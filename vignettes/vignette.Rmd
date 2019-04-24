@@ -1,0 +1,199 @@
+---
+title: "Package \"proteoQ\""
+author: "Qiang Zhang"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+fig_caption: yes
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  # cache = TRUE, 
+  out.width='.40\\linewidth',
+  fig.width=3,
+  fig.height=3,
+  fig.show='hold',
+  fig.align='center',
+  comment = "#>"
+)
+```
+
+
+## Introduction to proteoQ
+
+Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R functions. 
+
+## Application - Data F003485.csv
+In this section we illustrate the following applications of `proteoQ`:
+
+1. Summarization of PSM data to peptide and protein reports.
+2. Basic informatic analysis with the peptide and protein data.
+
+### Set up the experiments
+
+```{r setting_1, include = TRUE, eval = FALSE}
+# Load the proteoQ library
+library(proteoQ)
+
+# Specify the working directory
+dat_dir <- "c:\\The\\First\\Example"
+```
+
+PSM table(s) in a `csv` format will be exported by the end users from the [Mascot](https://http://www.matrixscience.com/) search engine. The option of `Include sub-set protein hits` is typically set to `0` with our opinionated choice of the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is, which begin(s) with letter `F`, followed by six digits and ends with `.csv` in filename extension. 
+
+The end user will also fill out an `Excel` or `csv` template with the information of multiplex experiment numbers, TMT channels, LC/MS injection indices, sample IDs and corresponding RAW data filenames. The default filename for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will be filled out by users to link multiple `RAW` filenames that are associated to the same sample IDs. The default filename for the fractionation summary is `frac_smry.xlsx`. Try `?setup_expts` for more details on the experimental setups. 
+
+The above files should be stored immediately under the the file folder specified by `dat_dir`. Examples of PSM outputs, `expt_smry` and `frac_smry` can be found as follows:
+
+```{r setting_2, include = TRUE, eval = FALSE}
+system.file("extdata", "F012345.csv", package = "proteoQ")
+system.file("extdata", "expt_smry.xlsx", package = "proteoQ")
+system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
+```
+
+As a final step of the setup, we will load the experimental summary and some precomputed results:
+
+```{r setting_3, include = TRUE, eval = FALSE}
+# Load the experiment
+setup_expts()
+```
+
+*Note*: it is possible for the same peptide sequence under different `csv` files being assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides. To avoid such ambiguity in protein inference, we typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed when constructing peptide reports. 
+
+
+### Summarize PSMs to peptides
+
+```{r PSM reports, eval = FALSE}
+# Generate PSM reports
+normPSM(
+ rptr_intco = 1000,
+ rm_craps = FALSE,
+ rm_krts = FALSE,
+ rm_outliers = FALSE,
+ plot_violins = TRUE
+)
+```
+
+
+```{r Peptide reports, eval = FALSE}
+# Generate peptide reports
+normPep(
+ id = pep_seq_mod,
+ method_psm_pep = median,
+ method_align = MGKernel,
+ range_log2r = c(10, 95),
+ range_int = c(5, 95),
+ n_comp = 2,
+ seed = 321, 
+ annot_kinases = TRUE,
+ maxit = 200,
+ epsilon = 1e-05
+)
+```
+
+Users will inspect the alignment of ratio profiles and, if needed, re-normalize the data with different sets of tuning parameters. The users will also decide on the choice of scaling normalization by comparing the histograms at `scale_log2r = TRUE` and `scale_log2r = FALSE`.
+
+*To be deleted*: The following three blocks of codes will be at first executed in the order of `normtPSM()`, `normPep()` and `normPrn()`, which will produce `PSM`, `peptide` and `protein` results, respectively.  After the first pass, users can rerun the codes at their own orders. 
+
+```{r Peptide log2FC, eval = FALSE}
+# Without the scaling of log2FC 
+pepHist(
+ scale_log2r = FALSE, 
+ show_curves = TRUE,
+ show_vline = TRUE,
+ ncol = 5
+)
+
+# With the scaling of log2FC 
+pepHist(
+ scale_log2r = TRUE, 
+ show_curves = TRUE,
+ show_vline = TRUE,
+ ncol = 5
+)
+```
+
+```{r Peptide histogram F, echo=FALSE, fig.align='center', fig.cap="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img1_path <- "Peptide\\Histogram\\Peptide_Histogram_N.png"
+img2_path <- "Peptide\\Histogram\\Peptide_Histogram_Z.png"
+knitr::include_graphics(c(img1_path, img2_path))
+```
+
+
+### Summarize peptides to proteins 
+
+```{r Protein reports, eval = FALSE}
+# Generate protein reports
+normPrn(
+ id = gene,
+ method_pep_prn = median,
+ method_align = MGKernel,
+ range_log2r = c(20, 90),
+ range_int = c(5, 95),
+ n_comp = 2,
+ seed = 246, 
+ fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta", 
+ maxit = 200,
+ epsilon = 1e-05
+)
+```
+
+Similar to the peptide summary, users will inspect the alignment and scaling of ratio profiles, and re-normalize the data when needed.
+
+```{r Protein log2FC without scaling, eval = FALSE}
+# Plot and inspect the histograms of protein log2FC
+prnHist(
+ scale_log2r = FALSE, 
+ show_curves = TRUE,
+ show_vline = TRUE,
+ ncol = 5
+)
+
+prnHist(
+ scale_log2r = TRUE, 
+ show_curves = TRUE,
+ show_vline = TRUE,
+ ncol = 5
+)
+```
+
+
+Correlation of both intensity and log2FC will be performed.
+
+```{r Peptide corr, eval = FALSE}
+# Correlation plots of peptide data
+pepCorr(
+	use_log10 = TRUE, 
+	scale_log2r = TRUE, 
+	min_int = 3.5,
+	max_int = 6.5, 
+	min_log2r = -2, 
+	max_log2r = 2, 
+	width = 24,
+	height = 24
+)
+```
+
+
+```{r Protein corr, eval = FALSE}
+# Correlation plots of protein data
+prnCorr(
+	use_log10 = TRUE, 
+	scale_log2r = TRUE, 
+	min_int = 3.5,
+	max_int = 6.5, 
+	min_log2r = -2, 
+	max_log2r = 2,
+	width = 24,
+	height = 24		
+)
+```
+
+![Intensity](Protein/Corrplot/Protein_Corrplot_Intensity_gg.png){ width=45% } ![log2FC](Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png){ width=45% }
+
+
