@@ -1,4 +1,4 @@
-#' Reads label scheme
+#' Processes the metadata of experiments
 #'
 #' @import dplyr purrr
 #' @importFrom magrittr %>%
@@ -14,10 +14,13 @@ prep_label_scheme <- function(dat_dir, filename) {
 	}	
 	
 	
-	if(is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+	if(is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), 
+	                                         error = function(e) 1)
+	
 	if(dat_dir == 1) stop("Set up the working directory first.")
 
-	if(!file.exists(file.path(dat_dir, filename))) stop(filename, " not found under '", dat_dir, "'.")
+	if(!file.exists(file.path(dat_dir, filename))) 
+	  stop(filename, " not found under '", dat_dir, "'.")
 
 	fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
 	
@@ -25,8 +28,8 @@ prep_label_scheme <- function(dat_dir, filename) {
 		label_scheme_full <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Setup") %>% 
 												dplyr::filter(rowSums(!is.na(.)) > 0)	
 	} else if(fn_suffix == "csv") {
-		label_scheme_full <- read.csv(file.path(dat_dir, filename), check.names = TRUE, header = TRUE, 
-												comment.char = "#", na.strings = c("", "NA")) %>% 
+		label_scheme_full <- read.csv(file.path(dat_dir, filename), check.names = TRUE, 
+		                              header = TRUE, comment.char = "#", na.strings = c("", "NA")) %>% 
 												dplyr::filter(rowSums(!is.na(.)) > 0)	
 	} else {
 		stop(filename, " needs to be in a file format of '.csv', '.xls' or '.xlsx'.")
@@ -41,11 +44,12 @@ prep_label_scheme <- function(dat_dir, filename) {
 		stop("Not all required columns are present in \'", filename, "\'", call. = TRUE)
 	}
 	
-	default_names <- c("Reference", "Select", "Group", "Order", "Color", 
-										"Shape", "Size", "Alpha", "Term", "Duplicate")
+	default_names <- c("Reference", "Select", "Group", "Order", "Fill",  "Color", 
+										"Shape", "Size", "Alpha", "Term", "Duplicate", "Benchmark")
+	
 	purrr::walk(default_names, ~ {
 		if(!.x %in% names(label_scheme_full)) {
-			message("Default column \'", .x, "\' added to \'", filename, "\'")
+			message("Column \'", .x, "\' added to \'", filename, "\'")
 			label_scheme_full[[.x]] <<- NA
 		}
 	})
@@ -56,15 +60,15 @@ prep_label_scheme <- function(dat_dir, filename) {
 	TMT_plex <- TMT_plex(label_scheme_full)
 	TMT_levels <- TMT_levels(TMT_plex)
 	
-	# ---------
 	label_scheme_full <- label_scheme_full %>% 
 		dplyr::mutate_at(vars(c("TMT_Channel")), ~ my_channels(.)) %>% 
-		dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% # remove accidentl empty rows
-		dplyr::mutate(Reference = !is.na(Reference), RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
+		dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% 
+		dplyr::mutate(Reference = !is.na(Reference), 
+		              RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
 		dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.)) %>% 
 		dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(., digits = 2)) %>% 
-		dplyr::mutate_at(vars(one_of("DAT_File")), ~ gsub("\\.csv$", "", ., ignore.case = TRUE)) %>% 
-		dplyr::mutate_at(vars(one_of("Windows_File")), ~ gsub("\\.raw$", "", ., ignore.case = TRUE)) %>% 
+		# dplyr::mutate_at(vars(one_of("DAT_File")), ~ gsub("\\.csv$", "", ., ignore.case = TRUE)) %>% 
+		# dplyr::mutate_at(vars(one_of("Windows_File")), ~ gsub("\\.raw$", "", ., ignore.case = TRUE)) %>% 
 		tidyr::fill(TMT_Set, LCMS_Injection, RAW_File, Accession_Type, Species) %>% 
 		dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>% 
 		dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
@@ -96,14 +100,15 @@ prep_label_scheme <- function(dat_dir, filename) {
 		dplyr::filter(is.na(RAW_File)) %>% 
 		dplyr::group_by(TMT_Set, LCMS_Injection) %>% 
 		dplyr::mutate(n = n()) %>% 
-		dplyr::filter(n != TMT_plex) # remove all-NA LCMS_Injection for a given TMT_Set
+		dplyr::filter(n != TMT_plex)
 	
 	if (nrow(check_tmt) > 0) {
 		check_tmt %>% 
 			dplyr::select(TMT_Set, LCMS_Injection, TMT_Channel) %>% 
 			print()
 		
-		stop(paste(check_tmt$TMT_Channel, "are missing at set", check_tmt$TMT_Set, "injection", check_tmt$LCMS_Injection))
+		stop(paste(check_tmt$TMT_Channel, "are missing at set", check_tmt$TMT_Set, "injection", 
+		           check_tmt$LCMS_Injection))
 	}
 	
 	# check the uniqueness of RAW_File per TMT_Set and LCMS_Injection
@@ -126,7 +131,8 @@ prep_label_scheme <- function(dat_dir, filename) {
 		
 	if (nrow(check_smpls) > 0 & TMT_plex > 0) {
 		check_smpls %>% print()
-		stop(paste("Need", TMT_plex, "unique samples in the above combination of TMT sets and LCMS injections." ))
+		stop(paste("Need", TMT_plex, 
+		           "unique samples in the above combination of TMT sets and LCMS injections." ))
 	}
 
 	save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.Rdata"))
@@ -134,17 +140,17 @@ prep_label_scheme <- function(dat_dir, filename) {
 	
 	load(file = file.path(dat_dir, "label_scheme_full.Rdata"), envir =  .GlobalEnv)
 	load(file = file.path(dat_dir, "label_scheme.Rdata"), envir =  .GlobalEnv)
-
-	# return(label_scheme_full)
 }
 
 
-#' Reads label scheme
+#' Loads the information of analyte prefractionation
 #'
 #' @import dplyr purrr
 #' @importFrom magrittr %>%
 prep_fraction_scheme <- function(dat_dir, filename) {
-	if(is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+	if(is.null(dat_dir)) 
+	  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+	
 	if(dat_dir == 1) stop("Set up the working directory first.")
 
 	fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
@@ -153,16 +159,15 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 	if(file.exists(file.path(dat_dir, filename))) {
 		if(fn_suffix %in% c("xls", "xlsx")) {
 			fraction_scheme <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Fractions") %>% 
-													dplyr::filter(rowSums(!is.na(.)) > 0)	
+			  dplyr::filter(rowSums(!is.na(.)) > 0)	
 		} else if(fn_suffix == "csv") {
 			fraction_scheme <- read.csv(file.path(dat_dir, filename), check.names = TRUE, header = TRUE, 
-													comment.char = "#", na.strings = c("", "NA"))  %>% 
-													dplyr::filter(rowSums(!is.na(.)) > 0)	
+			                            comment.char = "#", na.strings = c("", "NA"))  %>% 
+			  dplyr::filter(rowSums(!is.na(.)) > 0)	
 		} else {
 			stop(filename, " needs to be in a file format of '.csv', '.xls' or '.xlsx'.")
 		}
  	} else {
-		# warning(paste0("\"", gsub("\\\\", "/", file.path(dat_dir, filename)), "\"", " created"), call. = FALSE)	
 		load(file = file.path(dat_dir, "label_scheme_full.Rdata"), envir =  .GlobalEnv)
 		
 		fraction_scheme <- label_scheme_full %>% 
@@ -178,12 +183,12 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 }
 
 
-
-
-
-#'Load Species-specific Databases
+#'Loads species-specific Databases
 #'
-#'A function loads a set of precompiled tables in protein accessions, GO data and KEGG pathways.
+#'A function loads a set of precompiled tables in protein accessions, \code{GO}
+#'data, \code{KEGG} pathways and
+#'\code{\href{http://software.broadinstitute.org/gsea/msigdb}{molecular
+#'signatures}}.
 #'
 #'@seealso \code{\link{setup_expts}} for supported species.
 #'
@@ -193,11 +198,11 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 #'@export
 #'@import dplyr
 #'@importFrom magrittr %>%
-load_dbs <- function (dat_dir, expt_smry = "expt_smry.csv") {
-	
+load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 	Species <- find_species(label_scheme)
-	if(is.null(Species)) 
-		stop("'Species' in '", expt_smry, "' not recognized. It needs to be one of 'human', 'mouse', 'rat' or 'pdx'.")
+	
+	if(is.null(Species)) stop("'Species' in '", expt_smry, 
+	                          "' not recognized. It needs to be one of 'human', 'mouse', 'rat' or 'pdx'.")
 	
 	if (Species %in% c("homo sapiens", "human")) {
 		data(package = "proteoQ", prn_annot_hs)
@@ -292,29 +297,31 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.csv") {
 	if(!is.na(go_species)) names(go_sets) <- gsub("/", "-", names(go_sets))
 	if(!is.na(kegg_species)) names(kegg_sets) <- gsub("/", "~", names(kegg_sets))
 	
-	assign("dbs", list(prn_annot = prn_annot, go_sets = go_sets, kegg_sets = kegg_sets, c2_msig = c2_sets), envir = .GlobalEnv)
+	assign("dbs", 
+	       list(prn_annot = prn_annot, go_sets = go_sets, kegg_sets = kegg_sets, c2_msig = c2_sets), 
+	       envir = .GlobalEnv)
 }
 
 
-#'Set up Experiments
+#'Sets up experiments
 #'
-#'A function processes \code{.csv} files containing the metadata of TMT
+#'A function processes \code{.xlsx} files containing the metadata of TMT
 #'experiments
 #'
-#'@section \code{expt_smry.csv}: The \code{.csv} files should be located
+#'@section \code{expt_smry.xlsx}: The \code{.xlsx} files should be located
 #'  immediately under the file folder defined by the character vector of
 #'  \code{dat_dir}.
 #'
-#'  In the \code{expt_smry.csv} file, values under the \code{Sample_ID} column
-#'  should be unique for entries at different indeces of \code{TMT_Channel} and
-#'  \code{TMT_Set}, or left blank for used entries. Samples with the same
+#'  In the \code{expt_smry.xlsx} file, values under the \code{Sample_ID} column
+#'  should be unique for entries with unique combination of \code{TMT_Channel}
+#'  and \code{TMT_Set}, or left blank for used entries. Samples with the same
 #'  indeces of \code{TMT_Channel} and \code{TMT_Set} but different indeces of
 #'  \code{LCMS_Injection} should have the same value in \code{Sample_ID}.
 #'
 #'  Under the \code{Reference} column, entries should be indicated with non-void
 #'  string(s) for reference(s) and left blank for non-references.
 #'
-#'  Users can add or modify the \code{optional column keys} in the \code{.csv}
+#'  Users can add or modify the \code{optional column keys} in the \code{.xlsx}
 #'  file for suitable analysis (see \code{\link{prnSig}}... for the
 #'  customization of column keys).
 #'
@@ -327,8 +334,8 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.csv") {
 #'  in \code{Xcalibur} and the later should be used. (2) For analysis with
 #'  offline fractionations of peptides before LC/MS, the \code{RAW_File} column
 #'  should be left blank. The correspondence between the fractions and
-#'  \code{RAW_File} names should be specified in a separate file named
-#'  \code{fraction_scheme.csv}.)\cr Accession_Type \tab Protein accession types
+#'  \code{RAW_File} names should be specified in a separate file such as
+#'  \code{fraction_scheme.xlsx}.)\cr Accession_Type \tab Protein accession types
 #'  (The currently supported names are "uniprot_id" for
 #'  \code{\href{https://www.uniprot.org/help/entry_name}{UniProt entry name}}
 #'  and "refseq_acc" for
@@ -344,20 +351,23 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.csv") {
 #'
 #'  \tabular{ll}{ \strong{Optional column key}   \tab \strong{Descrption}\cr
 #'  Select \tab Selected \code{Sample_IDs} for indicated analysis of "MDS",
-#'  "Heat map"... \cr Group \tab Aesthetic labels annotating the prior knowledge
-#'  of sample groups, e.g., Ctrl_T1, Ctrl_T2, Disease_T1, Disease_T2, ... \cr
-#'  Order \tab Numeric labels specifying the order of sample \code{groups}
-#'  (\strong{Note}: leave the labels blank for unsupervised analysis.)\cr Color
-#'  \tab Aesthetic labels for sample annotation by color\cr Shape \tab Aesthetic
-#'  labels for sample annotation by shape\cr Size \tab Aesthetic labels for
-#'  sample annotation by size \cr Alpha \tab Aesthetic labels for sample
-#'  annotation by transparency \cr Term \tab Categorial terms for statistical
-#'  modeling \cr Duplicate \tab Indicators of duplicated samples for corrections
-#'  in statistical significance \cr ... \tab Customed columns for mapping to
-#'  indicated analysis}
+#'  "Heat map"... If the values underneath are left blank, all samples including
+#'  references will be used. \cr Group \tab Aesthetic labels annotating the
+#'  prior knowledge of sample groups, e.g., Ctrl_T1, Ctrl_T2, Disease_T1,
+#'  Disease_T2, ...\cr Order \tab Numeric labels specifying the order of sample
+#'  \code{groups} (\strong{Note}: leave the labels blank for unsupervised
+#'  analysis.)\cr Fill \tab Aesthetic labels for sample annotation by filled
+#'  color\cr Color \tab Aesthetic labels for sample annotation by edge color\cr
+#'  Shape \tab Aesthetic labels for sample annotation by shape\cr Size \tab
+#'  Aesthetic labels for sample annotation by size \cr Alpha \tab Aesthetic
+#'  labels for sample annotation by transparency \cr Term \tab Categorial terms
+#'  for statistical modeling \cr Duplicate \tab Indicators of duplicated samples
+#'  for corrections in statistical significance \cr Benchmark \tab Indicators of
+#'  benchmark sample (groups) for use in heat map visualizations.\cr ... \tab
+#'  Customed columns of metadata for mapping to indicated analysis}
 #'
-#'@section \code{frac_smry.csv}: There will be no need to prepare the
-#'  "frac_smry.csv" file if no peptide fractionations were performed in TMT
+#'@section \code{frac_smry.xlsx}: It is not necessary to prepare a
+#'  "frac_smry.xlsx" file if no peptide fractionations were performed in TMT
 #'  experiments.
 #'
 #'  \tabular{ll}{ \strong{Column key}   \tab \strong{Descrption}\cr TMT_Set \tab
@@ -368,16 +378,16 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.csv") {
 #'
 #'@param dat_dir A character string to the working directory.
 #'@param expt_smry A character string to the file of TMT experimental summary.
-#'  The default is "expt_smry.csv".
+#'  The default is "expt_smry.xlsx".
 #'@param frac_smry A character string to the file of peptide fractionation
-#'  summary. The default is "frac_smry.csv".
+#'  summary. The default is "frac_smry.xlsx".
 #'
 #' @examples
-#' # An examplary "expt_smry.csv"
-#' system.file("extdata", "expt_smry.csv", package = "proteoQ")
+#' # An examplary "expt_smry.xlsx"
+#' system.file("extdata", "expt_smry.xlsx", package = "proteoQ")
 #'
-#' # An examplary "frac_smry.csv"
-#' system.file("extdata", "frac_smry.csv", package = "proteoQ")
+#' # An examplary "frac_smry.xlsx"
+#' system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
 #'
 #' # Set up the working directory and experiments
 #' dat_dir <- c("C:\\my_direcotry")
@@ -393,25 +403,30 @@ setup_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry
 }	
 
 
-#' Extract the information of reference and unused TMT channels.
+#' Extracts the channel information in TMT experiments
 #'
-#' A function returns the indeces of TMT channels that are associated to reference(s), sample(s) and probable unused void(s).
+#' A function returns the indeces of TMT channels that are associated to
+#' reference(s), sample(s) and probable unused void(s).
 #'
 #' @param label_scheme The data frame returned by \code{\link{setup_expts}}.
 #' @param set_idx Numeric.  The index of a multiplex TMT experiment.
-#' @return Three lists of indeces: 
-#' \code{refChannels}, reference channels(s); 
-#' \code{emptyChannels}, empty channel(s) that were not used for sample labeling; 
-#' \code{labeledChannels}, non-empty channels including both reference(s) and sample(s).
+#' @return Three lists of indeces: \code{refChannels}, reference channels(s);
+#'   \code{emptyChannels}, empty channel(s) that were not used for sample
+#'   labeling; \code{labeledChannels}, non-empty channels including both
+#'   reference(s) and sample(s).
 #'
 #' @importFrom dplyr select filter
 channelInfo <- function (label_scheme, set_idx) {
 	stopifnot(length(set_idx) == 1)
 	
-	label_scheme_sub <- label_scheme %>% filter(!duplicated(Sample_ID), TMT_Set == set_idx) 
+	label_scheme_sub <- label_scheme %>% 
+	  dplyr::filter(!duplicated(Sample_ID), TMT_Set == set_idx) 
 
-	ref <- label_scheme_sub$Reference # TRUE or FALSE
-	empty_channel_sub <- is.na(label_scheme_sub$Sample_ID) | grepl("^Empty|^Outlier", label_scheme_sub$Sample_ID, ignore.case = TRUE)
+	ref <- label_scheme_sub$Reference
+	
+	empty_channel_sub <- is.na(label_scheme_sub$Sample_ID) | 
+	  grepl("^Empty|^Outlier", label_scheme_sub$Sample_ID, ignore.case = TRUE)
+	
 	label_scheme_sub <- !empty_channel_sub
 	
 	out <- list(
@@ -424,29 +439,30 @@ channelInfo <- function (label_scheme, set_idx) {
 }
 
 
-#' The number of multiplex TMT experiments.
+#' Finds the number of multiplex TMT experiments
 #'
 #' \code{n_TMT_sets} returns the number of multiplex TMT experiments.
 n_TMT_sets <- function (label_scheme_full) {
-	length(unique(label_scheme_full$TMT_Set)) # the number of multiplex TMT experiments; >= 1
+	length(unique(label_scheme_full$TMT_Set))
 }
 
-#' The multiplxity of TMT labels.
+#' Finds the multiplxity of TMT labels
 #'
 #' \code{TMT_plex} returns the multiplxity of TMT labels.
 TMT_plex <- function (label_scheme_full) {
-	nlevels(as.factor(label_scheme_full$TMT_Channel)) # determine TMT multiplxity
+	nlevels(as.factor(label_scheme_full$TMT_Channel))
 } 
 
-#' The factor levels of TMT labels.
+#' Finds the factor levels of TMT labels
 #'
 #' \code{TMT_levels} returns the factor levels of TMT labels.
 TMT_levels <- function (TMT_plex) {
-	# order label scheme data
 	if(TMT_plex == 10) {
-		TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131")
+		TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", "TMT-129N", 
+		                "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131")
 	} else if(TMT_plex == 11) {
-		TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131N", "TMT-131C")
+		TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", "TMT-129N", 
+		                "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131N", "TMT-131C")
 	} else if(TMT_plex == 6) {
 		TMT_levels <- c("TMT-126", "TMT-127", "TMT-128", "TMT-129", "TMT-130", "TMT-131")
 	} else if(TMT_plex == 1) {
@@ -456,7 +472,7 @@ TMT_levels <- function (TMT_plex) {
 	}
 }
 
-#' Simplifies label schemes from \code{label_scheme_full}.
+#' Simplifies label schemes from \code{label_scheme_full}
 #'
 #' Removes duplicated sample entries under different LC/MS injections.
 simple_label_scheme <- function (dat_dir, label_scheme_full) {
@@ -464,16 +480,17 @@ simple_label_scheme <- function (dat_dir, label_scheme_full) {
 	TMT_levels <- TMT_levels(TMT_plex)
 
 	label_scheme <- label_scheme_full %>% 
-		dplyr::filter(!duplicated(Sample_ID), !is.na(Sample_ID)) %>% # remove NA samples (in case extra lines in the label_scheme.csv file) and duplicated sample_IDs
+		dplyr::filter(!duplicated(Sample_ID), !is.na(Sample_ID)) %>% 
 		dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>% 
 		dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 	
 	save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
 }
 
-#' Checks the uniqueness of sample IDs in \code{label_scheme_full}.
+#' Checks the uniqueness of sample IDs in \code{label_scheme_full}
 #'
-#' \code{check_label_scheme} will stop the analysis if the number of unique samples are less than expected.
+#' \code{check_label_scheme} will stop the analysis if the number of unique
+#' samples are less than expected.
 check_label_scheme <- function (label_scheme_full) {
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	
@@ -484,9 +501,10 @@ check_label_scheme <- function (label_scheme_full) {
 	}
 }
 
-#' Find the Accession_Type
+#' Finds the Accession_Type
 #'
-#' \code{find_acctype} find the Accession_Type that will be used in the annotation of protein IDs.
+#' \code{find_acctype} finds the \code{Accession_Type} that will be used in the
+#' annotation of protein IDs.
 find_acctype <- function (label_scheme_full) {
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	
@@ -498,7 +516,7 @@ find_acctype <- function (label_scheme_full) {
 		tolower()
 }
 
-#' Find the Species
+#' Finds the species
 #'
 #' \code{find_species} find the species that will be used in analysis such as GSEA.
 find_species <- function (label_scheme_full) {
