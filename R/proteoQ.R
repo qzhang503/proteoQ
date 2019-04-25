@@ -4,12 +4,12 @@
 #' The proteoQ package provides three categories of functions in data preprocessing, 
 #'   quality assurance assessments and informatic analysis.
 #' 
-#' @section proteoQ functions in data preprocessing:
-#' reportPSM, normPep, normPrn
-#' @section proteoQ functions in data QA:
-#' proteoHisto, proteoCorrplot, proteoMDS, proteoMA
-#' @section proteoQ functions in informatic analysis:
-#' proteoHM, proteoTrend, proteoNMF, proteoSigtest, proteoVolcano
+#' @section proteoQ functions in data preprocessing: normPSM, normPep, normPrn
+#' @section proteoQ functions in data QA: pepHist, prnHist, pepCorr, prnCorr,
+#'   pepMA, prnMA
+#' @section proteoQ functions in informatic analysis: pepMDS, prnMDS, pepPCA,
+#'   prnPCA, pepEucDist, prnEucDist, pepHM, prnHM, pepNMF, prnNMF, prnTrend,
+#'   pepSig, prnSig, prnGAGE, prnGSVA, pepVol, prnVol, gsvaMap, gageMap
 #'
 #' @docType package
 #' @name proteoQ
