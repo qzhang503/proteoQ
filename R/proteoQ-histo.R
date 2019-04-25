@@ -1,15 +1,13 @@
-
-#' Plot histograms
+#' Plots histograms
 #'
 #' @import dplyr purrr rlang mixtools ggplot2 RColorBrewer
 #' @importFrom magrittr %>% 
 #' @importFrom tidyr gather
-#' @export
-plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_curves, show_vline, filepath = NULL, filename, ...) {
+plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_curves, 
+                       show_vline, filepath = NULL, filename, ...) {
 	
 	dots <- rlang::enexprs(...)
 
-	# Settings for graphing
 	xmin <- eval(dots$xmin, env = caller_env())
 	xmax <- eval(dots$xmax, env = caller_env())
 	x_breaks <- eval(dots$x_breaks, env = caller_env())
@@ -38,12 +36,11 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 	NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
 	
 	if(!is.null(params)) {
-		# The name of Gaussian components
 		n_comp <- max(params$Component)
 		nm_comps <- paste0("G", 1:n_comp)
 		nm_full <- c(nm_comps, paste(nm_comps, collapse = " + "))
 
-		# The percentage of non-NA values for each sample to offset the contributions of NAs in density plots
+		# Offset by the percentage of non-NA values
 		perc_nna <- df %>% 
 			dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}"), names(.))) %>% 
 			`names<-`(gsub(".*_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
@@ -74,14 +71,10 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 			dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID)
 
 		myPalette <- c(rep("gray", n_comp), "black")
-		
-		# nm <- nm_full %>% gsub("Gaussian\\.", "G", .)
-	
 	} else {
 		n_comp <- NA
 		nm_comps <- NA
 		myPalette <- NA
-		# nm <- NA
 		nm_full <- NA
 		perc_nna <- NA
 		fit <- NA
@@ -94,7 +87,6 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 		axis.text.y  = element_text(angle=0, vjust=0.5, size=18),
 		axis.title.x = element_text(colour="black", size=24),
 		axis.title.y = element_text(colour="black", size=24),
-		# plot.title = element_text(face="bold", colour="black", size=24, hjust=.5, vjust=.5),
 		plot.title = element_text(colour="black", size=24, hjust=.5, vjust=.5),
 
 		strip.text.x = element_text(size = 18, colour = "black", angle = 0), 
@@ -107,25 +99,23 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 
 		legend.key = element_rect(colour = NA, fill = 'transparent'), 
 		legend.background = element_rect(colour = NA,  fill = "transparent"),
-		# legend.position = c(0.15, 0.78),  
-		# legend.position = "none",  # to remove all legends
 		legend.title = element_blank(),
-		# legend.title = element_text(colour="black", size=18),
 		legend.text = element_text(colour="black", size=18),
 		legend.text.align = 0, 
 		legend.box = NULL
 	)
 	
 	seq <- c(-Inf, seq(4, 7, .5), Inf)
+	
 	df_melt <- df %>% 
 		dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>% 
 		dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>% 
-		dplyr::select(which(not_all_zero(.))) %>% # all-zero columns removed
-		dplyr::select(which(colSums(!is.na(.)) > 0)) %>%  # all-NA columns removed
+		dplyr::select(which(not_all_zero(.))) %>% 
+		dplyr::select(which(colSums(!is.na(.)) > 0)) %>%  
 		dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}", names(.))], na.rm = TRUE))) %>% 
 		dplyr::mutate_at(.vars = "Int_index", cut, seq, labels = seq[1:(length(seq)-1)]) %>% 
 		dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>% 
-		`names<-`(gsub(".*log2_R[0-9]{3}.*\\s+\\((.*)\\)$", "\\1", names(.))) %>% # Sample IDs being using for fitting
+		`names<-`(gsub(".*log2_R[0-9]{3}.*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
 		tidyr::gather(key = Sample_ID, value = value, -Int_index) %>% 
 		dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>% 
 		dplyr::arrange(Sample_ID) %>% 
@@ -134,18 +124,21 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 
 
 	p <- ggplot() + 
-		geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = Int_index), color = "white", alpha = .8, binwidth = binwidth, size = .1) +
+		geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = Int_index), 
+		               color = "white", alpha = .8, binwidth = binwidth, size = .1) +
 		scale_fill_brewer(palette = "Spectral", direction = -1) + 
-		# geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable), size = .2) + 
-		# geom_vline(xintercept = 0, size = .25, linetype = "dashed") + 
 		labs(title = "", x = x_label, y = expression("Frequency")) + 
-		scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = x_breaks), labels = as.character(seq(xmin, xmax, by = x_breaks))) + 
-		# scale_colour_manual(values = myPalette, name = "Gaussian", breaks = c(nm_comps, paste(nm_comps, collapse = " + ")), labels = nm_full) + 
+		scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = x_breaks), 
+		                   labels = as.character(seq(xmin, xmax, by = x_breaks))) + 
 		my_theme + 
 		facet_wrap(~ Sample_ID, ncol = ncol, scales = "free")
 		
-	if(show_curves) p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable), size = .2) + 
-											scale_colour_manual(values = myPalette, name = "Gaussian", breaks = c(nm_comps, paste(nm_comps, collapse = " + ")), labels = nm_full)
+	if(show_curves) p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable), 
+	                                   size = .2) + 
+											scale_colour_manual(values = myPalette, name = "Gaussian", 
+											                    breaks = c(nm_comps, paste(nm_comps, collapse = " + ")), 
+											                    labels = nm_full)
+	
 	if(show_vline) p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
 
 	if(!grepl("\\.png$", filename)) filename <- paste0(filename, ".png")
@@ -156,15 +149,14 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 	if(is.null(height)) height <- length(unique(df_melt$Sample_ID)) * 4 / ncol
 	
 	ggsave(file.path(filepath, filename), p, width = width, height = height, limitsize = FALSE, units = "in")
-
 }
 
 
 
-#'Plots Histograms
+#'Visualizes histograms
 #'
-#'\code{proteoHist} produces the histograms of \code{log2-ratios} for proteins
-#'or peptides data.
+#'\code{proteoHist} prepares the histogram visualization of \code{log2-ratios}
+#'for proteins or peptides data.
 #'
 #'In the histograms, the \code{log2-ratios} under each TMT channel are
 #'color-coded by their contributing reporter-ion intensity.
@@ -177,9 +169,9 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 #'@param id Character string to indicate the type of data. Peptide data will be
 #'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 #'  \code{id = prot_acc} or \code{gene}.
-#'@param  col_select Character string to a column key in \code{expt_smry.csv}.
-#'  Samples corresponding to non-empty entries will be included for the
-#'  indicated analysis.
+#'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
+#'  The default key is \code{Select}. Samples corresponding to non-empty entries
+#'  under \code{col_select} will be included in the indicated analysis.
 #'@param scale_log2r Logical; if TRUE, adjusts \code{log2-ratios} to the same
 #'  scale of standard deviation for all samples.
 #'@param show_curves Logical; if TRUE, shows the fitted curves.
@@ -205,16 +197,18 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 #' @examples
 #' # no scaling normalization
 #' proteoHist(
-#'   id = "pep_seq_mod",
+#'   id = pep_seq_mod,
 #'   scale_log2r = FALSE,
 #'   show_curves = TRUE,
 #'   show_vline = TRUE,
+#'   xmin = -1,
+#'   xmax = 1,
 #'   ncol = 4
 #' )
 #'
 #' # scaling normalization
 #' proteoHist(
-#'   id = "pep_seq_mod",
+#'   id = pep_seq_mod,
 #'   col_select = Select,
 #'   scale_log2r = TRUE,
 #'   show_curves = TRUE,
@@ -231,21 +225,24 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col_select = NULL, scale_log2r = FALSE, 
-                         show_curves = TRUE, show_vline = TRUE, new_fit = FALSE, df = NULL, filepath = NULL, filename = NULL, ...) {
-	id <- rlang::enexpr(id)
+proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col_select = NULL, 
+                        scale_log2r = FALSE, show_curves = TRUE, show_vline = TRUE, new_fit = FALSE, 
+                        df = NULL, filepath = NULL, filename = NULL, ...) {
+	
+  id <- rlang::enexpr(id)
 	if(length(id) != 1) id <- rlang::expr(gene)
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 	
 	col_select <- rlang::enexpr(col_select)
 
 	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = FALSE, 
-						df = df, filepath = filepath, filename = filename, 
-						anal_type = "Histogram")(new_fit = new_fit, show_curves = show_curves, show_vline = show_vline, ...)
+	          df = df, filepath = filepath, filename = filename, 
+	          anal_type = "Histogram")(new_fit = new_fit, show_curves = show_curves, 
+	                                   show_vline = show_vline, ...)
 }
 
 
-#'Histograms of Peptide Data
+#'Visualizes the histograms of peptide data
 #'@seealso \code{\link{proteoHist}} for parameters
 #'
 #' @examples
@@ -254,6 +251,8 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), co
 #'   scale_log2r = FALSE, 
 #'   show_curves = TRUE,
 #'   show_vline = TRUE,
+#'   xmin = -1,
+#'   xmax = 1,
 #'   ncol = 4
 #' )
 #' 
@@ -262,18 +261,10 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), co
 #'   scale_log2r = TRUE, 
 #'   show_curves = TRUE,
 #'   show_vline = TRUE,
+#'   xmin = -1,
+#'   xmax = 1,
 #'   ncol = 4
 #' )
-#'
-#' # direct call to proteoHist()
-#' proteoHist(
-#'   id = pep_seq_mod, 
-#'   scale_log2r = TRUE, 
-#'   show_curves = TRUE,
-#'   show_vline = TRUE,
-#'   ncol = 4
-#' )
-#'
 #'
 #' \dontrun{
 #' pepHist(
@@ -286,7 +277,8 @@ pepHist <- function (...) {
 	proteoHist(id = pep_seq, ...)
 }
 
-#'Histograms of Protein Data
+
+#'Visualizes the histograms of protein data
 #'@seealso \code{\link{proteoHist}} for parameters
 #'
 #' @examples
@@ -295,6 +287,8 @@ pepHist <- function (...) {
 #'   scale_log2r = FALSE, 
 #'   show_curves = TRUE,
 #'   show_vline = TRUE,
+#'   xmin = -1,
+#'   xmax = 1,
 #'   ncol = 4
 #' )
 #'
@@ -303,18 +297,11 @@ pepHist <- function (...) {
 #'   scale_log2r = TRUE, 
 #'   show_curves = TRUE,
 #'   show_vline = TRUE,
+#'   xmin = -1,
+#'   xmax = 1,
 #'   ncol = 4
 #' )
 #' 
-#' # direct call to proteoHist()
-#' proteoHist(
-#'   id = prot_acc, 
-#'   scale_log2r = TRUE, 
-#'   show_curves = TRUE,
-#'   show_vline = TRUE,
-#'   ncol = 4
-#' )
-#'
 #' \dontrun{
 #' prnHist(
 #'   col_select = "a_non_existed_column_key"
