@@ -340,7 +340,7 @@ Rosner_outliers <- function(x) {
 }
 
 
-#' Outlier removal with Dixon's method 
+#' Outlier removals with Dixon's method 
 Dixon_outliers <- function(x) {
 	# x = c(0.0000000, 0.0000000, 1.0271542, 0.0000000, 0.2080097)
 	# x = c(0.0000000, 0.0000000, NA, 0.0000000, 0.2080097)
