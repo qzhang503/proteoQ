@@ -1,4 +1,4 @@
-#' Removes PSM deaders
+#' Removes PSM headers
 #'
 #' \code{rmPSMHeaders} removes the header of PSM outputs from
 #' \code{\href{https://http://www.matrixscience.com/}{Mascot}}. It also removes
