@@ -1,18 +1,20 @@
-#' Functional Factories for Informatic Analysis
+#' Functional factories for informatic analysis
 #'
 #' \code{info_anal} produces functions for selected informatic analysis.
 #'
-#' @param anal_type The type of analysis; \code{anal_type = c("MDS", "PCA", "EucDist", "MA",
-#'   "Heatmap", "Histogram", "Corrplot", "Trend", "NMF", "Model")}.
+#' @param anal_type The type of analysis; \code{anal_type = c("MDS", "PCA",
+#'   "EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
+#'   "Model")}.
 #' @return a function to the given \code{anal_type}.
 #'
 #' @import dplyr rlang ggplot2 pheatmap
 #' @importFrom magrittr %>%
-info_anal <- function (id = gene, 
-											col_select = NULL, col_group = NULL, col_order = NULL, col_color = NULL, col_fill = NULL, 
-											col_shape = NULL, col_size = NULL, col_alpha = NULL, col_benchmark = NULL, 
-											scale_log2r = FALSE, impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL, 
-                      anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model", "NMF", "Trend")) {
+info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order = NULL, 
+											col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, 
+											col_alpha = NULL, col_benchmark = NULL, scale_log2r = FALSE, 
+											impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL, 
+                      anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model", 
+                                    "NMF", "Trend")) {
 
 	old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
@@ -30,18 +32,19 @@ info_anal <- function (id = gene,
 	col_alpha <- rlang::enexpr(col_alpha)
 	col_benchmark <- rlang::enexpr(col_benchmark)
 	
-
 	# col_select
 	if(is.null(col_select)) {
 		col_select <- rlang::expr(Select)
 	} else if(col_select == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), call. = FALSE)
+		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), 
+		     call. = FALSE)
 	}
 	
 	if(is.null(label_scheme[[col_select]])) {
 		stop("Column \'", rlang::as_string(col_select), "\' does not exist.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_select]])) == 0) {
-		stop("No samples were selected under column \'", rlang::as_string(col_select), "\'.", call. = FALSE)
+		stop("No samples were selected under column \'", rlang::as_string(col_select), "\'.", 
+		     call. = FALSE)
 	}
 	
 	
@@ -49,7 +52,8 @@ info_anal <- function (id = gene,
 	if(is.null(col_group)) {
 		col_group <- rlang::expr(Group)
 	} else if(col_group == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), call. = FALSE)
+		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), 
+		     call. = FALSE)
 	}
 	
 	if(is.null(label_scheme[[col_group]])) {
@@ -67,14 +71,16 @@ info_anal <- function (id = gene,
 	if(is.null(col_order)) {
 		col_order <- rlang::expr(Order)
 	} else if(col_order == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), call. = FALSE)
+		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), 
+		     call. = FALSE)
 	}
 	
 	if(is.null(label_scheme[[col_order]])) {
 		warning("Column \'", rlang::as_string(col_order), "\' does not exist. 
 			Samples will be arranged by the alphebatic order.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_order]])) == 0) {
-	  warning("No samples were specified under column \'", rlang::as_string(col_order), "\'.", call. = FALSE)
+	  warning("No samples were specified under column \'", rlang::as_string(col_order), "\'.", 
+	          call. = FALSE)
 	}
 	
 	
@@ -82,13 +88,15 @@ info_anal <- function (id = gene,
 	if(is.null(col_color)) {
 		col_color <- rlang::expr(Color)
 	} else if(col_color == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), call. = FALSE)
+		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), 
+		     call. = FALSE)
 	}
 	
 	if(is.null(label_scheme[[col_color]])) {
 		warning("Column \'", rlang::as_string(col_color), "\' does not exist.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_color]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_color), "\'.", call. = FALSE)
+		warning("No samples were specified under column \'", rlang::as_string(col_color), "\'.", 
+		        call. = FALSE)
 	}
 	
 	
@@ -96,13 +104,15 @@ info_anal <- function (id = gene,
 	if(is.null(col_fill)) {
 		col_fill <- rlang::expr(Fill)
 	} else if(col_fill == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), call. = FALSE)
+		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), 
+		     call. = FALSE)
 	}
 	
 	if(is.null(label_scheme[[col_fill]])) {
 		warning("Column \'", rlang::as_string(col_fill), "\' does not exist.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_fill]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_fill), "\'.", call. = FALSE)
+		warning("No samples were specified under column \'", rlang::as_string(col_fill), "\'.", 
+		        call. = FALSE)
 	}
 	
 	
@@ -110,13 +120,15 @@ info_anal <- function (id = gene,
 	if(is.null(col_shape)) {
 		col_shape <- rlang::expr(Shape)
 	} else if(col_shape == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), call. = FALSE)
+		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), 
+		     call. = FALSE)
 	}
 	
 	if(is.null(label_scheme[[col_shape]])) {
 		warning("Column \'", rlang::as_string(col_shape), "\' does not exist.")
 	} else if(sum(!is.na(label_scheme[[col_shape]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_shape), "\'.", call. = FALSE)
+		warning("No samples were specified under column \'", rlang::as_string(col_shape), "\'.", 
+		        call. = FALSE)
 	}
 	
 	
@@ -124,13 +136,15 @@ info_anal <- function (id = gene,
 	if(is.null(col_size)) {
 		col_size <- rlang::expr(Size)
 	} else if(col_size == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), call. = FALSE)
+		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), 
+		     call. = FALSE)
 	}
 	
 	if(is.null(label_scheme[[col_size]])) {
 		warning("Column \'", rlang::as_string(col_size), "\' does not exist.")
 	} else if(sum(!is.na(label_scheme[[col_size]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_size), "\'.", call. = FALSE)
+		warning("No samples were specified under column \'", rlang::as_string(col_size), "\'.", 
+		        call. = FALSE)
 	}
 	
 	
@@ -138,13 +152,15 @@ info_anal <- function (id = gene,
 	if(is.null(col_alpha)) {
 		col_alpha <- rlang::expr(Alpha)
 	} else if(col_alpha == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), call. = FALSE)
+		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), 
+		     call. = FALSE)
 	}
 	
 	if(is.null(label_scheme[[col_alpha]])) {
 		warning("Column \'", rlang::as_string(col_alpha), "\' does not exist.")
 	} else if(sum(!is.na(label_scheme[[col_alpha]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_alpha), "\'.", call. = FALSE)
+		warning("No samples were specified under column \'", rlang::as_string(col_alpha), "\'.", 
+		        call. = FALSE)
 	}
 	
 	
@@ -152,127 +168,22 @@ info_anal <- function (id = gene,
 	if(is.null(col_benchmark)) {
 		col_benchmark <- rlang::expr(Benchmark)
 	} else if(col_benchmark == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), call. = FALSE)
+		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."), 
+		     call. = FALSE)
 	}
 	
 	if(is.null(label_scheme[[col_benchmark]])) {
 		warning("Column \'", rlang::as_string(col_benchmark), "\' does not exist.")
 	} else if(sum(!is.na(label_scheme[[col_benchmark]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_benchmark), "\'.", call. = FALSE)
+		warning("No samples were specified under column \'", rlang::as_string(col_benchmark), "\'.", 
+		        call. = FALSE)
 	}
-	
-	
-	
-	
-	
-	run_scripts <- FALSE
-	if(run_scripts) {
-		if(is.null(col_select)) {
-			col_select <- rlang::expr(Select)
-			if(sum(!is.na(label_scheme$Select)) == 0) 
-				stop("Column \'", rlang::as_string(col_select), 
-					"\' is either empty or missing from the \'label scheme\' file.\n", 
-					"\tEnter sample names under the \'", rlang::as_string(col_select), "\' column for analysis.")
-		} else if(col_select == rlang::expr(Sample_ID)) {
-			stop(paste0("\'Sample_ID\' is a reserved column name.\n", 
-				"\tChoose or add a different column key to indicate samples for analysis."))
-		} else if(is.null(label_scheme[[col_select]])) {
-			stop("Column \'", rlang::as_string(col_select), "\' is empty.\n",  
-				"\tEnter sample names under the \'", rlang::as_string(col_select), "\' column for analysis.")
-		}
 
-		if(is.null(col_group)) {
-			col_group <- rlang::expr(Group)
-			if(sum(!is.na(label_scheme$Group)) == 0) label_scheme$Group <- label_scheme$Select
-		} else if(col_group == rlang::expr(Sample_ID)) {
-			stop(paste0("\'Sample_ID\' is a reserved column name.\n", 
-				"\tChoose or add a different column key to indicate samples for analysis."))
-		} else if(is.null(label_scheme[[col_group]])) {
-			stop("Column name \'", rlang::as_string(col_group), "\' is missing.", call. = TRUE)
-		}
-		
-		if(is.null(col_order)) {
-			col_order <- rlang::expr(Order)
-			if(sum(!is.na(label_scheme$Order)) == 0) 
-				warning("\tColumn \'", rlang::as_string(col_order), "\' is either empty or missing from the \'label scheme\' file.\n", 
-					"\tSamples will be arranged by the alphebatic order.", call. = TRUE)
-		} else if(col_order == rlang::expr(Sample_ID)) {
-			stop(paste0("\'Sample_ID\' is a reserved column name.\n", 
-				"\tChoose or add a different column key to indicate the order of samples."), call. = TRUE)
-		} else if(is.null(label_scheme[[col_order]])) {
-			warning("\tColumn \'", rlang::as_string(col_order), "\' is either empty or missing from the \'label scheme\' file.\n",  
-				"\tSamples will be arranged by the alphebatic order.", call. = TRUE)
-		}
-		
-		if(is.null(col_color)) {
-			col_color <- rlang::expr(Color)
-			if(sum(!is.na(label_scheme$Color)) == 0) 
-				warning("Default column name \'", rlang::as_string(col_color), "\' is empty or missing.", call. = TRUE)
-		} else if(col_color == rlang::expr(Sample_ID)) {
-			stop(paste0("Column \'Sample_ID\' is reserved; choose a different key.\n"))
-		} else if(is.null(label_scheme[[col_color]])) {
-			stop("Column name \'", rlang::as_string(col_color), "\' is missing.", call. = TRUE)
-		}		
-		
-		if(is.null(col_fill)) {
-			col_fill <- rlang::expr(Fill)
-			if(! "Fill" %in% names(label_scheme)) label_scheme$Fill <- NA
-
-			if(sum(!is.na(label_scheme$Fill)) == 0) 
-				warning("Default column name \'", rlang::as_string(col_fill), "\' is empty or missing.", call. = TRUE)
-		} else if(col_fill == rlang::expr(Sample_ID)) {
-			stop(paste0("Column \'Sample_ID\' is reserved; choose a different key.\n"))
-		} else if(is.null(label_scheme[[col_fill]])) {
-			stop("Column name \'", rlang::as_string(col_fill), "\' is missing.", call. = TRUE)
-		}
-		
-		if(is.null(col_shape)) {
-			col_shape <- rlang::expr(Shape)
-			if(sum(!is.na(label_scheme$Shape)) == 0) 
-				warning("Default column name \'", rlang::as_string(col_shape), "\' is empty or missing.", call. = TRUE)
-		} else if(col_shape == rlang::expr(Sample_ID)) {
-			stop(paste0("Column \'Sample_ID\' is reserved; choose a different key.\n"))
-		} else if(is.null(label_scheme[[col_shape]])) {
-			stop("Column name \'", rlang::as_string(col_shape), "\' is missing.", call. = TRUE)
-		}
-		
-		if(is.null(col_size)) {
-			col_size <- rlang::expr(Size)
-			if(sum(!is.na(label_scheme$Size)) == 0) 
-				warning("Default column name \'", rlang::as_string(col_size), "\' is empty or missing.", call. = TRUE)
-		} else if(col_size == rlang::expr(Sample_ID)) {
-			stop(paste0("Column \'Sample_ID\' is reserved; choose a different key.\n"))
-		} else if(is.null(label_scheme[[col_size]])) {
-			stop("Column name \'", rlang::as_string(col_size), "\' is missing.", call. = TRUE)
-		}
-		
-		if(is.null(col_alpha)) {
-			col_alpha <- rlang::expr(Alpha)
-			if(sum(!is.na(label_scheme$Alpha)) == 0) 
-				warning("Default column name \'", rlang::as_string(col_alpha), "\' is empty or missing.", call. = TRUE)
-		} else if(col_alpha == rlang::expr(Sample_ID)) {
-			stop(paste0("Column \'Sample_ID\' is reserved; choose a different key.\n"))
-		} else if(is.null(label_scheme[[col_alpha]])) {
-			stop("Column name \'", rlang::as_string(col_alpha), "\' is missing.", call. = TRUE)
-		}
-		
-		if(is.null(col_benchmark)) {
-			col_benchmark <- rlang::expr(Benchmark)
-			if(sum(!is.na(label_scheme$Benchmark)) == 0) 
-				warning("Default column name \'", rlang::as_string(col_benchmark), "\' is empty or missing.", call. = TRUE)
-		} else if(col_benchmark == rlang::expr(Sample_ID)) {
-			stop(paste0("Column \'Sample_ID\' is reserved; choose a different key.\n"))
-		} else if(is.null(label_scheme[[col_benchmark]])) {
-			stop("Column name \'", rlang::as_string(col_benchmark), "\' is missing.", call. = TRUE)
-		}
-		
-	}
-	
-	
 	anal_type <- rlang::as_string(rlang::enexpr(anal_type))
 	
 	id <- rlang::as_string(rlang::enexpr(id))
-	if(length(id) != 1) stop("\'id\' must be one of \'pep_seq\', \'pep_seq_mod\', \'prot_acc\' or \'gene\'")
+	if(length(id) != 1) 
+	  stop("\'id\' must be one of \'pep_seq\', \'pep_seq_mod\', \'prot_acc\' or \'gene\'")
 
 	cat(paste0("id = \"", id, "\"", " by the current call\n"))
 	id <- match_identifier(id)
@@ -284,7 +195,8 @@ info_anal <- function (id = gene,
 	  cat(paste0("id = \"", id, "\"", " after parameter matching to normPep()\n"))
 		data_type <- "Peptide"
 	} else {
-		stop("Unrecognized 'id'; needs to be in c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")", call. = TRUE)
+		stop("Unrecognized 'id'; 
+		     needs to be in c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")", call. = TRUE)
 	}
 
 	if(is.null(filepath)) {
@@ -315,7 +227,8 @@ info_anal <- function (id = gene,
 
 		if(anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) {
 		  if(file.exists(fn_raw)) src_path <- fn_raw else 
-		    stop(paste(fn_raw, "not found. \n Run normPSM(), normPep() and normPrn() first"), call. = TRUE)
+		    stop(paste(fn_raw, "not found. \n Run normPSM(), normPep() and normPrn() first"), 
+		         call. = TRUE)
 		} else if(anal_type %in% c("Trend", "NMF")) {
 		  if(file.exists(fn_imp)) src_path <- fn_imp else 
 		    stop(paste(fn_imp, "not found. \nRun imputeNA() first."), call. = TRUE)
@@ -324,18 +237,22 @@ info_anal <- function (id = gene,
 		    if(file.exists(fn_imp)) src_path <- fn_imp else 
 		      stop(paste(fn_imp, "not found. \nRun imputeNA() first."), call. = TRUE)
 		  } else {
-		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), call. = TRUE)
+		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), 
+		                                                         call. = TRUE)
 		  }
 		} else if(anal_type %in% c("Model", "ESGAGE", "GSVA")) {
 			if(impute_na) {
 		    if(file.exists(fn_imp)) src_path <- fn_imp else 
 		      stop(paste(fn_imp, "not found. \nRun imputeNA() first."), call. = TRUE)
 		  } else {
-		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), call. = TRUE)
+		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), 
+		                                                         call. = TRUE)
 		  }
 		}
 		
-		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#"), error = function(e) NA)
+		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t", 
+		                        comment.char = "#"), error = function(e) NA)
+		
 		if(!is.null(dim(df))) {
 			message(paste("File loaded:", gsub("\\\\", "/", src_path)))
 		} else {
@@ -348,17 +265,18 @@ info_anal <- function (id = gene,
 	if(anal_type %in% c("Model", "ESGAGE", "GSVA")) {
 		label_scheme_sub <- label_scheme %>% # to be subset by the "key" in "formulas"
 			dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID), !Reference)
-			# dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID))
 	} else {
 		label_scheme_sub <- label_scheme %>% 
-			dplyr::select(Sample_ID, TMT_Set, !!col_select, !!col_group, !!col_order, !!col_color, !!col_fill, 
-										!!col_shape, !!col_size, !!col_alpha, !!col_benchmark) %>% 
+			dplyr::select(Sample_ID, TMT_Set, !!col_select, !!col_group, !!col_order, !!col_color, 
+			              !!col_fill, !!col_shape, !!col_size, !!col_alpha, !!col_benchmark) %>% 
 			dplyr::filter(!is.na(!!col_select))
 	}
 	
-	if (nrow(label_scheme_sub) == 0) stop(paste0("No samples or conditions were defined for \"", anal_type, "\""))
+	if (nrow(label_scheme_sub) == 0) 
+	  stop(paste0("No samples or conditions were defined for \"", anal_type, "\""))
 
-	dfw <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type)
+	dfw <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
+	              sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type)
 
 	if(!any(names(df) == "kin_attr")) {
 		cat("Columns of kinase annoation not found.\n")
@@ -372,7 +290,10 @@ info_anal <- function (id = gene,
 	
 	if(annot_kinases) {
 		dir.create(file.path(filepath, "Kinases"), recursive = TRUE, showWarnings = FALSE)
-		dfw_kinase <- df %>% dplyr::filter(kin_attr) %>% prepDM(!!id, scale_log2r, label_scheme_sub$Sample_ID, anal_type = anal_type)
+	  
+		dfw_kinase <- df %>% 
+		  dplyr::filter(kin_attr) %>% 
+		  prepDM(!!id, scale_log2r, label_scheme_sub$Sample_ID, anal_type = anal_type)
 	}	
 	
 	force(scale_log2r)
@@ -390,14 +311,15 @@ info_anal <- function (id = gene,
 	force(col_benchmark)
 	
 	if(anal_type == "MDS") {
-		function(adjEucDist = adjEucDist, classical = classical, show_ids = show_ids, annot_cols = NULL, ...) {
-			df_mds <- scoreMDS(df = dfw$log2R, 
+		function(adjEucDist = adjEucDist, classical = classical, show_ids = show_ids, 
+		         annot_cols = NULL, ...) {
+			
+		  df_mds <- scoreMDS(df = dfw$log2R, 
 				label_scheme_sub = label_scheme_sub, 
 				scale_log2r = scale_log2r, 
 				adjEucDist, 
-				classical, 
-				...
-			) 
+				classical, ...
+			)
 
 			df_mds$MDS %>% plotMDS(col_color = !!col_color, 
 				col_fill = !!col_fill, col_shape = !!col_shape, 
@@ -405,15 +327,13 @@ info_anal <- function (id = gene,
 				label_scheme_sub = label_scheme_sub, 
 				filepath = filepath, 
 				filename = paste0(fn_prx, ".png"), 
-				show_ids = show_ids, 
-				...
+				show_ids = show_ids, ...
 			)
 
 			if(annot_kinases) {
 				df_kinase_mds <- scoreMDS(df = dfw_kinase$log2R, 
 					label_scheme_sub = label_scheme_sub, 
-				  scale_log2r = scale_log2r, adjEucDist, classical, 
-					...
+				  scale_log2r = scale_log2r, adjEucDist, classical, ...
 				) 
 				
 				df_kinase_mds$MDS %>% plotMDS(col_color = !!col_color, 
@@ -422,8 +342,7 @@ info_anal <- function (id = gene,
 					label_scheme_sub = label_scheme_sub, 
 					filepath = file.path(filepath, "Kinases"), 
 					filename = paste0(fn_prx, "_Kinases.", fn_suffix), 
-					show_ids = show_ids, 
-					...
+					show_ids = show_ids, ...
 				)
 			}
 		}
@@ -449,8 +368,7 @@ info_anal <- function (id = gene,
 				prop_var_bi = df_mds$prop_var_bi, 
 				filepath = filepath, 
 				filename = paste0(fn_prx, ".png"), 
-				show_ids = show_ids, 
-				...
+				show_ids = show_ids, ...
 			)
 
 			if(annot_kinases) {
@@ -458,8 +376,7 @@ info_anal <- function (id = gene,
 					label_scheme_sub = label_scheme_sub, 
 				  scale_log2r = scale_log2r, 
 					adjEucDist = FALSE, 
-					classical = TRUE, 
-					...
+					classical = TRUE, ...
 				) 
 				
 				plotPCA(df = df_kinase_mds$PCA, 
@@ -474,8 +391,7 @@ info_anal <- function (id = gene,
 					prop_var_bi = df_kinase_mds$prop_var_bi, 
 					filepath = file.path(filepath, "Kinases"), 
 					filename = paste0(fn_prx, "_Kinases.", fn_suffix), 
-					show_ids = show_ids, 
-					...
+					show_ids = show_ids, ...
 				)
 			}
 		}
@@ -487,14 +403,12 @@ info_anal <- function (id = gene,
 				label_scheme_sub = label_scheme_sub, 
 			  scale_log2r = scale_log2r, 
 				adjEucDist = adjEucDist, 
-				classical = TRUE, 
-				...
+				classical = TRUE, ...
 			) 
 
 			df_mds$D %>% plotEucDist(annot_cols, 
 				filepath = filepath, 
-				filename = paste0(fn_prx, ".png"), 
-				...
+				filename = paste0(fn_prx, ".png"), ...
 			)		
 
 			if(annot_kinases) {
@@ -502,52 +416,50 @@ info_anal <- function (id = gene,
 					label_scheme_sub = label_scheme_sub, 
 				  scale_log2r = scale_log2r, 
 					adjEucDist = adjEucDist, 
-					classical = TRUE, 
-					...
+					classical = TRUE, ...
 				) 
 				
 				df_kinase_mds$D %>% plotEucDist(annot_cols, 
 					filepath = file.path(filepath, "Kinases"), 
-					filename = paste0(fn_prx, "_Kinases.", fn_suffix), 
-					...
+					filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...
 				)
 			}
 		}
 		
 	} else if(anal_type == "MA") {
 		function(...) {
-			
-			on.exit(message("MA plots --- Completed."), add = TRUE)
 
-			plotMA(df = dfw, col_group = !!col_group, label_scheme_sub = label_scheme_sub, filepath = filepath, 
-			       filename = paste0(fn_prx, ".", fn_suffix), ...)
-			
+			plotMA(df = dfw, col_group = !!col_group, label_scheme_sub = label_scheme_sub, 
+			       filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), ...)
+
 			if(annot_kinases) {
-				plotMA(df = dfw_kinase, col_group = !!col_group, label_scheme_sub = label_scheme_sub, filepath = file.path(filepath, "Kinases"), 
+				plotMA(df = dfw_kinase, col_group = !!col_group, label_scheme_sub = label_scheme_sub, 
+				       filepath = file.path(filepath, "Kinases"), 
 				       filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...)
 			}
 		}
-		
 	} else if(anal_type == "Heatmap") {
-		function(complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin, annot_cols = annot_cols, ...) {
-			
-			# on.exit(message("Heat map plots --- Completed."), add = TRUE)
+		function(complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin, 
+		         annot_cols = annot_cols, ...) {
 
-			plotHM(df = df, id = !!id, scale_log2r = scale_log2r, col_benchmark = !!col_benchmark, label_scheme_sub = label_scheme_sub, 
+			plotHM(df = df, id = !!id, scale_log2r = scale_log2r, col_benchmark = !!col_benchmark, 
+			       label_scheme_sub = label_scheme_sub, 
 						filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), 
-						complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin, annot_cols, ...)
+						complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin, 
+						annot_cols, ...)
 						
 			if(annot_kinases) {
-				plotKinHM(df = df[df$kin_attr, ], id = !!id, scale_log2r = scale_log2r, col_benchmark = !!col_benchmark, label_scheme_sub = label_scheme_sub, 
-								filepath = file.path(filepath, "Kinases"), filename = paste0(fn_prx, "_Kinases.", fn_suffix), 
-			 					complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin, annot_cols, ...)
+				plotKinHM(df = df[df$kin_attr, ], id = !!id, scale_log2r = scale_log2r, 
+				          col_benchmark = !!col_benchmark, label_scheme_sub = label_scheme_sub, 
+								filepath = file.path(filepath, "Kinases"), 
+								filename = paste0(fn_prx, "_Kinases.", fn_suffix), 
+			 					complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin, 
+								annot_cols, ...)
 			}
 		}
 		
 	} else if(anal_type == "Histogram") {
 		function(new_fit = new_fit, show_curves = show_curves, show_vline = show_vline, ...) {
-			
-			on.exit(message("Histogram plots --- Completed."), add = TRUE)
 
 			if (scale_log2r) {
 				fn <- file.path(filepath, "MGKernel_params_Z.txt")
@@ -563,63 +475,68 @@ info_anal <- function (id = gene,
 				show_curves <- FALSE			
 			}
 
-			plotHisto(df = df, label_scheme_sub = label_scheme_sub, params = params, scale_log2r = scale_log2r, 
-			          show_curves = show_curves, show_vline = show_vline, filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), ...)
+			plotHisto(df = df, label_scheme_sub = label_scheme_sub, params = params, 
+			          scale_log2r = scale_log2r, show_curves = show_curves, show_vline = show_vline, 
+			          filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), ...)
 			
 			if(annot_kinases) {
 				if(is.null(dim(df[df$kin_attr, ]))) stop("Kinase annoation not found.", call. = TRUE)
 
 				plotHisto(df = df[df$kin_attr, ], label_scheme_sub = label_scheme_sub, params = params, 
 				          scale_log2r = scale_log2r, show_curves = FALSE, show_vline = show_vline, 
-				          filepath = file.path(filepath, "Kinases"), filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...)
+				          filepath = file.path(filepath, "Kinases"), 
+				          filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...)
 			}
 		}
 		
 	} else if (anal_type == "Corrplot") {
-		function(use_log10 = use_log10, min_int = min_int, max_int = max_int, min_log2r = min_log2r, max_log2r = max_log2r, ...) {
-			on.exit(message("Correlation plots --- Completed."), add = TRUE)
+		function(use_log10 = use_log10, min_int = min_int, max_int = max_int, min_log2r = min_log2r, 
+		         max_log2r = max_log2r, ...) {
 
-			# the values of col_select and col_order maybe different to "Select" and "Order"
-			# pass them as params to find out what columns to look for
-			
 			if(ncol(dfw$log2R) > 20) stop("Too many samples for correlation plots!", call. = TRUE)
 	
-			plotCorr(df = dfw, col_select = !!col_select, col_order = !!col_order, label_scheme_sub = label_scheme_sub, use_log10 = use_log10, scale_log2r = scale_log2r, 
-			         min_int = min_int, max_int = max_int, min_log2r = min_log2r, max_log2r = max_log2r, 
+			plotCorr(df = dfw, col_select = !!col_select, col_order = !!col_order, 
+			         label_scheme_sub = label_scheme_sub, use_log10 = use_log10, 
+			         scale_log2r = scale_log2r, min_int = min_int, max_int = max_int, 
+			         min_log2r = min_log2r, max_log2r = max_log2r, 
 							 filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), ...)
 			
 			if(annot_kinases) {
-				plotCorr(df = dfw_kinase, col_select = !!col_select, col_order = !!col_order, label_scheme_sub = label_scheme_sub, use_log10 = use_log10, scale_log2r = scale_log2r, 
-				         min_int = min_int, max_int = max_int, min_log2r = min_log2r, max_log2r = max_log2r, 
-								 filepath = file.path(filepath, "Kinases"), filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...)
+				plotCorr(df = dfw_kinase, col_select = !!col_select, col_order = !!col_order, 
+				         label_scheme_sub = label_scheme_sub, use_log10 = use_log10, 
+				         scale_log2r = scale_log2r, min_int = min_int, max_int = max_int, 
+				         min_log2r = min_log2r, max_log2r = max_log2r, 
+								 filepath = file.path(filepath, "Kinases"), 
+								 filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...)
 			}
 		}
 		
 	} else if (anal_type == "Trend") {
 		function(n_clust = n_clust, complete_cases = complete_cases, ...) {
 
-			on.exit(message("Trend plots --- Completed."), add = TRUE)
-
-			plotTrend(df = dfw$log2R, id = !!id, col_group = !!col_group, col_order = !!col_order, label_scheme_sub = label_scheme_sub, n_clust = n_clust, complete_cases = complete_cases, 
-			          scale_log2r = scale_log2r, filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), ...)
+			plotTrend(df = dfw$log2R, id = !!id, col_group = !!col_group, col_order = !!col_order, 
+			          label_scheme_sub = label_scheme_sub, n_clust = n_clust, 
+			          complete_cases = complete_cases, scale_log2r = scale_log2r, 
+			          filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), ...)
 
 			if(annot_kinases) {
-				plotTrend(df = dfw_kinase$log2R, col_group = !!col_group, col_order = !!col_order, id = !!id, label_scheme_sub = label_scheme_sub, n_clust = n_clust, complete_cases = complete_cases, 
-				          scale_log2r = scale_log2r, filepath = file.path(filepath, "Kinases"), 
+				plotTrend(df = dfw_kinase$log2R, col_group = !!col_group, col_order = !!col_order, id = !!id, 
+				          label_scheme_sub = label_scheme_sub, n_clust = n_clust, 
+				          complete_cases = complete_cases, scale_log2r = scale_log2r, 
+				          filepath = file.path(filepath, "Kinases"), 
 				          filename = paste0(fn_prx, "_Kinases", ".png"), ...)
 			}
-			
 		}
 		
 	} else if (anal_type == "NMF") {
 		function(r = r, nrun = nrun, 
 						complete_cases = complete_cases, 
 						xmin = -1, xmax = 1, x_margin = .1, annot_cols = annot_cols, 
-						width_consensus = width_consensus, height_consensus = height_consensus, width_coefmap = width_coefmap, height_coefmap = height_coefmap, ...) {
-			
-			on.exit(message("NMF --- Completed."), add = TRUE)
+						width_consensus = width_consensus, height_consensus = height_consensus, 
+						width_coefmap = width_coefmap, height_coefmap = height_coefmap, ...) {
 
-			plotNMF(df = dfw$log2R, id = !!id, col_group = !!col_group, label_scheme_sub = label_scheme_sub, 
+			plotNMF(df = dfw$log2R, id = !!id, col_group = !!col_group, 
+			        label_scheme_sub = label_scheme_sub, 
 							filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), 
 			        r = r, nrun = nrun, complete_cases = complete_cases, 
 			        xmin = xmin, xmax = xmax, x_margin = x_margin, annot_cols = annot_cols, 
@@ -628,21 +545,18 @@ info_anal <- function (id = gene,
 		}
 		
 	} else if(anal_type == "ESGAGE") {
-		function(complete_cases = FALSE, method = "limma", gset_nm = "go_sets", var_cutoff = 1E-3, pval_cutoff = .05, logFC_cutoff = log2(1.1), ...) {
-			
-			on.exit(message("ESGAGE --- Completed."), add = TRUE)
+		function(complete_cases = FALSE, method = "limma", gset_nm = "go_sets", var_cutoff = 1E-3, 
+		         pval_cutoff = .05, logFC_cutoff = log2(1.1), ...) {
 
-			df_op <- gageTest(df = dfw$log2R, id = !!id, label_scheme_sub = label_scheme_sub, filepath = filepath, 
-				filename = paste0(fn_prx, ".", fn_suffix), 
-				complete_cases, method = method, gset_nm = gset_nm, var_cutoff = var_cutoff, 
-				pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, ...)
-											
+			df_op <- gageTest(df = dfw$log2R, id = !!id, label_scheme_sub = label_scheme_sub, 
+			                  filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), 
+			                  complete_cases, method = method, gset_nm = gset_nm, var_cutoff = var_cutoff, 
+			                  pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, ...)
 		}
 		
 	} else if(anal_type == "GSVA") {
-		function(complete_cases = FALSE, method = "limma", gset_nm = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), mx.diff = TRUE, ...) {
-			
-			on.exit(message("GSVA --- Completed."), add = TRUE)
+		function(complete_cases = FALSE, method = "limma", gset_nm = "go_sets", var_cutoff = .5, 
+		         pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), mx.diff = TRUE, ...) {
 
 			# "id" only for tibbling rownames
 			df_op <- gsvaTest(df = dfw$log2R, id = !!id, label_scheme_sub = label_scheme_sub, 
@@ -653,29 +567,18 @@ info_anal <- function (id = gene,
 		}
 		
 	} else if (anal_type == "Model") {
-		function(complete_cases = FALSE, method = "limma", var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), ...) {
+		function(complete_cases = FALSE, method = "limma", var_cutoff = 1E-3, pval_cutoff = 1, 
+		         logFC_cutoff = log2(1), ...) {
 			
-			on.exit(message("Modeling --- Completed."), add = TRUE)
-
-			# ---------------------------------------------
-			# check all formulas are under the same type
-			# formulas = enexprs(...)
-			# fmls <- sapply(formulas, function (formula) as.character(formula) %>% gsub("\\s+", "", .) %>% .[. != "~"])
-			
-			# if (fmls[1, 1] == "log2Ratio") {
-			# 	len <- fmls[1, ] %>% as.vector() %>% unique() %>% length()
-			# 	stopifnot(len == 1)
-			# }
-			# ---------------------------------------------
-
-			df_op <- sigTest(df = dfw$log2R, id = !!id, label_scheme_sub = label_scheme_sub, filepath = filepath, 
-											filename = paste0(fn_prx, ".", fn_suffix), complete_cases = complete_cases, method = method, 
-											var_cutoff = var_cutoff, pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, ...) %>% 
+			df_op <- sigTest(df = dfw$log2R, id = !!id, label_scheme_sub = label_scheme_sub, 
+			                 filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), 
+			                 complete_cases = complete_cases, method = method, var_cutoff = var_cutoff, 
+			                 pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, ...) %>% 
 								tibble::rownames_to_column(id) %>% 
 								dplyr::right_join(df, ., by = id) 
 
-			write.table(df_op, file.path(filepath, paste0(data_type, "_pVals.txt")), sep = "\t", col.names = TRUE, 
-			            row.names = FALSE)
+			write.table(df_op, file.path(filepath, paste0(data_type, "_pVals.txt")), sep = "\t", 
+			            col.names = TRUE, row.names = FALSE)
 		}
 		
 	}
@@ -683,24 +586,23 @@ info_anal <- function (id = gene,
 }
 
 
-#' Prpare data for analysis
+#' Prepares data for analysis
 #'
-#' \code{prepDM} prepare a minimal data frame for subsequent analysis. 
-#'
-#' In the "label_scheme.csv" file, 
+#' \code{prepDM} prepares a minimal data frame for subsequent analysis.
 #'
 #' @param df A data frame containing only numeric values.
 #' @param id The name of unqiue identifiers.
-#' @param scale_log2r Logical; if TRUE, rescales \code{log2-ratios} to the same scale.
-#' @param sub_grp Numeric.  A list of sample IDs that will be used in subsequent analysis.
-#' @return A data frame tailored for subsequent analysis. 
+#' @param scale_log2r Logical; if TRUE, rescales \code{log2-ratios} to the same
+#'   scale.
+#' @param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
+#'   analysis.
+#' @return A data frame tailored for subsequent analysis.
 #'
 #' @examples
 #' tempData <- prepDM(df, entrez, scale_log2r, sub_grp = label_scheme_sub$Sample_ID)
 #'
 #' \dontrun{
 #' }
-#' @export
 #' @import dplyr
 #' @importFrom magrittr %>%
 prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) { 
@@ -709,8 +611,11 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
 	
 	NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
 	
-	df <- df %>% # filtration dominated by log2R, not Intensity
-			dplyr::filter(!duplicated(!!rlang::sym(id)), !is.na(!!rlang::sym(id)), rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
+	# filtration dominated by log2R, not Intensity
+	df <- df %>% 
+			dplyr::filter(!duplicated(!!rlang::sym(id)), 
+			              !is.na(!!rlang::sym(id)), 
+			              rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
 			reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) 	
 
 	Levels <- sub_grp %>% 
@@ -724,7 +629,8 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
 			dplyr::select(which(not_all_zero(.))) %>% # reference will drop with single reference 
 			dplyr::select(Levels[Levels %in% names(.)]) # ensure the same order
 		
-	dfI <- df %>% # dominated by log2R, no need to filter all-NA intensity rows
+	# dominated by log2R, no need to filter all-NA intensity rows
+	dfI <- df %>% 
 			dplyr::select(grep("^N_I[0-9]{3}", names(.))) %>% 
 			`colnames<-`(label_scheme$Sample_ID) %>% 
 			dplyr::select(which(names(.) %in% sub_grp)) %>% 
@@ -742,7 +648,7 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
 }
 
 
-#' Wrapper around pheatmap
+#' A wrapper around pheatmap
 #' 
 #' @import dplyr rlang pheatmap
 #' @importFrom magrittr %>%
@@ -763,19 +669,21 @@ my_pheatmap <- function(mat, filename, annotation_col, color, annotation_colors,
 	dots$annotation_colors <- NULL
 	dots$breaks <- NULL
 
-	ph_call <- rlang::expr(pheatmap(mat = !!mat, filename = !!filename, annotation_col = !!annotation_col, color = !!color, 
+	ph_call <- rlang::expr(
+	  pheatmap(mat = !!mat, filename = !!filename, annotation_col = !!annotation_col, color = !!color, 
 		annotation_colors = !!annotation_colors, breaks = !!breaks, !!!dots))
+	
 	rlang::expr_print(ph_call)
 	rlang::eval_bare(ph_call, env = caller_env())
 }
 
 
-#' Make heat maps
+#' Makes heat maps
 #' 
 #' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>%
 plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepath, filename, 
-									complete_cases, xmin = -1, xmax = 1, x_margin = .1, annot_cols = NULL, ...) {
+                   complete_cases, xmin = -1, xmax = 1, x_margin = .1, annot_cols = NULL, ...) {
 
 	id <- rlang::as_string(rlang::enexpr(id))
 	col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
@@ -830,7 +738,8 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 	
 	# mypalette <- colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(n_color)
 	# mypalette <- colorRampPalette(c("darkorange3", "white", "darkblue"))(n_color)
-	# image(matrix(1:n_color, nrow = n_color, ncol = 10), col = mypalette, xaxt = "n", yaxt = "n", useRaster = TRUE)
+	# image(matrix(1:n_color, nrow = n_color, ncol = 10), 
+	#   col = mypalette, xaxt = "n", yaxt = "n", useRaster = TRUE)
 
 	acc_type <- load(file = file.path(dat_dir, "label_scheme.Rdata")) %>% find_acctype()
 	
@@ -844,9 +753,12 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 	
 	df <- df %>% 
 		dplyr::mutate_at(vars(grep("^pVal|^adjP", names(.))), as.numeric) %>% 
-		dplyr::mutate(Mean_log10Int = log10(rowMeans(.[, grepl("^I[0-9]{3}", names(.))], na.rm = TRUE))) %>% 
+		dplyr::mutate(Mean_log10Int = log10(rowMeans(.[, grepl("^I[0-9]{3}", names(.))], 
+		                                             na.rm = TRUE))) %>% 
 		dplyr::mutate_at(vars(grep("log2_R[0-9]{3}", names(.))), ~setHMlims(., xmin, xmax)) %>% 
-		dplyr::filter(!duplicated(!!rlang::sym(id)), !is.na(!!rlang::sym(id)), rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
+		dplyr::filter(!duplicated(!!rlang::sym(id)), 
+		              !is.na(!!rlang::sym(id)), 
+		              rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
 		reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) 
 		
 	dfR <- df %>% 
@@ -886,11 +798,9 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 			`rownames<-`(.[[id]])	%>% 
 			dplyr::select(which(names(.) %in% sample_ids))
 			
-	# -------------------------------
 	if(cluster_rows) {
 		d <- dist(df_hm, method = clustering_distance_rows)
 		d[is.na(d)] <- .5 * max(d, na.rm = TRUE)
-		# d[is.na(d)] <- .75 * max(d, na.rm = TRUE)
 		h <- hclust(d)
 		dots$cluster_rows <- h	
 		
@@ -933,11 +843,6 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 						tibble::rownames_to_column(id) %>% 
 						dplyr::filter(complete.cases(.[, names(.) %in% sample_ids])) %>% 
 						tibble::column_to_rownames(id)
-				} else {
-					# df_sub <- df_sub %>% 
-					# 	tibble::rownames_to_column(id) %>% 
-					# 	dplyr::mutate_if(is.numeric, funs(replace(., is.na(.), 0))) %>% 
-					# 	tibble::column_to_rownames(id)
 				}
 				
 				if(cluster_rows) {
@@ -951,12 +856,9 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 					}
 				}
 				
-				# if(nrow(df_sub) < 2) browser()
-
 				pheatmap(
 					mat = df_sub, 
 					main = paste("Cluster", cluster_id), 
-					# cluster_rows = FALSE, 
 					cluster_rows = h_sub, 
 					show_rownames = TRUE, 
 					show_colnames = TRUE,
@@ -966,35 +868,31 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 					cellwidth = 14, 
 					fontsize_row = ceiling(200/nrow(Cluster %>% dplyr::filter(Cluster == cluster_id))), 
 					annotation_colors = annotation_colors, 
-					filename = file.path(filepath, "Subtrees", paste0("Subtree_", cutree_rows, "-", cluster_id, ".png"))
+					filename = file.path(filepath, "Subtrees", 
+					                     paste0("Subtree_", cutree_rows, "-", cluster_id, ".png"))
 				)
 				
 				rm(d_sub, h_sub)
 			}
-
 		}
-		
 	}
 
-	# to the control group
+	# to the benchmark group
 	if(sum(!is.na(label_scheme_sub[[col_benchmark]])) > 0) {
 		dfc <- ratio_toCtrl(df, !!rlang::sym(id), label_scheme_sub, nm_ctrl = !!col_benchmark)
-		# dfc <- ratio_toCtrl(df, !!id, label_scheme_sub, nm_ctrl = Benchmark)
 
 		if (complete_cases) {
 			dfc_hm <- dfc %>% 
 				dplyr::filter(complete.cases(.[, names(.) %in% sample_ids]))
 		} else {
 			dfc_hm <- dfc %>% 
-				dplyr::filter(rowSums(!is.na(.[, names(.) %in% sample_ids])) > 0) # %>% 
-			# 	dplyr::mutate_if(is.numeric, funs(replace(., is.na(.), 0)))
+				dplyr::filter(rowSums(!is.na(.[, names(.) %in% sample_ids])) > 0)
 		}
 		
 		dfc_hm <- dfc_hm %>% 
 				`rownames<-`(.[[id]])	%>% 
 				dplyr::select(which(names(.) %in% sample_ids))
 				
-		# -------------------------------
 		if(cluster_rows) {
 			d <- dist(dfc_hm, method = clustering_distance_rows)
 			d[is.na(d)] <- .5  * max(d, na.rm = TRUE)
@@ -1005,7 +903,6 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 		} else {
 			dots$cluster_rows <- FALSE
 		}
-		# -------------------------------
 
 		p <- my_pheatmap(
 			mat = dfc_hm, 
@@ -1020,10 +917,10 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 }
 
 
-#'Heat maps
+#'Plots heat maps
 #'
-#'\code{proteoHM} produces the heat maps of \code{log2-ratios} for proteins or
-#'peptides data.
+#'\code{proteoHM} produces the heat map visualization of \code{log2-ratios} for
+#'proteins or peptides data.
 #'
 #'Data columns with complete missing values will be removed prior to
 #'hierarchical column clustering. Data rows without non-missing pairs will
@@ -1046,6 +943,13 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'@param id Character string to indicate the type of data. Peptide data will be
 #'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 #'  \code{id = prot_acc} or \code{gene}.
+#'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
+#'  The default key is \code{Select}. Samples corresponding to non-empty entries
+#'  under \code{col_select} will be included in the indicated analysis.
+#'@param  col_benchmark Character string to a column key in
+#'  \code{expt_smry.xlsx}. The default key is \code{Benchmark}. Samples
+#'  corresponding to non-empty entries under \code{col_benchmark} will be used
+#'  as benchmarks in the indicated analysis.
 #'@param scale_log2r Logical; if TRUE, adjusts \code{log2-ratios} to the same
 #'  scale of standard deviation for all samples.
 #'@param impute_na Logical; if TRUE, imputes missing values.
@@ -1059,21 +963,21 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'@param filename A representative filename to output images. By default, it
 #'  will be determined by the names of the current \code{call}.
 #'@param ... More parameters for plotting: \cr \code{xmin}, the minimum x; \cr
-#'  \code{xmax}, the maximum x; \cr \code{x_margin}, the margin in heat scales;
-#'  \cr \code{width}, the width of plot; \cr \code{height}, the height of plot;
-#'  \cr arguments inherited from \code{\link[pheatmap]{pheatmap}}.
+#'  \code{xmax}, the maximum x; \cr \code{x_margin}, the margin in heat
+#'  scales;\cr \code{annot_cols}, the column keys in \code{expt_smry.xlsx} for
+#'  use in the color coding of samples;\cr \code{width}, the width of plot; \cr
+#'  \code{height}, the height of plot; \cr additional arguments inherited from
+#'  \code{\link[pheatmap]{pheatmap}}.
 #'@return Heat map images.
 #'
 #' @examples
 #'proteoHM(
 #'  id = prot_acc,
 #'  scale_log2r = TRUE,
-#'
 #'  xmin = -1,
 #'  xmax = 1,
 #'  x_margin = 0.1,
-#'
-#'  annot_cols = c("Peptide_Yield", "TMT_Set", "Heatmap_Group"),
+#'  annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
 #'  cluster_rows = TRUE,
 #'  cutree_rows = 6,
 #'  show_rownames = FALSE,
@@ -1087,35 +991,31 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'proteoHM(
 #'  id = prot_acc,
 #'  scale_log2r = TRUE,
-#'
 #'  xmin = -1,
 #'  xmax = 1,
 #'  x_margin = 0.1,
-#'
-#'  annot_cols = c("Peptide_Yield", "TMT_Set", "Heatmap_Group"),
+#'  annot_cols = c("Group"),
 #'  cluster_rows = TRUE,
-#'  clustering_distance_rows  = "maximum", #
-#'  cutree_rows = 6,
-#'  show_rownames = FALSE,
-#'  show_colnames = TRUE,
-#'  fontsize_row = 3,
-#'  cellwidth = 14,
-#'  width = 10,
-#'  height = 12
-#')
-#'
-#'proteoHM(
-#'  id = prot_acc,
-#'  scale_log2r = TRUE,
-#'
-#'  xmin = -1,
-#'  xmax = 1,
-#'  x_margin = 0.1,
-#'
-#'  annot_cols = c("Peptide_Yield", "TMT_Set", "Heatmap_Group"),
-#'  cluster_rows = FALSE, #
 #'  clustering_distance_rows  = "maximum",
-#'  cutree_rows = 6, # no tree cutting at 'cluster_rows = FALSE'
+#'  cutree_rows = 6,
+#'  show_rownames = FALSE,
+#'  show_colnames = TRUE,
+#'  fontsize_row = 3,
+#'  cellwidth = 14,
+#'  width = 10,
+#'  height = 12
+#')
+#'
+#'proteoHM(
+#'  id = prot_acc,
+#'  scale_log2r = TRUE,
+#'  xmin = -1,
+#'  xmax = 1,
+#'  x_margin = 0.1,
+#'  annot_cols = c("Group"),
+#'  cluster_rows = FALSE, # no row clustering
+#'  clustering_distance_rows  = "maximum",
+#'  cutree_rows = 6, # will overrule tree cutting at 'cluster_rows = FALSE'
 #'  show_rownames = FALSE,
 #'  show_colnames = TRUE,
 #'  fontsize_row = 3,
@@ -1129,26 +1029,33 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, scale_log2r = FALSE, impute_na = FALSE, complete_cases = FALSE, 
+proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, 
+                      scale_log2r = FALSE,impute_na = FALSE, complete_cases = FALSE, 
 											df = NULL, filepath = NULL, filename = NULL, 
 											xmin = -1, xmax = 1, x_margin = 0.1, annot_cols = NULL, ...) {
-	id <- rlang::enexpr(id)
+	
+  id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
 	col_benchmark <- rlang::enexpr(col_benchmark)
 	
-	info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark, scale_log2r = scale_log2r, impute_na = impute_na, 
-					df = df, filepath = filepath, filename = filename, 
-					anal_type = "Heatmap")(complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin, annot_cols = annot_cols, ...)
+	info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark, 
+	          scale_log2r = scale_log2r, impute_na = impute_na, df = df, filepath = filepath, 
+	          filename = filename, anal_type = "Heatmap")(complete_cases = complete_cases, 
+	                                                      xmin = xmin, xmax = xmax, 
+	                                                      x_margin = x_margin, 
+	                                                      annot_cols = annot_cols, ...)
 }
 
-#'Peptide Heat Maps
+
+#'Visualizes peptide heat maps
 #'@seealso \code{\link{proteoHM}} for parameters
 #'@export
 pepHM <- function (...) {
 	proteoHM(id = pep_seq, ...)
 }
-	
-#'Protein Heat Maps
+
+
+#'Visualizes protein heat maps
 #'@seealso \code{\link{proteoHM}} for parameters
 #'@export
 prnHM <- function (...) {
@@ -1156,27 +1063,26 @@ prnHM <- function (...) {
 }
 
 
-#' Make kinase heat maps
+#' Plots kinase heat maps
 #' 
 #' Specialized for kinase heat maps
 #' 
 #' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>%
 #' @export
-plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, filepath, filename, complete_cases, xmin = -1, xmax = 1, x_margin = .1, annot_cols = NULL, ...) {
-	id <- rlang::as_string(rlang::enexpr(id))
-	col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
+plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, filepath, filename, 
+                      complete_cases, xmin = -1, xmax = 1, x_margin = .1, annot_cols = NULL, ...) {
 	
-	print(id)
+  id <- rlang::as_string(rlang::enexpr(id))
+	col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
 
 	dots <- rlang::enexprs(...)
 
-	# ------------------------------
 	# parameter(s) in "dots" disabled for pheatmap()
 	dots$annotation_col <- NULL 
-	nm_idx <- names(dots) %in% c("df", "id", "scale_log2r", "annot_kinases", "complete_cases", "label_scheme_sub", "filepath", "filename")
+	nm_idx <- names(dots) %in% c("df", "id", "scale_log2r", "annot_kinases", "complete_cases", 
+	                             "label_scheme_sub", "filepath", "filename")
 	dots[nm_idx] <- NULL
-	# ------------------------------
 
 	fn_prx <- gsub("\\..*$", "", filename)
 	fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename) 
@@ -1216,13 +1122,17 @@ plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, file
 	
 	sample_ids <- label_scheme_sub$Sample_ID
 	
-	kin_levels <- c("TK", "TKL", "STE", "CK1", "AGC", "CAMK", "CMGC", "Atypical", "Other", "RGC", "Unclassified", "FAM20", "Lipid")
+	kin_levels <- c("TK", "TKL", "STE", "CK1", "AGC", "CAMK", "CMGC", "Atypical", "Other", "RGC", 
+	                "Unclassified", "FAM20", "Lipid")
 	
 	df <- df %>% 
 		dplyr::mutate_at(vars(grep("^pVal|^adjP", names(.))), as.numeric) %>% 
-		dplyr::mutate(Mean_log10Int = log10(rowMeans(.[, grepl("^I[0-9]{3}", names(.))], na.rm = TRUE))) %>% 
+		dplyr::mutate(Mean_log10Int = log10(rowMeans(.[, grepl("^I[0-9]{3}", names(.))], 
+		                                             na.rm = TRUE))) %>% 
 		dplyr::mutate_at(vars(grep("log2_R[0-9]{3}", names(.))), ~setHMlims(., xmin, xmax)) %>% 
-		dplyr::filter(!duplicated(!!rlang::sym(id)), !is.na(!!rlang::sym(id)), rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
+		dplyr::filter(!duplicated(!!rlang::sym(id)), 
+		              !is.na(!!rlang::sym(id)), 
+		              rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
 		reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) %>% 
 		dplyr::mutate(kin_class = factor(kin_class, levels = kin_levels)) %>% 
 		dplyr::arrange(kin_class, !!rlang::sym(id))
@@ -1241,13 +1151,18 @@ plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, file
 	
 	annotation_row <- df %>% 
 			dplyr::select(id, kin_class) %>% 
-			dplyr::mutate(kin_class = factor(kin_class,  
-																						levels = c("TK", "TKL", "STE", "CK1", "AGC", "CAMK", "CMGC", "Atypical", 
-																						"Other", "RGC", "Unclassified", "FAM20", "Lipid"))) %>% 
+			dplyr::mutate(kin_class = factor(kin_class, levels = 
+			                                   c("TK", "TKL", "STE", "CK1", "AGC", "CAMK", "CMGC", 
+			                                     "Atypical", "Other", "RGC", "Unclassified", 
+			                                     "FAM20", "Lipid"))) %>% 
 			tibble::column_to_rownames(id)
 
-	if (is.null(annot_cols)) annotation_col <- NA else annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = sample_ids) 
-	
+	if (is.null(annot_cols)) {
+	  annotation_col <- NA
+	} else {
+	  annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
+	}
+
 	if (is.null(dots$annotation_colors)) {
 		annotation_colors <- setHMColor(annotation_col)
 	} else if (is.na(dots$annotation_colors)) {
@@ -1256,9 +1171,7 @@ plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, file
 		annotation_colors <- eval(dots$annotation_colors, env = caller_env())
 	}		
 	
-	# if(ncol(annotation_col) == 0) annotation_col <- NA
-
-	complete_cases <- FALSE
+	# complete_cases <- FALSE
 	if (complete_cases) {
 		df_hm <- df %>% 
 			dplyr::filter(complete.cases(.[, names(.) %in% sample_ids]))
@@ -1281,7 +1194,7 @@ plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, file
 		breaks = color_breaks, 
 		!!!dots)
 
-	# to the control group
+	# to the benchmark group
 	if(sum(!is.na(label_scheme_sub[[col_benchmark]])) > 0) {
 		dfc <- ratio_toCtrl(df, !!id, label_scheme_sub, nm_ctrl = !!col_benchmark)
 
@@ -1307,22 +1220,21 @@ plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, file
 			annotation_colors = annotation_colors, 
 			breaks = color_breaks, 
 			!!!dots)
-		
 	}
 }
 
 
-#' Make kinase heat maps
+#' Visualizes kinase heat maps
 #' 
 #' Specialized for kinase heat maps
 #' 
 #' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>%
 #' @export
-proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, scale_log2r = FALSE, df = NULL, 
-											filepath = NULL, filename = NULL, complete_cases = FALSE, 
-											impute_na = FALSE, 
-											anal_type = "Heatmap", xmin = -1, xmax = 1, x_margin = 0.1, annot_cols = NULL, ...) {
+proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, scale_log2r = FALSE, 
+                         df = NULL, filepath = NULL, filename = NULL, complete_cases = FALSE, 
+                         impute_na = FALSE, anal_type = "Heatmap", xmin = -1, xmax = 1, 
+                         x_margin = 0.1, annot_cols = NULL, ...) {
 
 	col_select <- rlang::enexpr(col_select)
 	col_benchmark <- rlang::enexpr(col_benchmark)
@@ -1330,20 +1242,25 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 	if(is.null(col_select)) {
 		col_select <- rlang::expr(Select)
 		if(sum(!is.na(label_scheme$Select)) == 0) 
-			stop("Column \'", rlang::as_string(col_select), "\' is either empty or missing from the \'label scheme\' file.\n", 
-				"\tEnter sample names under the \'", rlang::as_string(col_select), "\' column for informatic analysis.", call. = TRUE)
+			stop("Column \'", rlang::as_string(col_select), 
+			     "\' is either empty or missing from the \'label scheme\' file.\n", 
+				"\tEnter sample names under the \'", rlang::as_string(col_select), 
+				"\' column for informatic analysis.", call. = TRUE)
 	} else if(col_select == rlang::expr(Sample_ID)) {
 		stop(paste0("\'Sample_ID\' is a reserved column name.\n", 
-			"\tChoose or add a different column key to indicate samples for informatic analysis."), call. = TRUE)
+			"\tChoose or add a different column key to indicate samples for informatic analysis."), 
+			call. = TRUE)
 	} else if(is.null(label_scheme[[col_select]])) {
 		stop("Column \'", rlang::as_string(col_select), "\' is empty.\n",  
-			"\tEnter sample names under the \'", rlang::as_string(col_select), "\' column for informatic analysis.", call. = TRUE)
+			"\tEnter sample names under the \'", rlang::as_string(col_select), 
+			"\' column for informatic analysis.", call. = TRUE)
 	}
 	
 	if(is.null(col_benchmark)) {
 		col_benchmark <- rlang::expr(Benchmark)
 		if(sum(!is.na(label_scheme$Benchmark)) == 0) 
-			warning("Default column name \'", rlang::as_string(col_benchmark), "\' is empty or missing.", call. = TRUE)
+			warning("Default column name \'", rlang::as_string(col_benchmark), 
+			        "\' is empty or missing.", call. = TRUE)
 	} else if(col_benchmark == rlang::expr(Sample_ID)) {
 		stop(paste0("Column \'Sample_ID\' is reserved; choose a different key.\n"))
 	} else if(is.null(label_scheme[[col_benchmark]])) {
@@ -1373,7 +1290,6 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 		fn_prx <- paste(data_type, anal_type, sep = "_")
 		fn_suffix <- "png"
 	} else {
-		# fn_prx <- paste(gsub("\\..*$", "", filename), anal_type, sep = "_")
 		fn_prx <- gsub("\\..*$", "", filename)
 		fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
 	}
@@ -1381,7 +1297,6 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 	if(is.null(df)) {
 		err_msg <- "File doesn't exist"
 		
-		# ------------------------
 		if (id %in% c("pep_seq", "pep_seq_mod")) {
 			fn_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_pVals.txt")
 			fn_imp <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
@@ -1397,9 +1312,10 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 		} else {
 			src_path <- ifelse(impute_na, fn_imp, fn_raw) 
 		}
-		# ------------------------
+
+		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t", 
+		                        comment.char = "#"), error = function(e) NA)
 		
-		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#"), error = function(e) NA)
 		if(!is.null(dim(df))) {
 			message(paste("File loaded:", gsub("\\\\", "/", src_path)))
 		} else {
@@ -1407,7 +1323,7 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 		}
 	}
 	
-	load(file = file.path(dat_dir, "label_scheme.Rdata"))
+	# load(file = file.path(dat_dir, "label_scheme.Rdata"))
 
 	label_scheme_sub <- label_scheme %>% 
 		dplyr::select(Sample_ID, TMT_Set, !!col_select) %>% 
@@ -1416,7 +1332,10 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 	dfw <- prepDM(df, !!rlang::sym(id), scale_log2r, label_scheme_sub$Sample_ID, anal_type = anal_type)
 
 	dir.create(file.path(filepath, "Kinases"), recursive = TRUE, showWarnings = FALSE)
-	dfw_kinase <- df %>% dplyr::filter(kin_attr) %>% prepDM(!!rlang::sym(id), scale_log2r, label_scheme_sub$Sample_ID, anal_type = anal_type)
+	
+	dfw_kinase <- df %>% 
+	  dplyr::filter(kin_attr) %>% 
+	  prepDM(!!rlang::sym(id), scale_log2r, label_scheme_sub$Sample_ID, anal_type = anal_type)
 
 	plotKinHM(
 		df = df[df$kin_attr, ], 
@@ -1432,7 +1351,6 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 		x_margin = x_margin, 
 		annot_cols = annot_cols,
 		!!!dots)
-
 }
 
 
