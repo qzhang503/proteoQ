@@ -79,11 +79,12 @@
 #'  being used in MS/MS ion search. If not specified, a pre-compiled system file
 #'  will be used.
 #'@param ... Additional parameters from \code{\link[mixtools]{normalmixEM}}:\cr
-#'  \code{maxit}, the maximum number of iterations allowed; \cr
-#'  \code{epsilon}, tolerance limit for declaring algorithm convergence.
+#'  \code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
+#'  tolerance limit for declaring algorithm convergence.
 #'@inheritParams mixtools::normalmixEM
 #'@family aggregate functions
-#'@seealso \code{\link{normPSM}} for PSMs and \code{\link{normPep}} for peptides.
+#'@seealso \code{\link{normPSM}} for PSMs and \code{\link{normPep}} for
+#'  peptides.
 #'@return The primary output in "\code{C:\\my_directory\\Protein\\Protein.txt}".
 #'
 #' @examples
@@ -109,8 +110,9 @@
 #'@importFrom magrittr %>%
 #'@export
 normPrn <- function (id = c("prot_acc", "gene"), 
-                     method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), method_align = c("MC", "MGKernel"), 
-                     range_log2r = c(20, 90), range_int = c(5, 95), n_comp = NULL, seed = NULL, fasta = NULL, ...) {
+                     method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), 
+                     method_align = c("MC", "MGKernel"), range_log2r = c(20, 90), 
+                     range_int = c(5, 95), n_comp = NULL, seed = NULL, fasta = NULL, ...) {
 
 	dir.create(file.path(dat_dir, "Protein\\Histogram"), recursive = TRUE, showWarnings = FALSE)
 	dir.create(file.path(dat_dir, "Protein\\cache"), recursive = TRUE, showWarnings = FALSE)
@@ -168,17 +170,10 @@ normPrn <- function (id = c("prot_acc", "gene"),
 										header = TRUE, sep = "\t", comment.char = "#") %>% 
 			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 
-		# summarise quantitative data from the same TMT experiment but different LCMS injections
+		# summarise data from the same TMT experiment at different LCMS injections
 		df_num <- df %>% 
 				dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
 				dplyr::group_by(!!rlang::sym(id))
-
-		## summarise log2-ratios and intensity values from different LCMS injections but under the same TMT experiment
-		# df_num <- if(method_pep_prn == "mean") 
-		# 	aggrNums(mean)(df_num, !! id, na.rm = TRUE) else if (method_pep_prn == "top.3") 
-		# 	TMT_top_n(df_num, !! id, na.rm = TRUE) else if (method_pep_prn == "weighted.mean") 
-		# 	TMT_wt_mean(df_num, !! id, na.rm = TRUE) else # need to implement a more flexible weighted-mean with the user choices of "x" and "w"
-		# 	aggrNums(median)(df_num, !! id, na.rm = TRUE) # default method: "median"
 
 		df_num <- switch(method_pep_prn, 
 					mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
@@ -190,14 +185,14 @@ normPrn <- function (id = c("prot_acc", "gene"),
 				
 		write.csv(df_num, file.path(dat_dir, "Protein\\cache", "prn_num.csv"), row.names = FALSE)
 
-		# calculate the number of PSM
+		# the number of PSM
 		df_psm <- df %>% 
 				dplyr::select(!!rlang::sym(id), n_psm) %>% 
 				dplyr::group_by(!!rlang::sym(id)) %>% 
 				dplyr::summarise(n_psm = sum(n_psm))
 		write.csv(df_psm, file.path(dat_dir, "Protein\\cache", "prn_npsm.csv"), row.names = FALSE)
 		
-		# calculate the number of unique peptides
+		# the number of unique peptides
 		df_seq <- df %>% 
 				dplyr::select(!!rlang::sym(id), pep_seq) %>% 
 				dplyr::filter(!duplicated(pep_seq)) %>% 
@@ -208,33 +203,46 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		# summarise categories using all strings
 		max_char <- 200
 		df_str_a <- df %>% 
-				dplyr::select(-n_psm, -grep("^log2_R[0-9]{3}|^I[0-9]{3}|^N_log2_R[0-9]{3}|^N_I[0-9]{3}|^Z_log2_R[0-9]{3}", names(.))) %>% # already processed 
-				dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score", "prot_matches", "prot_matches_sig", "prot_sequences", "prot_sequences_sig"))) %>% # will not be used
-				dplyr::select(-which(names(.) %in% c("pep_seq", "pep_var_mod", "pep_var_mod_pos"))) %>% # will not be used in protein report
-				dplyr::select(-which(names(.) %in% c("prot_desc", "prot_mass", "uniprot_acc", "uniprot_id", "gene", "entrez", "kin_attr", "kin_class", "kin_order"))) %>% # will be processed later
+				dplyr::select(-n_psm, 
+				              -grep("^log2_R[0-9]{3}|^I[0-9]{3}|^N_log2_R[0-9]{3}|^N_I[0-9]{3}|^Z_log2_R[0-9]{3}", 
+				                    names(.))) %>% # already processed 
+				dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score", 
+				                                     "prot_matches", "prot_matches_sig", "prot_sequences", 
+				                                     "prot_sequences_sig"))) %>% # will not be used
+				dplyr::select(-which(names(.) %in% c("pep_seq", "pep_var_mod", 
+				                                     "pep_var_mod_pos"))) %>% # will not be used in protein report
+				dplyr::select(-which(names(.) %in% c("prot_desc", "prot_mass", "uniprot_acc", "uniprot_id", 
+				                                     "gene", "entrez", "kin_attr", "kin_class", 
+				                                     "kin_order"))) %>% # will be processed later
 				dplyr::group_by(!!rlang::sym(id)) %>% 
 				dplyr::summarise_all(toString, na.rm = TRUE) %>% 
-				dplyr::mutate_at(vars(which(names(.) != id)), function (x) { ifelse(nchar(x) > max_char, paste0(str_sub(x, 1, max_char), "..."), x)})
+				dplyr::mutate_at(vars(which(names(.) != id)), 
+				                 function (x) {ifelse(nchar(x) > max_char, 
+				                                      paste0(str_sub(x, 1, max_char), "..."), x)})
+		
 		write.csv(df_str_a, file.path(dat_dir, "Protein\\cache", "prn_str_a.csv"), row.names = FALSE)
 		
 		# summarise categories using only the first string
 		nm_a <- names(df_str_a)[-which(names(df_str_a) == id)]
 		df_str_b <- df %>% 
-				dplyr::select(-n_psm, -grep("^log2_R[0-9]{3}|^I[0-9]{3}|^N_log2_R[0-9]{3}|^N_I[0-9]{3}|^Z_log2_R[0-9]{3}", names(.))) %>% # already processed 
+				dplyr::select(-n_psm, 
+				              -grep("^log2_R[0-9]{3}|^I[0-9]{3}|^N_log2_R[0-9]{3}|^N_I[0-9]{3}|^Z_log2_R[0-9]{3}", 
+				                    names(.))) %>% # already processed 
 				dplyr::select(-which(names(.) %in% nm_a)) %>% # already processed under "df_str_a"
-				dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score", "prot_matches", "prot_matches_sig", "prot_sequences", "prot_sequences_sig"))) %>% # will not be used
-				dplyr::select(-which(names(.) %in% c("pep_seq", "pep_var_mod", "pep_var_mod_pos"))) %>% # redundant information available in "pep_seq_mod"
+				dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score", 
+				                                     "prot_matches", "prot_matches_sig", "prot_sequences", 
+				                                     "prot_sequences_sig"))) %>% # will not be used
+				dplyr::select(-which(names(.) %in% c("pep_seq", "pep_var_mod", "pep_var_mod_pos"))) %>% # redundant
 				dplyr::filter(!duplicated(!!rlang::sym(id)))
+		
 		write.csv(df_str_b, file.path(dat_dir, "Protein\\cache", "prn_str_b.csv"), row.names = FALSE)
 	
-		# combine results
 		df <- list(df_str_b, df_seq, df_psm, df_str_a, df_num) %>% 
 				purrr::reduce(left_join, by = id) %>% 
 				data.frame(check.names = FALSE)
 
-		# rm(df_num, df_psm, df_str_a, nm_a, df_str_b)
+		rm(df_num, df_psm, df_str_a, nm_a, df_str_b)
 
-		# value rounding
 		df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
 				df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
 				dplyr::mutate_if(is.integer, as.numeric) %>% 
@@ -245,7 +253,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 				dplyr::mutate_if(is.integer, as.numeric) %>% 
 				round(., digits = 0)
 	
-		# re-order columns
 		df <- cbind.data.frame(
 				df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df))], 
 				df[, grep("^I[0-9]{3}", names(df))], 
@@ -260,26 +267,29 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		df <- replace_na_genes(df, acc_type)
 		df$gene <- as.factor(df$gene)
 
-		# all-NA ratios removed
 		df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ] 
 	
 		# add prot_cover
-		psm_data <- do.call(rbind, lapply(list.files(path = file.path(dat_dir, "PSM"), pattern = "Clean\\.txt$", full.names = TRUE), 
-													read.csv, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")) %>% 
+		psm_data <- do.call(rbind, 
+		                    lapply(list.files(path = file.path(dat_dir, "PSM"), 
+		                                      pattern = "Clean\\.txt$", full.names = TRUE), 
+		                           read.csv, 
+		                           check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")) %>% 
 							dplyr::select(prot_acc, pep_seq, pep_start, pep_end) %>% 
 							dplyr::filter(!duplicated(pep_seq))	%>% 
 							annotPrn(acc_type) 
+		
 		write.csv(psm_data, file.path(dat_dir, "Protein\\cache", "Protein_coverage.csv"), row.names = FALSE)
 		
 		df <- psm_data %>% 
 			calc_cover(id = !!id, fasta = fasta) %>% 
 			dplyr::right_join(df, by = id)
+		
 		write.csv(df, file.path(dat_dir, "Protein\\cache", "Protein_no_norm.csv"), row.names = FALSE)
-	
 	} else {
 		df <- read.csv(file.path(dat_dir, "Protein\\cache", "Protein_no_norm.csv"), 
 										check.names = FALSE, header = TRUE, comment.char = "#") %>% 
-			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
+			dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 	}
 	
 	if(is.null(n_comp)) n_comp <- if(nrow(df) > 3000) 3L else 2L
@@ -319,7 +329,8 @@ normPrn <- function (id = c("prot_acc", "gene"),
 			dplyr::summarise_all(~max(., na.rm = TRUE)) %>% 
       dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
 
-		# the number of unique gene in psm_data may be shorter than dfa and dfb for the reason of empty "genes" in dfa 
+		# the number of unique gene in psm_data may be shorter than those in 
+		# dfa and dfb for the reason of empty "genes" in dfa 
 		df <- list(dfc, dfb, dfa) %>% 
 			purrr::reduce(right_join, by = "gene") %>% 
 			dplyr::filter(!is.na(gene), !duplicated(gene))
