@@ -91,9 +91,7 @@ plotMDS <- function (df_mds, col_color = NULL, col_fill = NULL, col_shape = NULL
 #' @import dplyr ggplot2 rlang pheatmap
 #' @importFrom magrittr %>%
 plotEucDist <- function (D, annot_cols, filepath, filename, ...) {
-	
 	dots <- rlang::enexprs(...)
-	# dots[grepl("^mds_", names(dots))] <- NULL
 
 	D_matrix <- as.matrix(D)
 	
