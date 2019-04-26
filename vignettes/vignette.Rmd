@@ -23,6 +23,18 @@ knitr::opts_chunk$set(
 )
 ```
 
+## Installation
+To install this package, run R (version "3.5") as administrator and enter:
+
+```{r installation_1, include = TRUE, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c("GSVA", "Mfuzz", "NMF", "gage", "limma"), version = "3.8")
+
+if (!requireNamespace("devtools", quietly = TRUE))
+    install.packages("devtools")
+devtools::install_github("qzhang503/proteoQ")
+```
 
 ## Introduction to proteoQ
 
