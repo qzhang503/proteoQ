@@ -25,9 +25,8 @@ Imports:
     e1071,
     lme4,
     lmerTest,
-    broom.mixed,
     boot,
-    data.table,
+    broom.mixed,
     plyr,
     magrittr,
     reshape2,
@@ -42,5 +41,7 @@ Imports:
     RColorBrewer,
     seqinr,
     gridExtra,
-    statmod
+    statmod,
+    grid,
+    data.table
 RoxygenNote: 6.1.1
