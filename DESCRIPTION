@@ -25,6 +25,7 @@ Imports:
     e1071,
     lme4,
     lmerTest,
+    broom.mixed,
     boot,
     data.table,
     plyr,
