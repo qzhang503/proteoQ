@@ -43,5 +43,7 @@ Imports:
     gridExtra,
     statmod,
     grid,
-    data.table
+    data.table,
+    RCurl,
+    XML
 RoxygenNote: 6.1.1
