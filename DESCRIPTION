@@ -9,7 +9,7 @@ Authors@R:
 Description: Data Processing and Informatic Analysis of Mass Spectrometrirc Data.  
     It reads and processes data from multiplex TMT experiments in mass Spectrometry. 
 		It further provides basic informatic analysis.
-biocViews: Biobase, GSVA, GSVAdata, Mfuzz, NMF, gage, limma
+biocViews: Biobase, GSVA, Mfuzz, NMF, gage, limma
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
