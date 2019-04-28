@@ -45,5 +45,7 @@ Imports:
     grid,
     data.table,
     RCurl,
-    XML
+    XML,
+    readxl,
+    testthat
 RoxygenNote: 6.1.1
