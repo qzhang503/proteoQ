@@ -154,7 +154,7 @@ plotTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 }
 
 
-#'Clusters data by trends
+#'Clustering by trends
 #'
 #'Analyzes and visualizes the trend clustering of peptide or protein
 #'\code{log2-ratios}
@@ -221,8 +221,16 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #'Trend analysis of protein \code{log2-ratios}
 #'
+#' @examples
+#' prnTrend(
+#'   scale_log2r = TRUE,
+#'   col_order = Order,
+#'   n_clust = 6
+#' )
+#'
 #'@seealso \code{\link{proteoTrend}} for parameters
 #'@export
 prnTrend <- function (...) {
 	proteoTrend(id = gene, ...)
 }
+
