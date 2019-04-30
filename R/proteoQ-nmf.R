@@ -201,7 +201,18 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col
 
 #'Peptide NMF Classification
 #'
-#'NMF Classification of protein \code{log2-ratios}
+#'NMF Classification of peptide \code{log2-ratios}
+#'
+#' @examples
+#' pepNMF(
+#'   scale_log2r = TRUE,
+#'   xmin = -1,
+#'   xmax = 1,
+#'   x_margin = 0.1,
+#'   annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
+#'   r = 6,
+#'   nrun = 200
+#' )
 #'
 #'@seealso \code{\link{proteoNMF}} for parameters
 #'@export
@@ -213,8 +224,21 @@ pepNMF <- function (...) {
 #'
 #'NMF Classification of protein \code{log2-ratios}
 #'
+#' @examples
+#' prnNMF(
+#'   scale_log2r = TRUE,
+#'   xmin = -1,
+#'   xmax = 1,
+#'   x_margin = 0.1,
+#'   annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
+#'   r = 6,
+#'   nrun = 200
+#' )
+#'
+#'
 #'@seealso \code{\link{proteoNMF}} for parameters
 #'@export
 prnNMF <- function (...) {
 	proteoNMF(id = gene, ...)
 }
+
