@@ -675,20 +675,23 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 			  .[. %in% sp_ls] %>%
 			  purrr::map(~ names(sp_ls)[sp_ls == .x] %>% tolower)
 
-			# species <- purrr::map(species, ~ names(sp_ls)[sp_ls == .x] %>% tolower)
-
 		  if (length(species) > 1) {
 		    if (all(species %in% c("human", "mouse")))
 		      species <- "pdx"
 		    else
 		      stop("Multiple species other than a PDX model of `Human and Mouse` not currently handled.",
 		           call. = FALSE)
+		  } else {
+		    species <- unlist(species)
 		  }
 
 		  label_scheme_full$Species <- species
 		  label_scheme$Species <- species
 		  save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.Rdata"))
 		  save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
+		  write.table(label_scheme[1, c("Accession_Type", "Species")],
+		              file.path(dat_dir, "acctype_sp.txt"), sep = "\t",
+		              col.names = TRUE, row.names = FALSE)
 		  # load(file = file.path(dat_dir, "label_scheme_full.Rdata"), envir = .GlobalEnv)
 		  # load(file = file.path(dat_dir, "label_scheme.Rdata"), envir = .GlobalEnv)
 
