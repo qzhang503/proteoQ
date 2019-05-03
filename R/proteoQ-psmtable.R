@@ -158,6 +158,9 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 
   # find the indeces of Databases for use in the removals of cRAP
   # "\"Database,1::SwissProt 2::cRAP\""; note that the order can be different
+
+  # end users will most likely have a name different to "cRAP"
+  # so need an additional param
   df_dbOrder <- df_header[grep("Database", df_header)] %>%
 		gsub("\"", "", ., fixed = TRUE) %>%
 		gsub("Database,", "", ., fixed = TRUE) %>%
@@ -294,7 +297,6 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 				legend.box = NULL
 			)
 
-			# load(file = file.path(dat_dir, "label_scheme.Rdata"))
 			TMT_levels <- label_scheme %>% TMT_plex() %>% TMT_levels()
 			Levels <- TMT_levels %>% gsub("^TMT-", "I", .)
 			df_int <- df_split[[i]][, grepl("^I[0-9]{3}", names(df))] %>%
@@ -692,14 +694,13 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 		  write.table(label_scheme[1, c("Accession_Type", "Species")],
 		              file.path(dat_dir, "acctype_sp.txt"), sep = "\t",
 		              col.names = TRUE, row.names = FALSE)
+
 		  # load(file = file.path(dat_dir, "label_scheme_full.Rdata"), envir = .GlobalEnv)
 		  # load(file = file.path(dat_dir, "label_scheme.Rdata"), envir = .GlobalEnv)
 
 		  load_dbs(dat_dir = dat_dir, expt_smry = expt_smry)
 
 			if(rm_krts) {
-				# acc_type <- find_acctype(label_scheme)
-
 				krts <- dbs$prn_annot %>%
 					dplyr::filter(grepl("^krt[0-9]+", .$gene, ignore.case = TRUE)) %>%
 					dplyr::filter(!is.na(.[[acc_type]])) %>%
@@ -850,7 +851,6 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 				if (nrow(df_sub) > 0) {
 					# df_sub$pep_seq_mod <- paste0(paste0(substring(df_sub$pep_seq_mod, 1, 1), nt_ace_var_mods$Abbr),
 					#                              substring(df_sub$pep_seq_mod, 2)) # insert "_"
-
 				  df_sub$pep_seq_mod <- paste0("_", df_sub$pep_seq_mod)
 					fn <- nt_ace_var_mods[nt_ace_var_mods$Mascot_abbr == mod, "Filename"]
 					write.table(df_sub, file.path(dat_dir, "PSM\\Individual_mods", paste0(fn, ".txt")),
