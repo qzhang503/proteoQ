@@ -241,4 +241,3 @@ pepNMF <- function (...) {
 prnNMF <- function (...) {
 	proteoNMF(id = gene, ...)
 }
-
