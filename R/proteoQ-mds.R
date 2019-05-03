@@ -123,6 +123,7 @@ plotEucDist <- function (D, annot_cols, filepath, filename, ...) {
 	                             "annotation_colors", "breaks")
 	dots[nm_idx] <- NULL
 
+	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	n_TMT_sets <- n_TMT_sets(label_scheme)
 	max_width <- 77
 	
