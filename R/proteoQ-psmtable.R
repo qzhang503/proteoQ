@@ -74,6 +74,8 @@ rmPSMHeaders <- function () {
 #' @param rptr_intco Numeric; the threshold of reporter ion intensity.
 #' @param rm_craps Logical; if TRUE, removes
 #'   \code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.
+#' @param crap Character string; the name of cRAP database, which can be found
+#'   from the header of PSM outputs: "Database,1::cRAP 2::SwissProt".
 #' @param plot_violins Logical; if TRUE, prepares the violin plots of
 #'   reporter-ion intensities.
 #' @examples
@@ -83,7 +85,7 @@ rmPSMHeaders <- function () {
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
 #' @export
-splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
+splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, crap = "cRAP", plot_violins = TRUE) {
 
 	old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
@@ -156,25 +158,29 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 
   assign("df_header", readLines(file.path(dat_dir, "PSM", hd_file)))
 
-  # find the indeces of Databases for use in the removals of cRAP
-  # "\"Database,1::SwissProt 2::cRAP\""; note that the order can be different
-
-  # end users will most likely have a name different to "cRAP"
-  # so need an additional param
+  # find the index of "cRAP" Database
+  # "\"Database,1::SwissProt 2::cRAP\""; the order can be switched
   df_dbOrder <- df_header[grep("Database", df_header)] %>%
 		gsub("\"", "", ., fixed = TRUE) %>%
 		gsub("Database,", "", ., fixed = TRUE) %>%
     str_split(" ", simplify = TRUE)
 
-  # the character string corresponding to cRAP species; "::" with single database
-  db_prx <- paste0(grep("cRAP", df_dbOrder), "::")
+  crap_idx <- grep(crap, df_dbOrder)
+
+  if (rm_craps & purrr::is_empty(crap_idx))
+    stop("Database `", crap, "` not found. Check the PSM header for the name of cRAP database",
+         call. = FALSE)
+
+  crap_prx <- paste0(crap_idx, "::")
 
 	if(rm_craps) {
 		df <- df %>%
-			dplyr::filter(!grepl(paste0("^", db_prx), prot_acc))
+			dplyr::filter(!grepl(paste0("^", crap_prx), prot_acc))
 	}
 
-  prn_acc <- df_dbOrder %>% .[!grepl(db_prx, .)] %>% gsub("([0-9]{1}::).*", "\\1", .) %>%
+  prn_acc <- df_dbOrder %>%
+    .[!grepl(crap_prx, .)] %>%
+    gsub("([0-9]{1}::).*", "\\1", .) %>%
     parse_acc(df, .)
 
   label_scheme_full$Accession_Type <- prn_acc
@@ -982,21 +988,24 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'   plot_violins = TRUE
 #' )
 #'
-#'@import dplyr purrr ggplot2 RColorBrewer
+#'@import rlang dplyr purrr ggplot2 RColorBrewer
 #'@importFrom stringr str_split
 #'@importFrom magrittr %>%
 #'@export
 normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx",
-                    rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE, rm_outliers = FALSE,
+                    rptr_intco = 1000, rm_craps = FALSE, crap = "cRAP",
+                    rm_krts = FALSE, rm_outliers = FALSE,
                     plot_violins = TRUE) {
 
-	mget(names(formals()), rlang::current_env()) %>% save_call("normPSM")
+  crap <- rlang::as_string(rlang::enexpr(crap))
+
+  mget(names(formals()), rlang::current_env()) %>% save_call("normPSM")
 
   prep_label_scheme(dat_dir, expt_smry)
   prep_fraction_scheme(dat_dir = dat_dir, filename = frac_smry)
 
 	rmPSMHeaders()
-	splitPSM(rptr_intco, rm_craps, plot_violins)
+	splitPSM(rptr_intco, rm_craps, crap, plot_violins)
 	cleanupPSM(rm_outliers)
 	annotPSM(expt_smry, rm_krts, plot_violins)
 }

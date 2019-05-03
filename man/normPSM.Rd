@@ -6,13 +6,17 @@
 \usage{
 normPSM(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
   frac_smry = "frac_smry.xlsx", rptr_intco = 1000, rm_craps = FALSE,
-  rm_krts = FALSE, rm_outliers = FALSE, plot_violins = TRUE)
+  crap = "cRAP", rm_krts = FALSE, rm_outliers = FALSE,
+  plot_violins = TRUE)
 }
 \arguments{
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
 
 \item{rm_craps}{Logical; if TRUE, removes
 \code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.}
+
+\item{crap}{Character string; the name of cRAP database, which can be found
+from the header of PSM outputs: "Database,1::cRAP 2::SwissProt".}
 
 \item{rm_krts}{Logical; if TRUE, removes keratin entries from the output.}
 
