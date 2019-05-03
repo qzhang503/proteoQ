@@ -1,11 +1,11 @@
 #' Plots histograms
 #'
 #' @import dplyr purrr rlang mixtools ggplot2 RColorBrewer
-#' @importFrom magrittr %>% 
+#' @importFrom magrittr %>%
 #' @importFrom tidyr gather
-plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_curves, 
+plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_curves,
                        show_vline, filepath = NULL, filename, ...) {
-	
+
 	dots <- rlang::enexprs(...)
 
 	xmin <- eval(dots$xmin, env = caller_env())
@@ -34,40 +34,40 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 	nrow <- nrow(df)
 	x_label <- expression("Ratio ("*log[2]*")")
 	NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
-	
+
 	if(!is.null(params)) {
 		n_comp <- max(params$Component)
 		nm_comps <- paste0("G", 1:n_comp)
 		nm_full <- c(nm_comps, paste(nm_comps, collapse = " + "))
 
 		# Offset by the percentage of non-NA values
-		perc_nna <- df %>% 
-			dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}"), names(.))) %>% 
-			`names<-`(gsub(".*_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
+		perc_nna <- df %>%
+			dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}"), names(.))) %>%
+			`names<-`(gsub(".*_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>%
 			lapply(function(x) sum(!is.na(x)) / length(x) * nrow * binwidth)
-		
+
 		perc_nna <- perc_nna[names(perc_nna) %in% label_scheme_sub$Sample_ID]
-		
+
 		# Density profiles
-		fit <- params %>% 
-			dplyr::filter(.$Sample_ID %in% label_scheme_sub$Sample_ID) %>% 
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>% 
-			dplyr::arrange(Sample_ID) %>% 
-			split(.$Sample_ID) %>% 
+		fit <- params %>%
+			dplyr::filter(.$Sample_ID %in% label_scheme_sub$Sample_ID) %>%
+			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+			dplyr::arrange(Sample_ID) %>%
+			split(.$Sample_ID) %>%
 			lapply(sumdnorm, xmin, xmax, by = by)
 
-		fit <- fit %>% 
-			purrr::map(~ .[, grep("^G[0-9]{1}|^Sum", names(.))]) %>% 
-			purrr::map2(perc_nna, `*`) %>% 
-			do.call(rbind, .) %>% 
-			dplyr::bind_cols(fit %>% do.call(rbind, .) %>% dplyr::select(c("x", "Sample_ID"))) %>% 
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>% 
-			dplyr::arrange(Sample_ID) %>% 
-			dplyr::rename(!!sym(paste(nm_comps, collapse = " + ")) := Sum) %>% 
-			tidyr::gather(key = variable, value = value, -x, -Sample_ID) %>% 
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>% 
-			dplyr::mutate(variable = factor(variable, levels = nm_full)) %>% 
-			dplyr::arrange(Sample_ID, variable) %>% 
+		fit <- fit %>%
+			purrr::map(~ .[, grep("^G[0-9]{1}|^Sum", names(.))]) %>%
+			purrr::map2(perc_nna, `*`) %>%
+			do.call(rbind, .) %>%
+			dplyr::bind_cols(fit %>% do.call(rbind, .) %>% dplyr::select(c("x", "Sample_ID"))) %>%
+			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+			dplyr::arrange(Sample_ID) %>%
+			dplyr::rename(!!sym(paste(nm_comps, collapse = " + ")) := Sum) %>%
+			tidyr::gather(key = variable, value = value, -x, -Sample_ID) %>%
+			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+			dplyr::mutate(variable = factor(variable, levels = nm_full)) %>%
+			dplyr::arrange(Sample_ID, variable) %>%
 			dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID)
 
 		myPalette <- c(rep("gray", n_comp), "black")
@@ -89,65 +89,65 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 		axis.title.y = element_text(colour="black", size=24),
 		plot.title = element_text(colour="black", size=24, hjust=.5, vjust=.5),
 
-		strip.text.x = element_text(size = 18, colour = "black", angle = 0), 
+		strip.text.x = element_text(size = 18, colour = "black", angle = 0),
 		strip.text.y = element_text(size = 18, colour = "black", angle = 90),
 
-		panel.grid.major.x = element_blank(), 
+		panel.grid.major.x = element_blank(),
 		panel.grid.minor.x = element_blank(),
 		panel.grid.major.y = element_blank(),
-		panel.grid.minor.y = element_blank(), 
+		panel.grid.minor.y = element_blank(),
 
-		legend.key = element_rect(colour = NA, fill = 'transparent'), 
+		legend.key = element_rect(colour = NA, fill = 'transparent'),
 		legend.background = element_rect(colour = NA,  fill = "transparent"),
 		legend.title = element_blank(),
 		legend.text = element_text(colour="black", size=18),
-		legend.text.align = 0, 
+		legend.text.align = 0,
 		legend.box = NULL
 	)
-	
+
 	seq <- c(-Inf, seq(4, 7, .5), Inf)
-	
-	df_melt <- df %>% 
-		dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>% 
-		dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>% 
-		dplyr::select(which(not_all_zero(.))) %>% 
-		dplyr::select(which(colSums(!is.na(.)) > 0)) %>%  
-		dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}", names(.))], na.rm = TRUE))) %>% 
-		dplyr::mutate_at(.vars = "Int_index", cut, seq, labels = seq[1:(length(seq)-1)]) %>% 
-		dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>% 
-		`names<-`(gsub(".*log2_R[0-9]{3}.*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
-		tidyr::gather(key = Sample_ID, value = value, -Int_index) %>% 
-		dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>% 
-		dplyr::arrange(Sample_ID) %>% 
-		dplyr::filter(!is.na(value), !is.na(Int_index)) %>% 
+
+	df_melt <- df %>%
+		dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%
+		dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>%
+		dplyr::select(which(not_all_zero(.))) %>%
+		dplyr::select(which(colSums(!is.na(.)) > 0)) %>%
+		dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}", names(.))], na.rm = TRUE))) %>%
+		dplyr::mutate_at(.vars = "Int_index", cut, seq, labels = seq[1:(length(seq)-1)]) %>%
+		dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
+		`names<-`(gsub(".*log2_R[0-9]{3}.*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
+		tidyr::gather(key = Sample_ID, value = value, -Int_index) %>%
+		dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+		dplyr::arrange(Sample_ID) %>%
+		dplyr::filter(!is.na(value), !is.na(Int_index)) %>%
 		dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID)
 
 
-	p <- ggplot() + 
-		geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = Int_index), 
+	p <- ggplot() +
+		geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = Int_index),
 		               color = "white", alpha = .8, binwidth = binwidth, size = .1) +
-		scale_fill_brewer(palette = "Spectral", direction = -1) + 
-		labs(title = "", x = x_label, y = expression("Frequency")) + 
-		scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = x_breaks), 
-		                   labels = as.character(seq(xmin, xmax, by = x_breaks))) + 
-		my_theme + 
+		scale_fill_brewer(palette = "Spectral", direction = -1) +
+		labs(title = "", x = x_label, y = expression("Frequency")) +
+		scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = x_breaks),
+		                   labels = as.character(seq(xmin, xmax, by = x_breaks))) +
+		my_theme +
 		facet_wrap(~ Sample_ID, ncol = ncol, scales = "free")
-		
-	if(show_curves) p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable), 
-	                                   size = .2) + 
-											scale_colour_manual(values = myPalette, name = "Gaussian", 
-											                    breaks = c(nm_comps, paste(nm_comps, collapse = " + ")), 
+
+	if(show_curves) p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable),
+	                                   size = .2) +
+											scale_colour_manual(values = myPalette, name = "Gaussian",
+											                    breaks = c(nm_comps, paste(nm_comps, collapse = " + ")),
 											                    labels = nm_full)
-	
+
 	if(show_vline) p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
 
 	if(!grepl("\\.png$", filename)) filename <- paste0(filename, ".png")
-	fn_prx <- gsub(".png", "", filename, fixed = TRUE) 
+	fn_prx <- gsub(".png", "", filename, fixed = TRUE)
 	filename <- if (scale_log2r) paste0(fn_prx, "_Z", ".png") else paste0(fn_prx, "_N", ".png")
-	
+
 	if(is.null(width)) width <- 4 * ncol + 2
 	if(is.null(height)) height <- length(unique(df_melt$Sample_ID)) * 4 / ncol
-	
+
 	ggsave(file.path(filepath, filename), p, width = width, height = height, limitsize = FALSE, units = "in")
 }
 
@@ -225,19 +225,19 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col_select = NULL, 
-                        scale_log2r = FALSE, show_curves = TRUE, show_vline = TRUE, new_fit = FALSE, 
+proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col_select = NULL,
+                        scale_log2r = FALSE, show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
                         df = NULL, filepath = NULL, filename = NULL, ...) {
-	
+
   id <- rlang::enexpr(id)
 	if(length(id) != 1) id <- rlang::expr(gene)
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
-	
+
 	col_select <- rlang::enexpr(col_select)
 
-	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = FALSE, 
-	          df = df, filepath = filepath, filename = filename, 
-	          anal_type = "Histogram")(new_fit = new_fit, show_curves = show_curves, 
+	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = FALSE,
+	          df = df, filepath = filepath, filename = filename,
+	          anal_type = "Histogram")(new_fit = new_fit, show_curves = show_curves,
 	                                   show_vline = show_vline, ...)
 }
 
@@ -248,17 +248,17 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), co
 #' @examples
 #' # no scaling normalization
 #' pepHist(
-#'   scale_log2r = FALSE, 
+#'   scale_log2r = FALSE,
 #'   show_curves = TRUE,
 #'   show_vline = TRUE,
 #'   xmin = -1,
 #'   xmax = 1,
 #'   ncol = 4
 #' )
-#' 
+#'
 #' # scaling normalization
 #' pepHist(
-#'   scale_log2r = TRUE, 
+#'   scale_log2r = TRUE,
 #'   show_curves = TRUE,
 #'   show_vline = TRUE,
 #'   xmin = -1,
@@ -271,7 +271,7 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), co
 #'   col_select = "a_non_existed_column_key"
 #' )
 #' }
-#' 
+#'
 #'@export
 pepHist <- function (...) {
 	proteoHist(id = pep_seq, ...)
@@ -284,7 +284,7 @@ pepHist <- function (...) {
 #' @examples
 #' # no scaling normalization
 #' prnHist(
-#'   scale_log2r = FALSE, 
+#'   scale_log2r = FALSE,
 #'   show_curves = TRUE,
 #'   show_vline = TRUE,
 #'   xmin = -1,
@@ -294,22 +294,21 @@ pepHist <- function (...) {
 #'
 #' # scaling normalization
 #' prnHist(
-#'   scale_log2r = TRUE, 
+#'   scale_log2r = TRUE,
 #'   show_curves = TRUE,
 #'   show_vline = TRUE,
 #'   xmin = -1,
 #'   xmax = 1,
 #'   ncol = 4
 #' )
-#' 
+#'
 #' \dontrun{
 #' prnHist(
 #'   col_select = "a_non_existed_column_key"
 #' )
 #' }
-#' 
+#'
 #'@export
 prnHist <- function (...) {
 	proteoHist(id = gene, ...)
 }
-

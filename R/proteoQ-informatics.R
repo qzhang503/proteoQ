@@ -407,7 +407,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 				)
 			}
 		}
-
 	} else if(anal_type == "EucDist") {
 		function(adjEucDist = adjEucDist,
 			annot_cols = NULL, ...) {
