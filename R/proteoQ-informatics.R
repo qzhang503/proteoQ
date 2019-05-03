@@ -296,17 +296,16 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		dir.create(file.path(filepath, "Kinases"), recursive = TRUE, showWarnings = FALSE)
 
 		dfw_kinase <- df %>%
-		  dplyr::filter(kin_attr) %>%
-			# prepDM(!!id, scale_log2r = scale_log2r, sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type)
-		  {
-  		  ifelse(nrow(.) > 0,
-  		         prepDM(., !!id, scale_log2r, sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type),
-  		         stop("No proteins were annotated being kinase. Please check the `Accession_Type`
-  		              and/or `Species` in `expt_smry.xlxs`.", call. = FALSE)
+		  dplyr::filter(kin_attr)
 
-  		  )
-		  }
-
+		if (nrow(dfw_kinase) > 0) {
+		  dfw_kinase <- prepDM(dfw_kinase, !!id, scale_log2r,
+		                       sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type)
+		} else {
+		  stop("No proteins were annotated being kinase. Please check the `Accession_Type`
+		       and/or `Species` in `expt_smry.xlxs`.", call. = FALSE)
+		}
+		# prepDM(!!id, scale_log2r = scale_log2r, sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type)
 	}
 
 	force(scale_log2r)
