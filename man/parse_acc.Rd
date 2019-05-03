@@ -7,5 +7,8 @@
 parse_acc(df, prx)
 }
 \description{
+Find the protein accession from a non-cRAP entry and parse it.
+}
+\details{
 \code{parse_acc} parse the protein accession.
 }
