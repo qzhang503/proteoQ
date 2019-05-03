@@ -670,12 +670,20 @@ find_species <- function (label_scheme_full) {
 
 #' Determine the protein accession type from PSM tables
 #'
+#' Find the protein accession from a non-cRAP entry and parse it.
+#'
 #' \code{parse_acc} parse the protein accession.
 parse_acc <- function(df, prx) {
-  prn_acc <- df %>%
-    dplyr::filter(grepl(paste0("^", prx), prot_acc)) %>%
+  if (grepl("[0-9]{1}::", prx)) { # multiple databases
+    prn_acc <- df %>%
+      dplyr::filter(grepl(paste0("^", prx), prot_acc)) %>%
+      dplyr::mutate(prot_acc = gsub(prx, "", prot_acc))
+  } else { # single database
+    prn_acc <- df
+  }
+
+  prn_acc <- prn_acc %>%
     dplyr::select(prot_acc) %>%
-    dplyr::mutate(prot_acc = gsub(prx, "", prot_acc)) %>%
     unlist %>%
     .[1]
 
@@ -688,5 +696,4 @@ parse_acc <- function(df, prx) {
   } else {
     stop("Unknown protein accession", call. = FALSE)
   }
-
 }
