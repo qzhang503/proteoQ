@@ -1,85 +1,85 @@
 #' Plots MDS
-#' 
+#'
 #' @import dplyr ggplot2 rlang
 #' @importFrom magrittr %>%
-plotMDS <- function (df_mds, col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, 
-                     col_alpha = NULL, label_scheme_sub = label_scheme_sub, filepath, filename, 
+plotMDS <- function (df_mds, col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL,
+                     col_alpha = NULL, label_scheme_sub = label_scheme_sub, filepath, filename,
                      show_ids, ...) {
-	
+
 	dots <- rlang::exprs(...)
-	
+
 	col_fill <- rlang::enexpr(col_fill)
-	col_color <- rlang::enexpr(col_color)	
+	col_color <- rlang::enexpr(col_color)
 	col_shape <- rlang::enexpr(col_shape)
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
-	
+
 	my_theme <- theme_bw() + theme(
 		 axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
-		 axis.text.y  = element_text(angle=0, vjust=0.5, size=20),   
+		 axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
 		 axis.title.x = element_text(colour="black", size=20),
 		 axis.title.y = element_text(colour="black", size=20),
 		 plot.title = element_text(face="bold", colour="black", size=20, hjust=0.5, vjust=0.5),
 
-		 panel.grid.major.x = element_blank(), 
+		 panel.grid.major.x = element_blank(),
 		 panel.grid.minor.x = element_blank(),
 		 panel.grid.major.y = element_blank(),
-		 panel.grid.minor.y = element_blank(), 
+		 panel.grid.minor.y = element_blank(),
 
-		 legend.key = element_rect(colour = NA, fill = 'transparent'), 
+		 legend.key = element_rect(colour = NA, fill = 'transparent'),
 		 legend.background = element_rect(colour = NA,  fill = "transparent"),
 		 legend.title = element_blank(),
 		 legend.text = element_text(colour="black", size=14),
-		 legend.text.align = 0, 
+		 legend.text.align = 0,
 		 legend.box = NULL
 	)
 
 	myPalette <- c(rep("blue", 7), rep("red", 7))
 
-	df_mds <- df_mds %>% 
-		tibble::rownames_to_column("Sample_ID") %>% 
-		dplyr::left_join(label_scheme_sub) %>% 
-		dplyr::rename(Color := !!col_color, Fill := !!col_fill, Shape := !!col_shape, 
-		              Size := !!col_size, Alpha := !!col_alpha) %>% 
-		dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>% 
-		dplyr::select(which(not_all_NA(.)))	
+	df_mds <- df_mds %>%
+		tibble::rownames_to_column("Sample_ID") %>%
+		dplyr::left_join(label_scheme_sub) %>%
+		dplyr::rename(Color := !!col_color, Fill := !!col_fill, Shape := !!col_shape,
+		              Size := !!col_size, Alpha := !!col_alpha) %>%
+		dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>%
+		dplyr::select(which(not_all_NA(.)))
 
-	mapping <- ggplot2::aes(x = Coordinate.1, y = Coordinate.2, 
-			colour = Color, fill = Fill, shape = Shape, 
+	mapping <- ggplot2::aes(x = Coordinate.1, y = Coordinate.2,
+			colour = Color, fill = Fill, shape = Shape,
 			size = Size, alpha = Alpha, stroke = NA)
-	
-	nms <- names(df_mds) %>% 
-		.[. %in% c("Color", "Fill", "Shape", "Size", "Alpha")] 
-	
-	aes_nms <- mapping %>% 
-		purrr::map(., rlang::quo_name) %>% 
+
+	nms <- names(df_mds) %>%
+		.[. %in% c("Color", "Fill", "Shape", "Size", "Alpha")]
+
+	aes_nms <- mapping %>%
+		purrr::map(., rlang::quo_name) %>%
 		.[. %in% nms]
-	
-	mapping_var <- mapping %>% 
+
+	mapping_var <- mapping %>%
 		.[names(.) %in% c("x", "y", names(aes_nms))]
-	
-	mapping_fix <- mapping %>% 
-		.[!names(.) %in% c("x", "y", names(aes_nms))] %>% 
+
+	mapping_fix <- mapping %>%
+		.[!names(.) %in% c("x", "y", names(aes_nms))] %>%
 		purrr::map(., rlang::quo_name)
-	
+
 	rm(mapping, aes_nms, nms)
-	
-	fix_args <- list(color = "white", fill = NA, shape = 21, size = 4, alpha = 0.9, 
+
+	fix_args <- list(color = "white", fill = NA, shape = 21, size = 4, alpha = 0.9,
 	                 stroke = .02) %>% .[names(.) %in% names(mapping_fix)]
 
-	p <- ggplot() + 
+	p <- ggplot() +
 	  rlang::eval_tidy(rlang::quo(geom_point(data = df_mds, mapping = mapping_var, !!!fix_args)))
 
-	p <- p + 
-		scale_fill_brewer(palette = "Set1") + 
-		scale_color_brewer(palette = "Set1") + 
-		labs(title = "", x = expression("Coordinate 1"), y = expression("Coordinate 2")) + 
-		coord_fixed() + 
+	p <- p +
+		scale_fill_brewer(palette = "Set1") +
+		scale_color_brewer(palette = "Set1") +
+		labs(title = "", x = expression("Coordinate 1"), y = expression("Coordinate 2")) +
+		coord_fixed() +
 	my_theme
-	
-	if (show_ids) 
-	  p <- p + 
-	    geom_text(data = df_mds, mapping = aes(x = Coordinate.1, y = Coordinate.2, 
+
+	if (show_ids)
+	  p <- p +
+	    geom_text(data = df_mds, mapping = aes(x = Coordinate.1, y = Coordinate.2,
 	                                           label = df_mds$Sample_ID), color = "gray", size = 3)
 
 	ggsave(file.path(filepath, filename), p, ...)
@@ -87,30 +87,30 @@ plotMDS <- function (df_mds, col_color = NULL, col_fill = NULL, col_shape = NULL
 
 
 #' Plots EucDist
-#' 
+#'
 #' @import dplyr ggplot2 rlang pheatmap
 #' @importFrom magrittr %>%
 plotEucDist <- function (D, annot_cols, filepath, filename, ...) {
 	dots <- rlang::enexprs(...)
 
 	D_matrix <- as.matrix(D)
-	
+
 	n_color <- 500
 	xmin <- 0
 	xmax <- ceiling(max(D_matrix))
 	x_margin <- xmax/10
-	color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)], 
-	                  seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])	
+	color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
+	                  seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
 
 	if (is.null(dots$color)) {
-	  mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color) 
+	  mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
 	} else {
 	  mypalette <- eval(dots$color, env = caller_env())
 	}
 
-	if (is.null(annot_cols)) annotation_col <- NA else 
-		annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = attr(D, "Labels")) 
-	
+	if (is.null(annot_cols)) annotation_col <- NA else
+		annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = attr(D, "Labels"))
+
 	if (is.null(dots$annotation_colors)) {
 		annotation_colors <- setHMColor(annotation_col)
 	} else if (is.na(dots$annotation_colors)) {
@@ -119,36 +119,36 @@ plotEucDist <- function (D, annot_cols, filepath, filename, ...) {
 		annotation_colors <- eval(dots$annotation_colors, env = caller_env())
 	}
 
-	nm_idx <- names(dots) %in% c("mat", "filename", "annotation_col", "color", 
+	nm_idx <- names(dots) %in% c("mat", "filename", "annotation_col", "color",
 	                             "annotation_colors", "breaks")
 	dots[nm_idx] <- NULL
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	n_TMT_sets <- n_TMT_sets(label_scheme)
 	max_width <- 77
-	
+
 	if(is.null(dots$width)) dots$width <- pmin(10*n_TMT_sets*1.2, max_width)
 
 	if(dots$width >= max_width) {
 		cat("The width for the graphic device is", dots$width, "inches or more.\n")
 		stop("Please consider a a smaller `cellwidth`.")
 	}
-	
+
 	my_pheatmap(
-		mat = D_matrix, 
-		filename = file.path(filepath, filename), 
-		annotation_col = annotation_col, 
-		# annotation_col = NULL, 
-		color = mypalette, 
-		annotation_colors = annotation_colors, 
-		breaks = color_breaks, 
+		mat = D_matrix,
+		filename = file.path(filepath, filename),
+		annotation_col = annotation_col,
+		# annotation_col = NULL,
+		color = mypalette,
+		annotation_colors = annotation_colors,
+		breaks = color_breaks,
 		!!!dots
 	)
 }
 
 
 #' Plots PCA
-#' 
+#'
 #' @import dplyr ggplot2 rlang
 #' @importFrom magrittr %>%
 plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL,
@@ -156,13 +156,13 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
                      prop_var_bi, filepath, filename, show_ids, ...) {
 
 	dots <- rlang::enexprs(...)
-	
+
 	col_color <- rlang::enexpr(col_color)
 	col_fill <- rlang::enexpr(col_fill)
 	col_shape <- rlang::enexpr(col_shape)
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
-	
+
 	my_theme <- theme_bw() + theme(
 		 axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
 		 axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
@@ -170,97 +170,97 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 		 axis.title.y = element_text(colour="black", size=20),
 		 plot.title = element_text(face="bold", colour="black", size=20, hjust=0.5, vjust=0.5),
 
-		 panel.grid.major.x = element_blank(), 
+		 panel.grid.major.x = element_blank(),
 		 panel.grid.minor.x = element_blank(),
 		 panel.grid.major.y = element_blank(),
-		 panel.grid.minor.y = element_blank(), 
+		 panel.grid.minor.y = element_blank(),
 
-		 legend.key = element_rect(colour = NA, fill = 'transparent'), 
+		 legend.key = element_rect(colour = NA, fill = 'transparent'),
 		 legend.background = element_rect(colour = NA,  fill = "transparent"),
 		 legend.title = element_blank(),
 		 legend.text = element_text(colour="black", size=14),
-		 legend.text.align = 0, 
+		 legend.text.align = 0,
 		 legend.box = NULL
 	)
 
 	myPalette <- c(rep("blue", 7), rep("red", 7))
-	
-	df <- df %>% 
-		tibble::rownames_to_column("Sample_ID") %>% 
-		dplyr::left_join(label_scheme_sub) %>% 
-		dplyr::rename(Color := !!col_color, Fill := !!col_fill, Shape := !!col_shape, 
-		              Size := !!col_size, Alpha := !!col_alpha) %>% 
-		dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>% 
+
+	df <- df %>%
+		tibble::rownames_to_column("Sample_ID") %>%
+		dplyr::left_join(label_scheme_sub) %>%
+		dplyr::rename(Color := !!col_color, Fill := !!col_fill, Shape := !!col_shape,
+		              Size := !!col_size, Alpha := !!col_alpha) %>%
+		dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>%
 		dplyr::select(which(not_all_NA(.)))
-		
-	mapping <- ggplot2::aes(x = Coordinate.1, y = Coordinate.2, 
-			colour = Color, fill = Fill, shape = Shape, 
+
+	mapping <- ggplot2::aes(x = Coordinate.1, y = Coordinate.2,
+			colour = Color, fill = Fill, shape = Shape,
 			size = Size, alpha = Alpha, stroke = NA)
-	
-	nms <- names(df) %>% 
-		.[. %in% c("Color", "Fill", "Shape", "Size", "Alpha")] 
-	
-	aes_nms <- mapping %>% 
-		purrr::map(., rlang::quo_name) %>% 
+
+	nms <- names(df) %>%
+		.[. %in% c("Color", "Fill", "Shape", "Size", "Alpha")]
+
+	aes_nms <- mapping %>%
+		purrr::map(., rlang::quo_name) %>%
 		.[. %in% nms]
-	
-	mapping_var <- mapping %>% 
+
+	mapping_var <- mapping %>%
 		.[names(.) %in% c("x", "y", names(aes_nms))]
-	
-	mapping_fix <- mapping %>% 
-		.[!names(.) %in% c("x", "y", names(aes_nms))] %>% 
+
+	mapping_fix <- mapping %>%
+		.[!names(.) %in% c("x", "y", names(aes_nms))] %>%
 		purrr::map(., rlang::quo_name)
-	
+
 	rm(mapping, aes_nms, nms)
 
-	fix_args <- list(color = "white", fill = NA, shape = 21, size = 4, alpha = 0.9, stroke = .02) %>% 
+	fix_args <- list(color = "white", fill = NA, shape = 21, size = 4, alpha = 0.9, stroke = .02) %>%
 	  .[names(.) %in% names(mapping_fix)]
 
-	p <- ggplot() + 
+	p <- ggplot() +
 	  rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args)))
 
-	p <- p + 
-		scale_fill_brewer(palette = "Set1") + 
-		scale_color_brewer(palette = "Set1") + 
-		labs(title = "", x = paste0("PC1 (", prop_var[1], ")"), y = paste0("PC2 (", prop_var[2], ")")) + 
-		coord_fixed() + 
+	p <- p +
+		scale_fill_brewer(palette = "Set1") +
+		scale_color_brewer(palette = "Set1") +
+		labs(title = "", x = paste0("PC1 (", prop_var[1], ")"), y = paste0("PC2 (", prop_var[2], ")")) +
+		coord_fixed() +
 	my_theme
-		
-	if (show_ids) 
-	  p <- p + 
-	    geom_text(data = df, 
-	              mapping = aes(x = Coordinate.1, y = Coordinate.2, label = df$Sample_ID), 
+
+	if (show_ids)
+	  p <- p +
+	    geom_text(data = df,
+	              mapping = aes(x = Coordinate.1, y = Coordinate.2, label = df$Sample_ID),
 	              color = "gray", size = 3)
-	
+
 	ggsave(file.path(filepath, filename), p, ...)
-	
+
 	bi_plot <- FALSE
 	if (bi_plot) {
-		p_bi <- ggplot() + 
-			geom_point(data = pr_bi, mapping = aes(x = Coordinate.1, y = Coordinate.2), 
-			           alpha = .9, size = 1) + 
-			scale_fill_brewer(palette = "Set1") + 
-			scale_color_brewer(palette = "Set1") + 
-			labs(title = "", x = paste0("PC1 (", prop_var_bi[1], ")"), 
-			     y = paste0("PC2 (", prop_var_bi[2], ")")) + 
-			coord_fixed() + 
+		p_bi <- ggplot() +
+			geom_point(data = pr_bi, mapping = aes(x = Coordinate.1, y = Coordinate.2),
+			           alpha = .9, size = 1) +
+			scale_fill_brewer(palette = "Set1") +
+			scale_color_brewer(palette = "Set1") +
+			labs(title = "", x = paste0("PC1 (", prop_var_bi[1], ")"),
+			     y = paste0("PC2 (", prop_var_bi[2], ")")) +
+			coord_fixed() +
 		my_theme
-		
-		if (show_ids) 
-		  p_bi <- p_bi + geom_text(data = pr_bi, 
-		                           mapping = aes(x = Coordinate.1, y = Coordinate.2, 
+
+		if (show_ids)
+		  p_bi <- p_bi + geom_text(data = pr_bi,
+		                           mapping = aes(x = Coordinate.1, y = Coordinate.2,
 		                                         label = rownames(pr_bi)), color = "gray", size = 3)
-		
+
 		fn_prx <- gsub("\\..*$", "", filename)
-		fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename) 
-		
+		fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
+
 		ggsave(file.path(filepath, paste0(fn_prx, "bi_plot", ".", fn_suffix)), p_bi, ...)
 	}
 }
 
 
 #' Scores MDS and PCA
-#' 
+#'
 #' @import dplyr rlang
 #' @importFrom MASS isoMDS
 #' @importFrom magrittr %>%
@@ -273,12 +273,12 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 	D_matrix <- as.matrix(D)
 
 	# adjust Euclidean distance for samples from two different TMT sets
-	if (adjEucDist) { 
-		annotation_col <- colAnnot(annot_cols = c("TMT_Set"), sample_ids = attr(D, "Labels")) 
-		
+	if (adjEucDist) {
+		annotation_col <- colAnnot(annot_cols = c("TMT_Set"), sample_ids = attr(D, "Labels"))
+
 		for (i in 1:ncol(D_matrix)) {
 			for (j in 1:ncol(D_matrix)) {
-				if (annotation_col$TMT_Set[i] != annotation_col$TMT_Set[j]) 
+				if (annotation_col$TMT_Set[i] != annotation_col$TMT_Set[j])
 				  D_matrix[i, j] <- D_matrix[i, j]/sqrt(2)
 			}
 		}
@@ -291,61 +291,61 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 	} else {
 		df_mds <- data.frame(cmdscale(D_matrix, k = k))
 	}
-	
-	nms <- lapply(dots, expr_name) %>% 
+
+	nms <- lapply(dots, expr_name) %>%
 		.[. %in% names(label_scheme_sub)]
-		
-	lookup <- nms %>% 
+
+	lookup <- nms %>%
 		data.frame(check.names = FALSE)
 
-	label_scheme_mds <- label_scheme_sub[, names(label_scheme_sub) %in% nms] %>% 
-		`names<-`(names(lookup)) %>% 
-		dplyr::bind_cols(label_scheme_sub[, "Sample_ID", drop = FALSE]) %>% 
+	label_scheme_mds <- label_scheme_sub[, names(label_scheme_sub) %in% nms] %>%
+		`names<-`(names(lookup)) %>%
+		dplyr::bind_cols(label_scheme_sub[, "Sample_ID", drop = FALSE]) %>%
 		dplyr::select(which(not_all_NA(.)))
-	
+
 	dots[names(dots) %in% names(lookup)] <- NULL
-	
-	df_mds <- df_mds %>% 
-		`colnames<-`(paste("Coordinate", 1:k, sep = ".")) %>% 
-		tibble::rownames_to_column("Sample_ID") %>% 
-		dplyr::left_join(label_scheme_mds, by = "Sample_ID") %>% 
-		dplyr::select(which(not_all_zero(.))) %>% 
-		tibble::column_to_rownames(var = "Sample_ID")	
-	
+
+	df_mds <- df_mds %>%
+		`colnames<-`(paste("Coordinate", 1:k, sep = ".")) %>%
+		tibble::rownames_to_column("Sample_ID") %>%
+		dplyr::left_join(label_scheme_mds, by = "Sample_ID") %>%
+		dplyr::select(which(not_all_zero(.))) %>%
+		tibble::column_to_rownames(var = "Sample_ID")
+
 	# transposed data for pca by sample IDs
-	df_t <- df[complete.cases(df), ] %>% 
-		t() %>% 
-		data.frame(check.names = FALSE) %>% 
+	df_t <- df[complete.cases(df), ] %>%
+		t() %>%
+		data.frame(check.names = FALSE) %>%
 		bind_cols(label_scheme_sub)
-	
-	pr_out <- df_t %>% 
-		dplyr::select(which(colnames(.) %in% rownames(df))) %>% 
+
+	pr_out <- df_t %>%
+		dplyr::select(which(colnames(.) %in% rownames(df))) %>%
 		prcomp(scale = scale_log2r)
-		
+
 	rownames(pr_out$x) <- label_scheme_sub$Sample_ID
-	
+
 	# Proportion of Variance
-	prop_var <- summary(pr_out)$importance[2, ] %>% scales::percent()	
-	
-	df_pca <- pr_out$x %>% 
-		data.frame(check.names = FALSE) %>% 
-		tibble::rownames_to_column("Sample_ID") %>% 
-		dplyr::left_join(label_scheme_mds, by = "Sample_ID") %>% 
-		dplyr::select(which(not_all_zero(.))) %>% 
-		tibble::column_to_rownames(var = "Sample_ID")	%>% 
-		`names<-`(gsub("^PC", "Coordinate\\.", names(.))) 
-		
+	prop_var <- summary(pr_out)$importance[2, ] %>% scales::percent()
+
+	df_pca <- pr_out$x %>%
+		data.frame(check.names = FALSE) %>%
+		tibble::rownames_to_column("Sample_ID") %>%
+		dplyr::left_join(label_scheme_mds, by = "Sample_ID") %>%
+		dplyr::select(which(not_all_zero(.))) %>%
+		tibble::column_to_rownames(var = "Sample_ID")	%>%
+		`names<-`(gsub("^PC", "Coordinate\\.", names(.)))
+
 	# pca for biplot
-	pr_bi <- df[complete.cases(df), ] %>% prcomp(scale = scale_log2r) 
-	
-	df_pr_bi <- pr_bi$x %>% 
-		data.frame(check.names = FALSE) %>% 
-		`names<-`(gsub("^PC", "Coordinate\\.", names(.))) 
+	pr_bi <- df[complete.cases(df), ] %>% prcomp(scale = scale_log2r)
+
+	df_pr_bi <- pr_bi$x %>%
+		data.frame(check.names = FALSE) %>%
+		`names<-`(gsub("^PC", "Coordinate\\.", names(.)))
 
 	# Proportion of variance
 	prop_var_bi <- summary(pr_bi)$importance[2, ] %>% scales::percent()
-	
-	return(list("MDS" = df_mds, "D" = D, "PCA" = df_pca, "prop_var" = prop_var, 
+
+	return(list("MDS" = df_mds, "D" = D, "PCA" = df_pca, "prop_var" = prop_var,
 	            "pr_bi" = df_pr_bi, "prop_var_bi" = prop_var_bi))
 }
 
@@ -410,12 +410,12 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoMDS <- function (id = gene, 
-											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL, 
-											col_shape = NULL, col_size = NULL, col_alpha = NULL, 
-											scale_log2r = FALSE, adjEucDist = FALSE, classical = TRUE, show_ids = TRUE, 
+proteoMDS <- function (id = gene,
+											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
+											col_shape = NULL, col_size = NULL, col_alpha = NULL,
+											scale_log2r = FALSE, adjEucDist = FALSE, classical = TRUE, show_ids = TRUE,
                       annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
-	
+
 	id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
 	col_group <- rlang::enexpr(col_group)
@@ -425,11 +425,11 @@ proteoMDS <- function (id = gene,
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
 
-	info_anal(id = !!id, 
-		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill, 
-		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha, 
-		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = filepath, filename = filename, 
-		anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, show_ids = show_ids, 
+	info_anal(id = !!id,
+		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
+		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
+		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = filepath, filename = filename,
+		anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, show_ids = show_ids,
 		                   annot_cols = annot_cols, ...)
 }
 
@@ -482,12 +482,12 @@ proteoMDS <- function (id = gene,
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoPCA <- function (id = gene, 
-											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL, 
-											col_shape = NULL, col_size = NULL, col_alpha = NULL, 
-											scale_log2r = FALSE, show_ids = TRUE, 
+proteoPCA <- function (id = gene,
+											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
+											col_shape = NULL, col_size = NULL, col_alpha = NULL,
+											scale_log2r = FALSE, show_ids = TRUE,
                       annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
-	
+
 	id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
 	col_group <- rlang::enexpr(col_group)
@@ -497,10 +497,10 @@ proteoPCA <- function (id = gene,
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
 
-	info_anal(id = !!id, 
-		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill, 
-		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha, 
-		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = filepath, filename = filename, 
+	info_anal(id = !!id,
+		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
+		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
+		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = filepath, filename = filename,
 		anal_type = "PCA")(show_ids = show_ids, annot_cols = annot_cols, ...)
 }
 
@@ -537,19 +537,19 @@ proteoPCA <- function (id = gene,
 #'@param filename A representative filename to output images. By default, it
 #'  will be determined by the names of the current \code{call}.
 #'@param ... Parameters inherited from \code{\link[pheatmap]{pheatmap}}
-#'  
+#'
 #'@return Plots of distance matrices.
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoEucDist <- function (id = gene, 
-											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL, 
-											col_shape = NULL, col_size = NULL, col_alpha = NULL, 
-											scale_log2r = FALSE, adjEucDist = FALSE, 
-                      annot_cols = NULL, 
+proteoEucDist <- function (id = gene,
+											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
+											col_shape = NULL, col_size = NULL, col_alpha = NULL,
+											scale_log2r = FALSE, adjEucDist = FALSE,
+                      annot_cols = NULL,
 											df = NULL, filepath = NULL, filename = NULL, ...) {
-	
+
 	id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
 	col_group <- rlang::enexpr(col_group)
@@ -559,12 +559,12 @@ proteoEucDist <- function (id = gene,
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
 
-	info_anal(id = !!id, 
-		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill, 
-		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha, 
-		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = filepath, filename = filename, 
-		anal_type = "EucDist")(adjEucDist = adjEucDist, 
-		annot_cols = annot_cols, 
+	info_anal(id = !!id,
+		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
+		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
+		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = filepath, filename = filename,
+		anal_type = "EucDist")(adjEucDist = adjEucDist,
+		annot_cols = annot_cols,
 		...
 	)
 }
@@ -680,27 +680,27 @@ pepPCA <- function (...) {
 #'
 #' @examples
 #' prnEucDist(
-#'   scale_log2r = TRUE, 
-#'   adjEucDist = FALSE, 
-#'   show_ids = FALSE, 
+#'   scale_log2r = TRUE,
+#'   adjEucDist = FALSE,
+#'   show_ids = FALSE,
 #'   annot_cols = c("Peptide_Yield", "Group"),
-#'   display_numbers = TRUE, 
-#'   number_color = "grey30", 
+#'   display_numbers = TRUE,
+#'   number_color = "grey30",
 #'   number_format = "%.2f",
-#'   clustering_distance_rows = "euclidean", 
-#'   clustering_distance_cols = "euclidean", 
-#'   fontsize = 16, 
-#'   fontsize_row = 20, 
-#'   fontsize_col = 20, 
-#'   fontsize_number = 8, 
+#'   clustering_distance_rows = "euclidean",
+#'   clustering_distance_cols = "euclidean",
+#'   fontsize = 16,
+#'   fontsize_row = 20,
+#'   fontsize_col = 20,
+#'   fontsize_number = 8,
 #'   cluster_rows = TRUE,
 #'   show_rownames = TRUE,
 #'   show_colnames = TRUE,
-#'   border_color = "grey60", 
-#'   cellwidth = 24, 
+#'   border_color = "grey60",
+#'   cellwidth = 24,
 #'   cellheight = 24
 #' )
-#' 
+#'
 #'
 #' \dontrun{
 #' prnEucDist(
@@ -723,27 +723,27 @@ prnEucDist <- function (...) {
 #'
 #' @examples
 #' pepEucDist(
-#'   scale_log2r = TRUE, 
-#'   adjEucDist = FALSE, 
-#'   show_ids = FALSE, 
+#'   scale_log2r = TRUE,
+#'   adjEucDist = FALSE,
+#'   show_ids = FALSE,
 #'   annot_cols = c("Peptide_Yield", "Group"),
-#'   display_numbers = TRUE, 
-#'   number_color = "grey30", 
+#'   display_numbers = TRUE,
+#'   number_color = "grey30",
 #'   number_format = "%.2f",
-#'   clustering_distance_rows = "euclidean", 
-#'   clustering_distance_cols = "euclidean", 
-#'   fontsize = 16, 
-#'   fontsize_row = 20, 
-#'   fontsize_col = 20, 
-#'   fontsize_number = 8, 
+#'   clustering_distance_rows = "euclidean",
+#'   clustering_distance_cols = "euclidean",
+#'   fontsize = 16,
+#'   fontsize_row = 20,
+#'   fontsize_col = 20,
+#'   fontsize_number = 8,
 #'   cluster_rows = TRUE,
 #'   show_rownames = TRUE,
 #'   show_colnames = TRUE,
-#'   border_color = "grey60", 
-#'   cellwidth = 24, 
+#'   border_color = "grey60",
+#'   cellwidth = 24,
 #'   cellheight = 24
 #' )
-#' 
+#'
 #'
 #' \dontrun{
 #' pepEucDist(
@@ -758,4 +758,3 @@ prnEucDist <- function (...) {
 pepEucDist <- function (...) {
 	proteoEucDist(id = pep_seq, ...)
 }
-
