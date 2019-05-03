@@ -2,39 +2,33 @@
 % Please edit documentation in R/proteoQ-histo.R
 \name{pepHist}
 \alias{pepHist}
-\title{Histograms of Peptide Data}
+\title{Visualizes the histograms of peptide data}
 \usage{
 pepHist(...)
 }
 \description{
-Histograms of Peptide Data
+Visualizes the histograms of peptide data
 }
 \examples{
 # no scaling normalization
 pepHist(
-  scale_log2r = FALSE, 
+  scale_log2r = FALSE,
   show_curves = TRUE,
   show_vline = TRUE,
+  xmin = -1,
+  xmax = 1,
   ncol = 4
 )
 
 # scaling normalization
 pepHist(
-  scale_log2r = TRUE, 
+  scale_log2r = TRUE,
   show_curves = TRUE,
   show_vline = TRUE,
+  xmin = -1,
+  xmax = 1,
   ncol = 4
 )
-
-# direct call to proteoHist()
-proteoHist(
-  id = pep_seq_mod, 
-  scale_log2r = TRUE, 
-  show_curves = TRUE,
-  show_vline = TRUE,
-  ncol = 4
-)
-
 
 \dontrun{
 pepHist(

@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-informatics.R
 \name{info_anal}
 \alias{info_anal}
-\title{Functional Factories for Informatic Analysis}
+\title{Functional factories for informatic analysis}
 \usage{
 info_anal(id = gene, col_select = NULL, col_group = NULL,
   col_order = NULL, col_color = NULL, col_fill = NULL,
@@ -13,8 +13,9 @@ info_anal(id = gene, col_select = NULL, col_group = NULL,
   "NMF", "Trend"))
 }
 \arguments{
-\item{anal_type}{The type of analysis; \code{anal_type = c("MDS", "PCA", "EucDist", "MA",
-"Heatmap", "Histogram", "Corrplot", "Trend", "NMF", "Model")}.}
+\item{anal_type}{The type of analysis; \code{anal_type = c("MDS", "PCA",
+"EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
+"Model")}.}
 }
 \value{
 a function to the given \code{anal_type}.

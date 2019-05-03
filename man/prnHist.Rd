@@ -2,36 +2,31 @@
 % Please edit documentation in R/proteoQ-histo.R
 \name{prnHist}
 \alias{prnHist}
-\title{Histograms of Protein Data}
+\title{Visualizes the histograms of protein data}
 \usage{
 prnHist(...)
 }
 \description{
-Histograms of Protein Data
+Visualizes the histograms of protein data
 }
 \examples{
 # no scaling normalization
 prnHist(
-  scale_log2r = FALSE, 
+  scale_log2r = FALSE,
   show_curves = TRUE,
   show_vline = TRUE,
+  xmin = -1,
+  xmax = 1,
   ncol = 4
 )
 
 # scaling normalization
 prnHist(
-  scale_log2r = TRUE, 
+  scale_log2r = TRUE,
   show_curves = TRUE,
   show_vline = TRUE,
-  ncol = 4
-)
-
-# direct call to proteoHist()
-proteoHist(
-  id = prot_acc, 
-  scale_log2r = TRUE, 
-  show_curves = TRUE,
-  show_vline = TRUE,
+  xmin = -1,
+  xmax = 1,
   ncol = 4
 )
 

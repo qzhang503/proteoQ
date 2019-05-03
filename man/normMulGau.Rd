@@ -18,7 +18,7 @@ MC: median-centering; MGKernel: multiGaussian.}
 \item{id}{the unqiue identifier for data joining.  The default is \code{pep_seq_mod}.}
 
 \item{method_psm_pep}{The aggregation method from PSM to peptide results.
-\code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  
+\code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).
 If \code{weighted.mean}, log10-intensity will be used as the weights.}
 
 \item{rptr_intco}{the threshold of reporter-ion intensity}
@@ -30,15 +30,15 @@ A data frame.
 \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.
 }
 \details{
-Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.  
+Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.
 \code{pep_seq_mod} denotes peptide sequences with applicable modifications
-The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".  
+The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".
 SDs from different TMT experiments may be different; therefore, scale the SDs across TMT sets.
 }
 \examples{
 dat_dir <- "C:\\\\Results\\\\TMT\\\\Data"
 TMT_plex <- 10
-dir(file.path(dat_dir, "PSM")) 
+dir(file.path(dat_dir, "PSM"))
 rmPSMHeaders(dat_dir, TMT_plex)
 
 \dontrun{

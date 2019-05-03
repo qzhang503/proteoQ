@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{annotKin}
 \alias{annotKin}
-\title{Add kinase annotation}
+\title{Adds kinase annotation}
 \usage{
 annotKin(df, acc_type)
 }
 \description{
-Add kinase annotation
+Adds kinase annotation
 }

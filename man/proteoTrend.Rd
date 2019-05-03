@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-trends.R
 \name{proteoTrend}
 \alias{proteoTrend}
-\title{Plots the trend of \code{log2-ratios} after fuzzy c-mean classification}
+\title{Clustering by trends}
 \usage{
 proteoTrend(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, col_order = NULL, impute_na = FALSE,
@@ -10,34 +10,50 @@ proteoTrend(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   df = NULL, filepath = NULL, filename = NULL, ...)
 }
 \arguments{
-\item{id}{The name of a unique identifier (see \code{\link[proteoQ]{MDS}}).}
+\item{id}{Character string to indicate the type of data. Peptide data will be
+used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\code{id = prot_acc} or \code{gene}.}
 
-\item{scale_log2r}{Logical; if TRUE, rescales \code{log2-ratios} to the same
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+The default key is \code{Select}. Samples corresponding to non-empty entries
+under \code{col_select} will be included in the indicated analysis.}
+
+\item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
+The default key is \code{Order}. Data will be visualized by the order
+specified by the key.}
+
+\item{impute_na}{Logical; if TRUE, imputes missing values.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used for visualization.}
+
+\item{n_clust}{Numeric; the number of clusters that data will be divided into.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2-ratios} to the same
 scale of standard deviation for all samples.}
 
-\item{annot_kinases}{Logical; if TRUE, annotates proteins being kinases or
-not.}
+\item{df}{The filename of input data. By default, it will be determined by the
+value of \code{id}.}
+
+\item{filepath}{The filepath to output results. By default, it will be
+determined by the names of the current functional \code{call}.}
+
+\item{filename}{A representative filename to output images. By default, it
+will be determined by the names of the current \code{call}.}
+
+\item{...}{Additional parameters for plotting: \cr \code{ymin}, the minimum y;
+\cr \code{ymax}, the maximum y; \cr \code{y_breaks}, the breaks in y-axis;
+\cr \code{ncol}, the number of columns; \cr \code{nrow}, the number of rows;
+\cr \code{width}, the width of plot; \cr \code{height}, the height of plot.}
 }
 \value{
-Images stored under the file folders that are associated to
-  \code{id}, \code{anal_type} and \code{annot_kinases}.
+Trend plots.
 }
 \description{
-\code{proteoTrend} produces histograms.
+Analyzes and visualizes the trend clustering of peptide or protein
+\code{log2-ratios}
 }
 \details{
-reads the data from either "\code{~\\Direcotry\\Peptide\\Peptide All.txt}" at
-\code{id = pep_seq_mod}, or "\code{~\\Direcotry\\Protein\\Protein All by
-Accession.txt}" at \code{id = prot_acc} or
-"\code{~\\Direcotry\\Protein\\Protein All by gene.txt}" at \code{id = gene}.
-}
-\examples{
-MA(
-	id = gene,
-	scale_log2r = scale_log2r,
-	annot_kinases = annot_kinases,
-)
-
-\dontrun{
-}
+The option of \code{complete_cases} will be forced to \code{TRUE} at
+\code{impute_na = FALSE}
 }

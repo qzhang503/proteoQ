@@ -2,47 +2,25 @@
 % Please edit documentation in R/proteoQ-mds.R
 \name{pepMDS}
 \alias{pepMDS}
-\title{MDS Plots for Peptide Data}
+\title{MDS plots}
 \usage{
 pepMDS(...)
 }
 \description{
-MDS Plots for Peptide Data
+MDS plots of peptide data
 }
 \examples{
 pepMDS(
-  annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
-  col_color = Color, 
-  col_shape = Shape
-)
-
-pepMDS(
-  annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
-  col_color = Color, 
-  col_shape = Shape, 
-  
-  display_numbers = TRUE,
-  number_color = "grey30",
-  number_format = "\%.2f",
-  
-  fontsize = 16,
-  fontsize_row = 20,
-  fontsize_col = 20,
-  fontsize_number = 16,
-  
-  cluster_rows = TRUE,
-  show_rownames = TRUE,
-  show_colnames = TRUE,
-  border_color = "grey60",
-  cellwidth = 50,
-  cellheight = 50
+  scale_log2r = TRUE,
+  col_color = Color,
+  col_shape = Shape,
+  show_ids = TRUE,
 )
 
 \dontrun{
 pepMDS(
-  col_color = "column_key_not_in_label_scheme", 
-  col_shape = "also_a_missing_column_key", 
-  annot_cols = c("bad_column_key", "yet_another_bad_column_key")
+  col_color = "column_key_not_existed",
+  col_shape = "also_a_missing_column_key"
 )
 }
 

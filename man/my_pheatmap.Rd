@@ -2,11 +2,11 @@
 % Please edit documentation in R/proteoQ-informatics.R
 \name{my_pheatmap}
 \alias{my_pheatmap}
-\title{Wrapper around pheatmap}
+\title{A wrapper around pheatmap}
 \usage{
 my_pheatmap(mat, filename, annotation_col, color, annotation_colors,
   breaks, ...)
 }
 \description{
-Wrapper around pheatmap
+A wrapper around pheatmap
 }

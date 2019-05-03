@@ -2,12 +2,15 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{load_dbs}
 \alias{load_dbs}
-\title{Load Species-specific Databases}
+\title{Loads species-specific Databases}
 \usage{
-load_dbs(dat_dir, expt_smry = "expt_smry.csv")
+load_dbs(dat_dir, expt_smry = "expt_smry.xlsx")
 }
 \description{
-A function loads a set of precompiled tables in protein accessions, GO data and KEGG pathways.
+A function loads a set of precompiled tables in protein accessions, \code{GO}
+data, \code{KEGG} pathways and
+\code{\href{http://software.broadinstitute.org/gsea/msigdb}{molecular
+signatures}}.
 }
 \examples{
 load_dbs()

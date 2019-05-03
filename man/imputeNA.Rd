@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{imputeNA}
 \alias{imputeNA}
-\title{Impute NA}
+\title{Imputes NA}
 \usage{
 imputeNA(id, ...)
 }
@@ -18,7 +18,7 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
  for protein data.
 }
 \description{
-Impute NA
+Imputes NA
 }
 \examples{
 imputeNA(id = gene, m = 5, maxit = 5)

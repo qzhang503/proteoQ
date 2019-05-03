@@ -2,12 +2,20 @@
 % Please edit documentation in R/proteoQ-trends.R
 \name{prnTrend}
 \alias{prnTrend}
-\title{Trend Analysis of Protein \code{log2-ratios}}
+\title{Trend analysis}
 \usage{
 prnTrend(...)
 }
 \description{
-Trend Analysis of Protein \code{log2-ratios}
+Trend analysis of protein \code{log2-ratios}
+}
+\examples{
+prnTrend(
+  scale_log2r = TRUE,
+  col_order = Order,
+  n_clust = 6
+)
+
 }
 \seealso{
 \code{\link{proteoTrend}} for parameters

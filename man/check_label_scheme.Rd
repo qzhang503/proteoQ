@@ -2,10 +2,11 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{check_label_scheme}
 \alias{check_label_scheme}
-\title{Checks the uniqueness of sample IDs in \code{label_scheme_full}.}
+\title{Checks the uniqueness of sample IDs in \code{label_scheme_full}}
 \usage{
 check_label_scheme(label_scheme_full)
 }
 \description{
-\code{check_label_scheme} will stop the analysis if the number of unique samples are less than expected.
+\code{check_label_scheme} will stop the analysis if the number of unique
+samples are less than expected.
 }

@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-informatics.R
 \name{plotHM}
 \alias{plotHM}
-\title{Make heat maps}
+\title{Makes heat maps}
 \usage{
 plotHM(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepath,
   filename, complete_cases, xmin = -1, xmax = 1, x_margin = 0.1,
   annot_cols = NULL, ...)
 }
 \description{
-Make heat maps
+Makes heat maps
 }

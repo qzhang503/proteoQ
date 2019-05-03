@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-psmtable.R
 \name{Grubbs_outliers}
 \alias{Grubbs_outliers}
-\title{Outlier removal with Grubbs's method}
+\title{Outlier removals with Grubbs's method}
 \usage{
 Grubbs_outliers(x, type = 10)
 }
 \description{
-Outlier removal with Grubbs's method
+Outlier removals with Grubbs's method
 }

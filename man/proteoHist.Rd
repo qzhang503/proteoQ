@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-histo.R
 \name{proteoHist}
 \alias{proteoHist}
-\title{Plots Histograms}
+\title{Visualizes histograms}
 \usage{
 proteoHist(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, scale_log2r = FALSE, show_curves = TRUE,
@@ -14,9 +14,9 @@ proteoHist(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
-\item{col_select}{Character string to a column key in \code{expt_smry.csv}.
-Samples corresponding to non-empty entries will be included for the
-indicated analysis.}
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+The default key is \code{Select}. Samples corresponding to non-empty entries
+under \code{col_select} will be included in the indicated analysis.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2-ratios} to the same
 scale of standard deviation for all samples.}
@@ -50,8 +50,8 @@ The histograms of \code{log2-ratios} under
  "\code{C:\\my_directory\\Histogram}".
 }
 \description{
-\code{proteoHist} produces the histograms of \code{log2-ratios} for proteins
-or peptides data.
+\code{proteoHist} prepares the histogram visualization of \code{log2-ratios}
+for proteins or peptides data.
 }
 \details{
 In the histograms, the \code{log2-ratios} under each TMT channel are
@@ -65,16 +65,18 @@ pep_seq_mod} will be matched to \code{id = pep_seq}.
 \examples{
 # no scaling normalization
 proteoHist(
-  id = "pep_seq_mod",
+  id = pep_seq_mod,
   scale_log2r = FALSE,
   show_curves = TRUE,
   show_vline = TRUE,
+  xmin = -1,
+  xmax = 1,
   ncol = 4
 )
 
 # scaling normalization
 proteoHist(
-  id = "pep_seq_mod",
+  id = pep_seq_mod,
   col_select = Select,
   scale_log2r = TRUE,
   show_curves = TRUE,

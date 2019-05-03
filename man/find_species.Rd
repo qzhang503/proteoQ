@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{find_species}
 \alias{find_species}
-\title{Find the Species}
+\title{Finds the species}
 \usage{
 find_species(label_scheme_full)
 }

@@ -2,9 +2,10 @@
 % Please edit documentation in R/proteoQ-psmtable.R
 \name{annotPSM}
 \alias{annotPSM}
-\title{Annotates PSM Results.}
+\title{Annotates PSM results}
 \usage{
-annotPSM(rm_krts = FALSE, plot_violins = TRUE)
+annotPSM(expt_smry = "expt_smry.xlsx", rm_krts = FALSE,
+  plot_violins = TRUE)
 }
 \arguments{
 \item{rm_krts}{Logical; if TRUE, removes keratin entries from the output.}

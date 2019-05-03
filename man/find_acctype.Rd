@@ -2,10 +2,11 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{find_acctype}
 \alias{find_acctype}
-\title{Find the Accession_Type}
+\title{Finds the Accession_Type}
 \usage{
 find_acctype(label_scheme_full)
 }
 \description{
-\code{find_acctype} find the Accession_Type that will be used in the annotation of protein IDs.
+\code{find_acctype} finds the \code{Accession_Type} that will be used in the
+annotation of protein IDs.
 }

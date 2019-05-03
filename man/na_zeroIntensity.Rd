@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{na_zeroIntensity}
 \alias{na_zeroIntensity}
-\title{replace zero intensity with NA}
+\title{Replace zero intensity with NA}
 \usage{
 na_zeroIntensity(df)
 }
@@ -10,5 +10,6 @@ na_zeroIntensity(df)
 \item{df}{A list of file names.}
 }
 \description{
-\code{reorder_files} replace zero intensity with NA to avoid -Inf in log10 transformation.
+\code{reorder_files} replace zero intensity with NA to avoid -Inf in log10
+transformation.
 }

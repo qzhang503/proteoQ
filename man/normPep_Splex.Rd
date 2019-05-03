@@ -7,21 +7,24 @@
 normPep_Splex(id = "pep_seq_mod", method_psm_pep = "median")
 }
 \arguments{
-\item{id}{The variable for summarising PSMs into peptides. PSMs with the same value in \code{id} 
-will be summarised into a single entry of peptide.}
+\item{id}{The variable for summarising PSMs into peptides. PSMs with the same
+value in \code{id} will be summarised into a single entry of peptide.}
 
-\item{method_psm_pep}{The method for summarising \code{log2-ratios} from PSMs to peptides.
-\code{log10-intensities} will be the weights if \code{method_psm_pep = c("top.3", "weighted.mean")}.}
+\item{method_psm_pep}{The method for summarising \code{log2-ratios} from PSMs
+to peptides. \code{log10-intensities} will be the weights if
+\code{method_psm_pep = c("top.3", "weighted.mean")}.}
 }
 \value{
-Results in \code{.txt} files for each of TMT experiments and LC/MS injections.
+Results in \code{.txt} files for each of TMT experiments and LC/MS
+  injections.
 }
 \description{
-\code{normPep_Splex} prepares peptide data for each TMT experiment at different LC/MS injections.
+\code{normPep_Splex} prepares peptide data for each TMT experiment at
+different LC/MS injections.
 }
 \examples{
 	normPep_Splex(
-		id = pep_seq_mod, 
+		id = pep_seq_mod,
 		method_psm_pep = "median"
 	)
 

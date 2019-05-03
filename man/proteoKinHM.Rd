@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-informatics.R
 \name{proteoKinHM}
 \alias{proteoKinHM}
-\title{Make kinase heat maps}
+\title{Visualizes kinase heat maps}
 \usage{
 proteoKinHM(id = gene, col_select = NULL, col_benchmark = NULL,
   scale_log2r = FALSE, df = NULL, filepath = NULL, filename = NULL,

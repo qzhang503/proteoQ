@@ -2,12 +2,24 @@
 % Please edit documentation in R/proteoQ-nmf.R
 \name{pepNMF}
 \alias{pepNMF}
-\title{NMF Analysis of Peptide \code{log2-ratios}}
+\title{Peptide NMF Classification}
 \usage{
 pepNMF(...)
 }
 \description{
-NMF Analysis of Peptide \code{log2-ratios}
+NMF Classification of peptide \code{log2-ratios}
+}
+\examples{
+pepNMF(
+  scale_log2r = TRUE,
+  xmin = -1,
+  xmax = 1,
+  x_margin = 0.1,
+  annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
+  r = 6,
+  nrun = 200
+)
+
 }
 \seealso{
 \code{\link{proteoNMF}} for parameters

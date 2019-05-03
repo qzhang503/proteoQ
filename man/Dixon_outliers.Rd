@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-psmtable.R
 \name{Dixon_outliers}
 \alias{Dixon_outliers}
-\title{Outlier removal with Dixon's method}
+\title{Outlier removals with Dixon's method}
 \usage{
 Dixon_outliers(x)
 }
 \description{
-Outlier removal with Dixon's method
+Outlier removals with Dixon's method
 }

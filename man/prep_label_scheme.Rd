@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{prep_label_scheme}
 \alias{prep_label_scheme}
-\title{Reads label scheme}
+\title{Processes the metadata of experiments}
 \usage{
 prep_label_scheme(dat_dir, filename)
 }
 \description{
-Reads label scheme
+Processes the metadata of experiments
 }

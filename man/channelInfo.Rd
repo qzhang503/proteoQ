@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{channelInfo}
 \alias{channelInfo}
-\title{Extract the information of reference and unused TMT channels.}
+\title{Extracts the channel information in TMT experiments}
 \usage{
 channelInfo(label_scheme, set_idx)
 }
@@ -12,11 +12,12 @@ channelInfo(label_scheme, set_idx)
 \item{set_idx}{Numeric.  The index of a multiplex TMT experiment.}
 }
 \value{
-Three lists of indeces: 
-\code{refChannels}, reference channels(s); 
-\code{emptyChannels}, empty channel(s) that were not used for sample labeling; 
-\code{labeledChannels}, non-empty channels including both reference(s) and sample(s).
+Three lists of indeces: \code{refChannels}, reference channels(s);
+  \code{emptyChannels}, empty channel(s) that were not used for sample
+  labeling; \code{labeledChannels}, non-empty channels including both
+  reference(s) and sample(s).
 }
 \description{
-A function returns the indeces of TMT channels that are associated to reference(s), sample(s) and probable unused void(s).
+A function returns the indeces of TMT channels that are associated to
+reference(s), sample(s) and probable unused void(s).
 }

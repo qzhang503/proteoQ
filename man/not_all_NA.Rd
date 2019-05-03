@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{not_all_NA}
 \alias{not_all_NA}
-\title{All NA column(s)}
+\title{Finds all-NA column(s)}
 \usage{
 not_all_NA(x)
 }
@@ -10,12 +10,5 @@ not_all_NA(x)
 \item{x}{A data frame of \code{log2-ratios} and \code{intensity}.}
 }
 \description{
-\code{not_all_NA} identify the indeces of data columns with all NA values.
-}
-\examples{
-df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)
-
-\dontrun{
-df_num <- TMT_top_n(df, "prot_acc", na.rm = TRUE)
-}
+\code{not_all_NA} identifies the column indeces with all NA values.
 }

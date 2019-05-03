@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-corrplots.R
 \name{pepCorr}
 \alias{pepCorr}
-\title{Correlation plots of Peptide Data}
+\title{Correlation plots of peptide data}
 \usage{
 pepCorr(...)
 }
 \description{
-Correlation plots of Peptide Data
+Correlation plots of peptide data
 }
 \examples{
 pepCorr(

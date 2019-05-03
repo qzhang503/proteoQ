@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{not_all_zero}
 \alias{not_all_zero}
-\title{All zero column(s)}
+\title{Finds all-zero column(s)}
 \usage{
 not_all_zero(x)
 }
@@ -10,12 +10,5 @@ not_all_zero(x)
 \item{x}{A data frame of \code{log2-ratios} and \code{intensity}.}
 }
 \description{
-\code{TMT_wt_mean} identify the indeces of data columns with all NA values.
-}
-\examples{
-df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)
-
-\dontrun{
-df_num <- TMT_top_n(df, "prot_acc", na.rm = TRUE)
-}
+\code{TMT_wt_mean} identifies the column indeces with all NA values.
 }

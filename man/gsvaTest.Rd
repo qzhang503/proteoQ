@@ -10,5 +10,5 @@ gsvaTest(df, id = "entrez", label_scheme_sub, filepath, filename,
   mx.diff = TRUE, ...)
 }
 \description{
-Perform GSVA tests
+logFC_cutoff subsets data for adjusted pvals
 }

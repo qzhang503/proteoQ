@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-nmf.R
 \name{proteoNMF}
 \alias{proteoNMF}
-\title{NMF}
+\title{NMF analysis}
 \usage{
 proteoNMF(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, scale_log2r = FALSE, impute_na = TRUE,
@@ -12,41 +12,50 @@ proteoNMF(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   height_consensus = 6, width_coefmap = 6, height_coefmap = 6, ...)
 }
 \arguments{
-\item{id}{The name of a unique identifier (see \code{\link[proteoQ]{MDS}}).}
+\item{id}{Character string to indicate the type of data. Peptide data will be
+used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\code{id = prot_acc} or \code{gene}.}
 
-\item{scale_log2r}{Logical; if TRUE, rescales \code{log2-ratios} to the same
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+The default key is \code{Select}. Samples corresponding to non-empty entries
+under \code{col_select} will be included in the indicated analysis.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2-ratios} to the same
 scale of standard deviation for all samples.}
 
-\item{annot_kinases}{Logical; if TRUE, annotates proteins being kinases or
-not.}
+\item{impute_na}{Logical; if TRUE, imputes missing values.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used for visualization.}
+
+\item{df}{The filename of input data. By default, it will be determined by the
+value of \code{id}.}
+
+\item{filepath}{The filepath to output results. By default, it will be
+determined by the names of the current functional \code{call}.}
+
+\item{filename}{A representative filename to output images. By default, it
+will be determined by the names of the current \code{call}.}
+
+\item{r}{Numeric; the factorization rank (\code{\link[NMF]{nmf}}).}
+
+\item{nrun}{Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).}
+
+\item{...}{Additional parameters for plotting: \cr \code{xmin}, the minimum x; \cr
+\code{xmax}, the maximum x; \cr \code{x_margin}, the margin in heat
+scales;\cr \code{annot_cols}, the column keys in \code{expt_smry.xlsx} for
+use in the color coding of samples;\cr \code{width_}, the width of plot; \cr
+\code{height_}, the height of plot; \cr additional arguments inherited from
+\code{\link[pheatmap]{pheatmap}}.}
 }
 \value{
-Images stored under the file folders that are associated to
-  \code{id}, \code{anal_type} and \code{annot_kinases}.
+NMF plots.
 }
 \description{
-\code{proteoNMF} produces heat maps.
+Analyzes and visualizes the NMF clustering of peptide or protein
+\code{log2-ratios}
 }
 \details{
-reads the data from either "\code{~\\Direcotry\\Peptide\\Peptide All.txt}" at
-\code{id = pep_seq_mod}, or "\code{~\\Direcotry\\Protein\\Protein All by
-Accession.txt}" at \code{id = prot_acc} or
-"\code{~\\Direcotry\\Protein\\Protein All by gene.txt}" at \code{id = gene}.
-}
-\examples{
-MA(
-	id = gene,
-	scale_log2r = scale_log2r,
-	annot_kinases = annot_kinases,
-)
-
-# or use the form of functional factories
-	my_prnMA <- info_anal(df = NULL, id = prot_acc, scale_log2r, filepath = NULL, filename = NULL, annot_kinases, anal_type = "MA")
-	my_prnMA()
-
-	my_pepMA <- info_anal(df = NULL, id = pep_seq_mod, scale_log2r, filepath = NULL, filename = NULL, annot_kinases, anal_type = "MA")
-	my_pepMA()
-
-\dontrun{
-}
+The option of \code{complete_cases} will be forced to \code{TRUE} at
+\code{impute_na = FALSE}
 }

@@ -2,16 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{annotPrn}
 \alias{annotPrn}
-\title{Add annotation based on the "prot_acc"}
+\title{Adds annotation based on the "prot_acc"}
 \usage{
 annotPrn(df, acc_type)
 }
 \description{
-Add annotation based on the "prot_acc"
-}
-\examples{
-annotPrn(id = gene, m = 3, maxit = 3)
-
-\dontrun{
-}
+Adds annotation based on the "prot_acc"
 }
