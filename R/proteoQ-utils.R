@@ -1,26 +1,12 @@
 #' Prefix form of colnames(x)[c(2, 5, ...)] for use in pipes
 #'
-#' \code{names_pos<-} rename the columns at indeces \code{pos}.
-#'
-#' In the "label_scheme.csv" file, 
+#' \code{names_pos<-} rename the columns at the indeces of \code{pos}.
 #'
 #' @param x A data frame.
 #' @param pos Numeric.  The index of coloumns for name change.
 #' @param value Characters.  The new column names.
-#' @return The data frame with new names: 
-#' \code{refChannels}, reference channels(s); 
-#' \code{emptyChannels}, empty channel(s) that were not used for sample labeling; 
-#' \code{labeledChannels}, non-empty channels including reference(s) and sample(s).
+#' @return The data frame with new names.
 #'
-#' @examples
-#' label_scheme <- readRDS("c:\\Results\\R\\proteoQ\\Data\\label_scheme_orig.rds")
-#' channelInfo(label_scheme, 2)
-#'
-#' \dontrun{
-#' channelInfo(label_scheme, "a")
-#' channelInfo(label_scheme, c(1, 2))
-#' }
-#' @export
 #' @import dplyr
 #' @importFrom magrittr %>%
 `names_pos<-` <- function(x, pos, value) {
@@ -31,334 +17,259 @@
 
 #' Re-order filenames
 #'
-#' \code{reorder_files} re-ordered file names by TMT set numbers then by injection numbers.  
+#' \code{reorder_files} re-ordered file names by TMT set numbers then by injection numbers.
 #'
 #' @param filelist A list of file names.
 #' @param n_TMT_sets the number of multiplex TMT experiments.
 #' @import dplyr
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
-#' @export
-reorder_files <- function(filelist, n_TMT_sets) {  
+reorder_files <- function(filelist, n_TMT_sets) {
   newlist <- NULL
-  for (i in seq_len(n_TMT_sets)) newlist <- c(newlist, filelist[grep(paste0("set*.",i), filelist, ignore.case = TRUE)])
+  for (i in seq_len(n_TMT_sets))
+    newlist <- c(newlist, filelist[grep(paste0("set*.",i), filelist, ignore.case = TRUE)])
   return(newlist)
 }
 
 
 #' Re-order columns in a data frame
 #'
-#' \code{reorder_files} re-ordered file names by TMT set numbers then by injection numbers.  
+#' \code{reorder_files} re-ordered file names by TMT set numbers then by
+#' injection numbers.
 #'
-#' @param filelist A list of file names.
-#' @param endColIndex the indeces of columns to be moved to the end of \code{df}.
-#' @param col_to_rn the column identifier where the values under that column will be used as row names.
+#' @param df A data frame.
+#' @param endColIndex the indeces of columns to be moved to the end of
+#'   \code{df}.
+#' @param col_to_rn the column identifier where the values under that column
+#'   will be used as row names.
 #' @import dplyr rlang
-#' @importFrom stringr str_split 
+#' @importFrom stringr str_split
 #' @importFrom magrittr %>%
-#' @export
-reorderCols <- function (df, endColIndex, col_to_rn) { 
-	if (length(endColIndex) == 0) endColIndex <- grep("I[0-9]{3}|log2_R[0-9]{3}", names(df))  # default fields of intensity or log2_ratio values
-	df <- cbind(df[, -endColIndex], df[, endColIndex]) # put numeric columns to the end of data frame
+reorderCols <- function (df, endColIndex, col_to_rn) {
+	if (length(endColIndex) == 0) endColIndex <- grep("I[0-9]{3}|log2_R[0-9]{3}", names(df))
+	df <- cbind(df[, -endColIndex], df[, endColIndex])
 
 	if(sum(duplicated(df[[col_to_rn]])) > 0) {
-		# ---------------------------
-		id <- ensym(col_to_rn)
-		
-		df <- df %>% 
-				dplyr::group_by(!!id) %>% 
-				dplyr::mutate(Index = row_number()) %>% 
-				dplyr::mutate(indexed_names = paste(get(col_to_rn), Index, sep=".")) %>% 
-				data.frame(check.names = FALSE) %>% 
-				`rownames<-`(.[, "indexed_names"]) %>% 
-				# dplyr::select(-c("Index", as_string(id), "indexed_names"))
-				dplyr::select(-c("Index", "indexed_names"))  
-		# ---------------------------
-
+		df <- df %>%
+				dplyr::group_by(!!ensym(col_to_rn)) %>%
+				dplyr::mutate(Index = row_number()) %>%
+				dplyr::mutate(indexed_names = paste(get(col_to_rn), Index, sep=".")) %>%
+				data.frame(check.names = FALSE) %>%
+				`rownames<-`(.[, "indexed_names"]) %>%
+				dplyr::select(-c("Index", "indexed_names"))
 	} else {
 		rownames(df) <- df[[col_to_rn]]
 	}
 
-	# if (!is.na(col_to_rn)) rownames(df) <- make.names(df[[col_to_rn]], unique = TRUE) # make.names will check names and make changes
-
 	return(df)
 }
 
 
-#' replace zero intensity with NA
+#' Replace zero intensity with NA
 #'
-#' \code{reorder_files} replace zero intensity with NA to avoid -Inf in log10 transformation.  
+#' \code{reorder_files} replace zero intensity with NA to avoid -Inf in log10
+#' transformation.
 #'
 #' @param df A list of file names.
-#' @import dplyr 
+#' @import dplyr
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
-#' @export
-na_zeroIntensity <- function (df) { 
+na_zeroIntensity <- function (df) {
 	ind <- grep("I1[0-9]{2}", names(df))
-	
+
 	temp <- df[, ind]
 	temp[temp == 0] <- NA
 	df[, ind] <- temp
-	
+
 	return(df)
 }
 
-#' Aggregate numeric values
+#' Summarises numeric values
 #'
-#' \code{aggrNums} aggregate \code{log2-ratios} and \code{intensity} by \code{c("mean", "median", "weighted.mean", "top.3")}  
+#' \code{aggrNums} summarises \code{log2-ratios} and \code{intensity} by the
+#' descriptive statistics of \code{c("mean", "median", "weighted.mean",
+#' "top.3")}
 #'
 #' @param f A function for data aggregation.
 #' @examples
 #' df_num <- aggrNums(median)(df, prot_acc, na.rm = TRUE)
 #'
-#' \dontrun{
-#' df_num <- aggrNums("median")(df, prot_acc, na.rm = TRUE)
-#' }
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
-#' @export
 aggrNums <- function(f) {
 	function (df, id, ...) {
 		id <- rlang::as_string(rlang::enexpr(id))
 
-		df %>% 
-			dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-			dplyr::group_by(!!rlang::sym(id)) %>% 
+		df %>%
+			dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
+			dplyr::group_by(!!rlang::sym(id)) %>%
 			dplyr::summarise_all(list(~f(., ...)))
 	}
 }
 
 
-#' Calculate weighted mean
+#' Calculates weighted mean
 #'
-#' \code{TMT_wt_mean} calculate the weighted mean of \code{log2-ratios} and \code{intensity}.
+#' \code{TMT_wt_mean} calculates the weighted mean of \code{log2-ratios} and
+#' \code{intensity}.
 #'
 #' @param x A data frame of \code{log2-ratios} and \code{intensity}.
 #' @import dplyr rlang
 #' @importFrom stringr str_length
 #' @importFrom tidyr gather
 #' @importFrom magrittr %>%
-#' @export
 TMT_wt_mean <- function (x, id, ...) {
 	id <- rlang::as_string(rlang::enexpr(id))
 	dots <- rlang::enexprs(...)
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	TMT_levels <- label_scheme %>% TMT_plex() %>% TMT_levels()
-	
-	x_R <- x %>% 
-			dplyr::select(id, grep("^log2_R[0-9]{3}", names(.))) %>% 
-			tidyr::gather(key = variable, value = log2_R, -id) 
-			
-	x_I <- x %>% 
-			dplyr::select(id, grep("^I[0-9]{3}", names(.))) %>% 
-			tidyr::gather(key = variable, value = Intensity, -id)
-	
-	x_wt <- cbind.data.frame(x_I, log2_R = x_R[, c("log2_R")]) %>% 
-			dplyr::mutate(variable = gsub("^I", "log2_R", variable)) %>% 
-			dplyr::mutate(TMT = gsub("^log2_R(.*)\\s+.*", "TMT-\\1", variable)) %>% 
-			dplyr::mutate(TMT = factor(TMT, levels = TMT_levels)) %>% 
-			dplyr::mutate(variable = factor(variable, levels = unique(variable))) %>% 
-			dplyr::mutate(n = stringr::str_length(.[[id]])) %>% 
-			dplyr::filter(n != 0) %>% 
-			dplyr::group_by(!!rlang::sym(id), variable) %>% 
-			dplyr::summarise(log2_R = weighted.mean(log2_R, log10(Intensity), !!!dots)) %>% 
-			tidyr::spread(variable, log2_R)
-			
-	x <- x %>% 
-			dplyr::select(id, grep("(N_log2_R)|(Z_log2_R)|(I)[0-9]{3}", names(.))) %>% 
-			dplyr::group_by(!!rlang::sym(id)) %>% 
-			dplyr::summarise_all(funs(mean(., !!!dots))) %>% 
-			dplyr::left_join(x_wt, by = id)	
-	
-	rm(x_R, x_I, x_wt)
-	
-	cbind.data.frame(
-		x[, names(x) == id], 
-		x[, grepl("^I[0-9]{3}", names(x))], 
-		x[, grepl("^N_I[0-9]{3}", names(x))], 
-		x[, grepl("^log2_R[0-9]{3}", names(x))], 
-		x[, grepl("^N_log2_R[0-9]{3}", names(x))], 
-		x[, grepl("^Z_log2_R[0-9]{3}", names(x))])	
-}
 
+	x_R <- x %>%
+			dplyr::select(id, grep("^log2_R[0-9]{3}", names(.))) %>%
+			tidyr::gather(key = variable, value = log2_R, -id)
+
+	x_I <- x %>%
+			dplyr::select(id, grep("^I[0-9]{3}", names(.))) %>%
+			tidyr::gather(key = variable, value = Intensity, -id)
+
+	x_wt <- cbind.data.frame(x_I, log2_R = x_R[, c("log2_R")]) %>%
+			dplyr::mutate(variable = gsub("^I", "log2_R", variable)) %>%
+			dplyr::mutate(TMT = gsub("^log2_R(.*)\\s+.*", "TMT-\\1", variable)) %>%
+			dplyr::mutate(TMT = factor(TMT, levels = TMT_levels)) %>%
+			dplyr::mutate(variable = factor(variable, levels = unique(variable))) %>%
+			dplyr::mutate(n = stringr::str_length(.[[id]])) %>%
+			dplyr::filter(n != 0) %>%
+			dplyr::group_by(!!rlang::sym(id), variable) %>%
+			dplyr::summarise(log2_R = weighted.mean(log2_R, log10(Intensity), !!!dots)) %>%
+			tidyr::spread(variable, log2_R)
+
+	x <- x %>%
+			dplyr::select(id, grep("(N_log2_R)|(Z_log2_R)|(I)[0-9]{3}", names(.))) %>%
+			dplyr::group_by(!!rlang::sym(id)) %>%
+			dplyr::summarise_all(funs(mean(., !!!dots))) %>%
+			dplyr::left_join(x_wt, by = id)
+
+	rm(x_R, x_I, x_wt)
+
+	cbind.data.frame(
+		x[, names(x) == id],
+		x[, grepl("^I[0-9]{3}", names(x))],
+		x[, grepl("^N_I[0-9]{3}", names(x))],
+		x[, grepl("^log2_R[0-9]{3}", names(x))],
+		x[, grepl("^N_log2_R[0-9]{3}", names(x))],
+		x[, grepl("^Z_log2_R[0-9]{3}", names(x))])
+}
 
 
 #' Calculate top.3
 #'
-#' \code{TMT_wt_mean} calculate the weighted mean of \code{log2-ratios} and \code{intensity}.
+#' \code{TMT_wt_mean} calculates the weighted mean of \code{log2-ratios} and
+#' \code{intensity}.
 #'
 #' @param x A data frame of \code{log2-ratios} and \code{intensity}.
 #' @examples
 #' df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)
 #'
-#' \dontrun{
-#' df_num <- TMT_top_n(df, "prot_acc", na.rm = TRUE)
-#' }
 #' @import dplyr rlang
-#' @importFrom stringr str_split
 #' @importFrom magrittr %>%
-#' @export
 TMT_top_n <- function (x, id, ...) {
 
 	id_var <- rlang::enexpr(id)
 	id_nm <- rlang::expr_name(id_var)
 
 	dots <- rlang::enexprs(...)
-	args <- lapply(dots, expr_name) 
+	args <- lapply(dots, expr_name)
 
-	x %>% 
-		dplyr::select(id_nm, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-		dplyr::mutate(sum_Intensity =rowSums(.[grep("^I1[0-9]{2}", names(.))], na.rm = TRUE)) %>% 
-		dplyr::group_by(!!id_var) %>% 
-		dplyr::top_n(n = 3, wt = sum_Intensity) %>% 
-		dplyr::select(-sum_Intensity) %>% 
+	x %>%
+		dplyr::select(id_nm, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
+		dplyr::mutate(sum_Intensity =rowSums(.[grep("^I1[0-9]{2}", names(.))], na.rm = TRUE)) %>%
+		dplyr::group_by(!!id_var) %>%
+		dplyr::top_n(n = 3, wt = sum_Intensity) %>%
+		dplyr::select(-sum_Intensity) %>%
 		dplyr::summarise_all(funs(median(., !!!args)))
 }
 
 
-#' All zero column(s)
+#' Finds all-zero column(s)
 #'
-#' \code{TMT_wt_mean} identify the indeces of data columns with all NA values.
+#' \code{TMT_wt_mean} identifies the column indeces with all NA values.
 #'
 #' @param x A data frame of \code{log2-ratios} and \code{intensity}.
-#' @examples
-#' df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)
-#'
-#' \dontrun{
-#' df_num <- TMT_top_n(df, "prot_acc", na.rm = TRUE)
-#' }
-#' @import dplyr rlang
-#' @importFrom stringr str_split
-#' @importFrom magrittr %>%
-#' @export
 not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
 
 
-#' All NA column(s)
+#' Finds all-NA column(s)
 #'
-#' \code{not_all_NA} identify the indeces of data columns with all NA values.
+#' \code{not_all_NA} identifies the column indeces with all NA values.
 #'
 #' @param x A data frame of \code{log2-ratios} and \code{intensity}.
-#' @examples
-#' df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)
-#'
-#' \dontrun{
-#' df_num <- TMT_top_n(df, "prot_acc", na.rm = TRUE)
-#' }
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
-#' @export
 not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
 
 
-#' Define the column annotation in heat maps
-#' 
+#' Defines the column annotation in heat maps
+#'
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
 colAnnot <- function (annot_cols = NULL, sample_ids) {
-
 	if(is.null(annot_cols)) return(NA)
-	
+
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	exists <- annot_cols %in% names(label_scheme)
+
 	if(sum(!exists) > 0) {
-		warning(paste0("Column '", annot_cols[!exists], "'", " not found in \'label_scheme\' and will be skipped."))
+		warning(paste0("Column '", annot_cols[!exists], "'",
+		               " not found in \'label_scheme\' and will be skipped."))
 		annot_cols <- annot_cols[exists]
 	}
-	
+
 	if(length(annot_cols) == 0) return(NA)
 
-	x <- label_scheme %>% 
-		dplyr::filter(Sample_ID %in% sample_ids) %>% 
-		dplyr::select(annot_cols, Sample_ID) %>% 
-		dplyr::select(which(not_all_NA(.))) %>% 
-		dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]), !is.na(.[["Sample_ID"]])) %>% 
-		data.frame(check.names = FALSE) %>% 
-		`rownames<-`(.[["Sample_ID"]]) 
+	x <- label_scheme %>%
+		dplyr::filter(Sample_ID %in% sample_ids) %>%
+		dplyr::select(annot_cols, Sample_ID) %>%
+		dplyr::select(which(not_all_NA(.))) %>%
+		dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]),
+		              !is.na(.[["Sample_ID"]])) %>%
+		data.frame(check.names = FALSE) %>%
+		`rownames<-`(.[["Sample_ID"]])
 
 	if(any(duplicated(x[["Sample_ID"]]))) stop("Duplicated sample IDs found\n")
 
 	if(!"Sample_ID" %in% annot_cols) x <- x %>% dplyr::select(-Sample_ID)
-	
+
 	if(ncol(x) == 0) return(NA)
-	
+
 	if("TMT_Set" %in% names(x)) {
-		x <- x %>% 
-			tibble::rownames_to_column() %>% 
-			mutate(TMT_Set, as.factor(TMT_Set)) %>% 
-			tibble::column_to_rownames(var = "rowname") 
+		x <- x %>%
+			tibble::rownames_to_column() %>%
+			mutate(TMT_Set, as.factor(TMT_Set)) %>%
+			tibble::column_to_rownames(var = "rowname")
 	}
-	
-	return(x) 
+
+	return(x)
 }
 
 
-#' Customize the annotation colors for columns
-#' 
-#' @examples
-#' anno_colors <- annotation_col %>% dplyr::select(-c("Peptide_Yield")) %>% setHMColor(.) 
+#' Customizes the colors in column annotation
 #'
-#' \dontrun{
-#' }
-#' 
-#' @import dplyr rlang
-#' @importFrom magrittr %>%
-setHMColor_temp <- function (annotation_col) {
-	ncol <- ncol(annotation_col)
-	
-	if(is.null(ncol)) return (NA)
-	if(ncol == 0) return (NA)
-	
-	# -----
-	annotation_col <- annotation_col %>% 
-		# dplyr::mutate_at(vars(one_of("TMT_Set")), ~ factor(TMT_Set))
-		dplyr::mutate_if(is.character, as.factor)
-
-	palette <- lapply(names(annotation_col), function(x) {
-		n <- nlevels(annotation_col[[x]])
-		
-		palette <- if (n <= 9 & n >= 3) brewer.pal(n, name = "Set1") else if (n > 9) 
-			colorRampPalette(brewer.pal(n = 7, "Set1"))(n) else if (n == 2) 
-			c("#E41A1C", "#377EB8") else if (n == 1)
-			c("#E41A1C") else if (n == 0) 
-			colorRampPalette(brewer.pal(n = 9, "YlOrBr"))(100)
-			
-
-		names(palette) <- levels(annotation_col[[x]]) # the names of elements in a list
-		return(palette)
-		} 
-	)
-	
-	names(palette) <- names(annotation_col) # the names of the lists
-	
-	return(palette) 
-}
-
-
-#' Customize the annotation colors for columns
-#' 
-#' @examples
-#' anno_colors <- annotation_col %>% dplyr::select(-c("Peptide_Yield")) %>% setHMColor(.) 
-#'
-#' \dontrun{
-#' }
-#' 
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
 setHMColor <- function (annotation_col) {
 	ncol <- ncol(annotation_col)
-	
+
 	if(is.null(ncol)) return (NA)
 	if(ncol == 0) return (NA)
-	
-	annotation_col <- annotation_col %>% 
+
+	annotation_col <- annotation_col %>%
 		dplyr::mutate_at(vars(one_of("TMT_Set")), ~ factor(TMT_Set)) %>%
 		dplyr::mutate_if(is.character, as.factor)
 
 	palette <- lapply(names(annotation_col), function(x) {
 		n <- nlevels(annotation_col[[x]])
-		
+
 		palette <- if(n <= 9 & n >= 3) {
 			brewer.pal(n, name = "Set1")
 		} else if(n > 9) {
@@ -371,21 +282,21 @@ setHMColor <- function (annotation_col) {
 			colorRampPalette(brewer.pal(n = 9, "YlOrBr"))(100)
 		}
 
-		names(palette) <- levels(annotation_col[[x]]) # the names of elements in a list
-		return(palette)
-		} 
-	)
-	
-	names(palette) <- names(annotation_col) # the names of the lists
+		names(palette) <- levels(annotation_col[[x]])
 
-	return(palette) 
+		return(palette)
+	})
+
+	names(palette) <- names(annotation_col)
+
+	return(palette)
 }
 
 
-
-#' Set the upper and the lower limits of heat maps
+#' Sets the upper and the lower limits in the range of heat maps
 #'
-#' \code{setHMlims} imputes values beyond the limits to the corresponding limits.
+#' \code{setHMlims} imputes values beyond the limits to the corresponding
+#' limits.
 #'
 #' @param x A data frame of \code{log2-ratios}.
 #' @param xmin the lower limit.
@@ -393,50 +304,48 @@ setHMColor <- function (annotation_col) {
 #' @examples
 #' setHMlims(df, -1, 1)
 #'
-#' \dontrun{
-#' }
 #' @import dplyr rlang
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
 setHMlims <- function (x, xmin, xmax) {
 	x[x < xmin] <- xmin
 	x[x > xmax] <- xmax
-	
+
 	x
 }
-	
+
 
 #' Calculate the log2-ratio to the control group of samples
-#' 
+#'
 #' @examples
 #' ratio_toCtrl(df, "gene", label_scheme_sub, Heatmap_Group)
-#'
-#' \dontrun{
-#' }
 ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 	id <- rlang::as_string(rlang::enexpr(id))
 
 	nm_ctrl <- rlang::as_string(rlang::ensym(nm_ctrl))
 
-	x <- df %>% 
-		dplyr::select(which(names(.) %in% label_scheme_sub$Sample_ID)) %>% 
+	x <- df %>%
+		dplyr::select(which(names(.) %in% label_scheme_sub$Sample_ID)) %>%
 		`rownames<-`(df[[id]])
 
 	col_ratio <- which(names(x) %in% label_scheme_sub$Sample_ID)
-	col_ctrl <- which(names(x) %in% label_scheme_sub[!is.na(label_scheme_sub[[nm_ctrl]]), "Sample_ID"])
 
-	x[, col_ratio] <- sweep(x[, col_ratio], 1, rowMeans(x[, col_ctrl, drop = FALSE], na.rm = TRUE), "-")
-	
-	x <- x %>% tibble::rownames_to_column(id) 
-	
-	df %>% 
-		dplyr::select(which(!names(df) %in% label_scheme_sub$Sample_ID)) %>% 
-		dplyr::left_join(x, by = id)	%>% 
-		`rownames<-`(.[[id]])	
+	col_ctrl <- which(names(x) %in%
+	                    label_scheme_sub[!is.na(label_scheme_sub[[nm_ctrl]]), "Sample_ID"])
+
+	x[, col_ratio] <- sweep(x[, col_ratio], 1,
+	                        rowMeans(x[, col_ctrl, drop = FALSE], na.rm = TRUE), "-")
+
+	x <- x %>% tibble::rownames_to_column(id)
+
+	df %>%
+		dplyr::select(which(!names(df) %in% label_scheme_sub$Sample_ID)) %>%
+		dplyr::left_join(x, by = id)	%>%
+		`rownames<-`(.[[id]])
 }
 
 
-#'Impute NA
+#'Imputes NA
 #'
 #'@param id Character string to indicate the type of data. Peptide data will be
 #'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
@@ -449,9 +358,9 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'
 #' \dontrun{
 #' }
-#'@export
 #'@import dplyr purrr rlang mice
 #'@importFrom magrittr %>%
+#'@export
 imputeNA <- function (id, ...) {
 
 	my_mice <- function (data, ...) {
@@ -465,21 +374,24 @@ imputeNA <- function (id, ...) {
 
 	handleNA <- function (x, ...) {
 		ind <- purrr::map(x, is.numeric) %>% unlist()
-		if(sum(ind) < ncol(x)) message("Not all of the columns are numeric.  Only the numeric columns are taken for NA imputation.")
 
-		nm_orig <- names(x[, ind]) # handle column names with special characters
+		if(sum(ind) < ncol(x)) message("Not all of the columns are numeric.
+		                               Only the numeric columns are taken for NA imputation.")
 
-		x[, ind] <- x[, ind] %>% 
-			data.frame(check.names = TRUE) %>% # handle special column names
-			my_mice(...) %>% 
-			mice::complete(1) %>% 
+		# handle special column names
+		nm_orig <- names(x[, ind])
+
+		x[, ind] <- x[, ind] %>%
+			data.frame(check.names = TRUE) %>%
+			my_mice(...) %>%
+			mice::complete(1) %>%
 			`colnames<-`(nm_orig)
 
 		return(x)
 	}
-	
+
 	id <- rlang::as_string(rlang::enexpr(id))
-	
+
 	cat(paste0("id = \"", id, "\"", " by the current call", "\n"))
 	id <- match_identifier(id)
 	cat(paste0("id = \"", id, "\"", " after parameter matching to normPep() or normPrn()", "\n"))
@@ -493,32 +405,34 @@ imputeNA <- function (id, ...) {
 	}
 
 	if(!file.exists(filename)) {
-		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#"), error = function(e) NA)
-		
+		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
+		                        comment.char = "#"), error = function(e) NA)
+
 		if(!is.null(dim(df))) {
 			message(paste("File loaded:", gsub("\\\\", "/", src_path)))
 		} else {
 			stop(paste("No such file or directory:", gsub("\\\\", "/", src_path)))
 		}
-	
+
 		df[, grep("N_log2_R", names(df))]  <- df[, grep("N_log2_R", names(df))]  %>% handleNA(...)
-		
+
 		fn_params <- file.path(dat_dir, "Protein\\Histogram", "MGKernel_params_N.txt")
 		if(file.exists(fn_params)) {
-			# calculate back Z_log2_R from N_log2_R
-			cf_SD <- 
-				read.csv(fn_params, 
-								check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
-				dplyr::filter(!duplicated(Sample_ID)) %>% 
+			# back calculate Z_log2_R from N_log2_R
+			cf_SD <-
+				read.csv(fn_params,
+								check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>%
+				dplyr::filter(!duplicated(Sample_ID)) %>%
 				dplyr::select(Sample_ID, fct)
-				
-			df[, grep("Z_log2_R", names(df))] <- 
-				mapply(normSD, df[, grepl("^N_log2_R[0-9]{3}", names(df))], center = 0, SD = cf_SD$fct, SIMPLIFY = FALSE) %>% 
-				data.frame(check.names = FALSE) %>% 
-				`colnames<-`(gsub("N_log2", "Z_log2", names(.))) 
-			
+
+			df[, grep("Z_log2_R", names(df))] <-
+				mapply(normSD,
+				       df[, grepl("^N_log2_R[0-9]{3}", names(df))],
+				       center = 0, SD = cf_SD$fct, SIMPLIFY = FALSE) %>%
+				data.frame(check.names = FALSE) %>%
+				`colnames<-`(gsub("N_log2", "Z_log2", names(.)))
 		} else {
-			df[, grep("Z_log2_R", names(df))]  <- df[, grep("Z_log2_R", names(df))]  %>% handleNA(...)
+			df[, grep("Z_log2_R", names(df))]  <- df[, grep("Z_log2_R", names(df))] %>% handleNA(...)
 		}
 
 		if(any(duplicated(df[[id]]))) {
@@ -533,8 +447,7 @@ imputeNA <- function (id, ...) {
 		} else {
 			rownames(df) <- df[[id]]
 		}
-		
-		# write.table(df, filename, sep = "\t", col.names = TRUE, row.names = TRUE)
+
 		write.table(df, filename, sep = "\t", col.names = TRUE, row.names = FALSE)
 	} else {
 		cat("NA imputation has already been performed!\n")
@@ -542,14 +455,14 @@ imputeNA <- function (id, ...) {
 }
 
 
-#'Impute NA for Peptide Data
+#'Imputes NA for peptide data
 #'@seealso \code{\link{imputeNA}} for parameters
 #'@export
 pepImp <- function (...) {
 	imputeNA(id = pep_seq, ...)
 }
-	
-#'Impute NA for Protein Data
+
+#'Impute NA for protein data
 #'@seealso \code{\link{imputeNA}} for parameters
 #'@export
 prnImp <- function (...) {
@@ -557,36 +470,32 @@ prnImp <- function (...) {
 }
 
 
-#' Add annotation based on the "prot_acc"
-#' 
-#' @examples
-#' annotPrn(id = gene, m = 3, maxit = 3)
+#' Adds annotation based on the "prot_acc"
 #'
-#' \dontrun{
-#' }
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 annotPrn <- function (df, acc_type) {
 	acc_type <- tolower(acc_type)
-	
+
 	if(acc_type == "refseq_acc") {
 		key <- "refseq_acc"
 	} else if(acc_type == "uniprot_id") {
 		key <- "uniprot_id"
 	} else {
-		stop("Unrecognized protein accesion type; need to one of \'uniprot_id\' and \'refseq_acc\'", call. = TRUE)
+		stop("Unrecognized protein accesion type; need to one of \'uniprot_id\' and \'refseq_acc\'",
+		     call. = TRUE)
 	}
-	
-	lookup <- dbs$prn_annot %>% 
-		dplyr::select(-status, -organism, -length) %>% 
+
+	lookup <- dbs$prn_annot %>%
+		dplyr::select(-status, -organism, -length) %>%
 		dplyr::filter(!duplicated(.[[key]]))
-	
+
 	if(any(names(df) == "prot_desc")) lookup <- lookup %>% dplyr::select(-prot_desc)
-	
-	df <- df %>% 
+
+	df <- df %>%
 		dplyr::left_join(lookup, by = c("prot_acc" = key))
-	
-	# (1) annotate NA genes with prot_acc
+
+	# annotate NA genes with prot_acc
 	ind <- is.na(df$gene) | str_length(df$gen) == 0
 	if(sum(ind) > 0) df[ind, "gene"] <- df[ind, "prot_acc"]
 
@@ -594,16 +503,16 @@ annotPrn <- function (df, acc_type) {
 }
 
 
-#' Add kinase annotation
-#' 
+#' Adds kinase annotation
+#'
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 annotKin <- function (df, acc_type) {
 	acc_type <- tolower(acc_type)
-	
-	lookup <- kinase_lookup %>% 
-		dplyr::select(refseq_acc, gene, kin_attr, kin_class, kin_order) %>% 
-		dplyr::rename(gene_lookup = gene) %>% 
+
+	lookup <- kinase_lookup %>%
+		dplyr::select(refseq_acc, gene, kin_attr, kin_class, kin_order) %>%
+		dplyr::rename(gene_lookup = gene) %>%
 		dplyr::filter(!duplicated(.[["refseq_acc"]]))
 
 	if(acc_type == "refseq_acc") {
@@ -611,7 +520,8 @@ annotKin <- function (df, acc_type) {
 		df <- df %>% dplyr::left_join(lookup, by = c("prot_acc" = "refseq_acc"))
 	} else if(acc_type == "uniprot_id") {
 		key <- "refseq_acc"
-		if(!key %in% names(df)) stop("Column key, 'refseq_acc', is missing for kinase annotation.", call. = TRUE)
+		if(!key %in% names(df)) stop("Column key, 'refseq_acc', is missing for kinase annotation.",
+		                             call. = TRUE)
 		df <- df %>% dplyr::left_join(lookup, by = "refseq_acc")
 	}
 
@@ -619,46 +529,42 @@ annotKin <- function (df, acc_type) {
 	kinases <- df[[key]] %in% lookup[["refseq_acc"]]
 	if(sum(kinases) > 0) df$gene[kinases] <- as.character(df$gene_lookup[kinases])
 
-	df <- df %>% 
-		dplyr::mutate(gene = as.factor(gene)) %>% 
+	df <- df %>%
+		dplyr::mutate(gene = as.factor(gene)) %>%
 		dplyr::select(-gene_lookup)
 
 	df$kin_attr[is.na(df$kin_attr)] <- FALSE
-	
+
 	return(df)
 }
 
-#' Save the arguments in a function call
-#' 
+#' Saves the arguments in a function call
+#'
 #' @param call_pars Language.
 #' @param fn The name of function being called.
-#' 
+#'
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 save_call <- function(call_pars, fn) {
 	dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)
 	save(fn, file = file.path(dat_dir, "Calls", paste0(fn, "_call.Rdata")))
-	
+
 	call_pars[names(call_pars) == "..."] <- NULL
-	
-	purrr::map(call_pars , as.character) %>% 
-		do.call('rbind', .) %>% 
-		data.frame() %>% 
-		`colnames<-`(paste("value", 1:ncol(.), sep = ".")) %>% 
-		tibble::rownames_to_column("var") %>% 
-		write.table(., file.path(dat_dir, "Calls", paste0(fn, ".txt")), sep = '\t', col.names = TRUE, row.names = FALSE)
+
+	purrr::map(call_pars , as.character) %>%
+		do.call('rbind', .) %>%
+		data.frame() %>%
+		`colnames<-`(paste("value", 1:ncol(.), sep = ".")) %>%
+		tibble::rownames_to_column("var") %>%
+		write.table(., file.path(dat_dir, "Calls", paste0(fn, ".txt")), sep = '\t',
+		            col.names = TRUE, row.names = FALSE)
 }
 
 
-#' Match the current id to the id in normPep or normPrn
-#' 
-#' @param id.
-#' 
-#' @examples
-#' imputeNA(id = gene, m = 3, maxit = 3)
+#' Matches the current id to the id in normPep or normPrn
 #'
-#' \dontrun{
-#' }
+#' @param id.
+#'
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 match_identifier <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene")) {
@@ -667,67 +573,64 @@ match_identifier <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene
 	} else if (id %in% c("pep_seq", "pep_seq_mod")) {
 		fn_pars <- "normPep.txt"
 	}
-	
-	call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", fn_pars), check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#"), 
-												error = function(e) NA)
-	
+
+	call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", fn_pars), check.names = FALSE,
+	                               header = TRUE, sep = "\t", comment.char = "#"),
+	                      error = function(e) NA)
+
 	if(!is.null(dim(call_pars))) {
-		id <- call_pars %>% 
-			dplyr::filter(var == "id") %>% 
-			dplyr::select("value.1") %>% 
-			unlist() %>% 
+		id <- call_pars %>%
+			dplyr::filter(var == "id") %>%
+			dplyr::select("value.1") %>%
+			unlist() %>%
 			as.character()
-	} 
-	
+	}
+
 	return(id)
-}	
+}
 
 
-#' Replace NA genes
-#' 
-#' @examples
+#' Replaces NA genes
 #'
-#' \dontrun{
-#' }
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 replace_na_genes <- function(df, acc_type) {
 	acc_type <- tolower(acc_type)
-	
+
 	if(acc_type == "refseq_acc") {
 		na_gene <- (is.na(df[, c("gene")])) | (str_length(df$gene) == 0)
 		df$gene <- as.character(df$gene)
-		df$gene[na_gene] <- as.character(df$prot_acc[na_gene])	
+		df$gene[na_gene] <- as.character(df$prot_acc[na_gene])
 	} else if(acc_type == "uniprot_id") {
-		temp <- data.frame(do.call('rbind', strsplit(as.character(df$prot_desc), 'GN=', fixed = TRUE))) %>% 
-				dplyr::select(2) %>% 
-				`colnames<-`("gene") %>% 
-				dplyr::mutate(gene = gsub("PE\\=.*", "", gene)) %>% 
-				dplyr::mutate(gene = gsub("\\s+.*", "", gene)) 
+		temp <- data.frame(do.call('rbind', strsplit(as.character(df$prot_desc), 'GN=', fixed = TRUE))) %>%
+				dplyr::select(2) %>%
+				`colnames<-`("gene") %>%
+				dplyr::mutate(gene = gsub("PE\\=.*", "", gene)) %>%
+				dplyr::mutate(gene = gsub("\\s+.*", "", gene))
 
 		na_gene <- is.na(df$gene)
 		df[na_gene, c("gene")] <- temp[na_gene, c("gene")]
 		rm(temp)
-		
-		df <- df %>% 
+
+		df <- df %>%
 			dplyr::mutate(gene = gsub(".*\\|", "", gene))
 	}
-	
+
 	return(df)
 }
 
 
-#' Calculate protein coverage
-#' 
+#' Calculates protein percent coverage
+#'
 #' @import plyr dplyr purrr rlang seqinr
 #' @importFrom magrittr %>%
 calc_cover <- function(df, id, fasta = NULL) {
 	id <- rlang::as_string(rlang::enexpr(id))
 
-	acc_type <- load(file = file.path(dat_dir, "label_scheme.Rdata")) %>% 
-		find_acctype() %>% 
+	acc_type <- load(file = file.path(dat_dir, "label_scheme.Rdata")) %>%
+		find_acctype() %>%
 		tolower()
-	
+
 	if(acc_type == "refseq_acc") {
 		key <- "refseq_acc"
 	} else if(acc_type == "uniprot_id") {
@@ -735,83 +638,80 @@ calc_cover <- function(df, id, fasta = NULL) {
 	} else {
 		warning("Unkown accession type; use either \'uniprot_id\' or \'refseq_acc\'")
 	}
-	
+
 	if(!is.null(fasta) & file.exists(fasta)) {
 		fasta <- read.fasta(fasta, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
-		lookup <- data.frame(prot_acc = getName(fasta), length = getLength(fasta)) %>% 
-			dplyr::rename(!!key := prot_acc) %>% 
+		lookup <- data.frame(prot_acc = getName(fasta), length = getLength(fasta)) %>%
+			dplyr::rename(!!key := prot_acc) %>%
 			dplyr::mutate(!!key := gsub(".*\\|", "", !!rlang::sym(key)))
 	} else {
-		lookup <- dbs$prn_annot %>% 
-			dplyr::select(key, length) %>% 
-			dplyr::filter(!is.na(.[[key]]), !duplicated(.[[key]]))	
+		lookup <- dbs$prn_annot %>%
+			dplyr::select(key, length) %>%
+			dplyr::filter(!is.na(.[[key]]), !duplicated(.[[key]]))
 	}
-	
-	df %>% 
-		dplyr::select(prot_acc, pep_start, pep_end) %>% 
-		dplyr::left_join(lookup, by = c("prot_acc" = key)) %>% 
-		dplyr::filter(!is.na(length)) %>% 
-		dplyr::filter(.[["pep_start"]] <= .[["length"]]) %>% 
-		dplyr::filter(.[["pep_end"]] <= .[["length"]]) %>% 
-		split(.[["prot_acc"]], drop = TRUE) %>% 
+
+	df %>%
+		dplyr::select(prot_acc, pep_start, pep_end) %>%
+		dplyr::left_join(lookup, by = c("prot_acc" = key)) %>%
+		dplyr::filter(!is.na(length)) %>%
+		dplyr::filter(.[["pep_start"]] <= .[["length"]]) %>%
+		dplyr::filter(.[["pep_end"]] <= .[["length"]]) %>%
+		split(.[["prot_acc"]], drop = TRUE) %>%
 		purrr::map(function (x) {
-			len <- x[1, "length"] 
+			len <- x[1, "length"]
 			aa_map <- rep(NA, len)
 			for (i in 1:nrow(x)) aa_map[x[i, ]$pep_start:x[i, ]$pep_end] <- TRUE
 			sum(aa_map, na.rm = TRUE)/len
-		} ) %>% 
-		do.call("rbind", .) %>% 
-		data.frame(check.names = FALSE) %>% 
-		`colnames<-`("prot_cover") %>% 
-		tibble::rownames_to_column("prot_acc") %>% 
-		dplyr::mutate(prot_cover = ifelse(prot_cover > 1, 1, prot_cover)) %>% 
-		annotPrn(acc_type) %>% 
-		dplyr::group_by(!!rlang::sym(id)) %>% 
-		dplyr::select(!!rlang::sym(id), prot_cover) %>% 
-		dplyr::summarise_all(~max(., na.rm = TRUE)) %>% 
-		dplyr::mutate(prot_cover = round(prot_cover * 100, digits = 1)) %>% 
+		} ) %>%
+		do.call("rbind", .) %>%
+		data.frame(check.names = FALSE) %>%
+		`colnames<-`("prot_cover") %>%
+		tibble::rownames_to_column("prot_acc") %>%
+		dplyr::mutate(prot_cover = ifelse(prot_cover > 1, 1, prot_cover)) %>%
+		annotPrn(acc_type) %>%
+		dplyr::group_by(!!rlang::sym(id)) %>%
+		dplyr::select(!!rlang::sym(id), prot_cover) %>%
+		dplyr::summarise_all(~max(., na.rm = TRUE)) %>%
+		dplyr::mutate(prot_cover = round(prot_cover * 100, digits = 1)) %>%
 		dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
 }
 
 
-#' Replace NA genes
-#' 
-#' @examples
+#' Matches formulas to those in calls to pepSig or prnSig
 #'
-#' \dontrun{
-#' }
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 match_fmls <- function(formulas) {
 			load(file = file.path(dat_dir, "Calls\\prnSig_formulas.Rdata"))
-			
-			fml_chr <- formulas %>% 
-				as.character() %>% 
+
+			fml_chr <- formulas %>%
+				as.character() %>%
 				gsub("\\s+", "", .)
 
-			prnSig_chr <- prnSig_formulas %>% 
-				purrr::map(~ .[is_call(.)]) %>% 
-				as.character() %>% 
+			prnSig_chr <- prnSig_formulas %>%
+				purrr::map(~ .[is_call(.)]) %>%
+				as.character() %>%
 				gsub("\\s+", "", .)
-			
+
 			ok <- purrr::map_lgl(fml_chr, ~ . %in% prnSig_chr)
-			
-			if(!all(ok)) 
-				stop("Formula match failed: ", formulas[[which(!ok)]], " not found in the latest call to 'prnSig(...)'.")
+
+			if(!all(ok))
+				stop("Formula match failed: ", formulas[[which(!ok)]],
+				     " not found in the latest call to 'prnSig(...)'.")
 }
 
 
-#' Convert log2-ratios to linear fold changes
-#' 
+#' Converts log2-ratios to linear fold changes
+#'
 #' @import dplyr purrr
 #' @importFrom magrittr %>%
 to_linfc <- function(df) {
 		nms <- rownames(df)
-		
-		df %>% 
-			purrr::map(~ {ifelse(.x > 0, 2^.x, -1/(2^.x))}) %>% 
-			data.frame(check.names = FALSE) %>% 
-			`rownames<-`(nms)	
+
+		df %>%
+			purrr::map(~ {ifelse(.x > 0, 2^.x, -1/(2^.x))}) %>%
+			data.frame(check.names = FALSE) %>%
+			`rownames<-`(nms)
 }
 
 
