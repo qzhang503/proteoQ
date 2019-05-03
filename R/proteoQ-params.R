@@ -536,7 +536,7 @@ update_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smr
     dplyr::mutate(Accession_Type = acctype_sp[1, "Accession_Type"], Species = acctype_sp[1, "Species"])
   save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
 
-  # load_dbs(dat_dir = dat_dir, expt_smry = expt_smry)
+  load_dbs(dat_dir = dat_dir, expt_smry = expt_smry)
 }
 
 
