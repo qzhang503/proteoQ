@@ -1,18 +1,18 @@
 #' Data normalization
 #'
-#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.  
+#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.
 #'
-#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.  
+#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.
 #' \code{pep_seq_mod} denotes peptide sequences with applicable modifications
-#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".  
+#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".
 #' SDs from different TMT experiments may be different; therefore, scale the SDs across TMT sets.
 #'
 #' @param id the unqiue identifier for data joining.  The default is \code{pep_seq_mod}.
-#' @param method_align The normalization method for \code{log2-ratios} across TMT channels.  
-#' MC: median-centering; MGKernel: multiGaussian.  
-#' @param method_psm_pep The aggregation method from PSM to peptide results.  
-#'  \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  
-#'  If \code{weighted.mean}, log10-intensity will be used as the weights. 
+#' @param method_align The normalization method for \code{log2-ratios} across TMT channels.
+#' MC: median-centering; MGKernel: multiGaussian.
+#' @param method_psm_pep The aggregation method from PSM to peptide results.
+#'  \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).
+#'  If \code{weighted.mean}, log10-intensity will be used as the weights.
 #' @param range_log2r the range of trimmed \code{log2-ratios}
 #' @param range_int the range of trimmed \code{intensity}
 #' @param rptr_intco the threshold of reporter-ion intensity
@@ -21,14 +21,14 @@
 #' @examples
 #' dat_dir <- "C:\\Results\\TMT\\Data"
 #' TMT_plex <- 10
-#' dir(file.path(dat_dir, "PSM")) 
+#' dir(file.path(dat_dir, "PSM"))
 #' rmPSMHeaders(dat_dir, TMT_plex)
 #'
 #' \dontrun{
 #' dat_dir <- "C:\\Results\\TMT\\Data"
 #' TMT_plex <- 10
 #' rmPSMHeaders(file.path(dat_dir, "PSM"), TMT_plex)
-#' 
+#'
 #' dat_dir <- "C:\\Results\\TMT\\Data\\PSM"
 #' TMT_plex <- 10
 #' rmPSMHeaders(dat_dir, TMT_plex)
@@ -37,118 +37,120 @@
 #' @importFrom magrittr %>%
 #' @export
 normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range_int, filepath, ...) {
-	
+
 	my_which_max <- function (params) {
-		fit <- params %>% 
-			split(., .$Sample_ID) %>% 
-			lapply(sumdnorm, xmin = -2, xmax = 2, by = 2/400) %>% 
-			do.call(rbind, .) %>% 
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
-			dplyr::arrange(Sample_ID) 
+		fit <- params %>%
+			split(., .$Sample_ID) %>%
+			lapply(sumdnorm, xmin = -2, xmax = 2, by = 2/400) %>%
+			do.call(rbind, .) %>%
+			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+			dplyr::arrange(Sample_ID)
 
 		## Calibration coefficients for centering ratio profiles
 		# ddply(fit, .(Sample_ID), function(x) x[which.max(x$Sum), ])
-		cf_x <- fit %>% 
-			dplyr::group_by(Sample_ID) %>% 
-			dplyr::filter(Sum == max(Sum, na.rm = TRUE)) %>% 
-			dplyr::mutate(x = mean(x, na.rm = TRUE)) %>% # tie-breaking		
-			dplyr::filter(!duplicated(x)) 
-		
-		cf_empty <- fit %>% 
-			dplyr::filter(! Sample_ID %in% cf_x$Sample_ID) 
-			
+		cf_x <- fit %>%
+			dplyr::group_by(Sample_ID) %>%
+			dplyr::filter(Sum == max(Sum, na.rm = TRUE)) %>%
+			dplyr::mutate(x = mean(x, na.rm = TRUE)) %>% # tie-breaking
+			dplyr::filter(!duplicated(x))
+
+		cf_empty <- fit %>%
+			dplyr::filter(! Sample_ID %in% cf_x$Sample_ID)
+
 		if(nrow(cf_empty) > 0) {
-			cf_empty <- cf_empty %>% 
-				dplyr::group_by(Sample_ID) %>% 
-				dplyr::filter(!duplicated(Sum)) %>% 
-				dplyr::mutate(x = 0)			
+			cf_empty <- cf_empty %>%
+				dplyr::group_by(Sample_ID) %>%
+				dplyr::filter(!duplicated(Sum)) %>%
+				dplyr::mutate(x = 0)
 		}
-		
-		# cf_empty <- fit %>% 
-		# 	dplyr::filter(! Sample_ID %in% cf_x$Sample_ID) %>% 
+
+		# cf_empty <- fit %>%
+		# 	dplyr::filter(! Sample_ID %in% cf_x$Sample_ID) %>%
 		# 	{ if(nrow(.) > 0) {
-		# 		. %>% 
-		# 		dplyr::group_by(Sample_ID) %>% 
-		# 		dplyr::filter(!duplicated(Sum)) %>% 
-		# 		dplyr::mutate(x = 0)							
-		# 		} else {.} 
+		# 		. %>%
+		# 		dplyr::group_by(Sample_ID) %>%
+		# 		dplyr::filter(!duplicated(Sum)) %>%
+		# 		dplyr::mutate(x = 0)
+		# 		} else {.}
 		# 	}
-			
+
 		cf_x <- dplyr::bind_rows(cf_x, cf_empty) %>% # add back the empty samples
-			data.frame(check.names = FALSE) %>% 
+			data.frame(check.names = FALSE) %>%
 			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% # reorder factor levels by Sample_ID to avoid mismatch
 			dplyr::arrange(Sample_ID)
 	}
-	
+
 	dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
-	
+
 	dots <- rlang::enexprs(...)
 
 	if(!purrr::is_empty(dots)) {
-		data.frame(dots) %>% 
-			bind_cols(n_comp = n_comp) %>% 
-			write.table(., file = file.path(filepath, "normalmixEM_pars.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)		
+		data.frame(dots) %>%
+			bind_cols(n_comp = n_comp) %>%
+			write.table(., file = file.path(filepath, "normalmixEM_pars.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 	}
-	
-	label_scheme_sub <- label_scheme %>% 
-		dplyr::filter(!Reference, !grepl("^Empty\\.", Sample_ID))	%>% 
+
+	load(file = file.path(dat_dir, "label_scheme.Rdata"))
+
+	label_scheme_sub <- label_scheme %>%
+		dplyr::filter(!Reference, !grepl("^Empty\\.", Sample_ID))	%>%
 		mutate(Sample_ID = factor(Sample_ID, levels = (.$Sample_ID)))
-	
-	SD <- df %>% 
-		dplyr::select(grep("^N_log2_R|^N_I", names(.))) %>% 
-		dblTrim(., range_log2r, range_log2r) %>% 
-		`names<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) 
+
+	SD <- df %>%
+		dplyr::select(grep("^N_log2_R|^N_I", names(.))) %>%
+		dblTrim(., range_log2r, range_log2r) %>%
+		`names<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.)))
 
 	cf_SD <- SD/mean(SD %>% .[names(.) %in% label_scheme_sub$Sample_ID], na.rm = TRUE)
-	cf_SD <- cbind.data.frame(fct = cf_SD, SD) %>% 
-		tibble::rownames_to_column("Sample_ID") %>% 
-		dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
+	cf_SD <- cbind.data.frame(fct = cf_SD, SD) %>%
+		tibble::rownames_to_column("Sample_ID") %>%
+		dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
 		dplyr::arrange(Sample_ID)
 
 	rm(SD)
-	
-	df <- try(df %>% dplyr::select(-grep("Z_log2_R[0-9]{3}", names(.)))) 
+
+	df <- try(df %>% dplyr::select(-grep("Z_log2_R[0-9]{3}", names(.))))
 
 	if(method_align == "MGKernel") {
 		print(paste("Number of Gaussian components =", n_comp))
-		
+
 		if(!is.null(seed)) set.seed(seed)
 
 		params <- fitKernelDensity(
-									df = df[, grepl("^N_log2_R[0-9]{3}", names(df))] %>% 
-												`names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))), 
-									n_comp = n_comp, 
-									!!!dots) %>% 
-							dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
+									df = df[, grepl("^N_log2_R[0-9]{3}", names(df))] %>%
+												`names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))),
+									n_comp = n_comp,
+									!!!dots) %>%
+							dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
 							dplyr::arrange(Sample_ID, Component)
-		
-		cf_x <- my_which_max(params) %>% 
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
+
+		cf_x <- my_which_max(params) %>%
+			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
 			dplyr::arrange(Sample_ID)
-		
-		list(params, cf_x, cf_SD) %>% 
-			purrr::reduce(left_join, by = "Sample_ID") %>% 
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
-			dplyr::arrange(Sample_ID) %>% 
+
+		list(params, cf_x, cf_SD) %>%
+			purrr::reduce(left_join, by = "Sample_ID") %>%
+			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+			dplyr::arrange(Sample_ID) %>%
 			write.table(., file = file.path(filepath, "MGKernel_params_N.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 
 		# ========================================================================================
-		# not run 
+		# not run
 		#
 		# Pass arguments by row
 		# (1) the data frame breaks down to three lists of lambda, mean and sd when it "sees" lapply (or pmap here)
 		# (2) apply the function "list" from i = 1 to the length of any of the vector (for example lambda...; all the vector have the same length)
 		# (3) now args[i] is the list made of lambda[i], mean[i] and sd[i]
 		# (4) the net results is that each row in params[, c("lambda", "mean", "sd")] becomes a list of arguments
-		args <- params %>% 
-						dplyr::select(c("lambda", "mean", "sd")) %>% pmap(list) 
-		
+		args <- params %>%
+						dplyr::select(c("lambda", "mean", "sd")) %>% pmap(list)
+
 		# Define the function, i.e., normal density function with the weight of lambda
 		wt_dnorm <- function(x, lambda, mean, sd) lambda * length(x) * dnorm(x, mean, sd)
 
-		# The wrapper of stat_function(); easier to pass "x" 
+		# The wrapper of stat_function(); easier to pass "x"
 		stat_dnorm <- function(x, args) stat_function(aes(x), fun = wt_dnorm, n = 100, args = args, size = .2)
-		
+
 		# Pass the list of "args" to the wrapper function "stat_dnorm()" for plotting
 		# ggplot() + lapply(args, stat_dnorm, x = seq(-2, 2, 0.1))
 		#
@@ -156,77 +158,77 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 
 		# (2-3) Z-score transformation
 		# (i) names(df[, grepl("^N_log2_R[0-9]{3}", names(df))]), (ii) cf_x and (iii) cf_SD should be in the same order
-		df <- mapply(normSD, df[, grepl("^N_log2_R[0-9]{3}", names(df))], center = cf_x$x, SD = cf_SD$fct, SIMPLIFY = FALSE) %>% 
-			data.frame(check.names = FALSE) %>% 
-			`colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>% 
+		df <- mapply(normSD, df[, grepl("^N_log2_R[0-9]{3}", names(df))], center = cf_x$x, SD = cf_SD$fct, SIMPLIFY = FALSE) %>%
+			data.frame(check.names = FALSE) %>%
+			`colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
 			cbind(df, .)
 
 		## (3-1) Update log2-ratios and intensity values
 		df[, grepl("^N_log2_R[0-9]{3}", names(df))] <- sweep(df[, grepl("^N_log2_R[0-9]{3}", names(df))], 2, cf_x$x, "-")
-		df[, grepl("^N_I[0-9]{3}", names(df))] <- sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 2, 2^cf_x$x, "/") 
-		
+		df[, grepl("^N_I[0-9]{3}", names(df))] <- sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 2, 2^cf_x$x, "/")
+
 		params_z <- fitKernelDensity(
-									df = df[, grepl("^Z_log2_R[0-9]{3}", names(df))] %>% 
-													`names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))), 
-									n_comp = n_comp, 
-									!!!dots) %>% 
-							dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
-							dplyr::arrange(Sample_ID, Component) %>% 
+									df = df[, grepl("^Z_log2_R[0-9]{3}", names(df))] %>%
+													`names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))),
+									n_comp = n_comp,
+									!!!dots) %>%
+							dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+							dplyr::arrange(Sample_ID, Component) %>%
 							dplyr::mutate(x = 0)
 
 		write.table(params_z, file = file.path(filepath, "MGKernel_params_Z.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 
 	} else if (method_align == "MC") { # note that "center = 0" in the following; only scaled by SD
-		cf_x <- df %>% 
-			dplyr::select(matches("^N_log2_R[0-9]{3}")) %>% 
-			`colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>% 
-			dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>% 
-			unlist() %>% 
-			data.frame(x = .) %>% 
-			tibble::rownames_to_column("Sample_ID") %>% 
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
+		cf_x <- df %>%
+			dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
+			`colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
+			dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
+			unlist() %>%
+			data.frame(x = .) %>%
+			tibble::rownames_to_column("Sample_ID") %>%
+			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
 			dplyr::arrange(Sample_ID)
 
 		df <- mapply(normSD, df[,grepl("^N_log2_R[0-9]{3}", names(df))], center = cf_x$x, SD = cf_SD$fct, SIMPLIFY = FALSE) %>% # scale to the same SD
-				data.frame(check.names = FALSE) %>% 
-				`colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>% 
+				data.frame(check.names = FALSE) %>%
+				`colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
 				cbind(df, .)
 
 		## (3-1) Update log2-ratios and intensity values
 		df[, grepl("^N_log2_R[0-9]{3}", names(df))] <- sweep(df[, grepl("^N_log2_R[0-9]{3}", names(df))], 2, cf_x$x, "-")
-		df[, grepl("^N_I[0-9]{3}", names(df))] <- sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 2, 2^cf_x$x, "/") 
+		df[, grepl("^N_I[0-9]{3}", names(df))] <- sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 2, 2^cf_x$x, "/")
 
 	} else { # method_align <- c("YWHAE", "CBR4")
 		if(!all(method_align %in% df[["gene"]])) {
 			stop(paste(setdiff(method_align, df[["gene"]]), "in 'method_align' not found in gene names."), call. = TRUE)
 		}
-		
-		cf_x <- df %>% 
-			dplyr::filter(.[["gene"]] %in% method_align) %>% 
-			dplyr::select(matches("^N_log2_R[0-9]{3}")) %>% 
-			`colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>% 
-			dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>% 
-			unlist() %>% 
-			data.frame(x = .) %>% 
-			tibble::rownames_to_column("Sample_ID") %>% 
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
+
+		cf_x <- df %>%
+			dplyr::filter(.[["gene"]] %in% method_align) %>%
+			dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
+			`colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
+			dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
+			unlist() %>%
+			data.frame(x = .) %>%
+			tibble::rownames_to_column("Sample_ID") %>%
+			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
 			dplyr::arrange(Sample_ID)
 
 		if (sum(!is.na(cf_x$x)) == 0) {
 			stop(paste("Protein ID/Alignment method", method_align, "not found.") , call. = TRUE)
 		} else {
 			df <- mapply(normSD, df[,grepl("^N_log2_R[0-9]{3}", names(df))], center = cf_x$x, SD = cf_SD$fct, SIMPLIFY = FALSE) %>% # scale to the same SD
-					data.frame(check.names = FALSE) %>% 
-					`colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>% 
+					data.frame(check.names = FALSE) %>%
+					`colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
 					cbind(df, .)
 
-			## (3-1) Update log2-ratios and intensity values from the alignment at median center to the maximum multi-Gaussian density	
+			## (3-1) Update log2-ratios and intensity values from the alignment at median center to the maximum multi-Gaussian density
 			df[, grepl("^N_log2_R[0-9]{3}", names(df))] <- sweep(df[, grepl("^N_log2_R[0-9]{3}", names(df))], 2, cf_x$x, "-")
-			df[, grepl("^N_I[0-9]{3}", names(df))] <- sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 2, 2^cf_x$x, "/") 
-			# ddply(df[,grepl("^N_log2_R[0-9]{3}", names(df))], .(), numcolwise(median, na.rm = TRUE))	
+			df[, grepl("^N_I[0-9]{3}", names(df))] <- sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 2, 2^cf_x$x, "/")
+			# ddply(df[,grepl("^N_log2_R[0-9]{3}", names(df))], .(), numcolwise(median, na.rm = TRUE))
 		}
-		
-	}	
+
+	}
 
 	return(df)
 }
@@ -234,17 +236,17 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 
 #' Data normalization
 #'
-#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.  
+#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.
 #'
-#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.  
+#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.
 #' \code{pep_seq_mod} denotes peptide sequences with applicable modifications
-#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".  
+#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".
 #'
 #' @param id the unqiue identifier for data joining.  The default is \code{pep_seq_mod}.
-#' @param method_align Not used.  The normalization method for \code{log2-ratios} across TMT channels.  
-#' MC: median-centering; MGKernel: multiGaussian.  
-#' @param method_psm_pep the aggregation method from PSM to peptide results.  
-#' \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If \code{weighted.mean}, log10-intensity will be used as the weights 
+#' @param method_align Not used.  The normalization method for \code{log2-ratios} across TMT channels.
+#' MC: median-centering; MGKernel: multiGaussian.
+#' @param method_psm_pep the aggregation method from PSM to peptide results.
+#' \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If \code{weighted.mean}, log10-intensity will be used as the weights
 #' @param range_log2r the range of trimmed \code{log2-ratios}
 #' @param range_int the range of trimmed \code{intensity}
 #' @param rptr_intco the threshold of reporter-ion intensity
@@ -253,14 +255,14 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 #' @examples
 #' dat_dir <- "C:\\Results\\TMT\\Data"
 #' TMT_plex <- 10
-#' dir(file.path(dat_dir, "PSM")) 
+#' dir(file.path(dat_dir, "PSM"))
 #' rmPSMHeaders(dat_dir, TMT_plex)
 #'
 #' \dontrun{
 #' dat_dir <- "C:\\Results\\TMT\\Data"
 #' TMT_plex <- 10
 #' rmPSMHeaders(file.path(dat_dir, "PSM"), TMT_plex)
-#' 
+#'
 #' dat_dir <- "C:\\Results\\TMT\\Data\\PSM"
 #' TMT_plex <- 10
 #' rmPSMHeaders(dat_dir, TMT_plex)
@@ -270,7 +272,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 #' @export
 dblTrim <- function(df, range_log2r, range_int) {
 	df_trim <- df # data subset for trimming
-	
+
 	# trim by log2-ratios
 	col_r <- grepl("^N_log2_R", names(df_trim))
 	df_trim[, col_r] <- lapply(df_trim[, col_r], function (x) {
@@ -279,7 +281,7 @@ dblTrim <- function(df, range_log2r, range_int) {
 			return(x)
 		}
 	)
-	
+
 	# trim by intensity values
 	col_int <- grepl("^N_I", names(df_trim))
 	df_trim[, col_int] <- lapply(df_trim[, col_int], function (x) {
@@ -288,12 +290,12 @@ dblTrim <- function(df, range_log2r, range_int) {
 			return(x)
 		}
 	)
-	
+
 	# doubly trim by both log2-ratios and intensity values
 	df_trim[!is.na(df_trim)] <- 1  # boolean matrix: 1 indicating non-outliers; NA indicating outliers
 
-	df_trim <- mapply(`*`, df_trim[, grepl("^N_log2_R", names(df_trim))], df_trim[, grepl("^N_I", names(df_trim))], SIMPLIFY = FALSE) %>% 
-		data.frame(check.names = FALSE) # doubly trimmed boolean matrix 
+	df_trim <- mapply(`*`, df_trim[, grepl("^N_log2_R", names(df_trim))], df_trim[, grepl("^N_I", names(df_trim))], SIMPLIFY = FALSE) %>%
+		data.frame(check.names = FALSE) # doubly trimmed boolean matrix
 
 	df_trim[] <- mapply(`*`, df[, grepl("^N_log2_R", names(df))] , df_trim, SIMPLIFY = FALSE) # actual ratio table after trimming
 	# df_trim[] <- mapply(`*`, df[, grepl("^N_log2_R", names(df)) & !grepl("\\([Empty].*\\)$", names(df))] , df_trim, SIMPLIFY=FALSE) # actual ratio table after trimming
@@ -304,17 +306,17 @@ dblTrim <- function(df, range_log2r, range_int) {
 
 #' Data normalization
 #'
-#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.  
+#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.
 #'
-#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.  
+#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.
 #' \code{pep_seq_mod} denotes peptide sequences with applicable modifications
-#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".  
+#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".
 #'
 #' @param id the unqiue identifier for data joining.  The default is \code{pep_seq_mod}.
-#' @param method_align Not used.  The normalization method for \code{log2-ratios} across TMT channels.  
-#' MC: median-centering; MGKernel: multiGaussian.  
-#' @param method_psm_pep the aggregation method from PSM to peptide results.  
-#' \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If \code{weighted.mean}, log10-intensity will be used as the weights 
+#' @param method_align Not used.  The normalization method for \code{log2-ratios} across TMT channels.
+#' MC: median-centering; MGKernel: multiGaussian.
+#' @param method_psm_pep the aggregation method from PSM to peptide results.
+#' \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If \code{weighted.mean}, log10-intensity will be used as the weights
 #' @param range_log2r the range of trimmed \code{log2-ratios}
 #' @param range_int the range of trimmed \code{intensity}
 #' @param rptr_intco the threshold of reporter-ion intensity
@@ -323,14 +325,14 @@ dblTrim <- function(df, range_log2r, range_int) {
 #' @examples
 #' dat_dir <- "C:\\Results\\TMT\\Data"
 #' TMT_plex <- 10
-#' dir(file.path(dat_dir, "PSM")) 
+#' dir(file.path(dat_dir, "PSM"))
 #' rmPSMHeaders(dat_dir, TMT_plex)
 #'
 #' \dontrun{
 #' dat_dir <- "C:\\Results\\TMT\\Data"
 #' TMT_plex <- 10
 #' rmPSMHeaders(file.path(dat_dir, "PSM"), TMT_plex)
-#' 
+#'
 #' dat_dir <- "C:\\Results\\TMT\\Data\\PSM"
 #' TMT_plex <- 10
 #' rmPSMHeaders(dat_dir, TMT_plex)
@@ -340,38 +342,38 @@ dblTrim <- function(df, range_log2r, range_int) {
 #' @export
 sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 	wt_dnorm <- function (x, lambda, mean, sd) lambda * dnorm(x, mean = mean, sd = sd)
-	
-	args <- purrr::pmap(x[, names(x) %in% c("lambda", "mean", "sd")], list) %>% 
+
+	args <- purrr::pmap(x[, names(x) %in% c("lambda", "mean", "sd")], list) %>%
 		`names<-`(x$Sample_ID)
-	
+
 	# nm_comps <- paste("G", seq_len(length(args)), sep = ".")
 	nm_comps <- paste0("G", seq_len(length(args)))
 
 	Seq <- seq(xmin, xmax, by = by)
-	
-	lapply(args, function(args) rlang::eval_tidy(rlang::quo(wt_dnorm(Seq, !!! args)))) %>% 
-		do.call(cbind, .) %>% 
-		data.frame(check.names = FALSE) %>% 
-		`colnames<-`(nm_comps) %>% 
-		dplyr::mutate(Sum = rowSums(.)) %>% 
+
+	lapply(args, function(args) rlang::eval_tidy(rlang::quo(wt_dnorm(Seq, !!! args)))) %>%
+		do.call(cbind, .) %>%
+		data.frame(check.names = FALSE) %>%
+		`colnames<-`(nm_comps) %>%
+		dplyr::mutate(Sum = rowSums(.)) %>%
 		dplyr::mutate(x = Seq) %>% #
-		dplyr::mutate(Sample_ID = names(args)[1]) 
+		dplyr::mutate(Sample_ID = names(args)[1])
 }
 
 
 #' Data normalization
 #'
-#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.  
+#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.
 #'
-#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.  
+#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.
 #' \code{pep_seq_mod} denotes peptide sequences with applicable modifications
-#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".  
+#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".
 #'
 #' @param id the unqiue identifier for data joining.  The default is \code{pep_seq_mod}.
-#' @param method_align Not used.  The normalization method for \code{log2-ratios} across TMT channels.  
-#' MC: median-centering; MGKernel: multiGaussian.  
-#' @param method_psm_pep the aggregation method from PSM to peptide results.  
-#' \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If \code{weighted.mean}, log10-intensity will be used as the weights 
+#' @param method_align Not used.  The normalization method for \code{log2-ratios} across TMT channels.
+#' MC: median-centering; MGKernel: multiGaussian.
+#' @param method_psm_pep the aggregation method from PSM to peptide results.
+#' \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If \code{weighted.mean}, log10-intensity will be used as the weights
 #' @param range_log2r the range of trimmed \code{log2-ratios}
 #' @param range_int the range of trimmed \code{intensity}
 #' @param rptr_intco the threshold of reporter-ion intensity
@@ -380,14 +382,14 @@ sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 #' @examples
 #' dat_dir <- "C:\\Results\\TMT\\Data"
 #' TMT_plex <- 10
-#' dir(file.path(dat_dir, "PSM")) 
+#' dir(file.path(dat_dir, "PSM"))
 #' rmPSMHeaders(dat_dir, TMT_plex)
 #'
 #' \dontrun{
 #' dat_dir <- "C:\\Results\\TMT\\Data"
 #' TMT_plex <- 10
 #' rmPSMHeaders(file.path(dat_dir, "PSM"), TMT_plex)
-#' 
+#'
 #' dat_dir <- "C:\\Results\\TMT\\Data\\PSM"
 #' TMT_plex <- 10
 #' rmPSMHeaders(dat_dir, TMT_plex)
@@ -411,17 +413,17 @@ normSD <- function (x, center = 0, SD = 1) {
 
 #' Data normalization
 #'
-#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.  
+#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.
 #'
-#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.  
+#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.
 #' \code{pep_seq_mod} denotes peptide sequences with applicable modifications
-#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".  
+#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".
 #'
 #' @param id the unqiue identifier for data joining.  The default is \code{pep_seq_mod}.
-#' @param method_align Not used.  The normalization method for \code{log2-ratios} across TMT channels.  
-#' MC: median-centering; MGKernel: multiGaussian.  
-#' @param method_psm_pep the aggregation method from PSM to peptide results.  
-#' \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If \code{weighted.mean}, log10-intensity will be used as the weights 
+#' @param method_align Not used.  The normalization method for \code{log2-ratios} across TMT channels.
+#' MC: median-centering; MGKernel: multiGaussian.
+#' @param method_psm_pep the aggregation method from PSM to peptide results.
+#' \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If \code{weighted.mean}, log10-intensity will be used as the weights
 #' @param range_log2r the range of trimmed \code{log2-ratios}
 #' @param range_int the range of trimmed \code{intensity}
 #' @param rptr_intco the threshold of reporter-ion intensity
@@ -430,48 +432,48 @@ normSD <- function (x, center = 0, SD = 1) {
 #' @examples
 #' dat_dir <- "C:\\Results\\TMT\\Data"
 #' TMT_plex <- 10
-#' dir(file.path(dat_dir, "PSM")) 
+#' dir(file.path(dat_dir, "PSM"))
 #' rmPSMHeaders(dat_dir, TMT_plex)
 #'
 #' \dontrun{
 #' dat_dir <- "C:\\Results\\TMT\\Data"
 #' TMT_plex <- 10
 #' rmPSMHeaders(file.path(dat_dir, "PSM"), TMT_plex)
-#' 
+#'
 #' dat_dir <- "C:\\Results\\TMT\\Data\\PSM"
 #' TMT_plex <- 10
 #' rmPSMHeaders(dat_dir, TMT_plex)
 #' }
-#' @import dplyr purrr rlang mixtools 
+#' @import dplyr purrr rlang mixtools
 #' @importFrom magrittr %>%
 #' @export
 fitKernelDensity <- function (df, n_comp = 3, ...) {
-	
+
 	nmix_params <- function (x, n_comp = 3, ...) {
 		dots <- rlang::enexprs(...)
 		x <- rlang::enexpr(x)
-		
+
 		if(!is.null(dots$k)) {
 			cat(paste("k =", dots$k, "replaced by", paste("n_comp =", n_comp, "\n")))
 			dots$k <- NULL
 		}
-		
+
 		# nm_comps <- paste("G", 1:n_comp, sep=".")
 		# ColNames <- c("x", nm_comps, paste(nm_comps, collapse = " + "))
-		
-		if (sum(is.na(x)) == length(x) | 
-					(sum(is.na(x)) + sum(x == 0, na.rm = TRUE)) == length(x) | 
+
+		if (sum(is.na(x)) == length(x) |
+					(sum(is.na(x)) + sum(x == 0, na.rm = TRUE)) == length(x) |
 					all(x == 0)) {
-			df_par <- data.frame(Component = c(1:n_comp), lambda = rep(NA, n_comp), 
+			df_par <- data.frame(Component = c(1:n_comp), lambda = rep(NA, n_comp),
 									mean = rep(NA, n_comp), sd = rep(NA, n_comp))
 		} else {
 			x <- x[!is.na(x)]
-			
+
 			stopifnot(n_comp > 1)
-			
+
 			mixEM_call <- rlang::expr(mixtools::normalmixEM(!!x, k = !!n_comp, !!!dots))
 			x_k2 <- rlang::eval_bare(mixEM_call, caller_env())
-			
+
 			df_par <- data.frame(Component = 1:n_comp, lambda = x_k2$lambda, mean = x_k2$mu, sd = x_k2$sigma)
 		}
 
@@ -480,13 +482,12 @@ fitKernelDensity <- function (df, n_comp = 3, ...) {
 
 	dots <- rlang::enexprs(...)
 
-	lapply(df, nmix_params, n_comp, !!!dots) %>% 
-		do.call(rbind, .) %>% 
-		dplyr::mutate(Sample_ID = rownames(.)) %>% 
-		dplyr::mutate(Sample_ID = gsub("(.*)\\.\\d+$", "\\1", Sample_ID)) %>% 
-		dplyr::mutate(Channel = rep(1:(nrow(.)/n_comp), each = n_comp)) %>% 
-		dplyr::arrange(Channel, -lambda) %>% 
-		dplyr::mutate(Component = rep(1:n_comp, nrow(.)/n_comp)) %>% 
+	lapply(df, nmix_params, n_comp, !!!dots) %>%
+		do.call(rbind, .) %>%
+		dplyr::mutate(Sample_ID = rownames(.)) %>%
+		dplyr::mutate(Sample_ID = gsub("(.*)\\.\\d+$", "\\1", Sample_ID)) %>%
+		dplyr::mutate(Channel = rep(1:(nrow(.)/n_comp), each = n_comp)) %>%
+		dplyr::arrange(Channel, -lambda) %>%
+		dplyr::mutate(Component = rep(1:n_comp, nrow(.)/n_comp)) %>%
 		dplyr::mutate(Height = .$lambda * dnorm(.$mean, mean = .$mean, sd = .$sd))
 }
-
