@@ -342,4 +342,3 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	invisible(df)
 }
-
