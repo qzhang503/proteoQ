@@ -12,30 +12,27 @@ proteoSigtest(df = NULL, id = gene, scale_log2r = FALSE,
 \arguments{
 \item{id}{The name of a unique id (see \code{\link[proteoQ]{MDS}}).}
 
-\item{scale_log2r}{Logical; if TRUE, rescales \code{log2-ratios} to the same scale of standard deviation for all samples.}
+\item{scale_log2r}{Logical; if TRUE, rescales \code{log2-ratios} to the same
+scale of standard deviation for all samples.}
 }
 \value{
-Images stored under the file folders that are associated to \code{id}, \code{anal_type}.
+Images stored under the file folders that are associated to
+  \code{id}, \code{anal_type}.
 }
 \description{
-\code{proteoSigtest} produces heat maps.  It is a wrapper round the call \code{info_anal(..., anal_type = "Heatmap")}.
+\code{proteoSigtest} produces heat maps.  It is a wrapper round the call
+\code{info_anal(..., anal_type = "Heatmap")}.
 }
 \details{
-reads the data from either "\code{~\\Direcotry\\Peptide\\Peptide All.txt}" at \code{id = pep_seq_mod},
+reads the data from either "\code{~\\Direcotry\\Peptide\\Peptide All.txt}" at
+\code{id = pep_seq_mod},
 }
 \examples{
 MA(
-	id = gene, 
-	scale_log2r = scale_log2r, 
+	id = gene,
+	scale_log2r = scale_log2r,
 )
 
-# or use the form of functional factories 
-	my_prnMA <- info_anal(df = NULL, id = prot_acc, scale_log2r, filepath = NULL, filename = NULL, anal_type = "MA")
-	my_prnMA()
-	
-	my_pepMA <- info_anal(df = NULL, id = pep_seq_mod, scale_log2r, filepath = NULL, filename = NULL, anal_type = "MA")
-	my_pepMA()
-	
 \dontrun{
 }
 }

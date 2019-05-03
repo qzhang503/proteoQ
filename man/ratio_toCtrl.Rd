@@ -11,7 +11,4 @@ Calculate the log2-ratio to the control group of samples
 }
 \examples{
 ratio_toCtrl(df, "gene", label_scheme_sub, Heatmap_Group)
-
-\dontrun{
-}
 }

@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{prnImp}
 \alias{prnImp}
-\title{Impute NA for Protein Data}
+\title{Impute NA for protein data}
 \usage{
 prnImp(...)
 }
 \description{
-Impute NA for Protein Data
+Impute NA for protein data
 }
 \seealso{
 \code{\link{imputeNA}} for parameters

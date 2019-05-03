@@ -13,5 +13,10 @@ model_onechannel(df, id, formula, label_scheme_sub, complete_cases, method,
   var_cutoff, pval_cutoff, logFC_cutoff)
 }
 \description{
-#' @importFrom MASS ginv
+factorial model formula for interaction terms
+all factors under one channel in label_scheme_sub
+comparisons defined by contrasts
+var_cutoff to remove low-variance entries
+pval_cutoff for adjP
+logFC_cutoff
 }

@@ -2,10 +2,11 @@
 % Please edit documentation in R/proteoQ-psmtable.R
 \name{normPSM}
 \alias{normPSM}
-\title{Reports PSM Results}
+\title{Reports PSM results}
 \usage{
-normPSM(rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE,
-  rm_outliers = FALSE, plot_violins = TRUE)
+normPSM(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
+  frac_smry = "frac_smry.xlsx", rptr_intco = 1000, rm_craps = FALSE,
+  rm_krts = FALSE, rm_outliers = FALSE, plot_violins = TRUE)
 }
 \arguments{
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
@@ -21,7 +22,7 @@ normPSM(rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE,
 reporter-ion intensities.}
 }
 \value{
-Outputs under \code{C:\\my_direcotry\\PSM}. Primary results are in 
+Outputs under \code{C:\\my_direcotry\\PSM}. Primary results are in
  \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt, ...} for
  respective TMT experiments and LC/MS injections.
 }

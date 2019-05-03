@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{aggrNums}
 \alias{aggrNums}
-\title{Aggregate numeric values}
+\title{Summarises numeric values}
 \usage{
 aggrNums(f)
 }
@@ -10,12 +10,11 @@ aggrNums(f)
 \item{f}{A function for data aggregation.}
 }
 \description{
-\code{aggrNums} aggregate \code{log2-ratios} and \code{intensity} by \code{c("mean", "median", "weighted.mean", "top.3")}
+\code{aggrNums} summarises \code{log2-ratios} and \code{intensity} by the
+descriptive statistics of \code{c("mean", "median", "weighted.mean",
+"top.3")}
 }
 \examples{
 df_num <- aggrNums(median)(df, prot_acc, na.rm = TRUE)
 
-\dontrun{
-df_num <- aggrNums("median")(df, prot_acc, na.rm = TRUE)
-}
 }

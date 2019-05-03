@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{prep_fraction_scheme}
 \alias{prep_fraction_scheme}
-\title{Reads label scheme}
+\title{Loads the information of analyte prefractionation}
 \usage{
 prep_fraction_scheme(dat_dir, filename)
 }
 \description{
-Reads label scheme
+Loads the information of analyte prefractionation
 }

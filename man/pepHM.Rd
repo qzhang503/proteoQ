@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-informatics.R
 \name{pepHM}
 \alias{pepHM}
-\title{Peptide Heat Maps}
+\title{Visualizes peptide heat maps}
 \usage{
 pepHM(...)
 }
 \description{
-Peptide Heat Maps
+Visualizes peptide heat maps
 }
 \seealso{
 \code{\link{proteoHM}} for parameters

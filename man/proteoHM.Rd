@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-informatics.R
 \name{proteoHM}
 \alias{proteoHM}
-\title{Heat maps}
+\title{Plots heat maps}
 \usage{
 proteoHM(id = gene, col_select = NULL, col_benchmark = NULL,
   scale_log2r = FALSE, impute_na = FALSE, complete_cases = FALSE,
@@ -13,6 +13,15 @@ proteoHM(id = gene, col_select = NULL, col_benchmark = NULL,
 \item{id}{Character string to indicate the type of data. Peptide data will be
 used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
+
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+The default key is \code{Select}. Samples corresponding to non-empty entries
+under \code{col_select} will be included in the indicated analysis.}
+
+\item{col_benchmark}{Character string to a column key in
+\code{expt_smry.xlsx}. The default key is \code{Benchmark}. Samples
+corresponding to non-empty entries under \code{col_benchmark} will be used
+as benchmarks in the indicated analysis.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2-ratios} to the same
 scale of standard deviation for all samples.}
@@ -33,16 +42,18 @@ determined by the name of the current function \code{call} and the value of
 will be determined by the names of the current \code{call}.}
 
 \item{...}{More parameters for plotting: \cr \code{xmin}, the minimum x; \cr
-\code{xmax}, the maximum x; \cr \code{x_margin}, the margin in heat scales;
-\cr \code{width}, the width of plot; \cr \code{height}, the height of plot;
-\cr arguments inherited from \code{\link[pheatmap]{pheatmap}}.}
+\code{xmax}, the maximum x; \cr \code{x_margin}, the margin in heat
+scales;\cr \code{annot_cols}, the column keys in \code{expt_smry.xlsx} for
+use in the color coding of samples;\cr \code{width}, the width of plot; \cr
+\code{height}, the height of plot; \cr additional arguments inherited from
+\code{\link[pheatmap]{pheatmap}}.}
 }
 \value{
 Heat map images.
 }
 \description{
-\code{proteoHM} produces the heat maps of \code{log2-ratios} for proteins or
-peptides data.
+\code{proteoHM} produces the heat map visualization of \code{log2-ratios} for
+proteins or peptides data.
 }
 \details{
 Data columns with complete missing values will be removed prior to
@@ -67,12 +78,10 @@ pep_seq_mod} will be matched to \code{id = pep_seq}.
 proteoHM(
  id = prot_acc,
  scale_log2r = TRUE,
-
  xmin = -1,
  xmax = 1,
  x_margin = 0.1,
-
- annot_cols = c("Peptide_Yield", "TMT_Set", "Heatmap_Group"),
+ annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
  cluster_rows = TRUE,
  cutree_rows = 6,
  show_rownames = FALSE,
@@ -86,35 +95,31 @@ proteoHM(
 proteoHM(
  id = prot_acc,
  scale_log2r = TRUE,
-
  xmin = -1,
  xmax = 1,
  x_margin = 0.1,
-
- annot_cols = c("Peptide_Yield", "TMT_Set", "Heatmap_Group"),
+ annot_cols = c("Group"),
  cluster_rows = TRUE,
- clustering_distance_rows  = "maximum", #
- cutree_rows = 6,
- show_rownames = FALSE,
- show_colnames = TRUE,
- fontsize_row = 3,
- cellwidth = 14,
- width = 10,
- height = 12
-)
-
-proteoHM(
- id = prot_acc,
- scale_log2r = TRUE,
-
- xmin = -1,
- xmax = 1,
- x_margin = 0.1,
-
- annot_cols = c("Peptide_Yield", "TMT_Set", "Heatmap_Group"),
- cluster_rows = FALSE, #
  clustering_distance_rows  = "maximum",
- cutree_rows = 6, # no tree cutting at 'cluster_rows = FALSE'
+ cutree_rows = 6,
+ show_rownames = FALSE,
+ show_colnames = TRUE,
+ fontsize_row = 3,
+ cellwidth = 14,
+ width = 10,
+ height = 12
+)
+
+proteoHM(
+ id = prot_acc,
+ scale_log2r = TRUE,
+ xmin = -1,
+ xmax = 1,
+ x_margin = 0.1,
+ annot_cols = c("Group"),
+ cluster_rows = FALSE, # no row clustering
+ clustering_distance_rows  = "maximum",
+ cutree_rows = 6, # will overrule tree cutting at 'cluster_rows = FALSE'
  show_rownames = FALSE,
  show_colnames = TRUE,
  fontsize_row = 3,

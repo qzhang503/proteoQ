@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-informatics.R
 \name{prepDM}
 \alias{prepDM}
-\title{Prpare data for analysis}
+\title{Prepares data for analysis}
 \usage{
 prepDM(df, id, scale_log2r, sub_grp, type = "ratio", anal_type)
 }
@@ -11,18 +11,17 @@ prepDM(df, id, scale_log2r, sub_grp, type = "ratio", anal_type)
 
 \item{id}{The name of unqiue identifiers.}
 
-\item{scale_log2r}{Logical; if TRUE, rescales \code{log2-ratios} to the same scale.}
+\item{scale_log2r}{Logical; if TRUE, rescales \code{log2-ratios} to the same
+scale.}
 
-\item{sub_grp}{Numeric.  A list of sample IDs that will be used in subsequent analysis.}
+\item{sub_grp}{Numeric.  A list of sample IDs that will be used in subsequent
+analysis.}
 }
 \value{
 A data frame tailored for subsequent analysis.
 }
 \description{
-\code{prepDM} prepare a minimal data frame for subsequent analysis.
-}
-\details{
-In the "label_scheme.csv" file,
+\code{prepDM} prepares a minimal data frame for subsequent analysis.
 }
 \examples{
 tempData <- prepDM(df, entrez, scale_log2r, sub_grp = label_scheme_sub$Sample_ID)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-psmtable.R
 \name{cleanupPSM}
 \alias{cleanupPSM}
-\title{Cleans Up PSM Results.}
+\title{Cleans Up PSM results}
 \usage{
 cleanupPSM(rm_outliers = FALSE)
 }

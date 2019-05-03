@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{calc_cover}
 \alias{calc_cover}
-\title{Calculate protein coverage}
+\title{Calculates protein percent coverage}
 \usage{
 calc_cover(df, id, fasta = NULL)
 }
 \description{
-Calculate protein coverage
+Calculates protein percent coverage
 }

@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-informatics.R
 \name{prnHM}
 \alias{prnHM}
-\title{Protein Heat Maps}
+\title{Visualizes protein heat maps}
 \usage{
 prnHM(...)
 }
 \description{
-Protein Heat Maps
+Visualizes protein heat maps
 }
 \seealso{
 \code{\link{proteoHM}} for parameters

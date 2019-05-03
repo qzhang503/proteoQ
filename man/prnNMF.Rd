@@ -2,12 +2,25 @@
 % Please edit documentation in R/proteoQ-nmf.R
 \name{prnNMF}
 \alias{prnNMF}
-\title{NMF Analysis of Protein \code{log2-ratios}}
+\title{Protein NMF Classification}
 \usage{
 prnNMF(...)
 }
 \description{
-NMF Analysis of Protein \code{log2-ratios}
+NMF Classification of protein \code{log2-ratios}
+}
+\examples{
+prnNMF(
+  scale_log2r = TRUE,
+  xmin = -1,
+  xmax = 1,
+  x_margin = 0.1,
+  annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
+  r = 6,
+  nrun = 200
+)
+
+
 }
 \seealso{
 \code{\link{proteoNMF}} for parameters

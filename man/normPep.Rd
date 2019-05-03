@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-peptable.R
 \name{normPep}
 \alias{normPep}
-\title{Reports Peptide Results}
+\title{Reports peptide results}
 \usage{
 normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
   "mean", "weighted.mean", "top.3"), method_align = c("MC", "MGKernel"),
@@ -57,8 +57,8 @@ MGKernel}.}
 proteins.}
 
 \item{...}{Additional parameters from \code{\link[mixtools]{normalmixEM}}:\cr
-\code{maxit}, the maximum number of iterations allowed; \cr
-\code{epsilon}, tolerance limit for declaring algorithm convergence.}
+\code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
+tolerance limit for declaring algorithm convergence.}
 }
 \value{
 The primary output in \code{C:\\my_direcotry\\Peptide\\Peptide.txt}.
@@ -81,7 +81,7 @@ See \code{\link{normPrn}} for the description of column keys.
 		range_log2r = c(10, 95),
 		range_int = c(5, 95),
 		n_comp = 3,
-		seed = 1234, 
+		seed = 1234,
 		annot_kinases = TRUE,
 		maxit = 200,
 		epsilon = 1e-05

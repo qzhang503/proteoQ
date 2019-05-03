@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-corrplots.R
 \name{prnCorr}
 \alias{prnCorr}
-\title{Correlation plots of Protein Data}
+\title{Correlation plots of protein data}
 \usage{
 prnCorr(...)
 }
 \description{
-Correlation plots of Protein Data
+Correlation plots of protein data
 }
 \examples{
 prnCorr(

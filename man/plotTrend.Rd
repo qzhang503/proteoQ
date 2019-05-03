@@ -2,11 +2,11 @@
 % Please edit documentation in R/proteoQ-trends.R
 \name{plotTrend}
 \alias{plotTrend}
-\title{Make Trend lines from fuzzy c-mean clustering}
+\title{Plots trends}
 \usage{
 plotTrend(df, id, col_group, col_order, label_scheme_sub, n_clust,
   complete_cases, scale_log2r, filepath, filename, ...)
 }
 \description{
-Make Trend lines from fuzzy c-mean clustering
+Plots trends
 }

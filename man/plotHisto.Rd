@@ -2,11 +2,11 @@
 % Please edit documentation in R/proteoQ-histo.R
 \name{plotHisto}
 \alias{plotHisto}
-\title{Plot histograms}
+\title{Plots histograms}
 \usage{
 plotHisto(df = NULL, label_scheme_sub, params, scale_log2r, show_curves,
   show_vline, filepath = NULL, filename, ...)
 }
 \description{
-Plot histograms
+Plots histograms
 }

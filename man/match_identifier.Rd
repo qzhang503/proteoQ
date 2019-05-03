@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{match_identifier}
 \alias{match_identifier}
-\title{Match the current id to the id in normPep or normPrn}
+\title{Matches the current id to the id in normPep or normPrn}
 \usage{
 match_identifier(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 }
@@ -10,11 +10,5 @@ match_identifier(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 \item{id.}{}
 }
 \description{
-Match the current id to the id in normPep or normPrn
-}
-\examples{
-imputeNA(id = gene, m = 3, maxit = 3)
-
-\dontrun{
-}
+Matches the current id to the id in normPep or normPrn
 }

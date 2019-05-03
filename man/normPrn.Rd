@@ -61,8 +61,8 @@ being used in MS/MS ion search. If not specified, a pre-compiled system file
 will be used.}
 
 \item{...}{Additional parameters from \code{\link[mixtools]{normalmixEM}}:\cr
-\code{maxit}, the maximum number of iterations allowed; \cr
-\code{epsilon}, tolerance limit for declaring algorithm convergence.}
+\code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
+tolerance limit for declaring algorithm convergence.}
 }
 \value{
 The primary output in "\code{C:\\my_directory\\Protein\\Protein.txt}".
@@ -126,6 +126,7 @@ materials for indicated samples \cr N_log2_R (...) \tab Aligned \code{log2_R
 }
 }
 \seealso{
-\code{\link{normPSM}} for PSMs and \code{\link{normPep}} for peptides.
+\code{\link{normPSM}} for PSMs and \code{\link{normPep}} for
+ peptides.
 }
 \concept{aggregate functions}

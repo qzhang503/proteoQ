@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-mds.R
 \name{plotPCA}
 \alias{plotPCA}
-\title{Make PCA plots}
+\title{Plots PCA}
 \usage{
 plotPCA(df, col_color = NULL, col_fill = NULL, col_shape = NULL,
   col_size = NULL, col_alpha = NULL,
@@ -10,5 +10,5 @@ plotPCA(df, col_color = NULL, col_fill = NULL, col_shape = NULL,
   filepath, filename, show_ids, ...)
 }
 \description{
-Make PCA plots
+Plots PCA
 }

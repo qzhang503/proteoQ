@@ -7,13 +7,16 @@
 fitKernelDensity(df, n_comp = 3, ...)
 }
 \arguments{
-\item{id}{the unqiue identifier for data joining.  The default is \code{pep_seq_mod}.}
+\item{id}{the unqiue identifier for data joining.  The default is
+\code{pep_seq_mod}.}
 
-\item{method_align}{Not used.  The normalization method for \code{log2-ratios} across TMT channels.
-MC: median-centering; MGKernel: multiGaussian.}
+\item{method_align}{Not used.  The normalization method for
+\code{log2-ratios} across TMT channels. MC: median-centering; MGKernel:
+multiGaussian.}
 
 \item{method_psm_pep}{the aggregation method from PSM to peptide results.
-\code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If \code{weighted.mean}, log10-intensity will be used as the weights}
+\code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If
+\code{weighted.mean}, log10-intensity will be used as the weights}
 
 \item{range_log2r}{the range of trimmed \code{log2-ratios}}
 
@@ -25,17 +28,19 @@ MC: median-centering; MGKernel: multiGaussian.}
 A data frame.
 }
 \description{
-\code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.
+\code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT
+experiment.
 }
 \details{
-Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.  
-\code{pep_seq_mod} denotes peptide sequences with applicable modifications
-The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".
+Peptides with the same primary sequences but different modifications will be
+rolled up from PSM separately. \code{pep_seq_mod} denotes peptide sequences
+with applicable modifications The results will be stored under the folder
+"\code{~\\Direcotry\\Peptide}".
 }
 \examples{
 dat_dir <- "C:\\\\Results\\\\TMT\\\\Data"
 TMT_plex <- 10
-dir(file.path(dat_dir, "PSM")) 
+dir(file.path(dat_dir, "PSM"))
 rmPSMHeaders(dat_dir, TMT_plex)
 
 \dontrun{

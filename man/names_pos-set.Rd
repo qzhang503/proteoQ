@@ -14,23 +14,8 @@ names_pos(x, pos) <- value
 \item{value}{Characters.  The new column names.}
 }
 \value{
-The data frame with new names: 
-\code{refChannels}, reference channels(s); 
-\code{emptyChannels}, empty channel(s) that were not used for sample labeling; 
-\code{labeledChannels}, non-empty channels including reference(s) and sample(s).
+The data frame with new names.
 }
 \description{
-\code{names_pos<-} rename the columns at indeces \code{pos}.
-}
-\details{
-In the "label_scheme.csv" file,
-}
-\examples{
-label_scheme <- readRDS("c:\\\\Results\\\\R\\\\proteoQ\\\\Data\\\\label_scheme_orig.rds")
-channelInfo(label_scheme, 2)
-
-\dontrun{
-channelInfo(label_scheme, "a")
-channelInfo(label_scheme, c(1, 2))
-}
+\code{names_pos<-} rename the columns at the indeces of \code{pos}.
 }

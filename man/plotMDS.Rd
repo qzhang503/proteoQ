@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-mds.R
 \name{plotMDS}
 \alias{plotMDS}
-\title{Make MDS plots}
+\title{Plots MDS}
 \usage{
 plotMDS(df_mds, col_color = NULL, col_fill = NULL, col_shape = NULL,
   col_size = NULL, col_alpha = NULL,
   label_scheme_sub = label_scheme_sub, filepath, filename, show_ids, ...)
 }
 \description{
-Make MDS plots
+Plots MDS
 }

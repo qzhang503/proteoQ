@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-mds.R
 \name{plotEucDist}
 \alias{plotEucDist}
-\title{Make EucDist plots}
+\title{Plots EucDist}
 \usage{
 plotEucDist(D, annot_cols, filepath, filename, ...)
 }
 \description{
-Make EucDist plots
+Plots EucDist
 }

@@ -2,15 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{match_fmls}
 \alias{match_fmls}
-\title{Replace NA genes}
+\title{Matches formulas to those in calls to pepSig or prnSig}
 \usage{
 match_fmls(formulas)
 }
 \description{
-Replace NA genes
-}
-\examples{
-
-\dontrun{
-}
+Matches formulas to those in calls to pepSig or prnSig
 }

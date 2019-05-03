@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{n_TMT_sets}
 \alias{n_TMT_sets}
-\title{The number of multiplex TMT experiments.}
+\title{Finds the number of multiplex TMT experiments}
 \usage{
 n_TMT_sets(label_scheme_full)
 }
