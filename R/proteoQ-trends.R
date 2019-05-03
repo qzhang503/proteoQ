@@ -233,4 +233,3 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 prnTrend <- function (...) {
 	proteoTrend(id = gene, ...)
 }
-
