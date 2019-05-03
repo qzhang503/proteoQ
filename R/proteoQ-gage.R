@@ -264,7 +264,3 @@ gageTest <- function(df, id, label_scheme_sub, filepath, filename, complete_case
 	df_op <- purrr::map(dots, ~ my_gage(df, id, ., label_scheme_sub, complete_cases)) %>%
 		do.call("cbind", .)
 }
-
-
-
-
