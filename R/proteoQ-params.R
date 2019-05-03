@@ -509,9 +509,15 @@ setup_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry
 #'@import dplyr
 #'@importFrom magrittr %>%
 update_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
-  if(!file.exists(file.path(dat_dir, "acctype_sp.txt")))
+  if(is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv),
+                                           error = function(e) 1)
+
+  if(dat_dir == 1) stop("Set up the working directory first.")
+
+  if(!file.exists(file.path(dat_dir, "acctype_sp.txt"))) {
     stop("The information of protein accession type and species not availble.\n
          Please run `normPSM()` first.")
+  }
 
   acctype_sp <- read.csv(file.path(dat_dir, "acctype_sp.txt"), check.names = FALSE, sep = "\t",
                          header = TRUE, comment.char = "#")
@@ -523,13 +529,13 @@ update_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smr
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
 
   label_scheme_full <- label_scheme_full %>%
-    dplyr::mutate(Accession_Type = acctype_sp[1, "Accession_Type"], Species = acctype_sp[1, "Species"]) %>%
-    save(file = file.path(dat_dir, "label_scheme_full.Rdata"))
+    dplyr::mutate(Accession_Type = acctype_sp[1, "Accession_Type"], Species = acctype_sp[1, "Species"])
+  save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.Rdata"))
 
 
   label_scheme <- label_scheme %>%
-    dplyr::mutate(Accession_Type = acctype_sp[1, "Accession_Type"], Species = acctype_sp[1, "Species"]) %>%
-    save(file = file.path(dat_dir, "label_scheme.Rdata"))
+    dplyr::mutate(Accession_Type = acctype_sp[1, "Accession_Type"], Species = acctype_sp[1, "Species"])
+  save(label_scheme, file = file.path(dat_dir, "label_scheme_.Rdata"))
 
   # load_dbs(dat_dir = dat_dir, expt_smry = expt_smry)
 }
