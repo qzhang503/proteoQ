@@ -17,7 +17,8 @@
 
 #' Re-order filenames
 #'
-#' \code{reorder_files} re-ordered file names by TMT set numbers then by injection numbers.
+#' \code{reorder_files} re-ordered file names by TMT set numbers then by
+#' injection numbers.
 #'
 #' @param filelist A list of file names.
 #' @param n_TMT_sets the number of multiplex TMT experiments.
@@ -713,5 +714,3 @@ to_linfc <- function(df) {
 			data.frame(check.names = FALSE) %>%
 			`rownames<-`(nms)
 }
-
-

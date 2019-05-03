@@ -1,28 +1,17 @@
 #' Significance tests
 #'
-#' \code{proteoSigtest} produces heat maps.  It is a wrapper round the call \code{info_anal(..., anal_type = "Heatmap")}.
+#' \code{proteoSigtest} produces heat maps.  It is a wrapper round the call
+#' \code{info_anal(..., anal_type = "Heatmap")}.
 #'
-#' reads the data from either "\code{~\\Direcotry\\Peptide\\Peptide All.txt}" at \code{id = pep_seq_mod},
+#' reads the data from either "\code{~\\Direcotry\\Peptide\\Peptide All.txt}" at
+#' \code{id = pep_seq_mod},
 #'
 #' @param id The name of a unique id (see \code{\link[proteoQ]{MDS}}).
-#' @param scale_log2r Logical; if TRUE, rescales \code{log2-ratios} to the same scale of standard deviation for all samples.
-#' @return Images stored under the file folders that are associated to \code{id}, \code{anal_type}.
+#' @param scale_log2r Logical; if TRUE, rescales \code{log2-ratios} to the same
+#'   scale of standard deviation for all samples.
+#' @return Images stored under the file folders that are associated to
+#'   \code{id}, \code{anal_type}.
 #'
-#' @examples
-#' MA(
-#' 	id = gene,
-#' 	scale_log2r = scale_log2r,
-#' )
-#'
-#' # or use the form of functional factories
-#' 	my_prnMA <- info_anal(df = NULL, id = prot_acc, scale_log2r, filepath = NULL, filename = NULL, anal_type = "MA")
-#' 	my_prnMA()
-#'
-#' 	my_pepMA <- info_anal(df = NULL, id = pep_seq_mod, scale_log2r, filepath = NULL, filename = NULL, anal_type = "MA")
-#' 	my_pepMA()
-#'
-#' \dontrun{
-#' }
 #' @import dplyr rlang ggplot2
 #' @importFrom magrittr %>%
 #' @export
@@ -109,7 +98,8 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 			}
 		}
 
-		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#"), error = function(e) NA)
+		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE,
+		                        sep = "\t", comment.char = "#"), error = function(e) NA)
 		if(!is.null(dim(df))) {
 			message(paste("File loaded:", gsub("\\\\", "/", src_path)))
 		} else {
@@ -143,7 +133,8 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 			`names<-`(gsub("adjP", ".pVal", names(.)))
 	}
 
-	plotVolcano(df, !!id, filepath, filename, adjP, show_labels, anal_type, use_gagep, pval_cutoff, show_sig, ...)
+	plotVolcano(df, !!id, filepath, filename, adjP, show_labels, anal_type,
+	            use_gagep, pval_cutoff, show_sig, ...)
 
 	if(annot_kinases & anal_type == "Volcano") {
 		dir.create(file.path(filepath, "Kinases"), recursive = TRUE, showWarnings = FALSE)
@@ -176,8 +167,9 @@ plotVolcano <- function(df = NULL, id = "gene", filepath = NULL, filename = NULL
 			`colnames<-`(gsub(paste0(formula, "."), "", names(.))) %>%
 			dplyr::bind_cols(df[, !ind, drop = FALSE], .)
 
-		plotVolcano_sub(df = df, id = !!id, filepath = file.path(filepath, formula), filename = filename,
-										adjP = adjP, show_labels = show_labels, anal_type = anal_type)(use_gagep, pval_cutoff, show_sig, ...)
+		plotVolcano_sub(df = df, id = !!id, filepath = file.path(filepath, formula),
+		                filename = filename, adjP = adjP, show_labels = show_labels,
+		                anal_type = anal_type)(use_gagep, pval_cutoff, show_sig, ...)
 	}
 
 	id <- rlang::as_string(rlang::enexpr(id))
@@ -197,17 +189,19 @@ plotVolcano <- function(df = NULL, id = "gene", filepath = NULL, filename = NULL
 #'
 #' @import limma stringr purrr dplyr rlang grid gridExtra gtable
 #' @importFrom magrittr %>%
-plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE, anal_type) {
-	id <- rlang::as_string(rlang::enexpr(id))
+plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = NULL,
+                            adjP = FALSE, show_labels = TRUE, anal_type) {
+
+  id <- rlang::as_string(rlang::enexpr(id))
 
 	volcano_theme <- theme_bw() +
 	  theme(
-		axis.text.x  = element_text(angle=0, vjust=0.5, size=24),   # rotate x-axis label and define label size
-		axis.ticks.x  = element_blank(), # x-axis ticks
-		axis.text.y  = element_text(angle=0, vjust=0.5, size=24),   # rotate y-axis label and define label size
-		axis.title.x = element_text(colour="black", size=24),  # x-axis title size
-		axis.title.y = element_text(colour="black", size=24),  # y-axis title size
-		plot.title = element_text(face="bold", colour="black", size=20, hjust=.5, vjust=.5),   # Main title size
+		axis.text.x  = element_text(angle=0, vjust=0.5, size=24),
+		axis.ticks.x  = element_blank(),
+		axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
+		axis.title.x = element_text(colour="black", size=24),
+		axis.title.y = element_text(colour="black", size=24),
+		plot.title = element_text(face="bold", colour="black", size=20, hjust=.5, vjust=.5),
 
 		panel.grid.major.x = element_blank(),
 		panel.grid.minor.x = element_blank(),
@@ -215,26 +209,25 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 		panel.grid.minor.y = element_blank(),
 
 		strip.text.x = element_text(size = 16, colour = "black", angle = 0),
-		strip.text.y = element_text(size = 16, colour = "black", angle = 90),   # Facet title size
+		strip.text.y = element_text(size = 16, colour = "black", angle = 90),
 
 		legend.key = element_rect(colour = NA, fill = 'transparent'),
 		legend.background = element_rect(colour = NA,  fill = "transparent"),
-		# legend.position = c(0.15, 0.78),
-		legend.position = "none",  # to remove all legends
-		# legend.title = element_blank(),
+		legend.position = "none",
 		legend.title = element_text(colour="black", size=18),
 		legend.text = element_text(colour="black", size=18),
 		legend.text.align = 0,
 		legend.box = NULL
 	 )
 
-	contrast_groups <- names(df[grep("^log2Ratio\\s+\\(", names(df))]) %>% gsub("^log2Ratio\\s+\\(|\\)$", "", .)
+	contrast_groups <- names(df[grep("^log2Ratio\\s+\\(", names(df))]) %>%
+	  gsub("^log2Ratio\\s+\\(|\\)$", "", .)
 
 	if(anal_type %in% c("Volcano", "GSVA")) { # overall volcano
 		function(...) {
 			on.exit(message("Volcano plots --- Completed."), add = TRUE)
 
-			# id used for Venn
+			# "id" only being used for drawing Venn
 			fullVolcano(df = df, id = !!id, contrast_groups = contrast_groups,
 				volcano_theme = volcano_theme, filepath = filepath, filename = filename,
 				adjP = adjP, show_labels = show_labels, ...)
@@ -264,8 +257,10 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 #'
 #' @import dplyr purrr rlang ggplot2
 #' @importFrom magrittr %>%
-fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcano_theme, filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE, ...) {
-	id <- rlang::as_string(rlang::enexpr(id))
+fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcano_theme,
+                        filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE, ...) {
+
+  id <- rlang::as_string(rlang::enexpr(id))
 
 	dots <- rlang::enexprs(...)
 	xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
@@ -465,7 +460,8 @@ prep_gage <- function(contrast_groups, key = "term", pval_cutoff = 1E-2, use_gag
 #' @import dplyr rlang ggplot2
 #' @importFrom magrittr %>%
 gsVolcano <- function(df, contrast_groups, gsea_res, gsea_key = "term", gsets, volcano_theme,
-												filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE, show_sig = NULL, pval_cutoff = 1E-6, ...) {
+												filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE,
+												show_sig = NULL, pval_cutoff = 1E-6, ...) {
 
 	dots <- rlang::enexprs(...)
 	xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
@@ -480,6 +476,8 @@ gsVolcano <- function(df, contrast_groups, gsea_res, gsea_key = "term", gsets, v
 		unlist
 
 	# stopifnot(length(terms) > 0)
+
+	# continue with the next file at no terms
 	if (length(terms) > 0) {
   	dfw <- do.call(rbind,
   		purrr::map(contrast_groups, ~ {
@@ -642,12 +640,6 @@ gageMap <- function (...) {
 
 
 
-
-
-
-
-
-
 GeomTable <- ggproto(
 	"GeomTable",
 	Geom,
@@ -696,10 +688,10 @@ GeomTable <- ggproto(
 		just = c("center", "center")
 		)
 
-	# tt <- gridExtra::ttheme_minimal(core = list(fg_params=list(cex = .7)), colhead = list(fg_params=list(cex = .7), parse=TRUE), rowhead = list(fg_params=list(cex = .7)))
-	grob <-
-		# tableGrob(table, theme = ttheme_minimal(core = list(fg_params=list(cex = .7)), colhead = list(fg_params=list(cex = .7), parse=TRUE), rowhead = list(fg_params=list(cex = .7))))
-		tableGrob(table, rows=NULL, col=NULL, theme = ttheme_minimal(core = list(fg_params=list(cex = .7)), colhead = list(fg_params=list(cex = .7), parse=TRUE), rowhead = list(fg_params=list(cex = .7))))
+	grob <- tableGrob(table, rows = NULL, col = NULL,
+	                  theme = ttheme_minimal(core = list(fg_params=list(cex = .7)),
+	                                         colhead = list(fg_params=list(cex = .7), parse=TRUE),
+	                                         rowhead = list(fg_params=list(cex = .7))))
 	grob$heights <- grob$heights*.6
 
 	## add a line across the header
@@ -715,40 +707,28 @@ GeomTable <- ggproto(
 	}
 )
 
+
 facet_id <- local({
 	i <- 1
 	function() {
-	i <<- i + 1
-	i
+  	i <<- i + 1
+  	i
 	}
 })
 
-geom_table <-
-	function(mapping = NULL,
-			 data = NULL,
-			 stat = "identity",
-			 position = "identity",
-			 na.rm = FALSE,
-			 show.legend = NA,
-			 inherit.aes = TRUE,
-			 ...) {
-	layer(
-		geom = GeomTable,
-		mapping = mapping,
-		data = data,
-		stat = stat,
-		position = position,
-		show.legend = show.legend,
-		inherit.aes = inherit.aes,
-		params = list(na.rm = na.rm, ...)
-	)
-	}
 
-# helper function
+geom_table <- function(mapping = NULL, data = NULL, stat = "identity",
+                       position = "identity", na.rm = FALSE, show.legend = NA,
+                       inherit.aes = TRUE, ...) {
+  layer(geom = GeomTable, mapping = mapping, data = data, stat = stat, position = position,
+        show.legend = show.legend, inherit.aes = inherit.aes, params = list(na.rm = na.rm, ...)
+  )
+}
+
+
 to_csv_ <- function(x) {
-	paste(capture.output(write.csv(x, stdout(), row.names = F)),
-			collapse = "\n")
-	}
+	paste(capture.output(write.csv(x, stdout(), row.names = F)), collapse = "\n")
+}
 
 
 
@@ -953,3 +933,6 @@ vc_ESGAGE_old <- function(df, contrast_groups, method = "ESGAGE", type = "GO", k
 	} )
 
 }
+
+
+
