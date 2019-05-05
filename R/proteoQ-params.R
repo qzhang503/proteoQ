@@ -315,7 +315,7 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 }
 
 
-#'Sets up experiments
+#'Load experiments
 #'
 #'A function processes \code{.xlsx} files containing the metadata of TMT
 #'experiments
@@ -330,8 +330,8 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 #'  indeces of \code{TMT_Channel} and \code{TMT_Set} but different indeces of
 #'  \code{LCMS_Injection} should have the same value in \code{Sample_ID}.
 #'
-#'  Under the \code{Reference} column, entries should be indicated with non-void
-#'  string(s) for reference(s) and left blank for non-references.
+#'  Under the \code{Reference} column, reference entrie(s) are indicated with
+#'  non-void string(s).
 #'
 #'  Users can add or modify the \code{optional column keys} in the \code{.xlsx}
 #'  file for suitable analysis (see \code{\link{prnSig}}... for the
@@ -347,19 +347,11 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 #'  offline fractionations of peptides before LC/MS, the \code{RAW_File} column
 #'  should be left blank. The correspondence between the fractions and
 #'  \code{RAW_File} names should be specified in a separate file such as
-#'  \code{fraction_scheme.xlsx}.)\cr Accession_Type \tab Protein accession types
-#'  (The currently supported names are "uniprot_id" for
-#'  \code{\href{https://www.uniprot.org/help/entry_name}{UniProt entry name}}
-#'  and "refseq_acc" for
-#'  \code{\href{https://www.ncbi.nlm.nih.gov/refseq/}{RefSeq accession
-#'  number}}.)\cr Species \tab Species names (The currently supported names are
-#'  "human", "mouse", "rat". The name is "human and mouse" or "pdx" for
-#'  \code{\href{https://en.wikipedia.org/wiki/Patient_derived_xenograft}{"patient
-#'   derived xenografts"}}.)\cr Sample_ID \tab Unique sample IDs (\strong{Note}:
-#'  no space in name; leave the sample IDs blank for unused TMT channels.) \cr
-#'  Reference \tab Labels indicating reference samples in TMT experiments
-#'  (\strong{Note}: leave the labels blank for non-reference TMT channels.) \cr
-#'  \cr }
+#'  \code{fraction_scheme.xlsx}.)\cr Sample_ID \tab Unique sample IDs
+#'  (\strong{Note}: no space in name; leave the sample IDs blank for unused TMT
+#'  channels.) \cr Reference \tab Labels indicating reference samples in TMT
+#'  experiments (\strong{Note}: leave the labels blank for non-reference TMT
+#'  channels.) \cr \cr }
 #'
 #'  \tabular{ll}{ \strong{Optional column key}   \tab \strong{Descrption}\cr
 #'  Select \tab Selected \code{Sample_IDs} for indicated analysis of "MDS",
@@ -373,20 +365,20 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 #'  Shape \tab Aesthetic labels for sample annotation by shape\cr Size \tab
 #'  Aesthetic labels for sample annotation by size \cr Alpha \tab Aesthetic
 #'  labels for sample annotation by transparency \cr Term \tab Categorial terms
-#'  for statistical modeling \cr Duplicate \tab Indicators of duplicated samples
-#'  for corrections in statistical significance \cr Benchmark \tab Indicators of
-#'  benchmark sample (groups) for use in heat map visualizations.\cr ... \tab
-#'  Customed columns of metadata for mapping to indicated analysis}
+#'  for statistical modeling. Users can add columns, e.g. "Time", "Dose",
+#'  "Time_and_Dose"..., for additional groups of contrasts. \cr Duplicate \tab
+#'  Indicators of duplicated samples for corrections in statistical significance
+#'  \cr Benchmark \tab Indicators of benchmark sample (groups) for use in heat
+#'  map visualizations.\cr ... \tab Customed columns of metadata for aesthetic
+#'  mapping to indicated analysis}
 #'
 #'@section \code{frac_smry.xlsx}: It is not necessary to prepare a
 #'  "frac_smry.xlsx" file if no peptide fractionations were performed in TMT
 #'  experiments.
 #'
 #'  \tabular{ll}{ \strong{Column key}   \tab \strong{Descrption}\cr TMT_Set \tab
-#'  TMT experiment indeces  \cr LCMS_Injection   \tab LC/MS injection indeces
-#'  under a \code{TMT_Set} \cr Fraction \tab Fraction indeces under a
-#'  \code{TMT_Set} \cr RAW_File \tab MS data filenames originated by
-#'  \code{Xcalibur} with or without the \code{.raw} extension }
+#'  v.s.  \cr LCMS_Injection   \tab v.s. \cr Fraction \tab Fraction indeces
+#'  under a \code{TMT_Set} \cr RAW_File \tab v.s. }
 #'
 #'@param dat_dir A character string to the working directory.
 #'@param expt_smry A character string to the file of TMT experimental summary.
@@ -401,126 +393,28 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 #' # An examplary "frac_smry.xlsx"
 #' system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
 #'
-#' # Set up the working directory and experiments
+#' \dontrun{
 #' dat_dir <- c("C:\\my_direcotry")
-#' setup_expts()
+#' load_expts()
+#' }
 #'
 #'@export
 #'@import dplyr
 #'@importFrom magrittr %>%
-setup_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
-	prep_label_scheme(dat_dir, expt_smry)
-	prep_fraction_scheme(dat_dir = dat_dir, filename = frac_smry)
-	# load_dbs(dat_dir = dat_dir, expt_smry = expt_smry)
-}
-
-
-#'Update experiments
-#'
-#'A function processes \code{.xlsx} files containing the metadata of TMT
-#'experiments
-#'
-#'@section \code{expt_smry.xlsx}: The \code{.xlsx} files should be located
-#'  immediately under the file folder defined by the character vector of
-#'  \code{dat_dir}.
-#'
-#'  In the \code{expt_smry.xlsx} file, values under the \code{Sample_ID} column
-#'  should be unique for entries with unique combination of \code{TMT_Channel}
-#'  and \code{TMT_Set}, or left blank for used entries. Samples with the same
-#'  indeces of \code{TMT_Channel} and \code{TMT_Set} but different indeces of
-#'  \code{LCMS_Injection} should have the same value in \code{Sample_ID}.
-#'
-#'  Under the \code{Reference} column, entries should be indicated with non-void
-#'  string(s) for reference(s) and left blank for non-references.
-#'
-#'  Users can add or modify the \code{optional column keys} in the \code{.xlsx}
-#'  file for suitable analysis (see \code{\link{prnSig}}... for the
-#'  customization of column keys).
-#'
-#'  \tabular{ll}{ \strong{Reserved column key}   \tab \strong{Descrption}\cr
-#'  TMT_Channel \tab TMT channel names: \code{126}, \code{127N}, \code{127C} et
-#'  al. \cr TMT_Set \tab TMT experiment indeces  \cr LCMS_Injection   \tab LC/MS
-#'  injection indeces under a \code{TMT_Set} \cr RAW_File \tab MS data filenames
-#'  originated by \code{Xcalibur} with or without the \code{.raw} extension
-#'  (\strong{Notes}: (1) \code{OS} filenames can be different to those recorded
-#'  in \code{Xcalibur} and the later should be used. (2) For analysis with
-#'  offline fractionations of peptides before LC/MS, the \code{RAW_File} column
-#'  should be left blank. The correspondence between the fractions and
-#'  \code{RAW_File} names should be specified in a separate file such as
-#'  \code{fraction_scheme.xlsx}.)\cr Accession_Type \tab Protein accession types
-#'  (The currently supported names are "uniprot_id" for
-#'  \code{\href{https://www.uniprot.org/help/entry_name}{UniProt entry name}}
-#'  and "refseq_acc" for
-#'  \code{\href{https://www.ncbi.nlm.nih.gov/refseq/}{RefSeq accession
-#'  number}}.)\cr Species \tab Species names (The currently supported names are
-#'  "human", "mouse", "rat". The name is "human and mouse" or "pdx" for
-#'  \code{\href{https://en.wikipedia.org/wiki/Patient_derived_xenograft}{"patient
-#'   derived xenografts"}}.)\cr Sample_ID \tab Unique sample IDs (\strong{Note}:
-#'  no space in name; leave the sample IDs blank for unused TMT channels.) \cr
-#'  Reference \tab Labels indicating reference samples in TMT experiments
-#'  (\strong{Note}: leave the labels blank for non-reference TMT channels.) \cr
-#'  \cr }
-#'
-#'  \tabular{ll}{ \strong{Optional column key}   \tab \strong{Descrption}\cr
-#'  Select \tab Selected \code{Sample_IDs} for indicated analysis of "MDS",
-#'  "Heat map"... If the values underneath are left blank, all samples including
-#'  references will be used. \cr Group \tab Aesthetic labels annotating the
-#'  prior knowledge of sample groups, e.g., Ctrl_T1, Ctrl_T2, Disease_T1,
-#'  Disease_T2, ...\cr Order \tab Numeric labels specifying the order of sample
-#'  \code{groups} (\strong{Note}: leave the labels blank for unsupervised
-#'  analysis.)\cr Fill \tab Aesthetic labels for sample annotation by filled
-#'  color\cr Color \tab Aesthetic labels for sample annotation by edge color\cr
-#'  Shape \tab Aesthetic labels for sample annotation by shape\cr Size \tab
-#'  Aesthetic labels for sample annotation by size \cr Alpha \tab Aesthetic
-#'  labels for sample annotation by transparency \cr Term \tab Categorial terms
-#'  for statistical modeling \cr Duplicate \tab Indicators of duplicated samples
-#'  for corrections in statistical significance \cr Benchmark \tab Indicators of
-#'  benchmark sample (groups) for use in heat map visualizations.\cr ... \tab
-#'  Customed columns of metadata for mapping to indicated analysis}
-#'
-#'@section \code{frac_smry.xlsx}: It is not necessary to prepare a
-#'  "frac_smry.xlsx" file if no peptide fractionations were performed in TMT
-#'  experiments.
-#'
-#'  \tabular{ll}{ \strong{Column key}   \tab \strong{Descrption}\cr TMT_Set \tab
-#'  TMT experiment indeces  \cr LCMS_Injection   \tab LC/MS injection indeces
-#'  under a \code{TMT_Set} \cr Fraction \tab Fraction indeces under a
-#'  \code{TMT_Set} \cr RAW_File \tab MS data filenames originated by
-#'  \code{Xcalibur} with or without the \code{.raw} extension }
-#'
-#'@param dat_dir A character string to the working directory.
-#'@param expt_smry A character string to the file of TMT experimental summary.
-#'  The default is "expt_smry.xlsx".
-#'@param frac_smry A character string to the file of peptide fractionation
-#'  summary. The default is "frac_smry.xlsx".
-#'
-#' @examples
-#' # An examplary "expt_smry.xlsx"
-#' system.file("extdata", "expt_smry.xlsx", package = "proteoQ")
-#'
-#' # An examplary "frac_smry.xlsx"
-#' system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
-#'
-#' # Set up the working directory and experiments
-#' dat_dir <- c("C:\\my_direcotry")
-#' update_expts()
-#'
-#'@export
-#'@import dplyr
-#'@importFrom magrittr %>%
-update_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
+load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
   if(is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv),
                                            error = function(e) 1)
 
-  if(dat_dir == 1) stop("Set up the working directory first.")
+  if(dat_dir == 1) stop("Set up the working directory first.", call. = FALSE)
 
   if(!file.exists(file.path(dat_dir, "acctype_sp.txt"))) {
-    stop("The information of protein accession type and species not availble.\n
-         Please run `normPSM()` first.")
-  }
+    acctype_sp <- data.frame(Accession_Type = "uniprot_id", Species = "human")
+    # stop("The information of protein accession type and species not availble.\n Please run `normPSM()` first.")
+  } else {
+    acctype_sp <- read.csv(file.path(dat_dir, "acctype_sp.txt"), check.names = FALSE,
+                           sep = "\t", header = TRUE, comment.char = "#")
 
-  acctype_sp <- read.csv(file.path(dat_dir, "acctype_sp.txt"), check.names = FALSE, sep = "\t",
-                         header = TRUE, comment.char = "#")
+  }
 
   prep_label_scheme(dat_dir, expt_smry)
   # prep_fraction_scheme(dat_dir = dat_dir, filename = frac_smry)
@@ -673,7 +567,7 @@ find_species <- function (label_scheme_full) {
 #' Find the protein accession from a non-cRAP entry and parse it.
 #'
 #' \code{parse_acc} parse the protein accession.
-parse_acc <- function(df, prx) {
+parse_acc_temp <- function(df, prx) {
   if (grepl("[0-9]{1}::", prx)) { # multiple databases
     prn_acc <- df %>%
       dplyr::filter(grepl(paste0("^", prx), prot_acc)) %>%
@@ -696,4 +590,55 @@ parse_acc <- function(df, prx) {
   } else {
     stop("Unknown protein accession", call. = FALSE)
   }
+}
+
+
+#' Determine the protein accession type from PSM tables
+#'
+#' Find the protein accession from a non-cRAP entry and parse it.
+#'
+#' \code{parse_acc} parse the protein accession.
+parse_acc <- function(df) {
+  prn_acc <- df %>%
+    dplyr::select(prot_acc) %>%
+    unlist %>%
+    .[1]
+
+  if (grepl("_[A-Z]+", prn_acc)) {
+    acc_type <- "uniprot_id"
+  } else if (grepl("^NP_[0-9]+", prn_acc)) {
+    acc_type <- "refseq_acc"
+  } else if (grepl("[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}", prn_acc)) {
+    acc_type <- "uniprot_acc"
+  } else {
+    stop("Unknown protein accession", call. = FALSE)
+  }
+}
+
+
+#' Match scale_log2r
+#'
+#' \code{match_scale_log2r} matches `scale_log2r` from the caller environment.
+match_scale_log2r <- function(scale_log2r) {
+  stopifnot(is.logical(scale_log2r))
+
+  global_var <-tryCatch(global_var <-get("scale_log2r", envir = .GlobalEnv),
+                        error = function(e) "e")
+  if(global_var != "e" & is.logical(global_var)) scale_log2r <- global_var
+
+  return(scale_log2r)
+}
+
+
+#' Match to a global logical variable
+#'
+#' @examples
+#' foo <- function(scale_log2r = FALSE) {
+#'   match_logi_gv(scale_log2r)
+#' }
+#' foo()
+match_logi_gv <- function(var) {
+  nm <- rlang::as_string(rlang::enexpr(var))
+  gvar <-tryCatch(gvar <-get(nm, envir = .GlobalEnv), error = function(e) "e")
+  if(gvar != "e" & is.logical(gvar)) return(gvar) else return(var)
 }
