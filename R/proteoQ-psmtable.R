@@ -74,8 +74,6 @@ rmPSMHeaders <- function () {
 #' @param rptr_intco Numeric; the threshold of reporter ion intensity.
 #' @param rm_craps Logical; if TRUE, removes
 #'   \code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.
-#' @param crap Character string; the name of cRAP database, which can be found
-#'   from the header of PSM outputs: "Database,1::cRAP 2::SwissProt".
 #' @param plot_violins Logical; if TRUE, prepares the violin plots of
 #'   reporter-ion intensities.
 #' @examples
@@ -85,7 +83,7 @@ rmPSMHeaders <- function () {
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
 #' @export
-splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, crap = "cRAP", plot_violins = TRUE) {
+splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 
 	old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
@@ -121,8 +119,7 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, crap = "cRAP", plot_vi
 		)
 	)
 
-  # remove the spacer columns in the fields of ratios and intensities
-  # in Mascot outputs
+  # remove the spacer columns in Mascot outputs
   r_start <- which(names(df) == "pep_scan_title") + 1
   int_end <- ncol(df)
 	if(int_end > r_start) df <- df[, -c(seq(r_start, int_end, 2))]
@@ -151,37 +148,50 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, crap = "cRAP", plot_vi
 		rm(r_start, int_end, col_ratio, col_int)
 	}
 
-  # replace interim "-1" values back to "NA"
-  # use the first header file
-  hd_file <- list.files(path = file.path(dat_dir, "PSM"),
-                        pattern = "^F[0-9]{6}\\_header.txt$")[1]
+  if(rm_craps) df <- df %>% dplyr::filter(!grepl("\\|.*\\|$", prot_acc))
 
-  assign("df_header", readLines(file.path(dat_dir, "PSM", hd_file)))
+  df <- df %>% dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc))
 
-  # find the index of "cRAP" Database
-  # "\"Database,1::SwissProt 2::cRAP\""; the order can be switched
-  df_dbOrder <- df_header[grep("Database", df_header)] %>%
-		gsub("\"", "", ., fixed = TRUE) %>%
-		gsub("Database,", "", ., fixed = TRUE) %>%
-    str_split(" ", simplify = TRUE)
+  prn_acc <- parse_acc(df)
 
-  crap_idx <- grep(crap, df_dbOrder)
 
-  if (rm_craps & purrr::is_empty(crap_idx))
-    stop("Database `", crap, "` not found. Check the PSM header for the name of cRAP database",
-         call. = FALSE)
 
-  crap_prx <- paste0(crap_idx, "::")
+  # ---------------
+  run_scripts <- FALSE
+  if(run_scripts) {
+    # use the first header file
+    hd_file <- list.files(path = file.path(dat_dir, "PSM"),
+                          pattern = "^F[0-9]{6}\\_header.txt$")[1]
 
-	if(rm_craps) {
-		df <- df %>%
-			dplyr::filter(!grepl(paste0("^", crap_prx), prot_acc))
-	}
+    assign("df_header", readLines(file.path(dat_dir, "PSM", hd_file)))
 
-  prn_acc <- df_dbOrder %>%
-    .[!grepl(crap_prx, .)] %>%
-    gsub("([0-9]{1}::).*", "\\1", .) %>%
-    parse_acc(df, .)
+    # find the index of "cRAP" Database
+    # "\"Database,1::SwissProt 2::cRAP\""; the order can be switched
+    df_dbOrder <- df_header[grep("Database", df_header)] %>%
+  		gsub("\"", "", ., fixed = TRUE) %>%
+  		gsub("Database,", "", ., fixed = TRUE) %>%
+      str_split(" ", simplify = TRUE)
+
+    crap <- "cRAP"
+    crap_idx <- grep(crap, df_dbOrder)
+
+    if (rm_craps & purrr::is_empty(crap_idx))
+      stop("Database `", crap, "` not found. Check the PSM header for the name of cRAP database",
+           call. = FALSE)
+
+    crap_prx <- paste0(crap_idx, "::")
+
+  	if(rm_craps) {
+  		df <- df %>%
+  			dplyr::filter(!grepl(paste0("^", crap_prx), prot_acc))
+  	}
+
+    prn_acc <- df_dbOrder %>%
+      .[!grepl(crap_prx, .)] %>%
+      gsub("([1-9]{1}::).*", "\\1", .) %>%
+      parse_acc(df, .)
+  }
+
 
   label_scheme_full$Accession_Type <- prn_acc
   label_scheme$Accession_Type <- prn_acc
@@ -875,6 +885,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 
 			if(TMT_plex > 0) df <- normPSM(df, set_idx)
 
+			# clean up cRAP accessions
 			df$prot_acc <- df$prot_acc %>%
 				gsub("\\|$", "", .) %>%
 				gsub(".*\\|", "", .)
@@ -993,11 +1004,8 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'@importFrom magrittr %>%
 #'@export
 normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx",
-                    rptr_intco = 1000, rm_craps = FALSE, crap = "cRAP",
-                    rm_krts = FALSE, rm_outliers = FALSE,
-                    plot_violins = TRUE) {
-
-  crap <- rlang::as_string(rlang::enexpr(crap))
+                    rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE,
+                    rm_outliers = FALSE, plot_violins = TRUE) {
 
   mget(names(formals()), rlang::current_env()) %>% save_call("normPSM")
 
@@ -1005,7 +1013,7 @@ normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "f
   prep_fraction_scheme(dat_dir = dat_dir, filename = frac_smry)
 
 	rmPSMHeaders()
-	splitPSM(rptr_intco, rm_craps, crap, plot_violins)
+	splitPSM(rptr_intco, rm_craps, plot_violins)
 	cleanupPSM(rm_outliers)
 	annotPSM(expt_smry, rm_krts, plot_violins)
 }
