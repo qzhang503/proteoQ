@@ -1045,9 +1045,11 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'@importFrom magrittr %>%
 #'@export
 proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
-                      scale_log2r = FALSE,impute_na = FALSE, complete_cases = FALSE,
+                      scale_log2r = TRUE,impute_na = FALSE, complete_cases = FALSE,
 											df = NULL, filepath = NULL, filename = NULL,
 											xmin = -1, xmax = 1, x_margin = 0.1, annot_cols = NULL, ...) {
+
+  # scale_log2r <- match_logi_gv(scale_log2r)
 
   id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
@@ -1246,12 +1248,14 @@ plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, file
 #' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>%
 #' @export
-proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, scale_log2r = FALSE,
+proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, scale_log2r = TRUE,
                          df = NULL, filepath = NULL, filename = NULL, complete_cases = FALSE,
                          impute_na = FALSE, anal_type = "Heatmap", xmin = -1, xmax = 1,
                          x_margin = 0.1, annot_cols = NULL, ...) {
 
-	col_select <- rlang::enexpr(col_select)
+  # scale_log2r <- match_logi_gv(scale_log2r)
+
+  col_select <- rlang::enexpr(col_select)
 	col_benchmark <- rlang::enexpr(col_benchmark)
 
 	if(is.null(col_select)) {
