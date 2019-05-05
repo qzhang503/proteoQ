@@ -15,7 +15,7 @@
 #' @import dplyr rlang ggplot2
 #' @importFrom magrittr %>%
 #' @export
-proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_log2r = FALSE,
+proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_log2r = TRUE,
 													filepath = NULL, filename = NULL, impute_na = TRUE, adjP = FALSE,
 													show_labels = TRUE, use_gagep = TRUE, pval_cutoff = 5E-2, show_sig = NULL, ...) {
 	old_opt <- options(max.print = 99999)
@@ -28,6 +28,8 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	err_msg_2 <- "Unrecognized 'anal_type'; needs to be \"Volcano\" or \"GSVA\""
 	err_msg_3 <- "Volcano plots of peptides not available for GSVA."
 	err_msg_4 <- "GSVA results not found. Please perform prnGSVA() first."
+
+	# scale_log2r <- match_logi_gv(scale_log2r)
 
 	id <- rlang::as_string(rlang::enexpr(id))
 	cat(paste0("id = \"", id, "\"", " by the current call\n"))
@@ -933,6 +935,3 @@ vc_ESGAGE_old <- function(df, contrast_groups, method = "ESGAGE", type = "GO", k
 	} )
 
 }
-
-
-

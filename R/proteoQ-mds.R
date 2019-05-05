@@ -413,8 +413,10 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 proteoMDS <- function (id = gene,
 											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
 											col_shape = NULL, col_size = NULL, col_alpha = NULL,
-											scale_log2r = FALSE, adjEucDist = FALSE, classical = TRUE, show_ids = TRUE,
+											scale_log2r = TRUE, adjEucDist = FALSE, classical = TRUE, show_ids = TRUE,
                       annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
+
+  # scale_log2r <- match_logi_gv(scale_log2r)
 
 	id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
@@ -485,10 +487,12 @@ proteoMDS <- function (id = gene,
 proteoPCA <- function (id = gene,
 											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
 											col_shape = NULL, col_size = NULL, col_alpha = NULL,
-											scale_log2r = FALSE, show_ids = TRUE,
+											scale_log2r = TRUE, show_ids = TRUE,
                       annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
 
-	id <- rlang::enexpr(id)
+  # scale_log2r <- match_logi_gv(scale_log2r)
+
+  id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
 	col_group <- rlang::enexpr(col_group)
 	col_color <- rlang::enexpr(col_color)
@@ -546,11 +550,13 @@ proteoPCA <- function (id = gene,
 proteoEucDist <- function (id = gene,
 											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
 											col_shape = NULL, col_size = NULL, col_alpha = NULL,
-											scale_log2r = FALSE, adjEucDist = FALSE,
+											scale_log2r = TRUE, adjEucDist = FALSE,
                       annot_cols = NULL,
 											df = NULL, filepath = NULL, filename = NULL, ...) {
 
-	id <- rlang::enexpr(id)
+  # scale_log2r <- match_logi_gv(scale_log2r)
+
+  id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
 	col_group <- rlang::enexpr(col_group)
 	col_color <- rlang::enexpr(col_color)

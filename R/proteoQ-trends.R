@@ -194,8 +194,10 @@ plotTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
                          col_select = NULL, col_order = NULL,
 												impute_na = FALSE, complete_cases = FALSE,
-												n_clust = 6, scale_log2r = FALSE, df = NULL,
+												n_clust = 6, scale_log2r = TRUE, df = NULL,
 												filepath = NULL, filename = NULL, ...) {
+
+  # scale_log2r <- match_logi_gv(scale_log2r)
 
 	id <- rlang::enexpr(id)
 	if(id == rlang::expr(c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))) {

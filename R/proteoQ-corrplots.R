@@ -345,9 +345,11 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath, xmin, xmax, ...) 
 #'@importFrom magrittr %>%
 #'@export
 proteoCorrplot <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col_select = NULL,
-                            col_order = NULL, use_log10 = TRUE, scale_log2r = FALSE,
+                            col_order = NULL, use_log10 = TRUE, scale_log2r = TRUE,
 														min_int = 3.5, max_int = 6.5, min_log2r = -2, max_log2r = 2,
 														df = NULL, filepath = NULL, filename = NULL, ...) {
+
+  # scale_log2r <- match_logi_gv(scale_log2r)
 
   id <- rlang::enexpr(id)
 	if(length(id) != 1) id <- rlang::expr(gene)

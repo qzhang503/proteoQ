@@ -4,12 +4,14 @@
 #'@importFrom magrittr %>%
 #'@export
 prnGAGE <- function (id = gene,
-										scale_log2r = FALSE, df = NULL, filepath = NULL, filename = NULL,
+										scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL,
 										impute_na = TRUE, complete_cases = FALSE,
 										method = "limma", gset_nm = "go_sets", var_cutoff = 1E-3,
 										pval_cutoff = .05, logFC_cutoff = log2(1.1), ...) {
 
-	id <- rlang::enexpr(id)
+  # scale_log2r <- match_logi_gv(scale_log2r)
+
+  id <- rlang::enexpr(id)
 
 	dots <- rlang::enexprs(...)
 
