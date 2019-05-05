@@ -176,13 +176,15 @@ plotNMF <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
 #'@importFrom magrittr %>%
 #'@export
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col_select = NULL,
-											scale_log2r = FALSE, impute_na = TRUE, complete_cases = FALSE,
+											scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE,
 											df = NULL, filepath = NULL, filename = NULL, r = 4, nrun = 200,
 											xmin = -1, xmax = 1, x_margin = 0.1, annot_cols = NULL,
 											width_consensus = 6, height_consensus = 6,
 											width_coefmap = 6, height_coefmap = 6, ...) {
 
-	id <- rlang::enexpr(id)
+  # scale_log2r <- match_logi_gv(scale_log2r)
+
+  id <- rlang::enexpr(id)
 	if(length(id) != 1) id <- rlang::expr(gene)
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 
