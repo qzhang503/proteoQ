@@ -103,7 +103,7 @@ At `id = pep_seq_mod`, peptide sequences that are different in variable modifica
 
 By default, the log2FC of peptide data will be aligned by median centering across samples. If `method_align = MGKernel` is chosen, log2FC will be aligned under the assumption of multiple Gaussian kernels. The parameter `n_comp` defines the number of Gaussian kernels. The parameters `range_log2r` and `range_int` define the range of log2FC and the range of reporter-ion intensity, respectively, for use in the scaling normalization of standard deviation across samples. 
 
-Let's inspect the log2FC profiles with and without scaling normalization:^[`normPep()` will report log2FC results both before and after the scaling of standard deviations.] 
+Let's inspect the log2FC profiles with and without scaling normalization: 
 
 ```{r Peptide log2FC, eval = FALSE}
 # without the scaling of log2FC 
