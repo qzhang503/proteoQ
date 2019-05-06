@@ -65,7 +65,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins 
 
-\vspace{1.5cm}*Process PSMs* --- In this section, I demonstrate my approach of summarising PSM data to peptides and proteins. We start by processing PSM data from `Mascot` outputs:  
+*Process PSMs* --- In this section, I demonstrate my approach of summarising PSM data to peptides and proteins. We start by processing PSM data from `Mascot` outputs:  
 
 ```{r PSM summary, eval = FALSE}
 # Generate PSM reports
