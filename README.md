@@ -115,12 +115,6 @@ pepHist(
 )
 ```
 
-```{r Peptide histogram F, echo=FALSE, fig.align='center', fig.cap="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img1_path <- "Peptide\\Histogram\\Peptide_BI_GL1_N.png"
-img2_path <- "Peptide\\Histogram\\Peptide_BI_GL1_Z.png"
-knitr::include_graphics(c(img1_path, img2_path))
-```
-
 As expected, the widths of log2FC profiles become closer to each other after the scaling normalization. However, it is worthwhile to note that such adjustment may sometime lead to the shrinkage of log2FC towards zero. In the example shown below, `Smpl_6` contains serum proteins that are largely abscent in `samples 1 - 5`. We suspect that the scaling of log2FC would probably have obsecured the measures of relative protein abundance in `Smpl_6`. In our workflows, we typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with our a priori knowledge of the sample origins.  
 
 ```{r Peptide histogram G, echo=FALSE, fig.align='center', fig.cap="**Figure 2.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
