@@ -127,10 +127,10 @@ Without scaling normalization             |  With scaling normalization
 :-------------------------:|:-------------------------:
 ![BI_GL1_N](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Peptide/Histogram/Peptide_BI_GL1_N.png) |  ![BI_GL1_Z](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Peptide/Histogram/Peptide_BI_GL1_Z.png) 
 
-As expected, the widths of log2FC profiles become closer to each other after the scaling normalization. However, it is worthwhile to note that such adjustment may sometime lead to the shrinkage of log2FC towards zero. In the example shown below, `Smpl_6` contains serum proteins that are largely abscent in `samples 1 - 5`. We suspect that the scaling of log2FC would probably have obsecured the measures of relative protein abundance in `Smpl_6`. In our workflows, we typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with our a priori knowledge of the sample origins.  
+As expected, the widths of log2FC profiles become closer to each other after the scaling normalization. However, it is worthwhile to note that such adjustment may sometime lead to the shrinkage of log2FC towards zero. In the example shown below, `Smpl_6` contains serum proteins that are largely abscent in `samples 1 - 5`. As shown, the scaling of log2FC would probably have obsecured the measures of relative protein abundance in `Smpl_6`. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the sample origins. 
 
 Alignment of log2FC against housekeeping or normalizer protein(s) is also available. This seems suitable when the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
-*Summarize peptides to proteins* --- We next illustrate our approach of summarising peptides to proteins.  
+*Summarize peptides to proteins* --- We then summarise peptides to proteins.  
 
 ```{r Protein reports, eval = FALSE}
 # Generate protein reports
@@ -148,7 +148,7 @@ normPrn(
 )
 ```
 
-Similar to the peptide summary, users will inspect the alignment and the scaling of ratio profiles, and re-normalize the data when needed.^[Prameter `fasta` is solely used for the calculation of protein percent coverage. Precomputed data will be used if no `fasta` database is provided.]  
+Similar to the peptide summary, we inspect the alignment and the scaling of ratio profiles, and re-normalize the data when needed.^[Prameter `fasta` is solely used for the calculation of protein percent coverage. Precomputed data will be used if no `fasta` database is provided.]  
 
 ```{r Protein log2FC without scaling, eval = FALSE}
 # without the scaling of log2FC
