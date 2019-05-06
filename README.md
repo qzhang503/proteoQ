@@ -2,7 +2,6 @@
 Process TMT data from tandem MS experiments
 
 ## Introduction to proteoQ
-
 Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R functions. 
 
 ## Installation
@@ -18,11 +17,11 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("qzhang503/proteoQ")
 ```
 
-## Application - Data F003485.csv
+## Application  
 In this section we illustrate the following applications of `proteoQ`:
 
-1. Summarization of PSM data to peptide and protein reports.
-2. Basic informatic analysis with the peptide and protein data.
+* Summarization of PSM data to peptide and protein reports.
+* Basic informatic analysis with the peptide and protein data.
 
 ### Set up the experiments
 
@@ -34,7 +33,9 @@ library(proteoQ)
 dat_dir <- "c:\\The\\First\\Example"
 ```
 
-PSM table(s) in a `csv` format will be exported by the end users from the [Mascot](https://http://www.matrixscience.com/) search engine. The option of `Include sub-set protein hits` is typically set to `0` with our opinionated choice of the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is, which begin(s) with letter `F`, followed by six digits and ends with `.csv` in filename extension. 
+PSM table(s) in a `csv` format will be exported by the end users from the [Mascot](https://http://www.matrixscience.com/) search engine. The option of `Include sub-set protein hits` is typically set to `0` with our opinionated choice of the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in file name extension.] 
+
+It is possible for the same peptide sequence under different PSM files being assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides. To avoid such ambiguity in protein inference, we typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed when constructing peptide reports. 
 
 The end user will also fill out an `Excel` template with the information of multiplex experiment numbers, TMT channels, LC/MS injection indices, sample IDs and corresponding RAW data filenames. The default filename for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will be filled out by users to link multiple `RAW` filenames that are associated to the same sample IDs. The default filename for the fractionation summary is `frac_smry.xlsx`. Try `?loadf_expts` for more details on the experimental setups. 
 
@@ -52,8 +53,6 @@ As a final step of the setup, we will load the experimental summary and some pre
 # Load the experiment
 load_expts()
 ```
-
-*NB*: it is possible for the same peptide sequence under different PSM files being assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides. To avoid such ambiguity in protein inference, we typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed when constructing peptide reports. 
 
 
 ### Summarize PSMs to peptides and proteins 
