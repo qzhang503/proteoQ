@@ -57,7 +57,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins 
 
-\vspace{1.5cm}*Process PSMs* --- In this section, we will demonstrate our approach of summarising PSM data to peptides and proteins. We start by processing PSM data from `Mascot` outputs:  
+*Process PSMs* --- In this section, we will demonstrate our approach of summarising PSM data to peptides and proteins. We start by processing PSM data from `Mascot` outputs:  
 
 ```{r PSM summary, eval = FALSE}
 # Generate PSM reports
@@ -73,9 +73,9 @@ normPSM(
 normPSM()
 ```
 
-PSM outliers will be assessed at a basis of per peptide and per sample at `rm_outliers = TRUE`, which can be a slower process for large data sets. To mitigate repeated efforts in the assessment of PSM outliers, we may set `rm_outliers = FALSE` and `plot_violins = TRUE` when first executing `normPSM()`. We then visually inspect the violin plots of reporter-ion intensity. Empirically, PSMs with reporter-ion intensity less than 1,000 are trimmed and  samples with median intensity that is 2/3 or less to the average of majority samples are removed from further analysis.^[The sample removal and PSM re-processing can be achieved by deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-load of the experiment, `load_expts()`, and the re-execution of `normPSM()` with desired parameters.]  
+PSM outliers will be assessed at a basis of per peptide and per sample at `rm_outliers = TRUE`, which can be a slower process for large data sets. To mitigate repeated efforts in the assessment of PSM outliers, we may set `rm_outliers = FALSE` and `plot_violins = TRUE` when first executing `normPSM()`. We then visually inspect the violin plots of reporter-ion intensity. Empirically, PSMs with reporter-ion intensity less than 1,000 are trimmed and  samples with median intensity that is 2/3 or less to the average of majority samples are removed from further analysis.  
 
-\vspace{1.5cm}*Summarize PSMs to peptides* --- We next illustrate our approach of summarising PSM to peptides.  
+*Summarize PSMs to peptides* --- We next illustrate our approach of summarising PSM to peptides.  
 
 ```{r PSM to peptides, eval = FALSE}
 # Generate peptide reports
@@ -93,9 +93,9 @@ normPep()
 
 At `id = pep_seq_mod`, peptide sequences that are different in variable modificaitons will be treated as different species. We often choose this setting when analyzing phosphopeptides where the localization of site modifications may be an interest. 
 
-By default, the log2FC of peptide data will be aligned by median centering across samples. If `method_align = MGKernel` is chosen, log2FC will be aligned under the assumption of multiple Gaussian kernels.^[Density kernel estimates can occasionally capture spikes in the profiles of log2FC for data alignment. Users will need to inspect the alignment of ratio histograms and may optimize the data normalization with different combinations of tuning parameters before proceeding to the next steps.]  The parameter `n_comp` defines the number of Gaussian kernels. The parameters `range_log2r` and `range_int` define the range of log2FC and the range of reporter-ion intensity, respectively, for use in the scaling normalization of standard deviation across samples. 
+By default, the log2FC of peptide data will be aligned by median centering across samples. If `method_align = MGKernel` is chosen, log2FC will be aligned under the assumption of multiple Gaussian kernels. The parameter `n_comp` defines the number of Gaussian kernels. The parameters `range_log2r` and `range_int` define the range of log2FC and the range of reporter-ion intensity, respectively, for use in the scaling normalization of standard deviation across samples. 
 
-Let's inspect the log2FC profiles with and without scaling normalization:^[`normPep()` will report log2FC results both before and after the scaling of standard deviations.] 
+Let's inspect the log2FC profiles with and without scaling normalization: 
 
 ```{r Peptide log2FC, eval = FALSE}
 # without the scaling of log2FC 
