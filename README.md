@@ -83,7 +83,7 @@ normPSM()
 
 PSM outliers will be assessed at a basis of per peptide and per sample at `rm_outliers = TRUE`, which can be a slower process for large data sets. To mitigate repeated efforts in the assessment of PSM outliers, we may set `rm_outliers = FALSE` and `plot_violins = TRUE` when first executing `normPSM()`. We then visually inspect the violin plots of reporter-ion intensity. Empirically, PSMs with reporter-ion intensity less than 1,000 are trimmed and  samples with median intensity that is 2/3 or less to the average of majority samples are removed from further analysis.^[The sample removal and PSM re-processing can be achieved by deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-load of the experiment, `load_expts()`, and the re-execution of `normPSM()` with desired parameters.]  
 
-\vspace{1.5cm}*Summarize PSMs to peptides* --- We next summarise PSM to peptides.  
+*Summarize PSMs to peptides* --- We next summarise PSM to peptides.  
 
 ```{r PSM to peptides, eval = FALSE}
 # Generate peptide reports
