@@ -57,7 +57,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins 
 
-In this section, we demonstrate our approach of summarising PSM data to peptides and proteins. We start by processing PSM data from `Mascot` outputs: 
+\vspace{1.5cm}*Process PSMs* --- In this section, we will demonstrate our approach of summarising PSM data to peptides and proteins. We start by processing PSM data from `Mascot` outputs:  
 
 ```{r PSM summary, eval = FALSE}
 # Generate PSM reports
@@ -73,11 +73,9 @@ normPSM(
 normPSM()
 ```
 
-PSM outliers will be assessed at a basis of per peptide and per sample at `rm_outliers = TRUE`, which can be a slower process for large data sets. To avoid duplicated assessment of PSM outliers, We typically set `rm_outliers = FALSE` and `plot_violins = TRUE` when first executing `normPSM()`. We then visually inspect the violin plots of reporter-ion intensity. Empirically, samples with median intensity that is 2/3 or less to the average of majority samples are removed from further analysis. The sample removal and PSM re-analysis can be achieved by deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-load of the experiment: `load_expts()` and the re-execution of `normPSM()` with desired parameters.
+PSM outliers will be assessed at a basis of per peptide and per sample at `rm_outliers = TRUE`, which can be a slower process for large data sets. To mitigate repeated efforts in the assessment of PSM outliers, we may set `rm_outliers = FALSE` and `plot_violins = TRUE` when first executing `normPSM()`. We then visually inspect the violin plots of reporter-ion intensity. Empirically, PSMs with reporter-ion intensity less than 1,000 are trimmed and  samples with median intensity that is 2/3 or less to the average of majority samples are removed from further analysis.^[The sample removal and PSM re-processing can be achieved by deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-load of the experiment, `load_expts()`, and the re-execution of `normPSM()` with desired parameters.]  
 
-### Summarize PSMs to peptides 
-
-In this section, we illustrate our approach of summarising PSM data to peptides. 
+\vspace{1.5cm}*Summarize PSMs to peptides* --- We next illustrate our approach of summarising PSM to peptides.  
 
 ```{r PSM to peptides, eval = FALSE}
 # Generate peptide reports
@@ -95,11 +93,9 @@ normPep()
 
 At `id = pep_seq_mod`, peptide sequences that are different in variable modificaitons will be treated as different species. We often choose this setting when analyzing phosphopeptides where the localization of site modifications may be an interest. 
 
-By default, the log2FC of peptide data will be aligned by median centering across samples. If `method_align = MGKernel` is chosen, data will be aligned under the assumption of multiple Gaussian kernels in the log2FC profiles. The parameter `n_comp` defines the number of Gaussian kernels. 
+By default, the log2FC of peptide data will be aligned by median centering across samples. If `method_align = MGKernel` is chosen, log2FC will be aligned under the assumption of multiple Gaussian kernels.^[Density kernel estimates can occasionally capture spikes in the profiles of log2FC for data alignment. Users will need to inspect the alignment of ratio histograms and may optimize the data normalization with different combinations of tuning parameters before proceeding to the next steps.]  The parameter `n_comp` defines the number of Gaussian kernels. The parameters `range_log2r` and `range_int` define the range of log2FC and the range of reporter-ion intensity, respectively, for use in the scaling normalization of standard deviation across samples. 
 
-`normPep` will report log2FC results both before and after the scaling of standard deviations. The range of peptide log2FC for use in the scaling normalization will be defined by `range_log2r` and the range of reporter-ion intensity by `range_int`. 
-
-We next visualize the histogram of log2FC.
+Let's inspect the log2FC profiles with and without scaling normalization:^[`normPep()` will report log2FC results both before and after the scaling of standard deviations.] 
 
 ```{r Peptide log2FC, eval = FALSE}
 # without the scaling of log2FC 
@@ -119,11 +115,23 @@ pepHist(
 )
 ```
 
-As expected, the widths of log2FC profiles become closer to each other after the scaling normalization. However, the adjustment may lead to the shrinkage of log2FC towards zero especially when different sample types are being compared. In the example shown below, `Smpl_6` contains serum proteins that are largely abscent in `samples 1 - 5`. We suspect that the scaling of log2FC would probably have obsecured the measures of relative protein abundance in `Smpl_6`. We typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice along side with our knowledge of the sample origins. 
+```{r Peptide histogram F, echo=FALSE, fig.align='center', fig.cap="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img1_path <- "Peptide\\Histogram\\Peptide_BI_GL1_N.png"
+img2_path <- "Peptide\\Histogram\\Peptide_BI_GL1_Z.png"
+knitr::include_graphics(c(img1_path, img2_path))
+```
 
-Alignment of log2FC against housekeeping or normalizer protein(s) is also provided. This seems suitable when the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.
+  As expected, the widths of log2FC profiles become closer to each other after the scaling normalization. However, it is worthwhile to note that such adjustment may sometime lead to the shrinkage of log2FC towards zero. In the example shown below, `Smpl_6` contains serum proteins that are largely abscent in `samples 1 - 5`. We suspect that the scaling of log2FC would probably have obsecured the measures of relative protein abundance in `Smpl_6`. In our workflows, we typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with our a priori knowledge of the sample origins.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users will specify explicitly `scale_log2r = FALSE` to overwrite the default. Although the package provides the facility to look for a global setting of `scale_log2`, I don't recommend using it.]  
 
-### Summarize peptides to proteins 
+```{r Peptide histogram G, echo=FALSE, fig.align='center', fig.cap="**Figure 2.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img3_path <- "Peptide\\Histogram\\Peptide_WG_N.png"
+img4_path <- "Peptide\\Histogram\\Peptide_WG_Z.png"
+knitr::include_graphics(c(img3_path, img4_path))
+```
+
+  Alignment of log2FC against housekeeping or normalizer protein(s) is also available. This seems suitable when the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
+
+\vspace{1.5cm}*Summarize peptides to proteins* --- We next illustrate our approach of summarising peptides to proteins.  
 
 ```{r Protein reports, eval = FALSE}
 # Generate protein reports
@@ -141,10 +149,10 @@ normPrn(
 )
 ```
 
-Similar to the peptide summary, users will inspect the alignment and scaling of ratio profiles, and re-normalize the data when needed.
+Similar to the peptide summary, users will inspect the alignment and the scaling of ratio profiles, and re-normalize the data when needed.^[Prameter `fasta` is solely used for the calculation of protein percent coverage. Precomputed data will be used if no `fasta` database is provided.]  
 
 ```{r Protein log2FC without scaling, eval = FALSE}
-# Plot and inspect the histograms of protein log2FC
+# without the scaling of log2FC
 prnHist(
  scale_log2r = FALSE, 
  show_curves = TRUE,
@@ -152,6 +160,7 @@ prnHist(
  ncol = 5
 )
 
+# with the scaling of log2FC
 prnHist(
  scale_log2r = TRUE, 
  show_curves = TRUE,
@@ -159,8 +168,6 @@ prnHist(
  ncol = 5
 )
 ```
-
-Once decided on the choice of data scaling, it may be advisable to set `scale_log2r` as a global variable. This may save the efforts of repeptive setting of \code{scale_log2r} in later steps.
 
 ### Correlation plots
 Correlations of both intensity and log2FC will be performed.
