@@ -190,7 +190,8 @@ prnCorr(
 )
 ```
 
-![Intensity](Protein/Corrplot/Protein_Corrplot_Intensity_gg.png){ width=45% } ![log2FC](Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png){ width=45% }
+![Intensity](Protein/Corrplot/Protein_Corrplot_Intensity_gg.png){ width=45% } 
+![log2FC](Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png){ width=45% }
 
 The following shows examples of MDS and PCA against peptide data:
 
