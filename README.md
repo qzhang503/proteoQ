@@ -18,7 +18,7 @@ devtools::install_github("qzhang503/proteoQ")
 ```
 
 ## Application  
-In this section we illustrate the following applications of `proteoQ`:
+In this section I illustrate the following applications of `proteoQ`:
 
 * Summarization of PSM data to peptide and protein reports.
 * Basic informatic analysis with the peptide and protein data.
@@ -33,19 +33,27 @@ library(proteoQ)
 dat_dir <- "c:\\The\\First\\Example"
 ```
 
-PSM table(s) in a `csv` format will be exported by the end users from the [Mascot](https://http://www.matrixscience.com/) search engine. The option of `Include sub-set protein hits` is typically set to `0` with our opinionated choice of the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is. 
+PSM table(s) in a `csv` format will be exported by the users from the [Mascot](https://http://www.matrixscience.com/) search engine. I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in using the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in file name extension.] 
 
-It is possible for the same peptide sequence under different PSM files being assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides. To avoid such ambiguity in protein inference, we typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed when constructing peptide reports. 
+It is possible for the same peptide sequence under different PSM files being assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides. To avoid such ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed when constructing peptide reports. 
 
-The end user will also fill out an `Excel` template with the information of multiplex experiment numbers, TMT channels, LC/MS injection indices, sample IDs and corresponding RAW data filenames. The default filename for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will be filled out by users to link multiple `RAW` filenames that are associated to the same sample IDs. The default filename for the fractionation summary is `frac_smry.xlsx`. Try `?loadf_expts` for more details on the experimental setups. 
+The pacakge reads an `Excel` template containing the information of multiplex experiment numbers, TMT channels, LC/MS injection indices, sample IDs and corresponding RAW data file names. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. 
 
-The above files should be stored immediately under the the file folder specified by `dat_dir`. Examples of PSM outputs, `expt_smry` and `frac_smry` can be found as follows:
+The above files should be stored immediately under the the file folder specified by `dat_dir`. Examples of PSM outputs, `expt_smry` and `frac_smry` can be found as the follows:
 
 ```{r setting_2, include = TRUE, eval = FALSE}
 system.file("extdata", "F012345.csv", package = "proteoQ")
 system.file("extdata", "expt_smry.xlsx", package = "proteoQ")
 system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
 ```
+
+
+The description of the column keys in the `Excel` files can be found from the following: 
+
+```{r load_expts, include = TRUE, eval = FALSE}
+?load_expts
+```
+
 
 As a final step of the setup, we will load the experimental summary and some precomputed results:
 
