@@ -5,7 +5,11 @@ Process TMT data from tandem MS experiments
 Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R functions. 
 
 ## Installation
-To install this package, run R (version "3.6") as administrator and enter:
+To install this package, run R (version "3.6") as administrator 
+
+![Installation](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Installation.png)
+
+and enter:
 
 ```{r installation_1, include = TRUE, eval = FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE))
