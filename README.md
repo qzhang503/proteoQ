@@ -212,10 +212,10 @@ prnCorr(
 )
 ```
 
-![Intensity](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Protein/Corrplot/Protein_Corrplot_Intensity_gg.png){ width=45% } 
-![log2FC](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png){ width=45% }
+Intensity             |  log2FC
+:-------------------------:|:-------------------------:
+![Intensity](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Protein/Corrplot/Protein_Corrplot_Intensity_gg.png) |  ![log2FC](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png) 
 
-The following shows examples of MDS and PCA against peptide data:
 
 ```{r Peptide MDS, eval = FALSE}
 # MDS plots of peptide data
