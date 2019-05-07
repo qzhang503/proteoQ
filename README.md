@@ -39,11 +39,11 @@ dat_dir <- "c:\\The\\First\\Example"
 
 PSM table(s) in a `csv` format will be exported by the users from the [Mascot](https://http://www.matrixscience.com/) search engine. I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in using the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is.  
 
-![Mascot_export](./vignettes/Mascot_export.png = 10x20)
+![Mascot_export](./vignettes/Mascot_export.png)
 
 It is possible for the same peptide sequence under different PSM files being assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides. To avoid such ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed when constructing peptide reports. 
 
-![Mascot_daemon](./vignettes/Mascot_daemon.png =10x10)
+![Mascot_daemon](./vignettes/Mascot_daemon.png)
 
 The pacakge reads an `Excel` template containing the information of multiplex experiment numbers, TMT channels, LC/MS injection indices, sample IDs and corresponding RAW data file names. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. 
 
