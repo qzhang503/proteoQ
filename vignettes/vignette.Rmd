@@ -49,7 +49,15 @@ knitr::opts_chunk$set(
 Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R functions. 
 
 ## Installation
-To install this package, run R (version "3.6") as **administrator** and enter:
+To install this package, run R (version "3.6") as administrator
+
+```{r Installation, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_inst <- "Installation.png"
+
+knitr::include_graphics(c(img_inst))
+```
+
+and enter: 
 
 ```{r installation_1, include = TRUE, eval = FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -65,7 +73,7 @@ devtools::install_github("qzhang503/proteoQ")
 In this section I illustrate the following applications of `proteoQ`:
 
 * Summarization of PSM data to peptide and protein reports.
-* Basic informatic analysis with the peptide and protein data.
+* Basic informatic analysis against the peptide and protein data.
 
 ### Set up the experiments
 
@@ -77,9 +85,21 @@ library(proteoQ)
 dat_dir <- "c:\\The\\First\\Example"
 ```
 
-PSM table(s) in a `csv` format will be exported by the users from the [Mascot](https://http://www.matrixscience.com/) search engine. I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in employing the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in file name extension.] 
+PSM table(s) in a `csv` format will be exported by the users from the [Mascot](https://http://www.matrixscience.com/) search engine. I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in file name extension.]  
+
+```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_export <- "Mascot_export.png"
+
+knitr::include_graphics(c(img_export))
+```
 
 It is possible for the same peptide sequence under different PSM files being assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides. To avoid such ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed when constructing peptide reports. 
+
+```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_daemon <- "Mascot_daemon.png"
+
+knitr::include_graphics(c(img_daemon))
+```
 
 The pacakge reads an `Excel` template containing the information of multiplex experiment numbers, TMT channels, LC/MS injection indices, sample IDs and corresponding RAW data file names. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. 
 
@@ -145,7 +165,7 @@ normPep()
 
 At `id = pep_seq_mod`, peptide sequences that are different in variable modificaitons will be treated as different species. I often choose this setting when analyzing phosphopeptides where the localization of site modifications may be an interest. 
 
-By default, the log2FC of peptide data will be aligned by median centering across samples. If `method_align = MGKernel` is chosen, log2FC will be aligned under the assumption of multiple Gaussian kernels.^[Density kernel estimates can occasionally capture spikes in the profiles of log2FC for data alignment. Users will need to inspect the alignment of ratio histograms and may optimize the data normalization with different combinations of tuning parameters before proceeding to the next steps.]  The parameter `n_comp` defines the number of Gaussian kernels. The parameters `range_log2r` and `range_int` define the range of log2FC and the range of reporter-ion intensity, respectively, for use in the scaling normalization of standard deviation across samples. 
+By default, the log2FC of peptide data will be aligned by median centering across samples. If `method_align = MGKernel` is chosen, log2FC will be aligned under the assumption of multiple Gaussian kernels.^[Density kernel estimates can occasionally capture spikes in the profiles of log2FC for data alignment. Users will need to inspect the alignment of ratio histograms and may optimize the data normalization with different combinations of tuning parameters before proceeding to the next steps.]  The parameter `n_comp` defines the number of Gaussian kernels. The parameters `range_log2r` and `range_int` define the range of log2FC and the range of reporter-ion intensity, respectively, for use in the scaling of standard deviation across samples. 
 
 Let's inspect the log2FC profiles with and without scaling normalization:^[`normPep()` will report log2FC results both before and after the scaling of standard deviations.] 
 
@@ -201,7 +221,7 @@ normPrn(
 )
 ```
 
-Similar to the peptide summary, we inspect the alignment and the scaling of ratio profiles, and re-normalize the data when needed.^[Prameter `fasta` is solely used for the calculation of protein percent coverage. Precomputed data will be used if no `fasta` database is provided.]  
+Similar to the peptide summary, we inspect the alignment and the scaling of ratio profiles, and re-normalize the data if needed.^[Prameter `fasta` is solely used for the calculation of protein percent coverage. Precomputed data will be used if no `fasta` database is provided.]  
 
 ```{r Protein log2FC without scaling, eval = FALSE}
 # without the scaling of log2FC
@@ -266,6 +286,7 @@ pepMDS(
   show_ids = TRUE,
 )
 
+# PCA plots of peptide data
 pepPCA(
   scale_log2r = TRUE,
   col_color = Color,
@@ -274,5 +295,128 @@ pepPCA(
 )
 ```
 
+
+The following shows an example of Euclidean distance matrix against peptide data:
+
+```{r Peptide Euclidean, eval = FALSE}
+# Euclidean distance plots of peptide data
+pepEucDist(
+	scale_log2r = TRUE, 
+	adjEucDist = FALSE, 
+	show_ids = TRUE, 
+	annot_cols = c("Peptide_Yield", "Group"),
+
+	display_numbers = TRUE, 
+	number_color = "grey30", 
+	number_format = "%.2f",
+	
+	clustering_distance_rows = "euclidean", 
+	clustering_distance_cols = "euclidean", 
+	
+	fontsize = 16, 
+	fontsize_row = 20, 
+	fontsize_col = 20, 
+	fontsize_number = 8, 
+	
+	cluster_rows = TRUE,
+	show_rownames = TRUE,
+	show_colnames = TRUE,
+	border_color = "grey60", 
+	cellwidth = 24, 
+	cellheight = 24
+)
+```
+
+
+The following shows an example of heat map visualization against protein data:
+
+```{r Protein heat maps, eval = FALSE}
+# Protein heat maps
+prnHM(
+	scale_log2r = TRUE, 
+	xmin = -.5, 
+	xmax = .5, 
+	x_margin = 0.1, 
+	annot_cols = c("Peptide_Yield", "Group"), 
+	cluster_rows = TRUE, 
+	cutree_rows = 6, 
+	show_rownames = FALSE, 
+	show_colnames = TRUE, 
+	fontsize_row = 3, 
+	cellwidth = 14, 
+	width = 24, 
+	height = 12
+)
+```
+
+
+The following shows the imputation of peptide and protein data:
+
+```{r Imputatation, eval = FALSE}
+# Impute missing values
+pepImp(m = 5, maxit = 5)
+prnImp(m = 5, maxit = 5)
+```
+
+
+The following shows the trend analysis of protein expressions:
+
+```{r Protein trends, eval = FALSE}
+# Soft clustering in protein expressions by trends
+prnTrend(n_clust = 6, scale_log2r = TRUE)
+```
+
+The following shows the NMF analysis of protein data:
+
+```{r Protein NMF, eval = FALSE}
+# Protein NMF
+library(NMF)
+prnNMF(r = 6, xmin = -1, xmax = 1, x_margin = 0.1, 
+	annot_cols = c("Peptide_Yield", "TMT_Set", "Group"), 
+	scale_log2r = TRUE)
+```
+
+
+The following shows the significance analysis of peptide and protein data:
+
+```{r SigTest, eval = FALSE}
+# Peptide significance tests
+# Multiple terms and contrasts allowed 
+pepSig(
+	scale_log2r = TRUE, 
+	limma_1 = ~ Term["W2.TMT2-W2.TMT1", "W16.TMT2-W16.TMT1", "(W16.TMT2-W16.TMT1)-(W2.TMT2-W2.TMT1)"]
+)
+
+# Protein significance tests
+prnSig(
+	scale_log2r = TRUE, 
+	limma_1 = ~ Term["W2.TMT2-W2.TMT1", "W16.TMT2-W16.TMT1", "(W16.TMT2-W16.TMT1)-(W2.TMT2-W2.TMT1)"]
+)
+```
+
+
+The following shows the volcano plot visualization of peptide and protein data:
+
+```{r Volcano, eval = FALSE}
+# Peptide volcano plots
+pepVol(scale_log2r = TRUE)
+
+# Protein volcano plots
+prnVol(scale_log2r = TRUE)
+```
+
+
+The following performs GSVA:
+
+```{r Protein GSVA, eval = FALSE}
+prnGSVA(gset_nm = c("go_sets", "kegg_sets", "c2_msig"), scale_log2r = TRUE)
+```
+
+
+The following maps gene sets for volcano plot visualization:
+
+```{r Map GSVA, eval = FALSE}
+gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
+```
 
 
