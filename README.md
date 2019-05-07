@@ -7,7 +7,7 @@ Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tan
 ## Installation
 To install this package, run R (version "3.6") as administrator 
 
-![Installation](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Installation.png)
+![Installation](./vignettes/Installation.png)
 
 and enter:
 
