@@ -47,5 +47,6 @@ Imports:
     RCurl,
     XML,
     readxl,
-    testthat
+    testthat,
+    fs
 RoxygenNote: 6.1.1
