@@ -5,7 +5,7 @@
 \title{NMF analysis}
 \usage{
 proteoNMF(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
-  col_select = NULL, scale_log2r = FALSE, impute_na = TRUE,
+  col_select = NULL, scale_log2r = TRUE, impute_na = TRUE,
   complete_cases = FALSE, df = NULL, filepath = NULL,
   filename = NULL, r = 4, nrun = 200, xmin = -1, xmax = 1,
   x_margin = 0.1, annot_cols = NULL, width_consensus = 6,

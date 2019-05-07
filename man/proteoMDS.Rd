@@ -6,7 +6,7 @@
 \usage{
 proteoMDS(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
-  col_size = NULL, col_alpha = NULL, scale_log2r = FALSE,
+  col_size = NULL, col_alpha = NULL, scale_log2r = TRUE,
   adjEucDist = FALSE, classical = TRUE, show_ids = TRUE,
   annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL,
   ...)

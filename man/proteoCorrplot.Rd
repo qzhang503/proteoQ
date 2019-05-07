@@ -6,9 +6,8 @@
 \usage{
 proteoCorrplot(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, col_order = NULL, use_log10 = TRUE,
-  scale_log2r = FALSE, min_int = 3.5, max_int = 6.5,
-  min_log2r = -2, max_log2r = 2, df = NULL, filepath = NULL,
-  filename = NULL, ...)
+  scale_log2r = TRUE, min_int = 3.5, max_int = 6.5, min_log2r = -2,
+  max_log2r = 2, df = NULL, filepath = NULL, filename = NULL, ...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be

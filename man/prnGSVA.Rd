@@ -4,7 +4,7 @@
 \alias{prnGSVA}
 \title{MDS Plots}
 \usage{
-prnGSVA(id = gene, scale_log2r = FALSE, df = NULL, filepath = NULL,
+prnGSVA(id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
   filename = NULL, impute_na = TRUE, complete_cases = FALSE,
   method = "limma", gset_nm = "go_sets", var_cutoff = 0.5,
   pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), mx.diff = TRUE, ...)

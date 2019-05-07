@@ -5,7 +5,7 @@
 \title{MA Plots}
 \usage{
 proteoMA(id = gene, col_select = NULL, col_group = NULL,
-  scale_log2r = FALSE, df = NULL, filepath = NULL, filename = NULL,
+  scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL,
   ...)
 }
 \arguments{

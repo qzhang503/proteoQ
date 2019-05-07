@@ -4,7 +4,7 @@
 \alias{prnGAGE}
 \title{GAGE analysis}
 \usage{
-prnGAGE(id = gene, scale_log2r = FALSE, df = NULL, filepath = NULL,
+prnGAGE(id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
   filename = NULL, impute_na = TRUE, complete_cases = FALSE,
   method = "limma", gset_nm = "go_sets", var_cutoff = 0.001,
   pval_cutoff = 0.05, logFC_cutoff = log2(1.1), ...)

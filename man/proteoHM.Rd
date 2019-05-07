@@ -5,7 +5,7 @@
 \title{Plots heat maps}
 \usage{
 proteoHM(id = gene, col_select = NULL, col_benchmark = NULL,
-  scale_log2r = FALSE, impute_na = FALSE, complete_cases = FALSE,
+  scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE,
   df = NULL, filepath = NULL, filename = NULL, xmin = -1,
   xmax = 1, x_margin = 0.1, annot_cols = NULL, ...)
 }
