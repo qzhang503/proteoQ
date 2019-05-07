@@ -39,7 +39,7 @@ dat_dir <- "c:\\The\\First\\Example"
 
 PSM table(s) in a `csv` format will be exported by the users from the [Mascot](https://http://www.matrixscience.com/) search engine. I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in using the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is.  
 
-![Installation](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Mascot_export.png){:height="50%" width="50%"} 
+![Installation](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Mascot_export.png | width = 50)
 
 It is possible for the same peptide sequence under different PSM files being assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides. To avoid such ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed when constructing peptide reports. 
 
