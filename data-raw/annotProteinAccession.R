@@ -271,3 +271,6 @@ for (species in c("", "Mm", "Rn", "Dm")) {
 saveRDS(SwissProt_annot, file.path("C:\\Results\\R\\proteoQ\\data", paste("SwissProt", "annot.rds", sep = "_")))
 
 
+
+
+
