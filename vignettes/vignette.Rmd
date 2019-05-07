@@ -242,7 +242,7 @@ prnHist(
 ```
 
 ### Correlation plots
-The documentation from this point on is under construction; nevertheless, interactive R scripts are shown for now.  
+The documentation from this point on is under construction; nevertheless, interactive R scripts are made available for now.  
 
 Correlations of both intensity and log2FC will be performed.  
 

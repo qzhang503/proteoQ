@@ -179,7 +179,9 @@ prnHist(
 ```
 
 ### Correlation plots
-The documentation from this point on is under construction... Correlations of both intensity and log2FC will be performed.
+The documentation from this point on is under construction; nevertheless, interactive R scripts are made available for now.  
+
+Correlations of both intensity and log2FC will be performed.  
 
 ```{r Peptide corr, eval = FALSE}
 # Correlation plots of peptide data
@@ -210,8 +212,8 @@ prnCorr(
 )
 ```
 
-![Intensity](Protein/Corrplot/Protein_Corrplot_Intensity_gg.png){ width=45% } 
-![log2FC](Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png){ width=45% }
+![Intensity](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Protein/Corrplot/Protein_Corrplot_Intensity_gg.png){ width=45% } 
+![log2FC](https://github.com/qzhang503/proteoQ/blob/master/vignettes/Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png){ width=45% }
 
 The following shows examples of MDS and PCA against peptide data:
 
@@ -224,6 +226,7 @@ pepMDS(
   show_ids = TRUE,
 )
 
+# PCA plots of peptide data
 pepPCA(
   scale_log2r = TRUE,
   col_color = Color,
@@ -233,5 +236,127 @@ pepPCA(
 ```
 
 
+The following shows an example of Euclidean distance matrix against peptide data:
+
+```{r Peptide Euclidean, eval = FALSE}
+# Euclidean distance plots of peptide data
+pepEucDist(
+	scale_log2r = TRUE, 
+	adjEucDist = FALSE, 
+	show_ids = TRUE, 
+	annot_cols = c("Peptide_Yield", "Group"),
+
+	display_numbers = TRUE, 
+	number_color = "grey30", 
+	number_format = "%.2f",
+	
+	clustering_distance_rows = "euclidean", 
+	clustering_distance_cols = "euclidean", 
+	
+	fontsize = 16, 
+	fontsize_row = 20, 
+	fontsize_col = 20, 
+	fontsize_number = 8, 
+	
+	cluster_rows = TRUE,
+	show_rownames = TRUE,
+	show_colnames = TRUE,
+	border_color = "grey60", 
+	cellwidth = 24, 
+	cellheight = 24
+)
+```
+
+
+The following performs of heat map visualization against protein data:
+
+```{r Protein heat maps, eval = FALSE}
+# Protein heat maps
+prnHM(
+	scale_log2r = TRUE, 
+	xmin = -.5, 
+	xmax = .5, 
+	x_margin = 0.1, 
+	annot_cols = c("Peptide_Yield", "Group"), 
+	cluster_rows = TRUE, 
+	cutree_rows = 6, 
+	show_rownames = FALSE, 
+	show_colnames = TRUE, 
+	fontsize_row = 3, 
+	cellwidth = 14, 
+	width = 24, 
+	height = 12
+)
+```
+
+
+The following performs the imputation of peptide and protein data:
+
+```{r Imputatation, eval = FALSE}
+# Impute missing values
+pepImp(m = 5, maxit = 5)
+prnImp(m = 5, maxit = 5)
+```
+
+
+The following performs the trend analysis against protein expressions:
+
+```{r Protein trends, eval = FALSE}
+# Soft clustering in protein expressions by trends
+prnTrend(n_clust = 6, scale_log2r = TRUE)
+```
+
+The following performs the NMF analysis against protein data:
+
+```{r Protein NMF, eval = FALSE}
+# Protein NMF
+library(NMF)
+prnNMF(r = 6, xmin = -1, xmax = 1, x_margin = 0.1, 
+	annot_cols = c("Peptide_Yield", "TMT_Set", "Group"), 
+	scale_log2r = TRUE)
+```
+
+
+The following performs the significance analysis of peptide and protein data:
+
+```{r SigTest, eval = FALSE}
+# Peptide significance tests
+# Multiple formulas are allowed 
+pepSig(
+	scale_log2r = TRUE, 
+	limma_1 = ~ Term["W2.TMT2-W2.TMT1", "W16.TMT2-W16.TMT1", "(W16.TMT2-W16.TMT1)-(W2.TMT2-W2.TMT1)"]
+)
+
+# Protein significance tests
+prnSig(
+	scale_log2r = TRUE, 
+	limma_1 = ~ Term["W2.TMT2-W2.TMT1", "W16.TMT2-W16.TMT1", "(W16.TMT2-W16.TMT1)-(W2.TMT2-W2.TMT1)"]
+)
+```
+
+
+The following performs the volcano plot visualization of peptide and protein data:
+
+```{r Volcano, eval = FALSE}
+# Peptide volcano plots
+pepVol(scale_log2r = TRUE)
+
+# Protein volcano plots
+prnVol(scale_log2r = TRUE)
+```
+
+
+The following performs GSVA:
+
+```{r Protein GSVA, eval = FALSE}
+prnGSVA(gset_nm = c("go_sets", "kegg_sets", "c2_msig"), scale_log2r = TRUE)
+```
+
+
+The following maps gene sets under the environment of volcano plot visualization:
+
+```{r Map GSVA, eval = FALSE}
+gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
+```
 
 
