@@ -4,17 +4,13 @@
 \alias{splitPSM}
 \title{Splits PSM tables}
 \usage{
-splitPSM(rptr_intco = 1000, rm_craps = FALSE, crap = "cRAP",
-  plot_violins = TRUE)
+splitPSM(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE)
 }
 \arguments{
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
 
 \item{rm_craps}{Logical; if TRUE, removes
 \code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.}
-
-\item{crap}{Character string; the name of cRAP database, which can be found
-from the header of PSM outputs: "Database,1::cRAP 2::SwissProt".}
 
 \item{plot_violins}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}

@@ -5,7 +5,7 @@
 \title{Significance tests}
 \usage{
 proteoVolcano(id = "gene", anal_type = "Volcano", df = NULL,
-  scale_log2r = FALSE, filepath = NULL, filename = NULL,
+  scale_log2r = TRUE, filepath = NULL, filename = NULL,
   impute_na = TRUE, adjP = FALSE, show_labels = TRUE,
   use_gagep = TRUE, pval_cutoff = 0.05, show_sig = NULL, ...)
 }

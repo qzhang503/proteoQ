@@ -262,6 +262,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 	options(max.print = 2000000)
 
+	load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 
 	newColnames <- function(i, x) {

@@ -4,11 +4,11 @@
 \name{proteoQ}
 \alias{proteoQ}
 \alias{proteoQ-package}
-\title{proteoQ: A package for processing mass spectrometry data using tandam mass
-tags (\url{https://en.wikipedia.org/wiki/Tandem_mass_tag}).}
+\title{proteoQ: A package for processing mass spectrometry data using tandam mass tags 
+(\url{https://en.wikipedia.org/wiki/Tandem_mass_tag}).}
 \description{
-The proteoQ package provides three categories of functions in data
-preprocessing, quality assurance assessments and informatic analysis.
+The proteoQ package provides three categories of functions in data preprocessing, 
+  quality assurance assessments and informatic analysis.
 }
 \section{proteoQ functions in data preprocessing}{
  normPSM, normPep, normPrn

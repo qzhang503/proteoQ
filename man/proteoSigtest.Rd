@@ -4,7 +4,7 @@
 \alias{proteoSigtest}
 \title{Significance tests}
 \usage{
-proteoSigtest(df = NULL, id = gene, scale_log2r = FALSE,
+proteoSigtest(df = NULL, id = gene, scale_log2r = TRUE,
   filepath = NULL, filename = NULL, impute_na = TRUE,
   complete_cases = FALSE, method = "limma", var_cutoff = 0.001,
   pval_cutoff = 1, logFC_cutoff = log2(1), ...)
