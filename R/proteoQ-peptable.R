@@ -27,13 +27,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 	on.exit(message("Generation of individual peptide tables by RAW filenames --- Completed."),
 	        add = TRUE)
 
-	calcPepide <- function(df, label_scheme, id, method_psm_pep,
-	                       set_idx, injn_idx, range_log2r = c(0, 100), range_int = c(30, 80)) {
-
-	  # Not used: injn_idx
-		# Not used: range_log2r
-		# Not used: range_int
-
+	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx) {
 		id <- rlang::as_string(rlang::enexpr(id))
 
 		channelInfo <- label_scheme %>%
@@ -47,7 +41,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 				dplyr::mutate(pep_scan_title = gsub("\\\\", "~~", pep_scan_title)) %>%
 				dplyr::mutate(pep_scan_title = gsub("^File.*~~", "", pep_scan_title))
 
-		# summarise log2-ratios and intensity from the same TMT experiment at different LCMS injections
+		# summarise log2FC and intensity from the same `set_idx` but different LCMS injections
 		if (method_psm_pep == "mean") {
 			df_num <- aggrNums(mean)(df, !!rlang::sym(id), na.rm = TRUE)
 		} else if (method_psm_pep == "top.3") {
@@ -62,44 +56,40 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 				dplyr::select(!!rlang::sym(id)) %>%
 				dplyr::group_by(!!rlang::sym(id)) %>%
 				dplyr::summarise(n_psm = n())
+		
+		df_score <- df %>% 
+		  dplyr::select(!!rlang::sym(id), pep_score) %>% 
+		  dplyr::group_by(!!rlang::sym(id)) %>% 
+		  dplyr::summarise(pep_score = max(pep_score, na.rm = TRUE))
+		
+		df_expect <- df %>% 
+		  dplyr::select(!!rlang::sym(id), pep_expect) %>% 
+		  dplyr::group_by(!!rlang::sym(id)) %>% 
+		  dplyr::summarise(pep_expect = min(pep_expect, na.rm = TRUE))
 
+		df <- df %>% 
+		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% # already in `df_num`
+		  dplyr::select(-pep_score, -pep_expect) %>% # in `df_score` and `df_expect`
+		  dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score",
+		                                       "prot_matches", "prot_matches_sig", "prot_sequences",
+		                                       "prot_sequences_sig", "raw_file", "pep_query", 
+		                                       "pep_rank", "pep_isbold", "pep_isunique", 
+		                                       "pep_exp_mr", "pep_exp_z", "pep_calc_mr", 
+		                                       "pep_exp_mz", "pep_delta", "pep_miss", "pep_var_mod", 
+		                                       "pep_var_mod_pos", "pep_scan_title", "pep_res_before", 
+		                                       "pep_res_after", "pep_summed_mod_pos", 
+		                                       "pep_local_mod_pos")))
+		
+		df_first <- df %>% 
+		  dplyr::filter(!duplicated(!!rlang::sym(id)))
+		
+		if(id == "pep_seq_mod") {
+		  df_first <- df_first %>% dplyr::select(-pep_seq)
+		} else {
+		  df_first <- df_first %>% dplyr::select(-pep_seq_mod)
+		}
 
-		# summary of categories using all strings
-		df_str_a <- df %>%
-      # already processed
-		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
-		  # will not be used
-      dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score",
-                                           "prot_matches", "prot_matches_sig", "prot_sequences",
-                                           "prot_sequences_sig"))) %>%
-      # redundant data available in "pep_seq_mod"; "pep_var_mod_pos" but kept for convenience
-		  dplyr::select(-which(names(.) %in% c("pep_res_before", "pep_res_after",
-		                                       "pep_summed_mod_pos", "pep_local_mod_pos"))) %>%
-		  # will be processed later
-      dplyr::select(-which(names(.) %in% c("prot_acc", "pep_start", "pep_end", "pep_miss",
-                                           "pep_var_mod", "pep_var_mod_pos", "prot_desc",
-                                           "prot_mass")))
-
-		# will also be processed later
-		if(id == "pep_seq_mod") df_str_a <- df_str_a %>% dplyr::select(-pep_seq)
-
-		df_str_a <- df_str_a %>%
-				dplyr::group_by(!!rlang::sym(id)) %>%
-				dplyr::summarise_all(toString, na.rm = TRUE)
-
-		# summary of categories using only the first string
-		nm_a <- names(df_str_a)[-which(names(df_str_a) == id)]
-		df_str_b <- df %>%
-				dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% # already processed
-				dplyr::select(-which(names(.) %in% nm_a)) %>% # already processed under "df_str_a"
-				dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score",
-				                                     "prot_matches", "prot_matches_sig", "prot_sequences",
-				                                     "prot_sequences_sig"))) %>% # will not be used
-				dplyr::select(-which(names(.) %in% c("pep_res_before", "pep_res_after", "pep_summed_mod_pos",
-				                                     "pep_local_mod_pos"))) %>% # redundant kept for convenience
-				dplyr::filter(!duplicated(!!id))
-
-		df <- list(df_psm, df_str_b, df_str_a, df_num) %>%
+		df <- list(df_psm, df_first, df_score, df_expect, df_num) %>%
 				purrr::reduce(left_join, by = id) %>%
 				data.frame(check.names = FALSE)
 
@@ -150,9 +140,11 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 		injn_idx <- as.integer(gsub(".*LCMSinj(\\d+).*", "\\1", fn_prx))
 
 		df <- read.csv(file.path(dat_dir, "PSM", x), check.names = FALSE, header = TRUE,
-		               sep = "\t", comment.char = "#") %>%
+		               sep = "\t", comment.char = "#") 
+		
+		df <- df %>%
 		  calcPepide(label_scheme = label_scheme, id = !!id, method_psm_pep = method_psm_pep,
-		             set_idx = set_idx, injn_idx = injn_idx, range_int = range_int, range_log2r = range_log2r)
+		             set_idx = set_idx)
 
 		if(grepl("|", df$prot_acc[1], fixed = TRUE)) {
 			temp <- strsplit(as.character(df$prot_acc), '|', fixed = TRUE)
@@ -328,16 +320,16 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 		# remove peptides that have been assigned to more than one protein accession
 		dup_peps <- df %>%
-			dplyr::select(pep_seq, prot_acc) %>%
-			dplyr::group_by(pep_seq) %>%
+			dplyr::select(!!rlang::sym(id), prot_acc) %>%
+			dplyr::group_by(!!rlang::sym(id)) %>%
 			dplyr::summarise(N = n_distinct(prot_acc)) %>%
 			dplyr::filter(N > 1)
 
 		if (nrow(dup_peps) > 0) {
-			df <- df %>% dplyr::filter(!pep_seq %in% dup_peps$pep_seq)
+			df <- df %>% dplyr::filter(! (!!rlang::sym(id) %in% dup_peps[[id]]))
 
-			write.csv(df %>% dplyr::filter(pep_seq %in% dup_peps$pep_seq),
-				file.path(dat_dir, "Peptide", "pep_w_ambiguity_in_prn_ids.csv"),
+			write.csv(dup_peps,
+				file.path(dat_dir, "Peptide", "dbl_dipping_peptides.csv"),
 				sep = "\t", row.names = FALSE)
 		}
 		rm(dup_peps)
@@ -381,47 +373,12 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 				dplyr::group_by(!!rlang::sym(id)) %>%
 				dplyr::summarise(n_psm = sum(n_psm))
 
-		# categories for summary using all strings
-		max_char <- 500
-		df_str_a <- df %>%
-			dplyr::select(-n_psm, -TMT_Set,
-			              -grep("^log2_R[0-9]{3}|^I[0-9]{3}|^N_log2_R[0-9]{3}|^N_I[0-9]{3}|^Z_log2_R[0-9]{3}",
-			                    names(.))) %>% # already processed
-			dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score",
-			                                     "prot_matches", "prot_matches_sig", "prot_sequences",
-			                                     "prot_sequences_sig"))) %>% # will not be used
-			dplyr::select(-which(names(.) %in% c("pep_res_before", "pep_res_after", "pep_summed_mod_pos",
-			                                     "pep_local_mod_pos"))) %>% # redundant but kept for convenience
-			dplyr::select(-which(names(.) %in% c("pep_start", "pep_end", "pep_miss", "prot_acc", "prot_desc",
-			                                     "prot_mass", "pep_var_mod"))) # will be processed later
+		df_first <- df %>% 
+		  dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
+		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
+		  dplyr::select(-n_psm, -TMT_Set)
 
-		# will also be processed later
-		if(id == "pep_seq_mod") df_str_a <- df_str_a %>% dplyr::select(-pep_seq)
-
-		df_str_a <- df_str_a %>%
-			dplyr::group_by(!!rlang::sym(id)) %>%
-			dplyr::summarise_all(toString, na.rm = TRUE) %>%
-			dplyr::mutate(pep_scan_title =
-			                ifelse(nchar(pep_scan_title) > max_char,
-			                       paste0(str_sub(pep_scan_title, 1, max_char), "..."), pep_scan_title))
-
-		write.csv(df_str_a, file.path(dat_dir, "Peptide\\cache", "pep_stra.csv"), row.names = FALSE)
-
-		# categories for summary using the first string
-		nm_a <- names(df_str_a)[-which(names(df_str_a) == id)]
-		df_str_b <- df %>%
-			dplyr::select(-n_psm, -TMT_Set,
-			              -grep("^log2_R[0-9]{3}|^I[0-9]{3}|^N_log2_R[0-9]{3}|^N_I[0-9]{3}|^Z_log2_R[0-9]{3}",
-			                    names(.))) %>% # already processed
-			dplyr::select(-which(names(.) %in% nm_a)) %>% # already processed under "df_str_a"
-			dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score",
-			                                     "prot_matches", "prot_matches_sig", "prot_sequences",
-			                                     "prot_sequences_sig"))) %>% # will not be used
-			dplyr::select(-which(names(.) %in% c("pep_res_before", "pep_res_after", "pep_summed_mod_pos",
-			                                     "pep_local_mod_pos"))) %>% # redundant
-			dplyr::filter(!duplicated(!!rlang::sym(id)))
-
-		df <- list(df_str_b, df_psm, df_str_a, df_num) %>%
+		df <- list(df_psm, df_first, df_num) %>%
 			purrr::reduce(left_join, by = id) %>%
 			data.frame(check.names = FALSE)
 
@@ -479,9 +436,20 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		!!!dots
 	)
 
-	df[, grepl("^Z_log2_R[0-9]{3}", names(df))] <-  df[, grepl("^Z_log2_R[0-9]{3}", names(df))] %>%
+	df[, grepl("^Z_log2_R[0-9]{3}", names(df))] <-  
+	  df[, grepl("^Z_log2_R[0-9]{3}", names(df))] %>%
+	  dplyr::mutate_if(is.logical, as.numeric) %>%
+	  round(., digits = 3)
+	
+	df[, grepl("^N_log2_R[0-9]{3}", names(df))] <-  
+	  df[, grepl("^N_log2_R[0-9]{3}", names(df))] %>%
+	  dplyr::mutate_if(is.logical, as.numeric) %>%
+	  round(., digits = 3)
+	
+	df[, grepl("I[0-9]{3}", names(df))] <-  
+	  df[, grepl("I[0-9]{3}", names(df))] %>%
 		dplyr::mutate_if(is.logical, as.numeric) %>%
-		round(., digits = 3)
+		round(., digits = 0)
 
 	write.table(df, file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t",
 	            col.names = TRUE, row.names = FALSE)
