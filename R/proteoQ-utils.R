@@ -474,7 +474,7 @@ prnImp <- function (...) {
 #' Adds annotation based on the "prot_acc"
 #'
 #' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %$% 
 annotPrn <- function (df, acc_type) {
 	acc_type <- tolower(acc_type)
 
@@ -482,8 +482,10 @@ annotPrn <- function (df, acc_type) {
 		key <- "refseq_acc"
 	} else if(acc_type == "uniprot_id") {
 		key <- "uniprot_id"
+	} else if (acc_type == "uniprot_acc") {
+	  key <- "uniprot_acc"
 	} else {
-		stop("Unrecognized protein accesion type; need to one of \'uniprot_id\' and \'refseq_acc\'",
+		stop("Unrecognized protein accesion type; need to one of \'uniprot_id\', \'uniprot_acc\' or \'refseq_acc\'",
 		     call. = TRUE)
 	}
 
@@ -495,7 +497,19 @@ annotPrn <- function (df, acc_type) {
 
 	df <- df %>%
 		dplyr::left_join(lookup, by = c("prot_acc" = key))
+	
+	ind <- is.na(df$gene) | str_length(df$gen) == 0
+	if (acc_type %in% c("uniprot_id", "uniprot_acc") & sum(ind) > 0) {
+	  sub_gns <- df[ind, "prot_desc"] %>% 
+	    as.character(.) %>% 
+	    strsplit(., ' GN=', fixed = TRUE) %>% 
+	    plyr::ldply(., rbind) %$% 
+			gsub("\\s+.*", "", .[, 2])
 
+	  df[ind, "gene"] <- sub_gns
+		rm(sub_gns)
+	}
+	
 	# annotate NA genes with prot_acc
 	ind <- is.na(df$gene) | str_length(df$gen) == 0
 	if(sum(ind) > 0) df[ind, "gene"] <- df[ind, "prot_acc"]
