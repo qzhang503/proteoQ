@@ -176,72 +176,41 @@ normPrn <- function (id = c("prot_acc", "gene"),
 				dplyr::group_by(!!rlang::sym(id))
 
 		df_num <- switch(method_pep_prn, 
-					mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
-					top.3 = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
-					weighted.mean = TMT_wt_mean(df_num, !!rlang::sym(id), na.rm = TRUE), 
-					median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
-					aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE)
-				)
+		                 mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
+		                 top.3 = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
+		                 weighted.mean = TMT_wt_mean(df_num, !!rlang::sym(id), na.rm = TRUE), 
+		                 median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
+		                 aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
 				
 		write.csv(df_num, file.path(dat_dir, "Protein\\cache", "prn_num.csv"), row.names = FALSE)
 
-		# the number of PSM
 		df_psm <- df %>% 
 				dplyr::select(!!rlang::sym(id), n_psm) %>% 
 				dplyr::group_by(!!rlang::sym(id)) %>% 
 				dplyr::summarise(n_psm = sum(n_psm))
 		write.csv(df_psm, file.path(dat_dir, "Protein\\cache", "prn_npsm.csv"), row.names = FALSE)
 		
-		# the number of unique peptides
+		pep_id <- match_identifier("pep_seq")
+		
 		df_seq <- df %>% 
-				dplyr::select(!!rlang::sym(id), pep_seq) %>% 
-				dplyr::filter(!duplicated(pep_seq)) %>% 
+				dplyr::select(!!rlang::sym(id), !!rlang::sym(pep_id)) %>% 
+				dplyr::filter(!duplicated(!!rlang::sym(pep_id))) %>% 
 				dplyr::count(!!rlang::sym(id)) %>% # number of peptides for a protein
 				dplyr::rename(n_pep = n)
 		write.csv(df_seq, file.path(dat_dir, "Protein\\cache", "prn_npep.csv"), row.names = FALSE)
 	
-		# summarise categories using all strings
-		max_char <- 200
-		df_str_a <- df %>% 
-				dplyr::select(-n_psm, 
-				              -grep("^log2_R[0-9]{3}|^I[0-9]{3}|^N_log2_R[0-9]{3}|^N_I[0-9]{3}|^Z_log2_R[0-9]{3}", 
-				                    names(.))) %>% # already processed 
-				dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score", 
-				                                     "prot_matches", "prot_matches_sig", "prot_sequences", 
-				                                     "prot_sequences_sig"))) %>% # will not be used
-				dplyr::select(-which(names(.) %in% c("pep_seq", "pep_var_mod", 
-				                                     "pep_var_mod_pos"))) %>% # will not be used in protein report
-				dplyr::select(-which(names(.) %in% c("prot_desc", "prot_mass", "uniprot_acc", "uniprot_id", 
-				                                     "gene", "entrez", "kin_attr", "kin_class", 
-				                                     "kin_order"))) %>% # will be processed later
-				dplyr::group_by(!!rlang::sym(id)) %>% 
-				dplyr::summarise_all(toString, na.rm = TRUE) %>% 
-				dplyr::mutate_at(vars(which(names(.) != id)), 
-				                 function (x) {ifelse(nchar(x) > max_char, 
-				                                      paste0(str_sub(x, 1, max_char), "..."), x)})
-		
-		write.csv(df_str_a, file.path(dat_dir, "Protein\\cache", "prn_str_a.csv"), row.names = FALSE)
-		
-		# summarise categories using only the first string
-		nm_a <- names(df_str_a)[-which(names(df_str_a) == id)]
-		df_str_b <- df %>% 
-				dplyr::select(-n_psm, 
-				              -grep("^log2_R[0-9]{3}|^I[0-9]{3}|^N_log2_R[0-9]{3}|^N_I[0-9]{3}|^Z_log2_R[0-9]{3}", 
-				                    names(.))) %>% # already processed 
-				dplyr::select(-which(names(.) %in% nm_a)) %>% # already processed under "df_str_a"
-				dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score", 
-				                                     "prot_matches", "prot_matches_sig", "prot_sequences", 
-				                                     "prot_sequences_sig"))) %>% # will not be used
-				dplyr::select(-which(names(.) %in% c("pep_seq", "pep_var_mod", "pep_var_mod_pos"))) %>% # redundant
-				dplyr::filter(!duplicated(!!rlang::sym(id)))
-		
-		write.csv(df_str_b, file.path(dat_dir, "Protein\\cache", "prn_str_b.csv"), row.names = FALSE)
-	
-		df <- list(df_str_b, df_seq, df_psm, df_str_a, df_num) %>% 
+		df_first <- df %>% 
+		  dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
+		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
+		  dplyr::select(-n_psm)	%>% 
+		  dplyr::select(-pep_start, -pep_end, -pep_score, -pep_expect) %>% 
+		  dplyr::select(-!!rlang::sym(pep_id))
+
+		df <- list(df_seq, df_psm, df_first, df_num) %>% 
 				purrr::reduce(left_join, by = id) %>% 
 				data.frame(check.names = FALSE)
 
-		rm(df_num, df_psm, df_str_a, nm_a, df_str_b)
+		rm(df_num, df_psm, df_seq, df_first)
 
 		df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
 				df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
@@ -313,7 +282,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	if(gn_rollup) {
 		dfa <- df %>% 
 			dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
-			dplyr::filter(!is.na(gene)) %>% # proteins with empty "gene" but "prot_acc" are still kept 
+			dplyr::filter(!is.na(gene)) %>% # proteins with empty "gene" but "prot_acc" will be kept 
 			dplyr::group_by(gene) %>% 
 			dplyr::summarise_all(list(~median(., na.rm = TRUE)))
 		
