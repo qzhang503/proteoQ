@@ -205,7 +205,17 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 		tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>%
 		dplyr::select(-Fraction) %>%
 		dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File))
-
+	
+	# compare the RAW_File names in 'label_scheme_full' to the RAW_File names from Mascot
+	fn_lookup <- label_scheme_full %>%
+	  dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
+	  dplyr::mutate(filename = paste(paste0("TMTset", .$TMT_Set),
+	                                 paste0("LCMSinj", .$LCMS_Injection), sep = "_")) %>%
+	  dplyr::filter(!duplicated(filename)) %>%
+	  tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>% 
+	  dplyr::select(-RAW_File) %>%
+	  dplyr::left_join(fraction_scheme_temp, by = "TMT_inj")	  
+	
 	if(length(grep("^R[0-9]{3}", names(df))) > 0) {
 		df_split <- df %>%
 			dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
@@ -218,51 +228,40 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 			dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
 			dplyr::arrange(RAW_File, pep_seq, prot_acc) %>%
 			# a special case of redundant entries from Mascot
-		  dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))])) %>%
-			left_join(fraction_scheme_temp, id = "RAW_File") %>%
-			dplyr::group_by(TMT_inj) %>%
-			dplyr::mutate(psm_index = row_number()) %>%
-			data.frame(check.names = FALSE) %>%
-			split(., .$TMT_inj, drop = TRUE)
+		  dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
 	} else {
 		df_split <- df %>%
 			dplyr::filter(pep_expect <=  0.10) %>%
 		  dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
 			dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
-			dplyr::arrange(RAW_File, pep_seq, prot_acc)  %>%
-			left_join(fraction_scheme_temp, id = "RAW_File") %>%
-			dplyr::group_by(TMT_inj) %>%
-			dplyr::mutate(psm_index = row_number()) %>%
-			data.frame(check.names = FALSE) %>%
-			split(., .$TMT_inj, drop = TRUE)
+			dplyr::arrange(RAW_File, pep_seq, prot_acc)
 	}
-
-	# match the RAW_File in 'label_scheme_full' to the RAW_File from Mascot
-  fn_lookup <- label_scheme_full %>%
-		dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
-		dplyr::mutate(filename = paste(paste0("TMTset", .$TMT_Set),
-		                               paste0("LCMSinj", .$LCMS_Injection), sep = "_")) %>%
-		dplyr::filter(!duplicated(filename)) %>%
-		tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE)
-
-	# map with RAW_File names in fraction_scheme
-	fn_lookup <- fn_lookup %>%
-		dplyr::select(-RAW_File) %>%
-		dplyr::left_join(fraction_scheme_temp, by = "TMT_inj")
-
-	ms_files <- sapply(df_split, function (x) unique(x$RAW_File))
+	
+	# check mismatches in RAW_File names
+	ms_files <- unique(df_split$RAW_File)
 	label_scheme_files <- fn_lookup$RAW_File %>% unique()
-
+	
 	missing_msfs <- ms_files %>% .[!. %in% unique(fn_lookup$RAW_File)]
 	wrong_fms <- label_scheme_files[!label_scheme_files %in% ms_files]
-
+	
 	if(!purrr::is_empty(missing_msfs) | !purrr::is_empty(wrong_fms)) {
-		cat(missing_msfs, "found in PSM results are missing from the experimental summary file.\n")
-		cat("Errant RAW_Files:", wrong_fms, "\n")
-		stop(paste("Check filenames under the RAW_File column in the experimental summary file.") ,
-		     call. = TRUE)
+	  cat("RAW file names missing from the experimental summary file:\n")
+	  cat(paste0(missing_msfs, "\n"))
+	  
+	  cat("Incorrect file names in the experimental summary file:\n")
+	  cat(paste0("\t", wrong_fms, "\n"))
+	  
+	  stop(paste("Check filenames under the RAW_File column in the experimental summary file."),
+	       call. = FALSE)
 	}
-
+	
+	df_split <- df_split %>%
+	  left_join(fraction_scheme_temp, id = "RAW_File") %>%
+	  dplyr::group_by(TMT_inj) %>%
+	  dplyr::mutate(psm_index = row_number()) %>%
+	  data.frame(check.names = FALSE) %>%
+	  split(., .$TMT_inj, drop = TRUE)
+	
 	if (sum(fn_lookup$TMT_inj %in% names(df_split)) < length(fn_lookup$TMT_inj)) {
 		missing_files <- setdiff(names(df_split), fn_lookup$TMT_inj)
 		cat("Missing information under", fn_lookup[fn_lookup$TMT_inj ==  missing_files, "filename"],
