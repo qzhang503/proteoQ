@@ -330,7 +330,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 			write.csv(dup_peps,
 				file.path(dat_dir, "Peptide", "dbl_dipping_peptides.csv"),
-				sep = "\t", row.names = FALSE)
+				row.names = FALSE)
 		}
 		rm(dup_peps)
 
