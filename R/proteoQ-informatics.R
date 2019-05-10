@@ -15,13 +15,15 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 											impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL,
                       anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
                                     "NMF", "Trend")) {
+  
+  err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
 
-	old_opt <- options(max.print = 99999)
+  old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
 
 	old_dir <- getwd()
 	on.exit(setwd(old_dir), add = TRUE)
-
+	
 	col_select <- rlang::enexpr(col_select)
 	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)
@@ -31,31 +33,33 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
 	col_benchmark <- rlang::enexpr(col_benchmark)
+	
+	col_select <- ifelse(is.null(col_select), rlang::expr(Select), rlang::sym(col_select))
+	col_group <- ifelse(is.null(col_group), rlang::expr(Group), rlang::sym(col_group))
+	col_order <- ifelse(is.null(col_order), rlang::expr(Order), rlang::sym(col_order))
+	col_color <- ifelse(is.null(col_color), rlang::expr(Color), rlang::sym(col_color))
+	col_fill <- ifelse(is.null(col_fill), rlang::expr(Fill), rlang::sym(col_fill))
+	col_shape <- ifelse(is.null(col_shape), rlang::expr(Shape), rlang::sym(col_shape))
+	col_size <- ifelse(is.null(col_size), rlang::expr(Size), rlang::sym(col_size))
+	col_alpha <- ifelse(is.null(col_alpha), rlang::expr(Alpha), rlang::sym(col_alpha))
+	col_benchmark <- ifelse(is.null(col_benchmark), rlang::expr(Benchmark), rlang::sym(col_benchmark))
+	
+	if(col_select == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+	if(col_group == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+	if(col_order == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+	if(col_color == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+	if(col_fill == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+	if(col_shape == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+	if(col_size == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+	if(col_alpha == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+	if(col_benchmark == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 
-	# col_select
-	if(is.null(col_select)) {
-		col_select <- rlang::expr(Select)
-	} else if(col_select == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."),
-		     call. = FALSE)
-	}
-
-	# load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
-
+	
 	if(is.null(label_scheme[[col_select]])) {
 		stop("Column \'", rlang::as_string(col_select), "\' does not exist.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_select]])) == 0) {
 		stop("No samples were selected under column \'", rlang::as_string(col_select), "\'.",
-		     call. = FALSE)
-	}
-
-
-	# col_group
-	if(is.null(col_group)) {
-		col_group <- rlang::expr(Group)
-	} else if(col_group == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."),
 		     call. = FALSE)
 	}
 
@@ -69,30 +73,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			Use column \'Select\' instead.", call. = FALSE)
 	}
 
-
-	# col_order
-	if(is.null(col_order)) {
-		col_order <- rlang::expr(Order)
-	} else if(col_order == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."),
-		     call. = FALSE)
-	}
-
 	if(is.null(label_scheme[[col_order]])) {
 		warning("Column \'", rlang::as_string(col_order), "\' does not exist.
 			Samples will be arranged by the alphebatic order.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_order]])) == 0) {
 	  warning("No samples were specified under column \'", rlang::as_string(col_order), "\'.",
 	          call. = FALSE)
-	}
-
-
-	# col_color
-	if(is.null(col_color)) {
-		col_color <- rlang::expr(Color)
-	} else if(col_color == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."),
-		     call. = FALSE)
 	}
 
 	if(is.null(label_scheme[[col_color]])) {
@@ -103,28 +89,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	}
 
 
-	# col_fill
-	if(is.null(col_fill)) {
-		col_fill <- rlang::expr(Fill)
-	} else if(col_fill == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."),
-		     call. = FALSE)
-	}
-
 	if(is.null(label_scheme[[col_fill]])) {
 		warning("Column \'", rlang::as_string(col_fill), "\' does not exist.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_fill]])) == 0) {
 		warning("No samples were specified under column \'", rlang::as_string(col_fill), "\'.",
 		        call. = FALSE)
-	}
-
-
-	# col_shape
-	if(is.null(col_shape)) {
-		col_shape <- rlang::expr(Shape)
-	} else if(col_shape == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."),
-		     call. = FALSE)
 	}
 
 	if(is.null(label_scheme[[col_shape]])) {
@@ -134,15 +103,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		        call. = FALSE)
 	}
 
-
-	# col_size
-	if(is.null(col_size)) {
-		col_size <- rlang::expr(Size)
-	} else if(col_size == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."),
-		     call. = FALSE)
-	}
-
 	if(is.null(label_scheme[[col_size]])) {
 		warning("Column \'", rlang::as_string(col_size), "\' does not exist.")
 	} else if(sum(!is.na(label_scheme[[col_size]])) == 0) {
@@ -150,29 +110,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		        call. = FALSE)
 	}
 
-
-	# col_alpha
-	if(is.null(col_alpha)) {
-		col_alpha <- rlang::expr(Alpha)
-	} else if(col_alpha == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."),
-		     call. = FALSE)
-	}
-
 	if(is.null(label_scheme[[col_alpha]])) {
 		warning("Column \'", rlang::as_string(col_alpha), "\' does not exist.")
 	} else if(sum(!is.na(label_scheme[[col_alpha]])) == 0) {
 		warning("No samples were specified under column \'", rlang::as_string(col_alpha), "\'.",
 		        call. = FALSE)
-	}
-
-
-	# col_benchmark
-	if(is.null(col_benchmark)) {
-		col_benchmark <- rlang::expr(Benchmark)
-	} else if(col_benchmark == rlang::expr(Sample_ID)) {
-		stop(paste0("\'Sample_ID\' is reserved.\n", "\tPick a different column key."),
-		     call. = FALSE)
 	}
 
 	if(is.null(label_scheme[[col_benchmark]])) {
