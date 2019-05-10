@@ -728,3 +728,25 @@ to_linfc <- function(df) {
 			data.frame(check.names = FALSE) %>%
 			`rownames<-`(nms)
 }
+
+
+#' Extract RAW MS file names
+#'
+#' Extract a list of \code{RAW} file names that can be passed to \code{frac_smry.xlsx}
+#'
+#' @examples
+#' \dontrun{
+#' # Supposed that RAW MS files are stored under "C:\my_raw"
+#' extract_raws("C:\\my_raw")
+#' }
+#'
+#' @import dplyr purrr
+#' @importFrom magrittr %>%
+#' @importFrom tools md5sum
+extract_raws <- function(raw_dir) {
+  fns <- names(tools::md5sum(dir(raw_dir, pattern = "\\.raw$", full.names = FALSE)))
+  data.frame(Fraction = seq_along(fns), RAW_File = fns)
+}
+
+
+
