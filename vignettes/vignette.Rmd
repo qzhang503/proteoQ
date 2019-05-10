@@ -1,5 +1,5 @@
 ---
-title: "Package \"proteoQ\""
+title: Package "\"proteoQ\""  
 author: "Qiang Zhang"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -16,7 +16,7 @@ references:
   title: Reproducible workflow for multiplexed deep-scale proteome and phosphoproteome analysis of tumor tissues by liquid chromatography-mass spectrometry
   author:
   - family: Philipp
-    given: Martin
+    given: Martins
   container-title: Nature Protocols
   volume: 13
   URL: 'https://doi.org/10.1038/s41596-018-0006-9'
@@ -46,7 +46,7 @@ knitr::opts_chunk$set(
 
 
 ## Introduction to proteoQ
-Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R functions. 
+Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is developed with the aim of reproducible analysis of proteomics data. It currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R functions. 
 
 ## Installation
 To install this package, run R (version "3.6") as *administrator*
@@ -93,7 +93,7 @@ img_export <- "Mascot_export.png"
 knitr::include_graphics(c(img_export))
 ```
 
-It is possible for the same peptide sequence under different PSM files being assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides. To avoid such ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed when constructing peptide reports. 
+The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To avoid such ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed when constructing peptide reports. 
 
 ```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_daemon <- "Mascot_daemon.png"
@@ -101,9 +101,14 @@ img_daemon <- "Mascot_daemon.png"
 knitr::include_graphics(c(img_daemon))
 ```
 
-The pacakge reads an `Excel` template containing the information of multiplex experiment numbers, TMT channels, LC/MS injection indices, sample IDs and corresponding RAW data file names. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. 
+The pacakge reads an `Excel` template containing the metadata of multiplex experiment numbers, including TMT channels, LC/MS injection indices, sample IDs, corresponding RAW data file names and addditional fields from the users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. The function, `extract_raws`, can be used to summarise `.raw` file names under a file folder:
 
-The above files should be stored immediately under the the file folder specified by `dat_dir`. Examples of PSM outputs, `expt_smry` and `frac_smry` can be found as the follows:
+```{r extract raw file names, include = TRUE, eval = FALSE}
+# Supposed the RAW files are under the `raw_dir` folder
+extract_raws(raw_dir)
+```
+
+Note that the above files should be stored immediately under the the file folder specified by `dat_dir`. Examples of PSM outputs, `expt_smry` and `frac_smry` can be found as the follows:
 
 ```{r setting_2, include = TRUE, eval = FALSE}
 system.file("extdata", "F012345.csv", package = "proteoQ")
@@ -112,7 +117,7 @@ system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
 ```
 
 
-The description of the column keys in the `Excel` files can be found from the following: 
+and the description of the column keys in the `Excel` files can be found from the help document: 
 
 ```{r load_expts, include = TRUE, eval = FALSE}
 ?load_expts
@@ -129,7 +134,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins 
 
-\vspace{1.5cm}*Process PSMs* --- In this section, I demonstrate my approach of summarising PSM data to peptides and proteins. The data set that I use in this section corresponds to the proteomics data from Mertins et al.[-@mertins2018np]. We start by processing PSM data from `Mascot` outputs:  
+\vspace{1.5cm}*Process PSMs* --- In this section, I demonstrate the summarisation of PSM data to peptides and proteins. The data set I use in this section corresponds to the proteomics data from Mertins et al.[-@mertins2018np]. In the study, two different breast cancer subtypes, WHIM2 and WHIM16, from patient-derived xenograft models were assessed by three independent laborotories. Under each location, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. We start by processing PSM data from `Mascot` outputs:  
 
 ```{r PSM summary, eval = FALSE}
 # Generate PSM reports
@@ -158,9 +163,6 @@ normPep(
  range_log2r = c(20, 95),
  range_int = c(5, 95)
 )
-
-# or accept the default setting
-normPep()
 ```
 
 At `id = pep_seq_mod`, peptide sequences that are different in variable modificaitons will be treated as different species. I often choose this setting when analyzing phosphopeptides where the localization of site modifications may be an interest. 
