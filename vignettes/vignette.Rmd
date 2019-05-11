@@ -46,7 +46,9 @@ knitr::opts_chunk$set(
 
 
 ## Introduction to proteoQ
-Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is developed with the aim of reproducible analysis of proteomics data. It currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R functions. 
+Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is developed to aid reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. The arrangement put the original data behind the scene and allows end users to quickly address interesting biological questions using various informatic tools. In addition, the workflow will be documented upon the completion of an analysis, making it suitable for revisits. 
+
+The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R functions. 
 
 ## Installation
 To install this package, run R (version "3.6") as *administrator*
@@ -169,7 +171,7 @@ At `id = pep_seq_mod`, peptide sequences that are different in variable modifica
 
 By default, the log2FC of peptide data will be aligned by median centering across samples. If `method_align = MGKernel` is chosen, log2FC will be aligned under the assumption of multiple Gaussian kernels.^[Density kernel estimates can occasionally capture spikes in the profiles of log2FC for data alignment. Users will need to inspect the alignment of ratio histograms and may optimize the data normalization with different combinations of tuning parameters before proceeding to the next steps.]  The parameter `n_comp` defines the number of Gaussian kernels. The parameters `range_log2r` and `range_int` define the range of log2FC and the range of reporter-ion intensity, respectively, for use in the scaling of standard deviation across samples. 
 
-Let's inspect the log2FC profiles with and without scaling normalization:^[`normPep()` will report log2FC results both before and after the scaling of standard deviations.] 
+Let's compare the log2FC profiles with and without scaling normalization:^[`normPep()` will report log2FC results both before and after the scaling of standard deviations.] 
 
 ```{r Peptide log2FC, eval = FALSE}
 # without the scaling of log2FC 
@@ -185,11 +187,11 @@ pepHist(
 )
 ```
 
-There are 60 panels of of histograms in each plot, which may not be easy to examine as one piece. Alternatively, we will break the plots down by their data origins. We begin with modifying the `expt_smry.xlsx` file by adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`: 
+There are 60 panels of of histograms in each plot, which may not be easy to explore as a whole. In stead, we will break the plots down by their data origins. We begin with modifying the `expt_smry.xlsx` file by adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`: 
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/f5yMscCW9cw" frameborder="0" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/y0VuWLUpcek" frameborder="0" allowfullscreen></iframe>
 
-Each of the new columns contains exclusively sample entries that are tied to their laboratory origins. We now **update** the `expt_smry.xlsx` and are ready to plot histograms for each subset of data. In the tutorial, we only display the plots using the `BI` subset: 
+Each of the new columns contains and only contains sample entries that are tied to their laboratory origins. We now **update** the `expt_smry.xlsx` and are ready to plot histograms for each subset of data. In the tutorial, we only display the plots using the `BI` subset: 
 
 ```{r Peptide log2FC sub, eval = FALSE}
 # update the `expt_smry.xlsx`
@@ -211,7 +213,7 @@ pepHist(
 )
 ```
 
-*NB*: We tell `pepHist()` that we are interested in sample entries under the column `Select_BI`, a column that we just created. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.pdf`. 
+    *NB*: We told `pepHist()` that we are interested in sample entries under the column `Select_BI`, a column that we just created. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
 
 ```{r Peptide histogram F, echo=FALSE, fig.align='center', fig.cap="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img1_path <- "Peptide\\Histogram\\Peptide_BI_GL1_N.png"
