@@ -175,19 +175,43 @@ Let's inspect the log2FC profiles with and without scaling normalization:^[`norm
 # without the scaling of log2FC 
 pepHist(
  scale_log2r = FALSE, 
- show_curves = TRUE,
- show_vline = TRUE,
- ncol = 5
+ ncol = 10
 )
 
 # with the scaling of log2FC 
 pepHist(
  scale_log2r = TRUE, 
- show_curves = TRUE,
- show_vline = TRUE,
+ ncol = 10
+)
+```
+
+There are 60 panels of of histograms in each plot, which may not be easy to examine as one piece. Alternatively, we will break the plots down by their data origins. We begin with modifying the `expt_smry.xlsx` file by adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`: 
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/f5yMscCW9cw" frameborder="0" allowfullscreen></iframe>
+
+Each of the new columns contains exclusively sample entries that are tied to their laboratory origins. We now **update** the `expt_smry.xlsx` and are ready to plot histograms for each subset of data. In the tutorial, we only display the plots using the `BI` subset: 
+
+```{r Peptide log2FC sub, eval = FALSE}
+# update the `expt_smry.xlsx`
+load_expts()
+
+# without the scaling of log2FC 
+pepHist(
+ scale_log2r = FALSE, 
+ col_select = Select_BI,
+ filename = "Hist_BI_N.png", 
+ ncol = 5
+)
+
+# with the scaling of log2FC 
+pepHist(
+ col_select = Select_BI,
+ filename = "Hist_BI_Z.png", 
  ncol = 5
 )
 ```
+
+*NB*: We tell `pepHist()` that we are interested in sample entries under the column `Select_BI`, a column that we just created. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.pdf`. 
 
 ```{r Peptide histogram F, echo=FALSE, fig.align='center', fig.cap="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img1_path <- "Peptide\\Histogram\\Peptide_BI_GL1_N.png"
