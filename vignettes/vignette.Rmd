@@ -221,15 +221,7 @@ img2_path <- "Peptide\\Histogram\\Peptide_BI_GL1_Z.png"
 knitr::include_graphics(c(img1_path, img2_path))
 ```
 
-  As expected, the widths of log2FC profiles become closer to each other after the scaling normalization. However, it is worthwhile to note that such adjustment may sometime lead to the shrinkage of log2FC towards zero. In the example shown below, `Smpl_6` contains a group of proteins that are largely abscent in `samples 1 - 5`. As shown, the scaling of log2FC would probably have obsecured the measures of relative protein abundance in `Smpl_6`. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the sample origins.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users will specify explicitly `scale_log2r = FALSE` to overwrite the default. Although the package provides the facility to look for a global setting of `scale_log2`, I don't recommend using it.]  
-
-```{r Peptide histogram G, echo=FALSE, fig.align='center', fig.cap="**Figure 2.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img3_path <- "Peptide\\Histogram\\Peptide_WG_N.png"
-img4_path <- "Peptide\\Histogram\\Peptide_WG_Z.png"
-knitr::include_graphics(c(img3_path, img4_path))
-```
-
-  Alignment of log2FC against housekeeping or normalizer protein(s) is also available. This seems suitable when the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
+  As expected, the widths of log2FC profiles become closer to each other after the scaling normalization. However, such adjustment may cause artifacts when the standard deviaiton across samples are genuinely different. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the characteristics of samples.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users will specify explicitly `scale_log2r = FALSE` to overwrite the default. Although the package provides the facility to look for a global setting of `scale_log2`, I don't recommend using it.] Alignment of log2FC against housekeeping or normalizer protein(s) is also available. This seems suitable when the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
 
 \vspace{1.5cm}*Summarize peptides to proteins* --- We then summarise peptides to proteins.  
 
