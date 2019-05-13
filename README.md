@@ -203,6 +203,8 @@ adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`. Each of
 the new columns includes sample entries that are tied to their
 laboratory origins.
 
+[Select subset](https://www.youtube.com/embed/y0VuWLUpcek)
+
 <iframe width="560" height="315" src="https://www.youtube.com/embed/y0VuWLUpcek" frameborder="0" allowfullscreen>
 </iframe>
 
