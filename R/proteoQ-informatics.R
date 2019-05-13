@@ -996,6 +996,8 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
   id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
 	col_benchmark <- rlang::enexpr(col_benchmark)
+	
+	reload_expts()
 
 	info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
 	          scale_log2r = scale_log2r, impute_na = impute_na, df = df, filepath = filepath,
@@ -1284,7 +1286,7 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 		}
 	}
 
-	# load(file = file.path(dat_dir, "label_scheme.Rdata"))
+	reload_expts()
 
 	label_scheme_sub <- label_scheme %>%
 		dplyr::select(Sample_ID, TMT_Set, !!col_select) %>%

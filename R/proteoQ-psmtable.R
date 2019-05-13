@@ -1007,6 +1007,8 @@ normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "f
                     rm_outliers = FALSE, plot_violins = TRUE) {
 
   mget(names(formals()), rlang::current_env()) %>% save_call("normPSM")
+	
+	reload_expts()
 
   prep_label_scheme(dat_dir, expt_smry)
   prep_fraction_scheme(dat_dir = dat_dir, filename = frac_smry)

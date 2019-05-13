@@ -209,6 +209,8 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 
 	col_select <- rlang::enexpr(col_select)
 	col_order <- rlang::enexpr(col_order)
+	
+	reload_expts()
 
 	if(!impute_na) complete_cases <- TRUE
 

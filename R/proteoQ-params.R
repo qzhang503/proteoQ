@@ -406,6 +406,8 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
                                            error = function(e) 1)
 
   if(dat_dir == 1) stop("Set up the working directory first.", call. = FALSE)
+	
+	mget(names(formals()), rlang::current_env()) %>% save_call("load_expts")
 
   if(!file.exists(file.path(dat_dir, "acctype_sp.txt"))) {
     acctype_sp <- data.frame(Accession_Type = "uniprot_id", Species = "human")

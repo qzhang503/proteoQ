@@ -30,6 +30,8 @@ proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = 
   # scale_log2r <- match_logi_gv(scale_log2r)
 
 	id <- rlang::enexpr(id)
+	
+	reload_expts()
 
 	# force impute_na to TRUE for "lm" and "lmer"
 	if (!impute_na & method != "limma") impute_na <- TRUE

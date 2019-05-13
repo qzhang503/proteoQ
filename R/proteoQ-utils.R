@@ -605,6 +605,71 @@ match_identifier <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene
 }
 
 
+#' Matches the file name for expt_smry
+#'
+#' @param fn_pars.
+#'
+#' @import plyr dplyr purrr rlang
+#' @importFrom magrittr %>%
+match_expt <- function (fn_pars = "load_expts.txt") {
+	call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", fn_pars), check.names = FALSE,
+	                               header = TRUE, sep = "\t", comment.char = "#"),
+	                      error = function(e) NA)
+
+	if(!is.null(dim(call_pars))) {
+		expt_smry <- call_pars %>%
+			dplyr::filter(var == "expt_smry") %>%
+			dplyr::select("value.1") %>%
+			unlist() %>%
+			as.character()
+	} else {
+		expt_smry <- "expt_smry.xlsx"
+	}
+
+	return(expt_smry)
+}
+
+
+#' Matches the file name for frac_smry
+#'
+#' @param fn_pars.
+#'
+#' @import plyr dplyr purrr rlang
+#' @importFrom magrittr %>%
+match_frac <- function (fn_pars = "load_expts.txt") {
+	call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", fn_pars), check.names = FALSE,
+	                               header = TRUE, sep = "\t", comment.char = "#"),
+	                      error = function(e) NA)
+
+	if(!is.null(dim(call_pars))) {
+		frac_smry <- call_pars %>%
+			dplyr::filter(var == "frac_smry") %>%
+			dplyr::select("value.1") %>%
+			unlist() %>%
+			as.character()
+	} else {
+		frac_smry <- "frac_smry.xlsx"
+	}
+
+	return(frac_smry)
+}
+
+
+#' Reload the "expt_smry.xlsx" and "frac_smry.xlsx" if needed
+#'
+#' @import rlang
+#' @importFrom magrittr %>%
+#' @importFrom fs file_info
+reload_expts <- function() {
+	expt_smry <- match_expt()
+	frac_smry <- match_frac()
+	
+	fi_xlsx <- fs::file_info(file.path(dat_dir, expt_smry))$change_time
+	fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme.Rdata"))$change_time
+	if(fi_xlsx > fi_rda) load_expts(dat_dir, expt_smry, frac_smry)
+}
+
+
 #' Replaces NA genes
 #'
 #' @import plyr dplyr purrr rlang

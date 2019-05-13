@@ -253,6 +253,8 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	on.exit(setwd(old_dir), add = TRUE)
 
 	options(max.print = 2000000)
+	
+	reload_expts()
 
 	load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))

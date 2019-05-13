@@ -357,6 +357,8 @@ proteoCorrplot <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene")
 
 	col_select <- rlang::enexpr(col_select)
 	col_order <- rlang::enexpr(col_order)
+	
+	reload_expts()
 
 	info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
 	          scale_log2r = scale_log2r, impute_na = FALSE,

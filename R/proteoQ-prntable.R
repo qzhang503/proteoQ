@@ -127,6 +127,8 @@ normPrn <- function (id = c("prot_acc", "gene"),
 
 	options(max.print = 2000000) 
 	
+	reload_expts()
+	
 	method_pep_prn <- rlang::enexpr(method_pep_prn)
 	if(method_pep_prn == rlang::expr(c("median", "mean", "weighted.mean", "top.3"))) {
 		method_pep_prn <- "median"

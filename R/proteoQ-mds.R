@@ -426,6 +426,8 @@ proteoMDS <- function (id = gene,
 	col_shape <- rlang::enexpr(col_shape)
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
+	
+	reload_expts()
 
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
@@ -500,6 +502,8 @@ proteoPCA <- function (id = gene,
 	col_shape <- rlang::enexpr(col_shape)
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
+	
+	reload_expts()
 
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
@@ -564,6 +568,8 @@ proteoEucDist <- function (id = gene,
 	col_shape <- rlang::enexpr(col_shape)
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
+	
+	reload_expts()
 
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,

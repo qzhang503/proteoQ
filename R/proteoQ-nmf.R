@@ -189,6 +189,8 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 
 	col_select <- rlang::enexpr(col_select)
+	
+	reload_expts()
 
 	if(!impute_na) complete_cases <- TRUE
 
