@@ -32,11 +32,12 @@ and enter:
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "NMF", "gage", "limma"))
+BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "gage", "limma"))
 
+# may now quit and re-run R as a regular user
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
-devtools::install_github("qzhang503/proteoQ")
+devtools::install_github("qzhang503/proteoQ@master")
 ```
 
 Application
