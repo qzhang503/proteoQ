@@ -203,8 +203,7 @@ adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`. Each of
 the new columns includes sample entries that are tied to their
 laboratory origins.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/y0VuWLUpcek" frameborder="0" allowfullscreen>
-</iframe>
+[![Select subsets](https://img.youtube.com/vi/y0VuWLUpcek/0.jpg)](https://www.youtube.com/embed/y0VuWLUpcek)
 
 We now are ready to plot histograms for each subset of data.[5] In the
 tutorial, we only display the plots using the `BI` subset:
@@ -228,7 +227,7 @@ pepHist(
 
     *NB*: We told `pepHist()` that we are interested in sample entries under the column `Select_BI`, a column that we just created. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
 
-<img src="vignettes\Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="vignettes\Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
+<img src="vignettes/Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="vignettes/Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`;
 right, `scale_log2r = TRUE`
@@ -293,7 +292,7 @@ pepMDS(
 )
 ```
 
-<img src="vignettes\Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = FALSE`" width="45%" />
+<img src="vignettes/Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = FALSE`" width="45%" />
 <p class="caption">
 **Figure 2A.** MDS of peptide log2FC at `scale_log2r = FALSE`
 </p>
@@ -311,7 +310,7 @@ pepMDS(
 )
 ```
 
-<img src="vignettes\Peptide\MDS\MDS_JHU.png" alt="**Figure 2B.** MDS of peptide log2FC for the `JHU` subset" width="45%" />
+<img src="vignettes/Peptide\MDS\MDS_JHU.png" alt="**Figure 2B.** MDS of peptide log2FC for the `JHU` subset" width="45%" />
 <p class="caption">
 **Figure 2B.** MDS of peptide log2FC for the `JHU` subset
 </p>
@@ -338,7 +337,7 @@ pepMDS(
 )
 ```
 
-<img src="Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2C.** MDS of peptide log2FC for the `JHU` subset at modified aesthetics" width="45%" />
+<img src="vignettes/Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2C.** MDS of peptide log2FC for the `JHU` subset at modified aesthetics" width="45%" />
 <p class="caption">
 **Figure 2C.** MDS of peptide log2FC for the `JHU` subset at modified
 aesthetics
