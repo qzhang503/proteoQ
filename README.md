@@ -292,7 +292,7 @@ pepMDS(
 )
 ```
 
-<img src="Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="vignettes/Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`
 </p>
@@ -310,7 +310,7 @@ pepMDS(
 )
 ```
 
-<img src="Peptide\MDS\MDS_JHU.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
+<img src="vignettes/Peptide\MDS\MDS_JHU.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="vignettes/Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
 <p class="caption">
 **Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left:
 original aesthetics; right, modefied aesthetics
