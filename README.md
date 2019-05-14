@@ -379,8 +379,8 @@ prnCorr(
 )
 ```
 
-<img src="Protein/Corrplot/Protein_Corrplot_Intensity_gg.png" alt="Intensity" style="width:45.0%" />
-<img src="Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png" alt="log2FC" style="width:45.0%" />
+<img src="vignettes\Protein/Corrplot/Protein_Corrplot_Intensity_gg.png" alt="Intensity" style="width:45.0%" />
+<img src="vignettes\Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png" alt="log2FC" style="width:45.0%" />
 
 The following shows an example of Euclidean distance matrix against
 peptide data:
