@@ -291,14 +291,15 @@ pepMDS(
     show_ids = FALSE
 )
 ```
-<img src="vignettes/Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = FALSE`" width="45%" />
+
+<img src="Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
-**Figure 2A.** MDS of peptide log2FC at `scale_log2r = FALSE`
+**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`
 </p>
 
 It is clear that the WHIM2 and WHIM16 samples are well separated by
-Euclidean distance. We next take the `JHU` data subset as an example to
-explore batch effects in the proteomic sample handling:
+Euclidean distance (**Figure 2A**). We next take the `JHU` data subset
+as an example to explore batch effects in the proteomic sample handling:
 
 ``` r
 # `JHU` subset
@@ -309,21 +310,23 @@ pepMDS(
 )
 ```
 
-<img src="vignettes/Peptide\MDS\MDS_JHU.png" alt="**Figure 2B.** MDS of peptide log2FC for the `JHU` subset" width="45%" />
+<img src="Peptide\MDS\MDS_JHU.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
 <p class="caption">
-**Figure 2B.** MDS of peptide log2FC for the `JHU` subset
+**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left:
+original aesthetics; right, modefied aesthetics
 </p>
 
-We note that all samples are coded with the same color. This is not a
-surprise as the values under column `expt_smry.xlsx::Color` are
-exclusively `JHU` for the `Select_JHU` subset. For similar reasons, the
-two different batches of `TMT1` and `TMT2` are distinguished by
-transparency, which is governed by column `expt_smry.xlsx::Alpha`. We
-may wish to modify the aesthetics using different keys: e.g., color
-coding by WHIMs and size coding by batches. From the `expt_smry.xlsx`,
-we can see that we have already prepared the column `Shape` and `Alpha`
-to code WHIMs and batches, respectively. Therefore, we can recycle them
-to make the new plot without adding new columns to `expt_smry.xlsx`:
+We immediately note that all samples are coded with the same color
+(**Figure 2B**). This is not a surprise as the values under column
+`expt_smry.xlsx::Color` are exclusively `JHU` for the `Select_JHU`
+subset. For similar reasons, the two different batches of `TMT1` and
+`TMT2` are distinguished by transparency, which is governed by column
+`expt_smry.xlsx::Alpha`. We may wish to modify the aesthetics using
+different keys: e.g., color coding by WHIMs and size coding by batches.
+From the `expt_smry.xlsx`, we can see that we have already prepared the
+column `Shape` and `Alpha` to code WHIMs and batches, respectively.
+Therefore, we can recycle them to make the new plot without adding new
+columns to `expt_smry.xlsx` (**Figure 2C**):
 
 ``` r
 # `JHU` subset
@@ -335,12 +338,6 @@ pepMDS(
   show_ids = FALSE
 )
 ```
-
-<img src="vignettes/Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2C.** MDS of peptide log2FC for the `JHU` subset at modified aesthetics" width="45%" />
-<p class="caption">
-**Figure 2C.** MDS of peptide log2FC for the `JHU` subset at modified
-aesthetics
-</p>
 
 ### Correlation plots
 
