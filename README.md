@@ -25,7 +25,7 @@ Installation
 
 To install this package, run R (version “3.6”) as *administrator*
 
-<img src="vignettes/Installation.png" width="45%" style="display: block; margin: auto;" />
+<img src="vignetts/Installation.png" width="45%" style="display: block; margin: auto;" />
 
 and enter:
 
@@ -203,7 +203,8 @@ adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`. Each of
 the new columns includes sample entries that are tied to their
 laboratory origins.
 
-[![Select subsets](https://img.youtube.com/vi/y0VuWLUpcek/0.jpg)](https://www.youtube.com/embed/y0VuWLUpcek)
+<iframe width="560" height="315" src="https://www.youtube.com/embed/y0VuWLUpcek" frameborder="0" allowfullscreen>
+</iframe>
 
 We now are ready to plot histograms for each subset of data.[5] In the
 tutorial, we only display the plots using the `BI` subset:
@@ -227,15 +228,15 @@ pepHist(
 
     *NB*: We told `pepHist()` that we are interested in sample entries under the column `Select_BI`, a column that we just created. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
 
-<img src="vignettes/Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="vignettes/Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
+<img src="vignettes\Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="vignettes\Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`;
 right, `scale_log2r = TRUE`
 </p>
 
-As expected, the widths of log2FC profiles become closer to each other
-after the scaling normalization. However, such adjustment may cause
-artifacts when the standard deviaiton across samples are genuinely
+As expected, the widths of log2FC profiles are more similar to each
+other after the scaling normalization. However, such adjustment may
+cause artifacts when the standard deviaiton across samples are genuinely
 different. I typically test `scale_log2r` at both `TRUE` and `FALSE`,
 then make a choice in data scaling together with my a priori knowledge
 of the characteristics of samples.[6] Alignment of log2FC against
@@ -245,7 +246,7 @@ across samples where the assumption of constitutive expression for the
 vast majority of proteins may not hold.
 
 *Summarize peptides to proteins* — We then summarise peptides to
-proteins.
+proteins using a two-component Gaussian kernel.
 
 ``` r
 # Generate protein reports
@@ -270,21 +271,82 @@ of ratio profiles, and re-normalize the data if needed.[7]
 # without the scaling of log2FC
 prnHist(
  scale_log2r = FALSE, 
- show_curves = TRUE,
- show_vline = TRUE,
- ncol = 5
+ ncol = 10
 )
 
 # with the scaling of log2FC
 prnHist(
  scale_log2r = TRUE, 
- show_curves = TRUE,
- show_vline = TRUE,
- ncol = 5
+ ncol = 10
 )
 ```
 
+### MDS and PCA plots
+
+In this section, we visualize MDS, PCA and Euclidean distance against
+the peptide data at `scale_log2r = TRUE`. We start with metric MDS:
+
+``` r
+# data from all three laboratories
+pepMDS(
+    show_ids = FALSE
+)
+```
+
+<img src="vignettes\Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = FALSE`" width="45%" />
+<p class="caption">
+**Figure 2A.** MDS of peptide log2FC at `scale_log2r = FALSE`
+</p>
+
+It is clear that the WHIM2 and WHIM16 samples are well separated by
+Euclidean distance. We next take the `JHU` data subset as an example to
+explore batch effects in the proteomic sample handling:
+
+``` r
+# `JHU` subset
+pepMDS(
+  col_select = Select_JHU,
+  filename = "MDS_JHU.png",
+  show_ids = FALSE
+)
+```
+
+<img src="vignettes\Peptide\MDS\MDS_JHU.png" alt="**Figure 2B.** MDS of peptide log2FC for the `JHU` subset" width="45%" />
+<p class="caption">
+**Figure 2B.** MDS of peptide log2FC for the `JHU` subset
+</p>
+
+We note that all samples are coded with the same color. This is not a
+surprise as the values under column `expt_smry.xlsx::Color` are
+exclusively `JHU` for the `Select_JHU` subset. For similar reasons, the
+two different batches of `TMT1` and `TMT2` are distinguished by
+transparency, which is governed by column `expt_smry.xlsx::Alpha`. We
+may wish to modify the aesthetics using different keys: e.g., color
+coding by WHIMs and size coding by batches. From the `expt_smry.xlsx`,
+we can see that we have already prepared the column `Shape` and `Alpha`
+to code WHIMs and batches, respectively. Therefore, we can recycle them
+to make the new plot without adding new columns to `expt_smry.xlsx`:
+
+``` r
+# `JHU` subset
+pepMDS(
+  col_select = Select_JHU,
+  col_fill = Shape, # WHIMs  
+  col_size = Alpha, # batches
+  filename = "MDS_JHU_new_aes.png",
+  show_ids = FALSE
+)
+```
+
+<img src="Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2C.** MDS of peptide log2FC for the `JHU` subset at modified aesthetics" width="45%" />
+<p class="caption">
+**Figure 2C.** MDS of peptide log2FC for the `JHU` subset at modified
+aesthetics
+</p>
+
 ### Correlation plots
+
+In this section, we compare the correlation between W2 and W16.
 
 The documentation from this point on is under construction;
 nevertheless, interactive R scripts are made available for now.
@@ -319,28 +381,8 @@ prnCorr(
 )
 ```
 
-<img src="vignettes/Protein/Corrplot/Protein_Corrplot_Intensity_gg.png" alt="Intensity" style="width:45.0%" />
-<img src="vignettes/Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png" alt="log2FC" style="width:45.0%" />
-
-The following shows examples of MDS and PCA against peptide data:
-
-``` r
-# MDS plots of peptide data
-pepMDS(
-  scale_log2r = TRUE,
-  col_color = Color,
-  col_shape = Shape,
-  show_ids = TRUE,
-)
-
-# PCA plots of peptide data
-pepPCA(
-  scale_log2r = TRUE,
-  col_color = Color,
-  col_shape = Shape,
-  show_ids = TRUE,
-)
-```
+<img src="Protein/Corrplot/Protein_Corrplot_Intensity_gg.png" alt="Intensity" style="width:45.0%" />
+<img src="Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png" alt="log2FC" style="width:45.0%" />
 
 The following shows an example of Euclidean distance matrix against
 peptide data:
