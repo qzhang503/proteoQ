@@ -814,4 +814,15 @@ extract_raws <- function(raw_dir) {
 }
 
 
-
+#' Remove single-value columns
+#'
+#' @import dplyr purrr
+#' @importFrom magrittr %>%
+rm_sglval_cols <- function (x) {
+  sgl_val <- x %>% 
+    summarise_all(funs(n_distinct(.))) %>% 
+    purrr::map(~ .x == 1) %>% 
+    purrr::flatten_lgl()
+  
+  x[, !sgl_val, drop = FALSE]
+}

@@ -446,7 +446,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		function(use_log10 = use_log10, min_int = min_int, max_int = max_int, min_log2r = min_log2r,
 		         max_log2r = max_log2r, ...) {
 
-			if(ncol(dfw$log2R) > 20) stop("Too many samples for correlation plots!", call. = TRUE)
+			if(ncol(dfw$log2R) > 22) stop("Maximal number of samples for correlation plots is 22.", call. = TRUE)
 
 			plotCorr(df = dfw, col_select = !!col_select, col_order = !!col_order,
 			         label_scheme_sub = label_scheme_sub, use_log10 = use_log10,
