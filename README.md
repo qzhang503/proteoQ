@@ -25,7 +25,7 @@ Installation
 
 To install this package, run R (version “3.6”) as *administrator*
 
-<img src="vignetts/Installation.png" width="45%" style="display: block; margin: auto;" />
+<img src="vignetts\Installation.png" width="45%" style="display: block; margin: auto;" />
 
 and enter:
 
