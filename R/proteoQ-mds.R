@@ -6,13 +6,6 @@ plotMDS <- function (df_mds, col_color = NULL, col_fill = NULL, col_shape = NULL
                      col_alpha = NULL, label_scheme_sub = label_scheme_sub, filepath, filename,
                      show_ids, ...) {
 
-  df_mds <- df_mds %>%
-    tibble::rownames_to_column("Sample_ID") %>%
-    dplyr::left_join(label_scheme_sub) %>%
-    dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>%
-    dplyr::select(which(not_all_NA(.))) %>% 
-    rm_sglval_cols()
-
   dots <- rlang::exprs(...)
 
 	col_fill <- rlang::enexpr(col_fill)
