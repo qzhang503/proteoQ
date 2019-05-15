@@ -66,7 +66,7 @@ options of `Header` and `Peptide quantitation` should be checked to
 include the search parameters and quantitative values. The `filename(s)`
 of the export(s) will be taken as is.[1]
 
-<img src="images\Mascot\Mascot_export.png" width="45%" style="display: block; margin: auto;" />
+<img src="images\mascot\Mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
 The same peptide sequence under different PSM files can be assigned to
 different protein IDs when
@@ -78,7 +78,7 @@ Daemon](http://www.matrixscience.com/daemon.html). If the option is
 disabled, peptide sequences that have been assigned to multiple protein
 IDs will be removed for now when constructing peptide reports.
 
-<img src="images\Mascot\Mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
+<img src="images\mascot\Mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 
 The pacakge reads an `Excel` template containing the metadata of
 multiplex experiment numbers, including TMT channels, LC/MS injection
