@@ -826,3 +826,17 @@ rm_sglval_cols <- function (x) {
   
   x[, !sgl_val, drop = FALSE]
 }
+
+
+#' Combine data with metadata
+#'
+#' @import dplyr purrr
+#' @importFrom magrittr %>%
+cmbn_meta <- function(data, metadata) {
+  data %>% 
+    tibble::rownames_to_column("Sample_ID") %>%
+    dplyr::left_join(metadata) %>%
+    dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>%
+    dplyr::select(which(not_all_NA(.))) %>% 
+    rm_sglval_cols()
+}
