@@ -56,7 +56,7 @@ The tool currently processes the peptide spectrum matches (PSM) tables from [Mas
 To install this package, run R (version "3.6") as *administrator*
 
 ```{r Installation, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_inst <- "Installation.png"
+img_inst <- "images\\installation\\Installation.png"
 
 knitr::include_graphics(c(img_inst))
 ```
@@ -66,12 +66,14 @@ and enter:
 ```{r installation_1, include = TRUE, eval = FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "NMF", "gage", "limma"))
+BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "gage", "limma"))
 
+# may now quit and re-run R as a regular user
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
-devtools::install_github("qzhang503/proteoQ")
+devtools::install_github("qzhang503/proteoQ@master")
 ```
+
 
 ## Application  
 In this section I illustrate the following applications of `proteoQ`:
@@ -92,7 +94,7 @@ dat_dir <- "c:\\The\\First\\Example"
 PSM table(s) in a `csv` format will be exported by the users from the [Mascot](https://http://www.matrixscience.com/) search engine. I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in file name extension.]  
 
 ```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_export <- "Mascot_export.png"
+img_export <- "images\\Mascot\\Mascot_export.png"
 
 knitr::include_graphics(c(img_export))
 ```
@@ -100,7 +102,7 @@ knitr::include_graphics(c(img_export))
 The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To avoid such ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed for now when constructing peptide reports. 
 
 ```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_daemon <- "Mascot_daemon.png"
+img_daemon <- "images\\Mascot\\Mascot_daemon.png"
 
 knitr::include_graphics(c(img_daemon))
 ```
@@ -213,8 +215,8 @@ pepHist(
     *NB*: We told `pepHist()` that we are interested in sample entries under the column `Select_BI`, a column that we just created. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
 
 ```{r Peptide histogram F, echo=FALSE, fig.align='center', fig.cap="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img1_path <- "Peptide\\Histogram\\Peptide_BI_GL1_N.png"
-img2_path <- "Peptide\\Histogram\\Peptide_BI_GL1_Z.png"
+img1_path <- "images\\Peptide\\Histogram\\Peptide_BI_GL1_N.png"
+img2_path <- "images\\Peptide\\Histogram\\Peptide_BI_GL1_Z.png"
 knitr::include_graphics(c(img1_path, img2_path))
 ```
 
@@ -265,7 +267,7 @@ pepMDS(
 ```
 
 ```{r Peptide_MDS, echo=FALSE, fig.align='center', fig.cap="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_pepmds <- "Peptide\\MDS\\Peptide_MDS.png"
+img_pepmds <- "images\\Peptide\\MDS\\Peptide_MDS.png"
 
 knitr::include_graphics(c(img_pepmds))
 ```
@@ -282,8 +284,8 @@ pepMDS(
 ```
 
 ```{r Peptide_JHU_MDS, echo=FALSE, fig.align='center', fig.cap="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_jhu_pepmds <- "Peptide\\MDS\\MDS_JHU.png"
-img_jhu_pepmds_2 <- "Peptide\\MDS\\MDS_JHU_new_aes.png"
+img_jhu_pepmds <- "images\\Peptide\\MDS\\MDS_JHU.png"
+img_jhu_pepmds_2 <- "images\\Peptide\\MDS\\MDS_JHU_new_aes.png"
 knitr::include_graphics(c(img_jhu_pepmds, img_jhu_pepmds_2))
 ```
 
@@ -338,7 +340,7 @@ prnCorr(
 )
 ```
 
-![Intensity](Protein/Corrplot/Protein_Corrplot_Intensity_gg.png){ width=45% } ![log2FC](Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png){ width=45% }
+![Intensity](images/Protein/Corrplot/Protein_Corrplot_Intensity_gg.png){ width=45% } ![log2FC](images/Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png){ width=45% }
 
 
 The following shows an example of Euclidean distance matrix against peptide data:
