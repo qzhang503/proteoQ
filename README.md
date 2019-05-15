@@ -15,51 +15,29 @@ be conveniently reproduced upon revisiting.
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
 10- or 11-plex TMT experiments. Peptide and protein results are then
-<<<<<<< HEAD
-<<<<<<< HEAD
-produced with users' selection of parameters in data filtration,
-alignment and normalization. The package further offers a suite of tools
-and functionalities in statistics, informatics and data visualization by
-creating 'wrappers' around published R functions.
-=======
-=======
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 produced with users’ selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
 creating ‘wrappers’ around published R functions.
-<<<<<<< HEAD
->>>>>>> 9760ef48f771a96af4cc5291110a20bd5e60e12b
-=======
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 
 Installation
 ------------
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-To install this package, run R (version "3.6") as *administrator*
-=======
-To install this package, run R (version “3.6”) as *administrator*
->>>>>>> 9760ef48f771a96af4cc5291110a20bd5e60e12b
-
-<img src="vignettes/Installation.png" width="45%" style="display: block; margin: auto;" />
-=======
 To install this package, run R (version “3.6”) as *administrator*
 
-<img src="Installation.png" width="45%" style="display: block; margin: auto;" />
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
+<img src="images\installation\Installation.png" width="45%" style="display: block; margin: auto;" />
 
 and enter:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "NMF", "gage", "limma"))
+BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "gage", "limma"))
 
+# may now quit and re-run R as a regular user
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
-devtools::install_github("qzhang503/proteoQ")
+devtools::install_github("qzhang503/proteoQ@master")
 ```
 
 Application
@@ -88,11 +66,7 @@ options of `Header` and `Peptide quantitation` should be checked to
 include the search parameters and quantitative values. The `filename(s)`
 of the export(s) will be taken as is.[1]
 
-<<<<<<< HEAD
-<img src="vignettes/Mascot_export.png" width="45%" style="display: block; margin: auto;" />
-=======
-<img src="Mascot_export.png" width="45%" style="display: block; margin: auto;" />
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
+<img src="images\Mascot\Mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
 The same peptide sequence under different PSM files can be assigned to
 different protein IDs when
@@ -104,11 +78,7 @@ Daemon](http://www.matrixscience.com/daemon.html). If the option is
 disabled, peptide sequences that have been assigned to multiple protein
 IDs will be removed for now when constructing peptide reports.
 
-<<<<<<< HEAD
-<img src="vignettes/Mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
-=======
-<img src="Mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
+<img src="images\Mascot\Mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 
 The pacakge reads an `Excel` template containing the metadata of
 multiplex experiment numbers, including TMT channels, LC/MS injection
@@ -153,15 +123,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-*Process PSMs* - In this section, I demonstrate the summarisation of PSM
-=======
 *Process PSMs* — In this section, I demonstrate the summarisation of PSM
->>>>>>> 9760ef48f771a96af4cc5291110a20bd5e60e12b
-=======
-*Process PSMs* — In this section, I demonstrate the summarisation of PSM
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 data to peptides and proteins. The data set I use in this section
 corresponds to the proteomics data from Mertins et al.(2018). In the
 study, two different breast cancer subtypes, WHIM2 and WHIM16, from
@@ -195,15 +157,7 @@ less than 1,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
 analysis.[2]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-*Summarize PSMs to peptides* - We next summarise PSM to peptides.
-=======
 *Summarize PSMs to peptides* — We next summarise PSM to peptides.
->>>>>>> 9760ef48f771a96af4cc5291110a20bd5e60e12b
-=======
-*Summarize PSMs to peptides* — We next summarise PSM to peptides.
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 
 ``` r
 # Generate peptide reports
@@ -226,15 +180,7 @@ under the assumption of multiple Gaussian kernels.[3] The parameter
 of reporter-ion intensity, respectively, for use in the scaling of
 standard deviation across samples.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-Let's compare the log2FC profiles with and without scaling
-=======
 Let’s compare the log2FC profiles with and without scaling
->>>>>>> 9760ef48f771a96af4cc5291110a20bd5e60e12b
-=======
-Let’s compare the log2FC profiles with and without scaling
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 normalization:[4]
 
 ``` r
@@ -258,12 +204,8 @@ adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`. Each of
 the new columns includes sample entries that are tied to their
 laboratory origins.
 
-<<<<<<< HEAD
-[![Select subsets](https://img.youtube.com/vi/y0VuWLUpcek/0.jpg)](https://www.youtube.com/embed/y0VuWLUpcek)
-=======
 <iframe width="560" height="315" src="https://www.youtube.com/embed/y0VuWLUpcek" frameborder="0" allowfullscreen>
 </iframe>
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 
 We now are ready to plot histograms for each subset of data.[5] In the
 tutorial, we only display the plots using the `BI` subset:
@@ -287,25 +229,15 @@ pepHist(
 
     *NB*: We told `pepHist()` that we are interested in sample entries under the column `Select_BI`, a column that we just created. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
 
-<<<<<<< HEAD
-<img src="vignettes/Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="vignettes/Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
-=======
-<img src="Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
+<img src="images\Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="images\Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`;
 right, `scale_log2r = TRUE`
 </p>
 
-<<<<<<< HEAD
-As expected, the widths of log2FC profiles become closer to each other
-after the scaling normalization. However, such adjustment may cause
-artifacts when the standard deviaiton across samples are genuinely
-=======
 As expected, the widths of log2FC profiles are more similar to each
 other after the scaling normalization. However, such adjustment may
 cause artifacts when the standard deviaiton across samples are genuinely
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 different. I typically test `scale_log2r` at both `TRUE` and `FALSE`,
 then make a choice in data scaling together with my a priori knowledge
 of the characteristics of samples.[6] Alignment of log2FC against
@@ -314,17 +246,8 @@ suitable when the quantities of proteins of interest are different
 across samples where the assumption of constitutive expression for the
 vast majority of proteins may not hold.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-*Summarize peptides to proteins* - We then summarise peptides to
-=======
-*Summarize peptides to proteins* — We then summarise peptides to
->>>>>>> 9760ef48f771a96af4cc5291110a20bd5e60e12b
-proteins.
-=======
 *Summarize peptides to proteins* — We then summarise peptides to
 proteins using a two-component Gaussian kernel.
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 
 ``` r
 # Generate protein reports
@@ -349,23 +272,12 @@ of ratio profiles, and re-normalize the data if needed.[7]
 # without the scaling of log2FC
 prnHist(
  scale_log2r = FALSE, 
-<<<<<<< HEAD
- show_curves = TRUE,
- show_vline = TRUE,
- ncol = 5
-=======
  ncol = 10
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 )
 
 # with the scaling of log2FC
 prnHist(
  scale_log2r = TRUE, 
-<<<<<<< HEAD
- show_curves = TRUE,
- show_vline = TRUE,
- ncol = 5
-=======
  ncol = 10
 )
 ```
@@ -382,7 +294,7 @@ pepMDS(
 )
 ```
 
-<img src="Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="images\Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`
 </p>
@@ -400,7 +312,7 @@ pepMDS(
 )
 ```
 
-<img src="Peptide\MDS\MDS_JHU.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
+<img src="images\Peptide\MDS\MDS_JHU.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="images\Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
 <p class="caption">
 **Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left:
 original aesthetics; right, modefied aesthetics
@@ -426,17 +338,13 @@ pepMDS(
   col_size = Alpha, # batches
   filename = "MDS_JHU_new_aes.png",
   show_ids = FALSE
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 )
 ```
 
 ### Correlation plots
 
-<<<<<<< HEAD
-=======
 In this section, we compare the correlation between W2 and W16.
 
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 The documentation from this point on is under construction;
 nevertheless, interactive R scripts are made available for now.
 
@@ -470,33 +378,8 @@ prnCorr(
 )
 ```
 
-<<<<<<< HEAD
-<img src="vignettes/Protein/Corrplot/Protein_Corrplot_Intensity_gg.png" alt="Intensity" style="width:45.0%" />
-<img src="vignettes/Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png" alt="log2FC" style="width:45.0%" />
-
-The following shows examples of MDS and PCA against peptide data:
-
-``` r
-# MDS plots of peptide data
-pepMDS(
-  scale_log2r = TRUE,
-  col_color = Color,
-  col_shape = Shape,
-  show_ids = TRUE,
-)
-
-# PCA plots of peptide data
-pepPCA(
-  scale_log2r = TRUE,
-  col_color = Color,
-  col_shape = Shape,
-  show_ids = TRUE,
-)
-```
-=======
-<img src="Protein/Corrplot/Protein_Corrplot_Intensity_gg.png" alt="Intensity" style="width:45.0%" />
-<img src="Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png" alt="log2FC" style="width:45.0%" />
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
+<img src="images/Protein/Corrplot/Protein_Corrplot_Intensity_gg.png" alt="Intensity" style="width:45.0%" />
+<img src="images/Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png" alt="log2FC" style="width:45.0%" />
 
 The following shows an example of Euclidean distance matrix against
 peptide data:
@@ -618,23 +501,10 @@ visualization:
 gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
 ```
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
-Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
-Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
-1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
-=======
-=======
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 Philipp, Martins. 2018. “Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
 Liquid Chromatography-Mass Spectrometry.” *Nature Protocols* 13 (7):
 1632–61. <https://doi.org/10.1038/s41596-018-0006-9>.
-<<<<<<< HEAD
->>>>>>> 9760ef48f771a96af4cc5291110a20bd5e60e12b
-=======
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in file name extension.
@@ -661,15 +531,7 @@ scaling of standard deviations.
 calling functions involved parameter `scale_log2r`, users will specify
 explicitly `scale_log2r = FALSE` to overwrite the default. Although the
 package provides the facility to look for a global setting of
-<<<<<<< HEAD
-<<<<<<< HEAD
-`scale_log2`, I don't recommend using it.
-=======
 `scale_log2`, I don’t recommend using it.
->>>>>>> 9760ef48f771a96af4cc5291110a20bd5e60e12b
-=======
-`scale_log2`, I don’t recommend using it.
->>>>>>> b4aa42b57a7db741025ff87fff2092f6e1acf084
 
 [7] Prameter `fasta` is solely used for the calculation of protein
 percent coverage. Precomputed data will be used if no `fasta` database
