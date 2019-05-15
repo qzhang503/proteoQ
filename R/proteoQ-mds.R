@@ -2,7 +2,7 @@
 #'
 #' @import dplyr ggplot2 rlang
 #' @importFrom magrittr %>%
-plotMDS <- function (df_mds, col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL,
+plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL,
                      col_alpha = NULL, label_scheme_sub = label_scheme_sub, filepath, filename,
                      show_ids, ...) {
 
@@ -16,15 +16,15 @@ plotMDS <- function (df_mds, col_color = NULL, col_fill = NULL, col_shape = NULL
 	
 	map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
 
-	if (col_color != rlang::expr(Color) | !rlang::as_string(sym(col_color)) %in% names(df_mds)) 
+	if (col_color != rlang::expr(Color) | !rlang::as_string(sym(col_color)) %in% names(df)) 
 	  assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
-	if (col_fill != rlang::expr(Fill)  | !rlang::as_string(sym(col_fill)) %in% names(df_mds)) 
+	if (col_fill != rlang::expr(Fill)  | !rlang::as_string(sym(col_fill)) %in% names(df)) 
 	  assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
-	if (col_shape != rlang::expr(Shape) | !rlang::as_string(sym(col_shape)) %in% names(df_mds)) 
+	if (col_shape != rlang::expr(Shape) | !rlang::as_string(sym(col_shape)) %in% names(df)) 
 	  assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
-	if (col_size != rlang::expr(Size) | !rlang::as_string(sym(col_size)) %in% names(df_mds)) 
+	if (col_size != rlang::expr(Size) | !rlang::as_string(sym(col_size)) %in% names(df)) 
 	  assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
-	if (col_alpha != rlang::expr(Alpha) | !rlang::as_string(sym(col_alpha)) %in% names(df_mds)) 
+	if (col_alpha != rlang::expr(Alpha) | !rlang::as_string(sym(col_alpha)) %in% names(df)) 
 	  assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
 	
 	if (!is.na(map_color)) col_color <- NULL
@@ -72,8 +72,8 @@ plotMDS <- function (df_mds, col_color = NULL, col_fill = NULL, col_shape = NULL
 	  .[!is.na(.)]
 	fix_args$stroke <- 0.02
 
-	# aes_qns <- mapping %>% purrr::map(rlang::quo_name) %>% purrr::flatten_chr(.) %>% .[. %in% names(df_mds)]
-	p <- ggplot() + rlang::eval_tidy(rlang::quo(geom_point(data = df_mds, mapping = mapping_var, !!!fix_args)))
+	# aes_qns <- mapping %>% purrr::map(rlang::quo_name) %>% purrr::flatten_chr(.) %>% .[. %in% names(df)]
+	p <- ggplot() + rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args)))
 
 	p <- p +
 		# scale_fill_brewer(palette = "Set1") +
@@ -84,8 +84,8 @@ plotMDS <- function (df_mds, col_color = NULL, col_fill = NULL, col_shape = NULL
 
 	if (show_ids)
 	  p <- p +
-	    geom_text(data = df_mds, mapping = aes(x = Coordinate.1, y = Coordinate.2,
-	                                           label = df_mds$Sample_ID), color = "gray", size = 3)
+	    geom_text(data = df, mapping = aes(x = Coordinate.1, y = Coordinate.2,
+	                                           label = df$Sample_ID), color = "gray", size = 3)
 
 	ggsave(file.path(filepath, filename), p, ...)
 }
@@ -167,7 +167,28 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 	col_shape <- rlang::enexpr(col_shape)
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
-
+	
+	map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
+	
+	if (col_color != rlang::expr(Color) | !rlang::as_string(sym(col_color)) %in% names(df)) 
+	  assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
+	if (col_fill != rlang::expr(Fill)  | !rlang::as_string(sym(col_fill)) %in% names(df)) 
+	  assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
+	if (col_shape != rlang::expr(Shape) | !rlang::as_string(sym(col_shape)) %in% names(df)) 
+	  assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
+	if (col_size != rlang::expr(Size) | !rlang::as_string(sym(col_size)) %in% names(df)) 
+	  assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
+	if (col_alpha != rlang::expr(Alpha) | !rlang::as_string(sym(col_alpha)) %in% names(df)) 
+	  assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
+	
+	if (!is.na(map_color)) col_color <- NULL
+	if (!is.na(map_fill)) col_fill <- NULL
+	if (!is.na(map_shape)) col_shape <- NULL
+	if (!is.na(map_size)) col_size <- NULL
+	if (!is.na(map_alpha)) col_alpha <- NULL
+	
+	rm(map_color, map_fill, map_shape, map_size, map_alpha)
+	
 	my_theme <- theme_bw() + theme(
 		 axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
 		 axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
@@ -190,43 +211,27 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 
 	myPalette <- c(rep("blue", 7), rep("red", 7))
 
-	df <- df %>%
-		tibble::rownames_to_column("Sample_ID") %>%
-		dplyr::left_join(label_scheme_sub) %>%
-		dplyr::rename(Color := !!col_color, Fill := !!col_fill, Shape := !!col_shape,
-		              Size := !!col_size, Alpha := !!col_alpha) %>%
-		dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>%
-		dplyr::select(which(not_all_NA(.)))
-
 	mapping <- ggplot2::aes(x = Coordinate.1, y = Coordinate.2,
-			colour = Color, fill = Fill, shape = Shape,
-			size = Size, alpha = Alpha, stroke = NA)
+	                        colour = !!col_color, fill = !!col_fill, shape = !!col_shape,
+	                        size = !!col_size, alpha = !!col_alpha)
 
-	nms <- names(df) %>%
-		.[. %in% c("Color", "Fill", "Shape", "Size", "Alpha")]
-
-	aes_nms <- mapping %>%
-		purrr::map(., rlang::quo_name) %>%
-		.[. %in% nms]
-
-	mapping_var <- mapping %>%
-		.[names(.) %in% c("x", "y", names(aes_nms))]
-
-	mapping_fix <- mapping %>%
-		.[!names(.) %in% c("x", "y", names(aes_nms))] %>%
-		purrr::map(., rlang::quo_name)
-
-	rm(mapping, aes_nms, nms)
-
-	fix_args <- list(color = "white", fill = NA, shape = 21, size = 4, alpha = 0.9, stroke = .02) %>%
-	  .[names(.) %in% names(mapping_fix)]
+	idx <- purrr::map(mapping, `[[`, 1) %>% 
+	  purrr::map_lgl(is.null)
+	
+	mapping_var <- mapping[!idx]
+	mapping_fix <- mapping[idx]
+	
+	fix_args <- list(colour = "darkgray", fill = NA, shape = 21, size = 4, alpha = 0.9) %>% 
+	  .[names(.) %in% names(mapping_fix)] %>% 
+	  .[!is.na(.)]
+	fix_args$stroke <- 0.02
 
 	p <- ggplot() +
 	  rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args)))
 
 	p <- p +
-		scale_fill_brewer(palette = "Set1") +
-		scale_color_brewer(palette = "Set1") +
+		# scale_fill_brewer(palette = "Set1") +
+		# scale_color_brewer(palette = "Set1") +
 		labs(title = "", x = paste0("PC1 (", prop_var[1], ")"), y = paste0("PC2 (", prop_var[2], ")")) +
 		coord_fixed() +
 	my_theme

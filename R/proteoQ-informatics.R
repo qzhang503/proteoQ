@@ -88,7 +88,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		        call. = FALSE)
 	}
 
-
 	if(is.null(label_scheme[[col_fill]])) {
 		warning("Column \'", rlang::as_string(col_fill), "\' does not exist.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_fill]])) == 0) {
@@ -276,7 +275,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			)
 		  
 			df_mds$MDS %>% 
-			  cmbn_meta() %>% 
+			  cmbn_meta(label_scheme_sub) %>% 
 			  plotMDS(col_color = !!col_color, 
 			          col_fill = !!col_fill, col_shape = !!col_shape, 
 			          col_size = !!col_size, col_alpha = !!col_alpha, 
@@ -292,7 +291,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 				)
 
 				df_kinase_mds$MDS %>% 
-				  cmbn_meta() %>% 
+				  cmbn_meta(label_scheme_sub) %>% 
 				  plotMDS(col_color = !!col_color, 
 				          col_fill = !!col_fill, col_shape = !!col_shape, 
 				          col_size = !!col_size, col_alpha = !!col_alpha, 
@@ -311,21 +310,21 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 				classical = TRUE,
 				...
 			)
-
-			plotPCA(df = df_mds$PCA,
-				col_color = !!col_color,
-				col_fill = !!col_fill,
-				col_shape = !!col_shape,
-				col_size = !!col_size,
-				col_alpha = !!col_alpha,
-				label_scheme_sub = label_scheme_sub,
-				prop_var = df_mds$prop_var,
-				pr_bi = df_mds$pr_bi,
-				prop_var_bi = df_mds$prop_var_bi,
-				filepath = filepath,
-				filename = paste0(fn_prx, ".png"),
-				show_ids = show_ids, ...
-			)
+			
+			df_mds$PCA %>% 
+			  cmbn_meta(label_scheme_sub) %>% 
+			  plotPCA(col_color = !!col_color, 
+			          col_fill = !!col_fill, 
+			          col_shape = !!col_shape, 
+			          col_size = !!col_size, 
+			          col_alpha = !!col_alpha, 
+			          label_scheme_sub = label_scheme_sub, 
+			          prop_var = df_mds$prop_var, 
+			          pr_bi = df_mds$pr_bi, 
+			          prop_var_bi = df_mds$prop_var_bi, 
+			          filepath = filepath, 
+			          filename = paste0(fn_prx, ".png"), 
+			          show_ids = show_ids, ...)
 
 			if(annot_kinases) {
 				df_kinase_mds <- scoreMDS(df = dfw_kinase$log2R,
@@ -335,20 +334,20 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 					classical = TRUE, ...
 				)
 
-				plotPCA(df = df_kinase_mds$PCA,
-					col_color = !!col_color,
-					col_fill = !!col_fill,
-					col_shape = !!col_shape,
-					col_size = !!col_size,
-					col_alpha = !!col_alpha,
-					label_scheme_sub = label_scheme_sub,
-					prop_var = df_kinase_mds$prop_var,
-					pr_bi = df_kinase_mds$pr_bi,
-					prop_var_bi = df_kinase_mds$prop_var_bi,
-					filepath = file.path(filepath, "Kinases"),
-					filename = paste0(fn_prx, "_Kinases.", fn_suffix),
-					show_ids = show_ids, ...
-				)
+				df_kinase_mds$PCA %>% 
+				  cmbn_meta(label_scheme_sub) %>% 
+				  plotPCA(col_color = !!col_color, 
+				          col_fill = !!col_fill, 
+				          col_shape = !!col_shape, 
+				          col_size = !!col_size, 
+				          col_alpha = !!col_alpha, 
+				          label_scheme_sub = label_scheme_sub, 
+				          prop_var = df_kinase_mds$prop_var, 
+				          pr_bi = df_kinase_mds$pr_bi, 
+				          prop_var_bi = df_kinase_mds$prop_var_bi, 
+				          filepath = file.path(filepath, "Kinases"), 
+				          filename = paste0(fn_prx, "_Kinases.", fn_suffix), 
+				          show_ids = show_ids, ...)
 			}
 		}
 	} else if(anal_type == "EucDist") {
@@ -380,7 +379,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 				)
 			}
 		}
-
 	} else if(anal_type == "MA") {
 		function(...) {
 
