@@ -25,18 +25,19 @@ Installation
 
 To install this package, run R (version “3.6”) as *administrator*
 
-<img src="Installation.png" width="45%" style="display: block; margin: auto;" />
+<img src="images\installation\Installation.png" width="45%" style="display: block; margin: auto;" />
 
 and enter:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "NMF", "gage", "limma"))
+BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "gage", "limma"))
 
+# may now quit and re-run R as a regular user
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
-devtools::install_github("qzhang503/proteoQ")
+devtools::install_github("qzhang503/proteoQ@master")
 ```
 
 Application
@@ -65,7 +66,7 @@ options of `Header` and `Peptide quantitation` should be checked to
 include the search parameters and quantitative values. The `filename(s)`
 of the export(s) will be taken as is.[1]
 
-<img src="Mascot_export.png" width="45%" style="display: block; margin: auto;" />
+<img src="images\mascot\Mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
 The same peptide sequence under different PSM files can be assigned to
 different protein IDs when
@@ -77,7 +78,7 @@ Daemon](http://www.matrixscience.com/daemon.html). If the option is
 disabled, peptide sequences that have been assigned to multiple protein
 IDs will be removed for now when constructing peptide reports.
 
-<img src="Mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
+<img src="images\mascot\Mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 
 The pacakge reads an `Excel` template containing the metadata of
 multiplex experiment numbers, including TMT channels, LC/MS injection
@@ -228,7 +229,7 @@ pepHist(
 
     *NB*: We told `pepHist()` that we are interested in sample entries under the column `Select_BI`, a column that we just created. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
 
-<img src="Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
+<img src="images\Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="images\Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`;
 right, `scale_log2r = TRUE`
@@ -293,7 +294,7 @@ pepMDS(
 )
 ```
 
-<img src="Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="images\Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`
 </p>
@@ -311,7 +312,7 @@ pepMDS(
 )
 ```
 
-<img src="Peptide\MDS\MDS_JHU.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
+<img src="images\Peptide\MDS\MDS_JHU.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="images\Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
 <p class="caption">
 **Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left:
 original aesthetics; right, modefied aesthetics
@@ -377,8 +378,8 @@ prnCorr(
 )
 ```
 
-<img src="Protein/Corrplot/Protein_Corrplot_Intensity_gg.png" alt="Intensity" style="width:45.0%" />
-<img src="Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png" alt="log2FC" style="width:45.0%" />
+<img src="images/Protein/Corrplot/Protein_Corrplot_Intensity_gg.png" alt="Intensity" style="width:45.0%" />
+<img src="images/Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png" alt="log2FC" style="width:45.0%" />
 
 The following shows an example of Euclidean distance matrix against
 peptide data:
