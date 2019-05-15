@@ -202,9 +202,8 @@ to explore as a whole. In stead, we will break the plots down by their
 data origins. We begin with modifying the `expt_smry.xlsx` file by
 adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`. Each of
 the new columns includes sample entries that are tied to their
-laboratory origins.
-
-[![Select subsets](https://img.youtube.com/vi/y0VuWLUpcek/0.jpg)](https://www.youtube.com/embed/y0VuWLUpcek)
+laboratory origins. [![Select
+subsets](https://img.youtube.com/vi/y0VuWLUpcek/0.jpg)](https://www.youtube.com/embed/y0VuWLUpcek)
 
 We now are ready to plot histograms for each subset of data.[5] In the
 tutorial, we only display the plots using the `BI` subset:
