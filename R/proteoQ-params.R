@@ -1,9 +1,8 @@
 #' Processes the metadata of experiments
 #'
-#' @import dplyr purrr openxlsx
+#' @import dplyr tidyr purrr openxlsx
 #' @importFrom magrittr %>%
 #' @importFrom readxl read_excel
-#' @importFrom fs file_copy
 prep_label_scheme <- function(dat_dir, filename) {
 
 	my_channels <- function (x) {
@@ -76,7 +75,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 		dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
 		dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 
-	# replace the ids of NA samples
+	# replace NA sample ids
 	replace_na_smpls <- function(x, prefix) {
 		i <- is.na(x)
 		replace(as.character(x), i, paste(prefix, seq_len(sum(i)), sep = "."))
@@ -153,8 +152,9 @@ prep_label_scheme <- function(dat_dir, filename) {
 
 #' Loads the information of analyte prefractionation
 #'
-#' @import dplyr purrr
+#' @import dplyr purrr tidyr openxlsx
 #' @importFrom magrittr %>%
+#' @importFrom readxl read_excel
 prep_fraction_scheme <- function(dat_dir, filename) {
 	if(is.null(dat_dir))
 	  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
@@ -176,7 +176,6 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 			stop(filename, " needs to be in a file format of '.csv', '.xls' or '.xlsx'.")
 		}
  	} else {
-		# load(file = file.path(dat_dir, "label_scheme_full.Rdata"), envir =  .GlobalEnv)
 		load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 
 		fraction_scheme <- label_scheme_full %>%
@@ -184,11 +183,19 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 			dplyr::filter(!duplicated(RAW_File)) %>%
 			dplyr::group_by(TMT_Set, LCMS_Injection) %>%
 			dplyr::mutate(Fraction = row_number())
-	}
+ 	}
+	
+	fraction_scheme <- fraction_scheme %>% 
+	  tidyr::fill(TMT_Set, LCMS_Injection) %>% 
+	  dplyr::group_by(TMT_Set, LCMS_Injection) %>% 
+	  dplyr::mutate(Fraction = row_number())
+	
+	wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
+	openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
+	openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
 
-	write.csv(fraction_scheme, file.path(dat_dir, paste0(fn_prefix, ".csv")), row.names = FALSE)
+	# write.csv(fraction_scheme, file.path(dat_dir, paste0(fn_prefix, ".csv")), row.names = FALSE)
 	save(fraction_scheme, file = file.path(dat_dir, "fraction_scheme.Rdata"))
-	# load(file = file.path(dat_dir, "fraction_scheme.Rdata"), envir = .GlobalEnv)
 }
 
 
@@ -417,17 +424,17 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
 	
 	mget(names(formals()), rlang::current_env()) %>% save_call("load_expts")
 
-  if(!file.exists(file.path(dat_dir, "acctype_sp.txt"))) {
-    acctype_sp <- data.frame(Accession_Type = "uniprot_id", Species = "human")
-    # stop("The information of protein accession type and species not availble.\n Please run `normPSM()` first.")
+	# "acctype_sp.txt" only first available after executing `annotPSM``
+	# a placeholder if "acctype_sp.txt" not yet available
+	if(!file.exists(file.path(dat_dir, "acctype_sp.txt"))) {
+		acctype_sp <- data.frame(Accession_Type = "uniprot_id", Species = "human")
   } else {
-    acctype_sp <- read.csv(file.path(dat_dir, "acctype_sp.txt"), check.names = FALSE,
+		acctype_sp <- read.csv(file.path(dat_dir, "acctype_sp.txt"), check.names = FALSE,
                            sep = "\t", header = TRUE, comment.char = "#")
-
   }
 
   prep_label_scheme(dat_dir, expt_smry)
-  # prep_fraction_scheme(dat_dir = dat_dir, filename = frac_smry)
+  prep_fraction_scheme(dat_dir, frac_smry)
 
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
