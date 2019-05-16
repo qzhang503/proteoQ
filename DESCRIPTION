@@ -16,7 +16,6 @@ LazyData: true
 Suggests: 
     knitr,
     rmarkdown,
-    data.table,
     testthat
 VignetteBuilder: knitr
 Imports: 
@@ -33,6 +32,7 @@ Imports:
     magrittr,
     boot,
     broom.mixed,
+    data.table,		
     e1071,
     grid,
     gridExtra,
