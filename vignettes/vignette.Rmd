@@ -46,27 +46,18 @@ knitr::opts_chunk$set(
 
 
 ## Introduction to proteoQ
-Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is designed to aid automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for sample selections, aesthetics controls and statistical modelings. The arrangement allows end users to put data behind the scene and quickly address interesting biological questions using various informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting. 
+Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is designed to aid automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. The arrangement allows end users to put data behind the scene and quickly address interesting biological questions using various informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting. 
 
 The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R functions. 
 
 ## Installation
-To install this package, run R (version "3.6") as *administrator*
-
-```{r Installation, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_inst <- "images\\installation\\Installation.png"
-
-knitr::include_graphics(c(img_inst))
-```
-
-and enter: 
+To install this package, start R (version "3.6") and enter: 
 
 ```{r installation_1, include = TRUE, eval = FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "gage", "limma"))
 
-# may now quit and re-run R as a regular user
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ@master")
@@ -287,7 +278,7 @@ img_jhu_pepmds_2 <- "images\\Peptide\\MDS\\MDS_JHU_new_aes.png"
 knitr::include_graphics(c(img_jhu_pepmds, img_jhu_pepmds_2))
 ```
 
-We immediately note that all samples are coded with the same color (**Figure 2B**). This is not a surprise as the values under column `expt_smry.xlsx::Color` are exclusively `JHU` for the `Select_JHU` subset. For similar reasons, the two different batches of `TMT1` and `TMT2` are distinguished by transparency, which is governed by column `expt_smry.xlsx::Alpha`. We may wish to modify the aesthetics using different keys: e.g., color coding by WHIMs and size coding by batches. From the `expt_smry.xlsx`, we can see that we have already prepared the column `Shape` and `Alpha` to code WHIMs and batches, respectively. Therefore, we can recycle them to make the new plot without adding new columns of aesthetics control to `expt_smry.xlsx` (**Figure 2C**):
+We immediately spot that all samples are coded with the same color (**Figure 2B**). This is not a surprise as the values under column `expt_smry.xlsx::Color` are exclusively `JHU` for the `Select_JHU` subset. For similar reasons, the two different batches of `TMT1` and `TMT2` are distinguished by transparency, which is governed by column `expt_smry.xlsx::Alpha`. We may wish to modify the aesthetics using different keys: e.g., color coding by WHIMs and size coding by batches, without the recourse of writing new R scripts. One solution is to link the attributes and sample IDs by creating additional columns in `expt_smry.xlsx`. Fortunately, in this example, we have coincidentally prepared the column `Shape` and `Alpha` to code WHIMs and batches, respectively. Therefore, we can recycle them directly to make a new plot (**Figure 2C**): 
 
 ```{r Peptide JHU MDS 2, eval = FALSE}
 # `JHU` subset

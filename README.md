@@ -6,35 +6,30 @@ Chemical labeling using tandem mass tag
 applied in mass spectrometry (MS)-based quantification of proteins and
 peptides. The proteoQ tool is designed to aid automated and reproducible
 analysis of proteomics data. It interacts with an `Excel` spread sheet
-for sample selections, aesthetics controls and statistical modelings.
-The arrangement allows end users to put data behind the scene and
-quickly address interesting biological questions using various
+for dynamic sample selections, aesthetics controls and statistical
+modelings. The arrangement allows end users to put data behind the scene
+and quickly address interesting biological questions using various
 informatic tools. In addition, the entire workflow is documented and can
 be conveniently reproduced upon revisiting.
 
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
 10- or 11-plex TMT experiments. Peptide and protein results are then
-produced with users’ selection of parameters in data filtration,
+produced with users' selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
-creating ‘wrappers’ around published R functions.
+creating 'wrappers' around published R functions.
 
 Installation
 ------------
 
-To install this package, run R (version “3.6”) as *administrator*
-
-<img src="images\installation\Installation.png" width="45%" style="display: block; margin: auto;" />
-
-and enter:
+To install this package, start R (version "3.6") and enter:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "gage", "limma"))
 
-# may now quit and re-run R as a regular user
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ@master")
@@ -123,7 +118,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins
 
-*Process PSMs* — In this section, I demonstrate the summarisation of PSM
+*Process PSMs* - In this section, I demonstrate the summarisation of PSM
 data to peptides and proteins. The data set I use in this section
 corresponds to the proteomics data from Mertins et al.(2018). In the
 study, two different breast cancer subtypes, WHIM2 and WHIM16, from
@@ -157,7 +152,7 @@ less than 1,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
 analysis.[2]
 
-*Summarize PSMs to peptides* — We next summarise PSM to peptides.
+*Summarize PSMs to peptides* - We next summarise PSM to peptides.
 
 ``` r
 # Generate peptide reports
@@ -180,7 +175,7 @@ under the assumption of multiple Gaussian kernels.[3] The parameter
 of reporter-ion intensity, respectively, for use in the scaling of
 standard deviation across samples.
 
-Let’s compare the log2FC profiles with and without scaling
+Let's compare the log2FC profiles with and without scaling
 normalization:[4]
 
 ``` r
@@ -204,7 +199,8 @@ adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`. Each of
 the new columns includes sample entries that are tied to their
 laboratory origins.
 
-[![Select subsets](https://img.youtube.com/vi/y0VuWLUpcek/0.jpg)](https://www.youtube.com/embed/y0VuWLUpcek)
+[![Select
+subsets](https://img.youtube.com/vi/y0VuWLUpcek/0.jpg)](https://www.youtube.com/embed/y0VuWLUpcek)
 
 We now are ready to plot histograms for each subset of data.[5] In the
 tutorial, we only display the plots using the `BI` subset:
@@ -226,7 +222,7 @@ pepHist(
 )
 ```
 
-    *NB*: We told `pepHist()` that we are interested in sample entries under the column `Select_BI`, a column that we just created. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
+    *NB*: We interactively told `pepHist()` that we are interested in sample entries under the newly created `Select_BI` column. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
 
 <img src="images\Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="images\Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
@@ -245,7 +241,7 @@ suitable when the quantities of proteins of interest are different
 across samples where the assumption of constitutive expression for the
 vast majority of proteins may not hold.
 
-*Summarize peptides to proteins* — We then summarise peptides to
+*Summarize peptides to proteins* - We then summarise peptides to
 proteins using a two-component Gaussian kernel.
 
 ``` r
@@ -284,7 +280,8 @@ prnHist(
 ### MDS and PCA plots
 
 In this section, we visualize MDS, PCA and Euclidean distance against
-the peptide data at `scale_log2r = TRUE`. We start with metric MDS:
+the peptide data at `scale_log2r = TRUE`. We start with metric MDS for
+peptide data:
 
 ``` r
 # data from all three laboratories
@@ -298,9 +295,10 @@ pepMDS(
 **Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`
 </p>
 
-It is clear that the WHIM2 and WHIM16 samples are well separated by
-Euclidean distance (**Figure 2A**). We next take the `JHU` data subset
-as an example to explore batch effects in the proteomic sample handling:
+It is clear that the WHIM2 and WHIM16 samples are well separated by the
+Euclidean distance of log2FC (**Figure 2A**). We next take the `JHU`
+data subset as an example to explore batch effects in the proteomic
+sample handling:
 
 ``` r
 # `JHU` subset
@@ -317,17 +315,19 @@ pepMDS(
 original aesthetics; right, modefied aesthetics
 </p>
 
-We immediately note that all samples are coded with the same color
+We immediately spot that all samples are coded with the same color
 (**Figure 2B**). This is not a surprise as the values under column
 `expt_smry.xlsx::Color` are exclusively `JHU` for the `Select_JHU`
 subset. For similar reasons, the two different batches of `TMT1` and
 `TMT2` are distinguished by transparency, which is governed by column
 `expt_smry.xlsx::Alpha`. We may wish to modify the aesthetics using
-different keys: e.g., color coding by WHIMs and size coding by batches.
-From the `expt_smry.xlsx`, we can see that we have already prepared the
-column `Shape` and `Alpha` to code WHIMs and batches, respectively.
-Therefore, we can recycle them to make the new plot without adding new
-columns to `expt_smry.xlsx` (**Figure 2C**):
+different keys: e.g., color coding by WHIMs and size coding by batches,
+without the recourse of writing new R scripts. One solution is to link
+the attributes and sample IDs by creating additional columns in
+`expt_smry.xlsx`. Fortunately, in this example, we have coincidentally
+prepared the column `Shape` and `Alpha` to code WHIMs and batches,
+respectively. Therefore, we can recycle them directly to make a new plot
+(**Figure 2C**):
 
 ``` r
 # `JHU` subset
@@ -339,6 +339,57 @@ pepMDS(
   show_ids = FALSE
 )
 ```
+
+The `prnMDS` performs `MDS` for protein data. For `PCA` analysis, the
+corresponding functions are `pepPCA` and `prnPCA` for peptide and
+protein data, respectively.
+
+As mentioned at the begining of this section, `MDS` approximates
+Euclidean distances at a low dimensional space. Sometime it may be
+useful to have an accurate view of the distance matrix. Functions
+`pepEucDist` and `prnEucDist` plot the heat maps of Euclidean distance
+matrix for peptides and proteins, respectively. They are wrappers of
+([`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf))
+and inherit many parameters therein. Supposed that we are interested in
+visualizing the distance matrix for the `PNNL` subset:
+
+``` r
+# `PNNL` subset
+pepEucDist(
+    col_select = Select_PNNL,
+    annot_cols = c("Shape", "Alpha"),
+    annot_colnames = c("WHIM", "Batch"), 
+
+    # parameters from `pheatmap`
+    display_numbers = TRUE, 
+    number_color = "grey30", 
+    number_format = "%.2f",
+    
+    clustering_distance_rows = "euclidean", 
+    clustering_distance_cols = "euclidean", 
+    
+    fontsize = 16, 
+    fontsize_row = 20, 
+    fontsize_col = 20, 
+    fontsize_number = 8, 
+    
+    cluster_rows = TRUE,
+    show_rownames = TRUE,
+    show_colnames = TRUE,
+    border_color = "grey60", 
+    cellwidth = 24, 
+    cellheight = 24, 
+    width = 16,
+    height = 16, 
+    filename = "EucDist_PNNL.png"
+)
+```
+
+Parameter `annot_cols` defines the tracks to be displayed on the top of
+distrance-matrix plots. In this example, we have choosen
+`expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the
+WHIM subtypes and the batch numbers, respectively. Parameter
+`annot_colnames` allows us to rename the tracks for better intuition.
 
 ### Correlation plots
 
@@ -500,10 +551,10 @@ visualization:
 gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
 ```
 
-Philipp, Martins. 2018. “Reproducible Workflow for Multiplexed
+Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
-Liquid Chromatography-Mass Spectrometry.” *Nature Protocols* 13 (7):
-1632–61. <https://doi.org/10.1038/s41596-018-0006-9>.
+Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
+1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in file name extension.
@@ -530,7 +581,7 @@ scaling of standard deviations.
 calling functions involved parameter `scale_log2r`, users will specify
 explicitly `scale_log2r = FALSE` to overwrite the default. Although the
 package provides the facility to look for a global setting of
-`scale_log2`, I don’t recommend using it.
+`scale_log2`, I don't recommend using it.
 
 [7] Prameter `fasta` is solely used for the calculation of protein
 percent coverage. Precomputed data will be used if no `fasta` database
