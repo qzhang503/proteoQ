@@ -351,8 +351,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			}
 		}
 	} else if(anal_type == "EucDist") {
-		function(adjEucDist = adjEucDist,
-			annot_cols = NULL, ...) {
+		function(adjEucDist = adjEucDist, annot_cols = NULL, annot_colnames, ...) {
 			df_mds <- scoreMDS(df = dfw$log2R,
 				label_scheme_sub = label_scheme_sub,
 			  scale_log2r = scale_log2r,
@@ -360,9 +359,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 				classical = TRUE, ...
 			)
 
-			df_mds$D %>% plotEucDist(annot_cols,
-				filepath = filepath,
-				filename = paste0(fn_prx, ".png"), ...
+			df_mds$D %>% plotEucDist(annot_cols, 
+			                         annot_colnames, 
+			                         filepath = filepath, 
+			                         filename = paste0(fn_prx, ".png"), ...
 			)
 
 			if(annot_kinases) {
@@ -373,10 +373,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 					classical = TRUE, ...
 				)
 
-				df_kinase_mds$D %>% plotEucDist(annot_cols,
-					filepath = file.path(filepath, "Kinases"),
-					filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...
-				)
+				df_kinase_mds$D %>% plotEucDist(annot_cols, 
+				                                annot_colnames, 
+				                                filepath = file.path(filepath, "Kinases"), 
+				                                filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...)
 			}
 		}
 	} else if(anal_type == "MA") {

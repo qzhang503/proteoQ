@@ -1,7 +1,9 @@
 #' Processes the metadata of experiments
 #'
-#' @import dplyr purrr
+#' @import dplyr purrr openxlsx
 #' @importFrom magrittr %>%
+#' @importFrom readxl read_excel
+#' @importFrom fs file_copy
 prep_label_scheme <- function(dat_dir, filename) {
 
 	my_channels <- function (x) {
@@ -23,6 +25,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 	  stop(filename, " not found under '", dat_dir, "'.")
 
 	fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
+	fn_prefix <- gsub("\\..*$", "", filename)
 
 	if(fn_suffix %in% c("xls", "xlsx")) {
 		label_scheme_full <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Setup") %>%
@@ -136,6 +139,11 @@ prep_label_scheme <- function(dat_dir, filename) {
 	}
 
 	save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.Rdata"))
+
+	wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
+	openxlsx::writeData(wb, sheet = "Setup", label_scheme_full)
+	openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
+	
 	simple_label_scheme(dat_dir, label_scheme_full)
 
 	# load(file = file.path(dat_dir, "label_scheme_full.Rdata"), envir =  .GlobalEnv)

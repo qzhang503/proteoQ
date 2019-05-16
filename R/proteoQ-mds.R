@@ -95,7 +95,7 @@ plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 #'
 #' @import dplyr ggplot2 rlang pheatmap
 #' @importFrom magrittr %>%
-plotEucDist <- function (D, annot_cols, filepath, filename, ...) {
+plotEucDist <- function (D, annot_cols, filepath, filename, annot_colnames, ...) {
 	dots <- rlang::enexprs(...)
 
 	D_matrix <- as.matrix(D)
@@ -115,6 +115,10 @@ plotEucDist <- function (D, annot_cols, filepath, filename, ...) {
 
 	if (is.null(annot_cols)) annotation_col <- NA else
 		annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = attr(D, "Labels"))
+	
+	if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+	  colnames(annotation_col) <- annot_colnames
+	}
 
 	if (is.null(dots$annotation_colors)) {
 		annotation_colors <- setHMColor(annotation_col)
@@ -544,9 +548,11 @@ proteoPCA <- function (id = gene,
 #'  Typically, \code{adjEucDist = FALSE} if \code{reference samples} were split
 #'  near the end of a sample handling process, for instance, at the stages
 #'  immediately before or after TMT labeling.
-#'@param annot_cols Column names available in \code{expt_smry.xlsx}. Values under
-#'  the selected columns will be used to color-code sample IDs on the top of
-#'  \code{EucDist} plots.
+#'@param annot_cols Column names available in \code{expt_smry.xlsx}. Values
+#'  under the selected columns will be used to color-code sample IDs on the top
+#'  of \code{EucDist} plots.
+#'@param annot_colnames Character vector of replacement name(s) to
+#'  \code{annot_cols}.
 #'@param df The filename of input data. By default, it will be determined by the
 #'  value of \code{id}.
 #'@param filepath The filepath to output results. By default, it will be
@@ -565,7 +571,7 @@ proteoEucDist <- function (id = gene,
 											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
 											col_shape = NULL, col_size = NULL, col_alpha = NULL,
 											scale_log2r = TRUE, adjEucDist = FALSE,
-                      annot_cols = NULL,
+                      annot_cols = NULL, annot_colnames = NULL, 
 											df = NULL, filepath = NULL, filename = NULL, ...) {
 
   # scale_log2r <- match_logi_gv(scale_log2r)
@@ -580,14 +586,25 @@ proteoEucDist <- function (id = gene,
 	col_alpha <- rlang::enexpr(col_alpha)
 	
 	reload_expts()
+	
+	# if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+	#   load(file = file.path(dat_dir, "label_scheme.Rdata"))
+	#   
+	#   label_scheme <- label_scheme %>% 
+	#     dplyr::select(annot_cols) %>% 
+	#     `colnames<-`(annot_colnames) %>% 
+	#     dplyr::select(-which(names(.) %in% annot_cols)) %>% 
+	#     dplyr::bind_cols(label_scheme, .)
+	#   
+	#    save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
+	# }
 
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
 		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = filepath, filename = filename,
 		anal_type = "EucDist")(adjEucDist = adjEucDist,
-		annot_cols = annot_cols,
-		...
+		annot_cols = annot_cols, annot_colnames = annot_colnames, ...
 	)
 }
 

@@ -26,8 +26,8 @@ Imports:
     lme4,
     lmerTest,
     boot,
-    grid,		
-    gridExtra,		
+    grid,
+    gridExtra,
     broom.mixed,
     plyr,
     magrittr,
@@ -49,5 +49,9 @@ Imports:
     XML,
     readxl,
     testthat,
-    fs
+    fs,
+    readr,
+    tibble,
+    forcats,
+    openxlsx
 RoxygenNote: 6.1.1

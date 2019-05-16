@@ -214,7 +214,7 @@ not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
 #'
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
-colAnnot <- function (annot_cols = NULL, sample_ids) {
+colAnnot <- function (annot_cols = NULL, sample_ids, annot_colnames = NULL) {
 	if(is.null(annot_cols)) return(NA)
 
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
