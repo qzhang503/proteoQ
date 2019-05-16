@@ -3,8 +3,9 @@ title: Package "\"proteoQ\""
 author: "Qiang Zhang"
 date: "`r Sys.Date()`"
 output:
-  md_document:
-    variant: markdown_github
+  pdf_document:
+    toc: true
+    toc_depth: 2
 fig_caption: yes
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
@@ -84,19 +85,11 @@ dat_dir <- "c:\\The\\First\\Example"
 
 PSM table(s) in a `csv` format will be exported by the users from the [Mascot](https://http://www.matrixscience.com/) search engine. I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The `filename(s)` of the export(s) will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in file name extension.]  
 
-```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_export <- "images\\mascot\\Mascot_export.png"
-
-knitr::include_graphics(c(img_export))
-```
+![Mascot_export](images/mascot/Mascot_export.png){ width=45% } 
 
 The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To avoid such ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed for now when constructing peptide reports. 
 
-```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_daemon <- "images\\mascot\\Mascot_daemon.png"
-
-knitr::include_graphics(c(img_daemon))
-```
+![Mascot_daemon](images/mascot/Mascot_daemon.png){ width=45% } 
 
 The pacakge reads an `Excel` template containing the metadata of multiplex experiment numbers, including TMT channels, LC/MS injection indices, sample IDs, corresponding RAW data file names and addditional fields from the users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. The function, `extract_raws`, can be used to summarise `.raw` file names under a file folder:
 
@@ -131,7 +124,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins 
 
-\vspace{1.5cm}*Process PSMs* --- In this section, I demonstrate the summarisation of PSM data to peptides and proteins. The data set I use in this section corresponds to the proteomics data from Mertins et al.[-@mertins2018np]. In the study, two different breast cancer subtypes, WHIM2 and WHIM16, from patient-derived xenograft models were assessed by three independent laborotories. Under each location, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. We start by processing PSM data from `Mascot` outputs:  
+*Process PSMs* --- In this section, I demonstrate the summarisation of PSM data to peptides and proteins. The data set I use in this section corresponds to the proteomics data from Mertins et al.[-@mertins2018np]. In the study, two different breast cancer subtypes, WHIM2 and WHIM16, from patient-derived xenograft models were assessed by three independent laborotories. Under each location, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. We start by processing PSM data from `Mascot` outputs:  
 
 ```{r PSM summary, eval = FALSE}
 # Generate PSM reports
@@ -149,7 +142,7 @@ normPSM()
 
 PSM outliers will be assessed at a basis of per peptide and per sample at `rm_outliers = TRUE`, which can be a slow process for large data sets. To circumvent repeated efforts in the assessment of PSM outliers, we may set `rm_outliers = FALSE` and `plot_violins = TRUE` when first executing `normPSM()`. We then visually inspect the violin plots of reporter-ion intensity. Empirically, PSMs with reporter-ion intensity less than 1,000 are trimmed and  samples with median intensity that is 2/3 or less to the average of majority samples are removed from further analysis.^[The sample removal and PSM re-processing can be achieved by deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-load of the experiment, `load_expts()`, and the re-execution of `normPSM()` with desired parameters.]  
 
-\vspace{1.5cm}*Summarize PSMs to peptides* --- We next summarise PSM to peptides.  
+*Summarize PSMs to peptides* --- We next summarise PSM to peptides.  
 
 ```{r PSM to peptides, eval = FALSE}
 # Generate peptide reports
@@ -182,7 +175,7 @@ pepHist(
 
 There are 60 panels of of histograms in each plot, which may not be easy to explore as a whole. In stead, we will break the plots down by their data origins. We begin with modifying the `expt_smry.xlsx` file by adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`. Each of the new columns includes sample entries that are tied to their laboratory origins. 
 
-[![Select subsets](https://img.youtube.com/vi/y0VuWLUpcek/0.jpg)](https://www.youtube.com/embed/y0VuWLUpcek)
+https://www.youtube.com/embed/y0VuWLUpcek
 
 We now are ready to plot histograms for each subset of data.^[system files will be automatically updated from the modified `expt_smry.xlsx`] In the tutorial, we only display the plots using the `BI` subset: 
 
@@ -205,15 +198,11 @@ pepHist(
 
     *NB*: We interactively told `pepHist()` that we are interested in sample entries under the newly created `Select_BI` column. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
 
-```{r Peptide histogram F, echo=FALSE, fig.align='center', fig.cap="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img1_path <- "images\\Peptide\\Histogram\\Peptide_BI_GL1_N.png"
-img2_path <- "images\\Peptide\\Histogram\\Peptide_BI_GL1_Z.png"
-knitr::include_graphics(c(img1_path, img2_path))
-```
+![Peptide_N](images/Peptide/Histogram/Peptide_BI_GL1_N.png){ width=45% } ![Peptide_Z](images/Peptide/Histogram/Peptide_BI_GL1_Z.png){ width=45% }
 
   As expected, the widths of log2FC profiles are more similar to each other after the scaling normalization. However, such adjustment may cause artifacts when the standard deviaiton across samples are genuinely different. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the characteristics of samples.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users will specify explicitly `scale_log2r = FALSE` to overwrite the default. Although the package provides the facility to look for a global setting of `scale_log2`, I don't recommend using it.] Alignment of log2FC against housekeeping or normalizer protein(s) is also available. This seems suitable when the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
 
-\vspace{1.5cm}*Summarize peptides to proteins* --- We then summarise peptides to proteins using a two-component Gaussian kernel.  
+*Summarize peptides to proteins* --- We then summarise peptides to proteins using a two-component Gaussian kernel.  
 
 ```{r Protein reports, eval = FALSE}
 # Generate protein reports
@@ -257,11 +246,8 @@ pepMDS(
 )
 ```
 
-```{r Peptide_MDS, echo=FALSE, fig.align='center', fig.cap="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_pepmds <- "images\\Peptide\\MDS\\Peptide_MDS.png"
 
-knitr::include_graphics(c(img_pepmds))
-```
+![Peptide_MDS](images/Peptide/MDS/Peptide_MDS.png){ width=45% }
 
 It is clear that the WHIM2 and WHIM16 samples are well separated by the Euclidean distance of log2FC (**Figure 2A**). We next take the `JHU` data subset as an example to explore batch effects in the proteomic sample handling: 
 
@@ -274,11 +260,8 @@ pepMDS(
 )
 ```
 
-```{r Peptide_JHU_MDS, echo=FALSE, fig.align='center', fig.cap="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_jhu_pepmds <- "images\\Peptide\\MDS\\MDS_JHU.png"
-img_jhu_pepmds_2 <- "images\\Peptide\\MDS\\MDS_JHU_new_aes.png"
-knitr::include_graphics(c(img_jhu_pepmds, img_jhu_pepmds_2))
-```
+
+![MDS_JHU](images/Peptide/MDS/MDS_JHU.png){ width=45% } ![MDS_JHU_new_aes](images/Peptide/MDS/MDS_JHU_new_aes.png){ width=45% }
 
 We immediately spot that all samples are coded with the same color (**Figure 2B**). This is not a surprise as the values under column `expt_smry.xlsx::Color` are exclusively `JHU` for the `Select_JHU` subset. For similar reasons, the two different batches of `TMT1` and `TMT2` are distinguished by transparency, which is governed by column `expt_smry.xlsx::Alpha`. We may wish to modify the aesthetics using different keys: e.g., color coding by WHIMs and size coding by batches, without the recourse of writing new R scripts. One solution is to link the attributes and sample IDs by creating additional columns in `expt_smry.xlsx`. Fortunately, in this example, we have coincidentally prepared the column `Shape` and `Alpha` to code WHIMs and batches, respectively. Therefore, we can recycle them directly to make a new plot (**Figure 2C**): 
 
@@ -366,6 +349,7 @@ prnCorr(
 	height = 24		
 )
 ```
+
 
 ![Intensity](images/Protein/Corrplot/Protein_Corrplot_Intensity_gg.png){ width=45% } ![log2FC](images/Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png){ width=45% }
 

@@ -7,8 +7,8 @@
 proteoEucDist(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
   col_size = NULL, col_alpha = NULL, scale_log2r = TRUE,
-  adjEucDist = FALSE, annot_cols = NULL, df = NULL,
-  filepath = NULL, filename = NULL, ...)
+  adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL,
+  df = NULL, filepath = NULL, filename = NULL, ...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
@@ -27,9 +27,12 @@ Typically, \code{adjEucDist = FALSE} if \code{reference samples} were split
 near the end of a sample handling process, for instance, at the stages
 immediately before or after TMT labeling.}
 
-\item{annot_cols}{Column names available in \code{expt_smry.xlsx}. Values under
-the selected columns will be used to color-code sample IDs on the top of
-\code{EucDist} plots.}
+\item{annot_cols}{Column names available in \code{expt_smry.xlsx}. Values
+under the selected columns will be used to color-code sample IDs on the top
+of \code{EucDist} plots.}
+
+\item{annot_colnames}{Character vector of replacement name(s) to
+\code{annot_cols}.}
 
 \item{df}{The filename of input data. By default, it will be determined by the
 value of \code{id}.}

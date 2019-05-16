@@ -154,8 +154,6 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 
   prn_acc <- parse_acc(df)
 
-
-
   # ---------------
   run_scripts <- FALSE
   if(run_scripts) {

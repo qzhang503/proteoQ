@@ -100,11 +100,12 @@ na_zeroIntensity <- function (df) {
 aggrNums <- function(f) {
 	function (df, id, ...) {
 		id <- rlang::as_string(rlang::enexpr(id))
+		dots <- rlang::enexprs(...)
 
 		df %>%
 			dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
 			dplyr::group_by(!!rlang::sym(id)) %>%
-			dplyr::summarise_all(list(~f(., ...)))
+			dplyr::summarise_all(~ f(., !!!dots))
 	}
 }
 
@@ -214,7 +215,7 @@ not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
 #'
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
-colAnnot <- function (annot_cols = NULL, sample_ids) {
+colAnnot <- function (annot_cols = NULL, sample_ids, annot_colnames = NULL) {
 	if(is.null(annot_cols)) return(NA)
 
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
