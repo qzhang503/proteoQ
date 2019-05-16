@@ -44,7 +44,6 @@ Imports:
     openxlsx,
     pheatmap,
     plyr,
-    reshape2,
     rlang,
     seqinr,
     statmod,
