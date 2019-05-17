@@ -70,16 +70,16 @@ prep_label_scheme <- function(dat_dir, filename) {
 	TMT_plex <- TMT_plex(label_scheme_full)
 	TMT_levels <- TMT_levels(TMT_plex)
 
-	label_scheme_full <- label_scheme_full %>%
-    dplyr::mutate_at(vars(c("TMT_Channel")), ~ my_channels(.x)) %>%
-    dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% 
-    dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
-    dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
-    dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.x)) %>%
-    dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(.x, digits = 2)) %>%
-    tidyr::fill(TMT_Set, LCMS_Injection, RAW_File) %>%
-    dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
-    dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
+	label_scheme_full <- label_scheme_full %>% 
+	  dplyr::mutate_at(vars(c("TMT_Channel")), ~ my_channels(.x)) %>% 
+	  dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% 
+	  dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
+	  dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
+	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.x)) %>%
+	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(.x, digits = 2)) %>%
+	  tidyr::fill(TMT_Set, LCMS_Injection, RAW_File) %>%
+	  dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
+	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 
 	label_scheme_temp <- label_scheme_full %>%
 		dplyr::select(TMT_Channel, TMT_Set, Sample_ID) %>%
