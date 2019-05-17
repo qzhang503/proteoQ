@@ -1008,9 +1008,6 @@ normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "f
 	
 	reload_expts()
 
-  prep_label_scheme(dat_dir, expt_smry)
-  prep_fraction_scheme(dat_dir = dat_dir, filename = frac_smry)
-
 	rmPSMHeaders()
 	splitPSM(rptr_intco, rm_craps, plot_violins)
 	cleanupPSM(rm_outliers)

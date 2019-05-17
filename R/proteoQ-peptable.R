@@ -307,7 +307,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	mget(names(formals()), rlang::current_env()) %>% save_call("normPep")
 
 	if(!file.exists(file.path(dat_dir, "Peptide", "Peptide.txt"))) {
-		# normalize peptide data by each RAW file
+		# normalize peptide data within each RAW file
 		normPep_Splex(
 			id = !!id,
 			method_psm_pep = method_psm_pep
@@ -363,7 +363,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		# 	dplyr::select(-Identifier) %>%
 		# 	setDT(.)
 
-
 		for (set_idx in seq_len(n_TMT_sets(label_scheme_full)))
 		  df_num <- df_num %>% newColnames(set_idx, .)
 
@@ -403,7 +402,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 			df[, grep("^Z_log2_R[0-9]{3}", names(df))]
 		)
 
-		# annotatation including "refseq_acc" for kinase lookup
+		# annotation including historical lookup of kinases by "refseq_acc"
 		acc_type <- find_acctype(label_scheme)
 		df <- annotPrn(df, acc_type)
 		if(annot_kinases) df <- annotKin(df, acc_type)
