@@ -61,12 +61,21 @@ prep_label_scheme <- function(dat_dir, filename) {
 
 	TMT_plex <- TMT_plex(label_scheme_full)
 	TMT_levels <- TMT_levels(TMT_plex)
+	
+	
+	na_to_false <- function (x) {
+	  x <- ifelse(is.na(x), FALSE, TRUE)
+	}
 
 	label_scheme_full <- label_scheme_full %>%
-		dplyr::mutate_at(vars(c("TMT_Channel")), ~ my_channels(.)) %>%
-		dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>%
-		dplyr::mutate(Reference = !is.na(Reference),
-		              RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>%
+	  dplyr::mutate_at(vars(c("TMT_Channel")), ~ my_channels(.)) %>%
+	  dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% 
+	  dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) #  %>% 
+	  # dplyr::mutate_at(vars(c("Reference")), ~ na_to_false(.)) 
+	
+	label_scheme_full$Reference[is.na(label_scheme_full$Reference)] <- FALSE
+	
+	label_scheme_full <- label_scheme_full %>%
 		dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.)) %>%
 		dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(., digits = 2)) %>%
 		# dplyr::mutate_at(vars(one_of("DAT_File")), ~ gsub("\\.csv$", "", ., ignore.case = TRUE)) %>%
