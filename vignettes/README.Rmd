@@ -329,7 +329,7 @@ pepEucDist(
 Parameter `annot_cols` defines the tracks to be displayed on the top of distrance-matrix plots. In this example, we have choosen `expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the WHIM subtypes and the batch numbers, respectively. Parameter `annot_colnames` allows us to rename the tracks for better intuition.  
 
 ```{r Peptide_EucDist, echo=FALSE, fig.align='center', fig.cap="**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_pepEucDist <- "images\\peptide\\mds\\eucDist_pnnl.png"
+img_pepEucDist <- "images\\peptide\\mds\\eucdist_pnnl.png"
 knitr::include_graphics(c(img_pepEucDist))
 ```
 
