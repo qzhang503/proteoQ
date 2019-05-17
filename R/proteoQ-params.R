@@ -7,14 +7,22 @@ prep_label_scheme <- function(dat_dir, filename) {
 
 	my_channels <- function (x) {
 		x <- as.character(x)
-
 		pos <- !grepl("^TMT", x)
 		x[pos] <- paste0("TMT-", x[pos])
 
 		return(x)
 	}
 
-
+	replace_na_smpls <- function(x, prefix) {
+	  i <- is.na(x)
+	  replace(as.character(x), i, paste(prefix, seq_len(sum(i)), sep = "."))
+	}
+	
+	not_trival <- function (x) {
+	  ok <- !is.na(x) & (x != FALSE) & (x != 0)
+	}
+	
+	
 	if(is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv),
 	                                         error = function(e) 1)
 
@@ -46,9 +54,9 @@ prep_label_scheme <- function(dat_dir, filename) {
 		stop("Not all required columns are present in \'", filename, "\'", call. = TRUE)
 	}
 
-	default_names <- c("Reference", "Select", "Group", "Order", "Fill",  "Color",
+	default_names <- c("Select", "Group", "Order", "Fill",  "Color",
 										"Shape", "Size", "Alpha", "Term", "Duplicate", "Benchmark")
-
+	
 	purrr::walk(default_names, ~ {
 		if(!.x %in% names(label_scheme_full)) {
 			message("Column \'", .x, "\' added to \'", filename, "\'")
@@ -61,34 +69,17 @@ prep_label_scheme <- function(dat_dir, filename) {
 
 	TMT_plex <- TMT_plex(label_scheme_full)
 	TMT_levels <- TMT_levels(TMT_plex)
-	
-	
-	na_to_false <- function (x) {
-	  x <- ifelse(is.na(x), FALSE, TRUE)
-	}
 
 	label_scheme_full <- label_scheme_full %>%
-	  dplyr::mutate_at(vars(c("TMT_Channel")), ~ my_channels(.)) %>%
-	  dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% 
-	  dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) #  %>% 
-	  # dplyr::mutate_at(vars(c("Reference")), ~ na_to_false(.)) 
-	
-	label_scheme_full$Reference[is.na(label_scheme_full$Reference)] <- FALSE
-	
-	label_scheme_full <- label_scheme_full %>%
-		dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.)) %>%
-		dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(., digits = 2)) %>%
-		# dplyr::mutate_at(vars(one_of("DAT_File")), ~ gsub("\\.csv$", "", ., ignore.case = TRUE)) %>%
-		# dplyr::mutate_at(vars(one_of("Windows_File")), ~ gsub("\\.raw$", "", ., ignore.case = TRUE)) %>%
-		tidyr::fill(TMT_Set, LCMS_Injection, RAW_File) %>%
-		dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
-		dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
-
-	# replace NA sample ids
-	replace_na_smpls <- function(x, prefix) {
-		i <- is.na(x)
-		replace(as.character(x), i, paste(prefix, seq_len(sum(i)), sep = "."))
-	}
+    dplyr::mutate_at(vars(c("TMT_Channel")), ~ my_channels(.x)) %>%
+    dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% 
+    dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
+    dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
+    dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.x)) %>%
+    dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(.x, digits = 2)) %>%
+    tidyr::fill(TMT_Set, LCMS_Injection, RAW_File) %>%
+    dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
+    dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 
 	label_scheme_temp <- label_scheme_full %>%
 		dplyr::select(TMT_Channel, TMT_Set, Sample_ID) %>%
@@ -433,7 +424,7 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
 	
 	mget(names(formals()), rlang::current_env()) %>% save_call("load_expts")
 
-	# "acctype_sp.txt" only first available after executing `annotPSM``
+	# "acctype_sp.txt" first available after executing `annotPSM``
 	# a placeholder if "acctype_sp.txt" not yet available
 	if(!file.exists(file.path(dat_dir, "acctype_sp.txt"))) {
 		acctype_sp <- data.frame(Accession_Type = "uniprot_id", Species = "human")
@@ -553,7 +544,8 @@ check_label_scheme <- function (label_scheme_full) {
 
 	TMT_plex <- TMT_plex(label_scheme)
 	if(!is.null(TMT_plex)) {
-		if((nlevels(as.factor(label_scheme$Sample_ID))) < (TMT_plex * nlevels(as.factor(label_scheme$TMT_Set))))
+		if((nlevels(as.factor(label_scheme$Sample_ID))) < 
+		   (TMT_plex * nlevels(as.factor(label_scheme$TMT_Set))))
 			stop("Not enough observations in unique 'Sample_ID'")
 	}
 }
@@ -585,37 +577,6 @@ find_species <- function (label_scheme_full) {
 		unlist() %>%
 		as.character() %>%
 		tolower()
-}
-
-
-#' Determine the protein accession type from PSM tables
-#'
-#' Find the protein accession from a non-cRAP entry and parse it.
-#'
-#' \code{parse_acc} parse the protein accession.
-parse_acc_temp <- function(df, prx) {
-  if (grepl("[0-9]{1}::", prx)) { # multiple databases
-    prn_acc <- df %>%
-      dplyr::filter(grepl(paste0("^", prx), prot_acc)) %>%
-      dplyr::mutate(prot_acc = gsub(prx, "", prot_acc))
-  } else { # single database
-    prn_acc <- df
-  }
-
-  prn_acc <- prn_acc %>%
-    dplyr::select(prot_acc) %>%
-    unlist %>%
-    .[1]
-
-  if (grepl("_[A-Z]+", prn_acc)) {
-    acc_type <- "uniprot_id"
-  } else if (grepl("^NP_[0-9]+", prn_acc)) {
-    acc_type <- "refseq_acc"
-  } else if (grepl("[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}", prn_acc)) {
-    acc_type <- "uniprot_acc"
-  } else {
-    stop("Unknown protein accession", call. = FALSE)
-  }
 }
 
 
