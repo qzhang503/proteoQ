@@ -391,6 +391,11 @@ distrance-matrix plots. In this example, we have choosen
 WHIM subtypes and the batch numbers, respectively. Parameter
 `annot_colnames` allows us to rename the tracks for better intuition.
 
+<img src="images\Peptide\EucDist\EucDist_PNNL.png" alt="**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<p class="caption">
+**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`
+</p>
+
 ### Correlation plots
 
 In this section, we compare the correlation between W2 and W16.
