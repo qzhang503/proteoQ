@@ -382,17 +382,13 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		df <- list(df_psm, df_first, df_num) %>%
 			purrr::reduce(left_join, by = id) %>%
 			data.frame(check.names = FALSE)
-
-		df[, grepl("I[0-9]{3}", names(df))] <- df[, grepl("I[0-9]{3}", names(df))] %>%
-			dplyr::mutate_if(is.integer, as.numeric) %>%
-			dplyr::mutate_if(is.logical, as.numeric) %>%
-			round(., digits = 0)
-
-		df[, grepl("log2_R[0-9]{3}", names(df))] <- df[, grepl("log2_R[0-9]{3}", names(df))] %>%
-			dplyr::mutate_if(is.integer, as.numeric) %>%
-			dplyr::mutate_if(is.logical, as.numeric) %>%
-			round(., digits = 3)
-
+		
+		df <- df %>% 
+		  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
+		  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
+		  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
+		  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3))
+		
 		df <- cbind.data.frame(
 			df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df))],
 			df[, grep("^I[0-9]{3}", names(df))],
