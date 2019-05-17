@@ -175,26 +175,30 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 		} else {
 			stop(filename, " needs to be in a file format of '.csv', '.xls' or '.xlsx'.")
 		}
+	  
+	  fraction_scheme <- fraction_scheme %>% 
+	    tidyr::fill(TMT_Set, LCMS_Injection) %>% 
+	    dplyr::group_by(TMT_Set, LCMS_Injection) %>% 
+	    dplyr::mutate(Fraction = row_number())
+	  
+	  wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
+	  openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
+	  openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
  	} else {
-		load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
+ 	  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 
 		fraction_scheme <- label_scheme_full %>%
 			dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
 			dplyr::filter(!duplicated(RAW_File)) %>%
 			dplyr::group_by(TMT_Set, LCMS_Injection) %>%
 			dplyr::mutate(Fraction = row_number())
+
+		wb <- openxlsx::createWorkbook()
+		openxlsx::addWorksheet(wb, sheetName = "Fractions")
+		openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
+		openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
  	}
 	
-	fraction_scheme <- fraction_scheme %>% 
-	  tidyr::fill(TMT_Set, LCMS_Injection) %>% 
-	  dplyr::group_by(TMT_Set, LCMS_Injection) %>% 
-	  dplyr::mutate(Fraction = row_number())
-	
-	wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
-	openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
-	openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
-
-	# write.csv(fraction_scheme, file.path(dat_dir, paste0(fn_prefix, ".csv")), row.names = FALSE)
 	save(fraction_scheme, file = file.path(dat_dir, "fraction_scheme.Rdata"))
 }
 
