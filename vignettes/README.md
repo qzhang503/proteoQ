@@ -15,15 +15,15 @@ be conveniently reproduced upon revisiting.
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
 10- or 11-plex TMT experiments. Peptide and protein results are then
-produced with users’ selection of parameters in data filtration,
+produced with users' selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
-creating ‘wrappers’ around published R functions.
+creating 'wrappers' around published R functions.
 
 Installation
 ------------
 
-To install this package, start R (version “3.6”) and enter:
+To install this package, start R (version "3.6") and enter:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -61,7 +61,7 @@ options of `Header` and `Peptide quantitation` should be checked to
 include the search parameters and quantitative values. The `filename(s)`
 of the export(s) will be taken as is.[1]
 
-<img src="images\mascot\Mascot_export.png" width="45%" style="display: block; margin: auto;" />
+<img src="images\mascot\mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
 The same peptide sequence under different PSM files can be assigned to
 different protein IDs when
@@ -73,7 +73,7 @@ Daemon](http://www.matrixscience.com/daemon.html). If the option is
 disabled, peptide sequences that have been assigned to multiple protein
 IDs will be removed for now when constructing peptide reports.
 
-<img src="images\mascot\Mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
+<img src="images\mascot\mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 
 The pacakge reads an `Excel` template containing the metadata of
 multiplex experiment numbers, including TMT channels, LC/MS injection
@@ -118,7 +118,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins
 
-*Process PSMs* — In this section, I demonstrate the summarisation of PSM
+*Process PSMs* - In this section, I demonstrate the summarisation of PSM
 data to peptides and proteins. The data set I use in this section
 corresponds to the proteomics data from Mertins et al.(2018). In the
 study, two different breast cancer subtypes, WHIM2 and WHIM16, from
@@ -152,7 +152,7 @@ less than 1,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
 analysis.[2]
 
-*Summarize PSMs to peptides* — We next summarise PSM to peptides.
+*Summarize PSMs to peptides* - We next summarise PSM to peptides.
 
 ``` r
 # Generate peptide reports
@@ -175,7 +175,7 @@ under the assumption of multiple Gaussian kernels.[3] The parameter
 of reporter-ion intensity, respectively, for use in the scaling of
 standard deviation across samples.
 
-Let’s compare the log2FC profiles with and without scaling
+Let's compare the log2FC profiles with and without scaling
 normalization:[4]
 
 ``` r
@@ -224,7 +224,7 @@ pepHist(
 
     *NB*: We interactively told `pepHist()` that we are interested in sample entries under the newly created `Select_BI` column. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
 
-<img src="images\Peptide\Histogram\Peptide_BI_GL1_N.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="images\Peptide\Histogram\Peptide_BI_GL1_Z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
+<img src="images\peptide\histogram\peptide_bi_gl1_n.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="images\peptide\histogram\peptide_bi_gl1_z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`;
 right, `scale_log2r = TRUE`
@@ -241,7 +241,7 @@ suitable when the quantities of proteins of interest are different
 across samples where the assumption of constitutive expression for the
 vast majority of proteins may not hold.
 
-*Summarize peptides to proteins* — We then summarise peptides to
+*Summarize peptides to proteins* - We then summarise peptides to
 proteins using a two-component Gaussian kernel.
 
 ``` r
@@ -290,7 +290,7 @@ pepMDS(
 )
 ```
 
-<img src="images\Peptide\MDS\Peptide_MDS.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="images\peptide\mds\peptide_mds.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`
 </p>
@@ -309,7 +309,7 @@ pepMDS(
 )
 ```
 
-<img src="images\Peptide\MDS\MDS_JHU.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="images\Peptide\MDS\MDS_JHU_new_aes.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
+<img src="images\peptide\mds\mds_jhu.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="images\peptide\mds\mds_jhu_new_aes.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
 <p class="caption">
 **Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left:
 original aesthetics; right, modefied aesthetics
@@ -391,7 +391,7 @@ distrance-matrix plots. In this example, we have choosen
 WHIM subtypes and the batch numbers, respectively. Parameter
 `annot_colnames` allows us to rename the tracks for better intuition.
 
-<img src="images\Peptide\EucDist\EucDist_PNNL.png" alt="**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="images\peptide\mds\eucDist_pnnl.png" alt="**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`
 </p>
@@ -433,8 +433,8 @@ prnCorr(
 )
 ```
 
-<img src="images/Protein/Corrplot/Protein_Corrplot_Intensity_gg.png" alt="Intensity" style="width:45.0%" />
-<img src="images/Protein/Corrplot/Protein_Corrplot_log2Ratio_gg.png" alt="log2FC" style="width:45.0%" />
+<img src="images/protein/corrplot/protein_int_corr.png" alt="Intensity" style="width:45.0%" />
+<img src="images/protein/corrplot/protein_log2fc_corr.png" alt="log2FC" style="width:45.0%" />
 
 The following shows an example of Euclidean distance matrix against
 peptide data:
@@ -556,10 +556,10 @@ visualization:
 gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
 ```
 
-Philipp, Martins. 2018. “Reproducible Workflow for Multiplexed
+Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
-Liquid Chromatography-Mass Spectrometry.” *Nature Protocols* 13 (7):
-1632–61. <https://doi.org/10.1038/s41596-018-0006-9>.
+Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
+1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in file name extension.
@@ -586,7 +586,7 @@ scaling of standard deviations.
 calling functions involved parameter `scale_log2r`, users will specify
 explicitly `scale_log2r = FALSE` to overwrite the default. Although the
 package provides the facility to look for a global setting of
-`scale_log2`, I don’t recommend using it.
+`scale_log2`, I don't recommend using it.
 
 [7] Prameter `fasta` is solely used for the calculation of protein
 percent coverage. Precomputed data will be used if no `fasta` database
