@@ -274,30 +274,33 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		!!!dots
 	)
 
-	if(gn_rollup) {
-		dfa <- df %>% 
-			dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
-			dplyr::filter(!is.na(gene)) %>% # proteins with empty "gene" but "prot_acc" will be kept 
-			dplyr::group_by(gene) %>% 
-			dplyr::summarise_all(list(~median(., na.rm = TRUE)))
-		
-		dfb <- df %>% 
-			dplyr::select(-prot_cover, -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
-			dplyr::filter(!is.na(gene)) 
-		
-		dfc <- df %>% 
-			dplyr::select(gene, prot_cover) %>% 
-			dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
-			dplyr::group_by(gene) %>% 
-			dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
-			dplyr::summarise_all(~max(., na.rm = TRUE)) %>% 
-      dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
-
-		# the number of unique gene in psm_data may be shorter than those in 
-		# dfa and dfb for the reason of empty "genes" in dfa 
-		df <- list(dfc, dfb, dfa) %>% 
-			purrr::reduce(right_join, by = "gene") %>% 
-			dplyr::filter(!is.na(gene), !duplicated(gene))
+	if (gn_rollup) {
+	  # a slow step
+	  dfa <- df %>% 
+	    dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
+	    dplyr::filter(!is.na(gene)) %>% # proteins with empty "gene" but "prot_acc" will be kept 
+	    dplyr::group_by(gene) %>% 
+	    dplyr::summarise_all(list(~median(., na.rm = TRUE)))
+	  
+	  dfb <- df %>% 
+	    dplyr::select(-prot_cover, -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
+	    dplyr::filter(!is.na(gene)) 
+	  
+	  dfc <- df %>% 
+	    dplyr::select(gene, prot_cover) %>% 
+	    dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
+	    dplyr::group_by(gene) %>% 
+	    dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
+	    dplyr::summarise_all(~max(., na.rm = TRUE)) %>% 
+	    dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+	  
+	  # the number of unique gene in psm_data may be shorter than those in 
+	  # dfa and dfb for the reason of empty "genes" in dfa 
+	  df <- list(dfc, dfb, dfa) %>% 
+	    purrr::reduce(right_join, by = "gene") %>% 
+	    dplyr::filter(!is.na(gene), !duplicated(gene))
+	  
+	  write.csv(df, file.path(dat_dir, "Protein\\cache", "prn_rollup.csv"), row.names = FALSE)
 	}
 	
 	df <- df %>% dplyr::filter(!nchar(as.character(.[["prot_acc"]])) == 0)
