@@ -413,13 +413,13 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if(anal_type == "Heatmap") {
 		function(complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin,
-		         annot_cols = annot_cols, ...) {
+		         annot_cols = annot_cols, annot_colnames = annot_colnames, ...) {
 
 			plotHM(df = df, id = !!id, scale_log2r = scale_log2r, col_benchmark = !!col_benchmark,
 			       label_scheme_sub = label_scheme_sub,
 						filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix),
 						complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin,
-						annot_cols, ...)
+						annot_cols, annot_colnames, ...)
 
 			if(annot_kinases) {
 				plotKinHM(df = df[df$kin_attr, ], id = !!id, scale_log2r = scale_log2r,
@@ -427,7 +427,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 								filepath = file.path(filepath, "Kinases"),
 								filename = paste0(fn_prx, "_Kinases.", fn_suffix),
 			 					complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin,
-								annot_cols, ...)
+								annot_cols, annot_colnames, ...)
 			}
 		}
 
@@ -660,7 +660,8 @@ my_pheatmap <- function(mat, filename, annotation_col, color, annotation_colors,
 #' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>%
 plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepath, filename,
-                   complete_cases, xmin = -1, xmax = 1, x_margin = .1, annot_cols = NULL, ...) {
+                   complete_cases, xmin = -1, xmax = 1, x_margin = .1, 
+                   annot_cols = NULL, annot_colnames = NULL, ...) {
 
 	id <- rlang::as_string(rlang::enexpr(id))
 	col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
@@ -754,6 +755,10 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 		annotation_col <- NA
 	} else {
 		annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
+	}
+	
+	if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+	  colnames(annotation_col) <- annot_colnames
 	}
 
 	if (is.null(dots$annotation_colors)) {
@@ -1009,7 +1014,8 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
                       scale_log2r = TRUE,impute_na = FALSE, complete_cases = FALSE,
 											df = NULL, filepath = NULL, filename = NULL,
-											xmin = -1, xmax = 1, x_margin = 0.1, annot_cols = NULL, ...) {
+											xmin = -1, xmax = 1, x_margin = 0.1, 
+											annot_cols = NULL, annot_colnames = NULL, ...) {
 
   # scale_log2r <- match_logi_gv(scale_log2r)
 
@@ -1027,7 +1033,8 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
 	          filename = !!filename, anal_type = "Heatmap")(complete_cases = complete_cases,
 	                                                      xmin = xmin, xmax = xmax,
 	                                                      x_margin = x_margin,
-	                                                      annot_cols = annot_cols, ...)
+	                                                      annot_cols = annot_cols, 
+	                                                      annot_colnames = annot_colnames, ...)
 }
 
 
@@ -1055,7 +1062,8 @@ prnHM <- function (...) {
 #' @importFrom magrittr %>%
 #' @export
 plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, filepath, filename,
-                      complete_cases, xmin = -1, xmax = 1, x_margin = .1, annot_cols = NULL, ...) {
+                      complete_cases, xmin = -1, xmax = 1, x_margin = .1, 
+                      annot_cols = NULL, annot_colnames = NULL, ...) {
 
   id <- rlang::as_string(rlang::enexpr(id))
 	col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
