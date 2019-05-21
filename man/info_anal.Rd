@@ -7,7 +7,7 @@
 info_anal(id = gene, col_select = NULL, col_group = NULL,
   col_order = NULL, col_color = NULL, col_fill = NULL,
   col_shape = NULL, col_size = NULL, col_alpha = NULL,
-  col_benchmark = NULL, scale_log2r = FALSE, impute_na = FALSE,
+  col_benchmark = NULL, scale_log2r = TRUE, impute_na = FALSE,
   df = NULL, filepath = NULL, filename = NULL,
   anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
   "NMF", "Trend"))

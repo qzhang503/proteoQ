@@ -11,7 +11,7 @@
 #' @importFrom magrittr %>%
 info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order = NULL,
 											col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL,
-											col_alpha = NULL, col_benchmark = NULL, scale_log2r = FALSE,
+											col_alpha = NULL, col_benchmark = NULL, scale_log2r = TRUE,
 											impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL,
                       anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
                                     "NMF", "Trend")) {
@@ -53,6 +53,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if(col_size == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if(col_alpha == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if(col_benchmark == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+	
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	
@@ -150,6 +153,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 	if(is.null(filename)) {
 		fn_prx <- paste(data_type, anal_type, sep = "_")
+		fn_prx <- paste0(fn_prx, "_", ifelse(scale_log2r, "Z", "N"))
 		fn_suffix <- "png"
 	} else {
 		fn_prx <- gsub("\\..*$", "", filename)
@@ -446,7 +450,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		function(use_log10 = use_log10, min_int = min_int, max_int = max_int, min_log2r = min_log2r,
 		         max_log2r = max_log2r, ...) {
 
-			if(ncol(dfw$log2R) > 22) stop("Maximal number of samples for correlation plots is 22.", call. = TRUE)
+			if(ncol(dfw$log2R) > 44) stop("Maximal number of samples for correlation plots is 44.", call. = TRUE)
 
 			plotCorr(df = dfw, col_select = !!col_select, col_order = !!col_order,
 			         label_scheme_sub = label_scheme_sub, use_log10 = use_log10,

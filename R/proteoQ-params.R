@@ -81,7 +81,8 @@ prep_label_scheme <- function(dat_dir, filename) {
 	  dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
 	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 
-	label_scheme_temp <- label_scheme_full %>%
+	# add IDs to unused TMT channels
+	label_scheme_empty <- label_scheme_full %>%
 		dplyr::select(TMT_Channel, TMT_Set, Sample_ID) %>%
 		tidyr::unite(key, TMT_Channel, TMT_Set, remove = TRUE) %>%
 		dplyr::filter(!duplicated(key)) %>%
@@ -90,11 +91,15 @@ prep_label_scheme <- function(dat_dir, filename) {
 	label_scheme_full <- label_scheme_full %>%
 		tidyr::unite(key, TMT_Channel, TMT_Set, remove = FALSE) %>%
 		dplyr::select(-Sample_ID) %>%
-		dplyr::left_join(label_scheme_temp, by = "key") %>%
+		dplyr::left_join(label_scheme_empty, by = "key") %>%
 		dplyr::select(-key) %>%
 		dplyr::mutate(Sample_ID = factor(Sample_ID))
+	  
+	label_scheme_full <- dplyr::bind_cols(
+	  label_scheme_full %>% dplyr::select(Sample_ID), 
+	  label_scheme_full %>% dplyr::select(-Sample_ID))
 
-	rm(label_scheme_temp)
+	rm(label_scheme_empty)
 
 	# check the completeness of TMT_Channel
 	check_tmt <- label_scheme_full %>%

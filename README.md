@@ -15,15 +15,15 @@ be conveniently reproduced upon revisiting.
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
 10- or 11-plex TMT experiments. Peptide and protein results are then
-produced with users' selection of parameters in data filtration,
+produced with users’ selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
-creating 'wrappers' around published R functions.
+creating ‘wrappers’ around published R functions.
 
 Installation
 ------------
 
-To install this package, start R (version "3.6") and enter:
+To install this package, start R (version “3.6”) and enter:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -118,7 +118,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins
 
-*Process PSMs* - In this section, I demonstrate the summarisation of PSM
+*Process PSMs* — In this section, I demonstrate the summarisation of PSM
 data to peptides and proteins. The data set I use in this section
 corresponds to the proteomics data from Mertins et al.(2018). In the
 study, two different breast cancer subtypes, WHIM2 and WHIM16, from
@@ -152,16 +152,21 @@ less than 1,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
 analysis.[2]
 
-*Summarize PSMs to peptides* - We next summarise PSM to peptides.
+*Summarize PSMs to peptides* — We next summarise PSM to peptides.
 
 ``` r
 # Generate peptide reports
 normPep(
- id = pep_seq_mod,
- method_align = MGKernel,
- n_comp = 2,
- range_log2r = c(20, 95),
- range_int = c(5, 95)
+    id = pep_seq, 
+    method_psm_pep = median, 
+    method_align = MGKernel, 
+    range_log2r = c(5, 95), 
+    range_int = c(5, 95), 
+    n_comp = 3, 
+    seed = 749662, 
+    annot_kinases = TRUE,   
+    maxit = 200, 
+    epsilon = 1e-05
 )
 ```
 
@@ -175,7 +180,7 @@ under the assumption of multiple Gaussian kernels.[3] The parameter
 of reporter-ion intensity, respectively, for use in the scaling of
 standard deviation across samples.
 
-Let's compare the log2FC profiles with and without scaling
+Let’s compare the log2FC profiles with and without scaling
 normalization:[4]
 
 ``` r
@@ -195,12 +200,11 @@ pepHist(
 There are 60 panels of of histograms in each plot, which may not be easy
 to explore as a whole. In stead, we will break the plots down by their
 data origins. We begin with modifying the `expt_smry.xlsx` file by
-adding the columns `Select_BI`, `Select_JHU` and `Select_PNNL`. Each of
-the new columns includes sample entries that are tied to their
-laboratory origins.
+adding the columns `BI`, `JHU` and `PNNL`. Each of the new columns
+includes sample entries that are tied to their laboratory origins.
 
 [![Select
-subsets](https://img.youtube.com/vi/y0VuWLUpcek/0.jpg)](https://www.youtube.com/embed/y0VuWLUpcek)
+subsets](https://img.youtube.com/vi/3B5et8VY3hE/0.jpg)](https://www.youtube.com/embed/3B5et8VY3hE)
 
 We now are ready to plot histograms for each subset of data.[5] In the
 tutorial, we only display the plots using the `BI` subset:
@@ -209,20 +213,21 @@ tutorial, we only display the plots using the `BI` subset:
 # without the scaling of log2FC 
 pepHist(
  scale_log2r = FALSE, 
- col_select = Select_BI,
- filename = "Hist_BI_N.png", 
+ col_select = BI,
+ filename = Hist_BI_N.png, 
  ncol = 5
 )
 
 # with the scaling of log2FC 
 pepHist(
- col_select = Select_BI,
- filename = "Hist_BI_Z.png", 
+ scale_log2r = TRUE, 
+ col_select = BI,
+ filename = Hist_BI_Z.png, 
  ncol = 5
 )
 ```
 
-    *NB*: We interactively told `pepHist()` that we are interested in sample entries under the newly created `Select_BI` column. We also supply a file name assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_N.png`. 
+    *NB*: We interactively told `pepHist()` that we are interested in sample entries under the newly created `BI` column. We also supply a file name, assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_Z.png`. 
 
 <img src="images\peptide\histogram\peptide_bi_gl1_n.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="images\peptide\histogram\peptide_bi_gl1_z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
@@ -230,33 +235,33 @@ pepHist(
 right, `scale_log2r = TRUE`
 </p>
 
-As expected, the widths of log2FC profiles are more similar to each
-other after the scaling normalization. However, such adjustment may
-cause artifacts when the standard deviaiton across samples are genuinely
-different. I typically test `scale_log2r` at both `TRUE` and `FALSE`,
-then make a choice in data scaling together with my a priori knowledge
-of the characteristics of samples.[6] Alignment of log2FC against
-housekeeping or normalizer protein(s) is also available. This seems
-suitable when the quantities of proteins of interest are different
-across samples where the assumption of constitutive expression for the
-vast majority of proteins may not hold.
+As expected, the widths of log2FC profiles become more consistent after
+the scaling normalization. However, such adjustment may cause artifacts
+when the standard deviaiton across samples are genuinely different. I
+typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a
+choice in data scaling together with my a priori knowledge of the
+characteristics of samples.[6] Alignment of log2FC against housekeeping
+or normalizer protein(s) is also available. This seems suitable when the
+quantities of proteins of interest are different across samples where
+the assumption of constitutive expression for the vast majority of
+proteins may not hold.
 
-*Summarize peptides to proteins* - We then summarise peptides to
+*Summarize peptides to proteins* — We then summarise peptides to
 proteins using a two-component Gaussian kernel.
 
 ``` r
 # Generate protein reports
 normPrn(
- id = gene,
- method_pep_prn = median,
- method_align = MGKernel,
- range_log2r = c(20, 90),
- range_int = c(5, 95),
- n_comp = 2,
- seed = 246, 
- fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta", 
- maxit = 200,
- epsilon = 1e-05
+    id = gene, 
+    method_pep_prn = median, 
+    method_align = MGKernel, 
+    range_log2r = c(5, 95), 
+    range_int = c(5, 95), 
+    n_comp = 2, 
+    seed = 749662, 
+    fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta", 
+    maxit = 200, 
+    epsilon = 1e-05
 )
 ```
 
@@ -303,8 +308,8 @@ sample handling:
 ``` r
 # `JHU` subset
 pepMDS(
-  col_select = Select_JHU,
-  filename = "MDS_JHU.png",
+  col_select = JHU,
+  filename = MDS_JHU.png,
   show_ids = FALSE
 )
 ```
@@ -324,18 +329,18 @@ subset. For similar reasons, the two different batches of `TMT1` and
 different keys: e.g., color coding by WHIMs and size coding by batches,
 without the recourse of writing new R scripts. One solution is to link
 the attributes and sample IDs by creating additional columns in
-`expt_smry.xlsx`. Fortunately, in this example, we have coincidentally
-prepared the column `Shape` and `Alpha` to code WHIMs and batches,
-respectively. Therefore, we can recycle them directly to make a new plot
-(**Figure 2C**):
+`expt_smry.xlsx`. In this example, we have had coincidentally prepared
+the column `Shape` and `Alpha` to code WHIMs and batches, respectively.
+Therefore, we can recycle them directly to make a new plot (**Figure
+2C**):
 
 ``` r
 # `JHU` subset
 pepMDS(
-  col_select = Select_JHU,
+  col_select = JHU,
   col_fill = Shape, # WHIMs  
   col_size = Alpha, # batches
-  filename = "MDS_JHU_new_aes.png",
+  filename = MDS_JHU_new_aes.png,
   show_ids = FALSE
 )
 ```
@@ -344,19 +349,19 @@ The `prnMDS` performs `MDS` for protein data. For `PCA` analysis, the
 corresponding functions are `pepPCA` and `prnPCA` for peptide and
 protein data, respectively.
 
-As mentioned at the begining of this section, `MDS` approximates
-Euclidean distances at a low dimensional space. Sometime it may be
-useful to have an accurate view of the distance matrix. Functions
-`pepEucDist` and `prnEucDist` plot the heat maps of Euclidean distance
-matrix for peptides and proteins, respectively. They are wrappers of
+While `MDS` approximates Euclidean distances at a low dimensional space.
+Sometime it may be useful to have an accurate view of the distance
+matrix. Functions `pepEucDist` and `prnEucDist` plot the heat maps of
+Euclidean distance matrix for peptides and proteins, respectively. They
+are wrappers of
 ([`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf))
 and inherit many parameters therein. Supposed that we are interested in
-visualizing the distance matrix for the `PNNL` subset:
+visualizing the distance matrix for the `JHU` subset:
 
 ``` r
-# `PNNL` subset
+# `JHU` subset
 pepEucDist(
-    col_select = Select_PNNL,
+    col_select = JHU,
     annot_cols = c("Shape", "Alpha"),
     annot_colnames = c("WHIM", "Batch"), 
 
@@ -381,7 +386,8 @@ pepEucDist(
     cellheight = 24, 
     width = 16,
     height = 16, 
-    filename = "EucDist_PNNL.png"
+    
+    filename = EucDist_JHU.png
 )
 ```
 
@@ -389,25 +395,39 @@ Parameter `annot_cols` defines the tracks to be displayed on the top of
 distrance-matrix plots. In this example, we have choosen
 `expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the
 WHIM subtypes and the batch numbers, respectively. Parameter
-`annot_colnames` allows us to rename the tracks for better intuition.
+`annot_colnames` allows us to rename the tracks from `Shape` and `Alpha`
+to `WHIM` and `Batch`, respectively, for better intuition.
 
-<img src="images\peptide\mds\eucdist_pnnl.png" alt="**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="images\peptide\mds\eucdist_jhu.png" alt="**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
 **Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`
 </p>
 
 ### Correlation plots
 
-In this section, we compare the correlation between W2 and W16.
-
-The documentation from this point on is under construction;
-nevertheless, interactive R scripts are made available for now.
-
-Correlations of both intensity and log2FC will be performed.
+In this section, we visualize the batch effects through correlation
+plots. The `proteoQ` tool currently limits itself to a maximum of 44
+samples for a correlation plot. In the demo, we will perform correlation
+analysis against the `PNNL` data subset. By default, samples will be
+arranged diagnoally from upper left to bottom right by the row order of
+`expt_smry.xlsx::Sample_ID` within a subset. We have learned from the
+earlier `MDS` analysis that the batch effects are smaller than the
+differences between `W2` and `W16`. We may wish to put the `TMT1` and
+`TMT2` groups adjacient to each other for visualization of more nuance
+batch effects, followed by the correlational comparison of WHIM
+subtypes. We can achieve this by supervising sample IDs at a customized
+order. In the `expt_smry.xlsx`, I have pre-define an `Order` column
+where the `JHU` subset were arranged in the order of `W2.TMT1`,
+`W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look
+for the `Order` column for sample arrangement:
 
 ``` r
 # Correlation plots of peptide data
 pepCorr(
+    col_select = PNNL,
+    col_order = Order,
+    filename = PNNL.png,
+    
     use_log10 = TRUE, 
     scale_log2r = TRUE, 
     min_int = 3.5,
@@ -417,11 +437,13 @@ pepCorr(
     width = 24,
     height = 24
 )
-```
 
-``` r
 # Correlation plots of protein data
 prnCorr(
+    col_select = PNNL,
+    col_order = Order,
+    filename = PNNL.png,
+    
     use_log10 = TRUE, 
     scale_log2r = TRUE, 
     min_int = 3.5,
@@ -433,40 +455,14 @@ prnCorr(
 )
 ```
 
-<img src="images/protein/corrplot/protein_int_corr.png" alt="Intensity" style="width:45.0%" />
-<img src="images/protein/corrplot/protein_log2fc_corr.png" alt="log2FC" style="width:45.0%" />
+<img src="images\peptide\corrplot\corr_pnnl.png" alt="**Figure 3A-3B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" /><img src="images\protein\corrplot\corr_pnnl.png" alt="**Figure 3A-3B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" />
+<p class="caption">
+**Figure 3A-3B.** Correlation of log2FC for the `PNNL` subset. Left:
+peptide; right, protein
+</p>
 
-The following shows an example of Euclidean distance matrix against
-peptide data:
-
-``` r
-# Euclidean distance plots of peptide data
-pepEucDist(
-    scale_log2r = TRUE, 
-    adjEucDist = FALSE, 
-    show_ids = TRUE, 
-    annot_cols = c("Peptide_Yield", "Group"),
-
-    display_numbers = TRUE, 
-    number_color = "grey30", 
-    number_format = "%.2f",
-    
-    clustering_distance_rows = "euclidean", 
-    clustering_distance_cols = "euclidean", 
-    
-    fontsize = 16, 
-    fontsize_row = 20, 
-    fontsize_col = 20, 
-    fontsize_number = 8, 
-    
-    cluster_rows = TRUE,
-    show_rownames = TRUE,
-    show_colnames = TRUE,
-    border_color = "grey60", 
-    cellwidth = 24, 
-    cellheight = 24
-)
-```
+The documentation from this point on remains under construction;
+nevertheless, interactive R scripts are made available for now.
 
 The following performs of heat map visualization against protein data:
 
@@ -556,10 +552,10 @@ visualization:
 gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
 ```
 
-Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
+Philipp, Martins. 2018. “Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
-Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
-1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
+Liquid Chromatography-Mass Spectrometry.” *Nature Protocols* 13 (7):
+1632–61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in file name extension.
@@ -586,7 +582,7 @@ scaling of standard deviations.
 calling functions involved parameter `scale_log2r`, users will specify
 explicitly `scale_log2r = FALSE` to overwrite the default. Although the
 package provides the facility to look for a global setting of
-`scale_log2`, I don't recommend using it.
+`scale_log2`, I don’t recommend using it.
 
 [7] Prameter `fasta` is solely used for the calculation of protein
 percent coverage. Precomputed data will be used if no `fasta` database

@@ -441,12 +441,15 @@ proteoMDS <- function (id = gene,
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
 	
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
+	
 	reload_expts()
 
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
-		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = filepath, filename = filename,
+		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = !!filepath, filename = !!filename,
 		anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, show_ids = show_ids,
 		                   annot_cols = annot_cols, ...)
 }
@@ -517,12 +520,15 @@ proteoPCA <- function (id = gene,
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
 	
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
+	
 	reload_expts()
 
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
-		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = filepath, filename = filename,
+		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = !!filepath, filename = !!filename,
 		anal_type = "PCA")(show_ids = show_ids, annot_cols = annot_cols, ...)
 }
 
@@ -585,6 +591,9 @@ proteoEucDist <- function (id = gene,
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
 	
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
+	
 	reload_expts()
 	
 	# if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
@@ -602,7 +611,7 @@ proteoEucDist <- function (id = gene,
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
-		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = filepath, filename = filename,
+		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = !!filepath, filename = !!filename,
 		anal_type = "EucDist")(adjEucDist = adjEucDist,
 		annot_cols = annot_cols, annot_colnames = annot_colnames, ...
 	)
