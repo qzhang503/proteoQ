@@ -351,15 +351,15 @@ proteoCorrplot <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene")
 
 	col_select <- rlang::enexpr(col_select)
 	col_order <- rlang::enexpr(col_order)
-	
+	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
-	
+
 	reload_expts()
 
 	info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
 	          scale_log2r = scale_log2r, impute_na = FALSE,
-						df = df, filepath = !!filepath, filename = !!filename,
+						df = !!df, filepath = !!filepath, filename = !!filename,
 						anal_type = "Corrplot")(use_log10 = use_log10, min_int = min_int,
 						                        max_int = max_int, min_log2r = min_log2r,
 						                        max_log2r = max_log2r, ...)

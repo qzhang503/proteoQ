@@ -167,6 +167,8 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	stopifnot(id == "prot_acc")
 	
+	fasta <- rlang::as_string(rlang::enexpr(fasta))
+	
 	if(!file.exists(file.path(dat_dir, "Protein\\cache", "Protein_no_norm.csv"))) {
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
 										header = TRUE, sep = "\t", comment.char = "#") %>% 
@@ -241,20 +243,16 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ] 
 	
 		# add prot_cover
-		psm_data <- do.call(rbind, 
+		df <- do.call(rbind, 
 		                    lapply(list.files(path = file.path(dat_dir, "PSM"), 
 		                                      pattern = "Clean\\.txt$", full.names = TRUE), 
 		                           read.csv, 
 		                           check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")) %>% 
-							dplyr::select(prot_acc, pep_seq, pep_start, pep_end) %>% 
+							dplyr::select(prot_acc, prot_desc, pep_seq, pep_start, pep_end) %>% 
 							dplyr::filter(!duplicated(pep_seq))	%>% 
-							annotPrn(acc_type) 
-		
-		write.csv(psm_data, file.path(dat_dir, "Protein\\cache", "Protein_coverage.csv"), row.names = FALSE)
-		
-		df <- psm_data %>% 
-			calc_cover(id = !!id, fasta = fasta) %>% 
-			dplyr::right_join(df, by = id)
+							annotPrn(acc_type) %>% 
+		  calc_cover(id = !!id, fasta = fasta) %>% 
+		  dplyr::right_join(df, by = id)
 		
 		write.csv(df, file.path(dat_dir, "Protein\\cache", "Protein_no_norm.csv"), row.names = FALSE)
 	} else {
@@ -276,11 +274,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		!!!dots
 	)
 
-	df[, grepl("log2_R[0-9]{3}", names(df))] <- df[, grepl("log2_R[0-9]{3}", names(df))] %>% 
-		dplyr::mutate_if(is.integer, as.numeric) %>% 
-		dplyr::mutate_if(is.logical, as.numeric) %>% 
-		round(., digits = 3)
-	
 	if(gn_rollup) {
 		dfa <- df %>% 
 			dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
@@ -308,6 +301,13 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	}
 	
 	df <- df %>% dplyr::filter(!nchar(as.character(.[["prot_acc"]])) == 0)
+	
+	df <- df %>% 
+	  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
+	  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
+	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
+	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3))
+	
 	
 	write.table(df, file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 	

@@ -501,14 +501,17 @@ annotPrn <- function (df, acc_type) {
 	
 	ind <- is.na(df$gene) | str_length(df$gen) == 0
 	if (acc_type %in% c("uniprot_id", "uniprot_acc") & sum(ind) > 0) {
-	  sub_gns <- df[ind, "prot_desc"] %>% 
+	  substi_gns <- df[ind, "prot_desc"] %>% 
 	    as.character(.) %>% 
 	    strsplit(., ' GN=', fixed = TRUE) %>% 
-	    plyr::ldply(., rbind) %$% 
-			gsub("\\s+.*", "", .[, 2])
+	    plyr::ldply(., rbind) 
+	  
+	  if (ncol(substi_gns) > 1) {
+	    substi_gns %$% gsub("\\s+.*", "", .[, 2])
+	    df[ind, "gene"] <- substi_gns
+	  }
 
-	  df[ind, "gene"] <- sub_gns
-		rm(sub_gns)
+		rm(substi_gns)
 	}
 	
 	# annotate NA genes with prot_acc

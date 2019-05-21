@@ -54,6 +54,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if(col_alpha == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if(col_benchmark == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	
+	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 
@@ -196,7 +197,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."),
 		                                                         call. = TRUE)
 		  }
-		}
+		} 
 
 		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
 		                        comment.char = "#"), error = function(e) NA)
@@ -206,6 +207,21 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		} else {
 			stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
 		}
+	} else {
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    fn_raw <- file.path(dat_dir, "Peptide", df)
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    fn_raw <- file.path(dat_dir, "Protein", df)
+	  }
+	  
+	  df <- tryCatch(read.csv(fn_raw, check.names = FALSE, header = TRUE, sep = "\t",
+	                          comment.char = "#"), error = function(e) NA)
+	  
+	  if(!is.null(dim(df))) {
+	    message(paste("File loaded:", gsub("\\\\", "/", fn_raw)))
+	  } else {
+	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
+	  }
 	}
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
@@ -1000,12 +1016,15 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
   id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
 	col_benchmark <- rlang::enexpr(col_benchmark)
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
 	
 	reload_expts()
 
 	info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
-	          scale_log2r = scale_log2r, impute_na = impute_na, df = df, filepath = filepath,
-	          filename = filename, anal_type = "Heatmap")(complete_cases = complete_cases,
+	          scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath,
+	          filename = !!filename, anal_type = "Heatmap")(complete_cases = complete_cases,
 	                                                      xmin = xmin, xmax = xmax,
 	                                                      x_margin = x_margin,
 	                                                      annot_cols = annot_cols, ...)
@@ -1205,6 +1224,9 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 
   col_select <- rlang::enexpr(col_select)
 	col_benchmark <- rlang::enexpr(col_benchmark)
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
 
 	if(is.null(col_select)) {
 		col_select <- rlang::expr(Select)
@@ -1288,6 +1310,21 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 		} else {
 			stop(paste("No such file or directory:", gsub("\\\\", "/", src_path)))
 		}
+	} else {
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    fn_raw <- file.path(dat_dir, "Peptide", df)
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    fn_raw <- file.path(dat_dir, "Protein", df)
+	  }
+	  
+	  df <- tryCatch(read.csv(fn_raw, check.names = FALSE, header = TRUE, sep = "\t",
+	                          comment.char = "#"), error = function(e) NA)
+	  
+	  if(!is.null(dim(df))) {
+	    message(paste("File loaded:", gsub("\\\\", "/", fn_raw)))
+	  } else {
+	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
+	  }
 	}
 
 	reload_expts()

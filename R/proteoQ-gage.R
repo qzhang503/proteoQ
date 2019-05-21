@@ -12,7 +12,10 @@ prnGAGE <- function (id = gene,
   # scale_log2r <- match_logi_gv(scale_log2r)
 
   id <- rlang::enexpr(id)
-
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
+	
 	dots <- rlang::enexprs(...)
 
 	if(purrr::is_empty(dots)) {
@@ -25,8 +28,8 @@ prnGAGE <- function (id = gene,
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-	info_anal(df = df, id = !!id, scale_log2r = scale_log2r,
-					filepath = filepath, filename = filename,
+	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r,
+					filepath = !!filepath, filename = !!filename,
 					impute_na = impute_na,
 					anal_type = "ESGAGE")(complete_cases, method, gset_nm, var_cutoff,
 					                      pval_cutoff, logFC_cutoff, !!!dots)

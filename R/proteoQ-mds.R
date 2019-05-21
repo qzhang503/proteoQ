@@ -281,8 +281,12 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, classical, ...) {
 
 	dots <- rlang::exprs(...)
+	
+	stopifnot(nrow(df) > 50)
 
 	M <- cor(df, use="pairwise.complete.obs")
+	M[is.na(M)] <- 0
+	
 	D <- dist(t(df), method = "euclidean", diag = TRUE, upper = TRUE)
 	D_matrix <- as.matrix(D)
 
@@ -440,7 +444,7 @@ proteoMDS <- function (id = gene,
 	col_shape <- rlang::enexpr(col_shape)
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
-	
+	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	
@@ -449,7 +453,7 @@ proteoMDS <- function (id = gene,
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
-		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = !!filepath, filename = !!filename,
+		scale_log2r = scale_log2r, impute_na = FALSE, df = !!df, filepath = !!filepath, filename = !!filename,
 		anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, show_ids = show_ids,
 		                   annot_cols = annot_cols, ...)
 }
@@ -519,7 +523,7 @@ proteoPCA <- function (id = gene,
 	col_shape <- rlang::enexpr(col_shape)
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
-	
+	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	
@@ -528,7 +532,7 @@ proteoPCA <- function (id = gene,
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
-		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = !!filepath, filename = !!filename,
+		scale_log2r = scale_log2r, impute_na = FALSE, df = !!df, filepath = !!filepath, filename = !!filename,
 		anal_type = "PCA")(show_ids = show_ids, annot_cols = annot_cols, ...)
 }
 
@@ -590,7 +594,7 @@ proteoEucDist <- function (id = gene,
 	col_shape <- rlang::enexpr(col_shape)
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
-	
+	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	
@@ -611,7 +615,7 @@ proteoEucDist <- function (id = gene,
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
-		scale_log2r = scale_log2r, impute_na = FALSE, df = df, filepath = !!filepath, filename = !!filename,
+		scale_log2r = scale_log2r, impute_na = FALSE, df = !!df, filepath = !!filepath, filename = !!filename,
 		anal_type = "EucDist")(adjEucDist = adjEucDist,
 		annot_cols = annot_cols, annot_colnames = annot_colnames, ...
 	)

@@ -209,6 +209,9 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 
 	col_select <- rlang::enexpr(col_select)
 	col_order <- rlang::enexpr(col_order)
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
 	
 	reload_expts()
 
@@ -216,7 +219,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 
 	info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
 	          scale_log2r = scale_log2r, impute_na = impute_na,
-						df = df, filepath = filepath, filename = filename,
+						df = !!df, filepath = !!filepath, filename = !!filename,
 						anal_type = "Trend")(n_clust = n_clust, complete_cases = complete_cases, ...)
 }
 

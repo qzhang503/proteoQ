@@ -191,6 +191,9 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 	  openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
  	} else {
  	  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
+ 	  
+ 	  # in case forget to enter RAW_File names
+ 	  if (anyNA(label_scheme_full$RAW_File)) stop("Enter RAW file names in the experimental summary file")
 
 		fraction_scheme <- label_scheme_full %>%
 			dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%

@@ -234,13 +234,14 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), co
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 
 	col_select <- rlang::enexpr(col_select)
+	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	
 	reload_expts()
 
 	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = FALSE,
-	          df = df, filepath = !!filepath, filename = !!filename,
+	          df = !!df, filepath = !!filepath, filename = !!filename,
 	          anal_type = "Histogram")(new_fit = new_fit, show_curves = show_curves,
 	                                   show_vline = show_vline, ...)
 }
