@@ -222,7 +222,8 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 #' logFC_cutoff
 #'
 #' @importFrom MASS ginv
-model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases, method, var_cutoff, pval_cutoff, logFC_cutoff) {
+model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases, method, var_cutoff, 
+                              pval_cutoff, logFC_cutoff) {
 
 	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
 	# formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]

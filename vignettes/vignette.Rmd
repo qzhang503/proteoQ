@@ -1,6 +1,6 @@
 ---
 title: Package "\"proteoQ\""  
-author: "Qiang Zhang"
+author: ""
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 fig_caption: yes
@@ -305,7 +305,7 @@ pepEucDist(
 	annot_colnames = c("WHIM", "Batch"), 
 
 	# parameters from `pheatmap`
-	display_numbers = TRUE, 
+	display_numbers = FALSE, 
 	number_color = "grey30", 
 	number_format = "%.2f",
 	
@@ -323,14 +323,14 @@ pepEucDist(
 	border_color = "grey60", 
 	cellwidth = 24, 
 	cellheight = 24, 
-	width = 16,
-	height = 16, 
+	width = 14,
+	height = 12, 
 	
 	filename = EucDist_JHU.png
 )
 ```
 
-Parameter `annot_cols` defines the tracks to be displayed on the top of distrance-matrix plots. In this example, we have choosen `expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the WHIM subtypes and the batch numbers, respectively. Parameter `annot_colnames` allows us to rename the tracks from `Shape` and `Alpha` to `WHIM` and `Batch`, respectively, for better intuition.  
+Parameter `annot_cols` defines the tracks to be displayed on the top of distrance-matrix plots. In this example, we have choosen `expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the WHIM subtypes and the batch numbers, respectively. Parameter `annot_colnames` allows us to rename the tracks from `Shape` and `Alpha` to `WHIM` and `Batch`, respectively, for better intuition. We can alternatively add columns `WHIM` and `Batch` if we choose not to recycle columns `Shape` and `Alpha`. 
 
 ```{r Peptide_EucDist, echo=FALSE, fig.align='center', fig.cap="**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_pepEucDist <- "images\\peptide\\mds\\eucdist_jhu.png"
@@ -338,7 +338,7 @@ knitr::include_graphics(c(img_pepEucDist))
 ```
 
 ### Correlation plots
-In this section, we visualize the batch effects through correlation plots. The `proteoQ` tool currently limits itself to a maximum of 44 samples for a correlation plot. In the demo, we will perform correlation analysis against the `PNNL` data subset. By default, samples will be arranged diagnoally from upper left to bottom right by the row order of `expt_smry.xlsx::Sample_ID` within a subset. We have learned from the earlier `MDS` analysis that the batch effects are smaller than the differences between `W2` and `W16`. We may wish to put the `TMT1` and `TMT2` groups adjacient to each other for visualization of more nuance batch effects, followed by the correlational comparison of WHIM subtypes. We can achieve this by supervising sample IDs at a customized order. In the `expt_smry.xlsx`, I have prepared an `Order` column where samples within the `JHU` subset were arranged in the order of `W2.TMT1`, `W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look for the `Order` column for sample ordering:
+In this section, we visualize the batch effects through correlation plots. The `proteoQ` tool currently limits itself to a maximum of 44 samples for a correlation plot. In the demo, we will perform correlation analysis against the `PNNL` data subset. By default, samples will be arranged diagnoally from upper left to bottom right by the row order of `expt_smry.xlsx::Sample_ID` within a subset. We have learned from the earlier `MDS` analysis that the batch effects are smaller than the differences between `W2` and `W16`. We may wish to put the `TMT1` and `TMT2` groups adjacient to each other for visualization of more nuance batch effects, followed by the correlational comparison of WHIM subtypes. We can achieve this by supervising sample IDs at a customized order. In the `expt_smry.xlsx`, I have prepared an `Order` column where samples within the `JHU` subset were arranged in the descending order of `W2.TMT1`, `W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look for the `Order` column for sample arrangement:
 
 ```{r correlation, eval = FALSE}
 # Correlation plots of peptide data
@@ -384,6 +384,41 @@ knitr::include_graphics(c(img_jhu_pepcorr, img_jhu_prncorr))
 
 The documentation from this point on remains under construction...  
 
+### Significance tests and volcano plot visualization
+In this section, we perform the significance analysis of peptide and protein data. The approach of contrast fit is used in `proteoQ` (Chambers, J. M. (1992) Linear models; `limma`, Gordon Smith). We first define the contrast groups for significance tests.  For this purpose, I have devided the samples by their WHIM subtypes, laboratory locations and batch numbers. This ends up with entries of `W2.BI.TMT1`, `W2.BI.TMT2` etc. under the `expt_smry.xlsx::Term` column. The interactive environment between the Excel file and the proteoQ tool allows us to enter more columns of contrasts when needed. For instance, we might also be interested in a more course comparison of inter-laboratory differences without batch effects. The corresponding contrasts of `W2.BI`, `W2.BI` etc. can be found under a pre-made column, `Term_2`. Having these columns in hand, we are now ready to perform significance tests for peptides and protein species.  In the demo, we will analyze protein data and perform volcano plot visualization:   
+
+```{r SigTest, eval = FALSE}
+# Protein significance tests
+prnSig(
+	impute_na = FALSE, 
+	W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+	# W2_loc_bat = ~ Term["((W2.BI.TMT1-W2.JHU.TMT1)-(W2.BI.TMT2-W2.JHU.TMT2))", "((W2.BI.TMT1-W2.PNNL.TMT1)-(W2.BI.TMT2-W2.PNNL.TMT2))"], # location and batch effects
+	W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
+)
+
+# Volcano plots
+prnVol()
+```
+
+    Note that we have informed the `prnSig` function to look for contrasts under columns `Term` and `Term_2`, followed by the cotrast pairs in square brackets. Pairs of contrasts are separated by comma.  
+    
+Batch effects:
+```{r Protein_volcano_batches plots, echo=FALSE, fig.align='left', fig.cap="**Figure 5A.** Volcano plots of protein log2FC between two batches.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_volcplot_batches <- "images\\protein\\volcplot\\batches.png"
+img_venn_batches <- "images\\protein\\volcplot\\venn_batches.png"
+knitr::include_graphics(c(img_volcplot_batches))
+knitr::include_graphics(c(img_venn_batches))
+```
+
+Location effects:
+```{r Protein_volcano_locations plots, echo=FALSE, fig.align='left', fig.cap="**Figure 5B.** Volcano plots of protein log2FC between locations.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_volcplot_location <- "images\\protein\\volcplot\\locations.png"
+img_venn_location <- "images\\protein\\volcplot\\venn_locations.png"
+knitr::include_graphics(c(img_volcplot_location))
+knitr::include_graphics(c(img_venn_location))
+```
+
+
 The following performs of heat map visualization against protein data:
 
 ```{r Protein heat maps, eval = FALSE}
@@ -405,10 +440,11 @@ prnHM(
 )
 ```
 
-```{r Protein_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 4.** Heat map visualization of protein log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Protein_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 4.** Heat map visualization of protein log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_prnheat <- "images\\protein\\heatmap\\heatmap.png"
 knitr::include_graphics(c(img_prnheat))
 ```
+
 
 The following performs the imputation of peptide and protein data:
 
@@ -434,34 +470,6 @@ library(NMF)
 prnNMF(r = 6, xmin = -1, xmax = 1, x_margin = 0.1, 
 	annot_cols = c("Peptide_Yield", "TMT_Set", "Group"), 
 	scale_log2r = TRUE)
-```
-
-
-The following performs the significance analysis of peptide and protein data:
-
-```{r SigTest, eval = FALSE}
-# Protein significance tests
-prnSig(
-	impute_na = FALSE, 
-	contrasts_1 = ~ Term["(W16.BI.TMT1-W2.BI.TMT1)", 
-									"(W16.JHU.TMT1-W2.JHU.TMT1)", 
-									"(W16.PNNL.TMT1-W2.PNNL.TMT1)"], 
-	contrasts_2 = ~ Term["(W16.BI.TMT2-W16.BI.TMT1)-(W2.BI.TMT2-W2.BI.TMT1)", 
-									"(W16.JHU.TMT2-W16.JHU.TMT1)-(W2.JHU.TMT2-W2.JHU.TMT1)", 
-									"(W16.PNNL.TMT2-W16.PNNL.TMT1)-(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
-)
-
-prnVol(
-	width = 18,
-	height = 6
-)
-```
-
-
-```{r protein volcano plots, echo=FALSE, fig.align='center', fig.cap="**Figure 5A-5B.** Volcano plot visualization of log2FC. Left: contrasts defined in `contrasts_1`; right, contrasts defined in `contrasts_2`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_volcplot_1 <- "images\\protein\\volcplot\\volcplot_l.png"
-img_volcplot_2 <- "images\\protein\\volcplot\\volcplot_2.png"
-knitr::include_graphics(c(img_volcplot_1, img_volcplot_2))
 ```
 
 
