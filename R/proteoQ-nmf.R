@@ -189,13 +189,16 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 
 	col_select <- rlang::enexpr(col_select)
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
 	
 	reload_expts()
 
 	if(!impute_na) complete_cases <- TRUE
 
 	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = impute_na,
-					df = df, filepath = filepath, filename = filename,
+					df = !!df, filepath = !!filepath, filename = !!filename,
 					anal_type = "NMF")(r = r, nrun = nrun, complete_cases = complete_cases,
 					xmin = xmin, xmax = xmax, x_margin = x_margin, annot_cols = annot_cols,
 					width_consensus = width_consensus, height_consensus = height_consensus,

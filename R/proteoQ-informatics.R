@@ -11,7 +11,7 @@
 #' @importFrom magrittr %>%
 info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order = NULL,
 											col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL,
-											col_alpha = NULL, col_benchmark = NULL, scale_log2r = FALSE,
+											col_alpha = NULL, col_benchmark = NULL, scale_log2r = TRUE,
 											impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL,
                       anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
                                     "NMF", "Trend")) {
@@ -53,6 +53,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if(col_size == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if(col_alpha == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if(col_benchmark == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+	
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	
@@ -150,6 +154,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 	if(is.null(filename)) {
 		fn_prx <- paste(data_type, anal_type, sep = "_")
+		fn_prx <- paste0(fn_prx, "_", ifelse(scale_log2r, "Z", "N"))
 		fn_suffix <- "png"
 	} else {
 		fn_prx <- gsub("\\..*$", "", filename)
@@ -192,7 +197,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."),
 		                                                         call. = TRUE)
 		  }
-		}
+		} 
 
 		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
 		                        comment.char = "#"), error = function(e) NA)
@@ -202,6 +207,21 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		} else {
 			stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
 		}
+	} else {
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    fn_raw <- file.path(dat_dir, "Peptide", df)
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    fn_raw <- file.path(dat_dir, "Protein", df)
+	  }
+	  
+	  df <- tryCatch(read.csv(fn_raw, check.names = FALSE, header = TRUE, sep = "\t",
+	                          comment.char = "#"), error = function(e) NA)
+	  
+	  if(!is.null(dim(df))) {
+	    message(paste("File loaded:", gsub("\\\\", "/", fn_raw)))
+	  } else {
+	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
+	  }
 	}
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
@@ -393,13 +413,13 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if(anal_type == "Heatmap") {
 		function(complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin,
-		         annot_cols = annot_cols, ...) {
+		         annot_cols = annot_cols, annot_colnames = annot_colnames, ...) {
 
 			plotHM(df = df, id = !!id, scale_log2r = scale_log2r, col_benchmark = !!col_benchmark,
 			       label_scheme_sub = label_scheme_sub,
 						filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix),
 						complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin,
-						annot_cols, ...)
+						annot_cols, annot_colnames, ...)
 
 			if(annot_kinases) {
 				plotKinHM(df = df[df$kin_attr, ], id = !!id, scale_log2r = scale_log2r,
@@ -407,7 +427,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 								filepath = file.path(filepath, "Kinases"),
 								filename = paste0(fn_prx, "_Kinases.", fn_suffix),
 			 					complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin,
-								annot_cols, ...)
+								annot_cols, annot_colnames, ...)
 			}
 		}
 
@@ -446,7 +466,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		function(use_log10 = use_log10, min_int = min_int, max_int = max_int, min_log2r = min_log2r,
 		         max_log2r = max_log2r, ...) {
 
-			if(ncol(dfw$log2R) > 22) stop("Maximal number of samples for correlation plots is 22.", call. = TRUE)
+			if(ncol(dfw$log2R) > 44) stop("Maximal number of samples for correlation plots is 44.", call. = TRUE)
 
 			plotCorr(df = dfw, col_select = !!col_select, col_order = !!col_order,
 			         label_scheme_sub = label_scheme_sub, use_log10 = use_log10,
@@ -640,7 +660,8 @@ my_pheatmap <- function(mat, filename, annotation_col, color, annotation_colors,
 #' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>%
 plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepath, filename,
-                   complete_cases, xmin = -1, xmax = 1, x_margin = .1, annot_cols = NULL, ...) {
+                   complete_cases, xmin = -1, xmax = 1, x_margin = .1, 
+                   annot_cols = NULL, annot_colnames = NULL, ...) {
 
 	id <- rlang::as_string(rlang::enexpr(id))
 	col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
@@ -734,6 +755,10 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 		annotation_col <- NA
 	} else {
 		annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
+	}
+	
+	if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+	  colnames(annotation_col) <- annot_colnames
 	}
 
 	if (is.null(dots$annotation_colors)) {
@@ -989,22 +1014,27 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
                       scale_log2r = TRUE,impute_na = FALSE, complete_cases = FALSE,
 											df = NULL, filepath = NULL, filename = NULL,
-											xmin = -1, xmax = 1, x_margin = 0.1, annot_cols = NULL, ...) {
+											xmin = -1, xmax = 1, x_margin = 0.1, 
+											annot_cols = NULL, annot_colnames = NULL, ...) {
 
   # scale_log2r <- match_logi_gv(scale_log2r)
 
   id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
 	col_benchmark <- rlang::enexpr(col_benchmark)
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
 	
 	reload_expts()
 
 	info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
-	          scale_log2r = scale_log2r, impute_na = impute_na, df = df, filepath = filepath,
-	          filename = filename, anal_type = "Heatmap")(complete_cases = complete_cases,
+	          scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath,
+	          filename = !!filename, anal_type = "Heatmap")(complete_cases = complete_cases,
 	                                                      xmin = xmin, xmax = xmax,
 	                                                      x_margin = x_margin,
-	                                                      annot_cols = annot_cols, ...)
+	                                                      annot_cols = annot_cols, 
+	                                                      annot_colnames = annot_colnames, ...)
 }
 
 
@@ -1032,7 +1062,8 @@ prnHM <- function (...) {
 #' @importFrom magrittr %>%
 #' @export
 plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, filepath, filename,
-                      complete_cases, xmin = -1, xmax = 1, x_margin = .1, annot_cols = NULL, ...) {
+                      complete_cases, xmin = -1, xmax = 1, x_margin = .1, 
+                      annot_cols = NULL, annot_colnames = NULL, ...) {
 
   id <- rlang::as_string(rlang::enexpr(id))
 	col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
@@ -1201,6 +1232,9 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 
   col_select <- rlang::enexpr(col_select)
 	col_benchmark <- rlang::enexpr(col_benchmark)
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
 
 	if(is.null(col_select)) {
 		col_select <- rlang::expr(Select)
@@ -1284,6 +1318,21 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
 		} else {
 			stop(paste("No such file or directory:", gsub("\\\\", "/", src_path)))
 		}
+	} else {
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    fn_raw <- file.path(dat_dir, "Peptide", df)
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    fn_raw <- file.path(dat_dir, "Protein", df)
+	  }
+	  
+	  df <- tryCatch(read.csv(fn_raw, check.names = FALSE, header = TRUE, sep = "\t",
+	                          comment.char = "#"), error = function(e) NA)
+	  
+	  if(!is.null(dim(df))) {
+	    message(paste("File loaded:", gsub("\\\\", "/", fn_raw)))
+	  } else {
+	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
+	  }
 	}
 
 	reload_expts()

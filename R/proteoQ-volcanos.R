@@ -34,6 +34,10 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	id <- rlang::as_string(rlang::enexpr(id))
 	cat(paste0("id = \"", id, "\"", " by the current call\n"))
 	id <- match_identifier(id)
+	
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)	
 
 	if(id %in% c("prot_acc", "gene")) {
 	  cat(paste0("id = \"", id, "\"", " after parameter matching to normPrn()\n"))
@@ -111,6 +115,21 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 		df <- df %>%
 			`rownames<-`(.[, id]) %>%
 			dplyr::select(-grep("I[0-9]{3}|log2_R[0-9]{3}|^FC", names(.)))
+	} else {
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    fn_raw <- file.path(dat_dir, "Peptide\\Model", df)
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    fn_raw <- file.path(dat_dir, "Protein\\Model", df)
+	  }
+	  
+	  df <- tryCatch(read.csv(fn_raw, check.names = FALSE, header = TRUE, sep = "\t",
+	                          comment.char = "#"), error = function(e) NA)
+	  
+	  if(!is.null(dim(df))) {
+	    message(paste("File loaded:", gsub("\\\\", "/", fn_raw)))
+	  } else {
+	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
+	  }
 	}
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
@@ -280,7 +299,8 @@ fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcan
 		} )) %>%
 		dplyr::mutate(
 			Contrast = factor(Contrast, levels = contrast_groups),
-			pVal = as.numeric(pVal),
+			# pVal = as.numeric(pVal),
+			pVal = as.numeric(as.character(pVal)),
 			valence = ifelse(.$log2Ratio > 0, "pos", "neg")
 		) %>%
 		dplyr::filter(!is.na(pVal))

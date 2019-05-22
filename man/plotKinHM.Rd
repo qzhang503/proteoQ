@@ -6,7 +6,7 @@
 \usage{
 plotKinHM(id, scale_log2r, col_benchmark, label_scheme_sub, df, filepath,
   filename, complete_cases, xmin = -1, xmax = 1, x_margin = 0.1,
-  annot_cols = NULL, ...)
+  annot_cols = NULL, annot_colnames = NULL, ...)
 }
 \description{
 Specialized for kinase heat maps

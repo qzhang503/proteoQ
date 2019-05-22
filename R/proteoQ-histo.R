@@ -143,7 +143,7 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 
 	if(!grepl("\\.png$", filename)) filename <- paste0(filename, ".png")
 	fn_prx <- gsub(".png", "", filename, fixed = TRUE)
-	filename <- if (scale_log2r) paste0(fn_prx, "_Z", ".png") else paste0(fn_prx, "_N", ".png")
+	filename <- paste0(fn_prx, ".png")
 
 	if(is.null(width)) width <- 4 * ncol + 2
 	if(is.null(height)) height <- length(unique(df_melt$Sample_ID)) * 4 / ncol
@@ -226,7 +226,7 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 #'@importFrom magrittr %>%
 #'@export
 proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col_select = NULL,
-                        scale_log2r = FALSE, show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
+                        scale_log2r = TRUE, show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 
   id <- rlang::enexpr(id)
@@ -234,11 +234,14 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), co
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 
 	col_select <- rlang::enexpr(col_select)
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
 	
 	reload_expts()
 
 	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = FALSE,
-	          df = df, filepath = filepath, filename = filename,
+	          df = !!df, filepath = !!filepath, filename = !!filename,
 	          anal_type = "Histogram")(new_fit = new_fit, show_curves = show_curves,
 	                                   show_vline = show_vline, ...)
 }

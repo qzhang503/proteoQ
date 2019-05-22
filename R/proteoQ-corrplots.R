@@ -16,19 +16,19 @@ plotCorr <- function (df = NULL, col_select = NULL, col_order = NULL,
 	fn_prx <- gsub("\\..*$", "", filename)
 
 	if (use_log10) df$Intensity <- log10(df$Intensity)
-
-	if(dplyr::n_distinct(label_scheme_sub$Order) == 1) {
+	
+	if(dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1) {
 		df$Intensity <- df$Intensity[, order(names(df$Intensity))]
 		df$log2R <- df$log2R[, order(names(df$log2R))]
 	} else {
-		corrplot_orders <- label_scheme_sub %>%
-			dplyr::select(!!col_select, !!col_order) %>%
-			dplyr::filter(!is.na(!!col_order)) %>%
-			unique(.) %>%
-			dplyr::arrange(!!col_order)
-
-		df$Intensity <- df$Intensity[, as.character(corrplot_orders[[col_select]]), drop = FALSE]
-		df$log2R <- df$log2R[, as.character(corrplot_orders[[col_select]]), drop = FALSE]
+	  corrplot_orders <- label_scheme_sub %>%
+	    dplyr::select(Sample_ID, !!col_select, !!col_order) %>%
+	    dplyr::filter(!is.na(!!col_order)) %>%
+	    unique(.) %>%
+	    dplyr::arrange(!!col_order)
+	  
+	  df$Intensity <- df$Intensity[, as.character(corrplot_orders$Sample_ID), drop = FALSE]
+	  df$log2R <- df$log2R[, as.character(corrplot_orders$Sample_ID), drop = FALSE]
 	}
 
 	y_label <- x_label <- expression("Ratio ("*log[2]*")")
@@ -208,17 +208,17 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath, xmin, xmax, ...) 
 
   fn_prx <- gsub("\\..*$", "", filename)
 
-  n_TMT_sets <- n_TMT_sets(label_scheme)
-
+  ncol <- ncol(df)
+  
   if(is.null(dots$width)) {
-    width <- 10*n_TMT_sets*1.2
+    width <- 1.4 * ncol
   } else {
     width <- eval(dots$width, env = caller_env())
     dots$width <- NULL
   }
 
   if(is.null(dots$height)) {
-    height <- 10*n_TMT_sets*1.2
+    height <- 1.4 * ncol
   } else {
     height <- eval(dots$height, env = caller_env())
     dots$height <- NULL
@@ -230,12 +230,6 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath, xmin, xmax, ...) 
     dpi <- eval(dots$dpi, env = caller_env())
     dots$dpi <- NULL
   }
-
-  png(file.path(filepath, filename), width = width, height = height, units = "in", res = 300)
-    pairs(df, pch = ".", upper.panel = panel_cor, lower.panel = panel.smooth)
-  dev.off()
-
-  ncol <- ncol(df)
 
   p1 <- ggpairs(df, columnLabels = as.character(names(df)), labeller = label_wrap_gen(10),
                 title = "", xlab = xlab, ylab = ylab, lower = list(continuous = my_lower_no_sm),
@@ -302,7 +296,7 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath, xmin, xmax, ...) 
     theme(plot.title = element_text(face = "bold", colour = "black", size = 20,
                                     hjust = 0.5, vjust = 0.5))
 
-  ggsave(file.path(filepath, paste0(fn_prx, "_gg.png")), p1, width = width, height = height,
+  ggsave(file.path(filepath, paste0(fn_prx, ".png")), p1, width = width, height = height,
          dpi = dpi, units = "in")
 }
 
@@ -357,12 +351,15 @@ proteoCorrplot <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene")
 
 	col_select <- rlang::enexpr(col_select)
 	col_order <- rlang::enexpr(col_order)
-	
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
+
 	reload_expts()
 
 	info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
 	          scale_log2r = scale_log2r, impute_na = FALSE,
-						df = df, filepath = filepath, filename = filename,
+						df = !!df, filepath = !!filepath, filename = !!filename,
 						anal_type = "Corrplot")(use_log10 = use_log10, min_int = min_int,
 						                        max_int = max_int, min_log2r = min_log2r,
 						                        max_log2r = max_log2r, ...)

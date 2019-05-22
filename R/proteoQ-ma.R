@@ -294,12 +294,15 @@ proteoMA <- function (id = gene, col_select = NULL, col_group = NULL, scale_log2
 
 	col_select <- rlang::enexpr(col_select)
 	col_group <- rlang::enexpr(col_group)
+	df <- rlang::enexpr(df)
+	filepath <- rlang::enexpr(filepath)
+	filename <- rlang::enexpr(filename)
 	
 	reload_expts()
 
 	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group,
-	          scale_log2r = scale_log2r, impute_na = FALSE, df = df,
-	          filepath = filepath, filename = filename, anal_type = "MA")(...)
+	          scale_log2r = scale_log2r, impute_na = FALSE, df = !!df,
+	          filepath = !!filepath, filename = !!filename, anal_type = "MA")(...)
 }
 
 
