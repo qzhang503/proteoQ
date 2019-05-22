@@ -7,23 +7,24 @@ applied in mass spectrometry (MS)-based quantification of proteins and
 peptides. The proteoQ tool is designed to aid automated and reproducible
 analysis of proteomics data. It interacts with an `Excel` spread sheet
 for dynamic sample selections, aesthetics controls and statistical
-modelings. The arrangement allows end users to put data behind the scene
-and quickly address interesting biological questions using various
-informatic tools. In addition, the entire workflow is documented and can
-be conveniently reproduced upon revisiting.
+modelings. The arrangement allows users to put data manipulation behind
+the scene and apply metadata to quickly address interesting biological
+questions using various informatic tools. In addition, the entire
+workflow is documented and can be conveniently reproduced upon
+revisiting.
 
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
 10- or 11-plex TMT experiments. Peptide and protein results are then
-produced with users’ selection of parameters in data filtration,
+produced with users' selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
-creating ‘wrappers’ around published R functions.
+creating 'wrappers' around published R functions.
 
 Installation
 ------------
 
-To install this package, start R (version “3.6”) and enter:
+To install this package, start R (version "3.6") and enter:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -118,7 +119,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins
 
-*Process PSMs* — In this section, I demonstrate the summarisation of PSM
+*Process PSMs* - In this section, I demonstrate the summarisation of PSM
 data to peptides and proteins. The data set I use in this section
 corresponds to the proteomics data from Mertins et al.(2018). In the
 study, two different breast cancer subtypes, WHIM2 and WHIM16, from
@@ -152,7 +153,7 @@ less than 1,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
 analysis.[2]
 
-*Summarize PSMs to peptides* — We next summarise PSM to peptides.
+*Summarize PSMs to peptides* - We next summarise PSM to peptides.
 
 ``` r
 # Generate peptide reports
@@ -164,7 +165,6 @@ normPep(
     range_int = c(5, 95), 
     n_comp = 3, 
     seed = 749662, 
-    annot_kinases = TRUE,   
     maxit = 200, 
     epsilon = 1e-05
 )
@@ -175,12 +175,13 @@ modificaitons will be treated as different species. The log2FC of
 peptide data will be aligned by median centering across samples by
 default. If `method_align = MGKernel` is chosen, log2FC will be aligned
 under the assumption of multiple Gaussian kernels.[3] The parameter
-`n_comp` defines the number of Gaussian kernels. The parameters
-`range_log2r` and `range_int` define the range of log2FC and the range
-of reporter-ion intensity, respectively, for use in the scaling of
-standard deviation across samples.
+`n_comp` defines the number of Gaussian kernels and `seed` set a seed
+for reproducible fittings. The parameters `range_log2r` and `range_int`
+define the range of log2FC and the range of reporter-ion intensity,
+respectively, for use in the scaling of standard deviation across
+samples.
 
-Let’s compare the log2FC profiles with and without scaling
+Let's compare the log2FC profiles with and without scaling
 normalization:[4]
 
 ``` r
@@ -246,7 +247,7 @@ quantities of proteins of interest are different across samples where
 the assumption of constitutive expression for the vast majority of
 proteins may not hold.
 
-*Summarize peptides to proteins* — We then summarise peptides to
+*Summarize peptides to proteins* - We then summarise peptides to
 proteins using a two-component Gaussian kernel.
 
 ``` r
@@ -416,10 +417,10 @@ differences between `W2` and `W16`. We may wish to put the `TMT1` and
 `TMT2` groups adjacient to each other for visualization of more nuance
 batch effects, followed by the correlational comparison of WHIM
 subtypes. We can achieve this by supervising sample IDs at a customized
-order. In the `expt_smry.xlsx`, I have pre-define an `Order` column
-where the `JHU` subset were arranged in the order of `W2.TMT1`,
+order. In the `expt_smry.xlsx`, I have prepared an `Order` column where
+samples within the `JHU` subset were arranged in the order of `W2.TMT1`,
 `W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look
-for the `Order` column for sample arrangement:
+for the `Order` column for sample ordering:
 
 ``` r
 # Correlation plots of peptide data
@@ -461,35 +462,40 @@ prnCorr(
 peptide; right, protein
 </p>
 
-The documentation from this point on remains under construction;
-nevertheless, interactive R scripts are made available for now.
+The documentation from this point on remains under construction.
 
 The following performs of heat map visualization against protein data:
 
 ``` r
 # Protein heat maps
 prnHM(
-    scale_log2r = TRUE, 
-    xmin = -.5, 
-    xmax = .5, 
+    xmin = -1, 
+    xmax = 1, 
     x_margin = 0.1, 
-    annot_cols = c("Peptide_Yield", "Group"), 
+    annot_cols = c("Group", "Color", "Alpha", "Shape"), 
+    annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
     cluster_rows = TRUE, 
-    cutree_rows = 6, 
+    cutree_rows = 10, 
     show_rownames = FALSE, 
     show_colnames = TRUE, 
     fontsize_row = 3, 
     cellwidth = 14, 
-    width = 24, 
+    width = 18, 
     height = 12
 )
 ```
+
+<img src="images\protein\heatmap\heatmap.png" alt="**Figure 4.** Heat map visualization of protein log2FC at `scale_log2r = TRUE`" width="45%" />
+<p class="caption">
+**Figure 4.** Heat map visualization of protein log2FC at
+`scale_log2r = TRUE`
+</p>
 
 The following performs the imputation of peptide and protein data:
 
 ``` r
 # Impute missing values
-pepImp(m = 5, maxit = 5)
+pepImp(m = 2, maxit = 2)
 prnImp(m = 5, maxit = 5)
 ```
 
@@ -514,30 +520,28 @@ The following performs the significance analysis of peptide and protein
 data:
 
 ``` r
-# Peptide significance tests
-# Multiple formulas are allowed 
-pepSig(
-    scale_log2r = TRUE, 
-    limma_1 = ~ Term["W2.TMT2-W2.TMT1", "W16.TMT2-W16.TMT1", "(W16.TMT2-W16.TMT1)-(W2.TMT2-W2.TMT1)"]
-)
-
 # Protein significance tests
 prnSig(
-    scale_log2r = TRUE, 
-    limma_1 = ~ Term["W2.TMT2-W2.TMT1", "W16.TMT2-W16.TMT1", "(W16.TMT2-W16.TMT1)-(W2.TMT2-W2.TMT1)"]
+    impute_na = FALSE, 
+    contrasts_1 = ~ Term["(W16.BI.TMT1-W2.BI.TMT1)", 
+                                    "(W16.JHU.TMT1-W2.JHU.TMT1)", 
+                                    "(W16.PNNL.TMT1-W2.PNNL.TMT1)"], 
+    contrasts_2 = ~ Term["(W16.BI.TMT2-W16.BI.TMT1)-(W2.BI.TMT2-W2.BI.TMT1)", 
+                                    "(W16.JHU.TMT2-W16.JHU.TMT1)-(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                                    "(W16.PNNL.TMT2-W16.PNNL.TMT1)-(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+)
+
+prnVol(
+    width = 18,
+    height = 6
 )
 ```
 
-The following performs the volcano plot visualization of peptide and
-protein data:
-
-``` r
-# Peptide volcano plots
-pepVol(scale_log2r = TRUE)
-
-# Protein volcano plots
-prnVol(scale_log2r = TRUE)
-```
+<img src="images\protein\volcplot\volcplot_l.png" alt="**Figure 5A-5B.** Volcano plot visualization of log2FC. Left: contrasts defined in `contrasts_1`; right, contrasts defined in `contrasts_2`" width="45%" /><img src="images\protein\volcplot\volcplot_2.png" alt="**Figure 5A-5B.** Volcano plot visualization of log2FC. Left: contrasts defined in `contrasts_1`; right, contrasts defined in `contrasts_2`" width="45%" />
+<p class="caption">
+**Figure 5A-5B.** Volcano plot visualization of log2FC. Left: contrasts
+defined in `contrasts_1`; right, contrasts defined in `contrasts_2`
+</p>
 
 The following performs GSVA:
 
@@ -552,10 +556,10 @@ visualization:
 gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
 ```
 
-Philipp, Martins. 2018. “Reproducible Workflow for Multiplexed
+Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
-Liquid Chromatography-Mass Spectrometry.” *Nature Protocols* 13 (7):
-1632–61. <https://doi.org/10.1038/s41596-018-0006-9>.
+Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
+1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in file name extension.
@@ -582,7 +586,7 @@ scaling of standard deviations.
 calling functions involved parameter `scale_log2r`, users will specify
 explicitly `scale_log2r = FALSE` to overwrite the default. Although the
 package provides the facility to look for a global setting of
-`scale_log2`, I don’t recommend using it.
+`scale_log2`, I don't recommend using it.
 
 [7] Prameter `fasta` is solely used for the calculation of protein
 percent coverage. Precomputed data will be used if no `fasta` database
