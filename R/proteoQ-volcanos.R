@@ -299,7 +299,8 @@ fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcan
 		} )) %>%
 		dplyr::mutate(
 			Contrast = factor(Contrast, levels = contrast_groups),
-			pVal = as.numeric(pVal),
+			# pVal = as.numeric(pVal),
+			pVal = as.numeric(as.character(pVal)),
 			valence = ifelse(.$log2Ratio > 0, "pos", "neg")
 		) %>%
 		dplyr::filter(!is.na(pVal))
