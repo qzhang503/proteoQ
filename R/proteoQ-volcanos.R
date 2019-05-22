@@ -18,7 +18,10 @@
 proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_log2r = TRUE,
 													filepath = NULL, filename = NULL, impute_na = TRUE, adjP = FALSE,
 													show_labels = TRUE, use_gagep = TRUE, pval_cutoff = 5E-2, show_sig = NULL, ...) {
-	old_opt <- options(max.print = 99999)
+	
+  options(scipen=999)
+  
+  old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
 
 	old_dir <- getwd()
@@ -131,6 +134,12 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
 	  }
 	}
+	
+	# remove white space before NA in scientific notation
+	df <- df %>% 
+	  dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
+	  dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
+	  dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 
@@ -151,7 +160,7 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	} else {
 		df <- df %>%
 			dplyr::select(-contains("pVal")) %>%
-			`names<-`(gsub("adjP", ".pVal", names(.)))
+			`names<-`(gsub("adjP", "pVal", names(.)))
 	}
 
 	plotVolcano(df, !!id, filepath, filename, adjP, show_labels, anal_type,
@@ -281,6 +290,8 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcano_theme,
                         filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE, ...) {
 
+  # options(scipen = 999)
+  
   id <- rlang::as_string(rlang::enexpr(id))
 
 	dots <- rlang::enexprs(...)
@@ -296,15 +307,14 @@ fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcan
 				`colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
 				mutate(Contrast = .x) %>%
 				bind_cols(df[, !grepl("^pVal\\s+|^adjP\\s+|^log2Ratio\\s+", names(df)), drop = FALSE], .)
-		} )) %>%
-		dplyr::mutate(
-			Contrast = factor(Contrast, levels = contrast_groups),
-			# pVal = as.numeric(pVal),
-			pVal = as.numeric(as.character(pVal)),
-			valence = ifelse(.$log2Ratio > 0, "pos", "neg")
-		) %>%
-		dplyr::filter(!is.na(pVal))
-
+		} )) %>% 
+	  dplyr::mutate(
+	    Contrast = factor(Contrast, levels = contrast_groups),
+	    # pVal = as.numeric(as.character(.$pVal)), 
+	    valence = ifelse(.$log2Ratio > 0, "pos", "neg")
+	  ) %>%
+	  dplyr::filter(!is.na(pVal))
+	  
 	dfw_sub <- dfw %>%
 		dplyr::filter(pVal < yco & abs(log2Ratio) > log2(xco)) %>%
 		dplyr::arrange(Contrast, pVal) %>%
