@@ -16,15 +16,15 @@ revisiting.
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
 10- or 11-plex TMT experiments. Peptide and protein results are then
-produced with users' selection of parameters in data filtration,
+produced with users’ selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
-creating 'wrappers' around published R functions.
+creating ‘wrappers’ around published R functions.
 
 Installation
 ------------
 
-To install this package, start R (version "3.6") and enter:
+To install this package, start R (version “3.6”) and enter:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -119,7 +119,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins
 
-*Process PSMs* - In this section, I demonstrate the summarisation of PSM
+*Process PSMs* — In this section, I demonstrate the summarisation of PSM
 data to peptides and proteins. The data set I use in this section
 corresponds to the proteomics data from Mertins et al.(2018). In the
 study, two different breast cancer subtypes, WHIM2 and WHIM16, from
@@ -153,7 +153,7 @@ less than 1,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
 analysis.[2]
 
-*Summarize PSMs to peptides* - We next summarise PSM to peptides.
+*Summarize PSMs to peptides* — We next summarise PSM to peptides.
 
 ``` r
 # Generate peptide reports
@@ -181,7 +181,7 @@ define the range of log2FC and the range of reporter-ion intensity,
 respectively, for use in the scaling of standard deviation across
 samples.
 
-Let's compare the log2FC profiles with and without scaling
+Let’s compare the log2FC profiles with and without scaling
 normalization:[4]
 
 ``` r
@@ -247,7 +247,7 @@ quantities of proteins of interest are different across samples where
 the assumption of constitutive expression for the vast majority of
 proteins may not hold.
 
-*Summarize peptides to proteins* - We then summarise peptides to
+*Summarize peptides to proteins* — We then summarise peptides to
 proteins using a two-component Gaussian kernel.
 
 ``` r
@@ -367,7 +367,7 @@ pepEucDist(
     annot_colnames = c("WHIM", "Batch"), 
 
     # parameters from `pheatmap`
-    display_numbers = TRUE, 
+    display_numbers = FALSE, 
     number_color = "grey30", 
     number_format = "%.2f",
     
@@ -385,8 +385,8 @@ pepEucDist(
     border_color = "grey60", 
     cellwidth = 24, 
     cellheight = 24, 
-    width = 16,
-    height = 16, 
+    width = 14,
+    height = 12, 
     
     filename = EucDist_JHU.png
 )
@@ -397,7 +397,9 @@ distrance-matrix plots. In this example, we have choosen
 `expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the
 WHIM subtypes and the batch numbers, respectively. Parameter
 `annot_colnames` allows us to rename the tracks from `Shape` and `Alpha`
-to `WHIM` and `Batch`, respectively, for better intuition.
+to `WHIM` and `Batch`, respectively, for better intuition. We can
+alternatively add columns `WHIM` and `Batch` if we choose not to recycle
+columns `Shape` and `Alpha`.
 
 <img src="images\peptide\mds\eucdist_jhu.png" alt="**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
@@ -418,9 +420,9 @@ differences between `W2` and `W16`. We may wish to put the `TMT1` and
 batch effects, followed by the correlational comparison of WHIM
 subtypes. We can achieve this by supervising sample IDs at a customized
 order. In the `expt_smry.xlsx`, I have prepared an `Order` column where
-samples within the `JHU` subset were arranged in the order of `W2.TMT1`,
-`W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look
-for the `Order` column for sample ordering:
+samples within the `JHU` subset were arranged in the descending order of
+`W2.TMT1`, `W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program
+to look for the `Order` column for sample arrangement:
 
 ``` r
 # Correlation plots of peptide data
@@ -462,7 +464,58 @@ prnCorr(
 peptide; right, protein
 </p>
 
-The documentation from this point on remains under construction.
+The documentation from this point on remains under construction…
+
+### Significance tests and volcano plot visualization
+
+In this section, we perform the significance analysis of peptide and
+protein data. The approach of contrast fit is used in `proteoQ`
+(Chambers, J. M. (1992) Linear models; `limma`, Gordon Smith). We first
+define the contrast groups for significance tests. For this purpose, I
+have devided the samples by their WHIM subtypes, laboratory locations
+and batch numbers. This ends up with entries of `W2.BI.TMT1`,
+`W2.BI.TMT2` etc. under the `expt_smry.xlsx::Term` column. The
+interactive environment between the Excel file and the proteoQ tool
+allows us to enter more columns of contrasts when needed. For instance,
+we might also be interested in a more course comparison of
+inter-laboratory differences without batch effects. The corresponding
+contrasts of `W2.BI`, `W2.BI` etc. can be found under a pre-made column,
+`Term_2`. Having these columns in hand, we are now ready to perform
+significance tests for peptides and protein species. In the demo, we
+will analyze protein data and perform volcano plot visualization:
+
+``` r
+# Protein significance tests
+prnSig(
+    impute_na = FALSE, 
+    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+    # W2_loc_bat = ~ Term["((W2.BI.TMT1-W2.JHU.TMT1)-(W2.BI.TMT2-W2.JHU.TMT2))", "((W2.BI.TMT1-W2.PNNL.TMT1)-(W2.BI.TMT2-W2.PNNL.TMT2))"], # location and batch effects
+    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
+)
+
+# Volcano plots
+prnVol()
+```
+
+    Note that we have informed the `prnSig` function to look for contrasts under columns `Term` and `Term_2`, followed by the cotrast pairs in square brackets. Pairs of contrasts are separated by comma.  
+
+Batch effects:
+
+<img src="images\protein\volcplot\batches.png" alt="**Figure 5A.** Volcano plots of protein log2FC between two batches." width="80%" />
+<p class="caption">
+**Figure 5A.** Volcano plots of protein log2FC between two batches.
+</p>
+
+<img src="images\protein\volcplot\venn_batches.png" alt="**Figure 5A.** Volcano plots of protein log2FC between two batches." width="80%" />
+
+Location effects:
+
+<img src="images\protein\volcplot\locations.png" alt="**Figure 5B.** Volcano plots of protein log2FC between locations." width="80%" />
+<p class="caption">
+**Figure 5B.** Volcano plots of protein log2FC between locations.
+</p>
+
+<img src="images\protein\volcplot\venn_locations.png" alt="**Figure 5B.** Volcano plots of protein log2FC between locations." width="80%" />
 
 The following performs of heat map visualization against protein data:
 
@@ -485,7 +538,7 @@ prnHM(
 )
 ```
 
-<img src="images\protein\heatmap\heatmap.png" alt="**Figure 4.** Heat map visualization of protein log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="images\protein\heatmap\heatmap.png" alt="**Figure 4.** Heat map visualization of protein log2FC at `scale_log2r = TRUE`" width="80%" />
 <p class="caption">
 **Figure 4.** Heat map visualization of protein log2FC at
 `scale_log2r = TRUE`
@@ -516,33 +569,6 @@ prnNMF(r = 6, xmin = -1, xmax = 1, x_margin = 0.1,
     scale_log2r = TRUE)
 ```
 
-The following performs the significance analysis of peptide and protein
-data:
-
-``` r
-# Protein significance tests
-prnSig(
-    impute_na = FALSE, 
-    contrasts_1 = ~ Term["(W16.BI.TMT1-W2.BI.TMT1)", 
-                                    "(W16.JHU.TMT1-W2.JHU.TMT1)", 
-                                    "(W16.PNNL.TMT1-W2.PNNL.TMT1)"], 
-    contrasts_2 = ~ Term["(W16.BI.TMT2-W16.BI.TMT1)-(W2.BI.TMT2-W2.BI.TMT1)", 
-                                    "(W16.JHU.TMT2-W16.JHU.TMT1)-(W2.JHU.TMT2-W2.JHU.TMT1)", 
-                                    "(W16.PNNL.TMT2-W16.PNNL.TMT1)-(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
-)
-
-prnVol(
-    width = 18,
-    height = 6
-)
-```
-
-<img src="images\protein\volcplot\volcplot_l.png" alt="**Figure 5A-5B.** Volcano plot visualization of log2FC. Left: contrasts defined in `contrasts_1`; right, contrasts defined in `contrasts_2`" width="45%" /><img src="images\protein\volcplot\volcplot_2.png" alt="**Figure 5A-5B.** Volcano plot visualization of log2FC. Left: contrasts defined in `contrasts_1`; right, contrasts defined in `contrasts_2`" width="45%" />
-<p class="caption">
-**Figure 5A-5B.** Volcano plot visualization of log2FC. Left: contrasts
-defined in `contrasts_1`; right, contrasts defined in `contrasts_2`
-</p>
-
 The following performs GSVA:
 
 ``` r
@@ -556,10 +582,10 @@ visualization:
 gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
 ```
 
-Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
+Philipp, Martins. 2018. “Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
-Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
-1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
+Liquid Chromatography-Mass Spectrometry.” *Nature Protocols* 13 (7):
+1632–61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in file name extension.
@@ -586,7 +612,7 @@ scaling of standard deviations.
 calling functions involved parameter `scale_log2r`, users will specify
 explicitly `scale_log2r = FALSE` to overwrite the default. Although the
 package provides the facility to look for a global setting of
-`scale_log2`, I don't recommend using it.
+`scale_log2`, I don’t recommend using it.
 
 [7] Prameter `fasta` is solely used for the calculation of protein
 percent coverage. Precomputed data will be used if no `fasta` database
