@@ -6,8 +6,8 @@
 \usage{
 plotNMF(df, id, r, nrun, col_group, label_scheme_sub, filepath, filename,
   complete_cases, xmin = -1, xmax = 1, x_margin = 0.1,
-  annot_cols = NULL, width_consensus = 6, height_consensus = 6,
-  width_coefmap = 6, height_coefmap = 6, ...)
+  annot_cols = NULL, annot_colnames = NULL, width_consensus = 6,
+  height_consensus = 6, width_coefmap = 6, height_coefmap = 6, ...)
 }
 \description{
 Plots results from NMF analysis

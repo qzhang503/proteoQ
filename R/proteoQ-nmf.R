@@ -3,7 +3,8 @@
 #' @import NMF dplyr rlang Biobase
 #' @importFrom magrittr %>%
 plotNMF <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, filename,
-                    complete_cases, xmin = -1, xmax = 1, x_margin = .1, annot_cols = NULL,
+                    complete_cases, xmin = -1, xmax = 1, x_margin = .1, 
+                    annot_cols = NULL, annot_colnames = NULL, 
 										width_consensus = 6, height_consensus = 6, width_coefmap = 6,
 										height_coefmap = 6, ...) {
 
@@ -29,6 +30,10 @@ plotNMF <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
 	  annotation_col <- NA
 	else
 	  annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
+	
+	if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+	  colnames(annotation_col) <- annot_colnames
+	}
 
 	if (is.null(dots$annotation_colors)) {
 	  annotation_colors <- setHMColor(annotation_col)
@@ -178,7 +183,8 @@ plotNMF <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col_select = NULL,
 											scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE,
 											df = NULL, filepath = NULL, filename = NULL, r = 4, nrun = 200,
-											xmin = -1, xmax = 1, x_margin = 0.1, annot_cols = NULL,
+											xmin = -1, xmax = 1, x_margin = 0.1, 
+											annot_cols = NULL, annot_colnames = NULL, 
 											width_consensus = 6, height_consensus = 6,
 											width_coefmap = 6, height_coefmap = 6, ...) {
 
@@ -200,7 +206,8 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col
 	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = impute_na,
 					df = !!df, filepath = !!filepath, filename = !!filename,
 					anal_type = "NMF")(r = r, nrun = nrun, complete_cases = complete_cases,
-					xmin = xmin, xmax = xmax, x_margin = x_margin, annot_cols = annot_cols,
+					xmin = xmin, xmax = xmax, x_margin = x_margin, 
+					annot_cols = annot_cols, annot_colnames = annot_colnames, 
 					width_consensus = width_consensus, height_consensus = height_consensus,
 					width_coefmap = width_coefmap, height_coefmap = height_coefmap, ...)
 }

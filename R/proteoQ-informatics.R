@@ -24,6 +24,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	old_dir <- getwd()
 	on.exit(setwd(old_dir), add = TRUE)
 	
+	anal_type <- rlang::as_string(rlang::enexpr(anal_type))
+	
 	col_select <- rlang::enexpr(col_select)
 	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)
@@ -371,7 +373,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			}
 		}
 	} else if(anal_type == "EucDist") {
-		function(adjEucDist = adjEucDist, annot_cols = NULL, annot_colnames, ...) {
+		function(adjEucDist = adjEucDist, annot_cols = NULL, annot_colnames = NULL, ...) {
 			df_mds <- scoreMDS(df = dfw$log2R,
 				label_scheme_sub = label_scheme_sub,
 			  scale_log2r = scale_log2r,
@@ -414,7 +416,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if(anal_type == "Heatmap") {
 		function(complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin,
 		         annot_cols = annot_cols, annot_colnames = annot_colnames, ...) {
-
 			plotHM(df = df, id = !!id, scale_log2r = scale_log2r, col_benchmark = !!col_benchmark,
 			       label_scheme_sub = label_scheme_sub,
 						filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix),
@@ -430,7 +431,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 								annot_cols, annot_colnames, ...)
 			}
 		}
-
 	} else if(anal_type == "Histogram") {
 		function(new_fit = new_fit, show_curves = show_curves, show_vline = show_vline, ...) {
 
@@ -461,11 +461,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 				          filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...)
 			}
 		}
-
 	} else if (anal_type == "Corrplot") {
 		function(use_log10 = use_log10, min_int = min_int, max_int = max_int, min_log2r = min_log2r,
 		         max_log2r = max_log2r, ...) {
-
 			if(ncol(dfw$log2R) > 44) stop("Maximal number of samples for correlation plots is 44.", call. = TRUE)
 
 			plotCorr(df = dfw, col_select = !!col_select, col_order = !!col_order,
@@ -483,50 +481,62 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 								 filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...)
 			}
 		}
-
 	} else if (anal_type == "Trend") {
-		function(n_clust = n_clust, complete_cases = complete_cases, ...) {
-
-			plotTrend(df = dfw$log2R, id = !!id, col_group = !!col_group, col_order = !!col_order,
-			          label_scheme_sub = label_scheme_sub, n_clust = n_clust,
-			          complete_cases = complete_cases, scale_log2r = scale_log2r,
-			          filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), ...)
-
-			if(annot_kinases) {
-				plotTrend(df = dfw_kinase$log2R, col_group = !!col_group, col_order = !!col_order, id = !!id,
-				          label_scheme_sub = label_scheme_sub, n_clust = n_clust,
-				          complete_cases = complete_cases, scale_log2r = scale_log2r,
-				          filepath = file.path(filepath, "Kinases"),
-				          filename = paste0(fn_prx, "_Kinases", ".png"), ...)
-			}
+		function(n_clust = n_clust, complete_cases = complete_cases, task = !!task, ...) {
+		  
+		  task <- rlang::as_string(rlang::enexpr(task))
+		  
+		  if (task == "anal") {
+  			trendTest(df = dfw$log2R, id = !!id, col_group = !!col_group, col_order = !!col_order,
+  			          label_scheme_sub = label_scheme_sub, n_clust = n_clust,
+  			          complete_cases = complete_cases, scale_log2r = scale_log2r,
+  			          filepath = filepath, filename = paste0(fn_prx, "_n", n_clust, ".csv"), ...)	
+		    
+  			if(annot_kinases) {
+  			  trendTest(df = dfw_kinase$log2R, col_group = !!col_group, col_order = !!col_order, id = !!id,
+  				          label_scheme_sub = label_scheme_sub, n_clust = n_clust,
+  				          complete_cases = complete_cases, scale_log2r = scale_log2r,
+  				          filepath = file.path(filepath, "Kinases"),
+  				          filename = paste0(fn_prx, "_n", n_clust, "_Kinases.csv"), ...)
+  			}		    
+		  } else if (task == "plot") {
+		    plotTrend(id = !!id, 
+		        col_group = !!col_group, 
+		        col_order = !!col_order, 
+		        label_scheme_sub = label_scheme_sub, 
+		        n_clust = n_clust, 
+		        filepath = filepath, 
+		        in_nm = paste0(fn_prx, "_n", n_clust, ".csv"), 
+		        out_nm = paste0(fn_prx, "_n", n_clust, ".png"), ...)
+		  }
 		}
-
 	} else if (anal_type == "NMF") {
 		function(r = r, nrun = nrun,
 						complete_cases = complete_cases,
-						xmin = -1, xmax = 1, x_margin = .1, annot_cols = annot_cols,
-						width_consensus = width_consensus, height_consensus = height_consensus,
-						width_coefmap = width_coefmap, height_coefmap = height_coefmap, ...) {
+						xmin = -1, xmax = 1, x_margin = .1, 
+						annot_cols = annot_cols, annot_colnames = annot_colnames, 
+						width_consensus = width_consensus, 
+						height_consensus = height_consensus,
+						width_coefmap = width_coefmap, 
+						height_coefmap = height_coefmap, ...) {
 
 			plotNMF(df = dfw$log2R, id = !!id, col_group = !!col_group,
 			        label_scheme_sub = label_scheme_sub,
 							filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix),
 			        r = r, nrun = nrun, complete_cases = complete_cases,
-			        xmin = xmin, xmax = xmax, x_margin = x_margin, annot_cols = annot_cols,
+			        xmin = xmin, xmax = xmax, x_margin = x_margin, 
+							annot_cols = annot_cols, annot_colnames = annot_colnames, 
 			        width_consensus = width_consensus, height_consensus = height_consensus,
 			        width_coefmap = width_coefmap, height_coefmap = height_coefmap, ...)
 		}
-
 	} else if(anal_type == "ESGAGE") {
 		function(complete_cases = FALSE, method = "limma", gset_nm = "go_sets", var_cutoff = 1E-3,
 		         pval_cutoff = .05, logFC_cutoff = log2(1.1), ...) {
-
 			df_op <- gageTest(df = dfw$log2R, id = !!id, label_scheme_sub = label_scheme_sub,
 			                  filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix),
 			                  complete_cases, method = method, gset_nm = gset_nm, var_cutoff = var_cutoff,
 			                  pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, ...)
 		}
-
 	} else if(anal_type == "GSVA") {
 		function(complete_cases = FALSE, method = "limma", gset_nm = "go_sets", var_cutoff = .5,
 		         pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), mx.diff = TRUE, ...) {
@@ -542,7 +552,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (anal_type == "Model") {
 		function(complete_cases = FALSE, method = "limma", var_cutoff = 1E-3, pval_cutoff = 1,
 		         logFC_cutoff = log2(1), ...) {
-
 			df_op <- sigTest(df = dfw$log2R, id = !!id, label_scheme_sub = label_scheme_sub,
 			                 filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix),
 			                 complete_cases = complete_cases, method = method, var_cutoff = var_cutoff,
@@ -553,9 +562,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			write.table(df_op, file.path(filepath, paste0(data_type, "_pVals.txt")), sep = "\t",
 			            col.names = TRUE, row.names = FALSE)
 		}
-
 	}
-
 }
 
 

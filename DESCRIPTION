@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 0.0.0.9060
+Version: 0.0.0.9062
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",

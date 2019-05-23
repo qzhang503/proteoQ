@@ -461,7 +461,18 @@ The following performs the trend analysis against protein expressions:
 
 ```{r Protein trends, eval = FALSE}
 # Soft clustering in protein expressions by trends
-prnTrend(n_clust = 6, scale_log2r = TRUE)
+anal_prnTrend(
+  scale_log2r = TRUE, 
+  n_clust = 6
+)
+
+# Visualization of trends
+plot_prnTrend()
+```
+
+```{r Protein_trends plots, echo=FALSE, fig.align='left', fig.cap="**Figure 6.** Trend analysis of protein log2FC.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_prn_trends <- "images\\protein\\trend\\prn_trend_n6.png"
+knitr::include_graphics(c(img_prn_trends))
 ```
 
 The following performs the NMF analysis against protein data:
