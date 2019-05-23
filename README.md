@@ -16,15 +16,15 @@ revisiting.
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
 10- or 11-plex TMT experiments. Peptide and protein results are then
-produced with users’ selection of parameters in data filtration,
+produced with users' selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
-creating ‘wrappers’ around published R functions.
+creating 'wrappers' around published R functions.
 
 Installation
 ------------
 
-To install this package, start R (version “3.6”) and enter:
+To install this package, start R (version "3.6") and enter:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -119,7 +119,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins
 
-*Process PSMs* — In this section, I demonstrate the summarisation of PSM
+*Process PSMs* - In this section, I demonstrate the summarisation of PSM
 data to peptides and proteins. The data set I use in this section
 corresponds to the proteomics data from Mertins et al.(2018). In the
 study, two different breast cancer subtypes, WHIM2 and WHIM16, from
@@ -153,7 +153,7 @@ less than 1,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
 analysis.[2]
 
-*Summarize PSMs to peptides* — We next summarise PSM to peptides.
+*Summarize PSMs to peptides* - We next summarise PSM to peptides.
 
 ``` r
 # Generate peptide reports
@@ -181,7 +181,7 @@ define the range of log2FC and the range of reporter-ion intensity,
 respectively, for use in the scaling of standard deviation across
 samples.
 
-Let’s compare the log2FC profiles with and without scaling
+Let's compare the log2FC profiles with and without scaling
 normalization:[4]
 
 ``` r
@@ -247,7 +247,7 @@ quantities of proteins of interest are different across samples where
 the assumption of constitutive expression for the vast majority of
 proteins may not hold.
 
-*Summarize peptides to proteins* — We then summarise peptides to
+*Summarize peptides to proteins* - We then summarise peptides to
 proteins using a two-component Gaussian kernel.
 
 ``` r
@@ -464,7 +464,7 @@ prnCorr(
 peptide; right, protein
 </p>
 
-The documentation from this point on remains under construction…
+The documentation from this point on remains under construction.
 
 ### Significance tests and volcano plot visualization
 
@@ -556,8 +556,19 @@ The following performs the trend analysis against protein expressions:
 
 ``` r
 # Soft clustering in protein expressions by trends
-prnTrend(n_clust = 6, scale_log2r = TRUE)
+anal_prnTrend(
+  scale_log2r = TRUE, 
+  n_clust = 6
+)
+
+# Visualization of trends
+plot_prnTrend()
 ```
+
+<img src="images\protein\trend\prn_trend_n6.png" alt="**Figure 6.** Trend analysis of protein log2FC." width="80%" />
+<p class="caption">
+**Figure 6.** Trend analysis of protein log2FC.
+</p>
 
 The following performs the NMF analysis against protein data:
 
@@ -582,10 +593,10 @@ visualization:
 gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
 ```
 
-Philipp, Martins. 2018. “Reproducible Workflow for Multiplexed
+Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
-Liquid Chromatography-Mass Spectrometry.” *Nature Protocols* 13 (7):
-1632–61. <https://doi.org/10.1038/s41596-018-0006-9>.
+Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
+1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in file name extension.
@@ -612,7 +623,7 @@ scaling of standard deviations.
 calling functions involved parameter `scale_log2r`, users will specify
 explicitly `scale_log2r = FALSE` to overwrite the default. Although the
 package provides the facility to look for a global setting of
-`scale_log2`, I don’t recommend using it.
+`scale_log2`, I don't recommend using it.
 
 [7] Prameter `fasta` is solely used for the calculation of protein
 percent coverage. Precomputed data will be used if no `fasta` database

@@ -5,9 +5,10 @@
 \title{Clustering by trends}
 \usage{
 proteoTrend(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
-  col_select = NULL, col_order = NULL, impute_na = FALSE,
-  complete_cases = FALSE, n_clust = 6, scale_log2r = TRUE,
-  df = NULL, filepath = NULL, filename = NULL, ...)
+  anal_type = "Trend", switch_type = "anal", col_select = NULL,
+  col_order = NULL, impute_na = FALSE, complete_cases = FALSE,
+  n_clust = 6, scale_log2r = TRUE, df = NULL, filepath = NULL,
+  filename = NULL, ...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be

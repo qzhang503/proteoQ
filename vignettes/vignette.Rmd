@@ -305,9 +305,9 @@ pepEucDist(
 	annot_colnames = c("WHIM", "Batch"), 
 
 	# parameters from `pheatmap`
-	display_numbers = FALSE, 
+	display_numbers = TRUE, 
 	number_color = "grey30", 
-	number_format = "%.2f",
+	number_format = "%.1f",
 	
 	clustering_distance_rows = "euclidean", 
 	clustering_distance_cols = "euclidean", 
@@ -459,31 +459,58 @@ The following performs the trend analysis against protein expressions:
 
 ```{r Protein trends, eval = FALSE}
 # Soft clustering in protein expressions by trends
-prnTrend(n_clust = 6, scale_log2r = TRUE)
+anal_prnTrend(
+  scale_log2r = TRUE, 
+  n_clust = 6
+)
+
+# Visualization of trends
+plot_prnTrend()
 ```
+
+```{r Protein_trends plots, echo=FALSE, fig.align='left', fig.cap="**Figure 6.** Trend analysis of protein log2FC.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_prn_trends <- "images\\protein\\trend\\prn_trend_n6.png"
+knitr::include_graphics(c(img_prn_trends))
+```
+
 
 The following performs the NMF analysis against protein data:
 
 ```{r Protein NMF, eval = FALSE}
 # Protein NMF
 library(NMF)
-prnNMF(r = 6, xmin = -1, xmax = 1, x_margin = 0.1, 
-	annot_cols = c("Peptide_Yield", "TMT_Set", "Group"), 
-	scale_log2r = TRUE)
+prnNMF(
+  scale_log2r = TRUE,
+  r = 6, 
+  xmin = -2, 
+  xmax = 2, 
+  x_margin = 0.2, 
+	annot_cols = c("Color", "Alpha", "Shape"), 
+	annot_colnames = c("Lab", "Batch", "WHIM")
+)
 ```
 
 
 The following performs GSVA:
 
 ```{r Protein GSVA, eval = FALSE}
-prnGSVA(gset_nm = c("go_sets", "kegg_sets", "c2_msig"), scale_log2r = TRUE)
+prnGSVA(
+  scale_log2r = TRUE, 
+  gset_nm = c("go_sets", 
+              # "kegg_sets", 
+              "c2_msig")
+)
 ```
 
 
 The following maps gene sets under the environment of volcano plot visualization:
 
 ```{r Map GSVA, eval = FALSE}
-gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
+gsvaMap(
+  scale_log2r = TRUE, 
+  pval_cutoff = 1E-5, 
+  show_sig = "pVal"
+)
 ```
 
 

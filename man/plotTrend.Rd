@@ -4,8 +4,8 @@
 \alias{plotTrend}
 \title{Plots trends}
 \usage{
-plotTrend(df, id, col_group, col_order, label_scheme_sub, n_clust,
-  complete_cases, scale_log2r, filepath, filename, ...)
+plotTrend(id, col_group, col_order, label_scheme_sub, n_clust, filepath,
+  in_nm, out_nm, ...)
 }
 \description{
 Plots trends

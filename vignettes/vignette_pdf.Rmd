@@ -429,8 +429,17 @@ The following performs the trend analysis against protein expressions:
 
 ```{r Protein trends, eval = FALSE}
 # Soft clustering in protein expressions by trends
-prnTrend(n_clust = 6, scale_log2r = TRUE)
+anal_prnTrend(
+  scale_log2r = TRUE, 
+  n_clust = 6
+)
+
+# Visualization of trends
+plot_prnTrend()
 ```
+
+
+![Protein_trends](images\\protein\\trend\\prn_trend_n6.png){ width=80% }
 
 The following performs the NMF analysis against protein data:
 
