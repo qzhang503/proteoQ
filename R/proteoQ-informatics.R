@@ -483,51 +483,52 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "Trend") {
 		function(n_clust = n_clust, complete_cases = complete_cases, task = !!task, ...) {
-		  
-		  task <- rlang::as_string(rlang::enexpr(task))
-		  
-		  if (task == "anal") {
-  			trendTest(df = dfw$log2R, id = !!id, col_group = !!col_group, col_order = !!col_order,
-  			          label_scheme_sub = label_scheme_sub, n_clust = n_clust,
-  			          complete_cases = complete_cases, scale_log2r = scale_log2r,
-  			          filepath = filepath, filename = paste0(fn_prx, "_n", n_clust, ".csv"), ...)	
-		    
-  			if(annot_kinases) {
-  			  trendTest(df = dfw_kinase$log2R, col_group = !!col_group, col_order = !!col_order, id = !!id,
-  				          label_scheme_sub = label_scheme_sub, n_clust = n_clust,
-  				          complete_cases = complete_cases, scale_log2r = scale_log2r,
-  				          filepath = file.path(filepath, "Kinases"),
-  				          filename = paste0(fn_prx, "_n", n_clust, "_Kinases.csv"), ...)
-  			}		    
-		  } else if (task == "plot") {
-		    plotTrend(id = !!id, 
-		        col_group = !!col_group, 
-		        col_order = !!col_order, 
-		        label_scheme_sub = label_scheme_sub, 
-		        n_clust = n_clust, 
-		        filepath = filepath, 
-		        in_nm = paste0(fn_prx, "_n", n_clust, ".csv"), 
-		        out_nm = paste0(fn_prx, "_n", n_clust, ".png"), ...)
-		  }
+		  switch(rlang::as_string(rlang::enexpr(task)), 
+		         anal = trendTest(df = dfw$log2R, id = !!id, 
+		                          col_group = !!col_group, col_order = !!col_order,
+		                          label_scheme_sub = label_scheme_sub, n_clust = n_clust,
+		                          complete_cases = complete_cases, scale_log2r = scale_log2r,
+		                          filepath = filepath, 
+		                          filename = paste0(fn_prx, "_n", n_clust, ".csv"), ...), 
+		         plot = plotTrend(id = !!id, 
+		                          col_group = !!col_group, 
+		                          col_order = !!col_order, 
+		                          label_scheme_sub = label_scheme_sub, 
+		                          n_clust = n_clust, 
+		                          filepath = filepath, 
+		                          in_nm = paste0(fn_prx, "_n", n_clust, ".csv"), 
+		                          out_nm = paste0(fn_prx, "_n", n_clust, ".png"), ...)
+		  )
 		}
 	} else if (anal_type == "NMF") {
-		function(r = r, nrun = nrun,
-						complete_cases = complete_cases,
-						xmin = -1, xmax = 1, x_margin = .1, 
-						annot_cols = annot_cols, annot_colnames = annot_colnames, 
-						width_consensus = width_consensus, 
-						height_consensus = height_consensus,
-						width_coefmap = width_coefmap, 
-						height_coefmap = height_coefmap, ...) {
+		function(r = r, nrun = nrun, complete_cases = complete_cases, task = !!task, ...) {
 
-			plotNMF(df = dfw$log2R, id = !!id, col_group = !!col_group,
-			        label_scheme_sub = label_scheme_sub,
-							filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix),
-			        r = r, nrun = nrun, complete_cases = complete_cases,
-			        xmin = xmin, xmax = xmax, x_margin = x_margin, 
-							annot_cols = annot_cols, annot_colnames = annot_colnames, 
-			        width_consensus = width_consensus, height_consensus = height_consensus,
-			        width_coefmap = width_coefmap, height_coefmap = height_coefmap, ...)
+		  # if (is.null(r)) stop("Need to provide the r(ank) for NMF.")
+		  
+		  switch(rlang::as_string(rlang::enexpr(task)), 
+		         anal = nmfTest(df = dfw$log2R, id = !!id, r = r, nrun = nrun, 
+		                        col_group = !!col_group, label_scheme_sub = label_scheme_sub,
+		                        filepath = filepath, filename = paste0(fn_prx, "_r", r, ".csv"),
+		                        complete_cases = complete_cases, ...), 
+		         plotcon = plotNMFCon(id = !!id, 
+		                               r = r, 
+		                               label_scheme_sub = label_scheme_sub, 
+		                               filepath = filepath, 
+		                               in_nm = paste0(fn_prx, "_r", r, ".rda"), 
+		                               out_nm = paste0(fn_prx, "_r", r, "_consensus.png"), ...), 
+		         plotcoef = plotNMFCoef(id = !!id, 
+		                              r = r, 
+		                              label_scheme_sub = label_scheme_sub, 
+		                              filepath = filepath, 
+		                              in_nm = paste0(fn_prx, "_r", r, ".rda"), 
+		                              out_nm = paste0(fn_prx, "_r", r, "_coef.png"), ...), 
+		         plotmeta = plotNMFmeta(df = dfw$log2R, id = !!id, r = r, 
+		                                label_scheme_sub = label_scheme_sub, 
+		                                filepath = filepath, 
+		                                in_nm = paste0(fn_prx, "_r", r, ".rda"), 
+		                                out_nm = paste0(fn_prx, "_r", r, "_metagene.png"), ...)
+		  )
+
 		}
 	} else if(anal_type == "ESGAGE") {
 		function(complete_cases = FALSE, method = "limma", gset_nm = "go_sets", var_cutoff = 1E-3,

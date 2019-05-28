@@ -217,7 +217,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'@importFrom magrittr %>%
 #'@export
 proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                         anal_type = "Trend", switch_type = "anal", 
+                         anal_type = "Trend", task = "anal", 
                          col_select = NULL, col_order = NULL,
 												impute_na = FALSE, complete_cases = FALSE,
 												n_clust = 6, scale_log2r = TRUE, df = NULL,
@@ -234,7 +234,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	}
 	
 	anal_type <- rlang::enexpr(anal_type)
-	switch_type <- rlang::enexpr(switch_type)
+	task <- rlang::enexpr(task)
 	
 	col_select <- rlang::enexpr(col_select)
 	col_order <- rlang::enexpr(col_order)
@@ -250,7 +250,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	          scale_log2r = scale_log2r, impute_na = impute_na,
 						df = !!df, filepath = !!filepath, filename = !!filename,
 						anal_type = !!anal_type)(n_clust = n_clust, complete_cases = complete_cases, 
-						                         switch_type = !!switch_type, ...)
+						                         task = !!task, ...)
 }
 
 
@@ -270,8 +270,6 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 anal_prnTrend <- function (...) {
 	proteoTrend(id = gene, anal_type = Trend, task = anal, ...)
 }
-
-
 
 
 #'Trend visualization

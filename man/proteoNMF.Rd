@@ -7,10 +7,8 @@
 proteoNMF(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, scale_log2r = TRUE, impute_na = TRUE,
   complete_cases = FALSE, df = NULL, filepath = NULL,
-  filename = NULL, r = 4, nrun = 200, xmin = -1, xmax = 1,
-  x_margin = 0.1, annot_cols = NULL, annot_colnames = NULL,
-  width_consensus = 6, height_consensus = 6, width_coefmap = 6,
-  height_coefmap = 6, ...)
+  filename = NULL, anal_type = "NMF", task = "anal", r = 4,
+  nrun = 200, ...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
