@@ -5,7 +5,7 @@
 \title{Clustering by trends}
 \usage{
 proteoTrend(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
-  anal_type = "Trend", switch_type = "anal", col_select = NULL,
+  anal_type = "Trend", task = "anal", col_select = NULL,
   col_order = NULL, impute_na = FALSE, complete_cases = FALSE,
   n_clust = 6, scale_log2r = TRUE, df = NULL, filepath = NULL,
   filename = NULL, ...)

@@ -1,6 +1,6 @@
 ---
 title: Package "\"proteoQ\""  
-author: ""
+author: "Qiang Zhang"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 fig_caption: yes
@@ -382,7 +382,35 @@ knitr::include_graphics(c(img_jhu_pepcorr, img_jhu_prncorr))
 ```
 
 
-The documentation from this point on remains under construction...  
+More items under construction...  
+
+The following performs of heat map visualization against protein data:
+
+```{r Protein heat maps, eval = FALSE}
+# Protein heat maps
+prnHM(
+	xmin = -1, 
+	xmax = 1, 
+	x_margin = 0.1, 
+	annot_cols = c("Group", "Color", "Alpha", "Shape"), 
+	annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
+	cluster_rows = TRUE, 
+	cutree_rows = 10, 
+	show_rownames = FALSE, 
+	show_colnames = TRUE, 
+	fontsize_row = 3, 
+	cellwidth = 14, 
+	width = 18, 
+	height = 12
+)
+```
+
+```{r Protein_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 4.** Heat map visualization of protein log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_prnheat <- "images\\protein\\heatmap\\heatmap.png"
+knitr::include_graphics(c(img_prnheat))
+```
+
+
 
 ### Significance tests and volcano plot visualization
 In this section, we perform the significance analysis of peptide and protein data. The approach of contrast fit is used in `proteoQ` (Chambers, J. M. (1992) Linear models; `limma`, Gordon Smith). We first define the contrast groups for significance tests.  For this purpose, I have devided the samples by their WHIM subtypes, laboratory locations and batch numbers. This ends up with entries of `W2.BI.TMT1`, `W2.BI.TMT2` etc. under the `expt_smry.xlsx::Term` column. The interactive environment between the Excel file and the proteoQ tool allows us to enter more columns of contrasts when needed. For instance, we might also be interested in a more course comparison of inter-laboratory differences without batch effects. The corresponding contrasts of `W2.BI`, `W2.BI` etc. can be found under a pre-made column, `Term_2`. Having these columns in hand, we are now ready to perform significance tests for peptides and protein species.  In the demo, we will analyze protein data and perform volcano plot visualization:   
@@ -419,32 +447,6 @@ knitr::include_graphics(c(img_venn_location))
 ```
 
 
-The following performs of heat map visualization against protein data:
-
-```{r Protein heat maps, eval = FALSE}
-# Protein heat maps
-prnHM(
-	xmin = -1, 
-	xmax = 1, 
-	x_margin = 0.1, 
-	annot_cols = c("Group", "Color", "Alpha", "Shape"), 
-	annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
-	cluster_rows = TRUE, 
-	cutree_rows = 10, 
-	show_rownames = FALSE, 
-	show_colnames = TRUE, 
-	fontsize_row = 3, 
-	cellwidth = 14, 
-	width = 18, 
-	height = 12
-)
-```
-
-```{r Protein_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 4.** Heat map visualization of protein log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_prnheat <- "images\\protein\\heatmap\\heatmap.png"
-knitr::include_graphics(c(img_prnheat))
-```
-
 
 The following performs the imputation of peptide and protein data:
 
@@ -479,15 +481,49 @@ The following performs the NMF analysis against protein data:
 ```{r Protein NMF, eval = FALSE}
 # Protein NMF
 library(NMF)
-prnNMF(
-  scale_log2r = TRUE,
-  r = 6, 
-  xmin = -2, 
-  xmax = 2, 
-  x_margin = 0.2, 
-	annot_cols = c("Color", "Alpha", "Shape"), 
-	annot_colnames = c("Lab", "Batch", "WHIM")
+
+# NMF analysis
+anal_prnNMF(
+  # col_group = Group # optional a priori knowledge of sample groups
+	scale_log2r = TRUE,
+  r = 6,
+	nrun = 200
 )
+
+# Consensus heat map
+plot_prnNMFCon(
+  r = 6, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  width = 10, 
+  height = 10
+)
+
+# Coefficient heat map
+plot_prnNMFCoef(
+  r = 6, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  width = 10, 
+  height = 10
+)
+
+# Metagene heat map(s)
+plot_metaNMF(
+	r = 6, 
+	annot_cols = c("Color", "Alpha", "Shape"), 
+	annot_colnames = c("Lab", "Batch", "WHIM"), 
+
+	fontsize = 8, 
+	fontsize_col = 5
+)
+```
+
+
+```{r Protein NMF heat maps, echo=FALSE, fig.align='left', fig.cap="**Figure 7A-7B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_nmf_con <- "images\\protein\\nmf\\prn_nmf_r6_consensus.png"
+img_nmf_coef <- "images\\protein\\nmf\\prn_nmf_r6_coef.png"
+knitr::include_graphics(c(img_nmf_con, img_nmf_coef))
 ```
 
 

@@ -464,7 +464,34 @@ prnCorr(
 peptide; right, protein
 </p>
 
-The documentation from this point on remains under construction.
+More items under construction.
+
+The following performs of heat map visualization against protein data:
+
+``` r
+# Protein heat maps
+prnHM(
+    xmin = -1, 
+    xmax = 1, 
+    x_margin = 0.1, 
+    annot_cols = c("Group", "Color", "Alpha", "Shape"), 
+    annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
+    cluster_rows = TRUE, 
+    cutree_rows = 10, 
+    show_rownames = FALSE, 
+    show_colnames = TRUE, 
+    fontsize_row = 3, 
+    cellwidth = 14, 
+    width = 18, 
+    height = 12
+)
+```
+
+<img src="images\protein\heatmap\heatmap.png" alt="**Figure 4.** Heat map visualization of protein log2FC at `scale_log2r = TRUE`" width="80%" />
+<p class="caption">
+**Figure 4.** Heat map visualization of protein log2FC at
+`scale_log2r = TRUE`
+</p>
 
 ### Significance tests and volcano plot visualization
 
@@ -517,33 +544,6 @@ Location effects:
 
 <img src="images\protein\volcplot\venn_locations.png" alt="**Figure 5B.** Volcano plots of protein log2FC between locations." width="80%" />
 
-The following performs of heat map visualization against protein data:
-
-``` r
-# Protein heat maps
-prnHM(
-    xmin = -1, 
-    xmax = 1, 
-    x_margin = 0.1, 
-    annot_cols = c("Group", "Color", "Alpha", "Shape"), 
-    annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
-    cluster_rows = TRUE, 
-    cutree_rows = 10, 
-    show_rownames = FALSE, 
-    show_colnames = TRUE, 
-    fontsize_row = 3, 
-    cellwidth = 14, 
-    width = 18, 
-    height = 12
-)
-```
-
-<img src="images\protein\heatmap\heatmap.png" alt="**Figure 4.** Heat map visualization of protein log2FC at `scale_log2r = TRUE`" width="80%" />
-<p class="caption">
-**Figure 4.** Heat map visualization of protein log2FC at
-`scale_log2r = TRUE`
-</p>
-
 The following performs the imputation of peptide and protein data:
 
 ``` r
@@ -575,10 +575,49 @@ The following performs the NMF analysis against protein data:
 ``` r
 # Protein NMF
 library(NMF)
-prnNMF(r = 6, xmin = -1, xmax = 1, x_margin = 0.1, 
-    annot_cols = c("Peptide_Yield", "TMT_Set", "Group"), 
-    scale_log2r = TRUE)
+
+# NMF analysis
+anal_prnNMF(
+  # col_group = Group # optional a priori knowledge of sample groups
+    scale_log2r = TRUE,
+  r = 6,
+    nrun = 200
+)
+
+# Consensus heat map
+plot_prnNMFCon(
+  r = 6, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  width = 10, 
+  height = 10
+)
+
+# Coefficient heat map
+plot_prnNMFCoef(
+  r = 6, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  width = 10, 
+  height = 10
+)
+
+# Metagene heat map(s)
+plot_metaNMF(
+    r = 6, 
+    annot_cols = c("Color", "Alpha", "Shape"), 
+    annot_colnames = c("Lab", "Batch", "WHIM"), 
+
+    fontsize = 8, 
+    fontsize_col = 5
+)
 ```
+
+<img src="images\protein\nmf\prn_nmf_r6_consensus.png" alt="**Figure 7A-7B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" /><img src="images\protein\nmf\prn_nmf_r6_coef.png" alt="**Figure 7A-7B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" />
+<p class="caption">
+**Figure 7A-7B.** NMF analysis of protein log2FC. Left: concensus;
+right: coefficients.
+</p>
 
 The following performs GSVA:
 
