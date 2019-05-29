@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{reorder_files}
 \alias{reorder_files}
-\title{Re-order filenames}
+\title{Re-order file names}
 \usage{
 reorder_files(filelist, n_TMT_sets)
 }
@@ -12,6 +12,6 @@ reorder_files(filelist, n_TMT_sets)
 \item{n_TMT_sets}{the number of multiplex TMT experiments.}
 }
 \description{
-\code{reorder_files} re-ordered file names by TMT set numbers then by
+\code{reorder_files} re-orders file names by TMT set numbers then by LCMS
 injection numbers.
 }

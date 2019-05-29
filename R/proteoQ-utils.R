@@ -15,9 +15,9 @@
 }
 
 
-#' Re-order filenames
+#' Re-order file names
 #'
-#' \code{reorder_files} re-ordered file names by TMT set numbers then by
+#' \code{reorder_files} re-orders file names by TMT set numbers then by LCMS
 #' injection numbers.
 #'
 #' @param filelist A list of file names.
@@ -35,8 +35,7 @@ reorder_files <- function(filelist, n_TMT_sets) {
 
 #' Re-order columns in a data frame
 #'
-#' \code{reorder_files} re-ordered file names by TMT set numbers then by
-#' injection numbers.
+#' \code{reorderCols} re-orders columns in a data frame.
 #'
 #' @param df A data frame.
 #' @param endColIndex the indeces of columns to be moved to the end of
@@ -68,8 +67,8 @@ reorderCols <- function (df, endColIndex, col_to_rn) {
 
 #' Replace zero intensity with NA
 #'
-#' \code{reorder_files} replace zero intensity with NA to avoid -Inf in log10
-#' transformation.
+#' \code{na_zeroIntensity} replaces zero intensity with NA to avoid -Inf in
+#' log10 transformation.
 #'
 #' @param df A list of file names.
 #' @import dplyr
@@ -91,7 +90,7 @@ na_zeroIntensity <- function (df) {
 #' descriptive statistics of \code{c("mean", "median", "weighted.mean",
 #' "top.3")}
 #'
-#' @param f A function for data aggregation.
+#' @param f A function for data summarisation.
 #' @examples
 #' df_num <- aggrNums(median)(df, prot_acc, na.rm = TRUE)
 #'
@@ -116,6 +115,7 @@ aggrNums <- function(f) {
 #' \code{intensity}.
 #'
 #' @param x A data frame of \code{log2-ratios} and \code{intensity}.
+#' @param id The variable to summarise \code{log2-ratios}.
 #' @import dplyr rlang
 #' @importFrom stringr str_length
 #' @importFrom tidyr gather
@@ -170,6 +170,7 @@ TMT_wt_mean <- function (x, id, ...) {
 #' \code{intensity}.
 #'
 #' @param x A data frame of \code{log2-ratios} and \code{intensity}.
+#' @param id The variable to summarise \code{log2-ratios}.
 #' @examples
 #' df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)
 #'
@@ -195,7 +196,7 @@ TMT_top_n <- function (x, id, ...) {
 
 #' Finds all-zero column(s)
 #'
-#' \code{TMT_wt_mean} identifies the column indeces with all NA values.
+#' \code{not_all_zero} identifies the column indeces with all NA values.
 #'
 #' @param x A data frame of \code{log2-ratios} and \code{intensity}.
 not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
@@ -211,7 +212,7 @@ not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
 not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
 
 
-#' Defines the column annotation in heat maps
+#' Sets up the column annotation in heat maps
 #'
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
@@ -347,12 +348,12 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 }
 
 
-#'Imputes NA
+#'Imputes NA values
 #'
 #'@param id Character string to indicate the type of data. Peptide data will be
 #'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 #'  \code{id = prot_acc} or \code{gene}.
-#'@param ... Parameters from \code{\link[mice]{mice}}
+#'@param ... Parameters that will be passed to \code{\link[mice]{mice}}
 #'@return \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
 #'  for protein data.
 #' @examples
@@ -457,14 +458,14 @@ imputeNA <- function (id, ...) {
 }
 
 
-#'Imputes NA for peptide data
+#'Imputes NA values for peptide data
 #'@seealso \code{\link{imputeNA}} for parameters
 #'@export
 pepImp <- function (...) {
 	imputeNA(id = pep_seq, ...)
 }
 
-#'Impute NA for protein data
+#'Impute NA values for protein data
 #'@seealso \code{\link{imputeNA}} for parameters
 #'@export
 prnImp <- function (...) {
@@ -472,7 +473,9 @@ prnImp <- function (...) {
 }
 
 
-#' Adds annotation based on the "prot_acc"
+#' Adds protein annotation
+#'
+#' \code{annotPrn} annotates proteins based on the \code{acc_type}
 #'
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>% %$% 
@@ -609,7 +612,10 @@ match_identifier <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene
 }
 
 
-#' Matches the file name for expt_smry
+#' Matches the file name containing the summary of TMT experiment
+#'
+#' The default file name is \code{expt_smry.xlsx}. The \code{match_expt} matches
+#' the file name provided by users.
 #'
 #' @param fn_pars.
 #'
@@ -634,7 +640,10 @@ match_expt <- function (fn_pars = "load_expts.txt") {
 }
 
 
-#' Matches the file name for frac_smry
+#' Matches the file name containing the information of analyte fractionation
+#'
+#' The default file name is \code{frac_smry.xlsx}. The \code{match_frac} matches
+#' the file name provided by users.
 #'
 #' @param fn_pars.
 #'
@@ -659,7 +668,7 @@ match_frac <- function (fn_pars = "load_expts.txt") {
 }
 
 
-#' Reload the "expt_smry.xlsx" and "frac_smry.xlsx" if needed
+#' Reload the "expt_smry.xlsx" and "frac_smry.xlsx"
 #'
 #' @import rlang
 #' @importFrom magrittr %>%
@@ -785,7 +794,7 @@ match_fmls <- function(formulas) {
 }
 
 
-#' Converts log2-ratios to linear fold changes
+#' Converts log2FC to linear fold changes
 #'
 #' @import dplyr purrr
 #' @importFrom magrittr %>%

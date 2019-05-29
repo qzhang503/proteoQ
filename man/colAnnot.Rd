@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{colAnnot}
 \alias{colAnnot}
-\title{Defines the column annotation in heat maps}
+\title{Sets up the column annotation in heat maps}
 \usage{
 colAnnot(annot_cols = NULL, sample_ids, annot_colnames = NULL)
 }
 \description{
-Defines the column annotation in heat maps
+Sets up the column annotation in heat maps
 }

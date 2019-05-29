@@ -17,5 +17,5 @@ load_dbs()
 
 }
 \seealso{
-\code{\link{setup_expts}} for supported species.
+\code{\link{load_expts}} for supported species.
 }

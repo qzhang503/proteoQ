@@ -10,6 +10,6 @@ na_zeroIntensity(df)
 \item{df}{A list of file names.}
 }
 \description{
-\code{reorder_files} replace zero intensity with NA to avoid -Inf in log10
-transformation.
+\code{na_zeroIntensity} replaces zero intensity with NA to avoid -Inf in
+log10 transformation.
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{match_expt}
 \alias{match_expt}
-\title{Matches the file name for expt_smry}
+\title{Matches the file name containing the summary of TMT experiment}
 \usage{
 match_expt(fn_pars = "load_expts.txt")
 }
@@ -10,5 +10,6 @@ match_expt(fn_pars = "load_expts.txt")
 \item{fn_pars.}{}
 }
 \description{
-Matches the file name for expt_smry
+The default file name is \code{expt_smry.xlsx}. The \code{match_expt} matches
+the file name provided by users.
 }

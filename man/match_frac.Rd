@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{match_frac}
 \alias{match_frac}
-\title{Matches the file name for frac_smry}
+\title{Matches the file name containing the information of analyte fractionation}
 \usage{
 match_frac(fn_pars = "load_expts.txt")
 }
@@ -10,5 +10,6 @@ match_frac(fn_pars = "load_expts.txt")
 \item{fn_pars.}{}
 }
 \description{
-Matches the file name for frac_smry
+The default file name is \code{frac_smry.xlsx}. The \code{match_frac} matches
+the file name provided by users.
 }

@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{reload_expts}
 \alias{reload_expts}
-\title{Reload the "expt_smry.xlsx" and "frac_smry.xlsx" if needed}
+\title{Reload the "expt_smry.xlsx" and "frac_smry.xlsx"}
 \usage{
 reload_expts()
 }
 \description{
-Reload the "expt_smry.xlsx" and "frac_smry.xlsx" if needed
+Reload the "expt_smry.xlsx" and "frac_smry.xlsx"
 }

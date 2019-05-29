@@ -16,6 +16,5 @@ reorderCols(df, endColIndex, col_to_rn)
 will be used as row names.}
 }
 \description{
-\code{reorder_files} re-ordered file names by TMT set numbers then by
-injection numbers.
+\code{reorderCols} re-orders columns in a data frame.
 }

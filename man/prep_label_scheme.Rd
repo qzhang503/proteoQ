@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{prep_label_scheme}
 \alias{prep_label_scheme}
-\title{Processes the metadata of experiments}
+\title{Processes the metadata of TMT experiments}
 \usage{
 prep_label_scheme(dat_dir, filename)
 }
 \description{
-Processes the metadata of experiments
+Processes the metadata of TMT experiments
 }

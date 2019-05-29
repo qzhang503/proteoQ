@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{imputeNA}
 \alias{imputeNA}
-\title{Imputes NA}
+\title{Imputes NA values}
 \usage{
 imputeNA(id, ...)
 }
@@ -11,14 +11,14 @@ imputeNA(id, ...)
 used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
-\item{...}{Parameters from \code{\link[mice]{mice}}}
+\item{...}{Parameters that will be passed to \code{\link[mice]{mice}}}
 }
 \value{
 \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
  for protein data.
 }
 \description{
-Imputes NA
+Imputes NA values
 }
 \examples{
 imputeNA(id = gene, m = 5, maxit = 5)

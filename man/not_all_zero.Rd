@@ -10,5 +10,5 @@ not_all_zero(x)
 \item{x}{A data frame of \code{log2-ratios} and \code{intensity}.}
 }
 \description{
-\code{TMT_wt_mean} identifies the column indeces with all NA values.
+\code{not_all_zero} identifies the column indeces with all NA values.
 }
