@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{to_linfc}
 \alias{to_linfc}
-\title{Converts log2-ratios to linear fold changes}
+\title{Converts log2FC to linear fold changes}
 \usage{
 to_linfc(df)
 }
 \description{
-Converts log2-ratios to linear fold changes
+Converts log2FC to linear fold changes
 }

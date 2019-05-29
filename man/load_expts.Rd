@@ -10,76 +10,75 @@ load_expts(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
 \arguments{
 \item{dat_dir}{A character string to the working directory.}
 
-\item{expt_smry}{A character string to the file of TMT experimental summary.
-The default is "expt_smry.xlsx".}
+\item{expt_smry}{A character string to the \code{.xlsx} file containing TMT
+experimental summary. The default is "expt_smry.xlsx".}
 
-\item{frac_smry}{A character string to the file of peptide fractionation
-summary. The default is "frac_smry.xlsx".}
+\item{frac_smry}{A character string to the \code{.xlsx} file containing
+peptide fractionation summary. The default is "frac_smry.xlsx".}
 }
 \description{
 A function processes \code{.xlsx} files containing the metadata of TMT
 experiments
 }
 \section{\code{expt_smry.xlsx}}{
- The \code{.xlsx} files should be located
- immediately under the file folder defined by the character vector of
- \code{dat_dir}.
+ The \code{expt_smry.xlsx} files should be
+ located immediately under the file folder defined by the character vector of
+ \code{dat_dir}. The \code{Excel} spread sheet therein is comprised of three
+ tiers of fields: (1) essential, (2) optional default and (3) optional open.
+ The \code{essential} columns contain the mandatory information of TMT
+ experiments. The \code{optional default} columns serve as the fields for
+ default lookups in sample selection, grouping, ordering, aesthetics, etc.
+ The \code{optional open} fields allow users to define their own analysis,
+ aesthetics, etc.
 
- In the \code{expt_smry.xlsx} file, values under the \code{Sample_ID} column
- should be unique for entries with unique combination of \code{TMT_Channel}
- and \code{TMT_Set}, or left blank for used entries. Samples with the same
- indeces of \code{TMT_Channel} and \code{TMT_Set} but different indeces of
- \code{LCMS_Injection} should have the same value in \code{Sample_ID}.
+ \tabular{ll}{ \strong{Essential column}   \tab \strong{Descrption}\cr
+ Sample_ID \tab Unique sample IDs \cr TMT_Channel \tab TMT channel names:
+ \code{126}, \code{127N}, \code{127C} et al. \cr TMT_Set \tab TMT experiment
+ indeces  \cr LCMS_Injection   \tab LC/MS injection indeces under a
+ \code{TMT_Set} \cr RAW_File \tab MS data filenames originated by
+ \code{Xcalibur} with or without the \code{.raw} extension \cr Reference \tab
+ Labels indicating reference samples in TMT experiments \cr }
 
- Under the \code{Reference} column, reference entrie(s) are indicated with
- non-void string(s).
+ \code{Sample_ID}: values should be unique for entries at a unique
+ combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for
+ unused entries. Samples with the same indeces of \code{TMT_Channel} and
+ \code{TMT_Set} but different indeces of \code{LCMS_Injection} should have
+ the same value in \code{Sample_ID}. No white space or special characters are
+ allowed.
 
- Users can add or modify the \code{optional column keys} in the \code{.xlsx}
- file for suitable analysis (see \code{\link{prnSig}}... for the
- customization of column keys).
+ \code{RAW_File}: \code{OS} file names may be altered by MS users and thus
+ different to those recorded in \code{Xcalibur}. The original names by
+ \code{Xcalibur} should be used. For analysis with off-line fractionations of
+ peptides before LC/MS, the \code{RAW_File} column should be left blank. The
+ correspondence between the fractions and \code{RAW_File} names should be
+ specified in a separate file, for example, \code{frac_smry.xlsx}.
 
- \tabular{ll}{ \strong{Reserved column key}   \tab \strong{Descrption}\cr
- TMT_Channel \tab TMT channel names: \code{126}, \code{127N}, \code{127C} et
- al. \cr TMT_Set \tab TMT experiment indeces  \cr LCMS_Injection   \tab LC/MS
- injection indeces under a \code{TMT_Set} \cr RAW_File \tab MS data filenames
- originated by \code{Xcalibur} with or without the \code{.raw} extension
- (\strong{Notes}: (1) \code{OS} filenames can be different to those recorded
- in \code{Xcalibur} and the later should be used. (2) For analysis with
- offline fractionations of peptides before LC/MS, the \code{RAW_File} column
- should be left blank. The correspondence between the fractions and
- \code{RAW_File} names should be specified in a separate file such as
- \code{fraction_scheme.xlsx}.)\cr Sample_ID \tab Unique sample IDs
- (\strong{Note}: no space in name; leave the sample IDs blank for unused TMT
- channels.) \cr Reference \tab Labels indicating reference samples in TMT
- experiments (\strong{Note}: leave the labels blank for non-reference TMT
- channels.) \cr \cr }
+ \code{Reference}: reference entrie(s) are indicated with non-void string(s).
 
- \tabular{ll}{ \strong{Optional column key}   \tab \strong{Descrption}\cr
- Select \tab Selected \code{Sample_IDs} for indicated analysis of "MDS",
- "Heat map"... If the values underneath are left blank, all samples including
- references will be used. \cr Group \tab Aesthetic labels annotating the
- prior knowledge of sample groups, e.g., Ctrl_T1, Ctrl_T2, Disease_T1,
- Disease_T2, ...\cr Order \tab Numeric labels specifying the order of sample
- \code{groups} (\strong{Note}: leave the labels blank for unsupervised
- analysis.)\cr Fill \tab Aesthetic labels for sample annotation by filled
- color\cr Color \tab Aesthetic labels for sample annotation by edge color\cr
- Shape \tab Aesthetic labels for sample annotation by shape\cr Size \tab
- Aesthetic labels for sample annotation by size \cr Alpha \tab Aesthetic
- labels for sample annotation by transparency \cr Term \tab Categorial terms
- for statistical modeling. Users can add columns, e.g. "Time", "Dose",
- "Time_and_Dose"..., for additional groups of contrasts. \cr Duplicate \tab
+ \tabular{ll}{ \strong{Optional default column}   \tab \strong{Descrption}\cr
+ Select \tab Samples to be selected for indicated analysis \cr Group \tab
+ Aesthetic labels annotating the prior knowledge of sample groups, e.g.,
+ Ctrl_T1, Ctrl_T2, Disease_T1, Disease_T2, ...\cr Order \tab Numeric labels
+ specifying the order of sample \code{groups} \cr Fill \tab Aesthetic labels
+ for sample annotation by filled color\cr Color \tab Aesthetic labels for
+ sample annotation by edge color\cr Shape \tab Aesthetic labels for sample
+ annotation by shape\cr Size \tab Aesthetic labels for sample annotation by
+ size \cr Alpha \tab Aesthetic labels for sample annotation by transparency
+ \cr Term \tab Categorial terms for statistical modeling. \cr Duplicate \tab
  Indicators of duplicated samples for corrections in statistical significance
  \cr Benchmark \tab Indicators of benchmark sample (groups) for use in heat
- map visualizations.\cr ... \tab Customed columns of metadata for aesthetic
- mapping to indicated analysis}
+ map visualizations.\cr}
+
+\strong{Optional open column} \cr
+ See the package vignette for examples of open columns defined by users.
 }
 
 \section{\code{frac_smry.xlsx}}{
  It is not necessary to prepare a
- "frac_smry.xlsx" file if no peptide fractionations were performed in TMT
- experiments.
+ \code{frac_smry.xlsx} file if no peptide fractionations were performed in
+ TMT experiments.
 
- \tabular{ll}{ \strong{Column key}   \tab \strong{Descrption}\cr TMT_Set \tab
+ \tabular{ll}{ \strong{Column}   \tab \strong{Descrption}\cr TMT_Set \tab
  v.s.  \cr LCMS_Injection   \tab v.s. \cr Fraction \tab Fraction indeces
  under a \code{TMT_Set} \cr RAW_File \tab v.s. }
 }

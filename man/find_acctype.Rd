@@ -2,11 +2,12 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{find_acctype}
 \alias{find_acctype}
-\title{Finds the Accession_Type}
+\title{Finds the type of protein accession numbers}
 \usage{
 find_acctype(label_scheme_full)
 }
 \description{
 \code{find_acctype} finds the \code{Accession_Type} that will be used in the
-annotation of protein IDs.
+annotation of protein IDs. It currently supports \code{UniProt ID},
+\code{Uniprot Accession} and \code{RefSeq Accession}.
 }

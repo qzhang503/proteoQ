@@ -8,6 +8,8 @@ TMT_top_n(x, id, ...)
 }
 \arguments{
 \item{x}{A data frame of \code{log2-ratios} and \code{intensity}.}
+
+\item{id}{The variable to summarise \code{log2-ratios}.}
 }
 \description{
 \code{TMT_wt_mean} calculates the weighted mean of \code{log2-ratios} and

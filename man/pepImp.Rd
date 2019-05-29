@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{pepImp}
 \alias{pepImp}
-\title{Imputes NA for peptide data}
+\title{Imputes NA values for peptide data}
 \usage{
 pepImp(...)
 }
 \description{
-Imputes NA for peptide data
+Imputes NA values for peptide data
 }
 \seealso{
 \code{\link{imputeNA}} for parameters

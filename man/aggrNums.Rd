@@ -7,7 +7,7 @@
 aggrNums(f)
 }
 \arguments{
-\item{f}{A function for data aggregation.}
+\item{f}{A function for data summarisation.}
 }
 \description{
 \code{aggrNums} summarises \code{log2-ratios} and \code{intensity} by the

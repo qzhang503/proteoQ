@@ -10,6 +10,7 @@ match_logi_gv(var)
 Match to a global logical variable
 }
 \examples{
+scale_log2r <- TRUE
 foo <- function(scale_log2r = FALSE) {
   match_logi_gv(scale_log2r)
 }

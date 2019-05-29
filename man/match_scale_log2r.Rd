@@ -7,5 +7,6 @@
 match_scale_log2r(scale_log2r)
 }
 \description{
-\code{match_scale_log2r} matches `scale_log2r` from the caller environment.
+\code{match_scale_log2r} matches the value of \code{scale_log2r} to the value
+in caller environment.
 }

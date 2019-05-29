@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{annotPrn}
 \alias{annotPrn}
-\title{Adds annotation based on the "prot_acc"}
+\title{Adds protein annotation}
 \usage{
 annotPrn(df, acc_type)
 }
 \description{
-Adds annotation based on the "prot_acc"
+\code{annotPrn} annotates proteins based on the \code{acc_type}
 }
