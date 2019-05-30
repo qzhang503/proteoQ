@@ -172,22 +172,24 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 #'@param  new_fit Not currently used.
 #'@param df The file name of input data. By default, it will be determined by
 #'  the value of \code{id}.
-#'@param filepath The filepath to output results. By default, it will be
+#'@param filepath The file path to output results. By default, it will be
 #'  determined by the name of the current function \code{call} and the value of
 #'  \code{id}.
-#'@param filename A representative filename to output images. By default, it
+#'@param filename A representative file name to output images. By default, it
 #'  will be determined by the names of the current \code{call}. The images are
 #'  saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-#'  determined by the extension of file names with the default being \code{.png}.
-#'@param ... Additional parameters for plotting: \cr \code{xmin}, the minimum x
-#'  at a log2 scale; the default is -2. \cr \code{xmax}, the maximum x at a log2
-#'  scale; the default is +2. \cr \code{x_breaks}, the breaks in x-axis at a
-#'  log2 scale; the default is 1. \cr \code{binwidth}, the binwidth of
-#'  \code{log2-ratios}; the default is (xmax - xmin)/80. \cr \code{ncol}, the
-#'  number of columns; the default is 1. \cr \code{width}, the width of plot; \cr \code{height},
-#'  the height of plot.
-#'@return The histograms of \code{log2-ratios} under a "\code{Histogram}" sub
-#'  directory.
+#'  determined by the extension of file names with the default being
+#'  \code{.png}.
+#'@param ... Additional parameters for plotting: \cr \code{xmin}, the minimum
+#'  \eqn{x} at a log2 scale; the default is -2. \cr \code{xmax}, the maximum
+#'  \eqn{x} at a log2 scale; the default is +2. \cr \code{x_breaks}, the breaks
+#'  in \eqn{x}-axis at a log2 scale; the default is 1. \cr \code{binwidth}, the
+#'  binwidth of \code{log2-ratios}; the default is \eqn{(xmax - xmin)/80}. \cr
+#'  \code{ncol}, the number of columns; the default is 1. \cr \code{width}, the
+#'  width of plot; \cr \code{height}, the height of plot.
+#'@return The histograms of \code{log2-ratios} under
+#'  \code{~\\dat_dir\\Peptide\\Histogram} or
+#'  \code{~\\dat_dir\\Protein\\Histogram}.
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -212,9 +214,6 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), co
 	          anal_type = "Histogram")(new_fit = new_fit, show_curves = show_curves,
 	                                   show_vline = show_vline, ...)
 }
-
-
-
 
 
 #'Visualizes the histograms of peptide \code{log2FC}

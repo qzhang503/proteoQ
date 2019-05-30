@@ -395,8 +395,8 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 #'  \cr Benchmark \tab Indicators of benchmark sample (groups) for use in heat
 #'  map visualizations.\cr}
 #'
-#'\strong{Optional open column} \cr
-#'  See the package vignette for examples of open columns defined by users. 
+#'  \strong{Optional open column} \cr See the package vignette for examples of
+#'  open columns defined by users.
 #'
 #'@section \code{frac_smry.xlsx}: It is not necessary to prepare a
 #'  \code{frac_smry.xlsx} file if no peptide fractionations were performed in
@@ -407,8 +407,8 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 #'  under a \code{TMT_Set} \cr RAW_File \tab v.s. }
 #'
 #'@param dat_dir A character string to the working directory.
-#'@param expt_smry A character string to the \code{.xlsx} file containing TMT
-#'  experimental summary. The default is "expt_smry.xlsx".
+#'@param expt_smry A character string to the \code{.xlsx} file containing the
+#'  metadata of TMT experiments. The default is "expt_smry.xlsx".
 #'@param frac_smry A character string to the \code{.xlsx} file containing
 #'  peptide fractionation summary. The default is "frac_smry.xlsx".
 #'

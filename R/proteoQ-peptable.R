@@ -1,20 +1,16 @@
-#' Peptide results for individual TMT experiments
+#' Peptide reports for individual TMT experiments
 #'
 #' \code{normPep_Splex} prepares peptide data for each TMT experiment at
 #' different LC/MS injections.
 #'
-#' @param id The variable for summarising PSMs into peptides. PSMs with the same
-#'   value in \code{id} will be summarised into a single entry of peptide.
-#' @param method_psm_pep The method for summarising \code{log2-ratios} from PSMs
-#'   to peptides. \code{log10-intensities} will be the weights if
-#'   \code{method_psm_pep = c("top.3", "weighted.mean")}.
+#' @inheritParams normPep
 #' @return Results in \code{.txt} files for each of TMT experiments and LC/MS
 #'   injections.
 #'
 #' @examples
 #' 	normPep_Splex(
 #' 		id = pep_seq_mod,
-#' 		method_psm_pep = "median"
+#' 		method_psm_pep = median
 #' 	)
 #'
 #' \dontrun{
@@ -126,6 +122,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 	options(max.print = 2000000)
 
 	id <- rlang::as_string(rlang::enexpr(id))
+	method_psm_pep <- rlang::as_string(rlang::enexpr(method_psm_pep))
 
 	load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
@@ -180,24 +177,22 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'@param method_psm_pep The method to summarise the \code{log2-ratios} and the
 #'  \code{intensity} of \code{PSMs} by peptide entries. The descriptive
 #'  statistics includes \code{c("mean", "median", "top.3", "weighted.mean")}.
-#'
 #'  The \code{log10-intensity} of reporter ions at the \code{PSMs} levels will
 #'  be the weight when summarising \code{log2-ratios} with \code{"top.3"} or
 #'  \code{"weighted.mean"}.
-#'@param method_align The method to align the \code{log2-ratios} of peptides
-#'  entries across samples. \code{MC}: median-centering; \code{MGKernel}: the
-#'  kernal density defined by multiple Gaussian functions
-#'  (\code{\link[mixtools]{normalmixEM}}).
-#'
-#'  At \code{method_align = "MC"}, the ratio profiles of each sample will be
-#'  aligned in that the medians of the \code{log2-ratios} are zero. At
-#'  \code{method_align = "MGKernel"}, the \code{log2-ratios} will be aligned in
-#'  that the maximums of kernel density are zero. It is also possible to align
-#'  the \code{log2-ratios} to the median of a list of user-supplied genes:
-#'  \code{method_align = c("ACTB", "GAPDH", ...)}.
-#'@param range_log2r The range of the \code{log2-ratios} of peptide entries for
-#'  use in the scaling normalization of standard deviation across samples. The
-#'  default is between the 20th and the 90th quantiles.
+#'@param method_align The method to align the \code{log2-ratios} of
+#'  peptide/protein entries across samples. \code{MC}: median-centering;
+#'  \code{MGKernel}: the kernal density defined by multiple Gaussian functions
+#'  (\code{\link[mixtools]{normalmixEM}}). At \code{method_align = "MC"}, the
+#'  ratio profiles of each sample will be aligned in that the medians of the
+#'  \code{log2-ratios} are zero. At \code{method_align = "MGKernel"}, the
+#'  \code{log2-ratios} will be aligned in that the maximums of kernel density
+#'  are zero. It is also possible to align the \code{log2-ratios} to the median
+#'  of a list of user-supplied genes: \code{method_align = c("ACTB", "GAPDH",
+#'  ...)}.
+#'@param range_log2r The range of the \code{log2-ratios} of peptide/protein
+#'  entries for use in the scaling normalization of standard deviation across
+#'  samples. The default is between the 20th and the 90th quantiles.
 #'@param range_int The range of the \code{intensity} of reporter ions for use in
 #'  the scaling normalization of standard deviation across samples. The default
 #'  is between the 5th and the 95th quantiles.
@@ -215,7 +210,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'@inheritParams mixtools::normalmixEM
 #'@seealso \code{\link{normPSM}} for PSM and \code{\link{normPrn}} for proteins.
 #'
-#'@return The primary output in \code{C:\\my_direcotry\\Peptide\\Peptide.txt}.
+#'@return The primary output in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
 #'
 #' @examples
 #' 	normPep(

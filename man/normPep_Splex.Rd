@@ -2,17 +2,24 @@
 % Please edit documentation in R/proteoQ-peptable.R
 \name{normPep_Splex}
 \alias{normPep_Splex}
-\title{Peptide results for individual TMT experiments}
+\title{Peptide reports for individual TMT experiments}
 \usage{
 normPep_Splex(id = "pep_seq_mod", method_psm_pep = "median")
 }
 \arguments{
-\item{id}{The variable for summarising PSMs into peptides. PSMs with the same
-value in \code{id} will be summarised into a single entry of peptide.}
+\item{id}{The variable for summarisation of \code{PSMs} into peptides. The
+option \code{id = pep_seq} corresponds to the summarisation by the primary
+sequences of peptides. The option \code{id = pep_seq_mod} corresponds to the
+summarisation by both the primary sequences and variable modifications of
+peptides. \code{PSMs} data with the same value in \code{pep_seq} or
+\code{pep_seq_mod} will be summarised into a single entry of peptide.}
 
-\item{method_psm_pep}{The method for summarising \code{log2-ratios} from PSMs
-to peptides. \code{log10-intensities} will be the weights if
-\code{method_psm_pep = c("top.3", "weighted.mean")}.}
+\item{method_psm_pep}{The method to summarise the \code{log2-ratios} and the
+\code{intensity} of \code{PSMs} by peptide entries. The descriptive
+statistics includes \code{c("mean", "median", "top.3", "weighted.mean")}.
+The \code{log10-intensity} of reporter ions at the \code{PSMs} levels will
+be the weight when summarising \code{log2-ratios} with \code{"top.3"} or
+\code{"weighted.mean"}.}
 }
 \value{
 Results in \code{.txt} files for each of TMT experiments and LC/MS
@@ -25,7 +32,7 @@ different LC/MS injections.
 \examples{
 	normPep_Splex(
 		id = pep_seq_mod,
-		method_psm_pep = "median"
+		method_psm_pep = median
 	)
 
 \dontrun{
