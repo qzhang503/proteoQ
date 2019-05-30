@@ -75,9 +75,9 @@ See \code{\link{normPrn}} for the description of column keys.
 }
 \examples{
 	normPep(
-		id = "pep_seq_mod",
-		method_psm_pep = "median",
-		method_align = "MGKernel",
+		id = pep_seq_mod,
+		method_psm_pep = median,
+		method_align = MGKernel,
 		range_log2r = c(10, 95),
 		range_int = c(5, 95),
 		n_comp = 3,

@@ -7,10 +7,10 @@
 rmPSMHeaders()
 }
 \value{
-Header file(s) and data file(s) without the header.
+Header file(s) and PSM table(s) without the header.
 }
 \description{
-\code{rmPSMHeaders} removes the header of PSM outputs from
-\code{\href{https://http://www.matrixscience.com/}{Mascot}}. It also removes
-the spacer columns in the fields of ratio and intensity values.
+\code{rmPSMHeaders} removes the header of PSM from
+\code{\href{https://http://www.matrixscience.com/}{Mascot}} outputs. It also
+removes the spacer columns in the fields of ratio and intensity values.
 }

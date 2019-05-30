@@ -8,6 +8,9 @@ annotPSM(expt_smry = "expt_smry.xlsx", rm_krts = FALSE,
   plot_violins = TRUE)
 }
 \arguments{
+\item{expt_smry}{Character string; name of the file containing the
+metadata of TMT experiments.}
+
 \item{rm_krts}{Logical; if TRUE, removes keratin entries from the output.}
 
 \item{plot_violins}{Logical; if TRUE, prepares the violin plots of

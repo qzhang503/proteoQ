@@ -1,41 +1,15 @@
-#' Data normalization
+#'Data normalization
 #'
-#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT experiment.
+#'\code{normMulGau} normalizes \code{log2-ratios} under the assumption of multi
+#'Gaussian kernels.
 #'
-#' Peptides with the same primary sequences but different modifications will be rolled up from PSM separately.
-#' \code{pep_seq_mod} denotes peptide sequences with applicable modifications
-#' The results will be stored under the folder "\code{~\\Direcotry\\Peptide}".
-#' SDs from different TMT experiments may be different; therefore, scale the SDs across TMT sets.
+#' @param df An input data frame
+#'@inheritParams mixtools::normalmixEM
+#'@inheritParams normPep
+#'@return A data frame.
 #'
-#' @param id the unqiue identifier for data joining.  The default is \code{pep_seq_mod}.
-#' @param method_align The normalization method for \code{log2-ratios} across TMT channels.
-#' MC: median-centering; MGKernel: multiGaussian.
-#' @param method_psm_pep The aggregation method from PSM to peptide results.
-#'  \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).
-#'  If \code{weighted.mean}, log10-intensity will be used as the weights.
-#' @param range_log2r the range of trimmed \code{log2-ratios}
-#' @param range_int the range of trimmed \code{intensity}
-#' @param rptr_intco the threshold of reporter-ion intensity
-#' @return A data frame.
-#'
-#' @examples
-#' dat_dir <- "C:\\Results\\TMT\\Data"
-#' TMT_plex <- 10
-#' dir(file.path(dat_dir, "PSM"))
-#' rmPSMHeaders(dat_dir, TMT_plex)
-#'
-#' \dontrun{
-#' dat_dir <- "C:\\Results\\TMT\\Data"
-#' TMT_plex <- 10
-#' rmPSMHeaders(file.path(dat_dir, "PSM"), TMT_plex)
-#'
-#' dat_dir <- "C:\\Results\\TMT\\Data\\PSM"
-#' TMT_plex <- 10
-#' rmPSMHeaders(dat_dir, TMT_plex)
-#' }
-#' @import dplyr purrr rlang mixtools
-#' @importFrom magrittr %>%
-#' @export
+#'@import dplyr purrr rlang mixtools
+#'@importFrom magrittr %>%
 normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range_int, filepath, ...) {
 
 	my_which_max <- function (params) {
@@ -239,42 +213,12 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 
 #' Data normalization
 #'
-#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT
-#' experiment.
+#' \code{dblTrim} doubly trims the \code{log2FC} and reporter-ion intensity by
+#' the given ranges.
 #'
-#' Peptides with the same primary sequences but different modifications will be
-#' rolled up from PSM separately. \code{pep_seq_mod} denotes peptide sequences
-#' with applicable modifications The results will be stored under the folder
-#' "\code{~\\Direcotry\\Peptide}".
-#'
-#' @param id the unqiue identifier for data joining.  The default is
-#'   \code{pep_seq_mod}.
-#' @param method_align Not used.  The normalization method for
-#'   \code{log2-ratios} across TMT channels. MC: median-centering; MGKernel:
-#'   multiGaussian.
-#' @param method_psm_pep the aggregation method from PSM to peptide results.
-#'   \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If
-#'   \code{weighted.mean}, log10-intensity will be used as the weights
-#' @param range_log2r the range of trimmed \code{log2-ratios}
-#' @param range_int the range of trimmed \code{intensity}
-#' @param rptr_intco the threshold of reporter-ion intensity
+#' @inheritParams normPep
 #' @return A data frame.
 #'
-#' @examples
-#' dat_dir <- "C:\\Results\\TMT\\Data"
-#' TMT_plex <- 10
-#' dir(file.path(dat_dir, "PSM"))
-#' rmPSMHeaders(dat_dir, TMT_plex)
-#'
-#' \dontrun{
-#' dat_dir <- "C:\\Results\\TMT\\Data"
-#' TMT_plex <- 10
-#' rmPSMHeaders(file.path(dat_dir, "PSM"), TMT_plex)
-#'
-#' dat_dir <- "C:\\Results\\TMT\\Data\\PSM"
-#' TMT_plex <- 10
-#' rmPSMHeaders(dat_dir, TMT_plex)
-#' }
 #' @import dplyr purrr rlang mixtools
 #' @importFrom magrittr %>%
 dblTrim <- function(df, range_log2r, range_int) {
@@ -313,45 +257,11 @@ dblTrim <- function(df, range_log2r, range_int) {
 
 #' Data normalization
 #'
-#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT
-#' experiment.
+#' \code{sumdnorm} calculates summed density from \code{normMulGau}.
 #'
-#' Peptides with the same primary sequences but different modifications will be
-#' rolled up from PSM separately. \code{pep_seq_mod} denotes peptide sequences
-#' with applicable modifications The results will be stored under the folder
-#' "\code{~\\Direcotry\\Peptide}".
-#'
-#' @param id the unqiue identifier for data joining.  The default is
-#'   \code{pep_seq_mod}.
-#' @param method_align Not used.  The normalization method for
-#'   \code{log2-ratios} across TMT channels. MC: median-centering; MGKernel:
-#'   multiGaussian.
-#' @param method_psm_pep the aggregation method from PSM to peptide results.
-#'   \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If
-#'   \code{weighted.mean}, log10-intensity will be used as the weights
-#' @param range_log2r the range of trimmed \code{log2-ratios}
-#' @param range_int the range of trimmed \code{intensity}
-#' @param rptr_intco the threshold of reporter-ion intensity
 #' @return A data frame.
-#'
-#' @examples
-#' dat_dir <- "C:\\Results\\TMT\\Data"
-#' TMT_plex <- 10
-#' dir(file.path(dat_dir, "PSM"))
-#' rmPSMHeaders(dat_dir, TMT_plex)
-#'
-#' \dontrun{
-#' dat_dir <- "C:\\Results\\TMT\\Data"
-#' TMT_plex <- 10
-#' rmPSMHeaders(file.path(dat_dir, "PSM"), TMT_plex)
-#'
-#' dat_dir <- "C:\\Results\\TMT\\Data\\PSM"
-#' TMT_plex <- 10
-#' rmPSMHeaders(dat_dir, TMT_plex)
-#' }
 #' @import dplyr purrr rlang mixtools
 #' @importFrom magrittr %>%
-#' @export
 sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 	wt_dnorm <- function (x, lambda, mean, sd) lambda * dnorm(x, mean = mean, sd = sd)
 
@@ -375,42 +285,8 @@ sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 
 #' Data normalization
 #'
-#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT
-#' experiment.
+#' \code{normSD} normalizes the SD of \code{log2-ratios}.
 #'
-#' Peptides with the same primary sequences but different modifications will be
-#' rolled up from PSM separately. \code{pep_seq_mod} denotes peptide sequences
-#' with applicable modifications The results will be stored under the folder
-#' "\code{~\\Direcotry\\Peptide}".
-#'
-#' @param id the unqiue identifier for data joining.  The default is
-#'   \code{pep_seq_mod}.
-#' @param method_align Not used.  The normalization method for
-#'   \code{log2-ratios} across TMT channels. MC: median-centering; MGKernel:
-#'   multiGaussian.
-#' @param method_psm_pep the aggregation method from PSM to peptide results.
-#'   \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If
-#'   \code{weighted.mean}, log10-intensity will be used as the weights
-#' @param range_log2r the range of trimmed \code{log2-ratios}
-#' @param range_int the range of trimmed \code{intensity}
-#' @param rptr_intco the threshold of reporter-ion intensity
-#' @return A data frame.
-#'
-#' @examples
-#' dat_dir <- "C:\\Results\\TMT\\Data"
-#' TMT_plex <- 10
-#' dir(file.path(dat_dir, "PSM"))
-#' rmPSMHeaders(dat_dir, TMT_plex)
-#'
-#' \dontrun{
-#' dat_dir <- "C:\\Results\\TMT\\Data"
-#' TMT_plex <- 10
-#' rmPSMHeaders(file.path(dat_dir, "PSM"), TMT_plex)
-#'
-#' dat_dir <- "C:\\Results\\TMT\\Data\\PSM"
-#' TMT_plex <- 10
-#' rmPSMHeaders(dat_dir, TMT_plex)
-#' }
 #' @import dplyr purrr rlang mixtools
 #' @importFrom magrittr %>%
 #' @export
@@ -430,45 +306,12 @@ normSD <- function (x, center = 0, SD = 1) {
 
 #' Data normalization
 #'
-#' \code{normPep_Splex} normalization of peptide \code{log2-ratios} for each TMT
-#' experiment.
+#' \code{fitKernelDensity} calculates the fitted density of \code{log2-ratios}.
 #'
-#' Peptides with the same primary sequences but different modifications will be
-#' rolled up from PSM separately. \code{pep_seq_mod} denotes peptide sequences
-#' with applicable modifications The results will be stored under the folder
-#' "\code{~\\Direcotry\\Peptide}".
-#'
-#' @param id the unqiue identifier for data joining.  The default is
-#'   \code{pep_seq_mod}.
-#' @param method_align Not used.  The normalization method for
-#'   \code{log2-ratios} across TMT channels. MC: median-centering; MGKernel:
-#'   multiGaussian.
-#' @param method_psm_pep the aggregation method from PSM to peptide results.
-#'   \code{method_psm_pep = c("top.n, median, mean, weighted.mean"}).  If
-#'   \code{weighted.mean}, log10-intensity will be used as the weights
-#' @param range_log2r the range of trimmed \code{log2-ratios}
-#' @param range_int the range of trimmed \code{intensity}
-#' @param rptr_intco the threshold of reporter-ion intensity
 #' @return A data frame.
 #'
-#' @examples
-#' dat_dir <- "C:\\Results\\TMT\\Data"
-#' TMT_plex <- 10
-#' dir(file.path(dat_dir, "PSM"))
-#' rmPSMHeaders(dat_dir, TMT_plex)
-#'
-#' \dontrun{
-#' dat_dir <- "C:\\Results\\TMT\\Data"
-#' TMT_plex <- 10
-#' rmPSMHeaders(file.path(dat_dir, "PSM"), TMT_plex)
-#'
-#' dat_dir <- "C:\\Results\\TMT\\Data\\PSM"
-#' TMT_plex <- 10
-#' rmPSMHeaders(dat_dir, TMT_plex)
-#' }
 #' @import dplyr purrr rlang mixtools
 #' @importFrom magrittr %>%
-#' @export
 fitKernelDensity <- function (df, n_comp = 3, ...) {
 
 	nmix_params <- function (x, n_comp = 3, ...) {

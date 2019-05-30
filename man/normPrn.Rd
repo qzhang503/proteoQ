@@ -90,7 +90,7 @@ modifications are in the lower cases; the acetylations of protein N-terminals
 indicated by '_' and the flanking residues on the N- or C-terminal side of
 peptides separated by '.', e.g. "-._mAsGVAVSDGVIK.V"\cr prot_cover     \tab
 Protein sequence coverage calculated from all available raw files   \cr
-raw_file \tab MS filename(s) where peptides or proteins were identified \cr
+raw_file \tab MS file name(s) where peptides or proteins were identified \cr
 refseq_acc \tab \code{\href{https://www.ncbi.nlm.nih.gov/refseq/}{Protein
 RefSeq accession number}} \cr uniprot_acc    \tab
 \code{\href{https://www.uniprot.org/help/accession_numbers}{Protein UniProt
@@ -107,16 +107,18 @@ materials for indicated samples \cr N_log2_R (...) \tab Aligned \code{log2_R
 }
 \examples{
 	normPrn(
-		id = "prot_acc",
-		method_pep_prn = "median",
-		method_align = "MGKernel",
-		range_log2r = c(20, 90),
-		range_int = c(5, 95),
-		n_comp = 3,
-		maxit = 200,
+		id = gene, 
+		method_pep_prn = median, 
+		method_align = MGKernel, 
+		range_log2r = c(5, 95), 
+		range_int = c(5, 95), 
+		n_comp = 2, 
+		seed = 749662, 
+		fasta = "C:\\\\Results\\\\DB\\\\Refseq\\\\RefSeq_HM_Frozen_20130727.fasta", 
+		maxit = 200, 
 		epsilon = 1e-05
 	)
-
+	
 	normPrn(
 		id = "prot_acc",
 		fasta = "C:\\\\Results\\\\DB\\\\Refseq\\\\RefSeq_HM_Frozen_20130727.fasta"
