@@ -1,10 +1,10 @@
 #' Removes PSM headers
 #'
-#' \code{rmPSMHeaders} removes the header of PSM outputs from
-#' \code{\href{https://http://www.matrixscience.com/}{Mascot}}. It also removes
-#' the spacer columns in the fields of ratio and intensity values.
+#' \code{rmPSMHeaders} removes the header of PSM from
+#' \code{\href{https://http://www.matrixscience.com/}{Mascot}} outputs. It also
+#' removes the spacer columns in the fields of ratio and intensity values.
 #'
-#' @return Header file(s) and data file(s) without the header.
+#' @return Header file(s) and PSM table(s) without the header.
 #'
 #' @import dplyr
 #' @importFrom purrr walk
@@ -337,7 +337,8 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 }
 
 
-# Locates the positions of outliers
+#' Locates the positions of outliers
+#' 
 #' @param df A data frame containing the PSM table from Mascot.
 #' @param range_colRatios The range of columns.
 #' @return A data frame.
@@ -423,7 +424,6 @@ Grubbs_outliers <- function(x, type = 10) {
 
 	return (x)
 }
-
 
 
 #' Cleans Up PSM results
@@ -568,6 +568,8 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 #'
 #' \code{annotPSM} adds fields of annotation to PSM tables.
 #'
+#' @param expt_smry Character string; name of the file containing the
+#'   metadata of TMT experiments.
 #' @param rm_krts Logical; if TRUE, removes keratin entries from the output.
 #' @param plot_violins Logical; if TRUE, prepares the violin plots of
 #'   reporter-ion intensities.
@@ -948,10 +950,9 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 }
 
 
-
 #'Reports PSM results
 #'
-#'\code{normPSM} summarises
+#'\code{normPSM} produces
 #'\code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}}
 #'results from \code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}}
 #'experiments.
@@ -959,7 +960,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'End users will export \code{PSM} data from
 #'\code{\href{https://http://www.matrixscience.com/}{Mascot}} at a \code{.csv}
 #'format. The header information should be included during the \code{csv}
-#'export. A \code{.csv} filename should be defaulted by
+#'export. The \code{.csv} file name(s) should be defaulted by
 #'\code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with the
 #'letter \code{'F'}, followed by a six-digit number without space \code{(e.g.,
 #'F004453.csv)}. The \code{PSM} files should be present under the folder,
@@ -974,6 +975,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'denote peptide sequences with applicable variable modifications. See
 #'\code{\link{normPrn}} for the description of column keys and normalization.
 #'
+#'@inheritParams load_expts
 #'@inheritParams splitPSM
 #'@inheritParams cleanupPSM
 #'@inheritParams annotPSM
@@ -1006,6 +1008,9 @@ normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "f
 
   mget(names(formals()), rlang::current_env()) %>% save_call("normPSM")
 	
+  expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
+  frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
+  
 	reload_expts()
 
 	rmPSMHeaders()

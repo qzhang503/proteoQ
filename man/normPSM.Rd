@@ -9,6 +9,14 @@ normPSM(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
   rm_krts = FALSE, rm_outliers = FALSE, plot_violins = TRUE)
 }
 \arguments{
+\item{dat_dir}{A character string to the working directory.}
+
+\item{expt_smry}{A character string to the \code{.xlsx} file containing TMT
+experimental summary. The default is "expt_smry.xlsx".}
+
+\item{frac_smry}{A character string to the \code{.xlsx} file containing
+peptide fractionation summary. The default is "frac_smry.xlsx".}
+
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
 
 \item{rm_craps}{Logical; if TRUE, removes
@@ -27,7 +35,7 @@ Outputs under \code{C:\\my_direcotry\\PSM}. Primary results are in
  respective TMT experiments and LC/MS injections.
 }
 \description{
-\code{normPSM} summarises
+\code{normPSM} produces
 \code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}}
 results from \code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}}
 experiments.
@@ -36,7 +44,7 @@ experiments.
 End users will export \code{PSM} data from
 \code{\href{https://http://www.matrixscience.com/}{Mascot}} at a \code{.csv}
 format. The header information should be included during the \code{csv}
-export. A \code{.csv} filename should be defaulted by
+export. The \code{.csv} file name(s) should be defaulted by
 \code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with the
 letter \code{'F'}, followed by a six-digit number without space \code{(e.g.,
 F004453.csv)}. The \code{PSM} files should be present under the folder,

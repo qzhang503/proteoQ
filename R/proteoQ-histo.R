@@ -12,23 +12,23 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 	xmax <- eval(dots$xmax, env = caller_env())
 	x_breaks <- eval(dots$x_breaks, env = caller_env())
 	binwidth <- eval(dots$binwidth, env = caller_env())
-	ncol <- dots$ncol
-	width <- dots$width
-	height <- dots$height
+	alpha <- eval(dots$alpha, env = caller_env())
+	ncol <- eval(dots$ncol, env = caller_env())
+	width <- eval(dots$width, env = caller_env())
+	height <- eval(dots$height, env = caller_env())
 
 	if(is.null(xmin)) xmin <- -2
 	if(is.null(xmax)) xmax <- 2
 	if(is.null(x_breaks)) x_breaks <- 1
 	if(is.null(binwidth)) binwidth <- (xmax - xmin)/80
+	if(is.null(alpha)) alpha <- .8
 	if(is.null(ncol)) ncol <- 1
-
-	dots$xmin <- NULL
-	dots$xmax <- NULL
-	dots$x_breaks <- NULL
-	dots$binwidth <- NULL
-	dots$ncol <- NULL
-	dots$width <- NULL
-	dots$height <- NULL
+	if(is.null(width)) width <- 4 * ncol + 2
+	if(is.null(height)) height <- length(label_scheme_sub$Sample_ID) * 4 / ncol
+	
+	nm_idx <- names(dots) %in% c("xmin", "xmax", "x_breaks", "binwidth",
+	                             "ncol", "alpha", "width", "height")
+	dots[nm_idx] <- NULL
 
 	by = (xmax - xmin)/200
 	nrow <- nrow(df)
@@ -122,10 +122,9 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 		dplyr::filter(!is.na(value), !is.na(Int_index)) %>%
 		dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID)
 
-
 	p <- ggplot() +
 		geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = Int_index),
-		               color = "white", alpha = .8, binwidth = binwidth, size = .1) +
+		               color = "white", alpha = alpha, binwidth = binwidth, size = .1) +
 		scale_fill_brewer(palette = "Spectral", direction = -1) +
 		labs(title = "", x = x_label, y = expression("Frequency")) +
 		scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = x_breaks),
@@ -141,13 +140,7 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 
 	if(show_vline) p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
 
-	if(!grepl("\\.png$", filename)) filename <- paste0(filename, ".png")
-	fn_prx <- gsub(".png", "", filename, fixed = TRUE)
-	filename <- paste0(fn_prx, ".png")
-
-	if(is.null(width)) width <- 4 * ncol + 2
-	if(is.null(height)) height <- length(unique(df_melt$Sample_ID)) * 4 / ncol
-
+	filename <- gg_imgname(filename)
 	ggsave(file.path(filepath, filename), p, width = width, height = height, limitsize = FALSE, units = "in")
 }
 
@@ -161,7 +154,7 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 #'In the histograms, the \code{log2-ratios} under each TMT channel are
 #'color-coded by their contributing reporter-ion intensity.
 #'
-#'The function matches the current \code{id} to those in the latest \code{calls}
+#'The function matches the current \code{id} to those in the latest \code{call}
 #'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
 #'\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
 #'pep_seq_mod} will be matched to \code{id = pep_seq}.
@@ -177,56 +170,30 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 #'@param show_curves Logical; if TRUE, shows the fitted curves.
 #'@param show_vline Logical; if TRUE, shows the vertical lines at \code{x = 0}.
 #'@param  new_fit Not currently used.
-#'@param df The filename of input data. By default, it will be determined by the
-#'  value of \code{id}.
+#'@param df The file name of input data. By default, it will be determined by
+#'  the value of \code{id}.
 #'@param filepath The filepath to output results. By default, it will be
 #'  determined by the name of the current function \code{call} and the value of
 #'  \code{id}.
 #'@param filename A representative filename to output images. By default, it
 #'  will be determined by the names of the current \code{call}. The images are
-#'  saved via \code{\link[ggplot2]{ggsave}} and the type of images will be
-#'  determined by the extension of filenames with the default being \code{.png}.
-#'@param ... Additional parameters for plotting: \cr \code{xmin}, the minimum x;
-#'  \cr \code{xmax}, the maximum x; \cr \code{x_breaks}, the breaks in x-axis;
-#'  \cr \code{binwidth}, the binwidth of \code{log2-ratios}; \cr \code{ncol},
-#'  the number of columns; \cr \code{width}, the width of plot; \cr
-#'  \code{height}, the height of plot.
-#'@return The histograms of \code{log2-ratios} under
-#'  "\code{C:\\my_directory\\Histogram}".
+#'  saved via \code{\link[ggplot2]{ggsave}} and the image type will be
+#'  determined by the extension of file names with the default being \code{.png}.
+#'@param ... Additional parameters for plotting: \cr \code{xmin}, the minimum x
+#'  at a log2 scale; the default is -2. \cr \code{xmax}, the maximum x at a log2
+#'  scale; the default is +2. \cr \code{x_breaks}, the breaks in x-axis at a
+#'  log2 scale; the default is 1. \cr \code{binwidth}, the binwidth of
+#'  \code{log2-ratios}; the default is (xmax - xmin)/80. \cr \code{ncol}, the
+#'  number of columns; the default is 1. \cr \code{width}, the width of plot; \cr \code{height},
+#'  the height of plot.
+#'@return The histograms of \code{log2-ratios} under a "\code{Histogram}" sub
+#'  directory.
 #'
-#' @examples
-#' # no scaling normalization
-#' proteoHist(
-#'   id = pep_seq_mod,
-#'   scale_log2r = FALSE,
-#'   show_curves = TRUE,
-#'   show_vline = TRUE,
-#'   xmin = -1,
-#'   xmax = 1,
-#'   ncol = 4
-#' )
-#'
-#' # scaling normalization
-#' proteoHist(
-#'   id = pep_seq_mod,
-#'   col_select = Select,
-#'   scale_log2r = TRUE,
-#'   show_curves = TRUE,
-#'   show_vline = TRUE,
-#'   ncol = 4
-#' )
-#'
-#' \dontrun{
-#' proteoHist(
-#'   id = pep_seq_mod,
-#'   col_select = "a_non_existed_column_key"
-#' )
-#' }
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
 proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col_select = NULL,
-                        scale_log2r = TRUE, show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
+                        scale_log2r = FALSE, show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 
   id <- rlang::enexpr(id)
@@ -247,28 +214,30 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), co
 }
 
 
-#'Visualizes the histograms of peptide data
-#'@seealso \code{\link{proteoHist}} for parameters
+
+
+
+#'Visualizes the histograms of peptide \code{log2FC}
+#'
+#'\code{pepHist} is a wrapper function of \code{\link{proteoHist}}
+#'
+#'@rdname proteoHist
 #'
 #' @examples
-#' # no scaling normalization
+#' # without scaling normalization
 #' pepHist(
 #'   scale_log2r = FALSE,
-#'   show_curves = TRUE,
-#'   show_vline = TRUE,
 #'   xmin = -1,
 #'   xmax = 1,
-#'   ncol = 4
+#'   ncol = 5
 #' )
 #'
-#' # scaling normalization
+#' # with scaling normalization
 #' pepHist(
 #'   scale_log2r = TRUE,
-#'   show_curves = TRUE,
-#'   show_vline = TRUE,
 #'   xmin = -1,
 #'   xmax = 1,
-#'   ncol = 4
+#'   ncol = 5
 #' )
 #'
 #' \dontrun{
@@ -283,35 +252,24 @@ pepHist <- function (...) {
 }
 
 
-#'Visualizes the histograms of protein data
-#'@seealso \code{\link{proteoHist}} for parameters
+#'Visualizes the histograms of protein \code{log2FC}
+#'
+#'\code{prnHist} is a wrapper function of \code{\link{proteoHist}}
+#'
+#'@rdname proteoHist
 #'
 #' @examples
 #' # no scaling normalization
 #' prnHist(
-#'   scale_log2r = FALSE,
-#'   show_curves = TRUE,
-#'   show_vline = TRUE,
-#'   xmin = -1,
-#'   xmax = 1,
-#'   ncol = 4
+#'   ncol = 10
 #' )
 #'
 #' # scaling normalization
 #' prnHist(
 #'   scale_log2r = TRUE,
-#'   show_curves = TRUE,
-#'   show_vline = TRUE,
-#'   xmin = -1,
-#'   xmax = 1,
-#'   ncol = 4
+#'   ncol = 10
 #' )
 #'
-#' \dontrun{
-#' prnHist(
-#'   col_select = "a_non_existed_column_key"
-#' )
-#' }
 #'
 #'@export
 prnHist <- function (...) {

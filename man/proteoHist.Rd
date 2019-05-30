@@ -2,12 +2,18 @@
 % Please edit documentation in R/proteoQ-histo.R
 \name{proteoHist}
 \alias{proteoHist}
+\alias{pepHist}
+\alias{prnHist}
 \title{Visualizes histograms}
 \usage{
 proteoHist(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
-  col_select = NULL, scale_log2r = TRUE, show_curves = TRUE,
+  col_select = NULL, scale_log2r = FALSE, show_curves = TRUE,
   show_vline = TRUE, new_fit = FALSE, df = NULL, filepath = NULL,
   filename = NULL, ...)
+
+pepHist(...)
+
+prnHist(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
@@ -27,8 +33,8 @@ scale of standard deviation for all samples.}
 
 \item{new_fit}{Not currently used.}
 
-\item{df}{The filename of input data. By default, it will be determined by the
-value of \code{id}.}
+\item{df}{The file name of input data. By default, it will be determined by
+the value of \code{id}.}
 
 \item{filepath}{The filepath to output results. By default, it will be
 determined by the name of the current function \code{call} and the value of
@@ -36,58 +42,71 @@ determined by the name of the current function \code{call} and the value of
 
 \item{filename}{A representative filename to output images. By default, it
 will be determined by the names of the current \code{call}. The images are
-saved via \code{\link[ggplot2]{ggsave}} and the type of images will be
-determined by the extension of filenames with the default being \code{.png}.}
+saved via \code{\link[ggplot2]{ggsave}} and the image type will be
+determined by the extension of file names with the default being \code{.png}.}
 
-\item{...}{Additional parameters for plotting: \cr \code{xmin}, the minimum x;
-\cr \code{xmax}, the maximum x; \cr \code{x_breaks}, the breaks in x-axis;
-\cr \code{binwidth}, the binwidth of \code{log2-ratios}; \cr \code{ncol},
-the number of columns; \cr \code{width}, the width of plot; \cr
-\code{height}, the height of plot.}
+\item{...}{Additional parameters for plotting: \cr \code{xmin}, the minimum x
+at a log2 scale; the default is -2. \cr \code{xmax}, the maximum x at a log2
+scale; the default is +2. \cr \code{x_breaks}, the breaks in x-axis at a
+log2 scale; the default is 1. \cr \code{binwidth}, the binwidth of
+\code{log2-ratios}; the default is (xmax - xmin)/80. \cr \code{ncol}, the
+number of columns; the default is 1. \cr \code{width}, the width of plot; \cr \code{height},
+the height of plot.}
 }
 \value{
-The histograms of \code{log2-ratios} under
- "\code{C:\\my_directory\\Histogram}".
+The histograms of \code{log2-ratios} under a "\code{Histogram}" sub
+ directory.
 }
 \description{
 \code{proteoHist} prepares the histogram visualization of \code{log2-ratios}
 for proteins or peptides data.
+
+\code{pepHist} is a wrapper function of \code{\link{proteoHist}}
+
+\code{prnHist} is a wrapper function of \code{\link{proteoHist}}
 }
 \details{
 In the histograms, the \code{log2-ratios} under each TMT channel are
 color-coded by their contributing reporter-ion intensity.
 
-The function matches the current \code{id} to those in the latest \code{calls}
+The function matches the current \code{id} to those in the latest \code{call}
 to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
 \code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
 pep_seq_mod} will be matched to \code{id = pep_seq}.
 }
 \examples{
-# no scaling normalization
-proteoHist(
-  id = pep_seq_mod,
+# without scaling normalization
+pepHist(
   scale_log2r = FALSE,
-  show_curves = TRUE,
-  show_vline = TRUE,
   xmin = -1,
   xmax = 1,
-  ncol = 4
+  ncol = 5
 )
 
-# scaling normalization
-proteoHist(
-  id = pep_seq_mod,
-  col_select = Select,
+# with scaling normalization
+pepHist(
   scale_log2r = TRUE,
-  show_curves = TRUE,
-  show_vline = TRUE,
-  ncol = 4
+  xmin = -1,
+  xmax = 1,
+  ncol = 5
 )
 
 \dontrun{
-proteoHist(
-  id = pep_seq_mod,
+pepHist(
   col_select = "a_non_existed_column_key"
 )
 }
+
+# no scaling normalization
+prnHist(
+  ncol = 10
+)
+
+# scaling normalization
+prnHist(
+  scale_log2r = TRUE,
+  ncol = 10
+)
+
+
 }

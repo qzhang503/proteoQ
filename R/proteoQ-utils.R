@@ -853,3 +853,22 @@ cmbn_meta <- function(data, metadata) {
     dplyr::select(which(not_all_NA(.))) %>% 
     rm_sglval_cols()
 }
+
+
+#' Check file names for ggsave()
+#'
+gg_imgname <- function(filename) {
+  fn_prx <- gsub("\\..*$", "", filename)
+  fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
+  
+  exts <- c("png", "eps", "ps", "tex", "pdf", "jpeg", "tiff", "png", "bmp", "svg") 
+  
+  if(! fn_suffix %in% exts) {
+    warning(paste0("Unrecognized file extenstion: '", fn_suffix, "'. Image will be saved as a 'png'.\n"))
+    fn_suffix <- "png"
+  }
+  
+  paste0(fn_prx, ".", fn_suffix)
+}
+
+
