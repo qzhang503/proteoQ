@@ -10,17 +10,16 @@ normMulGau(df, method_align, n_comp, seed = NULL, range_log2r, range_int,
 \arguments{
 \item{df}{An input data frame}
 
-\item{method_align}{The method to align the \code{log2-ratios} of peptides
- entries across samples. \code{MC}: median-centering; \code{MGKernel}: the
- kernal density defined by multiple Gaussian functions
- (\code{\link[mixtools]{normalmixEM}}).
-
- At \code{method_align = "MC"}, the ratio profiles of each sample will be
- aligned in that the medians of the \code{log2-ratios} are zero. At
- \code{method_align = "MGKernel"}, the \code{log2-ratios} will be aligned in
- that the maximums of kernel density are zero. It is also possible to align
- the \code{log2-ratios} to the median of a list of user-supplied genes:
- \code{method_align = c("ACTB", "GAPDH", ...)}.}
+\item{method_align}{The method to align the \code{log2-ratios} of
+peptide/protein entries across samples. \code{MC}: median-centering;
+\code{MGKernel}: the kernal density defined by multiple Gaussian functions
+(\code{\link[mixtools]{normalmixEM}}). At \code{method_align = "MC"}, the
+ratio profiles of each sample will be aligned in that the medians of the
+\code{log2-ratios} are zero. At \code{method_align = "MGKernel"}, the
+\code{log2-ratios} will be aligned in that the maximums of kernel density
+are zero. It is also possible to align the \code{log2-ratios} to the median
+of a list of user-supplied genes: \code{method_align = c("ACTB", "GAPDH",
+...)}.}
 
 \item{n_comp}{The number of Gaussian components to be used with
 \code{method_align = "MGKernel"}. A typical value is 2 or 3. The variable
@@ -30,9 +29,9 @@ normMulGau(df, method_align, n_comp, seed = NULL, range_log2r, range_int,
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
 
-\item{range_log2r}{The range of the \code{log2-ratios} of peptide entries for
-use in the scaling normalization of standard deviation across samples. The
-default is between the 20th and the 90th quantiles.}
+\item{range_log2r}{The range of the \code{log2-ratios} of peptide/protein
+entries for use in the scaling normalization of standard deviation across
+samples. The default is between the 20th and the 90th quantiles.}
 
 \item{range_int}{The range of the \code{intensity} of reporter ions for use in
 the scaling normalization of standard deviation across samples. The default

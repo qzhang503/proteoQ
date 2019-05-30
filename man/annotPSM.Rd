@@ -8,8 +8,8 @@ annotPSM(expt_smry = "expt_smry.xlsx", rm_krts = FALSE,
   plot_violins = TRUE)
 }
 \arguments{
-\item{expt_smry}{Character string; name of the file containing the
-metadata of TMT experiments.}
+\item{expt_smry}{A character string to the \code{.xlsx} file containing the
+metadata of TMT experiments. The default is "expt_smry.xlsx".}
 
 \item{rm_krts}{Logical; if TRUE, removes keratin entries from the output.}
 

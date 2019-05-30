@@ -568,8 +568,7 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 #'
 #' \code{annotPSM} adds fields of annotation to PSM tables.
 #'
-#' @param expt_smry Character string; name of the file containing the
-#'   metadata of TMT experiments.
+#'@inheritParams load_expts
 #' @param rm_krts Logical; if TRUE, removes keratin entries from the output.
 #' @param plot_violins Logical; if TRUE, prepares the violin plots of
 #'   reporter-ion intensities.
@@ -952,7 +951,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 
 #'Reports PSM results
 #'
-#'\code{normPSM} produces
+#'\code{normPSM} reports
 #'\code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}}
 #'results from \code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}}
 #'experiments.
@@ -973,7 +972,8 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'alignment. Values under columns \code{N_I...} are normalized
 #'\code{reporter-ion intensity}. Character strings under \code{pep_seq_mod}
 #'denote peptide sequences with applicable variable modifications. See
-#'\code{\link{normPrn}} for the description of column keys and normalization.
+#'\code{\link{normPrn}} for more detailed description of column keys and data
+#'normalization.
 #'
 #'@inheritParams load_expts
 #'@inheritParams splitPSM
@@ -981,9 +981,10 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'@inheritParams annotPSM
 #'@seealso \code{\link{normPep}} for peptides and \code{\link{normPrn}} for
 #'  proteins.
-#'@return Outputs under \code{C:\\my_direcotry\\PSM}. Primary results are in
-#'  \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt, ...} for
-#'  respective TMT experiments and LC/MS injections.
+#'@return Outputs under \code{~dat_dir\\PSM}. Primary results are in
+#'  \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt, ...} The
+#'  indeces of TMT experiment and LC/MS injection are indicated in the file
+#'  names.
 #'
 #' @examples
 #' # An examplary PSM file
@@ -991,7 +992,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'
 #' dat_dir <- "C:\\my_directory"
 #' normPSM(
-#'   rptr_intco = 1000,
+#'   rptr_intco = 3000,
 #'   rm_craps = FALSE,
 #'   rm_krts = FALSE,
 #'   rm_outliers = FALSE,

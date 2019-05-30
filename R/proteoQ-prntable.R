@@ -39,71 +39,37 @@
 #'@param id The variable to summarise peptides into proteins. The option
 #'  \code{"prot_acc"} corresponds to the summarisation by the accession numbers
 #'  or entry names of proteins The option \code{"gene"} corresponds to the
-#'  summarisation by the gene names of proteins.
-#'
-#'  At \code{id = gene}, data under the same gene name but different acccesssion
-#'  numbers or entry names will be summarised into one entry.
+#'  summarisation by the gene names of proteins. At \code{id = gene}, data under
+#'  the same gene name but different acccesssion numbers or entry names will be
+#'  summarised into one entry.
 #'@param method_pep_prn The method to summarise the \code{log2-ratios} and the
 #'  \code{intensity} of peptides by protein entries. The descriptive statistics
-#'  includes \code{c("mean", "median", "top.3", "weighted.mean")}.
-#'
-#'  The representative \code{log10-intensity} of reporter ions at the peptide
-#'  levels (from \code{\link{normPep}}) will be the weigth when summarising
-#'  log2-ratios with "top.3" or "weighted.mean".
-#'@param method_align The method to align the \code{log2-ratios} of proteins
-#'  entries across samples. \code{MC}: median-centering; \code{MGKernel}: the
-#'  kernal density defined by multiple Gaussian functions
-#'  (\code{\link[mixtools]{normalmixEM}}).
-#'
-#'  At \code{method_align = "MC"}, the ratio profiles of each sample will be
-#'  aligned in that the medians of the \code{log2-ratios} are zero. At
-#'  \code{method_align = "MGKernel"}, the \code{log2-ratios} will be aligned in
-#'  that the maximums of kernel density are zero. It is also possible to align
-#'  the \code{log2-ratios} to the median of a list of user-supplied genes:
-#'  \code{method_align = c("ACTB", "GAPDH", ...)}. At \code{method_align =
-#'  NULL}, the protein summary by \code{method_pep_prn} will be taken without
-#'  furthur normalization.
-#'@param range_log2r The range of the \code{log2-ratios} of protein entries for
-#'  use in the scaling normalization of standard deviation across samples. The
-#'  default is between the 20th and the 90th quantiles.
-#'@param range_int The range of the representative reporter-ion \code{intensity}
-#'  of proteins for use in the scaling normalization of standard deviation
-#'  across samples. The default is between the 5th and the 95th quantiles.
-#'@param n_comp The number of Gaussian components to be used with
-#'  \code{method_align = "MGKernel"}. A typical value is 2 or 3. The variable
-#'  \code{n_comp} overwrites the augument \code{k} in
-#'  \code{\link[mixtools]{normalmixEM}}.
-#'@param seed Integer; a seed for reproducible fitting at \code{method_align =
-#'  MGKernel}.
+#'  includes \code{c("mean", "median", "top.3", "weighted.mean")}. The
+#'  representative \code{log10-intensity} of reporter ions at the peptide levels
+#'  (from \code{\link{normPep}}) will be the weigth when summarising log2-ratios
+#'  with "top.3" or "weighted.mean".
+#'@inheritParams normPep
 #'@param fasta The file name with prepended directory path to the fasta database
 #'  being used in MS/MS ion search. If not specified, a pre-compiled system file
 #'  will be used.
-#'@param ... Additional parameters from \code{\link[mixtools]{normalmixEM}}:\cr
-#'  \code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
-#'  tolerance limit for declaring algorithm convergence.
 #'@inheritParams mixtools::normalmixEM
 #'@family aggregate functions
 #'@seealso \code{\link{normPSM}} for PSMs and \code{\link{normPep}} for
 #'  peptides.
-#'@return The primary output in "\code{C:\\my_directory\\Protein\\Protein.txt}".
+#'@return The primary output in "\code{~\\dat_dir\\Protein\\Protein.txt}".
 #'
 #' @examples
 #' 	normPrn(
-#' 		id = gene, 
-#' 		method_pep_prn = median, 
-#' 		method_align = MGKernel, 
-#' 		range_log2r = c(5, 95), 
-#' 		range_int = c(5, 95), 
-#' 		n_comp = 2, 
-#' 		seed = 749662, 
-#' 		fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta", 
-#' 		maxit = 200, 
+#' 		id = gene,
+#' 		method_pep_prn = median,
+#' 		method_align = MGKernel,
+#' 		range_log2r = c(5, 95),
+#' 		range_int = c(5, 95),
+#' 		n_comp = 2,
+#' 		seed = 749662,
+#' 		fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta",
+#' 		maxit = 200,
 #' 		epsilon = 1e-05
-#' 	)
-#' 	
-#' 	normPrn(
-#' 		id = "prot_acc",
-#' 		fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta"
 #' 	)
 #'
 #' \dontrun{

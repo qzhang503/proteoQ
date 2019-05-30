@@ -18,28 +18,26 @@ peptides. \code{PSMs} data with the same value in \code{pep_seq} or
 \code{pep_seq_mod} will be summarised into a single entry of peptide.}
 
 \item{method_psm_pep}{The method to summarise the \code{log2-ratios} and the
- \code{intensity} of \code{PSMs} by peptide entries. The descriptive
- statistics includes \code{c("mean", "median", "top.3", "weighted.mean")}.
+\code{intensity} of \code{PSMs} by peptide entries. The descriptive
+statistics includes \code{c("mean", "median", "top.3", "weighted.mean")}.
+The \code{log10-intensity} of reporter ions at the \code{PSMs} levels will
+be the weight when summarising \code{log2-ratios} with \code{"top.3"} or
+\code{"weighted.mean"}.}
 
- The \code{log10-intensity} of reporter ions at the \code{PSMs} levels will
- be the weight when summarising \code{log2-ratios} with \code{"top.3"} or
- \code{"weighted.mean"}.}
+\item{method_align}{The method to align the \code{log2-ratios} of
+peptide/protein entries across samples. \code{MC}: median-centering;
+\code{MGKernel}: the kernal density defined by multiple Gaussian functions
+(\code{\link[mixtools]{normalmixEM}}). At \code{method_align = "MC"}, the
+ratio profiles of each sample will be aligned in that the medians of the
+\code{log2-ratios} are zero. At \code{method_align = "MGKernel"}, the
+\code{log2-ratios} will be aligned in that the maximums of kernel density
+are zero. It is also possible to align the \code{log2-ratios} to the median
+of a list of user-supplied genes: \code{method_align = c("ACTB", "GAPDH",
+...)}.}
 
-\item{method_align}{The method to align the \code{log2-ratios} of peptides
- entries across samples. \code{MC}: median-centering; \code{MGKernel}: the
- kernal density defined by multiple Gaussian functions
- (\code{\link[mixtools]{normalmixEM}}).
-
- At \code{method_align = "MC"}, the ratio profiles of each sample will be
- aligned in that the medians of the \code{log2-ratios} are zero. At
- \code{method_align = "MGKernel"}, the \code{log2-ratios} will be aligned in
- that the maximums of kernel density are zero. It is also possible to align
- the \code{log2-ratios} to the median of a list of user-supplied genes:
- \code{method_align = c("ACTB", "GAPDH", ...)}.}
-
-\item{range_log2r}{The range of the \code{log2-ratios} of peptide entries for
-use in the scaling normalization of standard deviation across samples. The
-default is between the 20th and the 90th quantiles.}
+\item{range_log2r}{The range of the \code{log2-ratios} of peptide/protein
+entries for use in the scaling normalization of standard deviation across
+samples. The default is between the 20th and the 90th quantiles.}
 
 \item{range_int}{The range of the \code{intensity} of reporter ions for use in
 the scaling normalization of standard deviation across samples. The default
@@ -61,7 +59,7 @@ proteins.}
 tolerance limit for declaring algorithm convergence.}
 }
 \value{
-The primary output in \code{C:\\my_direcotry\\Peptide\\Peptide.txt}.
+The primary output in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
 }
 \description{
 \code{normPep} summarises

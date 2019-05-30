@@ -11,8 +11,8 @@ normPSM(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
 \arguments{
 \item{dat_dir}{A character string to the working directory.}
 
-\item{expt_smry}{A character string to the \code{.xlsx} file containing TMT
-experimental summary. The default is "expt_smry.xlsx".}
+\item{expt_smry}{A character string to the \code{.xlsx} file containing the
+metadata of TMT experiments. The default is "expt_smry.xlsx".}
 
 \item{frac_smry}{A character string to the \code{.xlsx} file containing
 peptide fractionation summary. The default is "frac_smry.xlsx".}
@@ -30,12 +30,13 @@ peptide fractionation summary. The default is "frac_smry.xlsx".}
 reporter-ion intensities.}
 }
 \value{
-Outputs under \code{C:\\my_direcotry\\PSM}. Primary results are in
- \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt, ...} for
- respective TMT experiments and LC/MS injections.
+Outputs under \code{~dat_dir\\PSM}. Primary results are in
+ \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt, ...} The
+ indeces of TMT experiment and LC/MS injection are indicated in the file
+ names.
 }
 \description{
-\code{normPSM} produces
+\code{normPSM} reports
 \code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}}
 results from \code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}}
 experiments.
@@ -57,7 +58,8 @@ under columns \code{N_log2_R...} are \code{log2_R...} with median-centering
 alignment. Values under columns \code{N_I...} are normalized
 \code{reporter-ion intensity}. Character strings under \code{pep_seq_mod}
 denote peptide sequences with applicable variable modifications. See
-\code{\link{normPrn}} for the description of column keys and normalization.
+\code{\link{normPrn}} for more detailed description of column keys and data
+normalization.
 }
 \examples{
 # An examplary PSM file
@@ -65,7 +67,7 @@ system.file("extdata", "F012345.csv", package = "proteoQ")
 
 dat_dir <- "C:\\\\my_directory"
 normPSM(
-  rptr_intco = 1000,
+  rptr_intco = 3000,
   rm_craps = FALSE,
   rm_krts = FALSE,
   rm_outliers = FALSE,

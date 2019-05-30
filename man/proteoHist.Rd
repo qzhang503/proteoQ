@@ -36,26 +36,28 @@ scale of standard deviation for all samples.}
 \item{df}{The file name of input data. By default, it will be determined by
 the value of \code{id}.}
 
-\item{filepath}{The filepath to output results. By default, it will be
+\item{filepath}{The file path to output results. By default, it will be
 determined by the name of the current function \code{call} and the value of
 \code{id}.}
 
-\item{filename}{A representative filename to output images. By default, it
+\item{filename}{A representative file name to output images. By default, it
 will be determined by the names of the current \code{call}. The images are
 saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-determined by the extension of file names with the default being \code{.png}.}
+determined by the extension of file names with the default being
+\code{.png}.}
 
-\item{...}{Additional parameters for plotting: \cr \code{xmin}, the minimum x
-at a log2 scale; the default is -2. \cr \code{xmax}, the maximum x at a log2
-scale; the default is +2. \cr \code{x_breaks}, the breaks in x-axis at a
-log2 scale; the default is 1. \cr \code{binwidth}, the binwidth of
-\code{log2-ratios}; the default is (xmax - xmin)/80. \cr \code{ncol}, the
-number of columns; the default is 1. \cr \code{width}, the width of plot; \cr \code{height},
-the height of plot.}
+\item{...}{Additional parameters for plotting: \cr \code{xmin}, the minimum
+\eqn{x} at a log2 scale; the default is -2. \cr \code{xmax}, the maximum
+\eqn{x} at a log2 scale; the default is +2. \cr \code{x_breaks}, the breaks
+in \eqn{x}-axis at a log2 scale; the default is 1. \cr \code{binwidth}, the
+binwidth of \code{log2-ratios}; the default is \eqn{(xmax - xmin)/80}. \cr
+\code{ncol}, the number of columns; the default is 1. \cr \code{width}, the
+width of plot; \cr \code{height}, the height of plot.}
 }
 \value{
-The histograms of \code{log2-ratios} under a "\code{Histogram}" sub
- directory.
+The histograms of \code{log2-ratios} under
+ \code{~\\dat_dir\\Peptide\\Histogram} or
+ \code{~\\dat_dir\\Protein\\Histogram}.
 }
 \description{
 \code{proteoHist} prepares the histogram visualization of \code{log2-ratios}

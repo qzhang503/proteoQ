@@ -10,8 +10,8 @@ load_expts(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
 \arguments{
 \item{dat_dir}{A character string to the working directory.}
 
-\item{expt_smry}{A character string to the \code{.xlsx} file containing TMT
-experimental summary. The default is "expt_smry.xlsx".}
+\item{expt_smry}{A character string to the \code{.xlsx} file containing the
+metadata of TMT experiments. The default is "expt_smry.xlsx".}
 
 \item{frac_smry}{A character string to the \code{.xlsx} file containing
 peptide fractionation summary. The default is "frac_smry.xlsx".}
@@ -69,8 +69,8 @@ experiments
  \cr Benchmark \tab Indicators of benchmark sample (groups) for use in heat
  map visualizations.\cr}
 
-\strong{Optional open column} \cr
- See the package vignette for examples of open columns defined by users.
+ \strong{Optional open column} \cr See the package vignette for examples of
+ open columns defined by users.
 }
 
 \section{\code{frac_smry.xlsx}}{
