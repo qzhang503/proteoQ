@@ -86,7 +86,8 @@ plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 	  p <- p +
 	    geom_text(data = df, mapping = aes(x = Coordinate.1, y = Coordinate.2,
 	                                           label = df$Sample_ID), color = "gray", size = 3)
-
+	
+	filename <- gg_imgname(filename)
 	ggsave(file.path(filepath, filename), p, ...)
 }
 
@@ -143,6 +144,8 @@ plotEucDist <- function (D, annot_cols, filepath, filename, annot_colnames, ...)
 		stop("Please consider a a smaller `cellwidth`.")
 	}
 
+	filename <- gg_imgname(filename)
+	
 	my_pheatmap(
 		mat = D_matrix,
 		filename = file.path(filepath, filename),
@@ -246,6 +249,7 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 	              mapping = aes(x = Coordinate.1, y = Coordinate.2, label = df$Sample_ID),
 	              color = "gray", size = 3)
 
+	filename <- gg_imgname(filename)
 	ggsave(file.path(filepath, filename), p, ...)
 
 	bi_plot <- FALSE
@@ -372,39 +376,33 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 #'
 #'\code{proteoMDS} visualizes the results from multidimensional scaling (MDS).
 #'
-#'An Euclidean distance matrix of \code{log2-ratios} is returned by
+#'An Euclidean distance matrix of \code{log2FC} is returned by
 #'\code{\link[base]{dist}}, followed by a metric (\code{\link[stats]{cmdscale}})
 #'or non-metric (\code{\link[MASS]{isoMDS}}) MDS. The default is metric MDS with
 #'the input dissimilarities being euclidean distances.
 #'
-#'@param id Character string to indicate the type of data. Peptide data will be
-#'  used at column \code{id = "pep_seq"} or \code{"pep_seq_mod"}, and protein
-#'  data at \code{id = "prot_acc"} or \code{"gene"}.
-#'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Select}. Samples corresponding to non-empty entries
-#'  under \code{col_select} will be included in the indicated analysis.
-#'@param  col_group Not currently used.
+#'@inheritParams  proteoHist
+#'@param  col_group Not used.
 #'@param  col_color Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Color}. Values under which will be used for the
-#'  \code{color} aesthetics in \code{ggplot2}.
+#'  Values under which will be used for the \code{color} aesthetics in plots. At
+#'  the NULL default, the column key \code{Color} will be used.
 #'@param  col_fill Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Fill}. Values under which will be used for the
-#'  \code{fill} aesthetics in \code{ggplot2}.
+#'  Values under which will be used for the \code{fill} aesthetics in plots. At
+#'  the NULL default, the column key \code{Fill} will be used.
 #'@param  col_shape Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Shape}. Values under which will be used for the
-#'  \code{shape} aesthetics in \code{ggplot2}.
+#'  Values under which will be used for the \code{shape} aesthetics in plots. At
+#'  the NULL default, the column key \code{Shape} will be used.
 #'@param  col_size Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Size}. Values under which will be used for the
-#'  \code{size} aesthetics in \code{ggplot2}.
+#'  Values under which will be used for the \code{size} aesthetics in plots. At
+#'  the NULL default, the column key \code{Size} will be used.
 #'@param  col_alpha Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Alpha}. Values under which will be used for the
-#'  \code{alpha} aesthetics in \code{ggplot2}.
-#'@param scale_log2r Logical; if TRUE, adjusts \code{log2-ratios} to the same
-#'  scale of standard deviation for all samples.
+#'  Values under which will be used for the \code{alpha} (transparency)
+#'  aesthetics in plots. At the NULL default, the column key \code{Alpha} will
+#'  be used.
 #'@param adjEucDist Logical; if TRUE, adjusts the inter-plex Euclidean distance
 #'  by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
-#'  \code{reference samples} in each TMT plex undergo approximately the same
-#'  sample handling process as the rest of the samples. For instance,
+#'  \code{reference samples} from each TMT plex undergo approximately the same
+#'  sample handling process as the samples of interest. For instance,
 #'  \code{reference samples} were split at the levels of protein lysates.
 #'  Typically, \code{adjEucDist = FALSE} if \code{reference samples} were split
 #'  near the end of a sample handling process, for instance, at the stages
@@ -413,14 +411,7 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 #'  FALSE.
 #'@param show_ids Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 #'  plots.
-#'@param annot_cols Not currently used.
-#'@param df The filename of input data. By default, it will be determined by the
-#'  value of \code{id}.
-#'@param filepath The filepath to output results. By default, it will be
-#'  determined by the name of the current function \code{call} and the value of
-#'  \code{id}.
-#'@param filename A representative filename to output images. By default, it
-#'  will be determined by the names of the current \code{call}.
+#'@param annot_cols Not used.
 #'@param ... Parameters inherited from \code{ggsave}: \cr \code{width}, the
 #'  width of plot; \cr \code{height}, the height of plot \cr \code{...}
 #'
@@ -464,44 +455,9 @@ proteoMDS <- function (id = gene,
 #'\code{protePCA} visualizes the results from principal component analysis
 #'(PCA).
 #'
-#'\code{log2-ratios} are used in PCA (\code{\link[stats]{prcomp}}).
+#'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
 #'
-#'@param id Character string to indicate the type of data. Peptide data will be
-#'  used at column \code{id = "pep_seq"} or \code{"pep_seq_mod"}, and protein
-#'  data at \code{id = "prot_acc"} or \code{"gene"}.
-#'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Select}. Samples corresponding to non-empty entries
-#'  under \code{col_select} will be included in the indicated analysis.
-#'@param  col_group Not currently used.
-#'@param  col_color Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Color}. Values under which will be used for the
-#'  \code{color} aesthetics in \code{ggplot2}.
-#'@param  col_fill Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Fill}. Values under which will be used for the
-#'  \code{fill} aesthetics in \code{ggplot2}.
-#'@param  col_shape Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Shape}. Values under which will be used for the
-#'  \code{shape} aesthetics in \code{ggplot2}.
-#'@param  col_size Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Size}. Values under which will be used for the
-#'  \code{size} aesthetics in \code{ggplot2}.
-#'@param  col_alpha Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Alpha}. Values under which will be used for the
-#'  \code{alpha} aesthetics in \code{ggplot2}.
-#'@param scale_log2r Logical; if TRUE, adjusts \code{log2-ratios} to the same
-#'  scale of standard deviation for all samples.
-#'@param show_ids Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
-#'  plots.
-#'@param annot_cols Not currently used.
-#'@param df The filename of input data. By default, it will be determined by the
-#'  value of \code{id}.
-#'@param filepath The filepath to output results. By default, it will be
-#'  determined by the name of the current function \code{call} and the value of
-#'  \code{id}.
-#'@param filename A representative filename to output images. By default, it
-#'  will be determined by the names of the current \code{call}.
-#'@param ... Parameters inherited from \code{ggsave}: \cr \code{width}, the
-#'  width of plot; \cr \code{height}, the height of plot \cr \code{...}
+#'@inheritParams proteoMDS
 #'
 #'@return PCA plots.
 #'@import dplyr rlang ggplot2
@@ -537,42 +493,22 @@ proteoPCA <- function (id = gene,
 }
 
 
-#'Visualizes Euclidean distances
+#'Visualizes the matrix of Euclidean distances
 #'
-#'\code{proteoEucDist} visualizes the Euclidean distances of protein or peptide
-#'data.
+#'\code{proteoEucDist} visualizes the heat map of Euclidean distances.
 #'
-#'An Euclidean distance matrix of \code{log2-ratios} is returned by
-#'\code{\link[base]{dist}}.
+#'An Euclidean distance matrix of \code{log2FC} is returned by
+#'\code{\link[base]{dist}} for heat map visualization.
 #'
-#'@param id Character string to indicate the type of data. Peptide data will be
-#'  used at column \code{id = "pep_seq"} or \code{"pep_seq_mod"}, and protein
-#'  data at \code{id = "prot_acc"} or \code{"gene"}.
-#'@param scale_log2r Logical; if TRUE, adjusts \code{log2-ratios} to the same
-#'  scale of standard deviation for all samples.
-#'@param adjEucDist Logical; if TRUE, adjusts the inter-plex Euclidean distance
-#'  by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
-#'  \code{reference samples} in each TMT plex undergo approximately the same
-#'  sample handling process as the rest of the samples. For instance,
-#'  \code{reference samples} were split at the levels of protein lysates.
-#'  Typically, \code{adjEucDist = FALSE} if \code{reference samples} were split
-#'  near the end of a sample handling process, for instance, at the stages
-#'  immediately before or after TMT labeling.
-#'@param annot_cols Column names available in \code{expt_smry.xlsx}. Values
-#'  under the selected columns will be used to color-code sample IDs on the top
-#'  of \code{EucDist} plots.
-#'@param annot_colnames Character vector of replacement name(s) to
+#'@inheritParams proteoMDS
+#'@param annot_cols A character vector of column names in \code{expt_smry.xlsx}.
+#'  Values under the selected columns will be used to color-code sample IDs on the
+#'  top of a \code{EucDist} plot.
+#'@param annot_colnames A character vector of replacement name(s) to
 #'  \code{annot_cols}.
-#'@param df The filename of input data. By default, it will be determined by the
-#'  value of \code{id}.
-#'@param filepath The filepath to output results. By default, it will be
-#'  determined by the name of the current function \code{call} and the value of
-#'  \code{id}.
-#'@param filename A representative filename to output images. By default, it
-#'  will be determined by the names of the current \code{call}.
 #'@param ... Parameters inherited from \code{\link[pheatmap]{pheatmap}}
 #'
-#'@return Plots of distance matrices.
+#'@return Heat map visualization of distance matrices.
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -624,62 +560,32 @@ proteoEucDist <- function (id = gene,
 
 #'MDS plots
 #'
-#'MDS plots of protein data
+#'\code{pepMDS} is a wrapper function of \code{\link{proteoMDS}} for peptide
+#'data
 #'
-#' @examples
-#' prnMDS(
-#'   scale_log2r = TRUE,
-#'   col_color = Color,
-#'   col_shape = Shape,
-#'   show_ids = TRUE,
-#' )
-#'
-#' \dontrun{
-#' prnMDS(
-#'   col_color = "column_key_not_existed",
-#'   col_shape = "also_a_missing_column_key"
-#' )
-#' }
-#'
-#'@seealso \code{\link{proteoMDS}} for parameters
-#'@export
-prnMDS <- function (...) {
-	proteoMDS(id = gene, ...)
-}
-
-
-#'MDS plots
-#'
-#'MDS plots of peptide data
+#'@rdname proteoMDS
 #'
 #' @examples
 #' pepMDS(
-#'   scale_log2r = TRUE,
-#'   col_color = Color,
-#'   col_shape = Shape,
-#'   show_ids = TRUE,
+#'   scale_log2r = FALSE,
+#'   col_select = Select
 #' )
 #'
-#' \dontrun{
-#' pepMDS(
-#'   col_color = "column_key_not_existed",
-#'   col_shape = "also_a_missing_column_key"
-#' )
-#' }
-#'
-#'@seealso \code{\link{proteoMDS}} for parameters
 #'@export
 pepMDS <- function (...) {
 	proteoMDS(id = pep_seq, ...)
 }
 
 
-#'PCA plots
+#'MDS plots
 #'
-#'PCA plots of protein data
+#'\code{prnMDS} is a wrapper function of \code{\link{proteoMDS}} for protein
+#'data
+#'
+#'@rdname proteoMDS
 #'
 #' @examples
-#' prnPCA(
+#' prnMDS(
 #'   scale_log2r = TRUE,
 #'   col_color = Color,
 #'   col_shape = Shape,
@@ -687,22 +593,23 @@ pepMDS <- function (...) {
 #' )
 #'
 #' \dontrun{
-#' prnPCA(
+#' prnMDS(
 #'   col_color = "column_key_not_existed",
-#'   col_shape = "also_a_missing_column_key"
+#'   col_shape = "another_missing_column_key"
 #' )
 #' }
 #'
-#'@seealso \code{\link{proteoPCA}} for parameters
 #'@export
-prnPCA <- function (...) {
-	proteoPCA(id = gene, ...)
+prnMDS <- function (...) {
+  proteoMDS(id = gene, ...)
 }
 
 
 #'PCA plots
 #'
-#'PCA plots of peptide data
+#'\code{pepPCA} is a wrapper function of \code{\link{proteoPCA}} for peptide data
+#'
+#'@rdname proteoPCA
 #'
 #' @examples
 #' pepPCA(
@@ -712,76 +619,67 @@ prnPCA <- function (...) {
 #'   show_ids = TRUE,
 #' )
 #'
-#' \dontrun{
-#' pepPCA(
-#'   col_color = "column_key_not_existed",
-#'   col_shape = "also_a_missing_column_key"
-#' )
-#' }
-#'
-#'@seealso \code{\link{proteoPCA}} for parameters
 #'@export
 pepPCA <- function (...) {
 	proteoPCA(id = pep_seq, ...)
 }
 
 
-#'Distance plots
+#'PCA plots
 #'
-#'Euclidean distance of protein data
+#'\code{prnPCA} is a wrapper function of \code{\link{proteoPCA}} for protein data
+#'
+#'@rdname proteoPCA
 #'
 #' @examples
-#' prnEucDist(
+#' prnPCA(
 #'   scale_log2r = TRUE,
-#'   adjEucDist = FALSE,
-#'   show_ids = FALSE,
-#'   annot_cols = c("Peptide_Yield", "Group"),
-#'   display_numbers = TRUE,
-#'   number_color = "grey30",
-#'   number_format = "%.2f",
-#'   clustering_distance_rows = "euclidean",
-#'   clustering_distance_cols = "euclidean",
-#'   fontsize = 16,
-#'   fontsize_row = 20,
-#'   fontsize_col = 20,
-#'   fontsize_number = 8,
-#'   cluster_rows = TRUE,
-#'   show_rownames = TRUE,
-#'   show_colnames = TRUE,
-#'   border_color = "grey60",
-#'   cellwidth = 24,
-#'   cellheight = 24
+#'   col_color = Color,
+#'   col_shape = Shape,
+#'   show_ids = TRUE,
 #' )
 #'
-#'
 #' \dontrun{
-#' prnEucDist(
+#' prnPCA(
 #'   col_color = "column_key_not_existed",
-#'   col_shape = "also_a_missing_column_key",
-#'   annot_cols = c("bad_column_key", "yet_another_bad_column_key")
+#'   col_shape = "another_missing_column_key"
 #' )
 #' }
 #'
-#'@seealso \code{\link{proteoEucDist}} for parameters
 #'@export
-prnEucDist <- function (...) {
-	proteoEucDist(id = gene, ...)
+prnPCA <- function (...) {
+  proteoPCA(id = gene, ...)
 }
 
 
 #'Distance plots
 #'
-#'Euclidean distance of peptide data
+#'\code{pepEucDist} is a wrapper function of \code{\link{proteoEucDist}} for peptide data
+#'
+#'@rdname proteoEucDist
+#'
+#'@export
+pepEucDist <- function (...) {
+	proteoEucDist(id = pep_seq, ...)
+}
+
+
+#'Distance plots
+#'
+#'\code{prnEucDist} is a wrapper function of \code{\link{proteoEucDist}} for protein data
+#'
+#'@rdname proteoEucDist
 #'
 #' @examples
-#' pepEucDist(
+#' prnEucDist(
 #'   scale_log2r = TRUE,
-#'   adjEucDist = FALSE,
-#'   show_ids = FALSE,
 #'   annot_cols = c("Peptide_Yield", "Group"),
+#'   annot_colnames = c("New_Yield", "New_Group"), 
+#'   
+#'   # parameters from `pheatmap`
 #'   display_numbers = TRUE,
 #'   number_color = "grey30",
-#'   number_format = "%.2f",
+#'   number_format = "%.1f",
 #'   clustering_distance_rows = "euclidean",
 #'   clustering_distance_cols = "euclidean",
 #'   fontsize = 16,
@@ -793,20 +691,21 @@ prnEucDist <- function (...) {
 #'   show_colnames = TRUE,
 #'   border_color = "grey60",
 #'   cellwidth = 24,
-#'   cellheight = 24
+#'   cellheight = 24, 
+#'   width = 14,
+#'   height = 12
 #' )
 #'
 #'
 #' \dontrun{
-#' pepEucDist(
+#' prnEucDist(
 #'   col_color = "column_key_not_existed",
-#'   col_shape = "also_a_missing_column_key",
+#'   col_shape = "another_missing_column_key",
 #'   annot_cols = c("bad_column_key", "yet_another_bad_column_key")
 #' )
 #' }
 #'
-#'@seealso \code{\link{proteoEucDist}} for parameters
 #'@export
-pepEucDist <- function (...) {
-	proteoEucDist(id = pep_seq, ...)
+prnEucDist <- function (...) {
+  proteoEucDist(id = gene, ...)
 }

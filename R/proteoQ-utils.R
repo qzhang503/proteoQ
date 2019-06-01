@@ -86,7 +86,7 @@ na_zeroIntensity <- function (df) {
 
 #' Summarises numeric values
 #'
-#' \code{aggrNums} summarises \code{log2-ratios} and \code{intensity} by the
+#' \code{aggrNums} summarises \code{log2FC} and \code{intensity} by the
 #' descriptive statistics of \code{c("mean", "median", "weighted.mean",
 #' "top.3")}
 #'
@@ -111,11 +111,11 @@ aggrNums <- function(f) {
 
 #' Calculates weighted mean
 #'
-#' \code{TMT_wt_mean} calculates the weighted mean of \code{log2-ratios} and
+#' \code{TMT_wt_mean} calculates the weighted mean of \code{log2FC} and
 #' \code{intensity}.
 #'
-#' @param x A data frame of \code{log2-ratios} and \code{intensity}.
-#' @param id The variable to summarise \code{log2-ratios}.
+#' @param x A data frame of \code{log2FC} and \code{intensity}.
+#' @param id The variable to summarise \code{log2FC}.
 #' @import dplyr rlang
 #' @importFrom stringr str_length
 #' @importFrom tidyr gather
@@ -166,11 +166,11 @@ TMT_wt_mean <- function (x, id, ...) {
 
 #' Calculate top.3
 #'
-#' \code{TMT_wt_mean} calculates the weighted mean of \code{log2-ratios} and
+#' \code{TMT_wt_mean} calculates the weighted mean of \code{log2FC} and
 #' \code{intensity}.
 #'
-#' @param x A data frame of \code{log2-ratios} and \code{intensity}.
-#' @param id The variable to summarise \code{log2-ratios}.
+#' @param x A data frame of \code{log2FC} and \code{intensity}.
+#' @param id The variable to summarise \code{log2FC}.
 #' @examples
 #' df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)
 #'
@@ -198,7 +198,7 @@ TMT_top_n <- function (x, id, ...) {
 #'
 #' \code{not_all_zero} identifies the column indeces with all NA values.
 #'
-#' @param x A data frame of \code{log2-ratios} and \code{intensity}.
+#' @param x A data frame of \code{log2FC} and \code{intensity}.
 not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
 
 
@@ -206,7 +206,7 @@ not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
 #'
 #' \code{not_all_NA} identifies the column indeces with all NA values.
 #'
-#' @param x A data frame of \code{log2-ratios} and \code{intensity}.
+#' @param x A data frame of \code{log2FC} and \code{intensity}.
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
 not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
@@ -301,7 +301,7 @@ setHMColor <- function (annotation_col) {
 #' \code{setHMlims} imputes values beyond the limits to the corresponding
 #' limits.
 #'
-#' @param x A data frame of \code{log2-ratios}.
+#' @param x A data frame of \code{log2FC}.
 #' @param xmin the lower limit.
 #' @param xmax the upper limit.
 #' @examples

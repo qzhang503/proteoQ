@@ -7,7 +7,7 @@
 normPrn(id = c("prot_acc", "gene"), method_pep_prn = c("median",
   "mean", "weighted.mean", "top.3"), method_align = c("MC", "MGKernel"),
   range_log2r = c(20, 90), range_int = c(5, 95), n_comp = NULL,
-  seed = NULL, fasta = NULL, ...)
+  seed = NULL, fasta = NULL, col_refit = NULL, ...)
 }
 \arguments{
 \item{id}{The variable to summarise peptides into proteins. The option
@@ -17,27 +17,26 @@ summarisation by the gene names of proteins. At \code{id = gene}, data under
 the same gene name but different acccesssion numbers or entry names will be
 summarised into one entry.}
 
-\item{method_pep_prn}{The method to summarise the \code{log2-ratios} and the
+\item{method_pep_prn}{The method to summarise the \code{log2FC} and the
 \code{intensity} of peptides by protein entries. The descriptive statistics
 includes \code{c("mean", "median", "top.3", "weighted.mean")}. The
 representative \code{log10-intensity} of reporter ions at the peptide levels
-(from \code{\link{normPep}}) will be the weigth when summarising log2-ratios
+(from \code{\link{normPep}}) will be the weigth when summarising \code{log2FC}
 with "top.3" or "weighted.mean".}
 
-\item{method_align}{The method to align the \code{log2-ratios} of
-peptide/protein entries across samples. \code{MC}: median-centering;
-\code{MGKernel}: the kernal density defined by multiple Gaussian functions
+\item{method_align}{The method to align the \code{log2FC} of peptide/protein
+entries across samples. \code{MC}: median-centering; \code{MGKernel}: the
+kernal density defined by multiple Gaussian functions
 (\code{\link[mixtools]{normalmixEM}}). At \code{method_align = "MC"}, the
 ratio profiles of each sample will be aligned in that the medians of the
-\code{log2-ratios} are zero. At \code{method_align = "MGKernel"}, the
-\code{log2-ratios} will be aligned in that the maximums of kernel density
-are zero. It is also possible to align the \code{log2-ratios} to the median
-of a list of user-supplied genes: \code{method_align = c("ACTB", "GAPDH",
-...)}.}
+\code{log2FC} are zero. At \code{method_align = "MGKernel"}, the
+\code{log2FC} will be aligned in that the maximums of kernel density are
+zero. It is also possible to align the \code{log2FC} to the median of a list
+of user-supplied genes: \code{method_align = c("ACTB", "GAPDH", ...)}.}
 
-\item{range_log2r}{The range of the \code{log2-ratios} of peptide/protein
-entries for use in the scaling normalization of standard deviation across
-samples. The default is between the 20th and the 90th quantiles.}
+\item{range_log2r}{The range of the \code{log2FC} of peptide/protein entries
+for use in the scaling normalization of standard deviation across samples.
+The default is between the 20th and the 90th quantiles.}
 
 \item{range_int}{The range of the \code{intensity} of reporter ions for use in
 the scaling normalization of standard deviation across samples. The default
@@ -54,6 +53,14 @@ MGKernel}.}
 \item{fasta}{The file name with prepended directory path to the fasta database
 being used in MS/MS ion search. If not specified, a pre-compiled system file
 will be used.}
+
+\item{col_refit}{Character string to a column key in \code{expt_smry.xlsx}.
+Only samples corresponding to non-empty entries under \code{col_refit} will
+be used in the refit of \code{log2FC} using multiple Gaussian kernels. The
+density estimates from an earlier analyis will be kept for samples
+corresponding to empty entries under \code{col_refit}. At the NULL default,
+the column key \code{Sample_ID} will be used, which leads to the refit of
+code{log2FC} for all samples.}
 
 \item{...}{Additional parameters from \code{\link[mixtools]{normalmixEM}}:\cr
 \code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
@@ -94,8 +101,8 @@ accession number}} \cr uniprot_id     \tab
 name}} \cr I... (...)     \tab Reporter-ion intensity calculated from the
 descriptive statistics in method_\code{psm_pep} for indicated samples \cr
 N_I... (...)   \tab Normalized \code{I... (...)}. The calibration factors for
-median centerring of \code{log2-ratios} are used to scale the reporter-ion
-intensity \cr log2_R (...)   \tab \code{log2-ratios} relative to reference
+median centerring of \code{log2FC} are used to scale the reporter-ion
+intensity \cr log2_R (...)   \tab \code{log2FC} relative to reference
 materials for indicated samples \cr N_log2_R (...) \tab Aligned \code{log2_R
 (...)} according to method_align without scaling normalization \cr Z_log2_R
 (...) \tab \code{N_log2_R (...)} with scaling normalization \cr }

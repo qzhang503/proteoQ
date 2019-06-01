@@ -148,11 +148,11 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 
 #'Visualizes histograms
 #'
-#'\code{proteoHist} prepares the histogram visualization of \code{log2-ratios}
-#'for proteins or peptides data.
+#'\code{proteoHist} prepares the histogram visualization of \code{log2FC} for
+#'proteins or peptides data.
 #'
-#'In the histograms, the \code{log2-ratios} under each TMT channel are
-#'color-coded by their contributing reporter-ion intensity.
+#'In the histograms, the \code{log2FC} under each TMT channel are color-coded by
+#'their contributing reporter-ion intensity.
 #'
 #'The function matches the current \code{id} to those in the latest \code{call}
 #'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
@@ -163,31 +163,32 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 #'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 #'  \code{id = prot_acc} or \code{gene}.
 #'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Select}. Samples corresponding to non-empty entries
-#'  under \code{col_select} will be included in the indicated analysis.
-#'@param scale_log2r Logical; if TRUE, adjusts \code{log2-ratios} to the same
-#'  scale of standard deviation for all samples.
+#'  Samples corresponding to non-empty entries under \code{col_select} will be
+#'  included in the indicated analysis. At the NULL default, the column key
+#'  \code{Select} will be used.
+#'@param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
+#'  of standard deviation for all samples.
 #'@param show_curves Logical; if TRUE, shows the fitted curves.
 #'@param show_vline Logical; if TRUE, shows the vertical lines at \code{x = 0}.
 #'@param  new_fit Not currently used.
-#'@param df The file name of input data. By default, it will be determined by
+#'@param df The name of input data file. By default, it will be determined by
 #'  the value of \code{id}.
-#'@param filepath The file path to output results. By default, it will be
-#'  determined by the name of the current function \code{call} and the value of
-#'  \code{id}.
-#'@param filename A representative file name to output images. By default, it
-#'  will be determined by the names of the current \code{call}. The images are
+#'@param filepath A file path to output results. By default, it will be
+#'  determined by the name of the calling \code{function} and the value of
+#'  \code{id} in the \code{call}.
+#'@param filename A representative file name to output image(s). By default, it
+#'  will be determined by the name of the current \code{call}. The image(s) are
 #'  saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-#'  determined by the extension of file names with the default being
-#'  \code{.png}.
+#'  automatically determined by the extension of the file name. A \code{.png}
+#'  format will be used at default or an unrecognized file extension.
 #'@param ... Additional parameters for plotting: \cr \code{xmin}, the minimum
 #'  \eqn{x} at a log2 scale; the default is -2. \cr \code{xmax}, the maximum
 #'  \eqn{x} at a log2 scale; the default is +2. \cr \code{x_breaks}, the breaks
 #'  in \eqn{x}-axis at a log2 scale; the default is 1. \cr \code{binwidth}, the
-#'  binwidth of \code{log2-ratios}; the default is \eqn{(xmax - xmin)/80}. \cr
+#'  binwidth of \code{log2FC}; the default is \eqn{(xmax - xmin)/80}. \cr
 #'  \code{ncol}, the number of columns; the default is 1. \cr \code{width}, the
 #'  width of plot; \cr \code{height}, the height of plot.
-#'@return The histograms of \code{log2-ratios} under
+#'@return The histograms of \code{log2FC} under
 #'  \code{~\\dat_dir\\Peptide\\Histogram} or
 #'  \code{~\\dat_dir\\Protein\\Histogram}.
 #'
@@ -218,7 +219,8 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), co
 
 #'Visualizes the histograms of peptide \code{log2FC}
 #'
-#'\code{pepHist} is a wrapper function of \code{\link{proteoHist}}
+#'\code{pepHist} is a wrapper function of \code{\link{proteoHist}} for peptide
+#'data
 #'
 #'@rdname proteoHist
 #'
@@ -253,7 +255,8 @@ pepHist <- function (...) {
 
 #'Visualizes the histograms of protein \code{log2FC}
 #'
-#'\code{prnHist} is a wrapper function of \code{\link{proteoHist}}
+#'\code{prnHist} is a wrapper function of \code{\link{proteoHist}} for protein
+#'data
 #'
 #'@rdname proteoHist
 #'

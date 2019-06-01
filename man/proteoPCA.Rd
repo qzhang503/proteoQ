@@ -2,6 +2,8 @@
 % Please edit documentation in R/proteoQ-mds.R
 \name{proteoPCA}
 \alias{proteoPCA}
+\alias{pepPCA}
+\alias{prnPCA}
 \title{Visualizes PCA plots}
 \usage{
 proteoPCA(id = gene, col_select = NULL, col_group = NULL,
@@ -9,55 +11,64 @@ proteoPCA(id = gene, col_select = NULL, col_group = NULL,
   col_size = NULL, col_alpha = NULL, scale_log2r = TRUE,
   show_ids = TRUE, annot_cols = NULL, df = NULL, filepath = NULL,
   filename = NULL, ...)
+
+pepPCA(...)
+
+prnPCA(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
-used at column \code{id = "pep_seq"} or \code{"pep_seq_mod"}, and protein
-data at \code{id = "prot_acc"} or \code{"gene"}.}
+used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Select}. Samples corresponding to non-empty entries
-under \code{col_select} will be included in the indicated analysis.}
+Samples corresponding to non-empty entries under \code{col_select} will be
+included in the indicated analysis. At the NULL default, the column key
+\code{Select} will be used.}
 
-\item{col_group}{Not currently used.}
+\item{col_group}{Not used.}
 
 \item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Color}. Values under which will be used for the
-\code{color} aesthetics in \code{ggplot2}.}
+Values under which will be used for the \code{color} aesthetics in plots. At
+the NULL default, the column key \code{Color} will be used.}
 
 \item{col_fill}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Fill}. Values under which will be used for the
-\code{fill} aesthetics in \code{ggplot2}.}
+Values under which will be used for the \code{fill} aesthetics in plots. At
+the NULL default, the column key \code{Fill} will be used.}
 
 \item{col_shape}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Shape}. Values under which will be used for the
-\code{shape} aesthetics in \code{ggplot2}.}
+Values under which will be used for the \code{shape} aesthetics in plots. At
+the NULL default, the column key \code{Shape} will be used.}
 
 \item{col_size}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Size}. Values under which will be used for the
-\code{size} aesthetics in \code{ggplot2}.}
+Values under which will be used for the \code{size} aesthetics in plots. At
+the NULL default, the column key \code{Size} will be used.}
 
 \item{col_alpha}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Alpha}. Values under which will be used for the
-\code{alpha} aesthetics in \code{ggplot2}.}
+Values under which will be used for the \code{alpha} (transparency)
+aesthetics in plots. At the NULL default, the column key \code{Alpha} will
+be used.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2-ratios} to the same
-scale of standard deviation for all samples.}
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation for all samples.}
 
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots.}
 
-\item{annot_cols}{Not currently used.}
+\item{annot_cols}{Not used.}
 
-\item{df}{The filename of input data. By default, it will be determined by the
-value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined by
+the value of \code{id}.}
 
-\item{filepath}{The filepath to output results. By default, it will be
-determined by the name of the current function \code{call} and the value of
-\code{id}.}
+\item{filepath}{A file path to output results. By default, it will be
+determined by the name of the calling \code{function} and the value of
+\code{id} in the \code{call}.}
 
-\item{filename}{A representative filename to output images. By default, it
-will be determined by the names of the current \code{call}.}
+\item{filename}{A representative file name to output image(s). By default, it
+will be determined by the name of the current \code{call}. The image(s) are
+saved via \code{\link[ggplot2]{ggsave}} and the image type will be
+automatically determined by the extension of the file name. A \code{.png}
+format will be used at default or an unrecognized file extension.}
 
 \item{...}{Parameters inherited from \code{ggsave}: \cr \code{width}, the
 width of plot; \cr \code{height}, the height of plot \cr \code{...}}
@@ -68,7 +79,34 @@ PCA plots.
 \description{
 \code{protePCA} visualizes the results from principal component analysis
 (PCA).
+
+\code{pepPCA} is a wrapper function of \code{\link{proteoPCA}} for peptide data
+
+\code{prnPCA} is a wrapper function of \code{\link{proteoPCA}} for protein data
 }
 \details{
-\code{log2-ratios} are used in PCA (\code{\link[stats]{prcomp}}).
+\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
+}
+\examples{
+pepPCA(
+  scale_log2r = TRUE,
+  col_color = Color,
+  col_shape = Shape,
+  show_ids = TRUE,
+)
+
+prnPCA(
+  scale_log2r = TRUE,
+  col_color = Color,
+  col_shape = Shape,
+  show_ids = TRUE,
+)
+
+\dontrun{
+prnPCA(
+  col_color = "column_key_not_existed",
+  col_shape = "another_missing_column_key"
+)
+}
+
 }

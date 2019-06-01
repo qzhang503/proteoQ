@@ -303,7 +303,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			          col_size = !!col_size, col_alpha = !!col_alpha, 
 			          label_scheme_sub = label_scheme_sub, 
 			          filepath = filepath, 
-			          filename = paste0(fn_prx, ".png"), 
+			          filename = paste0(fn_prx, ".", fn_suffix), 
 			          show_ids = show_ids, ...)
 
 			if(annot_kinases) {
@@ -345,7 +345,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			          pr_bi = df_mds$pr_bi, 
 			          prop_var_bi = df_mds$prop_var_bi, 
 			          filepath = filepath, 
-			          filename = paste0(fn_prx, ".png"), 
+			          filename = paste0(fn_prx, ".", fn_suffix), 
 			          show_ids = show_ids, ...)
 
 			if(annot_kinases) {
@@ -384,7 +384,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			df_mds$D %>% plotEucDist(annot_cols, 
 			                         annot_colnames, 
 			                         filepath = filepath, 
-			                         filename = paste0(fn_prx, ".png"), ...
+			                         filename = paste0(fn_prx, ".", fn_suffix), ...
 			)
 
 			if(annot_kinases) {

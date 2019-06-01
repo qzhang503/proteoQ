@@ -7,9 +7,9 @@
 dblTrim(df, range_log2r, range_int)
 }
 \arguments{
-\item{range_log2r}{The range of the \code{log2-ratios} of peptide/protein
-entries for use in the scaling normalization of standard deviation across
-samples. The default is between the 20th and the 90th quantiles.}
+\item{range_log2r}{The range of the \code{log2FC} of peptide/protein entries
+for use in the scaling normalization of standard deviation across samples.
+The default is between the 20th and the 90th quantiles.}
 
 \item{range_int}{The range of the \code{intensity} of reporter ions for use in
 the scaling normalization of standard deviation across samples. The default

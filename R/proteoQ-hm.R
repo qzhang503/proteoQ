@@ -4,7 +4,7 @@
 #'
 #' @param df A data frame containing only numeric values.
 #' @param id The name of unqiue identifiers.
-#' @param scale_log2r Logical; if TRUE, rescales \code{log2-ratios} to the same
+#' @param scale_log2r Logical; if TRUE, rescales \code{log2FC} to the same
 #'   scale.
 #' @param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
 #'   analysis.
@@ -230,6 +230,8 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
     dots$cluster_rows <- FALSE
   }
   
+  filename <- gg_imgname(filename)
+  
   p <- my_pheatmap(
     mat = df_hm,
     filename = file.path(filepath, filename),
@@ -290,7 +292,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
           fontsize_row = ceiling(200/nrow(Cluster %>% dplyr::filter(Cluster == cluster_id))),
           annotation_colors = annotation_colors,
           filename = file.path(filepath, "Subtrees",
-                               paste0("Subtree_", cutree_rows, "-", cluster_id, ".png"))
+                               paste0("Subtree_", cutree_rows, "-", cluster_id, ".", fn_suffix))
         )
         
         rm(d_sub, h_sub)
@@ -340,7 +342,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 
 #'Plots heat maps
 #'
-#'\code{proteoHM} produces the heat map visualization of \code{log2-ratios} for
+#'\code{proteoHM} produces the heat map visualization of \code{log2FC} for
 #'proteins or peptides data.
 #'
 #'Data columns with complete missing values will be removed prior to
@@ -361,37 +363,16 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
 #'pep_seq_mod} will be matched to \code{id = pep_seq}.
 #'
-#'@param id Character string to indicate the type of data. Peptide data will be
-#'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
-#'  \code{id = prot_acc} or \code{gene}.
-#'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Select}. Samples corresponding to non-empty entries
-#'  under \code{col_select} will be included in the indicated analysis.
-#'@param  col_benchmark Character string to a column key in
-#'  \code{expt_smry.xlsx}. The default key is \code{Benchmark}. Samples
-#'  corresponding to non-empty entries under \code{col_benchmark} will be used
-#'  as benchmarks in the indicated analysis.
-#'@param scale_log2r Logical; if TRUE, adjusts \code{log2-ratios} to the same
-#'  scale of standard deviation for all samples.
+#'@inheritParams  proteoEucDist
+#'@param  col_benchmark Not used.
 #'@param impute_na Logical; if TRUE, imputes missing values.
 #'@param complete_cases Logical; if TRUE, only cases that are complete with no
 #'  missing values will be used for visualization.
-#'@param df The filename of input data. By default, it will be determined by the
-#'  value of \code{id}.
-#'@param filepath The filepath to output results. By default, it will be
-#'  determined by the name of the current function \code{call} and the value of
-#'  \code{id}.
-#'@param filename A representative file name to output images. By default, it
-#'  will be determined by the names of the current \code{call}.
-#'@param annot_cols Column keys in \code{expt_smry.xlsx} for use in displaying
-#'  tracks on the top of the plot.
-#'@param annot_colnames The display names of the column keys in
-#'  \code{annot_cols}.
-#'@param ... More parameters for plotting: \cr \code{xmin}, the minimum x; \cr
-#'  \code{xmax}, the maximum x; \cr \code{x_margin}, the margin in heat
-#'  scales;\cr \code{annot_cols}, the column keys in \code{expt_smry.xlsx} for
-#'  use in the color coding of samples;\cr \code{width}, the width of plot; \cr
-#'  \code{height}, the height of plot; \cr additional arguments inherited from
+#'@param ... More parameters for plotting: \cr \code{xmin}, the minimum \eqn{x}
+#'  at a log2 scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a
+#'  log2 scale; the default is +1 \cr \code{x_margin}, the margin in heat
+#'  scales; the default is 0.1 \cr \code{width}, the width of plot \cr
+#'  \code{height}, the height of plot \cr additional arguments inherited from
 #'  \code{\link[pheatmap]{pheatmap}}.
 #'@return Heat map images.
 #'
@@ -432,7 +413,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'  annot_cols = c("Group"),
 #'  cluster_rows = FALSE, # no row clustering
 #'  clustering_distance_rows  = "maximum",
-#'  cutree_rows = 6, # will overrule tree cutting at 'cluster_rows = FALSE'
+#'  cutree_rows = 6, # will be overruled at 'cluster_rows = FALSE'
 #'  show_rownames = FALSE,
 #'  show_colnames = TRUE,
 #'  fontsize_row = 3,
@@ -474,7 +455,11 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
 
 
 #'Visualizes peptide heat maps
-#'@seealso \code{\link{proteoHM}} for parameters
+#'
+#'\code{pepHM} is a wrapper function of \code{\link{proteoHM}} for peptide data
+#'
+#'@rdname proteoHM
+#'
 #'@export
 pepHM <- function (...) {
   proteoHM(id = pep_seq, ...)
@@ -482,7 +467,11 @@ pepHM <- function (...) {
 
 
 #'Visualizes protein heat maps
-#'@seealso \code{\link{proteoHM}} for parameters
+#'
+#'\code{prnHM} is a wrapper function of \code{\link{proteoHM}} for protein data
+#'
+#'@rdname proteoHM
+#'
 #'@export
 prnHM <- function (...) {
   proteoHM(id = gene, ...)

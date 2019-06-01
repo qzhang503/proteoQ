@@ -14,11 +14,11 @@ summarisation by both the primary sequences and variable modifications of
 peptides. \code{PSMs} data with the same value in \code{pep_seq} or
 \code{pep_seq_mod} will be summarised into a single entry of peptide.}
 
-\item{method_psm_pep}{The method to summarise the \code{log2-ratios} and the
+\item{method_psm_pep}{The method to summarise the \code{log2FC} and the
 \code{intensity} of \code{PSMs} by peptide entries. The descriptive
 statistics includes \code{c("mean", "median", "top.3", "weighted.mean")}.
 The \code{log10-intensity} of reporter ions at the \code{PSMs} levels will
-be the weight when summarising \code{log2-ratios} with \code{"top.3"} or
+be the weight when summarising \code{log2FC} with \code{"top.3"} or
 \code{"weighted.mean"}.}
 }
 \value{

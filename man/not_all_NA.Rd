@@ -7,7 +7,7 @@
 not_all_NA(x)
 }
 \arguments{
-\item{x}{A data frame of \code{log2-ratios} and \code{intensity}.}
+\item{x}{A data frame of \code{log2FC} and \code{intensity}.}
 }
 \description{
 \code{not_all_NA} identifies the column indeces with all NA values.

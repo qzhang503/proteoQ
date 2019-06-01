@@ -7,11 +7,11 @@
 TMT_wt_mean(x, id, ...)
 }
 \arguments{
-\item{x}{A data frame of \code{log2-ratios} and \code{intensity}.}
+\item{x}{A data frame of \code{log2FC} and \code{intensity}.}
 
-\item{id}{The variable to summarise \code{log2-ratios}.}
+\item{id}{The variable to summarise \code{log2FC}.}
 }
 \description{
-\code{TMT_wt_mean} calculates the weighted mean of \code{log2-ratios} and
+\code{TMT_wt_mean} calculates the weighted mean of \code{log2FC} and
 \code{intensity}.
 }
