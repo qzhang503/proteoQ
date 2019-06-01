@@ -2,6 +2,8 @@
 % Please edit documentation in R/proteoQ-hm.R
 \name{proteoHM}
 \alias{proteoHM}
+\alias{pepHM}
+\alias{prnHM}
 \title{Plots heat maps}
 \usage{
 proteoHM(id = gene, col_select = NULL, col_benchmark = NULL,
@@ -9,6 +11,10 @@ proteoHM(id = gene, col_select = NULL, col_benchmark = NULL,
   df = NULL, filepath = NULL, filename = NULL, xmin = -1,
   xmax = 1, x_margin = 0.1, annot_cols = NULL,
   annot_colnames = NULL, ...)
+
+pepHM(...)
+
+prnHM(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
@@ -16,51 +22,57 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Select}. Samples corresponding to non-empty entries
-under \code{col_select} will be included in the indicated analysis.}
+Samples corresponding to non-empty entries under \code{col_select} will be
+included in the indicated analysis. At the NULL default, the column key
+\code{Select} will be used.}
 
-\item{col_benchmark}{Character string to a column key in
-\code{expt_smry.xlsx}. The default key is \code{Benchmark}. Samples
-corresponding to non-empty entries under \code{col_benchmark} will be used
-as benchmarks in the indicated analysis.}
+\item{col_benchmark}{Not used.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2-ratios} to the same
-scale of standard deviation for all samples.}
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation for all samples.}
 
 \item{impute_na}{Logical; if TRUE, imputes missing values.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used for visualization.}
 
-\item{df}{The filename of input data. By default, it will be determined by the
-value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined by
+the value of \code{id}.}
 
-\item{filepath}{The filepath to output results. By default, it will be
-determined by the name of the current function \code{call} and the value of
-\code{id}.}
+\item{filepath}{A file path to output results. By default, it will be
+determined by the name of the calling \code{function} and the value of
+\code{id} in the \code{call}.}
 
-\item{filename}{A representative file name to output images. By default, it
-will be determined by the names of the current \code{call}.}
+\item{filename}{A representative file name to output image(s). By default, it
+will be determined by the name of the current \code{call}. The image(s) are
+saved via \code{\link[ggplot2]{ggsave}} and the image type will be
+automatically determined by the extension of the file name. A \code{.png}
+format will be used at default or an unrecognized file extension.}
 
-\item{annot_cols}{Column keys in \code{expt_smry.xlsx} for use in displaying
-tracks on the top of the plot.}
+\item{annot_cols}{A character vector of column names in \code{expt_smry.xlsx}.
+Values under the selected columns will be used to color-code sample IDs on the
+top of a \code{EucDist} plot.}
 
-\item{annot_colnames}{The display names of the column keys in
+\item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}.}
 
-\item{...}{More parameters for plotting: \cr \code{xmin}, the minimum x; \cr
-\code{xmax}, the maximum x; \cr \code{x_margin}, the margin in heat
-scales;\cr \code{annot_cols}, the column keys in \code{expt_smry.xlsx} for
-use in the color coding of samples;\cr \code{width}, the width of plot; \cr
-\code{height}, the height of plot; \cr additional arguments inherited from
+\item{...}{More parameters for plotting: \cr \code{xmin}, the minimum \eqn{x}
+at a log2 scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a
+log2 scale; the default is +1 \cr \code{x_margin}, the margin in heat
+scales; the default is 0.1 \cr \code{width}, the width of plot \cr
+\code{height}, the height of plot \cr additional arguments inherited from
 \code{\link[pheatmap]{pheatmap}}.}
 }
 \value{
 Heat map images.
 }
 \description{
-\code{proteoHM} produces the heat map visualization of \code{log2-ratios} for
+\code{proteoHM} produces the heat map visualization of \code{log2FC} for
 proteins or peptides data.
+
+\code{pepHM} is a wrapper function of \code{\link{proteoHM}} for peptide data
+
+\code{prnHM} is a wrapper function of \code{\link{proteoHM}} for protein data
 }
 \details{
 Data columns with complete missing values will be removed prior to
@@ -118,7 +130,7 @@ prnHM(
  annot_cols = c("Group"),
  cluster_rows = FALSE, # no row clustering
  clustering_distance_rows  = "maximum",
- cutree_rows = 6, # will overrule tree cutting at 'cluster_rows = FALSE'
+ cutree_rows = 6, # will be overruled at 'cluster_rows = FALSE'
  show_rownames = FALSE,
  show_colnames = TRUE,
  fontsize_row = 3,

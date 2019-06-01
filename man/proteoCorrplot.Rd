@@ -2,12 +2,18 @@
 % Please edit documentation in R/proteoQ-corrplots.R
 \name{proteoCorrplot}
 \alias{proteoCorrplot}
+\alias{pepCorr}
+\alias{prnCorr}
 \title{Correlation Plots}
 \usage{
 proteoCorrplot(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, col_order = NULL, use_log10 = TRUE,
   scale_log2r = TRUE, min_int = 3.5, max_int = 6.5, min_log2r = -2,
   max_log2r = 2, df = NULL, filepath = NULL, filename = NULL, ...)
+
+pepCorr(...)
+
+prnCorr(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
@@ -15,33 +21,41 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Select}. Samples corresponding to non-empty entries
-under \code{col_select} will be included in the indicated analysis.}
+Samples corresponding to non-empty entries under \code{col_select} will be
+included in the indicated analysis. At the NULL default, the column key
+\code{Select} will be used.}
 
-\item{col_order}{Not currently used.}
+\item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
+Numeric values under which will be used for the left-to-right arrangement of
+samples in plots. At the NULL default, the column key \code{Order} will be
+used.}
 
-\item{use_log10}{Logical; if TRUE, \code{log10} transformation of
-\code{intensity}.}
+\item{use_log10}{Logical; if TRUE, \code{log10} transformation for
+\code{intensity} data.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2-ratios} to the same
-scale of standard deviation for all samples.}
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation for all samples.}
 
-\item{min_int}{The minimum intensity at \code{log10} scale.}
+\item{min_int}{The minimum intensity at \code{log10} scale in display.}
 
-\item{max_int}{The maximum intensity at \code{log10} scale.}
+\item{max_int}{The maximum intensity at \code{log10} scale in display.}
 
-\item{min_log2r}{The minimum \code{log2-ratio} for display.}
+\item{min_log2r}{The minimum \code{log2FC} in display.}
 
-\item{max_log2r}{The maximum \code{log2-ratio} for display.}
+\item{max_log2r}{The maximum \code{log2FC} in display.}
 
-\item{df}{The filename of input data. By default, it will be determined by the
-value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined by
+the value of \code{id}.}
 
-\item{filepath}{The filepath to output results. By default, it will be
-determined by the names of the current functional \code{call}.}
+\item{filepath}{A file path to output results. By default, it will be
+determined by the name of the calling \code{function} and the value of
+\code{id} in the \code{call}.}
 
-\item{filename}{A representative filename to output images. By default, it
-will be determined by the names of the current \code{call}.}
+\item{filename}{A representative file name to output image(s). By default, it
+will be determined by the name of the current \code{call}. The image(s) are
+saved via \code{\link[ggplot2]{ggsave}} and the image type will be
+automatically determined by the extension of the file name. A \code{.png}
+format will be used at default or an unrecognized file extension.}
 
 \item{...}{Parameters inherited from \code{ggsave}: \cr \code{width}, the
 width of plot; \cr \code{height}, the height of plot \cr \code{...}}
@@ -50,12 +64,33 @@ width of plot; \cr \code{height}, the height of plot \cr \code{...}}
 Correlation plots.
 }
 \description{
-\code{proteoCorrplot} produces correlation plots for both \code{log2-ratios}
-and reporter-ion \code{intensities}.
+\code{proteoCorrplot} produces correlation plots for both \code{log2FC} and
+reporter-ion \code{intensities}.
+
+\code{pepCorr} is a wrapper function of \code{\link{proteoCorrplot}} for
+peptide data
+
+\code{prnCorr} is a wrapper function of \code{\link{proteoCorrplot}} for
+protein data
 }
 \details{
 The function matches the current \code{id} to those in the latest \code{calls}
 to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
 \code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
 pep_seq_mod} will be matched to \code{id = pep_seq}.
+}
+\examples{
+pepCorr(
+  use_log10 = TRUE,
+  scale_log2r = TRUE,
+  min_int = 3.5,
+  max_int = 6.5,
+  min_log2r = -2,
+  max_log2r = 2
+)
+
+prnCorr(
+  scale_log2r = TRUE
+)
+
 }

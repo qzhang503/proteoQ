@@ -7,7 +7,7 @@
 setHMlims(x, xmin, xmax)
 }
 \arguments{
-\item{x}{A data frame of \code{log2-ratios}.}
+\item{x}{A data frame of \code{log2FC}.}
 
 \item{xmin}{the lower limit.}
 

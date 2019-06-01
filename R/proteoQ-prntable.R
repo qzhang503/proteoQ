@@ -30,8 +30,8 @@
 #'name}} \cr I... (...)     \tab Reporter-ion intensity calculated from the
 #'descriptive statistics in method_\code{psm_pep} for indicated samples \cr
 #'N_I... (...)   \tab Normalized \code{I... (...)}. The calibration factors for
-#'median centerring of \code{log2-ratios} are used to scale the reporter-ion
-#'intensity \cr log2_R (...)   \tab \code{log2-ratios} relative to reference
+#'median centerring of \code{log2FC} are used to scale the reporter-ion
+#'intensity \cr log2_R (...)   \tab \code{log2FC} relative to reference
 #'materials for indicated samples \cr N_log2_R (...) \tab Aligned \code{log2_R
 #'(...)} according to method_align without scaling normalization \cr Z_log2_R
 #'(...) \tab \code{N_log2_R (...)} with scaling normalization \cr }
@@ -42,11 +42,11 @@
 #'  summarisation by the gene names of proteins. At \code{id = gene}, data under
 #'  the same gene name but different acccesssion numbers or entry names will be
 #'  summarised into one entry.
-#'@param method_pep_prn The method to summarise the \code{log2-ratios} and the
+#'@param method_pep_prn The method to summarise the \code{log2FC} and the
 #'  \code{intensity} of peptides by protein entries. The descriptive statistics
 #'  includes \code{c("mean", "median", "top.3", "weighted.mean")}. The
 #'  representative \code{log10-intensity} of reporter ions at the peptide levels
-#'  (from \code{\link{normPep}}) will be the weigth when summarising log2-ratios
+#'  (from \code{\link{normPep}}) will be the weigth when summarising \code{log2FC}
 #'  with "top.3" or "weighted.mean".
 #'@inheritParams normPep
 #'@param fasta The file name with prepended directory path to the fasta database
@@ -80,7 +80,8 @@
 normPrn <- function (id = c("prot_acc", "gene"), 
                      method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), 
                      method_align = c("MC", "MGKernel"), range_log2r = c(20, 90), 
-                     range_int = c(5, 95), n_comp = NULL, seed = NULL, fasta = NULL, ...) {
+                     range_int = c(5, 95), n_comp = NULL, seed = NULL, fasta = NULL, 
+                     col_refit = NULL, ...) {
 
 	dir.create(file.path(dat_dir, "Protein\\Histogram"), recursive = TRUE, showWarnings = FALSE)
 	dir.create(file.path(dat_dir, "Protein\\cache"), recursive = TRUE, showWarnings = FALSE)
@@ -121,6 +122,20 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		id <- "gene"
 	} else {
 		id <- rlang::as_string(id)
+	}
+	
+	col_refit <- rlang::enexpr(col_refit)
+	col_refit <- ifelse(is.null(col_refit), rlang::expr(Sample_ID), rlang::sym(col_refit))
+	load(file = file.path(dat_dir, "label_scheme.Rdata"))
+	
+	if(is.null(label_scheme[[col_refit]])) {
+	  col_refit <- rlang::expr(Sample_ID)
+	  warning("Column \'", rlang::as_string(col_refit), "\' does not exist.
+			Use column \'Sample_ID\' instead.", call. = FALSE)
+	} else if(sum(!is.na(label_scheme[[col_refit]])) == 0) {
+	  col_refit <- rlang::expr(Sample_ID)
+	  warning("No samples were specified under column \'", rlang::as_string(col_refit), "\'.
+			Use column \'Sample_ID\' instead.", call. = FALSE)
 	}
 	
 	mget(names(formals()), rlang::current_env()) %>% save_call("normPrn")
@@ -239,6 +254,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		range_log2r = range_log2r, 
 		range_int = range_int, 
 		filepath = file.path(dat_dir, "Protein\\Histogram"), 
+		col_refit = col_refit, 
 		!!!dots
 	)
 

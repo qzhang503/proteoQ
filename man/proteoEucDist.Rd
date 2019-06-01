@@ -2,58 +2,134 @@
 % Please edit documentation in R/proteoQ-mds.R
 \name{proteoEucDist}
 \alias{proteoEucDist}
-\title{Visualizes Euclidean distances}
+\alias{pepEucDist}
+\alias{prnEucDist}
+\title{Visualizes the matrix of Euclidean distances}
 \usage{
 proteoEucDist(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
   col_size = NULL, col_alpha = NULL, scale_log2r = TRUE,
   adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL,
   df = NULL, filepath = NULL, filename = NULL, ...)
+
+pepEucDist(...)
+
+prnEucDist(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
-used at column \code{id = "pep_seq"} or \code{"pep_seq_mod"}, and protein
-data at \code{id = "prot_acc"} or \code{"gene"}.}
+used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\code{id = prot_acc} or \code{gene}.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2-ratios} to the same
-scale of standard deviation for all samples.}
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_select} will be
+included in the indicated analysis. At the NULL default, the column key
+\code{Select} will be used.}
+
+\item{col_group}{Not used.}
+
+\item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{color} aesthetics in plots. At
+the NULL default, the column key \code{Color} will be used.}
+
+\item{col_fill}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{fill} aesthetics in plots. At
+the NULL default, the column key \code{Fill} will be used.}
+
+\item{col_shape}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{shape} aesthetics in plots. At
+the NULL default, the column key \code{Shape} will be used.}
+
+\item{col_size}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{size} aesthetics in plots. At
+the NULL default, the column key \code{Size} will be used.}
+
+\item{col_alpha}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{alpha} (transparency)
+aesthetics in plots. At the NULL default, the column key \code{Alpha} will
+be used.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation for all samples.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex Euclidean distance
 by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
-\code{reference samples} in each TMT plex undergo approximately the same
-sample handling process as the rest of the samples. For instance,
+\code{reference samples} from each TMT plex undergo approximately the same
+sample handling process as the samples of interest. For instance,
 \code{reference samples} were split at the levels of protein lysates.
 Typically, \code{adjEucDist = FALSE} if \code{reference samples} were split
 near the end of a sample handling process, for instance, at the stages
 immediately before or after TMT labeling.}
 
-\item{annot_cols}{Column names available in \code{expt_smry.xlsx}. Values
-under the selected columns will be used to color-code sample IDs on the top
-of \code{EucDist} plots.}
+\item{annot_cols}{A character vector of column names in \code{expt_smry.xlsx}.
+Values under the selected columns will be used to color-code sample IDs on the
+top of a \code{EucDist} plot.}
 
-\item{annot_colnames}{Character vector of replacement name(s) to
+\item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}.}
 
-\item{df}{The filename of input data. By default, it will be determined by the
-value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined by
+the value of \code{id}.}
 
-\item{filepath}{The filepath to output results. By default, it will be
-determined by the name of the current function \code{call} and the value of
-\code{id}.}
+\item{filepath}{A file path to output results. By default, it will be
+determined by the name of the calling \code{function} and the value of
+\code{id} in the \code{call}.}
 
-\item{filename}{A representative filename to output images. By default, it
-will be determined by the names of the current \code{call}.}
+\item{filename}{A representative file name to output image(s). By default, it
+will be determined by the name of the current \code{call}. The image(s) are
+saved via \code{\link[ggplot2]{ggsave}} and the image type will be
+automatically determined by the extension of the file name. A \code{.png}
+format will be used at default or an unrecognized file extension.}
 
 \item{...}{Parameters inherited from \code{\link[pheatmap]{pheatmap}}}
 }
 \value{
-Plots of distance matrices.
+Heat map visualization of distance matrices.
 }
 \description{
-\code{proteoEucDist} visualizes the Euclidean distances of protein or peptide
-data.
+\code{proteoEucDist} visualizes the heat map of Euclidean distances.
+
+\code{pepEucDist} is a wrapper function of \code{\link{proteoEucDist}} for peptide data
+
+\code{prnEucDist} is a wrapper function of \code{\link{proteoEucDist}} for protein data
 }
 \details{
-An Euclidean distance matrix of \code{log2-ratios} is returned by
-\code{\link[base]{dist}}.
+An Euclidean distance matrix of \code{log2FC} is returned by
+\code{\link[base]{dist}} for heat map visualization.
+}
+\examples{
+prnEucDist(
+  scale_log2r = TRUE,
+  annot_cols = c("Peptide_Yield", "Group"),
+  annot_colnames = c("New_Yield", "New_Group"), 
+  
+  # parameters from `pheatmap`
+  display_numbers = TRUE,
+  number_color = "grey30",
+  number_format = "\%.1f",
+  clustering_distance_rows = "euclidean",
+  clustering_distance_cols = "euclidean",
+  fontsize = 16,
+  fontsize_row = 20,
+  fontsize_col = 20,
+  fontsize_number = 8,
+  cluster_rows = TRUE,
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  border_color = "grey60",
+  cellwidth = 24,
+  cellheight = 24, 
+  width = 14,
+  height = 12
+)
+
+
+\dontrun{
+prnEucDist(
+  col_color = "column_key_not_existed",
+  col_shape = "another_missing_column_key",
+  annot_cols = c("bad_column_key", "yet_another_bad_column_key")
+)
+}
+
 }

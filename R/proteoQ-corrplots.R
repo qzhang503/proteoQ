@@ -14,6 +14,7 @@ plotCorr <- function (df = NULL, col_select = NULL, col_order = NULL,
 	col_order <- rlang::enexpr(col_order)
 
 	fn_prx <- gsub("\\..*$", "", filename)
+	fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
 
 	if (use_log10) df$Intensity <- log10(df$Intensity)
 	
@@ -36,11 +37,11 @@ plotCorr <- function (df = NULL, col_select = NULL, col_order = NULL,
 	                                     expression("Intensity ("*log[10]*")"), "Intensity")
 
 	plot_corr_sub(df = df$Intensity, xlab = x_label_int, ylab = y_label_int,
-	              filename = paste0(fn_prx, "_Intensity.png"), filepath = filepath,
+	              filename = paste0(fn_prx, "_Intensity.", fn_suffix), filepath = filepath,
 	              xmin = min_int, xmax = max_int, ...)
 
 	plot_corr_sub(df = df$log2R, xlab = x_label, ylab = y_label,
-	              filename = paste0(fn_prx, "_log2Ratio.png"), filepath = filepath,
+	              filename = paste0(fn_prx, "_log2Ratio", fn_suffix), filepath = filepath,
 	              xmin = min_log2r, xmax = max_log2r, ...)
 }
 
@@ -206,8 +207,6 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath, xmin, xmax, ...) 
 
   dots <- rlang::enexprs(...)
 
-  fn_prx <- gsub("\\..*$", "", filename)
-
   ncol <- ncol(df)
   
   if(is.null(dots$width)) {
@@ -295,43 +294,34 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath, xmin, xmax, ...) 
   p1 <- p1 +
     theme(plot.title = element_text(face = "bold", colour = "black", size = 20,
                                     hjust = 0.5, vjust = 0.5))
-
-  ggsave(file.path(filepath, paste0(fn_prx, ".png")), p1, width = width, height = height,
+  
+  filename <- gg_imgname(filename)
+  ggsave(file.path(filepath, filename), p1, width = width, height = height,
          dpi = dpi, units = "in")
 }
 
 
 #'Correlation Plots
 #'
-#'\code{proteoCorrplot} produces correlation plots for both \code{log2-ratios}
-#'and reporter-ion \code{intensities}.
+#'\code{proteoCorrplot} produces correlation plots for both \code{log2FC} and
+#'reporter-ion \code{intensities}.
 #'
 #'The function matches the current \code{id} to those in the latest \code{calls}
 #'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
 #'\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
 #'pep_seq_mod} will be matched to \code{id = pep_seq}.
 #'
-#'@param id Character string to indicate the type of data. Peptide data will be
-#'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
-#'  \code{id = prot_acc} or \code{gene}.
-#'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Select}. Samples corresponding to non-empty entries
-#'  under \code{col_select} will be included in the indicated analysis.
-#'@param  col_order Not currently used.
-#'@param use_log10 Logical; if TRUE, \code{log10} transformation of
-#'  \code{intensity}.
-#'@param scale_log2r Logical; if TRUE, adjusts \code{log2-ratios} to the same
-#'  scale of standard deviation for all samples.
-#'@param min_int The minimum intensity at \code{log10} scale.
-#'@param max_int The maximum intensity at \code{log10} scale.
-#'@param min_log2r The minimum \code{log2-ratio} for display.
-#'@param max_log2r The maximum \code{log2-ratio} for display.
-#'@param df The filename of input data. By default, it will be determined by the
-#'  value of \code{id}.
-#'@param filepath The filepath to output results. By default, it will be
-#'  determined by the names of the current functional \code{call}.
-#'@param filename A representative filename to output images. By default, it
-#'  will be determined by the names of the current \code{call}.
+#'@inheritParams proteoHist
+#'@param  col_order Character string to a column key in \code{expt_smry.xlsx}.
+#'  Numeric values under which will be used for the left-to-right arrangement of
+#'  samples in plots. At the NULL default, the column key \code{Order} will be
+#'  used.
+#'@param use_log10 Logical; if TRUE, \code{log10} transformation for
+#'  \code{intensity} data.
+#'@param min_int The minimum intensity at \code{log10} scale in display.
+#'@param max_int The maximum intensity at \code{log10} scale in display.
+#'@param min_log2r The minimum \code{log2FC} in display.
+#'@param max_log2r The maximum \code{log2FC} in display.
 #'@param ... Parameters inherited from \code{ggsave}: \cr \code{width}, the
 #'  width of plot; \cr \code{height}, the height of plot \cr \code{...}
 #'@return Correlation plots.
@@ -368,7 +358,10 @@ proteoCorrplot <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene")
 
 #'Correlation plots of peptide data
 #'
-#'@seealso \code{\link{proteoCorrplot}} for parameters
+#'\code{pepCorr} is a wrapper function of \code{\link{proteoCorrplot}} for
+#'peptide data
+#'
+#'@rdname proteoCorrplot
 #'
 #' @examples
 #' pepCorr(
@@ -387,16 +380,14 @@ pepCorr <- function (...) {
 
 #'Correlation plots of protein data
 #'
-#'@seealso \code{\link{proteoCorrplot}} for parameters
+#'\code{prnCorr} is a wrapper function of \code{\link{proteoCorrplot}} for
+#'protein data
+#'
+#'@rdname proteoCorrplot
 #'
 #' @examples
 #' prnCorr(
-#'   use_log10 = TRUE,
-#'   scale_log2r = TRUE,
-#'   min_int = 3.5,
-#'   max_int = 6.5,
-#'   min_log2r = -2,
-#'   max_log2r = 2
+#'   scale_log2r = TRUE
 #' )
 #'
 #'@export

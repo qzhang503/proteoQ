@@ -10,7 +10,7 @@ aggrNums(f)
 \item{f}{A function for data summarisation.}
 }
 \description{
-\code{aggrNums} summarises \code{log2-ratios} and \code{intensity} by the
+\code{aggrNums} summarises \code{log2FC} and \code{intensity} by the
 descriptive statistics of \code{c("mean", "median", "weighted.mean",
 "top.3")}
 }

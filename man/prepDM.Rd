@@ -11,7 +11,7 @@ prepDM(df, id, scale_log2r, sub_grp, type = "ratio", anal_type)
 
 \item{id}{The name of unqiue identifiers.}
 
-\item{scale_log2r}{Logical; if TRUE, rescales \code{log2-ratios} to the same
+\item{scale_log2r}{Logical; if TRUE, rescales \code{log2FC} to the same
 scale.}
 
 \item{sub_grp}{Numeric.  A list of sample IDs that will be used in subsequent

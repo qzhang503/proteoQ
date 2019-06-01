@@ -10,7 +10,8 @@
 #'
 #'@import dplyr purrr rlang mixtools
 #'@importFrom magrittr %>%
-normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range_int, filepath, ...) {
+normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range_int, filepath, 
+                       col_refit = NULL, ...) {
 
 	my_which_max <- function (params) {
 		fit <- params %>%
@@ -86,18 +87,44 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 
 	df <- try(df %>% dplyr::select(-grep("Z_log2_R[0-9]{3}", names(.))))
 
-	if(method_align == "MGKernel") {
+	if (method_align == "MGKernel") {
 		print(paste("Number of Gaussian components =", n_comp))
 
-		if(!is.null(seed)) set.seed(seed)
+		if (!is.null(seed)) set.seed(seed)
+	  
+    if (!file.exists(file.path(filepath, "MGKernel_params_N.txt"))) {
+      warning("First-pass normalization for the complete data set.")
+      
+      params <- df[, grepl("^N_log2_R[0-9]{3}", names(df))] %>%
+        `names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
+        fitKernelDensity(n_comp = n_comp, !!!dots) %>% 
+        dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
+        dplyr::arrange(Sample_ID, Component)
+    } else {
+      params_sub <- df[, grepl("^N_log2_R[0-9]{3}", names(df))] %>% 
+        `names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
+        dplyr::select(which(!is.na(label_scheme_sub[[col_refit]])))	%>% 
+        fitKernelDensity(n_comp = n_comp, !!!dots) %>% 
+        dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
+        dplyr::arrange(Sample_ID, Component)
+	    
+      params <- read.table(file.path(filepath, "MGKernel_params_N.txt"), 
+	                             check.names = FALSE, header = TRUE, comment.char = "#") %>% 
+	      dplyr::select(names(params_sub)) %>% 
+	      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+	      dplyr::arrange(Sample_ID, Component)
+	    
+	    rows <- params$Sample_ID %in% params_sub$Sample_ID
+	    params[rows, ] <- params_sub	      
+    }
 
-		params <- fitKernelDensity(
-									df = df[, grepl("^N_log2_R[0-9]{3}", names(df))] %>%
-												`names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))),
-									n_comp = n_comp,
-									!!!dots) %>%
-							dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
-							dplyr::arrange(Sample_ID, Component)
+		# params <- fitKernelDensity(
+		#  							df = df[, grepl("^N_log2_R[0-9]{3}", names(df))] %>%
+		# 										`names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))),
+		# 							n_comp = n_comp,
+		# 							!!!dots) %>%
+		# 					dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+		# 					dplyr::arrange(Sample_ID, Component)
 
 		cf_x <- my_which_max(params) %>%
 			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
@@ -138,15 +165,44 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		  sweep(df[, grepl("^N_log2_R[0-9]{3}", names(df))], 2, cf_x$x, "-")
 		df[, grepl("^N_I[0-9]{3}", names(df))] <-
 		  sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 2, 2^cf_x$x, "/")
-
-		params_z <- fitKernelDensity(
-									df = df[, grepl("^Z_log2_R[0-9]{3}", names(df))] %>%
-													`names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))),
-									n_comp = n_comp,
-									!!!dots) %>%
-							dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
-							dplyr::arrange(Sample_ID, Component) %>%
-							dplyr::mutate(x = 0)
+		
+		if (!file.exists(file.path(filepath, "MGKernel_params_Z.txt"))) {
+		  warning("First-pass normalization for the complete data set.")
+		  
+		  params_z <- df[, grepl("^Z_log2_R[0-9]{3}", names(df))] %>%
+		    `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
+		    fitKernelDensity(n_comp = n_comp, !!!dots) %>% 
+		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
+		    dplyr::arrange(Sample_ID, Component) %>% 
+		    dplyr::mutate(x = 0)
+		} else {
+		  params_z_sub <- df[, grepl("^Z_log2_R[0-9]{3}", names(df))] %>% 
+		    `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
+		    dplyr::select(which(!is.na(label_scheme_sub[[col_refit]])))	%>% 
+		    fitKernelDensity(n_comp = n_comp, !!!dots) %>% 
+		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
+		    dplyr::arrange(Sample_ID, Component)
+		  
+		  params_z <- read.table(file.path(filepath, "MGKernel_params_Z.txt"), 
+		                       check.names = FALSE, header = TRUE, comment.char = "#") %>% 
+		    dplyr::select(names(params_z_sub)) %>% 
+		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+		    dplyr::arrange(Sample_ID, Component)
+		  
+		  rows_z <- params_z$Sample_ID %in% params_z_sub$Sample_ID
+		  params_z[rows_z, ] <- params_z_sub
+		  
+		  params_z$x <- 0
+		}	
+		
+		# params_z <- fitKernelDensity(
+		# 							df = df[, grepl("^Z_log2_R[0-9]{3}", names(df))] %>%
+		# 											`names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))),
+		# 							n_comp = n_comp,
+		# 							!!!dots) %>%
+		# 					dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+		# 					dplyr::arrange(Sample_ID, Component) %>%
+		# 					dplyr::mutate(x = 0)
 
 		write.table(params_z, file = file.path(filepath, "MGKernel_params_Z.txt"),
 		            sep = "\t", col.names = TRUE, row.names = FALSE)

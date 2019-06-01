@@ -174,25 +174,24 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'  summarisation by both the primary sequences and variable modifications of
 #'  peptides. \code{PSMs} data with the same value in \code{pep_seq} or
 #'  \code{pep_seq_mod} will be summarised into a single entry of peptide.
-#'@param method_psm_pep The method to summarise the \code{log2-ratios} and the
+#'@param method_psm_pep The method to summarise the \code{log2FC} and the
 #'  \code{intensity} of \code{PSMs} by peptide entries. The descriptive
 #'  statistics includes \code{c("mean", "median", "top.3", "weighted.mean")}.
 #'  The \code{log10-intensity} of reporter ions at the \code{PSMs} levels will
-#'  be the weight when summarising \code{log2-ratios} with \code{"top.3"} or
+#'  be the weight when summarising \code{log2FC} with \code{"top.3"} or
 #'  \code{"weighted.mean"}.
-#'@param method_align The method to align the \code{log2-ratios} of
-#'  peptide/protein entries across samples. \code{MC}: median-centering;
-#'  \code{MGKernel}: the kernal density defined by multiple Gaussian functions
+#'@param method_align The method to align the \code{log2FC} of peptide/protein
+#'  entries across samples. \code{MC}: median-centering; \code{MGKernel}: the
+#'  kernal density defined by multiple Gaussian functions
 #'  (\code{\link[mixtools]{normalmixEM}}). At \code{method_align = "MC"}, the
 #'  ratio profiles of each sample will be aligned in that the medians of the
-#'  \code{log2-ratios} are zero. At \code{method_align = "MGKernel"}, the
-#'  \code{log2-ratios} will be aligned in that the maximums of kernel density
-#'  are zero. It is also possible to align the \code{log2-ratios} to the median
-#'  of a list of user-supplied genes: \code{method_align = c("ACTB", "GAPDH",
-#'  ...)}.
-#'@param range_log2r The range of the \code{log2-ratios} of peptide/protein
-#'  entries for use in the scaling normalization of standard deviation across
-#'  samples. The default is between the 20th and the 90th quantiles.
+#'  \code{log2FC} are zero. At \code{method_align = "MGKernel"}, the
+#'  \code{log2FC} will be aligned in that the maximums of kernel density are
+#'  zero. It is also possible to align the \code{log2FC} to the median of a list
+#'  of user-supplied genes: \code{method_align = c("ACTB", "GAPDH", ...)}.
+#'@param range_log2r The range of the \code{log2FC} of peptide/protein entries
+#'  for use in the scaling normalization of standard deviation across samples.
+#'  The default is between the 20th and the 90th quantiles.
 #'@param range_int The range of the \code{intensity} of reporter ions for use in
 #'  the scaling normalization of standard deviation across samples. The default
 #'  is between the 5th and the 95th quantiles.
@@ -204,6 +203,13 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'  MGKernel}.
 #'@param annot_kinases Logical; if TRUE, annotates kinase attributes of
 #'  proteins.
+#'@param  col_refit Character string to a column key in \code{expt_smry.xlsx}.
+#'  Only samples corresponding to non-empty entries under \code{col_refit} will
+#'  be used in the refit of \code{log2FC} using multiple Gaussian kernels. The
+#'  density estimates from an earlier analyis will be kept for samples
+#'  corresponding to empty entries under \code{col_refit}. At the NULL default,
+#'  the column key \code{Sample_ID} will be used, which leads to the refit of
+#'  code{log2FC} for all samples.
 #'@param ... Additional parameters from \code{\link[mixtools]{normalmixEM}}:\cr
 #'  \code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
 #'  tolerance limit for declaring algorithm convergence.
@@ -236,7 +242,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 										method_psm_pep = c("median", "mean", "weighted.mean", "top.3"),
 										method_align = c("MC", "MGKernel"), range_log2r = c(20, 90),
 										range_int = c(5, 95), n_comp = NULL, seed = NULL,
-										annot_kinases = FALSE, ...) {
+										annot_kinases = FALSE, col_refit = NULL, ...) {
 
 	dir.create(file.path(dat_dir, "Peptide\\Histogram"), recursive = TRUE, showWarnings = FALSE)
 	dir.create(file.path(dat_dir, "Peptide\\cache"), recursive = TRUE, showWarnings = FALSE)
@@ -280,6 +286,19 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
 	}
 
+	col_refit <- rlang::enexpr(col_refit)
+	col_refit <- ifelse(is.null(col_refit), rlang::expr(Sample_ID), rlang::sym(col_refit))
+	
+	if(is.null(label_scheme[[col_refit]])) {
+	  col_refit <- rlang::expr(Sample_ID)
+	  warning("Column \'", rlang::as_string(col_refit), "\' does not exist.
+			Use column \'Sample_ID\' instead.", call. = FALSE)
+	} else if(sum(!is.na(label_scheme[[col_refit]])) == 0) {
+	  col_refit <- rlang::expr(Sample_ID)
+	  warning("No samples were specified under column \'", rlang::as_string(col_refit), "\'.
+			Use column \'Sample_ID\' instead.", call. = FALSE)
+	}
+	
 	method_psm_pep <- rlang::enexpr(method_psm_pep)
 	if(method_psm_pep == rlang::expr(c("median", "mean", "weighted.mean", "top.3"))) {
 		method_psm_pep <- "median"
@@ -425,6 +444,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		range_log2r = range_log2r,
 		range_int = range_int,
 		filepath = file.path(dat_dir, "Peptide\\Histogram"),
+		col_refit = col_refit, 
 		!!!dots
 	)
 
