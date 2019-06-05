@@ -115,6 +115,22 @@ normPrn <- function (id = c("prot_acc", "gene"),
 			warning("Assume the value of 'method_align' is a list of housekeeping proteins")
 	}
 	
+	stopifnot(length(range_log2r) == 2)
+	stopifnot(length(range_int) == 2)
+	
+	if (range_log2r[2] <= 1) range_log2r <- range_log2r * 100
+	if (range_int[2] <= 1) range_int <- range_int * 100
+	
+	stopifnot(range_log2r[1] < range_log2r[2] & 
+	            range_log2r[1] >= 0 & range_log2r[2] <= 100)
+	
+	stopifnot(range_int[1] < range_int[2] & 
+	            range_int[1] >= 0 & range_int[2] <= 100)
+	
+	if(is.null(n_comp)) n_comp <- if(nrow(df) > 3000) 3L else 2L
+	n_comp <- n_comp %>% as.integer()
+	stopifnot(n_comp >= 2)
+	
 	dots <- rlang::enexprs(...)
 	
 	id <- rlang::enexpr(id)
@@ -243,8 +259,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 										check.names = FALSE, header = TRUE, comment.char = "#") %>% 
 			dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 	}
-	
-	if(is.null(n_comp)) n_comp <- if(nrow(df) > 3000) 3L else 2L
 	
 	df <- normMulGau(
 		df = df, 

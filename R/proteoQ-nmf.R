@@ -334,40 +334,21 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, in_nm, out_nm, ..
 }
 
 
-
 #'NMF analysis
 #'
-#'Analyzes and visualizes the NMF clustering of peptide or protein
-#'\code{log2-ratios}
+#'Analyzes and visualizes the NMF clustering of peptide or protein \code{log2FC}
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
 #'
-#'@param id Character string to indicate the type of data. Peptide data will be
-#'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
-#'  \code{id = prot_acc} or \code{gene}.
-#'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Select}. Samples corresponding to non-empty entries
-#'  under \code{col_select} will be included in the indicated analysis.
-#'@param impute_na Logical; if TRUE, imputes missing values.
-#'@param complete_cases Logical; if TRUE, only cases that are complete with no
-#'  missing values will be used for visualization.
+#'@inheritParams  proteoEucDist
+#'@inheritParams  proteoHM
+#'@inheritParams  info_anal
 #'@param r Numeric; the factorization rank (\code{\link[NMF]{nmf}}).
 #'@param nrun Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).
-#'@param scale_log2r Logical; if TRUE, adjusts \code{log2-ratios} to the same
-#'  scale of standard deviation for all samples.
-#'@param df The filename of input data. By default, it will be determined by the
-#'  value of \code{id}.
-#'@param filepath The filepath to output results. By default, it will be
-#'  determined by the names of the current functional \code{call}.
-#'@param filename A representative filename to output images. By default, it
-#'  will be determined by the names of the current \code{call}.
-#'@param ... Additional parameters for plotting: \cr \code{xmin}, the minimum x; \cr
-#'  \code{xmax}, the maximum x; \cr \code{x_margin}, the margin in heat
-#'  scales;\cr \code{annot_cols}, the column keys in \code{expt_smry.xlsx} for
-#'  use in the color coding of samples;\cr \code{width_}, the width of plot; \cr
-#'  \code{height_}, the height of plot; \cr additional arguments inherited from
-#'  \code{\link[pheatmap]{pheatmap}}.
+#'@param task Character string; a switch.
+#'@param ... additional arguments inherited from
+#'  \code{\link[NMF]{nmf}}.
 #'@return NMF plots.
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -404,20 +385,11 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 
 #'Peptide NMF Classification
 #'
-#'NMF Classification of peptide \code{log2-ratios}
+#'\code{anal_pepNMF} is a wrapper function of \code{\link{proteoNMF}} for the
+#'NMF analysis of peptide data
 #'
-#' @examples
-#' pepNMF(
-#'   scale_log2r = TRUE,
-#'   xmin = -1,
-#'   xmax = 1,
-#'   x_margin = 0.1,
-#'   annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
-#'   r = 6,
-#'   nrun = 200
-#' )
-#'
-#'@seealso \code{\link{proteoNMF}} for parameters
+#'@rdname proteoNMF
+#'@examples
 #'@export
 anal_pepNMF <- function (...) {
 	proteoNMF(id = pep_seq, task = anal, ...)
@@ -426,21 +398,20 @@ anal_pepNMF <- function (...) {
 
 #'Protein NMF Classification
 #'
-#'NMF Classification of protein \code{log2-ratios}
+#'\code{anal_prnNMF} is a wrapper function of \code{\link{proteoNMF}} for the
+#'NMF analysis of protein data
 #'
+#'@rdname proteoNMF
 #' @examples
-#' prnNMF(
+#' library(NMF)
+#'
+#' anal_prnNMF(
 #'   scale_log2r = TRUE,
-#'   xmin = -1,
-#'   xmax = 1,
-#'   x_margin = 0.1,
-#'   annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
+#'   col_group = Group # optional a priori knowledge of sample groups
 #'   r = 6,
 #'   nrun = 200
 #' )
 #'
-#'
-#'@seealso \code{\link{proteoNMF}} for parameters
 #'@export
 anal_prnNMF <- function (...) {
 	proteoNMF(id = gene, task = anal, ...)
@@ -449,16 +420,19 @@ anal_prnNMF <- function (...) {
 
 #'NMF consensus
 #'
-#'Visualizes the consensus heat map
+#'\code{plot_prnNMFCon} is a wrapper function of \code{\link{proteoNMF}} for the
+#'visualization of the consensus heat map of protein data
 #'
+#'@rdname proteoNMF
 #' @examples
-#' plot_prnNMFCon(
-#'   scale_log2r = TRUE,
-#'   col_order = Order,
-#'   n_clust = 6
-#' )
+#'plot_prnNMFCon(
+#'  r = 6, 
+#'  annot_cols = c("Color", "Alpha", "Shape"), 
+#'  annot_colnames = c("Lab", "Batch", "WHIM"), 
+#'  width = 10, 
+#'  height = 10
+#')
 #'
-#'@seealso \code{\link{proteoTrend}} for parameters
 #'@export
 plot_prnNMFCon <- function (...) {
   proteoNMF(id = gene, task = plotcon, ...)
@@ -467,16 +441,19 @@ plot_prnNMFCon <- function (...) {
 
 #'NMF coefficients
 #'
-#'Visualizes the coefficient heat map
+#'\code{plot_prnNMFCoef} is a wrapper function of \code{\link{proteoNMF}} for the
+#'visualization of the coefficient heat map of protein data
 #'
+#'@rdname proteoNMF
 #' @examples
-#' plot_prnNMFCoef(
-#'   scale_log2r = TRUE,
-#'   col_order = Order,
-#'   n_clust = 6
-#' )
+#'plot_prnNMFCoef(
+#'  r = 6, 
+#'  annot_cols = c("Color", "Alpha", "Shape"), 
+#'  annot_colnames = c("Lab", "Batch", "WHIM"), 
+#'  width = 10, 
+#'  height = 10
+#')
 #'
-#'@seealso \code{\link{proteoTrend}} for parameters
 #'@export
 plot_prnNMFCoef <- function (...) {
   proteoNMF(id = gene, task = plotcoef, ...)
@@ -485,16 +462,20 @@ plot_prnNMFCoef <- function (...) {
 
 #'NMF coefficients
 #'
-#'Visualizes the coefficient heat map
+#'\code{plot_metaNMF} is a wrapper function of \code{\link{proteoNMF}} for the
+#'visualization of the metagene heat maps of protein data
 #'
+#'@rdname proteoNMF
 #' @examples
-#' plot_metaNMF(
-#'   scale_log2r = TRUE,
-#'   col_order = Order,
-#'   n_clust = 6
-#' )
+#'plot_metaNMF(
+#'  r = 6, 
+#'  annot_cols = c("Color", "Alpha", "Shape"), 
+#'  annot_colnames = c("Lab", "Batch", "WHIM"), 
+#'  
+#'  fontsize = 8, 
+#'  fontsize_col = 5
+#')
 #'
-#'@seealso \code{\link{proteoTrend}} for parameters
 #'@export
 plot_metaNMF <- function (...) {
   proteoNMF(id = gene, task = plotmeta, ...)
