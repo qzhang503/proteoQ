@@ -738,7 +738,8 @@ calc_cover <- function(df, id, fasta = NULL) {
 			dplyr::rename(!!key := prot_acc) %>%
 			dplyr::mutate(!!key := gsub(".*\\|", "", !!rlang::sym(key)))
 	} else {
-		lookup <- dbs$prn_annot %>%
+		warning("Use pre-computed database to calculate protein coverages.")
+	  lookup <- dbs$prn_annot %>%
 			dplyr::select(key, length) %>%
 			dplyr::filter(!is.na(.[[key]]), !duplicated(.[[key]]))
 	}

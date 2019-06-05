@@ -7,15 +7,22 @@
 prepDM(df, id, scale_log2r, sub_grp, type = "ratio", anal_type)
 }
 \arguments{
-\item{df}{A data frame containing only numeric values.}
+\item{df}{The name of input data file. By default, it will be determined by
+the value of \code{id}.}
 
-\item{id}{The name of unqiue identifiers.}
+\item{id}{Character string to indicate the type of data. Peptide data will be
+used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\code{id = prot_acc} or \code{gene}.}
 
-\item{scale_log2r}{Logical; if TRUE, rescales \code{log2FC} to the same
-scale.}
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation for all samples.}
 
 \item{sub_grp}{Numeric.  A list of sample IDs that will be used in subsequent
 analysis.}
+
+\item{anal_type}{The type of analysis; \code{anal_type = c("MDS", "PCA",
+"EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
+"Model")}.}
 }
 \value{
 A data frame tailored for subsequent analysis.

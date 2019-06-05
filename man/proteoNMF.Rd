@@ -2,6 +2,11 @@
 % Please edit documentation in R/proteoQ-nmf.R
 \name{proteoNMF}
 \alias{proteoNMF}
+\alias{anal_pepNMF}
+\alias{anal_prnNMF}
+\alias{plot_prnNMFCon}
+\alias{plot_prnNMFCoef}
+\alias{plot_metaNMF}
 \title{NMF analysis}
 \usage{
 proteoNMF(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
@@ -9,6 +14,16 @@ proteoNMF(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   complete_cases = FALSE, df = NULL, filepath = NULL,
   filename = NULL, anal_type = "NMF", task = "anal", r = 4,
   nrun = 200, ...)
+
+anal_pepNMF(...)
+
+anal_prnNMF(...)
+
+plot_prnNMFCon(...)
+
+plot_prnNMFCoef(...)
+
+plot_metaNMF(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
@@ -16,45 +31,102 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Select}. Samples corresponding to non-empty entries
-under \code{col_select} will be included in the indicated analysis.}
+Samples corresponding to non-empty entries under \code{col_select} will be
+included in the indicated analysis. At the NULL default, the column key
+\code{Select} will be used.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2-ratios} to the same
-scale of standard deviation for all samples.}
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation for all samples.}
 
 \item{impute_na}{Logical; if TRUE, imputes missing values.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used for visualization.}
 
-\item{df}{The filename of input data. By default, it will be determined by the
-value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined by
+the value of \code{id}.}
 
-\item{filepath}{The filepath to output results. By default, it will be
-determined by the names of the current functional \code{call}.}
+\item{filepath}{A file path to output results. By default, it will be
+determined by the name of the calling \code{function} and the value of
+\code{id} in the \code{call}.}
 
-\item{filename}{A representative filename to output images. By default, it
-will be determined by the names of the current \code{call}.}
+\item{filename}{A representative file name to output image(s). By default, it
+will be determined by the name of the current \code{call}. The image(s) are
+saved via \code{\link[ggplot2]{ggsave}} and the image type will be
+automatically determined by the extension of the file name. A \code{.png}
+format will be used at default or an unrecognized file extension.}
+
+\item{anal_type}{The type of analysis; \code{anal_type = c("MDS", "PCA",
+"EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
+"Model")}.}
+
+\item{task}{Character string; a switch.}
 
 \item{r}{Numeric; the factorization rank (\code{\link[NMF]{nmf}}).}
 
 \item{nrun}{Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).}
 
-\item{...}{Additional parameters for plotting: \cr \code{xmin}, the minimum x; \cr
-\code{xmax}, the maximum x; \cr \code{x_margin}, the margin in heat
-scales;\cr \code{annot_cols}, the column keys in \code{expt_smry.xlsx} for
-use in the color coding of samples;\cr \code{width_}, the width of plot; \cr
-\code{height_}, the height of plot; \cr additional arguments inherited from
-\code{\link[pheatmap]{pheatmap}}.}
+\item{...}{additional arguments inherited from
+\code{\link[NMF]{nmf}}.}
 }
 \value{
 NMF plots.
 }
 \description{
-Analyzes and visualizes the NMF clustering of peptide or protein
-\code{log2-ratios}
+Analyzes and visualizes the NMF clustering of peptide or protein \code{log2FC}
+
+\code{anal_pepNMF} is a wrapper function of \code{\link{proteoNMF}} for the
+NMF analysis of peptide data
+
+\code{anal_prnNMF} is a wrapper function of \code{\link{proteoNMF}} for the
+NMF analysis of protein data
+
+\code{plot_prnNMFCon} is a wrapper function of \code{\link{proteoNMF}} for the
+visualization of the consensus heat map of protein data
+
+\code{plot_prnNMFCoef} is a wrapper function of \code{\link{proteoNMF}} for the
+visualization of the coefficient heat map of protein data
+
+\code{plot_metaNMF} is a wrapper function of \code{\link{proteoNMF}} for the
+visualization of the metagene heat maps of protein data
 }
 \details{
 The option of \code{complete_cases} will be forced to \code{TRUE} at
 \code{impute_na = FALSE}
+}
+\examples{
+library(NMF)
+
+anal_prnNMF(
+  scale_log2r = TRUE,
+  col_group = Group # optional a priori knowledge of sample groups
+  r = 6,
+  nrun = 200
+)
+
+plot_prnNMFCon(
+ r = 6, 
+ annot_cols = c("Color", "Alpha", "Shape"), 
+ annot_colnames = c("Lab", "Batch", "WHIM"), 
+ width = 10, 
+ height = 10
+)
+
+plot_prnNMFCoef(
+ r = 6, 
+ annot_cols = c("Color", "Alpha", "Shape"), 
+ annot_colnames = c("Lab", "Batch", "WHIM"), 
+ width = 10, 
+ height = 10
+)
+
+plot_metaNMF(
+ r = 6, 
+ annot_cols = c("Color", "Alpha", "Shape"), 
+ annot_colnames = c("Lab", "Batch", "WHIM"), 
+ 
+ fontsize = 8, 
+ fontsize_col = 5
+)
+
 }

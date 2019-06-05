@@ -1,22 +1,20 @@
-#' Prepares data for analysis
+#'Prepares data for analysis
 #'
-#' \code{prepDM} prepares a minimal adequate data frame for subsequent analysis.
+#'\code{prepDM} prepares a minimal adequate data frame for subsequent analysis.
 #'
-#' @param df A data frame containing only numeric values.
-#' @param id The name of unqiue identifiers.
-#' @param scale_log2r Logical; if TRUE, rescales \code{log2FC} to the same
-#'   scale.
-#' @param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
-#'   analysis.
-#' @return A data frame tailored for subsequent analysis.
+#'@inheritParams  proteoEucDist
+#'@inheritParams  info_anal
+#'@param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
+#'  analysis.
+#'@return A data frame tailored for subsequent analysis.
 #'
 #' @examples
 #' tempData <- prepDM(df, entrez, scale_log2r, sub_grp = label_scheme_sub$Sample_ID)
 #'
 #' \dontrun{
 #' }
-#' @import dplyr
-#' @importFrom magrittr %>%
+#'@import dplyr
+#'@importFrom magrittr %>%
 prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
   stopifnot(nrow(df) > 0)
   
