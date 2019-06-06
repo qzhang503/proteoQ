@@ -100,7 +100,7 @@ img_daemon <- "images\\mascot\\mascot_daemon.png"
 knitr::include_graphics(c(img_daemon))
 ```
 
-The merged search may become increasingly demanding in computing powers with large data sets. In the example, I combined the MS peak lists from the Hp-RP fractions within the same 10-plex TMT experiment, but not the lists across experiments. This results in a total of six pieces of PSM results in `Mascot` exports. To get us started more quickly, we simply copy the PSM files that we have prepared in `proteoQDA` over to the working directory, `dat_dir`:
+The merged search may become increasingly demanding in computing powers with large data sets. In the example, I combined the MS peak lists from the Hp-RP fractions within the same 10-plex TMT experiment, but not the lists across experiments. This results in a total of six pieces of PSM results in `Mascot` exports. To get us started more quickly, we go ahead and copy the PSM files that we have prepared in `proteoQDA` over to the working directory, `dat_dir`:
 
 ```{r copy_psm, include = TRUE, eval = FALSE}
 library(proteoQDA)
@@ -125,7 +125,7 @@ The  description of the column keys in the `Excel` files can be found from the h
 ?load_expts
 ```
 
-    Note that the PSM files and the `.xlsx` files are all stored immediately under the the file folder specified by `dat_dir`. 
+    Note that the PSM files and the `.xlsx` files are stored under the same file folder specified by `dat_dir`. 
 
 As a final step of the setup, we will load the experimental summary and some precomputed results:
 

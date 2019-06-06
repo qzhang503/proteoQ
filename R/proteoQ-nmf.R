@@ -346,9 +346,9 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, in_nm, out_nm, ..
 #'@inheritParams  info_anal
 #'@param r Numeric; the factorization rank (\code{\link[NMF]{nmf}}).
 #'@param nrun Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).
-#'@param task Character string; a switch.
-#'@param ... additional arguments inherited from
-#'  \code{\link[NMF]{nmf}}.
+#'@param task Character string; a switch for different tasks in a functional
+#'  factory.
+#'@param ... additional arguments inherited from \code{\link[NMF]{nmf}}.
 #'@return NMF plots.
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -390,6 +390,13 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #'@rdname proteoNMF
 #'@examples
+#'anal_pepNMF(
+#'  # col_group = Group # optional a priori knowledge of sample groups
+#'  scale_log2r = TRUE,
+#'  r = 6,
+#'  nrun = 200
+#')
+#'
 #'@export
 anal_pepNMF <- function (...) {
 	proteoNMF(id = pep_seq, task = anal, ...)

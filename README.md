@@ -4,14 +4,14 @@ Introduction to proteoQ
 Chemical labeling using tandem mass tag
 ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly
 applied in mass spectrometry (MS)-based quantification of proteins and
-peptides. The proteoQ tool is designed to aid automated and reproducible
-analysis of proteomics data. It interacts with an `Excel` spread sheet
-for dynamic sample selections, aesthetics controls and statistical
-modelings. The arrangement allows users to put data manipulation behind
-the scene and apply metadata to quickly address interesting biological
-questions using various informatic tools. In addition, the entire
-workflow is documented and can be conveniently reproduced upon
-revisiting.
+peptides. The `proteoQ` tool is designed to aid automated and
+reproducible analysis of proteomics data. It interacts with an `Excel`
+spread sheet for dynamic sample selections, aesthetics controls and
+statistical modelings. The arrangement allows users to put data
+manipulation behind the scene and apply metadata to openly address
+interesting biological questions using various informatic tools. In
+addition, the entire workflow is documented and can be conveniently
+reproduced upon revisiting.
 
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
@@ -33,7 +33,7 @@ BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "gage", "limma"))
 
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
-devtools::install_github("qzhang503/proteoQ@master")
+devtools::install_github("qzhang503/proteoQ")
 ```
 
 Application
@@ -44,23 +44,39 @@ In this section I illustrate the following applications of `proteoQ`:
 -   Summarization of PSM data to peptide and protein reports.
 -   Basic informatic analysis against the peptide and protein data.
 
-### Set up the experiments
+The data set I use in this section corresponds to the proteomics data
+from Mertins et al.(2018). In the study, two different breast cancer
+subtypes, triple negative (WHIM2) and luminal (WHIM16), from
+patient-derived xenograft (PDX) models were assessed by three
+independent laboratories. At each site, lysates from WHIM2 and WHIM16
+were each split and labeled with 10-plex TMT at equal sample sizes and
+repeated on a different day. This results in a total of 60 samples
+labeled under six 10-plex TMT experiments. The samples under each
+10-plex TMT were fractionated by off-line Hp-RP chromatography, followed
+by `LC/MS` analysis. The raw PSM results from Mascot searches are stored
+in a companion R package, `proteoQDA` and are accessbile through the
+following installation:
 
 ``` r
-# Load the proteoQ library
-library(proteoQ)
+devtools::install_github("qzhang503/proteoQDA")
+```
 
-# Set up the working directory
+### Set up the experiments
+
+We first set up a working directory:
+
+``` r
 dat_dir <- "c:\\The\\First\\Example"
 ```
 
-PSM table(s) in a `csv` format will be exported by the users from the
-[Mascot](https://http://www.matrixscience.com/) search engine. I
-typically set the option of `Include sub-set protein hits` to `0` with
-my opinionated choice in satisfying the principle of parsimony. The
-options of `Header` and `Peptide quantitation` should be checked to
-include the search parameters and quantitative values. The `filename(s)`
-of the export(s) will be taken as is.[1]
+The workflow begins with PSM table(s) in a `csv` format from the
+[Mascot](https://http://www.matrixscience.com/) search engine. When
+exporting PSM results, I typically set the option of
+`Include sub-set protein hits` to `0` with my opinionated choice in
+satisfying the principle of parsimony. The options of `Header` and
+`Peptide quantitation` should be checked to include the search
+parameters and quantitative values. The `filename(s)` of the export(s)
+will be taken as is.[1]
 
 <img src="images\mascot\mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
@@ -76,44 +92,54 @@ IDs will be removed for now when constructing peptide reports.
 
 <img src="images\mascot\mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 
-The pacakge reads an `Excel` template containing the metadata of
-multiplex experiment numbers, including TMT channels, LC/MS injection
+The merged search may become increasingly demanding in computing powers
+with large data sets. In the example, I combined the MS peak lists from
+the Hp-RP fractions within the same 10-plex TMT experiment, but not the
+lists across experiments. This results in a total of six pieces of PSM
+results in `Mascot` exports. To get us started more quickly, we go ahead
+and copy the PSM files that we have prepared in `proteoQDA` over to the
+working directory, `dat_dir`:
+
+``` r
+library(proteoQDA)
+copy_globalCPTAC(dat_dir)
+```
+
+We next load the `proteoQ` package:
+
+``` r
+library(proteoQ)
+```
+
+The `proteoQ` pacakge reads an `Excel` template containing the metadata
+of multiplex experiment numbers, including TMT channels, LC/MS injection
 indices, sample IDs, corresponding RAW data file names and addditional
 fields from the users. The default file name for the experimental
 summary is `expt_smry.xlsx`. If samples were fractionated off-line prior
 to `LC/MS`, a second `Excel` template will also be filled out to link
 multiple `RAW` file names that are associated to the same sample IDs.
-The default file name for the fractionation summary is `frac_smry.xlsx`.
-The function, `extract_raws`, can be used to summarise `.raw` file names
-under a file folder:
+The default file name for the fractionation summary is
+`frac_smry.xlsx`.[2] We now copy over the pre-compiled `expt_smry.xlsx`
+and `frac_smry.xlsx` to the directory `dat_dir`:
 
 ``` r
-# Supposed the RAW files are under the `raw_dir` folder
-extract_raws(raw_dir)
+copy_expt(dat_dir)
+copy_frac(dat_dir)
 ```
 
-Note that the above files should be stored immediately under the the
-file folder specified by `dat_dir`. Examples of PSM outputs, `expt_smry`
-and `frac_smry` can be found as the follows:
-
-``` r
-system.file("extdata", "F012345.csv", package = "proteoQ")
-system.file("extdata", "expt_smry.xlsx", package = "proteoQ")
-system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
-```
-
-and the description of the column keys in the `Excel` files can be found
+The description of the column keys in the `Excel` files can be found
 from the help document:
 
 ``` r
 ?load_expts
 ```
 
+    Note that the PSM files and the `.xlsx` files are stored under the same file folder specified by `dat_dir`. 
+
 As a final step of the setup, we will load the experimental summary and
 some precomputed results:
 
 ``` r
-# Load the experiment
 load_expts()
 ```
 
