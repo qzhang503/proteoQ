@@ -2,6 +2,8 @@
 % Please edit documentation in R/proteoQ-trends.R
 \name{proteoTrend}
 \alias{proteoTrend}
+\alias{anal_prnTrend}
+\alias{plot_prnTrend}
 \title{Clustering by trends}
 \usage{
 proteoTrend(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
@@ -9,19 +11,32 @@ proteoTrend(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_order = NULL, impute_na = FALSE, complete_cases = FALSE,
   n_clust = 6, scale_log2r = TRUE, df = NULL, filepath = NULL,
   filename = NULL, ...)
+
+anal_prnTrend(...)
+
+plot_prnTrend(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
 used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
+\item{anal_type}{The type of analysis; \code{anal_type = c("MDS", "PCA",
+"EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
+"Model")}.}
+
+\item{task}{Character string; a switch for different tasks in a functional
+factory.}
+
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Select}. Samples corresponding to non-empty entries
-under \code{col_select} will be included in the indicated analysis.}
+Samples corresponding to non-empty entries under \code{col_select} will be
+included in the indicated analysis. At the NULL default, the column key
+\code{Select} will be used.}
 
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
-The default key is \code{Order}. Data will be visualized by the order
-specified by the key.}
+Numeric values under which will be used for the left-to-right arrangement of
+samples in plots. At the NULL default, the column key \code{Order} will be
+used.}
 
 \item{impute_na}{Logical; if TRUE, imputes missing values.}
 
@@ -30,31 +45,59 @@ missing values will be used for visualization.}
 
 \item{n_clust}{Numeric; the number of clusters that data will be divided into.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2-ratios} to the same
-scale of standard deviation for all samples.}
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation for all samples.}
 
-\item{df}{The filename of input data. By default, it will be determined by the
-value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined by
+the value of \code{id}.}
 
-\item{filepath}{The filepath to output results. By default, it will be
-determined by the names of the current functional \code{call}.}
+\item{filepath}{A file path to output results. By default, it will be
+determined by the name of the calling \code{function} and the value of
+\code{id} in the \code{call}.}
 
-\item{filename}{A representative filename to output images. By default, it
-will be determined by the names of the current \code{call}.}
+\item{filename}{A representative file name to output image(s). By default, it
+will be determined by the name of the current \code{call}. The image(s) are
+saved via \code{\link[ggplot2]{ggsave}} and the image type will be
+automatically determined by the extension of the file name. A \code{.png}
+format will be used at default or an unrecognized file extension.}
 
-\item{...}{Additional parameters for plotting: \cr \code{ymin}, the minimum y;
-\cr \code{ymax}, the maximum y; \cr \code{y_breaks}, the breaks in y-axis;
-\cr \code{ncol}, the number of columns; \cr \code{nrow}, the number of rows;
-\cr \code{width}, the width of plot; \cr \code{height}, the height of plot.}
+\item{...}{Additional parameters for plotting: \cr \code{ymin}, the minimum y
+at \code{log2} scale; \cr \code{ymax}, the maximum y at \code{log2} scale;
+\cr \code{y_breaks}, the breaks in y-axis at \code{log2} scale; \cr
+\code{ncol}, the number of columns; \cr \code{nrow}, the number of rows; \cr
+\code{width}, the width of plot; \cr \code{height}, the height of plot.}
 }
 \value{
-Trend plots.
+Trends of \code{log2FC}
 }
 \description{
 Analyzes and visualizes the trend clustering of peptide or protein
-\code{log2-ratios}
+\code{log2FC}
+
+\code{anal_prnTrend} is a wrapper function of \code{\link{proteoTrend}} for the
+trend analysis of protein data
+
+\code{plot_prnTrend} is a wrapper function of \code{\link{proteoTrend}} for the
+visualization of the trends in protein data
 }
 \details{
 The option of \code{complete_cases} will be forced to \code{TRUE} at
 \code{impute_na = FALSE}
+}
+\examples{
+anal_prnTrend(
+  scale_log2r = TRUE,
+  col_order = Order,
+  n_clust = 6
+)
+
+plot_prnTrend(
+  scale_log2r = TRUE,
+  col_order = Order,
+  n_clust = 6
+)
+
+}
+\seealso{
+\code{\link{proteoTrend}} for parameters
 }

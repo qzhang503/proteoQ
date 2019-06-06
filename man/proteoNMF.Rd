@@ -60,14 +60,14 @@ format will be used at default or an unrecognized file extension.}
 "EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
 "Model")}.}
 
-\item{task}{Character string; a switch.}
+\item{task}{Character string; a switch for different tasks in a functional
+factory.}
 
 \item{r}{Numeric; the factorization rank (\code{\link[NMF]{nmf}}).}
 
 \item{nrun}{Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).}
 
-\item{...}{additional arguments inherited from
-\code{\link[NMF]{nmf}}.}
+\item{...}{additional arguments inherited from \code{\link[NMF]{nmf}}.}
 }
 \value{
 NMF plots.
@@ -95,6 +95,13 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 \code{impute_na = FALSE}
 }
 \examples{
+anal_pepNMF(
+ # col_group = Group # optional a priori knowledge of sample groups
+ scale_log2r = TRUE,
+ r = 6,
+ nrun = 200
+)
+
 library(NMF)
 
 anal_prnNMF(

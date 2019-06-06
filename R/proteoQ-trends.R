@@ -182,37 +182,22 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'Clustering by trends
 #'
 #'Analyzes and visualizes the trend clustering of peptide or protein
-#'\code{log2-ratios}
+#'\code{log2FC}
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
 #'
-#'@param id Character string to indicate the type of data. Peptide data will be
-#'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
-#'  \code{id = prot_acc} or \code{gene}.
-#'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Select}. Samples corresponding to non-empty entries
-#'  under \code{col_select} will be included in the indicated analysis.
-#'@param  col_order Character string to a column key in \code{expt_smry.xlsx}.
-#'  The default key is \code{Order}. Data will be visualized by the order
-#'  specified by the key.
-#'@param impute_na Logical; if TRUE, imputes missing values.
-#'@param complete_cases Logical; if TRUE, only cases that are complete with no
-#'  missing values will be used for visualization.
+#'@inheritParams proteoEucDist
+#'@inheritParams proteoCorrplot
+#'@inheritParams info_anal
+#'@inheritParams proteoNMF
 #'@param n_clust Numeric; the number of clusters that data will be divided into.
-#'@param scale_log2r Logical; if TRUE, adjusts \code{log2-ratios} to the same
-#'  scale of standard deviation for all samples.
-#'@param df The filename of input data. By default, it will be determined by the
-#'  value of \code{id}.
-#'@param filepath The filepath to output results. By default, it will be
-#'  determined by the names of the current functional \code{call}.
-#'@param filename A representative filename to output images. By default, it
-#'  will be determined by the names of the current \code{call}.
-#'@param ... Additional parameters for plotting: \cr \code{ymin}, the minimum y;
-#'  \cr \code{ymax}, the maximum y; \cr \code{y_breaks}, the breaks in y-axis;
-#'  \cr \code{ncol}, the number of columns; \cr \code{nrow}, the number of rows;
-#'  \cr \code{width}, the width of plot; \cr \code{height}, the height of plot.
-#'@return Trend plots.
+#'@param ... Additional parameters for plotting: \cr \code{ymin}, the minimum y
+#'  at \code{log2} scale; \cr \code{ymax}, the maximum y at \code{log2} scale;
+#'  \cr \code{y_breaks}, the breaks in y-axis at \code{log2} scale; \cr
+#'  \code{ncol}, the number of columns; \cr \code{nrow}, the number of rows; \cr
+#'  \code{width}, the width of plot; \cr \code{height}, the height of plot.
+#'@return Trends of \code{log2FC}
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
@@ -254,9 +239,12 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 }
 
 
-#'Trend analysis
+#'Trend analysis of protein \code{log2FC}
 #'
-#'Trend analysis of protein \code{log2-ratios}
+#'\code{anal_prnTrend} is a wrapper function of \code{\link{proteoTrend}} for the
+#'trend analysis of protein data
+#'
+#'@rdname proteoTrend
 #'
 #' @examples
 #' anal_prnTrend(
@@ -265,7 +253,6 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'   n_clust = 6
 #' )
 #'
-#'@seealso \code{\link{proteoTrend}} for parameters
 #'@export
 anal_prnTrend <- function (...) {
 	proteoTrend(id = gene, anal_type = Trend, task = anal, ...)
@@ -274,7 +261,10 @@ anal_prnTrend <- function (...) {
 
 #'Trend visualization
 #'
-#'Visualizes the trends of protein \code{log2-ratios}
+#'\code{plot_prnTrend} is a wrapper function of \code{\link{proteoTrend}} for the
+#'visualization of the trends in protein data
+#'
+#'@rdname proteoTrend
 #'
 #' @examples
 #' plot_prnTrend(
@@ -283,7 +273,6 @@ anal_prnTrend <- function (...) {
 #'   n_clust = 6
 #' )
 #'
-#'@seealso \code{\link{proteoTrend}} for parameters
 #'@export
 plot_prnTrend <- function (...) {
   proteoTrend(id = gene, anal_type = Trend, task = plot, ...)
