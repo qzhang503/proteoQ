@@ -28,6 +28,11 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 
 	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)
+	
+	if (complete_cases) {
+	  df <- df %>%
+	    dplyr::filter(complete.cases(.))
+	}
 
 	df_mean <- t(df) %>%
 		data.frame(check.names = FALSE) %>%
@@ -187,26 +192,27 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
 #'
+#'@inheritParams proteoNMF
 #'@inheritParams proteoEucDist
 #'@inheritParams proteoCorrplot
 #'@inheritParams info_anal
-#'@inheritParams proteoNMF
 #'@param n_clust Numeric; the number of clusters that data will be divided into.
-#'@param ... Additional parameters for plotting: \cr \code{ymin}, the minimum y
-#'  at \code{log2} scale; \cr \code{ymax}, the maximum y at \code{log2} scale;
-#'  \cr \code{y_breaks}, the breaks in y-axis at \code{log2} scale; \cr
-#'  \code{ncol}, the number of columns; \cr \code{nrow}, the number of rows; \cr
-#'  \code{width}, the width of plot; \cr \code{height}, the height of plot.
-#'@return Trends of \code{log2FC}
+#'@param ... Additional parameters for use in \code{plot_} functions: \cr
+#'  \code{ymin}, the minimum y at \code{log2} scale; \cr \code{ymax}, the
+#'  maximum y at \code{log2} scale; \cr \code{y_breaks}, the breaks in y-axis at
+#'  \code{log2} scale; \cr \code{ncol}, the number of columns; \cr \code{nrow},
+#'  the number of rows; \cr \code{width}, the width of plot; \cr \code{height},
+#'  the height of plot.
+#'@return Trend classification and visualization of \code{log2FC}.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
 proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                          anal_type = "Trend", task = "anal", 
-                         col_select = NULL, col_order = NULL,
-												impute_na = FALSE, complete_cases = FALSE,
-												n_clust = 6, scale_log2r = TRUE, df = NULL,
-												filepath = NULL, filename = NULL, ...) {
+                         col_select = NULL, col_group = NULL, col_order = NULL, 
+                         impute_na = FALSE, complete_cases = FALSE, 
+                         n_clust = 6, scale_log2r = TRUE, df = NULL, 
+                         filepath = NULL, filename = NULL, ...) {
 
   # scale_log2r <- match_logi_gv(scale_log2r)
 
@@ -218,10 +224,17 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 		stopifnot(id %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 	}
 	
+	stopifnot(rlang::is_logical(scale_log2r))
+	stopifnot(rlang::is_logical(impute_na))
+	stopifnot(rlang::is_logical(complete_cases))
+	stopifnot(rlang::as_string(rlang::enexpr(anal_type)) == "Trend")
+	stopifnot(n_clust >= 2 & n_clust %% 1 == 0)
+
 	anal_type <- rlang::enexpr(anal_type)
 	task <- rlang::enexpr(task)
 	
 	col_select <- rlang::enexpr(col_select)
+	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
@@ -231,7 +244,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 
 	if(!impute_na) complete_cases <- TRUE
 
-	info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
+	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, col_order = !!col_order,
 	          scale_log2r = scale_log2r, impute_na = impute_na,
 						df = !!df, filepath = !!filepath, filename = !!filename,
 						anal_type = !!anal_type)(n_clust = n_clust, complete_cases = complete_cases, 

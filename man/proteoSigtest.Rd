@@ -2,37 +2,85 @@
 % Please edit documentation in R/proteoQ-sigtests.R
 \name{proteoSigtest}
 \alias{proteoSigtest}
+\alias{pepSig}
+\alias{prnSig}
 \title{Significance tests}
 \usage{
 proteoSigtest(df = NULL, id = gene, scale_log2r = TRUE,
   filepath = NULL, filename = NULL, impute_na = TRUE,
   complete_cases = FALSE, method = "limma", var_cutoff = 0.001,
   pval_cutoff = 1, logFC_cutoff = log2(1), ...)
+
+pepSig(...)
+
+prnSig(...)
 }
 \arguments{
-\item{id}{The name of a unique id (see \code{\link[proteoQ]{MDS}}).}
+\item{df}{The name of input data file. By default, it will be determined by
+the value of \code{id}.}
 
-\item{scale_log2r}{Logical; if TRUE, rescales \code{log2-ratios} to the same
-scale of standard deviation for all samples.}
+\item{id}{Character string to indicate the type of data. Peptide data will be
+used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\code{id = prot_acc} or \code{gene}.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation for all samples.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined by the name of the calling \code{function} and the value of
+\code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to output image(s). By default, it
+will be determined by the name of the current \code{call}. The image(s) are
+saved via \code{\link[ggplot2]{ggsave}} and the image type will be
+automatically determined by the extension of the file name. A \code{.png}
+format will be used at default or an unrecognized file extension.}
+
+\item{impute_na}{Logical; if TRUE, imputes missing values.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used for visualization.}
+
+\item{method}{The method of linear modeling. The default is \code{limma}; at
+\code{method = lm}, the \code{lm()} in base R will be used for models
+without random effects and the \code{\link[lmerTest]{lmer()}} will be used
+for models with random effects.}
+
+\item{var_cutoff}{The cut-off in the variances of \code{log2FC}. Entries with
+variances smaller than the threshold will be removed from linear modeling.}
+
+\item{pval_cutoff}{The cut-off in significance \code{pVal}. Entries with
+\code{pVals} smaller than the threshold will be removed from multiple test
+corrections.}
+
+\item{logFC_cutoff}{The cut-off in \code{log2FC}. Entries with \code{log2FC}
+smaller than the threshold will be removed from multiple test corrections.}
+
+\item{...}{Contrasts for linear modeling. The syntax starts with a tilde,
+followed by the name of an available column key in \code{expt_smry.xlsx} and
+square brackets. The contrast groups are then quoted with multiple contrast
+groups separated by commas.}
 }
 \value{
-Images stored under the file folders that are associated to
-  \code{id}, \code{anal_type}.
+The primary output is
+ \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
+ \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data.
 }
 \description{
-\code{proteoSigtest} produces heat maps.  It is a wrapper round the call
-\code{info_anal(..., anal_type = "Heatmap")}.
-}
-\details{
-reads the data from either "\code{~\\Direcotry\\Peptide\\Peptide All.txt}" at
-\code{id = pep_seq_mod},
+\code{proteoSigtest} performs significance tests of peptide or protein
+\code{log2FC}
 }
 \examples{
-MA(
-	id = gene,
-	scale_log2r = scale_log2r,
+pepSig(
+ impute_na = FALSE, 
+ W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+ W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
 )
 
-\dontrun{
-}
+prnSig(
+ impute_na = FALSE, 
+ W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+ W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
+)
+
 }

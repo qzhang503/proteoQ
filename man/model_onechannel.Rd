@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-sigtests.R
 \name{model_onechannel}
 \alias{model_onechannel}
-\title{factorial model formula for interaction terms
+\title{Factorial model formula for interaction terms
 all factors under one channel in label_scheme_sub
 comparisons defined by contrasts
 var_cutoff to remove low-variance entries
@@ -13,7 +13,7 @@ model_onechannel(df, id, formula, label_scheme_sub, complete_cases, method,
   var_cutoff, pval_cutoff, logFC_cutoff)
 }
 \description{
-factorial model formula for interaction terms
+Factorial model formula for interaction terms
 all factors under one channel in label_scheme_sub
 comparisons defined by contrasts
 var_cutoff to remove low-variance entries

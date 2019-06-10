@@ -180,10 +180,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  if(file.exists(fn_raw)) src_path <- fn_raw else
 		    stop(paste(fn_raw, "not found. \n Run normPSM(), normPep() and normPrn() first"),
 		         call. = TRUE)
-		} else if(anal_type %in% c("Trend", "NMF")) {
-		  if(file.exists(fn_imp)) src_path <- fn_imp else
-		    stop(paste(fn_imp, "not found. \nRun imputeNA() first."), call. = TRUE)
-		} else if(anal_type %in% c("Heatmap")) {
+		} else if(anal_type %in% c("Heatmap", "Trend", "NMF")) {
 		  if(impute_na) {
 		    if(file.exists(fn_imp)) src_path <- fn_imp else
 		      stop(paste(fn_imp, "not found. \nRun imputeNA() first."), call. = TRUE)
@@ -502,9 +499,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "NMF") {
 		function(r = r, nrun = nrun, complete_cases = complete_cases, task = !!task, ...) {
-
-		  # if (is.null(r)) stop("Need to provide the r(ank) for NMF.")
-		  
 		  switch(rlang::as_string(rlang::enexpr(task)), 
 		         anal = nmfTest(df = dfw$log2R, id = !!id, r = r, nrun = nrun, 
 		                        col_group = !!col_group, label_scheme_sub = label_scheme_sub,
@@ -553,9 +547,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (anal_type == "Model") {
 		function(complete_cases = FALSE, method = "limma", var_cutoff = 1E-3, pval_cutoff = 1,
 		         logFC_cutoff = log2(1), ...) {
-			df_op <- sigTest(df = dfw$log2R, id = !!id, label_scheme_sub = label_scheme_sub,
+		  method <- rlang::enexpr(method)
+		  
+		  df_op <- sigTest(df = dfw$log2R, id = !!id, label_scheme_sub = label_scheme_sub,
 			                 filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix),
-			                 complete_cases = complete_cases, method = method, var_cutoff = var_cutoff,
+			                 complete_cases = complete_cases, method = !!method, var_cutoff = var_cutoff,
 			                 pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, ...) %>%
 								tibble::rownames_to_column(id) %>%
 								dplyr::right_join(df, ., by = id)

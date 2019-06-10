@@ -1,28 +1,32 @@
-#' Significance tests
+#'Significance tests
 #'
-#' \code{proteoSigtest} produces heat maps.  It is a wrapper round the call
-#' \code{info_anal(..., anal_type = "Heatmap")}.
+#'\code{proteoSigtest} performs significance tests of peptide or protein
+#'\code{log2FC}
 #'
-#' reads the data from either "\code{~\\Direcotry\\Peptide\\Peptide All.txt}" at
-#' \code{id = pep_seq_mod},
+#'@inheritParams  proteoHist
+#'@inheritParams  proteoHM
+#'@param method The method of linear modeling. The default is \code{limma}; at
+#'  \code{method = lm}, the \code{lm()} in base R will be used for models
+#'  without random effects and the \code{\link[lmerTest]{lmer()}} will be used
+#'  for models with random effects.
+#'@param var_cutoff The cut-off in the variances of \code{log2FC}. Entries with
+#'  variances smaller than the threshold will be removed from linear modeling.
+#'@param pval_cutoff The cut-off in significance \code{pVal}. Entries with
+#'  \code{pVals} smaller than the threshold will be removed from multiple test
+#'  corrections.
+#'@param logFC_cutoff The cut-off in \code{log2FC}. Entries with \code{log2FC}
+#'  smaller than the threshold will be removed from multiple test corrections.
+#'@param ... Contrasts for linear modeling. The syntax starts with a tilde,
+#'  followed by the name of an available column key in \code{expt_smry.xlsx} and
+#'  square brackets. The contrast groups are then quoted with multiple contrast
+#'  groups separated by commas.
+#'@return The primary output is
+#'  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
+#'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data.
 #'
-#' @param id The name of a unique id (see \code{\link[proteoQ]{MDS}}).
-#' @param scale_log2r Logical; if TRUE, rescales \code{log2-ratios} to the same
-#'   scale of standard deviation for all samples.
-#' @return Images stored under the file folders that are associated to
-#'   \code{id}, \code{anal_type}.
-#'
-#' @examples
-#' MA(
-#' 	id = gene,
-#' 	scale_log2r = scale_log2r,
-#' )
-#'
-#' \dontrun{
-#' }
-#' @import dplyr rlang ggplot2
-#' @importFrom magrittr %>%
-#' @export
+#'@import dplyr rlang ggplot2
+#'@importFrom magrittr %>%
+#'@export
 proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = NULL, filename = NULL,
 											impute_na = TRUE, complete_cases = FALSE, method = "limma",
 											var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), ...) {
@@ -31,6 +35,7 @@ proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = 
 
 	id <- rlang::enexpr(id)
 	df <- rlang::enexpr(df)
+	method <- rlang::enexpr(method)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	
@@ -45,7 +50,8 @@ proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = 
 	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r,
 					filepath = !!filepath, filename = !!filename,
 					impute_na = impute_na,
-					anal_type = "Model")(complete_cases, method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
+					anal_type = "Model")(complete_cases = complete_cases, method = !!method, 
+					                     var_cutoff, pval_cutoff, logFC_cutoff, ...)
 }
 
 
@@ -214,7 +220,7 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 }
 
 
-#' factorial model formula for interaction terms
+#' Factorial model formula for interaction terms
 #' all factors under one channel in label_scheme_sub
 #' comparisons defined by contrasts
 #' var_cutoff to remove low-variance entries
@@ -355,6 +361,7 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 										method, var_cutoff, pval_cutoff, logFC_cutoff, ...) {
 
 	id <- rlang::as_string(rlang::enexpr(id))
+	method <- rlang::as_string(rlang::enexpr(method))
 
 	dots = rlang::enexprs(...)
 
@@ -374,16 +381,34 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 }
 
 
-#'Significance Tests of Peptide \code{log2-ratios}
-#'@seealso \code{\link{proteoSigtest}} for parameters
+#'Significance tests of peptide \code{log2FC}
+#'
+#'@rdname proteoSigtest
+#'
+#' @examples
+#'pepSig(
+#'  impute_na = FALSE, 
+#'  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+#'  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
+#')
+#'
 #'@export
 pepSig <- function (...) {
 	proteoSigtest(id = "pep_seq", ...)
 }
 
 
-#'Significance Tests of Protein \code{log2-ratios}
-#'@seealso \code{\link{proteoSigtest}} for parameters
+#'Significance tests of protein \code{log2FC}
+#'
+#'@rdname proteoSigtest
+#'
+#' @examples
+#'prnSig(
+#'  impute_na = FALSE, 
+#'  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+#'  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
+#')
+#'
 #'@export
 prnSig <- function (...) {
 	proteoSigtest(id = "gene", ...)
