@@ -10,10 +10,10 @@
 \title{NMF analysis}
 \usage{
 proteoNMF(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
-  col_select = NULL, scale_log2r = TRUE, impute_na = TRUE,
-  complete_cases = FALSE, df = NULL, filepath = NULL,
-  filename = NULL, anal_type = "NMF", task = "anal", r = 4,
-  nrun = 200, ...)
+  col_select = NULL, col_group = NULL, scale_log2r = TRUE,
+  impute_na = TRUE, complete_cases = FALSE, df = NULL,
+  filepath = NULL, filename = NULL, anal_type = "NMF",
+  task = "anal", r = 4, nrun = 200, ...)
 
 anal_pepNMF(...)
 
@@ -34,6 +34,11 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 Samples corresponding to non-empty entries under \code{col_select} will be
 included in the indicated analysis. At the NULL default, the column key
 \code{Select} will be used.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation for all samples.}
@@ -67,10 +72,12 @@ factory.}
 
 \item{nrun}{Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).}
 
-\item{...}{additional arguments inherited from \code{\link[NMF]{nmf}}.}
+\item{...}{In \code{anal_} functions: additional arguments inherited from
+\code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments
+inherited from \code{proteoEucDist}.}
 }
 \value{
-NMF plots.
+NMF classification and visualization of \code{log2FC}.
 }
 \description{
 Analyzes and visualizes the NMF clustering of peptide or protein \code{log2FC}
@@ -95,45 +102,45 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 \code{impute_na = FALSE}
 }
 \examples{
+library(NMF)
 anal_pepNMF(
- # col_group = Group # optional a priori knowledge of sample groups
- scale_log2r = TRUE,
- r = 6,
- nrun = 200
+  scale_log2r = TRUE,
+  col_group = Group, # optional a priori knowledge of sample groups
+  r = 6,
+  nrun = 200
 )
 
 library(NMF)
-
 anal_prnNMF(
   scale_log2r = TRUE,
-  col_group = Group # optional a priori knowledge of sample groups
+  col_group = Group, # optional a priori knowledge of sample groups
   r = 6,
   nrun = 200
 )
 
 plot_prnNMFCon(
- r = 6, 
- annot_cols = c("Color", "Alpha", "Shape"), 
- annot_colnames = c("Lab", "Batch", "WHIM"), 
- width = 10, 
- height = 10
+  r = 6, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  width = 10, 
+  height = 10
 )
 
 plot_prnNMFCoef(
- r = 6, 
- annot_cols = c("Color", "Alpha", "Shape"), 
- annot_colnames = c("Lab", "Batch", "WHIM"), 
- width = 10, 
- height = 10
+  r = 6, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  width = 10, 
+  height = 10
 )
 
 plot_metaNMF(
- r = 6, 
- annot_cols = c("Color", "Alpha", "Shape"), 
- annot_colnames = c("Lab", "Batch", "WHIM"), 
- 
- fontsize = 8, 
- fontsize_col = 5
+  r = 6, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  
+  fontsize = 8, 
+  fontsize_col = 5
 )
 
 }

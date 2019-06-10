@@ -8,9 +8,9 @@
 \usage{
 proteoTrend(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   anal_type = "Trend", task = "anal", col_select = NULL,
-  col_order = NULL, impute_na = FALSE, complete_cases = FALSE,
-  n_clust = 6, scale_log2r = TRUE, df = NULL, filepath = NULL,
-  filename = NULL, ...)
+  col_group = NULL, col_order = NULL, impute_na = FALSE,
+  complete_cases = FALSE, n_clust = 6, scale_log2r = TRUE,
+  df = NULL, filepath = NULL, filename = NULL, ...)
 
 anal_prnTrend(...)
 
@@ -32,6 +32,11 @@ factory.}
 Samples corresponding to non-empty entries under \code{col_select} will be
 included in the indicated analysis. At the NULL default, the column key
 \code{Select} will be used.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used.}
 
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
 Numeric values under which will be used for the left-to-right arrangement of
@@ -61,14 +66,15 @@ saved via \code{\link[ggplot2]{ggsave}} and the image type will be
 automatically determined by the extension of the file name. A \code{.png}
 format will be used at default or an unrecognized file extension.}
 
-\item{...}{Additional parameters for plotting: \cr \code{ymin}, the minimum y
-at \code{log2} scale; \cr \code{ymax}, the maximum y at \code{log2} scale;
-\cr \code{y_breaks}, the breaks in y-axis at \code{log2} scale; \cr
-\code{ncol}, the number of columns; \cr \code{nrow}, the number of rows; \cr
-\code{width}, the width of plot; \cr \code{height}, the height of plot.}
+\item{...}{Additional parameters for use in \code{plot_} functions: \cr
+\code{ymin}, the minimum y at \code{log2} scale; \cr \code{ymax}, the
+maximum y at \code{log2} scale; \cr \code{y_breaks}, the breaks in y-axis at
+\code{log2} scale; \cr \code{ncol}, the number of columns; \cr \code{nrow},
+the number of rows; \cr \code{width}, the width of plot; \cr \code{height},
+the height of plot.}
 }
 \value{
-Trends of \code{log2FC}
+Trend classification and visualization of \code{log2FC}.
 }
 \description{
 Analyzes and visualizes the trend clustering of peptide or protein
@@ -97,7 +103,4 @@ plot_prnTrend(
   n_clust = 6
 )
 
-}
-\seealso{
-\code{\link{proteoTrend}} for parameters
 }

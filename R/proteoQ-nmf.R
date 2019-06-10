@@ -17,6 +17,11 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
   fn_prx <- gsub("\\..*$", "", filename)
   fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
   
+  if (complete_cases) {
+    df <- df %>%
+      dplyr::filter(complete.cases(.[, names(.) %in% sample_ids]))
+  } 
+  
   exprs_data <- data.matrix(2^df)
   
   pData <- label_scheme_sub %>%
@@ -344,18 +349,24 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, in_nm, out_nm, ..
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
+#'@param col_group Character string to a column key in \code{expt_smry.xlsx}.
+#'  Samples corresponding to non-empty entries under \code{col_group} will be
+#'  used for sample grouping in the indicated analysis. At the NULL default, the
+#'  column key \code{Group} will be used.
 #'@param r Numeric; the factorization rank (\code{\link[NMF]{nmf}}).
 #'@param nrun Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).
 #'@param task Character string; a switch for different tasks in a functional
 #'  factory.
-#'@param ... additional arguments inherited from \code{\link[NMF]{nmf}}.
-#'@return NMF plots.
+#'@param ... In \code{anal_} functions: additional arguments inherited from
+#'  \code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments
+#'  inherited from \code{proteoEucDist}.
+#'@return NMF classification and visualization of \code{log2FC}.
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                       col_select = NULL, scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, 
-                       df = NULL, filepath = NULL, filename = NULL, 
+                       col_select = NULL, col_group = NULL, scale_log2r = TRUE, impute_na = TRUE, 
+                       complete_cases = FALSE, df = NULL, filepath = NULL, filename = NULL, 
                        anal_type = "NMF", task = "anal", r = 4, nrun = 200, ...) {
 
   # scale_log2r <- match_logi_gv(scale_log2r)
@@ -364,10 +375,16 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	if(length(id) != 1) id <- rlang::expr(gene)
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 	
-	# anal_type <- rlang::enexpr(anal_type)
-	task <- rlang::enexpr(task)	
+	stopifnot(rlang::is_logical(scale_log2r))
+	stopifnot(rlang::is_logical(impute_na))
+	stopifnot(rlang::is_logical(complete_cases))
+	stopifnot(rlang::as_string(rlang::enexpr(anal_type)) == "NMF")
+	stopifnot(r >= 2 & r %% 1 == 0)
+	stopifnot(nrun >= 1 & nrun %% 1 == 0)
 
+	task <- rlang::enexpr(task)	
 	col_select <- rlang::enexpr(col_select)
+	col_group <- rlang::enexpr(col_group)
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
@@ -376,10 +393,10 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 
 	if(!impute_na) complete_cases <- TRUE
 
-	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = impute_na,
-					df = !!df, filepath = !!filepath, filename = !!filename,
-					anal_type = "NMF")(r = r, nrun = nrun, complete_cases = complete_cases,
-					task = !!task, ...)
+	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, scale_log2r = scale_log2r, 
+	          impute_na = impute_na, df = !!df, filepath = !!filepath, filename = !!filename, 
+	          anal_type = "NMF")(r = r, nrun = nrun, complete_cases = complete_cases, 
+	                             task = !!task, ...)
 }
 
 
@@ -390,12 +407,13 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #'@rdname proteoNMF
 #'@examples
-#'anal_pepNMF(
-#'  # col_group = Group # optional a priori knowledge of sample groups
-#'  scale_log2r = TRUE,
-#'  r = 6,
-#'  nrun = 200
-#')
+#' library(NMF)
+#' anal_pepNMF(
+#'   scale_log2r = TRUE,
+#'   col_group = Group, # optional a priori knowledge of sample groups
+#'   r = 6,
+#'   nrun = 200
+#' )
 #'
 #'@export
 anal_pepNMF <- function (...) {
@@ -411,10 +429,9 @@ anal_pepNMF <- function (...) {
 #'@rdname proteoNMF
 #' @examples
 #' library(NMF)
-#'
 #' anal_prnNMF(
 #'   scale_log2r = TRUE,
-#'   col_group = Group # optional a priori knowledge of sample groups
+#'   col_group = Group, # optional a priori knowledge of sample groups
 #'   r = 6,
 #'   nrun = 200
 #' )
@@ -433,11 +450,11 @@ anal_prnNMF <- function (...) {
 #'@rdname proteoNMF
 #' @examples
 #'plot_prnNMFCon(
-#'  r = 6, 
-#'  annot_cols = c("Color", "Alpha", "Shape"), 
-#'  annot_colnames = c("Lab", "Batch", "WHIM"), 
-#'  width = 10, 
-#'  height = 10
+#'   r = 6, 
+#'   annot_cols = c("Color", "Alpha", "Shape"), 
+#'   annot_colnames = c("Lab", "Batch", "WHIM"), 
+#'   width = 10, 
+#'   height = 10
 #')
 #'
 #'@export
@@ -454,11 +471,11 @@ plot_prnNMFCon <- function (...) {
 #'@rdname proteoNMF
 #' @examples
 #'plot_prnNMFCoef(
-#'  r = 6, 
-#'  annot_cols = c("Color", "Alpha", "Shape"), 
-#'  annot_colnames = c("Lab", "Batch", "WHIM"), 
-#'  width = 10, 
-#'  height = 10
+#'   r = 6, 
+#'   annot_cols = c("Color", "Alpha", "Shape"), 
+#'   annot_colnames = c("Lab", "Batch", "WHIM"), 
+#'   width = 10, 
+#'   height = 10
 #')
 #'
 #'@export
@@ -475,12 +492,12 @@ plot_prnNMFCoef <- function (...) {
 #'@rdname proteoNMF
 #' @examples
 #'plot_metaNMF(
-#'  r = 6, 
-#'  annot_cols = c("Color", "Alpha", "Shape"), 
-#'  annot_colnames = c("Lab", "Batch", "WHIM"), 
-#'  
-#'  fontsize = 8, 
-#'  fontsize_col = 5
+#'   r = 6, 
+#'   annot_cols = c("Color", "Alpha", "Shape"), 
+#'   annot_colnames = c("Lab", "Batch", "WHIM"), 
+#'   
+#'   fontsize = 8, 
+#'   fontsize_col = 5
 #')
 #'
 #'@export
