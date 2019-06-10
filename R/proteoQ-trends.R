@@ -29,11 +29,8 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)
 	
-	if (complete_cases) {
-	  df <- df %>%
-	    dplyr::filter(complete.cases(.))
-	}
-
+	if (complete_cases) df <- df[complete.cases(df), ]
+	
 	df_mean <- t(df) %>%
 		data.frame(check.names = FALSE) %>%
 		tibble::rownames_to_column("Sample_ID") %>%

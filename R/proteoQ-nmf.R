@@ -17,10 +17,7 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
   fn_prx <- gsub("\\..*$", "", filename)
   fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
   
-  if (complete_cases) {
-    df <- df %>%
-      dplyr::filter(complete.cases(.[, names(.) %in% sample_ids]))
-  } 
+  if (complete_cases) df <- df[complete.cases(df), ]
   
   exprs_data <- data.matrix(2^df)
   
@@ -126,9 +123,9 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, in_nm, out_nm,
     
   png(file.path(filepath, paste0(fn_prx, "_consensus.png")), 
       width = width, height = height, units="in", res = 300)
-  consensusmap(res_nmf, annCol = annotation_col, 
-               annColor=list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
-               tracks = c("basis:"), main = '', sub = '')
+    consensusmap(res_nmf, annCol = annotation_col, 
+                 annColor=list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
+                 tracks = c("basis:"), main = '', sub = '')
   dev.off()
   
   # my_pheatmap(
@@ -215,9 +212,9 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, in_nm, out_nm,
   
   png(file.path(filepath, paste0(gsub("\\..*$", "", in_nm), "_coef.png")), 
       width = width, height = height, units="in", res = 300)
-  coefmap(res_nmf, annCol = annotation_col, 
-          annColor = list(Type = 'Spectral', basis = 'Set3', consensus = 'YlOrRd:50'),
-          tracks = c("basis:"))
+    coefmap(res_nmf, annCol = annotation_col, 
+            annColor = list(Type = 'Spectral', basis = 'Set3', consensus = 'YlOrRd:50'),
+            tracks = c("basis:"))
   dev.off()
 }
 
@@ -226,7 +223,9 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, in_nm, out_nm,
 #'
 #' @import NMF dplyr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, in_nm, out_nm, ...) {
+plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, in_nm, out_nm, 
+                        # complete_cases, 
+                        ...) {
 
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
@@ -285,14 +284,15 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, in_nm, out_nm, ..
     annotation_colors <- eval(dots$annotation_colors, env = caller_env())
   }
   
-
   fn_prx <- gsub("\\..*$", "", in_nm)
   fn_suffix <- gsub(".*\\.(.*)$", "\\1", in_nm)
   
+  # if (complete_cases) df <- df[complete.cases(df), ]
+
   # metagene-specific features
   load(file = file.path(filepath, in_nm))
-  V_hat <- fitted(res_nmf)
-  s <- extractFeatures(res_nmf)
+  V_hat <- NMF::fitted(res_nmf)
+  s <- NMF::extractFeatures(res_nmf)
   # s <- featureScore(res_nmf)
   # w <- basis(res_nmf) # get matrix W
   # h <- coef(res_nmf) # get matrix H
@@ -372,7 +372,7 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   # scale_log2r <- match_logi_gv(scale_log2r)
 
   id <- rlang::enexpr(id)
-	if(length(id) != 1) id <- rlang::expr(gene)
+	if (length(id) != 1) id <- rlang::expr(gene)
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 	
 	stopifnot(rlang::is_logical(scale_log2r))
@@ -391,7 +391,7 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	
 	reload_expts()
 
-	if(!impute_na) complete_cases <- TRUE
+	if (!impute_na) complete_cases <- TRUE
 
 	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, scale_log2r = scale_log2r, 
 	          impute_na = impute_na, df = !!df, filepath = !!filepath, filename = !!filename, 
@@ -448,6 +448,7 @@ anal_prnNMF <- function (...) {
 #'visualization of the consensus heat map of protein data
 #'
 #'@rdname proteoNMF
+#'@inheritParams  proteoEucDist
 #' @examples
 #'plot_prnNMFCon(
 #'   r = 6, 
@@ -458,8 +459,11 @@ anal_prnNMF <- function (...) {
 #')
 #'
 #'@export
-plot_prnNMFCon <- function (...) {
-  proteoNMF(id = gene, task = plotcon, ...)
+plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
+  annot_cols <- rlang::enexpr(annot_cols)
+  annot_colnames <- rlang::enexpr(annot_colnames)
+  
+  proteoNMF(id = gene, task = plotcon, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 
@@ -469,6 +473,7 @@ plot_prnNMFCon <- function (...) {
 #'visualization of the coefficient heat map of protein data
 #'
 #'@rdname proteoNMF
+#'@inheritParams  proteoEucDist
 #' @examples
 #'plot_prnNMFCoef(
 #'   r = 6, 
@@ -479,8 +484,11 @@ plot_prnNMFCon <- function (...) {
 #')
 #'
 #'@export
-plot_prnNMFCoef <- function (...) {
-  proteoNMF(id = gene, task = plotcoef, ...)
+plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
+  annot_cols <- rlang::enexpr(annot_cols)
+  annot_colnames <- rlang::enexpr(annot_colnames)
+
+  proteoNMF(id = gene, task = plotcoef, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 
@@ -490,6 +498,7 @@ plot_prnNMFCoef <- function (...) {
 #'visualization of the metagene heat maps of protein data
 #'
 #'@rdname proteoNMF
+#'@inheritParams  proteoEucDist
 #' @examples
 #'plot_metaNMF(
 #'   r = 6, 
@@ -501,8 +510,11 @@ plot_prnNMFCoef <- function (...) {
 #')
 #'
 #'@export
-plot_metaNMF <- function (...) {
-  proteoNMF(id = gene, task = plotmeta, ...)
+plot_metaNMF <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
+  annot_cols <- rlang::enexpr(annot_cols)
+  annot_colnames <- rlang::enexpr(annot_colnames)
+
+  proteoNMF(id = gene, task = plotmeta, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 

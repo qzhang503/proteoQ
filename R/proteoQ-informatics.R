@@ -183,7 +183,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		} else if(anal_type %in% c("Heatmap", "Trend", "NMF")) {
 		  if(impute_na) {
 		    if(file.exists(fn_imp)) src_path <- fn_imp else
-		      stop(paste(fn_imp, "not found. \nRun imputeNA() first."), call. = TRUE)
+		      stop(paste(fn_imp, "not found. \nRun imputeNA() first or call the function with `impute_na = FALSE`."),
+		           call. = TRUE)
 		  } else {
 		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."),
 		                                                         call. = TRUE)
@@ -505,24 +506,25 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                        filepath = filepath, filename = paste0(fn_prx, "_r", r, ".csv"),
 		                        complete_cases = complete_cases, ...), 
 		         plotcon = plotNMFCon(id = !!id, 
-		                               r = r, 
-		                               label_scheme_sub = label_scheme_sub, 
-		                               filepath = filepath, 
-		                               in_nm = paste0(fn_prx, "_r", r, ".rda"), 
-		                               out_nm = paste0(fn_prx, "_r", r, "_consensus.png"), ...), 
-		         plotcoef = plotNMFCoef(id = !!id, 
 		                              r = r, 
 		                              label_scheme_sub = label_scheme_sub, 
 		                              filepath = filepath, 
 		                              in_nm = paste0(fn_prx, "_r", r, ".rda"), 
-		                              out_nm = paste0(fn_prx, "_r", r, "_coef.png"), ...), 
+		                              out_nm = paste0(fn_prx, "_r", r, "_consensus.png"), ...), 
+		         plotcoef = plotNMFCoef(id = !!id, 
+		                                r = r, 
+		                                label_scheme_sub = label_scheme_sub, 
+		                                filepath = filepath, 
+		                                in_nm = paste0(fn_prx, "_r", r, ".rda"), 
+		                                out_nm = paste0(fn_prx, "_r", r, "_coef.png"), ...), 
 		         plotmeta = plotNMFmeta(df = dfw$log2R, id = !!id, r = r, 
 		                                label_scheme_sub = label_scheme_sub, 
 		                                filepath = filepath, 
 		                                in_nm = paste0(fn_prx, "_r", r, ".rda"), 
-		                                out_nm = paste0(fn_prx, "_r", r, "_metagene.png"), ...)
+		                                out_nm = paste0(fn_prx, "_r", r, "_metagene.png"), 
+		                                # complete_cases = complete_cases, 
+		                                ...)
 		  )
-
 		}
 	} else if(anal_type == "ESGAGE") {
 		function(complete_cases = FALSE, method = "limma", gset_nm = "go_sets", var_cutoff = 1E-3,

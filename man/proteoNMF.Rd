@@ -19,11 +19,11 @@ anal_pepNMF(...)
 
 anal_prnNMF(...)
 
-plot_prnNMFCon(...)
+plot_prnNMFCon(annot_cols = NULL, annot_colnames = NULL, ...)
 
-plot_prnNMFCoef(...)
+plot_prnNMFCoef(annot_cols = NULL, annot_colnames = NULL, ...)
 
-plot_metaNMF(...)
+plot_metaNMF(annot_cols = NULL, annot_colnames = NULL, ...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
@@ -75,6 +75,13 @@ factory.}
 \item{...}{In \code{anal_} functions: additional arguments inherited from
 \code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments
 inherited from \code{proteoEucDist}.}
+
+\item{annot_cols}{A character vector of column names in \code{expt_smry.xlsx}.
+Values under the selected columns will be used to color-code sample IDs on the
+top of a \code{EucDist} plot.}
+
+\item{annot_colnames}{A character vector of replacement name(s) to
+\code{annot_cols}.}
 }
 \value{
 NMF classification and visualization of \code{log2FC}.
