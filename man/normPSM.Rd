@@ -62,9 +62,7 @@ denote peptide sequences with applicable variable modifications. See
 normalization.
 }
 \examples{
-# An examplary PSM file
-system.file("extdata", "F012345.csv", package = "proteoQ")
-
+\dontrun{
 dat_dir <- "C:\\\\my_directory"
 normPSM(
   rptr_intco = 3000,
@@ -73,6 +71,7 @@ normPSM(
   rm_outliers = FALSE,
   plot_violins = TRUE
 )
+}
 
 }
 \seealso{

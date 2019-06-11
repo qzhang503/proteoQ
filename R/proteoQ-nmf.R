@@ -1,13 +1,13 @@
 #' NMF analysis
 #'
-#' @import dplyr rlang Biobase
+#' @import dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
 #' @importFrom NMF nmf
 nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, filename,
                     complete_cases, ...) {
   
   stopifnot(nrow(label_scheme_sub) > 0)
-  
+
   sample_ids <- label_scheme_sub$Sample_ID
 
   col_group <- rlang::enexpr(col_group) # optional phenotypic information
@@ -16,6 +16,15 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
   
   fn_prx <- gsub("\\..*$", "", filename)
   fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
+  
+  if (is.null(r)) {
+    r <- c(4:8)
+    nrun <- 5
+    fn_prx <- paste0(fn_prx, r)
+  } else {
+    stopifnot(all(r >= 2) & all(r %% 1 == 0))
+    stopifnot(all(nrun >= 1) & all(nrun %% 1 == 0))
+  }
   
   if (complete_cases) df <- df[complete.cases(df), ]
   
@@ -34,188 +43,187 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
   exampleSet <- ExpressionSet(assayData = exprs_data, phenoData = phenoData,
                               experimentData = experimentData)
 
-  # featureNames(exampleSet)[1:5]
-  # phenoData(exampleSet)
-  # mat <- Biobase::exprs(exampleSet)
-  
-  res_nmf <- NMF::nmf(exampleSet, r, nrun = nrun)
-
-  save(res_nmf, file = file.path(filepath, paste0(fn_prx, ".rda")))
-  write.csv(res_nmf@consensus, file.path(filepath, paste0(fn_prx, "_consensus.csv")), row.names = FALSE)
-  write.csv(coef(res_nmf) %>% as.matrix, file.path(filepath, paste0(fn_prx, "_coef.csv")), row.names = FALSE)
+  purrr::walk2(r, fn_prx, ~ {
+    res_nmf <- NMF::nmf(exampleSet, .x, nrun = nrun)
+    save(res_nmf, file = file.path(filepath, paste0(.y, ".rda")))
+    write.csv(res_nmf@consensus, file.path(filepath, paste0(.y, "_consensus.csv")), row.names = FALSE)
+    write.csv(coef(res_nmf) %>% as.matrix, file.path(filepath, paste0(.y, "_coef.csv")), row.names = FALSE)
+  })
 }
-
 
 
 #' Plots consensus results from NMF analysis
 #'
-#' @import NMF dplyr rlang Biobase
+#' @import NMF dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFCon <- function(id, r, label_scheme_sub, filepath, in_nm, out_nm, 
-                       # annot_cols = NULL, annot_colnames = NULL, 
-                       ...) {
-
+plotNMFCon <- function(id, r, label_scheme_sub, filepath, fn_prx, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
-  
   sample_ids <- label_scheme_sub$Sample_ID
-  
-  src_path <- file.path(filepath, in_nm)
-  load(file = file.path(src_path))
-  
-  fn_prx <- gsub("\\..*$", "", in_nm)
-
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
+  
+  if (is.null(r)) {
+    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\d+\\.rda$"))
+  } else {
+    stopifnot(all(r >= 2) & all(r %% 1 == 0))
+    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\.rda$"))
+  }
+  
+  if(purrr::is_empty(filelist)) 
+    stop("No NMF results found under ", filepath, call. = FALSE)
 
-  D_matrix <- res_nmf@consensus
+  purrr::walk(filelist, ~ {
+    out_nm <- paste0(gsub("\\.rda$", "", .x), "_consensus.png")
+    load(file = file.path(file.path(filepath, .x)))
     
-  n_color <- 500
-  xmin <- 0
-  xmax <- ceiling(max(D_matrix))
-  x_margin <- xmax/10
-  color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
-                    seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
-  
-  if (is.null(dots$width)) {
-    width <- 1.35 * ncol(D_matrix)
-  } else {
-    width <- dots$width
-  }
-  
-  if (is.null(dots$height)) {
-    height <- 1.35 * ncol(D_matrix)
-  } else {
-    height <- dots$height
-  }
-  
-  if (is.null(dots$color)) {
-    mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
-  } else {
-    mypalette <- eval(dots$color, env = caller_env())
-  }
-  
-  if (is.null(dots$annot_cols)) {
-    annot_cols <- NULL
-  } else {
-    annot_cols <- eval(dots$annot_cols, env = caller_env())
-  }
-  
-  if (is.null(dots$annot_colnames)) {
-    annot_colnames <- NULL
-  } else {
-    annot_colnames <- eval(dots$annot_colnames, env = caller_env())
-  }
-  
-  if (is.null(annot_cols)) annotation_col <- NA else
-    annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = colnames(D_matrix))
-  
-  if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
-    colnames(annotation_col) <- annot_colnames
-  }
-  
-  if (is.null(dots$annotation_colors)) {
-    annotation_colors <- setHMColor(annotation_col)
-  } else if (is.na(dots$annotation_colors)) {
-    annotation_colors <- NA
-  } else {
-    annotation_colors <- eval(dots$annotation_colors, env = caller_env())
-  }
+    D_matrix <- res_nmf@consensus
+      
+    n_color <- 500
+    xmin <- 0
+    xmax <- ceiling(max(D_matrix))
+    x_margin <- xmax/10
+    color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
+                      seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
     
-  png(file.path(filepath, paste0(fn_prx, "_consensus.png")), 
-      width = width, height = height, units="in", res = 300)
+    if (is.null(dots$width)) {
+      width <- 1.35 * ncol(D_matrix)
+    } else {
+      width <- dots$width
+    }
+    
+    if (is.null(dots$height)) {
+      height <- 1.35 * ncol(D_matrix)
+    } else {
+      height <- dots$height
+    }
+    
+    if (is.null(dots$color)) {
+      mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
+    } else {
+      mypalette <- eval(dots$color, env = caller_env())
+    }
+    
+    if (is.null(dots$annot_cols)) {
+      annot_cols <- NULL
+    } else {
+      annot_cols <- eval(dots$annot_cols, env = caller_env())
+    }
+    
+    if (is.null(dots$annot_colnames)) {
+      annot_colnames <- NULL
+    } else {
+      annot_colnames <- eval(dots$annot_colnames, env = caller_env())
+    }
+    
+    if (is.null(annot_cols)) annotation_col <- NA else
+      annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = colnames(D_matrix))
+    
+    if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+      colnames(annotation_col) <- annot_colnames
+    }
+    
+    if (is.null(dots$annotation_colors)) {
+      annotation_colors <- setHMColor(annotation_col)
+    } else if (is.na(dots$annotation_colors)) {
+      annotation_colors <- NA
+    } else {
+      annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+    }
+    
+    png(file.path(filepath, out_nm), width = width, height = height, units="in", res = 300)
     consensusmap(res_nmf, annCol = annotation_col, 
                  annColor=list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
                  tracks = c("basis:"), main = '', sub = '')
-  dev.off()
-  
-  # my_pheatmap(
-  #   mat = D_matrix,
-  #   filename = file.path(filepath, out_nm), 
-  #   annotation_col = annotation_col,
-  #   color = mypalette,
-  #   annotation_colors = annotation_colors,
-  #   breaks = color_breaks,
-  #   !!!dots
-  # )
+    dev.off()
+    
+  })
 }
 
 
 #' Plots coef results from NMF analysis
 #'
-#' @import NMF dplyr rlang Biobase
+#' @import NMF dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFCoef <- function(id, r, label_scheme_sub, filepath, in_nm, out_nm, 
-                       # annot_cols = NULL, annot_colnames = NULL, 
-                       ...) {
-  
+plotNMFCoef <- function(id, r, label_scheme_sub, filepath, fn_prx, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
-	
   sample_ids <- label_scheme_sub$Sample_ID
-	
-  load(file = file.path(filepath, in_nm))
-	
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
-  D_matrix <- coef(res_nmf) %>% as.matrix
-
-  n_color <- 500
-  xmin <- 0
-  xmax <- ceiling(max(D_matrix))
-  x_margin <- xmax/10
-  color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
-                    seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
-  
-  if (is.null(dots$width)) {
-    width <- 1.35 * ncol(D_matrix)
+  if (is.null(r)) {
+    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\d+\\.rda$"))
   } else {
-    width <- dots$width
+    stopifnot(all(r >= 2) & all(r %% 1 == 0))
+    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\.rda$"))
   }
   
-  if (is.null(dots$height)) {
-    height <- 1.35 * ncol(D_matrix)
-  } else {
-    height <- dots$height
-  }
+  if(purrr::is_empty(filelist)) 
+    stop("No NMF results found under ", filepath, call. = FALSE)
   
-  if (is.null(dots$color)) {
-    mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
-  } else {
-    mypalette <- eval(dots$color, env = caller_env())
-  }
-  
-  if (is.null(dots$annot_cols)) {
-    annot_cols <- NULL
-  } else {
-    annot_cols <- eval(dots$annot_cols, env = caller_env())
-  }
-  
-  if (is.null(dots$annot_colnames)) {
-    annot_colnames <- NULL
-  } else {
-    annot_colnames <- eval(dots$annot_colnames, env = caller_env())
-  }
-  
-  annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = colnames(D_matrix))
-  
-  if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
-    colnames(annotation_col) <- annot_colnames
-  }
-
-  if (is.null(dots$annotation_colors)) {
-    annotation_colors <- setHMColor(annotation_col)
-  } else if (is.na(dots$annotation_colors)) {
-    annotation_colors <- NA
-  } else {
-    annotation_colors <- eval(dots$annotation_colors, env = caller_env())
-  }
-  
-  png(file.path(filepath, paste0(gsub("\\..*$", "", in_nm), "_coef.png")), 
-      width = width, height = height, units="in", res = 300)
+  purrr::walk(filelist, ~ {
+    out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.png")
+    src_path <- file.path(filepath, .x)
+    load(file = file.path(src_path))
+    
+    D_matrix <- coef(res_nmf) %>% as.matrix
+    
+    n_color <- 500
+    xmin <- 0
+    xmax <- ceiling(max(D_matrix))
+    x_margin <- xmax/10
+    color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
+                      seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
+    
+    if (is.null(dots$width)) {
+      width <- 1.35 * ncol(D_matrix)
+    } else {
+      width <- dots$width
+    }
+    
+    if (is.null(dots$height)) {
+      height <- 1.35 * ncol(D_matrix)
+    } else {
+      height <- dots$height
+    }
+    
+    if (is.null(dots$color)) {
+      mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
+    } else {
+      mypalette <- eval(dots$color, env = caller_env())
+    }
+    
+    if (is.null(dots$annot_cols)) {
+      annot_cols <- NULL
+    } else {
+      annot_cols <- eval(dots$annot_cols, env = caller_env())
+    }
+    
+    if (is.null(dots$annot_colnames)) {
+      annot_colnames <- NULL
+    } else {
+      annot_colnames <- eval(dots$annot_colnames, env = caller_env())
+    }
+    
+    annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = colnames(D_matrix))
+    
+    if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+      colnames(annotation_col) <- annot_colnames
+    }
+    
+    if (is.null(dots$annotation_colors)) {
+      annotation_colors <- setHMColor(annotation_col)
+    } else if (is.na(dots$annotation_colors)) {
+      annotation_colors <- NA
+    } else {
+      annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+    }
+    
+    png(file.path(filepath, out_nm), width = width, height = height, units ="in", res = 300)
     coefmap(res_nmf, annCol = annotation_col, 
             annColor = list(Type = 'Spectral', basis = 'Set3', consensus = 'YlOrRd:50'),
             tracks = c("basis:"))
-  dev.off()
+    dev.off()
+  })
 }
 
 
@@ -223,119 +231,125 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, in_nm, out_nm,
 #'
 #' @import NMF dplyr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, in_nm, out_nm, 
-                        # complete_cases, 
-                        ...) {
-
+plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
+  stopifnot(nrow(label_scheme_sub) > 0)
+  sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
-  if (is.null(dots$xmin)) {
-    xmin <- -1
+  if (is.null(r)) {
+    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\d+\\.rda$"))
+    r <- gsub(paste0(fn_prx, "(\\d+)\\.rda$"), "\\1", filelist) %>% as.numeric()
   } else {
-    xmin <- eval(dots$xmin, env = caller_env())
+    stopifnot(all(r >= 2) & all(r %% 1 == 0))
+    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\.rda$"))
   }
   
-  if (is.null(dots$xmax)) {
-    xmax <- 1
-  } else {
-    xmax <- eval(dots$xmax, env = caller_env())
-  }
-  
-  if (is.null(dots$x_margin)) {
-    x_margin <- .1
-  } else {
-    x_margin <- eval(dots$x_margin, env = caller_env())
-  }
-  
-  n_color <- 500
-  color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
-                    seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
-  
-  if (is.null(dots$color)) {
-    mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
-  } else {
-    mypalette <- eval(dots$color, env = caller_env())
-  }
-  
-  if (is.null(dots$annot_cols)) {
-    annot_cols <- NULL
-  } else {
-    annot_cols <- eval(dots$annot_cols, env = caller_env())
-  }
-  
-  if (is.null(dots$annot_colnames)) {
-    annot_colnames <- NULL
-  } else {
-    annot_colnames <- eval(dots$annot_colnames, env = caller_env())
-  }
-  
-  annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = colnames(df))
-  
-  if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
-    colnames(annotation_col) <- annot_colnames
-  }
-  
-  if (is.null(dots$annotation_colors)) {
-    annotation_colors <- setHMColor(annotation_col)
-  } else if (is.na(dots$annotation_colors)) {
-    annotation_colors <- NA
-  } else {
-    annotation_colors <- eval(dots$annotation_colors, env = caller_env())
-  }
-  
-  fn_prx <- gsub("\\..*$", "", in_nm)
-  fn_suffix <- gsub(".*\\.(.*)$", "\\1", in_nm)
-  
-  # if (complete_cases) df <- df[complete.cases(df), ]
+  if(purrr::is_empty(filelist)) 
+    stop("No NMF results found under ", filepath, call. = FALSE)
 
-  # metagene-specific features
-  load(file = file.path(filepath, in_nm))
-  V_hat <- NMF::fitted(res_nmf)
-  s <- NMF::extractFeatures(res_nmf)
-  # s <- featureScore(res_nmf)
-  # w <- basis(res_nmf) # get matrix W
-  # h <- coef(res_nmf) # get matrix H
-  
-  for (i in seq_len(r)) {
-    df_sub <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ]
-    
-    nrow <- nrow(df_sub)
-    
-    if (nrow > 0) {
-      fn_sub <- paste0(fn_prx, "_metagene", i, ".png")
-      width <- ncol(df_sub) * 2 + 2
-      
-      if (nrow > 300) {
-        height <- width * 1.5
-        dots$show_rownames = FALSE
-      } else {
-        cellheight <- 5
-        height <- cellheight * nrow + 8
-        fontsize_row <- 5
-        
-        dots$cellheight <- cellheight
-        dots$fontsize_row <- fontsize_row
-      }
-      
-      p <- my_pheatmap(
-        mat = df_sub,
-        filename = file.path(filepath, fn_sub),
-        annotation_col = annotation_col,
-        color = mypalette,
-        annotation_colors = annotation_colors,
-        breaks = color_breaks,
-        !!!dots
-      )
-      
-      df_op <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ] %>%
-        tibble::rownames_to_column(id)
-      
-      write.csv(df_op, file.path(filepath, paste0(fn_prx, "_metagene", i, ".csv")),
-                row.names = FALSE)
+  purrr::walk2(filelist, r, ~ {
+    src_path <- file.path(filepath, .x)
+    dir.create(file.path(filepath, .y), recursive = TRUE, showWarnings = FALSE)
+
+    load(file = file.path(src_path))
+    V_hat <- NMF::fitted(res_nmf)
+    s <- NMF::extractFeatures(res_nmf)
+
+    if (is.null(dots$xmin)) {
+      xmin <- -1
+    } else {
+      xmin <- eval(dots$xmin, env = caller_env())
     }
-  }
-  
+    
+    if (is.null(dots$xmax)) {
+      xmax <- 1
+    } else {
+      xmax <- eval(dots$xmax, env = caller_env())
+    }
+    
+    if (is.null(dots$x_margin)) {
+      x_margin <- .1
+    } else {
+      x_margin <- eval(dots$x_margin, env = caller_env())
+    }
+    
+    n_color <- 500
+    color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
+                      seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
+    
+    if (is.null(dots$color)) {
+      mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
+    } else {
+      mypalette <- eval(dots$color, env = caller_env())
+    }
+    
+    if (is.null(dots$annot_cols)) {
+      annot_cols <- NULL
+    } else {
+      annot_cols <- eval(dots$annot_cols, env = caller_env())
+    }
+    
+    if (is.null(dots$annot_colnames)) {
+      annot_colnames <- NULL
+    } else {
+      annot_colnames <- eval(dots$annot_colnames, env = caller_env())
+    }
+    
+    annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = colnames(df))
+    
+    if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+      colnames(annotation_col) <- annot_colnames
+    }
+    
+    if (is.null(dots$annotation_colors)) {
+      annotation_colors <- setHMColor(annotation_col)
+    } else if (is.na(dots$annotation_colors)) {
+      annotation_colors <- NA
+    } else {
+      annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+    }
+        
+    for (i in seq_len(.y)) {
+      df_sub <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ]
+      
+      nrow <- nrow(df_sub)
+      
+      if (nrow > 0) {
+        fn_sub <- paste0(fn_prx, .y, "_metagene", i, ".png")
+        width <- ncol(df_sub) * 2 + 2
+        
+        if (nrow > 300) {
+          height <- width * 1.5
+          dots$show_rownames = FALSE
+        } else {
+          cellheight <- 5
+          height <- cellheight * nrow + 8
+          fontsize_row <- 5
+          
+          dots$cellheight <- cellheight
+          dots$fontsize_row <- fontsize_row
+        }
+        
+        p <- my_pheatmap(
+          mat = df_sub,
+          filename = file.path(filepath, .y, fn_sub),
+          annotation_col = annotation_col,
+          color = mypalette,
+          annotation_colors = annotation_colors,
+          breaks = color_breaks,
+          !!!dots
+        )
+        
+        df_op <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ] %>%
+          tibble::rownames_to_column(id)
+        
+        write.csv(df_op, file.path(filepath, .y, paste0(fn_prx, .y, "_metagene", i, ".csv")),
+                  row.names = FALSE)
+      }
+    }
+
+  })
 }
 
 
@@ -367,7 +381,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, in_nm, out_nm,
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                        col_select = NULL, col_group = NULL, scale_log2r = TRUE, impute_na = TRUE, 
                        complete_cases = FALSE, df = NULL, filepath = NULL, filename = NULL, 
-                       anal_type = "NMF", task = "anal", r = 4, nrun = 200, ...) {
+                       anal_type = "NMF", task = "anal", r = NULL, nrun = 200, ...) {
 
   # scale_log2r <- match_logi_gv(scale_log2r)
 
@@ -379,8 +393,6 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	stopifnot(rlang::is_logical(impute_na))
 	stopifnot(rlang::is_logical(complete_cases))
 	stopifnot(rlang::as_string(rlang::enexpr(anal_type)) == "NMF")
-	stopifnot(r >= 2 & r %% 1 == 0)
-	stopifnot(nrun >= 1 & nrun %% 1 == 0)
 
 	task <- rlang::enexpr(task)	
 	col_select <- rlang::enexpr(col_select)
@@ -408,6 +420,8 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'@rdname proteoNMF
 #'@examples
 #' library(NMF)
+#' 
+#' # peptide data
 #' anal_pepNMF(
 #'   scale_log2r = TRUE,
 #'   col_group = Group, # optional a priori knowledge of sample groups
@@ -428,11 +442,20 @@ anal_pepNMF <- function (...) {
 #'
 #'@rdname proteoNMF
 #' @examples
-#' library(NMF)
+#' # protein data
 #' anal_prnNMF(
 #'   scale_log2r = TRUE,
-#'   col_group = Group, # optional a priori knowledge of sample groups
+#'   col_group = Group,
 #'   r = 6,
+#'   nrun = 200
+#' )
+#' 
+#' # protein data with a range of ranks
+#' anal_prnNMF(
+#'   col_group = Group,
+#'   scale_log2r = TRUE, 
+#'   impute_na = FALSE, 
+#'   r = c(5:8), 
 #'   nrun = 200
 #' )
 #'
@@ -450,8 +473,18 @@ anal_prnNMF <- function (...) {
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
 #' @examples
+#' # protein consensus plots for specific rank(s)
 #'plot_prnNMFCon(
-#'   r = 6, 
+#'   r = c(3, 5), 
+#'   annot_cols = c("Color", "Alpha", "Shape"), 
+#'   annot_colnames = c("Lab", "Batch", "WHIM"), 
+#'   width = 10, 
+#'   height = 10
+#')
+#'
+#'# protein consensus plots for all ranks
+#'plot_prnNMFCon(
+#'   impute_na = FALSE, 
 #'   annot_cols = c("Color", "Alpha", "Shape"), 
 #'   annot_colnames = c("Lab", "Batch", "WHIM"), 
 #'   width = 10, 
@@ -475,8 +508,8 @@ plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
 #' @examples
+#'# protein coefficient plots for all ranks
 #'plot_prnNMFCoef(
-#'   r = 6, 
 #'   annot_cols = c("Color", "Alpha", "Shape"), 
 #'   annot_colnames = c("Lab", "Batch", "WHIM"), 
 #'   width = 10, 
@@ -500,8 +533,9 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
 #' @examples
+#'# metagenes for all ranks
+#'# take additional arguments from `pheatmap`
 #'plot_metaNMF(
-#'   r = 6, 
 #'   annot_cols = c("Color", "Alpha", "Shape"), 
 #'   annot_colnames = c("Lab", "Batch", "WHIM"), 
 #'   
