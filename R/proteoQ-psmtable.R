@@ -987,9 +987,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'  names.
 #'
 #' @examples
-#' # An examplary PSM file
-#' system.file("extdata", "F012345.csv", package = "proteoQ")
-#'
+#' \dontrun{
 #' dat_dir <- "C:\\my_directory"
 #' normPSM(
 #'   rptr_intco = 3000,
@@ -998,6 +996,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'   rm_outliers = FALSE,
 #'   plot_violins = TRUE
 #' )
+#' }
 #'
 #'@import rlang dplyr purrr ggplot2 RColorBrewer
 #'@importFrom stringr str_split

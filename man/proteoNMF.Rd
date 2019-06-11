@@ -13,7 +13,7 @@ proteoNMF(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, col_group = NULL, scale_log2r = TRUE,
   impute_na = TRUE, complete_cases = FALSE, df = NULL,
   filepath = NULL, filename = NULL, anal_type = "NMF",
-  task = "anal", r = 4, nrun = 200, ...)
+  task = "anal", r = NULL, nrun = 200, ...)
 
 anal_pepNMF(...)
 
@@ -110,6 +110,8 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 }
 \examples{
 library(NMF)
+
+# peptide data
 anal_pepNMF(
   scale_log2r = TRUE,
   col_group = Group, # optional a priori knowledge of sample groups
@@ -117,32 +119,52 @@ anal_pepNMF(
   nrun = 200
 )
 
-library(NMF)
+# protein data
 anal_prnNMF(
   scale_log2r = TRUE,
-  col_group = Group, # optional a priori knowledge of sample groups
+  col_group = Group,
   r = 6,
   nrun = 200
 )
 
+# protein data with a range of ranks
+anal_prnNMF(
+  col_group = Group,
+  scale_log2r = TRUE, 
+  impute_na = FALSE, 
+  r = c(5:8), 
+  nrun = 200
+)
+
+# protein consensus plots for specific rank(s)
 plot_prnNMFCon(
-  r = 6, 
+  r = c(3, 5), 
   annot_cols = c("Color", "Alpha", "Shape"), 
   annot_colnames = c("Lab", "Batch", "WHIM"), 
   width = 10, 
   height = 10
 )
 
+# protein consensus plots for all ranks
+plot_prnNMFCon(
+  impute_na = FALSE, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  width = 10, 
+  height = 10
+)
+
+# protein coefficient plots for all ranks
 plot_prnNMFCoef(
-  r = 6, 
   annot_cols = c("Color", "Alpha", "Shape"), 
   annot_colnames = c("Lab", "Batch", "WHIM"), 
   width = 10, 
   height = 10
 )
 
+# metagenes for all ranks
+# take additional arguments from `pheatmap`
 plot_metaNMF(
-  r = 6, 
   annot_cols = c("Color", "Alpha", "Shape"), 
   annot_colnames = c("Lab", "Batch", "WHIM"), 
   

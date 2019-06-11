@@ -4,7 +4,7 @@
 \alias{plotNMFCoef}
 \title{Plots coef results from NMF analysis}
 \usage{
-plotNMFCoef(id, r, label_scheme_sub, filepath, in_nm, out_nm, ...)
+plotNMFCoef(id, r, label_scheme_sub, filepath, fn_prx, ...)
 }
 \description{
 Plots coef results from NMF analysis

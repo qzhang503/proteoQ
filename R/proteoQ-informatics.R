@@ -179,23 +179,23 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		if(anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) {
 		  if(file.exists(fn_raw)) src_path <- fn_raw else
 		    stop(paste(fn_raw, "not found. \n Run normPSM(), normPep() and normPrn() first"),
-		         call. = TRUE)
+		         call. = FALSE)
 		} else if(anal_type %in% c("Heatmap", "Trend", "NMF")) {
 		  if(impute_na) {
 		    if(file.exists(fn_imp)) src_path <- fn_imp else
-		      stop(paste(fn_imp, "not found. \nRun imputeNA() first or call the function with `impute_na = FALSE`."),
-		           call. = TRUE)
+		      stop(paste(fn_imp, "not found. \nImpute NA values first or call the function with `impute_na = FALSE`."),
+		           call. = FALSE)
 		  } else {
 		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."),
-		                                                         call. = TRUE)
+		                                                         call. = FALSE)
 		  }
 		} else if(anal_type %in% c("Model", "ESGAGE", "GSVA")) {
 			if(impute_na) {
 		    if(file.exists(fn_imp)) src_path <- fn_imp else
-		      stop(paste(fn_imp, "not found. \nRun imputeNA() first."), call. = TRUE)
+		      stop(paste(fn_imp, "not found. \nRun imputeNA() first."), call. = FALSE)
 		  } else {
 		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."),
-		                                                         call. = TRUE)
+		                                                         call. = FALSE)
 		  }
 		} 
 
@@ -509,20 +509,18 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                              r = r, 
 		                              label_scheme_sub = label_scheme_sub, 
 		                              filepath = filepath, 
-		                              in_nm = paste0(fn_prx, "_r", r, ".rda"), 
-		                              out_nm = paste0(fn_prx, "_r", r, "_consensus.png"), ...), 
+		                              fn_prx = paste0(fn_prx, "_r", r), 
+		                              ...), 
 		         plotcoef = plotNMFCoef(id = !!id, 
 		                                r = r, 
 		                                label_scheme_sub = label_scheme_sub, 
 		                                filepath = filepath, 
-		                                in_nm = paste0(fn_prx, "_r", r, ".rda"), 
-		                                out_nm = paste0(fn_prx, "_r", r, "_coef.png"), ...), 
+		                                fn_prx = paste0(fn_prx, "_r", r), 
+		                                ...), 
 		         plotmeta = plotNMFmeta(df = dfw$log2R, id = !!id, r = r, 
 		                                label_scheme_sub = label_scheme_sub, 
 		                                filepath = filepath, 
-		                                in_nm = paste0(fn_prx, "_r", r, ".rda"), 
-		                                out_nm = paste0(fn_prx, "_r", r, "_metagene.png"), 
-		                                # complete_cases = complete_cases, 
+		                                fn_prx = paste0(fn_prx, "_r", r), 
 		                                ...)
 		  )
 		}

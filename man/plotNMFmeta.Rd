@@ -4,7 +4,7 @@
 \alias{plotNMFmeta}
 \title{Plots coef results from NMF analysis}
 \usage{
-plotNMFmeta(df, id, r, label_scheme_sub, filepath, in_nm, out_nm, ...)
+plotNMFmeta(df, id, r, label_scheme_sub, filepath, fn_prx, ...)
 }
 \description{
 Plots coef results from NMF analysis
