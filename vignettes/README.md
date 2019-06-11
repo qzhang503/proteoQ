@@ -29,7 +29,7 @@ To install this package, start R (version "3.6") and enter:
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "gage", "limma"))
+BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "limma"))
 
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
@@ -52,10 +52,10 @@ independent laboratories. At each site, lysates from WHIM2 and WHIM16
 were each split and labeled with 10-plex TMT at equal sample sizes and
 repeated on a different day. This results in a total of 60 samples
 labeled under six 10-plex TMT experiments. The samples under each
-10-plex TMT were fractionated by off-line Hp-RP chromatography, followed
-by `LC/MS` analysis. The raw PSM results from Mascot searches are stored
-in a companion R package, `proteoQDA` and are accessbile through the
-following installation:
+10-plex TMT were fractionated by off-line Hp-RP chromatography(2011),
+followed by `LC/MS` analysis. The raw PSM results from Mascot searches
+are stored in a companion R package, `proteoQDA` and are accessbile
+through the following installation:
 
 ``` r
 devtools::install_github("qzhang503/proteoQDA")
@@ -96,63 +96,57 @@ The merged search may become increasingly demanding in computing powers
 with large data sets. In the example, I combined the MS peak lists from
 the Hp-RP fractions within the same 10-plex TMT experiment, but not the
 lists across experiments. This results in a total of six pieces of PSM
-results in `Mascot` exports. To get us started more quickly, we go ahead
-and copy the PSM files that we have prepared in `proteoQDA` over to the
-working directory, `dat_dir`:
+results in `Mascot` exports. To get us started, we go ahead and copy the
+PSM files that we have prepared in `proteoQDA` over to the working
+directory:
 
 ``` r
 library(proteoQDA)
-copy_globalCPTAC(dat_dir)
+cptac_csv_1(dat_dir)
 ```
 
-We next load the `proteoQ` package:
+The workflow involves an `Excel` template containing the metadata of
+multiplex experiment numbers, including TMT channels, LC/MS injection
+indices, sample IDs, reference channels, `RAW` MS data file names and
+addditional fields from the users. The default file name for the
+experimental summary is `expt_smry.xlsx` and the description of the
+column keys in the `Excel` files can be found from the help document by
+entering `?load_expts` from a `R` console. If samples were fractionated
+off-line prior to `LC/MS`, a second `Excel` template will also be filled
+out to link multiple `RAW` MS file names that are associated to the same
+sample IDs. The default file name for the fractionation summary is
+`frac_smry.xlsx`.[2] We copy over the pre-compiled `expt_smry.xlsx` and
+`frac_smry.xlsx` to the working directory:
 
 ``` r
-library(proteoQ)
+cptac_expt_1(dat_dir)
+cptac_frac_1(dat_dir)
 ```
 
-The `proteoQ` pacakge reads an `Excel` template containing the metadata
-of multiplex experiment numbers, including TMT channels, LC/MS injection
-indices, sample IDs, corresponding RAW data file names and addditional
-fields from the users. The default file name for the experimental
-summary is `expt_smry.xlsx`. If samples were fractionated off-line prior
-to `LC/MS`, a second `Excel` template will also be filled out to link
-multiple `RAW` file names that are associated to the same sample IDs.
-The default file name for the fractionation summary is
-`frac_smry.xlsx`.[2] We now copy over the pre-compiled `expt_smry.xlsx`
-and `frac_smry.xlsx` to the directory `dat_dir`:
-
-``` r
-copy_expt(dat_dir)
-copy_frac(dat_dir)
-```
-
-The description of the column keys in the `Excel` files can be found
-from the help document:
-
-``` r
-?load_expts
-```
-
-    Note that the PSM files and the `.xlsx` files are stored under the same file folder specified by `dat_dir`. 
+We now have all the pieces that are required by `proteoQ` in place.
+Let's have a quick glance at the `expt_smry.xlsx` file. We note that no
+reference channels were indicated under the column `Reference`. With
+`proteoQ`, the `log2FC` of each species in a given sample is calculated
+either (1) in relative to the reference(s) within each multiplex TMT
+experiment or (2) to the mean of all samples in the same experiment if
+reference(s) are absent. Hence, the later approach will be applied to
+the examplary data set that we are working with. In this special case,
+the mean of a given species in each TMT experiment is the average of
+five `WHIM2` and five `WHIM16` samples, which is biologically equivalent
+across TMT experiments.
 
 As a final step of the setup, we will load the experimental summary and
 some precomputed results:
 
 ``` r
+library(proteoQ)
 load_expts()
 ```
 
 ### Summarize PSMs to peptides and proteins
 
 *Process PSMs* - In this section, I demonstrate the summarisation of PSM
-data to peptides and proteins. The data set I use in this section
-corresponds to the proteomics data from Mertins et al.(2018). In the
-study, two different breast cancer subtypes, WHIM2 and WHIM16, from
-patient-derived xenograft models were assessed by three independent
-laborotories. Under each location, lysates from WHIM2 and WHIM16 were
-each split and labeled with 10-plex TMT at equal sample sizes and
-repeated on a different day. We start by processing PSM data from
+data to peptides and proteins. We start by processing PSM data from
 `Mascot` outputs:
 
 ``` r
@@ -165,7 +159,7 @@ normPSM(
  plot_violins = TRUE
 )
 
-# or accept the default in parameters 
+# or accept the default parameters 
 normPSM()
 ```
 
@@ -177,7 +171,7 @@ executing `normPSM()`. We then visually inspect the violin plots of
 reporter-ion intensity. Empirically, PSMs with reporter-ion intensity
 less than 1,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
-analysis.[2]
+analysis.[3]
 
 *Summarize PSMs to peptides* - We next summarise PSM to peptides.
 
@@ -200,7 +194,7 @@ At `id = pep_seq_mod`, peptide sequences that are different in variable
 modificaitons will be treated as different species. The log2FC of
 peptide data will be aligned by median centering across samples by
 default. If `method_align = MGKernel` is chosen, log2FC will be aligned
-under the assumption of multiple Gaussian kernels.[3] The parameter
+under the assumption of multiple Gaussian kernels.[4] The parameter
 `n_comp` defines the number of Gaussian kernels and `seed` set a seed
 for reproducible fittings. The parameters `range_log2r` and `range_int`
 define the range of log2FC and the range of reporter-ion intensity,
@@ -208,7 +202,7 @@ respectively, for use in the scaling of standard deviation across
 samples.
 
 Let's compare the log2FC profiles with and without scaling
-normalization:[4]
+normalization:[5]
 
 ``` r
 # without the scaling of log2FC 
@@ -233,7 +227,7 @@ includes sample entries that are tied to their laboratory origins.
 [![Select
 subsets](https://img.youtube.com/vi/3B5et8VY3hE/0.jpg)](https://www.youtube.com/embed/3B5et8VY3hE)
 
-We now are ready to plot histograms for each subset of data.[5] In the
+We now are ready to plot histograms for each subset of data.[6] In the
 tutorial, we only display the plots using the `BI` subset:
 
 ``` r
@@ -267,7 +261,7 @@ the scaling normalization. However, such adjustment may cause artifacts
 when the standard deviaiton across samples are genuinely different. I
 typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a
 choice in data scaling together with my a priori knowledge of the
-characteristics of samples.[6] Alignment of log2FC against housekeeping
+characteristics of samples.[7] Alignment of log2FC against housekeeping
 or normalizer protein(s) is also available. This seems suitable when the
 quantities of proteins of interest are different across samples where
 the assumption of constitutive expression for the vast majority of
@@ -293,7 +287,7 @@ normPrn(
 ```
 
 Similar to the peptide summary, we inspect the alignment and the scaling
-of ratio profiles, and re-normalize the data if needed.[7]
+of ratio profiles, and re-normalize the data if needed.[8]
 
 ``` r
 # without the scaling of log2FC
@@ -349,9 +343,9 @@ original aesthetics; right, modefied aesthetics
 
 We immediately spot that all samples are coded with the same color
 (**Figure 2B**). This is not a surprise as the values under column
-`expt_smry.xlsx::Color` are exclusively `JHU` for the `Select_JHU`
-subset. For similar reasons, the two different batches of `TMT1` and
-`TMT2` are distinguished by transparency, which is governed by column
+`expt_smry.xlsx::Color` are exclusively `JHU` for the `JHU` subset. For
+similar reasons, the two different batches of `TMT1` and `TMT2` are
+distinguished by transparency, which is governed by column
 `expt_smry.xlsx::Alpha`. We may wish to modify the aesthetics using
 different keys: e.g., color coding by WHIMs and size coding by batches,
 without the recourse of writing new R scripts. One solution is to link
@@ -393,9 +387,9 @@ pepEucDist(
     annot_colnames = c("WHIM", "Batch"), 
 
     # parameters from `pheatmap`
-    display_numbers = FALSE, 
+    display_numbers = TRUE, 
     number_color = "grey30", 
-    number_format = "%.2f",
+    number_format = "%.1f",
     
     clustering_distance_rows = "euclidean", 
     clustering_distance_cols = "euclidean", 
@@ -604,10 +598,10 @@ library(NMF)
 
 # NMF analysis
 anal_prnNMF(
-  # col_group = Group # optional a priori knowledge of sample groups
-    scale_log2r = TRUE,
+  # col_group = Group, # optional a priori knowledge of sample groups
+  scale_log2r = TRUE,
   r = 6,
-    nrun = 200
+  nrun = 200
 )
 
 # Consensus heat map
@@ -630,12 +624,12 @@ plot_prnNMFCoef(
 
 # Metagene heat map(s)
 plot_metaNMF(
-    r = 6, 
-    annot_cols = c("Color", "Alpha", "Shape"), 
-    annot_colnames = c("Lab", "Batch", "WHIM"), 
-
-    fontsize = 8, 
-    fontsize_col = 5
+  r = 6, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  
+  fontsize = 8, 
+  fontsize_col = 5
 )
 ```
 
@@ -648,14 +642,23 @@ right: coefficients.
 The following performs GSVA:
 
 ``` r
-prnGSVA(gset_nm = c("go_sets", "kegg_sets", "c2_msig"), scale_log2r = TRUE)
+prnGSVA(
+  scale_log2r = TRUE, 
+  gset_nm = c("go_sets", 
+              # "kegg_sets", 
+              "c2_msig")
+)
 ```
 
 The following maps gene sets under the environment of volcano plot
 visualization:
 
 ``` r
-gsvaMap(scale_log2r = TRUE, pval_cutoff = 1E-2, show_sig = "pVal")
+gsvaMap(
+  scale_log2r = TRUE, 
+  pval_cutoff = 1E-5, 
+  show_sig = "pVal"
+)
 ```
 
 Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
@@ -663,33 +666,41 @@ Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
 Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
 1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
+Wang, Y. 2011. "Reversed-Phase Chromatography with Multiple Fraction
+Concatenation Strategy for Proteome Profiling of Human MCF10A Cells."
+*Proteomics.* 11 (10): 2019-26.
+<https://doi.org/10.1002/pmic.201000722>.
+
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in file name extension.
 
-[2] The sample removal and PSM re-processing can be achieved by deleting
+[2] To extract the names of RAW files under a `raw_dir` folder:
+`extract_raws(raw_dir)`
+
+[3] The sample removal and PSM re-processing can be achieved by deleting
 the corresponding entries under the column `Sample_ID` in
 `expt_smry.xlsx`, followed by the re-load of the experiment,
 `load_expts()`, and the re-execution of `normPSM()` with desired
 parameters.
 
-[3] Density kernel estimates can occasionally capture spikes in the
+[4] Density kernel estimates can occasionally capture spikes in the
 profiles of log2FC for data alignment. Users will need to inspect the
 alignment of ratio histograms and may optimize the data normalization
 with different combinations of tuning parameters before proceeding to
 the next steps.
 
-[4] `normPep()` will report log2FC results both before and after the
+[5] `normPep()` will report log2FC results both before and after the
 scaling of standard deviations.
 
-[5] system files will be automatically updated from the modified
+[6] system files will be automatically updated from the modified
 `expt_smry.xlsx`
 
-[6] The default is `scale_log2r = TRUE` throughout the package. When
+[7] The default is `scale_log2r = TRUE` throughout the package. When
 calling functions involved parameter `scale_log2r`, users will specify
 explicitly `scale_log2r = FALSE` to overwrite the default. Although the
 package provides the facility to look for a global setting of
 `scale_log2`, I don't recommend using it.
 
-[7] Prameter `fasta` is solely used for the calculation of protein
+[8] Prameter `fasta` is solely used for the calculation of protein
 percent coverage. Precomputed data will be used if no `fasta` database
 is provided.
