@@ -12,8 +12,8 @@
 proteoNMF(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, col_group = NULL, scale_log2r = TRUE,
   impute_na = TRUE, complete_cases = FALSE, df = NULL,
-  filepath = NULL, filename = NULL, anal_type = "NMF",
-  task = "anal", r = NULL, nrun = 200, ...)
+  filepath = NULL, filename = NULL, task = "anal", r = NULL,
+  nrun = 200, ...)
 
 anal_pepNMF(...)
 
@@ -51,26 +51,18 @@ missing values will be used for visualization.}
 \item{df}{The name of input data file. By default, it will be determined by
 the value of \code{id}.}
 
-\item{filepath}{A file path to output results. By default, it will be
-determined by the name of the calling \code{function} and the value of
-\code{id} in the \code{call}.}
+\item{filepath}{Use system default.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-automatically determined by the extension of the file name. A \code{.png}
-format will be used at default or an unrecognized file extension.}
-
-\item{anal_type}{The type of analysis; \code{anal_type = c("MDS", "PCA",
-"EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
-"Model")}.}
+\item{filename}{Use system default.}
 
 \item{task}{Character string; a switch for different tasks in a functional
 factory.}
 
-\item{r}{Numeric; the factorization rank (\code{\link[NMF]{nmf}}).}
+\item{r}{Numeric vector; the factorization rank(s) in
+(\code{\link[NMF]{nmf}}).}
 
-\item{nrun}{Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).}
+\item{nrun}{Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).
+The default is c(4:8).}
 
 \item{...}{In \code{anal_} functions: additional arguments inherited from
 \code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments
@@ -111,7 +103,7 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 \examples{
 library(NMF)
 
-# peptide data
+# peptide data NMF at single r(ank)
 anal_pepNMF(
   scale_log2r = TRUE,
   col_group = Group, # optional a priori knowledge of sample groups
@@ -119,24 +111,17 @@ anal_pepNMF(
   nrun = 200
 )
 
-# protein data
+# protein data NMF at multiple ranks
 anal_prnNMF(
-  scale_log2r = TRUE,
-  col_group = Group,
-  r = 6,
-  nrun = 200
-)
-
-# protein data with a range of ranks
-anal_prnNMF(
-  col_group = Group,
-  scale_log2r = TRUE, 
   impute_na = FALSE, 
+  scale_log2r = TRUE, 
+  col_group = Group,
   r = c(5:8), 
   nrun = 200
 )
 
-# protein consensus plots for specific rank(s)
+
+# protein consensus heat maps at specific ranks
 plot_prnNMFCon(
   r = c(3, 5), 
   annot_cols = c("Color", "Alpha", "Shape"), 
@@ -145,7 +130,7 @@ plot_prnNMFCon(
   height = 10
 )
 
-# protein consensus plots for all ranks
+# protein consensus heat maps at all ranks
 plot_prnNMFCon(
   impute_na = FALSE, 
   annot_cols = c("Color", "Alpha", "Shape"), 
@@ -154,7 +139,8 @@ plot_prnNMFCon(
   height = 10
 )
 
-# protein coefficient plots for all ranks
+
+# protein coefficient heat maps at all ranks
 plot_prnNMFCoef(
   annot_cols = c("Color", "Alpha", "Shape"), 
   annot_colnames = c("Lab", "Batch", "WHIM"), 
@@ -162,13 +148,12 @@ plot_prnNMFCoef(
   height = 10
 )
 
-# metagenes for all ranks
-# take additional arguments from `pheatmap`
+# metagenes heat maps at all ranks; additional arguments are from `pheatmap`
 plot_metaNMF(
-  annot_cols = c("Color", "Alpha", "Shape"), 
-  annot_colnames = c("Lab", "Batch", "WHIM"), 
-  
-  fontsize = 8, 
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+
+  fontsize = 8,
   fontsize_col = 5
 )
 

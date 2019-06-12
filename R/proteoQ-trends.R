@@ -1,6 +1,6 @@
 #' Trend analysis
 #'
-#' @import Mfuzz dplyr rlang Biobase
+#' @import Mfuzz dplyr purrr rlang Biobase
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>%
@@ -20,14 +20,24 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 		                    method = "cmeans", m = m, ...)
 	}
 
+	
 	stopifnot(nrow(label_scheme_sub) > 0)
 
 	id <- rlang::as_string(rlang::enexpr(id))
-
 	dots <- rlang::enexprs(...)
 
 	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)
+	
+	fn_prx <- gsub("\\.csv$", "", filename)
+	fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
+	
+	if (is.null(n_clust)) {
+	  n_clust <- c(5:6)
+	  fn_prx <- paste0(fn_prx, n_clust)
+	} else {
+	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
+	}
 	
 	if (complete_cases) df <- df[complete.cases(df), ]
 	
@@ -54,89 +64,64 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 		dplyr::filter(complete.cases(.[, !grepl(id, names(.))])) %>%
 		tibble::column_to_rownames(id)
 
-	df_fuzzy = new('ExpressionSet', exprs = as.matrix(df_mean))
-	m1 <- mestimate(df_fuzzy)
+	purrr::walk(fn_prx, ~ {
+	  n_clust <- gsub(".*_n(\\d+)$", "\\1", .x) %>% as.numeric()
+	  filename <- paste0(.x, ".csv")
 
-	cl <- mfuzz(df_fuzzy, c = n_clust, m = m1)
-	O <- Mfuzz::overlap(cl)
-	
-	res_cl <- data.frame(cl_cluster = cl$cluster) %>%
-	  tibble::rownames_to_column() %>%
-	  dplyr::rename(!!id := rowname)
-	
-	Levels <- names(df_mean)
-
-	df_mean %>%
-	  tibble::rownames_to_column(id) %>% 
-	  left_join(res_cl, by = id) %>% 
-	  tidyr::gather(key = variable, value = value, -id, -cl_cluster) %>%
-	  dplyr::mutate(variable = factor(variable, levels = Levels)) %>%
-	  dplyr::arrange(variable) %>% 
-	  write.csv(file.path(filepath, filename), row.names = FALSE)	
+	  df_fuzzy = new('ExpressionSet', exprs = as.matrix(df_mean))
+	  # mat <- Biobase::exprs(df_fuzzy)
+	  # featureNames(df_fuzzy)
+	  # phenoData(df_fuzzy)
+	  
+	  m1 <- mestimate(df_fuzzy)
+	  
+	  cl <- mfuzz(df_fuzzy, c = n_clust, m = m1)
+	  O <- Mfuzz::overlap(cl)
+	  
+	  res_cl <- data.frame(cl_cluster = cl$cluster) %>%
+	    tibble::rownames_to_column() %>%
+	    dplyr::rename(!!id := rowname)
+	  
+	  Levels <- names(df_mean)
+	  
+	  df_mean %>%
+	    tibble::rownames_to_column(id) %>% 
+	    left_join(res_cl, by = id) %>% 
+	    tidyr::gather(key = variable, value = value, -id, -cl_cluster) %>%
+	    dplyr::mutate(variable = factor(variable, levels = Levels)) %>%
+	    dplyr::arrange(variable) %>% 
+	    write.csv(file.path(filepath, filename), row.names = FALSE)	
+	})
 }
 
 
 #' Plots trends
 #'
-#' @import dplyr rlang ggplot2 RColorBrewer
+#' @import dplyr rlang purrr ggplot2 RColorBrewer
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>%
-plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filepath, in_nm, out_nm, ...) {
-  id <- rlang::enexpr(id)
-  
-  col_group <- rlang::enexpr(col_group)
-  col_order <- rlang::enexpr(col_order)
-  src_path <- file.path(filepath, in_nm)
-  
-  df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, 
-                          comment.char = "#"), error = function(e) NA)
-  
-  if(!is.null(dim(df))) {
-    message(paste("File loaded:", gsub("\\\\", "/", src_path)))
-  } else {
-    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
-  }
-  
-  Levels <- label_scheme_sub %>% 
-    dplyr::arrange(!!col_order) %>% 
-    dplyr::select(!!col_group) %>% 
-    unique() %>% 
-    unlist()
-
-  df <- df %>% 
-    dplyr::mutate(variable = factor(variable, levels = Levels))
-  
+plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filepath, filename, ...) {
+  stopifnot(nrow(label_scheme_sub) > 0)
+  sample_ids <- label_scheme_sub$Sample_ID
+  id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
-  ymin <- eval(dots$ymin, env = caller_env())
-  ymax <- eval(dots$ymax, env = caller_env())
-  y_breaks <- eval(dots$y_breaks, env = caller_env())
-  ncol <- dots$ncol
-  nrow <- dots$nrow
-  width <- dots$width
-  height <- dots$height
+  fn_prx <- gsub("\\..*$", "", filename)
+  fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
   
-  if(is.null(ymin)) ymin <- -2
-  if(is.null(ymax)) ymax <- 2
-  if(is.null(y_breaks)) y_breaks <- 1
-  if(is.null(ncol)) ncol <- 1
-  if(is.null(nrow)) nrow <- 2
+  if (is.null(n_clust)) {
+    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\d+\\.csv$"))
+  } else {
+    stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
+    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\.csv$"))
+  }
   
-  dots$ymin <- NULL
-  dots$ymax <- NULL
-  dots$y_breaks <- NULL
-  dots$ncol <- NULL
-  dots$nrow <- NULL
-  
-  x_label <- expression("Ratio ("*log[2]*")")
-  
-  n_clust <- length(unique(df$cl_cluster))
-  if(is.null(width)) width <- n_clust * 8 / nrow
-  if(is.null(height)) height <- 8 * nrow
-  
-  dots$width <- NULL
-  dots$height <- NULL
+  if (purrr::is_empty(filelist)) 
+    stop("Trend results '", fn_prx, ".csv' not found under ", filepath, call. = FALSE)
+
+  col_group <- rlang::enexpr(col_group)
+  col_order <- rlang::enexpr(col_order)
   
   my_theme <- theme_bw() + theme(
     axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
@@ -155,6 +140,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
     strip.text.x = element_text(size = 24, colour = "black", angle = 0),
     strip.text.y = element_text(size = 24, colour = "black", angle = 90),
     
+    plot.margin = unit(c(5.5, 55, 5.5, 5.5), "points"), 
+    
     legend.key = element_rect(colour = NA, fill = 'transparent'),
     legend.background = element_rect(colour = NA,  fill = "transparent"),
     legend.position = "none",
@@ -164,26 +151,77 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
     legend.box = NULL
   )
   
-  p <- ggplot(data = df,
-              mapping = aes(x = variable, y = value, group = !!rlang::sym(id))) +
-    geom_line(colour = "white", alpha = .25) +
-    # stat_density2d(aes(fill = ..density..),
-    #                geom = "raster", alpha = .75, contour = FALSE) +
-    # scale_fill_distiller(limits = c(0,.5), palette = "Blues", direction = -1,
-    #                      na.value = brewer.pal(n = 9, name = "Blues")[1]) +
-    scale_y_continuous(limits = c(ymin, ymax), breaks = c(ymin, 0, ymax)) +
-    labs(title = "", x = "", y = x_label) +
-    my_theme
-  p <- p + facet_wrap(~ cl_cluster, nrow = nrow, labeller = label_value)
-  
-  ggsave(file.path(filepath, out_nm),
-         p, width = width, height = height, units = "in")
+  purrr::walk(filelist, ~ {
+    out_nm <- paste0(gsub("\\.csv$", "", .x), ".", fn_suffix)
+    src_path <- file.path(filepath, .x)
+    df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, 
+                            comment.char = "#"), error = function(e) NA)
+    
+    if (!is.null(dim(df))) {
+      message(paste("File loaded:", gsub("\\\\", "/", src_path)))
+    } else {
+      stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
+    }
+    
+    Levels <- label_scheme_sub %>% 
+      dplyr::arrange(!!col_order) %>% 
+      dplyr::select(!!col_group) %>% 
+      unique() %>% 
+      unlist()
+    
+    df <- df %>% 
+      dplyr::mutate(variable = factor(variable, levels = Levels))
+    
+    ymin <- eval(dots$ymin, env = caller_env())
+    ymax <- eval(dots$ymax, env = caller_env())
+    y_breaks <- eval(dots$y_breaks, env = caller_env())
+    ncol <- dots$ncol
+    nrow <- dots$nrow
+    width <- dots$width
+    height <- dots$height
+    
+    if(is.null(ymin)) ymin <- -2
+    if(is.null(ymax)) ymax <- 2
+    if(is.null(y_breaks)) y_breaks <- 1
+    if(is.null(ncol)) ncol <- 1
+    if(is.null(nrow)) nrow <- 2
+    
+    dots$ymin <- NULL
+    dots$ymax <- NULL
+    dots$y_breaks <- NULL
+    dots$ncol <- NULL
+    dots$nrow <- NULL
+    
+    x_label <- expression("Ratio ("*log[2]*")")
+    
+    n_clust <- length(unique(df$cl_cluster))
+    if(is.null(width)) width <- n_clust * 8 / nrow + 2
+    if(is.null(height)) height <- 8 * nrow
+    
+    dots$width <- NULL
+    dots$height <- NULL
+    
+    p <- ggplot(data = df,
+                mapping = aes(x = variable, y = value, group = !!rlang::sym(id))) +
+      geom_line(colour = "white", alpha = .25) +
+      # stat_density2d(aes(fill = ..density..),
+      #                geom = "raster", alpha = .75, contour = FALSE) +
+      # scale_fill_distiller(limits = c(0,.5), palette = "Blues", direction = -1,
+      #                      na.value = brewer.pal(n = 9, name = "Blues")[1]) +
+      scale_y_continuous(limits = c(ymin, ymax), breaks = c(ymin, 0, ymax)) +
+      labs(title = "", x = "", y = x_label) +
+      my_theme
+    p <- p + facet_wrap(~ cl_cluster, nrow = nrow, labeller = label_value)
+    
+    ggsave(file.path(filepath, out_nm),
+           p, width = width, height = height, units = "in")
+  })
 }
 
 
-#'Clustering by trends
+#'Clusters of trends
 #'
-#'Analyzes and visualizes the trend clustering of peptide or protein
+#'Analyzes and visualizes the clusters of trends of peptide or protein
 #'\code{log2FC}
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
@@ -193,7 +231,10 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'@inheritParams proteoEucDist
 #'@inheritParams proteoCorrplot
 #'@inheritParams info_anal
-#'@param n_clust Numeric; the number of clusters that data will be divided into.
+#'@param n_clust Numeric vector; the number(s) of clusters that data will be
+#'  divided into. The default is c(5:6).
+#'@param filepath Use system default.
+#'@param filename Use system default.
 #'@param ... Additional parameters for use in \code{plot_} functions: \cr
 #'  \code{ymin}, the minimum y at \code{log2} scale; \cr \code{ymax}, the
 #'  maximum y at \code{log2} scale; \cr \code{y_breaks}, the breaks in y-axis at
@@ -205,10 +246,10 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'@importFrom magrittr %>%
 #'@export
 proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                         anal_type = "Trend", task = "anal", 
+                         task = "anal", 
                          col_select = NULL, col_group = NULL, col_order = NULL, 
                          impute_na = FALSE, complete_cases = FALSE, 
-                         n_clust = 6, scale_log2r = TRUE, df = NULL, 
+                         n_clust = NULL, scale_log2r = TRUE, df = NULL, 
                          filepath = NULL, filename = NULL, ...) {
 
   # scale_log2r <- match_logi_gv(scale_log2r)
@@ -224,10 +265,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	stopifnot(rlang::is_logical(scale_log2r))
 	stopifnot(rlang::is_logical(impute_na))
 	stopifnot(rlang::is_logical(complete_cases))
-	stopifnot(rlang::as_string(rlang::enexpr(anal_type)) == "Trend")
-	stopifnot(n_clust >= 2 & n_clust %% 1 == 0)
 
-	anal_type <- rlang::enexpr(anal_type)
 	task <- rlang::enexpr(task)
 	
 	col_select <- rlang::enexpr(col_select)
@@ -244,7 +282,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, col_order = !!col_order,
 	          scale_log2r = scale_log2r, impute_na = impute_na,
 						df = !!df, filepath = !!filepath, filename = !!filename,
-						anal_type = !!anal_type)(n_clust = n_clust, complete_cases = complete_cases, 
+						anal_type = "Trend")(n_clust = n_clust, complete_cases = complete_cases, 
 						                         task = !!task, ...)
 }
 
@@ -260,7 +298,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #' anal_prnTrend(
 #'   scale_log2r = TRUE,
 #'   col_order = Order,
-#'   n_clust = 6
+#'   n_clust = c(5:6)
 #' )
 #'
 #'@export
@@ -280,7 +318,7 @@ anal_prnTrend <- function (...) {
 #' plot_prnTrend(
 #'   scale_log2r = TRUE,
 #'   col_order = Order,
-#'   n_clust = 6
+#'   n_clust = c(5:6)
 #' )
 #'
 #'@export
