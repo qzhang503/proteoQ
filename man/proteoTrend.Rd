@@ -4,13 +4,13 @@
 \alias{proteoTrend}
 \alias{anal_prnTrend}
 \alias{plot_prnTrend}
-\title{Clustering by trends}
+\title{Clusters of trends}
 \usage{
 proteoTrend(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
-  anal_type = "Trend", task = "anal", col_select = NULL,
-  col_group = NULL, col_order = NULL, impute_na = FALSE,
-  complete_cases = FALSE, n_clust = 6, scale_log2r = TRUE,
-  df = NULL, filepath = NULL, filename = NULL, ...)
+  task = "anal", col_select = NULL, col_group = NULL,
+  col_order = NULL, impute_na = FALSE, complete_cases = FALSE,
+  n_clust = NULL, scale_log2r = TRUE, df = NULL, filepath = NULL,
+  filename = NULL, ...)
 
 anal_prnTrend(...)
 
@@ -20,10 +20,6 @@ plot_prnTrend(...)
 \item{id}{Character string to indicate the type of data. Peptide data will be
 used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
-
-\item{anal_type}{The type of analysis; \code{anal_type = c("MDS", "PCA",
-"EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
-"Model")}.}
 
 \item{task}{Character string; a switch for different tasks in a functional
 factory.}
@@ -48,7 +44,8 @@ used.}
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used for visualization.}
 
-\item{n_clust}{Numeric; the number of clusters that data will be divided into.}
+\item{n_clust}{Numeric vector; the number(s) of clusters that data will be
+divided into. The default is c(5:6).}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation for all samples.}
@@ -56,15 +53,9 @@ of standard deviation for all samples.}
 \item{df}{The name of input data file. By default, it will be determined by
 the value of \code{id}.}
 
-\item{filepath}{A file path to output results. By default, it will be
-determined by the name of the calling \code{function} and the value of
-\code{id} in the \code{call}.}
+\item{filepath}{Use system default.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-automatically determined by the extension of the file name. A \code{.png}
-format will be used at default or an unrecognized file extension.}
+\item{filename}{Use system default.}
 
 \item{...}{Additional parameters for use in \code{plot_} functions: \cr
 \code{ymin}, the minimum y at \code{log2} scale; \cr \code{ymax}, the
@@ -77,7 +68,7 @@ the height of plot.}
 Trend classification and visualization of \code{log2FC}.
 }
 \description{
-Analyzes and visualizes the trend clustering of peptide or protein
+Analyzes and visualizes the clusters of trends of peptide or protein
 \code{log2FC}
 
 \code{anal_prnTrend} is a wrapper function of \code{\link{proteoTrend}} for the
@@ -94,13 +85,13 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 anal_prnTrend(
   scale_log2r = TRUE,
   col_order = Order,
-  n_clust = 6
+  n_clust = c(5:6)
 )
 
 plot_prnTrend(
   scale_log2r = TRUE,
   col_order = Order,
-  n_clust = 6
+  n_clust = c(5:6)
 )
 
 }

@@ -63,9 +63,9 @@ knitr::opts_chunk$set(
 
 
 ## Introduction to proteoQ
-Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed to aid automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. The arrangement allows users to put data manipulation behind the scene and apply metadata to openly address interesting biological questions using various informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting. 
+Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed to aid automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. The arrangement allows users to put data manipulation behind the scene and apply metadata to openly address biological questions using various informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting. 
 
-The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R functions. 
+The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines. 
 
 ## Installation
 To install this package, start R (version "3.6") and enter: 
@@ -117,21 +117,21 @@ img_daemon <- "images\\mascot\\mascot_daemon.png"
 knitr::include_graphics(c(img_daemon))
 ```
 
-The merged search may become increasingly demanding in computing powers with large data sets. In the example, I combined the MS peak lists from the Hp-RP fractions within the same 10-plex TMT experiment, but not the lists across experiments. This results in a total of six pieces of PSM results in `Mascot` exports. To get us started, we go ahead and copy the PSM files that we have prepared in `proteoQDA` over to the working directory:
+The merged search may become increasingly demanding in computing powers with growing data sets. In the example, I combined the MS peak lists from the Hp-RP fractions within the same 10-plex TMT experiment, but not the lists across experiments. This results in a total of six pieces of PSM results in `Mascot` exports. To get us started, we go ahead and copy the PSM files that we have prepared in `proteoQDA` over to the working directory:
 
 ```{r copy_psm, include = TRUE, eval = FALSE}
 library(proteoQDA)
 cptac_csv_1(dat_dir)
 ```
 
-The workflow involves an `Excel` template containing the metadata of multiplex experiment numbers, including TMT channels, LC/MS injection indices, sample IDs, reference channels, `RAW` MS data file names and addditional fields from the users. The default file name for the experimental summary is `expt_smry.xlsx` and the description of the column keys in the `Excel` files can be found from the help document by entering `?load_expts` from a `R` console. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. ^[To extract the names of RAW files under a `raw_dir` folder: `extract_raws(raw_dir)`] We copy over the pre-compiled `expt_smry.xlsx` and `frac_smry.xlsx` to the working directory: 
+The workflow involves an `Excel` template containing the metadata of multiplex experiment numbers, including TMT channels, LC/MS injection indices, sample IDs, reference channels, `RAW` MS data file names and addditional fields from the users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. ^[To extract the names of RAW files under a `raw_dir` folder: `extract_raws(raw_dir)`] The description of the column keys in the `Excel` files can be found from the help document by entering `?proteoQ::load_expts` from a `R` console. We copy over a pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx` to the working directory: 
 
 ```{r copy_expt_n_frac, include = TRUE, eval = FALSE}
 cptac_expt_1(dat_dir)
 cptac_frac_1(dat_dir)
 ```
 
-We now have all the pieces that are required by `proteoQ` in place. Let's have a quick glance at the `expt_smry.xlsx` file. We note that no reference channels were indicated under the column `Reference`. With `proteoQ`, the `log2FC` of each species in a given sample is calculated either (1) in relative to the reference(s) within each multiplex TMT experiment or (2) to the mean of all samples in the same experiment if reference(s) are absent. Hence, the later approach will be applied to the examplary data set that we are working with. In this special case, the mean of a given species in each TMT experiment is the average of five `WHIM2` and five `WHIM16` samples, which is biologically equivalent across TMT experiments. 
+We now have all the pieces that are required by `proteoQ` in place. Let's have a quick glance at the `expt_smry.xlsx` file. We note that no reference channels were indicated under the column `Reference`. With `proteoQ`, the `log2FC` of each species in a given sample is calculated either (a) in relative to the reference(s) within each multiplex TMT experiment or (b) to the mean of all samples in the same experiment if reference(s) are absent. Hence, the later approach will be applied to the examplary data set that we are working with. In this special case, the mean of a given species in each TMT experiment is the average of five `WHIM2` and five `WHIM16` samples, which is biologically equivalent across TMT experiments. 
 
 As a final step of the setup, we will load the experimental summary and some precomputed results:
 

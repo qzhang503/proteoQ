@@ -481,46 +481,51 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "Trend") {
 		function(n_clust = n_clust, complete_cases = complete_cases, task = !!task, ...) {
+		  fn_prx <- paste0(fn_prx, "_n", n_clust)
+		  
 		  switch(rlang::as_string(rlang::enexpr(task)), 
 		         anal = trendTest(df = dfw$log2R, id = !!id, 
 		                          col_group = !!col_group, col_order = !!col_order,
 		                          label_scheme_sub = label_scheme_sub, n_clust = n_clust,
 		                          complete_cases = complete_cases, scale_log2r = scale_log2r,
 		                          filepath = filepath, 
-		                          filename = paste0(fn_prx, "_n", n_clust, ".csv"), ...), 
+		                          filename = paste0(fn_prx, ".csv"), 
+		                          ...), 
 		         plot = plotTrend(id = !!id, 
 		                          col_group = !!col_group, 
 		                          col_order = !!col_order, 
 		                          label_scheme_sub = label_scheme_sub, 
 		                          n_clust = n_clust, 
 		                          filepath = filepath, 
-		                          in_nm = paste0(fn_prx, "_n", n_clust, ".csv"), 
-		                          out_nm = paste0(fn_prx, "_n", n_clust, ".png"), ...)
+		                          filename = paste0(fn_prx, ".", fn_suffix), 
+		                          ...)
 		  )
 		}
 	} else if (anal_type == "NMF") {
 		function(r = r, nrun = nrun, complete_cases = complete_cases, task = !!task, ...) {
+		  fn_prx <- paste0(fn_prx, "_r", r)
+		  
 		  switch(rlang::as_string(rlang::enexpr(task)), 
 		         anal = nmfTest(df = dfw$log2R, id = !!id, r = r, nrun = nrun, 
 		                        col_group = !!col_group, label_scheme_sub = label_scheme_sub,
-		                        filepath = filepath, filename = paste0(fn_prx, "_r", r, ".csv"),
+		                        filepath = filepath, filename = paste0(fn_prx, ".csv"), 
 		                        complete_cases = complete_cases, ...), 
 		         plotcon = plotNMFCon(id = !!id, 
 		                              r = r, 
 		                              label_scheme_sub = label_scheme_sub, 
 		                              filepath = filepath, 
-		                              fn_prx = paste0(fn_prx, "_r", r), 
+		                              fn_prx = fn_prx, 
 		                              ...), 
 		         plotcoef = plotNMFCoef(id = !!id, 
 		                                r = r, 
 		                                label_scheme_sub = label_scheme_sub, 
 		                                filepath = filepath, 
-		                                fn_prx = paste0(fn_prx, "_r", r), 
+		                                fn_prx = fn_prx, 
 		                                ...), 
 		         plotmeta = plotNMFmeta(df = dfw$log2R, id = !!id, r = r, 
 		                                label_scheme_sub = label_scheme_sub, 
 		                                filepath = filepath, 
-		                                fn_prx = paste0(fn_prx, "_r", r), 
+		                                fn_prx = fn_prx, 
 		                                ...)
 		  )
 		}

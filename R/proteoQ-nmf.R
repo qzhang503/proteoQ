@@ -7,13 +7,12 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
                     complete_cases, ...) {
   
   stopifnot(nrow(label_scheme_sub) > 0)
-
   sample_ids <- label_scheme_sub$Sample_ID
-
-  col_group <- rlang::enexpr(col_group) # optional phenotypic information
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
+  col_group <- rlang::enexpr(col_group) # optional phenotypic information
+
   fn_prx <- gsub("\\..*$", "", filename)
   fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
   
@@ -43,11 +42,13 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
   exampleSet <- ExpressionSet(assayData = exprs_data, phenoData = phenoData,
                               experimentData = experimentData)
 
-  purrr::walk2(r, fn_prx, ~ {
-    res_nmf <- NMF::nmf(exampleSet, .x, nrun = nrun)
-    save(res_nmf, file = file.path(filepath, paste0(.y, ".rda")))
-    write.csv(res_nmf@consensus, file.path(filepath, paste0(.y, "_consensus.csv")), row.names = FALSE)
-    write.csv(coef(res_nmf) %>% as.matrix, file.path(filepath, paste0(.y, "_coef.csv")), row.names = FALSE)
+  purrr::walk(fn_prx, ~ {
+    r <- gsub(".*_r(\\d+)$", "\\1", .x) %>% as.numeric()
+    
+    res_nmf <- NMF::nmf(exampleSet, r, nrun = nrun)
+    save(res_nmf, file = file.path(filepath, paste0(.x, ".rda")))
+    write.csv(res_nmf@consensus, file.path(filepath, paste0(.x, "_consensus.csv")), row.names = FALSE)
+    write.csv(coef(res_nmf) %>% as.matrix, file.path(filepath, paste0(.x, "_coef.csv")), row.names = FALSE)
   })
 }
 
@@ -239,7 +240,6 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
   
   if (is.null(r)) {
     filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\d+\\.rda$"))
-    r <- gsub(paste0(fn_prx, "(\\d+)\\.rda$"), "\\1", filelist) %>% as.numeric()
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
     filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\.rda$"))
@@ -248,11 +248,14 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
   if(purrr::is_empty(filelist)) 
     stop("No NMF results found under ", filepath, call. = FALSE)
 
-  purrr::walk2(filelist, r, ~ {
-    src_path <- file.path(filepath, .x)
-    dir.create(file.path(filepath, .y), recursive = TRUE, showWarnings = FALSE)
+  purrr::walk(filelist, ~ {
+    fn_prx <- gsub("\\.rda$", "", .x)
+    r <- gsub(".*_r(\\d+)\\.rda$", "\\1", .x) %>% as.numeric()
+    dir.create(file.path(filepath, r), recursive = TRUE, showWarnings = FALSE)
 
+    src_path <- file.path(filepath, .x)
     load(file = file.path(src_path))
+    
     V_hat <- NMF::fitted(res_nmf)
     s <- NMF::extractFeatures(res_nmf)
 
@@ -310,13 +313,13 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
       annotation_colors <- eval(dots$annotation_colors, env = caller_env())
     }
         
-    for (i in seq_len(.y)) {
+    for (i in seq_len(r)) {
       df_sub <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ]
       
       nrow <- nrow(df_sub)
       
       if (nrow > 0) {
-        fn_sub <- paste0(fn_prx, .y, "_metagene", i, ".png")
+        fn_sub <- paste0(fn_prx, "_metagene", i, ".png")
         width <- ncol(df_sub) * 2 + 2
         
         if (nrow > 300) {
@@ -331,9 +334,11 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
           dots$fontsize_row <- fontsize_row
         }
         
+        if (nrow <= 150) dots$show_rownames <- TRUE
+        
         p <- my_pheatmap(
           mat = df_sub,
-          filename = file.path(filepath, .y, fn_sub),
+          filename = file.path(filepath, r, fn_sub),
           annotation_col = annotation_col,
           color = mypalette,
           annotation_colors = annotation_colors,
@@ -344,7 +349,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
         df_op <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ] %>%
           tibble::rownames_to_column(id)
         
-        write.csv(df_op, file.path(filepath, .y, paste0(fn_prx, .y, "_metagene", i, ".csv")),
+        write.csv(df_op, file.path(filepath, r, paste0(fn_prx, "_metagene", i, ".csv")),
                   row.names = FALSE)
       }
     }
@@ -367,10 +372,14 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
 #'  Samples corresponding to non-empty entries under \code{col_group} will be
 #'  used for sample grouping in the indicated analysis. At the NULL default, the
 #'  column key \code{Group} will be used.
-#'@param r Numeric; the factorization rank (\code{\link[NMF]{nmf}}).
+#'@param r Numeric vector; the factorization rank(s) in
+#'  (\code{\link[NMF]{nmf}}).
 #'@param nrun Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).
+#'  The default is c(4:8).
 #'@param task Character string; a switch for different tasks in a functional
 #'  factory.
+#'@param filepath Use system default.
+#'@param filename Use system default.
 #'@param ... In \code{anal_} functions: additional arguments inherited from
 #'  \code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments
 #'  inherited from \code{proteoEucDist}.
@@ -381,7 +390,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                        col_select = NULL, col_group = NULL, scale_log2r = TRUE, impute_na = TRUE, 
                        complete_cases = FALSE, df = NULL, filepath = NULL, filename = NULL, 
-                       anal_type = "NMF", task = "anal", r = NULL, nrun = 200, ...) {
+                       task = "anal", r = NULL, nrun = 200, ...) {
 
   # scale_log2r <- match_logi_gv(scale_log2r)
 
@@ -392,7 +401,6 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	stopifnot(rlang::is_logical(scale_log2r))
 	stopifnot(rlang::is_logical(impute_na))
 	stopifnot(rlang::is_logical(complete_cases))
-	stopifnot(rlang::as_string(rlang::enexpr(anal_type)) == "NMF")
 
 	task <- rlang::enexpr(task)	
 	col_select <- rlang::enexpr(col_select)
@@ -421,7 +429,7 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'@examples
 #' library(NMF)
 #' 
-#' # peptide data
+#' # peptide data NMF at single r(ank)
 #' anal_pepNMF(
 #'   scale_log2r = TRUE,
 #'   col_group = Group, # optional a priori knowledge of sample groups
@@ -442,19 +450,11 @@ anal_pepNMF <- function (...) {
 #'
 #'@rdname proteoNMF
 #' @examples
-#' # protein data
+#' # protein data NMF at multiple ranks
 #' anal_prnNMF(
-#'   scale_log2r = TRUE,
-#'   col_group = Group,
-#'   r = 6,
-#'   nrun = 200
-#' )
-#' 
-#' # protein data with a range of ranks
-#' anal_prnNMF(
-#'   col_group = Group,
-#'   scale_log2r = TRUE, 
 #'   impute_na = FALSE, 
+#'   scale_log2r = TRUE, 
+#'   col_group = Group,
 #'   r = c(5:8), 
 #'   nrun = 200
 #' )
@@ -473,24 +473,25 @@ anal_prnNMF <- function (...) {
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
 #' @examples
-#' # protein consensus plots for specific rank(s)
-#'plot_prnNMFCon(
+#' 
+#' # protein consensus heat maps at specific ranks
+#' plot_prnNMFCon(
 #'   r = c(3, 5), 
 #'   annot_cols = c("Color", "Alpha", "Shape"), 
 #'   annot_colnames = c("Lab", "Batch", "WHIM"), 
 #'   width = 10, 
 #'   height = 10
-#')
+#' )
 #'
-#'# protein consensus plots for all ranks
-#'plot_prnNMFCon(
+#' # protein consensus heat maps at all ranks
+#' plot_prnNMFCon(
 #'   impute_na = FALSE, 
 #'   annot_cols = c("Color", "Alpha", "Shape"), 
 #'   annot_colnames = c("Lab", "Batch", "WHIM"), 
 #'   width = 10, 
 #'   height = 10
-#')
-#'
+#' )
+#' 
 #'@export
 plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   annot_cols <- rlang::enexpr(annot_cols)
@@ -508,13 +509,14 @@ plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
 #' @examples
-#'# protein coefficient plots for all ranks
-#'plot_prnNMFCoef(
+#' 
+#' # protein coefficient heat maps at all ranks
+#' plot_prnNMFCoef(
 #'   annot_cols = c("Color", "Alpha", "Shape"), 
 #'   annot_colnames = c("Lab", "Batch", "WHIM"), 
 #'   width = 10, 
 #'   height = 10
-#')
+#' )
 #'
 #'@export
 plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
@@ -533,15 +535,14 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
 #' @examples
-#'# metagenes for all ranks
-#'# take additional arguments from `pheatmap`
-#'plot_metaNMF(
-#'   annot_cols = c("Color", "Alpha", "Shape"), 
-#'   annot_colnames = c("Lab", "Batch", "WHIM"), 
-#'   
-#'   fontsize = 8, 
+#' # metagenes heat maps at all ranks; additional arguments are from `pheatmap`
+#' plot_metaNMF(
+#'   annot_cols = c("Color", "Alpha", "Shape"),
+#'   annot_colnames = c("Lab", "Batch", "WHIM"),
+#'
+#'   fontsize = 8,
 #'   fontsize_col = 5
-#')
+#' )
 #'
 #'@export
 plot_metaNMF <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
