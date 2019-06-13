@@ -425,14 +425,20 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 #' }
 #'
 #'@export
-#'@import dplyr
+#'@import dplyr rlang
 #'@importFrom magrittr %>%
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
-  if(is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv),
-                                           error = function(e) 1)
+  expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
+  frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
+  
+  if (is.null(dat_dir)) {
+    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+    if(dat_dir == 1) 
+      stop("`dat_dir` not found; set up the working directory first.", call. = FALSE)
+  } else {
+    assign("dat_dir", dat_dir, envir = .GlobalEnv)
+  }
 
-  if(dat_dir == 1) stop("Set up the working directory first.", call. = FALSE)
-	
 	mget(names(formals()), rlang::current_env()) %>% save_call("load_expts")
 
 	# "acctype_sp.txt" first available after executing `annotPSM``

@@ -9,9 +9,9 @@ reproducible analysis of proteomics data. It interacts with an `Excel`
 spread sheet for dynamic sample selections, aesthetics controls and
 statistical modelings. The arrangement allows users to put data
 manipulation behind the scene and apply metadata to openly address
-interesting biological questions using various informatic tools. In
-addition, the entire workflow is documented and can be conveniently
-reproduced upon revisiting.
+biological questions using various informatic tools. In addition, the
+entire workflow is documented and can be conveniently reproduced upon
+revisiting.
 
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
@@ -19,7 +19,7 @@ from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
 produced with users' selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
-creating 'wrappers' around published R functions.
+creating 'wrappers' around published R routines.
 
 Installation
 ------------
@@ -36,13 +36,14 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("qzhang503/proteoQ")
 ```
 
-Application
------------
+Application - Part I
+--------------------
 
 In this section I illustrate the following applications of `proteoQ`:
 
 -   Summarization of PSM data to peptide and protein reports.
--   Basic informatic analysis against the peptide and protein data.
+-   Visualization of quality metrics in peptide and protein data.
+-   Parital or complete re-normalization of data when needed
 
 The data set I use in this section corresponds to the proteomics data
 from Mertins et al.(2018). In the study, two different breast cancer
@@ -53,9 +54,10 @@ were each split and labeled with 10-plex TMT at equal sample sizes and
 repeated on a different day. This results in a total of 60 samples
 labeled under six 10-plex TMT experiments. The samples under each
 10-plex TMT were fractionated by off-line Hp-RP chromatography(2011),
-followed by `LC/MS` analysis. The raw PSM results from Mascot searches
-are stored in a companion R package, `proteoQDA` and are accessbile
-through the following installation:
+followed by `LC/MS` analysis. The raw PSM results from
+[Mascot](https://http://www.matrixscience.com/) searches are stored in a
+companion R package, `proteoQDA` and are accessbile through the
+following installation:
 
 ``` r
 devtools::install_github("qzhang503/proteoQDA")
@@ -93,11 +95,11 @@ IDs will be removed for now when constructing peptide reports.
 <img src="images\mascot\mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 
 The merged search may become increasingly demanding in computing powers
-with large data sets. In the example, I combined the MS peak lists from
-the Hp-RP fractions within the same 10-plex TMT experiment, but not the
-lists across experiments. This results in a total of six pieces of PSM
-results in `Mascot` exports. To get us started, we go ahead and copy the
-PSM files that we have prepared in `proteoQDA` over to the working
+with growing data sets. In the example, I combined the MS peak lists
+from the Hp-RP fractions within the same 10-plex TMT experiment, but not
+the lists across experiments. This results in a total of six pieces of
+PSM results in `Mascot` exports. To get us started, we go ahead and copy
+the PSM files that we have prepared in `proteoQDA` over to the working
 directory:
 
 ``` r
@@ -109,14 +111,15 @@ The workflow involves an `Excel` template containing the metadata of
 multiplex experiment numbers, including TMT channels, LC/MS injection
 indices, sample IDs, reference channels, `RAW` MS data file names and
 addditional fields from the users. The default file name for the
-experimental summary is `expt_smry.xlsx` and the description of the
-column keys in the `Excel` files can be found from the help document by
-entering `?load_expts` from a `R` console. If samples were fractionated
+experimental summary is `expt_smry.xlsx`. If samples were fractionated
 off-line prior to `LC/MS`, a second `Excel` template will also be filled
 out to link multiple `RAW` MS file names that are associated to the same
 sample IDs. The default file name for the fractionation summary is
-`frac_smry.xlsx`.[2] We copy over the pre-compiled `expt_smry.xlsx` and
-`frac_smry.xlsx` to the working directory:
+`frac_smry.xlsx`.[2] The description of the column keys in the `Excel`
+files can be found from the help document by entering
+`?proteoQ::load_expts` from a `R` console. We next copy over a
+pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx` to the working
+directory:
 
 ``` r
 cptac_expt_1(dat_dir)
@@ -127,9 +130,9 @@ We now have all the pieces that are required by `proteoQ` in place.
 Let's have a quick glance at the `expt_smry.xlsx` file. We note that no
 reference channels were indicated under the column `Reference`. With
 `proteoQ`, the `log2FC` of each species in a given sample is calculated
-either (1) in relative to the reference(s) within each multiplex TMT
-experiment or (2) to the mean of all samples in the same experiment if
-reference(s) are absent. Hence, the later approach will be applied to
+either (a) in relative to the reference(s) within each multiplex TMT
+experiment or (b) to the mean of all samples in the same experiment if
+reference(s) are absent. Hence, the later approach will be employed to
 the examplary data set that we are working with. In this special case,
 the mean of a given species in each TMT experiment is the average of
 five `WHIM2` and five `WHIM16` samples, which is biologically equivalent
@@ -227,8 +230,8 @@ includes sample entries that are tied to their laboratory origins.
 [![Select
 subsets](https://img.youtube.com/vi/3B5et8VY3hE/0.jpg)](https://www.youtube.com/embed/3B5et8VY3hE)
 
-We now are ready to plot histograms for each subset of data.[6] In the
-tutorial, we only display the plots using the `BI` subset:
+We now are ready to plot histograms for each subset of data.[6] In this
+document, we only display the plots using the `BI` subset:
 
 ``` r
 # without the scaling of log2FC 
@@ -261,11 +264,13 @@ the scaling normalization. However, such adjustment may cause artifacts
 when the standard deviaiton across samples are genuinely different. I
 typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a
 choice in data scaling together with my a priori knowledge of the
-characteristics of samples.[7] Alignment of log2FC against housekeeping
-or normalizer protein(s) is also available. This seems suitable when the
-quantities of proteins of interest are different across samples where
-the assumption of constitutive expression for the vast majority of
-proteins may not hold.
+characteristics of both samples and references.[7] I will use the same
+data set to illustrate the impacts of references in scaling
+normalization in [Lab 1](###%20Lab%201). Alignment of log2FC against
+housekeeping or normalizer protein(s) is also available. This seems
+suitable when the quantities of proteins of interest are different
+across samples where the assumption of constitutive expression for the
+vast majority of proteins may not hold.
 
 *Summarize peptides to proteins* - We then summarise peptides to
 proteins using a two-component Gaussian kernel.
@@ -302,6 +307,14 @@ prnHist(
  ncol = 10
 )
 ```
+
+Application - Part II
+---------------------
+
+In this section I illustrate the following applications of `proteoQ`:
+
+-   Basic informatic analysis and linear modeling against the peptide
+    and protein data.
 
 ### MDS and PCA plots
 
@@ -660,6 +673,112 @@ gsvaMap(
   show_sig = "pVal"
 )
 ```
+
+### Lab: Choices of references
+
+In this lab, we explore the effects of reference choices on data
+normalization. We first copy data over to the file directory specified
+by `temp_dir`, followed by PSM, peptide normalization and histogram
+visualization of peptide `log2FC`.
+
+``` r
+# directory setup
+temp_dir <- "c:\\The\\W2_ref\\Example"
+library(proteoQDA)
+cptac_csv_1(temp_dir)
+cptac_expt_ref_w2(temp_dir)
+cptac_frac_1(temp_dir)
+
+# analysis
+library(proteoQ)
+load_expts(temp_dir, expt_smry_ref_w2.xlsx)
+
+normPSM()
+
+normPep(
+  id = pep_seq, 
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 911, 
+  maxit = 200, 
+  epsilon = 1e-05
+)
+
+# visualization
+pepHist(
+    scale_log2r = FALSE, 
+    ncol = 9
+)
+```
+
+<img src="images\peptide\histogram\peptide_ref_w2.png" alt="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference." width="80%" />
+<p class="caption">
+**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference.
+</p>
+
+Notice that in the above histogram the `log2FC` profiles of `WHIM2`
+samples are much narrower than those of `WHIM16` (**Figure S1A**). This
+will occur when a reference is more similar to one group of sample(s)
+than the other. In our case, the reference is one of `WHIM2`. The
+difference in the breadth of `log2FC` profiles between the `WHIM16` and
+the `WHIM2` groups is likely due to the genuine difference in their
+proteomes. If the above argument is valid, a scaling normalize would
+moderate, and thus bias, the quantitative difference in proteomes
+between `WHIM2` and `WHIM16`.
+
+We alternatively seek a "center-of-mass" representation for uses as
+references. We select one `WHIM2` and one `WHIM16` from each 10-plex
+TMT. The `proteoQ` tool will average the signals from designated
+references. Thefore, the derived reference can be viewed as a mid point
+of the `WHIM2` and the `WHIM16` proteomes. We next perform analogously
+the data summary and histogram visualization. With the new reference, we
+have achieved `log2FC` profiles that are more comparable in breadth
+between `WHIM2` and `WHIM16` samples. With the new reference, a scaling
+normalization may be suitable at later steps.
+
+``` r
+# directory setup
+temp_dir_2 <- "c:\\The\\W2_W16_ref\\Example"
+library(proteoQDA)
+cptac_csv_1(temp_dir_2)
+expt_smry_ref_w2_w16(temp_dir_2)
+cptac_frac_1(temp_dir_2)
+
+# analysis
+library(proteoQ)
+load_expts(temp_dir_2, expt_smry_ref_w2_w16.xlsx)
+
+normPSM()
+
+normPep(
+  id = pep_seq, 
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 911, 
+  maxit = 200, 
+  epsilon = 1e-05
+)
+
+# visualization
+pepHist(
+    scale_log2r = FALSE, 
+    ncol = 8
+)
+```
+
+<img src="images\peptide\histogram\peptide_ref_w2_w16.png" alt="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." width="80%" />
+<p class="caption">
+**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and
+WHIM16 reference.
+</p>
+
+### References
 
 Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
