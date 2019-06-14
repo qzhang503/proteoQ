@@ -778,6 +778,66 @@ pepHist(
 WHIM16 reference.
 </p>
 
+### Lab: Peptide subsets
+
+In addition to the global proteomes, the CPTAC publication contains
+phosphopeptide data from the same samples.(2018) In this lab, we will
+explore the stoichiometry of phosphopeptide subsets in relative to the
+combined data sets of `global + phospho` peptides. We first performed a
+search aganist the combined `global and phospho` data. The search
+results are available in `proteoQDA`. We next copy the result files
+over, followed by the analysis and visualization of the `BI` subset:
+
+``` r
+# directory setup
+temp_phospho_dir <- "c:\\The\\Phosphopeptide\\Example"
+library(proteoQDA)
+cptac_csv_2(temp_phospho_dir)
+cptac_expt_2(temp_phospho_dir)
+cptac_frac_2(temp_phospho_dir)
+
+# analysis
+library(proteoQ)
+load_expts(temp_phospho_dir, expt_smry.xlsx)
+
+normPSM()
+
+normPep(
+  id = pep_seq_mod, # peptides with different variable modifications
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05
+)
+
+# all peptides
+pepHist(
+    col_select = BI, 
+    scale_log2r = TRUE, 
+    ncol = 4, 
+    filename = "BI_all_peptides.png"
+)
+
+# phospho subsets
+pepHist(
+    col_select = BI, 
+    scale_log2r = TRUE, 
+    pep_pattern = "sty", 
+    ncol = 4, 
+    filename = "BI_pSTY.png"
+)
+```
+
+<img src="images\peptide\histogram\bi_cmbn_peptides.png" alt="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." width="45%" /><img src="images\peptide\histogram\bi_phospho_sub.png" alt="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." width="45%" />
+<p class="caption">
+**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left:
+global + phospho; right: phospho only.
+</p>
+
 ### References
 
 Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
@@ -815,10 +875,9 @@ scaling of standard deviations.
 `expt_smry.xlsx`
 
 [7] The default is `scale_log2r = TRUE` throughout the package. When
-calling functions involved parameter `scale_log2r`, users will specify
-explicitly `scale_log2r = FALSE` to overwrite the default. Although the
-package provides the facility to look for a global setting of
-`scale_log2`, I don't recommend using it.
+calling functions involved parameter `scale_log2r`, users can specify
+explicitly `scale_log2r = FALSE` or define its value under the global
+environment.
 
 [8] Prameter `fasta` is solely used for the calculation of protein
 percent coverage. Precomputed data will be used if no `fasta` database

@@ -113,9 +113,10 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 	)
 
 	seq <- c(-Inf, seq(4, 7, .5), Inf)
-	
-	if(pep_pattern != "Z") {
-	  df <- df %>% dplyr::filter(grepl(pep_pattern, !!rlang::sym(id)))
+
+	if(pep_pattern != "zzz") {
+	  df <- df %>% 
+	    dplyr::filter(grepl(paste0("[", pep_pattern, "]"), !!rlang::sym(id)))
 	  stopifnot(nrow(df) > 0)
 	}
 	
@@ -180,6 +181,11 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'  \code{Select} will be used.
 #'@param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
 #'  of standard deviation for all samples.
+#'@param pep_pattern Character string containing one-letter representation of
+#'  amino acids. At the "zzz" default, all peptides will be used. Letters in the
+#'  character string are case sensitive. For example, \code{pep_pattern = "m"}
+#'  will extract peptides with oxidized methiones and \code{pep_pattern = "_"}
+#'  with N-terminal acetylation.
 #'@param show_curves Logical; if TRUE, shows the fitted curves.
 #'@param show_vline Logical; if TRUE, shows the vertical lines at \code{x = 0}.
 #'@param  new_fit Not currently used.
@@ -208,7 +214,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'@importFrom magrittr %>%
 #'@export
 proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                        col_select = NULL, scale_log2r = FALSE, pep_pattern = "Z", 
+                        col_select = NULL, scale_log2r = FALSE, pep_pattern = "zzz", 
                         show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 

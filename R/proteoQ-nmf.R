@@ -395,7 +395,7 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
                        complete_cases = FALSE, df = NULL, filepath = NULL, filename = NULL, 
                        task = "anal", r = NULL, nrun = 200, ...) {
 
-  # scale_log2r <- match_logi_gv(scale_log2r)
+  scale_log2r <- match_logi_gv("scale_log2r")
 
   id <- rlang::enexpr(id)
 	if (length(id) != 1) id <- rlang::expr(gene)

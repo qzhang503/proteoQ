@@ -286,7 +286,7 @@ plotMA <- function (df, col_group, label_scheme_sub, filepath, filename, ...) {
 proteoMA <- function (id = gene, col_select = NULL, col_group = NULL, scale_log2r = TRUE,
                       df = NULL, filepath = NULL, filename = NULL, ...) {
 
-  # scale_log2r <- match_logi_gv(scale_log2r)
+  scale_log2r <- match_logi_gv("scale_log2r")
 
   id <- rlang::enexpr(id)
 	if(length(id) != 1) id <- rlang::expr(gene)

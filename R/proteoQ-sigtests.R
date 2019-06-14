@@ -31,7 +31,7 @@ proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = 
 											impute_na = TRUE, complete_cases = FALSE, method = "limma",
 											var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), ...) {
 
-  # scale_log2r <- match_logi_gv(scale_log2r)
+  scale_log2r <- match_logi_gv("scale_log2r")
 
 	id <- rlang::enexpr(id)
 	df <- rlang::enexpr(df)

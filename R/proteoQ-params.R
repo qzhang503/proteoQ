@@ -630,7 +630,7 @@ parse_acc <- function(df) {
 #' \code{match_scale_log2r} matches the value of \code{scale_log2r} to the value
 #' in caller environment.
 match_scale_log2r <- function(scale_log2r) {
-  stopifnot(is.logical(scale_log2r))
+  stopifnot(rlang::is_logical(scale_log2r))
 
   global_var <-tryCatch(global_var <-get("scale_log2r", envir = .GlobalEnv),
                         error = function(e) "e")
@@ -645,11 +645,16 @@ match_scale_log2r <- function(scale_log2r) {
 #' @examples
 #' scale_log2r <- TRUE
 #' foo <- function(scale_log2r = FALSE) {
-#'   match_logi_gv(scale_log2r)
+#'   match_logi_gv("scale_log2r")
 #' }
 #' foo()
 match_logi_gv <- function(var) {
-  nm <- rlang::as_string(rlang::enexpr(var))
-  gvar <-tryCatch(gvar <-get(nm, envir = .GlobalEnv), error = function(e) "e")
-  if(gvar != "e" & is.logical(gvar)) return(gvar) else return(var)
+  gvar <-tryCatch(gvar <-get(var, envir = .GlobalEnv), error = function(e) "e")
+  
+  if(gvar != "e") {
+    stopifnot(rlang::is_logical(gvar))
+    return(gvar)
+  } else {
+    return(var)
+  }
 }
