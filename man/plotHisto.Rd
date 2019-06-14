@@ -4,8 +4,8 @@
 \alias{plotHisto}
 \title{Plots histograms}
 \usage{
-plotHisto(df = NULL, label_scheme_sub, params, scale_log2r, show_curves,
-  show_vline, filepath = NULL, filename, ...)
+plotHisto(df = NULL, id, label_scheme_sub, params, scale_log2r,
+  pep_pattern, show_curves, show_vline, filepath = NULL, filename, ...)
 }
 \description{
 Plots histograms

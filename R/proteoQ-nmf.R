@@ -71,7 +71,8 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, fn_prx, ...) {
   }
   
   if(purrr::is_empty(filelist)) 
-    stop("No NMF results found under ", filepath, call. = FALSE)
+    stop("NMF result file `", fn_prx, "... not found under ", filepath, 
+         "\nCheck the setting in `scale_log2r` for a probable mismatch.", call. = FALSE)
 
   purrr::walk(filelist, ~ {
     out_nm <- paste0(gsub("\\.rda$", "", .x), "_consensus.png")
@@ -159,7 +160,8 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, fn_prx, ...) {
   }
   
   if(purrr::is_empty(filelist)) 
-    stop("No NMF results found under ", filepath, call. = FALSE)
+    stop("NMF result file `", fn_prx, "... not found under ", filepath, 
+         "\nCheck the setting in `scale_log2r` for a probable mismatch.", call. = FALSE)
   
   purrr::walk(filelist, ~ {
     out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.png")
@@ -246,7 +248,8 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
   }
   
   if(purrr::is_empty(filelist)) 
-    stop("No NMF results found under ", filepath, call. = FALSE)
+    stop("NMF result file `", fn_prx, "... not found under ", filepath, 
+         "\nCheck the setting in `scale_log2r` for a probable mismatch.", call. = FALSE)
 
   purrr::walk(filelist, ~ {
     fn_prx <- gsub("\\.rda$", "", .x)

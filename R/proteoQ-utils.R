@@ -678,6 +678,9 @@ reload_expts <- function() {
 	frac_smry <- match_frac()
 	
 	fi_xlsx <- fs::file_info(file.path(dat_dir, expt_smry))$change_time
+	
+	if(is.na(fi_xlsx)) stop("Time stamp of `expt_smry.xlsx` not available.")
+	
 	fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme.Rdata"))$change_time
 	if(fi_xlsx > fi_rda) load_expts(dat_dir, expt_smry, frac_smry)
 }
@@ -731,19 +734,23 @@ calc_cover <- function(df, id, fasta = NULL) {
 	} else {
 		warning("Unkown accession type; use either \'uniprot_id\' or \'refseq_acc\'")
 	}
-
-	if(!is.null(fasta) & file.exists(fasta)) {
-		fasta <- read.fasta(fasta, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
-		lookup <- data.frame(prot_acc = getName(fasta), length = getLength(fasta)) %>%
-			dplyr::rename(!!key := prot_acc) %>%
-			dplyr::mutate(!!key := gsub(".*\\|", "", !!rlang::sym(key)))
+	
+	if(!is.null(fasta)) {
+	  if(file.exists(fasta)) {
+	    fasta <- read.fasta(fasta, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
+	    lookup <- data.frame(prot_acc = getName(fasta), length = getLength(fasta)) %>%
+	      dplyr::rename(!!key := prot_acc) %>%
+	      dplyr::mutate(!!key := gsub(".*\\|", "", !!rlang::sym(key)))
+	  } else {
+	    stop(fasta, "not found.", call. = FALSE)
+	  }
 	} else {
-		warning("Use pre-computed database to calculate protein coverages.")
+	  warning("Use pre-computed database to calculate protein coverages.")
 	  lookup <- dbs$prn_annot %>%
-			dplyr::select(key, length) %>%
-			dplyr::filter(!is.na(.[[key]]), !duplicated(.[[key]]))
+	    dplyr::select(key, length) %>%
+	    dplyr::filter(!is.na(.[[key]]), !duplicated(.[[key]]))
 	}
-
+	
 	df %>%
 		dplyr::select(prot_acc, pep_start, pep_end) %>%
 		dplyr::left_join(lookup, by = c("prot_acc" = key)) %>%

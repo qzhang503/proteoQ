@@ -3,10 +3,17 @@
 #' @import dplyr purrr rlang mixtools ggplot2 RColorBrewer
 #' @importFrom magrittr %>%
 #' @importFrom tidyr gather
-plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_curves,
-                       show_vline, filepath = NULL, filename, ...) {
+plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep_pattern, 
+                       show_curves, show_vline, filepath = NULL, filename, ...) {
 
-	dots <- rlang::enexprs(...)
+  stopifnot(nrow(label_scheme_sub) > 0)
+  stopifnot(rlang::is_logical(scale_log2r))
+  stopifnot(!grepl("[^A-z_]", pep_pattern))
+  stopifnot(rlang::is_logical(show_curves))
+  stopifnot(rlang::is_logical(show_vline))
+
+  id <- rlang::as_string(rlang::enexpr(id))
+  dots <- rlang::enexprs(...)
 
 	xmin <- eval(dots$xmin, env = caller_env())
 	xmax <- eval(dots$xmax, env = caller_env())
@@ -106,7 +113,12 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 	)
 
 	seq <- c(-Inf, seq(4, 7, .5), Inf)
-
+	
+	if(pep_pattern != "Z") {
+	  df <- df %>% dplyr::filter(grepl(pep_pattern, !!rlang::sym(id)))
+	  stopifnot(nrow(df) > 0)
+	}
+	
 	df_melt <- df %>%
 		dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%
 		dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>%
@@ -195,8 +207,9 @@ plotHisto <- function (df = NULL, label_scheme_sub, params, scale_log2r, show_cu
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), col_select = NULL,
-                        scale_log2r = FALSE, show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
+proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
+                        col_select = NULL, scale_log2r = FALSE, pep_pattern = "Z", 
+                        show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 
   id <- rlang::enexpr(id)
@@ -212,7 +225,7 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), co
 
 	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = FALSE,
 	          df = !!df, filepath = !!filepath, filename = !!filename,
-	          anal_type = "Histogram")(new_fit = new_fit, show_curves = show_curves,
+	          anal_type = "Histogram")(pep_pattern = pep_pattern, new_fit = new_fit, show_curves = show_curves,
 	                                   show_vline = show_vline, ...)
 }
 
