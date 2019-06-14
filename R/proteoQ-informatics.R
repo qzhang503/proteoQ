@@ -430,7 +430,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			}
 		}
 	} else if(anal_type == "Histogram") {
-		function(new_fit = new_fit, show_curves = show_curves, show_vline = show_vline, ...) {
+		function(pep_pattern = pep_pattern, new_fit = new_fit, show_curves = show_curves, show_vline = show_vline, ...) {
 
 			if (scale_log2r) {
 				fn <- file.path(filepath, "MGKernel_params_Z.txt")
@@ -446,15 +446,17 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 				show_curves <- FALSE
 			}
 
-			plotHisto(df = df, label_scheme_sub = label_scheme_sub, params = params,
-			          scale_log2r = scale_log2r, show_curves = show_curves, show_vline = show_vline,
+			plotHisto(df = df, id = !!id, label_scheme_sub = label_scheme_sub, params = params,
+			          scale_log2r = scale_log2r, pep_pattern = pep_pattern, 
+			          show_curves = show_curves, show_vline = show_vline,
 			          filepath = filepath, filename = paste0(fn_prx, ".", fn_suffix), ...)
 
 			if(annot_kinases) {
 				if(is.null(dim(df[df$kin_attr, ]))) stop("Kinase annoation not found.", call. = TRUE)
 
-				plotHisto(df = df[df$kin_attr, ], label_scheme_sub = label_scheme_sub, params = params,
-				          scale_log2r = scale_log2r, show_curves = FALSE, show_vline = show_vline,
+				plotHisto(df = df[df$kin_attr, ], id = !!id, label_scheme_sub = label_scheme_sub, params = params,
+				          scale_log2r = scale_log2r, pep_pattern = pep_pattern, 
+				          show_curves = FALSE, show_vline = show_vline,
 				          filepath = file.path(filepath, "Kinases"),
 				          filename = paste0(fn_prx, "_Kinases.", fn_suffix), ...)
 			}

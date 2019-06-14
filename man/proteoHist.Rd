@@ -7,9 +7,9 @@
 \title{Visualizes histograms}
 \usage{
 proteoHist(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
-  col_select = NULL, scale_log2r = FALSE, show_curves = TRUE,
-  show_vline = TRUE, new_fit = FALSE, df = NULL, filepath = NULL,
-  filename = NULL, ...)
+  col_select = NULL, scale_log2r = FALSE, pep_pattern = "Z",
+  show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
+  df = NULL, filepath = NULL, filename = NULL, ...)
 
 pepHist(...)
 

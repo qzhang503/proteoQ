@@ -166,7 +166,10 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	stopifnot(id == "prot_acc")
 	
-	fasta <- rlang::as_string(rlang::enexpr(fasta))
+	if(!is.null(fasta)) {
+	  fasta <- rlang::as_string(rlang::enexpr(fasta))
+	  stopifnot(file.exists(fasta))
+	}
 	
 	if(!file.exists(file.path(dat_dir, "Protein\\cache", "Protein_no_norm.csv"))) {
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 

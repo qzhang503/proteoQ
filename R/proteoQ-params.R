@@ -428,9 +428,13 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 #'@import dplyr rlang
 #'@importFrom magrittr %>%
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
+  
+  force(expt_smry)
+  force(frac_smry)
+
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
-  
+
   if (is.null(dat_dir)) {
     dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
     if(dat_dir == 1) 

@@ -117,9 +117,11 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
     filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\.csv$"))
   }
   
-  if (purrr::is_empty(filelist)) 
-    stop("Trend results '", fn_prx, ".csv' not found under ", filepath, call. = FALSE)
-
+  if(purrr::is_empty(filelist)) 
+    stop("Trend result file `", fn_prx, "... not found under ", filepath, 
+         "\nCheck the setting in `scale_log2r` for a probable mismatch.", call. = FALSE)
+  
+  
   col_group <- rlang::enexpr(col_group)
   col_order <- rlang::enexpr(col_order)
   
