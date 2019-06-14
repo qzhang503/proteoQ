@@ -13,7 +13,7 @@ prnGSVA <- function (id = gene,
 										gset_nm = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4,
 										logFC_cutoff = log2(1.1), mx.diff = TRUE, ...) {
 
-  # scale_log2r <- match_logi_gv(scale_log2r)
+  scale_log2r <- match_logi_gv("scale_log2r")
 
   id <- rlang::enexpr(id)
 	df <- rlang::enexpr(df)

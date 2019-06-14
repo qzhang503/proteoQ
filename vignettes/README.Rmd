@@ -229,7 +229,7 @@ img2_path <- "images\\peptide\\histogram\\peptide_bi_gl1_z.png"
 knitr::include_graphics(c(img1_path, img2_path))
 ```
 
-  As expected, the widths of log2FC profiles become more consistent after the scaling normalization. However, such adjustment may cause artifacts when the standard deviaiton across samples are genuinely different. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the characteristics of both samples and references.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users will specify explicitly `scale_log2r = FALSE` to overwrite the default. Although the package provides the facility to look for a global setting of `scale_log2`, I don't recommend using it.] I will use the same data set to illustrate the impacts of references in scaling normalization in [Lab 1](### Lab 1). Alignment of log2FC against housekeeping or normalizer protein(s) is also available. This seems suitable when the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
+  As expected, the widths of log2FC profiles become more consistent after the scaling normalization. However, such adjustment may cause artifacts when the standard deviaiton across samples are genuinely different. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the characteristics of both samples and references.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users can specify explicitly `scale_log2r = FALSE` or define its value under the global environment.] I will use the same data set to illustrate the impacts of references in scaling normalization in [Lab 1](### Lab 1). Alignment of log2FC against housekeeping or normalizer protein(s) is also available. This seems suitable when the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
   
 \vspace{1.5cm}*Summarize peptides to proteins* --- We then summarise peptides to proteins using a two-component Gaussian kernel.  
 
@@ -658,6 +658,60 @@ img_pep_ref_w2_w16 <- "images\\peptide\\histogram\\peptide_ref_w2_w16.png"
 knitr::include_graphics(c(img_pep_ref_w2_w16))
 ```
 
+
+### Lab: Peptide subsets
+
+In addition to the global proteomes, the CPTAC publication contains phosphopeptide data from the same samples.[-@mertins2018np] In this lab, we will explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. We first performed a search aganist the combined `global and phospho` data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset: 
+
+```{r peptide subsets reference, eval = FALSE}
+# directory setup
+temp_phospho_dir <- "c:\\The\\Phosphopeptide\\Example"
+library(proteoQDA)
+cptac_csv_2(temp_phospho_dir)
+cptac_expt_2(temp_phospho_dir)
+cptac_frac_2(temp_phospho_dir)
+
+# analysis
+library(proteoQ)
+load_expts(temp_phospho_dir, expt_smry.xlsx)
+
+normPSM()
+
+normPep(
+  id = pep_seq_mod, # peptides with different variable modifications
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05
+)
+
+# all peptides
+pepHist(
+	col_select = BI, 
+	scale_log2r = TRUE, 
+	ncol = 4, 
+	filename = "BI_all_peptides.png"
+)
+
+# phospho subsets
+pepHist(
+	col_select = BI, 
+	scale_log2r = TRUE, 
+	pep_pattern = "sty", 
+	ncol = 4, 
+	filename = "BI_pSTY.png"
+)
+```
+
+```{r peptide_subset_hist, echo=FALSE, fig.align='left', fig.cap="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_pep_gl_phospho <- "images\\peptide\\histogram\\bi_cmbn_peptides.png"
+img_pep_phospho <- "images\\peptide\\histogram\\bi_phospho_sub.png"
+knitr::include_graphics(c(img_pep_gl_phospho, img_pep_phospho))
+```
 
 
 

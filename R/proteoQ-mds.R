@@ -425,7 +425,7 @@ proteoMDS <- function (id = gene,
 											scale_log2r = TRUE, adjEucDist = FALSE, classical = TRUE, show_ids = TRUE,
                       annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
 
-  # scale_log2r <- match_logi_gv(scale_log2r)
+  scale_log2r <- match_logi_gv("scale_log2r")
 
 	id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
@@ -469,7 +469,7 @@ proteoPCA <- function (id = gene,
 											scale_log2r = TRUE, show_ids = TRUE,
                       annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
 
-  # scale_log2r <- match_logi_gv(scale_log2r)
+  scale_log2r <- match_logi_gv("scale_log2r")
 
   id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
@@ -520,7 +520,7 @@ proteoEucDist <- function (id = gene,
                       annot_cols = NULL, annot_colnames = NULL, 
 											df = NULL, filepath = NULL, filename = NULL, ...) {
 
-  # scale_log2r <- match_logi_gv(scale_log2r)
+  scale_log2r <- match_logi_gv("scale_log2r")
 
   id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)

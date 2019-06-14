@@ -7,7 +7,7 @@
 \title{Visualizes histograms}
 \usage{
 proteoHist(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
-  col_select = NULL, scale_log2r = FALSE, pep_pattern = "Z",
+  col_select = NULL, scale_log2r = FALSE, pep_pattern = "zzz",
   show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
   df = NULL, filepath = NULL, filename = NULL, ...)
 
@@ -27,6 +27,12 @@ included in the indicated analysis. At the NULL default, the column key
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation for all samples.}
+
+\item{pep_pattern}{Character string containing one-letter representation of
+amino acids. At the "zzz" default, all peptides will be used. Letters in the
+character string are case sensitive. For example, \code{pep_pattern = "m"}
+will extract peptides with oxidized methiones and \code{pep_pattern = "_"}
+with N-terminal acetylation.}
 
 \item{show_curves}{Logical; if TRUE, shows the fitted curves.}
 
