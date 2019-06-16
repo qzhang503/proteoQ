@@ -429,9 +429,6 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 #'@importFrom magrittr %>%
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
   
-  force(expt_smry)
-  force(frac_smry)
-
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
 
@@ -470,6 +467,7 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
 
   load_dbs(dat_dir = dat_dir, expt_smry = expt_smry)
 }
+
 
 
 #' Extracts the channel information in TMT experiments

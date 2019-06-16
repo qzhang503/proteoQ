@@ -338,11 +338,8 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 	if(!file.exists(file.path(dat_dir, "Peptide", "Peptide.txt"))) {
 		# normalize peptide data within each RAW file
-		normPep_Splex(
-			id = !!id,
-			method_psm_pep = method_psm_pep
-		)
-
+	  normPep_Splex(id = !!id, method_psm_pep = method_psm_pep)
+	  
 		df <- do.call(rbind,
 			lapply(list.files(path = file.path(dat_dir, "Peptide"), pattern = paste0("TMTset"),
 			                  full.names = TRUE), read.csv, check.names = FALSE, header = TRUE,

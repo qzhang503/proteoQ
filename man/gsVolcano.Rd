@@ -6,7 +6,7 @@
 \usage{
 gsVolcano(df, contrast_groups, gsea_res, gsea_key = "term", gsets,
   volcano_theme, filepath = NULL, filename = NULL, adjP = FALSE,
-  show_labels = TRUE, show_sig = NULL, pval_cutoff = 1e-06, ...)
+  show_labels = TRUE, show_sig = NULL, pval_cutoff = 0.000001, ...)
 }
 \description{
 Volcano Plots of Protein \code{log2-ratios} under Given Gene Sets
