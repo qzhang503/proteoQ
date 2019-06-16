@@ -495,12 +495,14 @@ annotPrn <- function (df, acc_type) {
 
 	lookup <- dbs$prn_annot %>%
 		dplyr::select(-status, -organism, -length) %>%
-		dplyr::filter(!duplicated(.[[key]]))
+		dplyr::filter(!duplicated(.[[key]])) # %>% 
+	  # dplyr::mutate(!!key := as.character(.[[key]]))
 
 	if(any(names(df) == "prot_desc")) lookup <- lookup %>% dplyr::select(-prot_desc)
 
-	df <- df %>%
-		dplyr::left_join(lookup, by = c("prot_acc" = key))
+	df <- df %>% 
+	  # dplyr::mutate(prot_acc = as.character(prot_acc)) %>% 
+		dplyr::left_join(lookup, by = c("prot_acc" = key)) 
 	
 	ind <- is.na(df$gene) | str_length(df$gen) == 0
 	if (acc_type %in% c("uniprot_id", "uniprot_acc") & sum(ind) > 0) {
@@ -510,7 +512,7 @@ annotPrn <- function (df, acc_type) {
 	    plyr::ldply(., rbind) 
 	  
 	  if (ncol(substi_gns) > 1) {
-	    substi_gns %$% gsub("\\s+.*", "", .[, 2])
+	    substi_gns <- substi_gns %$% gsub("\\s+.*", "", .[, 2])
 	    df[ind, "gene"] <- substi_gns
 	  }
 
@@ -682,7 +684,10 @@ reload_expts <- function() {
 	if(is.na(fi_xlsx)) stop("Time stamp of `expt_smry.xlsx` not available.")
 	
 	fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme.Rdata"))$change_time
-	if(fi_xlsx > fi_rda) load_expts(dat_dir, expt_smry, frac_smry)
+	if(fi_xlsx > fi_rda) {
+	  load_expts(dat_dir = dat_dir, expt_smry = !!rlang::sym(expt_smry), 
+	             frac_smry = !!rlang::sym(frac_smry))
+	}
 }
 
 
