@@ -333,7 +333,7 @@ proteoCorrplot <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene")
 														min_int = 3.5, max_int = 6.5, min_log2r = -2, max_log2r = 2,
 														df = NULL, filepath = NULL, filename = NULL, ...) {
 
-  scale_log2r <- match_logi_gv("scale_log2r")
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
   id <- rlang::enexpr(id)
 	if(length(id) != 1) id <- rlang::expr(gene)

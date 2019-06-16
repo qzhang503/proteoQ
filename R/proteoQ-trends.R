@@ -254,7 +254,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
                          n_clust = NULL, scale_log2r = TRUE, df = NULL, 
                          filepath = NULL, filename = NULL, ...) {
 
-  scale_log2r <- match_logi_gv("scale_log2r")
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
 	id <- rlang::enexpr(id)
 	if(id == rlang::expr(c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))) {

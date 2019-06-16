@@ -4,7 +4,7 @@
 \alias{match_logi_gv}
 \title{Match to a global logical variable}
 \usage{
-match_logi_gv(var)
+match_logi_gv(var, val)
 }
 \description{
 Match to a global logical variable
@@ -12,7 +12,7 @@ Match to a global logical variable
 \examples{
 scale_log2r <- TRUE
 foo <- function(scale_log2r = FALSE) {
-  match_logi_gv("scale_log2r")
+  match_logi_gv("scale_log2r", scale_log2r)
 }
 foo()
 }

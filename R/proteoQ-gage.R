@@ -9,7 +9,7 @@ prnGAGE <- function (id = gene,
 										method = "limma", gset_nm = "go_sets", var_cutoff = 1E-3,
 										pval_cutoff = .05, logFC_cutoff = log2(1.1), ...) {
 
-  scale_log2r <- match_logi_gv("scale_log2r")
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
   id <- rlang::enexpr(id)
 	df <- rlang::enexpr(df)
