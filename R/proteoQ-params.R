@@ -643,16 +643,16 @@ match_scale_log2r <- function(scale_log2r) {
 #' @examples
 #' scale_log2r <- TRUE
 #' foo <- function(scale_log2r = FALSE) {
-#'   match_logi_gv("scale_log2r")
+#'   match_logi_gv("scale_log2r", scale_log2r)
 #' }
 #' foo()
-match_logi_gv <- function(var) {
+match_logi_gv <- function(var, val) {
   gvar <-tryCatch(gvar <-get(var, envir = .GlobalEnv), error = function(e) "e")
   
   if(gvar != "e") {
     stopifnot(rlang::is_logical(gvar))
     return(gvar)
   } else {
-    return(var)
+    return(val)
   }
 }

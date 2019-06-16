@@ -6,7 +6,7 @@
 \usage{
 gsvaTest(df, id = "entrez", label_scheme_sub, filepath, filename,
   complete_cases = FALSE, method = "limma", gset_nm = "go_sets",
-  var_cutoff = 0.5, pval_cutoff = 0.0001, logFC_cutoff = log2(1.1),
+  var_cutoff = 0.5, pval_cutoff = 1e-04, logFC_cutoff = log2(1.1),
   mx.diff = TRUE, ...)
 }
 \description{

@@ -676,18 +676,17 @@ match_frac <- function (fn_pars = "load_expts.txt") {
 #' @importFrom magrittr %>%
 #' @importFrom fs file_info
 reload_expts <- function() {
-	expt_smry <- match_expt()
-	frac_smry <- match_frac()
-	
-	fi_xlsx <- fs::file_info(file.path(dat_dir, expt_smry))$change_time
-	
-	if(is.na(fi_xlsx)) stop("Time stamp of `expt_smry.xlsx` not available.")
-	
-	fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme.Rdata"))$change_time
-	if(fi_xlsx > fi_rda) {
-	  load_expts(dat_dir = dat_dir, expt_smry = !!rlang::sym(expt_smry), 
-	             frac_smry = !!rlang::sym(frac_smry))
-	}
+  expt_smry <- match_expt()
+  frac_smry <- match_frac()
+  
+  fi_xlsx <- fs::file_info(file.path(dat_dir, expt_smry))$change_time
+  
+  if(is.na(fi_xlsx)) stop("Time stamp of `expt_smry.xlsx` not available.")
+  
+  fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme.Rdata"))$change_time
+  if(fi_xlsx > fi_rda) {
+    load_expts(dat_dir = dat_dir, expt_smry = !!expt_smry, frac_smry = !!frac_smry)
+  }
 }
 
 

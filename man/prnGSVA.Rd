@@ -7,8 +7,7 @@
 prnGSVA(id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
   filename = NULL, impute_na = TRUE, complete_cases = FALSE,
   method = "limma", gset_nm = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 0.0001, logFC_cutoff = log2(1.1), mx.diff = TRUE,
-  ...)
+  pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), mx.diff = TRUE, ...)
 }
 \description{
 \code{proteoMDS} visualizes the results from multidimensional scaling (MDS)

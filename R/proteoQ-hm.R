@@ -431,7 +431,7 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
                       xmin = -1, xmax = 1, x_margin = 0.1, 
                       annot_cols = NULL, annot_colnames = NULL, ...) {
   
-  scale_log2r <- match_logi_gv("scale_log2r")
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- rlang::enexpr(id)
   col_select <- rlang::enexpr(col_select)
@@ -650,7 +650,7 @@ proteoKinHM <- function (id = gene, col_select = NULL, col_benchmark = NULL, sca
                          impute_na = FALSE, anal_type = "Heatmap", xmin = -1, xmax = 1,
                          x_margin = 0.1, annot_cols = NULL, ...) {
   
-  scale_log2r <- match_logi_gv("scale_log2r")
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   col_select <- rlang::enexpr(col_select)
   col_benchmark <- rlang::enexpr(col_benchmark)

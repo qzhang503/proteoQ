@@ -32,7 +32,7 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	err_msg_3 <- "Volcano plots of peptides not available for GSVA."
 	err_msg_4 <- "GSVA results not found. Please perform prnGSVA() first."
 
-	scale_log2r <- match_logi_gv("scale_log2r")
+	scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
 	id <- rlang::as_string(rlang::enexpr(id))
 	cat(paste0("id = \"", id, "\"", " by the current call\n"))
