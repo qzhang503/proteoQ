@@ -784,9 +784,9 @@ In addition to the global proteomes, the CPTAC publication contains
 phosphopeptide data from the same samples.(2018) In this lab, we will
 explore the stoichiometry of phosphopeptide subsets in relative to the
 combined data sets of `global + phospho` peptides. We first performed a
-search aganist the combined `global and phospho` data. The search
-results are available in `proteoQDA`. We next copy the result files
-over, followed by the analysis and visualization of the `BI` subset:
+search aganist the combined data. The search results are available in
+`proteoQDA`. We next copy the result files over, followed by the
+analysis and visualization of the `BI` subset:
 
 ``` r
 # directory setup
@@ -837,6 +837,19 @@ pepHist(
 **Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left:
 global + phospho; right: phospho only.
 </p>
+
+Ideally, the profiles of the `log2FC` between the `phospho` subsets and
+the overall data would either align at the maximum density or perhaps
+offset by similar distance among replicated samples. In this example,
+the alginment at maximum density seems to be case. The observation
+raises the possibility of measuring the stoichiometry of
+phosphoproteomes in relative to global data across sample types or
+conditions.
+
+*NB:* I used underscore to stand for N-terminal acetylation. The R
+language will throw an error if we attemp to use `pep_pattern = _` to
+subset peptides with N-terminal acetylation. In this case, we will need
+to quote the underscore: `pep_pattern = "_"`.
 
 ### References
 
