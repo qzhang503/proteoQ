@@ -787,22 +787,28 @@ calc_cover <- function(df, id, fasta = NULL) {
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 match_fmls <- function(formulas) {
-			load(file = file.path(dat_dir, "Calls\\prnSig_formulas.Rdata"))
+  fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.Rdata")
 
-			fml_chr <- formulas %>%
-				as.character() %>%
-				gsub("\\s+", "", .)
+  if(file.exists(fml_file)) {
+    load(file = fml_file)
+  } else {
+    stop("Run `prnSig()` first.")
+  }
+  
+	fml_chr <- formulas %>%
+		as.character() %>%
+		gsub("\\s+", "", .)
 
-			prnSig_chr <- prnSig_formulas %>%
-				purrr::map(~ .[is_call(.)]) %>%
-				as.character() %>%
-				gsub("\\s+", "", .)
+	prnSig_chr <- prnSig_formulas %>%
+		purrr::map(~ .[is_call(.)]) %>%
+		as.character() %>%
+		gsub("\\s+", "", .)
 
-			ok <- purrr::map_lgl(fml_chr, ~ . %in% prnSig_chr)
+	ok <- purrr::map_lgl(fml_chr, ~ . %in% prnSig_chr)
 
-			if(!all(ok))
-				stop("Formula match failed: ", formulas[[which(!ok)]],
-				     " not found in the latest call to 'prnSig(...)'.")
+	if(!all(ok))
+		stop("Formula match failed: ", formulas[[which(!ok)]],
+		     " not found in the latest call to 'prnSig(...)'.")
 }
 
 

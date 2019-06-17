@@ -524,9 +524,13 @@ The following performs GSVA:
   ```{r Protein GSVA, eval = FALSE}
 prnGSVA(
   scale_log2r = TRUE, 
-  gset_nm = c("go_sets", 
-              # "kegg_sets", 
-              "c2_msig")
+	impute_na = FALSE, 
+  gset_nm = c("go_sets", "c2_msig"), 
+
+	min.sz = 10, 
+	verbose = FALSE, 
+	parallel.sz = 0, 
+	mx.diff = TRUE, 
 )
 ```
 
@@ -626,9 +630,9 @@ pepHist(
 
 ### Lab: Peptide subsets
 
-In addition to the global proteomes, the CPTAC publication contains phosphopeptide data from the same samples.[-@mertins2018np] In this lab, we will explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. We first performed a search aganist the combined `global and phospho` data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset: 
-  
-  ```{r peptide subsets reference, eval = FALSE}
+In addition to the global proteomes, the CPTAC publication contains phosphopeptide data from the same samples.[-@mertins2018np] In this lab, we will explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. We first performed a search aganist the combined data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset: 
+
+```{r peptide subsets reference, eval = FALSE}
 # directory setup
 temp_phospho_dir <- "c:\\The\\Phosphopeptide\\Example"
 library(proteoQDA)
@@ -656,24 +660,29 @@ normPep(
 
 # all peptides
 pepHist(
-  col_select = BI, 
-  scale_log2r = TRUE, 
-  ncol = 4, 
-  filename = "BI_all_peptides.png"
+	col_select = BI, 
+	scale_log2r = TRUE, 
+	ncol = 4, 
+	filename = "BI_all_peptides.png"
 )
 
 # phospho subsets
 pepHist(
-  col_select = BI, 
-  scale_log2r = TRUE, 
-  pep_pattern = "sty", 
-  ncol = 4, 
-  filename = "BI_pSTY.png"
+	col_select = BI, 
+	scale_log2r = TRUE, 
+	pep_pattern = "sty", 
+	ncol = 4, 
+	filename = "BI_pSTY.png"
 )
 ```
 
 ![peptide_subset_hist](images\\peptide\\histogram\\bi_cmbn_peptides.png){ width=40% }
 ![peptide_subset_hist2](images\\peptide\\histogram\\bi_phospho_sub.png){ width=40% }
+
+Ideally, the profiles of the `log2FC` between the `phospho` subsets and the overall data would either align at the maximum density or perhaps offset by similar distance among replicated samples. In this example, the alginment at maximum density seems to be case. The observation raises the possibility of measuring the stoichiometry of phosphoproteomes in relative to global data across sample types or conditions. 
+
+*NB:* I used underscore to stand for N-terminal acetylation. The R language will throw an error if we attemp to use `pep_pattern = _` to subset peptides with N-terminal acetylation. In this case, we will need to quote the underscore: `pep_pattern = "_"`.
+
 
 
 ### References

@@ -657,9 +657,13 @@ The following performs GSVA:
 ``` r
 prnGSVA(
   scale_log2r = TRUE, 
-  gset_nm = c("go_sets", 
-              # "kegg_sets", 
-              "c2_msig")
+    impute_na = FALSE, 
+  gset_nm = c("go_sets", "c2_msig"), 
+
+    min.sz = 10, 
+    verbose = FALSE, 
+    parallel.sz = 0, 
+    mx.diff = TRUE, 
 )
 ```
 
