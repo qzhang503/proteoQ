@@ -719,7 +719,7 @@ knitr::include_graphics(c(img_pep_gl_phospho, img_pep_phospho))
 
 Ideally, the profiles of the `log2FC` between the `phospho` subsets and the overall data would either align at the maximum density or perhaps offset by similar distance among replicated samples. In this example, the alginment at maximum density seems to be case. The observation raises the possibility of measuring the stoichiometry of phosphoproteomes in relative to global data across sample types or conditions. 
 
-*NB:* I used underscore to stand for N-terminal acetylation. The R language will throw an error if we attemp to use `pep_pattern = _` to subset peptides with N-terminal acetylation. In this case, we will need to quote the underscore: `pep_pattern = "_"`.
+*NB:* I used underscore to denote N-terminal acetylation. The R language will throw an error if we attemp to use `pep_pattern = _` to subset peptides with N-terminal acetylation. In this case, we will need to quote the underscore: `pep_pattern = "_"`.
 
 
 

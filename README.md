@@ -850,10 +850,10 @@ raises the possibility of measuring the stoichiometry of
 phosphoproteomes in relative to global data across sample types or
 conditions.
 
-*NB:* I used underscore to stand for N-terminal acetylation. The R
-language will throw an error if we attemp to use `pep_pattern = _` to
-subset peptides with N-terminal acetylation. In this case, we will need
-to quote the underscore: `pep_pattern = "_"`.
+*NB:* I used underscore to denote N-terminal acetylation. The R language
+will throw an error if we attemp to use `pep_pattern = _` to subset
+peptides with N-terminal acetylation. In this case, we will need to
+quote the underscore: `pep_pattern = "_"`.
 
 ### References
 
