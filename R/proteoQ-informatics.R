@@ -180,16 +180,16 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  if(file.exists(fn_raw)) src_path <- fn_raw else
 		    stop(paste(fn_raw, "not found. \n Run normPSM(), normPep() and normPrn() first"),
 		         call. = FALSE)
-		} else if(anal_type %in% c("Heatmap", "Trend", "NMF")) {
+		} else if(anal_type %in% c("Heatmap", "Trend", "NMF", "GSVA")) {
 		  if(impute_na) {
 		    if(file.exists(fn_imp)) src_path <- fn_imp else
-		      stop(paste(fn_imp, "not found. \nImpute NA values first or call the function with `impute_na = FALSE`."),
+		      stop(paste(fn_imp, "not found. \nImpute NA values first or set `impute_na = FALSE`."),
 		           call. = FALSE)
 		  } else {
 		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."),
 		                                                         call. = FALSE)
 		  }
-		} else if(anal_type %in% c("Model", "ESGAGE", "GSVA")) {
+		} else if(anal_type %in% c("Model", "ESGAGE")) {
 			if(impute_na) {
 		    if(file.exists(fn_imp)) src_path <- fn_imp else
 		      stop(paste(fn_imp, "not found. \nRun imputeNA() first."), call. = FALSE)
@@ -540,15 +540,15 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			                  pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, ...)
 		}
 	} else if(anal_type == "GSVA") {
-		function(complete_cases = FALSE, method = "limma", gset_nm = "go_sets", var_cutoff = .5,
-		         pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), mx.diff = TRUE, ...) {
+		function(complete_cases = FALSE, lm_method = "limma", gset_nm = "go_sets", var_cutoff = .5,
+		         pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
 
 			# "id" only for tibbling rownames
 			df_op <- gsvaTest(df = dfw$log2R, id = !!id, label_scheme_sub = label_scheme_sub,
-				filepath, filename = paste0(fn_prx, ".", fn_suffix),
-				complete_cases = complete_cases, method = method,
+				filepath, filename = paste0(fn_prx, ".csv"),
+				complete_cases = complete_cases, lm_method = lm_method,
 				gset_nm = gset_nm, var_cutoff = var_cutoff,
-				pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, mx.diff = mx.diff, ...)
+				pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, ...)
 		}
 
 	} else if (anal_type == "Model") {

@@ -2,14 +2,57 @@
 % Please edit documentation in R/proteoQ-gsva.R
 \name{prnGSVA}
 \alias{prnGSVA}
-\title{MDS Plots}
+\title{GSVA of protein data}
 \usage{
 prnGSVA(id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
   filename = NULL, impute_na = TRUE, complete_cases = FALSE,
-  method = "limma", gset_nm = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), mx.diff = TRUE, ...)
+  lm_method = "limma", gset_nm = "go_sets", var_cutoff = 0.5,
+  pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), ...)
+}
+\arguments{
+\item{id}{Character string to indicate the type of data. Peptide data will be
+used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\code{id = prot_acc} or \code{gene}.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation for all samples.}
+
+\item{df}{The name of input data file. By default, it will be determined by
+the value of \code{id}.}
+
+\item{filepath}{Use system default.}
+
+\item{filename}{Use system default.}
+
+\item{impute_na}{Logical; if TRUE, imputes missing values.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used for visualization.}
+
+\item{lm_method}{Character string indicating the linear modeling method for
+significance assessment of GSVA enrichment scores}
+
+\item{gset_nm}{Character vector of the name(s) of gene sets. The currently
+available data sets include c("go_sets", "kegg_sets", "c2_msig").}
+
+\item{var_cutoff}{The cut-off in the variances of \code{log2FC}. Entries with
+variances smaller than the threshold will be removed from linear modeling.}
+
+\item{pval_cutoff}{The cut-off in significance \code{pVal}. Entries with
+\code{pVals} smaller than the threshold will be removed from multiple test
+corrections.}
+
+\item{logFC_cutoff}{The cut-off in \code{log2FC}. Entries with \code{log2FC}
+smaller than the threshold will be removed from multiple test corrections.}
+
+\item{...}{Parameters inherited from \code{\link[pheatmap]{pheatmap}}}
+
+\item{Parameters}{for \code{\link[GSVA]{gsva}}}
 }
 \description{
-\code{proteoMDS} visualizes the results from multidimensional scaling (MDS)
-and principal component analysis (PCA).
+\code{prnGSVA} performs the GSVA aganist protein \code{log2FC}
+}
+\details{
+The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
+default.
 }
