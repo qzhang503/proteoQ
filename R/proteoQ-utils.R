@@ -1,3 +1,67 @@
+#'Prepares data for analysis
+#'
+#'\code{prepDM} prepares a minimal adequate data frame for subsequent analysis.
+#'
+#'@inheritParams  proteoEucDist
+#'@inheritParams  info_anal
+#'@param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
+#'  analysis.
+#'@return A data frame tailored for subsequent analysis.
+#'
+#' @examples
+#' tempData <- prepDM(df, entrez, scale_log2r, sub_grp = label_scheme_sub$Sample_ID)
+#'
+#' \dontrun{
+#' }
+#'@import dplyr
+#'@importFrom magrittr %>%
+prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
+  stopifnot(nrow(df) > 0)
+  
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  
+  id <- rlang::as_string(rlang::enexpr(id))
+  if(anal_type %in% c("ESGAGE", "GSVA")) id <- "entrez"
+  
+  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
+  
+  # data filtration dominated by log2R, not Intensity
+  df <- df %>%
+    dplyr::filter(!duplicated(!!rlang::sym(id)),
+                  !is.na(!!rlang::sym(id)),
+                  rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>%
+    reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id)
+  
+  Levels <- sub_grp %>%
+    as.character(.) %>%
+    .[!grepl("^Empty\\.[0-9]+", .)]
+  
+  dfR <- df %>%
+    dplyr::select(grep(NorZ_ratios, names(.))) %>%
+    `colnames<-`(label_scheme$Sample_ID) %>%
+    dplyr::select(which(names(.) %in% sub_grp)) %>%
+    dplyr::select(which(not_all_zero(.))) %>% # reference will drop with single reference
+    dplyr::select(Levels[Levels %in% names(.)]) # ensure the same order
+  
+  # dominated by log2R, no need to filter all-NA intensity rows
+  dfI <- df %>%
+    dplyr::select(grep("^N_I[0-9]{3}", names(.))) %>%
+    `colnames<-`(label_scheme$Sample_ID) %>%
+    dplyr::select(which(names(.) %in% sub_grp)) %>%
+    dplyr::select(which(not_all_zero(.))) %>%
+    dplyr::select(which(names(.) %in% names(dfR))) %>%
+    dplyr::select(Levels[Levels %in% names(.)])
+  
+  tempI <- dfI
+  rownames(tempI) <- paste(rownames(tempI), "Intensity", sep = "@")
+  
+  tempR <- dfR
+  rownames(tempR) <- paste(rownames(tempR), "log2R", sep = "@")
+  
+  return(list(log2R = dfR, Intensity = dfI, IR = rbind(tempR, tempI)))
+}
+
+
 #' Prefix form of colnames(x)[c(2, 5, ...)] for use in pipes
 #'
 #' \code{names_pos<-} rename the columns at the indeces of \code{pos}.
@@ -888,5 +952,44 @@ gg_imgname <- function(filename) {
   
   paste0(fn_prx, ".", fn_suffix)
 }
+
+
+#' Check file names for ggsave()
+#' 
+#' @import dplyr purrr
+#' @importFrom magrittr %>%
+rm_pval_whitespace <- function(df) {
+  df <- df %>% 
+    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
+    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
+    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
+}
+
+
+
+#' Match gene sets
+#' 
+#' @import dplyr purrr
+#' @importFrom magrittr %>%
+match_gsets <- function(gset_nm = "go_sets") {
+  stopifnot(all(gset_nm %in% c("go_sets", "kegg_sets", "c2_msig")))
+  
+  gsets <- dbs %>% .[names(.) %in% gset_nm]
+  stopifnot(length(gsets) > 0)
+  
+  is_null <- purrr::map_lgl(gsets, ~ is.null(.x))
+  gset_nm <- gset_nm[!is_null]
+  
+  
+  purrr::walk2(is_null, names(is_null), 
+               ~ if(.x) warning("Gene set: `", .y, "` not found", call. = FALSE))
+  
+  gsets[is_null] <- NULL
+  gsets <- gsets %>% purrr::reduce(`c`)
+}
+
+
+
+
 
 

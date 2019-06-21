@@ -2,13 +2,11 @@
 % Please edit documentation in R/proteoQ-volcanos.R
 \name{gsvaMap}
 \alias{gsvaMap}
-\title{Volcano Plots of Protein \code{log2-ratios} under Given Gene Sets}
+\title{Volcano plots of protein \code{log2FC} under gene sets}
 \usage{
 gsvaMap(...)
 }
 \description{
-Volcano Plots of Protein \code{log2-ratios} under Given Gene Sets
-}
-\seealso{
-\code{\link{proteoVolcano}} for parameters
+\code{gsvaMap} is a wrapper function of \code{\link{proteoVolcano}} for
+mapping of protein data by gene sets.
 }

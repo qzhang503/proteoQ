@@ -17,8 +17,20 @@
 #'@param filepath Use system default.
 #'@param filename Use system default.
 #'@param Parameters for \code{\link[GSVA]{gsva}}
+#'
 #'@import dplyr rlang ggplot2 GSVA
 #'@importFrom magrittr %>%
+#' @examples
+#'prnGSVA(
+#'  scale_log2r = TRUE, 
+#'  impute_na = FALSE, 
+#'  min.sz = 10, 
+#'  verbose = FALSE, 
+#'  parallel.sz = 0, 
+#'  mx.diff = TRUE, 
+#'  gset_nm = c("go_sets", "kegg_sets"), 
+#')
+#'
 #'@export
 prnGSVA <- function (id = gene,
 										scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL,

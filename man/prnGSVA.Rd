@@ -7,7 +7,7 @@
 prnGSVA(id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
   filename = NULL, impute_na = TRUE, complete_cases = FALSE,
   lm_method = "limma", gset_nm = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), ...)
+  pval_cutoff = 0.0001, logFC_cutoff = log2(1.1), ...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
@@ -55,4 +55,16 @@ smaller than the threshold will be removed from multiple test corrections.}
 \details{
 The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 default.
+}
+\examples{
+prnGSVA(
+ scale_log2r = TRUE, 
+ impute_na = FALSE, 
+ min.sz = 10, 
+ verbose = FALSE, 
+ parallel.sz = 0, 
+ mx.diff = TRUE, 
+ gset_nm = c("go_sets", "kegg_sets"), 
+)
+
 }
