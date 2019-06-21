@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-volcanos.R
 \name{gsVolcano}
 \alias{gsVolcano}
-\title{Volcano Plots of Protein \code{log2-ratios} under Given Gene Sets}
+\title{Volcano plots of protein \code{log2FC} under given gene sets}
 \usage{
 gsVolcano(df, contrast_groups, gsea_res, gsea_key = "term", gsets,
   volcano_theme, filepath = NULL, filename = NULL, adjP = FALSE,
-  show_labels = TRUE, show_sig = NULL, pval_cutoff = 1e-06, ...)
+  show_labels = TRUE, show_sig = "none", pval_cutoff = 0.000001, ...)
 }
 \description{
-Volcano Plots of Protein \code{log2-ratios} under Given Gene Sets
+Volcano plots of protein \code{log2FC} under given gene sets
 }

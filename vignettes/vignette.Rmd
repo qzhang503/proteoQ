@@ -86,7 +86,7 @@ In this section I illustrate the following applications of `proteoQ`:
 
 * Summarization of PSM data to peptide and protein reports.
 * Visualization of quality metrics in peptide and protein data.
-* Parital or complete re-normalization of data when needed
+* Re-normalization of data in part or in full
 
 The data set I use in this section corresponds to the proteomics data from Mertins et al.[-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line Hp-RP chromatography[-@wangyy2011proteomics], followed by `LC/MS` analysis. The raw PSM results from [Mascot](https://http://www.matrixscience.com/) searches are stored in a companion R package, `proteoQDA` and are accessbile through the following installation:
 

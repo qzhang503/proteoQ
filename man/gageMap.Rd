@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-volcanos.R
 \name{gageMap}
 \alias{gageMap}
-\title{Volcano Plots of Protein \code{log2-ratios} under Given Gene Sets}
+\title{Volcano Plots of Protein \code{log2FC} under Given Gene Sets}
 \usage{
 gageMap(...)
 }
 \description{
-Volcano Plots of Protein \code{log2-ratios} under Given Gene Sets
+Volcano Plots of Protein \code{log2FC} under Given Gene Sets
 }
 \seealso{
 \code{\link{proteoVolcano}} for parameters

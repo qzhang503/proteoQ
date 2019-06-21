@@ -1,23 +1,58 @@
-#' Significance tests
+#'Significance tests
 #'
-#' \code{proteoSigtest} produces heat maps.  It is a wrapper round the call
-#' \code{info_anal(..., anal_type = "Heatmap")}.
+#'\code{proteoVolcano} provides the volcano plot visualization of
+#'peptide/protein \code{log2FC} or enrichement terms.
 #'
-#' reads the data from either "\code{~\\Direcotry\\Peptide\\Peptide All.txt}" at
-#' \code{id = pep_seq_mod},
+#'@inheritParams  proteoEucDist
+#'@inheritParams  proteoHM
+#'@inheritParams  info_anal
+#'@inheritParams  prnGSPA
+#'@param adjP Logical; if TRUE, use adjusted pVals in volcan plot(s).
+#'@param show_labels Logical; if TRUE, shows the labels of top twenty entries.
+#'@param use_gagep Not currently used.
+#'@param show_sig Character string indicating the type of significance values
+#'  will be shown on volcano plots. The default is \code{"none"}. Additional
+#'  choices are from \code{c("pVal", "qVal")}.
+#'@param pval_cutoff The cut-off in significance \code{pVal}. Gene sets with
+#'  \code{pVals} smaller than the threshold will be removed from volcano plot
+#'  visualization.
+#'@inheritParams proteoSigtest
+#'@param ... Additional parameters for plotting: \cr \code{xco}, the cut-off
+#'  lines of fold changes at position \code{x}; the default is at \eqn{-1.2} and
+#'  \eqn{+1.2}. \cr \code{yco}, the cut-off line of \code{pVal} at position
+#'  \code{y}; the default is \eqn{0.05}. \cr \code{width}, the width of plot;
+#'  \cr \code{height}, the height of plot.
 #'
-#' @param id The name of a unique id (see \code{\link[proteoQ]{MDS}}).
-#' @param scale_log2r Logical; if TRUE, rescales \code{log2-ratios} to the same
-#'   scale of standard deviation for all samples.
-#' @return Images stored under the file folders that are associated to
-#'   \code{id}, \code{anal_type}.
+#'@import dplyr rlang ggplot2
+#'@importFrom magrittr %>%
 #'
-#' @import dplyr rlang ggplot2
-#' @importFrom magrittr %>%
-#' @export
+#' @examples
+#' # protein volcano plot(s)
+#' prnVol(
+#'   scale_log2r = TRUE,
+#'   show_labels = TRUE,
+#'   xco = 1.2,
+#'   yco = 0.01,
+#' )
+#'
+#' # protein volcano plot subsets by pathways
+#' gspaMap(
+#'   scale_log2r = TRUE,
+#'   show_labels = TRUE,
+#'   pval_cutoff = 1E-2,
+#'   gset_nm = c("go_sets", "kegg_sets"),
+#'   show_sig = pVal,
+#'   yco = 0.01,
+#' )
+#'
+#' \dontrun{
+#' }
+#'
+#'@export
 proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_log2r = TRUE,
 													filepath = NULL, filename = NULL, impute_na = TRUE, adjP = FALSE,
-													show_labels = TRUE, use_gagep = TRUE, pval_cutoff = 5E-2, show_sig = NULL, ...) {
+													show_labels = TRUE, use_gagep = FALSE, 
+													pval_cutoff = 5E-2, show_sig = "none", gset_nm = "go_sets", ...) {
 	
   options(scipen=999)
   
@@ -26,22 +61,30 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 
 	old_dir <- getwd()
 	on.exit(setwd(old_dir), add = TRUE)
+	
+	stopifnot(rlang::is_logical(scale_log2r))
+	stopifnot(rlang::is_logical(impute_na))
+	stopifnot(rlang::is_logical(adjP))
+	stopifnot(rlang::is_logical(show_labels))
+	stopifnot(rlang::is_logical(use_gagep))
+	stopifnot(rlang::is_double(pval_cutoff))
 
 	err_msg_1 <- "Unrecognized 'id'; needs to be \"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\" or \"term\""
-	err_msg_2 <- "Unrecognized 'anal_type'; needs to be \"Volcano\" or \"GSVA\""
-	err_msg_3 <- "Volcano plots of peptides not available for GSVA."
-	err_msg_4 <- "GSVA results not found. Please perform prnGSVA() first."
+	err_msg_2 <- "Unrecognized 'anal_type'; needs to be \"Volcano\", \"GSVA\" or \"GSPA\""
+	err_msg_3 <- "Volcano plots of peptides not available for GSPA or GSVA."
+	err_msg_4 <- "GSVA results not found. Perform prnGSVA() first."
 
 	scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
 	id <- rlang::as_string(rlang::enexpr(id))
 	cat(paste0("id = \"", id, "\"", " by the current call\n"))
 	id <- match_identifier(id)
-	
+
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)	
-
+	show_sig <- rlang::as_string(rlang::enexpr(show_sig))
+	
 	if(id %in% c("prot_acc", "gene")) {
 	  cat(paste0("id = \"", id, "\"", " after parameter matching to normPrn()\n"))
 	} else if(id %in% c("pep_seq", "pep_seq_mod")) {
@@ -52,11 +95,11 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 		stop(err_msg_1, call. = TRUE)
 	}
 
-	if(!anal_type %in% c("Volcano", "GSVA", "mapGAGE", "mapGSVA")) stop(err_msg_2, call. = TRUE)
+	if(!anal_type %in% c("Volcano", "GSPA", "GSVA", "mapGAGE", "mapGSVA", "mapGSPA")) stop(err_msg_2, call. = TRUE)
 
-	if (id %in% c("prot_acc", "gene", "term")) {
+	if(id %in% c("prot_acc", "gene", "term")) {
 		data_type <- "Protein"
-	} else if (id %in% c("pep_seq", "pep_seq_mod")) {
+	} else if(id %in% c("pep_seq", "pep_seq_mod")) {
 		data_type <- "Peptide"
 	}
 
@@ -75,7 +118,7 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	filename <- paste0(fn_prx, ".", fn_suffix)
 
 	if(is.null(df)) {
-		if(anal_type %in% c("Volcano", "ESGAGE", "mapGAGE", "mapGSVA")) {
+		if(anal_type %in% c("Volcano", "ESGAGE", "mapGAGE", "mapGSVA", "mapGSPA")) {
 			if(id %in% c("pep_seq", "pep_seq_mod")) {
 				fn_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_pVals.txt")
 				fn_imp <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
@@ -97,7 +140,6 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 					src_path <- ifelse(impute_na, fn_imp, fn_raw)
 				}
 			}
-
 		} else if(anal_type %in% c("GSVA")) {
 			if(id %in% c("pep_seq", "pep_seq_mod")) {
 				stop(err_msg_3, call. = TRUE)
@@ -105,6 +147,13 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 				fn_p <- file.path(dat_dir, "Protein\\GSVA", "Protein_GSVA_pVals.txt")
 				if(file.exists(fn_p)) src_path <- fn_p else stop(err_msg_4)
 			}
+		} else if(anal_type %in% c("GSPA")) {
+		  if(id %in% c("pep_seq", "pep_seq_mod")) {
+		    stop(err_msg_3, call. = TRUE)
+		  } else if(id %in% c("prot_acc", "gene", "term")) {
+		    fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
+		    if(file.exists(fn_p)) src_path <- fn_p else stop(err_msg_4)
+		  }
 		}
 
 		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE,
@@ -112,16 +161,16 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 		if(!is.null(dim(df))) {
 			message(paste("File loaded:", gsub("\\\\", "/", src_path)))
 		} else {
-			stop(paste("No such file or directory:", gsub("\\\\", "/", src_path)))
+			stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
 		}
 
 		df <- df %>%
 			`rownames<-`(.[, id]) %>%
 			dplyr::select(-grep("I[0-9]{3}|log2_R[0-9]{3}|^FC", names(.)))
 	} else {
-	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	  if(id %in% c("pep_seq", "pep_seq_mod")) {
 	    fn_raw <- file.path(dat_dir, "Peptide\\Model", df)
-	  } else if (id %in% c("prot_acc", "gene")) {
+	  } else if(id %in% c("prot_acc", "gene")) {
 	    fn_raw <- file.path(dat_dir, "Protein\\Model", df)
 	  }
 	  
@@ -164,7 +213,7 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	}
 
 	plotVolcano(df, !!id, filepath, filename, adjP, show_labels, anal_type,
-	            use_gagep, pval_cutoff, show_sig, ...)
+	            use_gagep, pval_cutoff, show_sig, gset_nm, ...)
 
 	if(annot_kinases & anal_type == "Volcano") {
 		dir.create(file.path(filepath, "Kinases"), recursive = TRUE, showWarnings = FALSE)
@@ -173,10 +222,11 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 		plotVolcano(df = df_kinase,
 			id = !!id, filepath = file.path(filepath, "Kinases"),
 			filename = paste0(fn_prx, "_Kinases.", fn_suffix),
-			adjP, show_labels = show_labels, anal_type = anal_type, use_gagep, show_sig, ...)
+			adjP, show_labels = show_labels, anal_type = anal_type, use_gagep, show_sig, gset_nm, ...)
 	}
 
 }
+
 
 
 #' Perform significance tests
@@ -184,43 +234,57 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 #' @import limma stringr purrr dplyr rlang grid gridExtra gtable
 #' @importFrom magrittr %>%
 plotVolcano <- function(df = NULL, id = "gene", filepath = NULL, filename = NULL,
-												adjP = FALSE, show_labels = TRUE, anal_type, use_gagep, pval_cutoff, show_sig, ...) {
+                        adjP = FALSE, show_labels = TRUE, anal_type, use_gagep, pval_cutoff, show_sig, gset_nm, ...) {
 
-	fml_volcano <- function (df, formula, ...) {
-		ind <- purrr::map(formulas, ~ grepl(., names(df))) %>%
-			dplyr::bind_cols() %>%
-			rowSums() %>%
-			`>`(0)
-
-		df <- df %>%
-			dplyr::select(grep(formula, names(.), fixed = TRUE)) %>%
-			`colnames<-`(gsub(paste0(formula, "."), "", names(.))) %>%
-			dplyr::bind_cols(df[, !ind, drop = FALSE], .)
-
-		plotVolcano_sub(df = df, id = !!id, filepath = file.path(filepath, formula),
-		                filename = filename, adjP = adjP, show_labels = show_labels,
-		                anal_type = anal_type)(use_gagep, pval_cutoff, show_sig, ...)
-	}
-
-	id <- rlang::as_string(rlang::enexpr(id))
-	id <- match_identifier(id)
-
-	dots <- rlang::enexprs(...)
-
-	formulas <- names(df) %>% .[grepl("pVal", .)] %>% gsub("(.*)\\.pVal.*", "\\1", .) %>% unique()
-	sub_dirs <- file.path(filepath, formulas)
-	purrr::walk(sub_dirs, function(x) dir.create(x, recursive = TRUE, showWarnings = FALSE))
-
-	if (length(formulas) > 0) purrr::walk(formulas, fml_volcano, df = df, !!!dots)
+  id <- rlang::as_string(rlang::enexpr(id))
+  id <- match_identifier(id)
+  dots <- rlang::enexprs(...)
+  
+  formulas <- names(df) %>% .[grepl("pVal", .)] %>% 
+    gsub("(.*)\\.pVal.*", "\\1", .) %>% 
+    unique()
+  
+  sub_dirs <- file.path(filepath, formulas)
+  purrr::walk(sub_dirs, ~ dir.create(.x, recursive = TRUE, showWarnings = FALSE))
+  
+  col_ind <- purrr::map(formulas, ~ grepl(.x, names(df))) %>%
+    dplyr::bind_cols() %>%
+    rowSums() %>%
+    `>`(0)
+  
+  if(length(formulas) > 0) purrr::walk(formulas, fml_volcano, df = df, col_ind = col_ind, id = !!id, 
+                                       filepath, filename, adjP, show_labels, anal_type, 
+                                       use_gagep, pval_cutoff, show_sig, gset_nm, !!!dots)
 }
 
 
-#' Perform significance tests
+#' Formula specific volcano plots
+#'
+#' @import purrr dplyr rlang
+#' @importFrom magrittr %>%
+fml_volcano <- function (df, formula, col_ind, id, 
+                         filepath, filename, adjP, show_labels, anal_type, 
+                         use_gagep, pval_cutoff, show_sig, gset_nm, 
+                         ...) {
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  df <- df %>%
+    dplyr::select(grep(formula, names(.), fixed = TRUE)) %>%
+    `colnames<-`(gsub(paste0(formula, "."), "", names(.))) %>%
+    dplyr::bind_cols(df[, !col_ind, drop = FALSE], .)
+  
+  plotVolcano_sub(df = df, id = !!id, filepath = file.path(filepath, formula), 
+                  filename = filename, adjP = adjP, show_labels = show_labels,
+                  anal_type = anal_type, gset_nm)(use_gagep, pval_cutoff, show_sig, subdir = formula, ...)
+}
+
+
+#' Plot volcanos
 #'
 #' @import limma stringr purrr dplyr rlang grid gridExtra gtable
 #' @importFrom magrittr %>%
 plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = NULL,
-                            adjP = FALSE, show_labels = TRUE, anal_type) {
+                            adjP = FALSE, show_labels = TRUE, anal_type, gset_nm = "go_sets") {
 
   id <- rlang::as_string(rlang::enexpr(id))
 
@@ -255,15 +319,13 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 
 	if(anal_type %in% c("Volcano", "GSVA")) { # overall volcano
 		function(...) {
-			on.exit(message("Volcano plots --- Completed."), add = TRUE)
-
 			# "id" only being used for drawing Venn
 			fullVolcano(df = df, id = !!id, contrast_groups = contrast_groups,
 				volcano_theme = volcano_theme, filepath = filepath, filename = filename,
 				adjP = adjP, show_labels = show_labels, ...)
 		}
 	} else if(anal_type == "mapGSVA") {
-		function(use_gagep = FALSE, pval_cutoff = 1E-6, show_sig = NULL, ...) {
+		function(use_gagep = FALSE, pval_cutoff = 1E-6, show_sig = "none", ...) {
 			gsea_res <- prep_gsva(contrast_groups, pval_cutoff)
 			gsets <- c(dbs$go_sets, dbs$kegg_sets, dbs$c2_msig)
 
@@ -271,22 +333,37 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 				filepath, filename, adjP, show_labels, show_sig, pval_cutoff, ...)
 		}
 	} else if(anal_type == "mapGAGE") {
-		function(use_gagep = FALSE, pval_cutoff = 1E-6, show_sig = NULL, ...) {
+		function(use_gagep = FALSE, pval_cutoff = 1E-6, show_sig = "none", ...) {
 			gsea_res <- prep_gage(contrast_groups, key = "term", pval_cutoff, use_gagep)
 			gsets <- c(dbs$go_sets, dbs$kegg_sets, dbs$c2_msig)
 
 			gsVolcano(df, contrast_groups, gsea_res, gsea_key = "term", gsets, volcano_theme,
 				filepath, filename, adjP, show_labels, show_sig, pval_cutoff, ...)
 		}
-	}
-
+	} else if(anal_type == "mapGSPA")
+	  function(use_gagep = FALSE, pval_cutoff = 5E-2, show_sig = "none", subdir = formula, ...) {
+	    gsea_res <- do.call(rbind,
+	                        purrr::map(
+	                          list.files(path = file.path(dat_dir, "Protein\\GSPA", subdir), 
+	                                     pattern = "Protein_GSPA_.*\\.csv$", , full.names = TRUE),
+	                          readr::read_csv
+	                        )
+	    )
+	    
+	    gsets <- match_gsets(gset_nm)
+	    # gsets <- c(dbs$go_sets, dbs$kegg_sets, dbs$c2_msig)
+	    
+	    gsVolcano(df, contrast_groups, gsea_res, gsea_key = "term", gsets, volcano_theme,
+	              filepath, filename, adjP, show_labels, show_sig, pval_cutoff, ...)
+	  }
 }
 
 
-#' Plot all species
+#' Volcano plots for all proteins or peptides in a data set
 #'
 #' @import dplyr purrr rlang ggplot2
 #' @importFrom magrittr %>%
+#' @importFrom limma vennDiagram
 fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcano_theme,
                         filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE, ...) {
 
@@ -328,22 +405,24 @@ fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcan
 		data.frame (check.names = FALSE)
 
 	# require(gridExtra)
-	# tt <- gridExtra::ttheme_minimal(core = list(fg_params=list(cex = .7)), colhead = list(fg_params=list(cex = .7), parse=TRUE), rowhead = list(fg_params=list(cex = .7)))
+	# tt <- gridExtra::ttheme_minimal(core = list(fg_params=list(cex = .7)), 
+	#                                 colhead = list(fg_params=list(cex = .7), parse=TRUE), 
+	#                                 rowhead = list(fg_params=list(cex = .7)))
 	# nrow <- max(min(nrow(dfw_sub),20), 1)
 	# tbl <- tableGrob(dfw_sub_top20[,c("Contrast", "Index","gene")], rows=NULL, col=NULL, theme=tt)
 	# tbl$heights <- tbl$heights*.6
 
 	# data table for labels
 	dt <- purrr::map(contrast_groups, ~ {
-			to_csv_(dfw_sub_top20 %>%
-									dplyr::filter(Contrast == .x) %>%
-									dplyr::select(c("Index", id))) %>%
-			{if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .} # the exception of zero entry
-		})  %>%
-		do.call(rbind, .) %>%
-		data.frame(Contrast = contrast_groups, id = ., stringsAsFactors = FALSE) %>%
-		dplyr::rename(!!rlang::sym(id) := id) %>%
-		dplyr::mutate(Contrast = factor(Contrast,  levels = contrast_groups))
+	  to_csv_(dfw_sub_top20 %>%
+            dplyr::filter(Contrast == .x) %>%
+            dplyr::select(c("Index", id))) %>%
+            {if(!grepl("\n", .)) . <- paste0(.,"\n1,\"NA\"") else .} # a zero-entry exception
+	  })  %>%
+	  do.call(rbind, .) %>%
+	  data.frame(Contrast = contrast_groups, id = ., stringsAsFactors = FALSE) %>%
+	  dplyr::rename(!!rlang::sym(id) := id) %>%
+	  dplyr::mutate(Contrast = factor(Contrast,  levels = contrast_groups))
 
 	fn_prx <- gsub("\\..*$", "", filename)
 
@@ -360,9 +439,12 @@ fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcan
 	}
 
 	p <-ggplot() +
-		geom_point(data = dfw, mapping = aes(x = log2Ratio, y = -log10(pVal)), size = 3, colour = "gray", shape = 20, alpha = .5) +
-		geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), size = 3, color = myPalette[2], shape = 20, alpha = .8) +
-		geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), size = 3, color = myPalette[1], shape = 20, alpha = .8) +
+		geom_point(data = dfw, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+		           size = 3, colour = "gray", shape = 20, alpha = .5) +
+		geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+		           size = 3, color = myPalette[2], shape = 20, alpha = .8) +
+		geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+		           size = 3, color = myPalette[1], shape = 20, alpha = .8) +
 		geom_hline(yintercept = -log10(yco), linetype = "longdash", size = .5) +
 		geom_vline(xintercept = -log2(xco), linetype = "longdash", size = .5) +
 		geom_vline(xintercept = log2(xco), linetype = "longdash", size = .5) +
@@ -374,138 +456,89 @@ fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcan
 		# annotation_custom(tbl, xmin=-xmax*.95, xmax=-xmax*.75, ymin=-Inf, ymax=Inf) +
 		volcano_theme
 
-	# gene
-		if (show_labels) {
-			p <- p + geom_text(data = dfw_sub_top20, mapping = aes(x = log2Ratio, y = -log10(pVal), label = Index, color = Index),
-					size = 3, alpha = .5, hjust = 0, nudge_x = 0.05, vjust = 0, nudge_y = 0.05)
-			p <- p + facet_wrap(~Contrast, nrow = nrow, labeller = label_value)
-			p <- p + geom_table(data = dt, aes(table = !!rlang::sym(id)), x = -xmax*.85, y = ymax/2)
-		} else {
-			p <- p + facet_wrap(~Contrast, nrow = nrow, labeller = label_value)
-		}
-
-		if(is.null(dots$width)) {
-			width <- ifelse(nrow > 1, 6*length(unique(dfw$Contrast))/nrow + 1, 6*length(unique(dfw$Contrast))/nrow)
-		} else {
-			width <- dots$width
-		}
-
-		if(is.null(dots$height)) {
-			height <- 6*nrow
-		} else {
-			height <- dots$height
-		}
-
-		ggsave(file.path(filepath, filename), p, width = width, height = height, units = "in")
-
-
-		# Venn diagram
-		summ_venn <- function(df, id, contrast_groups) {
-			stopifnot(length(contrast_groups) <= 5)
-
-			universe <- sort(unique(df[[id]]))
-
-			Counts <- matrix(0, nrow = length(universe), ncol = length(contrast_groups)) %>%
-				`rownames<-`(universe) %>%
-				`colnames<-`(contrast_groups)
-
-			for (Group in contrast_groups) {
-				ids <- df %>% dplyr::filter(Contrast == Group) %>% dplyr::select(id) %>% unlist()
-				Counts[, Group] <- rownames(Counts) %in% ids
-			}
-
-			return(Counts)
-		}
-
-		plot_venn <- function(Counts, filepath, direction) {
-			myPalette <- brewer.pal(n = 9, name = "Set1")
-			Width <- 3
-			Height <- 3
-
-			fn_prx <- paste0("Venn_", direction)
-
-			png(file.path(filepath, paste0(fn_prx, ".png")), width = Width, height = Height, units = "in", res = 300)
-				limma::vennDiagram(limma::vennCounts(Counts), circle.col = myPalette, cex = .5)
-			dev.off()
-			write.csv(Counts, file.path(filepath, paste0(fn_prx, ".csv")), row.names = TRUE)
-		}
-
-
-		summ_venn(dfw_greater, id, contrast_groups) %>% plot_venn(filepath, "greater")
-		summ_venn(dfw_less, id, contrast_groups) %>% plot_venn(filepath, "less")
-}
-
-
-#' @importFrom magrittr %>%
-#' @importFrom readr read_tsv
-prep_gsva <- function(contrast_groups, pval_cutoff = 1E-2) {
-	do.call(rbind,
-		lapply(
-			list.files(path = file.path(dat_dir, "Protein", "GSVA"), pattern = "_pVals.txt$", , full.names = TRUE),
-			readr::read_tsv
-		)
-	) %>%
-	dplyr::select(-grep("\\.FC\\s+\\(", names(.))) %>%
-	dplyr::select(-grep("\\.log2Ratio\\s+\\(", names(.))) %>%
-	dplyr::select(-grep("\\.adjP\\s+\\(", names(.))) %>%
-	`names<-`(gsub(".*\\.pVal\\s+\\((.*)\\)$", "\\1", names(.))) %>%
-	tidyr::gather(key = contrast, value = p_val, -term) %>%
-	dplyr::filter(p_val < pval_cutoff) %>%
-	dplyr::mutate(q_val = p.adjust(.$p_val, "BH")) %>%
-	dplyr::mutate(term = factor(term), contrast = factor(contrast, levels = contrast_groups)) %>%
-	dplyr::arrange(contrast) %>%
-	tidyr::complete(term, contrast)
-}
-
-
-#' @importFrom magrittr %>%
-prep_gage <- function(contrast_groups, key = "term", pval_cutoff = 1E-2, use_gagep = TRUE) {
-	gsea_res <- do.call(rbind,
-		lapply(
-			list.files(path = file.path(dat_dir, "Protein", "ESGAGE"), pattern = "_pVals.txt$", , full.names = TRUE),
-			readr::read_tsv
-		)
-	) %>%
-	dplyr::select(-stat.mean, -set.size, -direction, -p.geomean, -q_geomean, -q.val) %>%
-	dplyr::filter(p.val < pval_cutoff)
-
-	if(use_gagep) {
-		gsea_res <- gsea_res %>%
-			dplyr::select(-p_geomean)
+	if (show_labels) {
+		p <- p + geom_text(data = dfw_sub_top20, mapping = aes(x = log2Ratio, y = -log10(pVal), 
+		                                                       label = Index, color = Index), 
+		                   size = 3, alpha = .5, hjust = 0, nudge_x = 0.05, vjust = 0, nudge_y = 0.05)
+		p <- p + facet_wrap(~Contrast, nrow = nrow, labeller = label_value)
+		p <- p + geom_table(data = dt, aes(table = !!rlang::sym(id)), x = -xmax*.85, y = ymax/2)
 	} else {
-		gsea_res <- gsea_res %>%
-			dplyr::select(-p.val) %>%
-			dplyr::rename(p.val = p_geomean)
+		p <- p + facet_wrap(~Contrast, nrow = nrow, labeller = label_value)
 	}
 
-	gsea_res <- gsea_res %>%
-		dplyr::rename(p_val = p.val) %>%
-		dplyr::mutate(q_val = p.adjust(.$p_val, "BH")) %>%
-		dplyr::mutate(term = factor(term), contrast = factor(contrast, levels = contrast_groups)) %>%
-		dplyr::arrange(contrast) %>%
-		tidyr::complete(term, contrast)
+	if(is.null(dots$width)) {
+		width <- ifelse(nrow > 1, 6*length(unique(dfw$Contrast))/nrow + 1, 
+		                6*length(unique(dfw$Contrast)) / nrow)
+	} else {
+		width <- dots$width
+	}
+
+	if(is.null(dots$height)) {
+		height <- 6*nrow
+	} else {
+		height <- dots$height
+	}
+
+	ggsave(file.path(filepath, filename), p, width = width, height = height, units = "in")
+
+	# Venn diagram
+	summ_venn <- function(df, id, contrast_groups) {
+		stopifnot(length(contrast_groups) <= 5)
+
+		universe <- sort(unique(df[[id]]))
+
+		Counts <- matrix(0, nrow = length(universe), ncol = length(contrast_groups)) %>%
+			`rownames<-`(universe) %>%
+			`colnames<-`(contrast_groups)
+
+		for (Group in contrast_groups) {
+			ids <- df %>% dplyr::filter(Contrast == Group) %>% dplyr::select(id) %>% unlist()
+			Counts[, Group] <- rownames(Counts) %in% ids
+		}
+
+		return(Counts)
+	}
+
+	plot_venn <- function(Counts, filepath, direction) {
+		myPalette <- brewer.pal(n = 9, name = "Set1")
+		Width <- 3
+		Height <- 3
+
+		fn_prx <- paste0("Venn_", direction)
+
+		png(file.path(filepath, paste0(fn_prx, ".png")), width = Width, height = Height, units = "in", res = 300)
+			limma::vennDiagram(limma::vennCounts(Counts), circle.col = myPalette, cex = .5)
+		dev.off()
+		write.csv(Counts, file.path(filepath, paste0(fn_prx, ".csv")), row.names = TRUE)
+	}
+
+	summ_venn(dfw_greater, id, contrast_groups) %>% plot_venn(filepath, "greater")
+	summ_venn(dfw_less, id, contrast_groups) %>% plot_venn(filepath, "less")
 }
 
 
-#' Volcano Plots of Protein \code{log2-ratios} under Given Gene Sets
+#' Volcano plots of protein \code{log2FC} under given gene sets
 #'
 #' @import dplyr rlang ggplot2
 #' @importFrom magrittr %>%
 gsVolcano <- function(df, contrast_groups, gsea_res, gsea_key = "term", gsets, volcano_theme,
 												filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE,
-												show_sig = NULL, pval_cutoff = 1E-6, ...) {
+												show_sig = "none", pval_cutoff = 1E-6, ...) {
 
 	dots <- rlang::enexprs(...)
 	xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
 	yco <- ifelse(is.null(dots$yco), .05, dots$yco)
 	x_label <- expression("Ratio ("*log[2]*")")
 	y_label <- ifelse(adjP, expression("pVal ("*-log[10]*")"), expression("adjP ("*-log[10]*")"))
-
+	
+	N <- pmin(dplyr::n_distinct(gsea_res[[gsea_key]]), 100)
 	terms <- gsea_res %>%
-		dplyr::filter(p_val <= pval_cutoff) %>%
-		dplyr::select(gsea_key) %>%
-		unique %>%
-		unlist
+	  dplyr::arrange(p_val) %>% 
+	  dplyr::slice(1:N) %>% 
+	  dplyr::filter(p_val <= pval_cutoff) %>%
+	  dplyr::select(gsea_key) %>%
+	  unique %>%
+	  unlist
 
 	# stopifnot(length(terms) > 0)
 
@@ -557,7 +590,7 @@ gsVolcano <- function(df, contrast_groups, gsea_res, gsea_key = "term", gsets, v
   			# mutate(newContrast = paste0(Contrast, " (", sig_level, ")"))
   			dplyr::mutate(newContrast = Contrast)
 
-  		if(!is.null(show_sig)) {
+  		if(show_sig != "none") {
   			if(show_sig == "pVal") {
   				dfw_sub <- dfw_sub %>%
   					dplyr::mutate(newContrast = paste0(Contrast, " (p = ", p_val, ")"))
@@ -627,20 +660,97 @@ gsVolcano <- function(df, contrast_groups, gsea_res, gsea_key = "term", gsets, v
 
 
 
-#'Volcano Plots of Protein \code{log2-ratios}
-#'
-#'@seealso \code{\link{proteoVolcano}} for parameters
-#'@export
-pepVol <- function (...) {
-	proteoVolcano(id = "pep_seq", anal_type = "Volcano", ...)
+
+#' @importFrom magrittr %>%
+#' @importFrom readr read_tsv
+prep_gsva <- function(contrast_groups, pval_cutoff = 1E-2) {
+	do.call(rbind,
+		lapply(
+			list.files(path = file.path(dat_dir, "Protein", "GSVA"), pattern = "_pVals.txt$", , full.names = TRUE),
+			readr::read_tsv
+		)
+	) %>%
+	dplyr::select(-grep("\\.FC\\s+\\(", names(.))) %>%
+	dplyr::select(-grep("\\.log2Ratio\\s+\\(", names(.))) %>%
+	dplyr::select(-grep("\\.adjP\\s+\\(", names(.))) %>%
+	`names<-`(gsub(".*\\.pVal\\s+\\((.*)\\)$", "\\1", names(.))) %>%
+	tidyr::gather(key = contrast, value = p_val, -term) %>%
+	dplyr::filter(p_val < pval_cutoff) %>%
+	dplyr::mutate(q_val = p.adjust(.$p_val, "BH")) %>%
+	dplyr::mutate(term = factor(term), contrast = factor(contrast, levels = contrast_groups)) %>%
+	dplyr::arrange(contrast) %>%
+	tidyr::complete(term, contrast)
 }
 
 
-#'Volcano Plots of Protein \code{log2-ratios}
-#'@seealso \code{\link{proteoVolcano}} for parameters
+#' @importFrom magrittr %>%
+prep_gage <- function(contrast_groups, key = "term", pval_cutoff = 1E-2, use_gagep = TRUE) {
+	gsea_res <- do.call(rbind,
+		lapply(
+			list.files(path = file.path(dat_dir, "Protein", "ESGAGE"), pattern = "_pVals.txt$", , full.names = TRUE),
+			readr::read_tsv
+		)
+	) %>%
+	dplyr::select(-stat.mean, -set.size, -direction, -p.geomean, -q_geomean, -q.val) %>%
+	dplyr::filter(p.val < pval_cutoff)
+
+	if(use_gagep) {
+		gsea_res <- gsea_res %>%
+			dplyr::select(-p_geomean)
+	} else {
+		gsea_res <- gsea_res %>%
+			dplyr::select(-p.val) %>%
+			dplyr::rename(p.val = p_geomean)
+	}
+
+	gsea_res <- gsea_res %>%
+		dplyr::rename(p_val = p.val) %>%
+		dplyr::mutate(q_val = p.adjust(.$p_val, "BH")) %>%
+		dplyr::mutate(term = factor(term), contrast = factor(contrast, levels = contrast_groups)) %>%
+		dplyr::arrange(contrast) %>%
+		tidyr::complete(term, contrast)
+}
+
+
+
+
+
+#'Volcano plots of peptide \code{log2FC}
+#'
+#'\code{pepVol} is a wrapper function of \code{\link{proteoVolcano}} for peptide data
+#'
+#'@rdname proteoVolcano
+#'
+#'@export
+pepVol <- function (...) {
+  err_msg <- "Parameters \"id\" and \"anal_type\" are preset in the calling function\n."
+  warn_msg <- "Parameters \"pval_cutoff\" and \"show_sig\" are not used\n."
+  
+  dots <- rlang::enexprs(...)
+  if(any(names(dots) %in% c("id", "anal_type"))) stop(err_msg)
+  if(any(names(dots) %in% c("pval_cutoff", "show_sig"))) warning(warn_msg)
+  
+  
+  proteoVolcano(id = "pep_seq", anal_type = "Volcano", ...)
+}
+
+
+#'Volcano plots of protein \code{log2FC}
+#'
+#'\code{prnVol} is a wrapper function of \code{\link{proteoVolcano}} for protein data
+#'
+#'@rdname proteoVolcano
+#'
 #'@export
 prnVol <- function (...) {
-		proteoVolcano(id = "gene", anal_type = "Volcano", ...)
+	err_msg <- "Parameters \"id\" and \"anal_type\" are preset in the calling function\n."
+	warn_msg <- "Parameters \"pval_cutoff\" and \"show_sig\" are not used\n."
+	
+  dots <- rlang::enexprs(...)
+  if(any(names(dots) %in% c("id", "anal_type"))) stop(err_msg)
+  if(any(names(dots) %in% c("pval_cutoff", "show_sig"))) warning(warn_msg)
+
+  proteoVolcano(id = "gene", anal_type = "Volcano", ...)
 }
 
 
@@ -653,23 +763,62 @@ gsvaVol <- function (...) {
 }
 
 
-#'Volcano Plots of Protein \code{log2-ratios} under Given Gene Sets
+#'Volcano plots of protein \code{log2FC} under gene sets
 #'
-#'@seealso \code{\link{proteoVolcano}} for parameters
+#'\code{gsvaMap} is a wrapper function of \code{\link{proteoVolcano}} for
+#'mapping of protein data by gene sets.
+#'
 #'@export
 gsvaMap <- function (...) {
-	proteoVolcano(id = "gene", anal_type = "mapGSVA", ...)
+  err_msg <- "Parameters \"id\" and \"anal_type\" are preset in the calling function\n."
+
+  dots <- rlang::enexprs(...)
+  if(any(names(dots) %in% c("id", "anal_type"))) stop(err_msg)
+
+  proteoVolcano(id = "gene", anal_type = "mapGSVA", ...)
 }
 
 
-#'Volcano Plots of Protein \code{log2-ratios} under Given Gene Sets
+#'Volcano plots of protein \code{log2FC} under gene sets
+#'
+#'\code{gspaMap} is a wrapper function of \code{\link{proteoVolcano}} for
+#'mapping of protein data by gene sets.
+#'
+#'@rdname proteoVolcano
+#'
+#'@export
+gspaMap <- function (...) {
+  err_msg <- "Parameters \"id\" and \"anal_type\" are preset in the calling function\n."
+  
+  dots <- rlang::enexprs(...)
+  if(any(names(dots) %in% c("id", "anal_type"))) stop(err_msg)
+  
+  proteoVolcano(id = "gene", anal_type = "mapGSPA", ...)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#'Volcano Plots of Protein \code{log2FC} under Given Gene Sets
 #'
 #'@seealso \code{\link{proteoVolcano}} for parameters
 #'@export
 gageMap <- function (...) {
 	proteoVolcano(id = "gene", anal_type = "mapGAGE", ...)
 }
-
 
 
 GeomTable <- ggproto(
@@ -761,6 +910,24 @@ geom_table <- function(mapping = NULL, data = NULL, stat = "identity",
 to_csv_ <- function(x) {
 	paste(capture.output(write.csv(x, stdout(), row.names = F)), collapse = "\n")
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -2,28 +2,104 @@
 % Please edit documentation in R/proteoQ-volcanos.R
 \name{proteoVolcano}
 \alias{proteoVolcano}
+\alias{pepVol}
+\alias{prnVol}
+\alias{gspaMap}
 \title{Significance tests}
 \usage{
 proteoVolcano(id = "gene", anal_type = "Volcano", df = NULL,
   scale_log2r = TRUE, filepath = NULL, filename = NULL,
   impute_na = TRUE, adjP = FALSE, show_labels = TRUE,
-  use_gagep = TRUE, pval_cutoff = 0.05, show_sig = NULL, ...)
+  use_gagep = FALSE, pval_cutoff = 0.05, show_sig = "none",
+  gset_nm = "go_sets", ...)
+
+pepVol(...)
+
+prnVol(...)
+
+gspaMap(...)
 }
 \arguments{
-\item{id}{The name of a unique id (see \code{\link[proteoQ]{MDS}}).}
+\item{id}{Character string to indicate the type of data. Peptide data will be
+used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\code{id = prot_acc} or \code{gene}.}
 
-\item{scale_log2r}{Logical; if TRUE, rescales \code{log2-ratios} to the same
-scale of standard deviation for all samples.}
-}
-\value{
-Images stored under the file folders that are associated to
-  \code{id}, \code{anal_type}.
+\item{anal_type}{The type of analysis; \code{anal_type = c("MDS", "PCA",
+"EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
+"Model")}.}
+
+\item{df}{The name of input data file. By default, it will be determined by
+the value of \code{id}.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation for all samples.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined by the name of the calling \code{function} and the value of
+\code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to output image(s). By default, it
+will be determined by the name of the current \code{call}. The image(s) are
+saved via \code{\link[ggplot2]{ggsave}} and the image type will be
+automatically determined by the extension of the file name. A \code{.png}
+format will be used at default or an unrecognized file extension.}
+
+\item{impute_na}{Logical; if TRUE, imputes missing values.}
+
+\item{adjP}{Logical; if TRUE, use adjusted pVals in volcan plot(s).}
+
+\item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.}
+
+\item{use_gagep}{Not currently used.}
+
+\item{pval_cutoff}{The cut-off in significance \code{pVal}. Gene sets with
+\code{pVals} smaller than the threshold will be removed from volcano plot
+visualization.}
+
+\item{show_sig}{Character string indicating the type of significance values
+will be shown on volcano plots. The default is \code{"none"}. Additional
+choices are from \code{c("pVal", "qVal")}.}
+
+\item{gset_nm}{Character vector of the name(s) of gene sets. The currently
+available data sets include \code{c("go_sets", "kegg_sets", "c2_msig")}.}
+
+\item{...}{Additional parameters for plotting: \cr \code{xco}, the cut-off
+lines of fold changes at position \code{x}; the default is at \eqn{-1.2} and
+\eqn{+1.2}. \cr \code{yco}, the cut-off line of \code{pVal} at position
+\code{y}; the default is \eqn{0.05}. \cr \code{width}, the width of plot;
+\cr \code{height}, the height of plot.}
 }
 \description{
-\code{proteoSigtest} produces heat maps.  It is a wrapper round the call
-\code{info_anal(..., anal_type = "Heatmap")}.
+\code{proteoVolcano} provides the volcano plot visualization of
+peptide/protein \code{log2FC} or enrichement terms.
+
+\code{pepVol} is a wrapper function of \code{\link{proteoVolcano}} for peptide data
+
+\code{prnVol} is a wrapper function of \code{\link{proteoVolcano}} for protein data
+
+\code{gspaMap} is a wrapper function of \code{\link{proteoVolcano}} for
+mapping of protein data by gene sets.
 }
-\details{
-reads the data from either "\code{~\\Direcotry\\Peptide\\Peptide All.txt}" at
-\code{id = pep_seq_mod},
+\examples{
+# protein volcano plot(s)
+prnVol(
+  scale_log2r = TRUE,
+  show_labels = TRUE,
+  xco = 1.2,
+  yco = 0.01,
+)
+
+# protein volcano plot subsets by pathways
+gspaMap(
+  scale_log2r = TRUE,
+  show_labels = TRUE,
+  pval_cutoff = 1E-2,
+  gset_nm = c("go_sets", "kegg_sets"),
+  show_sig = pVal,
+  yco = 0.01,
+)
+
+\dontrun{
+}
+
 }

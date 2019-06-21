@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-volcanos.R
 \name{fullVolcano}
 \alias{fullVolcano}
-\title{Plot all species}
+\title{Volcano plots for all proteins or peptides in a data set}
 \usage{
 fullVolcano(df, id = "gene", contrast_groups,
   volcano_theme = volcano_theme, filepath = NULL, filename = NULL,
   adjP = FALSE, show_labels = TRUE, ...)
 }
 \description{
-Plot all species
+Volcano plots for all proteins or peptides in a data set
 }

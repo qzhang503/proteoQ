@@ -176,11 +176,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
 		}
 
-		if(anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) {
+		if(anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
 		  if(file.exists(fn_raw)) src_path <- fn_raw else
 		    stop(paste(fn_raw, "not found. \n Run normPSM(), normPep() and normPrn() first"),
 		         call. = FALSE)
-		} else if(anal_type %in% c("Heatmap", "Trend", "NMF", "GSVA")) {
+		} else if(anal_type %in% c("Heatmap", "Trend", "NMF", "GSVA", "Model", "ESGAGE")) { # optional impute_na
 		  if(impute_na) {
 		    if(file.exists(fn_imp)) src_path <- fn_imp else
 		      stop(paste(fn_imp, "not found. \nImpute NA values first or set `impute_na = FALSE`."),
@@ -189,16 +189,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."),
 		                                                         call. = FALSE)
 		  }
-		} else if(anal_type %in% c("Model", "ESGAGE")) {
-			if(impute_na) {
-		    if(file.exists(fn_imp)) src_path <- fn_imp else
-		      stop(paste(fn_imp, "not found. \nRun imputeNA() first."), call. = FALSE)
-		  } else {
-		    if(file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."),
-		                                                         call. = FALSE)
-		  }
-		} 
-
+		} else if(anal_type %in% c("GSPA")) {
+			if(file.exists(fn_p)) src_path <- fn_p else
+				stop(paste(fn_p, "not found. \nRun `prnSig. fist."), call. = FALSE)
+		}
+		
 		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
 		                        comment.char = "#"), error = function(e) NA)
 
@@ -226,7 +221,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 
-	if(anal_type %in% c("Model", "ESGAGE", "GSVA")) {
+	if(anal_type %in% c("Model", "ESGAGE", "GSVA", "GSPA")) {
 		label_scheme_sub <- label_scheme %>% # to be subset by the "key" in "formulas"
 			dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID), !Reference)
 	} else {
@@ -236,12 +231,15 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			dplyr::filter(!is.na(!!col_select))
 	}
 
-	if (nrow(label_scheme_sub) == 0)
+	if(nrow(label_scheme_sub) == 0)
 	  stop(paste0("No samples or conditions were defined for \"", anal_type, "\""))
-
-	dfw <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r,
-	              sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type)
-
+	
+	if(anal_type %in% c("GSPA")) {
+	  dfw <- df
+	} else {
+	  dfw <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
+	                sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type)
+	}
 
 	if(!any(names(df) == "kin_attr")) {
 		cat("Columns of kinase annoation not found.\n")
@@ -259,9 +257,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		dfw_kinase <- df %>%
 		  dplyr::filter(kin_attr)
 
-		if (nrow(dfw_kinase) > 0) {
-		  dfw_kinase <- prepDM(dfw_kinase, !!id, scale_log2r,
-		                       sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type)
+		if(nrow(dfw_kinase) > 0) {
+		  if(! anal_type %in% c("GSPA")) {
+		    dfw_kinase <- prepDM(dfw_kinase, !!id, scale_log2r,
+		                         sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type)
+		  }
 		} else {
 		  stop("No proteins were annotated being kinase. Please check the `Accession_Type`
 		       and/or `Species` in `expt_smry.xlxs`.", call. = FALSE)
@@ -566,6 +566,19 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			write.table(df_op, file.path(filepath, paste0(data_type, "_pVals.txt")), sep = "\t",
 			            col.names = TRUE, row.names = FALSE)
 		}
+	} else if(anal_type == "GSPA") {
+		function(complete_cases = FALSE, 
+		         gset_nm = "go_sets", var_cutoff = .5,
+		         pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), min_size = 10, ...) {
+
+			# "id" only for tibbling rownames
+			df_op <- gspaTest(df = dfw, id = !!id, label_scheme_sub = label_scheme_sub,
+				filepath, filename = paste0(fn_prx, ".csv"),
+				complete_cases = complete_cases, 
+				gset_nm = gset_nm, var_cutoff = var_cutoff,
+				pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, min_size = min_size, ...)
+		}
+
 	}
 }
 
