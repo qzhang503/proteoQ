@@ -16,15 +16,15 @@ revisiting.
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches for 6-,
 10- or 11-plex TMT experiments. Peptide and protein results are then
-produced with users’ selection of parameters in data filtration,
+produced with users' selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
-creating ‘wrappers’ around published R routines.
+creating 'wrappers' around published R routines.
 
 Installation
 ------------
 
-To install this package, start R (version “3.6”) and enter:
+To install this package, start R (version "3.6") and enter:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -36,14 +36,14 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("qzhang503/proteoQ")
 ```
 
-Application – Part I
+Application - Part I
 --------------------
 
 In this section I illustrate the following applications of `proteoQ`:
 
 -   Summarization of PSM data to peptide and protein reports.
 -   Visualization of quality metrics in peptide and protein data.
--   Parital or complete re-normalization of data when needed
+-   Re-normalization of data in part or in full
 
 The data set I use in this section corresponds to the proteomics data
 from Mertins et al.(2018). In the study, two different breast cancer
@@ -127,7 +127,7 @@ cptac_frac_1(dat_dir)
 ```
 
 We now have all the pieces that are required by `proteoQ` in place.
-Let’s have a quick glance at the `expt_smry.xlsx` file. We note that no
+Let's have a quick glance at the `expt_smry.xlsx` file. We note that no
 reference channels were indicated under the column `Reference`. With
 `proteoQ`, the `log2FC` of each species in a given sample is calculated
 either (a) in relative to the reference(s) within each multiplex TMT
@@ -148,7 +148,7 @@ load_expts()
 
 ### Summarize PSMs to peptides and proteins
 
-*Process PSMs* — In this section, I demonstrate the summarisation of PSM
+*Process PSMs* - In this section, I demonstrate the summarisation of PSM
 data to peptides and proteins. We start by processing PSM data from
 `Mascot` outputs:
 
@@ -176,7 +176,7 @@ less than 1,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
 analysis.[3]
 
-*Summarize PSMs to peptides* — We next summarise PSM to peptides.
+*Summarize PSMs to peptides* - We next summarise PSM to peptides.
 
 ``` r
 # Generate peptide reports
@@ -204,7 +204,7 @@ define the range of log2FC and the range of reporter-ion intensity,
 respectively, for use in the scaling of standard deviation across
 samples.
 
-Let’s compare the log2FC profiles with and without scaling
+Let's compare the log2FC profiles with and without scaling
 normalization:[5]
 
 ``` r
@@ -272,7 +272,7 @@ suitable when the quantities of proteins of interest are different
 across samples where the assumption of constitutive expression for the
 vast majority of proteins may not hold.
 
-*Summarize peptides to proteins* — We then summarise peptides to
+*Summarize peptides to proteins* - We then summarise peptides to
 proteins using a two-component Gaussian kernel.
 
 ``` r
@@ -308,7 +308,7 @@ prnHist(
 )
 ```
 
-Application – Part II
+Application - Part II
 ---------------------
 
 In this section I illustrate the following applications of `proteoQ`:
@@ -497,7 +497,7 @@ prnCorr(
 peptide; right, protein
 </p>
 
-More items under construction…
+More items under construction.
 
 The following performs of heat map visualization against protein data:
 
@@ -652,6 +652,31 @@ plot_metaNMF(
 right: coefficients.
 </p>
 
+The following performs gene set probability analysis (GSPA):
+
+``` r
+prnGSPA(
+  scale_log2r = TRUE, 
+    impute_na = FALSE, 
+    pval_cutoff = 5E-2, 
+  gset_nm = c("go_sets", "kegg_sets"), 
+)
+```
+
+The following maps GSPA-enriched gene sets under the environment of
+volcano plot visualization:
+
+``` r
+gspaMap(
+    scale_log2r = TRUE,
+    show_labels = TRUE, 
+    pval_cutoff = 5E-3, 
+    # gset_nm = c("kegg_sets"), 
+    show_sig = pVal, 
+    yco = 0.01, 
+)
+```
+
 The following performs GSVA:
 
 ``` r
@@ -733,7 +758,7 @@ proteomes. If the above argument is valid, a scaling normalize would
 moderate, and thus bias, the quantitative difference in proteomes
 between `WHIM2` and `WHIM16`.
 
-We alternatively seek a “center-of-mass” representation for uses as
+We alternatively seek a "center-of-mass" representation for uses as
 references. We select one `WHIM2` and one `WHIM16` from each 10-plex
 TMT. The `proteoQ` tool will average the signals from designated
 references. Thefore, the derived reference can be viewed as a mid point
@@ -820,19 +845,19 @@ normPep(
 
 # all peptides
 pepHist(
-    col_select = BI, 
-    scale_log2r = TRUE, 
-    ncol = 4, 
-    filename = "BI_all_peptides.png"
+  col_select = BI, 
+  scale_log2r = TRUE, 
+  ncol = 4, 
+  filename = "BI_all_peptides.png"
 )
 
 # phospho subsets
 pepHist(
-    col_select = BI, 
-    scale_log2r = TRUE, 
-    pep_pattern = "sty", 
-    ncol = 4, 
-    filename = "BI_pSTY.png"
+  col_select = BI, 
+  scale_log2r = TRUE, 
+  pep_pattern = "sty", 
+  ncol = 4, 
+  filename = "BI_pSTY.png"
 )
 ```
 
@@ -857,14 +882,14 @@ quote the underscore: `pep_pattern = "_"`.
 
 ### References
 
-Philipp, Martins. 2018. “Reproducible Workflow for Multiplexed
+Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
-Liquid Chromatography-Mass Spectrometry.” *Nature Protocols* 13 (7):
-1632–61. <https://doi.org/10.1038/s41596-018-0006-9>.
+Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
+1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
-Wang, Y. 2011. “Reversed-Phase Chromatography with Multiple Fraction
-Concatenation Strategy for Proteome Profiling of Human MCF10A Cells.”
-*Proteomics.* 11 (10): 2019–26.
+Wang, Y. 2011. "Reversed-Phase Chromatography with Multiple Fraction
+Concatenation Strategy for Proteome Profiling of Human MCF10A Cells."
+*Proteomics.* 11 (10): 2019-26.
 <https://doi.org/10.1002/pmic.201000722>.
 
 [1] The default file names begin with letter `F`, followed by six digits

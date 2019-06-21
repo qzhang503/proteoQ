@@ -85,6 +85,9 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	filename <- rlang::enexpr(filename)	
 	show_sig <- rlang::as_string(rlang::enexpr(show_sig))
 	
+	gset_nm_2 <- match_gset_nm(gset_nm)
+	gset_nm <- gset_nm %>% .[. %in% gset_nm_2]
+	
 	if(id %in% c("prot_acc", "gene")) {
 	  cat(paste0("id = \"", id, "\"", " after parameter matching to normPrn()\n"))
 	} else if(id %in% c("pep_seq", "pep_seq_mod")) {
@@ -342,17 +345,16 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 		}
 	} else if(anal_type == "mapGSPA")
 	  function(use_gagep = FALSE, pval_cutoff = 5E-2, show_sig = "none", subdir = formula, ...) {
+	    gsets <- match_gsets(gset_nm)
+	    
 	    gsea_res <- do.call(rbind,
 	                        purrr::map(
 	                          list.files(path = file.path(dat_dir, "Protein\\GSPA", subdir), 
 	                                     pattern = "Protein_GSPA_.*\\.csv$", , full.names = TRUE),
 	                          readr::read_csv
-	                        )
-	    )
-	    
-	    gsets <- match_gsets(gset_nm)
-	    # gsets <- c(dbs$go_sets, dbs$kegg_sets, dbs$c2_msig)
-	    
+	                        )) %>% 
+	      dplyr::filter(.$term %in% names(gsets))
+
 	    gsVolcano(df, contrast_groups, gsea_res, gsea_key = "term", gsets, volcano_theme,
 	              filepath, filename, adjP, show_labels, show_sig, pval_cutoff, ...)
 	  }

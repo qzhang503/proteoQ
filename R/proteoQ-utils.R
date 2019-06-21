@@ -967,7 +967,7 @@ rm_pval_whitespace <- function(df) {
 
 
 
-#' Match gene sets
+#' Match the database of gene sets
 #' 
 #' @import dplyr purrr
 #' @importFrom magrittr %>%
@@ -989,7 +989,28 @@ match_gsets <- function(gset_nm = "go_sets") {
 }
 
 
+#' Matches the current gene set names to those used in prnGSPA()
+#'
+#' @param id. 
+#'
+#' @import plyr dplyr purrr rlang
+#' @importFrom magrittr %>%
+match_gset_nm <- function (id = c("go_sets", "kegg_sets", "c2_msig")) {
+  fn_pars <- "prnGSPA.txt"
 
-
+  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", fn_pars), check.names = FALSE,
+                                 header = TRUE, sep = "\t", comment.char = "#"),
+                        error = function(e) NA)
+  
+  if(!is.null(dim(call_pars))) {
+    id <- call_pars %>%
+      dplyr::filter(var == "gset_nm") %>% 
+      dplyr::select(-1) %>% 
+      unlist() %>%
+      as.character()
+  }
+  
+  return(id)
+}
 
 
