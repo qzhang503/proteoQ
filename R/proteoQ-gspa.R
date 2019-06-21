@@ -77,8 +77,7 @@ prnGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
 	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r,
 					filepath = !!filepath, filename = !!filename,
 					impute_na = impute_na,
-					anal_type = "GSPA")(complete_cases, 
-					                    gset_nm, 
+					anal_type = "GSPA")(complete_cases, gset_nm, 
 					                    var_cutoff, pval_cutoff, logFC_cutoff, min_size, 
 					                    !!!dots)
 }

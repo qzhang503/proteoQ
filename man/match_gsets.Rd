@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{match_gsets}
 \alias{match_gsets}
-\title{Match gene sets}
+\title{Match the database of gene sets}
 \usage{
 match_gsets(gset_nm = "go_sets")
 }
 \description{
-Match gene sets
+Match the database of gene sets
 }

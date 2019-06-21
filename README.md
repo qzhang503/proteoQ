@@ -43,7 +43,7 @@ In this section I illustrate the following applications of `proteoQ`:
 
 -   Summarization of PSM data to peptide and protein reports.
 -   Visualization of quality metrics in peptide and protein data.
--   Parital or complete re-normalization of data when needed
+-   Re-normalization of data in part or in full
 
 The data set I use in this section corresponds to the proteomics data
 from Mertins et al.(2018). In the study, two different breast cancer
@@ -652,6 +652,31 @@ plot_metaNMF(
 right: coefficients.
 </p>
 
+The following performs gene set probability analysis (GSPA):
+
+``` r
+prnGSPA(
+  scale_log2r = TRUE, 
+    impute_na = FALSE, 
+    pval_cutoff = 5E-2, 
+  gset_nm = c("go_sets", "kegg_sets"), 
+)
+```
+
+The following maps GSPA-enriched gene sets under the environment of
+volcano plot visualization:
+
+``` r
+gspaMap(
+    scale_log2r = TRUE,
+    show_labels = TRUE, 
+    pval_cutoff = 5E-3, 
+    # gset_nm = c("kegg_sets"), 
+    show_sig = pVal, 
+    yco = 0.01, 
+)
+```
+
 The following performs GSVA:
 
 ``` r
@@ -820,19 +845,19 @@ normPep(
 
 # all peptides
 pepHist(
-    col_select = BI, 
-    scale_log2r = TRUE, 
-    ncol = 4, 
-    filename = "BI_all_peptides.png"
+  col_select = BI, 
+  scale_log2r = TRUE, 
+  ncol = 4, 
+  filename = "BI_all_peptides.png"
 )
 
 # phospho subsets
 pepHist(
-    col_select = BI, 
-    scale_log2r = TRUE, 
-    pep_pattern = "sty", 
-    ncol = 4, 
-    filename = "BI_pSTY.png"
+  col_select = BI, 
+  scale_log2r = TRUE, 
+  pep_pattern = "sty", 
+  ncol = 4, 
+  filename = "BI_pSTY.png"
 )
 ```
 
