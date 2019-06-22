@@ -1,7 +1,15 @@
 #'GSPA of protein data
 #'
-#'\code{prnGSPA} performs the Gene Set Probability Analysis (GSPA) aganist
-#'protein \code{log2FC}
+#'\code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
+#'(GSPA) aganist protein \code{log2FC} data
+#'
+#'The significance pVals of proteins are first obtained from
+#'\code{\link{prnSig}}, which involves moderated t-test using
+#'\code{\link[limma]{eBayes}}. The geometric mean of pVals are then each
+#'calculated for the groups of up or down regulated proteins. The quotient of
+#'the two pVals is used to prepsent the significance of gene set enrichment. The
+#'arguments \code{pval_cutoff} and \code{logFC_cutoff} are used to filter low
+#'influence genes.
 #'
 #'The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 #'default.
@@ -10,8 +18,9 @@
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
-#'@param gset_nm Character vector of the name(s) of gene sets. The currently
-#'  available data sets include \code{c("go_sets", "kegg_sets", "c2_msig")}.
+#'@param gset_nm Character vector containing the name(s) of gene sets for
+#'  enrichment analysis. The currently supported data sets are
+#'  \code{c("go_sets", "kegg_sets", "c2_msig")}.
 #'@param filepath Use system default.
 #'@param filename Use system default.
 #'@param var_cutoff Not currently used.
@@ -19,15 +28,17 @@
 #'  with \code{pVals} smaller than the threshold will be removed from GSPA.
 #'@param logFC_cutoff The cut-off in \code{log2FC}. Protein entries with
 #'  \code{log2FC} smaller than the threshold will be removed from GSPA.
-#'@param min_size Minimum number of protein entries for a gene set test.
+#'@param min_size Minimum number of protein entries for consideration of a gene
+#'  set test.
+#'@param ... To be defined.
 #'@import dplyr rlang ggplot2 GSVA
 #'@importFrom magrittr %>%
 #' @examples
 #' prnGSPA(
-#'   scale_log2r = TRUE, 
-#'   impute_na = FALSE, 
-#'   pval_cutoff = 5E-2, 
-#'   gset_nm = c("go_sets", "kegg_sets"), 
+#'   scale_log2r = TRUE,
+#'   impute_na = FALSE,
+#'   pval_cutoff = 5E-2,
+#'   gset_nm = c("go_sets", "kegg_sets"),
 #' )
 #'
 #' \dontrun{
@@ -148,7 +159,8 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
         dplyr::summarise(log2Ratio = mean(log2Ratio, na.rm = TRUE)) %>% 
         tidyr::spread(key = contrast, value = log2Ratio) %>% 
         dplyr::select(-valence) %>% 
-        `colnames<-`(paste0("log2Ratio (", colnames(.), ")"))
+        `colnames<-`(paste0("log2Ratio (", colnames(.), ")")) %>% 
+        abs(.) # may leave as an option later for dual significance
       
       delta_fc <- delta_fc[2, ] - delta_fc[1, ]
       

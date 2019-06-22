@@ -31,10 +31,11 @@ included in the indicated analysis. At the NULL default, the column key
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation for all samples.}
 
-\item{impute_na}{Logical; if TRUE, imputes missing values.}
+\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+will be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used for visualization.}
+missing values will be used.}
 
 \item{df}{The name of input data file. By default, it will be determined by
 the value of \code{id}.}

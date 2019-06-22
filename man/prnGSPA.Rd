@@ -24,13 +24,15 @@ the value of \code{id}.}
 
 \item{filename}{Use system default.}
 
-\item{impute_na}{Logical; if TRUE, imputes missing values.}
+\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+will be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used for visualization.}
+missing values will be used.}
 
-\item{gset_nm}{Character vector of the name(s) of gene sets. The currently
-available data sets include \code{c("go_sets", "kegg_sets", "c2_msig")}.}
+\item{gset_nm}{Character vector containing the name(s) of gene sets for
+enrichment analysis. The currently supported data sets are
+\code{c("go_sets", "kegg_sets", "c2_msig")}.}
 
 \item{var_cutoff}{Not currently used.}
 
@@ -40,27 +42,33 @@ with \code{pVals} smaller than the threshold will be removed from GSPA.}
 \item{logFC_cutoff}{The cut-off in \code{log2FC}. Protein entries with
 \code{log2FC} smaller than the threshold will be removed from GSPA.}
 
-\item{min_size}{Minimum number of protein entries for a gene set test.}
+\item{min_size}{Minimum number of protein entries for consideration of a gene
+set test.}
 
-\item{...}{Contrasts for linear modeling. The syntax starts with a tilde,
-followed by the name of an available column key in \code{expt_smry.xlsx} and
-square brackets. The contrast groups are then quoted with multiple contrast
-groups separated by commas.}
+\item{...}{To be defined.}
 }
 \description{
-\code{prnGSPA} performs the Gene Set Probability Analysis (GSPA) aganist
-protein \code{log2FC}
+\code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
+(GSPA) aganist protein \code{log2FC} data
 }
 \details{
+The significance pVals of proteins are first obtained from
+\code{\link{prnSig}}, which involves moderated t-test using
+\code{\link[limma]{eBayes}}. The geometric mean of pVals are then each
+calculated for the groups of up or down regulated proteins. The quotient of
+the two pVals is used to prepsent the significance of gene set enrichment. The
+arguments \code{pval_cutoff} and \code{logFC_cutoff} are used to filter low
+influence genes.
+
 The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 default.
 }
 \examples{
 prnGSPA(
-  scale_log2r = TRUE, 
-  impute_na = FALSE, 
-  pval_cutoff = 5E-2, 
-  gset_nm = c("go_sets", "kegg_sets"), 
+  scale_log2r = TRUE,
+  impute_na = FALSE,
+  pval_cutoff = 5E-2,
+  gset_nm = c("go_sets", "kegg_sets"),
 )
 
 \dontrun{

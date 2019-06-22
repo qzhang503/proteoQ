@@ -36,10 +36,11 @@ saved via \code{\link[ggplot2]{ggsave}} and the image type will be
 automatically determined by the extension of the file name. A \code{.png}
 format will be used at default or an unrecognized file extension.}
 
-\item{impute_na}{Logical; if TRUE, imputes missing values.}
+\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+will be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used for visualization.}
+missing values will be used.}
 
 \item{method}{The method of linear modeling. The default is \code{limma}; at
 \code{method = lm}, the \code{lm()} in base R will be used for models

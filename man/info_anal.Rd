@@ -13,9 +13,11 @@ info_anal(id = gene, col_select = NULL, col_group = NULL,
   "NMF", "Trend"))
 }
 \arguments{
-\item{anal_type}{The type of analysis; \code{anal_type = c("MDS", "PCA",
-"EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
-"Model")}.}
+\item{anal_type}{The type of analysis for method dispatch in functional
+factories; Values include \code{anal_type = c("MDS", "PCA", "EucDist",
+"MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF", "Model", ...)}.
+Most likely users will ignore the argument as its value is pre-set in
+wrapper functions.}
 }
 \value{
 a function to the given \code{anal_type}.

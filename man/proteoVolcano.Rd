@@ -5,12 +5,12 @@
 \alias{pepVol}
 \alias{prnVol}
 \alias{gspaMap}
-\title{Significance tests}
+\title{Volcano plot visualization}
 \usage{
 proteoVolcano(id = "gene", anal_type = "Volcano", df = NULL,
   scale_log2r = TRUE, filepath = NULL, filename = NULL,
   impute_na = TRUE, adjP = FALSE, show_labels = TRUE,
-  use_gagep = FALSE, pval_cutoff = 0.05, show_sig = "none",
+  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), show_sig = "none",
   gset_nm = "go_sets", ...)
 
 pepVol(...)
@@ -24,9 +24,11 @@ gspaMap(...)
 used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
-\item{anal_type}{The type of analysis; \code{anal_type = c("MDS", "PCA",
-"EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
-"Model")}.}
+\item{anal_type}{The type of analysis for method dispatch in functional
+factories; Values include \code{anal_type = c("MDS", "PCA", "EucDist",
+"MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF", "Model", ...)}.
+Most likely users will ignore the argument as its value is pre-set in
+wrapper functions.}
 
 \item{df}{The name of input data file. By default, it will be determined by
 the value of \code{id}.}
@@ -44,24 +46,31 @@ saved via \code{\link[ggplot2]{ggsave}} and the image type will be
 automatically determined by the extension of the file name. A \code{.png}
 format will be used at default or an unrecognized file extension.}
 
-\item{impute_na}{Logical; if TRUE, imputes missing values.}
+\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+will be used.}
 
-\item{adjP}{Logical; if TRUE, use adjusted pVals in volcan plot(s).}
+\item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals for protein/peptide
+entries in volcano plot(s).}
 
 \item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.}
 
-\item{use_gagep}{Not currently used.}
+\item{pval_cutoff}{Numeric. \code{Gene sets} with enrichment \code{pVals} more
+significant than the threshold will be used for volcano plot visualization.
+The argument is not used in \code{prnVol} and \code{pepVol}.}
 
-\item{pval_cutoff}{The cut-off in significance \code{pVal}. Gene sets with
-\code{pVals} smaller than the threshold will be removed from volcano plot
-visualization.}
+\item{logFC_cutoff}{Numeric. \code{Gene sets} with enrichment \code{log2FC}
+greater than the threshold will be used for volcano plot visualization. The
+cut-off is in a logarithmic base of 2, not in a linear scale. The argument
+is not used in \code{prnVol} and \code{pepVol}.}
 
 \item{show_sig}{Character string indicating the type of significance values
-will be shown on volcano plots. The default is \code{"none"}. Additional
-choices are from \code{c("pVal", "qVal")}.}
+to be shown on volcano plots. The default is \code{"none"}. Additional
+choices are from \code{c("pVal", "qVal")} where \code{pVal} or \code{qVal}
+will be shown, respectively, in the facet grid of plots.}
 
-\item{gset_nm}{Character vector of the name(s) of gene sets. The currently
-available data sets include \code{c("go_sets", "kegg_sets", "c2_msig")}.}
+\item{gset_nm}{Character vector containing the name(s) of gene sets for
+enrichment analysis. The currently supported data sets are
+\code{c("go_sets", "kegg_sets", "c2_msig")}.}
 
 \item{...}{Additional parameters for plotting: \cr \code{xco}, the cut-off
 lines of fold changes at position \code{x}; the default is at \eqn{-1.2} and
@@ -71,7 +80,7 @@ lines of fold changes at position \code{x}; the default is at \eqn{-1.2} and
 }
 \description{
 \code{proteoVolcano} provides the volcano plot visualization of
-peptide/protein \code{log2FC} or enrichement terms.
+peptide/protein data or protein sub groups in the context of gene sets.
 
 \code{pepVol} is a wrapper function of \code{\link{proteoVolcano}} for peptide data
 
@@ -89,11 +98,12 @@ prnVol(
   yco = 0.01,
 )
 
-# protein volcano plot subsets by pathways
+# protein volcano plot subsets by gene sets
 gspaMap(
   scale_log2r = TRUE,
   show_labels = TRUE,
   pval_cutoff = 1E-2,
+  logFC_cutoff = log2(1.2),
   gset_nm = c("go_sets", "kegg_sets"),
   show_sig = pVal,
   yco = 0.01,
