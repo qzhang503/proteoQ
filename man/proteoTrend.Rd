@@ -39,10 +39,11 @@ Numeric values under which will be used for the left-to-right arrangement of
 samples in plots. At the NULL default, the column key \code{Order} will be
 used.}
 
-\item{impute_na}{Logical; if TRUE, imputes missing values.}
+\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+will be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used for visualization.}
+missing values will be used.}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be
 divided into. The default is c(5:6).}

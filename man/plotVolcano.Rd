@@ -6,7 +6,7 @@
 \usage{
 plotVolcano(df = NULL, id = "gene", filepath = NULL,
   filename = NULL, adjP = FALSE, show_labels = TRUE, anal_type,
-  use_gagep, pval_cutoff, show_sig, gset_nm, ...)
+  pval_cutoff, logFC_cutoff, show_sig, gset_nm, ...)
 }
 \description{
 Perform significance tests

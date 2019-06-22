@@ -272,6 +272,38 @@ suitable when the quantities of proteins of interest are different
 across samples where the assumption of constitutive expression for the
 vast majority of proteins may not hold.
 
+A multi-Gaussian kernel can fail capturing the log2FC profiles for a
+subset of samples. This is less an issue with a small number of samples.
+Using a trial-and-error approach, we can start over with a new
+combination of parameters, such as a different `seed`, and/or a
+different range of `scale_log2r` et al. However, the one-size-fit-all
+attempt may remain inadequate when the number of samples is relatively
+large. The `proteoQ` allow users to *focus* fit aganist selected
+samples. This is the job of argument `col_refit`. Let's say we want to
+re-fit the log2FC for samples `W2.BI.TR2.TMT1` and `W2.BI.TR2.TMT2`. We
+simply add a column, which I named it `Select_sub`, to `expt_smry.xlsx`
+with the sample entries for re-fit being indicated under the column:
+
+<img src="images\peptide\histogram\partial_refit.png" width="80%" style="display: block; margin: auto;" />
+
+We then execute the following codes with argument `col_fit` being linked
+to the newly created column:
+
+``` r
+normPep(
+    id = pep_seq, 
+    method_psm_pep = median, 
+    method_align = MGKernel, 
+    range_log2r = c(5, 95), 
+    range_int = c(5, 95), 
+    n_comp = 3,
+    col_refit = Select_sub,
+    seed = 749662, 
+    maxit = 200, 
+    epsilon = 1e-05
+)
+```
+
 *Summarize peptides to proteins* - We then summarise peptides to
 proteins using a two-component Gaussian kernel.
 
@@ -577,6 +609,58 @@ Location effects:
 
 <img src="images\protein\volcplot\venn_locations.png" alt="**Figure 5B.** Volcano plots of protein log2FC between locations." width="80%" />
 
+### Mapped gene sets in volcano plots
+
+There are a handful of tools for gene set enrichement analysis, such as
+GSEA, GSVA, gage, to name a few. Sometime it would be rather intuitive
+if we can visualize the enrichment of gene sets under the context of
+volcano plots. Currently, the interest of `proteoQ` is to naively
+visualize the *asymmetricity* of protein probability *p*-values under
+volcano plots. I called it analysis of Gene Set Probability
+Asymmetricity (GSPA). Briefly, the significance `pVals` of proteins
+obtained from linear modeling are taken, followed by the calculation of
+the geometric mean of `pVals` for the groups of up- or down-regulated
+proteins within a gene set, as well as the corresponding mean `log2FC`.
+The quotient of the two `pVals` is then taken to represent the
+significance of enrichment and the delta of the two `log2FC` for use as
+the fold change of enrichment. The arguments `pval_cutoff` and
+`logFC_cutoff` allow us to filter out low impact genes.
+
+``` r
+prnGSPA(
+  scale_log2r = TRUE,
+  impute_na = FALSE,
+  pval_cutoff = 5E-2,
+  gset_nm = c("go_sets", "kegg_sets"),
+)
+```
+
+To visualize the distribution of protein `log2FC` and `pVal` withnin
+gene sets:
+
+``` r
+gspaMap(
+  scale_log2r = TRUE,
+  show_labels = TRUE,
+  pval_cutoff = 1E-2,
+  logFC_cutoff = log2(1.2),
+  show_sig = pVal,
+  yco = 0.01,
+)
+```
+
+This will produce the volcano plots of proteins within gene sets that
+have passed our selection criteria. In the demo, I only show one of the
+examples:
+
+<img src="images\protein\volcplot\urogenital_system_development.png" alt="**Figure 6.** An example of volcano plots of protein log2FC under a gene set" width="80%" />
+<p class="caption">
+**Figure 6.** An example of volcano plots of protein log2FC under a gene
+set
+</p>
+
+### Imputation of NA values
+
 The following performs the imputation of peptide and protein data:
 
 ``` r
@@ -584,6 +668,8 @@ The following performs the imputation of peptide and protein data:
 pepImp(m = 2, maxit = 2)
 prnImp(m = 5, maxit = 5)
 ```
+
+### Trend Analysis
 
 The following performs the trend analysis against protein expressions:
 
@@ -598,9 +684,9 @@ anal_prnTrend(
 plot_prnTrend()
 ```
 
-<img src="images\protein\trend\prn_trend_n6.png" alt="**Figure 6.** Trend analysis of protein log2FC." width="80%" />
+<img src="images\protein\trend\prn_trend_n6.png" alt="**Figure 7.** Trend analysis of protein log2FC." width="80%" />
 <p class="caption">
-**Figure 6.** Trend analysis of protein log2FC.
+**Figure 7.** Trend analysis of protein log2FC.
 </p>
 
 The following performs the NMF analysis against protein data:
@@ -646,62 +732,11 @@ plot_metaNMF(
 )
 ```
 
-<img src="images\protein\nmf\prn_nmf_r6_consensus.png" alt="**Figure 7A-7B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" /><img src="images\protein\nmf\prn_nmf_r6_coef.png" alt="**Figure 7A-7B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" />
+<img src="images\protein\nmf\prn_nmf_r6_consensus.png" alt="**Figure 8A-8B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" /><img src="images\protein\nmf\prn_nmf_r6_coef.png" alt="**Figure 8A-8B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" />
 <p class="caption">
-**Figure 7A-7B.** NMF analysis of protein log2FC. Left: concensus;
+**Figure 8A-8B.** NMF analysis of protein log2FC. Left: concensus;
 right: coefficients.
 </p>
-
-The following performs gene set probability analysis (GSPA):
-
-``` r
-prnGSPA(
-  scale_log2r = TRUE, 
-    impute_na = FALSE, 
-    pval_cutoff = 5E-2, 
-  gset_nm = c("go_sets", "kegg_sets"), 
-)
-```
-
-The following maps GSPA-enriched gene sets under the environment of
-volcano plot visualization:
-
-``` r
-gspaMap(
-    scale_log2r = TRUE,
-    show_labels = TRUE, 
-    pval_cutoff = 5E-3, 
-    # gset_nm = c("kegg_sets"), 
-    show_sig = pVal, 
-    yco = 0.01, 
-)
-```
-
-The following performs GSVA:
-
-``` r
-prnGSVA(
-  scale_log2r = TRUE, 
-    impute_na = FALSE, 
-  gset_nm = c("go_sets", "c2_msig"), 
-
-    min.sz = 10, 
-    verbose = FALSE, 
-    parallel.sz = 0, 
-    mx.diff = TRUE, 
-)
-```
-
-The following maps gene sets under the environment of volcano plot
-visualization:
-
-``` r
-gsvaMap(
-  scale_log2r = TRUE, 
-  pval_cutoff = 1E-5, 
-  show_sig = "pVal"
-)
-```
 
 ### Lab: Choices of references
 

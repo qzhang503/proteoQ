@@ -299,9 +299,10 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'
 #'@inheritParams  proteoEucDist
 #'@param  col_benchmark Not used.
-#'@param impute_na Logical; if TRUE, imputes missing values.
+#'@param impute_na Logical; if TRUE, data will the imputation of missing values
+#'  will be used.
 #'@param complete_cases Logical; if TRUE, only cases that are complete with no
-#'  missing values will be used for visualization.
+#'  missing values will be used.
 #'@param ... More parameters for plotting: \cr \code{xmin}, the minimum \eqn{x}
 #'  at a log2 scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a
 #'  log2 scale; the default is +1 \cr \code{x_margin}, the margin in heat

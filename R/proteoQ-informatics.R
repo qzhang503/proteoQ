@@ -2,9 +2,11 @@
 #'
 #' \code{info_anal} produces functions for selected informatic analysis.
 #'
-#' @param anal_type The type of analysis; \code{anal_type = c("MDS", "PCA",
-#'   "EucDist", "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF",
-#'   "Model")}.
+#' @param anal_type The type of analysis for method dispatch in functional
+#'   factories; Values include \code{anal_type = c("MDS", "PCA", "EucDist",
+#'   "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF", "Model", ...)}.
+#'   Most likely users will ignore the argument as its value is pre-set in
+#'   wrapper functions.
 #' @return a function to the given \code{anal_type}.
 #'
 #' @import dplyr rlang ggplot2 pheatmap
