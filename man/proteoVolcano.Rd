@@ -102,10 +102,10 @@ prnVol(
 gspaMap(
   scale_log2r = TRUE,
   show_labels = TRUE,
-  pval_cutoff = 1E-2,
+  pval_cutoff = 5E-3,
   logFC_cutoff = log2(1.2),
-  gset_nm = c("go_sets", "kegg_sets"),
-  show_sig = pVal,
+  # gset_nm = c("go_sets", "kegg_sets"),
+  show_sig = p,
   yco = 0.01,
 )
 

@@ -44,10 +44,10 @@
 #' gspaMap(
 #'   scale_log2r = TRUE,
 #'   show_labels = TRUE,
-#'   pval_cutoff = 1E-2,
+#'   pval_cutoff = 5E-3,
 #'   logFC_cutoff = log2(1.2),
-#'   gset_nm = c("go_sets", "kegg_sets"),
-#'   show_sig = pVal,
+#'   # gset_nm = c("go_sets", "kegg_sets"),
+#'   show_sig = p,
 #'   yco = 0.01,
 #' )
 #'
@@ -607,12 +607,12 @@ gsVolcano <- function(df, contrast_groups, gsea_res, gsea_key = "term", gsets, v
   			# mutate(sig_level = ifelse(.$q.val > 0.05, "n.s.", ifelse(.$q.val > 0.005, "*", "**"))) %>%
   			# mutate(newContrast = paste0(Contrast, " (", sig_level, ")"))
   			dplyr::mutate(newContrast = Contrast)
-
+				
   		if(show_sig != "none") {
-  			if(show_sig == "pVal") {
+  			if(grepl("^p", show_sig)) {
   				dfw_sub <- dfw_sub %>%
   					dplyr::mutate(newContrast = paste0(Contrast, " (p = ", p_val, ")"))
-  			} else if(show_sig == "qVal") {
+  			} else if(grepl("^q", show_sig)) {
   				dfw_sub <- dfw_sub %>%
   					dplyr::mutate(newContrast = paste0(Contrast, " (q = ", q_val, ")"))
   			}
