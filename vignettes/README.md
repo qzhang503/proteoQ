@@ -581,7 +581,6 @@ will analyze protein data and perform volcano plot visualization:
 prnSig(
     impute_na = FALSE, 
     W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-    # W2_loc_bat = ~ Term["((W2.BI.TMT1-W2.JHU.TMT1)-(W2.BI.TMT2-W2.JHU.TMT2))", "((W2.BI.TMT1-W2.PNNL.TMT1)-(W2.BI.TMT2-W2.PNNL.TMT2))"], # location and batch effects
     W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
 )
 
@@ -631,6 +630,7 @@ prnGSPA(
   scale_log2r = TRUE,
   impute_na = FALSE,
   pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
   gset_nm = c("go_sets", "kegg_sets"),
 )
 ```
@@ -738,7 +738,9 @@ plot_metaNMF(
 right: coefficients.
 </p>
 
-### Lab: Choices of references
+### Labs
+
+#### Choices of references
 
 In this lab, we explore the effects of reference choices on data
 normalization. We first copy data over to the file directory specified
@@ -842,7 +844,7 @@ pepHist(
 WHIM16 reference.
 </p>
 
-### Lab: Peptide subsets
+#### Peptide subsets
 
 In addition to the global proteomes, the CPTAC publication contains
 phosphopeptide data from the same samples.(2018) In this lab, we will
@@ -914,6 +916,118 @@ conditions.
 will throw an error if we attemp to use `pep_pattern = _` to subset
 peptides with N-terminal acetylation. In this case, we will need to
 quote the underscore: `pep_pattern = "_"`.
+
+#### Random effects
+
+*Single random effect* - In proteomic studies involved multiple
+multiplex `TMT` experiments, the limited multiplicity of isobaric tags
+requires sample parting into subgroups. Measures in `log2FC` are then
+obtained within each subgroup by comparing to common reference
+materials, followed by data bridging across experiments. This setup
+violates the independence assumption in linear regression as the
+measures of `log2FC` are batched by `TMT` experiments. In this lab, we
+will use the CPTAC data to test the statistical significance in protein
+abundance between the `WHIM2` and the `WHIM16` subtypes, by first taking
+the batch effects into account. We will use mixed-effects models to
+explore the random effects that were introduced by the data stitching.
+In case that you would like to find out more about mixed-effects models
+in R, I found the online
+[tutorial](http://www.bodowinter.com/tutorial/bw_LME_tutorial2.pdf) a
+helpful resource.
+
+We start off by copying over the `expt_smry.xlsx` file, which contains a
+newly created column, `Term_3`, for terms to be used in the statistical
+tests of `WHIM2` and `WHIM16`. We also copy over the protein results
+from `Part I` of the vignette and carry out the signficance tests with
+and without random effects.
+
+``` r
+# directory setup
+temp_raneff_dir <- "c:\\The\\Random_effects\\Example"
+library(proteoQDA)
+cptac_prn_1(temp_raneff_dir)
+cptac_expt_3(temp_raneff_dir)
+cptac_frac_3(temp_raneff_dir)
+
+# analysis
+library(proteoQ)
+load_expts(temp_raneff_dir, expt_smry.xlsx)
+
+prnSig(
+ impute_na = FALSE, 
+ W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed effect only
+ W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effects
+)
+
+# volcano plots
+prnVol()
+```
+
+In the formula linked to argument `W2_vs_W16_mix`, the random effect
+`(1|TMT_Set)` is an addition to the fix effect `Term_3["W16-W2"]`. The
+syntax `(1|TMT_Set)` indicates the `TMT_Set` term to be parsed as a
+random effect. The name of the term is again a column key in
+`expt_smry.xlsx`. In this example, the `TMT` batches are documented
+under the column `TMT_Set` and can be applied directly to our formula.
+Upon the completion of the protein signficance tests, we can analyze
+analogously the gene set enrichment against these new formulas by
+calling functions `prnGSPA` and `gspaMAP`.
+
+*Multiple random effects* - In this section, we will test the
+statistical significance in protein abundance changes between the
+`WHIM2` and the `WHIM16` subtypes, by taking additively both the TMT
+batch effects and the laboratory effects into account. At the time of
+writing the document, I don't yet know how to handle multiple random
+effects using `limma`. If you have an answer, please let me know.
+Alternatively, I use `lmerTest` to do the work.
+
+Missing values can frequently fail random-effects modeling with more
+complex error structures and need some cares. One workaround is to
+simply restrict ourselves to entries that are complete in cases. This
+would lead to a number of proteins not measurable in their statistical
+significance. Alternatively, we may seek to fill in missing values using
+techniques such as multivariate imputation. At present, I use the `mice`
+function from the R package "mice" in `prnSig()` and `pepSig()` for the
+imputation of protein and peptide data, respectively. To impute protein
+data:
+
+``` r
+prnImp(m = 5, maxit = 5)
+```
+
+During the directory setup of this lab, we have prepared the data,
+`Protein_impNA.txt`, with NA being imputed. We further note that the
+laboratory differences are coded under columns `Color` in
+`expt_smry.xlsx`. So we can skip the above `prnImp` step and test the
+statistical difference between `WHIM2` and `WHIM16` aganist the
+following three models:
+
+``` r
+prnSig(
+  impute_na = TRUE,
+  method = lm,
+  W2_vs_W16_fix = ~ Term_3["W16-W2"], # one fixed effect
+  W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
+  W2_vs_W16_mix_2 = ~ Term_3["W16-W2"] + (1|TMT_Set) + (1|Color), # one fixed and two random effects
+)
+
+# correlation plots
+df <- read.csv(file.path(temp_raneff_dir, "Protein\\Model\\Protein_pVals.txt"), check.names = FALSE, header = TRUE, sep = "\t") %>%
+  dplyr::select(grep("pVal\\s+", names(.))) %>% 
+  `colnames<-`(c("none", "one", "two")) %>% 
+  dplyr::mutate_all(~ -log10(.x)) %>% 
+  GGally::ggpairs(df, columnLabels = as.character(names(df)), labeller = label_wrap_gen(10), title = "", 
+                  xlab = expression("pVal ("*-log[10]*")"), ylab = expression("pVal ("*-log[10]*")")) 
+```
+
+The correlation plots indicate that the random effects of batches and
+laboratory locations are much smaller than the fixed effect of the
+biological differences of `WHIM2` and `WHIM16`.
+
+<img src="images\protein\model\raneff_models.png" alt="**Figure S3.** Pearson r of protein significance p-values." width="40%" />
+<p class="caption">
+**Figure S3.** Pearson r of protein significance p-values.
+</p>
 
 ### References
 

@@ -181,9 +181,12 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
     dplyr::mutate(valence = ifelse(.$log2Ratio > 0, "pos", "neg")) %>% 
     dplyr::mutate(valence = factor(valence, levels = c("neg", "pos"))) 
   
+  # imputation of NA to 0 increases the number of entries in descriptive "mean" calculation, 
+  # which is like a penalty function
   df <- df %>% 
     tidyr::complete(entrez, contrast, valence) %>% 
-    dplyr::mutate(p_val = ifelse(is.na(p_val), 0, p_val))
+    dplyr::mutate(p_val = ifelse(is.na(p_val), 0, p_val)) # %>% 
+    # dplyr::mutate(log2Ratio = ifelse(is.na(log2Ratio), 0, log2Ratio))
   
   contrast_groups <- unique(df$contrast) %>% as.character()
 
