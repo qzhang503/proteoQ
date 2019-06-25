@@ -66,6 +66,108 @@ rmPSMHeaders <- function () {
 }
 
 
+#' Extract RAW file names
+#'
+#' \code{extractRAW} extracts the RAW file names from the PSM result files under
+#' the current working directory.
+#'
+#' @examples
+#' extractRAW()
+#'
+#' @import dplyr tidyr
+#' @importFrom stringr str_split
+#' @importFrom magrittr %>%
+#' @export
+extractRAW <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
+  dir.create(file.path(dat_dir, "PSM\\temp"), recursive = TRUE, showWarnings = FALSE)
+  filelist = list.files(path = file.path(dat_dir), pattern = "^F[0-9]{6}\\.csv$")
+
+  if(purrr::is_empty(filelist))
+    stop("No PSM files(s) with .csv extension are available under ", dat_dir, call. = TRUE)
+  
+  output_prefix <- gsub(".csv$", "", filelist)
+  
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  TMT_plex <- TMT_plex(label_scheme)
+  
+  batchPSMheader_2 <- function(filelist, TMT_plex) {
+    df <- readLines(file.path(dat_dir, filelist))
+    
+    first_nonheader_row <- grep("pep_seq", df)
+    
+    header <- df[1 : (first_nonheader_row - 1)]
+    header <- gsub("\"", "", header, fixed = TRUE)
+    
+    output_prefix <- gsub(".csv$", "", filelist)
+    write.table(header, file.path(dat_dir, "PSM\\temp",
+                                  paste0(output_prefix, "_header", ".txt")), 
+                sep = "\t", col.names = FALSE, row.names = FALSE)
+
+    df <- df[first_nonheader_row : length(df)]
+    df <- gsub("\"---\"", -1, df, fixed = TRUE)
+    df <- gsub("\"###\"", -1, df, fixed = TRUE)
+    
+    if(TMT_plex == 11) {
+      df[1] <- paste0(df[1], paste(rep(",", 42), collapse = ''))
+    } else if (TMT_plex == 10) {
+      df[1] <- paste0(df[1], paste(rep(",", 38), collapse = ''))
+    } else if(TMT_plex == 6) {
+      df[1] <- paste0(df[1], paste(rep(",", 22), collapse = ''))
+    }
+    
+    writeLines(df, file.path(dat_dir, "PSM\\temp", paste0(output_prefix, "_hdr_rm.csv")))
+  }
+  
+  purrr::walk(filelist, batchPSMheader_2, TMT_plex)
+
+  df <- do.call(rbind,
+                lapply(
+                  list.files(path = file.path(dat_dir, "PSM\\temp"),
+                             pattern = paste0("F[0-9]{6}", "_hdr_rm.csv"),
+                             full.names = TRUE), read.delim, sep = ',',
+                  check.names = FALSE, header = TRUE,
+                  stringsAsFactors = FALSE, quote = "\"",
+                  fill = TRUE , skip = 0
+                )
+  )
+  
+  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
+  TMT_plex <- TMT_plex(label_scheme_full)
+  
+  # remove the spacer columns in Mascot outputs
+  r_start <- which(names(df) == "pep_scan_title") + 1
+  int_end <- ncol(df)
+  if(int_end > r_start) df <- df[, -c(seq(r_start, int_end, 2))]
+  
+  if (TMT_plex == 11) {
+    col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
+                   "R130N", "R130C", "R131N", "R131C")
+    col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
+                 "I130N", "I130C", "I131N", "I131C")
+  } else if (TMT_plex == 10) {
+    col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
+                   "R130N", "R130C", "R131")
+    col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
+                 "I130N", "I130C", "I131")
+  } else if(TMT_plex == 6) {
+    col_ratio <- c("R127", "R128", "R129", "R130", "R131")
+    col_int <- c("I126", "I127", "I128", "I129", "I130", "I131")
+  } else {
+    col_ratio <- NULL
+    col_int <- NULL
+  }
+  
+  df <- df[, "pep_scan_title", drop = FALSE] %>% 
+    dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title))
+  
+  missing_msfs <- unique(df$RAW_File)
+  
+  if(!purrr::is_empty(missing_msfs)) cat(paste0(missing_msfs, "\n"))
+  
+  unlink(file.path(dat_dir, "PSM\\temp"), recursive = TRUE, force = TRUE)
+}
+
+
 #' Splits PSM tables
 #'
 #' \code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It
@@ -678,7 +780,8 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 			if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
   		  species <- df %>%
   		    dplyr::select(prot_desc) %>%
-  			  dplyr::mutate(prot_desc = gsub(".*OS=(.*)\\s+GN=.*", "\\1", prot_desc))
+  			  dplyr::mutate(prot_desc = gsub(".*OS=(.*)\\s+GN=.*", "\\1", prot_desc)) %>% 
+  		    dplyr::mutate(prot_desc = sub("^(\\S*\\s+\\S+).*", "\\1", prot_desc)) 
 			} else if (acc_type == "refseq_acc") {
 			  species <- df %>%
 			    dplyr::select(prot_desc) %>%
@@ -944,8 +1047,6 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 	  }
 
 	}
-
-
 }
 
 
