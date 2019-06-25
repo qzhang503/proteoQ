@@ -204,6 +204,8 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
         
         if(cluster_rows) {
           d_sub <- dist(df_sub, method = clustering_distance_rows)
+          if(length(d_sub) == 0) next
+
           d_sub[is.na(d_sub)] <- .5 * max(d_sub, na.rm = TRUE)
           
           if (nrow(df_sub) < 2) {
@@ -213,22 +215,25 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
           }
         }
         
-        pheatmap(
-          mat = df_sub,
-          main = paste("Cluster", cluster_id),
-          cluster_rows = h_sub,
-          show_rownames = TRUE,
-          show_colnames = TRUE,
-          annotation_col = annotation_col,
-          color = mypalette,
-          breaks = color_breaks,
-          cellwidth = 14,
-          fontsize_row = ceiling(200/nrow(Cluster %>% dplyr::filter(Cluster == cluster_id))),
-          annotation_colors = annotation_colors,
-          filename = file.path(filepath, "Subtrees",
-                               paste0("Subtree_", cutree_rows, "-", cluster_id, ".", fn_suffix))
+        try(
+          pheatmap(
+            mat = df_sub,
+            main = paste("Cluster", cluster_id),
+            cluster_rows = h_sub,
+            show_rownames = TRUE,
+            show_colnames = TRUE,
+            annotation_col = annotation_col,
+            color = mypalette,
+            breaks = color_breaks,
+            cellwidth = 14,
+            fontsize_row = ceiling(200/nrow(Cluster %>% dplyr::filter(Cluster == cluster_id))),
+            annotation_colors = annotation_colors,
+            filename = file.path(filepath, "Subtrees",
+                                 paste0("Subtree_", cutree_rows, "-", cluster_id, ".", fn_suffix))
+          )          
         )
-        
+
+          
         rm(d_sub, h_sub)
       }
     }
