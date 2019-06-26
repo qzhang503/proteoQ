@@ -208,11 +208,24 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 
           d_sub[is.na(d_sub)] <- .5 * max(d_sub, na.rm = TRUE)
           
-          if (nrow(df_sub) < 2) {
+          nrow <- nrow(df_sub)
+          if (nrow < 2) {
             h_sub <- FALSE
           } else {
             h_sub <- hclust(d_sub)
           }
+        }
+        
+        if(nrow <= 150) {
+          cellheight <- 5
+          fontsize_row <- 5
+          show_rownames <- TRUE
+          height <- NA
+        } else {
+          cellheight <- NA
+          fontsize_row <- NA
+          show_rownames <- FALSE
+          height <- NA
         }
         
         try(
@@ -220,20 +233,22 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
             mat = df_sub,
             main = paste("Cluster", cluster_id),
             cluster_rows = h_sub,
-            show_rownames = TRUE,
+            show_rownames = show_rownames,
             show_colnames = TRUE,
             annotation_col = annotation_col,
             color = mypalette,
             breaks = color_breaks,
             cellwidth = 14,
-            fontsize_row = ceiling(200/nrow(Cluster %>% dplyr::filter(Cluster == cluster_id))),
+            cellheight = cellheight,
+            # fontsize_row = ceiling(200/nrow(Cluster %>% dplyr::filter(Cluster == cluster_id))),
+            fontsize_row = fontsize_row,
+            height = height, 
             annotation_colors = annotation_colors,
             filename = file.path(filepath, "Subtrees",
                                  paste0("Subtree_", cutree_rows, "-", cluster_id, ".", fn_suffix))
           )          
         )
 
-          
         rm(d_sub, h_sub)
       }
     }

@@ -778,10 +778,11 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 			             Fly = "Drosophila melanogaster")
 
 			if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
-  		  species <- df %>%
-  		    dplyr::select(prot_desc) %>%
-  			  dplyr::mutate(prot_desc = gsub(".*OS=(.*)\\s+GN=.*", "\\1", prot_desc)) %>% 
-  		    dplyr::mutate(prot_desc = sub("^(\\S*\\s+\\S+).*", "\\1", prot_desc)) 
+			  species <- df %>%
+			    dplyr::select(prot_desc) %>%
+			    dplyr::filter(grepl("OS=", prot_desc)) %>% 
+			    dplyr::mutate(prot_desc = sub("^.*OS=(\\S*\\s+\\S+).*", "\\1", prot_desc)) %>% 
+			    dplyr::filter(!is.na(prot_desc))
 			} else if (acc_type == "refseq_acc") {
 			  species <- df %>%
 			    dplyr::select(prot_desc) %>%
@@ -1026,7 +1027,8 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 				Levels <- TMT_levels %>% gsub("^TMT-", "I", .)
 				df_int <- df[, grepl("^I[0-9]{3}", names(df))] %>%
 					tidyr::gather(key = "Channel", value = "Intensity") %>%
-					dplyr::mutate(Channel = factor(Channel, levels = Levels))
+					dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
+				  dplyr::filter(!is.na(Intensity))
 				rm(Levels)
 
 				Width <- 8
