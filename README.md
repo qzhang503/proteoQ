@@ -29,15 +29,15 @@ To install this package, start R (version "3.6") and enter:
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("Biobase", "GSVA", "Mfuzz", "limma"))
+BiocManager::install(c("Biobase", "Mfuzz", "limma"))
 
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
 ```
 
-Application - Part I
---------------------
+Part I - Data normalization
+---------------------------
 
 In this section I illustrate the following applications of `proteoQ`:
 
@@ -46,24 +46,24 @@ In this section I illustrate the following applications of `proteoQ`:
 -   Re-normalization of data in part or in full
 
 The data set I use in this section corresponds to the proteomics data
-from Mertins et al.(2018). In the study, two different breast cancer
+from Mertins et al. (2018). In the study, two different breast cancer
 subtypes, triple negative (WHIM2) and luminal (WHIM16), from
 patient-derived xenograft (PDX) models were assessed by three
 independent laboratories. At each site, lysates from WHIM2 and WHIM16
 were each split and labeled with 10-plex TMT at equal sample sizes and
 repeated on a different day. This results in a total of 60 samples
 labeled under six 10-plex TMT experiments. The samples under each
-10-plex TMT were fractionated by off-line Hp-RP chromatography(2011),
-followed by `LC/MS` analysis. The raw PSM results from
+10-plex TMT were fractionated by off-line Hp-RP chromatography, followed
+by `LC/MS` analysis. The raw PSM results from
 [Mascot](https://http://www.matrixscience.com/) searches are stored in a
-companion R package, `proteoQDA` and are accessbile through the
+companion R package, `proteoQDA`, and are accessbile through the
 following installation:
 
 ``` r
 devtools::install_github("qzhang503/proteoQDA")
 ```
 
-### Set up the experiments
+### 1.1 Set up the experiments
 
 We first set up a working directory:
 
@@ -77,8 +77,8 @@ exporting PSM results, I typically set the option of
 `Include sub-set protein hits` to `0` with my opinionated choice in
 satisfying the principle of parsimony. The options of `Header` and
 `Peptide quantitation` should be checked to include the search
-parameters and quantitative values. The `filename(s)` of the export(s)
-will be taken as is.[1]
+parameters and quantitative values, respectively. The filename(s) of the
+exports will be taken as is.[1]
 
 <img src="images\mascot\mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
@@ -94,13 +94,12 @@ IDs will be removed for now when constructing peptide reports.
 
 <img src="images\mascot\mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 
-The merged search may become increasingly demanding in computing powers
-with growing data sets. In the example, I combined the MS peak lists
-from the Hp-RP fractions within the same 10-plex TMT experiment, but not
-the lists across experiments. This results in a total of six pieces of
-PSM results in `Mascot` exports. To get us started, we go ahead and copy
-the PSM files that we have prepared in `proteoQDA` over to the working
-directory:
+The merged search may become cumbersome with growing data sets. In this
+example, I combined the MS peak lists from the Hp-RP fractions within
+the same 10-plex TMT experiment, but not the lists across experiments.
+This results in a total of six pieces of PSM results in `Mascot`
+exports. To get us started, we go ahead and copy the PSM files that we
+have prepared in `proteoQDA` over to the working directory:
 
 ``` r
 library(proteoQDA)
@@ -115,11 +114,27 @@ experimental summary is `expt_smry.xlsx`. If samples were fractionated
 off-line prior to `LC/MS`, a second `Excel` template will also be filled
 out to link multiple `RAW` MS file names that are associated to the same
 sample IDs. The default file name for the fractionation summary is
-`frac_smry.xlsx`.[2] The description of the column keys in the `Excel`
-files can be found from the help document by entering
-`?proteoQ::load_expts` from a `R` console. We next copy over a
-pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx` to the working
-directory:
+`frac_smry.xlsx`.[2] Unless otherwise mentioned, we will assume these
+default file names throughtout the document.
+
+Columns in the `expt_smry.xlsx` are approximately divided into the
+following three tiers: (1) `essential`, (2) `optional default` and (3)
+`optional open`. We supply the required information of the TMT
+experiments under the essential columns. The optional default columns
+serve as the fields for convenient lookups in sample selection,
+grouping, ordering, aesthetics etc. For instance, the program will by
+default look for values under the `Color` column if no instruction was
+given in the color coding of a PCA plot. The optional open fields on the
+other hand allow us to define our own analysis and aesthetics: we may
+openly define multiple columns of contrast groups at different levels of
+granularity for uses in linear modeling. Description of the column keys
+can be found from the help document by entering `?proteoQ::load_expts`
+from a `R` console.
+
+<img src="images\installation\three_tier_expt_smry.png" width="80%" style="display: block; margin: auto;" />
+
+We next copy over a pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx`
+to the working directory:
 
 ``` r
 cptac_expt_1(dat_dir)
@@ -146,20 +161,20 @@ library(proteoQ)
 load_expts()
 ```
 
-### Summarize PSMs to peptides and proteins
+### 1.2 Summarize PSMs to peptides and proteins
 
 *Process PSMs* - In this section, I demonstrate the summarisation of PSM
 data to peptides and proteins. We start by processing PSM data from
 `Mascot` outputs:
 
 ``` r
-# Generate PSM reports
+# PSM reports
 normPSM(
- rptr_intco = 1000,
- rm_craps = FALSE,
- rm_krts = FALSE,
- rm_outliers = FALSE,
- plot_violins = TRUE
+  rptr_intco = 1000,
+  rm_craps = FALSE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE,
+  plot_violins = TRUE
 )
 
 # or accept the default parameters 
@@ -179,17 +194,17 @@ analysis.[3]
 *Summarize PSMs to peptides* - We next summarise PSM to peptides.
 
 ``` r
-# Generate peptide reports
+# peptide reports
 normPep(
-    id = pep_seq, 
-    method_psm_pep = median, 
-    method_align = MGKernel, 
-    range_log2r = c(5, 95), 
-    range_int = c(5, 95), 
-    n_comp = 3, 
-    seed = 749662, 
-    maxit = 200, 
-    epsilon = 1e-05
+  id = pep_seq, 
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05
 )
 ```
 
@@ -210,22 +225,24 @@ normalization:[5]
 ``` r
 # without the scaling of log2FC 
 pepHist(
- scale_log2r = FALSE, 
- ncol = 10
+  scale_log2r = FALSE, 
+  ncol = 10
 )
 
 # with the scaling of log2FC 
 pepHist(
- scale_log2r = TRUE, 
- ncol = 10
+  scale_log2r = TRUE, 
+  ncol = 10
 )
 ```
 
-There are 60 panels of of histograms in each plot, which may not be easy
-to explore as a whole. In stead, we will break the plots down by their
-data origins. We begin with modifying the `expt_smry.xlsx` file by
-adding the columns `BI`, `JHU` and `PNNL`. Each of the new columns
-includes sample entries that are tied to their laboratory origins.
+By default, the above calls will look for none NA entries under column
+`Select` in `expt_smry.xlsx`. This will results in plots of histograms
+with 60 panels in each, which may not be easy to explore as a whole. In
+stead, we will break the plots down by their data origins. We begin with
+modifying the `expt_smry.xlsx` file by adding the columns `BI`, `JHU`
+and `PNNL`. Each of the new columns includes sample entries that are
+tied to their laboratory origins.
 
 [![Select
 subsets](https://img.youtube.com/vi/3B5et8VY3hE/0.jpg)](https://www.youtube.com/embed/3B5et8VY3hE)
@@ -236,22 +253,29 @@ document, we only display the plots using the `BI` subset:
 ``` r
 # without the scaling of log2FC 
 pepHist(
- scale_log2r = FALSE, 
- col_select = BI,
- filename = Hist_BI_N.png, 
- ncol = 5
+  scale_log2r = FALSE, 
+  col_select = BI,
+  filename = Hist_BI_N.png, 
+  ncol = 5
 )
 
 # with the scaling of log2FC 
 pepHist(
- scale_log2r = TRUE, 
- col_select = BI,
- filename = Hist_BI_Z.png, 
- ncol = 5
+  scale_log2r = TRUE, 
+  col_select = BI,
+  filename = Hist_BI_Z.png, 
+  ncol = 5
 )
 ```
 
-    *NB*: We interactively told `pepHist()` that we are interested in sample entries under the newly created `BI` column. We also supply a file name, assuming that we want to keep the earlierly generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_Z.png`. 
+*NB*: We interactively told `pepHist()` that we are interested in sample
+entries under the newly created `BI` column. Behind the scene, the
+interactions are enable through the readind and writing of `Excel`
+workbook by
+[`openxlsx`](https://cran.r-project.org/web/packages/openxlsx/openxlsx.pdf).
+We also supply a file name, assuming that we want to keep the earlierly
+generated plots with default file names of `Peptide_Histogram_N.png` and
+`Peptide_Histogram_Z.png`.
 
 <img src="images\peptide\histogram\peptide_bi_gl1_n.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="images\peptide\histogram\peptide_bi_gl1_z.png" alt="**Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
@@ -272,6 +296,61 @@ suitable when the quantities of proteins of interest are different
 across samples where the assumption of constitutive expression for the
 vast majority of proteins may not hold.
 
+*Summarize peptides to proteins* - We then summarise peptides to
+proteins using a two-component Gaussian kernel.
+
+``` r
+# protein reports
+normPrn(
+  id = gene, 
+  method_pep_prn = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 2, 
+  seed = 749662, 
+  fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta", 
+  maxit = 200, 
+  epsilon = 1e-05
+)
+```
+
+Similar to the peptide summary, we inspect the alignment and the scaling
+of ratio profiles, and re-normalize the data if needed.[8]
+
+``` r
+# without the scaling of log2FC
+prnHist(
+  scale_log2r = FALSE, 
+  ncol = 10
+)
+
+# with the scaling of log2FC
+prnHist(
+  scale_log2r = TRUE, 
+  ncol = 10
+)
+```
+
+*NB:* At this point, we might have reach a consensus on the choice of
+scaling normalization. In this case, it may be applausible to set the
+value of `scale_log2r` under the Global environment, namely the R
+console that we are interacting with.
+
+``` r
+# if agree
+scale_log2r <- TRUE
+
+# or disagree
+scale_logr <- FALSE
+```
+
+In this way, we can skip the repetitive setting of `scale_log2r` in our
+workflow from this point on, or more importantly, prevent ourselves from
+peppering the settings of **TRUE** or **FALSE** from calls to calls.
+
+### 1.3 Data renormalization against a sample subset
+
 A multi-Gaussian kernel can fail capturing the log2FC profiles for a
 subset of samples. This is less an issue with a small number of samples.
 Using a trial-and-error approach, we can start over with a new
@@ -291,73 +370,36 @@ to the newly created column:
 
 ``` r
 normPep(
-    id = pep_seq, 
-    method_psm_pep = median, 
-    method_align = MGKernel, 
-    range_log2r = c(5, 95), 
-    range_int = c(5, 95), 
-    n_comp = 3,
-    col_refit = Select_sub,
-    seed = 749662, 
-    maxit = 200, 
-    epsilon = 1e-05
+  id = pep_seq, 
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3,
+  col_refit = Select_sub,
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05
 )
 ```
 
-*Summarize peptides to proteins* - We then summarise peptides to
-proteins using a two-component Gaussian kernel.
-
-``` r
-# Generate protein reports
-normPrn(
-    id = gene, 
-    method_pep_prn = median, 
-    method_align = MGKernel, 
-    range_log2r = c(5, 95), 
-    range_int = c(5, 95), 
-    n_comp = 2, 
-    seed = 749662, 
-    fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta", 
-    maxit = 200, 
-    epsilon = 1e-05
-)
-```
-
-Similar to the peptide summary, we inspect the alignment and the scaling
-of ratio profiles, and re-normalize the data if needed.[8]
-
-``` r
-# without the scaling of log2FC
-prnHist(
- scale_log2r = FALSE, 
- ncol = 10
-)
-
-# with the scaling of log2FC
-prnHist(
- scale_log2r = TRUE, 
- ncol = 10
-)
-```
-
-Application - Part II
----------------------
+Part II - Basic informatics
+---------------------------
 
 In this section I illustrate the following applications of `proteoQ`:
 
 -   Basic informatic analysis and linear modeling against the peptide
     and protein data.
 
-### MDS and PCA plots
+### 2.1 MDS and PCA plots
 
-In this section, we visualize MDS, PCA and Euclidean distance against
-the peptide data at `scale_log2r = TRUE`. We start with metric MDS for
-peptide data:
+We first visualize MDS, PCA and Euclidean distance against the peptide
+data. We start with metric MDS for peptide data:
 
 ``` r
 # data from all three laboratories
 pepMDS(
-    show_ids = FALSE
+  show_ids = FALSE
 )
 ```
 
@@ -420,40 +462,40 @@ Sometime it may be useful to have an accurate view of the distance
 matrix. Functions `pepEucDist` and `prnEucDist` plot the heat maps of
 Euclidean distance matrix for peptides and proteins, respectively. They
 are wrappers of
-([`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf))
+[`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf)
 and inherit many parameters therein. Supposed that we are interested in
 visualizing the distance matrix for the `JHU` subset:
 
 ``` r
 # `JHU` subset
 pepEucDist(
-    col_select = JHU,
-    annot_cols = c("Shape", "Alpha"),
-    annot_colnames = c("WHIM", "Batch"), 
-
-    # parameters from `pheatmap`
-    display_numbers = TRUE, 
-    number_color = "grey30", 
-    number_format = "%.1f",
-    
-    clustering_distance_rows = "euclidean", 
-    clustering_distance_cols = "euclidean", 
-    
-    fontsize = 16, 
-    fontsize_row = 20, 
-    fontsize_col = 20, 
-    fontsize_number = 8, 
-    
-    cluster_rows = TRUE,
-    show_rownames = TRUE,
-    show_colnames = TRUE,
-    border_color = "grey60", 
-    cellwidth = 24, 
-    cellheight = 24, 
-    width = 14,
-    height = 12, 
-    
-    filename = EucDist_JHU.png
+  col_select = JHU,
+  annot_cols = c("Shape", "Alpha"),
+  annot_colnames = c("WHIM", "Batch"), 
+  
+  # parameters from `pheatmap`
+  display_numbers = TRUE, 
+  number_color = "grey30", 
+  number_format = "%.1f",
+  
+  clustering_distance_rows = "euclidean", 
+  clustering_distance_cols = "euclidean", 
+  
+  fontsize = 16, 
+  fontsize_row = 20, 
+  fontsize_col = 20, 
+  fontsize_number = 8, 
+  
+  cluster_rows = TRUE,
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  border_color = "grey60", 
+  cellwidth = 24, 
+  cellheight = 24, 
+  width = 14,
+  height = 12, 
+  
+  filename = EucDist_JHU.png
 )
 ```
 
@@ -471,7 +513,7 @@ columns `Shape` and `Alpha`.
 **Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`
 </p>
 
-### Correlation plots
+### 2.2 Correlation plots
 
 In this section, we visualize the batch effects through correlation
 plots. The `proteoQ` tool currently limits itself to a maximum of 44
@@ -490,36 +532,36 @@ samples within the `JHU` subset were arranged in the descending order of
 to look for the `Order` column for sample arrangement:
 
 ``` r
-# Correlation plots of peptide data
+# peptide correlation
 pepCorr(
-    col_select = PNNL,
-    col_order = Order,
-    filename = PNNL.png,
-    
-    use_log10 = TRUE, 
-    scale_log2r = TRUE, 
-    min_int = 3.5,
-    max_int = 6.5, 
-    min_log2r = -2, 
-    max_log2r = 2, 
-    width = 24,
-    height = 24
+  col_select = PNNL,
+  col_order = Order,
+  filename = PNNL.png,
+  
+  use_log10 = TRUE, 
+  scale_log2r = TRUE, 
+  min_int = 3.5,
+  max_int = 6.5, 
+  min_log2r = -2, 
+  max_log2r = 2, 
+  width = 24,
+  height = 24
 )
-
-# Correlation plots of protein data
+  
+# protein correlation
 prnCorr(
-    col_select = PNNL,
-    col_order = Order,
-    filename = PNNL.png,
-    
-    use_log10 = TRUE, 
-    scale_log2r = TRUE, 
-    min_int = 3.5,
-    max_int = 6.5, 
-    min_log2r = -2, 
-    max_log2r = 2,
-    width = 24,
-    height = 24     
+  col_select = PNNL,
+  col_order = Order,
+  filename = PNNL.png,
+  
+  use_log10 = TRUE, 
+  scale_log2r = TRUE, 
+  min_int = 3.5,
+  max_int = 6.5, 
+  min_log2r = -2, 
+  max_log2r = 2,
+  width = 24,
+  height = 24,
 )
 ```
 
@@ -529,26 +571,40 @@ prnCorr(
 peptide; right, protein
 </p>
 
-More items under construction.
+### 2.3 Imputation of NA values
 
-The following performs of heat map visualization against protein data:
+The following performs the imputation of peptide and protein data. More
+information can be found from
+[`mice`](https://cran.r-project.org/web/packages/mice/mice.pdf).
 
 ``` r
-# Protein heat maps
+# imputation of missing values
+pepImp(m = 2, maxit = 2)
+prnImp(m = 5, maxit = 5)
+```
+
+### 2.4 Heat map
+
+The following performs of heat map visualization against protein data.
+More details on the arguments can be found from
+[`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf).
+
+``` r
+# protein heat maps
 prnHM(
-    xmin = -1, 
-    xmax = 1, 
-    x_margin = 0.1, 
-    annot_cols = c("Group", "Color", "Alpha", "Shape"), 
-    annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
-    cluster_rows = TRUE, 
-    cutree_rows = 10, 
-    show_rownames = FALSE, 
-    show_colnames = TRUE, 
-    fontsize_row = 3, 
-    cellwidth = 14, 
-    width = 18, 
-    height = 12
+  xmin = -1, 
+  xmax = 1, 
+  x_margin = 0.1, 
+  annot_cols = c("Group", "Color", "Alpha", "Shape"), 
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
+  cluster_rows = TRUE, 
+  cutree_rows = 10, 
+  show_rownames = FALSE, 
+  show_colnames = TRUE, 
+  fontsize_row = 3, 
+  cellwidth = 14, 
+  width = 18, 
+  height = 12,
 )
 ```
 
@@ -558,7 +614,7 @@ prnHM(
 `scale_log2r = TRUE`
 </p>
 
-### Significance tests and volcano plot visualization
+### 2.5 Significance tests and volcano plot visualization
 
 In this section, we perform the significance analysis of peptide and
 protein data. The approach of contrast fit is used in `proteoQ`
@@ -577,38 +633,32 @@ significance tests for peptides and protein species. In the demo, we
 will analyze protein data and perform volcano plot visualization:
 
 ``` r
-# Protein significance tests
+# significance tests of protein log2FC
 prnSig(
-    impute_na = FALSE, 
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
+  impute_na = FALSE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
 )
 
-# Volcano plots
+# volcano plots
 prnVol()
 ```
 
-    Note that we have informed the `prnSig` function to look for contrasts under columns `Term` and `Term_2`, followed by the cotrast pairs in square brackets. Pairs of contrasts are separated by comma.  
-
-Batch effects:
+Note that we have informed the `prnSig` function to look for contrasts
+under columns `Term` and `Term_2`, followed by the cotrast pairs in
+square brackets. Pairs of contrasts are separated by commas.
 
 <img src="images\protein\volcplot\batches.png" alt="**Figure 5A.** Volcano plots of protein log2FC between two batches." width="80%" />
 <p class="caption">
 **Figure 5A.** Volcano plots of protein log2FC between two batches.
 </p>
 
-<img src="images\protein\volcplot\venn_batches.png" alt="**Figure 5A.** Volcano plots of protein log2FC between two batches." width="80%" />
-
-Location effects:
-
 <img src="images\protein\volcplot\locations.png" alt="**Figure 5B.** Volcano plots of protein log2FC between locations." width="80%" />
 <p class="caption">
 **Figure 5B.** Volcano plots of protein log2FC between locations.
 </p>
 
-<img src="images\protein\volcplot\venn_locations.png" alt="**Figure 5B.** Volcano plots of protein log2FC between locations." width="80%" />
-
-### Mapped gene sets in volcano plots
+### 2.6 Gene sets in volcano plots
 
 There are a handful of tools for gene set enrichement analysis, such as
 GSEA, GSVA, gage, to name a few. Sometime it would be rather intuitive
@@ -627,7 +677,6 @@ the fold change of enrichment. The arguments `pval_cutoff` and
 
 ``` r
 prnGSPA(
-  scale_log2r = TRUE,
   impute_na = FALSE,
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
@@ -640,7 +689,6 @@ gene sets:
 
 ``` r
 gspaMap(
-  scale_log2r = TRUE,
   show_labels = TRUE,
   pval_cutoff = 1E-2,
   logFC_cutoff = log2(1.2),
@@ -659,28 +707,20 @@ examples:
 set
 </p>
 
-### Imputation of NA values
+### 2.7 Trend Analysis
 
-The following performs the imputation of peptide and protein data:
-
-``` r
-# Impute missing values
-pepImp(m = 2, maxit = 2)
-prnImp(m = 5, maxit = 5)
-```
-
-### Trend Analysis
-
-The following performs the trend analysis against protein expressions:
+The following performs the trend analysis against protein expressions.
+More details on the arguments can be found from
+[`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf).
 
 ``` r
-# Soft clustering in protein expressions by trends
+# clustering of protein expressions by soft trends
 anal_prnTrend(
   scale_log2r = TRUE, 
   n_clust = 6
 )
 
-# Visualization of trends
+# visualization
 plot_prnTrend()
 ```
 
@@ -689,10 +729,14 @@ plot_prnTrend()
 **Figure 7.** Trend analysis of protein log2FC.
 </p>
 
-The following performs the NMF analysis against protein data:
+### 2.8 NMF Analysis
+
+The following performs the NMF analysis against protein data. More
+details on the arguments can be found from
+[`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf).
 
 ``` r
-# Protein NMF
+# load library
 library(NMF)
 
 # NMF analysis
@@ -703,7 +747,7 @@ anal_prnNMF(
   nrun = 200
 )
 
-# Consensus heat map
+# consensus heat map
 plot_prnNMFCon(
   r = 6, 
   annot_cols = c("Color", "Alpha", "Shape"), 
@@ -712,7 +756,7 @@ plot_prnNMFCon(
   height = 10
 )
 
-# Coefficient heat map
+# coefficient heat map
 plot_prnNMFCoef(
   r = 6, 
   annot_cols = c("Color", "Alpha", "Shape"), 
@@ -721,7 +765,7 @@ plot_prnNMFCoef(
   height = 10
 )
 
-# Metagene heat map(s)
+# metagene heat map(s)
 plot_metaNMF(
   r = 6, 
   annot_cols = c("Color", "Alpha", "Shape"), 
@@ -738,9 +782,10 @@ plot_metaNMF(
 right: coefficients.
 </p>
 
-### Labs
+Part III - Labs
+---------------
 
-#### Choices of references
+### 3.1. Choices of references
 
 In this lab, we explore the effects of reference choices on data
 normalization. We first copy data over to the file directory specified
@@ -775,9 +820,12 @@ normPep(
 
 # visualization
 pepHist(
-    scale_log2r = FALSE, 
-    ncol = 9
+  scale_log2r = FALSE, 
+  ncol = 9
 )
+
+# global setting of `scale_log2r`
+scale_log2r <- TRUE
 ```
 
 <img src="images\peptide\histogram\peptide_ref_w2.png" alt="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference." width="80%" />
@@ -813,12 +861,14 @@ cptac_csv_1(temp_dir_2)
 expt_smry_ref_w2_w16(temp_dir_2)
 cptac_frac_1(temp_dir_2)
 
-# analysis
+# experiment upload
 library(proteoQ)
 load_expts(temp_dir_2, expt_smry_ref_w2_w16.xlsx)
 
+# PSM normalization
 normPSM()
 
+# peptide normalization
 normPep(
   id = pep_seq, 
   method_psm_pep = median, 
@@ -828,13 +878,13 @@ normPep(
   n_comp = 3, 
   seed = 911, 
   maxit = 200, 
-  epsilon = 1e-05
+  epsilon = 1e-05,
 )
 
 # visualization
 pepHist(
-    scale_log2r = FALSE, 
-    ncol = 8
+  scale_log2r = FALSE, 
+  ncol = 8
 )
 ```
 
@@ -844,7 +894,7 @@ pepHist(
 WHIM16 reference.
 </p>
 
-#### Peptide subsets
+### 3.2. Peptide subsets
 
 In addition to the global proteomes, the CPTAC publication contains
 phosphopeptide data from the same samples.(2018) In this lab, we will
@@ -866,8 +916,10 @@ cptac_frac_2(temp_phospho_dir)
 library(proteoQ)
 load_expts(temp_phospho_dir, expt_smry.xlsx)
 
+# PSM normalization
 normPSM()
 
+# peptide normalization
 normPep(
   id = pep_seq_mod, # peptides with different variable modifications
   method_psm_pep = median, 
@@ -880,7 +932,7 @@ normPep(
   epsilon = 1e-05
 )
 
-# all peptides
+# histograms of all peptides
 pepHist(
   col_select = BI, 
   scale_log2r = TRUE, 
@@ -888,7 +940,7 @@ pepHist(
   filename = "BI_all_peptides.png"
 )
 
-# phospho subsets
+# histograms of phosphopeptide subsets
 pepHist(
   col_select = BI, 
   scale_log2r = TRUE, 
@@ -917,7 +969,7 @@ will throw an error if we attemp to use `pep_pattern = _` to subset
 peptides with N-terminal acetylation. In this case, we will need to
 quote the underscore: `pep_pattern = "_"`.
 
-#### Random effects
+### 3.3 Random effects
 
 *Single random effect* - In proteomic studies involved multiple
 multiplex `TMT` experiments, the limited multiplicity of isobaric tags
@@ -954,9 +1006,9 @@ library(proteoQ)
 load_expts(temp_raneff_dir, expt_smry.xlsx)
 
 prnSig(
- impute_na = FALSE, 
- W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed effect only
- W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effects
+  impute_na = FALSE, 
+  W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed effect only
+  W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effects
 )
 
 # volcano plots
@@ -987,7 +1039,7 @@ simply restrict ourselves to entries that are complete in cases. This
 would lead to a number of proteins not measurable in their statistical
 significance. Alternatively, we may seek to fill in missing values using
 techniques such as multivariate imputation. At present, I use the `mice`
-function from the R package "mice" in `prnSig()` and `pepSig()` for the
+function from the R package "mice" in `prnImp()` and `pepImp()` for the
 imputation of protein and peptide data, respectively. To impute protein
 data:
 
@@ -1012,12 +1064,13 @@ prnSig(
 )
 
 # correlation plots
-df <- read.csv(file.path(temp_raneff_dir, "Protein\\Model\\Protein_pVals.txt"), check.names = FALSE, header = TRUE, sep = "\t") %>%
+df <- read.csv(file.path(temp_raneff_dir, "Protein\\Model\\Protein_pVals.txt"), 
+    check.names = FALSE, header = TRUE, sep = "\t") %>%
   dplyr::select(grep("pVal\\s+", names(.))) %>% 
   `colnames<-`(c("none", "one", "two")) %>% 
   dplyr::mutate_all(~ -log10(.x)) %>% 
   GGally::ggpairs(df, columnLabels = as.character(names(df)), labeller = label_wrap_gen(10), title = "", 
-                  xlab = expression("pVal ("*-log[10]*")"), ylab = expression("pVal ("*-log[10]*")")) 
+    xlab = expression("pVal ("*-log[10]*")"), ylab = expression("pVal ("*-log[10]*")")) 
 ```
 
 The correlation plots indicate that the random effects of batches and
@@ -1029,17 +1082,13 @@ biological differences of `WHIM2` and `WHIM16`.
 **Figure S3.** Pearson r of protein significance p-values.
 </p>
 
-### References
+References
+----------
 
 Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
 Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
 1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
-
-Wang, Y. 2011. "Reversed-Phase Chromatography with Multiple Fraction
-Concatenation Strategy for Proteome Profiling of Human MCF10A Cells."
-*Proteomics.* 11 (10): 2019-26.
-<https://doi.org/10.1002/pmic.201000722>.
 
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in file name extension.
