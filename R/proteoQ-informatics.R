@@ -502,7 +502,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                          n_clust = n_clust, 
 		                          filepath = filepath, 
 		                          filename = paste0(fn_prx, ".", fn_suffix), 
-		                          ...)
+		                          ...), 
+		         stop("Invalid `task`.", Call. = TRUE)
 		  )
 		}
 	} else if (anal_type == "NMF") {
@@ -530,7 +531,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                                label_scheme_sub = label_scheme_sub, 
 		                                filepath = filepath, 
 		                                fn_prx = fn_prx, 
-		                                ...)
+		                                ...), 
+		         stop("Invalid `task`.", Call. = TRUE)
 		  )
 		}
 	} else if(anal_type == "ESGAGE") {
