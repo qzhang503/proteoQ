@@ -819,10 +819,14 @@ calc_cover <- function(df, id, fasta = NULL) {
 	    dplyr::filter(!is.na(.[[key]]), !duplicated(.[[key]]))
 	}
 	
+	df <- df %>%
+	  dplyr::select(prot_acc, pep_start, pep_end) %>%
+	  dplyr::left_join(lookup, by = c("prot_acc" = key)) %>%
+	  dplyr::filter(!is.na(length))
+	
+	if (nrow(df) == 0) stop("Probably incorrect accession types in the fasta file.")
+	
 	df %>%
-		dplyr::select(prot_acc, pep_start, pep_end) %>%
-		dplyr::left_join(lookup, by = c("prot_acc" = key)) %>%
-		dplyr::filter(!is.na(length)) %>%
 		dplyr::filter(.[["pep_start"]] <= .[["length"]]) %>%
 		dplyr::filter(.[["pep_end"]] <= .[["length"]]) %>%
 		split(.[["prot_acc"]], drop = TRUE) %>%
