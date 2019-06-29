@@ -63,7 +63,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   
   find_fit_nms <- function(nm_a, nm_b) {
     ind <- purrr::map(nm_b, ~ grepl(.x, nm_a)) %>% 
-      reduce(`|`)
+      purrr::reduce(`|`)
     nm_a <- nm_a[ind]
   }
   
@@ -96,7 +96,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		print(paste("Number of Gaussian components =", n_comp))
 	  
 	  # N_log2_R... in the inputs are median centered at the first pass
-	  params_sub <- df[, nm_log2r_n] %>% 
+	  params_sub <- df[, nm_log2r_n, drop = FALSE] %>% 
 	    `names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
 	    fitKernelDensity(n_comp = n_comp, seed = seed, !!!dots) %>% 
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
@@ -178,8 +178,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		}
 		
 		# aligned log2FC and intensity after the calculation of "df_z"
-		df[, nm_log2r_n] <- sweep(df[, nm_log2r_n], 2, cf_x_fit$x, "-")
-		df[, nm_int_n] <- sweep(df[, nm_int_n], 2, 2^cf_x_fit$x, "/")
+		df[, nm_log2r_n] <- sweep(df[, nm_log2r_n, drop = FALSE], 2, cf_x_fit$x, "-")
+		df[, nm_int_n] <- sweep(df[, nm_int_n, drop = FALSE], 2, 2^cf_x_fit$x, "/")
 
 		# separate fits of Z_log2_r for curve parameters only...
 		if (!file.exists(file.path(filepath, "MGKernel_params_Z.txt"))) {
@@ -192,7 +192,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		    dplyr::arrange(Sample_ID, Component) %>% 
 		    dplyr::mutate(x = 0)
 		} else {
-		  params_z_sub <- df[, nm_log2r_z] %>% 
+		  params_z_sub <- df[, nm_log2r_z, drop = FALSE] %>% 
 		    `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
 		    fitKernelDensity(n_comp = n_comp, seed, !!!dots) %>% 
 		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 

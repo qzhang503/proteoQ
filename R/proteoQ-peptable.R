@@ -127,7 +127,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 	load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 
-	filelist = list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
+	filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
 		reorder_files(n_TMT_sets(label_scheme_full))
 
 	purrr::walk(as.list(filelist), function (x) {
@@ -149,8 +149,6 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 			if(ncol(temp) > 1) df$prot_acc <- temp[, 2]
 			rm(temp)
 		}
-
-		# df <- replace_na_genes(df, find_acctype(label_scheme))
 
 		write.table(df, file.path(dat_dir, "Peptide", paste0(fn_prx, "_Peptide_N", ".txt")),
 		            sep = "\t", col.names = TRUE, row.names = FALSE)
@@ -203,13 +201,14 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'  MGKernel}.
 #'@param annot_kinases Logical; if TRUE, annotates kinase attributes of
 #'  proteins.
-#'@param  col_refit Character string to a column key in \code{expt_smry.xlsx}.
+#'@param col_refit Character string to a column key in \code{expt_smry.xlsx}.
 #'  Only samples corresponding to non-empty entries under \code{col_refit} will
 #'  be used in the refit of \code{log2FC} using multiple Gaussian kernels. The
 #'  density estimates from an earlier analyis will be kept for samples
 #'  corresponding to empty entries under \code{col_refit}. At the NULL default,
 #'  the column key \code{Sample_ID} will be used, which leads to the refit of
 #'  code{log2FC} for all samples.
+#'@param cache Logical; if TRUE, use cache.
 #'@param ... Additional parameters from \code{\link[mixtools]{normalmixEM}}:\cr
 #'  \code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
 #'  tolerance limit for declaring algorithm convergence.
@@ -242,7 +241,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 										method_psm_pep = c("median", "mean", "weighted.mean", "top.3"),
 										method_align = c("MC", "MGKernel"), range_log2r = c(20, 90),
 										range_int = c(5, 95), n_comp = NULL, seed = NULL,
-										annot_kinases = FALSE, col_refit = NULL, ...) {
+										annot_kinases = FALSE, col_refit = NULL, cache = TRUE, ...) {
 
 	dir.create(file.path(dat_dir, "Peptide\\Histogram"), recursive = TRUE, showWarnings = FALSE)
 	dir.create(file.path(dat_dir, "Peptide\\cache"), recursive = TRUE, showWarnings = FALSE)
@@ -269,9 +268,9 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		names(x)[cols] <- paste0(nm_channel, " (", as.character(label_scheme_sub$Sample_ID), ")")
 
 		cols <- grep("[RI][0-9]{3}.*\\s+\\(.*\\)$", names(x))
-		if (is.data.table(x)) { # for data.table
+		if (is.data.table(x)) {
 			if (length(cols) < ncol(x)) x <- cbind(x[, ..cols], x[, -..cols])
-		} else { # for data.frame
+		} else {
 			if (length(cols) < ncol(x)) x <- dplyr::bind_cols(x[, cols], x[, -cols, drop = FALSE])
 		}
 
@@ -336,7 +335,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 	mget(names(formals()), rlang::current_env()) %>% save_call("normPep")
 
-	if(!file.exists(file.path(dat_dir, "Peptide", "Peptide.txt"))) {
+	if(!(cache & file.exists(file.path(dat_dir, "Peptide", "Peptide.txt")))) {
 		# normalize peptide data within each RAW file
 	  normPep_Splex(id = !!id, method_psm_pep = method_psm_pep)
 	  
