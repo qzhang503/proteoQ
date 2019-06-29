@@ -7,7 +7,8 @@
 normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
   "mean", "weighted.mean", "top.3"), method_align = c("MC", "MGKernel"),
   range_log2r = c(20, 90), range_int = c(5, 95), n_comp = NULL,
-  seed = NULL, annot_kinases = FALSE, col_refit = NULL, ...)
+  seed = NULL, annot_kinases = FALSE, col_refit = NULL,
+  cache = TRUE, ...)
 }
 \arguments{
 \item{id}{The variable for summarisation of \code{PSMs} into peptides. The
@@ -60,6 +61,8 @@ density estimates from an earlier analyis will be kept for samples
 corresponding to empty entries under \code{col_refit}. At the NULL default,
 the column key \code{Sample_ID} will be used, which leads to the refit of
 code{log2FC} for all samples.}
+
+\item{cache}{Logical; if TRUE, use cache.}
 
 \item{...}{Additional parameters from \code{\link[mixtools]{normalmixEM}}:\cr
 \code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},

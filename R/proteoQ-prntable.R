@@ -81,7 +81,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
                      method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), 
                      method_align = c("MC", "MGKernel"), range_log2r = c(20, 90), 
                      range_int = c(5, 95), n_comp = NULL, seed = NULL, fasta = NULL, 
-                     col_refit = NULL, ...) {
+                     col_refit = NULL, cache = TRUE, ...) {
 
 	dir.create(file.path(dat_dir, "Protein\\Histogram"), recursive = TRUE, showWarnings = FALSE)
 	dir.create(file.path(dat_dir, "Protein\\cache"), recursive = TRUE, showWarnings = FALSE)
@@ -171,7 +171,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	  stopifnot(file.exists(fasta))
 	}
 	
-	if(!file.exists(file.path(dat_dir, "Protein", "Protein.txt"))) {
+	if(!(cache & file.exists(file.path(dat_dir, "Protein", "Protein.txt")))) {
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
 										header = TRUE, sep = "\t", comment.char = "#") %>% 
 			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
