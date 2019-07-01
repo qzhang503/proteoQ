@@ -1,7 +1,8 @@
 #'Volcano plot visualization
 #'
-#'\code{proteoVolcano} provides the volcano plot visualization of
-#'peptide/protein data or protein sub groups in the context of gene sets.
+#'\code{proteoVolcano} visualizes the volcano plots of peptide or protein data,
+#'or protein sub sets under the same gene sets. Users should never call the
+#'method directly, but instead use the wrappers.
 #'
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
@@ -10,10 +11,10 @@
 #'@param adjP Logical; if TRUE, use Benjamini-Hochberg pVals for protein/peptide
 #'  entries in volcano plot(s).
 #'@param show_labels Logical; if TRUE, shows the labels of top twenty entries.
-#'@param show_sig Character string indicating the type of significance values
-#'  to be shown on volcano plots. The default is \code{"none"}. Additional
-#'  choices are from \code{c("pVal", "qVal")} where \code{pVal} or \code{qVal}
-#'  will be shown, respectively, in the facet grid of plots.
+#'@param show_sig Character string indicating the type of significance values to
+#'  be shown on volcano plots. The default is \code{"none"}. Additional choices
+#'  are from \code{c("pVal", "qVal")} where \code{pVal} or \code{qVal} will be
+#'  shown, respectively, in the facet grid of plots.
 #'@param pval_cutoff Numeric. \code{Gene sets} with enrichment \code{pVals} more
 #'  significant than the threshold will be used for volcano plot visualization.
 #'  The argument is not used in \code{prnVol} and \code{pepVol}.
@@ -61,6 +62,7 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 													show_sig = "none", gset_nm = "go_sets", ...) {
 	
   options(scipen=999)
+	options(warn = 1)
   
   old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
@@ -540,6 +542,8 @@ gsVolcano <- function(df, contrast_groups, gsea_res, gsea_key = "term", gsets, v
 	x_label <- expression("Ratio ("*log[2]*")")
 	y_label <- ifelse(adjP, expression("pVal ("*-log[10]*")"), expression("adjP ("*-log[10]*")"))
 	
+	if (nrow(gsea_res) == 0) stop("No GSEA terms availbale for volcano plots.")
+	
 	N <- pmin(dplyr::n_distinct(gsea_res[[gsea_key]]), 100)
 	terms <- gsea_res %>%
 	  dplyr::arrange(p_val) %>% 
@@ -720,18 +724,15 @@ prep_gage <- function(contrast_groups, key = "term", pval_cutoff = 1E-2) {
 }
 
 
-
-
-
 #'Volcano plots of peptide \code{log2FC}
 #'
-#'\code{pepVol} is a wrapper function of \code{\link{proteoVolcano}} for peptide data
+#'\code{pepVol} is a wrapper of \code{\link{proteoVolcano}} for peptide data
 #'
 #'@rdname proteoVolcano
 #'
 #'@export
 pepVol <- function (...) {
-  err_msg <- "Parameters \"id\" and \"anal_type\" are preset in the calling function\n."
+  err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
   warn_msg <- "Parameters \"pval_cutoff\" and \"show_sig\" are not used\n."
   
   dots <- rlang::enexprs(...)
@@ -745,14 +746,14 @@ pepVol <- function (...) {
 
 #'Volcano plots of protein \code{log2FC}
 #'
-#'\code{prnVol} is a wrapper function of \code{\link{proteoVolcano}} for protein data
+#'\code{prnVol} is a wrapper of \code{\link{proteoVolcano}} for protein data
 #'
 #'@rdname proteoVolcano
 #'
 #'@export
 prnVol <- function (...) {
-	err_msg <- "Parameters \"id\" and \"anal_type\" are preset in the calling function\n."
-	warn_msg <- "Parameters \"pval_cutoff\" and \"show_sig\" are not used\n."
+  err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
+	warn_msg <- "Parameters \"pval_cutoff\" and \"show_sig\" are not used.\n"
 	
   dots <- rlang::enexprs(...)
   if(any(names(dots) %in% c("id", "anal_type"))) stop(err_msg)
@@ -767,21 +768,22 @@ prnVol <- function (...) {
 #'@seealso \code{\link{proteoVolcano}} for parameters
 #'@export
 gsvaVol <- function (...) {
-	proteoVolcano(id = "term", anal_type = "GSVA", ...)
+  err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
+
+  proteoVolcano(id = "term", anal_type = "GSVA", ...)
 }
 
 
 #'Volcano plots of protein \code{log2FC} under gene sets
 #'
-#'\code{gsvaMap} is a wrapper function of \code{\link{proteoVolcano}} for
-#'mapping of protein data by gene sets.
+#'\code{gsvaMap} is a wrapper of \code{\link{proteoVolcano}} for mapping of
+#'protein data by gene sets.
 #'
 #'@export
 gsvaMap <- function (...) {
-  err_msg <- "Parameters \"id\" and \"anal_type\" are preset in the calling function\n."
-
-  dots <- rlang::enexprs(...)
-  if(any(names(dots) %in% c("id", "anal_type"))) stop(err_msg)
+  err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
 
   proteoVolcano(id = "gene", anal_type = "mapGSVA", ...)
 }
@@ -789,18 +791,16 @@ gsvaMap <- function (...) {
 
 #'Volcano plots of protein \code{log2FC} under gene sets
 #'
-#'\code{gspaMap} is a wrapper function of \code{\link{proteoVolcano}} for
+#'\code{gspaMap} is a wrapper of \code{\link{proteoVolcano}} for
 #'mapping of protein data by gene sets.
 #'
 #'@rdname proteoVolcano
 #'
 #'@export
 gspaMap <- function (...) {
-  err_msg <- "Parameters \"id\" and \"anal_type\" are preset in the calling function\n."
-  
-  dots <- rlang::enexprs(...)
-  if(any(names(dots) %in% c("id", "anal_type"))) stop(err_msg)
-  
+  err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
+
   proteoVolcano(id = "gene", anal_type = "mapGSPA", ...)
 }
 
@@ -810,7 +810,10 @@ gspaMap <- function (...) {
 #'@seealso \code{\link{proteoVolcano}} for parameters
 #'@export
 gageMap <- function (...) {
-	proteoVolcano(id = "gene", anal_type = "mapGAGE", ...)
+  err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
+  
+  proteoVolcano(id = "gene", anal_type = "mapGAGE", ...)
 }
 
 

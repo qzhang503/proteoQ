@@ -24,11 +24,10 @@ gspaMap(...)
 used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
-\item{anal_type}{The type of analysis for method dispatch in functional
-factories; Values include \code{anal_type = c("MDS", "PCA", "EucDist",
-"MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF", "Model", ...)}.
-Most likely users will ignore the argument as its value is pre-set in
-wrapper functions.}
+\item{anal_type}{Character string; the type of analysis that are preset for
+method dispatch in function factories; Values include \code{anal_type =
+c("MDS", "PCA", "EucDist", "MA", "Heatmap", "Histogram", "Corrplot",
+"Trend", "NMF", "Model", ...)}.}
 
 \item{df}{The name of input data file. By default, it will be determined by
 the value of \code{id}.}
@@ -42,11 +41,11 @@ determined by the name of the calling \code{function} and the value of
 
 \item{filename}{A representative file name to output image(s). By default, it
 will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-automatically determined by the extension of the file name. A \code{.png}
-format will be used at default or an unrecognized file extension.}
+saved via \code{\link[ggplot2]{ggsave}} where the image type will be
+determined by the extension of the file name. A \code{.png} format will be
+used at default or an unrecognized file extension.}
 
-\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
 
 \item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals for protein/peptide
@@ -63,10 +62,10 @@ greater than the threshold will be used for volcano plot visualization. The
 cut-off is in a logarithmic base of 2, not in a linear scale. The argument
 is not used in \code{prnVol} and \code{pepVol}.}
 
-\item{show_sig}{Character string indicating the type of significance values
-to be shown on volcano plots. The default is \code{"none"}. Additional
-choices are from \code{c("pVal", "qVal")} where \code{pVal} or \code{qVal}
-will be shown, respectively, in the facet grid of plots.}
+\item{show_sig}{Character string indicating the type of significance values to
+be shown on volcano plots. The default is \code{"none"}. Additional choices
+are from \code{c("pVal", "qVal")} where \code{pVal} or \code{qVal} will be
+shown, respectively, in the facet grid of plots.}
 
 \item{gset_nm}{Character vector containing the name(s) of gene sets for
 enrichment analysis. The currently supported data sets are
@@ -79,14 +78,15 @@ lines of fold changes at position \code{x}; the default is at \eqn{-1.2} and
 \cr \code{height}, the height of plot.}
 }
 \description{
-\code{proteoVolcano} provides the volcano plot visualization of
-peptide/protein data or protein sub groups in the context of gene sets.
+\code{proteoVolcano} visualizes the volcano plots of peptide or protein data,
+or protein sub sets under the same gene sets. Users should never call the
+method directly, but instead use the wrappers.
 
-\code{pepVol} is a wrapper function of \code{\link{proteoVolcano}} for peptide data
+\code{pepVol} is a wrapper of \code{\link{proteoVolcano}} for peptide data
 
-\code{prnVol} is a wrapper function of \code{\link{proteoVolcano}} for protein data
+\code{prnVol} is a wrapper of \code{\link{proteoVolcano}} for protein data
 
-\code{gspaMap} is a wrapper function of \code{\link{proteoVolcano}} for
+\code{gspaMap} is a wrapper of \code{\link{proteoVolcano}} for
 mapping of protein data by gene sets.
 }
 \examples{

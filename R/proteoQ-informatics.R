@@ -2,11 +2,10 @@
 #'
 #' \code{info_anal} produces functions for selected informatic analysis.
 #'
-#' @param anal_type The type of analysis for method dispatch in functional
-#'   factories; Values include \code{anal_type = c("MDS", "PCA", "EucDist",
-#'   "MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF", "Model", ...)}.
-#'   Most likely users will ignore the argument as its value is pre-set in
-#'   wrapper functions.
+#' @param anal_type Character string; the type of analysis that are preset for
+#'   method dispatch in function factories; Values include \code{anal_type =
+#'   c("MDS", "PCA", "EucDist", "MA", "Heatmap", "Histogram", "Corrplot",
+#'   "Trend", "NMF", "Model", ...)}.
 #' @return a function to the given \code{anal_type}.
 #'
 #' @import dplyr rlang ggplot2 pheatmap
@@ -432,7 +431,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			}
 		}
 	} else if(anal_type == "Histogram") {
-		function(pep_pattern = pep_pattern, new_fit = new_fit, show_curves = show_curves, show_vline = show_vline, ...) {
+		function(pep_pattern = pep_pattern, show_curves = show_curves, show_vline = show_vline, ...) {
 
 			if (scale_log2r) {
 				fn <- file.path(filepath, "MGKernel_params_Z.txt")

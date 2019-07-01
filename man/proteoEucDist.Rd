@@ -4,7 +4,7 @@
 \alias{proteoEucDist}
 \alias{pepEucDist}
 \alias{prnEucDist}
-\title{Visualizes the matrix of Euclidean distances}
+\title{Visualization of the Euclidean distance matrix}
 \usage{
 proteoEucDist(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
@@ -22,9 +22,9 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_select} will be
-included in the indicated analysis. At the NULL default, the column key
-\code{Select} will be used.}
+Samples corresponding to non-empty entries under the column key will be
+included in the indicated analysis. At the NULL default, the column key will
+be \code{Select}.}
 
 \item{col_group}{Not used.}
 
@@ -77,9 +77,9 @@ determined by the name of the calling \code{function} and the value of
 
 \item{filename}{A representative file name to output image(s). By default, it
 will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-automatically determined by the extension of the file name. A \code{.png}
-format will be used at default or an unrecognized file extension.}
+saved via \code{\link[ggplot2]{ggsave}} where the image type will be
+determined by the extension of the file name. A \code{.png} format will be
+used at default or an unrecognized file extension.}
 
 \item{...}{Parameters inherited from \code{\link[pheatmap]{pheatmap}}}
 }
@@ -89,21 +89,26 @@ Heat map visualization of distance matrices.
 \description{
 \code{proteoEucDist} visualizes the heat map of Euclidean distances.
 
-\code{pepEucDist} is a wrapper function of \code{\link{proteoEucDist}} for peptide data
+\code{pepEucDist} is a wrapper of \code{\link{proteoEucDist}} for peptide data
 
-\code{prnEucDist} is a wrapper function of \code{\link{proteoEucDist}} for protein data
+\code{prnEucDist} is a wrapper of \code{\link{proteoEucDist}} for protein data
 }
 \details{
 An Euclidean distance matrix of \code{log2FC} is returned by
 \code{\link[base]{dist}} for heat map visualization.
+
+The function matches the current \code{id} to those in the latest \code{calls}
+to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
+\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+pep_seq_mod} will be matched to \code{id = pep_seq}.
 }
 \examples{
 prnEucDist(
   scale_log2r = TRUE,
   annot_cols = c("Peptide_Yield", "Group"),
-  annot_colnames = c("New_Yield", "New_Group"), 
-  
-  # parameters from `pheatmap`
+  annot_colnames = c("New_Yield", "New_Group"),
+
+  # parameters for `pheatmap`
   display_numbers = TRUE,
   number_color = "grey30",
   number_format = "\%.1f",
@@ -118,7 +123,7 @@ prnEucDist(
   show_colnames = TRUE,
   border_color = "grey60",
   cellwidth = 24,
-  cellheight = 24, 
+  cellheight = 24,
   width = 14,
   height = 12
 )

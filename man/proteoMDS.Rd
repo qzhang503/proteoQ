@@ -4,7 +4,7 @@
 \alias{proteoMDS}
 \alias{pepMDS}
 \alias{prnMDS}
-\title{Visualizes MDS plots}
+\title{Visualization of MDS plots}
 \usage{
 proteoMDS(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
@@ -23,9 +23,9 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_select} will be
-included in the indicated analysis. At the NULL default, the column key
-\code{Select} will be used.}
+Samples corresponding to non-empty entries under the column key will be
+included in the indicated analysis. At the NULL default, the column key will
+be \code{Select}.}
 
 \item{col_group}{Not used.}
 
@@ -79,12 +79,12 @@ determined by the name of the calling \code{function} and the value of
 
 \item{filename}{A representative file name to output image(s). By default, it
 will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-automatically determined by the extension of the file name. A \code{.png}
-format will be used at default or an unrecognized file extension.}
+saved via \code{\link[ggplot2]{ggsave}} where the image type will be
+determined by the extension of the file name. A \code{.png} format will be
+used at default or an unrecognized file extension.}
 
-\item{...}{Parameters inherited from \code{ggsave}: \cr \code{width}, the
-width of plot; \cr \code{height}, the height of plot \cr \code{...}}
+\item{...}{Parameters for \code{ggsave}: \cr \code{width}, the width of plot;
+\cr \code{height}, the height of plot \cr \code{...}}
 }
 \value{
 MDS plots.
@@ -92,17 +92,20 @@ MDS plots.
 \description{
 \code{proteoMDS} visualizes the results from multidimensional scaling (MDS).
 
-\code{pepMDS} is a wrapper function of \code{\link{proteoMDS}} for peptide
-data
+\code{pepMDS} is a wrapper of \code{\link{proteoMDS}} for peptide data
 
-\code{prnMDS} is a wrapper function of \code{\link{proteoMDS}} for protein
-data
+\code{prnMDS} is a wrapper of \code{\link{proteoMDS}} for protein data
 }
 \details{
 An Euclidean distance matrix of \code{log2FC} is returned by
 \code{\link[base]{dist}}, followed by a metric (\code{\link[stats]{cmdscale}})
 or non-metric (\code{\link[MASS]{isoMDS}}) MDS. The default is metric MDS with
 the input dissimilarities being euclidean distances.
+
+The function matches the current \code{id} to those in the latest \code{calls}
+to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
+\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+pep_seq_mod} will be matched to \code{id = pep_seq}.
 }
 \examples{
 pepMDS(

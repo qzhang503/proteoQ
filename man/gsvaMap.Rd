@@ -7,6 +7,6 @@
 gsvaMap(...)
 }
 \description{
-\code{gsvaMap} is a wrapper function of \code{\link{proteoVolcano}} for
-mapping of protein data by gene sets.
+\code{gsvaMap} is a wrapper of \code{\link{proteoVolcano}} for mapping of
+protein data by gene sets.
 }

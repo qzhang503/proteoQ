@@ -4,7 +4,7 @@
 \alias{proteoHM}
 \alias{pepHM}
 \alias{prnHM}
-\title{Plots heat maps}
+\title{Visualization of heat maps}
 \usage{
 proteoHM(id = gene, col_select = NULL, col_benchmark = NULL,
   scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE,
@@ -22,16 +22,16 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_select} will be
-included in the indicated analysis. At the NULL default, the column key
-\code{Select} will be used.}
+Samples corresponding to non-empty entries under the column key will be
+included in the indicated analysis. At the NULL default, the column key will
+be \code{Select}.}
 
 \item{col_benchmark}{Not used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation for all samples.}
 
-\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
@@ -46,9 +46,9 @@ determined by the name of the calling \code{function} and the value of
 
 \item{filename}{A representative file name to output image(s). By default, it
 will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-automatically determined by the extension of the file name. A \code{.png}
-format will be used at default or an unrecognized file extension.}
+saved via \code{\link[ggplot2]{ggsave}} where the image type will be
+determined by the extension of the file name. A \code{.png} format will be
+used at default or an unrecognized file extension.}
 
 \item{annot_cols}{A character vector of column names in \code{expt_smry.xlsx}.
 Values under the selected columns will be used to color-code sample IDs on the
@@ -61,15 +61,14 @@ top of a \code{EucDist} plot.}
 at a log2 scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a
 log2 scale; the default is +1 \cr \code{x_margin}, the margin in heat
 scales; the default is 0.1 \cr \code{width}, the width of plot \cr
-\code{height}, the height of plot \cr additional arguments inherited from
+\code{height}, the height of plot \cr additional arguments for
 \code{\link[pheatmap]{pheatmap}}.}
 }
 \value{
-Heat map images.
+Heat maps.
 }
 \description{
-\code{proteoHM} produces the heat map visualization of \code{log2FC} for
-proteins or peptides data.
+\code{proteoHM} visualizes the heat maps of protein or peptide \code{log2FC}.
 
 \code{pepHM} is a wrapper function of \code{\link{proteoHM}} for peptide data
 

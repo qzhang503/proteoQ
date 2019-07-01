@@ -4,7 +4,7 @@
 \alias{proteoPCA}
 \alias{pepPCA}
 \alias{prnPCA}
-\title{Visualizes PCA plots}
+\title{Visualization of PCA plots}
 \usage{
 proteoPCA(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
@@ -22,9 +22,9 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_select} will be
-included in the indicated analysis. At the NULL default, the column key
-\code{Select} will be used.}
+Samples corresponding to non-empty entries under the column key will be
+included in the indicated analysis. At the NULL default, the column key will
+be \code{Select}.}
 
 \item{col_group}{Not used.}
 
@@ -66,26 +66,31 @@ determined by the name of the calling \code{function} and the value of
 
 \item{filename}{A representative file name to output image(s). By default, it
 will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-automatically determined by the extension of the file name. A \code{.png}
-format will be used at default or an unrecognized file extension.}
+saved via \code{\link[ggplot2]{ggsave}} where the image type will be
+determined by the extension of the file name. A \code{.png} format will be
+used at default or an unrecognized file extension.}
 
-\item{...}{Parameters inherited from \code{ggsave}: \cr \code{width}, the
-width of plot; \cr \code{height}, the height of plot \cr \code{...}}
+\item{...}{Parameters for \code{ggsave}: \cr \code{width}, the width of plot;
+\cr \code{height}, the height of plot \cr \code{...}}
 }
 \value{
 PCA plots.
 }
 \description{
-\code{protePCA} visualizes the results from principal component analysis
+\code{proteoPCA} visualizes the results from principal component analysis
 (PCA).
 
-\code{pepPCA} is a wrapper function of \code{\link{proteoPCA}} for peptide data
+\code{pepPCA} is a wrapper of \code{\link{proteoPCA}} for peptide data
 
-\code{prnPCA} is a wrapper function of \code{\link{proteoPCA}} for protein data
+\code{prnPCA} is a wrapper of \code{\link{proteoPCA}} for protein data
 }
 \details{
 \code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
+
+The function matches the current \code{id} to those in the latest \code{calls}
+to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
+\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+pep_seq_mod} will be matched to \code{id = pep_seq}.
 }
 \examples{
 pepPCA(

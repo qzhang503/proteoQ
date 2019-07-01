@@ -363,7 +363,9 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
 
 #'NMF analysis
 #'
-#'Analyzes and visualizes the NMF clustering of peptide or protein \code{log2FC}
+#'\code{proteoNMF} analyzes and visualizes the NMF clustering of peptide or
+#'protein \code{log2FC}. Users should never call the method directly, but
+#'instead use the wrappers.
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
@@ -375,16 +377,15 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
 #'  Samples corresponding to non-empty entries under \code{col_group} will be
 #'  used for sample grouping in the indicated analysis. At the NULL default, the
 #'  column key \code{Group} will be used.
-#'@param r Numeric vector; the factorization rank(s) in
-#'  (\code{\link[NMF]{nmf}}).
-#'@param nrun Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).
-#'  The default is c(4:8).
-#'@param task Character string; a switch for different tasks in a functional
+#'@param r Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
+#'  The default is c(4:8)
+#'@param nrun Numeric; the number of runs in \code{\link[NMF]{nmf}}.
+#'@param task Character string; a signature for task dispatch in a function
 #'  factory.
 #'@param filepath Use system default.
 #'@param filename Use system default.
-#'@param ... In \code{anal_} functions: additional arguments inherited from
-#'  \code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments
+#'@param ... In \code{anal_} functions: additional arguments are inherited from
+#'  \code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments are
 #'  inherited from \code{proteoEucDist}.
 #'@return NMF classification and visualization of \code{log2FC}.
 #'@import NMF dplyr rlang ggplot2
@@ -425,13 +426,13 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 
 #'Peptide NMF Classification
 #'
-#'\code{anal_pepNMF} is a wrapper function of \code{\link{proteoNMF}} for the
-#'NMF analysis of peptide data
+#'\code{anal_pepNMF} is a wrapper of \code{\link{proteoNMF}} for the NMF
+#'analysis of peptide data
 #'
 #'@rdname proteoNMF
 #'@examples
 #' library(NMF)
-#' 
+#'
 #' # peptide data NMF at single r(ank)
 #' anal_pepNMF(
 #'   scale_log2r = TRUE,
@@ -442,61 +443,70 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #'@export
 anal_pepNMF <- function (...) {
-	proteoNMF(id = pep_seq, task = anal, ...)
+  err_msg <- "Don't call the function with arguments `id` and/or `task`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
+
+  proteoNMF(id = pep_seq, task = anal, ...)
 }
 
 
 #'Protein NMF Classification
 #'
-#'\code{anal_prnNMF} is a wrapper function of \code{\link{proteoNMF}} for the
-#'NMF analysis of protein data
+#'\code{anal_prnNMF} is a wrapper of \code{\link{proteoNMF}} for the NMF
+#'analysis of protein data
 #'
 #'@rdname proteoNMF
 #' @examples
 #' # protein data NMF at multiple ranks
 #' anal_prnNMF(
-#'   impute_na = FALSE, 
-#'   scale_log2r = TRUE, 
+#'   impute_na = FALSE,
+#'   scale_log2r = TRUE,
 #'   col_group = Group,
-#'   r = c(5:8), 
+#'   r = c(5:8),
 #'   nrun = 200
 #' )
 #'
 #'@export
 anal_prnNMF <- function (...) {
-	proteoNMF(id = gene, task = anal, ...)
+  err_msg <- "Don't call the function with arguments `id` and/or `task`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
+
+  proteoNMF(id = gene, task = anal, ...)
 }
 
 
 #'NMF consensus
 #'
-#'\code{plot_prnNMFCon} is a wrapper function of \code{\link{proteoNMF}} for the
+#'\code{plot_prnNMFCon} is a wrapper of \code{\link{proteoNMF}} for the
 #'visualization of the consensus heat map of protein data
 #'
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
 #' @examples
-#' 
+#'
 #' # protein consensus heat maps at specific ranks
 #' plot_prnNMFCon(
-#'   r = c(3, 5), 
-#'   annot_cols = c("Color", "Alpha", "Shape"), 
-#'   annot_colnames = c("Lab", "Batch", "WHIM"), 
-#'   width = 10, 
+#'   r = c(3, 5),
+#'   annot_cols = c("Color", "Alpha", "Shape"),
+#'   annot_colnames = c("Lab", "Batch", "WHIM"),
+#'   width = 10,
 #'   height = 10
 #' )
 #'
-#' # protein consensus heat maps at all ranks
+#' # protein consensus heat maps at all available ranks
 #' plot_prnNMFCon(
-#'   impute_na = FALSE, 
-#'   annot_cols = c("Color", "Alpha", "Shape"), 
-#'   annot_colnames = c("Lab", "Batch", "WHIM"), 
-#'   width = 10, 
+#'   impute_na = FALSE,
+#'   annot_cols = c("Color", "Alpha", "Shape"),
+#'   annot_colnames = c("Lab", "Batch", "WHIM"),
+#'   width = 10,
 #'   height = 10
 #' )
-#' 
+#'
 #'@export
 plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
+  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
+
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
   
@@ -506,23 +516,26 @@ plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 
 #'NMF coefficients
 #'
-#'\code{plot_prnNMFCoef} is a wrapper function of \code{\link{proteoNMF}} for the
+#'\code{plot_prnNMFCoef} is a wrapper of \code{\link{proteoNMF}} for the
 #'visualization of the coefficient heat map of protein data
 #'
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
 #' @examples
-#' 
+#'
 #' # protein coefficient heat maps at all ranks
 #' plot_prnNMFCoef(
-#'   annot_cols = c("Color", "Alpha", "Shape"), 
-#'   annot_colnames = c("Lab", "Batch", "WHIM"), 
-#'   width = 10, 
+#'   annot_cols = c("Color", "Alpha", "Shape"),
+#'   annot_colnames = c("Lab", "Batch", "WHIM"),
+#'   width = 10,
 #'   height = 10
 #' )
 #'
 #'@export
 plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
+  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
+
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
 
@@ -532,13 +545,13 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 
 #'NMF coefficients
 #'
-#'\code{plot_metaNMF} is a wrapper function of \code{\link{proteoNMF}} for the
+#'\code{plot_metaNMF} is a wrapper of \code{\link{proteoNMF}} for the
 #'visualization of the metagene heat maps of protein data
 #'
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
 #' @examples
-#' # metagenes heat maps at all ranks; additional arguments are from `pheatmap`
+#' # metagenes heat maps at all available ranks; additional arguments are from `pheatmap`
 #' plot_metaNMF(
 #'   annot_cols = c("Color", "Alpha", "Shape"),
 #'   annot_colnames = c("Lab", "Batch", "WHIM"),
@@ -549,6 +562,9 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'
 #'@export
 plot_metaNMF <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
+  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
+
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
 

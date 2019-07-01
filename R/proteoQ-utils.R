@@ -412,19 +412,15 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 }
 
 
-#'Imputes NA values
+#'Imputation of NA values
 #'
-#'@param id Character string to indicate the type of data. Peptide data will be
-#'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
-#'  \code{id = prot_acc} or \code{gene}.
-#'@param ... Parameters that will be passed to \code{\link[mice]{mice}}
+#'
+#'\code{imputeNA} imputes NA \code{log2FC} values in protein or peptide data.
+#'
+#'@inheritParams proteoHist
+#'@param ... Parameters for \code{\link[mice]{mice}}
 #'@return \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
 #'  for protein data.
-#' @examples
-#' imputeNA(id = gene, m = 5, maxit = 5)
-#'
-#' \dontrun{
-#' }
 #'@import dplyr purrr rlang mice
 #'@importFrom magrittr %>%
 #'@export
@@ -522,18 +518,49 @@ imputeNA <- function (id, ...) {
 }
 
 
-#'Imputes NA values for peptide data
-#'@seealso \code{\link{imputeNA}} for parameters
+#'Impute NA values for peptide data
+#'
+#'\code{pepImp} is a wrapper of \code{\link{imputeNA}} for peptide data
+#'
+#'@rdname imputeNA
+#'
+#' @examples
+#' \dontrun{
+#' pepImp(
+#'   m = 3,
+#'   maxit = 3,
+#' )
+#' }
+#'
 #'@export
 pepImp <- function (...) {
-	imputeNA(id = pep_seq, ...)
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  imputeNA(id = pep_seq, ...)
 }
 
+
 #'Impute NA values for protein data
-#'@seealso \code{\link{imputeNA}} for parameters
+#'
+#'\code{prnImp} is a wrapper of \code{\link{imputeNA}} for protein data
+#'
+#'@rdname imputeNA
+#'
+#' @examples
+#' \dontrun{
+#' prnImp(
+#'   m = 5,
+#'   maxit = 5,
+#' )
+#' }
+#'
 #'@export
 prnImp <- function (...) {
-	imputeNA(id = gene, ...)
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  imputeNA(id = gene, ...)
 }
 
 

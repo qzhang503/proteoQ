@@ -6,7 +6,7 @@
 \usage{
 gsVolcano(df, contrast_groups, gsea_res, gsea_key = "term", gsets,
   volcano_theme, filepath = NULL, filename = NULL, adjP = FALSE,
-  show_labels = TRUE, show_sig = "none", pval_cutoff = 1e-06,
+  show_labels = TRUE, show_sig = "none", pval_cutoff = 0.000001,
   logFC_cutoff = log2(1.2), ...)
 }
 \description{
