@@ -221,10 +221,11 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 }
 
 
-#'Clusters of trends
+#'Clustering of data trends
 #'
-#'Analyzes and visualizes the clusters of trends of peptide or protein
-#'\code{log2FC}
+#'\code{proteoTrend} analyzes and visualizes the trends of peptide or protein
+#'\code{log2FC}. Users should never call the method directly, but instead use
+#'the wrappers.
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
@@ -291,8 +292,8 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 
 #'Trend analysis of protein \code{log2FC}
 #'
-#'\code{anal_prnTrend} is a wrapper function of \code{\link{proteoTrend}} for the
-#'trend analysis of protein data
+#'\code{anal_prnTrend} is a wrapper of \code{\link{proteoTrend}} for the trend
+#'analysis of protein data
 #'
 #'@rdname proteoTrend
 #'
@@ -305,13 +306,16 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #'@export
 anal_prnTrend <- function (...) {
-	proteoTrend(id = gene, anal_type = Trend, task = anal, ...)
+  err_msg <- "Don't call the function with arguments `id`, `anal_type` or `task`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
+  
+  proteoTrend(id = gene, anal_type = Trend, task = anal, ...)
 }
 
 
 #'Trend visualization
 #'
-#'\code{plot_prnTrend} is a wrapper function of \code{\link{proteoTrend}} for the
+#'\code{plot_prnTrend} is a wrapper of \code{\link{proteoTrend}} for the
 #'visualization of the trends in protein data
 #'
 #'@rdname proteoTrend
@@ -325,6 +329,9 @@ anal_prnTrend <- function (...) {
 #'
 #'@export
 plot_prnTrend <- function (...) {
+  err_msg <- "Don't call the function with arguments `id`, `anal_type` or `task`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
+  
   proteoTrend(id = gene, anal_type = Trend, task = plot, ...)
 }
 

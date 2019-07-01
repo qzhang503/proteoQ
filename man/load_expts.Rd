@@ -64,13 +64,14 @@ experiments
  sample annotation by edge color\cr Shape \tab Aesthetic labels for sample
  annotation by shape\cr Size \tab Aesthetic labels for sample annotation by
  size \cr Alpha \tab Aesthetic labels for sample annotation by transparency
- \cr Term \tab Categorial terms for statistical modeling. \cr Duplicate \tab
- Indicators of duplicated samples for corrections in statistical significance
  \cr Benchmark \tab Indicators of benchmark sample (groups) for use in heat
  map visualizations.\cr}
 
- \strong{Optional open column} \cr See the package vignette for examples of
- open columns defined by users.
+ \tabular{ll}{ \strong{Exemplary optional open column}   \tab
+ \strong{Descrption}\cr Term \tab Categorial terms for statistical modeling.
+ \cr Duplicate \tab Indicators of duplicated samples for corrections in
+ statistical significance \cr Peptide_Yield \tab Yields of peptides in sample
+ handling \cr}
 }
 
 \section{\code{frac_smry.xlsx}}{

@@ -4,12 +4,12 @@
 \alias{proteoHist}
 \alias{pepHist}
 \alias{prnHist}
-\title{Visualizes histograms}
+\title{Histogram visualization}
 \usage{
 proteoHist(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, scale_log2r = FALSE, pep_pattern = "zzz",
-  show_curves = TRUE, show_vline = TRUE, new_fit = FALSE,
-  df = NULL, filepath = NULL, filename = NULL, ...)
+  show_curves = TRUE, show_vline = TRUE, df = NULL,
+  filepath = NULL, filename = NULL, ...)
 
 pepHist(...)
 
@@ -21,9 +21,9 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_select} will be
-included in the indicated analysis. At the NULL default, the column key
-\code{Select} will be used.}
+Samples corresponding to non-empty entries under the column key will be
+included in the indicated analysis. At the NULL default, the column key will
+be \code{Select}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation for all samples.}
@@ -38,8 +38,6 @@ with N-terminal acetylation.}
 
 \item{show_vline}{Logical; if TRUE, shows the vertical lines at \code{x = 0}.}
 
-\item{new_fit}{Not currently used.}
-
 \item{df}{The name of input data file. By default, it will be determined by
 the value of \code{id}.}
 
@@ -49,9 +47,9 @@ determined by the name of the calling \code{function} and the value of
 
 \item{filename}{A representative file name to output image(s). By default, it
 will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-automatically determined by the extension of the file name. A \code{.png}
-format will be used at default or an unrecognized file extension.}
+saved via \code{\link[ggplot2]{ggsave}} where the image type will be
+determined by the extension of the file name. A \code{.png} format will be
+used at default or an unrecognized file extension.}
 
 \item{...}{Additional parameters for plotting: \cr \code{xmin}, the minimum
 \eqn{x} at a log2 scale; the default is -2. \cr \code{xmax}, the maximum
@@ -67,14 +65,11 @@ The histograms of \code{log2FC} under
  \code{~\\dat_dir\\Protein\\Histogram}.
 }
 \description{
-\code{proteoHist} prepares the histogram visualization of \code{log2FC} for
-proteins or peptides data.
+\code{proteoHist} plots the histograms of protein or peptide \code{log2FC}.
 
-\code{pepHist} is a wrapper function of \code{\link{proteoHist}} for peptide
-data
+\code{pepHist} is a wrapper of \code{\link{proteoHist}} for peptide data
 
-\code{prnHist} is a wrapper function of \code{\link{proteoHist}} for protein
-data
+\code{prnHist} is a wrapper of \code{\link{proteoHist}} for protein data
 }
 \details{
 In the histograms, the \code{log2FC} under each TMT channel are color-coded by

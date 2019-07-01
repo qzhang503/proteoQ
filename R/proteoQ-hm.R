@@ -294,10 +294,9 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 }
 
 
-#'Plots heat maps
+#'Visualization of heat maps
 #'
-#'\code{proteoHM} produces the heat map visualization of \code{log2FC} for
-#'proteins or peptides data.
+#'\code{proteoHM} visualizes the heat maps of protein or peptide \code{log2FC}.
 #'
 #'Data columns with complete missing values will be removed prior to
 #'hierarchical column clustering. Data rows without non-missing pairs will
@@ -319,7 +318,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'
 #'@inheritParams  proteoEucDist
 #'@param  col_benchmark Not used.
-#'@param impute_na Logical; if TRUE, data will the imputation of missing values
+#'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used.
 #'@param complete_cases Logical; if TRUE, only cases that are complete with no
 #'  missing values will be used.
@@ -327,9 +326,9 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'  at a log2 scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a
 #'  log2 scale; the default is +1 \cr \code{x_margin}, the margin in heat
 #'  scales; the default is 0.1 \cr \code{width}, the width of plot \cr
-#'  \code{height}, the height of plot \cr additional arguments inherited from
+#'  \code{height}, the height of plot \cr additional arguments for
 #'  \code{\link[pheatmap]{pheatmap}}.
-#'@return Heat map images.
+#'@return Heat maps.
 #'
 #' @examples
 #'prnHM(
@@ -417,6 +416,9 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
 #'
 #'@export
 pepHM <- function (...) {
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
   proteoHM(id = pep_seq, ...)
 }
 
@@ -429,6 +431,9 @@ pepHM <- function (...) {
 #'
 #'@export
 prnHM <- function (...) {
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
   proteoHM(id = gene, ...)
 }
 

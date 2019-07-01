@@ -303,7 +303,7 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath, xmin, xmax, ...) 
 
 #'Correlation Plots
 #'
-#'\code{proteoCorrplot} produces correlation plots for both \code{log2FC} and
+#'\code{proteoCorrplot} plots Pearson correlation for both \code{log2FC} and
 #'reporter-ion \code{intensities}.
 #'
 #'The function matches the current \code{id} to those in the latest \code{calls}
@@ -322,8 +322,8 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath, xmin, xmax, ...) 
 #'@param max_int The maximum intensity at \code{log10} scale in display.
 #'@param min_log2r The minimum \code{log2FC} in display.
 #'@param max_log2r The maximum \code{log2FC} in display.
-#'@param ... Parameters inherited from \code{ggsave}: \cr \code{width}, the
-#'  width of plot; \cr \code{height}, the height of plot \cr \code{...}
+#'@param ... Parameters for \code{ggsave}: \cr \code{width}, the width of plot;
+#'  \cr \code{height}, the height of plot \cr \code{...}
 #'@return Correlation plots.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -358,8 +358,7 @@ proteoCorrplot <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene")
 
 #'Correlation plots of peptide data
 #'
-#'\code{pepCorr} is a wrapper function of \code{\link{proteoCorrplot}} for
-#'peptide data
+#'\code{pepCorr} is a wrapper of \code{\link{proteoCorrplot}} for peptide data
 #'
 #'@rdname proteoCorrplot
 #'
@@ -375,13 +374,15 @@ proteoCorrplot <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene")
 #'
 #'@export
 pepCorr <- function (...) {
-	proteoCorrplot(id = pep_seq, ...)
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  proteoCorrplot(id = pep_seq, ...)
 }
 
 #'Correlation plots of protein data
 #'
-#'\code{prnCorr} is a wrapper function of \code{\link{proteoCorrplot}} for
-#'protein data
+#'\code{prnCorr} is a wrapper of \code{\link{proteoCorrplot}} for protein data
 #'
 #'@rdname proteoCorrplot
 #'
@@ -392,5 +393,8 @@ pepCorr <- function (...) {
 #'
 #'@export
 prnCorr <- function (...) {
-	proteoCorrplot(id = gene, ...)
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  proteoCorrplot(id = gene, ...)
 }

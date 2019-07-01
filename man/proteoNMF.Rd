@@ -31,9 +31,9 @@ used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_select} will be
-included in the indicated analysis. At the NULL default, the column key
-\code{Select} will be used.}
+Samples corresponding to non-empty entries under the column key will be
+included in the indicated analysis. At the NULL default, the column key will
+be \code{Select}.}
 
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be
@@ -43,7 +43,7 @@ column key \code{Group} will be used.}
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation for all samples.}
 
-\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
@@ -56,17 +56,16 @@ the value of \code{id}.}
 
 \item{filename}{Use system default.}
 
-\item{task}{Character string; a switch for different tasks in a functional
+\item{task}{Character string; a signature for task dispatch in a function
 factory.}
 
-\item{r}{Numeric vector; the factorization rank(s) in
-(\code{\link[NMF]{nmf}}).}
+\item{r}{Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
+The default is c(4:8)}
 
-\item{nrun}{Numeric; the number of runs to perform (\code{\link[NMF]{nmf}}).
-The default is c(4:8).}
+\item{nrun}{Numeric; the number of runs in \code{\link[NMF]{nmf}}.}
 
-\item{...}{In \code{anal_} functions: additional arguments inherited from
-\code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments
+\item{...}{In \code{anal_} functions: additional arguments are inherited from
+\code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments are
 inherited from \code{proteoEucDist}.}
 
 \item{annot_cols}{A character vector of column names in \code{expt_smry.xlsx}.
@@ -80,21 +79,23 @@ top of a \code{EucDist} plot.}
 NMF classification and visualization of \code{log2FC}.
 }
 \description{
-Analyzes and visualizes the NMF clustering of peptide or protein \code{log2FC}
+\code{proteoNMF} analyzes and visualizes the NMF clustering of peptide or
+protein \code{log2FC}. Users should never call the method directly, but
+instead use the wrappers.
 
-\code{anal_pepNMF} is a wrapper function of \code{\link{proteoNMF}} for the
-NMF analysis of peptide data
+\code{anal_pepNMF} is a wrapper of \code{\link{proteoNMF}} for the NMF
+analysis of peptide data
 
-\code{anal_prnNMF} is a wrapper function of \code{\link{proteoNMF}} for the
-NMF analysis of protein data
+\code{anal_prnNMF} is a wrapper of \code{\link{proteoNMF}} for the NMF
+analysis of protein data
 
-\code{plot_prnNMFCon} is a wrapper function of \code{\link{proteoNMF}} for the
+\code{plot_prnNMFCon} is a wrapper of \code{\link{proteoNMF}} for the
 visualization of the consensus heat map of protein data
 
-\code{plot_prnNMFCoef} is a wrapper function of \code{\link{proteoNMF}} for the
+\code{plot_prnNMFCoef} is a wrapper of \code{\link{proteoNMF}} for the
 visualization of the coefficient heat map of protein data
 
-\code{plot_metaNMF} is a wrapper function of \code{\link{proteoNMF}} for the
+\code{plot_metaNMF} is a wrapper of \code{\link{proteoNMF}} for the
 visualization of the metagene heat maps of protein data
 }
 \details{
@@ -114,42 +115,42 @@ anal_pepNMF(
 
 # protein data NMF at multiple ranks
 anal_prnNMF(
-  impute_na = FALSE, 
-  scale_log2r = TRUE, 
+  impute_na = FALSE,
+  scale_log2r = TRUE,
   col_group = Group,
-  r = c(5:8), 
+  r = c(5:8),
   nrun = 200
 )
 
 
 # protein consensus heat maps at specific ranks
 plot_prnNMFCon(
-  r = c(3, 5), 
-  annot_cols = c("Color", "Alpha", "Shape"), 
-  annot_colnames = c("Lab", "Batch", "WHIM"), 
-  width = 10, 
+  r = c(3, 5),
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
   height = 10
 )
 
-# protein consensus heat maps at all ranks
+# protein consensus heat maps at all available ranks
 plot_prnNMFCon(
-  impute_na = FALSE, 
-  annot_cols = c("Color", "Alpha", "Shape"), 
-  annot_colnames = c("Lab", "Batch", "WHIM"), 
-  width = 10, 
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
   height = 10
 )
 
 
 # protein coefficient heat maps at all ranks
 plot_prnNMFCoef(
-  annot_cols = c("Color", "Alpha", "Shape"), 
-  annot_colnames = c("Lab", "Batch", "WHIM"), 
-  width = 10, 
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
   height = 10
 )
 
-# metagenes heat maps at all ranks; additional arguments are from `pheatmap`
+# metagenes heat maps at all available ranks; additional arguments are from `pheatmap`
 plot_metaNMF(
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),

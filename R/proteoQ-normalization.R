@@ -183,7 +183,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 
 		# separate fits of Z_log2_r for curve parameters only...
 		if (!file.exists(file.path(filepath, "MGKernel_params_Z.txt"))) {
-		  warning("First-pass normalization for the complete data set.")
+		  # warning("First-pass normalization for the complete data set.")
 		  
 		  params_z <- df[, nm_log2r_z] %>%
 		    `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 

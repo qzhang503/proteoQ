@@ -24,7 +24,7 @@ the value of \code{id}.}
 
 \item{filename}{Use system default.}
 
-\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no

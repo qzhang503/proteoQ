@@ -44,7 +44,7 @@ experiments.
 \details{
 End users will export \code{PSM} data from
 \code{\href{https://http://www.matrixscience.com/}{Mascot}} at a \code{.csv}
-format. The header information should be included during the \code{csv}
+format. The header information should be included during the \code{.csv}
 export. The \code{.csv} file name(s) should be defaulted by
 \code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with the
 letter \code{'F'}, followed by a six-digit number without space \code{(e.g.,
@@ -57,9 +57,9 @@ TMT set or to the row means if no \code{reference(s)} are present. Values
 under columns \code{N_log2_R...} are \code{log2_R...} with median-centering
 alignment. Values under columns \code{N_I...} are normalized
 \code{reporter-ion intensity}. Character strings under \code{pep_seq_mod}
-denote peptide sequences with applicable variable modifications. See
-\code{\link{normPrn}} for more detailed description of column keys and data
-normalization.
+denote peptide sequences with applicable variable modifications.
+
+See \code{\link{normPrn}} for the description of column keys in the output.
 }
 \examples{
 \dontrun{

@@ -4,7 +4,7 @@
 \alias{proteoTrend}
 \alias{anal_prnTrend}
 \alias{plot_prnTrend}
-\title{Clusters of trends}
+\title{Clustering of data trends}
 \usage{
 proteoTrend(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   task = "anal", col_select = NULL, col_group = NULL,
@@ -21,13 +21,13 @@ plot_prnTrend(...)
 used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
-\item{task}{Character string; a switch for different tasks in a functional
+\item{task}{Character string; a signature for task dispatch in a function
 factory.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_select} will be
-included in the indicated analysis. At the NULL default, the column key
-\code{Select} will be used.}
+Samples corresponding to non-empty entries under the column key will be
+included in the indicated analysis. At the NULL default, the column key will
+be \code{Select}.}
 
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be
@@ -39,7 +39,7 @@ Numeric values under which will be used for the left-to-right arrangement of
 samples in plots. At the NULL default, the column key \code{Order} will be
 used.}
 
-\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
@@ -69,13 +69,14 @@ the height of plot.}
 Trend classification and visualization of \code{log2FC}.
 }
 \description{
-Analyzes and visualizes the clusters of trends of peptide or protein
-\code{log2FC}
+\code{proteoTrend} analyzes and visualizes the trends of peptide or protein
+\code{log2FC}. Users should never call the method directly, but instead use
+the wrappers.
 
-\code{anal_prnTrend} is a wrapper function of \code{\link{proteoTrend}} for the
-trend analysis of protein data
+\code{anal_prnTrend} is a wrapper of \code{\link{proteoTrend}} for the trend
+analysis of protein data
 
-\code{plot_prnTrend} is a wrapper function of \code{\link{proteoTrend}} for the
+\code{plot_prnTrend} is a wrapper of \code{\link{proteoTrend}} for the
 visualization of the trends in protein data
 }
 \details{

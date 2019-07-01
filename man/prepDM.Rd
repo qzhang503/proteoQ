@@ -20,11 +20,10 @@ of standard deviation for all samples.}
 \item{sub_grp}{Numeric.  A list of sample IDs that will be used in subsequent
 analysis.}
 
-\item{anal_type}{The type of analysis for method dispatch in functional
-factories; Values include \code{anal_type = c("MDS", "PCA", "EucDist",
-"MA", "Heatmap", "Histogram", "Corrplot", "Trend", "NMF", "Model", ...)}.
-Most likely users will ignore the argument as its value is pre-set in
-wrapper functions.}
+\item{anal_type}{Character string; the type of analysis that are preset for
+method dispatch in function factories; Values include \code{anal_type =
+c("MDS", "PCA", "EucDist", "MA", "Heatmap", "Histogram", "Corrplot",
+"Trend", "NMF", "Model", ...)}.}
 }
 \value{
 A data frame tailored for subsequent analysis.

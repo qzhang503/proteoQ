@@ -7,7 +7,7 @@
 prnGSVA(id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
   filename = NULL, impute_na = TRUE, complete_cases = FALSE,
   lm_method = "limma", gset_nm = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), ...)
+  pval_cutoff = 0.0001, logFC_cutoff = log2(1.1), ...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
@@ -24,7 +24,7 @@ the value of \code{id}.}
 
 \item{filename}{Use system default.}
 
-\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
@@ -36,14 +36,15 @@ significance assessment of GSVA enrichment scores}
 \item{gset_nm}{Character vector of the name(s) of gene sets. The currently
 available data sets include c("go_sets", "kegg_sets", "c2_msig").}
 
-\item{var_cutoff}{The cut-off in the variances of \code{log2FC}. Entries with
-variances smaller than the threshold will be removed from linear modeling.}
+\item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.
+Entries with variances smaller than the threshold will be removed from
+linear modeling.}
 
-\item{pval_cutoff}{The cut-off in significance \code{pVal}. Entries with
-\code{pVals} smaller than the threshold will be removed from multiple test
-corrections.}
+\item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
+with \code{pVals} smaller than the threshold will be removed from multiple
+test corrections.}
 
-\item{logFC_cutoff}{The cut-off in \code{log2FC}. Entries with \code{log2FC}
+\item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with \code{log2FC}
 smaller than the threshold will be removed from multiple test corrections.}
 
 \item{...}{Parameters inherited from \code{\link[pheatmap]{pheatmap}}}

@@ -12,10 +12,10 @@
 #'\tab Protein gene name \cr kin_attr       \tab Optional; the attribute of
 #'proteins being kinases \cr kin_class      \tab Optional; the classes of
 #'kinases, e.g., TK, TKL... \cr kin_order      \tab Optional; the order of
-#'"kin_class" using the \code{\href{http://kinase.com/human/kinome/}{kinase tree
-#'diagram}} \cr n_pep          \tab The number of significant peptide sequences
-#'matched to a proposed protein \cr n_psm \tab The number of significant MS/MS
-#'queries matched to a peptide sequence \cr pep_seq_mod    \tab One-letter
+#'"kin_class" from the \code{\href{http://kinase.com/human/kinome/}{kinase tree
+#'diagram}} \cr n_pep \tab The number of significant peptide sequences matched
+#'to a proposed protein \cr n_psm \tab The number of significant MS/MS queries
+#'matched to a peptide sequence \cr pep_seq_mod    \tab One-letter
 #'representation of peptide sequences: amino acid residue(s) with variable
 #'modifications are in the lower cases; the acetylations of protein N-terminals
 #'indicated by '_' and the flanking residues on the N- or C-terminal side of
@@ -28,30 +28,31 @@
 #'accession number}} \cr uniprot_id     \tab
 #'\code{\href{https://www.uniprot.org/help/entry_name}{Protein UniProt entry
 #'name}} \cr I... (...)     \tab Reporter-ion intensity calculated from the
-#'descriptive statistics in method_\code{psm_pep} for indicated samples \cr
-#'N_I... (...)   \tab Normalized \code{I... (...)}. The calibration factors for
-#'median centerring of \code{log2FC} are used to scale the reporter-ion
-#'intensity \cr log2_R (...)   \tab \code{log2FC} relative to reference
-#'materials for indicated samples \cr N_log2_R (...) \tab Aligned \code{log2_R
-#'(...)} according to method_align without scaling normalization \cr Z_log2_R
-#'(...) \tab \code{N_log2_R (...)} with scaling normalization \cr }
+#'descriptive statistics in \code{mothod_psm_pep} or \code{mothod_pep_prn} for
+#'indicated samples \cr N_I... (...)   \tab Normalized \code{I... (...)}. The
+#'calibration factors for the alignment of \code{log2FC} are used to scale the
+#'reporter-ion intensity \cr log2_R (...)   \tab \code{log2FC} relative to
+#'reference materials for indicated samples \cr N_log2_R (...) \tab Aligned
+#'\code{log2_R (...)} according to \code{method_align} without scaling
+#'normalization \cr Z_log2_R (...) \tab \code{N_log2_R (...)} with scaling
+#'normalization \cr }
 #'
-#'@param id The variable to summarise peptides into proteins. The option
-#'  \code{"prot_acc"} corresponds to the summarisation by the accession numbers
-#'  or entry names of proteins The option \code{"gene"} corresponds to the
-#'  summarisation by the gene names of proteins. At \code{id = gene}, data under
-#'  the same gene name but different acccesssion numbers or entry names will be
-#'  summarised into one entry.
-#'@param method_pep_prn The method to summarise the \code{log2FC} and the
-#'  \code{intensity} of peptides by protein entries. The descriptive statistics
-#'  includes \code{c("mean", "median", "top.3", "weighted.mean")}. The
-#'  representative \code{log10-intensity} of reporter ions at the peptide levels
-#'  (from \code{\link{normPep}}) will be the weigth when summarising \code{log2FC}
-#'  with "top.3" or "weighted.mean".
+#'@param id Character string; the variable to summarise peptides into proteins.
+#'  The option \code{prot_acc} corresponds to the summarisation by the accession
+#'  numbers or entry names of proteins. The option \code{gene} corresponds to
+#'  the summarisation by the gene names of proteins. At \code{id = gene}, data
+#'  under the same gene name but different acccesssion numbers or entry names
+#'  will be summarised into one entry.
+#'@param method_pep_prn Character string; the method to summarise the
+#'  \code{log2FC} and the \code{intensity} of peptides by protein entries. The
+#'  descriptive statistics includes \code{c("mean", "median", "top.3",
+#'  "weighted.mean")}. The representative \code{log10-intensity} of reporter
+#'  ions at the peptide levels (from \code{\link{normPep}}) will be the weigth
+#'  when summarising \code{log2FC} with \code{top.3} or \code{weighted.mean}.
 #'@inheritParams normPep
-#'@param fasta The file name with prepended directory path to the fasta database
-#'  being used in MS/MS ion search. If not specified, a pre-compiled system file
-#'  will be used.
+#'@param fasta Character string; the file name with prepended directory path to
+#'  the \code{fasta} database being used in MS/MS ion search. If not specified,
+#'  a pre-compiled system file will be used.
 #'@inheritParams mixtools::normalmixEM
 #'@family aggregate functions
 #'@seealso \code{\link{normPSM}} for PSMs and \code{\link{normPep}} for
@@ -59,20 +60,19 @@
 #'@return The primary output in "\code{~\\dat_dir\\Protein\\Protein.txt}".
 #'
 #' @examples
-#' 	normPrn(
-#' 		id = gene,
-#' 		method_pep_prn = median,
-#' 		method_align = MGKernel,
-#' 		range_log2r = c(5, 95),
-#' 		range_int = c(5, 95),
-#' 		n_comp = 2,
-#' 		seed = 749662,
-#' 		fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta",
-#' 		maxit = 200,
-#' 		epsilon = 1e-05
-#' 	)
-#'
 #' \dontrun{
+#'normPrn(
+#'  id = gene,
+#'  method_pep_prn = median,
+#'  method_align = MGKernel,
+#'  range_log2r = c(5, 95),
+#'  range_int = c(5, 95),
+#'  n_comp = 2,
+#'  seed = 749662,
+#'  fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta",
+#'  maxit = 200,
+#'  epsilon = 1e-05
+#')
 #' }
 #'@import stringr dplyr tidyr purrr data.table rlang mixtools
 #'@importFrom magrittr %>%
@@ -246,7 +246,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 		# add prot_cover
 		df <- do.call(rbind, 
-		                    lapply(list.files(path = file.path(dat_dir, "PSM"), 
+		                    lapply(list.files(path = file.path(dat_dir, "PSM\\cache"), 
 		                                      pattern = "Clean\\.txt$", full.names = TRUE), 
 		                           read.csv, 
 		                           check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")) %>% 

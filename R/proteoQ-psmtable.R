@@ -1,3 +1,30 @@
+theme_psm_violin <- theme_bw() +
+	theme(
+	axis.text.x  = element_text(angle = 90, vjust = 0.5, size = 24),
+	axis.ticks.x  = element_blank(),
+	axis.text.y  = element_text(angle = 0, vjust = 0.5, size = 24),
+	axis.title.x = element_text(colour = "black", size = 24),
+	axis.title.y = element_text(colour = "black", size = 24),
+	plot.title = element_text(colour = "black", size  =24, hjust = .5, vjust = .5),
+
+	strip.text.x = element_text(size = 18, colour = "black", angle = 0),
+	strip.text.y = element_text(size = 18, colour = "black", angle = 90),
+
+	panel.grid.major.x = element_blank(),
+	panel.grid.minor.x = element_blank(),
+	panel.grid.major.y = element_blank(),
+	panel.grid.minor.y = element_blank(),
+
+	legend.key = element_rect(colour = NA, fill = 'transparent'),
+	legend.background = element_rect(colour = NA,  fill = "transparent"),
+	legend.position = "none",
+	legend.title = element_blank(),
+	legend.text = element_text(colour = "black", size = 18),
+	legend.text.align = 0,
+	legend.box = NULL
+)
+
+
 #' Removes PSM headers
 #'
 #' \code{rmPSMHeaders} removes the header of PSM from
@@ -12,6 +39,7 @@
 #' @export
 rmPSMHeaders <- function () {
 	dir.create(file.path(dat_dir, "PSM\\Violin"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM\\cache"), recursive = TRUE, showWarnings = FALSE)
 
 	old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
@@ -26,7 +54,7 @@ rmPSMHeaders <- function () {
 	filelist = list.files(path = file.path(dat_dir), pattern = "^F[0-9]{6}\\.csv$")
 
 	if(purrr::is_empty(filelist))
-	  stop("No PSM files(s) with .csv extension are available under ", dat_dir, call. = TRUE)
+	  stop("Can't find PSM files(s) with `.csv` extension under ", dat_dir, call. = TRUE)
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	TMT_plex <- TMT_plex(label_scheme)
@@ -39,7 +67,7 @@ rmPSMHeaders <- function () {
 		temp_header <- gsub("\"", "", temp_header, fixed = TRUE)
 
 		output_prefix <- gsub(".csv$", "", filelist)
-		write.table(temp_header, file.path(dat_dir, "PSM",
+		write.table(temp_header, file.path(dat_dir, "PSM\\cache",
 		            paste0(output_prefix, "_header", ".txt")),
 		            sep = "\t", col.names = FALSE, row.names = FALSE)
 		rm(temp_header)
@@ -57,7 +85,7 @@ rmPSMHeaders <- function () {
 			temp[1] <- paste0(temp[1], paste(rep(",", 22), collapse = ''))
 		}
 
-		writeLines(temp, file.path(dat_dir, "PSM",
+		writeLines(temp, file.path(dat_dir, "PSM\\cache",
 		                           paste0(output_prefix, "_hdr_rm.csv")))
 		rm(temp)
 	}
@@ -83,7 +111,7 @@ extractRAW <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE)
   filelist = list.files(path = file.path(dat_dir), pattern = "^F[0-9]{6}\\.csv$")
 
   if(purrr::is_empty(filelist))
-    stop("No PSM files(s) with .csv extension are available under ", dat_dir, call. = TRUE)
+    stop("Can't find PSM files(s) with `.csv` extension under ", dat_dir, call. = TRUE)
   
   output_prefix <- gsub(".csv$", "", filelist)
   
@@ -202,7 +230,7 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 
 	TMT_plex <- TMT_plex(label_scheme_full)
 
-  filelist = list.files(path = file.path(dat_dir, "PSM"),
+  filelist = list.files(path = file.path(dat_dir, "PSM\\cache"),
                         pattern = "^F[0-9]{6}\\_hdr_rm.csv$")
 
 	if (length(filelist) == 0)
@@ -212,7 +240,7 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 
   df <- do.call(rbind,
 		lapply(
-			list.files(path = file.path(dat_dir, "PSM"),
+			list.files(path = file.path(dat_dir, "PSM\\cache"),
 			pattern = paste0("F[0-9]{6}", "_hdr_rm.csv"),
 			full.names = TRUE), read.delim, sep = ',',
 			check.names = FALSE, header = TRUE,
@@ -292,13 +320,11 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
       parse_acc(df, .)
   }
 
-
+  # ---------------
   label_scheme_full$Accession_Type <- prn_acc
   label_scheme$Accession_Type <- prn_acc
   save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.Rdata"))
   save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
-  # load(file = file.path(dat_dir, "label_scheme_full.Rdata"), envir = .GlobalEnv)
-  # load(file = file.path(dat_dir, "label_scheme.Rdata"), envir = .GlobalEnv)
 
   # split data into subsets for each TMT plex and LC/MS
 	fraction_scheme_temp <- fraction_scheme %>%
@@ -381,36 +407,10 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 
 		df_split[[i]] <- df_split[[i]] %>% dplyr::rename(raw_file = RAW_File)
 
-		write.csv(df_split[[i]], file.path(dat_dir, "PSM", out_fn), row.names = FALSE)
+		write.csv(df_split[[i]], file.path(dat_dir, "PSM\\cache", out_fn), row.names = FALSE)
 
 		if (plot_violins & TMT_plex > 0) {
 			dir.create(file.path(dat_dir, "PSM\\Violin\\bf_olm"), recursive = TRUE, showWarnings = FALSE)
-
-			my_theme <- theme_bw() +
-				theme(
-				axis.text.x  = element_text(angle = 90, vjust = 0.5, size = 24),
-				axis.ticks.x  = element_blank(),
-				axis.text.y  = element_text(angle = 0, vjust = 0.5, size = 24),
-				axis.title.x = element_text(colour = "black", size = 24),
-				axis.title.y = element_text(colour = "black", size = 24),
-				plot.title = element_text(colour = "black", size  =24, hjust = .5, vjust = .5),
-
-				strip.text.x = element_text(size = 18, colour = "black", angle = 0),
-				strip.text.y = element_text(size = 18, colour = "black", angle = 90),
-
-				panel.grid.major.x = element_blank(),
-				panel.grid.minor.x = element_blank(),
-				panel.grid.major.y = element_blank(),
-				panel.grid.minor.y = element_blank(),
-
-				legend.key = element_rect(colour = NA, fill = 'transparent'),
-				legend.background = element_rect(colour = NA,  fill = "transparent"),
-				legend.position = "none",
-				legend.title = element_blank(),
-				legend.text = element_text(colour = "black", size = 18),
-				legend.text.align = 0,
-				legend.box = NULL
-			)
 
 			TMT_levels <- label_scheme %>% TMT_plex() %>% TMT_levels()
 			Levels <- TMT_levels %>% gsub("^TMT-", "I", .)
@@ -428,8 +428,8 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 			  geom_boxplot(df_int, mapping = aes(x = Channel, y = log10(Intensity)), width = 0.2, lwd = .2, fill = "white") +
 			  stat_summary(df_int, mapping = aes(x = Channel, y = log10(Intensity)), fun.y = "mean", geom = "point",
 			               shape = 23, size = 2, fill = "white", alpha = .5) +
-			  labs(title = expression("Reporter-ion intensity"), x = expression("Channel"), y = expression("Intensity ("*log[10]*")")) +
-			  my_theme
+			  labs(title = expression("Reporter ions"), x = expression("Channel"), y = expression("Intensity ("*log[10]*")")) +
+			  theme_psm_violin
 
 			ggsave(file.path(dat_dir, "PSM\\Violin\\bf_olm", filename), p, width = Width, height = Height, units = "in")
 		}
@@ -557,18 +557,18 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 	load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 	TMT_plex <- TMT_plex(label_scheme_full)
 
-	filelist = list.files(path = file.path(dat_dir, "PSM"),
+	filelist = list.files(path = file.path(dat_dir, "PSM\\cache"),
 	                      pattern = "^TMT.*LCMS.*\\.csv$")
 
 	for (i in seq_along(filelist)) {
-		df <- read.csv(file.path(dat_dir, "PSM", filelist[i]), check.names = FALSE,
+		df <- read.csv(file.path(dat_dir, "PSM\\cache", filelist[i]), check.names = FALSE,
 		               header = TRUE, comment.char = "#")
 
 		if(TMT_plex == 0) {
 			# lable-free data
 		  # re-save ".csv" as ".txt"
 			fn <- paste0(gsub(".csv", "", filelist[i]), "_Clean.txt")
-			write.table(df, file.path(dat_dir, "PSM", fn), sep = "\t", col.names = TRUE,
+			write.table(df, file.path(dat_dir, "PSM\\cache", fn), sep = "\t", col.names = TRUE,
 			            row.names = FALSE)
 			cat(filelist[i], "processed\n")
 
@@ -658,7 +658,7 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 		}
 
 		fn <- paste0(gsub(".csv", "", filelist[i]), "_Clean.txt")
-		write.table(df, file.path(dat_dir, "PSM", fn), sep = "\t", col.names = TRUE,
+		write.table(df, file.path(dat_dir, "PSM\\cache", fn), sep = "\t", col.names = TRUE,
 		            row.names = FALSE)
 		cat(filelist[i], "processed\n")
 	}
@@ -736,9 +736,9 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 
 	options(max.print = 5000000)
 
-	hd_fn <- list.files(path = file.path(dat_dir, "PSM"),
+	hd_fn <- list.files(path = file.path(dat_dir, "PSM\\cache"),
 	                    pattern = "^F\\d+_header.txt$")
-	assign("df_header", readLines(file.path(dat_dir, "PSM", hd_fn[1])))
+	assign("df_header", readLines(file.path(dat_dir, "PSM\\cache", hd_fn[1])))
 
 	load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
@@ -746,7 +746,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 	TMT_plex <- TMT_plex(label_scheme_full)
 
 	filelist <- list.files(
-								path = file.path(dat_dir, "PSM"),
+								path = file.path(dat_dir, "PSM\\cache"),
 	              pattern = "^TMT.*LCMS.*_Clean.txt$"
 							) %>%
 		reorder_files(., n_TMT_sets)
@@ -763,7 +763,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 
 	   # injections under the same TMT experiment
 	  for (injn_idx in seq_along(sublist)) {
-			df <- read.csv(file.path(dat_dir, "PSM", sublist[injn_idx]),
+			df <- read.csv(file.path(dat_dir, "PSM\\cache", sublist[injn_idx]),
 			               check.names = FALSE, header = TRUE, sep = "\t",
 			               comment.char = "#") %>%
 				dplyr::mutate(pep_seq_mod = as.character(pep_seq)) %>%
@@ -812,9 +812,6 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 		  write.table(label_scheme[1, c("Accession_Type", "Species")],
 		              file.path(dat_dir, "acctype_sp.txt"), sep = "\t",
 		              col.names = TRUE, row.names = FALSE)
-
-		  # load(file = file.path(dat_dir, "label_scheme_full.Rdata"), envir = .GlobalEnv)
-		  # load(file = file.path(dat_dir, "label_scheme.Rdata"), envir = .GlobalEnv)
 
 		  load_dbs(dat_dir = dat_dir, expt_smry = expt_smry)
 
@@ -997,32 +994,6 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 			            sep = "\t", col.names = TRUE, row.names = FALSE)
 
 			if (plot_violins & TMT_plex > 0) {
-				my_theme <- theme_bw() +
-					theme(
-					axis.text.x  = element_text(angle=90, vjust=0.5, size=24),
-					axis.ticks.x  = element_blank(),
-					axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
-					axis.title.x = element_text(colour="black", size=24),
-					axis.title.y = element_text(colour="black", size=24),
-					plot.title = element_text(colour="black", size=24, hjust=.5, vjust=.5),
-
-					strip.text.x = element_text(size = 18, colour = "black", angle = 0),
-					strip.text.y = element_text(size = 18, colour = "black", angle = 90),
-
-					panel.grid.major.x = element_blank(),
-					panel.grid.minor.x = element_blank(),
-					panel.grid.major.y = element_blank(),
-					panel.grid.minor.y = element_blank(),
-
-					legend.key = element_rect(colour = NA, fill = 'transparent'),
-					legend.background = element_rect(colour = NA,  fill = "transparent"),
-					legend.position = "none",
-					legend.title = element_blank(),
-					legend.text = element_text(colour="black", size=18),
-					legend.text.align = 0,
-					legend.box = NULL
-				)
-
 				TMT_levels <- label_scheme %>% TMT_plex() %>% TMT_levels()
 				Levels <- TMT_levels %>% gsub("^TMT-", "I", .)
 				df_int <- df[, grepl("^I[0-9]{3}", names(df))] %>%
@@ -1040,8 +1011,8 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 					geom_boxplot(df_int, mapping=aes(x=Channel, y=log10(Intensity)), width=0.2, lwd=.2, fill="white") +
 					stat_summary(df_int, mapping=aes(x=Channel, y=log10(Intensity)), fun.y="mean", geom="point",
 					             shape=23, size=2, fill="white", alpha=.5) +
-					labs(title=expression("Reporter-ion intensity"), x=expression("Channel"), y=expression("Intensity ("*log[10]*")")) +
-					my_theme
+					labs(title=expression("Reporter ions"), x=expression("Channel"), y=expression("Intensity ("*log[10]*")")) +
+					theme_psm_violin
 
 				ggsave(file.path(dat_dir, "PSM\\Violin", paste0(filename, ".png")), p, width = Width, height = Height, units = "in")
 			}
@@ -1061,7 +1032,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'
 #'End users will export \code{PSM} data from
 #'\code{\href{https://http://www.matrixscience.com/}{Mascot}} at a \code{.csv}
-#'format. The header information should be included during the \code{csv}
+#'format. The header information should be included during the \code{.csv}
 #'export. The \code{.csv} file name(s) should be defaulted by
 #'\code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with the
 #'letter \code{'F'}, followed by a six-digit number without space \code{(e.g.,
@@ -1074,9 +1045,9 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'under columns \code{N_log2_R...} are \code{log2_R...} with median-centering
 #'alignment. Values under columns \code{N_I...} are normalized
 #'\code{reporter-ion intensity}. Character strings under \code{pep_seq_mod}
-#'denote peptide sequences with applicable variable modifications. See
-#'\code{\link{normPrn}} for more detailed description of column keys and data
-#'normalization.
+#'denote peptide sequences with applicable variable modifications. 
+#'
+#'See \code{\link{normPrn}} for the description of column keys in the output.
 #'
 #'@inheritParams load_expts
 #'@inheritParams splitPSM

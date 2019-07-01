@@ -5,16 +5,17 @@
 #'
 #'@inheritParams  proteoHist
 #'@inheritParams  proteoHM
-#'@param method The method of linear modeling. The default is \code{limma}; at
-#'  \code{method = lm}, the \code{lm()} in base R will be used for models
-#'  without random effects and the \code{\link[lmerTest]{lmer()}} will be used
-#'  for models with random effects.
-#'@param var_cutoff The cut-off in the variances of \code{log2FC}. Entries with
-#'  variances smaller than the threshold will be removed from linear modeling.
-#'@param pval_cutoff The cut-off in significance \code{pVal}. Entries with
-#'  \code{pVals} smaller than the threshold will be removed from multiple test
-#'  corrections.
-#'@param logFC_cutoff The cut-off in \code{log2FC}. Entries with \code{log2FC}
+#'@param method Character string; the method of linear modeling. The default is
+#'  \code{limma}; at \code{method = lm}, the \code{lm()} in base R will be used
+#'  for models without random effects and the \code{\link[lmerTest]{lmer()}}
+#'  will be used for models with random effects.
+#'@param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
+#'  Entries with variances smaller than the threshold will be removed from
+#'  linear modeling.
+#'@param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
+#'  with \code{pVals} smaller than the threshold will be removed from multiple
+#'  test corrections.
+#'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with \code{log2FC}
 #'  smaller than the threshold will be removed from multiple test corrections.
 #'@param ... Contrasts for linear modeling. The syntax starts with a tilde,
 #'  followed by the name of an available column key in \code{expt_smry.xlsx} and
@@ -383,6 +384,9 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 
 #'Significance tests of peptide \code{log2FC}
 #'
+#'\code{pepSig} is a wrapper of \code{\link{proteoSigtest}} for the
+#'significance tests of peptide data
+#'
 #'@rdname proteoSigtest
 #'
 #' @examples
@@ -394,22 +398,33 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 #'
 #'@export
 pepSig <- function (...) {
-	proteoSigtest(id = "pep_seq", ...)
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+
+  proteoSigtest(id = "pep_seq", ...)
 }
 
 
 #'Significance tests of protein \code{log2FC}
 #'
+#'
+#'\code{prnSig} is a wrapper of \code{\link{proteoSigtest}} for the significance
+#'tests of protein data
+#'
+#'
 #'@rdname proteoSigtest
 #'
 #' @examples
 #'prnSig(
-#'  impute_na = FALSE, 
+#'  impute_na = FALSE,
 #'  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
 #'  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
 #')
 #'
 #'@export
 prnSig <- function (...) {
-	proteoSigtest(id = "gene", ...)
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  proteoSigtest(id = "gene", ...)
 }

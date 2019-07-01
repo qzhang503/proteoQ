@@ -32,29 +32,30 @@ determined by the name of the calling \code{function} and the value of
 
 \item{filename}{A representative file name to output image(s). By default, it
 will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} and the image type will be
-automatically determined by the extension of the file name. A \code{.png}
-format will be used at default or an unrecognized file extension.}
+saved via \code{\link[ggplot2]{ggsave}} where the image type will be
+determined by the extension of the file name. A \code{.png} format will be
+used at default or an unrecognized file extension.}
 
-\item{impute_na}{Logical; if TRUE, data will the imputation of missing values
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used.}
 
-\item{method}{The method of linear modeling. The default is \code{limma}; at
-\code{method = lm}, the \code{lm()} in base R will be used for models
-without random effects and the \code{\link[lmerTest]{lmer()}} will be used
-for models with random effects.}
+\item{method}{Character string; the method of linear modeling. The default is
+\code{limma}; at \code{method = lm}, the \code{lm()} in base R will be used
+for models without random effects and the \code{\link[lmerTest]{lmer()}}
+will be used for models with random effects.}
 
-\item{var_cutoff}{The cut-off in the variances of \code{log2FC}. Entries with
-variances smaller than the threshold will be removed from linear modeling.}
+\item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.
+Entries with variances smaller than the threshold will be removed from
+linear modeling.}
 
-\item{pval_cutoff}{The cut-off in significance \code{pVal}. Entries with
-\code{pVals} smaller than the threshold will be removed from multiple test
-corrections.}
+\item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
+with \code{pVals} smaller than the threshold will be removed from multiple
+test corrections.}
 
-\item{logFC_cutoff}{The cut-off in \code{log2FC}. Entries with \code{log2FC}
+\item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with \code{log2FC}
 smaller than the threshold will be removed from multiple test corrections.}
 
 \item{...}{Contrasts for linear modeling. The syntax starts with a tilde,
@@ -70,6 +71,12 @@ The primary output is
 \description{
 \code{proteoSigtest} performs significance tests of peptide or protein
 \code{log2FC}
+
+\code{pepSig} is a wrapper of \code{\link{proteoSigtest}} for the
+significance tests of peptide data
+
+\code{prnSig} is a wrapper of \code{\link{proteoSigtest}} for the significance
+tests of protein data
 }
 \examples{
 pepSig(
@@ -79,7 +86,7 @@ pepSig(
 )
 
 prnSig(
- impute_na = FALSE, 
+ impute_na = FALSE,
  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
 )

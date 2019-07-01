@@ -372,7 +372,7 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 }
 
 
-#'Visualizes MDS plots
+#'Visualization of MDS plots
 #'
 #'\code{proteoMDS} visualizes the results from multidimensional scaling (MDS).
 #'
@@ -380,6 +380,11 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 #'\code{\link[base]{dist}}, followed by a metric (\code{\link[stats]{cmdscale}})
 #'or non-metric (\code{\link[MASS]{isoMDS}}) MDS. The default is metric MDS with
 #'the input dissimilarities being euclidean distances.
+#'
+#'The function matches the current \code{id} to those in the latest \code{calls}
+#'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
+#'\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+#'pep_seq_mod} will be matched to \code{id = pep_seq}.
 #'
 #'@inheritParams  proteoHist
 #'@param  col_group Not used.
@@ -412,8 +417,8 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 #'@param show_ids Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 #'  plots.
 #'@param annot_cols Not used.
-#'@param ... Parameters inherited from \code{ggsave}: \cr \code{width}, the
-#'  width of plot; \cr \code{height}, the height of plot \cr \code{...}
+#'@param ... Parameters for \code{ggsave}: \cr \code{width}, the width of plot;
+#'  \cr \code{height}, the height of plot \cr \code{...}
 #'
 #'@return MDS plots.
 #'@import dplyr rlang ggplot2
@@ -450,12 +455,17 @@ proteoMDS <- function (id = gene,
 }
 
 
-#'Visualizes PCA plots
+#'Visualization of PCA plots
 #'
-#'\code{protePCA} visualizes the results from principal component analysis
+#'\code{proteoPCA} visualizes the results from principal component analysis
 #'(PCA).
 #'
-#'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
+#'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}). 
+#'
+#'The function matches the current \code{id} to those in the latest \code{calls}
+#'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
+#'\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+#'pep_seq_mod} will be matched to \code{id = pep_seq}.
 #'
 #'@inheritParams proteoMDS
 #'
@@ -493,12 +503,17 @@ proteoPCA <- function (id = gene,
 }
 
 
-#'Visualizes the matrix of Euclidean distances
+#'Visualization of the Euclidean distance matrix
 #'
 #'\code{proteoEucDist} visualizes the heat map of Euclidean distances.
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
 #'\code{\link[base]{dist}} for heat map visualization.
+#'
+#'The function matches the current \code{id} to those in the latest \code{calls}
+#'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
+#'\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+#'pep_seq_mod} will be matched to \code{id = pep_seq}.
 #'
 #'@inheritParams proteoMDS
 #'@param annot_cols A character vector of column names in \code{expt_smry.xlsx}.
@@ -560,8 +575,7 @@ proteoEucDist <- function (id = gene,
 
 #'MDS plots
 #'
-#'\code{pepMDS} is a wrapper function of \code{\link{proteoMDS}} for peptide
-#'data
+#'\code{pepMDS} is a wrapper of \code{\link{proteoMDS}} for peptide data
 #'
 #'@rdname proteoMDS
 #'
@@ -573,14 +587,16 @@ proteoEucDist <- function (id = gene,
 #'
 #'@export
 pepMDS <- function (...) {
-	proteoMDS(id = pep_seq, ...)
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  proteoMDS(id = pep_seq, ...)
 }
 
 
 #'MDS plots
 #'
-#'\code{prnMDS} is a wrapper function of \code{\link{proteoMDS}} for protein
-#'data
+#'\code{prnMDS} is a wrapper of \code{\link{proteoMDS}} for protein data
 #'
 #'@rdname proteoMDS
 #'
@@ -601,13 +617,16 @@ pepMDS <- function (...) {
 #'
 #'@export
 prnMDS <- function (...) {
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
   proteoMDS(id = gene, ...)
 }
 
 
 #'PCA plots
 #'
-#'\code{pepPCA} is a wrapper function of \code{\link{proteoPCA}} for peptide data
+#'\code{pepPCA} is a wrapper of \code{\link{proteoPCA}} for peptide data
 #'
 #'@rdname proteoPCA
 #'
@@ -621,13 +640,16 @@ prnMDS <- function (...) {
 #'
 #'@export
 pepPCA <- function (...) {
-	proteoPCA(id = pep_seq, ...)
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  proteoPCA(id = pep_seq, ...)
 }
 
 
 #'PCA plots
 #'
-#'\code{prnPCA} is a wrapper function of \code{\link{proteoPCA}} for protein data
+#'\code{prnPCA} is a wrapper of \code{\link{proteoPCA}} for protein data
 #'
 #'@rdname proteoPCA
 #'
@@ -648,25 +670,31 @@ pepPCA <- function (...) {
 #'
 #'@export
 prnPCA <- function (...) {
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
   proteoPCA(id = gene, ...)
 }
 
 
 #'Distance plots
 #'
-#'\code{pepEucDist} is a wrapper function of \code{\link{proteoEucDist}} for peptide data
+#'\code{pepEucDist} is a wrapper of \code{\link{proteoEucDist}} for peptide data
 #'
 #'@rdname proteoEucDist
 #'
 #'@export
 pepEucDist <- function (...) {
-	proteoEucDist(id = pep_seq, ...)
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  proteoEucDist(id = pep_seq, ...)
 }
 
 
 #'Distance plots
 #'
-#'\code{prnEucDist} is a wrapper function of \code{\link{proteoEucDist}} for protein data
+#'\code{prnEucDist} is a wrapper of \code{\link{proteoEucDist}} for protein data
 #'
 #'@rdname proteoEucDist
 #'
@@ -674,9 +702,9 @@ pepEucDist <- function (...) {
 #' prnEucDist(
 #'   scale_log2r = TRUE,
 #'   annot_cols = c("Peptide_Yield", "Group"),
-#'   annot_colnames = c("New_Yield", "New_Group"), 
-#'   
-#'   # parameters from `pheatmap`
+#'   annot_colnames = c("New_Yield", "New_Group"),
+#'
+#'   # parameters for `pheatmap`
 #'   display_numbers = TRUE,
 #'   number_color = "grey30",
 #'   number_format = "%.1f",
@@ -691,7 +719,7 @@ pepEucDist <- function (...) {
 #'   show_colnames = TRUE,
 #'   border_color = "grey60",
 #'   cellwidth = 24,
-#'   cellheight = 24, 
+#'   cellheight = 24,
 #'   width = 14,
 #'   height = 12
 #' )
@@ -707,5 +735,8 @@ pepEucDist <- function (...) {
 #'
 #'@export
 prnEucDist <- function (...) {
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
   proteoEucDist(id = gene, ...)
 }

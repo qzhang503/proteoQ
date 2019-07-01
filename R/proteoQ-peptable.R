@@ -164,36 +164,40 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'\code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}} experiments
 #'and \code{LC/MS} injections.
 #'
-#'See \code{\link{normPrn}} for the description of column keys.
+#'See \code{\link{normPrn}} for the description of column keys in the output.
 #'
-#'@param id The variable for summarisation of \code{PSMs} into peptides. The
-#'  option \code{id = pep_seq} corresponds to the summarisation by the primary
-#'  sequences of peptides. The option \code{id = pep_seq_mod} corresponds to the
-#'  summarisation by both the primary sequences and variable modifications of
-#'  peptides. \code{PSMs} data with the same value in \code{pep_seq} or
-#'  \code{pep_seq_mod} will be summarised into a single entry of peptide.
-#'@param method_psm_pep The method to summarise the \code{log2FC} and the
-#'  \code{intensity} of \code{PSMs} by peptide entries. The descriptive
-#'  statistics includes \code{c("mean", "median", "top.3", "weighted.mean")}.
-#'  The \code{log10-intensity} of reporter ions at the \code{PSMs} levels will
-#'  be the weight when summarising \code{log2FC} with \code{"top.3"} or
-#'  \code{"weighted.mean"}.
-#'@param method_align The method to align the \code{log2FC} of peptide/protein
-#'  entries across samples. \code{MC}: median-centering; \code{MGKernel}: the
-#'  kernal density defined by multiple Gaussian functions
-#'  (\code{\link[mixtools]{normalmixEM}}). At \code{method_align = "MC"}, the
-#'  ratio profiles of each sample will be aligned in that the medians of the
-#'  \code{log2FC} are zero. At \code{method_align = "MGKernel"}, the
-#'  \code{log2FC} will be aligned in that the maximums of kernel density are
-#'  zero. It is also possible to align the \code{log2FC} to the median of a list
-#'  of user-supplied genes: \code{method_align = c("ACTB", "GAPDH", ...)}.
-#'@param range_log2r The range of the \code{log2FC} of peptide/protein entries
-#'  for use in the scaling normalization of standard deviation across samples.
-#'  The default is between the 20th and the 90th quantiles.
-#'@param range_int The range of the \code{intensity} of reporter ions for use in
-#'  the scaling normalization of standard deviation across samples. The default
-#'  is between the 5th and the 95th quantiles.
-#'@param n_comp The number of Gaussian components to be used with
+#'@param id Character string; the variable for summarisation of \code{PSMs} into
+#'  peptides. The option \code{id = pep_seq} corresponds to the summarisation by
+#'  the primary sequences of peptides. The option \code{id = pep_seq_mod}
+#'  corresponds to the summarisation by both the primary sequences and variable
+#'  modifications of peptides. \code{PSMs} data with the same value in
+#'  \code{pep_seq} or \code{pep_seq_mod} will be summarised into a single entry
+#'  of peptide.
+#'@param method_psm_pep Character string; the method to summarise the
+#'  \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
+#'  The descriptive statistics includes \code{c("mean", "median", "top.3",
+#'  "weighted.mean")}. The \code{log10-intensity} of reporter ions at the
+#'  \code{PSMs} levels will be the weight when summarising \code{log2FC} with
+#'  \code{"top.3"} or \code{"weighted.mean"}.
+#'@param method_align Character string or a list of gene symbols; the method to
+#'  align the \code{log2FC} of peptide/protein entries across samples.
+#'  \code{MC}: median-centering; \code{MGKernel}: the kernal density defined by
+#'  multiple Gaussian functions (\code{\link[mixtools]{normalmixEM}}). At
+#'  \code{method_align = "MC"}, the ratio profiles of each sample will be
+#'  aligned in that the medians of the \code{log2FC} are zero. At
+#'  \code{method_align = "MGKernel"}, the \code{log2FC} will be aligned in that
+#'  the maximums of kernel density are zero. It is also possible to align the
+#'  \code{log2FC} to the median of a list of user-supplied genes:
+#'  \code{method_align = c("ACTB", "GAPDH", ...)}.
+#'@param range_log2r Numeric vector at length two; the range of the
+#'  \code{log2FC} of peptide/protein entries for use in the scaling
+#'  normalization of standard deviation across samples. The default is between
+#'  the 20th and the 90th quantiles.
+#'@param range_int Numeric vector at length two; the range of the
+#'  \code{intensity} of reporter ions for use in the scaling normalization of
+#'  standard deviation across samples. The default is between the 5th and the
+#'  95th quantiles.
+#'@param n_comp Integer; the number of Gaussian components to be used with
 #'  \code{method_align = "MGKernel"}. A typical value is 2 or 3. The variable
 #'  \code{n_comp} overwrites the augument \code{k} in
 #'  \code{\link[mixtools]{normalmixEM}}.
@@ -202,36 +206,33 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'@param annot_kinases Logical; if TRUE, annotates kinase attributes of
 #'  proteins.
 #'@param col_refit Character string to a column key in \code{expt_smry.xlsx}.
-#'  Only samples corresponding to non-empty entries under \code{col_refit} will
-#'  be used in the refit of \code{log2FC} using multiple Gaussian kernels. The
-#'  density estimates from an earlier analyis will be kept for samples
-#'  corresponding to empty entries under \code{col_refit}. At the NULL default,
-#'  the column key \code{Sample_ID} will be used, which leads to the refit of
-#'  code{log2FC} for all samples.
+#'  Samples corresponding to non-empty entries under \code{col_refit} will be
+#'  used in the refit of \code{log2FC} using multiple Gaussian kernels. The
+#'  density estimates from an earlier analyis will be kept for the remaining
+#'  samples. At the NULL default, the column key \code{Sample_ID} will be used,
+#'  which results in the refit of the \code{log2FC} for all samples.
 #'@param cache Logical; if TRUE, use cache.
-#'@param ... Additional parameters from \code{\link[mixtools]{normalmixEM}}:\cr
+#'@param ... Additional parameters for \code{\link[mixtools]{normalmixEM}}:\cr
 #'  \code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
 #'  tolerance limit for declaring algorithm convergence.
 #'@inheritParams mixtools::normalmixEM
-#'@seealso \code{\link{normPSM}} for PSM and \code{\link{normPrn}} for proteins.
+#'@seealso \code{\link{normPSM}} for PSM an \code{\link{normPrn}} for proteins.
 #'
 #'@return The primary output in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
 #'
 #' @examples
-#' 	normPep(
-#' 		id = pep_seq_mod,
-#' 		method_psm_pep = median,
-#' 		method_align = MGKernel,
-#' 		range_log2r = c(10, 95),
-#' 		range_int = c(5, 95),
-#' 		n_comp = 3,
-#' 		seed = 1234,
-#' 		annot_kinases = TRUE,
-#' 		maxit = 200,
-#' 		epsilon = 1e-05
-#' 	)
-#'
 #' \dontrun{
+#'normPep(
+#'  id = pep_seq_mod,
+#'  method_psm_pep = median,
+#'  method_align = MGKernel,
+#'  range_log2r = c(10, 95),
+#'  range_int = c(5, 95),
+#'  n_comp = 3,
+#'  seed = 1234,
+#'  maxit = 200,
+#'  epsilon = 1e-05
+#')
 #' }
 #'@import stringr dplyr tidyr purrr data.table rlang
 #'@importFrom plyr ddply

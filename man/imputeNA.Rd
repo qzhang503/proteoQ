@@ -2,27 +2,47 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{imputeNA}
 \alias{imputeNA}
-\title{Imputes NA values}
+\alias{pepImp}
+\alias{prnImp}
+\title{Imputation of NA values}
 \usage{
 imputeNA(id, ...)
+
+pepImp(...)
+
+prnImp(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. Peptide data will be
 used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
 \code{id = prot_acc} or \code{gene}.}
 
-\item{...}{Parameters that will be passed to \code{\link[mice]{mice}}}
+\item{...}{Parameters for \code{\link[mice]{mice}}}
 }
 \value{
 \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
  for protein data.
 }
 \description{
-Imputes NA values
+\code{imputeNA} imputes NA \code{log2FC} values in protein or peptide data.
+
+\code{pepImp} is a wrapper of \code{\link{imputeNA}} for peptide data
+
+\code{prnImp} is a wrapper of \code{\link{imputeNA}} for protein data
 }
 \examples{
-imputeNA(id = gene, m = 5, maxit = 5)
+\dontrun{
+pepImp(
+  m = 3,
+  maxit = 3,
+)
+}
 
 \dontrun{
+prnImp(
+  m = 5,
+  maxit = 5,
+)
 }
+
 }
