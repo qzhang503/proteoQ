@@ -10,15 +10,16 @@
     -   [2.1 MDS and PCA plots](#mds-and-pca-plots)
     -   [2.2 Correlation plots](#correlation-plots)
     -   [2.3 Imputation of NA values](#imputation-of-na-values)
-    -   [2.4 Heat map](#heat-map)
+    -   [2.4 Heat maps](#heat-maps)
     -   [2.5 Significance tests and volcano plot
         visualization](#significance-tests-and-volcano-plot-visualization)
-    -   [2.6 Gene sets in volcano plots](#gene-sets-in-volcano-plots)
+    -   [2.6 Gene sets under volcano
+        plots](#gene-sets-under-volcano-plots)
     -   [2.7 Trend Analysis](#trend-analysis)
     -   [2.8 NMF Analysis](#nmf-analysis)
 -   [Part III - Labs](#part-iii-labs)
-    -   [3.1. Choices of references](#choices-of-references)
-    -   [3.2. Peptide subsets](#peptide-subsets)
+    -   [3.1 Choices of references](#choices-of-references)
+    -   [3.2 Peptide subsets](#peptide-subsets)
     -   [3.3 Random effects](#random-effects)
 -   [References](#references)
 
@@ -611,7 +612,7 @@ pepImp(m = 2, maxit = 2)
 prnImp(m = 5, maxit = 5)
 ```
 
-### 2.4 Heat map
+### 2.4 Heat maps
 
 The following performs heat map visualization against protein data.
 Detailed description of the arguments can be found from
@@ -686,7 +687,7 @@ square brackets. Pairs of contrasts are separated by commas.
 **Figure 5B.** Volcano plots of protein log2FC between locations.
 </p>
 
-### 2.6 Gene sets in volcano plots
+### 2.6 Gene sets under volcano plots
 
 There are a handful of tools for gene set enrichement analysis, such as
 GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can
@@ -812,7 +813,7 @@ right: coefficients.
 Part III - Labs
 ---------------
 
-### 3.1. Choices of references
+### 3.1 Choices of references
 
 In this lab, we explore the effects of reference choices on data
 normalization. We first copy data over to the file directory specified
@@ -918,7 +919,7 @@ pepHist(
 WHIM16 reference.
 </p>
 
-### 3.2. Peptide subsets
+### 3.2 Peptide subsets
 
 In addition to the global proteomes, the CPTAC publication contains
 phosphopeptide data from the same samples.(2018) In this lab, we will
