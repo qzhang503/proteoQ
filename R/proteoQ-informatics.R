@@ -8,7 +8,7 @@
 #'   "Trend", "NMF", "Model", ...)}.
 #' @return a function to the given \code{anal_type}.
 #'
-#' @import dplyr rlang ggplot2 pheatmap
+#' @import dplyr rlang ggplot2 pheatmap openxlsx
 #' @importFrom magrittr %>%
 info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order = NULL,
 											col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL,
@@ -568,6 +568,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 			write.table(df_op, file.path(filepath, paste0(data_type, "_pVals.txt")), sep = "\t",
 			            col.names = TRUE, row.names = FALSE)
+			
+			wb <- createWorkbook("proteoQ")
+			addWorksheet(wb, sheetName = "Results")
+			openxlsx::writeData(wb, sheet = "Results", df_op)
+			saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), overwrite = TRUE) 
 		}
 	} else if(anal_type == "GSPA") {
 		function(complete_cases = FALSE, 

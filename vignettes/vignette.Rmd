@@ -2,7 +2,9 @@
 title: Package "\"proteoQ\""  
 author: "Qiang Zhang"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    toc: true
 fig_caption: yes
 vignette: >
   %\VignetteIndexEntry{Vignette Title}

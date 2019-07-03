@@ -1,3 +1,27 @@
+-   [Introduction to proteoQ](#introduction-to-proteoq)
+-   [Installation](#installation)
+-   [Part I - Data normalization](#part-i-data-normalization)
+    -   [1.1 Set up the experiments](#set-up-the-experiments)
+    -   [1.2 Summarize PSMs to peptides and
+        proteins](#summarize-psms-to-peptides-and-proteins)
+    -   [1.3 Data renormalization against a sample
+        subset](#data-renormalization-against-a-sample-subset)
+-   [Part II - Basic informatics](#part-ii-basic-informatics)
+    -   [2.1 MDS and PCA plots](#mds-and-pca-plots)
+    -   [2.2 Correlation plots](#correlation-plots)
+    -   [2.3 Imputation of NA values](#imputation-of-na-values)
+    -   [2.4 Heat map](#heat-map)
+    -   [2.5 Significance tests and volcano plot
+        visualization](#significance-tests-and-volcano-plot-visualization)
+    -   [2.6 Gene sets in volcano plots](#gene-sets-in-volcano-plots)
+    -   [2.7 Trend Analysis](#trend-analysis)
+    -   [2.8 NMF Analysis](#nmf-analysis)
+-   [Part III - Labs](#part-iii-labs)
+    -   [3.1. Choices of references](#choices-of-references)
+    -   [3.2. Peptide subsets](#peptide-subsets)
+    -   [3.3 Random effects](#random-effects)
+-   [References](#references)
+
 Introduction to proteoQ
 -----------------------
 
@@ -1061,11 +1085,11 @@ prnSig(
 
 # correlation plots
 df <- read.csv(file.path(temp_raneff_dir, "Protein\\Model\\Protein_pVals.txt"), 
-  check.names = FALSE, header = TRUE, sep = "\t") %>%
+    check.names = FALSE, header = TRUE, sep = "\t") %>%
   dplyr::select(grep("pVal\\s+", names(.))) %>% 
   `colnames<-`(c("none", "one", "two")) %>% 
   dplyr::mutate_all(~ -log10(.x)) %>% 
-  GGally::ggpairs(columnLabels = as.character(names(df)), labeller = label_wrap_gen(10), title = "", 
+  GGally::ggpairs(df, columnLabels = as.character(names(df)), labeller = label_wrap_gen(10), title = "", 
     xlab = expression("pVal ("*-log[10]*")"), ylab = expression("pVal ("*-log[10]*")")) 
 ```
 
