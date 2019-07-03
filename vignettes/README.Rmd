@@ -5,6 +5,7 @@ date: "`r Sys.Date()`"
 output:
   md_document:
     variant: markdown_github
+    toc: true
 fig_caption: yes
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
@@ -460,7 +461,7 @@ pepImp(m = 2, maxit = 2)
 prnImp(m = 5, maxit = 5)
 ```
 
-### 2.4 Heat map
+### 2.4 Heat maps
 The following performs heat map visualization against protein data. Detailed description of the arguments can be found from [`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf). 
 
 ```{r Protein heat maps, eval = FALSE}
@@ -517,7 +518,7 @@ img_venn_location <- "images\\protein\\volcplot\\venn_locations.png"
 knitr::include_graphics(c(img_volcplot_location))
 ```
 
-### 2.6 Gene sets in volcano plots
+### 2.6 Gene sets under volcano plots
 There are a handful of tools for gene set enrichement analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can visualize the enrichment of gene sets under the context of volcano plots. Currently, the `preoteoQ` takes a naive approach to visualize the *asymmetricity* of protein probability *p*-values under volcano plots. In the analysis of Gene Set Probability Asymmetricity (GSPA), the significance `pVals` of proteins obtained from linear modeling are taken, followed by the calculation of the geometric mean of `pVals` for the groups of up- or down-regulated proteins within a gene set, as well as the corresponding mean `log2FC`. The quotient of the two `pVals` is then taken to represent the significance of enrichment and the delta of the two `log2FC` for use as the fold change of enrichment. The arguments `pval_cutoff` and `logFC_cutoff` allow us to filter out low impact genes.  
 
 ```{r prnGSPA, eval = FALSE}
@@ -619,8 +620,8 @@ knitr::include_graphics(c(img_nmf_con, img_nmf_coef))
 ```
 
 ## Part III --- Labs
-### 3.1. Choices of references
-In this lab, we explore the effects of reference choices on data normalization. We first copy data over to the file directory specified by `temp_dir`, followed by PSM, peptide normalization and histogram visualization of peptide `log2FC`. 
+### 3.1 Choices of references 
+In this lab, we explore the effects of reference choices on data normalization. We first copy data over to the file directory specified by `temp_dir`, followed by PSM, peptide normalization and histogram visualization of peptide `log2FC`.  
 
 ```{r W2 reference, eval = FALSE}
 # directory setup
@@ -704,7 +705,7 @@ img_pep_ref_w2_w16 <- "images\\peptide\\histogram\\peptide_ref_w2_w16.png"
 knitr::include_graphics(c(img_pep_ref_w2_w16))
 ```
 
-### 3.2. Peptide subsets
+### 3.2 Peptide subsets
 In addition to the global proteomes, the CPTAC publication contains phosphopeptide data from the same samples.[-@mertins2018np] In this lab, we will explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. We first performed a search aganist the combined data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset: 
 
 ```{r peptide subsets reference, eval = FALSE}
