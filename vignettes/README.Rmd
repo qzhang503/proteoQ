@@ -814,12 +814,12 @@ prnSig(
 )
 
 # correlation plots
-df <- read.csv(file.path(temp_raneff_dir, "Protein\\Model\\Protein_pVals.txt"), 
-    check.names = FALSE, header = TRUE, sep = "\t") %>%
+read.csv(file.path(temp_raneff_dir, "Protein\\Model\\Protein_pVals.txt"), 
+         check.names = FALSE, header = TRUE, sep = "\t") %>%
   dplyr::select(grep("pVal\\s+", names(.))) %>% 
   `colnames<-`(c("none", "one", "two")) %>% 
   dplyr::mutate_all(~ -log10(.x)) %>% 
-  GGally::ggpairs(df, columnLabels = as.character(names(df)), labeller = label_wrap_gen(10), title = "", 
+  GGally::ggpairs(columnLabels = as.character(names(.)), labeller = label_wrap_gen(10), title = "", 
     xlab = expression("pVal ("*-log[10]*")"), ylab = expression("pVal ("*-log[10]*")")) 
 ```
 
