@@ -4,12 +4,12 @@
     -   [1.1 Set up the experiments](#set-up-the-experiments)
     -   [1.2 Summarize PSMs to peptides and
         proteins](#summarize-psms-to-peptides-and-proteins)
-    -   [1.3 Data renormalization against a sample
-        subset](#data-renormalization-against-a-sample-subset)
+    -   [1.3 Renormalize data for a subset of
+        samples](#renormalize-data-for-a-subset-of-samples)
 -   [Part II - Basic informatics](#part-ii-basic-informatics)
     -   [2.1 MDS and PCA plots](#mds-and-pca-plots)
     -   [2.2 Correlation plots](#correlation-plots)
-    -   [2.3 Imputation of NA values](#imputation-of-na-values)
+    -   [2.3 Missing value imputation](#missing-value-imputation)
     -   [2.4 Heat maps](#heat-maps)
     -   [2.5 Significance tests and volcano plot
         visualization](#significance-tests-and-volcano-plot-visualization)
@@ -18,7 +18,7 @@
     -   [2.7 Trend Analysis](#trend-analysis)
     -   [2.8 NMF Analysis](#nmf-analysis)
 -   [Part III - Labs](#part-iii-labs)
-    -   [3.1 Choices of references](#choices-of-references)
+    -   [3.1 Reference choices](#reference-choices)
     -   [3.2 Peptide subsets](#peptide-subsets)
     -   [3.3 Random effects](#random-effects)
 -   [References](#references)
@@ -64,13 +64,13 @@ devtools::install_github("qzhang503/proteoQ")
 Part I - Data normalization
 ---------------------------
 
-In this section I illustrate the following applications of `proteoQ`:
+In this section we illustrate the following applications of `proteoQ`:
 
 -   Summarization of PSM data to peptide and protein reports.
 -   Visualization of quality metrics in peptide and protein data.
--   Re-normalization of data in part or in full
+-   Re-normalization of data in partial or in full
 
-The data set I use in this section corresponds to the proteomics data
+The data set we use in this section corresponds to the proteomics data
 from Mertins et al. (2018). In the study, two different breast cancer
 subtypes, triple negative (WHIM2) and luminal (WHIM16), from
 patient-derived xenograft (PDX) models were assessed by three
@@ -102,8 +102,8 @@ exporting PSM results, I typically set the option of
 `Include sub-set protein hits` to `0` with my opinionated choice in
 satisfying the principle of parsimony. The options of `Header` and
 `Peptide quantitation` should be checked to include the search
-parameters and quantitative values, respectively. The filename(s) of the
-exports will be taken as is.[1]
+parameters and quantitative values, respectively. The file name(s) of
+the exports will be taken as is.[1]
 
 <img src="images\mascot\mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
@@ -119,12 +119,12 @@ IDs will be removed for now when constructing peptide reports.
 
 <img src="images\mascot\mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 
-The merged search may become cumbersome with growing data sets. In this
-example, I combined the MS peak lists from the Hp-RP fractions within
-the same 10-plex TMT experiment, but not the lists across experiments.
-This results in a total of six pieces of PSM results in `Mascot`
-exports. To get us started, we go ahead and copy the PSM files that we
-have prepared in `proteoQDA` over to the working directory:
+The merged search may become increasingly cumbersome with growing data
+sets. In this example, I combined the MS peak lists from the Hp-RP
+fractions within the same 10-plex TMT experiment, but not the lists
+across experiments. This results in a total of six pieces of PSM results
+in `Mascot` exports. To get us started, we go ahead and copy over the
+PSM files that we have prepared in `proteoQDA` to the working directory:
 
 ``` r
 library(proteoQDA)
@@ -188,8 +188,8 @@ load_expts()
 
 ### 1.2 Summarize PSMs to peptides and proteins
 
-*Process PSMs* - In this section, I demonstrate the summarisation of PSM
-data to peptides and proteins. We start by processing PSM data from
+*Process PSMs* - In this section, we demonstrate the summarisation of
+PSM data to peptides and proteins. We start by processing PSM data from
 `Mascot` outputs:
 
 ``` r
@@ -313,13 +313,14 @@ after the scaling normalization. However, such adjustment may cause
 artifacts when the standard deviaiton across samples are genuinely
 different. I typically test `scale_log2r` at both `TRUE` and `FALSE`,
 then make a choice in data scaling together with my a priori knowledge
-of the characteristics of both samples and references.[7] I will use the
-same data set to illustrate the impacts of references in scaling
-normalization in [Lab 3.1](##%20Part%20III%20---%20Labs). Alignment of
-`log2FC` against housekeeping or normalizer protein(s) is also
-available. This seems suitable when sometime the quantities of proteins
-of interest are different across samples where the assumption of
-constitutive expression for the vast majority of proteins may not hold.
+of the characteristics of both samples and references.[7] We will use
+the same data set to illustrate the impacts of reference selections in
+scaling normalization in [Lab 3.1](##%20Part%20III%20---%20Labs).
+Alignment of `log2FC` against housekeeping or normalizer protein(s) is
+also available. This seems suitable when sometime the quantities of
+proteins of interest are different across samples where the assumption
+of constitutive expression for the vast majority of proteins may not
+hold.
 
 *Summarize peptides to proteins* - We then summarise peptides to
 proteins using a two-component Gaussian kernel.[8]
@@ -366,7 +367,7 @@ console that we are interacting with.
 # if agree
 scale_log2r <- TRUE
 
-# or if disagree
+# or disagree
 scale_logr <- FALSE
 ```
 
@@ -375,7 +376,7 @@ workflow from this point on, and more importantly, prevent ourselves
 from peppering the settings of **TRUE** or **FALSE** from calls to
 calls.
 
-### 1.3 Data renormalization against a sample subset
+### 1.3 Renormalize data for a subset of samples
 
 A multi-Gaussian kernel can fail capturing the `log2FC` profiles for a
 subset of samples. This is less an issue with a small number of samples.
@@ -598,7 +599,7 @@ prnCorr(
 peptide; right, protein
 </p>
 
-### 2.3 Imputation of NA values
+### 2.3 Missing value imputation
 
 The following performs the imputation of peptide and protein data. More
 information can be found from
@@ -616,7 +617,8 @@ prnImp(m = 5, maxit = 5)
 
 The following performs heat map visualization against protein data.
 Detailed description of the arguments can be found from
-[`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf).
+[`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf)
+and `?prnHM`.
 
 ``` r
 # protein heat maps
@@ -637,10 +639,9 @@ prnHM(
 )
 ```
 
-<img src="images\protein\heatmap\heatmap.png" alt="**Figure 4.** Heat map visualization of protein log2FC at `scale_log2r = TRUE`" width="80%" />
+<img src="images\protein\heatmap\heatmap.png" alt="**Figure 4.** Heat map visualization of protein log2FC" width="80%" />
 <p class="caption">
-**Figure 4.** Heat map visualization of protein log2FC at
-`scale_log2r = TRUE`
+**Figure 4.** Heat map visualization of protein log2FC
 </p>
 
 ### 2.5 Significance tests and volcano plot visualization
@@ -658,8 +659,8 @@ interested in a more course comparison of inter-laboratory differences
 without batch effects. The corresponding contrasts of `W2.BI`, `W2.BI`
 etc. can be found under a pre-made column, `Term_2`. Having these
 columns in hand, we are now ready to perform significance tests for
-peptides and protein species. In the demo, we will analyze protein data
-and perform volcano plot visualization:
+peptides and protein species. In the document, we will analyze protein
+data and perform volcano plot visualization:
 
 ``` r
 # significance tests of protein log2FC
@@ -689,9 +690,9 @@ square brackets. Pairs of contrasts are separated by commas.
 
 ### 2.6 Gene sets under volcano plots
 
-There are a handful of tools for gene set enrichement analysis, such as
-GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can
-visualize the enrichment of gene sets under the context of volcano
+There are a handful of `R` tools for gene set enrichement analysis, such
+as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we
+can visualize the enrichment of gene sets under the context of volcano
 plots. Currently, the `preoteoQ` takes a naive approach to visualize the
 *asymmetricity* of protein probability *p*-values under volcano plots.
 In the analysis of Gene Set Probability Asymmetricity (GSPA), the
@@ -701,8 +702,8 @@ the groups of up- or down-regulated proteins within a gene set, as well
 as the corresponding mean `log2FC`. The quotient of the two `pVals` is
 then taken to represent the significance of enrichment and the delta of
 the two `log2FC` for use as the fold change of enrichment. The arguments
-`pval_cutoff` and `logFC_cutoff` allow us to filter out low impact
-genes.
+`pval_cutoff` and `logFC_cutoff` allow us to filter out low impact genes
+prior to the analysis.
 
 ``` r
 prnGSPA(
@@ -740,6 +741,8 @@ set
 The following performs the trend analysis against protein expressions.
 More information can be found from
 [`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf).
+Note that the number of clusters is provided by `n_clust`, which can be
+a single value or a vector of integers.
 
 ``` r
 # soft clustering of protein data
@@ -813,7 +816,7 @@ right: coefficients.
 Part III - Labs
 ---------------
 
-### 3.1 Choices of references
+### 3.1 Reference choices
 
 In this lab, we explore the effects of reference choices on data
 normalization. We first copy data over to the file directory specified
@@ -1112,7 +1115,7 @@ Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
 1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
 [1] The default file names begin with letter `F`, followed by six digits
-and ends with `.csv` in file name extension.
+and ends with `.csv` in name extension.
 
 [2] To extract the names of RAW files under a `raw_dir` folder:
 `extract_raws(raw_dir)`
@@ -1124,10 +1127,10 @@ the corresponding entries under the column `Sample_ID` in
 parameters.
 
 [4] Density kernel estimates can occasionally capture spikes in the
-profiles of log2FC for data alignment. Users will need to inspect the
-alignment of ratio histograms and may optimize the data normalization
-with different combinations of tuning parameters before proceeding to
-the next steps.
+profiles of log2FC during data alignment. Users will need to inspect the
+alignment of ratio histograms and may optimize the data normalization in
+full with different combinations of tuning parameters or in part against
+a subset of samples, before proceeding to the next steps.
 
 [5] `normPep()` will report log2FC results both before and after the
 scaling of standard deviations.
