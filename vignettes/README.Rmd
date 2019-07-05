@@ -2,7 +2,6 @@
 title: Package "\"proteoQ\""  
 author: 
   - Qiang Zhang
-  - Reid R Townsend
 date: "`r Sys.Date()`"
 output:
   md_document:

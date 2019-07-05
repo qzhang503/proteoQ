@@ -23,7 +23,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 	on.exit(message("Generation of individual peptide tables by RAW filenames --- Completed."),
 	        add = TRUE)
 
-	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx) {
+	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx, injn_idx) {
 		id <- rlang::as_string(rlang::enexpr(id))
 
 		channelInfo <- label_scheme %>%
@@ -36,7 +36,45 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 				dplyr::select(-grep("^R[0-9]{3}", names(.))) %>%
 				dplyr::mutate(pep_scan_title = gsub("\\\\", "~~", pep_scan_title)) %>%
 				dplyr::mutate(pep_scan_title = gsub("^File.*~~", "", pep_scan_title))
-
+		
+		df_sd <- df %>% 
+		  dplyr::select(!!rlang::sym(id), grep("^log2_R", names(.))) %>%
+		  dplyr::group_by(!!rlang::sym(id)) %>%
+		  dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) %>% 
+		  dplyr::mutate_at(vars(grep("^log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
+		  `names_pos<-`(2:ncol(.), paste0("sd_", names(.)[2:ncol(.)]))
+		
+		dir.create(file.path(dat_dir, "Peptide\\SD"), recursive = TRUE, showWarnings = FALSE)
+		
+		# violin plots of SD
+		if (TMT_plex(label_scheme) > 0) {
+		  TMT_levels <- label_scheme %>% TMT_plex() %>% TMT_levels()
+		  Levels <- TMT_levels %>% gsub("^TMT-", "", .)
+		  
+		  df_sd2 <- df_sd %>%
+		    `names<-`(gsub("sd_log2_R", "", names(.))) %>% 
+		    tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
+		    dplyr::rename(Channel := !!rlang::sym(id)) %>% 
+		    dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
+		    dplyr::filter(!is.na(SD))
+		  
+		  Width <- 8
+		  Height <- 8
+		  filename <- paste0("SD_set_", set_idx, "_inj_", injn_idx)
+		  
+		  p <- ggplot() +
+		    geom_violin(df_sd2, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
+		    geom_boxplot(df_sd2, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
+		    stat_summary(df_sd2, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
+		                 shape=23, size=2, fill="white", alpha=.5) +
+		    labs(title = expression("Peptide"), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
+		    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, .2)) +
+		    theme_psm_violin
+		  
+		  ggsave(file.path(dat_dir, "Peptide\\SD", paste0(filename, ".png")), p, width = Width, height = Height, units = "in")
+		  rm(TMT_levels, Levels, Width, Height, filename, p, df_sd2)
+		}
+		
 		# summarise log2FC and intensity from the same `set_idx` but different LCMS injections
 		if (method_psm_pep == "mean") {
 			df_num <- aggrNums(mean)(df, !!rlang::sym(id), na.rm = TRUE)
@@ -85,7 +123,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 		  df_first <- df_first %>% dplyr::select(-pep_seq_mod)
 		}
 
-		df <- list(df_psm, df_first, df_score, df_expect, df_num) %>%
+		df <- list(df_psm, df_sd, df_first, df_score, df_expect, df_num) %>%
 				purrr::reduce(left_join, by = id) %>%
 				data.frame(check.names = FALSE)
 
@@ -141,7 +179,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 		
 		df <- df %>%
 		  calcPepide(label_scheme = label_scheme, id = !!id, method_psm_pep = method_psm_pep,
-		             set_idx = set_idx)
+		             set_idx = set_idx, injn_idx = injn_idx)
 
 		if(grepl("|", df$prot_acc[1], fixed = TRUE)) {
 			temp <- strsplit(as.character(df$prot_acc), '|', fixed = TRUE)

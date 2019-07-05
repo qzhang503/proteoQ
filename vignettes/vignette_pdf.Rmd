@@ -8,7 +8,7 @@ output:
   rmarkdown::pdf_document:
     toc: true
     toc_depth: 2
-fig_caption: yes
+    fig_caption: yes
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
   %\VignetteEngine{knitr::rmarkdown}
@@ -112,14 +112,13 @@ I typically set the option of `Include sub-set protein hits` to `0` with my opin
 
 **Scheme 1.** Mascot export.  
 
-
-The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To avoid such ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed for now when constructing peptide reports. 
+\vspace{0.2cm}The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To avoid such ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed for now when constructing peptide reports. 
 
 ![](images/mascot/mascot_daemon.png){ width=45% }
 
 **Scheme 2** Mascot daemon.
 
-The merged search may become cumbersome with growing data sets. In this example, I combined the MS peak lists from the Hp-RP fractions within the same 10-plex TMT experiment, but not the lists across experiments. This results in a total of six pieces of PSM results in `Mascot` exports. To get us started, we go ahead and copy the PSM files that we have prepared in `proteoQDA` over to the working directory:
+\vspace{0.2cm}The merged search may become cumbersome with growing data sets. In this example, I combined the MS peak lists from the Hp-RP fractions within the same 10-plex TMT experiment, but not the lists across experiments. This results in a total of six pieces of PSM results in `Mascot` exports. To get us started, we go ahead and copy the PSM files that we have prepared in `proteoQDA` over to the working directory:
 
 ```{r copy_psm, include = TRUE, eval = FALSE}
 library(proteoQDA)
@@ -134,7 +133,7 @@ Columns in the `expt_smry.xlsx` are approximately divided into the following thr
 
 **Scheme 3** The layout of `expt_smry.xlsx`.
 
-We next copy over a pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx` to the working directory:
+\vspace{0.2cm}We next copy over a pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx` to the working directory:
 
 ```{r copy_expt_n_frac, include = TRUE, eval = FALSE}
 cptac_expt_1(dat_dir)
@@ -235,7 +234,7 @@ pepHist(
 
 **Figure 1.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`.  
 
-As expected, the widths of `log2FC` profiles become more consistent after the scaling normalization. However, such adjustment may cause artifacts when the standard deviaiton across samples are genuinely different. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the characteristics of both samples and references.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users can specify explicitly `scale_log2r = FALSE` or define its value under the global environment.] I will use the same data set to illustrate the impacts of references in scaling normalization in [Lab 3.1](## Part III --- Labs). Alignment of `log2FC` against housekeeping or normalizer protein(s) is also available. This seems suitable when sometime the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
+\vspace{0.2cm}As expected, the widths of `log2FC` profiles become more consistent after the scaling normalization. However, such adjustment may cause artifacts when the standard deviaiton across samples are genuinely different. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the characteristics of both samples and references.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users can specify explicitly `scale_log2r = FALSE` or define its value under the global environment.] I will use the same data set to illustrate the impacts of references in scaling normalization in [Lab 3.1](## Part III --- Labs). Alignment of `log2FC` against housekeeping or normalizer protein(s) is also available. This seems suitable when sometime the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
 
 *Summarize peptides to proteins* --- We then summarise peptides to proteins using a two-component Gaussian kernel.^[Prameter `fasta` is solely used for the calculation of protein percent coverage. Precomputed data will be used if no `fasta` database is provided.] 
 
@@ -290,8 +289,7 @@ A multi-Gaussian kernel can fail capturing the `log2FC` profiles for a subset of
 
 **Scheme 4** Partial refit.
 
-  
-We then execute the following codes with argument `col_fit` being linked to the newly created column:
+\vspace{0.2cm}We then execute the following codes with argument `col_fit` being linked to the newly created column:
   
 ```{r normPep_partial, eval = FALSE}
 normPep(
@@ -329,7 +327,7 @@ pepMDS(
 
 **Figure 2A** MDS of peptide `log2FC`.
 
-It is clear that the WHIM2 and WHIM16 samples are well separated by the Euclidean distance of `log2FC` (**Figure 2A**). We next take the `JHU` data subset as an example to explore batch effects in the proteomic sample handling: 
+\vspace{0.2cm}It is clear that the WHIM2 and WHIM16 samples are well separated by the Euclidean distance of `log2FC` (**Figure 2A**). We next take the `JHU` data subset as an example to explore batch effects in the proteomic sample handling: 
 
 ```{r Peptide JHU MDS, eval = FALSE}
 # `JHU` subset
@@ -344,7 +342,7 @@ pepMDS(
 
 **Figure 2B-2C.** MDS of peptide `log2FC` for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics.  
 
-We immediately spot that all samples are coded with the same color (**Figure 2B**). This is not a surprise as the values under column `expt_smry.xlsx::Color` are exclusively `JHU` for the `JHU` subset. For similar reasons, the two different batches of `TMT1` and `TMT2` are distinguished by transparency, which is governed by column `expt_smry.xlsx::Alpha`. We may wish to modify the aesthetics using different keys: e.g., color coding by WHIMs and size coding by batches, without the recourse of writing new R scripts. One solution is to link the attributes and sample IDs by creating additional columns in `expt_smry.xlsx`. In this example, we have had coincidentally prepared the column `Shape` and `Alpha` to code WHIMs and batches, respectively, for the `JHU` subset. Therefore, we can recycle them directly to make a new plot (**Figure 2C**): 
+\vspace{0.2cm}We immediately spot that all samples are coded with the same color (**Figure 2B**). This is not a surprise as the values under column `expt_smry.xlsx::Color` are exclusively `JHU` for the `JHU` subset. For similar reasons, the two different batches of `TMT1` and `TMT2` are distinguished by transparency, which is governed by column `expt_smry.xlsx::Alpha`. We may wish to modify the aesthetics using different keys: e.g., color coding by WHIMs and size coding by batches, without the recourse of writing new R scripts. One solution is to link the attributes and sample IDs by creating additional columns in `expt_smry.xlsx`. In this example, we have had coincidentally prepared the column `Shape` and `Alpha` to code WHIMs and batches, respectively, for the `JHU` subset. Therefore, we can recycle them directly to make a new plot (**Figure 2C**): 
 
 ```{r Peptide JHU MDS 2, eval = FALSE}
 # `JHU` subset
@@ -740,7 +738,7 @@ pepHist(
 
 **Figure S2A-S2B.** Histogram visualization of peptide `log2FC`. Left: global + phospho; right: phospho only.
 
-Ideally, the profiles of the `log2FC` between the `phospho` subsets and the overall data would either align at the maximum density or perhaps offset by similar distance among replicated samples. In this example, the alginment at maximum density seems to be case. The observation raises the possibility of measuring the stoichiometry of phosphoproteomes in relative to global data across sample types or conditions. 
+\vspace{0.2cm}Ideally, the profiles of the `log2FC` between the `phospho` subsets and the overall data would either align at the maximum density or perhaps offset by similar distance among replicated samples. In this example, the alginment at maximum density seems to be case. The observation raises the possibility of measuring the stoichiometry of phosphoproteomes in relative to global data across sample types or conditions. 
 
 
 *NB:* I used underscore to denote N-terminal acetylation. The R language will throw an error if we attemp to use `pep_pattern = _` to subset peptides with N-terminal acetylation. In this case, we will need to quote the underscore: `pep_pattern = "_"`.
