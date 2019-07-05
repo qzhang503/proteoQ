@@ -175,6 +175,41 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
 										header = TRUE, sep = "\t", comment.char = "#") %>% 
 			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
+		
+		# SD
+		df_sd <- df %>% 
+		  dplyr::select(!!rlang::sym(id), grep("^log2_R", names(.))) %>%
+		  dplyr::group_by(!!rlang::sym(id)) %>%
+		  dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) %>% 
+		  dplyr::mutate_at(vars(grep("^log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
+		  `names<-`(gsub("^log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "SD \\(\\1\\)", names(.)))
+
+		write.csv(df_sd, file.path(dat_dir, "Protein\\cache", "prn_sd.csv"), row.names = FALSE)
+		
+		# violin plots of SD
+		Levels <- names(df_sd) %>% 
+		  .[grepl("^SD\\s+\\(", .)] %>% 
+		  gsub("^SD\\s+\\((.*)\\)$", "\\1", .)
+		
+		df_sd <- df_sd %>%
+		  `names<-`(gsub("^SD\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
+		  tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
+		  dplyr::rename(Channel := !!rlang::sym(id)) %>% 
+		  dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
+		  dplyr::filter(!is.na(SD))
+		
+		p <- ggplot() +
+		  geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
+		  geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
+		  stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
+		               shape=23, size=2, fill="white", alpha=.5) +
+		  labs(title = expression("Protein"), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
+		  scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.5, .5)) +
+		  theme_psm_violin
+		
+		dir.create(file.path(dat_dir, "Protein\\SD"), recursive = TRUE, showWarnings = FALSE)
+		ggsave(file.path(dat_dir, "Protein\\SD", "Protein_SD.png"), p, units = "in")
+		rm(Levels, p, df_sd)
 
 		# summarise data from the same TMT experiment at different LCMS injections
 		df_num <- df %>% 
@@ -290,7 +325,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	                 check.names = FALSE, header = TRUE, comment.char = "#") %>% 
 	    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 	}
-	
+
 	df <- normMulGau(
 		df = df, 
 		method_align = method_align, 
@@ -310,7 +345,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
 	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
 	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3))
-	
 	
 	write.table(df, file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 	
