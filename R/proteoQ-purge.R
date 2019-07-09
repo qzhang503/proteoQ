@@ -3,7 +3,7 @@
 #'\code{purgeData} removes entries with SD > cv_cutoff
 #'
 #'@import dplyr purrr rlang
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% 
 purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, ...) {
   id <- rlang::as_string(rlang::enexpr(id))
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
@@ -252,5 +252,3 @@ sd_violin_full <- function(df_sd, id, label_scheme, filepath, filename) {
   
   try(ggsave(file.path(filepath, filename), p, width = 7* n_TMT_sets(label_scheme), height = 7, units = "in"))
 }
-
-
