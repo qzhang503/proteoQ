@@ -53,8 +53,11 @@ purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, .
       dplyr::arrange(!!rlang::sym(id)) %>% 
       dplyr::select(!!rlang::sym(id), grep("^log2_R[0-9]{3}", names(.))) %>%
       dplyr::group_by(!!rlang::sym(id)) %>%
-      dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) %T>% 
-      write.csv(file.path(dat_dir, "Protein\\cache", "prn_sd.csv"), row.names = FALSE) %>% 
+      dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) 
+    
+    write.csv(df_sd, file.path(dat_dir, "Protein\\cache", "prn_sd.csv"), row.names = FALSE) 
+    
+    df_sd <- df_sd %>% 
       tidyr::gather(grep("log2_R[0-9]{3}", names(.)), key = ID, value = value)
     
     Levels <- unique(df_sd$ID)
