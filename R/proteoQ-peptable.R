@@ -20,11 +20,10 @@
 normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 
 	dir.create(file.path(dat_dir, "Peptide\\Histogram"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide\\SD"), recursive = TRUE, showWarnings = FALSE)
 	on.exit(message("Generation of individual peptide tables by RAW filenames --- Completed."),
 	        add = TRUE)
 
-	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx, injn_idx) {
+	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx) {
 		id <- rlang::as_string(rlang::enexpr(id))
 
 		channelInfo <- label_scheme %>%
@@ -37,16 +36,6 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 				dplyr::select(-grep("^R[0-9]{3}", names(.))) %>%
 				dplyr::mutate(pep_scan_title = gsub("\\\\", "~~", pep_scan_title)) %>%
 				dplyr::mutate(pep_scan_title = gsub("^File.*~~", "", pep_scan_title))
-		
-		# violin plots of SDs
-		df_sd <- df %>% 
-		  dplyr::select(!!rlang::sym(id), grep("^log2_R", names(.))) %>%
-		  dplyr::group_by(!!rlang::sym(id)) %>%
-		  dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) %>% 
-		  dplyr::mutate_at(vars(grep("^log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
-		  `names_pos<-`(2:ncol(.), paste0("sd_", names(.)[2:ncol(.)]))
-		
-		sd_violin(df_sd, !!id, label_scheme, paste0("SD_set_", set_idx, "_inj_", injn_idx, ".png"), 8, 8)
 
 		# summarise log2FC and intensity from the same `set_idx` but different LCMS injections
 		if (method_psm_pep == "mean") {
@@ -96,7 +85,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 		  df_first <- df_first %>% dplyr::select(-pep_seq_mod)
 		}
 
-		df <- list(df_psm, df_sd, df_first, df_score, df_expect, df_num) %>%
+		df <- list(df_psm, df_first, df_score, df_expect, df_num) %>%
 				purrr::reduce(left_join, by = id) %>%
 				data.frame(check.names = FALSE)
 
@@ -152,7 +141,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 		
 		df <- df %>%
 		  calcPepide(label_scheme = label_scheme, id = !!id, method_psm_pep = method_psm_pep,
-		             set_idx = set_idx, injn_idx = injn_idx)
+		             set_idx = set_idx)
 
 		if(grepl("|", df$prot_acc[1], fixed = TRUE)) {
 			temp <- strsplit(as.character(df$prot_acc), '|', fixed = TRUE)
@@ -271,6 +260,24 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 
+	newColnames <- function(i, x) {
+		label_scheme_sub <- label_scheme %>%
+			dplyr::filter(TMT_Set == i)
+
+		cols <- grep(paste0("[RI][0-9]{3}[NC]*_", i, "$"), names(x))
+		nm_channel <- gsub(paste0("([RI][0-9]{3}[NC]*)_", i, "$"), "\\1", names(x)[cols])
+		names(x)[cols] <- paste0(nm_channel, " (", as.character(label_scheme_sub$Sample_ID), ")")
+
+		cols <- grep("[RI][0-9]{3}.*\\s+\\(.*\\)$", names(x))
+		if (is.data.table(x)) {
+			if (length(cols) < ncol(x)) x <- cbind(x[, ..cols], x[, -..cols])
+		} else {
+			if (length(cols) < ncol(x)) x <- dplyr::bind_cols(x[, cols], x[, -cols, drop = FALSE])
+		}
+
+		return(x)
+	}
+
 	id <- rlang::enexpr(id)
 	if(id == rlang::expr(c("pep_seq", "pep_seq_mod"))) {
 		id <- "pep_seq_mod"
@@ -348,11 +355,12 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 			dplyr::filter(N > 1)
 
 		if (nrow(dup_peps) > 0) {
-		  df <- df %>% dplyr::filter(! (!!rlang::sym(id) %in% dup_peps[[id]]))
-		  write.csv(dup_peps, file.path(dat_dir, "Peptide", "dbl_dipping_peptides.csv"), row.names = FALSE)
+			df <- df %>% dplyr::filter(! (!!rlang::sym(id) %in% dup_peps[[id]]))
+
+			write.csv(dup_peps,
+				file.path(dat_dir, "Peptide", "dbl_dipping_peptides.csv"),
+				row.names = FALSE)
 		}
-		
-		write.csv(df, file.path(dat_dir, "Peptide\\cache", "unambi_peptides.csv"), row.names = FALSE)
 		rm(dup_peps)
 
 		# median summarisation of data from the same TMT experiment at different LCMS injections
@@ -382,25 +390,21 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		# 	dplyr::select(-Identifier) %>%
 		# 	setDT(.)
 
-		for (set_idx in seq_len(n_TMT_sets(label_scheme))) {
-		  df_num <- newColnames(set_idx, df_num, label_scheme)
-		}
-		df_num <- df_num %>% dplyr::arrange(!!rlang::sym(id))
+		for (set_idx in seq_len(n_TMT_sets(label_scheme_full)))
+		  df_num <- df_num %>% newColnames(set_idx, .)
 
 		write.csv(df_num, file.path(dat_dir, "Peptide\\cache", "pep_num.csv"), row.names = FALSE)
 
 		# calculate the number of PSM for each peptide
 		df_psm <- df %>%
-		  dplyr::select(!!rlang::sym(id), n_psm) %>%
-		  dplyr::group_by(!!rlang::sym(id)) %>%
-		  dplyr::summarise(n_psm = sum(n_psm)) %>% 
-		  dplyr::arrange(!!rlang::sym(id))
+				dplyr::select(!!rlang::sym(id), n_psm) %>%
+				dplyr::group_by(!!rlang::sym(id)) %>%
+				dplyr::summarise(n_psm = sum(n_psm))
 
 		df_first <- df %>% 
 		  dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
 		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-		  dplyr::select(-n_psm, -TMT_Set) %>% 
-		  dplyr::arrange(!!rlang::sym(id))
+		  dplyr::select(-n_psm, -TMT_Set)
 
 		df <- list(df_psm, df_first, df_num) %>%
 			purrr::reduce(left_join, by = id) %>%
@@ -432,16 +436,15 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 		df <- reorderCols(df, endColIndex = grep("I[0-9]{3}|R[0-9]{3}", names(df)), col_to_rn = id)
 
-		df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ] %>% 
-		  dplyr::arrange(!!rlang::sym(id))
+		df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ]
 
 		# df <- replace_na_genes(df, acc_type)
+
 		write.csv(df, file.path(dat_dir, "Peptide\\cache", "Peptide_no_norm.csv"), row.names = FALSE)
 	} else {
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"),
 			check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>%
-			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0) %>% 
-		  dplyr::arrange(!!rlang::sym(id))
+			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 	}
 
 	df <- normMulGau(
@@ -476,98 +479,3 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 	invisible(df)
 }
-
-
-
-#' Make new column names
-#'
-#' \code{newColnames} match names to Sample_ID in label_scheme
-#'
-#' @import dplyr purrr rlang
-#' @importFrom magrittr %>%
-newColnames <- function(i, x, label_scheme) {
-  label_scheme_sub <- label_scheme %>%
-    dplyr::filter(TMT_Set == i)
-  
-  cols <- grep(paste0("[RI][0-9]{3}[NC]*_", i, "$"), names(x))
-  nm_channel <- gsub(paste0("([RI][0-9]{3}[NC]*)_", i, "$"), "\\1", names(x)[cols])
-  names(x)[cols] <- paste0(nm_channel, " (", as.character(label_scheme_sub$Sample_ID), ")")
-  
-  cols <- grep("[RI][0-9]{3}.*\\s+\\(.*\\)$", names(x))
-  if (is.data.table(x)) {
-    if (length(cols) < ncol(x)) x <- cbind(x[, ..cols], x[, -..cols])
-  } else {
-    if (length(cols) < ncol(x)) x <- dplyr::bind_cols(x[, -cols, drop = FALSE], x[, cols])
-  }
-  
-  return(x)
-}
-
-
-#' Violin plots of SDs
-#'
-#' \code{sd_violin} visualizes the SD distribution of SD
-#'
-#' @import dplyr purrr rlang ggplot2
-#' @importFrom magrittr %>%
-sd_violin <- function(df_sd, id, label_scheme, filename, width, height) {
-  id <- rlang::as_string(rlang::enexpr(id))
-  
-  if (TMT_plex(label_scheme) > 0) {
-    TMT_levels <- label_scheme %>% TMT_plex() %>% TMT_levels()
-    Levels <- TMT_levels %>% gsub("^TMT-", "", .)
-    
-    df_sd <- df_sd %>%
-      `names<-`(gsub("sd_log2_R", "", names(.))) %>% 
-      tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
-      dplyr::rename(Channel := !!rlang::sym(id)) %>% 
-      dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
-      dplyr::filter(!is.na(SD))
-    
-    p <- ggplot() +
-      geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
-      geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
-      stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
-                   shape=23, size=2, fill="white", alpha=.5) +
-      labs(title = expression("Peptide"), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
-      scale_y_continuous(limits = c(0, .6), breaks = seq(0, .6, .2)) +
-      theme_psm_violin
-    
-    ggsave(file.path(dat_dir, "Peptide\\SD", filename), p, width = width, height = height, units = "in")
-  }
-}
-
-
-#' Violin plots of SDs
-#'
-#' \code{sd_violin_full} visualizes the SD distribution of SD
-#'
-#' @import dplyr purrr rlang ggplot2
-#' @importFrom magrittr %>%
-sd_violin_full <- function(df_sd, id, label_scheme, filepath, filename) {
-  id <- rlang::as_string(rlang::enexpr(id))
-  
-  Levels <- names(df_sd) %>% 
-    .[grepl("^log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-    gsub("^log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", .)  
-  
-  df_sd <- df_sd %>%
-    `names<-`(gsub("^log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
-    tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
-    dplyr::rename(Channel := !!rlang::sym(id)) %>% 
-    dplyr::ungroup(Channel) %>% 
-    dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
-    dplyr::filter(!is.na(SD))
-  
-  p <- ggplot() +
-    geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
-    geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
-    stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
-                 shape=23, size=2, fill="white", alpha=.5) +
-    labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
-    scale_y_continuous(limits = c(0, .6), breaks = seq(0, .6, .2)) +
-    theme_psm_violin
-  
-  try(ggsave(file.path(filepath, filename), p, width = 7* n_TMT_sets(label_scheme), height = 7, units = "in"))
-}
-
