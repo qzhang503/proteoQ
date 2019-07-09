@@ -175,7 +175,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
 										header = TRUE, sep = "\t", comment.char = "#") %>% 
 			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
-
+		
 		# summarise data from the same TMT experiment at different LCMS injections
 		df_num <- df %>% 
 				dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
@@ -290,7 +290,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	                 check.names = FALSE, header = TRUE, comment.char = "#") %>% 
 	    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 	}
-	
+
 	df <- normMulGau(
 		df = df, 
 		method_align = method_align, 
@@ -310,7 +310,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
 	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
 	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3))
-	
 	
 	write.table(df, file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 	

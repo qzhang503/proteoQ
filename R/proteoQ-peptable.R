@@ -20,10 +20,11 @@
 normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 
 	dir.create(file.path(dat_dir, "Peptide\\Histogram"), recursive = TRUE, showWarnings = FALSE)
+  # dir.create(file.path(dat_dir, "Peptide\\SD"), recursive = TRUE, showWarnings = FALSE)
 	on.exit(message("Generation of individual peptide tables by RAW filenames --- Completed."),
 	        add = TRUE)
 
-	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx) {
+	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx, injn_idx) {
 		id <- rlang::as_string(rlang::enexpr(id))
 
 		channelInfo <- label_scheme %>%
@@ -141,7 +142,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 		
 		df <- df %>%
 		  calcPepide(label_scheme = label_scheme, id = !!id, method_psm_pep = method_psm_pep,
-		             set_idx = set_idx)
+		             set_idx = set_idx, injn_idx = injn_idx)
 
 		if(grepl("|", df$prot_acc[1], fixed = TRUE)) {
 			temp <- strsplit(as.character(df$prot_acc), '|', fixed = TRUE)
@@ -236,7 +237,8 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #' }
 #'@import stringr dplyr tidyr purrr data.table rlang
 #'@importFrom plyr ddply
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% 
+#'@importFrom magrittr %T>% 
 #'@export
 normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 										method_psm_pep = c("median", "mean", "weighted.mean", "top.3"),
@@ -259,24 +261,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 	load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
-
-	newColnames <- function(i, x) {
-		label_scheme_sub <- label_scheme %>%
-			dplyr::filter(TMT_Set == i)
-
-		cols <- grep(paste0("[RI][0-9]{3}[NC]*_", i, "$"), names(x))
-		nm_channel <- gsub(paste0("([RI][0-9]{3}[NC]*)_", i, "$"), "\\1", names(x)[cols])
-		names(x)[cols] <- paste0(nm_channel, " (", as.character(label_scheme_sub$Sample_ID), ")")
-
-		cols <- grep("[RI][0-9]{3}.*\\s+\\(.*\\)$", names(x))
-		if (is.data.table(x)) {
-			if (length(cols) < ncol(x)) x <- cbind(x[, ..cols], x[, -..cols])
-		} else {
-			if (length(cols) < ncol(x)) x <- dplyr::bind_cols(x[, cols], x[, -cols, drop = FALSE])
-		}
-
-		return(x)
-	}
 
 	id <- rlang::enexpr(id)
 	if(id == rlang::expr(c("pep_seq", "pep_seq_mod"))) {
@@ -355,12 +339,11 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 			dplyr::filter(N > 1)
 
 		if (nrow(dup_peps) > 0) {
-			df <- df %>% dplyr::filter(! (!!rlang::sym(id) %in% dup_peps[[id]]))
-
-			write.csv(dup_peps,
-				file.path(dat_dir, "Peptide", "dbl_dipping_peptides.csv"),
-				row.names = FALSE)
+		  df <- df %>% dplyr::filter(! (!!rlang::sym(id) %in% dup_peps[[id]]))
+		  write.csv(dup_peps, file.path(dat_dir, "Peptide", "dbl_dipping_peptides.csv"), row.names = FALSE)
 		}
+		
+		write.csv(df, file.path(dat_dir, "Peptide\\cache", "unambi_peptides.csv"), row.names = FALSE)
 		rm(dup_peps)
 
 		# median summarisation of data from the same TMT experiment at different LCMS injections
@@ -368,7 +351,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 			dplyr::select(!!rlang::sym(id), TMT_Set, grep(
 			  "^log2_R[0-9]{3}|^I[0-9]{3}|^N_log2_R[0-9]{3}|^N_I[0-9]{3}|^Z_log2_R[0-9]{3}", names(.))) %>%
 			dplyr::group_by(!!rlang::sym(id), TMT_Set) %>%
-			dplyr::summarise_all(~ median(., na.rm = TRUE))
+			dplyr::summarise_all(~ median(.x, na.rm = TRUE))
 
 		df_num <- df_num %>%
 			dplyr::arrange(TMT_Set) %>%
@@ -383,28 +366,27 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 			tidyr::spread(ID, value)
 		rm(Levels)
 
-		# faster when using data.table to transform "df_num" to wide format
-		# df_num <- dcast(setDT(df_num), eval(as.name(Identifier)) ~ TMT_Set,
-		#   value.var = names(df_num)[!names(df_num) %in% c(Identifier, "TMT_Set")]) %>%
-		# 	dplyr::mutate(!! rlang::sym(id) := Identifier) %>%
-		# 	dplyr::select(-Identifier) %>%
-		# 	setDT(.)
-
-		for (set_idx in seq_len(n_TMT_sets(label_scheme_full)))
-		  df_num <- df_num %>% newColnames(set_idx, .)
-
-		write.csv(df_num, file.path(dat_dir, "Peptide\\cache", "pep_num.csv"), row.names = FALSE)
+		for (set_idx in seq_len(n_TMT_sets(label_scheme))) {
+		  df_num <- newColnames(set_idx, df_num, label_scheme)
+		}
+		
+		df_num <- df_num %>% 
+		  dplyr::select(!!rlang::sym(id), grep("[RI][0-9]{3}[NC]*", names(.))) %>% 
+		  dplyr::arrange(!!rlang::sym(id)) %T>%
+		  write.csv(file.path(dat_dir, "Peptide\\cache", "pep_num.csv"), row.names = FALSE)
 
 		# calculate the number of PSM for each peptide
 		df_psm <- df %>%
-				dplyr::select(!!rlang::sym(id), n_psm) %>%
-				dplyr::group_by(!!rlang::sym(id)) %>%
-				dplyr::summarise(n_psm = sum(n_psm))
+		  dplyr::select(!!rlang::sym(id), n_psm) %>%
+		  dplyr::group_by(!!rlang::sym(id)) %>%
+		  dplyr::summarise(n_psm = sum(n_psm)) %>% 
+		  dplyr::arrange(!!rlang::sym(id))
 
 		df_first <- df %>% 
 		  dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
 		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-		  dplyr::select(-n_psm, -TMT_Set)
+		  dplyr::select(-n_psm, -TMT_Set) %>% 
+		  dplyr::arrange(!!rlang::sym(id))
 
 		df <- list(df_psm, df_first, df_num) %>%
 			purrr::reduce(left_join, by = id) %>%
@@ -436,15 +418,16 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 		df <- reorderCols(df, endColIndex = grep("I[0-9]{3}|R[0-9]{3}", names(df)), col_to_rn = id)
 
-		df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ]
+		df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ] %>% 
+		  dplyr::arrange(!!rlang::sym(id))
 
 		# df <- replace_na_genes(df, acc_type)
-
 		write.csv(df, file.path(dat_dir, "Peptide\\cache", "Peptide_no_norm.csv"), row.names = FALSE)
 	} else {
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"),
 			check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>%
-			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
+			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0) %>% 
+		  dplyr::arrange(!!rlang::sym(id))
 	}
 
 	df <- normMulGau(
@@ -479,3 +462,31 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 	invisible(df)
 }
+
+
+
+#' Make new column names
+#'
+#' \code{newColnames} match names to Sample_ID in label_scheme
+#'
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>%
+newColnames <- function(i, x, label_scheme) {
+  label_scheme_sub <- label_scheme %>%
+    dplyr::filter(TMT_Set == i)
+  
+  cols <- grep(paste0("[RI][0-9]{3}[NC]*_", i, "$"), names(x))
+  nm_channel <- gsub(paste0("([RI][0-9]{3}[NC]*)_", i, "$"), "\\1", names(x)[cols])
+  names(x)[cols] <- paste0(nm_channel, " (", as.character(label_scheme_sub$Sample_ID), ")")
+  
+  cols <- grep("[RI][0-9]{3}.*\\s+\\(.*\\)$", names(x))
+  
+  # cols with new names go first
+  if (length(cols) < ncol(x)) x <- dplyr::bind_cols(x[, cols], x[, -cols, drop = FALSE])
+
+  return(x)
+}
+
+
+
+
