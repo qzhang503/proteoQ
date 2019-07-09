@@ -418,7 +418,12 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 				tidyr::gather(key = "Channel", value = "Intensity") %>%
 				dplyr::mutate(Channel = factor(Channel, levels = Levels))
 			rm(Levels)
-
+			
+			mean_int <- df_int %>% 
+			  dplyr::group_by(Channel) %>% 
+			  dplyr::summarise(Intensity = mean(log10(Intensity), na.rm = TRUE)) %>% 
+			  dplyr::mutate(Intensity = round(Intensity, digit = 1))
+			
 			Width <- 8
 			Height <- 8
 
@@ -429,6 +434,7 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 			  stat_summary(df_int, mapping = aes(x = Channel, y = log10(Intensity)), fun.y = "mean", geom = "point",
 			               shape = 23, size = 2, fill = "white", alpha = .5) +
 			  labs(title = expression("Reporter ions"), x = expression("Channel"), y = expression("Intensity ("*log[10]*")")) +
+			  geom_text(data = mean_int, aes(x = Channel, label = Intensity, y = Intensity + 0.2), size = 5, colour = "red", alpha = .5) + 
 			  theme_psm_violin
 
 			ggsave(file.path(dat_dir, "PSM\\Violin\\bf_olm", filename), p, width = Width, height = Height, units = "in")
@@ -1001,6 +1007,11 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 					dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
 				  dplyr::filter(!is.na(Intensity))
 				rm(Levels)
+				
+				mean_int <- df_int %>% 
+				  dplyr::group_by(Channel) %>% 
+				  dplyr::summarise(Intensity = mean(log10(Intensity), na.rm = TRUE)) %>% 
+				  dplyr::mutate(Intensity = round(Intensity, digit = 1))
 
 				Width <- 8
 				Height <- 8
@@ -1011,7 +1022,8 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 					geom_boxplot(df_int, mapping=aes(x=Channel, y=log10(Intensity)), width=0.2, lwd=.2, fill="white") +
 					stat_summary(df_int, mapping=aes(x=Channel, y=log10(Intensity)), fun.y="mean", geom="point",
 					             shape=23, size=2, fill="white", alpha=.5) +
-					labs(title=expression("Reporter ions"), x=expression("Channel"), y=expression("Intensity ("*log[10]*")")) +
+					labs(title=expression("Reporter ions"), x=expression("Channel"), y=expression("Intensity ("*log[10]*")")) + 
+				  geom_text(data = mean_int, aes(x = Channel, label = Intensity, y = Intensity + 0.2), size = 5, colour = "red", alpha = .5) + 
 					theme_psm_violin
 
 				ggsave(file.path(dat_dir, "PSM\\Violin", paste0(filename, ".png")), p, width = Width, height = Height, units = "in")
