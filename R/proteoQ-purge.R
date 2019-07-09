@@ -3,7 +3,7 @@
 #'\code{purgeData} removes entries with SD > cv_cutoff
 #'
 #'@import dplyr purrr rlang
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% 
 purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, ...) {
   id <- rlang::as_string(rlang::enexpr(id))
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
