@@ -16,7 +16,7 @@
 #' \dontrun{
 #' }
 #' @import stringr dplyr purrr rlang
-#' @importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% 
 normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 
 	dir.create(file.path(dat_dir, "Peptide\\Histogram"), recursive = TRUE, showWarnings = FALSE)
@@ -485,7 +485,6 @@ newColnames <- function(i, x, label_scheme) {
 
   return(x)
 }
-
 
 
 

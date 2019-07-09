@@ -252,5 +252,3 @@ sd_violin_full <- function(df_sd, id, label_scheme, filepath, filename) {
   
   try(ggsave(file.path(filepath, filename), p, width = 7* n_TMT_sets(label_scheme), height = 7, units = "in"))
 }
-
-
