@@ -369,8 +369,9 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		
 		df_num <- df_num %>% 
 		  dplyr::select(!!rlang::sym(id), grep("[RI][0-9]{3}[NC]*", names(.))) %>% 
-		  dplyr::arrange(!!rlang::sym(id)) %T>%
-		  write.csv(file.path(dat_dir, "Peptide\\cache", "pep_num.csv"), row.names = FALSE)
+		  dplyr::arrange(!!rlang::sym(id)) 
+		
+		write.csv(df_num, file.path(dat_dir, "Peptide\\cache", "pep_num.csv"), row.names = FALSE)
 
 		# calculate the number of PSM for each peptide
 		df_psm <- df %>%

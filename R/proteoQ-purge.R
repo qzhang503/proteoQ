@@ -27,8 +27,11 @@ purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, .
       dplyr::select(!!rlang::sym(id), TMT_Set, grep("^log2_R[0-9]{3}", names(.))) %>%
       dplyr::group_by(!!rlang::sym(id), TMT_Set) %>%
       dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) %>% 
-      dplyr::arrange(TMT_Set) %T>%
-      write.csv(file.path(dat_dir, "Peptide\\cache", "pep_sd.csv"), row.names = FALSE) %>% 
+      dplyr::arrange(TMT_Set) 
+    
+    write.csv(df_sd, file.path(dat_dir, "Peptide\\cache", "pep_sd.csv"), row.names = FALSE)
+    
+    df_sd <- df_sd %>% 
       tidyr::gather(grep("log2_R[0-9]{3}", names(.)), key = ID, value = value) %>%
       tidyr::unite(ID, ID, TMT_Set)
     
