@@ -416,3 +416,10 @@ fitKernelDensity <- function (df, n_comp = 3, seed = NULL, ...) {
 		dplyr::mutate(Height = .$lambda * dnorm(.$mean, mean = .$mean, sd = .$sd))
 }
 
+
+
+
+
+
+
+
