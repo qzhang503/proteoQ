@@ -220,3 +220,37 @@ purPrn <- function (...) {
 }
 
 
+#' Violin plots of SDs
+#'
+#' \code{sd_violin_full} visualizes the SD distribution of SD
+#'
+#' @import dplyr purrr rlang ggplot2
+#' @importFrom magrittr %>%
+sd_violin_full <- function(df_sd, id, label_scheme, filepath, filename) {
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  Levels <- names(df_sd) %>% 
+    .[grepl("^log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+    gsub("^log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", .)  
+  
+  df_sd <- df_sd %>%
+    `names<-`(gsub("^log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
+    tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
+    dplyr::rename(Channel := !!rlang::sym(id)) %>% 
+    dplyr::ungroup(Channel) %>% 
+    dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
+    dplyr::filter(!is.na(SD))
+  
+  p <- ggplot() +
+    geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
+    geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
+    stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
+                 shape=23, size=2, fill="white", alpha=.5) +
+    labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
+    scale_y_continuous(limits = c(0, .6), breaks = seq(0, .6, .2)) +
+    theme_psm_violin
+  
+  try(ggsave(file.path(filepath, filename), p, width = 7* n_TMT_sets(label_scheme), height = 7, units = "in"))
+}
+
+
