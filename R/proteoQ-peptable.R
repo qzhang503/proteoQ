@@ -15,8 +15,7 @@
 #'
 #' \dontrun{
 #' }
-#' @import stringr dplyr purrr rlang
-#'@importFrom magrittr %>% %T>% 
+#' @import stringr dplyr purrr rlang  magrittr
 normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 
 	dir.create(file.path(dat_dir, "Peptide\\Histogram"), recursive = TRUE, showWarnings = FALSE)
@@ -236,8 +235,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #')
 #' }
 #'@import stringr dplyr tidyr purrr data.table rlang
-#'@importFrom plyr ddply
-#'@importFrom magrittr %>% %T>% 
+#'@importFrom plyr ddply magrittr
 #'@export
 normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 										method_psm_pep = c("median", "mean", "weighted.mean", "top.3"),
