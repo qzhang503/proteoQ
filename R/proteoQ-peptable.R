@@ -19,7 +19,6 @@
 normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 
 	dir.create(file.path(dat_dir, "Peptide\\Histogram"), recursive = TRUE, showWarnings = FALSE)
-  # dir.create(file.path(dat_dir, "Peptide\\SD"), recursive = TRUE, showWarnings = FALSE)
 	on.exit(message("Generation of individual peptide tables by RAW filenames --- Completed."),
 	        add = TRUE)
 
@@ -234,8 +233,8 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'  epsilon = 1e-05
 #')
 #' }
-#'@import stringr dplyr tidyr purrr data.table rlang
-#'@importFrom plyr ddply magrittr
+#'@import stringr dplyr tidyr purrr data.table rlang magrittr
+#'@importFrom plyr ddply 
 #'@export
 normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 										method_psm_pep = c("median", "mean", "weighted.mean", "top.3"),

@@ -293,6 +293,8 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 	
 	D <- dist(t(df), method = "euclidean", diag = TRUE, upper = TRUE)
 	D_matrix <- as.matrix(D)
+	
+	if (anyNA(D)) stop("Distance cannot be calculated for one more sample pairs.")
 
 	# adjust Euclidean distance for samples from two different TMT sets
 	if (adjEucDist) {
