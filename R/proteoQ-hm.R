@@ -23,7 +23,7 @@ my_pheatmap <- function(mat, filename, annotation_col, color, annotation_colors,
     pheatmap(mat = !!mat, filename = !!filename, annotation_col = !!annotation_col, color = !!color,
              annotation_colors = !!annotation_colors, breaks = !!breaks, !!!dots))
   
-  rlang::expr_print(ph_call)
+  # rlang::expr_print(ph_call)
   rlang::eval_bare(ph_call, env = caller_env())
 }
 

@@ -6,6 +6,7 @@
         proteins](#summarize-psms-to-peptides-and-proteins)
     -   [1.3 Renormalize data for a subset of
         samples](#renormalize-data-for-a-subset-of-samples)
+    -   [1.4 Purge data](#purge-data)
 -   [Part II - Basic informatics](#part-ii-basic-informatics)
     -   [2.1 MDS and PCA plots](#mds-and-pca-plots)
     -   [2.2 Correlation plots](#correlation-plots)
@@ -411,6 +412,55 @@ normPep(
 )
 ```
 
+### 1.4 Purge data
+
+Sometimes we may want to distill data with more strigent criteria. The
+`proteoQ` workflow currently supports data purging by `CV` and the
+number of identifying sequences. The `CV` are calculated from the
+ascribing PSMs for peptide data, or ascribing peptides for protein data.
+Data entries with `CV` greater than the cut-off will be replaced with
+NA. Similary, the augument `nseq_cutoff` stands for the cut-off value in
+the number of identifying PSMs for peptide data, or the number of
+identifying peptides for protein data. Data entries with identifying
+PSMs or peptides less than the cut-off will be replaced with NA.
+
+Here I will use the protein data as an example. We first take a look at
+the distributions of `CV` without setting any criterion in data
+filtration:
+
+``` r
+purPrn()
+```
+
+<img src="images\protein\purge\prn_sd_bf.png" alt="**Figure 2A.** CV of protein log2FC before purging" width="80%" />
+<p class="caption">
+**Figure 2A.** CV of protein log2FC before purging
+</p>
+
+This gave us a gist about the `CV` of `log2FC` for each sample. We next,
+for instance, choose a cut-off in `CV` at 0.5 and a cut-off in the
+number of identifying peptides at three:
+
+``` r
+purPrn(
+  cv_cutoff = .5, 
+  nseq_cutoff = 3, 
+)
+```
+
+<img src="images\protein\purge\prn_sd_af.png" alt="**Figure 2B.** CV of protein log2FC after purging" width="80%" />
+<p class="caption">
+**Figure 2B.** CV of protein log2FC after purging
+</p>
+
+Note that the file of `Protein.txt` will be overwritten with the
+cleanup. It may be a good idea to make a copy of the data file before
+experimenting. Otherwise, we will need to start over with data
+normalization should we want to revert the changes. Also importantly, we
+will call `normPrn` to re-normalize the purged data and `prnHist` for
+updated visualization of histograms. The same is true for the cleanup
+and update of peptide data.
+
 Part II - Basic informatics
 ---------------------------
 
@@ -431,13 +481,13 @@ pepMDS(
 )
 ```
 
-<img src="images\peptide\mds\peptide_mds.png" alt="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="images\peptide\mds\peptide_mds.png" alt="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
-**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`
+**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`
 </p>
 
 It is clear that the WHIM2 and WHIM16 samples are well separated by the
-Euclidean distance of `log2FC` (**Figure 2A**). We next take the `JHU`
+Euclidean distance of `log2FC` (**Figure 3A**). We next take the `JHU`
 data subset as an example to explore batch effects in the proteomic
 sample handling:
 
@@ -450,14 +500,14 @@ pepMDS(
 )
 ```
 
-<img src="images\peptide\mds\mds_jhu.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="images\peptide\mds\mds_jhu_new_aes.png" alt="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
+<img src="images\peptide\mds\mds_jhu.png" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="images\peptide\mds\mds_jhu_new_aes.png" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
 <p class="caption">
-**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left:
+**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left:
 original aesthetics; right, modefied aesthetics
 </p>
 
 We immediately spot that all samples are coded with the same color
-(**Figure 2B**). This is not a surprise as the values under column
+(**Figure 3B**). This is not a surprise as the values under column
 `expt_smry.xlsx::Color` are exclusively `JHU` for the `JHU` subset. For
 similar reasons, the two different batches of `TMT1` and `TMT2` are
 distinguished by transparency, which is governed by column
@@ -468,7 +518,7 @@ the attributes and sample IDs by creating additional columns in
 `expt_smry.xlsx`. In this example, we have had coincidentally prepared
 the column `Shape` and `Alpha` to code WHIMs and batches, respectively,
 for the `JHU` subset. Therefore, we can recycle them directly to make a
-new plot (**Figure 2C**):
+new plot (**Figure 3C**):
 
 ``` r
 # `JHU` subset
@@ -536,9 +586,9 @@ to `WHIM` and `Batch`, respectively, for better intuition. We can
 alternatively add columns `WHIM` and `Batch` if we choose not to recycle
 columns `Shape` and `Alpha`.
 
-<img src="images\peptide\mds\eucdist_jhu.png" alt="**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="images\peptide\mds\eucdist_jhu.png" alt="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 <p class="caption">
-**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`
+**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`
 </p>
 
 ### 2.2 Correlation plots
@@ -593,9 +643,9 @@ prnCorr(
 )
 ```
 
-<img src="images\peptide\corrplot\corr_pnnl.png" alt="**Figure 3A-3B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" /><img src="images\protein\corrplot\corr_pnnl.png" alt="**Figure 3A-3B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" />
+<img src="images\peptide\corrplot\corr_pnnl.png" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" /><img src="images\protein\corrplot\corr_pnnl.png" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" />
 <p class="caption">
-**Figure 3A-3B.** Correlation of log2FC for the `PNNL` subset. Left:
+**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left:
 peptide; right, protein
 </p>
 
@@ -639,9 +689,9 @@ prnHM(
 )
 ```
 
-<img src="images\protein\heatmap\heatmap.png" alt="**Figure 4.** Heat map visualization of protein log2FC" width="80%" />
+<img src="images\protein\heatmap\heatmap.png" alt="**Figure 5.** Heat map visualization of protein log2FC" width="80%" />
 <p class="caption">
-**Figure 4.** Heat map visualization of protein log2FC
+**Figure 5.** Heat map visualization of protein log2FC
 </p>
 
 ### 2.5 Significance tests and volcano plot visualization
@@ -678,14 +728,14 @@ Note that we have informed the `prnSig` function to look for contrasts
 under columns `Term` and `Term_2`, followed by the cotrast pairs in
 square brackets. Pairs of contrasts are separated by commas.
 
-<img src="images\protein\volcplot\batches.png" alt="**Figure 5A.** Volcano plots of protein log2FC between two batches." width="80%" />
+<img src="images\protein\volcplot\batches.png" alt="**Figure 6A.** Volcano plots of protein log2FC between two batches." width="80%" />
 <p class="caption">
-**Figure 5A.** Volcano plots of protein log2FC between two batches.
+**Figure 6A.** Volcano plots of protein log2FC between two batches.
 </p>
 
-<img src="images\protein\volcplot\locations.png" alt="**Figure 5B.** Volcano plots of protein log2FC between locations." width="80%" />
+<img src="images\protein\volcplot\locations.png" alt="**Figure 6B.** Volcano plots of protein log2FC between locations." width="80%" />
 <p class="caption">
-**Figure 5B.** Volcano plots of protein log2FC between locations.
+**Figure 6B.** Volcano plots of protein log2FC between locations.
 </p>
 
 ### 2.6 Gene sets under volcano plots
@@ -730,9 +780,9 @@ gspaMap(
 This will produce the volcano plots of proteins within gene sets that
 have passed our selection criteria. Here, we show one of the examples:
 
-<img src="images\protein\volcplot\urogenital_system_development.png" alt="**Figure 6.** An example of volcano plots of protein log2FC under a gene set" width="80%" />
+<img src="images\protein\volcplot\urogenital_system_development.png" alt="**Figure 7.** An example of volcano plots of protein log2FC under a gene set" width="80%" />
 <p class="caption">
-**Figure 6.** An example of volcano plots of protein log2FC under a gene
+**Figure 7.** An example of volcano plots of protein log2FC under a gene
 set
 </p>
 
@@ -755,9 +805,9 @@ anal_prnTrend(
 plot_prnTrend()
 ```
 
-<img src="images\protein\trend\prn_trend_n6.png" alt="**Figure 7.** Trend analysis of protein log2FC." width="80%" />
+<img src="images\protein\trend\prn_trend_n6.png" alt="**Figure 8.** Trend analysis of protein log2FC." width="80%" />
 <p class="caption">
-**Figure 7.** Trend analysis of protein log2FC.
+**Figure 8.** Trend analysis of protein log2FC.
 </p>
 
 ### 2.8 NMF Analysis
@@ -807,9 +857,9 @@ plot_metaNMF(
 )
 ```
 
-<img src="images\protein\nmf\prn_nmf_r6_consensus.png" alt="**Figure 8A-8B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" /><img src="images\protein\nmf\prn_nmf_r6_coef.png" alt="**Figure 8A-8B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" />
+<img src="images\protein\nmf\prn_nmf_r6_consensus.png" alt="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" /><img src="images\protein\nmf\prn_nmf_r6_coef.png" alt="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" />
 <p class="caption">
-**Figure 8A-8B.** NMF analysis of protein log2FC. Left: concensus;
+**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus;
 right: coefficients.
 </p>
 

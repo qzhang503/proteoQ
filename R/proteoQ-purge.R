@@ -2,13 +2,17 @@
 #'
 #'\code{purgeData} removes entries with SD > cv_cutoff
 #'
-#'@import dplyr purrr rlang magrittr
+#'@import dplyr purrr rlang
+#'@importFrom magrittr %>%
+#'@importFrom magrittr %T>%
 purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, ...) {
   id <- rlang::as_string(rlang::enexpr(id))
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
   
   stopifnot(nseq_cutoff > 0 & nseq_cutoff%%1 == 0)
+  
+  df <- df %>% dplyr::arrange(!!rlang::sym(id))
   
   if (id %in% c("pep_seq", "pep_seq_mod")) {
     filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
@@ -27,11 +31,7 @@ purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, .
       dplyr::select(!!rlang::sym(id), TMT_Set, grep("^log2_R[0-9]{3}", names(.))) %>%
       dplyr::group_by(!!rlang::sym(id), TMT_Set) %>%
       dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) %>% 
-      dplyr::arrange(TMT_Set) 
-    
-    write.csv(df_sd, file.path(dat_dir, "Peptide\\cache", "pep_sd.csv"), row.names = FALSE)
-    
-    df_sd <- df_sd %>% 
+      dplyr::arrange(TMT_Set) %>% 
       tidyr::gather(grep("log2_R[0-9]{3}", names(.)), key = ID, value = value) %>%
       tidyr::unite(ID, ID, TMT_Set)
     
@@ -44,48 +44,38 @@ purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, .
     for (set_idx in seq_len(n_TMT_sets(label_scheme))) {
       df_sd <- newColnames(set_idx, df_sd, label_scheme)
     }
+    
+    df_sd <- df_sd %>% 
+      dplyr::select(!!rlang::sym(id), grep("log2_R[0-9]{3}[NC]*", names(.))) %>% 
+      dplyr::arrange(!!rlang::sym(id)) %T>%
+      write.csv(file.path(dat_dir, "Peptide\\cache", "pep_sd.csv"), row.names = FALSE)
   } else if (id %in% c("prot_acc", "gene")) {
     df_sd <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
                       header = TRUE, sep = "\t", comment.char = "#") %>% 
-      filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
-    
-    df_sd <- df_sd %>% 
+      filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) %>% 
       dplyr::arrange(!!rlang::sym(id)) %>% 
       dplyr::select(!!rlang::sym(id), grep("^log2_R[0-9]{3}", names(.))) %>%
       dplyr::group_by(!!rlang::sym(id)) %>%
-      dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) 
-    
-    write.csv(df_sd, file.path(dat_dir, "Protein\\cache", "prn_sd.csv"), row.names = FALSE) 
-    
-    df_sd <- df_sd %>% 
+      dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) %T>%
+      write.csv(file.path(dat_dir, "Protein\\cache", "prn_sd.csv"), row.names = FALSE) %>% 
       tidyr::gather(grep("log2_R[0-9]{3}", names(.)), key = ID, value = value)
-    
+
     Levels <- unique(df_sd$ID)
     df_sd <- df_sd %>%
       dplyr::mutate(ID = factor(ID, levels = Levels)) %>%
       tidyr::spread(ID, value) %>% 
-      dplyr::mutate_at(vars(grep("^log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3))
+      dplyr::mutate_at(vars(grep("^log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
+      dplyr::arrange(!!rlang::sym(id))
   }
   
-  # violin plots
-  if (id %in% c("pep_seq", "pep_seq_mod")) {
-    filepath <- file.path(dat_dir, "Peptide\\Purge")
-    filename <- "Peptide_SD.png"
-    dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
-  } else if (id %in% c("prot_acc", "gene")) {
-    filepath <- file.path(dat_dir, "Protein\\Purge")
-    filename <- "Protein_SD.png"
-    dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
-  }
-  sd_violin_full(df_sd, !!id, label_scheme, filepath, filename)
-
   # purging
   if (!is.null(cv_cutoff)) {
     stopifnot(is.numeric(cv_cutoff))
-
+    
     df_sd <- df_sd %>% 
-      dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ replace(.x, is.na(.x), 0)) %>% 
-      dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ replace(.x, .x > cv_cutoff, NA)) %>% 
+      dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ replace(.x, .x > cv_cutoff, NA)) 
+    
+    df_sd_lgl <- df_sd%>% 
       dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ replace(.x, !is.na(.x), 1)) %>% 
       dplyr::filter(!!rlang::sym(id) %in% df[[id]]) %>% 
       dplyr::arrange(!!rlang::sym(id)) %>% 
@@ -95,8 +85,8 @@ purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, .
     
     df <- df %>% 
       dplyr::arrange(!!rlang::sym(id)) %>% 
-      dplyr::left_join(df_sd, by = id)
-  
+      dplyr::left_join(df_sd_lgl, by = id)
+    
     df[, grepl("^log2_R[0-9]{3}", names(df))] <-
       purrr::map2(as.list(df[, grepl("^log2_R[0-9]{3}", names(df))]),
                   as.list(df[, grepl("^sd_log2_R[0-9]{3}", names(df))]), `*`) %>%
@@ -125,17 +115,27 @@ purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, .
     df <- df %>% 
       dplyr::select(-grep("^sd_log2_R", names(.)))
   }
-
+  
   if (id %in% c("pep_seq", "pep_seq_mod")) {
-    df <- df %>% 
-      dplyr::filter(n_psm >= nseq_cutoff)
+    filepath <- file.path(dat_dir, "Peptide\\Purge")
+    filename <- "Peptide_SD.png"
+    dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
+    df <- df %>% dplyr::filter(n_psm >= nseq_cutoff)
   } else if (id %in% c("prot_acc", "gene")) {
-    df <- df %>% 
-      dplyr::filter(n_pep >= nseq_cutoff)
+    filepath <- file.path(dat_dir, "Protein\\Purge")
+    filename <- "Protein_SD.png"
+    dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
+    df <- df %>% dplyr::filter(n_pep >= nseq_cutoff)
   }
   
   df <- df %>% 
     dplyr::filter(rowSums(!is.na(.[, grep("^log2_R[0-9]{3}", names(.) )])) > 0)
+  
+  # violin plots
+  df_sd <- df_sd %>% 
+    dplyr::filter(!!rlang::sym(id) %in% df[[id]])
+  
+  sd_violin_full(df_sd, !!id, label_scheme, filepath, filename)
 
   return(df)
 }
@@ -153,10 +153,13 @@ purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, .
 #'@inheritParams proteoHist
 #'@param cv_cutoff Numeric; the cut-off of CV. The CVs are from the ascribing
 #'  PSMs for peptide data or ascribing peptides for protein data.
-#'@param nseq_cutoff Positive integer; for peptide data, peptide entries with the
-#'  number of identifying PSMs smaller than the cutoff will be removed; for
-#'  protein data, protein entries with the number of identifying peptides
-#'  smaller than the cutoff will be removed.
+#'@param nseq_cutoff Positive integer. When calling from \code{purPep}, peptide
+#'  entries in \code{Peptide.txt} with the number of identifying PSMs smaller
+#'  than \code{nseq_cutoff} will be replaced with NA. When calling from
+#'  \code{purPrn}, protein entries in \code{Protein.txt} with the number of
+#'  identifying peptides smaller than \code{nseq_cutoff} will be replaced with
+#'  NA.
+#'@param ... Additional parameters for plotting yet to be defined.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
@@ -174,7 +177,8 @@ proteoPurge <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   
   reload_expts()
   
-  info_anal(id = !!id, df = !!df, filepath = !!filepath, filename = !!filename,
+  info_anal(id = !!id, 
+            df = !!df, filepath = !!filepath, filename = !!filename,
             anal_type = "Purge")(cv_cutoff = cv_cutoff, nseq_cutoff = nseq_cutoff, ...)
 }
 

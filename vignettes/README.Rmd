@@ -1,7 +1,7 @@
 ---
 title: Package "\"proteoQ\""  
 author: 
-  - Qiang Zhang
+- name: Qiang Zhang
 date: "`r Sys.Date()`"
 output:
   md_document:
@@ -309,6 +309,36 @@ normPep(
 )
 ```
 
+### 1.4 Purge data 
+Sometimes we may want to distill data with more strigent criteria. The `proteoQ` workflow currently supports data purging by `CV` and the number of identifying sequences. The `CV` are calculated from the ascribing PSMs for peptide data, or ascribing peptides for protein data. Data entries with `CV` greater than the cut-off will be replaced with NA. Similary, the augument `nseq_cutoff` stands for the cut-off value in the number of identifying PSMs for peptide data, or the number of identifying peptides for protein data. Data entries with identifying PSMs or peptides less than the cut-off will be replaced with NA. 
+
+Here I will use the protein data as an example. We first take a look at the distributions of `CV` without setting any criterion in data filtration:  
+
+```{r purge_prn_bf, eval = FALSE}
+purPrn()
+```
+
+```{r Protein_purge_bf, echo=FALSE, fig.align='center', fig.cap="**Figure 2A.** CV of protein log2FC before purging", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_purprn_br <- "images\\protein\\purge\\prn_sd_bf.png"
+knitr::include_graphics(c(img_purprn_br))
+```
+
+This gave us a gist about the `CV` of `log2FC` for each sample. We next, for instance, choose a cut-off in `CV` at 0.5 and a cut-off in the number of identifying peptides at three:  
+
+```{r purge_prn_af, eval = FALSE}
+purPrn(
+  cv_cutoff = .5, 
+  nseq_cutoff = 3, 
+)
+```
+
+```{r Protein_purge_af, echo=FALSE, fig.align='center', fig.cap="**Figure 2B.** CV of protein log2FC after purging", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_purprn_af <- "images\\protein\\purge\\prn_sd_af.png"
+knitr::include_graphics(c(img_purprn_af))
+```
+
+Note that the file of `Protein.txt` will be overwritten with the cleanup. It may be a good idea to make a copy of the data file before experimenting. Otherwise, we will need to start over with data normalization should we want to revert the changes. Also importantly, we will call `normPrn` to re-normalize the purged data and `prnHist` for updated visualization of histograms. The same is true for the cleanup and update of peptide data.  
+
 ## Part II --- Basic informatics
 In this section I illustrate the following applications of `proteoQ`:  
   
@@ -325,12 +355,12 @@ pepMDS(
 )
 ```
 
-```{r Peptide_MDS, echo=FALSE, fig.align='center', fig.cap="**Figure 2A.** MDS of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Peptide_MDS, echo=FALSE, fig.align='center', fig.cap="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_pepmds <- "images\\peptide\\mds\\peptide_mds.png"
 knitr::include_graphics(c(img_pepmds))
 ```
 
-It is clear that the WHIM2 and WHIM16 samples are well separated by the Euclidean distance of `log2FC` (**Figure 2A**). We next take the `JHU` data subset as an example to explore batch effects in the proteomic sample handling:  
+It is clear that the WHIM2 and WHIM16 samples are well separated by the Euclidean distance of `log2FC` (**Figure 3A**). We next take the `JHU` data subset as an example to explore batch effects in the proteomic sample handling:  
 
 ```{r Peptide JHU MDS, eval = FALSE}
 # `JHU` subset
@@ -341,13 +371,13 @@ pepMDS(
 )
 ```
 
-```{r Peptide_JHU_MDS, echo=FALSE, fig.align='center', fig.cap="**Figure 2B-2C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Peptide_JHU_MDS, echo=FALSE, fig.align='center', fig.cap="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_jhu_pepmds <- "images\\peptide\\mds\\mds_jhu.png"
 img_jhu_pepmds_2 <- "images\\peptide\\mds\\mds_jhu_new_aes.png"
 knitr::include_graphics(c(img_jhu_pepmds, img_jhu_pepmds_2))
 ```
 
-We immediately spot that all samples are coded with the same color (**Figure 2B**). This is not a surprise as the values under column `expt_smry.xlsx::Color` are exclusively `JHU` for the `JHU` subset. For similar reasons, the two different batches of `TMT1` and `TMT2` are distinguished by transparency, which is governed by column `expt_smry.xlsx::Alpha`. We may wish to modify the aesthetics using different keys: e.g., color coding by WHIMs and size coding by batches, without the recourse of writing new R scripts. One solution is to link the attributes and sample IDs by creating additional columns in `expt_smry.xlsx`. In this example, we have had coincidentally prepared the column `Shape` and `Alpha` to code WHIMs and batches, respectively, for the `JHU` subset. Therefore, we can recycle them directly to make a new plot (**Figure 2C**):  
+We immediately spot that all samples are coded with the same color (**Figure 3B**). This is not a surprise as the values under column `expt_smry.xlsx::Color` are exclusively `JHU` for the `JHU` subset. For similar reasons, the two different batches of `TMT1` and `TMT2` are distinguished by transparency, which is governed by column `expt_smry.xlsx::Alpha`. We may wish to modify the aesthetics using different keys: e.g., color coding by WHIMs and size coding by batches, without the recourse of writing new R scripts. One solution is to link the attributes and sample IDs by creating additional columns in `expt_smry.xlsx`. In this example, we have had coincidentally prepared the column `Shape` and `Alpha` to code WHIMs and batches, respectively, for the `JHU` subset. Therefore, we can recycle them directly to make a new plot (**Figure 3C**):  
 
 ```{r Peptide JHU MDS 2, eval = FALSE}
 # `JHU` subset
@@ -399,7 +429,7 @@ pepEucDist(
 
 Parameter `annot_cols` defines the tracks to be displayed on the top of distrance-matrix plots. In this example, we have choosen `expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the WHIM subtypes and the batch numbers, respectively. Parameter `annot_colnames` allows us to rename the tracks from `Shape` and `Alpha` to `WHIM` and `Batch`, respectively, for better intuition. We can alternatively add columns `WHIM` and `Batch` if we choose not to recycle columns `Shape` and `Alpha`.  
 
-```{r Peptide_EucDist, echo=FALSE, fig.align='center', fig.cap="**Figure 2D.** EucDist of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Peptide_EucDist, echo=FALSE, fig.align='center', fig.cap="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_pepEucDist <- "images\\peptide\\mds\\eucdist_jhu.png"
 knitr::include_graphics(c(img_pepEucDist))
 ```
@@ -442,7 +472,7 @@ prnCorr(
 ```
 
 
-```{r Correlation plots, echo=FALSE, fig.align='center', fig.cap="**Figure 3A-3B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Correlation plots, echo=FALSE, fig.align='center', fig.cap="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_jhu_pepcorr <- "images\\peptide\\corrplot\\corr_pnnl.png"
 img_jhu_prncorr <- "images\\protein\\corrplot\\corr_pnnl.png"
 knitr::include_graphics(c(img_jhu_pepcorr, img_jhu_prncorr))
@@ -481,7 +511,7 @@ prnHM(
 )
 ```
 
-```{r Protein_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 4.** Heat map visualization of protein log2FC", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r Protein_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 5.** Heat map visualization of protein log2FC", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_prnheat <- "images\\protein\\heatmap\\heatmap.png"
 knitr::include_graphics(c(img_prnheat))
 ```
@@ -504,14 +534,14 @@ prnVol()
 Note that we have informed the `prnSig` function to look for contrasts under columns `Term` and `Term_2`, followed by the cotrast pairs in square brackets. Pairs of contrasts are separated by commas.  
 
 
-```{r Protein_volcano_batches plots, echo=FALSE, fig.align='left', fig.cap="**Figure 5A.** Volcano plots of protein log2FC between two batches.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r Protein_volcano_batches plots, echo=FALSE, fig.align='left', fig.cap="**Figure 6A.** Volcano plots of protein log2FC between two batches.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_volcplot_batches <- "images\\protein\\volcplot\\batches.png"
 img_venn_batches <- "images\\protein\\volcplot\\venn_batches.png"
 knitr::include_graphics(c(img_volcplot_batches))
 ```
 
 
-```{r Protein_volcano_locations plots, echo=FALSE, fig.align='left', fig.cap="**Figure 5B.** Volcano plots of protein log2FC between locations.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r Protein_volcano_locations plots, echo=FALSE, fig.align='left', fig.cap="**Figure 6B.** Volcano plots of protein log2FC between locations.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_volcplot_location <- "images\\protein\\volcplot\\locations.png"
 img_venn_location <- "images\\protein\\volcplot\\venn_locations.png"
 knitr::include_graphics(c(img_volcplot_location))
@@ -543,7 +573,7 @@ gspaMap(
 
 This will produce the volcano plots of proteins within gene sets that have passed our selection criteria. Here, we show one of the examples:  
 
-```{r gspaMap_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 6.** An example of volcano plots of protein log2FC under a gene set", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r gspaMap_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 7.** An example of volcano plots of protein log2FC under a gene set", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_volcplot_gspa <- "images\\protein\\volcplot\\urogenital_system_development.png"
 knitr::include_graphics(c(img_volcplot_gspa))
 ```
@@ -562,7 +592,7 @@ anal_prnTrend(
 plot_prnTrend()
 ```
 
-```{r Protein_trends plots, echo=FALSE, fig.align='left', fig.cap="**Figure 7.** Trend analysis of protein log2FC.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r Protein_trends plots, echo=FALSE, fig.align='left', fig.cap="**Figure 8.** Trend analysis of protein log2FC.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_prn_trends <- "images\\protein\\trend\\prn_trend_n6.png"
 knitr::include_graphics(c(img_prn_trends))
 ```
@@ -611,7 +641,7 @@ plot_metaNMF(
 )
 ```
 
-```{r Protein NMF heat maps, echo=FALSE, fig.align='left', fig.cap="**Figure 8A-8B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Protein NMF heat maps, echo=FALSE, fig.align='left', fig.cap="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_nmf_con <- "images\\protein\\nmf\\prn_nmf_r6_consensus.png"
 img_nmf_coef <- "images\\protein\\nmf\\prn_nmf_r6_coef.png"
 knitr::include_graphics(c(img_nmf_con, img_nmf_coef))
