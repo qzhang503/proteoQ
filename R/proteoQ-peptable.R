@@ -233,7 +233,9 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'  epsilon = 1e-05
 #')
 #' }
-#'@import stringr dplyr tidyr purrr data.table rlang magrittr
+#'@import stringr dplyr tidyr purrr data.table rlang
+#'@importFrom magrittr %>%
+#'@importFrom magrittr %T>%
 #'@importFrom plyr ddply 
 #'@export
 normPep <- function (id = c("pep_seq", "pep_seq_mod"),
@@ -368,9 +370,8 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		
 		df_num <- df_num %>% 
 		  dplyr::select(!!rlang::sym(id), grep("[RI][0-9]{3}[NC]*", names(.))) %>% 
-		  dplyr::arrange(!!rlang::sym(id)) 
-		
-		write.csv(df_num, file.path(dat_dir, "Peptide\\cache", "pep_num.csv"), row.names = FALSE)
+		  dplyr::arrange(!!rlang::sym(id)) %T>%
+		  write.csv(file.path(dat_dir, "Peptide\\cache", "pep_num.csv"), row.names = FALSE)
 
 		# calculate the number of PSM for each peptide
 		df_psm <- df %>%
@@ -416,10 +417,8 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		df <- reorderCols(df, endColIndex = grep("I[0-9]{3}|R[0-9]{3}", names(df)), col_to_rn = id)
 
 		df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ] %>% 
-		  dplyr::arrange(!!rlang::sym(id))
-
-		# df <- replace_na_genes(df, acc_type)
-		write.csv(df, file.path(dat_dir, "Peptide\\cache", "Peptide_no_norm.csv"), row.names = FALSE)
+		  dplyr::arrange(!!rlang::sym(id)) %T>%
+		  write.csv(file.path(dat_dir, "Peptide\\cache", "Peptide_no_norm.csv"), row.names = FALSE)
 	} else {
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"),
 			check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>%

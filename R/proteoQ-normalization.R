@@ -214,7 +214,9 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		            sep = "\t", col.names = TRUE, row.names = FALSE)
 
 	} else if (method_align == "MC") {
-		cf_x <- df %>%
+	  cf_SD <- calc_sd_fcts(df, range_log2r, range_int, label_scheme)
+	  
+	  cf_x <- df %>%
 			dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
 			`colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
 			dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
@@ -223,6 +225,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 			tibble::rownames_to_column("Sample_ID") %>%
 			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
 			dplyr::arrange(Sample_ID)
+		
+		df <- df[, !grepl("^Z_log2_R[0-9]{3}", names(df)), drop = FALSE]
 
 		df <- mapply(normSD, df[,grepl("^N_log2_R[0-9]{3}", names(df))],
 		             center = cf_x$x, SD = cf_SD$fct, SIMPLIFY = FALSE) %>% # scale to the same SD
