@@ -50,7 +50,8 @@ creating 'wrappers' around published R routines.
 Installation
 ------------
 
-To install this package, start R (version "3.6") and enter:
+To install this package, start R (version "3.6.1") as **administrator**
+and enter:
 
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -171,8 +172,8 @@ We now have all the pieces that are required by `proteoQ` in place.
 Let's have a quick glance at the `expt_smry.xlsx` file. We note that no
 reference channels were indicated under the column `Reference`. With
 `proteoQ`, the `log2FC` of each species in a given sample is calculated
-either (a) in relative to the reference(s) within each multiplex TMT
-experiment or (b) to the mean of all samples in the same experiment if
+either (*a*) in relative to the reference(s) within each multiplex TMT
+experiment or (*b*) to the mean of all samples in the same experiment if
 reference(s) are absent. Hence, the later approach will be employed to
 the examplary data set that we are working with. In this special case,
 the `mean(log2FC)` for a given species in each TMT experiment is
@@ -394,8 +395,8 @@ under the column:
 
 <img src="images\peptide\histogram\partial_refit.png" width="80%" style="display: block; margin: auto;" />
 
-We then execute the following codes with argument `col_fit` being linked
-to the newly created column:
+We then execute the following codes with argument `col_refit` being
+linked to the newly created column:
 
 ``` r
 normPep(
@@ -419,7 +420,7 @@ Sometimes we may want to distill data with more strigent criteria. The
 number of identifying sequences. The `CV` are calculated from the
 ascribing PSMs for peptide data, or ascribing peptides for protein data.
 Data entries with `CV` greater than the cut-off will be replaced with
-NA. Similary, the augument `nseq_cutoff` stands for the cut-off value in
+NA. Similary, the argument `nseq_cutoff` stands for the cut-off value in
 the number of identifying PSMs for peptide data, or the number of
 identifying peptides for protein data. Data entries with identifying
 PSMs or peptides less than the cut-off will be replaced with NA.
@@ -456,10 +457,10 @@ purPrn(
 Note that the file of `Protein.txt` will be overwritten with the
 cleanup. It may be a good idea to make a copy of the data file before
 experimenting. Otherwise, we will need to start over with data
-normalization should we want to revert the changes. Also importantly, we
-will call `normPrn` to re-normalize the purged data and `prnHist` for
-updated visualization of histograms. The same is true for the cleanup
-and update of peptide data.
+normalization should we want to revert the changes. Also, we will call
+`normPrn` to re-normalize the purged data and `prnHist` for updated
+visualization of histograms. The same is true for the cleanup and update
+of peptide data.
 
 Part II - Basic informatics
 ---------------------------
@@ -536,7 +537,7 @@ analysis, the corresponding functions are `pepPCA` and `prnPCA` for
 peptide and protein data, respectively.
 
 While `MDS` approximates Euclidean distances at a low dimensional space.
-Sometime it may be useful to have an accurate view of the distance
+Sometimes it may be useful to have an accurate view of the distance
 matrix. Functions `pepEucDist` and `prnEucDist` plot the heat maps of
 Euclidean distance matrix for peptides and proteins, respectively. They
 are wrappers of
