@@ -379,13 +379,13 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 #'\code{proteoMDS} visualizes the results from multidimensional scaling (MDS).
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
-#'\code{\link[base]{dist}}, followed by a metric (\code{\link[stats]{cmdscale}})
+#'\code{\link[stats]{dist}}, followed by a metric (\code{\link[stats]{cmdscale}})
 #'or non-metric (\code{\link[MASS]{isoMDS}}) MDS. The default is metric MDS with
 #'the input dissimilarities being euclidean distances.
 #'
 #'The function matches the current \code{id} to those in the latest \code{calls}
 #'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-#'\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+#'\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
 #'pep_seq_mod} will be matched to \code{id = pep_seq}.
 #'
 #'@inheritParams  proteoHist
@@ -466,7 +466,7 @@ proteoMDS <- function (id = gene,
 #'
 #'The function matches the current \code{id} to those in the latest \code{calls}
 #'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-#'\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+#'\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
 #'pep_seq_mod} will be matched to \code{id = pep_seq}.
 #'
 #'@inheritParams proteoMDS
@@ -510,11 +510,11 @@ proteoPCA <- function (id = gene,
 #'\code{proteoEucDist} visualizes the heat map of Euclidean distances.
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
-#'\code{\link[base]{dist}} for heat map visualization.
+#'\code{\link[stats]{dist}} for heat map visualization.
 #'
 #'The function matches the current \code{id} to those in the latest \code{calls}
 #'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-#'\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+#'\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
 #'pep_seq_mod} will be matched to \code{id = pep_seq}.
 #'
 #'@inheritParams proteoMDS

@@ -31,7 +31,7 @@
 #'@param min_size Minimum number of protein entries for consideration of a gene
 #'  set test.
 #'@param ... To be defined.
-#'@import dplyr rlang ggplot2 GSVA
+#'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #' @examples
 #' prnGSPA(
@@ -98,7 +98,7 @@ prnGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
 #'
 #' logFC_cutoff subsets data for adjusted pvals
 #'
-#' @import limma stringr purrr tidyr dplyr rlang gage
+#' @import limma stringr purrr tidyr dplyr rlang
 #' @importFrom magrittr %>% %$%
 #' @importFrom outliers grubbs.test
 #' @importFrom broom.mixed tidy
