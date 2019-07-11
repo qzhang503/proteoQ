@@ -44,7 +44,7 @@ missing values will be used.}
 
 \item{method}{Character string; the method of linear modeling. The default is
 \code{limma}; at \code{method = lm}, the \code{lm()} in base R will be used
-for models without random effects and the \code{\link[lmerTest]{lmer()}}
+for models without random effects and the \code{\link[lmerTest]{lmer}}
 will be used for models with random effects.}
 
 \item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.

@@ -477,7 +477,7 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
 #' A function returns the indeces of TMT channels that are associated to
 #' reference(s), sample(s) and probable unused void(s).
 #'
-#' @param label_scheme The data frame returned by \code{\link{setup_expts}}.
+#' @param label_scheme The data frame returned by \code{\link{load_expts}}.
 #' @param set_idx Numeric.  The index of a multiplex TMT experiment.
 #' @return Three lists of indeces: \code{refChannels}, reference channels(s);
 #'   \code{emptyChannels}, empty channel(s) that were not used for sample

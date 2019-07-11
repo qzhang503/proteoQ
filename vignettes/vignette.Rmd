@@ -291,7 +291,7 @@ img_partial_refit <- "images\\peptide\\histogram\\partial_refit.png"
 knitr::include_graphics(c(img_partial_refit))
 ```
 
-We then execute the following codes with argument `col_fit` being linked to the newly created column:  
+We then execute the following codes with argument `col_refit` being linked to the newly created column:  
   
 ```{r normPep_partial, eval = FALSE}
 normPep(

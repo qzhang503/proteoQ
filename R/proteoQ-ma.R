@@ -263,7 +263,7 @@ plotMA <- function (df, col_group, label_scheme_sub, filepath, filename, ...) {
 #' Accession.txt}" at \code{id = prot_acc} or
 #' "\code{~\\Direcotry\\Protein\\Protein All by gene.txt}" at \code{id = gene}.
 #'
-#' @param id The name of a unique identifier (see \code{\link[proteoQ]{MDS}}).
+#' @param id The name of a unique identifier (see \code{\link[proteoQ]{proteoMDS}}).
 #' @param scale_log2r Logical; if TRUE, rescales \code{log2-ratios} to the same
 #'   scale of standard deviation for all samples.
 #' @param annot_kinases Logical; if TRUE, annotates proteins being kinases or

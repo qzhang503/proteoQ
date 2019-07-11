@@ -98,13 +98,13 @@ MDS plots.
 }
 \details{
 An Euclidean distance matrix of \code{log2FC} is returned by
-\code{\link[base]{dist}}, followed by a metric (\code{\link[stats]{cmdscale}})
+\code{\link[stats]{dist}}, followed by a metric (\code{\link[stats]{cmdscale}})
 or non-metric (\code{\link[MASS]{isoMDS}}) MDS. The default is metric MDS with
 the input dissimilarities being euclidean distances.
 
 The function matches the current \code{id} to those in the latest \code{calls}
 to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
 pep_seq_mod} will be matched to \code{id = pep_seq}.
 }
 \examples{

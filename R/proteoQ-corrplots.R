@@ -308,7 +308,7 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath, xmin, xmax, ...) 
 #'
 #'The function matches the current \code{id} to those in the latest \code{calls}
 #'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-#'\code{pep_seq} was used in \code{\link{normPep()}}, the current \code{id =
+#'\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
 #'pep_seq_mod} will be matched to \code{id = pep_seq}.
 #'
 #'@inheritParams proteoHist
