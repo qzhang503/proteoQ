@@ -4,8 +4,8 @@
 \alias{find_species}
 \title{Finds the species}
 \usage{
-find_species(label_scheme_full)
+find_species()
 }
 \description{
-\code{find_species} find the species that will be used in analysis such as GSEA.
+\code{find_species} find the species for annotation.
 }

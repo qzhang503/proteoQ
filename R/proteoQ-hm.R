@@ -92,7 +92,8 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   # image(matrix(1:n_color, nrow = n_color, ncol = 10),
   #   col = mypalette, xaxt = "n", yaxt = "n", useRaster = TRUE)
   
-  acc_type <- load(file = file.path(dat_dir, "label_scheme.Rdata")) %>% find_acctype()
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  acc_type <- find_acctype()
   
   if(acc_type == "refseq_acc") {
     df <- df %>% mutate(Species = gsub(".*\\[(.*)\\].*", "\\1", .$prot_desc))
@@ -488,7 +489,8 @@ plotKinHM <- function(id, scale_log2r, col_benchmark, label_scheme_sub, df, file
     mypalette <- eval(dots$color, env = caller_env())
   }
   
-  acc_type <- load(file = file.path(dat_dir, "label_scheme.Rdata")) %>% find_acctype()
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  acc_type <- find_acctype()
   
   if(acc_type == "refseq_acc") {
     df <- df %>% mutate(Species = gsub(".*\\[(.*)\\].*", "\\1", .$prot_desc))

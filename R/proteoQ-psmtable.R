@@ -54,7 +54,7 @@ rmPSMHeaders <- function () {
 	filelist = list.files(path = file.path(dat_dir), pattern = "^F[0-9]{6}\\.csv$")
 
 	if(purrr::is_empty(filelist))
-	  stop("Can't find PSM files(s) with `.csv` extension under ", dat_dir, call. = TRUE)
+	  stop("Can't find PSM files(s) with `.csv` extension under ", dat_dir, call. = FALSE)
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	TMT_plex <- TMT_plex(label_scheme)
@@ -111,7 +111,7 @@ extractRAW <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE)
   filelist = list.files(path = file.path(dat_dir), pattern = "^F[0-9]{6}\\.csv$")
 
   if(purrr::is_empty(filelist))
-    stop("Can't find PSM files(s) with `.csv` extension under ", dat_dir, call. = TRUE)
+    stop("Can't find PSM files(s) with `.csv` extension under ", dat_dir, call. = FALSE)
   
   output_prefix <- gsub(".csv$", "", filelist)
   
@@ -382,7 +382,7 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 	}
 	
 	df_split <- df_split %>%
-	  left_join(fraction_scheme_temp, id = "RAW_File") %>%
+	  dplyr::left_join(fraction_scheme_temp, id = "RAW_File") %>%
 	  dplyr::group_by(TMT_inj) %>%
 	  dplyr::mutate(psm_index = row_number()) %>%
 	  data.frame(check.names = FALSE) %>%
@@ -585,7 +585,7 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 		N <- sum(grepl("R[0-9]{3}", names(df)))
 
 		df <- df %>%
-			mutate(n = rowSums(.[, grep("R[0-9]{3}", names(.))] == -1)) %>%
+			dplyr::mutate(n = rowSums(.[, grep("R[0-9]{3}", names(.))] == -1)) %>%
 			dplyr::filter(n != N) %>%
 			dplyr::select(-n)
 
@@ -688,7 +688,7 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins = TRUE) {
 
 	# median-centering normalization
-	normPSM <- function(df, set_idx) {
+	mcPSM <- function(df, set_idx) {
 		label_scheme_sub <- label_scheme[label_scheme$TMT_Set == set_idx &
 		                                   label_scheme$LCMS_Injection == 1, ]
 
@@ -767,7 +767,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 
 	  channelInfo <- channelInfo(label_scheme, set_idx)
 
-	   # injections under the same TMT experiment
+	  # injections under the same TMT experiment
 	  for (injn_idx in seq_along(sublist)) {
 			df <- read.csv(file.path(dat_dir, "PSM\\cache", sublist[injn_idx]),
 			               check.names = FALSE, header = TRUE, sep = "\t",
@@ -776,40 +776,8 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 				dplyr::select(which(names(.) == "pep_seq_mod"),
 				              which(names(.) != "pep_seq_mod"))
 
-			acc_type <- find_acctype(label_scheme)
-
-			sp_ls <- c(Human = "Homo sapiens",
-			             Mouse = "Mus musculus",
-			             Rat = "Rattus norvegicus",
-			             Fly = "Drosophila melanogaster")
-
-			if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
-			  species <- df %>%
-			    dplyr::select(prot_desc) %>%
-			    dplyr::filter(grepl("OS=", prot_desc)) %>% 
-			    dplyr::mutate(prot_desc = sub("^.*OS=(\\S*\\s+\\S+).*", "\\1", prot_desc)) %>% 
-			    dplyr::filter(!is.na(prot_desc))
-			} else if (acc_type == "refseq_acc") {
-			  species <- df %>%
-			    dplyr::select(prot_desc) %>%
-			    dplyr::mutate(prot_desc = gsub(".*\\s+\\[(.*)\\].*", "\\1", prot_desc))
-			}
-
-			species <- species %>%
-			  unique() %>%
-			  unlist() %>%
-			  .[. %in% sp_ls] %>%
-			  purrr::map(~ names(sp_ls)[sp_ls == .x] %>% tolower)
-
-		  if (length(species) > 1) {
-		    if (all(species %in% c("human", "mouse")))
-		      species <- "pdx"
-		    else
-		      stop("Multiple species other than a PDX model of `Human and Mouse` not currently handled.",
-		           call. = FALSE)
-		  } else {
-		    species <- unlist(species)
-		  }
+			acc_type <- find_acctype()
+			species <- find_df_species(df, acc_type)
 
 		  label_scheme_full$Species <- species
 		  label_scheme$Species <- species
@@ -819,7 +787,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 		              file.path(dat_dir, "acctype_sp.txt"), sep = "\t",
 		              col.names = TRUE, row.names = FALSE)
 
-		  load_dbs(dat_dir = dat_dir, expt_smry = expt_smry)
+		  load_dbs()
 
 			if(rm_krts) {
 				krts <- dbs$prn_annot %>%
@@ -878,9 +846,8 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 					substr(df_sub$pep_seq_mod, locales, locales) <- lowers
 
 					fn <- var_mods[var_mods$Mascot_abbr == mod, "Filename"]
-					write.table(df_sub, file.path(dat_dir, "PSM\\Individual_mods",
-					                              paste0(fn, ".txt")), sep = "\t",
-					                              col.names = TRUE, row.names = FALSE)
+					try(write.table(df_sub, file.path(dat_dir, "PSM\\Individual_mods", paste0(fn, ".txt")), 
+					                sep = "\t", col.names = TRUE, row.names = FALSE))
 
 					df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
 				}
@@ -906,16 +873,13 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 						rows <- !is.na(pos_matrix[, k])
 						locales <- pos_matrix[rows, k]
 
-						lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>%
-						  tolower()
+						lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>% tolower()
 						substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
-
-						fn <- var_mods[var_mods$Mascot_abbr == mod, "Filename"]
-						write.table(df_sub, file.path(dat_dir, "PSM\\Individual_mods",
-						                              paste0(fn, ".txt")),
-							                            sep = "\t", col.names = TRUE,
-						                              row.names = FALSE)
 					}
+				  
+				  fn <- var_mods[var_mods$Mascot_abbr == mod, "Filename"]
+				  try(write.table(df_sub, file.path(dat_dir, "PSM\\Individual_mods", paste0(fn, ".txt")), 
+				                  sep = "\t", col.names = TRUE, row.names = FALSE))
 
 					df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
 				}
@@ -944,10 +908,10 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 							substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
 
 							fn <- phospho_mods[phospho_mods$Mascot_abbr == mod, "Filename"]
-							write.table(df_sub, file.path(dat_dir, "PSM\\Individual_mods",
-							                              paste0(fn, ".txt")),
-								                            sep = "\t", col.names = TRUE,
-							                              row.names = FALSE)
+							try(
+							  write.table(df_sub, file.path(dat_dir, "PSM\\Individual_mods",paste0(fn, ".txt")), 
+							              sep = "\t", col.names = TRUE, row.names = FALSE)							  
+							)
 						}
 
 						df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
@@ -974,8 +938,8 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 					#                              substring(df_sub$pep_seq_mod, 2)) # insert "_"
 				  df_sub$pep_seq_mod <- paste0("_", df_sub$pep_seq_mod)
 					fn <- nt_ace_var_mods[nt_ace_var_mods$Mascot_abbr == mod, "Filename"]
-					write.table(df_sub, file.path(dat_dir, "PSM\\Individual_mods", paste0(fn, ".txt")),
-					            sep = "\t", col.names = TRUE, row.names = FALSE)
+					try(write.table(df_sub, file.path(dat_dir, "PSM\\Individual_mods", paste0(fn, ".txt")), 
+					                sep = "\t", col.names = TRUE, row.names = FALSE))
 
 					df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
 				}
@@ -988,7 +952,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 				dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
 				dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))
 
-			if(TMT_plex > 0) df <- normPSM(df, set_idx)
+			if(TMT_plex > 0) df <- mcPSM(df, set_idx)
 
 			# clean up cRAP accessions
 			df$prot_acc <- df$prot_acc %>%

@@ -54,9 +54,8 @@ prep_label_scheme <- function(dat_dir, filename) {
 		stop("Not all required columns are present in \'", filename, "\'", call. = TRUE)
 	}
 
-	default_names <- c("Select", "Group", "Order", "Fill",  "Color",
-										"Shape", "Size", "Alpha", "Term", "Duplicate", "Benchmark")
-	
+	default_names <- c("Select", "Group", "Order", "Fill",  "Color", "Shape", "Size", "Alpha")
+
 	purrr::walk(default_names, ~ {
 		if(!.x %in% names(label_scheme_full)) {
 			message("Column \'", .x, "\' added to \'", filename, "\'")
@@ -149,9 +148,6 @@ prep_label_scheme <- function(dat_dir, filename) {
 	openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
 	
 	simple_label_scheme(dat_dir, label_scheme_full)
-
-	# load(file = file.path(dat_dir, "label_scheme_full.Rdata"), envir =  .GlobalEnv)
-	# load(file = file.path(dat_dir, "label_scheme.Rdata"), envir =  .GlobalEnv)
 }
 
 
@@ -226,11 +222,15 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 #'@export
 #'@import dplyr
 #'@importFrom magrittr %>%
-load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
-	species <- find_species(label_scheme)
+load_dbs <- function () {
+  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+  if(dat_dir == 1) stop("Assign the working directory to variable `dat_dir` first.")
 
-	if(is.null(species)) stop("'species' in '", expt_smry,
-	                          "' not recognized. It needs to be one of 'human', 'mouse', 'rat' or 'pdx'.")
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  species <- find_species()
+
+	if(is.null(species)) stop("Unrecognized species; 
+	                          the currently supported species are 'human', 'mouse', 'rat' or 'pdx'.")
 
 	if (species %in% c("homo sapiens", "human")) {
 		data(package = "proteoQ", prn_annot_hs)
@@ -427,26 +427,29 @@ load_dbs <- function (dat_dir, expt_smry = "expt_smry.xlsx") {
 #' }
 #'
 #'@export
-#'@import dplyr rlang
+#'@import dplyr rlang fs
 #'@importFrom magrittr %>%
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
-  
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
 
   if (is.null(dat_dir)) {
     dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-    if(dat_dir == 1) 
-      stop("`dat_dir` not found; set up the working directory first.", call. = FALSE)
+    if (dat_dir == 1) 
+      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
+  }
+  
+  if(!fs::dir_exists(dat_dir)) {
+    stop(dat_dir, " not existed.", call. = FALSE)
   }
 
 	mget(names(formals()), rlang::current_env()) %>% save_call("load_expts")
 
 	# "acctype_sp.txt" first available after executing `annotPSM``
 	# a placeholder if "acctype_sp.txt" not yet available
-	if(!file.exists(file.path(dat_dir, "acctype_sp.txt"))) {
+	if (!file.exists(file.path(dat_dir, "acctype_sp.txt"))) {
 		acctype_sp <- data.frame(Accession_Type = "uniprot_id", Species = "human")
   } else {
 		acctype_sp <- read.csv(file.path(dat_dir, "acctype_sp.txt"), check.names = FALSE,
@@ -467,7 +470,7 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
     dplyr::mutate(Accession_Type = acctype_sp[1, "Accession_Type"], Species = acctype_sp[1, "Species"])
   save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
 
-  load_dbs(dat_dir = dat_dir, expt_smry = expt_smry)
+  load_dbs()
 }
 
 
@@ -576,7 +579,7 @@ check_label_scheme <- function (label_scheme_full) {
 #' \code{find_acctype} finds the \code{Accession_Type} that will be used in the
 #' annotation of protein IDs. It currently supports \code{UniProt ID},
 #' \code{Uniprot Accession} and \code{RefSeq Accession}.
-find_acctype <- function (label_scheme_full) {
+find_acctype <- function () {
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 
 	label_scheme %>%
@@ -589,8 +592,8 @@ find_acctype <- function (label_scheme_full) {
 
 #' Finds the species
 #'
-#' \code{find_species} find the species that will be used in analysis such as GSEA.
-find_species <- function (label_scheme_full) {
+#' \code{find_species} find the species for annotation.
+find_species <- function () {
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 
 	label_scheme %>%
@@ -602,13 +605,60 @@ find_species <- function (label_scheme_full) {
 }
 
 
+#' Finds the species from result tables
+#'
+#' \code{find_df_species} find the species from PSM or peptide data.
+find_df_species <- function(df, acc_type) {
+	stopifnot("prot_desc" %in% names(df))	
+  
+  sp_ls <- c(Human = "Homo sapiens", 
+             Mouse = "Mus musculus",
+             Rat = "Rattus norvegicus", 
+             Fly = "Drosophila melanogaster")
+		
+	if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
+		species <- df %>%
+			dplyr::select(prot_desc) %>%
+			dplyr::filter(grepl("OS=", prot_desc)) %>% 
+			dplyr::mutate(prot_desc = sub("^.*OS=(\\S*\\s+\\S+).*", "\\1", prot_desc)) %>% 
+			dplyr::filter(!is.na(prot_desc))
+	} else if (acc_type == "refseq_acc") {
+		species <- df %>%
+			dplyr::select(prot_desc) %>%
+			dplyr::mutate(prot_desc = gsub(".*\\s+\\[(.*)\\].*", "\\1", prot_desc))
+	}
+	
+	species <- species %>%
+		unique() %>%
+		unlist() %>%
+		.[. %in% sp_ls] %>%
+		purrr::map(~ names(sp_ls)[sp_ls == .x] %>% tolower)
+	
+	if (length(species) > 1) {
+		if (all(species %in% c("human", "mouse")))
+			species <- "pdx"
+		else
+			stop("Multiple species other than a PDX model of `Human and Mouse` not currently handled.",
+					 call. = FALSE)
+	} else {
+		species <- unlist(species)
+	}
+		
+	return(species)
+}
+
+
 #' Determine the protein accession type from PSM tables
 #'
 #' Find the protein accession from a non-cRAP entry and parse it.
 #'
 #' \code{parse_acc} parse the protein accession.
 parse_acc <- function(df) {
+  stopifnot("prot_acc" %in% names(df))
+  
   prn_acc <- df %>%
+    dplyr::filter(!grepl("^REV__", prot_acc)) %>% 
+    dplyr::filter(!grepl("^CON__", prot_acc)) %>% 
     dplyr::select(prot_acc) %>%
     unlist %>%
     .[1]
@@ -622,6 +672,8 @@ parse_acc <- function(df) {
   } else {
     stop("Unknown protein accession", call. = FALSE)
   }
+  
+  return(acc_type)
 }
 
 

@@ -338,13 +338,16 @@ setHMColor <- function (annotation_col) {
 		n <- nlevels(annotation_col[[x]])
 
 		palette <- if(n <= 9 & n >= 3) {
-			brewer.pal(n, name = "Set1")
+			# brewer.pal(n, name = "Set1")
+		  brewer.pal(n, name = "Set2")
 		} else if(n > 9) {
 			colorRampPalette(brewer.pal(n = 7, "Set1"))(n)
 		} else if(n == 2) {
-			c("#E41A1C", "#377EB8")
+			# c("#E41A1C", "#377EB8")
+		  c("#66C2A5", "#FC8D62")
 		} else if(n == 1) {
-			c("#E41A1C")
+			# c("#E41A1C")
+		  c("#66C2A5")
 		} else if(n == 0) {
 			colorRampPalette(brewer.pal(n = 9, "YlOrBr"))(100)
 		}
@@ -566,12 +569,16 @@ prnImp <- function (...) {
 
 #' Adds protein annotation
 #'
-#' \code{annotPrn} annotates proteins based on the \code{acc_type}
+#' \code{annotPrn} cross-referencing proteins among \code{uniprot_acc},
+#' \code{uniprot_id}, \code{refseq} and \code{entrez}.
 #'
 #' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>% %$% 
+#' @importFrom magrittr %>% %$%
 annotPrn <- function (df, acc_type) {
-	acc_type <- tolower(acc_type)
+	stopifnot ("prot_acc" %in% names(df))
+  
+  # acc_type <- tolower(acc_type)
+	acc_type <- find_acctype() %>% tolower()
 
 	if(acc_type == "refseq_acc") {
 		key <- "refseq_acc"
@@ -581,7 +588,7 @@ annotPrn <- function (df, acc_type) {
 	  key <- "uniprot_acc"
 	} else {
 		stop("Unrecognized protein accesion type; need to one of \'uniprot_id\', \'uniprot_acc\' or \'refseq_acc\'",
-		     call. = TRUE)
+		     call. = FALSE)
 	}
 
 	lookup <- dbs$prn_annot %>%
@@ -623,20 +630,23 @@ annotPrn <- function (df, acc_type) {
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 annotKin <- function (df, acc_type) {
-	acc_type <- tolower(acc_type)
+	stopifnot ("prot_acc" %in% names(df))
+	
+	# acc_type <- tolower(acc_type)
+	acc_type <- find_acctype() %>% tolower()
 
 	lookup <- kinase_lookup %>%
 		dplyr::select(refseq_acc, gene, kin_attr, kin_class, kin_order) %>%
 		dplyr::rename(gene_lookup = gene) %>%
 		dplyr::filter(!duplicated(.[["refseq_acc"]]))
 
-	if(acc_type == "refseq_acc") {
+	if (acc_type == "refseq_acc") {
 		key <- "prot_acc"
 		df <- df %>% dplyr::left_join(lookup, by = c("prot_acc" = "refseq_acc"))
-	} else if(acc_type == "uniprot_id") {
+	} else if (acc_type %in% c("uniprot_id", "uniprot_acc")) {
 		key <- "refseq_acc"
-		if(!key %in% names(df)) stop("Column key, 'refseq_acc', is missing for kinase annotation.",
-		                             call. = TRUE)
+		if (!key %in% names(df)) stop("Column key, 'refseq_acc', is missing for kinase annotation.", 
+		                              call. = FALSE)
 		df <- df %>% dplyr::left_join(lookup, by = "refseq_acc")
 	}
 
@@ -652,6 +662,7 @@ annotKin <- function (df, acc_type) {
 
 	return(df)
 }
+
 
 #' Saves the arguments in a function call
 #'
@@ -811,69 +822,248 @@ replace_na_genes <- function(df, acc_type) {
 }
 
 
+#' Adds protein description
+#'
+#' \code{annotPrndesc} annotates protein descriptions based on the \code{fasta}
+#'
+#' @import plyr dplyr purrr rlang stringr seqinr
+#' @importFrom magrittr %>% %$%
+annotPrndesc <- function (df, fasta){
+  stopifnot("prot_acc" %in% names(df))
+  
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  acc_type <- find_acctype() %>% tolower()
+  
+  if (acc_type == "refseq_acc") {
+    key <- "refseq_acc"
+  } else if (acc_type %in% "uniprot_id") {
+    key <- "uniprot_id"
+  } else if (acc_type %in% "uniprot_acc") {
+    key <- "uniprot_acc"
+  } else {
+    warning("Unkown accession type.")
+  }
+  
+  df <- df %>% 
+    dplyr::mutate(prot_acc = gsub("^.*\\|(.*)\\|.*$", "\\1", prot_acc))
+  
+  if (!is.null(fasta)) {
+    if (all(file.exists(fasta))) {
+      fasta <- purrr::map(fasta, ~ {
+        seqinr::read.fasta(.x, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
+      }) %>% do.call(`c`, .) %>% 
+        `names<-`(gsub("^.*\\|(.*)\\|.*$", "\\1", names(.))) %>% 
+        .[names(.) %in% unique(df$prot_acc)]
+      
+      if (length(fasta) == 0) {
+        stop("No fasta entries match protein accessions; probably wrong fasta file.", 
+             call. = FALSE)
+      }
+      
+      lookup <- dplyr::bind_cols(
+        # prot_acc = seqinr::getName(fasta), 
+        prot_acc = names(fasta), 
+        prot_desc = seqinr::getAnnot(fasta) %>% 
+          purrr::map(., `[[`, 1) %>% 
+          unlist(), 
+        prot_mass = purrr::map_dbl(fasta, ~ {seqinr::getSequence(.x) %>% seqinr::pmw()})
+      ) %>% 
+        dplyr::filter(.$prot_acc %in% unique(df$prot_acc))
+    } else {
+      stop("Wrong FASTA file path or name.", call. = FALSE)
+    }
+  } else {
+    stop("FASTA file not provided.")
+  }
+  
+  rm(fasta)
+  
+  df %>% 
+    dplyr::left_join(lookup, by = "prot_acc") %>% 
+    dplyr::mutate(prot_mass = round(prot_mass, digits = 1))
+}
+
+
+#' Add peptide start and end positions
+#'
+#' \code{annotPeppos} annotates the start and the end positions of peptides in
+#' ascribed proteins description based on the \code{fasta}.
+#'
+#' @import dplyr purrr rlang stringr seqinr
+#' @importFrom magrittr %>% %$%
+annotPeppos <- function (df, fasta){
+  stopifnot("prot_acc" %in% names(df))
+  stopifnot("pep_seq" %in% names(df))
+  
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  acc_type <- find_acctype() %>% tolower()
+  
+  if (acc_type == "refseq_acc") {
+    key <- "refseq_acc"
+  } else if (acc_type %in% "uniprot_id") {
+    key <- "uniprot_id"
+  } else if (acc_type %in% "uniprot_acc") {
+    key <- "uniprot_acc"
+  } else {
+    warning("Unkown accession type.")
+  }
+  
+  df <- df %>% 
+    dplyr::mutate(prot_acc = gsub("^.*\\|(.*)\\|.*$", "\\1", prot_acc))
+  
+  if (!is.null(fasta)) {
+    if (all(file.exists(fasta))) {
+      fasta <- purrr::map(fasta, ~ {
+        seqinr::read.fasta(.x, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
+      }) %>% do.call(`c`, .) %>% 
+        `names<-`(gsub("^.*\\|(.*)\\|.*$", "\\1", names(.))) %>% 
+        .[names(.) %in% unique(df$prot_acc)]
+      
+      if (length(fasta) == 0) {
+        stop("No fasta entries match protein accessions; probably wrong fasta file.", 
+             call. = FALSE)
+      }
+      
+      pep_pos_all <- purrr::map2(as.list(df$prot_acc), as.list(df$pep_seq), ~ {
+        fasta_sub <- fasta %>% .[names(.) == .x]
+        pep_seq <- as.character(.y)
+        
+        if (!rlang::is_empty(fasta_sub)) {
+          pep_pos <- str_locate(fasta_sub, pattern = pep_seq)
+          pep_pos <- cbind(pep_seq, pep_pos)
+        } else {
+          pep_pos <- cbind(pep_seq, start = NA, end = NA)
+        }
+      }) %>% 
+        do.call(rbind, .) %>% 
+        `colnames<-`(c("pep_seq", "pep_start", "pep_end")) %>% 
+        data.frame(check.names = FALSE)
+    } else {
+      stop("Wrong FASTA file path or name.", call. = FALSE)
+    }
+  } else {
+    stop("FASTA file not provided.")
+  }
+  
+  rm(fasta)
+  
+  df %>% dplyr::left_join(pep_pos_all, by = "pep_seq")
+}
+
+
+#' Subset fasta by accession type
+#'
+#' @import plyr dplyr purrr rlang seqinr
+#' @importFrom magrittr %>%
+subset_fasta <- function (df, fasta, acc_type) {
+  stopifnot("prot_acc" %in% names(df))
+  
+  if (acc_type == "refseq_acc") {
+    key <- "refseq_acc"
+  } else if (acc_type == "uniprot_id") {
+    key <- "uniprot_id"
+  } else if (acc_type == "uniprot_acc") {
+    key <- "uniprot_acc"
+  } else {
+    warning("Unkown accession type.")
+  }
+  
+  fasta <- purrr::map(fasta, ~ {
+    seqinr::read.fasta(.x, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
+  }) %>% do.call(`c`, .)
+  
+  if (key == "uniprot_id") {
+    fasta <- fasta %>% 
+      `names<-`(gsub("^.*\\|.*\\|(.*)$", "\\1", names(.))) %>% 
+      .[names(.) %in% unique(df$prot_acc)]
+  } else if (key == "uniprot_acc") {
+    fasta <- fasta %>% 
+      `names<-`(gsub("^.*\\|(.*)\\|.*$", "\\1", names(.))) %>% 
+      .[names(.) %in% unique(df$prot_acc)]
+  } else if (key == "refseq_acc") {
+    fasta <- fasta %>% 
+      .[names(.) %in% unique(df$prot_acc)]
+  }    
+}
+
+
 #' Calculates protein percent coverage
 #'
 #' @import plyr dplyr purrr rlang seqinr
 #' @importFrom magrittr %>%
 calc_cover <- function(df, id, fasta = NULL) {
-	id <- rlang::as_string(rlang::enexpr(id))
+  id <- rlang::as_string(rlang::enexpr(id))
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  acc_type <- find_acctype() %>% tolower()
+  
+  if (acc_type == "refseq_acc") {
+    key <- "refseq_acc"
+  } else if (acc_type %in% "uniprot_id") {
+    key <- "uniprot_id"
+  } else if (acc_type %in% "uniprot_acc") {
+    key <- "uniprot_acc"
+  } else {
+    warning("Unkown accession type.")
+  }
 
-	acc_type <- load(file = file.path(dat_dir, "label_scheme.Rdata")) %>%
-		find_acctype() %>%
-		tolower()
-
-	if(acc_type == "refseq_acc") {
-		key <- "refseq_acc"
-	} else if(acc_type == "uniprot_id") {
-		key <- "uniprot_id"
-	} else {
-		warning("Unkown accession type; use either \'uniprot_id\' or \'refseq_acc\'")
-	}
-	
-	if(!is.null(fasta)) {
-	  if(file.exists(fasta)) {
-	    fasta <- read.fasta(fasta, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
-	    lookup <- data.frame(prot_acc = getName(fasta), length = getLength(fasta)) %>%
-	      dplyr::rename(!!key := prot_acc) %>%
-	      dplyr::mutate(!!key := gsub(".*\\|", "", !!rlang::sym(key)))
-	  } else {
-	    stop(fasta, "not found.", call. = FALSE)
-	  }
-	} else {
-	  warning("Use pre-computed database to calculate protein coverages.")
-	  lookup <- dbs$prn_annot %>%
-	    dplyr::select(key, length) %>%
-	    dplyr::filter(!is.na(.[[key]]), !duplicated(.[[key]]))
-	}
-	
-	df <- df %>%
-	  dplyr::select(prot_acc, pep_start, pep_end) %>%
-	  dplyr::left_join(lookup, by = c("prot_acc" = key)) %>%
-	  dplyr::filter(!is.na(length))
-	
-	if (nrow(df) == 0) stop("Probably incorrect accession types in the fasta file.")
-	
-	df %>%
-		dplyr::filter(.[["pep_start"]] <= .[["length"]]) %>%
-		dplyr::filter(.[["pep_end"]] <= .[["length"]]) %>%
-		split(.[["prot_acc"]], drop = TRUE) %>%
-		purrr::map(function (x) {
-			len <- x[1, "length"]
-			aa_map <- rep(NA, len)
-			for (i in 1:nrow(x)) aa_map[x[i, ]$pep_start:x[i, ]$pep_end] <- TRUE
-			sum(aa_map, na.rm = TRUE)/len
-		} ) %>%
-		do.call("rbind", .) %>%
-		data.frame(check.names = FALSE) %>%
-		`colnames<-`("prot_cover") %>%
-		tibble::rownames_to_column("prot_acc") %>%
-		dplyr::mutate(prot_cover = ifelse(prot_cover > 1, 1, prot_cover)) %>%
-		annotPrn(acc_type) %>%
-		dplyr::group_by(!!rlang::sym(id)) %>%
-		dplyr::select(!!rlang::sym(id), prot_cover) %>%
-		dplyr::summarise_all(~max(., na.rm = TRUE)) %>%
-		dplyr::mutate(prot_cover = round(prot_cover * 100, digits = 1)) %>%
-		dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+  if (!is.null(fasta)) {
+    if (all(file.exists(fasta))) {
+      fasta <- subset_fasta(df, fasta, acc_type)
+      
+      if (length(fasta) == 0) {
+        stop("No fasta entries matched the type of protein accession. Check the correctness of fasta file.", 
+             call. = FALSE)
+      }
+      
+      if (length(fasta) <= 200) {
+        warning("Less than 200 entries in fasta match by protein accession. 
+                Make sure the fasta file is correct.")
+      }
+      
+      lookup <- data.frame(prot_acc = names(fasta), length = getLength(fasta)) %>%
+        dplyr::rename(!!key := prot_acc) %>%
+        dplyr::mutate(!!key := gsub(".*\\|", "", !!rlang::sym(key)))
+    } else {
+      cat(fasta, "\n")
+      stop("Not all fasta files were found.", call. = FALSE)
+    }
+  } else {
+    warning("Use pre-computed database to calculate protein coverages.")
+    lookup <- dbs$prn_annot %>%
+      dplyr::select(key, length) %>%
+      dplyr::filter(!is.na(.[[key]]), !duplicated(.[[key]]))
+  }
+  
+  df <- df %>%
+    dplyr::select(prot_acc, pep_start, pep_end) %>%
+    dplyr::left_join(lookup, by = c("prot_acc" = key)) %>%
+    dplyr::filter(!is.na(length))
+  
+  if (nrow(df) == 0) stop("Probably incorrect accession types in the fasta file.", call. = FALSE)
+  
+  df <- df %>%
+    dplyr::filter(.[["pep_start"]] <= .[["length"]]) %>%
+    dplyr::filter(.[["pep_end"]] <= .[["length"]]) %>%
+    split(.[["prot_acc"]], drop = TRUE) %>%
+    purrr::map(function (x) {
+      len <- x[1, "length"]
+      aa_map <- rep(NA, len)
+      for (i in 1:nrow(x)) aa_map[x[i, ]$pep_start:x[i, ]$pep_end] <- TRUE
+      sum(aa_map, na.rm = TRUE)/len
+    } ) %>%
+    do.call("rbind", .) %>%
+    data.frame(check.names = FALSE) %>%
+    `colnames<-`("prot_cover") %>%
+    tibble::rownames_to_column("prot_acc") %>%
+    dplyr::mutate(prot_cover = ifelse(prot_cover > 1, 1, prot_cover)) %>%
+    annotPrn(acc_type) %>%
+    dplyr::group_by(!!rlang::sym(id)) %>%
+    dplyr::select(!!rlang::sym(id), prot_cover) %>%
+    dplyr::summarise_all(~max(., na.rm = TRUE)) %>%
+    dplyr::mutate(prot_cover = round(prot_cover * 100, digits = 1)) %>%
+    dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+  
+  return(df)
 }
 
 
@@ -997,7 +1187,6 @@ rm_pval_whitespace <- function(df) {
 }
 
 
-
 #' Match the database of gene sets
 #' 
 #' @import dplyr purrr
@@ -1043,5 +1232,6 @@ match_gset_nm <- function (id = c("go_sets", "kegg_sets", "c2_msig")) {
   
   return(id)
 }
+
 
 

@@ -4,7 +4,7 @@
 \alias{find_acctype}
 \title{Finds the type of protein accession numbers}
 \usage{
-find_acctype(label_scheme_full)
+find_acctype()
 }
 \description{
 \code{find_acctype} finds the \code{Accession_Type} that will be used in the

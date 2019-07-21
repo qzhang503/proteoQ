@@ -5,10 +5,11 @@
 \title{Reports peptide results}
 \usage{
 normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
-  "mean", "weighted.mean", "top.3"), method_align = c("MC", "MGKernel"),
-  range_log2r = c(20, 90), range_int = c(5, 95), n_comp = NULL,
-  seed = NULL, annot_kinases = FALSE, col_refit = NULL,
-  cache = TRUE, ...)
+  "mean", "weighted.mean", "top.3", "mq"), rm_krts = TRUE,
+  rm_craps = TRUE, rm_reverses = TRUE, method_align = c("MC",
+  "MGKernel"), range_log2r = c(20, 90), range_int = c(5, 95),
+  n_comp = NULL, seed = NULL, fasta = NULL, annot_kinases = FALSE,
+  col_refit = NULL, cache = TRUE, ...)
 }
 \arguments{
 \item{id}{Character string; the variable for summarisation of \code{PSMs} into
@@ -20,11 +21,27 @@ modifications of peptides. \code{PSMs} data with the same value in
 of peptide.}
 
 \item{method_psm_pep}{Character string; the method to summarise the
-\code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
-The descriptive statistics includes \code{c("mean", "median", "top.3",
-"weighted.mean")}. The \code{log10-intensity} of reporter ions at the
-\code{PSMs} levels will be the weight when summarising \code{log2FC} with
-\code{"top.3"} or \code{"weighted.mean"}.}
+ \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
+ The descriptive statistics includes \code{c("mean", "median", "top.3",
+ "weighted.mean")}. The \code{log10-intensity} of reporter ions at the
+ \code{PSMs} levels will be the weight when summarising \code{log2FC} with
+ \code{"top.3"} or \code{"weighted.mean"}.
+
+ At \code{method_psm_pep = mq}, the PSM to peptide summarisation will be
+ bypassed. Instead, MaxQuant peptide tables based on \code{peptides.txt} or
+ \code{modificationSpecificPeptides.txt} will be taken. More specifically,
+ the peptide table(s) without site modification information will be used at
+ \code{id = pep_seq} and the peptide table(s) with site modification
+ information will be used at \code{id = pep_seq_mod}.}
+
+\item{rm_krts}{Logical; if TRUE, removes keratin entries from MaxQuant peptide
+results.}
+
+\item{rm_craps}{Logical; if TRUE, removes \code{Potential contaminant} entries
+from MaxQuant peptide results.}
+
+\item{rm_reverses}{Logical; if TRUE, removes \code{Reverse} entries from
+MaxQuant peptide results.}
 
 \item{method_align}{Character string or a list of gene symbols; the method to
 align the \code{log2FC} of peptide/protein entries across samples.
@@ -54,6 +71,9 @@ standard deviation across samples. The default is between the 5th and the
 
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
+
+\item{fasta}{Character string(s); the file name(s) with prepended directory
+path to the \code{fasta} database being used in MS/MS ion search.}
 
 \item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
 proteins.}
@@ -89,6 +109,21 @@ See \code{\link{normPrn}} for the description of column keys in the output.
 normPep(
  id = pep_seq_mod,
  method_psm_pep = median,
+ method_align = MGKernel,
+ range_log2r = c(10, 95),
+ range_int = c(5, 95),
+ n_comp = 3,
+ seed = 1234,
+ maxit = 200,
+ epsilon = 1e-05
+)
+
+# MaxQuant peptide table(s)
+normPep(
+ id = pep_seq,
+ fasta = c("~\\\\proteoQ\\\\db\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+           "~\\\\proteoQ\\\\db\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+ method_psm_pep = mq,
  method_align = MGKernel,
  range_log2r = c(10, 95),
  range_int = c(5, 95),
