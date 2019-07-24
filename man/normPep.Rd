@@ -5,8 +5,8 @@
 \title{Reports peptide results}
 \usage{
 normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
-  "mean", "weighted.mean", "top.3", "mq"), rm_krts = TRUE,
-  rm_craps = TRUE, rm_reverses = TRUE, method_align = c("MC",
+  "mean", "weighted.mean", "top.3", "mq"), rm_mq_krts = TRUE,
+  rm_mq_craps = TRUE, rm_mq_reverses = TRUE, method_align = c("MC",
   "MGKernel"), range_log2r = c(20, 90), range_int = c(5, 95),
   n_comp = NULL, seed = NULL, fasta = NULL, annot_kinases = FALSE,
   col_refit = NULL, cache = TRUE, ...)
@@ -34,13 +34,13 @@ of peptide.}
  \code{id = pep_seq} and the peptide table(s) with site modification
  information will be used at \code{id = pep_seq_mod}.}
 
-\item{rm_krts}{Logical; if TRUE, removes keratin entries from MaxQuant peptide
+\item{rm_mq_krts}{Logical; if TRUE, removes keratin entries from MaxQuant peptide
 results.}
 
-\item{rm_craps}{Logical; if TRUE, removes \code{Potential contaminant} entries
+\item{rm_mq_craps}{Logical; if TRUE, removes \code{Potential contaminant} entries
 from MaxQuant peptide results.}
 
-\item{rm_reverses}{Logical; if TRUE, removes \code{Reverse} entries from
+\item{rm_mq_reverses}{Logical; if TRUE, removes \code{Reverse} entries from
 MaxQuant peptide results.}
 
 \item{method_align}{Character string or a list of gene symbols; the method to

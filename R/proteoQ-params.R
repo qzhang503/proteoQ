@@ -574,6 +574,7 @@ check_label_scheme <- function (label_scheme_full) {
 	}
 }
 
+
 #' Finds the type of protein accession numbers
 #'
 #' \code{find_acctype} finds the \code{Accession_Type} that will be used in the
@@ -589,6 +590,7 @@ find_acctype <- function () {
 		as.character() %>%
 		tolower()
 }
+
 
 #' Finds the species
 #'

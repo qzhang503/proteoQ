@@ -577,7 +577,6 @@ prnImp <- function (...) {
 annotPrn <- function (df, acc_type) {
 	stopifnot ("prot_acc" %in% names(df))
   
-  # acc_type <- tolower(acc_type)
 	acc_type <- find_acctype() %>% tolower()
 
 	if(acc_type == "refseq_acc") {

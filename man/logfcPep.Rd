@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-peptable.R
 \name{logfcPep}
 \alias{logfcPep}
-\title{median-centering normalization}
+\title{Median-centering normalization}
 \usage{
 logfcPep(df, label_scheme, set_idx)
 }
 \description{
-median-centering normalization
+Median-centering normalization
 }

@@ -2,6 +2,9 @@
 #'
 #' \code{newColnames} match names to Sample_ID in label_scheme
 #'
+#' @param i Integer; the index of TMT experiment 
+#' @param x Data frame; log2FC data
+#' @param label_scheme Experiment summary
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
 newColnames <- function(i, x, label_scheme) {
@@ -18,46 +21,6 @@ newColnames <- function(i, x, label_scheme) {
   if (length(cols) < ncol(x)) x <- dplyr::bind_cols(x[, cols], x[, -cols, drop = FALSE])
   
   return(x)
-}
-
-
-#' median-centering normalization
-logfcPep <- function(df, label_scheme, set_idx) {
-  # label_scheme_sub <- label_scheme[label_scheme$TMT_Set == set_idx & label_scheme$LCMS_Injection == 1, ]
-  label_scheme_sub <- label_scheme %>% 
-    .[.$TMT_Set == set_idx & .$LCMS_Injection == 1, ]
-  
-  channelInfo <- channelInfo(label_scheme_sub, set_idx)
-  
-  col_sample <- grep("^I[0-9]{3}", names(df))
-  
-  if(length(channelInfo$refChannels) > 0) {
-    ref_index <- channelInfo$refChannels
-  } else {
-    ref_index <- channelInfo$labeledChannels
-  }
-  
-  df <- sweep(df[, col_sample], 1,
-              rowMeans(df[, col_sample[ref_index], drop = FALSE], na.rm = TRUE), "/") %>%
-    log2(.) %>%
-    `colnames<-`(gsub("I", "log2_R", names(.)))	%>%
-    cbind(df, .) %>%
-    dplyr::mutate_at(.vars = grep("[I|R][0-9]{3}", names(.)), ~ replace(.x, is.infinite(.x), NA))
-  
-  col_log2Ratio <- grepl("^log2_R[0-9]{3}", names(df))
-  cf <- apply(df[, col_log2Ratio, drop = FALSE], 2, median, na.rm = TRUE)
-  
-  df <- sweep(df[, col_log2Ratio, drop = FALSE], 2, cf, "-") %>%
-    `colnames<-`(paste("N", names(.), sep="_"))	%>%
-    cbind(df, .)
-  
-  df <- sweep(df[, grepl("^I[0-9]{3}", names(df)), drop = FALSE], 2, 2^cf, "/") %>%
-    `colnames<-`(paste("N", names(.), sep="_"))	%>%
-    cbind(df, .)
-  
-  df <- df %>%
-    # reorderCols(endColIndex = grep("[RI][0-9]{3}", names(df)), col_to_rn = "pep_seq_mod") %>%
-    na_zeroIntensity()
 }
 
 
@@ -155,7 +118,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 					df[, grepl("[log2_R][0-9]{3}", names(df)), drop = FALSE],
 					df[, grepl("[I][0-9]{3}", names(df)), drop = FALSE]) %>%
 					dplyr::mutate_at(.vars = grep("[I|log2_R][0-9]{3}", names(.)),
-					                 list(~replace(., is.infinite(.), NA) ))
+					                 list(~ replace(., is.infinite(.), NA) ))
 
 		# median-centered across TMT channels under the same multiplex experiment
 		col_r <- grepl("^log2_R[0-9]{3}", names(df))
@@ -192,167 +155,31 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 	filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
 		reorder_files(n_TMT_sets(label_scheme_full))
 
-	purrr::walk(as.list(filelist), function (x) {
-		fn_prx <- gsub("_PSM_N.txt", "", x, fixed = TRUE)
+	purrr::walk(as.list(filelist), ~ {
+		fn_prx <- gsub("_PSM_N.txt", "", .x, fixed = TRUE)
 
 		set_idx <- as.integer(gsub(".*TMTset(\\d+)_.*", "\\1", fn_prx))
 		injn_idx <- as.integer(gsub(".*LCMSinj(\\d+).*", "\\1", fn_prx))
 
-		df <- read.csv(file.path(dat_dir, "PSM", x), check.names = FALSE, header = TRUE,
-		               sep = "\t", comment.char = "#") 
-		
-		df <- df %>%
-		  calcPepide(label_scheme = label_scheme, id = !!id, method_psm_pep = method_psm_pep,
+		df <- read.csv(file.path(dat_dir, "PSM", .x), check.names = FALSE, header = TRUE,
+		               sep = "\t", comment.char = "#") %>% 
+		  calcPepide(label_scheme = label_scheme, id = !!id, method_psm_pep = method_psm_pep, 
 		             set_idx = set_idx, injn_idx = injn_idx)
 
-		if(grepl("|", df$prot_acc[1], fixed = TRUE)) {
-			temp <- strsplit(as.character(df$prot_acc), '|', fixed = TRUE)
-			temp <- plyr::ldply(temp, rbind)
-			if(ncol(temp) > 1) df$prot_acc <- temp[, 2]
-			rm(temp)
+		# less than ideal
+		run_scripts <- FALSE
+		if (run_scripts) {
+  		if (grepl("|", df$prot_acc[1], fixed = TRUE)) {
+  		  temp <- strsplit(as.character(df$prot_acc), '|', fixed = TRUE)
+  			temp <- plyr::ldply(temp, rbind)
+  			if (ncol(temp) > 1) df$prot_acc <- temp[, 2]
+  			rm(temp)
+  		}		  
 		}
 
 		write.table(df, file.path(dat_dir, "Peptide", paste0(fn_prx, "_Peptide_N", ".txt")),
 		            sep = "\t", col.names = TRUE, row.names = FALSE)
 	})
-}
-
-
-#' @import stringr dplyr purrr rlang
-#' @importFrom magrittr %>%
-#' @importFrom magrittr %T>%
-normPepSplex_mq <- function (id = "pep_seq_mod", fasta = fasta, 
-                             rm_krts = TRUE, rm_craps = TRUE, rm_reverses = TRUE) {
-  id <- rlang::as_string(rlang::enexpr(id))
-  
-  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
-  
-  TMT_plex <- TMT_plex(label_scheme)
-  TMT_levels <- TMT_levels(TMT_plex)
-  
-  filelist <- label_scheme$RAW_File %>% 
-    unique() %>% 
-    gsub("\\.txt$", "", .) %>% 
-    paste0(., ".txt")
-  
-  purrr::walk(as.list(filelist), ~ {
-    fn_prx <- gsub("\\.txt$", "", .x)
-    
-    label_scheme_sub <- label_scheme_full %>% 
-      dplyr::filter(RAW_File == .x | RAW_File == fn_prx)
-    
-    set_idx <- label_scheme_sub %>% 
-      dplyr::select(TMT_Set) %>% 
-      unique() %>% 
-      unlist()
-    
-    injn_idx <- label_scheme_sub %>% 
-      dplyr::select(LCMS_Injection) %>% 
-      unique() %>% 
-      unlist()
-    
-    df <- read.csv(file.path(dat_dir, .x), check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") 
-    
-    if (rm_craps) {
-      df <- df %>% 
-        dplyr::filter(.$`Potential contaminant` != "+")
-    }
-    
-    if (rm_reverses) {
-      df <- df %>% 
-        dplyr::filter(.$Reverse != "+")
-    }
-    
-    if (id == "pep_seq_mod") {
-      if(all(names(df) != "Modifications")) {
-        stop("Column `Modifications` not found; 
-             use modification-specific peptide table(s) or set `id = pep_seq`.", 
-             call. = FALSE)
-      }
-      
-      df <- df %>% 
-        dplyr::rename(pep_seq = Sequence, prot_acc = Proteins, pep_score = Score, pep_expect = PEP) %>% 
-        dplyr::mutate(prot_acc = gsub("\\;.*", "", prot_acc)) %>% 
-        dplyr::rename_at(vars(grep("^Experiment", names(.))), ~ gsub("^Experiment.*", "n_psm", .x)) %>% 
-        dplyr::mutate(TMT_Set = set_idx) %>% 
-        dplyr::mutate(pep_seq_mod = paste0(pep_seq, " [", Modifications, "]"))
-    } else if (id == "pep_seq") {
-      if(any(names(df) == "Modifications")) {
-        stop("Use peptide table(s) without column `Modifications` or set `id = pep_seq_mod`.", 
-             call. = FALSE)
-      }
-      
-      df <- df %>% 
-        dplyr::rename(pep_seq = Sequence, prot_acc = `Leading razor protein`, pep_score = Score, pep_expect = PEP) %>% 
-        dplyr::rename_at(vars(grep("^Experiment", names(.))), ~ gsub("^Experiment.*", "n_psm", .x)) %>% 
-        dplyr::mutate(TMT_Set = set_idx) %>% 
-        dplyr::mutate(pep_seq_mod = pep_seq)
-    }
-    
-    df <- df %>% 
-      dplyr::select(grep("^Reporter intensity corrected\\s+\\d+$", names(.))) %>% 
-      `names<-`(gsub("TMT-", "I", as.character(TMT_levels))) %>% 
-      dplyr::bind_cols(df, .) %>% 
-      logfcPep(label_scheme, set_idx)
-    
-    df <- annotPrndesc(df, fasta)
-    
-    if(rm_krts) {
-      df <- df %>% 
-        dplyr::mutate(is_krt = grepl("^.*\\s+krt[0-9]+", prot_desc, ignore.case = TRUE)) %>% 
-        dplyr::filter(!is_krt) %>% 
-        dplyr::select(-is_krt)
-    }
-    
-		df <- annotPeppos(df, fasta)
-    
-    df <- df %>% 
-      dplyr::select(pep_seq, pep_seq_mod, n_psm, prot_acc, prot_desc, prot_mass, pep_start, pep_end, pep_score, pep_expect) %>% 
-      dplyr::bind_cols(df %>% dplyr::select(grep("^log2_R[0-9]{3}", names(df)))) %>% 
-      dplyr::bind_cols(df %>% dplyr::select(grep("^I[0-9]{3}", names(df)))) %>% 
-      dplyr::bind_cols(df %>% dplyr::select(grep("^N_log2_R[0-9]{3}", names(df)))) %>% 
-      dplyr::bind_cols(df %>% dplyr::select(grep("^N_I[0-9]{3}", names(df)))) %>% 
-      dplyr::bind_cols(df %>% dplyr::select(TMT_Set))
-    
-    if(id == "pep_seq_mod") {
-      df <- df %>% dplyr::select(-pep_seq)
-    } else if (id == "pep_seq") {
-      df <- df %>% dplyr::select(-pep_seq_mod)
-    } else {
-      stop("Unknown `id`.", call. = FALSE)
-    }
-    
-    write.table(df, file.path(dat_dir, "Peptide", paste0("TMTset", set_idx, "_LCMSinj", injn_idx, "_Peptide_N.txt")), 
-                sep = "\t", col.names = TRUE, row.names = FALSE)
-    })
-  
-  # find accession type and species
-  df <- do.call(rbind,
-                lapply(list.files(path = file.path(dat_dir, "Peptide"), 
-                                  pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"),
-                                  full.names = TRUE), read.csv, check.names = FALSE, header = TRUE, 
-                       sep = "\t", comment.char = "#")) %>%
-    dplyr::mutate(TMT_Set = factor(TMT_Set)) %>%
-    dplyr::arrange(TMT_Set)
-  
-  acc_type <- parse_acc(df)
-  species <- find_df_species(df, acc_type)
-  
-  label_scheme_full <- label_scheme_full %>% 
-    dplyr::mutate(Accession_Type = acc_type, Species = species)
-  
-  label_scheme <- label_scheme %>% 
-    dplyr::mutate(Accession_Type = acc_type, Species = species)
-  
-  save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.Rdata"))
-  save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
-  
-  write.table(label_scheme[1, c("Accession_Type", "Species")],
-              file.path(dat_dir, "acctype_sp.txt"), sep = "\t",
-              col.names = TRUE, row.names = FALSE)
-  
-  load_dbs()
 }
 
 
@@ -386,11 +213,11 @@ normPepSplex_mq <- function (id = "pep_seq_mod", fasta = fasta,
 #'  the peptide table(s) without site modification information will be used at
 #'  \code{id = pep_seq} and the peptide table(s) with site modification
 #'  information will be used at \code{id = pep_seq_mod}.
-#'@param rm_krts Logical; if TRUE, removes keratin entries from MaxQuant peptide
+#'@param rm_mq_krts Logical; if TRUE, removes keratin entries from MaxQuant peptide
 #'  results.
-#'@param rm_craps Logical; if TRUE, removes \code{Potential contaminant} entries
+#'@param rm_mq_craps Logical; if TRUE, removes \code{Potential contaminant} entries
 #'  from MaxQuant peptide results.
-#'@param rm_reverses Logical; if TRUE, removes \code{Reverse} entries from
+#'@param rm_mq_reverses Logical; if TRUE, removes \code{Reverse} entries from
 #'  MaxQuant peptide results.
 #'@param method_align Character string or a list of gene symbols; the method to
 #'  align the \code{log2FC} of peptide/protein entries across samples.
@@ -471,7 +298,7 @@ normPepSplex_mq <- function (id = "pep_seq_mod", fasta = fasta,
 #'@export
 normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 										method_psm_pep = c("median", "mean", "weighted.mean", "top.3", "mq"), 
-										rm_krts = TRUE, rm_craps = TRUE, rm_reverses = TRUE, 
+										rm_mq_krts = TRUE, rm_mq_craps = TRUE, rm_mq_reverses = TRUE, 
 										method_align = c("MC", "MGKernel"), range_log2r = c(20, 90),
 										range_int = c(5, 95), n_comp = NULL, seed = NULL, fasta = NULL, 
 										annot_kinases = FALSE, col_refit = NULL, cache = TRUE, ...) {
@@ -554,7 +381,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		# normalize peptide data within each file
 	  if (method_psm_pep == "mq") {
 	    normPepSplex_mq(id = !!id, fasta = fasta, 
-	                    rm_krts = rm_krts, rm_craps = rm_craps, rm_reverses = rm_reverses)
+	                    rm_mq_krts = rm_mq_krts, rm_mq_craps = rm_mq_craps, rm_mq_reverses = rm_mq_reverses)
 	  } else {
 	    normPep_Splex(id = !!id, method_psm_pep = method_psm_pep)
 	  }
@@ -566,6 +393,28 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 			       sep = "\t", comment.char = "#")) %>%
 			dplyr::mutate(TMT_Set = factor(TMT_Set)) %>%
 			dplyr::arrange(TMT_Set)
+		
+		# no "acctype_sp.txt" yet since bypassing PSM tables at method_psm_pep == "mq"
+		if (method_psm_pep == "mq") {
+		  acc_type <- parse_acc(df)
+		  species <- find_df_species(df, acc_type)
+		  
+		  label_scheme_full <- label_scheme_full %>% 
+		    dplyr::mutate(Accession_Type = acc_type, Species = species)
+		  
+		  label_scheme <- label_scheme %>% 
+		    dplyr::mutate(Accession_Type = acc_type, Species = species)
+		  
+		  save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.Rdata"))
+		  save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
+		  
+		  write.table(label_scheme[1, c("Accession_Type", "Species")],
+		              file.path(dat_dir, "acctype_sp.txt"), sep = "\t",
+		              col.names = TRUE, row.names = FALSE)
+		  
+		  load_dbs()
+		}
+		
 
 		# remove peptides that have been assigned to more than one protein accession
 		dup_peps <- df %>%
@@ -643,7 +492,9 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 			df[, grep("^Z_log2_R[0-9]{3}", names(df))]
 		)
 
-		# annotation including historical lookup of kinases by "refseq_acc"
+		# (1) annotation including historical lookup of kinases by "refseq_acc"
+		# (2) cross-referencing refseq to uniprot; gene names will be refseq IDs  
+		#     for the refseq IDs not found in uniprot
 		acc_type <- find_acctype()
 		df <- annotPrn(df, acc_type)
 		if(annot_kinases) df <- annotKin(df, acc_type)
@@ -694,8 +545,235 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	write.table(df, file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t",
 	            col.names = TRUE, row.names = FALSE)
 
-	invisible(df)
+	# invisible(df)
 }
 
+
+
+
+#' Median-centering normalization
+#' 
+#' @import dplyr purrr rlang  magrittr
+logfcPep <- function(df, label_scheme, set_idx) {
+  label_scheme_sub <- label_scheme %>% 
+    .[.$TMT_Set == set_idx & .$LCMS_Injection == 1, ]
+  
+  channelInfo <- channelInfo(label_scheme_sub, set_idx)
+  
+  col_sample <- grep("^I[0-9]{3}", names(df))
+  
+  if (length(channelInfo$refChannels) > 0) {
+    ref_index <- channelInfo$refChannels
+  } else {
+    ref_index <- channelInfo$labeledChannels
+  }
+  
+  df <- sweep(df[, col_sample, drop = FALSE], 1,
+              rowMeans(df[, col_sample[ref_index], drop = FALSE], na.rm = TRUE), "/") %>%
+    log2(.) %>%
+    `colnames<-`(gsub("I", "log2_R", names(.)))	%>%
+    cbind(df, .) %>%
+    dplyr::mutate_at(.vars = grep("[I|R][0-9]{3}", names(.)), ~ replace(.x, is.infinite(.x), NA))
+  
+  col_log2Ratio <- grepl("^log2_R[0-9]{3}", names(df))
+  cf <- apply(df[, col_log2Ratio, drop = FALSE], 2, median, na.rm = TRUE)
+  
+  df <- sweep(df[, col_log2Ratio, drop = FALSE], 2, cf, "-") %>%
+    `colnames<-`(paste("N", names(.), sep="_"))	%>%
+    cbind(df, .)
+  
+  df <- sweep(df[, grepl("^I[0-9]{3}", names(df)), drop = FALSE], 2, 2^cf, "/") %>%
+    `colnames<-`(paste("N", names(.), sep="_"))	%>%
+    cbind(df, .)
+  
+  df <- df %>%
+    # reorderCols(endColIndex = grep("[RI][0-9]{3}", names(df)), col_to_rn = "pep_seq_mod") %>%
+    na_zeroIntensity()
+}
+
+
+#' Peptide reports for individual TMT experiments
+#'
+#' \code{normPepSplex_mq} processes peptide data from MaxQuant peptide table(s).
+#' It splits the original tables by TMT set numbers. Different LCMS injections
+#' under the same TMT experiment will be handled as different fractions.
+#' Therefore, the injection index is always "1".
+#'
+#' @inheritParams normPep
+#' @return Results in \code{.txt} files for each of TMT experiments and LC/MS
+#'   injections.
+#'
+#' @examples
+#' 	normPep_Splex(
+#' 		id = pep_seq_mod,
+#' 		method_psm_pep = median
+#' 	)
+#'
+#' \dontrun{
+#' }
+#' @import stringr dplyr purrr rlang  magrittr
+normPepSplex_mq <- function (id = "pep_seq_mod", fasta = fasta, 
+                             corrected_mq_int = TRUE, 
+                             rm_mq_krts = TRUE, rm_mq_craps = TRUE, rm_mq_reverses = TRUE) {
+  
+  id <- rlang::as_string(rlang::enexpr(id))
+  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  TMT_plex <- TMT_plex(label_scheme)
+  TMT_levels <- TMT_levels(TMT_plex)
+  # n_TMT_sets <- n_TMT_sets(label_scheme)
+  
+  if (id == "pep_seq_mod") {
+    filelist <- list.files(path = file.path(dat_dir), pattern = "^modificationSpecificPeptides.*\\.txt$") # %>%
+    # reorder_files(n_TMT_sets(label_scheme_full))
+  } else if (id == "pep_seq") {
+    filelist <- list.files(path = file.path(dat_dir), pattern = "^peptides.*\\.txt$") # %>%
+    # reorder_files(n_TMT_sets(label_scheme_full))
+  }
+  
+  if (rlang::is_empty(filelist)) {
+    stop("No MaxQuant peptide results were found. 
+         Make sure the file names start with `modificationSpecificPeptides` at `id = pep_seq_mod` or 
+         `peptides` at `id = pep_seq`.", call. = FALSE)
+  }
+  
+  purrr::walk(filelist, ~ {
+    df <- read.csv(file.path(dat_dir, .x), check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") 
+    
+    df_psm <- df %>% 
+      dplyr::select(Sequence, grep("^Experiment\\s{1}", names(.)))
+    
+    df <- df %>% 
+      dplyr::select(-grep("^Reporter\\s{1}intensity\\s{1}count\\s{1}", names(.))) %>% 
+      dplyr::select(-grep("^Reporter\\s{1}intensity\\s{1}\\d+$", names(.))) %>% 
+      dplyr::select(-grep("^Reporter\\s{1}intensity\\s{1}corrected\\s{1}\\d+$", names(.))) %>% 
+      dplyr::select(-grep("^Intensity\\s{1}", names(.))) %>% 
+      dplyr::select(-grep("^Experiment\\s{1}", names(.))) %>% 
+      dplyr::select(-grep("^Fraction\\s{1}", names(.)))
+
+    if (id == "pep_seq_mod") {
+      if (all(names(df) != "Modifications")) {
+        stop("Column `Modifications` not found; use modification-specific peptide table(s) or set `id = pep_seq`.", 
+             call. = FALSE)
+      }
+    } else if (id == "pep_seq") {
+      if (any(names(df) == "Modifications")) {
+        stop("Use peptide table(s) without column `Modifications` or set `id = pep_seq_mod`.", 
+             call. = FALSE)
+      }
+    }
+
+    if (corrected_mq_int) {
+      df <- df %>% 
+        dplyr::select(-grep("^Reporter\\s{1}intensity\\s{1}\\d+\\s{1}", names(.)))
+    } else {
+      df <- df %>% 
+        dplyr::select(-grep("^Reporter\\s{1}intensity\\s{1}corrected\\s{1}\\d+[^\\d]", names(.)))
+    }
+    
+    mq_grps_in_df <- names(df) %>% 
+      .[grepl("Reporter\\s{1}intensity\\s{1}.*[0-9]+", .)] %>% 
+      gsub("Reporter\\s{1}intensity\\s{1}.*[0-9]+\\s{1}(.*)", "\\1", .) %>% 
+      unique()
+
+    for (set_idx in unique(label_scheme$TMT_Set)) {
+      mq_grp_allowed <- label_scheme %>% 
+        dplyr::filter(TMT_Set == set_idx) %>% 
+        dplyr::select(MQ_Experiment) %>% 
+        unlist() %>% 
+        unique()
+      
+      mq_grps_matched <- mq_grps_in_df %>% 
+        .[. %in% mq_grp_allowed]
+      
+      if (purrr::is_empty(mq_grps_matched)) next
+
+      df_int <- df[, grepl("Reporter\\s{1}intensity\\s{1}.*[0-9]+", names(df)), drop = FALSE] %>% 
+        dplyr::select(grep(paste0(mq_grps_matched, "$"), names(.))) %>% 
+        `names<-`(gsub("TMT-", "I", as.character(TMT_levels)))
+
+      stopifnot(ncol(df_int) == TMT_plex)
+      
+      df_int <- df_int %>% 
+        logfcPep(label_scheme, set_idx)
+      
+      df_psm_sub <- df_psm %>% 
+        dplyr::select(grep(paste0(mq_grps_matched, "$"), names(.))) %>% 
+        `colnames<-`("n_psm")
+
+      df_sub <- dplyr::bind_cols(
+        df[, !grepl("Reporter\\s{1}intensity\\s{1}.*[0-9]+", names(df)), drop = FALSE], 
+        df_psm_sub, 
+        df_int
+      ) %>% 
+        dplyr::mutate(TMT_Set = set_idx)
+      
+      if (id == "pep_seq_mod") {
+        df_sub <- df_sub %>% 
+          dplyr::rename(pep_seq = Sequence, 
+                        prot_acc = Proteins, 
+                        pep_score = Score, 
+                        pep_expect = PEP) %>% 
+          dplyr::mutate(prot_acc = gsub("\\;.*", "", prot_acc)) %>% 
+          dplyr::mutate(pep_seq_mod = paste0(pep_seq, " [", Modifications, "]"))
+      } else if (id == "pep_seq") {
+        df_sub <- df_sub %>% 
+          dplyr::rename(pep_seq = Sequence, 
+                        prot_acc = `Leading razor protein`, 
+                        # pep_start = `Start position`, 
+                        # pep_end = `End position`, 
+                        pep_score = Score, 
+                        pep_expect = PEP) %>% 
+          dplyr::mutate(pep_seq_mod = pep_seq)
+      }
+      
+      df_sub <- annotPrndesc(df_sub, fasta)
+      
+      if(rm_mq_krts) {
+        df_sub <- df_sub %>% 
+          dplyr::mutate(is_krt = grepl("^.*\\s+krt[0-9]+", prot_desc, ignore.case = TRUE)) %>% 
+          dplyr::filter(!is_krt) %>% 
+          dplyr::select(-is_krt)
+      }
+      
+      df_sub <- annotPeppos(df_sub, fasta)
+      
+      if (rm_mq_craps) {
+        df_sub <- df_sub %>% 
+          dplyr::filter(.$`Potential contaminant` != "+")
+      }
+      
+      if (rm_mq_reverses) {
+        df_sub <- df_sub %>% 
+          dplyr::filter(.$Reverse != "+")
+      }
+      
+      df_sub <- df_sub %>% 
+        dplyr::select(pep_seq, pep_seq_mod, n_psm, prot_acc, prot_desc, 
+                      prot_mass, pep_start, pep_end, pep_score, pep_expect) %>% 
+        dplyr::bind_cols(df_sub %>% dplyr::select(grep("^log2_R[0-9]{3}", names(df_sub)))) %>% 
+        dplyr::bind_cols(df_sub %>% dplyr::select(grep("^I[0-9]{3}", names(df_sub)))) %>% 
+        dplyr::bind_cols(df_sub %>% dplyr::select(grep("^N_log2_R[0-9]{3}", names(df_sub)))) %>% 
+        dplyr::bind_cols(df_sub %>% dplyr::select(grep("^N_I[0-9]{3}", names(df_sub)))) %>% 
+        dplyr::bind_cols(df_sub %>% dplyr::select(TMT_Set)) %>% 
+        dplyr::filter(!grepl("^REV_", .$prot_acc)) %>% 
+        dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0)
+
+      if(id == "pep_seq_mod") {
+        df_sub <- df_sub %>% dplyr::select(-pep_seq)
+      } else if (id == "pep_seq") {
+        df_sub <- df_sub %>% dplyr::select(-pep_seq_mod)
+      } else {
+        stop("Unknown `id`.", call. = FALSE)
+      }
+      
+      injn_idx <- 1
+      write.table(df_sub, 
+                  file.path(dat_dir, "Peptide", paste0("TMTset", set_idx, "_LCMSinj", injn_idx, "_Peptide_N.txt")), 
+                  sep = "\t", col.names = TRUE, row.names = FALSE)
+    }
+  })
+
+}
 
 

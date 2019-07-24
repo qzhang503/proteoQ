@@ -89,8 +89,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	old_dir <- getwd()
 	on.exit(setwd(old_dir), add = TRUE)
-	
-	# on.exit(message("Generation of a combined protein table --- Completed."), add = TRUE)
 
 	options(max.print = 2000000) 
 	
@@ -247,20 +245,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		  calc_cover(id = !!id, fasta = fasta) %>% 
 		  dplyr::right_join(df, by = id)
 		
-		run_scripts <- FALSE 
-		if (run_scripts) {
-  		# add prot_cover
-  		df <- do.call(rbind, 
-  		              lapply(list.files(path = file.path(dat_dir, "PSM\\cache"), 
-  		                                pattern = "Clean\\.txt$", full.names = TRUE), 
-  		                     read.csv, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")) %>% 
-  							dplyr::select(prot_acc, prot_desc, pep_seq, pep_start, pep_end) %>% 
-  							dplyr::filter(!duplicated(pep_seq)) %>% 
-  		  annotPrn(acc_type) %>% 
-  		  calc_cover(id = !!id, fasta = fasta) %>% 
-  		  dplyr::right_join(df, by = id)		  
-		}
-
+		rm(id_pep)
 		write.csv(df, file.path(dat_dir, "Protein\\cache", "Protein_no_norm.csv"), row.names = FALSE)
 		
 		if (gn_rollup) {
@@ -318,5 +303,5 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	write.table(df, file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 	
-	invisible(df)
+	# invisible(df)
 }

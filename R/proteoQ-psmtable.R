@@ -236,7 +236,7 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 	if (length(filelist) == 0)
 	  stop(paste("No PSM files were found under", file.path(dat_dir, "PSM")))
 
-  out_pfix <- gsub(".csv$", "", filelist)
+  # out_pfix <- gsub(".csv$", "", filelist)
 
   df <- do.call(rbind,
 		lapply(
