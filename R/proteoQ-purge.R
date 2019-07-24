@@ -18,6 +18,10 @@ purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, .
     filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
       reorder_files(n_TMT_sets(label_scheme_full))
     
+    if (is_empty(filelist)) {
+      stop("PSM files not found; may be you are starting with MaxQuant peptide outputs.", call. = FALSE)
+    }
+    
     df_sd <- purrr::map(as.list(filelist), ~ {
       df <- read.csv(file.path(dat_dir, "PSM", .x), check.names = FALSE, header = TRUE,
                      sep = "\t", comment.char = "#") %>% 

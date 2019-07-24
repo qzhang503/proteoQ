@@ -50,9 +50,6 @@
 #'  ions at the peptide levels (from \code{\link{normPep}}) will be the weigth
 #'  when summarising \code{log2FC} with \code{top.3} or \code{weighted.mean}.
 #'@inheritParams normPep
-#'@param fasta Character string; the file name with prepended directory path to
-#'  the \code{fasta} database being used in MS/MS ion search. If not specified,
-#'  a pre-compiled system file will be used.
 #'@inheritParams mixtools::normalmixEM
 #'@family aggregate functions
 #'@seealso \code{\link{normPSM}} for PSMs and \code{\link{normPep}} for
@@ -69,7 +66,8 @@
 #'  range_int = c(5, 95),
 #'  n_comp = 2,
 #'  seed = 749662,
-#'  fasta = "C:\\Results\\DB\\Refseq\\RefSeq_HM_Frozen_20130727.fasta",
+#'  fasta = c("~\\proteoQ\\db\\refseq\\refseq_hs_2013_07.fasta", 
+#'            "~\\proteoQ\\db\\refseq\\refseq_mm_2013_07.fasta"),
 #'  maxit = 200,
 #'  epsilon = 1e-05
 #')
@@ -91,8 +89,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	old_dir <- getwd()
 	on.exit(setwd(old_dir), add = TRUE)
-	
-	# on.exit(message("Generation of a combined protein table --- Completed."), add = TRUE)
 
 	options(max.print = 2000000) 
 	
@@ -166,11 +162,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	stopifnot(id == "prot_acc")
 	
-	if(!is.null(fasta)) {
-	  fasta <- rlang::as_string(rlang::enexpr(fasta))
-	  stopifnot(file.exists(fasta))
-	}
-	
 	if(!(cache & file.exists(file.path(dat_dir, "Protein", "Protein.txt")))) {
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
 										header = TRUE, sep = "\t", comment.char = "#") %>% 
@@ -236,26 +227,25 @@ normPrn <- function (id = c("prot_acc", "gene"),
 				df[, grep("^N_log2_R[0-9]{3}", names(df))], 
 				df[, grep("^Z_log2_R[0-9]{3}", names(df))])
 
-		acc_type <- load(file = file.path(dat_dir, "label_scheme.Rdata")) %>% find_acctype()
+		load(file = file.path(dat_dir, "label_scheme.Rdata"))
+		acc_type <- find_acctype()
 		
 		# replace NA genes with prot_acc; some genes are represented by protein acessions
 		df <- replace_na_genes(df, acc_type)
 		df$gene <- as.factor(df$gene)
 
 		df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ] 
-	
+		
 		# add prot_cover
-		df <- do.call(rbind, 
-		                    lapply(list.files(path = file.path(dat_dir, "PSM\\cache"), 
-		                                      pattern = "Clean\\.txt$", full.names = TRUE), 
-		                           read.csv, 
-		                           check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")) %>% 
-							dplyr::select(prot_acc, prot_desc, pep_seq, pep_start, pep_end) %>% 
-							dplyr::filter(!duplicated(pep_seq))	%>% 
-							annotPrn(acc_type) %>% 
+		id_pep <- match_identifier("pep_seq")
+
+		df <- read.csv(file.path(dat_dir, "Peptide\\Peptide.txt"), check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
+		  dplyr::select(prot_acc, prot_desc, !!rlang::sym(id_pep), pep_start, pep_end) %>% 
+		  annotPrn(acc_type) %>% 
 		  calc_cover(id = !!id, fasta = fasta) %>% 
 		  dplyr::right_join(df, by = id)
 		
+		rm(id_pep)
 		write.csv(df, file.path(dat_dir, "Protein\\cache", "Protein_no_norm.csv"), row.names = FALSE)
 		
 		if (gn_rollup) {
@@ -313,5 +303,5 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	write.table(df, file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 	
-	invisible(df)
+	# invisible(df)
 }

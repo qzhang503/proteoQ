@@ -4,7 +4,7 @@
 \alias{load_dbs}
 \title{Loads species-specific Databases}
 \usage{
-load_dbs(dat_dir, expt_smry = "expt_smry.xlsx")
+load_dbs()
 }
 \description{
 A function loads a set of precompiled tables in protein accessions, \code{GO}

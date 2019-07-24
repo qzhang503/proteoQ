@@ -16,11 +16,18 @@ modifications of peptides. \code{PSMs} data with the same value in
 of peptide.}
 
 \item{method_psm_pep}{Character string; the method to summarise the
-\code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
-The descriptive statistics includes \code{c("mean", "median", "top.3",
-"weighted.mean")}. The \code{log10-intensity} of reporter ions at the
-\code{PSMs} levels will be the weight when summarising \code{log2FC} with
-\code{"top.3"} or \code{"weighted.mean"}.}
+ \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
+ The descriptive statistics includes \code{c("mean", "median", "top.3",
+ "weighted.mean")}. The \code{log10-intensity} of reporter ions at the
+ \code{PSMs} levels will be the weight when summarising \code{log2FC} with
+ \code{"top.3"} or \code{"weighted.mean"}.
+
+ At \code{method_psm_pep = mq}, the PSM to peptide summarisation will be
+ bypassed. Instead, MaxQuant peptide tables based on \code{peptides.txt} or
+ \code{modificationSpecificPeptides.txt} will be taken. More specifically,
+ the peptide table(s) without site modification information will be used at
+ \code{id = pep_seq} and the peptide table(s) with site modification
+ information will be used at \code{id = pep_seq_mod}.}
 }
 \value{
 Results in \code{.txt} files for each of TMT experiments and LC/MS

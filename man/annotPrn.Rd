@@ -7,5 +7,6 @@
 annotPrn(df, acc_type)
 }
 \description{
-\code{annotPrn} annotates proteins based on the \code{acc_type}
+\code{annotPrn} cross-referencing proteins among \code{uniprot_acc},
+\code{uniprot_id}, \code{refseq} and \code{entrez}.
 }

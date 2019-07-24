@@ -6,6 +6,13 @@
 \usage{
 newColnames(i, x, label_scheme)
 }
+\arguments{
+\item{i}{Integer; the index of TMT experiment}
+
+\item{x}{Data frame; log2FC data}
+
+\item{label_scheme}{Experiment summary}
+}
 \description{
 \code{newColnames} match names to Sample_ID in label_scheme
 }

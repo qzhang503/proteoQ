@@ -53,9 +53,8 @@ standard deviation across samples. The default is between the 5th and the
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
 
-\item{fasta}{Character string; the file name with prepended directory path to
-the \code{fasta} database being used in MS/MS ion search. If not specified,
-a pre-compiled system file will be used.}
+\item{fasta}{Character string(s); the file name(s) with prepended directory
+path to the \code{fasta} database being used in MS/MS ion search.}
 
 \item{col_refit}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_refit} will be
@@ -122,7 +121,8 @@ normPrn(
  range_int = c(5, 95),
  n_comp = 2,
  seed = 749662,
- fasta = "C:\\\\Results\\\\DB\\\\Refseq\\\\RefSeq_HM_Frozen_20130727.fasta",
+ fasta = c("~\\\\proteoQ\\\\db\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+           "~\\\\proteoQ\\\\db\\\\refseq\\\\refseq_mm_2013_07.fasta"),
  maxit = 200,
  epsilon = 1e-05
 )
