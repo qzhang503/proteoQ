@@ -60,14 +60,14 @@
 #' \dontrun{
 #'normPrn(
 #'  id = gene,
+#'  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
+#'            "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
 #'  method_pep_prn = median,
 #'  method_align = MGKernel,
 #'  range_log2r = c(5, 95),
 #'  range_int = c(5, 95),
 #'  n_comp = 2,
 #'  seed = 749662,
-#'  fasta = c("~\\proteoQ\\db\\refseq\\refseq_hs_2013_07.fasta", 
-#'            "~\\proteoQ\\db\\refseq\\refseq_mm_2013_07.fasta"),
 #'  maxit = 200,
 #'  epsilon = 1e-05
 #')
