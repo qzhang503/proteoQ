@@ -266,6 +266,8 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #' \dontrun{
 #'normPep(
 #'  id = pep_seq_mod,
+#'  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
+#'            "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
 #'  method_psm_pep = median,
 #'  method_align = MGKernel,
 #'  range_log2r = c(10, 95),
@@ -279,8 +281,8 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'# MaxQuant peptide table(s)
 #'normPep(
 #'  id = pep_seq,
-#'  fasta = c("~\\proteoQ\\db\\refseq\\refseq_hs_2013_07.fasta", 
-#'            "~\\proteoQ\\db\\refseq\\refseq_mm_2013_07.fasta"),
+#'  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
+#'            "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
 #'  method_psm_pep = mq,
 #'  method_align = MGKernel,
 #'  range_log2r = c(10, 95),

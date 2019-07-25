@@ -37,7 +37,12 @@ experiments
  indeces  \cr LCMS_Injection   \tab LC/MS injection indeces under a
  \code{TMT_Set} \cr RAW_File \tab MS data filenames originated by
  \code{Xcalibur} with or without the \code{.raw} extension \cr Reference \tab
- Labels indicating reference samples in TMT experiments \cr }
+ Labels indicating reference samples in TMT experiments \cr MQ_Experiment
+ \tab A helper to link the values under the \code{TMT_Set} column in
+ \code{expt_smry.xlsx} to those under the \code{Experiment} column in the
+ interface of \code{MaxQuant --> Raw data --> Load}. The values in the
+ \code{Excel} file need to have one-to-one correspondence to those in
+ \code{MaxQuant}. }
 
  \code{Sample_ID}: values should be unique for entries at a unique
  combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for
