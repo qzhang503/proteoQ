@@ -46,7 +46,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 	}
 
 	must_have <- c("TMT_Channel", "TMT_Set", "LCMS_Injection", "RAW_File",
-								"Sample_ID", "Reference")
+								"Sample_ID", "Reference", "MQ_Experiment")
 
 	missing_cols <- must_have[!must_have %in% names(label_scheme_full)]
 	if(length(missing_cols) > 0) {
@@ -76,7 +76,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 	  dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
 	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.x)) %>%
 	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(.x, digits = 2)) %>%
-	  tidyr::fill(TMT_Set, LCMS_Injection, RAW_File) %>%
+	  tidyr::fill(TMT_Set, LCMS_Injection, RAW_File, MQ_Experiment) %>%
 	  dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
 	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 
