@@ -45,6 +45,9 @@ prep_label_scheme <- function(dat_dir, filename) {
 		stop(filename, " needs to be in a file format of '.csv', '.xls' or '.xlsx'.")
 	}
 
+	# back compatibility without "MQ_Experiment"
+	if (! "MQ_Experiment" %in% names(label_scheme_full)) label_scheme_full$MQ_Experiment <- NA
+	
 	must_have <- c("TMT_Channel", "TMT_Set", "LCMS_Injection", "RAW_File",
 								"Sample_ID", "Reference", "MQ_Experiment")
 
@@ -717,3 +720,42 @@ match_logi_gv <- function(var, val) {
     return(val)
   }
 }
+
+
+#' Find mismatches in RAW file names
+#'
+#' \code{check_raws} finds mismatched RAW files between expt_smry.xlsx and
+#' PSM outs.
+check_raws <- function(df) {
+  stopifnot ("RAW_File" %in% names(df))
+  
+  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  load(file = file.path(dat_dir, "fraction_scheme.Rdata"))
+  
+  tmtinj_raw <- fraction_scheme %>%
+    tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>%
+    dplyr::select(-Fraction) %>%
+    dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File))
+  
+  ms_raws <- df$RAW_File %>% unique()
+  label_scheme_raws <- tmtinj_raw$RAW_File %>% unique()
+  
+  missing_ms_raws <- ms_raws %>% .[! . %in% label_scheme_raws]
+  wrong_label_scheme_raws <- label_scheme_raws[! label_scheme_raws %in% ms_raws]
+  
+  if(!purrr::is_empty(missing_ms_raws) | !purrr::is_empty(wrong_label_scheme_raws)) {
+    cat("The following MS RAW files are missing from the experimental summary file:\n")
+    cat(paste0(missing_ms_raws, "\n"))
+    
+    cat("The following RAW files in the experimental summary file are not found in PSM data:\n")
+    cat(paste0("\t", wrong_label_scheme_raws, "\n"))
+    
+    stop(paste("Check file names under the RAW_File column in the experimental summary file."),
+         call. = FALSE)
+  }
+
+  return(tmtinj_raw)
+}
+
+

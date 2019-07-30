@@ -22,7 +22,7 @@ of peptide.}
  \code{PSMs} levels will be the weight when summarising \code{log2FC} with
  \code{"top.3"} or \code{"weighted.mean"}.
 
- At \code{method_psm_pep = mq}, the PSM to peptide summarisation will be
+ At \code{method_psm_pep = mqpep}, the PSM to peptide summarisation will be
  bypassed. Instead, MaxQuant peptide tables based on \code{peptides.txt} or
  \code{modificationSpecificPeptides.txt} will be taken. More specifically,
  the peptide table(s) without site modification information will be used at

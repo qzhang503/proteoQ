@@ -49,95 +49,95 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 	        add = TRUE)
 
 	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx, injn_idx) {
-		id <- rlang::as_string(rlang::enexpr(id))
-
-		channelInfo <- label_scheme %>%
-			dplyr::filter(TMT_Set == set_idx) %>%
-			channelInfo(set_idx)
-
-		df <- df[rowSums(!is.na(df[, grepl("^N_log2_R[0-9]{3}", names(df)), drop = FALSE])) > 0, ] %>%
-				dplyr::arrange(!!rlang::sym(id), prot_acc) %>%
-				dplyr::filter(pep_isunique == 1) %>%
-				dplyr::select(-grep("^R[0-9]{3}", names(.))) %>%
-				dplyr::mutate(pep_scan_title = gsub("\\\\", "~~", pep_scan_title)) %>%
-				dplyr::mutate(pep_scan_title = gsub("^File.*~~", "", pep_scan_title))
-
-		# summarise log2FC and intensity from the same `set_idx` but different LCMS injections
-		if (method_psm_pep == "mean") {
-			df_num <- aggrNums(mean)(df, !!rlang::sym(id), na.rm = TRUE)
-		} else if (method_psm_pep == "top.3") {
-			df_num <- TMT_top_n(df, !!rlang::sym(id), na.rm = TRUE)
-		} else if (method_psm_pep == "weighted.mean") {
-			df_num <- TMT_wt_mean(df, !!rlang::sym(id), na.rm = TRUE)
-		} else {
-			df_num <- aggrNums(median)(df, !!rlang::sym(id), na.rm = TRUE)
-		}
-
-		df_psm <- df %>%
-				dplyr::select(!!rlang::sym(id)) %>%
-				dplyr::group_by(!!rlang::sym(id)) %>%
-				dplyr::summarise(n_psm = n())
-		
-		df_score <- df %>% 
-		  dplyr::select(!!rlang::sym(id), pep_score) %>% 
-		  dplyr::group_by(!!rlang::sym(id)) %>% 
-		  dplyr::summarise(pep_score = max(pep_score, na.rm = TRUE))
-		
-		df_expect <- df %>% 
-		  dplyr::select(!!rlang::sym(id), pep_expect) %>% 
-		  dplyr::group_by(!!rlang::sym(id)) %>% 
-		  dplyr::summarise(pep_expect = min(pep_expect, na.rm = TRUE))
-
-		df <- df %>% 
-		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% # already in `df_num`
-		  dplyr::select(-pep_score, -pep_expect) %>% # in `df_score` and `df_expect`
-		  dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score",
-		                                       "prot_matches", "prot_matches_sig", "prot_sequences",
-		                                       "prot_sequences_sig", "raw_file", "pep_query", 
-		                                       "pep_rank", "pep_isbold", "pep_isunique", 
-		                                       "pep_exp_mr", "pep_exp_z", "pep_calc_mr", 
-		                                       "pep_exp_mz", "pep_delta", "pep_miss", "pep_var_mod", 
-		                                       "pep_var_mod_pos", "pep_scan_title", "pep_res_before", 
-		                                       "pep_res_after", "pep_summed_mod_pos", 
-		                                       "pep_local_mod_pos")))
-		
-		df_first <- df %>% 
-		  dplyr::filter(!duplicated(!!rlang::sym(id)))
-		
-		if(id == "pep_seq_mod") {
-		  df_first <- df_first %>% dplyr::select(-pep_seq)
-		} else {
-		  df_first <- df_first %>% dplyr::select(-pep_seq_mod)
-		}
-
-		df <- list(df_psm, df_first, df_score, df_expect, df_num) %>%
-				purrr::reduce(left_join, by = id) %>%
-				data.frame(check.names = FALSE)
-
-		df <- cbind.data.frame(df[, !grepl("[I|log2_R][0-9]{3}", names(df)), drop = FALSE],
-					df[, grepl("[log2_R][0-9]{3}", names(df)), drop = FALSE],
-					df[, grepl("[I][0-9]{3}", names(df)), drop = FALSE]) %>%
-					dplyr::mutate_at(.vars = grep("[I|log2_R][0-9]{3}", names(.)),
-					                 list(~ replace(., is.infinite(.), NA) ))
-
-		# median-centered across TMT channels under the same multiplex experiment
-		col_r <- grepl("^log2_R[0-9]{3}", names(df))
-		cf <- apply(df[, col_r, drop = FALSE], 2, median, na.rm = TRUE)
-		df <- cbind(df[, -grep("^N_log2_R[0-9]{3}", names(df))],
-		            sweep(df[, col_r], 2, cf, "-") %>%
-		              `colnames<-`(paste("N", colnames(.), sep="_")))
-
-		col_int <- grepl("^I[0-9]{3}", names(df))
-		df  <- cbind(df[, -grep("^N_I[0-9]{3}", names(df))],
-		             sweep(df[, col_int, drop=FALSE], 2, 2^cf, "/") %>%
-		               `colnames<-`(paste("N", colnames(.), sep="_")))
-
-		rm(cf, col_r, col_int)
-
-		df <- na_zeroIntensity(df) %>% mutate(TMT_Set = set_idx)
+	  id <- rlang::as_string(rlang::enexpr(id))
+	  
+	  channelInfo <- label_scheme %>%
+	    dplyr::filter(TMT_Set == set_idx) %>%
+	    channelInfo(set_idx)
+	  
+	  df <- df[rowSums(!is.na(df[, grepl("^N_log2_R[0-9]{3}", names(df)), drop = FALSE])) > 0, ] %>%
+	    dplyr::arrange(!!rlang::sym(id), prot_acc) %>%
+	    dplyr::filter(pep_isunique == 1) %>%
+	    dplyr::select(-grep("^R[0-9]{3}", names(.))) %>%
+	    dplyr::mutate(pep_scan_title = gsub("\\\\", "~~", pep_scan_title)) %>%
+	    dplyr::mutate(pep_scan_title = gsub("^File.*~~", "", pep_scan_title))
+	  
+	  # summarise log2FC and intensity from the same `set_idx` but different LCMS injections
+	  if (method_psm_pep == "mean") {
+	    df_num <- aggrNums(mean)(df, !!rlang::sym(id), na.rm = TRUE)
+	  } else if (method_psm_pep == "top.3") {
+	    df_num <- TMT_top_n(df, !!rlang::sym(id), na.rm = TRUE)
+	  } else if (method_psm_pep == "weighted.mean") {
+	    df_num <- TMT_wt_mean(df, !!rlang::sym(id), na.rm = TRUE)
+	  } else {
+	    df_num <- aggrNums(median)(df, !!rlang::sym(id), na.rm = TRUE)
+	  }
+	  
+	  df_psm <- df %>%
+	    dplyr::select(!!rlang::sym(id)) %>%
+	    dplyr::group_by(!!rlang::sym(id)) %>%
+	    dplyr::summarise(n_psm = n())
+	  
+	  df_score <- df %>% 
+	    dplyr::select(!!rlang::sym(id), pep_score) %>% 
+	    dplyr::group_by(!!rlang::sym(id)) %>% 
+	    dplyr::summarise(pep_score = max(pep_score, na.rm = TRUE))
+	  
+	  df_expect <- df %>% 
+	    dplyr::select(!!rlang::sym(id), pep_expect) %>% 
+	    dplyr::group_by(!!rlang::sym(id)) %>% 
+	    dplyr::summarise(pep_expect = min(pep_expect, na.rm = TRUE))
+	  
+	  df <- df %>% 
+	    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% # already in `df_num`
+	    dplyr::select(-pep_score, -pep_expect) %>% # in `df_score` and `df_expect`
+	    dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score",
+	                                         "prot_matches", "prot_matches_sig", "prot_sequences",
+	                                         "prot_sequences_sig", "raw_file", "pep_query", 
+	                                         "pep_rank", "pep_isbold", "pep_isunique", 
+	                                         "pep_exp_mr", "pep_exp_z", "pep_calc_mr", 
+	                                         "pep_exp_mz", "pep_delta", "pep_miss", "pep_var_mod", 
+	                                         "pep_var_mod_pos", "pep_scan_title", "pep_res_before", 
+	                                         "pep_res_after", "pep_summed_mod_pos", 
+	                                         "pep_local_mod_pos")))
+	  
+	  df_first <- df %>% 
+	    dplyr::filter(!duplicated(!!rlang::sym(id)))
+	  
+	  if(id == "pep_seq_mod") {
+	    df_first <- df_first %>% dplyr::select(-pep_seq)
+	  } else {
+	    df_first <- df_first %>% dplyr::select(-pep_seq_mod)
+	  }
+	  
+	  df <- list(df_psm, df_first, df_score, df_expect, df_num) %>%
+	    purrr::reduce(left_join, by = id) %>%
+	    data.frame(check.names = FALSE)
+	  
+	  df <- cbind.data.frame(df[, !grepl("[I|log2_R][0-9]{3}", names(df)), drop = FALSE],
+	                         df[, grepl("[log2_R][0-9]{3}", names(df)), drop = FALSE],
+	                         df[, grepl("[I][0-9]{3}", names(df)), drop = FALSE]) %>%
+	    dplyr::mutate_at(.vars = grep("[I|log2_R][0-9]{3}", names(.)),
+	                     list(~ replace(., is.infinite(.), NA) ))
+	  
+	  # median-centered across TMT channels under the same multiplex experiment
+	  col_r <- grepl("^log2_R[0-9]{3}", names(df))
+	  cf <- apply(df[, col_r, drop = FALSE], 2, median, na.rm = TRUE)
+	  df <- cbind(df[, -grep("^N_log2_R[0-9]{3}", names(df))],
+	              sweep(df[, col_r], 2, cf, "-") %>%
+	                `colnames<-`(paste("N", colnames(.), sep="_")))
+	  
+	  col_int <- grepl("^I[0-9]{3}", names(df))
+	  df  <- cbind(df[, -grep("^N_I[0-9]{3}", names(df))],
+	               sweep(df[, col_int, drop=FALSE], 2, 2^cf, "/") %>%
+	                 `colnames<-`(paste("N", colnames(.), sep="_")))
+	  
+	  rm(cf, col_r, col_int)
+	  
+	  df <- na_zeroIntensity(df) %>% mutate(TMT_Set = set_idx)
 	}
-
-
+	
+	
 	old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
 
@@ -207,18 +207,16 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'  \code{PSMs} levels will be the weight when summarising \code{log2FC} with
 #'  \code{"top.3"} or \code{"weighted.mean"}.
 #'
-#'  At \code{method_psm_pep = mq}, the PSM to peptide summarisation will be
+#'  At \code{method_psm_pep = mqpep}, the PSM to peptide summarisation will be
 #'  bypassed. Instead, MaxQuant peptide tables based on \code{peptides.txt} or
 #'  \code{modificationSpecificPeptides.txt} will be taken. More specifically,
 #'  the peptide table(s) without site modification information will be used at
 #'  \code{id = pep_seq} and the peptide table(s) with site modification
 #'  information will be used at \code{id = pep_seq_mod}.
-#'@param rm_mq_krts Logical; if TRUE, removes keratin entries from MaxQuant peptide
-#'  results.
-#'@param rm_mq_craps Logical; if TRUE, removes \code{Potential contaminant} entries
-#'  from MaxQuant peptide results.
-#'@param rm_mq_reverses Logical; if TRUE, removes \code{Reverse} entries from
-#'  MaxQuant peptide results.
+#'@param rm_mq_krts Logical; if TRUE, removes keratin entries from MaxQuant
+#'  peptide results.
+#'@param rm_mq_craps Logical; if TRUE, removes \code{Potential contaminant}
+#'  entries from MaxQuant peptide results.
 #'@param method_align Character string or a list of gene symbols; the method to
 #'  align the \code{log2FC} of peptide/protein entries across samples.
 #'  \code{MC}: median-centering; \code{MGKernel}: the kernal density defined by
@@ -243,8 +241,6 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'  \code{\link[mixtools]{normalmixEM}}.
 #'@param seed Integer; a seed for reproducible fitting at \code{method_align =
 #'  MGKernel}.
-#'@param fasta Character string(s); the file name(s) with prepended directory
-#'  path to the \code{fasta} database being used in MS/MS ion search.
 #'@param annot_kinases Logical; if TRUE, annotates kinase attributes of
 #'  proteins.
 #'@param col_refit Character string to a column key in \code{expt_smry.xlsx}.
@@ -257,6 +253,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'@param ... Additional parameters for \code{\link[mixtools]{normalmixEM}}:\cr
 #'  \code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
 #'  tolerance limit for declaring algorithm convergence.
+#'@inheritParams normPSM
 #'@inheritParams mixtools::normalmixEM
 #'@seealso \code{\link{normPSM}} for PSM an \code{\link{normPrn}} for proteins.
 #'
@@ -266,7 +263,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #' \dontrun{
 #'normPep(
 #'  id = pep_seq_mod,
-#'  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
+#'  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
 #'            "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
 #'  method_psm_pep = median,
 #'  method_align = MGKernel,
@@ -281,9 +278,9 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'# MaxQuant peptide table(s)
 #'normPep(
 #'  id = pep_seq,
-#'  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
+#'  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
 #'            "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
-#'  method_psm_pep = mq,
+#'  method_psm_pep = mqpep,
 #'  method_align = MGKernel,
 #'  range_log2r = c(10, 95),
 #'  range_int = c(5, 95),
@@ -299,7 +296,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median") {
 #'@importFrom plyr ddply
 #'@export
 normPep <- function (id = c("pep_seq", "pep_seq_mod"),
-										method_psm_pep = c("median", "mean", "weighted.mean", "top.3", "mq"), 
+										method_psm_pep = c("median", "mean", "weighted.mean", "top.3", "mqpep"), 
 										rm_mq_krts = TRUE, rm_mq_craps = TRUE, rm_mq_reverses = TRUE, 
 										method_align = c("MC", "MGKernel"), range_log2r = c(20, 90),
 										range_int = c(5, 95), n_comp = NULL, seed = NULL, fasta = NULL, 
@@ -343,11 +340,11 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	}
 	
 	method_psm_pep <- rlang::enexpr(method_psm_pep)
-	if(method_psm_pep == rlang::expr(c("median", "mean", "weighted.mean", "top.3", "mq"))) {
+	if(method_psm_pep == rlang::expr(c("median", "mean", "weighted.mean", "top.3", "mqpep"))) {
 		method_psm_pep <- "median"
 	} else {
 		method_psm_pep <- rlang::as_string(method_psm_pep)
-		stopifnot(method_psm_pep %in% c("mean", "top.3", "median", "weighted.mean", "mq"))
+		stopifnot(method_psm_pep %in% c("mean", "top.3", "median", "weighted.mean", "mqpep"))
 	}
 
 	method_align <- rlang::enexpr(method_align)
@@ -381,8 +378,8 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 	if(!(cache & file.exists(file.path(dat_dir, "Peptide", "Peptide.txt")))) {
 		# normalize peptide data within each file
-	  if (method_psm_pep == "mq") {
-	    normPepSplex_mq(id = !!id, fasta = fasta, 
+	  if (method_psm_pep == "mqpep") {
+	    normPepSplex_mqpep(id = !!id, fasta = fasta, 
 	                    rm_mq_krts = rm_mq_krts, rm_mq_craps = rm_mq_craps, rm_mq_reverses = rm_mq_reverses)
 	  } else {
 	    normPep_Splex(id = !!id, method_psm_pep = method_psm_pep)
@@ -596,7 +593,7 @@ logfcPep <- function(df, label_scheme, set_idx) {
 
 #' Peptide reports for individual TMT experiments
 #'
-#' \code{normPepSplex_mq} processes peptide data from MaxQuant peptide table(s).
+#' \code{normPepSplex_mqpep} processes peptide data from MaxQuant peptide table(s).
 #' It splits the original tables by TMT set numbers. Different LCMS injections
 #' under the same TMT experiment will be handled as different fractions.
 #' Therefore, the injection index is always "1".
@@ -614,7 +611,7 @@ logfcPep <- function(df, label_scheme, set_idx) {
 #' \dontrun{
 #' }
 #' @import stringr dplyr purrr rlang  magrittr
-normPepSplex_mq <- function (id = "pep_seq_mod", fasta = fasta, 
+normPepSplex_mqpep <- function (id = "pep_seq_mod", fasta = fasta, 
                              corrected_mq_int = TRUE, 
                              rm_mq_krts = TRUE, rm_mq_craps = TRUE, rm_mq_reverses = TRUE) {
   
