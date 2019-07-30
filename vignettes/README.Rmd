@@ -391,14 +391,14 @@ We now are ready to perform peptide normalization:
 # peptide reports
 normPep(
 	id = pep_seq, 
-	method_psm_pep = mq, 
+	method_psm_pep = mqpep, 
 	method_align = MGKernel, 
 	range_log2r = c(5, 95), 
 	range_int = c(5, 95), 
 	n_comp = 3, 
 	seed = 749662, 
-	fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
-					 "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"), 
+  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
+	          "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"), 
 	annot_kinases = TRUE,	
 	maxit = 200, 
 	epsilon = 1e-05
@@ -406,7 +406,7 @@ normPep(
 
 ```
 
-Note that we called `normPep()` with `id = pep_seq`, to acknowledge that the input files, `peptide... .txt`, contain data without peptide site modification. To call the function with `id = pep_seq_mod`, we need to supply a different set of data files of `modificationSpecificPeptides... .txt`. We further note that `method_psm_pep = mq`, which allows the program to bypass PSM-to-peptide summarisation and use the Maxquant peptide tables as the input. Upon the completion of peptide normalization, we can proceed to the histogram visualization and protein normalization as we have done with the Mascot example. The only exception is that the call to `purPep()` will throw us an error as there are no PSM data for peptide `CV`.  
+Note that we called `normPep()` with `id = pep_seq`, to acknowledge that the input files, `peptide... .txt`, contain data without peptide site modification. To call the function with `id = pep_seq_mod`, we need to supply a different set of data files of `modificationSpecificPeptides... .txt`. We further note that `method_psm_pep = mqpep`, which allows the program to bypass PSM-to-peptide summarisation and use the Maxquant peptide tables as the input. Upon the completion of peptide normalization, we can proceed to the histogram visualization and protein normalization as we have done with the Mascot example. The only exception is that the call to `purPep()` will throw us an error as there are no PSM data were prepared for the calculations of peptide `CV`.  
 
 ## Part 2 --- Basic informatics
 In this section I illustrate the following applications of `proteoQ`:  

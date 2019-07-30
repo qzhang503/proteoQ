@@ -5,7 +5,8 @@
 \title{Reports PSM results}
 \usage{
 normPSM(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
-  frac_smry = "frac_smry.xlsx", rptr_intco = 1000, rm_craps = FALSE,
+  frac_smry = "frac_smry.xlsx", fasta = NULL, corrected_int = TRUE,
+  rm_reverses = TRUE, rptr_intco = 1000, rm_craps = FALSE,
   rm_krts = FALSE, rm_outliers = FALSE, plot_violins = TRUE)
 }
 \arguments{
@@ -16,6 +17,16 @@ metadata of TMT experiments. The default is "expt_smry.xlsx".}
 
 \item{frac_smry}{A character string to the \code{.xlsx} file containing
 peptide fractionation summary. The default is "frac_smry.xlsx".}
+
+\item{fasta}{Character string(s); the file name(s) with prepended directory
+path to the \code{fasta} database being used in MS/MS ion search.}
+
+\item{corrected_int}{Logical; if TRUE, use values under columns "Reporter
+intensity corrected" in MaxQuant PSM results. Otherwise, use "Report
+intensity" without corrections.}
+
+\item{rm_reverses}{Logical; if TRUE, removes \code{Reverse} entries from
+MaxQuant peptide results.}
 
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
 
@@ -30,7 +41,7 @@ peptide fractionation summary. The default is "frac_smry.xlsx".}
 reporter-ion intensities.}
 }
 \value{
-Outputs under \code{~dat_dir\\PSM}. Primary results are in
+Outputs under \code{dat_dir\\PSM}. Primary results are in
  \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt, ...} The
  indeces of TMT experiment and LC/MS injection are indicated in the file
  names.
@@ -42,14 +53,8 @@ results from \code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}}
 experiments.
 }
 \details{
-End users will export \code{PSM} data from
-\code{\href{https://http://www.matrixscience.com/}{Mascot}} at a \code{.csv}
-format. The header information should be included during the \code{.csv}
-export. The \code{.csv} file name(s) should be defaulted by
-\code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with the
-letter \code{'F'}, followed by a six-digit number without space \code{(e.g.,
-F004453.csv)}. The \code{PSM} files should be present under the folder,
-\code{"~\\dat_dir"}, specified by the end users.
+The \code{PSM} files should be present under the working directory,
+\code{"dat_dir"}, specified by end users.
 
 In each primary output file, "\code{...PSM_N.txt}", values under columns
 \code{log2_R...} are relative to the \code{reference(s)} within each multiplex
@@ -58,16 +63,74 @@ under columns \code{N_log2_R...} are \code{log2_R...} with median-centering
 alignment. Values under columns \code{N_I...} are normalized
 \code{reporter-ion intensity}. Character strings under \code{pep_seq_mod}
 denote peptide sequences with applicable variable modifications.
-
-See \code{\link{normPrn}} for the description of column keys in the output.
 }
+\section{\code{Mascot}}{
+ End users will export \code{PSM} data from
+ \code{\href{https://http://www.matrixscience.com/}{Mascot}} at a \code{.csv}
+ format. The header information should be included during the \code{.csv}
+ export. The file name(s) should be defaulted by
+ \code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with
+ the letter \code{'F'}, followed by a six-digit number without space and
+ ended with \code{'.csv'} extension \code{(e.g., F004453.csv)}.
+
+ See \code{\link{normPrn}} for the description of column keys in the output.
+}
+
+\section{\code{MaxQuant}}{
+ End users will copy over \code{msms.txt}
+ file(s) from \code{\href{https://www.maxquant.org/}{MaxQuant}} to the
+ \code{dat_dir} directory. In the case of multiple \code{msms.txt} files for
+ processing, the file names need to be compiled in that they start with
+ \code{'msms'} and end with \code{'.txt'} in extension.
+}
+
 \examples{
 \dontrun{
-dat_dir <- "C:\\\\my_directory"
+# set up a working directory
+library(proteoQ)
+dat_dir <- c("C:\\\\The\\\\First\\\\Example")
+
+# copy fasta
+library(proteoQDA)
+copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\refseq")
+copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\refseq")
+
+# copy Mascot PSM data
+cptac_csv_1(dat_dir)
+
+# copy "expt_smry.xlsx" and "frac_smry.xlsx"
+cptac_expt_1(dat_dir)
+cptac_frac_1(dat_dir)
+
+# load experiments
+load_expts()
+
+# process Mascot PSMs
 normPSM(
   rptr_intco = 3000,
   rm_craps = FALSE,
   rm_krts = FALSE,
+  rm_outliers = FALSE,
+  plot_violins = TRUE
+)
+
+
+# MaxQuant example
+dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+cptac_mq_pep_1(dat_dir)
+cptac_mq_expt_1(dat_dir)
+cptac_frac_1(dat_dir)
+
+load_expts()
+
+normPSM(
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
+            "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  corrected_int = TRUE,
+  rm_reverses = TRUE,
+  rptr_intco = 3000,
+  rm_craps = TRUE,
+  rm_krts = TRUE,
   rm_outliers = FALSE,
   plot_violins = TRUE
 )

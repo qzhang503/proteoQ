@@ -5,7 +5,7 @@
 \title{Reports peptide results}
 \usage{
 normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
-  "mean", "weighted.mean", "top.3", "mq"), rm_mq_krts = TRUE,
+  "mean", "weighted.mean", "top.3", "mqpep"), rm_mq_krts = TRUE,
   rm_mq_craps = TRUE, rm_mq_reverses = TRUE, method_align = c("MC",
   "MGKernel"), range_log2r = c(20, 90), range_int = c(5, 95),
   n_comp = NULL, seed = NULL, fasta = NULL, annot_kinases = FALSE,
@@ -27,21 +27,18 @@ of peptide.}
  \code{PSMs} levels will be the weight when summarising \code{log2FC} with
  \code{"top.3"} or \code{"weighted.mean"}.
 
- At \code{method_psm_pep = mq}, the PSM to peptide summarisation will be
+ At \code{method_psm_pep = mqpep}, the PSM to peptide summarisation will be
  bypassed. Instead, MaxQuant peptide tables based on \code{peptides.txt} or
  \code{modificationSpecificPeptides.txt} will be taken. More specifically,
  the peptide table(s) without site modification information will be used at
  \code{id = pep_seq} and the peptide table(s) with site modification
  information will be used at \code{id = pep_seq_mod}.}
 
-\item{rm_mq_krts}{Logical; if TRUE, removes keratin entries from MaxQuant peptide
-results.}
+\item{rm_mq_krts}{Logical; if TRUE, removes keratin entries from MaxQuant
+peptide results.}
 
-\item{rm_mq_craps}{Logical; if TRUE, removes \code{Potential contaminant} entries
-from MaxQuant peptide results.}
-
-\item{rm_mq_reverses}{Logical; if TRUE, removes \code{Reverse} entries from
-MaxQuant peptide results.}
+\item{rm_mq_craps}{Logical; if TRUE, removes \code{Potential contaminant}
+entries from MaxQuant peptide results.}
 
 \item{method_align}{Character string or a list of gene symbols; the method to
 align the \code{log2FC} of peptide/protein entries across samples.
@@ -108,7 +105,7 @@ See \code{\link{normPrn}} for the description of column keys in the output.
 \dontrun{
 normPep(
  id = pep_seq_mod,
- fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+ fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
            "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
  method_psm_pep = median,
  method_align = MGKernel,
@@ -123,9 +120,9 @@ normPep(
 # MaxQuant peptide table(s)
 normPep(
  id = pep_seq,
- fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+ fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
            "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
- method_psm_pep = mq,
+ method_psm_pep = mqpep,
  method_align = MGKernel,
  range_log2r = c(10, 95),
  range_int = c(5, 95),
