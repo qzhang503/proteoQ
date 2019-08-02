@@ -300,6 +300,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 										rm_mq_krts = TRUE, rm_mq_craps = TRUE, rm_mq_reverses = TRUE, 
 										method_align = c("MC", "MGKernel"), range_log2r = c(20, 90),
 										range_int = c(5, 95), n_comp = NULL, seed = NULL, fasta = NULL, 
+										pep_unique_by = "group", 
 										annot_kinases = FALSE, col_refit = NULL, cache = TRUE, ...) {
 
 	dir.create(file.path(dat_dir, "Peptide\\Histogram"), recursive = TRUE, showWarnings = FALSE)
@@ -372,15 +373,18 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	n_comp <- n_comp %>% as.integer()
 	stopifnot(n_comp >= 2)
 	
+	pep_unique_by <- rlang::as_string(rlang::enexpr(pep_unique_by))
+	
 	dots <- rlang::enexprs(...)
 
 	mget(names(formals()), rlang::current_env()) %>% save_call("normPep")
 
 	if(!(cache & file.exists(file.path(dat_dir, "Peptide", "Peptide.txt")))) {
 		# normalize peptide data within each file
-	  if (method_psm_pep == "mqpep") {
-	    normPepSplex_mqpep(id = !!id, fasta = fasta, 
-	                    rm_mq_krts = rm_mq_krts, rm_mq_craps = rm_mq_craps, rm_mq_reverses = rm_mq_reverses)
+	  if (method_psm_pep %in% c("mq", "mqpep")) {
+	    normPepSplex_mqpep(id = !!id, fasta = fasta, pep_unique_by = pep_unique_by, 
+	                       rm_mq_krts = rm_mq_krts, rm_mq_craps = rm_mq_craps, 
+	                       rm_mq_reverses = rm_mq_reverses)
 	  } else {
 	    normPep_Splex(id = !!id, method_psm_pep = method_psm_pep)
 	  }
@@ -394,7 +398,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 			dplyr::arrange(TMT_Set)
 		
 		# no "acctype_sp.txt" yet since bypassing PSM tables at method_psm_pep == "mq"
-		if (method_psm_pep == "mq") {
+		if (method_psm_pep == "mqpep") {
 		  acc_type <- parse_acc(df)
 		  species <- find_df_species(df, acc_type)
 		  
@@ -414,7 +418,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		  load_dbs()
 		}
 		
-
 		# remove peptides that have been assigned to more than one protein accession
 		dup_peps <- df %>%
 			dplyr::select(!!rlang::sym(id), prot_acc) %>%
@@ -540,11 +543,29 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	  df[, grepl("I[0-9]{3}", names(df))] %>%
 		dplyr::mutate_if(is.logical, as.numeric) %>%
 		round(., digits = 0)
+	
+	df <- df %>% 
+	  dplyr::select(-one_of(
+	    "m/z", "Scan number", "Scan index", "Length", "Deamidation (N) Probabilities", 
+	    "Oxidation (M) Probabilities", "Deamidation (N) Score Diffs", "Oxidation (M) Score Diffs", 
+	    "Acetyl (Protein N-term)", "Deamidation (N)", "Glu->pyro-Glu", "Oxidation (M)", 
+	    "Charge", "Fragmentation", "Mass analyzer", "Type", "Scan event number", 
+	    "Isotope index", "Mass", "Mass error [ppm]", "Mass error [Da]", 
+	    "Simple mass error [ppm]", "Retention time", "Delta score", "Score diff", 
+	    "Localization prob", "Combinatorics", "PIF", 
+	    "Fraction of total spectrum", "Base peak fraction", "Precursor Full ScanNumber", 
+	    "Precursor Intensity", "Precursor Apex Fraction", "Precursor Apex Offset", 
+	    "Precursor Apex Offset Time", "Matches", "Intensities", "Mass Deviations [Da]", 
+	    "Mass Deviations [ppm]", "Masses", "Number of Matches", "Intensity coverage", "Peak coverage", 
+	    "Neutral loss level", "ETD identification type", "Reverse", "All scores", "All sequences", 
+	    "All modified sequences", "Reporter PIF", "Reporter fraction", "ID", "Protein group IDs", 
+	    "Peptide ID", "Mod. peptide ID", "Evidence ID", "Deamidation (N) site IDs", 
+	    "Oxidation (M) site IDs"
+	  )) %>% 
+	  dplyr::select(-grep("^Reporter mass deviation", names(.)))
 
 	write.table(df, file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t",
 	            col.names = TRUE, row.names = FALSE)
-
-	# invisible(df)
 }
 
 
@@ -612,22 +633,19 @@ logfcPep <- function(df, label_scheme, set_idx) {
 #' }
 #' @import stringr dplyr purrr rlang  magrittr
 normPepSplex_mqpep <- function (id = "pep_seq_mod", fasta = fasta, 
-                             corrected_mq_int = TRUE, 
-                             rm_mq_krts = TRUE, rm_mq_craps = TRUE, rm_mq_reverses = TRUE) {
+                                pep_unique_by = "group", corrected_mq_int = TRUE, 
+                                rm_mq_krts = TRUE, rm_mq_craps = TRUE, rm_mq_reverses = TRUE) {
   
   id <- rlang::as_string(rlang::enexpr(id))
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
   TMT_plex <- TMT_plex(label_scheme)
   TMT_levels <- TMT_levels(TMT_plex)
-  # n_TMT_sets <- n_TMT_sets(label_scheme)
-  
+
   if (id == "pep_seq_mod") {
-    filelist <- list.files(path = file.path(dat_dir), pattern = "^modificationSpecificPeptides.*\\.txt$") # %>%
-    # reorder_files(n_TMT_sets(label_scheme_full))
+    filelist <- list.files(path = file.path(dat_dir), pattern = "^modificationSpecificPeptides.*\\.txt$")
   } else if (id == "pep_seq") {
-    filelist <- list.files(path = file.path(dat_dir), pattern = "^peptides.*\\.txt$") # %>%
-    # reorder_files(n_TMT_sets(label_scheme_full))
+    filelist <- list.files(path = file.path(dat_dir), pattern = "^peptides.*\\.txt$")
   }
   
   if (rlang::is_empty(filelist)) {
@@ -670,6 +688,17 @@ normPepSplex_mqpep <- function (id = "pep_seq_mod", fasta = fasta,
         dplyr::select(-grep("^Reporter\\s{1}intensity\\s{1}corrected\\s{1}\\d+[^\\d]", names(.)))
     }
     
+    if (pep_unique_by == "group") {
+      df <- df %>% 
+        dplyr::mutate(pep_isunique = ifelse(`Unique (Groups)` == "yes", 1, 0))
+    } else if (pep_unique_by == "protein") {
+      df <- df %>% 
+        dplyr::mutate(pep_isunique = ifelse(`Unique (Proteins)` == "yes", 1, 0))
+    } else {
+      df %>% 
+        dplyr::mutate(pep_isunique == 1)
+    }
+
     mq_grps_in_df <- names(df) %>% 
       .[grepl("Reporter\\s{1}intensity\\s{1}.*[0-9]+", .)] %>% 
       gsub("Reporter\\s{1}intensity\\s{1}.*[0-9]+\\s{1}(.*)", "\\1", .) %>% 
@@ -719,12 +748,14 @@ normPepSplex_mqpep <- function (id = "pep_seq_mod", fasta = fasta,
         df_sub <- df_sub %>% 
           dplyr::rename(pep_seq = Sequence, 
                         prot_acc = `Leading razor protein`, 
-                        # pep_start = `Start position`, 
-                        # pep_end = `End position`, 
                         pep_score = Score, 
                         pep_expect = PEP) %>% 
           dplyr::mutate(pep_seq_mod = pep_seq)
       }
+      
+      df_sub <- df_sub %>% 
+        dplyr::filter(.$pep_isunique == 1) %>% 
+        dplyr::select(-pep_isunique)
       
       df_sub <- annotPrndesc(df_sub, fasta)
       

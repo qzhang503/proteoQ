@@ -45,11 +45,8 @@ prep_label_scheme <- function(dat_dir, filename) {
 		stop(filename, " needs to be in a file format of '.csv', '.xls' or '.xlsx'.")
 	}
 
-	# back compatibility without "MQ_Experiment"
-	if (! "MQ_Experiment" %in% names(label_scheme_full)) label_scheme_full$MQ_Experiment <- NA
-	
 	must_have <- c("TMT_Channel", "TMT_Set", "LCMS_Injection", "RAW_File",
-								"Sample_ID", "Reference", "MQ_Experiment")
+								"Sample_ID", "Reference")
 
 	missing_cols <- must_have[!must_have %in% names(label_scheme_full)]
 	if(length(missing_cols) > 0) {
@@ -79,7 +76,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 	  dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
 	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.x)) %>%
 	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(.x, digits = 2)) %>%
-	  tidyr::fill(TMT_Set, LCMS_Injection, RAW_File, MQ_Experiment) %>%
+	  tidyr::fill(one_of("TMT_Set", "LCMS_Injection", "RAW_File", "MQ_Experiment")) %>%
 	  dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
 	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 
@@ -369,9 +366,7 @@ load_dbs <- function () {
 #'  Labels indicating reference samples in TMT experiments \cr MQ_Experiment
 #'  \tab A helper to link the values under the \code{TMT_Set} column in
 #'  \code{expt_smry.xlsx} to those under the \code{Experiment} column in the
-#'  interface of \code{MaxQuant --> Raw data --> Load}. The values in the
-#'  \code{Excel} file need to have one-to-one correspondence to those in
-#'  \code{MaxQuant}. }
+#'  interface of \code{MaxQuant -> Raw data -> Load}. }
 #'
 #'  \code{Sample_ID}: values should be unique for entries at a unique
 #'  combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for
@@ -388,6 +383,13 @@ load_dbs <- function () {
 #'  specified in a separate file, for example, \code{frac_smry.xlsx}.
 #'
 #'  \code{Reference}: reference entrie(s) are indicated with non-void string(s).
+#'
+#'  \code{MQ_Experiment}: only required for \code{MaxQuant} workflows starting
+#'  with peptide data, i.e., with the data files being \code{peptides.txt} or
+#'  \code{modificationSpecificPeptides.txt}. The values underneath need to match
+#'  those under the \code{Experiment} column in \code{MaxQuant} GUI and have
+#'  one-to-one correspondence to those under \code{TMT_Set} in
+#'  \code{expt_smry.xlsx}.
 #'
 #'  \tabular{ll}{ \strong{Optional default column}   \tab \strong{Descrption}\cr
 #'  Select \tab Samples to be selected for indicated analysis \cr Group \tab
@@ -430,7 +432,17 @@ load_dbs <- function () {
 #' system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
 #'
 #' \dontrun{
-#' dat_dir <- c("C:\\my_direcotry")
+#' library(proteoQ)
+#' dat_dir <- c("C:\\The\\First\\Example")
+#'
+#' # copy Mascot PSM data
+#' cptac_csv_1(dat_dir)
+#'
+#' # copy "expt_smry.xlsx" and "frac_smry.xlsx"
+#' cptac_expt_1(dat_dir)
+#' cptac_frac_1(dat_dir)
+#'
+#' # load experiments
 #' load_expts()
 #' }
 #'
