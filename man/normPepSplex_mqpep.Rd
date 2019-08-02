@@ -5,8 +5,8 @@
 \title{Peptide reports for individual TMT experiments}
 \usage{
 normPepSplex_mqpep(id = "pep_seq_mod", fasta = fasta,
-  corrected_mq_int = TRUE, rm_mq_krts = TRUE, rm_mq_craps = TRUE,
-  rm_mq_reverses = TRUE)
+  pep_unique_by = "group", corrected_mq_int = TRUE,
+  rm_mq_krts = TRUE, rm_mq_craps = TRUE, rm_mq_reverses = TRUE)
 }
 \arguments{
 \item{id}{Character string; the variable for summarisation of \code{PSMs} into
@@ -17,8 +17,15 @@ modifications of peptides. \code{PSMs} data with the same value in
 \code{pep_seq} or \code{pep_seq_mod} will be summarised into a single entry
 of peptide.}
 
-\item{fasta}{Character string(s); the file name(s) with prepended directory
-path to the \code{fasta} database being used in MS/MS ion search.}
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search.}
+
+\item{pep_unique_by}{A character string for use in the filtration of peptide
+data from \code{MaxQuant}. The choice is in one of \code{c("group",
+"protein", "none")} At the \code{group} default, only peptides unique by
+protein groups will be kept. At \code{protein}, only peptides unique by
+protein entries will be kept. At \code{none}, all peptides will be kept.}
 
 \item{rm_mq_krts}{Logical; if TRUE, removes keratin entries from MaxQuant
 peptide results.}

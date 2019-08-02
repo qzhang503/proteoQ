@@ -891,8 +891,7 @@ annotPrndesc <- function (df, fasta){
 #' @import dplyr purrr rlang stringr seqinr
 #' @importFrom magrittr %>% %$%
 annotPeppos <- function (df, fasta){
-  stopifnot("prot_acc" %in% names(df))
-  stopifnot("pep_seq" %in% names(df))
+  stopifnot(all(c("prot_acc", "pep_seq") %in% names(df)))
   
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
   acc_type <- find_acctype() %>% tolower()
@@ -919,7 +918,7 @@ annotPeppos <- function (df, fasta){
         .[names(.) %in% unique(df$prot_acc)]
       
       if (length(fasta) == 0) {
-        stop("No fasta entries match protein accessions; probably wrong fasta file.", 
+        stop("No fasta entries match protein accessions; probably wrong fasta files.", 
              call. = FALSE)
       }
       
@@ -938,7 +937,7 @@ annotPeppos <- function (df, fasta){
         `colnames<-`(c("pep_seq", "pep_start", "pep_end")) %>% 
         data.frame(check.names = FALSE)
     } else {
-      stop("Wrong FASTA file path or name.", call. = FALSE)
+      stop("Wrong FASTA file path or names.", call. = FALSE)
     }
   } else {
     stop("FASTA file not provided.")
@@ -1232,5 +1231,99 @@ match_gset_nm <- function (id = c("go_sets", "kegg_sets", "c2_msig")) {
   return(id)
 }
 
+
+#' Keratin removals
+#'
+#' @param id. 
+#'
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>%
+rm_krts <- function (df, acc_type) {
+  stopifnot("prot_acc" %in% names(df))
+  
+  krts <- dbs$prn_annot %>%
+    dplyr::filter(grepl("^krt[0-9]+", .$gene, ignore.case = TRUE)) %>%
+    dplyr::filter(!is.na(.[[acc_type]])) %>%
+    dplyr::select(acc_type) %>%
+    unlist()
+  
+  df %>%
+    dplyr::filter(! .$prot_acc %in% krts)  
+}
+
+
+#' Add start and end positions and preceding and succeeding residues of peptides
+#'
+#' \code{annotPeppos_mq} annotates start and end positions and the preceding and
+#' succeeding residues of peptides.
+#'
+#' @import dplyr purrr rlang stringr seqinr
+#' @importFrom magrittr %>% %$%
+annotPeppos_mq <- function (df, fasta){
+  stopifnot(all(c("prot_acc", "pep_seq") %in% names(df)))
+  
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  acc_type <- find_acctype() %>% tolower()
+  
+  if (acc_type == "refseq_acc") {
+    key <- "refseq_acc"
+  } else if (acc_type %in% "uniprot_id") {
+    key <- "uniprot_id"
+  } else if (acc_type %in% "uniprot_acc") {
+    key <- "uniprot_acc"
+  } else {
+    warning("Unkown accession type.")
+  }
+  
+  df <- df %>% 
+    dplyr::mutate(prot_acc = gsub("^.*\\|(.*)\\|.*$", "\\1", prot_acc))
+
+  if (!is.null(fasta)) {
+    if (all(file.exists(fasta))) {
+      fasta <- purrr::map(fasta, ~ {
+        seqinr::read.fasta(.x, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
+      }) %>% do.call(`c`, .) %>% 
+        `names<-`(gsub("^.*\\|(.*)\\|.*$", "\\1", names(.))) %>% 
+        .[names(.) %in% unique(df$prot_acc)]
+      
+      if (length(fasta) == 0) {
+        stop("No fasta entries match protein accessions; probably wrong fasta files.", 
+             call. = FALSE)
+      }
+      
+      pep_pos_all <- purrr::map2(as.list(df$prot_acc), as.list(df$pep_seq), ~ {
+        fasta_sub <- fasta %>% .[names(.) == .x]
+        pep_seq <- as.character(.y)
+        
+        if (!rlang::is_empty(fasta_sub)) {
+          pep_pos <- str_locate(fasta_sub, pattern = pep_seq)
+          pos_bf <- pep_pos[1] - 1
+          pos_af <- pep_pos[2] + 1
+          
+          pep_res_before <- str_sub(fasta_sub, pos_bf, pos_bf)
+          pep_res_after <- str_sub(fasta_sub, pos_af, pos_af)
+          
+          if (nchar(pep_res_before) == 0) pep_res_before <- "-"
+          if (nchar(pep_res_after) == 0) pep_res_after <- "-"
+          
+          pep_pos <- cbind(pep_seq, pep_res_before, pep_pos, pep_res_after)
+        } else {
+          pep_pos <- cbind(pep_seq, pep_res_before = NA, start = NA, end = NA, pep_res_after = NA)
+        }
+      }) %>% 
+        do.call(rbind, .) %>% 
+        `colnames<-`(c("pep_seq", "pep_res_before", "pep_start", "pep_end", "pep_res_after")) %>% 
+        data.frame(check.names = FALSE)
+    } else {
+      stop("Wrong FASTA file path or names.", call. = FALSE)
+    }
+  } else {
+    stop("FASTA file not provided.")
+  }
+  
+  rm(fasta)
+  
+  df %>% dplyr::left_join(pep_pos_all, by = "pep_seq")
+}
 
 

@@ -642,11 +642,6 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 
 			rm(dfw_split, range_colRatios)
 
-			# df[, grepl("^I[0-9]{3}", names(df))] <- df[, grepl("^I[0-9]{3}", names(df))] %>%
-			#   mapply(`*`, ., df[, grepl("^X[0-9]{3}", names(df))])
-			# df[, grepl("^R[0-9]{3}", names(df))] <- df[, grepl("^R[0-9]{3}", names(df))] %>%
-			#   mapply(`*`, ., df[, grepl("^X[0-9]{3}", names(df))])
-
 			df[, grepl("^I[0-9]{3}", names(df))] <-
 			  purrr::map2(as.list(df[, grepl("^I[0-9]{3}", names(df))]),
 			              as.list(df[, grepl("^X[0-9]{3}", names(df))]), `*`) %>%
@@ -1021,11 +1016,17 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'\code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It
 #'separates PSM data by TMT experiment and LC/MS injection.
 #'
-#'@param fasta Character string(s); the file name(s) with prepended directory
-#'  path to the \code{fasta} database being used in MS/MS ion search.
-#'@param corrected_int Logical; if TRUE, use values under columns "Reporter
-#'  intensity corrected" in MaxQuant PSM results. Otherwise, use "Report
-#'  intensity" without corrections.
+#'@param fasta Character string(s) to the name(s) of fasta file(s) with
+#'  prepended directory path. The \code{fasta} database(s) need to match those
+#'  used in MS/MS ion search.
+#'@param pep_unique_by A character string for use in the filtration of peptide
+#'  data from \code{MaxQuant}. The choice is in one of \code{c("group",
+#'  "protein", "none")} At the \code{group} default, only peptides unique by
+#'  protein groups will be kept. At \code{protein}, only peptides unique by
+#'  protein entries will be kept. At \code{none}, all peptides will be kept.
+#'@param corrected_int Logical. If TRUE, values under columns "Reporter
+#'  intensity corrected" in MaxQuant PSM results (\code{msms.txt}) will be used.
+#'  Otherwise, "Reporter intensity" values without corrections will be used.
 #'@param rm_reverses Logical; if TRUE, removes \code{Reverse} entries from
 #'  MaxQuant peptide results.
 #'@inheritParams splitPSM
@@ -1036,8 +1037,34 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'@importFrom stringr str_split
 #'@importFrom magrittr %>%
 #'@export
-splitPSM_mq <- function(fasta = NULL, corrected_int = TRUE, rptr_intco = 1000, 
+splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = FALSE, rptr_intco = 1000, 
                         rm_craps = FALSE, rm_reverses = TRUE, plot_violins = TRUE) {
+  
+  add_mascot_headers <- function (df) {
+    df %>% 
+      dplyr::mutate(pep_scan_title = RAW_File) %>% 
+      dplyr::mutate(prot_hit_num = NA) %>% 
+      dplyr::mutate(prot_family_member = NA) %>% 
+      dplyr::mutate(prot_score = NA) %>% 
+      dplyr::mutate(prot_matches = NA) %>% 
+      dplyr::mutate(prot_matches_sig = NA) %>% 
+      dplyr::mutate(prot_sequences = NA) %>% 
+      dplyr::mutate(prot_sequences_sig = NA) %>% 
+      dplyr::mutate(pep_query = NA) %>% 
+      dplyr::mutate(pep_rank = NA) %>% 
+      dplyr::mutate(pep_isbold = NA) %>% 
+      dplyr::mutate(pep_exp_mr = NA) %>% 
+      dplyr::mutate(pep_exp_z = NA) %>% 
+      dplyr::mutate(pep_calc_mr = NA) %>% 
+      dplyr::mutate(pep_exp_mz = NA) %>% 
+      dplyr::mutate(pep_delta = NA) %>% 
+      dplyr::mutate(pep_miss = NA) %>% 
+      dplyr::mutate(pep_var_mod = NA) %>% 
+      dplyr::mutate(pep_var_mod_pos = NA) %>% 
+      dplyr::mutate(pep_summed_mod_pos = NA) %>% 
+      dplyr::mutate(pep_local_mod_pos = NA)
+  }
+  
   
   old_opt <- options(max.print = 99999)
   on.exit(options(old_opt), add = TRUE)
@@ -1053,8 +1080,7 @@ splitPSM_mq <- function(fasta = NULL, corrected_int = TRUE, rptr_intco = 1000,
   
   TMT_plex <- TMT_plex(label_scheme_full)
   TMT_levels <- TMT_levels(TMT_plex)
-  # n_TMT_sets <- n_TMT_sets(label_scheme)
-  
+
   filelist <- list.files(path = file.path(dat_dir), pattern = "^msms.*\\.txt$")
   
   if (rlang::is_empty(filelist)) 
@@ -1063,7 +1089,8 @@ splitPSM_mq <- function(fasta = NULL, corrected_int = TRUE, rptr_intco = 1000,
   
   df <- purrr::map(file.path(dat_dir, filelist), read.csv, 
                    check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
-    dplyr::bind_rows()
+    dplyr::bind_rows() %>% 
+    dplyr::rename(ID = id)
   
   if (corrected_int) {
     df <- df %>% 
@@ -1111,15 +1138,19 @@ splitPSM_mq <- function(fasta = NULL, corrected_int = TRUE, rptr_intco = 1000,
         pep_expect = PEP, 
         pep_var_mod = Modifications, 
         RAW_File = `Raw file`
-        # raw_file = `Raw file`
-      ) %>% 
-      dplyr::mutate(prot_acc = gsub("\\;.*", "", prot_acc))
+      ) 
     
-    df <- cbind.data.frame(
-      df %>% dplyr::select(-grep("^[IR][0-9]{3}", names(.))), 
-      df %>% dplyr::select(grep("^R[0-9]{3}", names(.))), 
-      df %>% dplyr::select(grep("^I[0-9]{3}", names(.)))
-    )
+    if (pep_unique_by == "group") {
+      df <- df %>% 
+        dplyr::mutate(pep_isunique = ifelse(grepl(";", `Protein group IDs`), 0, 1))
+    } else if (pep_unique_by == "protein") {
+      df <- df %>% 
+        dplyr::mutate(pep_isunique = ifelse(grepl(";", prot_acc), 0, 1))
+    }
+    
+    df <- df %>% 
+      dplyr::mutate(prot_acc = gsub("\\;.*", "", prot_acc)) %>% 
+      add_mascot_headers()
   }
   
   prn_acc <- parse_acc(df)
@@ -1130,6 +1161,21 @@ splitPSM_mq <- function(fasta = NULL, corrected_int = TRUE, rptr_intco = 1000,
   
   df <- annotPrndesc(df, fasta)
   
+  df <- df %>% 
+    dplyr::filter(!duplicated(pep_seq)) %>% 
+    dplyr::select(c("pep_seq", "prot_acc")) %>% 
+    annotPeppos_mq(fasta) %>% 
+    dplyr::select(-prot_acc) %>% 
+    dplyr::right_join(., df, by = "pep_seq")
+  
+
+  df <- cbind.data.frame(
+    df[, grepl("^[a-z]", names(df))], 
+    df[, grepl("^[A-Z]", names(df)) & !grepl("^[IR][0-9]{3}[NC]*", names(df))], 
+    df[, grepl("^[R][0-9]{3}[NC]*", names(df))], 
+    df[, grepl("^[I][0-9]{3}[NC]*", names(df))]
+  )
+
   if(length(grep("^R[0-9]{3}", names(df))) > 0) {
     df_split <- df %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
@@ -1224,9 +1270,6 @@ splitPSM_mq <- function(fasta = NULL, corrected_int = TRUE, rptr_intco = 1000,
 }
 
 
-
-
-
 #' Annotates PSM results
 #'
 #' \code{annotPSM} adds fields of annotation to PSM tables.
@@ -1239,9 +1282,7 @@ splitPSM_mq <- function(fasta = NULL, corrected_int = TRUE, rptr_intco = 1000,
 #' @importFrom magrittr %>%
 #' @export
 annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins = TRUE) {
-  
 
-  
   dir.create(file.path(dat_dir, "PSM\\Individual_mods"), recursive = TRUE, showWarnings = FALSE)
   
   old_opt <- options(max.print = 99999)
@@ -1251,9 +1292,6 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
   on.exit(setwd(old_dir), add = TRUE)
   
   options(max.print = 5000000)
-  
-  # hd_fn <- list.files(path = file.path(dat_dir, "PSM\\cache"), pattern = "^F\\d+_header.txt$")
-  # assign("df_header", readLines(file.path(dat_dir, "PSM\\cache", hd_fn[1])))
   
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
@@ -1276,7 +1314,7 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
     
     channelInfo <- channelInfo(label_scheme, set_idx)
     
-    # injections under the same TMT experiment
+    # LCMS injections under the same TMT experiment
     for (injn_idx in seq_along(sublist)) {
       df <- read.csv(file.path(dat_dir, "PSM\\cache", sublist[injn_idx]),
                      check.names = FALSE, header = TRUE, sep = "\t",
@@ -1298,17 +1336,8 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
       
       load_dbs()
       
-      if(rm_krts) {
-        krts <- dbs$prn_annot %>%
-          dplyr::filter(grepl("^krt[0-9]+", .$gene, ignore.case = TRUE)) %>%
-          dplyr::filter(!is.na(.[[acc_type]])) %>%
-          dplyr::select(acc_type) %>%
-          unlist()
-        
-        df <- df %>%
-          dplyr::filter(! .$prot_acc %in% krts)
-      }
-      
+      if (rm_krts) df <- rm_krts(df, acc_type)
+
       df <- df %>% 
         dplyr::mutate(pep_seq_mod = gsub("^_(.*)_$", "\\1", pep_seq_mod)) %>% 
         dplyr::mutate(pep_seq_mod = gsub("^\\(ac\\)", "_", pep_seq_mod)) %>% 
@@ -1332,7 +1361,9 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
         dplyr::mutate(pep_seq_mod = gsub("T\\([^\\)]+\\)", "t", pep_seq_mod)) %>% 
         dplyr::mutate(pep_seq_mod = gsub("V\\([^\\)]+\\)", "v", pep_seq_mod)) %>% 
         dplyr::mutate(pep_seq_mod = gsub("W\\([^\\)]+\\)", "w", pep_seq_mod)) %>% 
-        dplyr::mutate(pep_seq_mod = gsub("Y\\([^\\)]+\\)", "y", pep_seq_mod))
+        dplyr::mutate(pep_seq_mod = gsub("Y\\([^\\)]+\\)", "y", pep_seq_mod)) %>% 
+        dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = ".")) %>% 
+        dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = "."))
       
       if(TMT_plex > 0) df <- mcPSM(df, set_idx)
       
@@ -1406,8 +1437,8 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 #'@section \code{MaxQuant}: End users will copy over \code{msms.txt}
 #'  file(s) from \code{\href{https://www.maxquant.org/}{MaxQuant}} to the
 #'  \code{dat_dir} directory. In the case of multiple \code{msms.txt} files for
-#'  processing, the file names need to be compiled in that they start with
-#'  \code{'msms'} and end with \code{'.txt'} in extension.
+#'  processing, the file names need to be compiled in that they all start with
+#'  \code{'msms'} and end with \code{'.txt'} extension.
 #'
 #'@inheritParams load_expts
 #'@inheritParams splitPSM
@@ -1423,8 +1454,8 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 #'
 #' @examples
 #' \dontrun{
+#' # Mascot example
 #' # set up a working directory
-#' library(proteoQ)
 #' dat_dir <- c("C:\\The\\First\\Example")
 #'
 #' # copy fasta
@@ -1440,6 +1471,7 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 #' cptac_frac_1(dat_dir)
 #'
 #' # load experiments
+#' library(proteoQ)
 #' load_expts()
 #'
 #' # process Mascot PSMs
@@ -1453,23 +1485,25 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 #'
 #'
 #' # MaxQuant example
-#' dat_dir <- c("C:\\The\\MQ\\Example")
-#' cptac_mq_pep_1(dat_dir)
-#' cptac_mq_expt_1(dat_dir)
+#' dat_dir <- c("C:\\The\\MQ\\PSM_Example")
+#'
+#' # copy MaxQuant PSM data
+#' library(proteoQDB)
+#' cptac_mq_psm_1(dat_dir)
+#'
+#' # copy "expt_smry.xlsx" and "frac_smry.xlsx"
+#' cptac_expt_1(dat_dir)
 #' cptac_frac_1(dat_dir)
 #'
+#' # load experiments
+#' library(proteoQ)
 #' load_expts()
 #'
+#' # process MaxQuant PSMs
 #' normPSM(
 #'   fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
 #'             "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
-#'   corrected_int = TRUE,
-#'   rm_reverses = TRUE,
-#'   rptr_intco = 3000,
-#'   rm_craps = TRUE,
-#'   rm_krts = TRUE,
-#'   rm_outliers = FALSE,
-#'   plot_violins = TRUE
+#'   rptr_intco = 3000
 #' )
 #' }
 #'
@@ -1478,9 +1512,9 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 #'@importFrom magrittr %>%
 #'@export
 normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx", 
-                       fasta = NULL, corrected_int = TRUE, rm_reverses = TRUE, 
-                       rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE,
-                       rm_outliers = FALSE, plot_violins = TRUE) {
+                    fasta = NULL, pep_unique_by = "group", corrected_int = FALSE, rm_reverses = TRUE, 
+                    rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE,
+                    rm_outliers = FALSE, plot_violins = TRUE) {
   
   if (is.null(dat_dir)) {
     dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
@@ -1492,13 +1526,15 @@ normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "f
   
   dir.create(file.path(dat_dir, "PSM\\Violin"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM\\cache"), recursive = TRUE, showWarnings = FALSE)
-  
+
   if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^F[0-9]{6}\\.csv$"))) {
     type <- "mascot"
   } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^msms.*\\.txt$"))) {
     type <- "mq"
   }
 
+  pep_unique_by <- rlang::as_string(rlang::enexpr(pep_unique_by))
+  
   mget(names(formals()), rlang::current_env()) %>% save_call("normPSM")
   
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
@@ -1511,7 +1547,8 @@ normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "f
     cleanupPSM(rm_outliers)
     annotPSM(expt_smry, rm_krts, plot_violins)
   } else if (type == "mq") {
-    splitPSM_mq(fasta, corrected_int, rptr_intco, rm_craps, rm_reverses, plot_violins)
+    splitPSM_mq(fasta, pep_unique_by, corrected_int, 
+                rptr_intco, rm_craps, rm_reverses, plot_violins)
     cleanupPSM(rm_outliers)
     annotPSM_mq(expt_smry, rm_krts, plot_violins)
   }

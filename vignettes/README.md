@@ -8,8 +8,7 @@
     -   [1.3 Renormalize data for a subset of
         samples](#renormalize-data-for-a-subset-of-samples)
     -   [1.4 Purge data](#purge-data)
-    -   [1.5 Summarize MaxQuant peptide
-        tables](#summarize-maxquant-peptide-tables)
+    -   [1.5 Summarize MaxQuant results](#summarize-maxquant-results)
 -   [Part 2 — Basic informatics](#part-2-basic-informatics)
     -   [2.1 MDS and PCA plots](#mds-and-pca-plots)
     -   [2.2 Correlation plots](#correlation-plots)
@@ -43,9 +42,9 @@ entire workflow is documented and can be conveniently reproduced upon
 revisiting.
 
 The tool currently processes the peptide spectrum matches (PSM) tables
-from [Mascot](https://http://www.matrixscience.com/) searches and
-peptide tables from [MaxQuant](https://www.maxquant.org/), for 6-, 10-
-or 11-plex TMT experiments. Peptide and protein results are then
+from [Mascot](https://http://www.matrixscience.com/) searches and PSM
+and peptide tables from [MaxQuant](https://www.maxquant.org/), for 6-,
+10- or 11-plex TMT experiments. Peptide and protein results are then
 produced with users’ selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
@@ -78,8 +77,7 @@ In this section I illustrate the following applications of `proteoQ`:
     data.
 -   Re-normalization of data in partial or in full.
 -   Removal of low-quality entries from peptide and protein data.
--   Organization of MaxQuant peptide results to normalized peptide data
-    and downstream analysis.
+-   Summarizationof MaxQuant results from PSMs or peptides.
 
 The data set we use in this section corresponds to the proteomics data
 from Mertins et al. (2018). In the study, two different breast cancer
@@ -92,11 +90,12 @@ labeled under six 10-plex TMT experiments. The samples under each
 10-plex TMT were fractionated by off-line, high pH reversed-phase
 (Hp-RP) chromatography, followed by `LC/MS` analysis. The raw PSM
 results from [Mascot](https://http://www.matrixscience.com/) searches
-are stored in a companion R package, `proteoQDA`, and are accessbile
-through the following installation:
+are stored in companion R packages, `proteoQDA` and `proteoQDB`, and are
+accessbile through the following installation:
 
 ``` r
 devtools::install_github("qzhang503/proteoQDA")
+devtools::install_github("qzhang503/proteoQDB")
 ```
 
 ### 1.1 Set up experiment for Mascot workflow
@@ -123,8 +122,8 @@ the exports will be taken as is.[1]
 The same peptide sequence under different PSM files can be assigned to
 different protein IDs when
 [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins
-from peptides using algorithms such as greedy set cover. To avoid such
-ambiguity in protein inference, I typically enable the option of
+from peptides using algorithms such as greedy set cover. To escape from
+the ambiguity in protein inference, I typically enable the option of
 `Merge MS/MS files into single search` in [Mascot
 Daemon](http://www.matrixscience.com/daemon.html). If the option is
 disabled, peptide sequences that have been assigned to multiple protein
@@ -240,9 +239,6 @@ normPSM(
   rm_outliers = FALSE,
   plot_violins = TRUE
 )
-
-# or accept the default parameters 
-normPSM()
 ```
 
 PSM outliers will be assessed at a basis of per peptide and per sample
@@ -316,8 +312,8 @@ tied to their laboratory origins.
 [![Select
 subsets](https://img.youtube.com/vi/3B5et8VY3hE/0.jpg)](https://www.youtube.com/embed/3B5et8VY3hE)
 
-We now are ready to plot histograms for each subset of data.[6] In this
-document, we only display the plots using the `BI` subset:
+We now are ready to plot histograms for each subset of the data.[6] In
+this document, we only display the plots using the `BI` subset:
 
 ``` r
 # without scaling 
@@ -503,28 +499,108 @@ Note that the file of `Protein.txt` will be overwritten with the
 cleanup. It may be a good idea to make a copy of the data file before
 experimenting. Otherwise, we will need to start over with data
 normalization should we want to revert the changes. Also, we will call
-again `normPrn` to re-normalize the purged data and `prnHist` for
+`normPrn` again to re-normalize the purged data and `prnHist` for
 updated visualization of histograms. The same is true for the cleanup
 and the update of peptide data.
 
-### 1.5 Summarize MaxQuant peptide tables
+### 1.5 Summarize MaxQuant results
 
-In this section, we will summarize peptide tables from MaxQuant to
-peptide and protein reports and for subsequent analysis with `proteoQ`.
-At present, `proteoQ` handles both the `peptides.txt` without site
-modification information and `modificationSpecificPeptides.txt` with
-site modification information. The `peptide.txt` will be used in
-conjuction with `id = pep_seq` and `modificationSpecificPeptides.txt`
-with `id = pep_seq_mod` when calling from `normPep()`. The prefix of
-`peptides` or `modificationSpecificPeptides` in file names need to be
-kept at all time.
+In this section, I will illustrate the processing of MaxQuant results
+using the same set of data from CPTAC. We will first apply a workflow of
+PSMs –&gt; peptides –&gt; proteins in data summarization. We then take
+an alternative procedure by using the peptide tables directly from
+MaxQuant.
 
-Similar to the preparative steps in the above Mascot workflow, we first
-set up a working directory and copy over the pre-made peptide data from
-MaxQuant searches:
+#### 1.5.1 MaxQuant PSM tables
+
+The name of a PSM file containg reporter-ion intensities is `msms.txt`
+defaulted by MaxQuant. In the event of multiple `msms.txt` files for
+processing, the names need to be formatted in that they all start with
+`msms` and end with the `.txt` extension. With this in mind, we go ahead
+and copy over the PSM files that have been prepared in another companion
+data package, `proteoQDB`, to a working directory:
 
 ``` r
-dat_dir <- "c:\\The\\MQ\\Example"
+dat_dir <- c("C:\\The\\MQ\\PSM_Example")
+
+# devtools::install_github("qzhang503/proteoQDB")
+library(proteoQDB)
+cptac_mq_psm_1(dat_dir)
+```
+
+Similarly, we copy over the corresponding `expt_smry.xlsx` and
+`fract_smry.xlsx` files and load the experiment:
+
+``` r
+cptac_expt_1(dat_dir)
+cptac_frac_1(dat_dir)
+
+library(proteoQ)
+load_expts()
+```
+
+We next process the PSM data from MaxQuant and perform peptide and
+protein normlizations.
+
+``` r
+# PSM reports
+normPSM(
+  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
+            "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
+  rptr_intco = 3000
+)
+
+# Peptide reports
+normPep(
+ id = pep_seq_mod,
+ fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
+           "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
+ method_align = MGKernel,
+ range_log2r = c(10, 95),
+ range_int = c(5, 95),
+ n_comp = 3,
+ seed = 1234,
+ maxit = 200,
+ epsilon = 1e-05
+)
+
+normPrn(
+ id = gene,
+ fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
+           "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
+ method_pep_prn = median,
+ method_align = MGKernel,
+ range_log2r = c(5, 95),
+ range_int = c(5, 95),
+ n_comp = 2,
+ seed = 749662,
+ maxit = 200,
+ epsilon = 1e-05
+)
+```
+
+Following the normalization steps, we can carry out analogous procedures
+in data purging and histogram visualization as we have done with the
+Mascot outputs.
+
+#### 1.5.2 MaxQuant peptide tables
+
+In this section, we will summarize peptide tables from MaxQuant to
+peptide and protein reports. Currently, `proteoQ` handles both the
+`peptides.txt` without site modification information and the
+`modificationSpecificPeptides.txt` with site modification information.
+The `peptide.txt` will be used in conjuction with `id = pep_seq` and
+`modificationSpecificPeptides.txt` with `id = pep_seq_mod` when calling
+from `normPep()`. The prefix of `peptides` or
+`modificationSpecificPeptides` in file names need to be kept at all
+time.
+
+Similar to the preparative steps in the earlier Mascot workflow, we
+first set up a working directory and copy over the pre-made peptide data
+from MaxQuant searches:
+
+``` r
+dat_dir <- "c:\\The\\MQ\\Peptide_Example"
 
 library(proteoQDA)
 cptac_mq_pep_1(dat_dir)
@@ -542,7 +618,7 @@ Note that there is an additional column, `MQ_Experiment`, in the
 in `expt_smry.xlsx` to the `Experiment` column that can be found under
 the interface of `Raw data --> Load` in `MaxQuant`. These two
 identifiers need to have *one-to-one* correspondence. In other words, it
-is not possible to have one multiplex `Experiment` to go into multiple
+is not permitted to have one multiplex `Experiment` to go into multiple
 `TMT_Sets` or vice versa.
 
 <img src="images\maxquant\maxquant_interface.png" width="80%" style="display: block; margin: auto;" />
@@ -559,8 +635,8 @@ normPep(
     range_int = c(5, 95), 
     n_comp = 3, 
     seed = 749662, 
-  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
-              "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"), 
+  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
+            "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"), 
     annot_kinases = TRUE,   
     maxit = 200, 
     epsilon = 1e-05
@@ -568,17 +644,16 @@ normPep(
 ```
 
 Note that we called `normPep()` with `id = pep_seq`, to acknowledge that
-the input files, `peptide... .txt`, contain data without peptide site
-modification. To call the function with `id = pep_seq_mod`, we need to
-supply a different set of data files of
-`modificationSpecificPeptides... .txt`. We further note that
-`method_psm_pep = mqpep`, which allows the program to bypass
-PSM-to-peptide summarisation and use the Maxquant peptide tables as the
-input. Upon the completion of peptide normalization, we can proceed to
-the histogram visualization and protein normalization as we have done
-with the Mascot example. The only exception is that the call to
-`purPep()` will throw us an error as there are no PSM data were prepared
-for the calculations of peptide `CV`.
+the input files are `peptide... .txt` without peptide site modification.
+To call the function with `id = pep_seq_mod`, we need to supply a
+different set of data files of `modificationSpecificPeptides... .txt`.
+We further note that `method_psm_pep = mqpep`, which allows the program
+to bypass PSM-to-peptide summarisation and instead use the Maxquant
+peptide tables as the input. Upon the completion of peptide
+normalization, we can proceed to the histogram visualization and protein
+normalization as we have done with the Mascot example. The only
+exception is that the call to `purPep()` will throw us an error as there
+are no PSM data were prepared for the calculations of peptide `CV`.
 
 Part 2 — Basic informatics
 --------------------------

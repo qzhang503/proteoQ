@@ -8,8 +8,9 @@ normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
   "mean", "weighted.mean", "top.3", "mqpep"), rm_mq_krts = TRUE,
   rm_mq_craps = TRUE, rm_mq_reverses = TRUE, method_align = c("MC",
   "MGKernel"), range_log2r = c(20, 90), range_int = c(5, 95),
-  n_comp = NULL, seed = NULL, fasta = NULL, annot_kinases = FALSE,
-  col_refit = NULL, cache = TRUE, ...)
+  n_comp = NULL, seed = NULL, fasta = NULL,
+  pep_unique_by = "group", annot_kinases = FALSE, col_refit = NULL,
+  cache = TRUE, ...)
 }
 \arguments{
 \item{id}{Character string; the variable for summarisation of \code{PSMs} into
@@ -69,8 +70,15 @@ standard deviation across samples. The default is between the 5th and the
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
 
-\item{fasta}{Character string(s); the file name(s) with prepended directory
-path to the \code{fasta} database being used in MS/MS ion search.}
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search.}
+
+\item{pep_unique_by}{A character string for use in the filtration of peptide
+data from \code{MaxQuant}. The choice is in one of \code{c("group",
+"protein", "none")} At the \code{group} default, only peptides unique by
+protein groups will be kept. At \code{protein}, only peptides unique by
+protein entries will be kept. At \code{none}, all peptides will be kept.}
 
 \item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
 proteins.}

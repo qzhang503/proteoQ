@@ -5,9 +5,10 @@
 \title{Reports PSM results}
 \usage{
 normPSM(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
-  frac_smry = "frac_smry.xlsx", fasta = NULL, corrected_int = TRUE,
-  rm_reverses = TRUE, rptr_intco = 1000, rm_craps = FALSE,
-  rm_krts = FALSE, rm_outliers = FALSE, plot_violins = TRUE)
+  frac_smry = "frac_smry.xlsx", fasta = NULL,
+  pep_unique_by = "group", corrected_int = FALSE, rm_reverses = TRUE,
+  rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE,
+  rm_outliers = FALSE, plot_violins = TRUE)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory.}
@@ -18,12 +19,19 @@ metadata of TMT experiments. The default is "expt_smry.xlsx".}
 \item{frac_smry}{A character string to the \code{.xlsx} file containing
 peptide fractionation summary. The default is "frac_smry.xlsx".}
 
-\item{fasta}{Character string(s); the file name(s) with prepended directory
-path to the \code{fasta} database being used in MS/MS ion search.}
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search.}
 
-\item{corrected_int}{Logical; if TRUE, use values under columns "Reporter
-intensity corrected" in MaxQuant PSM results. Otherwise, use "Report
-intensity" without corrections.}
+\item{pep_unique_by}{A character string for use in the filtration of peptide
+data from \code{MaxQuant}. The choice is in one of \code{c("group",
+"protein", "none")} At the \code{group} default, only peptides unique by
+protein groups will be kept. At \code{protein}, only peptides unique by
+protein entries will be kept. At \code{none}, all peptides will be kept.}
+
+\item{corrected_int}{Logical. If TRUE, values under columns "Reporter
+intensity corrected" in MaxQuant PSM results (\code{msms.txt}) will be used.
+Otherwise, "Reporter intensity" values without corrections will be used.}
 
 \item{rm_reverses}{Logical; if TRUE, removes \code{Reverse} entries from
 MaxQuant peptide results.}
@@ -80,14 +88,14 @@ denote peptide sequences with applicable variable modifications.
  End users will copy over \code{msms.txt}
  file(s) from \code{\href{https://www.maxquant.org/}{MaxQuant}} to the
  \code{dat_dir} directory. In the case of multiple \code{msms.txt} files for
- processing, the file names need to be compiled in that they start with
- \code{'msms'} and end with \code{'.txt'} in extension.
+ processing, the file names need to be compiled in that they all start with
+ \code{'msms'} and end with \code{'.txt'} extension.
 }
 
 \examples{
 \dontrun{
+# Mascot example
 # set up a working directory
-library(proteoQ)
 dat_dir <- c("C:\\\\The\\\\First\\\\Example")
 
 # copy fasta
@@ -103,6 +111,7 @@ cptac_expt_1(dat_dir)
 cptac_frac_1(dat_dir)
 
 # load experiments
+library(proteoQ)
 load_expts()
 
 # process Mascot PSMs
@@ -116,23 +125,25 @@ normPSM(
 
 
 # MaxQuant example
-dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-cptac_mq_pep_1(dat_dir)
-cptac_mq_expt_1(dat_dir)
+dat_dir <- c("C:\\\\The\\\\MQ\\\\PSM_Example")
+
+# copy MaxQuant PSM data
+library(proteoQDB)
+cptac_mq_psm_1(dat_dir)
+
+# copy "expt_smry.xlsx" and "frac_smry.xlsx"
+cptac_expt_1(dat_dir)
 cptac_frac_1(dat_dir)
 
+# load experiments
+library(proteoQ)
 load_expts()
 
+# process MaxQuant PSMs
 normPSM(
   fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
             "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-  corrected_int = TRUE,
-  rm_reverses = TRUE,
-  rptr_intco = 3000,
-  rm_craps = TRUE,
-  rm_krts = TRUE,
-  rm_outliers = FALSE,
-  plot_violins = TRUE
+  rptr_intco = 3000
 )
 }
 

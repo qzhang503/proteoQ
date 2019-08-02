@@ -53,8 +53,9 @@ standard deviation across samples. The default is between the 5th and the
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
 
-\item{fasta}{Character string(s); the file name(s) with prepended directory
-path to the \code{fasta} database being used in MS/MS ion search.}
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search.}
 
 \item{col_refit}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_refit} will be

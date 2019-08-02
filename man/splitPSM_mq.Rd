@@ -4,16 +4,24 @@
 \alias{splitPSM_mq}
 \title{Splits PSM tables}
 \usage{
-splitPSM_mq(fasta = NULL, corrected_int = TRUE, rptr_intco = 1000,
-  rm_craps = FALSE, rm_reverses = TRUE, plot_violins = TRUE)
+splitPSM_mq(fasta = NULL, pep_unique_by = "group",
+  corrected_int = FALSE, rptr_intco = 1000, rm_craps = FALSE,
+  rm_reverses = TRUE, plot_violins = TRUE)
 }
 \arguments{
-\item{fasta}{Character string(s); the file name(s) with prepended directory
-path to the \code{fasta} database being used in MS/MS ion search.}
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search.}
 
-\item{corrected_int}{Logical; if TRUE, use values under columns "Reporter
-intensity corrected" in MaxQuant PSM results. Otherwise, use "Report
-intensity" without corrections.}
+\item{pep_unique_by}{A character string for use in the filtration of peptide
+data from \code{MaxQuant}. The choice is in one of \code{c("group",
+"protein", "none")} At the \code{group} default, only peptides unique by
+protein groups will be kept. At \code{protein}, only peptides unique by
+protein entries will be kept. At \code{none}, all peptides will be kept.}
+
+\item{corrected_int}{Logical. If TRUE, values under columns "Reporter
+intensity corrected" in MaxQuant PSM results (\code{msms.txt}) will be used.
+Otherwise, "Reporter intensity" values without corrections will be used.}
 
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
 
