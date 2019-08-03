@@ -518,7 +518,7 @@ defaulted by MaxQuant. In the event of multiple `msms.txt` files for
 processing, the names need to be formatted in that they all start with
 `msms` and end with the `.txt` extension.
 
-The file sizes of the `msms.txt` are relatively large for data use in
+The file sizes of the `msms.txt` are relatively large for data used in
 the demonstration. For simplicity, we will only use the subset that
 belong to batch one in the CPTAC example. Even so, direct installation
 by `devtools::install_github` is not yet feasible, or not free, at this
@@ -527,25 +527,23 @@ One resort is to install [Github Desktop](https://desktop.github.com/),
 find
 <a href="https://github.com/qiangzhang503/proteoQDB.git" class="uri">https://github.com/qiangzhang503/proteoQDB.git</a>,
 fetch the files and make a local installation through something like
-`devtools::install("c:\\my_directory\\proteoQDB")`.
+`devtools::install(pkg  = "~\\GitHub\\proteoQDB")`.
 
 Alternatively, we can first clone
 [`proteoQDB`](https://github.com/qiangzhang503/proteoQDB.git) and unzip
-the files to a local directory, let’s say “c:\\my\_directory\\proteoQDB”
-again. We will also manaully download the three `.rda` files under the
-`data` folder in
+the files to a local directory, let’s say “\~\\GitHub\\proteoQDB”. We
+next manually download the three `.rda` files under the `data` folder in
 <a href="https://github.com/qiangzhang503/proteoQDB" class="uri">https://github.com/qiangzhang503/proteoQDB</a>.
-We next replace the `.rda` files under
-“c:\\my\_directory\\proteoQDB\\data” with newly downloaded. Finally, we
-will do a local installation just like above.
+We then replace the `.rda` files under “\~\\GitHub\\proteoQDB\\data”
+with the newly downloaded. Finally, we will do a local installation just
+like the above.
 
-If all goes well with the installation, we will copy over the PSM files
-in `proteoQDB` to a working directory:
+If all goes well with the local installation, we will load `proteoQDB`
+and copy over the PSM files therein to a working directory:
 
 ``` r
 dat_dir <- c("C:\\The\\MQ\\PSM_Example")
 
-# devtools::install_github("qzhang503/proteoQDB")
 library(proteoQDB)
 cptac_mq_psm_1(dat_dir)
 ```
