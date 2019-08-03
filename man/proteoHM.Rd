@@ -51,8 +51,8 @@ determined by the extension of the file name. A \code{.png} format will be
 used at default or an unrecognized file extension.}
 
 \item{annot_cols}{A character vector of column names in \code{expt_smry.xlsx}.
-Values under the selected columns will be used to color-code sample IDs on the
-top of a \code{EucDist} plot.}
+Values under the selected columns will be used to color-code sample IDs on
+the top of the indicated plot.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}.}
