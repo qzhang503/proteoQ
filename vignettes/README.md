@@ -89,14 +89,13 @@ repeated on a different day. This results in a total of 60 samples
 labeled under six 10-plex TMT experiments. The samples under each
 10-plex TMT were fractionated by off-line, high pH reversed-phase
 (Hp-RP) chromatography, followed by `LC/MS` analysis. The raw PSM
-results from [Mascot](https://http://www.matrixscience.com/) and
-[MaxQuant](https://www.maxquant.org/) searches are stored in companion R
-packages, `proteoQDA` and `proteoQDB`, and are accessbile through the
+results from [Mascot](https://http://www.matrixscience.com/) and peptide
+results from [MaxQuant](https://www.maxquant.org/) searches are stored
+in a companion R package, `proteoQDA`, and are accessbile through the
 following installation:
 
 ``` r
 devtools::install_github("qzhang503/proteoQDA")
-devtools::install_github("qiangzhang503/proteoQDB")
 ```
 
 ### 1.1 Set up experiment for Mascot workflow
@@ -517,9 +516,31 @@ MaxQuant.
 The name of a PSM file containg reporter-ion intensities is `msms.txt`
 defaulted by MaxQuant. In the event of multiple `msms.txt` files for
 processing, the names need to be formatted in that they all start with
-`msms` and end with the `.txt` extension. With this in mind, we go ahead
-and copy over the PSM files that have been prepared in another companion
-data package, `proteoQDB`, to a working directory:
+`msms` and end with the `.txt` extension.
+
+The file sizes of the `msms.txt` are relatively large for data use in
+the demonstration. For simplicity, we will only use the subset that
+belong to batch one in the CPTAC example. Even so, direct installation
+by `devtools::install_github` is not yet feasible, or not free, at this
+point for large files hosted through [LFS](https://git-lfs.github.com/).
+One resort is to install [Github Desktop](https://desktop.github.com/),
+find
+<a href="https://github.com/qiangzhang503/proteoQDB.git" class="uri">https://github.com/qiangzhang503/proteoQDB.git</a>,
+fetch the files and make a local installation through something like
+`devtools::install("c:\\my_directory\\proteoQDB")`.
+
+Alternatively, we can first clone
+[`proteoQDB`](https://github.com/qiangzhang503/proteoQDB.git) and unzip
+the files to a local directory, let’s say “c:\\my\_directory\\proteoQDB”
+again. We will also manaully download the three `.rda` files under the
+`data` folder in
+<a href="https://github.com/qiangzhang503/proteoQDB" class="uri">https://github.com/qiangzhang503/proteoQDB</a>.
+We next replace the `.rda` files under
+“c:\\my\_directory\\proteoQDB\\data” with newly downloaded. Finally, we
+will do a local installation just like above.
+
+If all goes well with the installation, we will copy over the PSM files
+in `proteoQDB` to a working directory:
 
 ``` r
 dat_dir <- c("C:\\The\\MQ\\PSM_Example")
