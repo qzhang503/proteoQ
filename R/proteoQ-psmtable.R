@@ -1430,7 +1430,7 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 #'  export. The file name(s) should be defaulted by
 #'  \code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with
 #'  the letter \code{'F'}, followed by a six-digit number without space and
-#'  ended with \code{'.csv'} extension \code{(e.g., F004453.csv)}.
+#'  ended with a \code{'.csv'} extension \code{(e.g., F004453.csv)}.
 #'
 #'  See \code{\link{normPrn}} for the description of column keys in the output.
 #'
@@ -1438,7 +1438,7 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 #'  file(s) from \code{\href{https://www.maxquant.org/}{MaxQuant}} to the
 #'  \code{dat_dir} directory. In the case of multiple \code{msms.txt} files for
 #'  processing, the file names need to be compiled in that they all start with
-#'  \code{'msms'} and end with \code{'.txt'} extension.
+#'  \code{'msms'} and end with a \code{'.txt'} extension.
 #'
 #'@inheritParams load_expts
 #'@inheritParams splitPSM

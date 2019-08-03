@@ -125,7 +125,7 @@ normPep(
  epsilon = 1e-05
 )
 
-# MaxQuant peptide table(s)
+# MaxQuant peptide table(s) without PSM information
 normPep(
  id = pep_seq,
  fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",

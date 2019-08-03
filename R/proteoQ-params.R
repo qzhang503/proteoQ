@@ -365,8 +365,8 @@ load_dbs <- function () {
 #'  \code{Xcalibur} with or without the \code{.raw} extension \cr Reference \tab
 #'  Labels indicating reference samples in TMT experiments \cr MQ_Experiment
 #'  \tab A helper to link the values under the \code{TMT_Set} column in
-#'  \code{expt_smry.xlsx} to those under the \code{Experiment} column in the
-#'  interface of \code{MaxQuant -> Raw data -> Load}. }
+#'  \code{expt_smry.xlsx} to those under the \code{Experiment} column in the GUI
+#'  of \code{MaxQuant -> Raw data -> Load}. }
 #'
 #'  \code{Sample_ID}: values should be unique for entries at a unique
 #'  combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for

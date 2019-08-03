@@ -91,11 +91,11 @@ In this section I illustrate the following applications of `proteoQ`:
 * Removal of low-quality entries from peptide and protein data.
 * Summarizationof MaxQuant results from PSMs or peptides.  
 
-The data set we use in this section corresponds to the proteomics data from Mertins et al. [-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by `LC/MS` analysis. The raw PSM results from [Mascot](https://http://www.matrixscience.com/) searches are stored in companion R packages, `proteoQDA` and `proteoQDB`, and are accessbile through the following installation:  
+The data set we use in this section corresponds to the proteomics data from Mertins et al. [-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by `LC/MS` analysis. The raw PSM results from [Mascot](https://http://www.matrixscience.com/) and [MaxQuant](https://www.maxquant.org/) searches are stored in companion R packages, `proteoQDA` and `proteoQDB`, and are accessbile through the following installation:  
 
 ```{r proteoQDA, include = TRUE, eval = FALSE}
 devtools::install_github("qzhang503/proteoQDA")
-devtools::install_github("qzhang503/proteoQDB")
+devtools::install_github("qiangzhang503/proteoQDB")
 ```
 
 ### 1.1 Set up experiment for Mascot workflow
@@ -106,7 +106,7 @@ dat_dir <- "c:\\The\\First\\Example"
 ```
 
 #### 1.1.1 Prepare Mascot PSM data
-The workflow begins with PSM table(s) in a `csv` format from the [Mascot](https://http://www.matrixscience.com/) search engine. When exporting PSM results, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values, respectively. The file name(s) of the exports will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in name extension.]  
+The workflow begins with PSM table(s) in a `.csv` format from the [Mascot](https://http://www.matrixscience.com/) search engine. When exporting PSM results, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. The options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values, respectively. The file name(s) of the exports will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in name extension.]  
 
 ```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_export <- "images\\mascot\\mascot_export.png"
@@ -374,8 +374,8 @@ cptac_mq_psm_1(dat_dir)
 Similarly, we copy over the corresponding `expt_smry.xlsx` and `fract_smry.xlsx` files and load the experiment:  
 
 ```{r mq_psm_load, include = TRUE, eval = FALSE}
-cptac_expt_1(dat_dir)
-cptac_frac_1(dat_dir)
+cptac_mqpsm_expt(dat_dir)
+cptac_mqpsm_frac(dat_dir)
 
 library(proteoQ)
 load_expts()
@@ -441,7 +441,7 @@ cptac_mq_expt_1(dat_dir)
 cptac_frac_1(dat_dir)
 ```
 
-Note that there is an additional column, `MQ_Experiment`, in the `expt_smry.xlsx`. This is a helper column to link the `TMT_Set` column in `expt_smry.xlsx` to the `Experiment` column that can be found under the interface of `Raw data --> Load` in `MaxQuant`. These two identifiers need to have *one-to-one* correspondence. In other words, it is not permitted to have one multiplex `Experiment` to go into multiple `TMT_Sets` or vice versa.  
+Note that there is an additional column, `MQ_Experiment`, in the `expt_smry.xlsx`. This is a helper column to link the `TMT_Set` column in `expt_smry.xlsx` to the `Experiment` column that can be found under the GUI of `Raw data --> Load` in `MaxQuant`. These two identifiers need to have *one-to-one* correspondence. In other words, it is not permitted to have one multiplex `Experiment` to go into multiple `TMT_Sets` or vice versa.  
 
 ```{r MaxQuant_interface, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_mq_interface <- "images\\maxquant\\maxquant_interface.png"

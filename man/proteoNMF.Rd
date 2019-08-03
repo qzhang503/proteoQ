@@ -69,8 +69,8 @@ The default is c(4:8)}
 inherited from \code{proteoEucDist}.}
 
 \item{annot_cols}{A character vector of column names in \code{expt_smry.xlsx}.
-Values under the selected columns will be used to color-code sample IDs on the
-top of a \code{EucDist} plot.}
+Values under the selected columns will be used to color-code sample IDs on
+the top of the indicated plot.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}.}

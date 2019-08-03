@@ -89,13 +89,14 @@ repeated on a different day. This results in a total of 60 samples
 labeled under six 10-plex TMT experiments. The samples under each
 10-plex TMT were fractionated by off-line, high pH reversed-phase
 (Hp-RP) chromatography, followed by `LC/MS` analysis. The raw PSM
-results from [Mascot](https://http://www.matrixscience.com/) searches
-are stored in companion R packages, `proteoQDA` and `proteoQDB`, and are
-accessbile through the following installation:
+results from [Mascot](https://http://www.matrixscience.com/) and
+[MaxQuant](https://www.maxquant.org/) searches are stored in companion R
+packages, `proteoQDA` and `proteoQDB`, and are accessbile through the
+following installation:
 
 ``` r
 devtools::install_github("qzhang503/proteoQDA")
-devtools::install_github("qzhang503/proteoQDB")
+devtools::install_github("qiangzhang503/proteoQDB")
 ```
 
 ### 1.1 Set up experiment for Mascot workflow
@@ -108,7 +109,7 @@ dat_dir <- "c:\\The\\First\\Example"
 
 #### 1.1.1 Prepare Mascot PSM data
 
-The workflow begins with PSM table(s) in a `csv` format from the
+The workflow begins with PSM table(s) in a `.csv` format from the
 [Mascot](https://http://www.matrixscience.com/) search engine. When
 exporting PSM results, I typically set the option of
 `Include sub-set protein hits` to `0` with my opinionated choice in
@@ -532,8 +533,8 @@ Similarly, we copy over the corresponding `expt_smry.xlsx` and
 `fract_smry.xlsx` files and load the experiment:
 
 ``` r
-cptac_expt_1(dat_dir)
-cptac_frac_1(dat_dir)
+cptac_mqpsm_expt(dat_dir)
+cptac_mqpsm_frac(dat_dir)
 
 library(proteoQ)
 load_expts()
@@ -616,10 +617,10 @@ cptac_frac_1(dat_dir)
 Note that there is an additional column, `MQ_Experiment`, in the
 `expt_smry.xlsx`. This is a helper column to link the `TMT_Set` column
 in `expt_smry.xlsx` to the `Experiment` column that can be found under
-the interface of `Raw data --> Load` in `MaxQuant`. These two
-identifiers need to have *one-to-one* correspondence. In other words, it
-is not permitted to have one multiplex `Experiment` to go into multiple
-`TMT_Sets` or vice versa.
+the GUI of `Raw data --> Load` in `MaxQuant`. These two identifiers need
+to have *one-to-one* correspondence. In other words, it is not permitted
+to have one multiplex `Experiment` to go into multiple `TMT_Sets` or
+vice versa.
 
 <img src="images\maxquant\maxquant_interface.png" width="80%" style="display: block; margin: auto;" />
 

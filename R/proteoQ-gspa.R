@@ -8,8 +8,8 @@
 #'\code{\link[limma]{eBayes}}. The geometric mean of pVals are then each
 #'calculated for the groups of up or down regulated proteins. The quotient of
 #'the two pVals is used to prepsent the significance of gene set enrichment. The
-#'arguments \code{pval_cutoff} and \code{logFC_cutoff} are used to filter low
-#'influence genes.
+#'arguments \code{pval_cutoff} and \code{logFC_cutoff} are used to filter out
+#'low influence genes.
 #'
 #'The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 #'default.
