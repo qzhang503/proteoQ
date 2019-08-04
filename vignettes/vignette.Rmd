@@ -101,7 +101,7 @@ devtools::install_github("qzhang503/proteoQDA")
 We first set up a working directory for use in a Mascot example:  
 
 ```{r dir_setup, include = TRUE, eval = FALSE}
-dat_dir <- "c:\\The\\First\\Example"
+dat_dir <- "c:\\The\\Mascot\\Example"
 ```
 
 #### 1.1.1 Prepare Mascot PSM data
@@ -372,7 +372,7 @@ If all goes well with the local installation, we will load `proteoQDB` and copy 
 dat_dir <- c("C:\\The\\MQ\\PSM_Example")
 
 library(proteoQDB)
-cptac_mq_psm_1(dat_dir)
+cptac_mqpsm_txt(dat_dir)
 ```
 
 Similarly, we copy over the corresponding `expt_smry.xlsx` and `fract_smry.xlsx` files and load the experiment:  
@@ -435,14 +435,14 @@ Similar to the preparative steps in the earlier Mascot workflow, we first set up
 dat_dir <- "c:\\The\\MQ\\Peptide_Example"
 
 library(proteoQDA)
-cptac_mq_pep_1(dat_dir)
+cptac_mqpep_txt(dat_dir)
 ```
 
 We next copy over the `expt_smry.xlsx` and the `frac_smry.xlsx` files:  
 
 ```{r expt_setup_mq, include = TRUE, eval = FALSE}
-cptac_mq_expt_1(dat_dir)
-cptac_frac_1(dat_dir)
+cptac_mqpep_expt(dat_dir)
+cptac_mqpep_frac(dat_dir)
 ```
 
 Note that there is an additional column, `MQ_Experiment`, in the `expt_smry.xlsx`. This is a helper column to link the `TMT_Set` column in `expt_smry.xlsx` to the `Experiment` column that can be found under the GUI of `Raw data --> Load` in `MaxQuant`. These two identifiers need to have *one-to-one* correspondence. In other words, it is not permitted to have one multiplex `Experiment` to go into multiple `TMT_Sets` or vice versa.  

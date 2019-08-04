@@ -103,7 +103,7 @@ devtools::install_github("qzhang503/proteoQDA")
 We first set up a working directory for use in a Mascot example:
 
 ``` r
-dat_dir <- "c:\\The\\First\\Example"
+dat_dir <- "c:\\The\\Mascot\\Example"
 ```
 
 #### 1.1.1 Prepare Mascot PSM data
@@ -545,7 +545,7 @@ and copy over the PSM files therein to a working directory:
 dat_dir <- c("C:\\The\\MQ\\PSM_Example")
 
 library(proteoQDB)
-cptac_mq_psm_1(dat_dir)
+cptac_mqpsm_txt(dat_dir)
 ```
 
 Similarly, we copy over the corresponding `expt_smry.xlsx` and
@@ -623,14 +623,14 @@ from MaxQuant searches:
 dat_dir <- "c:\\The\\MQ\\Peptide_Example"
 
 library(proteoQDA)
-cptac_mq_pep_1(dat_dir)
+cptac_mqpep_txt(dat_dir)
 ```
 
 We next copy over the `expt_smry.xlsx` and the `frac_smry.xlsx` files:
 
 ``` r
-cptac_mq_expt_1(dat_dir)
-cptac_frac_1(dat_dir)
+cptac_mqpep_expt(dat_dir)
+cptac_mqpep_frac(dat_dir)
 ```
 
 Note that there is an additional column, `MQ_Experiment`, in the
