@@ -8,5 +8,5 @@ check_raws(df)
 }
 \description{
 \code{check_raws} finds mismatched RAW files between expt_smry.xlsx and
-PSM outs.
+PSM outputs.
 }

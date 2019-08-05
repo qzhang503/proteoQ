@@ -304,12 +304,17 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'   n_clust = c(5:6)
 #' )
 #'
+#'@import purrr
 #'@export
 anal_prnTrend <- function (...) {
   err_msg <- "Don't call the function with arguments `id`, `anal_type` or `task`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
   
-  proteoTrend(id = gene, anal_type = Trend, task = anal, ...)
+  dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoTrend)(id = gene, anal_type = Trend, task = anal, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\Trend\\log","anal_prnTrend_log.csv"), append = TRUE)
 }
 
 
@@ -327,11 +332,16 @@ anal_prnTrend <- function (...) {
 #'   n_clust = c(5:6)
 #' )
 #'
+#'@import purrr
 #'@export
 plot_prnTrend <- function (...) {
   err_msg <- "Don't call the function with arguments `id`, `anal_type` or `task`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
   
-  proteoTrend(id = gene, anal_type = Trend, task = plot, ...)
+  dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoTrend)(id = gene, anal_type = Trend, task = plot, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\Trend\\log","plot_prnTrend_log.csv"), append = TRUE)
 }
 

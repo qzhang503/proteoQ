@@ -114,5 +114,4 @@ prnHist(
   ncol = 10
 )
 
-
 }

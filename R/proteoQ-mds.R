@@ -587,12 +587,17 @@ proteoEucDist <- function (id = gene,
 #'   col_select = Select
 #' )
 #'
+#'@import purrr
 #'@export
 pepMDS <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoMDS(id = pep_seq, ...)
+  dir.create(file.path(dat_dir, "Peptide\\MDS\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoMDS)(id = pep_seq, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\MDS\\log","pepMDS_log.csv"), append = TRUE)
 }
 
 
@@ -617,12 +622,17 @@ pepMDS <- function (...) {
 #' )
 #' }
 #'
+#'@import purrr
 #'@export
 prnMDS <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoMDS(id = gene, ...)
+  dir.create(file.path(dat_dir, "Protein\\MDS\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoMDS)(id = gene, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\MDS\\log","prnMDS_log.csv"), append = TRUE)
 }
 
 
@@ -640,12 +650,17 @@ prnMDS <- function (...) {
 #'   show_ids = TRUE,
 #' )
 #'
+#'@import purrr
 #'@export
 pepPCA <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoPCA(id = pep_seq, ...)
+  dir.create(file.path(dat_dir, "Peptide\\PCA\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoPCA)(id = pep_seq, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\PCA\\log","pepPCA_log.csv"), append = TRUE)
 }
 
 
@@ -670,12 +685,17 @@ pepPCA <- function (...) {
 #' )
 #' }
 #'
+#'@import purrr
 #'@export
 prnPCA <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoPCA(id = gene, ...)
+  dir.create(file.path(dat_dir, "Protein\\PCA\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoPCA)(id = gene, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\PCA\\log","prnPCA_log.csv"), append = TRUE)
 }
 
 
@@ -685,12 +705,17 @@ prnPCA <- function (...) {
 #'
 #'@rdname proteoEucDist
 #'
+#'@import purrr
 #'@export
 pepEucDist <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoEucDist(id = pep_seq, ...)
+  dir.create(file.path(dat_dir, "Peptide\\EucDist\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoEucDist)(id = pep_seq, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\EucDist\\log","pepEucDist_log.csv"), append = TRUE)
 }
 
 
@@ -735,10 +760,15 @@ pepEucDist <- function (...) {
 #' )
 #' }
 #'
+#'@import purrr
 #'@export
 prnEucDist <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoEucDist(id = gene, ...)
+  dir.create(file.path(dat_dir, "Protein\\EucDist\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoEucDist)(id = gene, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\EucDist\\log","prnEucDist_log.csv"), append = TRUE)
 }

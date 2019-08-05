@@ -263,12 +263,17 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #' )
 #' }
 #'
+#'@import purrr
 #'@export
 pepHist <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoHist(id = pep_seq, ...)
+  dir.create(file.path(dat_dir, "Peptide\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoHist)(id = pep_seq, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\Histogram\\log","pepHist_log.csv"), append = TRUE)  
 }
 
 
@@ -290,11 +295,15 @@ pepHist <- function (...) {
 #'   ncol = 10
 #' )
 #'
-#'
+#'@import purrr
 #'@export
 prnHist <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoHist(id = gene, ...)
+  dir.create(file.path(dat_dir, "Protein\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoHist)(id = gene, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\Histogram\\log","prnHist_log.csv"), append = TRUE)
 }

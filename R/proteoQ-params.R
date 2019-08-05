@@ -737,7 +737,7 @@ match_logi_gv <- function(var, val) {
 #' Find mismatches in RAW file names
 #'
 #' \code{check_raws} finds mismatched RAW files between expt_smry.xlsx and
-#' PSM outs.
+#' PSM outputs.
 check_raws <- function(df) {
   stopifnot ("RAW_File" %in% names(df))
   

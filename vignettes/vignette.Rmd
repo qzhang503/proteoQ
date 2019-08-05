@@ -455,6 +455,10 @@ knitr::include_graphics(c(img_mq_interface))
 We now are ready to perform peptide normalization:  
 
 ```{r mq_peptides, eval = FALSE}
+# load experiments
+library(proteoQ)
+load_expts()
+
 # peptide reports
 normPep(
 	id = pep_seq, 

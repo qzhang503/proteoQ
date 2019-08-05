@@ -396,12 +396,17 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 #'  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
 #')
 #'
+#'@import purrr
 #'@export
 pepSig <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-
-  proteoSigtest(id = "pep_seq", ...)
+  
+  dir.create(file.path(dat_dir, "Peptide\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoSigtest)(id = pep_seq, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\Model\\log","pepSig_log.csv"), append = TRUE)
 }
 
 
@@ -414,6 +419,7 @@ pepSig <- function (...) {
 #'
 #'@rdname proteoSigtest
 #'
+#'@import purrr
 #' @examples
 #'prnSig(
 #'  impute_na = FALSE,
@@ -421,10 +427,15 @@ pepSig <- function (...) {
 #'  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
 #')
 #'
+#'@import purrr
 #'@export
 prnSig <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoSigtest(id = "gene", ...)
+  dir.create(file.path(dat_dir, "Protein\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoSigtest)(id = gene, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\Model\\log","prnSig_log.csv"), append = TRUE)
 }

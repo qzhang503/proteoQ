@@ -441,12 +441,17 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'   nrun = 200
 #' )
 #'
+#'@import purrr
 #'@export
 anal_pepNMF <- function (...) {
   err_msg <- "Don't call the function with arguments `id` and/or `task`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
-
-  proteoNMF(id = pep_seq, task = anal, ...)
+  
+  dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = pep_seq, task = anal, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\NMF\\log","anal_pepNMF_log.csv"), append = TRUE)  
 }
 
 
@@ -466,12 +471,62 @@ anal_pepNMF <- function (...) {
 #'   nrun = 200
 #' )
 #'
+#'@import purrr
 #'@export
 anal_prnNMF <- function (...) {
   err_msg <- "Don't call the function with arguments `id` and/or `task`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
 
-  proteoNMF(id = gene, task = anal, ...)
+  dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = gene, task = anal, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\NMF\\log","anal_prnNMF_log.csv"), append = TRUE)  
+}
+
+
+#'NMF consensus
+#'
+#'\code{plot_pepNMFCon} is a wrapper of \code{\link{proteoNMF}} for the
+#'visualization of the consensus heat map of peptide data
+#'
+#'@rdname proteoNMF
+#'@inheritParams  proteoEucDist
+#' @examples
+#'
+#' # peptide consensus heat maps at specific ranks
+#' plot_pepNMFCon(
+#'   r = c(3, 5),
+#'   annot_cols = c("Color", "Alpha", "Shape"),
+#'   annot_colnames = c("Lab", "Batch", "WHIM"),
+#'   width = 10,
+#'   height = 10
+#' )
+#'
+#' # peptide consensus heat maps at all available ranks
+#' plot_pepNMFCon(
+#'   impute_na = FALSE,
+#'   annot_cols = c("Color", "Alpha", "Shape"),
+#'   annot_colnames = c("Lab", "Batch", "WHIM"),
+#'   width = 10,
+#'   height = 10
+#' )
+#'
+#'@import purrr
+#'@export
+plot_pepNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
+  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
+  
+  annot_cols <- rlang::enexpr(annot_cols)
+  annot_colnames <- rlang::enexpr(annot_colnames)
+  
+  dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = pep_seq, task = plotcon, 
+                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\NMF\\log","plot_pepNMFCon_log.csv"), append = TRUE)
 }
 
 
@@ -502,6 +557,7 @@ anal_prnNMF <- function (...) {
 #'   height = 10
 #' )
 #'
+#'@import purrr
 #'@export
 plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
@@ -510,7 +566,47 @@ plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
   
-  proteoNMF(id = gene, task = plotcon, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = gene, task = plotcon, 
+                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\NMF\\log","plot_prnNMFCon_log.csv"), append = TRUE)
+}
+
+
+#'NMF coefficients
+#'
+#'\code{plot_pepNMFCoef} is a wrapper of \code{\link{proteoNMF}} for the
+#'visualization of the coefficient heat map of peptide data
+#'
+#'@rdname proteoNMF
+#'@inheritParams  proteoEucDist
+#' @examples
+#'
+#' # peptide coefficient heat maps at all ranks
+#' plot_pepNMFCoef(
+#'   annot_cols = c("Color", "Alpha", "Shape"),
+#'   annot_colnames = c("Lab", "Batch", "WHIM"),
+#'   width = 10,
+#'   height = 10
+#' )
+#'
+#'@import purrr
+#'@export
+plot_pepNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
+  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
+  
+  annot_cols <- rlang::enexpr(annot_cols)
+  annot_colnames <- rlang::enexpr(annot_colnames)
+  
+  dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = pep_seq, task = plotcoef, 
+                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\NMF\\log","plot_pepNMFCoef_log.csv"), append = TRUE)
 }
 
 
@@ -531,6 +627,7 @@ plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'   height = 10
 #' )
 #'
+#'@import purrr
 #'@export
 plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
@@ -538,8 +635,13 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
-
-  proteoNMF(id = gene, task = plotcoef, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  
+  dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = gene, task = plotcoef, 
+                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\NMF\\log","plot_prnNMFCoef_log.csv"), append = TRUE)
 }
 
 
@@ -560,6 +662,7 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'   fontsize_col = 5
 #' )
 #'
+#'@import purrr
 #'@export
 plot_metaNMF <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
@@ -567,8 +670,13 @@ plot_metaNMF <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
-
-  proteoNMF(id = gene, task = plotmeta, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  
+  dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = gene, task = plotmeta, 
+                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\NMF\\log","plot_metaNMF_log.csv"), append = TRUE)  
 }
 
 
