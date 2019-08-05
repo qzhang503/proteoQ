@@ -4,7 +4,9 @@
 \alias{proteoNMF}
 \alias{anal_pepNMF}
 \alias{anal_prnNMF}
+\alias{plot_pepNMFCon}
 \alias{plot_prnNMFCon}
+\alias{plot_pepNMFCoef}
 \alias{plot_prnNMFCoef}
 \alias{plot_metaNMF}
 \title{NMF analysis}
@@ -19,7 +21,11 @@ anal_pepNMF(...)
 
 anal_prnNMF(...)
 
+plot_pepNMFCon(annot_cols = NULL, annot_colnames = NULL, ...)
+
 plot_prnNMFCon(annot_cols = NULL, annot_colnames = NULL, ...)
+
+plot_pepNMFCoef(annot_cols = NULL, annot_colnames = NULL, ...)
 
 plot_prnNMFCoef(annot_cols = NULL, annot_colnames = NULL, ...)
 
@@ -89,8 +95,14 @@ analysis of peptide data
 \code{anal_prnNMF} is a wrapper of \code{\link{proteoNMF}} for the NMF
 analysis of protein data
 
+\code{plot_pepNMFCon} is a wrapper of \code{\link{proteoNMF}} for the
+visualization of the consensus heat map of peptide data
+
 \code{plot_prnNMFCon} is a wrapper of \code{\link{proteoNMF}} for the
 visualization of the consensus heat map of protein data
+
+\code{plot_pepNMFCoef} is a wrapper of \code{\link{proteoNMF}} for the
+visualization of the coefficient heat map of peptide data
 
 \code{plot_prnNMFCoef} is a wrapper of \code{\link{proteoNMF}} for the
 visualization of the coefficient heat map of protein data
@@ -123,6 +135,25 @@ anal_prnNMF(
 )
 
 
+# peptide consensus heat maps at specific ranks
+plot_pepNMFCon(
+  r = c(3, 5),
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10
+)
+
+# peptide consensus heat maps at all available ranks
+plot_pepNMFCon(
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10
+)
+
+
 # protein consensus heat maps at specific ranks
 plot_prnNMFCon(
   r = c(3, 5),
@@ -135,6 +166,15 @@ plot_prnNMFCon(
 # protein consensus heat maps at all available ranks
 plot_prnNMFCon(
   impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10
+)
+
+
+# peptide coefficient heat maps at all ranks
+plot_pepNMFCoef(
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,

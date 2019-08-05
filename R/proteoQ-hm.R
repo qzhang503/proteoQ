@@ -415,12 +415,17 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
 #'
 #'@rdname proteoHM
 #'
+#'@import purrr
 #'@export
 pepHM <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoHM(id = pep_seq, ...)
+  dir.create(file.path(dat_dir, "Peptide\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoHM)(id = pep_seq, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\Heatmap\\log","pepHM_log.csv"), append = TRUE)  
 }
 
 
@@ -430,12 +435,17 @@ pepHM <- function (...) {
 #'
 #'@rdname proteoHM
 #'
+#'@import purrr
 #'@export
 prnHM <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoHM(id = gene, ...)
+  dir.create(file.path(dat_dir, "Protein\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoHM)(id = gene, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\Heatmap\\log","prnHM_log.csv"), append = TRUE)
 }
 
 

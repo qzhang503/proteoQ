@@ -372,12 +372,17 @@ proteoCorrplot <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene")
 #'   max_log2r = 2
 #' )
 #'
+#'@import purrr
 #'@export
 pepCorr <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoCorrplot(id = pep_seq, ...)
+  dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoCorrplot)(id = pep_seq, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\Corrplot\\log","pepCorr_log.csv"), append = TRUE)
 }
 
 #'Correlation plots of protein data
@@ -391,10 +396,15 @@ pepCorr <- function (...) {
 #'   scale_log2r = TRUE
 #' )
 #'
+#'@import purrr
 #'@export
 prnCorr <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoCorrplot(id = gene, ...)
+  dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoCorrplot)(id = gene, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\Corrplot\\log","prnCorr_log.csv"), append = TRUE)
 }

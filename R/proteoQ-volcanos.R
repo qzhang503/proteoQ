@@ -730,6 +730,7 @@ prep_gage <- function(contrast_groups, key = "term", pval_cutoff = 1E-2) {
 #'
 #'@rdname proteoVolcano
 #'
+#'@import purrr
 #'@export
 pepVol <- function (...) {
   err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
@@ -739,8 +740,12 @@ pepVol <- function (...) {
   if(any(names(dots) %in% c("id", "anal_type"))) stop(err_msg)
   if(any(names(dots) %in% c("pval_cutoff", "show_sig"))) warning(warn_msg)
   
+  dir.create(file.path(dat_dir, "Peptide\\Volcano\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  proteoVolcano(id = "pep_seq", anal_type = "Volcano", ...)
+  quietly_log <- purrr::quietly(proteoVolcano)(id = "pep_seq", anal_type = "Volcano", ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\Volcano\\log","pepnVol_log.csv"), append = TRUE)
+  # proteoVolcano(id = "pep_seq", anal_type = "Volcano", ...)
 }
 
 
@@ -750,6 +755,7 @@ pepVol <- function (...) {
 #'
 #'@rdname proteoVolcano
 #'
+#'@import purrr
 #'@export
 prnVol <- function (...) {
   err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
@@ -759,7 +765,12 @@ prnVol <- function (...) {
   if(any(names(dots) %in% c("id", "anal_type"))) stop(err_msg)
   if(any(names(dots) %in% c("pval_cutoff", "show_sig"))) warning(warn_msg)
 
-  proteoVolcano(id = "gene", anal_type = "Volcano", ...)
+  dir.create(file.path(dat_dir, "Protein\\Volcano\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoVolcano)(id = "gene", anal_type = "Volcano", ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\Volcano\\log","prnVol_log.csv"), append = TRUE)
+  # proteoVolcano(id = "gene", anal_type = "Volcano", ...)
 }
 
 
@@ -770,7 +781,7 @@ prnVol <- function (...) {
 gsvaVol <- function (...) {
   err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
-
+  
   proteoVolcano(id = "term", anal_type = "GSVA", ...)
 }
 
