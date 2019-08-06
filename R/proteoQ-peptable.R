@@ -517,17 +517,23 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		  dplyr::arrange(!!rlang::sym(id))
 	}
 
-	df <- normMulGau(
-		df = df,
-		method_align = method_align,
-		n_comp = n_comp,
-		seed = seed,
-		range_log2r = range_log2r,
-		range_int = range_int,
-		filepath = file.path(dat_dir, "Peptide\\Histogram"),
-		col_refit = col_refit, 
-		!!!dots
+	dir.create(file.path(dat_dir, "Peptide\\log"), recursive = TRUE, showWarnings = FALSE)
+	quietly_out <- purrr::quietly(normMulGau)(
+	  df = df,
+	  method_align = method_align,
+	  n_comp = n_comp,
+	  seed = seed,
+	  range_log2r = range_log2r,
+	  range_int = range_int,
+	  filepath = file.path(dat_dir, "Peptide\\Histogram"),
+	  col_refit = col_refit, 
+	  !!!dots
 	)
+	
+	purrr::walk(quietly_out[-1], write, 
+	            file.path(dat_dir, "Peptide\\log","pep_MulGau_log.csv"), append = TRUE)
+	
+	df <- quietly_out$result
 
 	df[, grepl("^Z_log2_R[0-9]{3}", names(df))] <-  
 	  df[, grepl("^Z_log2_R[0-9]{3}", names(df))] %>%

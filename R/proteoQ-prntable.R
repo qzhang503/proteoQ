@@ -282,27 +282,28 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 	}
 
-	df <- normMulGau(
-		df = df, 
-		method_align = method_align, 
-		n_comp = n_comp, 
-		seed = seed, 
-		range_log2r = range_log2r, 
-		range_int = range_int, 
-		filepath = file.path(dat_dir, "Protein\\Histogram"), 
-		col_refit = col_refit, 
-		!!!dots
+	dir.create(file.path(dat_dir, "Protein\\log"), recursive = TRUE, showWarnings = FALSE)
+	quietly_out <- purrr::quietly(normMulGau)(
+	  df = df, 
+	  method_align = method_align, 
+	  n_comp = n_comp, 
+	  seed = seed, 
+	  range_log2r = range_log2r, 
+	  range_int = range_int, 
+	  filepath = file.path(dat_dir, "Protein\\Histogram"), 
+	  col_refit = col_refit, 
+	  !!!dots
 	)
-
-	df <- df %>% dplyr::filter(!nchar(as.character(.[["prot_acc"]])) == 0)
 	
-	df <- df %>% 
+	purrr::walk(quietly_out[-1], write, 
+	            file.path(dat_dir, "Protein\\log","prn_MulGau_log.csv"), append = TRUE)
+	
+	df <- quietly_out$result %>% 
+	  dplyr::filter(!nchar(as.character(.[["prot_acc"]])) == 0) %>% 
 	  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
 	  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
 	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
 	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3))
 	
 	write.table(df, file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
-	
-	# invisible(df)
 }

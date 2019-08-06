@@ -201,12 +201,16 @@ proteoPurge <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #' )
 #' }
 #'
+#'@import purrr
 #'@export
 purPep <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoPurge(id = pep_seq, ...)
+  dir.create(file.path(dat_dir, "Peptide\\Purge\\log"), recursive = TRUE, showWarnings = FALSE)
+  quietly_log <- purrr::quietly(proteoPurge)(id = pep_seq, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\Purge\\log","pepPurge_log.csv"), append = TRUE)
 }
 
 
@@ -224,12 +228,17 @@ purPep <- function (...) {
 #' )
 #' }
 #'
+#'@import purrr
 #'@export
 purPrn <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  proteoPurge(id = gene, ...)
+  dir.create(file.path(dat_dir, "Protein\\Purge\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoPurge)(id = gene, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\Purge\\log","prnPurge_log.csv"), append = TRUE)
 }
 
 

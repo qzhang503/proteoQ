@@ -6,7 +6,6 @@ date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
-    toc_depth: 3
 fig_caption: yes
 vignette: >
   %\VignetteIndexEntry{Vignette Title}

@@ -1,6 +1,6 @@
 -   [Introduction to proteoQ](#introduction-to-proteoq)
 -   [Installation](#installation)
--   [Part 1 - Data normalization](#part-1-data-normalization)
+-   [Part 1 — Data normalization](#part-1-data-normalization)
     -   [1.1 Set up experiment for Mascot
         workflow](#set-up-experiment-for-mascot-workflow)
     -   [1.2 Summarise Mascot PSMs to peptides and
@@ -9,7 +9,7 @@
         samples](#renormalize-data-for-a-subset-of-samples)
     -   [1.4 Purge data](#purge-data)
     -   [1.5 Summarize MaxQuant results](#summarize-maxquant-results)
--   [Part 2 - Basic informatics](#part-2-basic-informatics)
+-   [Part 2 — Basic informatics](#part-2-basic-informatics)
     -   [2.1 MDS and PCA plots](#mds-and-pca-plots)
     -   [2.2 Correlation plots](#correlation-plots)
     -   [2.3 Missing value imputation](#missing-value-imputation)
@@ -20,7 +20,7 @@
         plots](#gene-sets-under-volcano-plots)
     -   [2.7 Trend Analysis](#trend-analysis)
     -   [2.8 NMF Analysis](#nmf-analysis)
--   [Part 3 - Labs](#part-3-labs)
+-   [Part 3 — Labs](#part-3-labs)
     -   [3.1 Reference choices](#reference-choices)
     -   [3.2 Peptide subsets](#peptide-subsets)
     -   [3.3 Random effects](#random-effects)
@@ -45,15 +45,15 @@ The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) searches and PSM
 and peptide tables from [MaxQuant](https://www.maxquant.org/), for 6-,
 10- or 11-plex TMT experiments. Peptide and protein results are then
-produced with users' selection of parameters in data filtration,
+produced with users’ selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
-creating 'wrappers' around published R routines.
+creating ‘wrappers’ around published R routines.
 
 Installation
 ------------
 
-To install this package, start R (version "3.6.1") as **administrator**
+To install this package, start R (version “3.6.1”) as **administrator**
 and enter:
 
 ``` r
@@ -66,7 +66,7 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("qzhang503/proteoQ")
 ```
 
-Part 1 - Data normalization
+Part 1 — Data normalization
 ---------------------------
 
 In this section I illustrate the following applications of `proteoQ`:
@@ -80,7 +80,7 @@ In this section I illustrate the following applications of `proteoQ`:
 -   Summarizationof MaxQuant results from PSMs or peptides.
 
 The data set we use in this section corresponds to the proteomics data
-from Mertins et al.�(2018). In the study, two different breast cancer
+from Mertins et al. (2018). In the study, two different breast cancer
 subtypes, triple negative (WHIM2) and luminal (WHIM16), from
 patient-derived xenograft (PDX) models were assessed by three
 independent laboratories. At each site, lysates from WHIM2 and WHIM16
@@ -151,7 +151,7 @@ are required by `proteoQ` for annotation of peptide and protein reports.
 The fasta files, or more precisely the entries therein, need to match
 those used in the MS/MS searches. To do this, we copy over the
 corresponding fasta files that we have prepared in `proteoQDA` package
-to a database folder, let's say `proteoQ\dbs\refseq` under `home`
+to a database folder, let’s say `proteoQ\dbs\refseq` under `home`
 directory:
 
 ``` r
@@ -198,7 +198,7 @@ cptac_frac_1(dat_dir)
 ```
 
 We now have all the pieces that are required by `proteoQ` in place.
-Let's have a quick glance at the `expt_smry.xlsx` file. We note that no
+Let’s have a quick glance at the `expt_smry.xlsx` file. We note that no
 reference channels were indicated under the column `Reference`. With
 `proteoQ`, the `log2FC` of each species in a given sample is calculated
 either (*a*) in relative to the reference(s) within each multiplex TMT
@@ -284,7 +284,7 @@ set a seed for reproducible fittings. The parameters `range_log2r` and
 intensity, respectively, for use in the scaling of standard deviation
 across samples.
 
-Let's compare the `log2FC` profiles with and without scaling
+Let’s compare the `log2FC` profiles with and without scaling
 normalization:[5]
 
 ``` r
@@ -425,10 +425,10 @@ A multi-Gaussian kernel can fail capturing the `log2FC` profiles for a
 subset of samples. This is less an issue with a small number of samples.
 Using a trial-and-error approach, we can start over with a new
 combination of parameters, such as a different `seed`, and/or a
-different range of `scale_log2r` et al.�However, the one-size-fit-all
+different range of `scale_log2r` et al. However, the one-size-fit-all
 attempt may remain inadequate when the number of samples is relatively
 large. The `proteoQ` allow users to *focus* fit aganist selected
-samples. This is the job of argument `col_refit`. Let's say we want to
+samples. This is the job of argument `col_refit`. Let’s say we want to
 re-fit the `log2FC` for samples `W2.BI.TR2.TMT1` and `W2.BI.TR2.TMT2`.
 We simply add a column, which I named it `Select_sub`, to
 `expt_smry.xlsx` with the sample entries for re-fit being indicated
@@ -507,7 +507,7 @@ and the update of peptide data.
 
 In this section, I will illustrate the processing of MaxQuant results
 using the same set of data from CPTAC. We will first apply a workflow of
-PSMs -&gt; peptides -&gt; proteins in data summarization. We then take
+PSMs –&gt; peptides –&gt; proteins in data summarization. We then take
 an alternative procedure by using the peptide tables directly from
 MaxQuant.
 
@@ -531,10 +531,10 @@ fetch the files and make a local installation through something like
 
 Alternatively, we can first clone
 [`proteoQDB`](https://github.com/qiangzhang503/proteoQDB.git) and unzip
-the files to a local directory, let's say "\~\\GitHub\\proteoQDB". We
+the files to a local directory, let’s say “\~\\GitHub\\proteoQDB”. We
 next manually download the three `.rda` files under the `data` folder in
 <a href="https://github.com/qiangzhang503/proteoQDB" class="uri">https://github.com/qiangzhang503/proteoQDB</a>.
-We then replace the `.rda` files under "\~\\GitHub\\proteoQDB\\data"
+We then replace the `.rda` files under “\~\\GitHub\\proteoQDB\\data”
 with the newly downloaded. Finally, we will do a local installation just
 like the above.
 
@@ -679,7 +679,7 @@ normalization as we have done with the Mascot example. The only
 exception is that the call to `purPep()` will throw us an error as there
 are no PSM data were prepared for the calculations of peptide `CV`.
 
-Part 2 - Basic informatics
+Part 2 — Basic informatics
 --------------------------
 
 In this section I illustrate the following applications of `proteoQ`:
@@ -1081,7 +1081,7 @@ plot_metaNMF(
 right: coefficients.
 </p>
 
-Part 3 - Labs
+Part 3 — Labs
 -------------
 
 ### 3.1 Reference choices
@@ -1139,7 +1139,7 @@ proteomes. If the above argument is valid, a scaling normalize would
 moderate, and thus bias, the quantitative difference in proteomes
 between `WHIM2` and `WHIM16`.
 
-We alternatively seek a "center-of-mass" representation for uses as
+We alternatively seek a “center-of-mass” representation for uses as
 references. We select one `WHIM2` and one `WHIM16` from each 10-plex
 TMT. The `proteoQ` tool will average the signals from designated
 references. Thefore, the derived reference can be viewed as a mid point
@@ -1267,7 +1267,7 @@ quote the underscore: `pep_pattern = "_"`.
 
 ### 3.3 Random effects
 
-*Single random effect* - In proteomic studies involved multiple
+*Single random effect* — In proteomic studies involved multiple
 multiplex `TMT` experiments, the limited multiplicity of isobaric tags
 requires sample parting into subgroups. Measures in `log2FC` are then
 obtained within each subgroup by comparing to common reference
@@ -1321,11 +1321,11 @@ Upon the completion of the protein signficance tests, we can analyze
 analogously the gene set enrichment against these new formulas by
 calling functions `prnGSPA` and `gspaMAP`.
 
-*Multiple random effects* - In this section, we will test the
+*Multiple random effects* — In this section, we will test the
 statistical significance in protein abundance changes between the
 `WHIM2` and the `WHIM16` subtypes, by taking additively both the TMT
 batch effects and the laboratory effects into account. At the time of
-writing the document, I don't yet know how to handle multiple random
+writing the document, I don’t yet know how to handle multiple random
 effects using `limma`. Alternatively, I use `lmerTest` to do the work.
 
 Missing values can frequently fail random-effects modeling with more
@@ -1334,7 +1334,7 @@ simply restrict ourselves to entries that are complete in cases. This
 would lead to a number of proteins not measurable in their statistical
 significance. Alternatively, we may seek to fill in missing values using
 techniques such as multivariate imputation. At present, I use the `mice`
-function from the R package "mice" in `prnImp()` and `pepImp()` for the
+function from the R package “mice” in `prnImp()` and `pepImp()` for the
 imputation of protein and peptide data, respectively. To impute protein
 data:
 
@@ -1377,10 +1377,10 @@ biological differences of `WHIM2` and `WHIM16`.
 References
 ----------
 
-Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
+Philipp, Martins. 2018. “Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
-Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
-1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
+Liquid Chromatography-Mass Spectrometry.” *Nature Protocols* 13 (7):
+1632–61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in name extension.
