@@ -32,7 +32,7 @@ Imports:
     magrittr,
     boot,
     broom.mixed,
-    data.table,		
+    data.table,
     e1071,
     grid,
     gridExtra,
@@ -52,5 +52,6 @@ Imports:
     NMF,
     RColorBrewer,
     RCurl,
-    XML
+    XML,
+    STRINGdb
 RoxygenNote: 6.1.1

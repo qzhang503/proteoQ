@@ -5,7 +5,7 @@ author:
 date: "`r Sys.Date()`"
 output:
   md_document:
-    variant: markdown_github
+    variant: gfm
     toc: true
 fig_caption: yes
 vignette: >
@@ -75,7 +75,7 @@ To install this package, start R (version "3.6.1") as **administrator** and ente
 ```{r installation_1, include = TRUE, eval = FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("Biobase", "Mfuzz", "limma"))
+BiocManager::install(c("Biobase", "Mfuzz", "STRINGdb", "limma"))
 
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
@@ -719,10 +719,10 @@ knitr::include_graphics(c(img_volcplot_gspa))
 ```
 
 ### 2.7 Trend Analysis
-The following performs the trend analysis against protein expressions. More information can be found from [`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf). Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.  
+The following performs the trend analysis against protein expressions. More information can be found from [`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf) and `?anal_prnTrend`. Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.  
 
 ```{r Protein trends, eval = FALSE}
-# soft clustering of protein data
+# soft clustering of protein expression data
 anal_prnTrend(
   scale_log2r = TRUE, 
   n_clust = 6
@@ -732,10 +732,18 @@ anal_prnTrend(
 plot_prnTrend()
 ```
 
-```{r Protein_trends plots, echo=FALSE, fig.align='left', fig.cap="**Figure 8.** Trend analysis of protein log2FC.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r Protein_trends plots, echo=FALSE, fig.align='left', fig.cap="**Figure 8A.** Trend analysis of protein log2FC.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_prn_trends <- "images\\protein\\trend\\prn_trend_n6.png"
 knitr::include_graphics(c(img_prn_trends))
 ```
+
+At the above example of `n_clust = 6`, the correspondence between protein IDs and their cluster assignments is summarised in file `Protein_Trend_Z_n6.csv`. The letter `Z` in the file name denotes the option of `scale_log2r = TRUE`. One common use of trend data is to further feed them to enrichment analysis in terms such as gene ontology. In the example shown below, we simply copy and paste the gene ids at `cl_cluster = 4` from the result file for analysis by [`ClueGO`](http://apps.cytoscape.org/apps/cluego). The analysis showed enrichment in `epidermis development` between triple negative (WHIM2) and luminal (WHIM16).  
+
+```{r Protein_cluego, echo=FALSE, fig.align='left', fig.cap="**Figure 8B.** GO annotation of protein log2FC at trend 4 in **8A**.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_prn_cluego <- "images\\protein\\trend\\cluego_trend_4.png"
+knitr::include_graphics(c(img_prn_cluego))
+```
+
 
 ### 2.8 NMF Analysis
 The following performs the NMF analysis against protein data. More details can be found from [`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf).  
@@ -786,6 +794,19 @@ img_nmf_con <- "images\\protein\\nmf\\prn_nmf_r6_consensus.png"
 img_nmf_coef <- "images\\protein\\nmf\\prn_nmf_r6_coef.png"
 knitr::include_graphics(c(img_nmf_con, img_nmf_coef))
 ```
+
+### 2.9 STRINGdb Analysis
+The following performs the [`STRING`](http://www.string-db.org) analysis of protein-protein interactions. More details can be found from [`STRINGdb`](https://www.bioconductor.org/packages/release/bioc/vignettes/STRINGdb/inst/doc/STRINGdb.pdf) and `?getStringDB`.  
+
+```{r Protein StringDB, eval = FALSE}
+getStringDB(
+  score_cutoff = .9,
+  nseq_cutoff = 2,
+  adjP = FALSE
+)
+```
+
+The results of protein-protein interaction is summarised in `Protein_STRING_ppi.tsv` and the expression data in `Protein_STRING_expr.tsv`. The files are formatted for direct applications with [`Cytoscape`](https://cytoscape.org).  
 
 ## Part 3 --- Labs  
 ### 3.1 Reference choices  
