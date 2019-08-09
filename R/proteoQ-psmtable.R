@@ -295,6 +295,7 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
       dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
       dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) %>%
       dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
+      dplyr::mutate(RAW_File = gsub("^.*\\s{1}File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
       dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
       dplyr::arrange(RAW_File, pep_seq, prot_acc) %>%
       # a special case of redundant entries from Mascot
@@ -302,7 +303,8 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
   } else {
     df_split <- df %>%
       dplyr::filter(pep_expect <=  0.10) %>%
-      dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
+      dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>% 
+			dplyr::mutate(RAW_File = gsub("^.*\\s{1}File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
       dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
       dplyr::arrange(RAW_File, pep_seq, prot_acc)
   }
@@ -334,78 +336,6 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
     dplyr::select(-RAW_File) %>%
     dplyr::left_join(tmtinj_raw_map, by = "TMT_inj")
 
-  run_scripts <- FALSE
-  if (run_scripts) {
-  	fraction_scheme_temp <- fraction_scheme %>%
-  		tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>%
-  		dplyr::select(-Fraction) %>%
-  		dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File))
-  	
-  	# compare the RAW_File names in 'label_scheme_full' to the RAW_File names from Mascot
-  	fn_lookup <- label_scheme_full %>%
-  	  dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
-  	  dplyr::mutate(filename = paste(paste0("TMTset", .$TMT_Set),
-  	                                 paste0("LCMSinj", .$LCMS_Injection), sep = "_")) %>%
-  	  dplyr::filter(!duplicated(filename)) %>%
-  	  tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>% 
-  	  dplyr::select(-RAW_File) %>%
-  	  dplyr::left_join(fraction_scheme_temp, by = "TMT_inj")
-  	
-  	if(length(grep("^R[0-9]{3}", names(df))) > 0) {
-  		df_split <- df %>%
-  			dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
-  			dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), ~ifelse(. == -1, NA, .)) %>%
-  			dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), ~ifelse(. <= rptr_intco, NA, .)) %>%
-  			dplyr::filter(pep_expect <=  0.10) %>%
-  			dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
-  			dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) %>%
-  			dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
-  			dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
-  			dplyr::arrange(RAW_File, pep_seq, prot_acc) %>%
-  			# a special case of redundant entries from Mascot
-  		  dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
-  	} else {
-  		df_split <- df %>%
-  			dplyr::filter(pep_expect <=  0.10) %>%
-  		  dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
-  			dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
-  			dplyr::arrange(RAW_File, pep_seq, prot_acc)
-  	}
-  	
-  	# check mismatches in RAW_File names
-  	ms_files <- unique(df_split$RAW_File)
-  	label_scheme_files <- fn_lookup$RAW_File %>% unique()
-  	
-  	missing_msfs <- ms_files %>% .[!. %in% unique(fn_lookup$RAW_File)]
-  	wrong_fms <- label_scheme_files[!label_scheme_files %in% ms_files]
-  	
-  	if(!purrr::is_empty(missing_msfs) | !purrr::is_empty(wrong_fms)) {
-  	  cat("RAW file names missing from the experimental summary file:\n")
-  	  cat(paste0(missing_msfs, "\n"))
-  	  
-  	  cat("Incorrect file names in the experimental summary file:\n")
-  	  cat(paste0("\t", wrong_fms, "\n"))
-  	  
-  	  stop(paste("Check filenames under the RAW_File column in the experimental summary file."),
-  	       call. = FALSE)
-  	}
-  	
-  	df_split <- df_split %>%
-  	  dplyr::left_join(fraction_scheme_temp, id = "RAW_File") %>%
-  	  dplyr::group_by(TMT_inj) %>%
-  	  dplyr::mutate(psm_index = row_number()) %>%
-  	  data.frame(check.names = FALSE) %>%
-  	  split(., .$TMT_inj, drop = TRUE)
-  	
-  	if (sum(fn_lookup$TMT_inj %in% names(df_split)) < length(fn_lookup$TMT_inj)) {
-  		missing_files <- setdiff(names(df_split), fn_lookup$TMT_inj)
-  		cat("Missing information under", fn_lookup[fn_lookup$TMT_inj ==  missing_files, "filename"],
-  		    "in", filename, "\n")
-  		stop(paste("Check filenames under the RAW_File column in", filename), call. = TRUE)
-  	}
-  }
-
-  
 	for (i in seq_along(df_split)) {
 		df_split[[i]] <- df_split[[i]] %>% dplyr::select(-TMT_inj)
 
@@ -1531,7 +1461,9 @@ normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "f
     type <- "mascot"
   } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^msms.*\\.txt$"))) {
     type <- "mq"
-  }
+  } else {
+    stop("Unknow data type or missing data files.", call. = FALSE)
+	}
 
   pep_unique_by <- rlang::as_string(rlang::enexpr(pep_unique_by))
   

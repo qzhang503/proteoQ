@@ -48,8 +48,7 @@ used at default or an unrecognized file extension.}
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
 
-\item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals for protein/peptide
-entries in volcano plot(s).}
+\item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals.}
 
 \item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.}
 

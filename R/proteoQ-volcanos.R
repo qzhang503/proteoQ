@@ -8,8 +8,7 @@
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
 #'@inheritParams  prnGSPA
-#'@param adjP Logical; if TRUE, use Benjamini-Hochberg pVals for protein/peptide
-#'  entries in volcano plot(s).
+#'@param adjP Logical; if TRUE, use Benjamini-Hochberg pVals.
 #'@param show_labels Logical; if TRUE, shows the labels of top twenty entries.
 #'@param show_sig Character string indicating the type of significance values to
 #'  be shown on volcano plots. The default is \code{"none"}. Additional choices

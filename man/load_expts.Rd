@@ -103,7 +103,7 @@ system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
 
 \dontrun{
 library(proteoQ)
-dat_dir <- c("C:\\\\The\\\\First\\\\Example")
+dat_dir <- c("C:\\\\The\\\\Mascot\\\\Example")
 
 # copy Mascot PSM data
 cptac_csv_1(dat_dir)
@@ -114,6 +114,45 @@ cptac_frac_1(dat_dir)
 
 # load experiments
 load_expts()
+
+# PSMs
+normPSM(
+  rptr_intco = 1000,
+  rm_craps = TRUE,
+  rm_krts = TRUE,
+  rm_outliers = FALSE,
+  plot_violins = TRUE
+)
+
+# peptides
+normPep(
+  id = pep_seq_mod,
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
+            "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  method_psm_pep = median,
+  method_align = MGKernel,
+  range_log2r = c(10, 95),
+  range_int = c(5, 95),
+  n_comp = 3,
+  seed = 1234,
+  maxit = 200,
+  epsilon = 1e-05
+)
+
+# proteins
+normPrn(
+  id = gene,
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
+            "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  method_pep_prn = median,
+  method_align = MGKernel,
+  range_log2r = c(5, 95),
+  range_int = c(5, 95),
+  n_comp = 2,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05
+)
 }
 
 }
