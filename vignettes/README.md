@@ -20,7 +20,7 @@
         plots](#gene-sets-under-volcano-plots)
       - [2.7 Trend Analysis](#trend-analysis)
       - [2.8 NMF Analysis](#nmf-analysis)
-      - [2.9 STRINGdb Analysis](#stringdb-analysis)
+      - [2.9 STRING Analysis](#string-analysis)
   - [Part 3 - Labs](#part-3-labs)
       - [3.1 Reference choices](#reference-choices)
       - [3.2 Peptide subsets](#peptide-subsets)
@@ -58,7 +58,7 @@ and enter:
 ``` r
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("Biobase", "Mfuzz", "STRINGdb", "limma"))
+BiocManager::install(c("Biobase", "Mfuzz", "limma"))
 
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
@@ -151,13 +151,13 @@ are required by `proteoQ` for annotation of peptide and protein reports.
 The fasta files, or more precisely the entries therein, need to match
 those used in the MS/MS searches. To do this, we copy over the
 corresponding fasta files that we have prepared in `proteoQDA` package
-to a database folder, let's say `proteoQ\dbs\refseq` under `home`
+to a database folder, let's say `proteoQ\dbs\fasta\refseq` under `home`
 directory:
 
 ``` r
 library(proteoQDA)
-copy_refseq_hs("~\\proteoQ\\dbs\\refseq")
-copy_refseq_mm("~\\proteoQ\\dbs\\refseq")
+copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
+copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 ```
 
 #### 1.1.3 Prepare metadata
@@ -260,8 +260,8 @@ We next summarise PSM to peptides:
 # peptide reports
 normPep(
   id = pep_seq,
-    fasta = c("~\\proteoQ\\db\\refseq\\refseq_hs_2013_07.fasta", 
-                      "~\\proteoQ\\db\\refseq\\refseq_mm_2013_07.fasta"),
+    fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+           "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
   method_psm_pep = median, 
   method_align = MGKernel, 
   range_log2r = c(5, 95), 
@@ -368,8 +368,8 @@ two-component Gaussian kernel.
 # protein reports
 normPrn(
   id = gene, 
-    fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
-                      "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
+    fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+           "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
   method_pep_prn = median, 
   method_align = MGKernel, 
   range_log2r = c(5, 95), 
@@ -555,16 +555,16 @@ protein normlizations.
 ``` r
 # PSM reports
 normPSM(
-  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
-            "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
-  rptr_intco = 3000
+ fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+           "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
+ rptr_intco = 3000
 )
 
 # Peptide reports
 normPep(
  id = pep_seq_mod,
- fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
-           "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
+ fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+           "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
  method_align = MGKernel,
  range_log2r = c(10, 95),
  range_int = c(5, 95),
@@ -576,8 +576,8 @@ normPep(
 
 normPrn(
  id = gene,
- fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
-           "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
+ fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+           "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
  method_pep_prn = median,
  method_align = MGKernel,
  range_log2r = c(5, 95),
@@ -650,8 +650,8 @@ normPep(
     range_int = c(5, 95), 
     n_comp = 3, 
     seed = 749662, 
-  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta", 
-            "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"), 
+    fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+           "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
     annot_kinases = TRUE,   
     maxit = 200, 
     epsilon = 1e-05
@@ -991,19 +991,12 @@ plot_prnTrend()
 
 <img src="images\protein\trend\prn_trend_n6.png" title="**Figure 8A.** Trend analysis of protein log2FC." alt="**Figure 8A.** Trend analysis of protein log2FC." width="80%" style="display: block; margin: auto auto auto 0;" />
 
-At the above example of `n_clust = 6`, the correspondence between
+With the above example at `n_clust = 6`, the correspondence between
 protein IDs and their cluster assignments is summarised in file
 `Protein_Trend_Z_n6.csv`. The letter `Z` in the file name denotes the
-option of `scale_log2r = TRUE`. One common use of trend data is to
-further feed them to enrichment analysis in terms such as gene ontology.
-In the example shown below, we simply copy and paste the gene ids at
-`cl_cluster = 4` from the result file for analysis by
-[`ClueGO`](http://apps.cytoscape.org/apps/cluego). The analysis showed
-enrichment in `epidermis development` between triple negative (WHIM2)
-and luminal
-(WHIM16).
-
-<img src="images\protein\trend\cluego_trend_4.png" title="**Figure 8B.** GO annotation of protein log2FC at trend 4 in **8A**." alt="**Figure 8B.** GO annotation of protein log2FC at trend 4 in **8A**." width="80%" style="display: block; margin: auto auto auto 0;" />
+option of `scale_log2r = TRUE`. The results are compatible for
+enrichment analysis such as gene ontology with tools such as
+[`ClueGO`](http://apps.cytoscape.org/apps/cluego) and more.
 
 ### 2.8 NMF Analysis
 
@@ -1054,15 +1047,15 @@ plot_metaNMF(
 
 <img src="images\protein\nmf\prn_nmf_r6_consensus.png" title="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." alt="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images\protein\nmf\prn_nmf_r6_coef.png" title="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." alt="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" style="display: block; margin: auto auto auto 0;" />
 
-### 2.9 STRINGdb Analysis
+### 2.9 STRING Analysis
 
 The following performs the [`STRING`](http://www.string-db.org) analysis
 of protein-protein interactions. More details can be found from
-[`STRINGdb`](https://www.bioconductor.org/packages/release/bioc/vignettes/STRINGdb/inst/doc/STRINGdb.pdf)
-and `?getStringDB`.
+`?getStringDB`.
 
 ``` r
 getStringDB(
+  db_path = "~\\proteoQ\\dbs\\string",
   score_cutoff = .9,
   nseq_cutoff = 2,
   adjP = FALSE
@@ -1073,6 +1066,17 @@ The results of protein-protein interaction is summarised in
 `Protein_STRING_ppi.tsv` and the expression data in
 `Protein_STRING_expr.tsv`. The files are formatted for direct
 applications with [`Cytoscape`](https://cytoscape.org).
+
+When calling `getStringDB`, the corresponding databases will be
+downloaded automatically if not yet present locally. One can also choose
+to download separately the databases for a given `species`:
+
+``` r
+dl_stringdbs(
+  species = dog,
+  db_path = "~\\proteoQ\\dbs\\string"
+)
+```
 
 ## Part 3 - Labs
 
