@@ -4,9 +4,12 @@
 \alias{getStringDB}
 \title{STRING outputs}
 \usage{
-getStringDB(score_cutoff = 0.7, nseq_cutoff = 2, adjP = FALSE)
+getStringDB(db_path = "~\\\\proteoQ\\\\dbs\\\\string",
+  score_cutoff = 0.7, nseq_cutoff = 2, adjP = FALSE)
 }
 \arguments{
+\item{db_path}{Character string; the local path for database(s).}
+
 \item{score_cutoff}{Numeric; the threshold of the \code{combined_score} of
 protein-protein interaction.}
 
@@ -17,18 +20,21 @@ analysis.}
 \item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals.}
 }
 \description{
-\code{getStringDB} reports the \code{\href{https://string-db.org/}{STRING}}
+\code{getStringDB} produces the \code{\href{https://string-db.org/}{STRING}}
 results of protein-protein interaction and protein expressions. The
 interaction file, \code{Protein_STRING_ppi.tsv}, and the expression file,
-\code{Protein_STRING_expr.tsv}, can be used by
+\code{Protein_STRING_expr.tsv}, may be used by
 \code{\href{https://cytoscape.org/}{Cytoscape}} for further processing and
 analysis.
 }
 \examples{
+\dontrun{
 getStringDB(
+  db_path = "~\\\\proteoQ\\\\dbs\\\\string",
   score_cutoff = .9,
   nseq_cutoff = 2,
   adjP = FALSE
 )
+}
 
 }

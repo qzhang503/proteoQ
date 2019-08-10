@@ -53,5 +53,5 @@ Imports:
     RColorBrewer,
     RCurl,
     XML,
-    STRINGdb
+    downloader
 RoxygenNote: 6.1.1
