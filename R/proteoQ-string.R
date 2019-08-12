@@ -170,8 +170,7 @@ getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string",
   stopifnot(rlang::is_double(score_cutoff))
   stopifnot(rlang::is_double(nseq_cutoff))
   
-  # id <- match_identifier("gene")
-  id <- "gene"
+  id <- match_identifier("gene")
 
   if (score_cutoff <= 1) score_cutoff <- score_cutoff * 1000
   
@@ -204,44 +203,48 @@ getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string",
   species <- find_species()
   abbr_species <- sp_lookup(species) 
   taxid <- taxid_lookup(species)
-  
-  dl_stringdbs(!!sym(species))
+  dl_stringdbs(!!species)
   
   db_path2 <- file.path(db_path, abbr_species)
-
-  filelist_info <- list.files(
-    path = db_path2, 
-    pattern = paste0(taxid, ".protein.info", ".*.txt$")
-  )
+  filelist_info <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.info", ".*.txt$"))
+  filelist_link <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.links", ".*.txt$"))
+  filelist_alias <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.aliases", ".*.txt$"))
   
-  prn_info <- read.csv(file.path(db_path2, filelist_info), sep = "\t", 
-                       check.names = FALSE, header = TRUE, comment.char = "#") %>% 
+  prn_info <- read.csv(file.path(db_path2, filelist_info), sep = "\t", check.names = FALSE, 
+                       header = TRUE, comment.char = "#") %>% 
     dplyr::select(protein_external_id, preferred_name) %>% 
     dplyr::rename(!!id := preferred_name)
-  
-  filelist_link <- list.files(
-    path = db_path2, 
-    pattern = paste0(taxid, ".protein.links.*", ".*.txt$")
-  )
-  
+
   prn_links <- read.csv(file.path(db_path2, filelist_link), sep = "\t", 
                         check.names = FALSE, header = TRUE, comment.char = "#")
+  
+  prn_alias <- read.csv(file.path(db_path2, filelist_alias), sep = "\t", 
+                        check.names = FALSE, header = TRUE, comment.char = "#")
 
-  string_map <- df %>%
-    dplyr::select(id) %>% 
-    dplyr::left_join(prn_info)
+  prn_alias_sub <- prn_alias %>% 
+    dplyr::filter(.$alias %in% df[[id]]) %>% 
+    dplyr::filter(!duplicated(alias)) %>% 
+    dplyr::select(-source) %>% 
+    dplyr::rename(!!id := alias) %>% 
+    dplyr::rename(protein_external_id = string_protein_id)
   
+  if (id == "gene") {
+    string_map <- df %>%
+      dplyr::select(id) %>% 
+      dplyr::left_join(prn_info)
+  } else {
+    string_map <- df %>%
+      dplyr::select(id) %>% 
+      dplyr::left_join(prn_alias_sub)    
+  }
+
   prn_links_sub <- prn_links %>% 
-    dplyr::filter(protein1 %in% string_map$protein_external_id)
-  
-  prn_links_sub <- prn_links_sub %>% 
+    dplyr::filter(protein1 %in% string_map$protein_external_id) %>% 
     dplyr::left_join(string_map, by = c("protein1" = "protein_external_id")) %>% 
-    dplyr::rename(node1 = gene)
-  
-  prn_links_sub <- prn_links_sub %>% 
+    dplyr::rename(node1 = gene) %>% 
     dplyr::left_join(string_map, by = c("protein2" = "protein_external_id")) %>% 
-    dplyr::rename(node2 = gene)
-  
+    dplyr::rename(node2 = gene)    
+
   first_four <- c("node1", "node2", "protein1", "protein2")
   ppi <- dplyr::bind_cols(
     prn_links_sub[, first_four], 
