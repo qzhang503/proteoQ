@@ -1121,10 +1121,17 @@ to_linfc <- function(df) {
 #'
 #' @import dplyr purrr
 #' @importFrom magrittr %>%
+#' @importFrom magrittr %T>%
 #' @importFrom tools md5sum
+#' @export
 extract_raws <- function(raw_dir) {
+  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+  if (dat_dir == 1) 
+    stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+
   fns <- names(tools::md5sum(dir(raw_dir, pattern = "\\.raw$", full.names = FALSE)))
-  data.frame(Fraction = seq_along(fns), RAW_File = fns)
+  data.frame(Fraction = seq_along(fns), RAW_File = fns) %T>% 
+    write.table(file.path(dat_dir, "raw_list.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 }
 
 
