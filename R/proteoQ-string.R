@@ -135,6 +135,88 @@ dl_stringdbs <- function(species = NULL, db_path = "~\\proteoQ\\dbs\\string", ov
 }
 
 
+
+#'Annotates protein STRING ids by species
+#'
+#'@inheritParams getStringDB
+#'@import dplyr purrr
+annot_stringdb <- function(species, df, db_path, id, score_cutoff) {
+  abbr_species <- sp_lookup(species) 
+  taxid <- taxid_lookup(species)
+  dl_stringdbs(!!species)
+  
+  db_path2 <- file.path(db_path, abbr_species)
+  filelist_info <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.info", ".*.txt$"))
+  filelist_link <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.links", ".*.txt$"))
+  filelist_alias <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.aliases", ".*.txt$"))
+  
+  prn_info <- read.csv(file.path(db_path2, filelist_info), sep = "\t", check.names = FALSE, 
+                       header = TRUE, comment.char = "#") %>% 
+    dplyr::select(protein_external_id, preferred_name) %>% 
+    dplyr::rename(!!id := preferred_name)
+  
+  prn_links <- read.csv(file.path(db_path2, filelist_link), sep = "\t", 
+                        check.names = FALSE, header = TRUE, comment.char = "#")
+  
+  prn_alias <- read.csv(file.path(db_path2, filelist_alias), sep = "\t", 
+                        check.names = FALSE, header = TRUE, comment.char = "#")
+  
+  prn_alias_sub <- prn_alias %>% 
+    dplyr::filter(.$alias %in% df[[id]]) %>% 
+    dplyr::filter(!duplicated(alias)) %>% 
+    dplyr::select(-source) %>% 
+    dplyr::rename(!!id := alias) %>% 
+    dplyr::rename(protein_external_id = string_protein_id)
+  
+  if (id == "gene") {
+    string_map <- df %>%
+      dplyr::select(id) %>% 
+      dplyr::left_join(prn_info) %>% 
+      dplyr::filter(!is.na(protein_external_id))
+  } else {
+    string_map <- df %>%
+      dplyr::select(id) %>% 
+      dplyr::left_join(prn_alias_sub) %>% 
+      dplyr::filter(!is.na(protein_external_id))
+  }
+  
+  prn_links_sub <- prn_links %>% 
+    dplyr::filter(protein1 %in% string_map$protein_external_id) %>% 
+    dplyr::left_join(string_map, by = c("protein1" = "protein_external_id")) %>% 
+    dplyr::rename(node1 = gene) %>% 
+    dplyr::left_join(string_map, by = c("protein2" = "protein_external_id")) %>% 
+    dplyr::rename(node2 = gene)    
+  
+  first_four <- c("node1", "node2", "protein1", "protein2")
+  ppi <- dplyr::bind_cols(
+    prn_links_sub[, first_four], 
+    prn_links_sub[, !names(prn_links_sub) %in% first_four]
+  ) %>% 
+    dplyr::filter(!is.na(node1), !is.na(node2)) %>% 
+    `names_pos<-`(1:4, c("#node1", "node2", "node1_external_id", "node2_external_id")) %>% 
+    dplyr::filter(combined_score > score_cutoff)
+  
+  write.table(ppi, file.path(dat_dir, "Protein\\String", paste0("Protein_STRING_ppi_", species, "_.tsv")), 
+              quote = FALSE, sep = "\t", row.names = FALSE)
+  
+  # expression data file
+  gns <- c(ppi[["#node1"]], ppi[["node2"]]) %>% unique()
+  
+  df <- dplyr::bind_cols(
+    df %>% dplyr::select(id), 
+    df %>% dplyr::select(grep("pVal|log2Ratio", names(.)))
+  ) %>% 
+    dplyr::filter(!!rlang::sym(id) %in% gns)
+
+  df[is.na(df)] <- "" # Cytoscape compatibility
+  
+  write.table(df, file.path(dat_dir, "Protein\\String", paste0("Protein_STRING_expr_", species, "_.tsv")), 
+              quote = FALSE, sep = "\t", row.names = FALSE)
+  
+}
+
+
+
 #'STRING outputs
 #'
 #'\code{getStringDB} produces the \code{\href{https://string-db.org/}{STRING}}
@@ -201,71 +283,8 @@ getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string",
     dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
 
   species <- find_species()
-  abbr_species <- sp_lookup(species) 
-  taxid <- taxid_lookup(species)
-  dl_stringdbs(!!species)
+  if (species == "pdx") species <- c("human", "mouse")
   
-  db_path2 <- file.path(db_path, abbr_species)
-  filelist_info <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.info", ".*.txt$"))
-  filelist_link <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.links", ".*.txt$"))
-  filelist_alias <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.aliases", ".*.txt$"))
-  
-  prn_info <- read.csv(file.path(db_path2, filelist_info), sep = "\t", check.names = FALSE, 
-                       header = TRUE, comment.char = "#") %>% 
-    dplyr::select(protein_external_id, preferred_name) %>% 
-    dplyr::rename(!!id := preferred_name)
-
-  prn_links <- read.csv(file.path(db_path2, filelist_link), sep = "\t", 
-                        check.names = FALSE, header = TRUE, comment.char = "#")
-  
-  prn_alias <- read.csv(file.path(db_path2, filelist_alias), sep = "\t", 
-                        check.names = FALSE, header = TRUE, comment.char = "#")
-
-  prn_alias_sub <- prn_alias %>% 
-    dplyr::filter(.$alias %in% df[[id]]) %>% 
-    dplyr::filter(!duplicated(alias)) %>% 
-    dplyr::select(-source) %>% 
-    dplyr::rename(!!id := alias) %>% 
-    dplyr::rename(protein_external_id = string_protein_id)
-  
-  if (id == "gene") {
-    string_map <- df %>%
-      dplyr::select(id) %>% 
-      dplyr::left_join(prn_info)
-  } else {
-    string_map <- df %>%
-      dplyr::select(id) %>% 
-      dplyr::left_join(prn_alias_sub)    
-  }
-
-  prn_links_sub <- prn_links %>% 
-    dplyr::filter(protein1 %in% string_map$protein_external_id) %>% 
-    dplyr::left_join(string_map, by = c("protein1" = "protein_external_id")) %>% 
-    dplyr::rename(node1 = gene) %>% 
-    dplyr::left_join(string_map, by = c("protein2" = "protein_external_id")) %>% 
-    dplyr::rename(node2 = gene)    
-
-  first_four <- c("node1", "node2", "protein1", "protein2")
-  ppi <- dplyr::bind_cols(
-    prn_links_sub[, first_four], 
-    prn_links_sub[, !names(prn_links_sub) %in% first_four]
-  ) %>% 
-    dplyr::filter(!is.na(node1), !is.na(node2)) %>% 
-    `names_pos<-`(1:4, c("#node1", "node2", "node1_external_id", "node2_external_id")) %>% 
-    dplyr::filter(combined_score > score_cutoff)
-  
-  write.table(ppi, file.path(dat_dir, "Protein\\String\\Protein_STRING_ppi.tsv"), 
-              quote = FALSE, sep = "\t", row.names = FALSE)
-
-  # expression data file
-  df <- dplyr::bind_cols(
-    df %>% dplyr::select(id), 
-    df %>% dplyr::select(grep("pVal|log2Ratio", names(.)))
-  )
-  
-  df[is.na(df)] <- "" # Cytoscape compatibility
-  write.table(df, file.path(dat_dir, "Protein\\String", "Protein_STRING_expr.tsv"), 
-              quote = FALSE, sep = "\t", row.names = FALSE)
-
+  purrr::walk(species, annot_stringdb, df, db_path, id, score_cutoff)
 }
 
