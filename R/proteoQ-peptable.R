@@ -518,6 +518,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	}
 
 	dir.create(file.path(dat_dir, "Peptide\\log"), recursive = TRUE, showWarnings = FALSE)
+
 	quietly_out <- purrr::quietly(normMulGau)(
 	  df = df,
 	  method_align = method_align,
@@ -550,25 +551,27 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		dplyr::mutate_if(is.logical, as.numeric) %>%
 		round(., digits = 0)
 	
-	df <- df %>% 
-	  dplyr::select(-one_of(
-	    "m/z", "Scan number", "Scan index", "Length", "Deamidation (N) Probabilities", 
-	    "Oxidation (M) Probabilities", "Deamidation (N) Score Diffs", "Oxidation (M) Score Diffs", 
-	    "Acetyl (Protein N-term)", "Deamidation (N)", "Glu->pyro-Glu", "Oxidation (M)", 
-	    "Charge", "Fragmentation", "Mass analyzer", "Type", "Scan event number", 
-	    "Isotope index", "Mass", "Mass error [ppm]", "Mass error [Da]", 
-	    "Simple mass error [ppm]", "Retention time", "Delta score", "Score diff", 
-	    "Localization prob", "Combinatorics", "PIF", 
-	    "Fraction of total spectrum", "Base peak fraction", "Precursor Full ScanNumber", 
-	    "Precursor Intensity", "Precursor Apex Fraction", "Precursor Apex Offset", 
-	    "Precursor Apex Offset Time", "Matches", "Intensities", "Mass Deviations [Da]", 
-	    "Mass Deviations [ppm]", "Masses", "Number of Matches", "Intensity coverage", "Peak coverage", 
-	    "Neutral loss level", "ETD identification type", "Reverse", "All scores", "All sequences", 
-	    "All modified sequences", "Reporter PIF", "Reporter fraction", "ID", "Protein group IDs", 
-	    "Peptide ID", "Mod. peptide ID", "Evidence ID", "Deamidation (N) site IDs", 
-	    "Oxidation (M) site IDs"
-	  )) %>% 
-	  dplyr::select(-grep("^Reporter mass deviation", names(.)))
+	suppressWarnings(
+	  df <- df %>% 
+	    dplyr::select(-one_of(
+	      "m/z", "Scan number", "Scan index", "Length", "Deamidation (N) Probabilities", 
+	      "Oxidation (M) Probabilities", "Deamidation (N) Score Diffs", "Oxidation (M) Score Diffs", 
+	      "Acetyl (Protein N-term)", "Deamidation (N)", "Glu->pyro-Glu", "Oxidation (M)", 
+	      "Charge", "Fragmentation", "Mass analyzer", "Type", "Scan event number", 
+	      "Isotope index", "Mass", "Mass error [ppm]", "Mass error [Da]", 
+	      "Simple mass error [ppm]", "Retention time", "Delta score", "Score diff", 
+	      "Localization prob", "Combinatorics", "PIF", 
+	      "Fraction of total spectrum", "Base peak fraction", "Precursor Full ScanNumber", 
+	      "Precursor Intensity", "Precursor Apex Fraction", "Precursor Apex Offset", 
+	      "Precursor Apex Offset Time", "Matches", "Intensities", "Mass Deviations [Da]", 
+	      "Mass Deviations [ppm]", "Masses", "Number of Matches", "Intensity coverage", "Peak coverage", 
+	      "Neutral loss level", "ETD identification type", "Reverse", "All scores", "All sequences", 
+	      "All modified sequences", "Reporter PIF", "Reporter fraction", "ID", "Protein group IDs", 
+	      "Peptide ID", "Mod. peptide ID", "Evidence ID", "Deamidation (N) site IDs", 
+	      "Oxidation (M) site IDs"
+	    )) %>% 
+	    dplyr::select(-grep("^Reporter mass deviation", names(.)))
+	)
 
 	write.table(df, file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t",
 	            col.names = TRUE, row.names = FALSE)

@@ -88,7 +88,7 @@ filterData <- function (df, var_cutoff = 1E-3) {
 #' Prepare formulas
 #'
 #' @importFrom magrittr %>%
-prepFml <- function(formula, label_scheme_sub) {
+prepFml <- function(formula, label_scheme_sub, ...) {
 
 	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
 	# formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
@@ -101,6 +101,8 @@ prepFml <- function(formula, label_scheme_sub) {
 	# formula = log2Ratio ~ Term
 	# formula = ~ Term[~V] # no interaction terms
 	# formula = ~ Term
+  
+  dots <- rlang::enexprs(...)
 
 	fml <- as.character(formula) %>% gsub("\\s+", "", .) %>% .[. != "~"]
 	len <- length(fml)
@@ -138,12 +140,43 @@ prepFml <- function(formula, label_scheme_sub) {
 
 		elements <- fml[len] %>%
 			gsub(".*\\[(.*)\\].*", "\\1", .) %>%
-			gsub("/[0-9]", "", .) %>%
+			gsub("/[0-9]", "", .) %>% # "(A+B)/2-C"
 			gsub("\\\"", "", .) %>%
 			gsub("[\\(\\)]", "", .) %>%
 			str_split("[,\\+\\-]\\s*", simplify = TRUE) %>%
 			as.character() %>%
 			unique()
+		
+		if (!is.null(dots$secret)) {
+		  new_contrs <- fml[len] %>%
+		    gsub("^.*\\[(.*)\\]$", "\\1", .) %>%
+		    gsub("\\\"", "", .) %>% 
+		    str_split(",\\s*", simplify = TRUE) %>% 
+		    purrr::map_chr(~ {
+		      .x %>% 
+		        gsub("\\(\\+{1}", "\\(.PLUS.\\1", .) %>% 
+		        gsub("\\(\\-{1}", "\\(.MINUS.\\1", .) %>% 
+		        gsub("\\(([^\\(].*?)\\)", "\\1", .)
+		    })
+
+		  new_elements <- new_contrs %>%
+		    gsub("/[0-9]", "", .) %>% # (A+B+C)/3-D
+		    gsub("[\\(\\)]", "", .) %>%
+		    str_split("[\\+\\-]\\s*", simplify = TRUE) %>%
+		    as.character() %>%
+		    unique() %>% 
+		    .[. != ""]
+		  
+		  elements <- new_elements %>% 
+		    gsub(".PLUS.", "+", ., fixed = TRUE) %>% 
+		    gsub(".MINUS.", "-", ., fixed = TRUE)
+		  
+		  cat("\ncontrs: ", contrs %>% as.character, "\n")
+		  cat("new_contrs: ", new_contrs %>% as.character, "\n")
+		  cat("elements: ", elements %>% as.character, "\n")
+		  cat("new_elements: ", new_elements %>% as.character, "\n\n")
+		}
+		
 	}
 
 	label_scheme_sub_sub <- label_scheme_sub %>%
@@ -153,8 +186,23 @@ prepFml <- function(formula, label_scheme_sub) {
 	design <- model.matrix(~0+label_scheme_sub_sub[[key_col]]) %>%
 		`colnames<-`(levels(label_scheme_sub_sub[[key_col]]))
 
-	contr_mat <- makeContrasts(contrasts = contrs, levels = data.frame(design))
-
+	if (!is.null(dots$secret)) {
+	  new_design_nms <- colnames(design) %>% 
+	    gsub("+", ".PLUS.", ., fixed = TRUE) %>% 
+	    gsub("-", ".MINUS.", ., fixed = TRUE)
+	  
+	  new_design <- design %>% 
+	    `colnames<-`(new_design_nms)
+	  
+	  contr_mat <- makeContrasts(contrasts = new_contrs, levels = data.frame(new_design)) %>% 
+	    `colnames<-`(contrs) %>% 
+	    `rownames<-`(colnames(design))
+	  
+	  rm(new_design_nms, new_design)
+	} else {
+	  contr_mat <- makeContrasts(contrasts = contrs, levels = data.frame(design))
+	}
+	
 	random_vars <- fml[len] %>%
 		gsub("\\[.*\\]+?", "", .) %>%
 		paste("~", .) %>%
@@ -164,6 +212,8 @@ prepFml <- function(formula, label_scheme_sub) {
 		.[grepl("\\|", .)] %>%
 		gsub("1\\s*\\|\\s*(.*)", "\\1", .)
 
+	cat("random_vars: ", random_vars %>% as.character, "\n\n")
+	
 	return(list(design = design, contr_mat = contr_mat, key_col = key_col, random_vars = random_vars,
 							label_scheme_sub_sub = label_scheme_sub_sub))
 }
@@ -230,7 +280,7 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 #'
 #' @importFrom MASS ginv
 model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases, method, var_cutoff, 
-                              pval_cutoff, logFC_cutoff) {
+                              pval_cutoff, logFC_cutoff, ...) {
 
 	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
 	# formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
@@ -246,7 +296,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 
 	id <- rlang::as_string(rlang::enexpr(id))
 
-	fml_ops <- prepFml(formula, label_scheme_sub)
+	fml_ops <- prepFml(formula, label_scheme_sub, ...)
 		contr_mat <- fml_ops$contr_mat
 		design <- fml_ops$design
 		key_col <- fml_ops$key_col
@@ -280,6 +330,9 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 			eBayes()
 	}
 
+	print(design)
+	print(contr_mat)
+	
 	# limma
 	log2rs <- fit$coefficients %>%
 		data.frame(check.names = FALSE) %>%
@@ -364,7 +417,10 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	id <- rlang::as_string(rlang::enexpr(id))
 	method <- rlang::as_string(rlang::enexpr(method))
 
-	dots = rlang::enexprs(...)
+	dots <- rlang::enexprs(...)
+	
+	non_fml_dots <- dots[!map_lgl(dots, is_formula)]
+	dots <- dots[map_lgl(dots, is_formula)]
 
 	if(id %in% c("prot_acc", "gene")) {
 		prnSig_formulas <- dots
@@ -377,7 +433,7 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	}
 
 	df_op <- purrr::map(dots, ~ model_onechannel(df, id, ., label_scheme_sub, complete_cases,
-							 method, var_cutoff, pval_cutoff, logFC_cutoff)) %>%
+							 method, var_cutoff, pval_cutoff, logFC_cutoff, !!!non_fml_dots)) %>%
 					do.call("cbind", .)
 }
 
@@ -435,6 +491,8 @@ prnSig <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
   
+  # proteoSigtest(id = gene, ...)
+
   quietly_log <- purrr::quietly(proteoSigtest)(id = gene, ...)
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Protein\\Model\\log","prnSig_log.csv"), append = TRUE)

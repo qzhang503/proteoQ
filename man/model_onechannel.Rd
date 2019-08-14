@@ -10,7 +10,7 @@ pval_cutoff for adjP
 logFC_cutoff}
 \usage{
 model_onechannel(df, id, formula, label_scheme_sub, complete_cases, method,
-  var_cutoff, pval_cutoff, logFC_cutoff)
+  var_cutoff, pval_cutoff, logFC_cutoff, ...)
 }
 \description{
 Factorial model formula for interaction terms
