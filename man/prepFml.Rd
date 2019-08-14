@@ -4,7 +4,7 @@
 \alias{prepFml}
 \title{Prepare formulas}
 \usage{
-prepFml(formula, label_scheme_sub)
+prepFml(formula, label_scheme_sub, ...)
 }
 \description{
 Prepare formulas

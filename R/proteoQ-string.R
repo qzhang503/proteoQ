@@ -80,8 +80,6 @@ dl_stringdbs <- function(species = NULL, db_path = "~\\proteoQ\\dbs\\string", ov
                  stop("Unknown `species`.", Call. = FALSE)
   )
   
-
-  # species <- rlang::as_string(rlang::enexpr(species))
   abbr_species <- sp_lookup(species) 
   taxid <- taxid_lookup(species)
   
