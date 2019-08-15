@@ -260,7 +260,7 @@ We next summarise PSM to peptides:
 # peptide reports
 normPep(
   id = pep_seq,
-    fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
   method_psm_pep = median, 
   method_align = MGKernel, 
@@ -513,12 +513,12 @@ processing, the names need to be formatted in that they all start with
 The file sizes of the `msms.txt` are relatively large for data used in
 the demonstration. For simplicity, we will only use the subset that
 belong to batch one in the CPTAC example. Even so, direct installation
-by `devtools::install_github` is not yet feasible, or not free, at this
-point for large files hosted through [LFS](https://git-lfs.github.com/).
-One resort is to install [Github Desktop](https://desktop.github.com/),
-find <https://github.com/qiangzhang503/proteoQDB.git>, fetch the files
-and make a local installation through something like
-`devtools::install(pkg = "~\\GitHub\\proteoQDB")`.
+by `devtools::install_github` is not yet feasible at this point for
+large files hosted through [LFS](https://git-lfs.github.com/). One
+resort is to install [Github Desktop](https://desktop.github.com/), find
+<https://github.com/qiangzhang503/proteoQDB.git>, fetch the files and
+make a local installation through something like `devtools::install(pkg
+= "~\\GitHub\\proteoQDB")`.
 
 Alternatively, we can first clone
 [`proteoQDB`](https://github.com/qiangzhang503/proteoQDB.git) and unzip
@@ -924,6 +924,19 @@ commas.
 <img src="images\protein\volcplot\batches.png" title="**Figure 6A.** Volcano plots of protein log2FC between two batches." alt="**Figure 6A.** Volcano plots of protein log2FC between two batches." width="80%" style="display: block; margin: auto auto auto 0;" />
 
 <img src="images\protein\volcplot\locations.png" title="**Figure 6B.** Volcano plots of protein log2FC between locations." alt="**Figure 6B.** Volcano plots of protein log2FC between locations." width="80%" style="display: block; margin: auto auto auto 0;" />
+
+In general, the special characters of `+` and `-` are not supported in
+linear modeling. However, it may be sometime convenient to use `A+B` to
+denote a combined treatment of both `A` and `B` in biological studies.
+In the case, we will put the term(s) containing `+` or `-` into pointy
+bracket(s). The syntax in the following example will compare the effects
+of `A`, `B`, `A+B` and the average of `A` and `B` to control `C`.
+
+``` r
+prnSig(
+  fml = ~ Term["A - C", "B - C", "<A+B> - C", "(A + B)/2 - C"], # location effects
+)
+```
 
 ### 2.6 Gene sets under volcano plots
 
@@ -1375,8 +1388,11 @@ Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
 1.  The default file names begin with letter `F`, followed by six digits
     and ends with `.csv` in name extension.
 
-2.  To extract the names of RAW files under a `raw_dir` folder:
-    `extract_raws(raw_dir)`
+2.  To extract the names of RAW MS files under a `raw_dir` folder:
+    `extract_raws(raw_dir)`. Very occasionally, there may be RAW files
+    without PSM contributions. In this case, the file names will be
+    shown as missing by the program and need to be removed from
+    `expt_smry.xlsx` or `frac_smry.xlsx`.
 
 3.  The sample removal and PSM re-processing can be achieved by deleting
     the corresponding entries under the column `Sample_ID` in
