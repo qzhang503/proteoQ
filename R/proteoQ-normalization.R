@@ -67,7 +67,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
     nm_a <- nm_a[ind]
   }
   
-  need_freshstart <- function(filepath, filename = "MGKernel_params_N.txt", n_comp) {
+  ok_file_ncomp <- function(filepath, filename, n_comp) {
     if (file.exists(file.path(filepath, filename))) {
       params <- read.table(file.path(filepath, filename), 
                            check.names = FALSE, header = TRUE, comment.char = "#")
@@ -77,7 +77,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
     }
   }
   
-	
+
   dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
 
 	dots <- rlang::enexprs(...)
@@ -89,6 +89,18 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 			            sep = "\t", col.names = TRUE, row.names = FALSE)
 	}
 
+	if ((!ok_file_ncomp(filepath, "MGKernel_params_N.txt", n_comp)) & col_refit != rlang::expr(sample_ID)) {
+	  warning("Missing `MGKernel_params_N.txt` or different `n_comp` value. 
+	          Run an all-sample normalization instead.")
+	  col_refit <- rlang::expr(Sample_ID)	  	  
+	}
+
+	if ((!ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)) & col_refit != rlang::expr(sample_ID)) {
+	  warning("Missing `MGKernel_params_Z.txt` or different `n_comp` value. 
+	          Run an all-sample normalization instead.")
+	  col_refit <- rlang::expr(Sample_ID)	  	  
+	}
+	
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	  
 	label_scheme_fit <- label_scheme %>% 
@@ -104,7 +116,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	
 	if (method_align == "MGKernel") {
 		print(paste("Number of Gaussian components =", n_comp))
-	  
+
 	  # N_log2_R... from the inputs are median centered in the first pass
 	  params_sub <- df[, nm_log2r_n, drop = FALSE] %>% 
 	    `names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
@@ -112,7 +124,9 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
 	    dplyr::arrange(Sample_ID, Component)
 
-    if (!need_freshstart(filepath, "MGKernel_params_N.txt", n_comp)) {
+    if (!ok_file_ncomp(filepath, "MGKernel_params_N.txt", n_comp)) {
+      # `col_refit = Sample_ID` if not `ok`
+      # so `params_sub` will be for all samples
       params <- params_sub
     } else {
       params <- read.table(file.path(filepath, "MGKernel_params_N.txt"), 
@@ -191,7 +205,9 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		df[, nm_int_n] <- sweep(df[, nm_int_n, drop = FALSE], 2, 2^cf_x_fit$x, "/")
 
 		# separate fits of Z_log2_r for curve parameters only...
-		if (!need_freshstart(filepath, "MGKernel_params_Z.txt", n_comp)) {
+		if (!ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)) {
+		  # `col_refit = Sample_ID` if not `ok`
+		  # so `nm_log2r_z` will include all samples
 		  params_z <- df[, nm_log2r_z] %>%
 		    `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
 		    fitKernelDensity(n_comp = n_comp, seed, !!!dots) %>% 
