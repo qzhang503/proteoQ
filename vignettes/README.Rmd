@@ -136,7 +136,7 @@ copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 ```
 
 #### 1.1.3 Prepare metadata
-The workflow involves an `Excel` template containing the metadata of multiplex experiment numbers, including TMT channels, LC/MS injection indices, sample IDs, reference channels, `RAW` MS data file names and addditional fields from the users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. ^[To extract the names of RAW files under a `raw_dir` folder: `extract_raws(raw_dir)`] Unless otherwise mentioned, we will assume these default file names throughtout the document.  
+The workflow involves an `Excel` template containing the metadata of multiplex experiment numbers, including TMT channels, LC/MS injection indices, sample IDs, reference channels, `RAW` MS data file names and addditional fields from the users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. ^[To extract the names of RAW MS files under a `raw_dir` folder: `extract_raws(raw_dir)`. Very occasionally, there may be RAW files without PSM contributions. In this case, the file names will be shown as missing by the program and need to be removed from `expt_smry.xlsx` or `frac_smry.xlsx`.] Unless otherwise mentioned, we will assume these default file names throughtout the document.  
 
 Columns in the `expt_smry.xlsx` are approximately divided into the following three tiers: (1) `essential`, (2) `optional default` and (3) `optional open`. We supply the required information of the TMT experiments under the essential columns. The optional default columns serve as the fields for convenient lookups in sample selection, grouping, ordering, aesthetics etc. For instance, the program will by default look for values under the `Color` column if no instruction was given in the color coding of a PCA plot. The optional open fields on the other hand allow us to define our own analysis and aesthetics: we may openly define multiple columns of contrasts at different levels of granularity for uses in linear modeling. Description of the column keys can be found from the help document by entering `?proteoQ::load_expts` from a `R` console.  
 
@@ -188,7 +188,7 @@ We next summarise PSM to peptides:
 # peptide reports
 normPep(
   id = pep_seq,
-	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
   method_psm_pep = median, 
   method_align = MGKernel, 
@@ -362,7 +362,7 @@ In this section, I will illustrate the processing of MaxQuant results using the 
 #### 1.5.1 MaxQuant PSM tables
 The name of a PSM file containg reporter-ion intensities is `msms.txt` defaulted by MaxQuant. In the event of multiple `msms.txt` files for processing, the names need to be formatted in that they all start with `msms` and end with the `.txt` extension. 
 
-The file sizes of the `msms.txt` are relatively large for data used in the demonstration. For simplicity, we will only use the subset that belong to batch one in the CPTAC example. Even so, direct installation by `devtools::install_github` is not yet feasible, or not free, at this point for large files hosted through [LFS](https://git-lfs.github.com/). One resort is to install [Github Desktop](https://desktop.github.com/), find https://github.com/qiangzhang503/proteoQDB.git, fetch the files and make a local installation through something like `devtools::install(pkg  = "~\\GitHub\\proteoQDB")`. 
+The file sizes of the `msms.txt` are relatively large for data used in the demonstration. For simplicity, we will only use the subset that belong to batch one in the CPTAC example. Even so, direct installation by `devtools::install_github` is not yet feasible at this point for large files hosted through [LFS](https://git-lfs.github.com/). One resort is to install [Github Desktop](https://desktop.github.com/), find https://github.com/qiangzhang503/proteoQDB.git, fetch the files and make a local installation through something like `devtools::install(pkg  = "~\\GitHub\\proteoQDB")`. 
 
 Alternatively, we can first clone [`proteoQDB`](https://github.com/qiangzhang503/proteoQDB.git) and unzip the files to a local directory, let's say "~\\GitHub\\proteoQDB". We next manually download the three `.rda` files under the `data` folder in https://github.com/qiangzhang503/proteoQDB. We then replace the `.rda` files under "~\\GitHub\\proteoQDB\\data" with the newly downloaded. Finally, we will do a local installation just like the above.  
 
@@ -685,6 +685,15 @@ knitr::include_graphics(c(img_volcplot_batches))
 img_volcplot_location <- "images\\protein\\volcplot\\locations.png"
 img_venn_location <- "images\\protein\\volcplot\\venn_locations.png"
 knitr::include_graphics(c(img_volcplot_location))
+```
+
+In general, the special characters of `+` and `-` are not supported in linear modeling. However, it may be sometime convenient to use `A+B` to denote a combined treatment of both `A` and `B` in biological studies. In the case, we will put the term(s) containing `+` or `-` into pointy bracket(s). The syntax in the following example will compare the effects of `A`, `B`, `A+B` and the average of `A` and `B` to control `C`.  
+
+```{r special characters in sigtest, eval = FALSE}
+prnSig(
+  fml = ~ Term["A - C", "B - C", "<A+B> - C", "(A + B)/2 - C"], # location effects
+)
+
 ```
 
 ### 2.6 Gene sets under volcano plots

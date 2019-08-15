@@ -132,51 +132,89 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 		contrs <- paste(new_levels[-1], new_levels[1], sep = "-")
 		elements <- new_levels
 	} else {
-		contrs <- fml[len] %>%
-			gsub(".*\\[(.*)\\].*", "\\1", .) %>%
-			gsub("\\\"", "", .) %>%
-			str_split(",\\s*", simplify = TRUE) %>%
-			as.character()
-
-		elements <- fml[len] %>%
-			gsub(".*\\[(.*)\\].*", "\\1", .) %>%
-			gsub("/[0-9]", "", .) %>% # "(A+B)/2-C"
-			gsub("\\\"", "", .) %>%
-			gsub("[\\(\\)]", "", .) %>%
-			str_split("[,\\+\\-]\\s*", simplify = TRUE) %>%
-			as.character() %>%
-			unique()
-		
-		if (!is.null(dots$secret)) {
-		  new_contrs <- fml[len] %>%
-		    gsub("^.*\\[(.*)\\]$", "\\1", .) %>%
-		    gsub("\\\"", "", .) %>% 
-		    str_split(",\\s*", simplify = TRUE) %>% 
-		    purrr::map_chr(~ {
-		      .x %>% 
-		        gsub("\\(\\+{1}", "\\(.PLUS.\\1", .) %>% 
-		        gsub("\\(\\-{1}", "\\(.MINUS.\\1", .) %>% 
-		        gsub("\\(([^\\(].*?)\\)", "\\1", .)
-		    })
-
-		  new_elements <- new_contrs %>%
-		    gsub("/[0-9]", "", .) %>% # (A+B+C)/3-D
-		    gsub("[\\(\\)]", "", .) %>%
-		    str_split("[\\+\\-]\\s*", simplify = TRUE) %>%
-		    as.character() %>%
-		    unique() %>% 
-		    .[. != ""]
-		  
-		  elements <- new_elements %>% 
-		    gsub(".PLUS.", "+", ., fixed = TRUE) %>% 
-		    gsub(".MINUS.", "-", ., fixed = TRUE)
-		  
-		  cat("\ncontrs: ", contrs %>% as.character, "\n")
-		  cat("new_contrs: ", new_contrs %>% as.character, "\n")
-		  cat("elements: ", elements %>% as.character, "\n")
-		  cat("new_elements: ", new_elements %>% as.character, "\n\n")
+		run_scripts <- FALSE
+		if (run_scripts) {
+  	  contrs <- fml[len] %>%
+  			gsub(".*\\[(.*)\\].*", "\\1", .) %>%
+  			gsub("\\\"", "", .) %>%
+  			str_split(",\\s*", simplify = TRUE) %>%
+  			as.character()
+  
+  		elements <- fml[len] %>%
+  			gsub(".*\\[(.*)\\].*", "\\1", .) %>%
+  			gsub("/[0-9]", "", .) %>% # "(A+B)/2-C"
+  			gsub("\\\"", "", .) %>%
+  			gsub("[\\(\\)]", "", .) %>%
+  			str_split("[,\\+\\-]\\s*", simplify = TRUE) %>%
+  			as.character() %>%
+  			unique()
+  		
+  		if (!is.null(dots$secret)) {
+  		  contrs <- fml[len] %>%
+  		    gsub(".*\\[(.*)\\].*", "\\1", .) %>%
+  		    gsub("\\\"", "", .) %>%
+  		    str_split(",\\s*", simplify = TRUE) %>%
+  		    as.character()
+  		  
+  		  new_contrs <- fml[len] %>%
+  		    gsub("^.*\\[(.*)\\].*", "\\1", .) %>% # may have random terms at the end
+  		    gsub("\\\"", "", .) %>% 
+  		    str_split(",\\s*", simplify = TRUE) %>% 
+  		    gsub("\\s+", "", .) %>% 
+  		    gsub("<([^>]*?)\\+([^>]*?)>", "<\\1.plus.\\2>", .) %>% 
+  		    gsub("<([^>]*?)\\-([^>]*?)>", "<\\1.minus.\\2>", .) %>% 
+  		    gsub("[ <>]+", "", .)
+  		  
+  		  new_elements <- new_contrs %>%
+  		    gsub("/[0-9]", "", .) %>% # (A+B+C)/3-D
+  		    gsub("[\\(\\)]", "", .) %>%
+  		    str_split("[\\+\\-]\\s*", simplify = TRUE) %>%
+  		    as.character() %>%
+  		    unique() %>% 
+  		    .[. != ""]
+  		  
+  		  elements <- new_elements %>% 
+  		    gsub(".plus.", "+", ., fixed = TRUE) %>% 
+  		    gsub(".minus.", "-", ., fixed = TRUE)
+  		  
+  		  cat("\ncontrs: ", contrs %>% as.character, "\n")
+  		  cat("new_contrs: ", new_contrs %>% as.character, "\n")
+  		  cat("elements: ", elements %>% as.character, "\n")
+  		  cat("new_elements: ", new_elements %>% as.character, "\n\n")
+  		}
 		}
-		
+
+	  contrs <- fml[len] %>%
+	    gsub(".*\\[(.*)\\].*", "\\1", .) %>%
+	    gsub("\\\"", "", .) %>%
+	    str_split(",\\s*", simplify = TRUE) %>%
+	    as.character()
+
+	  new_contrs <- fml[len] %>%
+	    gsub("^.*\\[(.*)\\].*", "\\1", .) %>% # may have random terms at the end
+	    gsub("\\\"", "", .) %>% 
+	    str_split(",\\s*", simplify = TRUE) %>% 
+	    gsub("\\s+", "", .) %>% 
+	    gsub("<([^>]*?)\\+([^>]*?)>", "<\\1.plus.\\2>", .) %>% 
+	    gsub("<([^>]*?)\\-([^>]*?)>", "<\\1.minus.\\2>", .) %>% 
+	    gsub("[ <>]+", "", .)
+
+	  new_elements <- new_contrs %>%
+	    gsub("/[0-9]", "", .) %>% # (A+B+C)/3-D
+	    gsub("[\\(\\)]", "", .) %>%
+	    str_split("[\\+\\-]\\s*", simplify = TRUE) %>%
+	    as.character() %>%
+	    unique() %>% 
+	    .[. != ""]
+	  
+	  elements <- new_elements %>% 
+	    gsub(".plus.", "+", ., fixed = TRUE) %>% 
+	    gsub(".minus.", "-", ., fixed = TRUE)
+	  
+	  cat("\ncontrs: ", contrs %>% as.character, "\n")
+	  cat("new_contrs: ", new_contrs %>% as.character, "\n")
+	  cat("elements: ", elements %>% as.character, "\n")
+	  cat("new_elements: ", new_elements %>% as.character, "\n\n")		
 	}
 
 	label_scheme_sub_sub <- label_scheme_sub %>%
@@ -186,22 +224,38 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 	design <- model.matrix(~0+label_scheme_sub_sub[[key_col]]) %>%
 		`colnames<-`(levels(label_scheme_sub_sub[[key_col]]))
 
-	if (!is.null(dots$secret)) {
-	  new_design_nms <- colnames(design) %>% 
-	    gsub("+", ".PLUS.", ., fixed = TRUE) %>% 
-	    gsub("-", ".MINUS.", ., fixed = TRUE)
-	  
-	  new_design <- design %>% 
-	    `colnames<-`(new_design_nms)
-	  
-	  contr_mat <- makeContrasts(contrasts = new_contrs, levels = data.frame(new_design)) %>% 
-	    `colnames<-`(contrs) %>% 
-	    `rownames<-`(colnames(design))
-	  
-	  rm(new_design_nms, new_design)
-	} else {
-	  contr_mat <- makeContrasts(contrasts = contrs, levels = data.frame(design))
+	run_scripts <- FALSE
+	if (run_scripts) {
+	  if (!is.null(dots$secret)) {
+	    new_design_nms <- colnames(design) %>% 
+	      gsub("+", ".plus.", ., fixed = TRUE) %>% 
+	      gsub("-", ".minus.", ., fixed = TRUE)
+	    
+	    new_design <- design %>% 
+	      `colnames<-`(new_design_nms)
+	    
+	    contr_mat <- makeContrasts(contrasts = new_contrs, levels = data.frame(new_design)) %>% 
+	      `colnames<-`(contrs) %>% 
+	      `rownames<-`(colnames(design))
+	    
+	    rm(new_design_nms, new_design)
+	  } else {
+	    contr_mat <- makeContrasts(contrasts = contrs, levels = data.frame(design))
+	  }
 	}
+	
+	new_design_nms <- colnames(design) %>% 
+	  gsub("+", ".plus.", ., fixed = TRUE) %>% 
+	  gsub("-", ".minus.", ., fixed = TRUE)
+	
+	new_design <- design %>% 
+	  `colnames<-`(new_design_nms)
+	
+	contr_mat <- makeContrasts(contrasts = new_contrs, levels = data.frame(new_design)) %>% 
+	  `colnames<-`(contrs) %>% 
+	  `rownames<-`(colnames(design))
+	
+	rm(new_design_nms, new_design)
 	
 	random_vars <- fml[len] %>%
 		gsub("\\[.*\\]+?", "", .) %>%
