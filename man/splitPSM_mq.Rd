@@ -6,7 +6,7 @@
 \usage{
 splitPSM_mq(fasta = NULL, pep_unique_by = "group",
   corrected_int = FALSE, rptr_intco = 1000, rm_craps = FALSE,
-  rm_reverses = TRUE, plot_violins = TRUE)
+  rm_reverses = TRUE, plot_violins = TRUE, ...)
 }
 \arguments{
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with

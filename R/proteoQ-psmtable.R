@@ -213,7 +213,7 @@ extractRAW <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE)
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
 #' @export
-splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
+splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE, ...) {
 
 	old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
@@ -246,6 +246,8 @@ splitPSM <- function(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE) {
 			fill = TRUE , skip = 0
 		)
 	)
+  
+  df <- filters_in_call(df, ...)
 
   # remove the spacer columns in Mascot outputs
   r_start <- which(names(df) == "pep_scan_title") + 1
@@ -968,7 +970,7 @@ annotPSM <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_violins
 #'@importFrom magrittr %>%
 #'@export
 splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = FALSE, rptr_intco = 1000, 
-                        rm_craps = FALSE, rm_reverses = TRUE, plot_violins = TRUE) {
+                        rm_craps = FALSE, rm_reverses = TRUE, plot_violins = TRUE, ...) {
   
   add_mascot_headers <- function (df) {
     df %>% 
@@ -1022,6 +1024,8 @@ splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = F
     dplyr::bind_rows() %>% 
     dplyr::rename(ID = id)
   
+  df <- filters_in_call(df, ...)
+
   if (corrected_int) {
     df <- df %>% 
       dplyr::select(-grep("^Reporter\\s{1}intensity\\s{1}\\d+$", names(.)))
@@ -1370,6 +1374,7 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 #'  processing, the file names need to be compiled in that they all start with
 #'  \code{'msms'} and end with a \code{'.txt'} extension.
 #'
+#'@param ... Additional parameters for row filtration of data. 
 #'@inheritParams load_expts
 #'@inheritParams splitPSM
 #'@inheritParams splitPSM_mq
@@ -1410,7 +1415,12 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 #'   rm_craps = FALSE,
 #'   rm_krts = FALSE,
 #'   rm_outliers = FALSE,
-#'   plot_violins = TRUE
+#'   plot_violins = TRUE, 
+#'   
+#'   # `dot-dot-dot` filtration of Mascot PSMs
+#'   pep_rank = expr(pep_rank == 1), 
+#'   pep_miss = expr(pep_miss <= 2), 
+#'   pep_exp_z = expr(pep_exp_z == 2 | pep_exp_z == 3), 
 #' )
 #'
 #'
@@ -1433,7 +1443,11 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 #' normPSM(
 #'   fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
 #'             "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
-#'   rptr_intco = 3000
+#'   rptr_intco = 3000, 
+#'   
+#'   # `dot-dot-dot` filtration of MaxQuant PSMs
+#'   Charge = expr(Charge == "2" | Charge == "3"), 
+#'   `Oxidation (M)` = expr(`Oxidation (M)` == 1),
 #' )
 #' }
 #'
@@ -1444,7 +1458,7 @@ annotPSM_mq <- function(expt_smry = "expt_smry.xlsx", rm_krts = FALSE, plot_viol
 normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx", 
                     fasta = NULL, pep_unique_by = "group", corrected_int = FALSE, rm_reverses = TRUE, 
                     rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE,
-                    rm_outliers = FALSE, plot_violins = TRUE) {
+                    rm_outliers = FALSE, plot_violins = TRUE, ...) {
   
   if (is.null(dat_dir)) {
     dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
@@ -1475,12 +1489,12 @@ normPSM <- function(dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "f
   
   if (type == "mascot") {
     rmPSMHeaders()
-    splitPSM(rptr_intco, rm_craps, plot_violins)
+    splitPSM(rptr_intco, rm_craps, plot_violins, ...)
     cleanupPSM(rm_outliers)
     annotPSM(expt_smry, rm_krts, plot_violins)
   } else if (type == "mq") {
     splitPSM_mq(fasta, pep_unique_by, corrected_int, 
-                rptr_intco, rm_craps, rm_reverses, plot_violins)
+                rptr_intco, rm_craps, rm_reverses, plot_violins, ...)
     cleanupPSM(rm_outliers)
     annotPSM_mq(expt_smry, rm_krts, plot_violins)
   }
