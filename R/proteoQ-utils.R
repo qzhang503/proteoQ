@@ -1334,3 +1334,25 @@ annotPeppos_mq <- function (df, fasta){
 }
 
 
+#' Filter rows
+#'
+#' @param df; data frame. 
+#'
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>%
+filters_in_call <- function (df, ...) {
+  dots <- enexprs(...)
+  nms <- names(dots)
+  
+  for (i in seq_along(dots)) {
+    rows_expr <- dots[[nms[i]]]
+    rows_val <- try(eval_tidy(eval_bare(rows_expr), df))
+
+    stopifnot(is.logical(rows_val))
+    
+    df <- df[rows_val, , drop = FALSE]
+  }
+  
+  return(df)
+}
+

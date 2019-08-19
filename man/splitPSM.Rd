@@ -4,7 +4,8 @@
 \alias{splitPSM}
 \title{Splits PSM tables}
 \usage{
-splitPSM(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE)
+splitPSM(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE,
+  ...)
 }
 \arguments{
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}

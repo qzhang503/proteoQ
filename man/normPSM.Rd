@@ -8,7 +8,7 @@ normPSM(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
   frac_smry = "frac_smry.xlsx", fasta = NULL,
   pep_unique_by = "group", corrected_int = FALSE, rm_reverses = TRUE,
   rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE,
-  rm_outliers = FALSE, plot_violins = TRUE)
+  rm_outliers = FALSE, plot_violins = TRUE, ...)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory.}
@@ -47,6 +47,8 @@ MaxQuant peptide results.}
 
 \item{plot_violins}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}
+
+\item{...}{Additional parameters for row filtration of data.}
 }
 \value{
 Outputs under \code{dat_dir\\PSM}. Primary results are in
@@ -120,7 +122,12 @@ normPSM(
   rm_craps = FALSE,
   rm_krts = FALSE,
   rm_outliers = FALSE,
-  plot_violins = TRUE
+  plot_violins = TRUE, 
+  
+  # `dot-dot-dot` filtration of Mascot PSMs
+  pep_rank = expr(pep_rank == 1), 
+  pep_miss = expr(pep_miss <= 2), 
+  pep_exp_z = expr(pep_exp_z == 2 | pep_exp_z == 3), 
 )
 
 
@@ -143,7 +150,11 @@ load_expts()
 normPSM(
   fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
             "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-  rptr_intco = 3000
+  rptr_intco = 3000, 
+  
+  # `dot-dot-dot` filtration of MaxQuant PSMs
+  Charge = expr(Charge == "2" | Charge == "3"), 
+  `Oxidation (M)` = expr(`Oxidation (M)` == 1),
 )
 }
 

@@ -5,8 +5,8 @@ author:
 date: "`r Sys.Date()`"
 output:
   md_document:
-    variant: gfm
-    toc: true
+  variant: gfm
+toc: true
 fig_caption: yes
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
@@ -16,6 +16,20 @@ vignette: >
 
 ---
 references:
+- id: hwickham2019advr
+  title: Advanced R
+  author:
+  - family: Wickham
+    given: Hadley
+  URL: 'https://adv-r.hadley.nz/'
+  ISBN-13: 978-0367255374
+  edition: 2
+  publisher: Chapman & Hall/CRC
+  type: book
+  issued:
+    year: 2019
+    month: 6
+
 - id: mertins2018np
   title: Reproducible workflow for multiplexed deep-scale proteome and phosphoproteome analysis of tumor tissues by liquid chromatography-mass spectrometry
   author:
@@ -175,11 +189,31 @@ normPSM(
   rm_craps = FALSE,
   rm_krts = FALSE,
   rm_outliers = FALSE,
-  plot_violins = TRUE
+  plot_violins = TRUE, 
 )
 ```
 
 PSM outliers will be assessed at a basis of per peptide and per sample at `rm_outliers = TRUE`, which can be a slow process for large data sets. To circumvent repeated efforts in the assessment of PSM outliers, we may set `rm_outliers = FALSE` and `plot_violins = TRUE` when first executing `normPSM()`. We then visually inspect the violin plots of reporter-ion intensity. Empirically, PSMs with reporter-ion intensity less than 1,000 are trimmed and  samples with median intensity that is 2/3 or less to the average of majority samples are removed from further analysis.^[The sample removal and PSM re-processing can be achieved by deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-load of the experiment, `load_expts()`, and the re-execution of `normPSM()` with desired parameters.]   
+
+The `normPSM` function can take additional arguments of `dot-dot-dot` [see @hwickham2019advr, ch. 6] for the row filtration of data using logical conditions. In the hypothetical example shown below, we will limit ourselves to peptide entries with no more than 2 missed cleavages and at charge states of 2 or 3 by supplying the variable arguments (varargs) of `filter_by_miss` and `filter_by_mz`, respectively:  
+
+```{r PSM dots, eval = FALSE}
+normPSM(
+  rptr_intco = 1000,
+  rm_craps = FALSE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE,
+  plot_violins = TRUE, 
+  
+  # `dot-dot-dot` filtration of Mascot PSMs
+  filter_by_miss = expr(pep_miss <= 2), 
+  filter_by_mz = expr(pep_exp_z == 2 | pep_exp_z == 3),
+)
+```
+
+Note that `pep_miss` and `pep_exp_z` therein are column keys that can be found from the PSM data. The assignments of varargs need to be in the format of `name = expr(logical conditions)`. To my very limited knowledge, R does not support the direct assignment of logical expressions to function arguments. To get around this, I took advantage of the `expr` utility in `rlang` package where the logical conditions are supplied within the round parenthesis after `expr`. Followed that, the program will take away the `expr` pronoun by performing a bare evaluation, such as `rlang::eval_bare`, and then a tidy evaluation of `rlang::eval_tidy` for actually data filtrations ([see @hwickham2019advr, ch. 20]).  
+
+As mentioned earlier, a central theme of `proteoQ` is to tuck away direct data manipulation by supplying high-level scripts. With the above setup in data filtration, we can readily recall and reproduce what we have done in data processing upon system revisiting, even after an extended peroid.  
 
 #### 1.2.2 Summarize PSMs to peptides
 We next summarise PSM to peptides:  
@@ -390,41 +424,59 @@ We next process the PSM data from MaxQuant and perform peptide and protein norml
 ```{r mq_psm, eval = FALSE}
 # PSM reports
 normPSM(
- fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
- rptr_intco = 3000
+  rptr_intco = 3000, 
 )
 
 # Peptide reports
 normPep(
- id = pep_seq_mod,
- fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+  id = pep_seq_mod,
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
- method_align = MGKernel,
- range_log2r = c(10, 95),
- range_int = c(5, 95),
- n_comp = 3,
- seed = 1234,
- maxit = 200,
- epsilon = 1e-05
+  method_align = MGKernel,
+  range_log2r = c(10, 95),
+  range_int = c(5, 95),
+  n_comp = 3,
+  seed = 1234,
+  maxit = 200,
+  epsilon = 1e-05
 )
 
 normPrn(
- id = gene,
- fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+  id = gene,
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
- method_pep_prn = median,
- method_align = MGKernel,
- range_log2r = c(5, 95),
- range_int = c(5, 95),
- n_comp = 2,
- seed = 749662,
- maxit = 200,
- epsilon = 1e-05
+  method_pep_prn = median,
+  method_align = MGKernel,
+  range_log2r = c(5, 95),
+  range_int = c(5, 95),
+  n_comp = 2,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05
 )
 ```
 
+
 Following the normalization steps, we can carry out analogous procedures in data purging and histogram visualization as we have done with the Mascot outputs.  
+
+
+*NB*: analogous to the Mascot workflow, we may supply additional criteria in the row filtration of PSM data from MaxQuant:  
+  
+```{r mq_psm_dots, eval = FALSE}
+normPSM(
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
+  rptr_intco = 3000, 
+  
+  # `dot-dot-dot` filtration of MaxQuant PSMs
+  filter_by_charge = expr(Charge == "2" | Charge == "3"), 
+  filter_by_ox = expr(`Oxidation (M)` == 1), 
+)
+```
+
+Some column keys in MaxQuant outputs contain white space(s) and special character(s) such as parenthesis. In these cases, we will need to quote the column keys with a pair of backticks, ``.  
 
 #### 1.5.2 MaxQuant peptide tables
 In this section, we will summarize peptide tables from MaxQuant to peptide and protein reports. Currently, `proteoQ` handles both the `peptides.txt` without site modification information and the `modificationSpecificPeptides.txt` with site modification information. The `peptide.txt` will be used in conjuction with `id = pep_seq` and `modificationSpecificPeptides.txt` with `id = pep_seq_mod` when calling from `normPep()`. The prefix of `peptides` or `modificationSpecificPeptides` in file names need to be kept at all time.  
@@ -482,8 +534,8 @@ Note that we called `normPep()` with `id = pep_seq`, to acknowledge that the inp
 ## Part 2 --- Basic informatics
 In this section I illustrate the following applications of `proteoQ`:  
   
-  * Basic informatic analysis against peptide and protein data.
-  * Linear modeling using contrast fits
+* Basic informatic analysis against peptide and protein data.
+* Linear modeling using contrast fits
 
 ### 2.1 MDS and PCA plots
 We first visualize MDS, PCA and Euclidean distance against the peptide data. We start with metric MDS for peptide data:  
@@ -592,10 +644,10 @@ pepCorr(
   max_log2r = 2, 
   width = 24,
   height = 24
-)
+  )
   
-# protein correlation
-prnCorr(
+  # protein correlation
+  prnCorr(
   col_select = PNNL,
   col_order = Order,
   filename = PNNL.png,
@@ -617,6 +669,8 @@ img_jhu_pepcorr <- "images\\peptide\\corrplot\\corr_pnnl.png"
 img_jhu_prncorr <- "images\\protein\\corrplot\\corr_pnnl.png"
 knitr::include_graphics(c(img_jhu_pepcorr, img_jhu_prncorr))
 ```
+
+
 
 ### 2.3 Missing value imputation 
 The following performs the imputation of peptide and protein data. More information can be found from [`mice`](https://cran.r-project.org/web/packages/mice/mice.pdf).  
@@ -691,10 +745,11 @@ In general, the special characters of `+` and `-` are not supported in linear mo
 
 ```{r special characters in sigtest, eval = FALSE}
 prnSig(
-  fml = ~ Term["A - C", "B - C", "<A+B> - C", "(A + B)/2 - C"], # location effects
+  fml = ~ Term["A - C", "B - C", "<A+B> - C", "(A + B)/2 - C"],
 )
 
 ```
+
 
 ### 2.6 Gene sets under volcano plots
 There are a handful of `R` tools for gene set enrichement analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can visualize the enrichment of gene sets under the context of volcano plots. Currently, the `preoteoQ` takes a naive approach to visualize the *asymmetricity* of protein probability *p*-values under volcano plots. In the analysis of Gene Set Probability Asymmetricity (GSPA), the significance `pVals` of proteins obtained from linear modeling are taken, followed by the calculation of the geometric mean of `pVals` for the groups of up- or down-regulated proteins within a gene set, as well as the corresponding mean `log2FC`. The quotient of the two `pVals` is then taken to represent the significance of enrichment and the delta of the two `log2FC` for use as the fold change of enrichment. The arguments `pval_cutoff` and `logFC_cutoff` allow us to filter out low impact genes prior to the analysis.  
@@ -798,6 +853,7 @@ img_nmf_con <- "images\\protein\\nmf\\prn_nmf_r6_consensus.png"
 img_nmf_coef <- "images\\protein\\nmf\\prn_nmf_r6_coef.png"
 knitr::include_graphics(c(img_nmf_con, img_nmf_coef))
 ```
+
 
 ### 2.9 STRING Analysis
 The following performs the [`STRING`](http://www.string-db.org) analysis of protein-protein interactions. More details can be found from `?getStringDB`.  
@@ -907,6 +963,7 @@ pepHist(
 img_pep_ref_w2_w16 <- "images\\peptide\\histogram\\peptide_ref_w2_w16.png"
 knitr::include_graphics(c(img_pep_ref_w2_w16))
 ```
+
 
 ### 3.2 Peptide subsets
 In addition to the global proteomes, the CPTAC publication contains phosphopeptide data from the same samples.[-@mertins2018np] In this lab, we will explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. We first performed a search aganist the combined data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset:  
@@ -1033,4 +1090,8 @@ knitr::include_graphics(c(img_prn_mix_effs))
 ```
 
 ## References
+
+
+
+
 
