@@ -303,6 +303,23 @@ load_dbs <- function () {
 
 		kegg_species <- "ath"
 		go_species <- "Anopheles"
+	} else if (species %in% c("canis lupus familiaris", "canis familiaris", "dog")) {
+	  data(package = "proteoQ", prn_annot_cf)
+	  # data(package = "proteoQ", go_sets_cf)
+	  # data(package = "proteoQ", kegg_sets_cf)
+	  go_sets_cf <- NULL
+	  kegg_sets_cf <- NULL
+	  
+	  
+	  prn_annot <- prn_annot_cf
+	  go_sets <- NULL
+	  kegg_sets <- NULL
+	  c2_sets <- NULL
+	  
+	  kegg_species <- NA # "cfa"
+	  go_species <- NA # "Dog"
+	  
+	  rm(prn_annot_cf, go_sets_cf, kegg_sets_cf, envir = .GlobalEnv)
 	} else if (species %in% c("human and mouse", "pdx")) {
 		data(package = "proteoQ", prn_annot_hs)
 		data(package = "proteoQ", prn_annot_mm)
@@ -340,7 +357,7 @@ load_dbs <- function () {
 	assign("dbs",
 	       list(prn_annot = prn_annot, go_sets = go_sets, kegg_sets = kegg_sets, c2_msig = c2_sets),
 	       envir = .GlobalEnv)
-}
+} 
 
 
 #'Load experiments
@@ -676,6 +693,8 @@ find_df_species <- function(df, acc_type) {
   sp_ls <- c(Human = "Homo sapiens", 
              Mouse = "Mus musculus",
              Rat = "Rattus norvegicus", 
+             # Dog = "Canis lupus familiaris", 
+             Dog = "Canis lupus", 
              Fly = "Drosophila melanogaster")
 		
 	if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
@@ -784,7 +803,25 @@ check_raws <- function(df) {
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
   load(file = file.path(dat_dir, "fraction_scheme.Rdata"))
-  
+
+  ## program-generated frac_smry.xlsx may be based on wrong information from expt_smry.xlsx
+  ls_raws <- label_scheme_full$RAW_File %>% unique()
+  fs_raws <- fraction_scheme$RAW_File %>% unique()
+  if (!(all(is.na(ls_raws)) | all(ls_raws %in% fs_raws))) {
+    pars <- read.csv(file.path(dat_dir, "Calls", "load_expts.txt"), 
+                     check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")
+
+    fn_frac <- pars %>% 
+      dplyr::filter(var == "frac_smry") %>% 
+      dplyr::select("value.1") %>% 
+      unlist() %>% 
+      as.character()
+    
+    unlink(file.path(dat_dir, fn_frac))
+    prep_fraction_scheme(dat_dir, fn_frac)
+    load(file = file.path(dat_dir, "fraction_scheme.Rdata"))
+  }
+
   tmtinj_raw <- fraction_scheme %>%
     tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>%
     dplyr::select(-Fraction) %>%
@@ -798,10 +835,10 @@ check_raws <- function(df) {
   wrong_label_scheme_raws <- label_scheme_raws[! label_scheme_raws %in% ms_raws]
   
   if(!purrr::is_empty(missing_ms_raws) | !purrr::is_empty(wrong_label_scheme_raws)) {
-    cat("The following MS RAW files are missing from the experimental summary file:\n")
+    cat("RAW MS file name(s) missing from the `experimental summary` and/or `fraction summary` files:\n")
     cat(paste0(missing_ms_raws, "\n"))
     
-    cat("The following RAW files in the experimental summary file are not found in PSM data:\n")
+    cat("RAW MS files in `experimental summary` and/or `fraction summary` files not found in PSM data:\n")
     cat(paste0("\t", wrong_label_scheme_raws, "\n"))
     
     stop(paste("Check file names under the RAW_File column in the experimental summary file."),

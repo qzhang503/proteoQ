@@ -1,63 +1,196 @@
+# library(proteoQ)
+# library(UniProt.ws)
+library(plyr)
+library(reshape2)
 library(dplyr)
 library(stringr)
 library(magrittr)
 
-for (species in c("hs", "mm", "rn", "dm")) {
-	if(species == "hs") {
-		fn <- "C:\\Results\\DB\\Swissprot\\20190306\\hs\\uniprot-filtered-organism__Homo+sapiens+(Human)+[9606]_.tab"
-	} else if(species == "mm") {
-		fn <- "C:\\Results\\DB\\Swissprot\\20190306\\mm\\uniprot-filtered-organism__Mus+musculus+(Mouse)+[10090]_.tab"
-	} else if(species == "rn") {
-		fn <- "C:\\Results\\DB\\Swissprot\\20190306\\rn\\uniprot-filtered-organism__Rattus+norvegicus+(Rat)+[10116]_.tab"
-	} else if(species == "dm") {
-		fn <- "C:\\Results\\DB\\Swissprot\\20190306\\dm\\uniprot-dm-filtered-organism__Drosophila+melanogaster+(Fruit+fly)+[722--.tab"
-	}
-	
-	crossrefs <- read.csv(fn, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")
-	
-	refseq <- crossrefs %>% 
-		dplyr::select("Entry name", "Cross-reference (RefSeq)") %$% 
-		str_split(.$"Cross-reference (RefSeq)", ";", simplify = TRUE) %>% 
-		data.frame() %>% 
-		dplyr::bind_cols(crossrefs[, "Entry name", drop = FALSE], .) %>% 
-		tidyr::gather(-"Entry name", key = Col, value = RefSeq) %>% 
-		dplyr::select(-Col)	%>% 
-		dplyr::filter(nchar(RefSeq) > 0) %>% 
-		dplyr::filter(grepl("^NP_", RefSeq)) %>% 
-		dplyr::mutate(RefSeq = gsub("\\s+\\[.*\\]\\s*", "", .$RefSeq)) %>% 
-		dplyr::mutate(RefSeq = gsub("\\.\\d*", "", .$RefSeq))
-		
-	crossrefs <- crossrefs %>% 
-		dplyr::select(-"Cross-reference (RefSeq)") %>% 
-		dplyr::mutate("Gene names" = gsub("\\s+.*", "", .$"Gene names")) %>% 
-		dplyr::full_join(refseq, by = "Entry name")
-	# write.table(crossrefs, file.path("C:\\Results\\DB\\Swissprot\\20190306\\Dm\\temp.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
-	
-	entrez <- read.csv(file.path("C:\\Results\\DB\\Swissprot\\20190306", species, paste0("Entrez_", species, ".txt")) , check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
-		dplyr::rename("Entry name" = "From") %>% 
-		dplyr::rename("Entrez" = "To")
-	
-	crossrefs <- crossrefs %>% 
-		dplyr::left_join(entrez, by = "Entry name")
-
-	filename <- paste0("prn_annot_", species) %>% tolower()
-	assign(filename, 
-					crossrefs %>% 
-						dplyr::rename(uniprot_acc = Entry, 
-						uniprot_id = "Entry name", 
-						status = "Status", 
-						prot_desc = "Protein names", 
-						gene = "Gene names", 
-						organism = Organism, 
-						length = Length, 
-						refseq_acc = RefSeq, 
-						entrez = Entrez))
-	
-	write.table(get(filename), file.path("C:\\Results\\DB\\Swissprot\\20190306", species, paste0("UniProt_CrossRef_", species, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE)
-	save(list = filename, file = file.path("C:\\Results\\R\\proteoQ\\data", paste0(filename, ".RData")))
+#' Prefix form of colnames(x)[c(2, 5, ...)] for use in pipes
+#'
+#' \code{names_pos<-} rename the columns at the indeces of \code{pos}.
+#'
+#' @param x A data frame.
+#' @param pos Numeric.  The index of coloumns for name change.
+#' @param value Characters.  The new column names.
+#' @return The data frame with new names.
+#'
+#' @import dplyr
+#' @importFrom magrittr %>%
+`names_pos<-` <- function(x, pos, value) {
+  names(x)[pos] <- value
+  x
 }
 
 
+#'Species lookup
+sp_lookup <- function(species) {
+  switch(species, 
+         human = "hs",
+         mouse = "mm",
+         rat = "rn",
+         fly = "dm", 
+         bovine = "bt",
+         dog = "cf", 
+         stop("Unknown `species`.", Call. = FALSE)
+  )    
+}
+
+
+#'Toxonomy lookup
+taxid_lookup <- function(species) {
+  switch (species,
+          human = 9606, 
+          mouse = 10090,
+          rat = 10116, 
+          fly = 7227, 
+          bovine = 9913,
+          dog = 9612, 
+          stop("Unknown `species`.", Call. = FALSE)
+  )
+}
+
+
+#' map "from" to entrez
+#' res_entrez <- map_entrez(species, from = "egUNIPROT")
+map_entrez <- function(species, from) {
+  sp_lookup_org <- function(species) {
+    switch(species, 
+           human = "Hs",
+           mouse = "Mm",
+           rat = "Rn",
+           fly = "Dm", 
+           bovine = "Bt",
+           dog = "Cf", 
+           stop("Unknown `species`.", Call. = FALSE)
+    )    
+  }
+  
+  abbr_species <- sp_lookup_org(species) 
+  taxid <- taxid_lookup(species)
+  
+  if (!requireNamespace(paste("org", abbr_species, "eg.db", sep = "."), quietly = TRUE)) 
+    BiocManager::install(paste("org", abbr_species, "eg.db", sep = "."))
+
+  library(paste("org", abbr_species, "eg.db", sep = "."), character.only = TRUE)
+  
+  x <- get(paste("org", abbr_species, from, sep = "."))
+  mapped_genes <- mappedkeys(x) # "from" to entrez
+  
+  accessions <- as.list(x[mapped_genes]) %>% 
+    plyr::ldply(., rbind) %>% 
+    `names_pos<-`(., 1, c("entrez")) %>% 
+    `names_pos<-`(., 2:ncol(.), paste(from, 1:(length(.)-1), sep = ".")) %>% 
+    mutate_at(.vars = grep("^eg", names(.)), funs(as.character)) %>% 
+    melt(id = "entrez") %>% 
+    filter(!is.na(entrez), !is.na(value)) %>% 
+    dplyr::select(-c("variable")) # %>% 
+  #	`colnames<-`(c("entrez", "Uniprot_accession")) 
+  
+  if (from == "egUNIPROT") {
+    accessions <- accessions %>% dplyr::rename(Uniprot_accession = value)
+  } else if (from == "egREFSEQ") {
+    accessions <- accessions %>% dplyr::rename(Uniprot_id = value)
+  }
+  
+  return(accessions)
+}
+
+
+#'Cross-ref file name lookup
+#'
+#'fn <- crossref_fn("human")
+crossref_fn <- function(species) {
+  switch(species, 
+         hs = "~\\proteoQ\\dbs\\crossref\\hs\\uniprot-filtered-organism__Homo+sapiens+(Human)+[9606]_.tab",
+         mm = "~\\proteoQ\\dbs\\crossref\\mm\\uniprot-filtered-organism__Mus+musculus+(Mouse)+[10090]_.tab",
+         rn = "~\\proteoQ\\dbs\\crossref\\rn\\uniprot-filtered-organism__Rattus+norvegicus+(Rat)+[10116]_.tab",
+         dm = "~\\proteoQ\\dbs\\crossref\\dm\\uniprot-dm-filtered-organism__Drosophila+melanogaster+(Fruit+fly)+[722--.tab", 
+         bt = "~\\proteoQ\\dbs\\crossref\\bt\\uniprot-reviewed_yes+AND+organism__Bos+taurus+[9913]_.tab", 
+         cf = "~\\proteoQ\\dbs\\crossref\\cf\\uniprot-canis+lupus+familiaris-filtered-organism__Canis+lupus+familiaris+(--.tab", 
+         stop("Unknown `species`.", Call. = FALSE)
+  )    
+}
+
+
+#'Re-arrange cross-reference table
+#'
+#'crossrefs <- arrange_crossrefs("human")
+arrange_crossrefs <- function (species) {
+  
+  abbr_species <- sp_lookup(species) 
+  taxid <- taxid_lookup(species)
+    
+  crossrefs <- crossref_fn(abbr_species) %>% 
+    read.csv(check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")
+  
+  refseq <- crossrefs %>% 
+    dplyr::select("Entry name", "Cross-reference (RefSeq)") %$% 
+    str_split(.$"Cross-reference (RefSeq)", ";", simplify = TRUE) %>% 
+    data.frame() %>% 
+    dplyr::bind_cols(crossrefs[, "Entry name", drop = FALSE], .) %>% 
+    tidyr::gather(-"Entry name", key = Col, value = RefSeq) %>% 
+    dplyr::select(-Col)	%>% 
+    dplyr::filter(nchar(RefSeq) > 0) %>% 
+    dplyr::filter(grepl("^NP_", RefSeq)) %>% 
+    dplyr::mutate(RefSeq = gsub("\\s+\\[.*\\]\\s*", "", .$RefSeq)) %>% 
+    dplyr::mutate(RefSeq = gsub("\\.\\d*", "", .$RefSeq))
+  
+  crossrefs <- crossrefs %>% 
+    dplyr::select(-"Cross-reference (RefSeq)") %>% 
+    dplyr::mutate("Gene names" = gsub("\\s+.*", "", .$"Gene names")) %>% 
+    dplyr::full_join(refseq, by = "Entry name")
+
+  rm(refseq)
+  
+  res_entrez <- map_entrez(species, from = "egUNIPROT") %>% 
+    dplyr::rename("Entry" = "Uniprot_accession", "Entrez" = "entrez")
+    
+  
+  crossrefs <- left_join(crossrefs, res_entrez, by = "Entry")
+  # "uniprot_acc" "uniprot_id"  "status"      "prot_desc"   "gene"        "organism"    "length"      "refseq_acc"  "entrez" 
+  
+  
+  # entrez <- read.csv(file.path("~\\proteoQ\\dbs\\crossref", abbr_species, paste0("entrez_", abbr_species, ".txt")), 
+  #                    check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
+  #   dplyr::rename("Entry name" = "From") %>% 
+  #   dplyr::rename("Entrez" = "To")
+  
+  # crossrefs <- crossrefs %>% 
+  #   dplyr::left_join(entrez, by = "Entry name")
+  
+  filename <- paste0("prn_annot_", abbr_species) %>% tolower()
+  assign(filename, 
+         crossrefs %>% 
+           dplyr::rename(uniprot_acc = Entry, 
+                         uniprot_id = "Entry name", 
+                         status = "Status", 
+                         prot_desc = "Protein names", 
+                         gene = "Gene names", 
+                         organism = Organism, 
+                         length = Length, 
+                         refseq_acc = RefSeq, 
+                         entrez = Entrez))
+  
+  write.table(get(filename), 
+              file.path("~\\proteoQ\\dbs\\crossref", abbr_species, paste0("uniprot_crossref_", abbr_species, ".txt")), 
+              sep = "\t", col.names = TRUE, row.names = FALSE)
+  save(list = filename, file = file.path("C:\\Results\\R\\proteoQ\\data", paste0(filename, ".RData")))
+}
+
+
+# crossrefs <- arrange_crossrefs("dog")
+
+
+
+
+
+
+
+  
+
+
+# ----------------------------------------------
 devtools::document(pkg  = "C:\\Results\\R\\proteoQ")
 kinase_lookup <- kinase_lookup %>% 
 					dplyr::rename(
@@ -163,29 +296,30 @@ map_refseq_gene <- function(species) {
 #' map "from" to entrez
 #' from = c("egUNIPROT", "egREFSEQ")
 map_entrez <- function(species, from) {
-	library(paste("org", species, "eg.db", sep = "."), character.only = TRUE)
-
-	x <- get(paste("org", species, from, sep = "."))
-	mapped_genes <- mappedkeys(x) # "from" to entrez
-	
-	accessions <- as.list(x[mapped_genes]) %>% 
-		plyr::ldply(., rbind) %>% 
-		`names_pos<-`(., 1, c("entrez")) %>% 
-		`names_pos<-`(., 2:ncol(.), paste(from, 1:(length(.)-1), sep = ".")) %>% 
-		mutate_at(.vars = grep("^eg", names(.)), funs(as.character)) %>% 
-		melt(id = "entrez") %>% 
-		filter(!is.na(entrez), !is.na(value)) %>% 
-		dplyr::select(-c("variable")) # %>% 
-		#	`colnames<-`(c("entrez", "Uniprot_accession")) 
-	
-	if (from == "egUNIPROT") {
-		accessions <- accessions %>% dplyr::rename(Uniprot_accession = value)
-	} else if (from == "egREFSEQ") {
-		accessions <- accessions %>% dplyr::rename(Uniprot_id = value)
-	}
-	
-	return(accessions)
+  library(paste("org", species, "eg.db", sep = "."), character.only = TRUE)
+  
+  x <- get(paste("org", species, from, sep = "."))
+  mapped_genes <- mappedkeys(x) # "from" to entrez
+  
+  accessions <- as.list(x[mapped_genes]) %>% 
+    plyr::ldply(., rbind) %>% 
+    `names_pos<-`(., 1, c("entrez")) %>% 
+    `names_pos<-`(., 2:ncol(.), paste(from, 1:(length(.)-1), sep = ".")) %>% 
+    mutate_at(.vars = grep("^eg", names(.)), funs(as.character)) %>% 
+    melt(id = "entrez") %>% 
+    filter(!is.na(entrez), !is.na(value)) %>% 
+    dplyr::select(-c("variable")) # %>% 
+  #	`colnames<-`(c("entrez", "Uniprot_accession")) 
+  
+  if (from == "egUNIPROT") {
+    accessions <- accessions %>% dplyr::rename(Uniprot_accession = value)
+  } else if (from == "egREFSEQ") {
+    accessions <- accessions %>% dplyr::rename(Uniprot_id = value)
+  }
+  
+  return(accessions)
 }
+
 
 
 #' subset fasta by species

@@ -4,14 +4,19 @@ author:
 - name: Qiang Zhang
 date: "`r Sys.Date()`"
 output:
-  md_document:
-  variant: gfm
-toc: true
-fig_caption: yes
-vignette: >
-  %\VignetteIndexEntry{Vignette Title}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+  md_document: 
+    variant: markdown_github 
+    toc: true
+  html_document: 
+    theme: united 
+    highlight: haddock 
+    toc: true 
+    toc_float: true  
+    fig_caption: yes
+    keep_md: true
+  github_document: 
+    toc: true 
+    fig_caption: yes
 ---
 
 ---
@@ -78,10 +83,14 @@ knitr::opts_chunk$set(
 )
 ```
 
+
 ## Introduction to proteoQ
 Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed to aid automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. The arrangement allows users to put data manipulation behind the scene and apply metadata to openly address biological questions using various informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
 
 The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches and PSM and peptide tables from [MaxQuant](https://www.maxquant.org/), for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
+
+The following link will render a [README.html](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html) with a floating TOC.  Note that the process might take a while.  
+
 
 ## Installation
 To install this package, start R (version "3.6.1") as **administrator** and enter:  
@@ -96,7 +105,7 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("qzhang503/proteoQ")
 ```
 
-## Part 1 --- Data normalization
+## Part 1 --- Data normalization 
 In this section I illustrate the following applications of `proteoQ`:  
 
 * Summarization of Mascot PSM results to normalized peptide and protein data. 
@@ -213,7 +222,7 @@ normPSM(
 
 Note that `pep_miss` and `pep_exp_z` therein are column keys that can be found from the PSM data. The assignments of varargs need to be in the format of `name = expr(logical conditions)`. To my very limited knowledge, R does not support the direct assignment of logical expressions to function arguments. To get around this, I took advantage of the `expr` utility in `rlang` package where the logical conditions are supplied within the round parenthesis after `expr`. Followed that, the program will take away the `expr` pronoun by performing a bare evaluation, such as `rlang::eval_bare`, and then a tidy evaluation of `rlang::eval_tidy` for actually data filtrations ([see @hwickham2019advr, ch. 20]).  
 
-As mentioned earlier, a central theme of `proteoQ` is to tuck away direct data manipulation by supplying high-level scripts. With the above setup in data filtration, we can readily recall and reproduce what we have done in data processing upon system revisiting, even after an extended peroid.  
+As mentioned earlier, a central theme of `proteoQ` is to reduce or avoid direct data manipulation by supplying high-level scripts. With the self-containing approach in data filtration, we can readily recall and reproduce what we had done when revisiting the system in the future.  
 
 #### 1.2.2 Summarize PSMs to peptides
 We next summarise PSM to peptides:  
@@ -294,8 +303,8 @@ We then summarise peptides to proteins, for example, using a two-component Gauss
 # protein reports
 normPrn(
   id = gene, 
-	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
-           "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
   method_pep_prn = median, 
   method_align = MGKernel, 
   range_log2r = c(5, 95), 
@@ -323,7 +332,7 @@ prnHist(
 )
 ```
 
-*NB:* At this point, we might have reach a consensus on the choice of scaling normalization. If so, it may be plausible to set the value of `scale_log2r` under the Global environment, which is typically the R console that we are interacting with.  
+*NB:* at this point, we might have reach a consensus on the choice of scaling normalization. If so, it may be plausible to set the value of `scale_log2r` under the Global environment, which is typically the R console that we are interacting with.  
 
 ```{r global scale_log24, eval = FALSE}
 # if agree
@@ -361,7 +370,7 @@ normPep(
 ```
 
 ### 1.4 Purge data 
-Sometimes we may want to distill data with more strigent criteria. The `proteoQ` workflow currently supports data purging by `CV` and the number of identifying sequences. The `CV` are calculated from the ascribing PSMs for peptide data, or ascribing peptides for protein data. Data entries with `CV` greater than the cut-off will be replaced with NA. Similary, the argument `nseq_cutoff` stands for the cut-off value in the number of identifying PSMs for peptide data, or the number of identifying peptides for protein data. Data entries with identifying PSMs or peptides less than the cut-off will be replaced with NA. 
+Sometimes we may want to distill data with more strigent criteria. The `proteoQ` workflow currently supports data purging by `CV` and the number of identifying sequences. The `CV` are calculated from the ascribing PSMs for peptide data, or ascribing peptides for protein data. Data entries with `CV` greater than the cut-off will be replaced with NA. This will also remove one-hit wonders in PSM and peptides. Similary, the argument `nseq_cutoff` stands for the cut-off value in the number of identifying PSMs for peptide data, or the number of identifying peptides for protein data. Data entries with identifying PSMs or peptides less than the cut-off will be replaced with NA. 
 
 Here I will use the protein data as an example. We first take a look at the distributions of `CV` without setting any criterion in data filtration:  
 
@@ -388,7 +397,7 @@ img_purprn_af <- "images\\protein\\purge\\prn_sd_af.png"
 knitr::include_graphics(c(img_purprn_af))
 ```
 
-Note that the file of `Protein.txt` will be overwritten with the cleanup. It may be a good idea to make a copy of the data file before experimenting. Otherwise, we will need to start over with data normalization should we want to revert the changes. Also, we will call `normPrn` again to re-normalize the purged data and `prnHist` for updated visualization of histograms. The same is true for the cleanup and the update of peptide data.  
+*NB:* the file of `Protein.txt` will be overwritten with the cleanup. It may be a good idea to make a copy of the data file before experimenting. Otherwise, we will need to start over with data normalization should we want to revert the changes. Also, we will call `normPrn` again to re-normalize the purged data and `prnHist` for updated visualization of histograms. The same is true for the cleanup and the update of peptide data.  
 
 ### 1.5 Summarize MaxQuant results
 In this section, I will illustrate the processing of MaxQuant results using the same set of data from CPTAC. We will first apply a workflow of PSMs --> peptides --> proteins in data summarization. We then take an alternative procedure by using the peptide tables directly from MaxQuant. 
@@ -476,7 +485,7 @@ normPSM(
 )
 ```
 
-Some column keys in MaxQuant outputs contain white space(s) and special character(s) such as parenthesis. In these cases, we will need to quote the column keys with a pair of backticks, ``.  
+Some column keys in MaxQuant outputs contain white space(s) and special character(s) such as parenthesis. In these cases, we will need to quote the column keys with a pair of backticks.  
 
 #### 1.5.2 MaxQuant peptide tables
 In this section, we will summarize peptide tables from MaxQuant to peptide and protein reports. Currently, `proteoQ` handles both the `peptides.txt` without site modification information and the `modificationSpecificPeptides.txt` with site modification information. The `peptide.txt` will be used in conjuction with `id = pep_seq` and `modificationSpecificPeptides.txt` with `id = pep_seq_mod` when calling from `normPep()`. The prefix of `peptides` or `modificationSpecificPeptides` in file names need to be kept at all time.  
@@ -530,6 +539,7 @@ normPep(
 ```
 
 Note that we called `normPep()` with `id = pep_seq`, to acknowledge that the input files are `peptide... .txt` without peptide site modification. To call the function with `id = pep_seq_mod`, we need to supply a different set of data files of `modificationSpecificPeptides... .txt`. We further note that `method_psm_pep = mqpep`, which allows the program to bypass PSM-to-peptide summarisation and instead use the Maxquant peptide tables as the input. Upon the completion of peptide normalization, we can proceed to the histogram visualization and protein normalization as we have done with the Mascot example. The only exception is that the call to `purPep()` will throw us an error as there are no PSM data were prepared for the calculations of peptide `CV`.  
+
 
 ## Part 2 --- Basic informatics
 In this section I illustrate the following applications of `proteoQ`:  
@@ -741,11 +751,12 @@ img_venn_location <- "images\\protein\\volcplot\\venn_locations.png"
 knitr::include_graphics(c(img_volcplot_location))
 ```
 
-In general, the special characters of `+` and `-` are not supported in linear modeling. However, it may be sometime convenient to use `A+B` to denote a combined treatment of both `A` and `B` in biological studies. In the case, we will put the term(s) containing `+` or `-` into pointy bracket(s). The syntax in the following example will compare the effects of `A`, `B`, `A+B` and the average of `A` and `B` to control `C`.  
+In general, the special characters of `+` and `-` are not supported in linear modeling. However, it may be sometime convenient to use `A+B` to denote a combined treatment of both `A` and `B` in biological studies. In the case, we will put the term(s) containing `+` or `-` into a pair of pointy brackets. The syntax in the following hypothetical example will compare the effects of `A`, `B`, `A+B` and the average of `A` and `B` to control `C`.  
 
 ```{r special characters in sigtest, eval = FALSE}
+# note that <A + B> is one condition whereas (A + B) contains two conditions
 prnSig(
-  fml = ~ Term["A - C", "B - C", "<A+B> - C", "(A + B)/2 - C"],
+  fml = ~ Term["A - C", "B - C", "<A + B> - C", "(A + B)/2 - C"],
 )
 
 ```
@@ -801,7 +812,7 @@ img_prn_trends <- "images\\protein\\trend\\prn_trend_n6.png"
 knitr::include_graphics(c(img_prn_trends))
 ```
 
-With the above example at `n_clust = 6`, the correspondence between protein IDs and their cluster assignments is summarised in file `Protein_Trend_Z_n6.csv`. The letter `Z` in the file name denotes the option of `scale_log2r = TRUE`. The results are compatible for enrichment analysis such as gene ontology with tools such as [`ClueGO`](http://apps.cytoscape.org/apps/cluego) and more.
+With the above example at `n_clust = 6`, the correspondence between protein IDs and their cluster assignments is summarised in file `Protein_Trend_Z_n6.csv`. The letter `Z` in the file name denotes the option of `scale_log2r = TRUE`.
 
 
 ### 2.8 NMF Analysis
@@ -877,6 +888,7 @@ dl_stringdbs(
   db_path = "~\\proteoQ\\dbs\\string"
 )
 ```
+
 
 ## Part 3 --- Labs  
 ### 3.1 Reference choices  
@@ -1090,8 +1102,5 @@ knitr::include_graphics(c(img_prn_mix_effs))
 ```
 
 ## References
-
-
-
 
 
