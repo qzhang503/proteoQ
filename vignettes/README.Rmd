@@ -4,17 +4,19 @@ author:
 - name: Qiang Zhang
 date: "`r Sys.Date()`"
 output:
+  md_document: 
+    variant: markdown_github 
+    toc: true
   html_document: 
     theme: united 
     highlight: haddock 
     toc: true 
-    toc_float: true 
+    toc_float: true  
     fig_caption: yes
     keep_md: true
   github_document: 
     toc: true 
     fig_caption: yes
-    keep_md: true
 ---
 
 ---
