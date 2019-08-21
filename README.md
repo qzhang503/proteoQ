@@ -51,6 +51,10 @@ alignment and normalization. The package further offers a suite of tools
 and functionalities in statistics, informatics and data visualization by
 creating 'wrappers' around published R routines.
 
+The following link will render a
+[README.html](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)
+with a floating TOC. Note that the process might take a while.
+
 Installation
 ------------
 

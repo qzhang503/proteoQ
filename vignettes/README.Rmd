@@ -89,6 +89,9 @@ Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tan
 
 The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) searches and PSM and peptide tables from [MaxQuant](https://www.maxquant.org/), for 6-, 10- or 11-plex TMT experiments. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
 
+The following link will render a [README.html](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html) with a floating TOC.  Note that the process might take a while.  
+
+
 ## Installation
 To install this package, start R (version "3.6.1") as **administrator** and enter:  
 
