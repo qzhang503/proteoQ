@@ -10,15 +10,16 @@ proteoHM(id = gene, col_select = NULL, col_benchmark = NULL,
   scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE,
   df = NULL, filepath = NULL, filename = NULL, xmin = -1,
   xmax = 1, x_margin = 0.1, annot_cols = NULL,
-  annot_colnames = NULL, ...)
+  annot_colnames = NULL, annot_rows = NULL, ...)
 
 pepHM(...)
 
 prnHM(...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. Peptide data will be
-used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically by the program. Peptide data will be used at
+\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -37,106 +38,141 @@ will be used.}
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used.}
 
-\item{df}{The name of input data file. By default, it will be determined by
-the value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined
+automatically by the value of \code{id}.}
 
 \item{filepath}{A file path to output results. By default, it will be
-determined by the name of the calling \code{function} and the value of
-\code{id} in the \code{call}.}
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
 
 \item{filename}{A representative file name to output image(s). By default, it
-will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} where the image type will be
-determined by the extension of the file name. A \code{.png} format will be
-used at default or an unrecognized file extension.}
+will be determined automatically by the name of the current \code{call}. The
+image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
+will be determined by the extension of the file name. A \code{.png} format
+will be used at default or an unrecognized file extension.}
 
-\item{annot_cols}{A character vector of column names in \code{expt_smry.xlsx}.
-Values under the selected columns will be used to color-code sample IDs on
+\item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
+The values under the selected keys will be used to color-code sample IDs on
 the top of the indicated plot.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}.}
 
-\item{...}{More parameters for plotting: \cr \code{xmin}, the minimum \eqn{x}
-at a log2 scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a
-log2 scale; the default is +1 \cr \code{x_margin}, the margin in heat
-scales; the default is 0.1 \cr \code{width}, the width of plot \cr
-\code{height}, the height of plot \cr additional arguments for
-\code{\link[pheatmap]{pheatmap}}.}
+\item{annot_rows}{A character vector of column keys that can be found from
+input files of \code{Peptide.txt}, \code{Protein.txt} et al. The values
+under the selected keys will be used to color-code peptides or proteins on
+the side of the indicated plot.}
+
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data; also see \code{\link{normPSM}}. \cr \code{arrange_}: Logical
+expression(s) for the row ordering of data. The \code{lhs} needs to start
+with \code{arrange_}. The logical condition(s) at the \code{rhs} needs to be
+enclosed in \code{exprs} with round parenthesis. \cr \cr Additional
+parameters for plotting: \cr \code{xmin}, the minimum \eqn{x} at a log2
+scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a log2
+scale; the default is +1 \cr \code{x_margin}, the margin in heat scales; the
+default is 0.1 \cr \code{width}, the width of plot \cr \code{height}, the
+height of plot \cr \cr Additional arguments for
+\code{\link[pheatmap]{pheatmap}}. \cr \cr Arguments disabled for
+\code{pheatmap}: \cr \code{annotation_col}; use \code{annot_cols} instead
+\cr \code{annotation_row}; use \code{annot_rows} instead}
 }
 \value{
 Heat maps.
 }
 \description{
 \code{proteoHM} visualizes the heat maps of protein or peptide \code{log2FC}.
+Users should avoid call the method directly, but instead use the following
+wrappers.
 
 \code{pepHM} is a wrapper function of \code{\link{proteoHM}} for peptide data
 
 \code{prnHM} is a wrapper function of \code{\link{proteoHM}} for protein data
 }
 \details{
-Data columns with complete missing values will be removed prior to
-hierarchical column clustering. Data rows without non-missing pairs will
-result in NA distances in inter-row dissimilarities
-(\code{\link[stats]{dist}}). At \code{complet_cases = TRUE}, the data subset
-that are complete without missing values will be used. At \code{impute_na =
-TRUE}, all data rows will be used with NA imputation (\code{\link{imputeNA}}).
-At the default of \code{complet_cases = FALSE} and \code{impute_na = FALSE},
-NA distances will be arbitrarily replaced with the mean value in the
-row-disance matrix for hierarchical row clustering.
+Data rows without non-missing pairs will result in NA distances in inter-row
+dissimilarities (\code{\link[stats]{dist}}). At \code{complet_cases = TRUE},
+the data subset that are complete without missing values will be used. At
+\code{impute_na = TRUE}, all data rows will be used with NA imputation (see
+\code{\link{imputeNA}}). At the default of \code{complet_cases = FALSE} and
+\code{impute_na = FALSE}, NA distances will be arbitrarily replaced with the
+mean value of the row-disance matrix for hierarchical row clustering.
+
+Data columns with complete missing values will be first removed prior to
+hierarchical column clustering. Similarly, NA distances in data columns will
+be replaced with the mean value of the column-distance matrix.
 
 To avoid memory failure, row aggregation using the \code{kmeans_k} option
 (\code{\link[pheatmap]{pheatmap}}) may be considered for large data sets.
 
-The function matches the current \code{id} to those in the latest \code{calls}
-to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
-pep_seq_mod} will be matched to \code{id = pep_seq}.
+The function matches the current \code{id} to the grouping argument in the
+latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
+example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
+the setting of \code{id = pep_seq_mod} in the current call will be matched to
+\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
+was employed, the setting of \code{id = prot_acc} in the current call will be
+matched to \code{id = gene}.
 }
 \examples{
+# unsupervised row clustering
 prnHM(
- scale_log2r = TRUE,
- xmin = -1,
- xmax = 1,
- x_margin = 0.1,
- annot_cols = c("Peptide_Yield", "TMT_Set", "Group"),
- annot_colnames = c("Peptide_Yield", "Batch", "Phenotype"),
- cluster_rows = TRUE,
- cutree_rows = 6,
- show_rownames = FALSE,
- show_colnames = TRUE,
- fontsize_row = 3,
- cellwidth = 14,
- width = 10,
- height = 12
+  xmin = -1,
+  xmax = 1,
+  x_margin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  cutree_rows = 10,
+  show_rownames = FALSE,
+  show_colnames = TRUE,
+  fontsize_row = 3,
+  cellwidth = 14,
+  width = 18,
+  height = 12,
+  
+  filter_sp = exprs(species == "human", n_pep >= 2),
+  
+  filename = "prn_hu_npep2.png",
 )
 
+# rows ordered by kinase classes then by gene names
 prnHM(
- scale_log2r = TRUE,
- annot_cols = c("Group"),
- cluster_rows = TRUE,
- clustering_distance_rows  = "maximum",
- cutree_rows = 6,
- show_rownames = FALSE,
- show_colnames = TRUE,
- fontsize_row = 3,
- cellwidth = 14,
- width = 10,
- height = 12
+  xmin = -1,
+  xmax = 1,
+  x_margin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = FALSE,
+  annot_rows = c("kin_class"),
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  fontsize_row = 2,
+  cellheight = 2,
+  cellwidth = 14,
+  width = 22,
+  height = 22,
+  
+  filter_kin = exprs(kin_attr, species == "human"),
+  arrange_kin = exprs(kin_order, gene),
+  
+  filename = "kin_hu_row_by_class.png",
 )
 
+# `cutree_rows` ignored at `cluster_rows = FALSE`
 prnHM(
- scale_log2r = TRUE,
- annot_cols = c("Group"),
- cluster_rows = FALSE, # no row clustering
- clustering_distance_rows  = "maximum",
- cutree_rows = 6, # will be overruled at 'cluster_rows = FALSE'
- show_rownames = FALSE,
- show_colnames = TRUE,
- fontsize_row = 3,
- cellwidth = 14,
- width = 10,
- height = 12
+  scale_log2r = TRUE,
+  annot_cols = c("Group"),
+  cluster_rows = FALSE, 
+  clustering_distance_rows  = "maximum",
+  cutree_rows = 6, 
+  show_rownames = FALSE,
+  show_colnames = TRUE,
+  fontsize_row = 3,
+  cellwidth = 14,
+  width = 22,
+  height = 22,
+  
+  filename = "cutree_overruled.png",
 )
 
 \dontrun{

@@ -4,7 +4,8 @@
 \alias{plot_corr_sub}
 \title{Make correlation plots}
 \usage{
-plot_corr_sub(df, xlab, ylab, filename, filepath, xmin, xmax, ...)
+plot_corr_sub(df, xlab, ylab, filename, filepath, xmin, xmax, x_breaks,
+  width, height, ...)
 }
 \description{
 Make correlation plots

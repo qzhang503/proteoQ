@@ -15,11 +15,8 @@ the primary sequences of peptides. The option \code{id = pep_seq_mod}
 corresponds to the summarisation by both the primary sequences and variable
 modifications of peptides. \code{PSMs} data with the same value in
 \code{pep_seq} or \code{pep_seq_mod} will be summarised into a single entry
-of peptide.}
-
-\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
-prepended directory path. The \code{fasta} database(s) need to match those
-used in MS/MS ion search.}
+of peptide. Currently, the value of \code{id} will match automatically to
+the value of \code{group_psm_by} in \code{normPSM}.}
 
 \item{pep_unique_by}{A character string for use in the filtration of peptide
 data from \code{MaxQuant}. The choice is in one of \code{c("group",
@@ -38,17 +35,8 @@ Results in \code{.txt} files for each of TMT experiments and LC/MS
   injections.
 }
 \description{
-\code{normPepSplex_mqpep} processes peptide data from MaxQuant peptide table(s).
-It splits the original tables by TMT set numbers. Different LCMS injections
-under the same TMT experiment will be handled as different fractions.
-Therefore, the injection index is always "1".
-}
-\examples{
-	normPep_Splex(
-		id = pep_seq_mod,
-		method_psm_pep = median
-	)
-
-\dontrun{
-}
+\code{normPepSplex_mqpep} processes peptide data from MaxQuant peptide
+table(s). It splits the original tables by TMT set numbers. Different LCMS
+injections under the same TMT experiment will be handled as different
+fractions. Therefore, the injection index is always "1".
 }

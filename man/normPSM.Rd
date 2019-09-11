@@ -4,13 +4,22 @@
 \alias{normPSM}
 \title{Reports PSM results}
 \usage{
-normPSM(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
-  frac_smry = "frac_smry.xlsx", fasta = NULL,
-  pep_unique_by = "group", corrected_int = FALSE, rm_reverses = TRUE,
-  rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE,
-  rm_outliers = FALSE, plot_violins = TRUE, ...)
+normPSM(group_psm_by = c("pep_seq", "pep_seq_mod"), dat_dir = NULL,
+  expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx",
+  fasta = NULL, pep_unique_by = "group", corrected_int = FALSE,
+  rm_reverses = TRUE, rptr_intco = 1000, rm_craps = FALSE,
+  rm_krts = FALSE, rm_outliers = FALSE, annot_kinases = FALSE,
+  plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...)
 }
 \arguments{
+\item{group_psm_by}{A character string for the grouping of PSM entries. At the
+\code{pep_seq} default, descriptive statistics will be calculated based on
+the same \code{pep_seq} groups. At \code{group_psm_by = pep_seq_mod},
+peptides with different variable modifications will be treated as different
+species. The early decision in data grouping will inform the downstream
+purging (\code{\link{purgePSM}}) and summarization (\code{\link{normPep}})
+of PSM data.}
+
 \item{dat_dir}{A character string to the working directory.}
 
 \item{expt_smry}{A character string to the \code{.xlsx} file containing the
@@ -45,16 +54,25 @@ MaxQuant peptide results.}
 
 \item{rm_outliers}{Logical; if TRUE, performs outlier removals.}
 
-\item{plot_violins}{Logical; if TRUE, prepares the violin plots of
+\item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
+proteins.}
+
+\item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}
 
-\item{...}{Additional parameters for row filtration of data.}
+\item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
+peptide \code{log2FC} for each sample.}
+
+\item{...}{\code{filter_}: Each one corresponds to a logical expression(s) for
+the filtration of data rows. The \code{lhs} needs to start with
+\code{filter_}. The logical condition(s) at the \code{rhs} needs to be
+enclosed in \code{exprs} with round parenthesis.}
 }
 \value{
-Outputs under \code{dat_dir\\PSM}. Primary results are in
- \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt, ...} The
- indeces of TMT experiment and LC/MS injection are indicated in the file
- names.
+Outputs are under the directory of \code{dat_dir\\PSM}. Primary
+ results are in \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt,
+ ...} The indeces of TMT experiment and LC/MS injection are indicated in the
+ file names.
 }
 \description{
 \code{normPSM} reports
@@ -67,12 +85,16 @@ The \code{PSM} files should be present under the working directory,
 \code{"dat_dir"}, specified by end users.
 
 In each primary output file, "\code{...PSM_N.txt}", values under columns
-\code{log2_R...} are relative to the \code{reference(s)} within each multiplex
-TMT set or to the row means if no \code{reference(s)} are present. Values
-under columns \code{N_log2_R...} are \code{log2_R...} with median-centering
-alignment. Values under columns \code{N_I...} are normalized
-\code{reporter-ion intensity}. Character strings under \code{pep_seq_mod}
-denote peptide sequences with applicable variable modifications.
+\code{log2_R...} are logarithmic ratios at base 2 in relative to the
+\code{reference(s)} within each multiplex TMT set, or to the row means if no
+\code{reference(s)} are present. Values under columns \code{N_log2_R...} are
+\code{log2_R...} with median-centering alignment. Values under columns
+\code{I...} are raw \code{reporter-ion intensity} from database searches.
+Values under columns \code{N_I...} are normalized \code{reporter-ion
+intensity}. Values under columns \code{sd_log2_R...} are the standard
+deviation of the \code{log2FC} of peptides from ascribing PSMs. Character
+strings under \code{pep_seq_mod} denote peptide sequences with applicable
+variable modifications.
 }
 \section{\code{Mascot}}{
  End users will export \code{PSM} data from
@@ -87,23 +109,24 @@ denote peptide sequences with applicable variable modifications.
 }
 
 \section{\code{MaxQuant}}{
- End users will copy over \code{msms.txt}
- file(s) from \code{\href{https://www.maxquant.org/}{MaxQuant}} to the
- \code{dat_dir} directory. In the case of multiple \code{msms.txt} files for
- processing, the file names need to be compiled in that they all start with
- \code{'msms'} and end with a \code{'.txt'} extension.
+ End users will copy over \code{msms.txt} file(s)
+ from \code{\href{https://www.maxquant.org/}{MaxQuant}} to the \code{dat_dir}
+ directory. In the case of multiple \code{msms.txt} files for processing, the
+ file names need to be compiled in that they all start with \code{'msms'} and
+ end with a \code{'.txt'} extension.
 }
 
 \examples{
 \dontrun{
 # Mascot example
 # set up a working directory
+dir.create("C:\\\\The\\\\Mascot\\\\Example", recursive = TRUE, showWarnings = FALSE)
 dat_dir <- c("C:\\\\The\\\\First\\\\Example")
 
 # copy fasta
 library(proteoQDA)
-copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\refseq")
-copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\refseq")
+copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
+copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
 
 # copy Mascot PSM data
 cptac_csv_1(dat_dir)
@@ -116,23 +139,30 @@ cptac_frac_1(dat_dir)
 library(proteoQ)
 load_expts()
 
-# process Mascot PSMs
+# process PSMs with in-function filtration of data by `filter_`
 normPSM(
+  group_psm_by = pep_seq, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
   rptr_intco = 3000,
-  rm_craps = FALSE,
+  rm_craps = TRUE,
   rm_krts = FALSE,
-  rm_outliers = FALSE,
-  plot_violins = TRUE, 
+  rm_outliers = FALSE, 
+  annot_kinases = TRUE,	
+  plot_rptr_int = TRUE, 
+  plot_log2FC_cv = TRUE, 
   
-  # `dot-dot-dot` filtration of Mascot PSMs
-  pep_rank = expr(pep_rank == 1), 
-  pep_miss = expr(pep_miss <= 2), 
-  pep_exp_z = expr(pep_exp_z == 2 | pep_exp_z == 3), 
+  filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+  filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
 )
+
+# examplary PSM purging; n: the number of PSMs
+purgePSM(max_cv = .5, min_n = 2)
 
 
 # MaxQuant example
-dat_dir <- c("C:\\\\The\\\\MQ\\\\PSM_Example")
+dir.create("C:\\\\The\\\\MQ\\\\Example", recursive = TRUE, showWarnings = FALSE)
+dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
 
 # copy MaxQuant PSM data
 library(proteoQDB)
@@ -147,15 +177,7 @@ library(proteoQ)
 load_expts()
 
 # process MaxQuant PSMs
-normPSM(
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-  rptr_intco = 3000, 
-  
-  # `dot-dot-dot` filtration of MaxQuant PSMs
-  Charge = expr(Charge == "2" | Charge == "3"), 
-  `Oxidation (M)` = expr(`Oxidation (M)` == 1),
-)
+#   under construction
 }
 
 }

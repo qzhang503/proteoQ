@@ -4,7 +4,7 @@
 \alias{plotNMFCon}
 \title{Plots consensus results from NMF analysis}
 \usage{
-plotNMFCon(id, r, label_scheme_sub, filepath, fn_prx, ...)
+plotNMFCon(id, r, label_scheme_sub, filepath, filename, ...)
 }
 \description{
 Plots consensus results from NMF analysis

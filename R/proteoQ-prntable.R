@@ -3,7 +3,7 @@
 #'\code{normPrn} summarises peptides into proteins and performs data
 #'normalization.
 #'
-#'The column keys are defined in
+#'For the analysis of Mascot results, the column keys are defined in
 #'\code{\href{http://www.matrixscience.com/help/csv_headers.html}{Matrix
 #'Science}} with the following additions:
 #'
@@ -43,7 +43,8 @@
 #'  numbers or entry names of proteins. The option \code{gene} corresponds to
 #'  the summarisation by the gene names of proteins. At \code{id = gene}, data
 #'  under the same gene name but different acccesssion numbers or entry names
-#'  will be summarised into one entry.
+#'  will be summarised into one entry. Currently, the value of \code{id} will
+#'  match automatically to the value of \code{group_pep_by} in \code{normPep}.
 #'@param method_pep_prn Character string; the method to summarise the
 #'  \code{log2FC} and the \code{intensity} of peptides by protein entries. The
 #'  descriptive statistics includes \code{c("mean", "median", "top.3",
@@ -55,35 +56,38 @@
 #'@family aggregate functions
 #'@seealso \code{\link{normPSM}} for PSMs and \code{\link{normPep}} for
 #'  peptides.
-#'@return The primary output in "\code{~\\dat_dir\\Protein\\Protein.txt}".
+#'@return The primary output is in "\code{~\\dat_dir\\Protein\\Protein.txt}".
 #'
 #' @examples
 #' \dontrun{
-#'normPrn(
-#'  id = gene,
-#'  fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
-#'            "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
-#'  method_pep_prn = median,
-#'  method_align = MGKernel,
-#'  range_log2r = c(5, 95),
-#'  range_int = c(5, 95),
-#'  n_comp = 2,
-#'  seed = 749662,
-#'  maxit = 200,
-#'  epsilon = 1e-05
-#')
+#' # proteins results with examplary `filter_...`
+#' normPrn(
+#'   method_pep_prn = median, 
+#'   method_align = MGKernel, 
+#'   range_log2r = c(20, 95), 
+#'   range_int = c(5, 95), 
+#'   n_comp = 2, 
+#'   seed = 749662, 
+#'   maxit = 200, 
+#'   epsilon = 1e-05, 
+#'   
+#'   filter_by = exprs(n_psm >= 5, n_pep >=2), 	
+#' )
+#' 
 #' }
 #'@import stringr dplyr tidyr purrr data.table rlang mixtools
 #'@importFrom magrittr %>%
+#'@importFrom magrittr %T>%
 #'@export
 normPrn <- function (id = c("prot_acc", "gene"), 
                      method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), 
-                     method_align = c("MC", "MGKernel"), range_log2r = c(20, 90), 
-                     range_int = c(5, 95), n_comp = NULL, seed = NULL, fasta = NULL, 
+                     method_align = c("MC", "MGKernel"), range_log2r = c(10, 90), 
+                     range_int = c(5, 95), n_comp = NULL, seed = NULL, 
                      col_refit = NULL, cache = TRUE, ...) {
 
 	dir.create(file.path(dat_dir, "Protein\\Histogram"), recursive = TRUE, showWarnings = FALSE)
 	dir.create(file.path(dat_dir, "Protein\\cache"), recursive = TRUE, showWarnings = FALSE)
+	dir.create(file.path(dat_dir, "Protein\\log"), recursive = TRUE, showWarnings = FALSE)
 	
 	old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
@@ -96,7 +100,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	reload_expts()
 	
 	method_pep_prn <- rlang::enexpr(method_pep_prn)
-	if(method_pep_prn == rlang::expr(c("median", "mean", "weighted.mean", "top.3"))) {
+	if (method_pep_prn == rlang::expr(c("median", "mean", "weighted.mean", "top.3"))) {
 		method_pep_prn <- "median"
 	} else {
 		method_pep_prn <- rlang::as_string(method_pep_prn)
@@ -104,7 +108,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	}
 	
 	method_align <- rlang::enexpr(method_align)
-	if(method_align == rlang::expr(c("MC", "MGKernel"))) {
+	if (method_align == rlang::expr(c("MC", "MGKernel"))) {
 		method_align <- "MC"
 	} else {
 		method_align <- rlang::as_string(method_align)
@@ -124,28 +128,36 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	stopifnot(range_int[1] < range_int[2] & 
 	            range_int[1] >= 0 & range_int[2] <= 100)
 	
-	if(is.null(n_comp)) n_comp <- if(nrow(df) > 3000) 3L else 2L
+	if (is.null(n_comp)) n_comp <- if(nrow(df) > 3000) 3L else 2L
 	n_comp <- n_comp %>% as.integer()
 	stopifnot(n_comp >= 2)
 	
+	# dots <- rlang::enexprs(...)
 	dots <- rlang::enexprs(...)
+	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+	dots <- dots %>% .[! . %in% lang_dots]
 	
+	# depreciated
 	id <- rlang::enexpr(id)
-	if(id == rlang::expr(c("prot_acc", "gene"))) {
+	if (id == rlang::expr(c("prot_acc", "gene"))) {
 		id <- "gene"
 	} else {
 		id <- rlang::as_string(id)
 	}
 	
+	id <- match_normPep_id()
+	
+	# if (is.null(fasta)) fasta <- match_fasta()
+	
 	col_refit <- rlang::enexpr(col_refit)
 	col_refit <- ifelse(is.null(col_refit), rlang::expr(Sample_ID), rlang::sym(col_refit))
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	
-	if(is.null(label_scheme[[col_refit]])) {
+	if (is.null(label_scheme[[col_refit]])) {
 	  col_refit <- rlang::expr(Sample_ID)
 	  warning("Column \'", rlang::as_string(col_refit), "\' does not exist.
 			Use column \'Sample_ID\' instead.", call. = FALSE)
-	} else if(sum(!is.na(label_scheme[[col_refit]])) == 0) {
+	} else if (sum(!is.na(label_scheme[[col_refit]])) == 0) {
 	  col_refit <- rlang::expr(Sample_ID)
 	  warning("No samples were specified under column \'", rlang::as_string(col_refit), "\'.
 			Use column \'Sample_ID\' instead.", call. = FALSE)
@@ -154,7 +166,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	mget(names(formals()), rlang::current_env()) %>% save_call("normPrn")
 	stopifnot(id %in% c("prot_acc", "gene"))
 
-	if(id == "gene") {
+	if (id == "gene") {
 		gn_rollup <- TRUE
 		id <- "prot_acc"
 	} else {
@@ -163,7 +175,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	stopifnot(id == "prot_acc")
 	
-	if(!(cache & file.exists(file.path(dat_dir, "Protein", "Protein.txt")))) {
+	if (!(cache & file.exists(file.path(dat_dir, "Protein", "Protein.txt")))) {
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
 										header = TRUE, sep = "\t", comment.char = "#") %>% 
 			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
@@ -188,15 +200,16 @@ normPrn <- function (id = c("prot_acc", "gene"),
 				dplyr::summarise(n_psm = sum(n_psm))
 		write.csv(df_psm, file.path(dat_dir, "Protein\\cache", "prn_npsm.csv"), row.names = FALSE)
 		
-		pep_id <- match_identifier("pep_seq")
+		# pep_id <- match_identifier("pep_seq") # depreciated
+		pep_id <- match_normPSM_id()
 		
 		df_seq <- df %>% 
-				dplyr::select(!!rlang::sym(id), !!rlang::sym(pep_id)) %>% 
-				dplyr::filter(!duplicated(!!rlang::sym(pep_id))) %>% 
-				dplyr::count(!!rlang::sym(id)) %>% # number of peptides for a protein
-				dplyr::rename(n_pep = n)
-		write.csv(df_seq, file.path(dat_dir, "Protein\\cache", "prn_npep.csv"), row.names = FALSE)
-	
+		  dplyr::select(!!rlang::sym(id), !!rlang::sym(pep_id)) %>% 
+		  dplyr::filter(!duplicated(!!rlang::sym(pep_id))) %>% 
+		  dplyr::count(!!rlang::sym(id)) %>% 
+		  dplyr::rename(n_pep = n) %T>% 
+		  write.csv(., file.path(dat_dir, "Protein\\cache", "prn_npep.csv"), row.names = FALSE)
+
 		df_first <- df %>% 
 		  dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
 		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
@@ -227,35 +240,33 @@ normPrn <- function (id = c("prot_acc", "gene"),
 				df[, grep("^log2_R[0-9]{3}", names(df))], 
 				df[, grep("^N_log2_R[0-9]{3}", names(df))], 
 				df[, grep("^Z_log2_R[0-9]{3}", names(df))])
-
-		load(file = file.path(dat_dir, "label_scheme.Rdata"))
-		acc_type <- find_acctype()
 		
-		# replace NA genes with prot_acc; some genes are represented by protein acessions
-		df <- replace_na_genes(df, acc_type)
-		df$gene <- as.factor(df$gene)
-
-		df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ] 
+		df <- df %>% 
+		  .[rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0, ]
+		# df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ] 
 		
 		# add prot_cover
-		id_pep <- match_identifier("pep_seq")
+		# id_pep <- match_identifier("pep_seq")
 
-		df <- read.csv(file.path(dat_dir, "Peptide\\Peptide.txt"), check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
-		  dplyr::select(prot_acc, prot_desc, !!rlang::sym(id_pep), pep_start, pep_end) %>% 
-		  annotPrn(acc_type) %>% 
+		load(file = file.path(dat_dir, "label_scheme.Rdata"))		
+		fasta <- seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
+		                            seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
+		
+		df <- read.csv(file.path(dat_dir, "Peptide\\Peptide.txt"), check.names = FALSE, 
+		               header = TRUE, sep = "\t", comment.char = "#") %>% 
+		  dplyr::select(prot_acc, acc_type, prot_desc, !!rlang::sym(pep_id), pep_start, pep_end) %>% 
 		  calc_cover(id = !!id, fasta = fasta) %>% 
 		  dplyr::right_join(df, by = id)
 		
-		rm(id_pep)
+		# rm(pep_id)
 		write.csv(df, file.path(dat_dir, "Protein\\cache", "Protein_no_norm.csv"), row.names = FALSE)
-		
+
 		if (gn_rollup) {
-		  # a slow step
 		  dfa <- df %>% 
 		    dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
 		    dplyr::filter(!is.na(gene)) %>% # proteins with empty "gene" but "prot_acc" will be kept 
 		    dplyr::group_by(gene) %>% 
-		    dplyr::summarise_all(list(~median(., na.rm = TRUE)))
+		    dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
 		  
 		  dfb <- df %>% 
 		    dplyr::select(-prot_cover, -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
@@ -266,23 +277,24 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		    dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
 		    dplyr::group_by(gene) %>% 
 		    dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
-		    dplyr::summarise_all(~max(., na.rm = TRUE)) %>% 
+		    dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 
 		    dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
 		  
 		  # the number of unique gene in psm_data may be shorter than those in 
 		  # dfa and dfb for the reason of empty "genes" in dfa 
 		  df <- list(dfc, dfb, dfa) %>% 
 		    purrr::reduce(right_join, by = "gene") %>% 
-		    dplyr::filter(!is.na(gene), !duplicated(gene))
-		  write.csv(df, file.path(dat_dir, "Protein\\cache", "prn_rollup.csv"), row.names = FALSE)
+		    dplyr::filter(!is.na(gene), !duplicated(gene)) %T>% 
+		    write.csv(., file.path(dat_dir, "Protein\\cache", "prn_rollup.csv"), row.names = FALSE)
 		}
 	} else {
 	  df <- read.csv(file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", 
 	                 check.names = FALSE, header = TRUE, comment.char = "#") %>% 
 	    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 	}
+	
+	df <- df %>% filters_in_call(!!!lang_dots)
 
-	dir.create(file.path(dat_dir, "Protein\\log"), recursive = TRUE, showWarnings = FALSE)
 	quietly_out <- purrr::quietly(normMulGau)(
 	  df = df, 
 	  method_align = method_align, 
@@ -303,7 +315,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
 	  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
 	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
-	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3))
-	
-	write.table(df, file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
+	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %T>% 
+	  write.table(., file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 }

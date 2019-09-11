@@ -4,18 +4,20 @@
 \alias{annotPSM_mq}
 \title{Annotates PSM results}
 \usage{
-annotPSM_mq(expt_smry = "expt_smry.xlsx", rm_krts = FALSE,
-  plot_violins = TRUE)
+annotPSM_mq(expt_smry = "expt_smry.xlsx", fasta = NULL,
+  rm_krts = FALSE, plot_rptr_int = TRUE)
 }
 \arguments{
 \item{expt_smry}{A character string to the \code{.xlsx} file containing the
 metadata of TMT experiments. The default is "expt_smry.xlsx".}
 
-\item{rm_krts}{Logical; if TRUE, removes keratin entries from the output.}
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search.}
 
-\item{plot_violins}{Logical; if TRUE, prepares the violin plots of
+\item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}
 }
 \description{
-\code{annotPSM} adds fields of annotation to PSM tables.
+\code{annotPSM_mq} adds fields of annotation to PSM tables.
 }

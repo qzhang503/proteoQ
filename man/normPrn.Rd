@@ -6,8 +6,8 @@
 \usage{
 normPrn(id = c("prot_acc", "gene"), method_pep_prn = c("median",
   "mean", "weighted.mean", "top.3"), method_align = c("MC", "MGKernel"),
-  range_log2r = c(20, 90), range_int = c(5, 95), n_comp = NULL,
-  seed = NULL, fasta = NULL, col_refit = NULL, cache = TRUE, ...)
+  range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL,
+  seed = NULL, col_refit = NULL, cache = TRUE, ...)
 }
 \arguments{
 \item{id}{Character string; the variable to summarise peptides into proteins.
@@ -15,7 +15,8 @@ The option \code{prot_acc} corresponds to the summarisation by the accession
 numbers or entry names of proteins. The option \code{gene} corresponds to
 the summarisation by the gene names of proteins. At \code{id = gene}, data
 under the same gene name but different acccesssion numbers or entry names
-will be summarised into one entry.}
+will be summarised into one entry. Currently, the value of \code{id} will
+match automatically to the value of \code{group_pep_by} in \code{normPep}.}
 
 \item{method_pep_prn}{Character string; the method to summarise the
 \code{log2FC} and the \code{intensity} of peptides by protein entries. The
@@ -38,7 +39,7 @@ the maximums of kernel density are zero. It is also possible to align the
 \item{range_log2r}{Numeric vector at length two; the range of the
 \code{log2FC} of peptide/protein entries for use in the scaling
 normalization of standard deviation across samples. The default is between
-the 20th and the 90th quantiles.}
+the 10th and the 90th quantiles.}
 
 \item{range_int}{Numeric vector at length two; the range of the
 \code{intensity} of reporter ions for use in the scaling normalization of
@@ -53,10 +54,6 @@ standard deviation across samples. The default is between the 5th and the
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
 
-\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
-prepended directory path. The \code{fasta} database(s) need to match those
-used in MS/MS ion search.}
-
 \item{col_refit}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_refit} will be
 used in the refit of \code{log2FC} using multiple Gaussian kernels. The
@@ -66,19 +63,21 @@ which results in the refit of the \code{log2FC} for all samples.}
 
 \item{cache}{Logical; if TRUE, use cache.}
 
-\item{...}{Additional parameters for \code{\link[mixtools]{normalmixEM}}:\cr
-\code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
-tolerance limit for declaring algorithm convergence.}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data; also see \code{\link{normPSM}}. \cr Additional parameters for
+\code{\link[mixtools]{normalmixEM}}:\cr \code{maxit}, the maximum number of
+iterations allowed; \cr \code{epsilon}, tolerance limit for declaring
+algorithm convergence.}
 }
 \value{
-The primary output in "\code{~\\dat_dir\\Protein\\Protein.txt}".
+The primary output is in "\code{~\\dat_dir\\Protein\\Protein.txt}".
 }
 \description{
 \code{normPrn} summarises peptides into proteins and performs data
 normalization.
 }
 \details{
-The column keys are defined in
+For the analysis of Mascot results, the column keys are defined in
 \code{\href{http://www.matrixscience.com/help/csv_headers.html}{Matrix
 Science}} with the following additions:
 
@@ -115,19 +114,20 @@ normalization \cr }
 }
 \examples{
 \dontrun{
+# proteins results with examplary `filter_...`
 normPrn(
- id = gene,
- fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
-           "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
- method_pep_prn = median,
- method_align = MGKernel,
- range_log2r = c(5, 95),
- range_int = c(5, 95),
- n_comp = 2,
- seed = 749662,
- maxit = 200,
- epsilon = 1e-05
+  method_pep_prn = median, 
+  method_align = MGKernel, 
+  range_log2r = c(20, 95), 
+  range_int = c(5, 95), 
+  n_comp = 2, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  
+  filter_by = exprs(n_psm >= 5, n_pep >=2), 	
 )
+
 }
 }
 \seealso{

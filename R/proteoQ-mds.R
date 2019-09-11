@@ -6,7 +6,7 @@ plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
                      col_alpha = NULL, label_scheme_sub = label_scheme_sub, filepath, filename,
                      show_ids, ...) {
 
-  dots <- rlang::exprs(...)
+  dots <- rlang::enexprs(...)
 
 	col_fill <- rlang::enexpr(col_fill)
 	col_color <- rlang::enexpr(col_color)
@@ -82,13 +82,15 @@ plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 		coord_fixed() +
 	my_theme
 
-	if (show_ids)
+	if (show_ids) {
 	  p <- p +
-	    geom_text(data = df, mapping = aes(x = Coordinate.1, y = Coordinate.2,
-	                                           label = df$Sample_ID), color = "gray", size = 3)
-	
-	filename <- gg_imgname(filename)
-	ggsave(file.path(filepath, filename), p, ...)
+	    geom_text(data = df, 
+	              mapping = aes(x = Coordinate.1, y = Coordinate.2, 
+	                            label = df$Sample_ID), color = "gray", size = 3)	  
+	}
+
+	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), dots)
+	do.call(ggsave, gg_args)
 }
 
 
@@ -137,9 +139,9 @@ plotEucDist <- function (D, annot_cols, filepath, filename, annot_colnames, ...)
 	n_TMT_sets <- n_TMT_sets(label_scheme)
 	max_width <- 77
 
-	if(is.null(dots$width)) dots$width <- pmin(10*n_TMT_sets*1.2, max_width)
+	if (is.null(dots$width)) dots$width <- pmin(10*n_TMT_sets*1.2, max_width)
 
-	if(dots$width >= max_width) {
+	if (dots$width >= max_width) {
 		cat("The width for the graphic device is", dots$width, "inches or more.\n")
 		stop("Please consider a a smaller `cellwidth`.")
 	}
@@ -150,7 +152,7 @@ plotEucDist <- function (D, annot_cols, filepath, filename, annot_colnames, ...)
 		mat = D_matrix,
 		filename = file.path(filepath, filename),
 		annotation_col = annotation_col,
-		# annotation_col = NULL,
+		annotation_row = NA, 
 		color = mypalette,
 		annotation_colors = annotation_colors,
 		breaks = color_breaks,
@@ -250,9 +252,11 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 	              color = "gray", size = 3)
 
 	filename <- gg_imgname(filename)
-	ggsave(file.path(filepath, filename), p, ...)
+	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), dots)
+	do.call(ggsave, gg_args)
+	# ggsave(file.path(filepath, filename), p, ...)
 
-	bi_plot <- FALSE
+	bi_plot <- TRUE
 	if (bi_plot) {
 		p_bi <- ggplot() +
 			geom_point(data = pr_bi, mapping = aes(x = Coordinate.1, y = Coordinate.2),
@@ -269,10 +273,14 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 		                           mapping = aes(x = Coordinate.1, y = Coordinate.2,
 		                                         label = rownames(pr_bi)), color = "gray", size = 3)
 
-		fn_prx <- gsub("\\..*$", "", filename)
-		fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
+		fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+		fn_prefix <- gsub("\\.[^.]*$", "", filename)
+		
+		new_filename <- paste0(fn_prefix, "bi_plot", ".", fn_suffix) %>% 
+		  gg_imgname()
 
-		ggsave(file.path(filepath, paste0(fn_prx, "bi_plot", ".", fn_suffix)), p_bi, ...)
+		gg_args_bi <- c(filename = file.path(filepath, new_filename), dots)
+		do.call(ggsave, gg_args_bi)
 	}
 }
 
@@ -282,12 +290,18 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 #' @import dplyr rlang
 #' @importFrom MASS isoMDS
 #' @importFrom magrittr %>%
-scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, classical, ...) {
+scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r, 
+                      adjEucDist = FALSE, classical, ...) {
 
-	dots <- rlang::exprs(...)
+	dots <- rlang::enexprs(...)
+	id <- rlang::as_string(rlang::enexpr(id))
 	
 	stopifnot(nrow(df) > 50)
 
+	df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
+	             sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
+	  .$log2R
+	
 	M <- cor(df, use="pairwise.complete.obs")
 	M[is.na(M)] <- 0
 	
@@ -315,24 +329,30 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 	} else {
 		df_mds <- data.frame(cmdscale(D_matrix, k = k))
 	}
+	
+	run_scripts <- FALSE
+	if (run_scripts) {
 
-	nms <- lapply(dots, expr_name) %>%
-		.[. %in% names(label_scheme_sub)]
+	}
+	
+  	nms <- lapply(dots, expr_name) %>%
+  		.[. %in% names(label_scheme_sub)]
+  
+  	lookup <- nms %>%
+  		data.frame(check.names = FALSE)
+  
+  	label_scheme_mds <- label_scheme_sub[, names(label_scheme_sub) %in% nms] %>%
+  		`names<-`(names(lookup)) %>%
+  		dplyr::bind_cols(label_scheme_sub[, "Sample_ID", drop = FALSE]) %>%
+  		dplyr::select(which(not_all_NA(.)))
+  
+  	dots[names(dots) %in% names(lookup)] <- NULL	  
 
-	lookup <- nms %>%
-		data.frame(check.names = FALSE)
-
-	label_scheme_mds <- label_scheme_sub[, names(label_scheme_sub) %in% nms] %>%
-		`names<-`(names(lookup)) %>%
-		dplyr::bind_cols(label_scheme_sub[, "Sample_ID", drop = FALSE]) %>%
-		dplyr::select(which(not_all_NA(.)))
-
-	dots[names(dots) %in% names(lookup)] <- NULL
 
 	df_mds <- df_mds %>%
 		`colnames<-`(paste("Coordinate", 1:k, sep = ".")) %>%
 		tibble::rownames_to_column("Sample_ID") %>%
-		dplyr::left_join(label_scheme_mds, by = "Sample_ID") %>%
+		# dplyr::left_join(label_scheme_mds, by = "Sample_ID") %>%
 		dplyr::select(which(not_all_zero(.))) %>%
 		tibble::column_to_rownames(var = "Sample_ID")
 
@@ -377,16 +397,22 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 #'Visualization of MDS plots
 #'
 #'\code{proteoMDS} visualizes the results from multidimensional scaling (MDS).
+#'Users should avoid call the method directly, but instead use the following
+#'wrappers.
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
-#'\code{\link[stats]{dist}}, followed by a metric (\code{\link[stats]{cmdscale}})
-#'or non-metric (\code{\link[MASS]{isoMDS}}) MDS. The default is metric MDS with
-#'the input dissimilarities being euclidean distances.
+#'\code{\link[stats]{dist}}, followed by a metric
+#'(\code{\link[stats]{cmdscale}}) or non-metric (\code{\link[MASS]{isoMDS}})
+#'MDS. The default is metric MDS with the input dissimilarities being euclidean
+#'distances.
 #'
-#'The function matches the current \code{id} to those in the latest \code{calls}
-#'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-#'\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
-#'pep_seq_mod} will be matched to \code{id = pep_seq}.
+#'The function matches the current \code{id} to the grouping argument in the
+#'latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
+#'example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
+#'the setting of \code{id = pep_seq_mod} in the current call will be matched to
+#'\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
+#'was employed, the setting of \code{id = prot_acc} in the current call will be
+#'matched to \code{id = gene}.
 #'
 #'@inheritParams  proteoHist
 #'@param  col_group Not used.
@@ -419,8 +445,10 @@ scoreMDS <- function (df, label_scheme_sub, scale_log2r, adjEucDist = FALSE, cla
 #'@param show_ids Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 #'  plots.
 #'@param annot_cols Not used.
-#'@param ... Parameters for \code{ggsave}: \cr \code{width}, the width of plot;
-#'  \cr \code{height}, the height of plot \cr \code{...}
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
+#'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
+#'  \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
+#'  height of plot \cr \code{...}
 #'
 #'@return MDS plots.
 #'@import dplyr rlang ggplot2
@@ -460,14 +488,18 @@ proteoMDS <- function (id = gene,
 #'Visualization of PCA plots
 #'
 #'\code{proteoPCA} visualizes the results from principal component analysis
-#'(PCA).
+#'(PCA). Users should avoid call the method directly, but instead use the
+#'following wrappers.
 #'
-#'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}). 
+#'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
 #'
-#'The function matches the current \code{id} to those in the latest \code{calls}
-#'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-#'\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
-#'pep_seq_mod} will be matched to \code{id = pep_seq}.
+#'The function matches the current \code{id} to the grouping argument in the
+#'latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
+#'example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
+#'the setting of \code{id = pep_seq_mod} in the current call will be matched to
+#'\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
+#'was employed, the setting of \code{id = prot_acc} in the current call will be
+#'matched to \code{id = gene}.
 #'
 #'@inheritParams proteoMDS
 #'
@@ -507,19 +539,23 @@ proteoPCA <- function (id = gene,
 
 #'Visualization of the Euclidean distance matrix
 #'
-#'\code{proteoEucDist} visualizes the heat map of Euclidean distances.
+#'\code{proteoEucDist} visualizes the heat map of Euclidean distances. Users
+#'should avoid call the method directly, but instead use the following wrappers.
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
 #'\code{\link[stats]{dist}} for heat map visualization.
 #'
-#'The function matches the current \code{id} to those in the latest \code{calls}
-#'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-#'\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
-#'pep_seq_mod} will be matched to \code{id = pep_seq}.
+#'The function matches the current \code{id} to the grouping argument in the
+#'latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
+#'example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
+#'the setting of \code{id = pep_seq_mod} in the current call will be matched to
+#'\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
+#'was employed, the setting of \code{id = prot_acc} in the current call will be
+#'matched to \code{id = gene}.
 #'
 #'@inheritParams proteoMDS
-#'@param annot_cols A character vector of column names in \code{expt_smry.xlsx}.
-#'  Values under the selected columns will be used to color-code sample IDs on
+#'@param annot_cols A character vector of column keys in \code{expt_smry.xlsx}.
+#'  The values under the selected keys will be used to color-code sample IDs on
 #'  the top of the indicated plot.
 #'@param annot_colnames A character vector of replacement name(s) to
 #'  \code{annot_cols}.
@@ -553,18 +589,6 @@ proteoEucDist <- function (id = gene,
 	
 	reload_expts()
 	
-	# if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
-	#   load(file = file.path(dat_dir, "label_scheme.Rdata"))
-	#   
-	#   label_scheme <- label_scheme %>% 
-	#     dplyr::select(annot_cols) %>% 
-	#     `colnames<-`(annot_colnames) %>% 
-	#     dplyr::select(-which(names(.) %in% annot_cols)) %>% 
-	#     dplyr::bind_cols(label_scheme, .)
-	#   
-	#    save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
-	# }
-
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
@@ -584,7 +608,9 @@ proteoEucDist <- function (id = gene,
 #' @examples
 #' pepMDS(
 #'   scale_log2r = FALSE,
-#'   col_select = Select
+#'   col_select = Select, 
+#'   filter_by_npsm = exprs(n_psm >= 10),
+#'   filename = "pepMDS_filtered.png",
 #' )
 #'
 #'@import purrr
@@ -613,6 +639,8 @@ pepMDS <- function (...) {
 #'   col_color = Color,
 #'   col_shape = Shape,
 #'   show_ids = TRUE,
+#'   filter_by_npep = exprs(n_pep >= 5),
+#'   filename = "prnMDS_filtered.png",
 #' )
 #'
 #' \dontrun{
@@ -629,7 +657,7 @@ prnMDS <- function (...) {
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\MDS\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+
   quietly_log <- purrr::quietly(proteoMDS)(id = gene, ...)
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Protein\\MDS\\log","prnMDS_log.csv"), append = TRUE)
@@ -638,7 +666,7 @@ prnMDS <- function (...) {
 
 #'PCA plots
 #'
-#'\code{pepPCA} is a wrapper of \code{\link{proteoPCA}} for peptide data
+#'\code{pepPCA} is a wrapper of \code{\link{proteoPCA}} for peptide data. 
 #'
 #'@rdname proteoPCA
 #'
@@ -648,6 +676,8 @@ prnMDS <- function (...) {
 #'   col_color = Color,
 #'   col_shape = Shape,
 #'   show_ids = TRUE,
+#'   filter_by_npsm = exprs(n_psm >= 10),
+#'   filename = "pepPCA_filtered.png",
 #' )
 #'
 #'@import purrr
@@ -676,6 +706,8 @@ pepPCA <- function (...) {
 #'   col_color = Color,
 #'   col_shape = Shape,
 #'   show_ids = TRUE,
+#'   filter_by_npep = exprs(n_pep >= 5),
+#'   filename = "prnPCA_filtered.png",
 #' )
 #'
 #' \dontrun{
@@ -714,6 +746,7 @@ pepEucDist <- function (...) {
   dir.create(file.path(dat_dir, "Peptide\\EucDist\\log"), recursive = TRUE, showWarnings = FALSE)
   
   quietly_log <- purrr::quietly(proteoEucDist)(id = pep_seq, ...)
+  quietly_log$result <- NULL
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Peptide\\EucDist\\log","pepEucDist_log.csv"), append = TRUE)
 }
@@ -748,7 +781,9 @@ pepEucDist <- function (...) {
 #'   cellwidth = 24,
 #'   cellheight = 24,
 #'   width = 14,
-#'   height = 12
+#'   height = 12, 
+#'   filter_by_npep = exprs(n_pep >= 5),
+#'   filename = "prnEucDist_filtered.png",
 #' )
 #'
 #'
@@ -767,8 +802,9 @@ prnEucDist <- function (...) {
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\EucDist\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+
   quietly_log <- purrr::quietly(proteoEucDist)(id = gene, ...)
+  quietly_log$result <- NULL
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Protein\\EucDist\\log","prnEucDist_log.csv"), append = TRUE)
 }

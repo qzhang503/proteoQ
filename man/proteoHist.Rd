@@ -16,8 +16,9 @@ pepHist(...)
 prnHist(...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. Peptide data will be
-used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically by the program. Peptide data will be used at
+\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -30,34 +31,42 @@ of standard deviation for all samples.}
 
 \item{pep_pattern}{Character string containing one-letter representation of
 amino acids. At the "zzz" default, all peptides will be used. Letters in the
-character string are case sensitive. For example, \code{pep_pattern = "m"}
-will extract peptides with oxidized methiones and \code{pep_pattern = "_"}
-with N-terminal acetylation.}
+character string are case sensitive. For example, \code{pep_pattern = "y"}
+will extract peptides with tyrosine phosphorylation. To extract peptides
+with N-terminal acetylation, use \code{pep_pattern = "_"}. The parameter
+provides a means for high-level subsetting of peptide entries in a data set.
+In general, one can use the \code{filter-in-function} feature described in
+\code{?normPSM} to subset data.}
 
-\item{show_curves}{Logical; if TRUE, shows the fitted curves.}
+\item{show_curves}{Logical; if TRUE, shows the fitted curves. The curve
+parameters are based on the latest call to \code{normPep} or \code{normPrn}.
+This feature can inform the effects of data filtration on the alignment of
+\code{logFC} profiles.}
 
 \item{show_vline}{Logical; if TRUE, shows the vertical lines at \code{x = 0}.}
 
-\item{df}{The name of input data file. By default, it will be determined by
-the value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined
+automatically by the value of \code{id}.}
 
 \item{filepath}{A file path to output results. By default, it will be
-determined by the name of the calling \code{function} and the value of
-\code{id} in the \code{call}.}
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
 
 \item{filename}{A representative file name to output image(s). By default, it
-will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} where the image type will be
-determined by the extension of the file name. A \code{.png} format will be
-used at default or an unrecognized file extension.}
+will be determined automatically by the name of the current \code{call}. The
+image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
+will be determined by the extension of the file name. A \code{.png} format
+will be used at default or an unrecognized file extension.}
 
-\item{...}{Additional parameters for plotting: \cr \code{xmin}, the minimum
-\eqn{x} at a log2 scale; the default is -2. \cr \code{xmax}, the maximum
-\eqn{x} at a log2 scale; the default is +2. \cr \code{x_breaks}, the breaks
-in \eqn{x}-axis at a log2 scale; the default is 1. \cr \code{binwidth}, the
-binwidth of \code{log2FC}; the default is \eqn{(xmax - xmin)/80}. \cr
-\code{ncol}, the number of columns; the default is 1. \cr \code{width}, the
-width of plot; \cr \code{height}, the height of plot.}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data; also see \code{\link{normPSM}}. \cr Additional parameters for
+plotting: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale; the default
+is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the default is
++2. \cr \code{x_breaks}, the breaks in \eqn{x}-axis at a log2 scale; the
+default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC}; the
+default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of columns;
+the default is 1. \cr \code{width}, the width of plot; \cr \code{height},
+the height of plot.}
 }
 \value{
 The histograms of \code{log2FC} under
@@ -66,6 +75,8 @@ The histograms of \code{log2FC} under
 }
 \description{
 \code{proteoHist} plots the histograms of protein or peptide \code{log2FC}.
+Users should avoid call the method directly, but instead use the following
+wrappers.
 
 \code{pepHist} is a wrapper of \code{\link{proteoHist}} for peptide data
 
@@ -75,43 +86,80 @@ The histograms of \code{log2FC} under
 In the histograms, the \code{log2FC} under each TMT channel are color-coded by
 their contributing reporter-ion intensity.
 
-The function matches the current \code{id} to those in the latest \code{call}
-to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
-pep_seq_mod} will be matched to \code{id = pep_seq}.
+The function matches the current \code{id} to the grouping argument in the
+latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
+example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
+the setting of \code{id = pep_seq_mod} in the current call will be matched to
+\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
+was employed, the setting of \code{id = prot_acc} in the current call will be
+matched to \code{id = gene}.
 }
 \examples{
-# without scaling normalization
+## visualization of normalization
+# without scaling
+pepHist(scale_log2r = FALSE)
+
+# with scaling
+pepHist(scale_log2r = TRUE)
+
+## samples for use are indicated under a column, i.e. `Select`, in `expt_smry.xlsx`
+# peptides
+pepHist(col_select = Select)
+
+# proteins
+prnHist(col_select = Select)
+
+## data filtration
+# phosphopeptide subset
 pepHist(
-  scale_log2r = FALSE,
-  xmin = -1,
-  xmax = 1,
-  ncol = 5
+  pep_pattern = "sty",
+  filename = "pepHist_fil_by_sty.png",
 )
 
-# with scaling normalization
+# recommended way to extract phosphopeptides
 pepHist(
-  scale_log2r = TRUE,
-  xmin = -1,
-  xmax = 1,
-  ncol = 5
+  filter_by = exprs(grepl("[sty]", pep_seq_mod)),
+  filename = "pepHist_fil_by_sty.png",
+)
+
+# exclude oxidized methione or deamidated asparagine
+pepHist(
+  filter_by = exprs(!grepl("[mn]", pep_seq_mod)),
+  filename = "pepHist_fil_no_mn.png",
+)
+
+## between lead and lag
+# leading logFC profiles of peptides
+pepHist(
+  filename = "pepHist.png",
+)
+
+# lagging logFC profiles of peptides at
+#   (1) n_psm >= 10
+#   (2) and no methionine oxidation or asparagine deamidation
+# may exclude sample(s) with considerable offset(s) 
+#   between the 'bootstrapped' lead and lag from further analysis
+pepHist(
+  filter_by_npsm = exprs(n_psm >= 10),
+  filter_by_mn = exprs(!grepl("[mn]", pep_seq_mod)),
+  filename = "pepHist_filtered.png",
 )
 
 \dontrun{
+# sample selection
 pepHist(
-  col_select = "a_non_existed_column_key"
+  col_select = "a_column_key_not_in_`expt_smry.xlsx`",
 )
+
+# data filtration
+pepHist(
+  filter_by = exprs(!grepl("[m]", a_column_key_not_in_data_table)),
+)
+
+prnHist(
+  lhs_not_start_with_filter_ = exprs(n_psm >= 5),
+)
+
 }
-
-# no scaling normalization
-prnHist(
-  ncol = 10
-)
-
-# scaling normalization
-prnHist(
-  scale_log2r = TRUE,
-  ncol = 10
-)
 
 }

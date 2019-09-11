@@ -4,7 +4,8 @@
 \alias{normPep_Splex}
 \title{Peptide reports for individual TMT experiments}
 \usage{
-normPep_Splex(id = "pep_seq_mod", method_psm_pep = "median")
+normPep_Splex(id = "pep_seq_mod", method_psm_pep = "median",
+  group_pep_by = "prot_acc")
 }
 \arguments{
 \item{id}{Character string; the variable for summarisation of \code{PSMs} into
@@ -13,21 +14,15 @@ the primary sequences of peptides. The option \code{id = pep_seq_mod}
 corresponds to the summarisation by both the primary sequences and variable
 modifications of peptides. \code{PSMs} data with the same value in
 \code{pep_seq} or \code{pep_seq_mod} will be summarised into a single entry
-of peptide.}
+of peptide. Currently, the value of \code{id} will match automatically to
+the value of \code{group_psm_by} in \code{normPSM}.}
 
 \item{method_psm_pep}{Character string; the method to summarise the
- \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
- The descriptive statistics includes \code{c("mean", "median", "top.3",
- "weighted.mean")}. The \code{log10-intensity} of reporter ions at the
- \code{PSMs} levels will be the weight when summarising \code{log2FC} with
- \code{"top.3"} or \code{"weighted.mean"}.
-
- At \code{method_psm_pep = mqpep}, the PSM to peptide summarisation will be
- bypassed. Instead, MaxQuant peptide tables based on \code{peptides.txt} or
- \code{modificationSpecificPeptides.txt} will be taken. More specifically,
- the peptide table(s) without site modification information will be used at
- \code{id = pep_seq} and the peptide table(s) with site modification
- information will be used at \code{id = pep_seq_mod}.}
+\code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
+The descriptive statistics includes \code{c("mean", "median", "top.3",
+"weighted.mean")}. The \code{log10-intensity} of reporter ions at the
+\code{PSMs} levels will be the weight when summarising \code{log2FC} with
+\code{"top.3"} or \code{"weighted.mean"}.}
 }
 \value{
 Results in \code{.txt} files for each of TMT experiments and LC/MS

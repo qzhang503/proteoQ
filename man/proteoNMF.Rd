@@ -32,8 +32,9 @@ plot_prnNMFCoef(annot_cols = NULL, annot_colnames = NULL, ...)
 plot_metaNMF(annot_cols = NULL, annot_colnames = NULL, ...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. Peptide data will be
-used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically by the program. Peptide data will be used at
+\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -55,8 +56,8 @@ will be used.}
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used.}
 
-\item{df}{The name of input data file. By default, it will be determined by
-the value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined
+automatically by the value of \code{id}.}
 
 \item{filepath}{Use system default.}
 
@@ -70,12 +71,12 @@ The default is c(4:8)}
 
 \item{nrun}{Numeric; the number of runs in \code{\link[NMF]{nmf}}.}
 
-\item{...}{In \code{anal_} functions: additional arguments are inherited from
+\item{...}{In \code{anal_} functions: additional arguments are for
 \code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments are
-inherited from \code{proteoEucDist}.}
+for \code{pheatmap}.}
 
-\item{annot_cols}{A character vector of column names in \code{expt_smry.xlsx}.
-Values under the selected columns will be used to color-code sample IDs on
+\item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
+The values under the selected keys will be used to color-code sample IDs on
 the top of the indicated plot.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
@@ -86,8 +87,8 @@ NMF classification and visualization of \code{log2FC}.
 }
 \description{
 \code{proteoNMF} analyzes and visualizes the NMF clustering of peptide or
-protein \code{log2FC}. Users should never call the method directly, but
-instead use the wrappers.
+protein \code{log2FC}. Users should avoid call the method directly, but
+instead use the following wrappers.
 
 \code{anal_pepNMF} is a wrapper of \code{\link{proteoNMF}} for the NMF
 analysis of peptide data
@@ -117,31 +118,35 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 \examples{
 library(NMF)
 
-# peptide data NMF at single r(ank)
+# peptide data NMF at two different r(ank)s
 anal_pepNMF(
   scale_log2r = TRUE,
   col_group = Group, # optional a priori knowledge of sample groups
-  r = 6,
-  nrun = 200
+  r = c(6, 8),
+  nrun = 200,
+  filter_by_npsm = exprs(n_psm >= 2),
 )
 
 # protein data NMF at multiple ranks
+library(NMF)
+
 anal_prnNMF(
   impute_na = FALSE,
   scale_log2r = TRUE,
   col_group = Group,
   r = c(5:8),
-  nrun = 200
+  nrun = 200, 
+  filter_by_npep = exprs(n_pep >= 2),
 )
 
 
 # peptide consensus heat maps at specific ranks
 plot_pepNMFCon(
-  r = c(3, 5),
+  r = c(5, 6),
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
-  height = 10
+  height = 10,
 )
 
 # peptide consensus heat maps at all available ranks
@@ -150,17 +155,17 @@ plot_pepNMFCon(
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
-  height = 10
+  height = 10,
 )
 
 
 # protein consensus heat maps at specific ranks
 plot_prnNMFCon(
-  r = c(3, 5),
+  r = c(7:8),
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
-  height = 10
+  height = 10,
 )
 
 # protein consensus heat maps at all available ranks

@@ -4,8 +4,8 @@
 \alias{scoreMDS}
 \title{Scores MDS and PCA}
 \usage{
-scoreMDS(df, label_scheme_sub, scale_log2r, adjEucDist = FALSE,
-  classical, ...)
+scoreMDS(df, id, label_scheme_sub, anal_type, scale_log2r,
+  adjEucDist = FALSE, classical, ...)
 }
 \description{
 Scores MDS and PCA

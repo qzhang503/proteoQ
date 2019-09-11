@@ -6,7 +6,7 @@
 \usage{
 plotVolcano_sub(df = NULL, id = "gene", filepath = NULL,
   filename = NULL, adjP = FALSE, show_labels = TRUE, anal_type,
-  gset_nm = "go_sets")
+  gset_nms = "go_sets")
 }
 \description{
 Plot volcanos

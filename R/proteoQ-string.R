@@ -1,31 +1,3 @@
-#'Species lookup
-sp_lookup <- function(species) {
-  switch(species, 
-         human = "hs",
-         mouse = "mm",
-         rat = "rn",
-         fly = "dm", 
-         bovine = "bt",
-         dog = "cf", 
-         stop("Unknown `species`.", Call. = FALSE)
-  )    
-}
-
-
-#'Toxonomy lookup
-taxid_lookup <- function(species) {
-  switch (species,
-          human = 9606, 
-          mouse = 10090,
-          rat = 10116, 
-          fly = 7227, 
-          bovine = 9913,
-          dog = 9612, 
-          stop("Unknown `species`.", Call. = FALSE)
-  )
-}
-
-
 #'Downloads STRING databases
 #'
 #'@param species Character string; the species. The currently supported species
@@ -133,7 +105,6 @@ dl_stringdbs <- function(species = NULL, db_path = "~\\proteoQ\\dbs\\string", ov
 }
 
 
-
 #'Annotates protein STRING ids by species
 #'
 #'@inheritParams getStringDB
@@ -214,29 +185,27 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff) {
 }
 
 
-
 #'STRING outputs
 #'
 #'\code{getStringDB} produces the \code{\href{https://string-db.org/}{STRING}}
 #'results of protein-protein interaction and protein expressions. The
 #'interaction file, \code{Protein_STRING_ppi.tsv}, and the expression file,
-#'\code{Protein_STRING_expr.tsv}, may be used by
-#'\code{\href{https://cytoscape.org/}{Cytoscape}} for further processing and
-#'analysis.
+#'\code{Protein_STRING_expr.tsv}, are compatible with
+#'\code{\href{https://cytoscape.org/}{Cytoscape}}.
 #'
 #'@inheritParams dl_stringdbs
 #'@param score_cutoff Numeric; the threshold of the \code{combined_score} of
 #'  protein-protein interaction.
-#'@param nseq_cutoff Positive integer. Proteins with the number of identifying
-#'  peptides smaller than the cut-off value will be removed from further
-#'  analysis.
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
+#'  data; also see \code{\link{normPSM}}. 
 #' @examples
 #' \dontrun{
 #' getStringDB(
 #'   db_path = "~\\proteoQ\\dbs\\string",
 #'   score_cutoff = .9,
-#'   nseq_cutoff = 2,
-#'   adjP = FALSE
+#'   adjP = FALSE,
+#'   filter_by_sp = exprs(species %in% c("human", "mouse")), 
+#'   filter_by_npep = exprs(n_pep >= 2), 
 #' )
 #' }
 #'
@@ -244,24 +213,48 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff) {
 #'@inheritParams proteoPurge
 #'@import dplyr purrr
 #'@export
-getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", 
-                             score_cutoff = .7, nseq_cutoff = 2, adjP = FALSE) {
+getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, adjP = FALSE, ...) {
   stopifnot(rlang::is_logical(adjP))
   stopifnot(rlang::is_double(score_cutoff))
-  stopifnot(rlang::is_double(nseq_cutoff))
-  
-  id <- match_identifier("gene")
 
   if (score_cutoff <= 1) score_cutoff <- score_cutoff * 1000
   
   dir.create(file.path(dat_dir, "Protein\\String\\cache"), recursive = TRUE, showWarnings = FALSE)
-
-  df <- read.csv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt"), check.names = FALSE, 
-                 stringsAsFactors = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
-    dplyr::filter(!is.na(id), nchar(id) > 0, n_pep >= nseq_cutoff)
   
+  fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
+  fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
+  
+  if (file.exists(fn_p)) {
+    src_path <- fn_p
+  } else if (file.exists(fn_raw)) {
+    src_path <- fn_raw
+  } else {
+    stop("Protein results not found.", call. = FALSE)
+  }
+  
+  df <- read.csv(src_path, check.names = FALSE, stringsAsFactors = FALSE, 
+                 header = TRUE, sep = "\t", comment.char = "#")
+  
+  id <- match_identifier("gene")
   stopifnot(id %in% names(df))
+  stopifnot("species" %in% names(df))
   
+  species <- unique(df$species) %>% 
+    .[!is.na(.)] %>% 
+    as.character()
+  
+  stopifnot(length(species) >= 1)
+
+  dots <- rlang::enexprs(...)
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
+
+  df <- df %>% 
+    dplyr::filter(!is.na(id), nchar(id) > 0) %>% 
+    filters_in_call(!!!filter_dots)
+
   if(!adjP) {
     df <- df %>%
       dplyr::select(-contains("adjP"))
@@ -280,9 +273,8 @@ getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string",
     dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
     dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
 
-  species <- find_species()
-  if (species == "pdx") species <- c("human", "mouse")
-  
+  # check db_path exists?
+
   purrr::walk(species, annot_stringdb, df, db_path, id, score_cutoff)
 }
 

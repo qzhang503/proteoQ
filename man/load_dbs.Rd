@@ -4,7 +4,7 @@
 \alias{load_dbs}
 \title{Loads species-specific Databases}
 \usage{
-load_dbs()
+load_dbs(gset_nms = "go_sets", species = "human")
 }
 \description{
 A function loads a set of precompiled tables in protein accessions, \code{GO}
@@ -13,7 +13,7 @@ data, \code{KEGG} pathways and
 signatures}}.
 }
 \examples{
-load_dbs()
+load_dbs("human")
 
 }
 \seealso{

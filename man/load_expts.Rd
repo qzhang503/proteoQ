@@ -37,10 +37,7 @@ experiments
  indeces  \cr LCMS_Injection   \tab LC/MS injection indeces under a
  \code{TMT_Set} \cr RAW_File \tab MS data filenames originated by
  \code{Xcalibur} with or without the \code{.raw} extension \cr Reference \tab
- Labels indicating reference samples in TMT experiments \cr MQ_Experiment
- \tab A helper to link the values under the \code{TMT_Set} column in
- \code{expt_smry.xlsx} to those under the \code{Experiment} column in the GUI
- of \code{MaxQuant -> Raw data -> Load}. }
+ Labels indicating reference samples in TMT experiments \cr }
 
  \code{Sample_ID}: values should be unique for entries at a unique
  combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for
@@ -57,13 +54,6 @@ experiments
  specified in a separate file, for example, \code{frac_smry.xlsx}.
 
  \code{Reference}: reference entrie(s) are indicated with non-void string(s).
-
- \code{MQ_Experiment}: only required for \code{MaxQuant} workflows starting
- with peptide data, i.e., with the data files being \code{peptides.txt} or
- \code{modificationSpecificPeptides.txt}. The values underneath need to match
- those under the \code{Experiment} column in \code{MaxQuant} GUI and have
- one-to-one correspondence to those under \code{TMT_Set} in
- \code{expt_smry.xlsx}.
 
  \tabular{ll}{ \strong{Optional default column}   \tab \strong{Descrption}\cr
  Select \tab Samples to be selected for indicated analysis \cr Group \tab
@@ -102,8 +92,14 @@ system.file("extdata", "expt_smry.xlsx", package = "proteoQ")
 system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
 
 \dontrun{
-library(proteoQ)
+# set up a working directory
+dir.create("C:\\\\The\\\\Mascot\\\\Example", recursive = TRUE, showWarnings = FALSE)
 dat_dir <- c("C:\\\\The\\\\Mascot\\\\Example")
+
+# copy fasta
+library(proteoQDA)
+copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
+copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
 
 # copy Mascot PSM data
 cptac_csv_1(dat_dir)
@@ -113,46 +109,69 @@ cptac_expt_1(dat_dir)
 cptac_frac_1(dat_dir)
 
 # load experiments
+library(proteoQ)
 load_expts()
 
-# PSMs
+
+# process PSMs with in-function filtration of data by `filter_`
 normPSM(
-  rptr_intco = 1000,
+  group_psm_by = pep_seq, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+  rptr_intco = 3000,
   rm_craps = TRUE,
-  rm_krts = TRUE,
-  rm_outliers = FALSE,
-  plot_violins = TRUE
+  rm_krts = FALSE,
+  rm_outliers = FALSE, 
+  annot_kinases = TRUE,	
+  plot_rptr_int = TRUE, 
+  plot_log2FC_cv = TRUE, 
+  
+  filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+  filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
 )
 
-# peptides
+# examplary PSM purging; n: the number of PSMs
+purgePSM(max_cv = .5, min_n = 2)
+
+
+# peptides results with examplary `filter_...`
 normPep(
-  id = pep_seq_mod,
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-  method_psm_pep = median,
-  method_align = MGKernel,
-  range_log2r = c(10, 95),
-  range_int = c(5, 95),
-  n_comp = 3,
-  seed = 1234,
-  maxit = 200,
-  epsilon = 1e-05
+  group_pep_by = gene, 
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  
+  filter_by = exprs(n_psm >= 2),
+  # filter_by_sp = exprs(species == "human"), 
 )
 
-# proteins
+# examplary peptide purging; n: the number of peptides
+purgePep(max_cv = .5, min_n = 2)
+
+
+# proteins results with examplary `filter_...`
 normPrn(
-  id = gene,
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-  method_pep_prn = median,
-  method_align = MGKernel,
-  range_log2r = c(5, 95),
-  range_int = c(5, 95),
-  n_comp = 2,
-  seed = 749662,
-  maxit = 200,
-  epsilon = 1e-05
+  method_pep_prn = median, 
+  method_align = MGKernel, 
+  range_log2r = c(20, 95), 
+  range_int = c(5, 95), 
+  n_comp = 2, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  
+  filter_by = exprs(n_psm >= 5, n_pep >=2), 	
 )
+
+
+# validation steps in next
+?pepHist
+
 }
 
 }

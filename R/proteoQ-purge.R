@@ -1,3 +1,37 @@
+#' Violin plots of SDs
+#'
+#' \code{sd_violin_full} visualizes the SD distribution of SD
+#'
+#' @import dplyr purrr rlang ggplot2
+#' @importFrom magrittr %>%
+sd_violin_full <- function(df_sd, id, label_scheme, filepath, filename) {
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  Levels <- names(df_sd) %>% 
+    .[grepl("^log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+    gsub("^log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", .)  
+  
+  df_sd <- df_sd %>%
+    `names<-`(gsub("^log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
+    tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
+    dplyr::rename(Channel := !!rlang::sym(id)) %>% 
+    dplyr::ungroup(Channel) %>% 
+    dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
+    dplyr::filter(!is.na(SD))
+  
+  p <- ggplot() +
+    geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
+    geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
+    stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
+                 shape=23, size=2, fill="white", alpha=.5) +
+    labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
+    scale_y_continuous(limits = c(0, .6), breaks = seq(0, .6, .2)) +
+    theme_psm_violin
+  
+  try(ggsave(file.path(filepath, filename), p, width = 7* n_TMT_sets(label_scheme), height = 7, units = "in"))
+}
+
+
 #'Rmove SD outliers
 #'
 #'\code{purgeData} removes entries with SD > cv_cutoff
@@ -5,7 +39,7 @@
 #'@import dplyr purrr rlang
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
-purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, ...) {
+purgeData <- function(df, id, cv_cutoff = NULL, nseq_cutoff = 1, ...) {
   id <- rlang::as_string(rlang::enexpr(id))
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
@@ -145,7 +179,7 @@ purgeData <- function(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, .
 }
 
 
-#'Purge ata
+#'Purge data
 #'
 #'\code{proteoPurge} provides additional cleanup of protein or peptide data.
 #'
@@ -242,35 +276,213 @@ purPrn <- function (...) {
 }
 
 
-#' Violin plots of SDs
+
+
+
+
+#' Filter data groups by a CV cut-off
 #'
-#' \code{sd_violin_full} visualizes the SD distribution of SD
+#' \code{purge_by_cv} replaces the data entries at \code{group CV > max_cv} to
+#' NA.
 #'
-#' @import dplyr purrr rlang ggplot2
+#' @inheritParams proteoHist
+#' @param max_cv Numeric; the cut-off in CV. The CV are from the ascribing PSMs
+#'   for the filtration of peptides or ascribing peptides for the filtration of
+#'   proteins.
+#' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
-sd_violin_full <- function(df_sd, id, label_scheme, filepath, filename) {
-  id <- rlang::as_string(rlang::enexpr(id))
+purge_by_cv <- function (df, id, max_cv) {
+  if (!is.null(max_cv)) {
+    stopifnot(is.numeric(max_cv))
+    
+    df_sd_lgl <- df %>% 
+      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.))) %>% 
+      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), 
+                       ~ replace(.x, .x > max_cv, NA)) %>% 
+      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), 
+                       ~ replace(.x, !is.na(.x), 1)) %>% 
+      `names<-`(gsub("^sd_log2_R", "lgl_log2_sd", names(.))) %>% 
+      dplyr::filter(!duplicated(.[[id]]))
+    
+    df <- df %>% 
+      dplyr::arrange(!!rlang::sym(id)) %>% 
+      dplyr::left_join(df_sd_lgl, by = id)
+    
+    df[, grepl("^log2_R[0-9]{3}", names(df))] <-
+      purrr::map2(as.list(df[, grepl("^log2_R[0-9]{3}", names(df))]),
+                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+      dplyr::bind_rows()
+    
+    df[, grepl("^N_log2_R[0-9]{3}", names(df))] <-
+      purrr::map2(as.list(df[, grepl("^N_log2_R[0-9]{3}", names(df))]),
+                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+      dplyr::bind_rows()
+    
+    df[, grepl("^Z_log2_R[0-9]{3}", names(df))] <-
+      purrr::map2(as.list(df[, grepl("^Z_log2_R[0-9]{3}", names(df))]),
+                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+      dplyr::bind_rows()
+    
+    df[, grepl("^sd_log2_R[0-9]{3}", names(df))] <-
+      purrr::map2(as.list(df[, grepl("^sd_log2_R[0-9]{3}", names(df))]),
+                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+      dplyr::bind_rows()
+    
+    df[, grepl("^I[0-9]{3}", names(df))] <-
+      purrr::map2(as.list(df[, grepl("^I[0-9]{3}", names(df))]),
+                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+      dplyr::bind_rows()
+    
+    df[, grepl("^N_I[0-9]{3}", names(df))] <-
+      purrr::map2(as.list(df[, grepl("^N_I[0-9]{3}", names(df))]),
+                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+      dplyr::bind_rows()
+    
+    df <- df %>% 
+      dplyr::select(-grep("^lgl_log2_sd", names(.))) %>% 
+      dplyr::filter(rowSums(!is.na(.[, grep("^log2_R[0-9]{3}", names(.) )])) > 0)
+  }
   
-  Levels <- names(df_sd) %>% 
-    .[grepl("^log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-    gsub("^log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", .)  
-  
-  df_sd <- df_sd %>%
-    `names<-`(gsub("^log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
-    tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
-    dplyr::rename(Channel := !!rlang::sym(id)) %>% 
-    dplyr::ungroup(Channel) %>% 
-    dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
-    dplyr::filter(!is.na(SD))
-  
-  p <- ggplot() +
-    geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
-    geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
-    stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
-                 shape=23, size=2, fill="white", alpha=.5) +
-    labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
-    scale_y_continuous(limits = c(0, .6), breaks = seq(0, .6, .2)) +
-    theme_psm_violin
-  
-  try(ggsave(file.path(filepath, filename), p, width = 7* n_TMT_sets(label_scheme), height = 7, units = "in"))
+  return(df)
 }
+
+
+#' Filter data groups by a minimal number of observations (n_obs)
+#'
+#' \code{purge_by_n} replaces the data entries at \code{group n_obs < min_n} to
+#' NA.
+#'
+#' @inheritParams proteoHist
+#' @param min_n Positive integer. When calling from \code{purgePSM}, peptide
+#'   entries in PSM tables with the number of identifying PSMs smaller than
+#'   \code{min_n} will be replaced with NA. When calling from \code{purgePep},
+#'   protein entries in peptide tables with the number of identifying peptides
+#'   smaller than \code{min_n} will be replaced with NA.
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>%
+purge_by_n <- function (df, id, min_n) {
+  kept <- df %>%
+    dplyr::select(!!rlang::sym(id)) %>%
+    dplyr::group_by(!!rlang::sym(id)) %>%
+    dplyr::summarise(n = n()) %>% 
+    dplyr::filter(n >= min_n) %>% 
+    dplyr::select(id) %>% 
+    unlist() %>% 
+    as.character()
+
+  df %>% 
+    dplyr::filter(.[[id]] %in% kept) 
+}
+
+
+#'Purge PSM data
+#'
+#'\code{purgePSM} removes \code{peptide} entries from PSM tables by selection
+#'criteria.
+#'
+#'The CV of peptides are calculated from contributing PSMs.
+#'
+#'@inheritParams normPSM
+#'@inheritParams purge_by_cv
+#'@inheritParams purge_by_n
+#'@param ... Yet to be defined.
+#'@import dplyr rlang ggplot2
+#'@importFrom magrittr %>%
+#'@importFrom magrittr %T>%
+#'@export
+purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
+
+  if (is.null(dat_dir)) {
+    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+    if (dat_dir == 1) 
+      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+  } else {
+    assign("dat_dir", dat_dir, envir = .GlobalEnv)
+  }
+  
+  id <- match_normPSM_id()
+  
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
+  stopifnot(min_n > 0 & min_n%%1 == 0)
+  
+  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  
+  filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
+    reorder_files(n_TMT_sets(label_scheme_full))
+    
+  for (fn in filelist) {
+    df <- read.csv(file.path(dat_dir, "PSM", fn), check.names = FALSE, 
+                   header = TRUE, sep = "\t", comment.char = "#")
+    
+    df <- df %>% 
+      purge_by_cv(id, max_cv) %>% 
+      purge_by_n(id, min_n) %>% 
+      dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) %T>% 
+      write.table(file.path(dat_dir, "PSM", fn), sep = "\t", col.names = TRUE, row.names = FALSE)
+    
+    df %>% 
+      dplyr::select(id, grep("^sd_log2_R[0-9]{3}", names(.))) %>% 
+      dplyr::filter(!duplicated(.[[id]])) %>% 
+      dplyr::filter(rowSums(!is.na(.[grep("^sd_log2_R[0-9]{3}", names(.))])) > 0) %>%
+      sd_violin(!!id, 
+                file.path(dat_dir, "PSM\\log2FC_cv\\purged", gsub("_PSM_N.txt", "_sd.png", fn)), 
+                8, 8)
+  }
+  
+  mget(names(formals()), rlang::current_env()) %>% save_call("purPSM")
+}
+
+
+#'Purge peptide data
+#'
+#'\code{purgePep} removes \code{protein} entries from peptide table(s) by
+#'selection criteria.
+#'
+#'The CV of proteins are calculated from contributing peptides.
+#'
+#'@inheritParams normPSM
+#'@inheritParams purge_by_cv
+#'@inheritParams purge_by_n
+#'@param ... Yet to be defined.
+#'@import dplyr rlang ggplot2
+#'@importFrom magrittr %>%
+#'@importFrom magrittr %T>%
+#'@export
+purgePep <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
+  if (is.null(dat_dir)) {
+    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+    if (dat_dir == 1) 
+      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+  } else {
+    assign("dat_dir", dat_dir, envir = .GlobalEnv)
+  }
+  
+  id <- match_normPep_id()
+  
+  stopifnot(id %in% c("prot_acc", "gene"))
+  stopifnot(min_n > 0 & min_n%%1 == 0)
+  
+  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  
+  fn <- file.path(dat_dir, "Peptide", "Peptide.txt")
+  df <- read.csv(fn, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
+    purge_by_cv(id, max_cv) %>% 
+    purge_by_n(id, min_n) %>% 
+    dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) %T>% 
+    write.table(fn, sep = "\t", col.names = TRUE, row.names = FALSE)
+  
+  df %>% 
+    dplyr::select(id, grep("^sd_log2_R[0-9]{3}", names(.))) %>% 
+    dplyr::filter(!duplicated(.[[id]])) %>% 
+    dplyr::filter(rowSums(!is.na(.[grep("^sd_log2_R[0-9]{3}", names(.))])) > 0) %>% 
+    sd_violin(!!id, file.path(dat_dir, "Peptide\\log2FC_cv\\purged", "Peptide_sd.png"), 
+              8 * n_TMT_sets(label_scheme), 8)
+            
+  mget(names(formals()), rlang::current_env()) %>% save_call("purPSM")
+}
+
+
+
+

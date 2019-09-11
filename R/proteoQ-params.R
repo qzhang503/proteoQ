@@ -19,30 +19,30 @@ prep_label_scheme <- function(dat_dir, filename) {
 	}
 	
 	not_trival <- function (x) {
-	  ok <- !is.na(x) & (x != FALSE) & (x != 0)
+	  ok <- (!is.na(x)) & (x != FALSE) & (x != 0)
 	}
 	
 	
-	if(is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv),
+	if (is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv),
 	                                         error = function(e) 1)
 
-	if(dat_dir == 1) stop("Set up the working directory first.")
+	if (dat_dir == 1) stop("Set up the working directory first.")
 
-	if(!file.exists(file.path(dat_dir, filename)))
+	if (!file.exists(file.path(dat_dir, filename)))
 	  stop(filename, " not found under '", dat_dir, "'.")
 
-	fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
-	fn_prefix <- gsub("\\..*$", "", filename)
+	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+	fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
-	if(fn_suffix %in% c("xls", "xlsx")) {
+	if (fn_suffix %in% c("xls", "xlsx")) {
 		label_scheme_full <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Setup") %>%
 												dplyr::filter(rowSums(!is.na(.)) > 0)
-	} else if(fn_suffix == "csv") {
+	} else if (fn_suffix == "csv") {
 		label_scheme_full <- read.csv(file.path(dat_dir, filename), check.names = TRUE,
 		                              header = TRUE, comment.char = "#", na.strings = c("", "NA")) %>%
 												dplyr::filter(rowSums(!is.na(.)) > 0)
 	} else {
-		stop(filename, " needs to be in a file format of '.csv', '.xls' or '.xlsx'.")
+		stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
 	}
 
 	must_have <- c("TMT_Channel", "TMT_Set", "LCMS_Injection", "RAW_File",
@@ -54,17 +54,17 @@ prep_label_scheme <- function(dat_dir, filename) {
 		stop("Not all required columns are present in \'", filename, "\'", call. = TRUE)
 	}
 
-	default_names <- c("Select", "Group", "Order", "Fill",  "Color", "Shape", "Size", "Alpha")
+	default_names <- c("Select", "Group", "Order", "Fill",  "Color", "Shape", "Size", "Alpha", "Peptide_Yield")
 
-	purrr::walk(default_names, ~ {
-		if(!.x %in% names(label_scheme_full)) {
-			message("Column \'", .x, "\' added to \'", filename, "\'")
+	purrr::walk(as.list(default_names), ~ {
+		if (!.x %in% names(label_scheme_full)) {
+		  message("Column \'", .x, "\' added to \'", filename, "\'")
 			label_scheme_full[[.x]] <<- NA
 		}
-	})
+	}, label_scheme_full)
 
 	# a case of label-free data
-	if(dplyr::n_distinct(label_scheme_full$TMT_Channel) == 1) label_scheme_full$TMT_Channel <- NA
+	if (dplyr::n_distinct(label_scheme_full$TMT_Channel) == 1) label_scheme_full$TMT_Channel <- NA
 
 	TMT_plex <- TMT_plex(label_scheme_full)
 	TMT_levels <- TMT_levels(TMT_plex)
@@ -77,7 +77,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 	  dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
 	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.x)) %>%
 	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(.x, digits = 2)) %>%
-	  tidyr::fill(one_of("TMT_Set", "LCMS_Injection", "RAW_File", "MQ_Experiment")) %>%
+	  tidyr::fill(one_of("TMT_Set", "LCMS_Injection", "RAW_File")) %>%
 	  dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
 	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 
@@ -158,35 +158,38 @@ prep_label_scheme <- function(dat_dir, filename) {
 #' @importFrom magrittr %>%
 #' @importFrom readxl read_excel
 prep_fraction_scheme <- function(dat_dir, filename) {
-	if(is.null(dat_dir))
+	if (is.null(dat_dir))
 	  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
 
-	if(dat_dir == 1) stop("Set up the working directory first.")
+	if (dat_dir == 1) stop("Set up the working directory first.")
 
-	fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
-	fn_prefix <- gsub("\\..*$", "", filename)
+	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+	fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
-	if(file.exists(file.path(dat_dir, filename))) {
-		if(fn_suffix %in% c("xls", "xlsx")) {
+	if (file.exists(file.path(dat_dir, filename))) {
+		if (fn_suffix %in% c("xls", "xlsx")) {
 			fraction_scheme <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Fractions") %>%
 			  dplyr::filter(rowSums(!is.na(.)) > 0)
-		} else if(fn_suffix == "csv") {
+		} else if (fn_suffix == "csv") {
 			fraction_scheme <- read.csv(file.path(dat_dir, filename), check.names = TRUE, header = TRUE,
 			                            comment.char = "#", na.strings = c("", "NA"))  %>%
 			  dplyr::filter(rowSums(!is.na(.)) > 0)
 		} else {
-			stop(filename, " needs to be in a file format of '.csv', '.xls' or '.xlsx'.")
+			stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
 		}
 	  
 	  fraction_scheme <- fraction_scheme %>% 
 	    tidyr::fill(TMT_Set, LCMS_Injection) %>% 
 	    dplyr::group_by(TMT_Set, LCMS_Injection) %>% 
-	    dplyr::mutate(Fraction = row_number())
-	  
+	    dplyr::mutate(Fraction = row_number()) 
+
 	  wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
 	  openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
 	  openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
  	} else {
+ 	  assign(".auto_frac_smry", TRUE, envir = .GlobalEnv)
+ 	  
+ 	  # warning: frac_smry.xlsx` data will be incorrect if based on wrong information from `expt_smry.xlsx`
  	  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
  	  
  	  # in case forget to enter RAW_File names
@@ -218,146 +221,31 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 #'@seealso \code{\link{load_expts}} for supported species.
 #'
 #' @examples
-#' load_dbs()
+#' load_dbs("human")
 #'
 #'@export
-#'@import dplyr
+#'@import dplyr rlang
 #'@importFrom magrittr %>%
-load_dbs <- function () {
-  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-  if(dat_dir == 1) stop("Assign the working directory to variable `dat_dir` first.")
+load_dbs <- function (gset_nms = "go_sets", species = "human") {
+  allowed <- c("go_sets", "kegg_sets", "c2_msig")
+  stopifnot(all(gset_nms %in% allowed))
+  
+	if (is.null(species)) stop("Unrecognized species.")
 
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
-  species <- find_species()
-
-	if(is.null(species)) stop("Unrecognized species; 
-	                          the currently supported species are 'human', 'mouse', 'rat' or 'pdx'.")
-
-	if (species %in% c("homo sapiens", "human")) {
-		data(package = "proteoQ", prn_annot_hs)
-		data(package = "proteoQ", go_sets_hs)
-		data(package = "proteoQ", kegg_sets_hs)
-		data(package = "proteoQ", c2_msig_hs)
-
-		prn_annot <- prn_annot_hs
-		go_sets <- go_sets_hs
-		kegg_sets <- kegg_sets_hs
-		c2_sets <- c2_msig_hs
-
-		kegg_species <- "hsa"
-		go_species <- "Human"
-
-		rm(prn_annot_hs, go_sets_hs, kegg_sets_hs, c2_msig_hs, envir = .GlobalEnv)
-	} else if (species %in% c("mus musculus", "mouse")) {
-		data(package = "proteoQ", prn_annot_mm)
-		data(package = "proteoQ", go_sets_mm)
-		data(package = "proteoQ", kegg_sets_mm)
-
-		prn_annot <- prn_annot_mm
-		go_sets <- go_sets_mm
-		kegg_sets <- kegg_sets_mm
-		c2_sets <- NULL
-
-		kegg_species <- "mmu"
-		go_species <- "Mouse"
-
-		rm(prn_annot_mm, go_sets_mm, kegg_sets_mm, envir = .GlobalEnv)
-	} else if (species %in% c("rattus norvegicus", "rat")) {
-		data(package = "proteoQ", prn_annot_rn)
-		data(package = "proteoQ", go_sets_rn)
-		data(package = "proteoQ", kegg_sets_rn)
-
-		prn_annot <- prn_annot_rn
-		go_sets <- go_sets_rn
-		kegg_sets <- kegg_sets_rn
-		c2_sets <- NULL
-
-		kegg_species <- "rno"
-		go_species <- "Rat"
-
-		rm(prn_annot_rn, go_sets_rn, kegg_sets_rn, envir = .GlobalEnv)
-	} else if (species %in% c("drosophila", "fly")) {
-		# load(file = ".\\data\\prn_annot_dm.RData")
-		data(package = "proteoQ", prn_annot_dm)
-		go_sets_dm <- NULL
-		kegg_sets_dm <- NULL
-
-		prn_annot <- prn_annot_dm
-		go_sets <- go_sets_dm
-		kegg_sets <- kegg_sets_dm
-		c2_sets <- NULL
-
-		kegg_species <- "dme"
-		go_species <- "Fly"
-
-		rm(prn_annot_dm, envir = .GlobalEnv)
-	} else if(species %in% c("arabidopsis")) {
-		prn_annot_at <- NULL
-		go_sets_at <- NULL
-		kegg_sets_at <- NULL
-		c2_sets <- NULL
-
-		prn_annot <- prn_annot_at
-		go_sets <- go_sets_at
-		kegg_sets <- kegg_sets_at
-
-		kegg_species <- "ath"
-		go_species <- "Anopheles"
-	} else if (species %in% c("canis lupus familiaris", "canis familiaris", "dog")) {
-	  data(package = "proteoQ", prn_annot_cf)
-	  # data(package = "proteoQ", go_sets_cf)
-	  # data(package = "proteoQ", kegg_sets_cf)
-	  go_sets_cf <- NULL
-	  kegg_sets_cf <- NULL
-	  
-	  
-	  prn_annot <- prn_annot_cf
-	  go_sets <- NULL
-	  kegg_sets <- NULL
-	  c2_sets <- NULL
-	  
-	  kegg_species <- NA # "cfa"
-	  go_species <- NA # "Dog"
-	  
-	  rm(prn_annot_cf, go_sets_cf, kegg_sets_cf, envir = .GlobalEnv)
-	} else if (species %in% c("human and mouse", "pdx")) {
-		data(package = "proteoQ", prn_annot_hs)
-		data(package = "proteoQ", prn_annot_mm)
-		prn_annot_hsmm <- rbind(prn_annot_hs, prn_annot_mm)
-
-		data(package = "proteoQ", go_sets_hs)
-		data(package = "proteoQ", go_sets_mm)
-
-		names(go_sets_hs) <- paste("Hs", names(go_sets_hs), sep = ".")
-		names(go_sets_mm) <- paste("Mm", names(go_sets_mm), sep = ".")
-		go_sets_hsmm <- c(go_sets_hs, go_sets_mm)
-
-		data(package = "proteoQ", kegg_sets_hs)
-		data(package = "proteoQ", kegg_sets_mm)
-
-		kegg_sets_hsmm <- c(kegg_sets_hs, kegg_sets_mm)
-
-		data(package = "proteoQ", c2_msig_hs)
-		c2_sets <- c2_msig_hs
-
-		prn_annot <- prn_annot_hsmm
-		go_sets <- go_sets_hsmm
-		kegg_sets <- kegg_sets_hsmm
-
-		kegg_species <- "hsammu"
-		go_species <- "Human and Mouse"
-
-		rm(prn_annot_hs, go_sets_hs, kegg_sets_hs, c2_msig_hs, envir = .GlobalEnv)
-		rm(prn_annot_mm, go_sets_mm, kegg_sets_mm, envir = .GlobalEnv)
-	}
-
-	if(!is.na(go_species)) names(go_sets) <- gsub("/", "-", names(go_sets))
-	if(!is.na(kegg_species)) names(kegg_sets) <- gsub("/", "~", names(kegg_sets))
-
-	assign("dbs",
-	       list(prn_annot = prn_annot, go_sets = go_sets, kegg_sets = kegg_sets, c2_msig = c2_sets),
-	       envir = .GlobalEnv)
+  abbr_sp <- purrr::map_chr(species, sp_lookup)
+  filelist <- map(abbr_sp, ~ paste0(gset_nms, "_", .x)) %>% unlist()
+  
+  data(package = "proteoQ", list = filelist)
+  gsets <- purrr::map(filelist, ~ try(get(.x))) %>% do.call(`c`, .)
+  
+  stopifnot(length(gsets) > 0)
+  try(rm(list = filelist, envir = .GlobalEnv))
+  
+  if (length(gsets) > 0) names(gsets) <- gsub("/", "-", names(gsets))
+  
+  assign("gsets", gsets, envir = .GlobalEnv)
 } 
+
 
 
 #'Load experiments
@@ -381,10 +269,7 @@ load_dbs <- function () {
 #'  indeces  \cr LCMS_Injection   \tab LC/MS injection indeces under a
 #'  \code{TMT_Set} \cr RAW_File \tab MS data filenames originated by
 #'  \code{Xcalibur} with or without the \code{.raw} extension \cr Reference \tab
-#'  Labels indicating reference samples in TMT experiments \cr MQ_Experiment
-#'  \tab A helper to link the values under the \code{TMT_Set} column in
-#'  \code{expt_smry.xlsx} to those under the \code{Experiment} column in the GUI
-#'  of \code{MaxQuant -> Raw data -> Load}. }
+#'  Labels indicating reference samples in TMT experiments \cr }
 #'
 #'  \code{Sample_ID}: values should be unique for entries at a unique
 #'  combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for
@@ -401,13 +286,6 @@ load_dbs <- function () {
 #'  specified in a separate file, for example, \code{frac_smry.xlsx}.
 #'
 #'  \code{Reference}: reference entrie(s) are indicated with non-void string(s).
-#'
-#'  \code{MQ_Experiment}: only required for \code{MaxQuant} workflows starting
-#'  with peptide data, i.e., with the data files being \code{peptides.txt} or
-#'  \code{modificationSpecificPeptides.txt}. The values underneath need to match
-#'  those under the \code{Experiment} column in \code{MaxQuant} GUI and have
-#'  one-to-one correspondence to those under \code{TMT_Set} in
-#'  \code{expt_smry.xlsx}.
 #'
 #'  \tabular{ll}{ \strong{Optional default column}   \tab \strong{Descrption}\cr
 #'  Select \tab Samples to be selected for indicated analysis \cr Group \tab
@@ -450,8 +328,14 @@ load_dbs <- function () {
 #' system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
 #'
 #' \dontrun{
-#' library(proteoQ)
+#' # set up a working directory
+#' dir.create("C:\\The\\Mascot\\Example", recursive = TRUE, showWarnings = FALSE)
 #' dat_dir <- c("C:\\The\\Mascot\\Example")
+#'
+#' # copy fasta
+#' library(proteoQDA)
+#' copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
+#' copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 #'
 #' # copy Mascot PSM data
 #' cptac_csv_1(dat_dir)
@@ -461,46 +345,69 @@ load_dbs <- function () {
 #' cptac_frac_1(dat_dir)
 #'
 #' # load experiments
+#' library(proteoQ)
 #' load_expts()
-#' 
-#' # PSMs
+#'
+#'
+#' # process PSMs with in-function filtration of data by `filter_`
 #' normPSM(
-#'   rptr_intco = 1000,
+#'   group_psm_by = pep_seq, 
+#'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+#'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+#'   rptr_intco = 3000,
 #'   rm_craps = TRUE,
-#'   rm_krts = TRUE,
-#'   rm_outliers = FALSE,
-#'   plot_violins = TRUE
+#'   rm_krts = FALSE,
+#'   rm_outliers = FALSE, 
+#'   annot_kinases = TRUE,	
+#'   plot_rptr_int = TRUE, 
+#'   plot_log2FC_cv = TRUE, 
+#'   
+#'   filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+#'   filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
 #' )
-#' 
-#' # peptides
+#'
+#' # examplary PSM purging; n: the number of PSMs
+#' purgePSM(max_cv = .5, min_n = 2)
+#'
+#'
+#' # peptides results with examplary `filter_...`
 #' normPep(
-#'   id = pep_seq_mod,
-#'   fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
-#'             "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
-#'   method_psm_pep = median,
-#'   method_align = MGKernel,
-#'   range_log2r = c(10, 95),
-#'   range_int = c(5, 95),
-#'   n_comp = 3,
-#'   seed = 1234,
-#'   maxit = 200,
-#'   epsilon = 1e-05
+#'   group_pep_by = gene, 
+#'   method_psm_pep = median, 
+#'   method_align = MGKernel, 
+#'   range_log2r = c(5, 95), 
+#'   range_int = c(5, 95), 
+#'   n_comp = 3, 
+#'   seed = 749662, 
+#'   maxit = 200, 
+#'   epsilon = 1e-05, 
+#'   
+#'   filter_by = exprs(n_psm >= 2),
+#'   # filter_by_sp = exprs(species == "human"), 
 #' )
 #' 
-#' # proteins
+#' # examplary peptide purging; n: the number of peptides
+#' purgePep(max_cv = .5, min_n = 2)
+#' 
+#' 
+#' # proteins results with examplary `filter_...`
 #' normPrn(
-#'   id = gene,
-#'   fasta = c("~\\proteoQ\\dbs\\refseq\\refseq_hs_2013_07.fasta",
-#'             "~\\proteoQ\\dbs\\refseq\\refseq_mm_2013_07.fasta"),
-#'   method_pep_prn = median,
-#'   method_align = MGKernel,
-#'   range_log2r = c(5, 95),
-#'   range_int = c(5, 95),
-#'   n_comp = 2,
-#'   seed = 749662,
-#'   maxit = 200,
-#'   epsilon = 1e-05
+#'   method_pep_prn = median, 
+#'   method_align = MGKernel, 
+#'   range_log2r = c(20, 95), 
+#'   range_int = c(5, 95), 
+#'   n_comp = 2, 
+#'   seed = 749662, 
+#'   maxit = 200, 
+#'   epsilon = 1e-05, 
+#'   
+#'   filter_by = exprs(n_psm >= 5, n_pep >=2), 	
 #' )
+#' 
+#' 
+#' # validation steps in next
+#' ?pepHist
+#' 
 #' }
 #'
 #'@export
@@ -524,30 +431,8 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
 
 	mget(names(formals()), rlang::current_env()) %>% save_call("load_expts")
 
-	# "acctype_sp.txt" first available after executing `annotPSM``
-	# a placeholder if "acctype_sp.txt" not yet available
-	if (!file.exists(file.path(dat_dir, "acctype_sp.txt"))) {
-		acctype_sp <- data.frame(Accession_Type = "uniprot_id", Species = "human")
-  } else {
-		acctype_sp <- read.csv(file.path(dat_dir, "acctype_sp.txt"), check.names = FALSE,
-                           sep = "\t", header = TRUE, comment.char = "#")
-  }
-
   prep_label_scheme(dat_dir, expt_smry)
   prep_fraction_scheme(dat_dir, frac_smry)
-
-  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
-
-  label_scheme_full <- label_scheme_full %>%
-    dplyr::mutate(Accession_Type = acctype_sp[1, "Accession_Type"], Species = acctype_sp[1, "Species"])
-  save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.Rdata"))
-
-  label_scheme <- label_scheme %>%
-    dplyr::mutate(Accession_Type = acctype_sp[1, "Accession_Type"], Species = acctype_sp[1, "Species"])
-  save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
-
-  load_dbs()
 }
 
 
@@ -649,83 +534,6 @@ check_label_scheme <- function (label_scheme_full) {
 		   (TMT_plex * nlevels(as.factor(label_scheme$TMT_Set))))
 			stop("Not enough observations in unique 'Sample_ID'")
 	}
-}
-
-
-#' Finds the type of protein accession numbers
-#'
-#' \code{find_acctype} finds the \code{Accession_Type} that will be used in the
-#' annotation of protein IDs. It currently supports \code{UniProt ID},
-#' \code{Uniprot Accession} and \code{RefSeq Accession}.
-find_acctype <- function () {
-	load(file = file.path(dat_dir, "label_scheme.Rdata"))
-
-	label_scheme %>%
-		dplyr::filter(!is.na(Accession_Type), dplyr::row_number() == 1) %>%
-		dplyr::select(Accession_Type) %>%
-		unlist() %>%
-		as.character() %>%
-		tolower()
-}
-
-
-#' Finds the species
-#'
-#' \code{find_species} find the species for annotation.
-find_species <- function () {
-	load(file = file.path(dat_dir, "label_scheme.Rdata"))
-
-	label_scheme %>%
-		dplyr::filter(!is.na(Species), dplyr::row_number() == 1) %>%
-		dplyr::select(Species) %>%
-		unlist() %>%
-		as.character() %>%
-		tolower()
-}
-
-
-#' Finds the species from result tables
-#'
-#' \code{find_df_species} find the species from PSM or peptide data.
-find_df_species <- function(df, acc_type) {
-	stopifnot("prot_desc" %in% names(df))	
-  
-  sp_ls <- c(Human = "Homo sapiens", 
-             Mouse = "Mus musculus",
-             Rat = "Rattus norvegicus", 
-             # Dog = "Canis lupus familiaris", 
-             Dog = "Canis lupus", 
-             Fly = "Drosophila melanogaster")
-		
-	if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
-		species <- df %>%
-			dplyr::select(prot_desc) %>%
-			dplyr::filter(grepl("OS=", prot_desc)) %>% 
-			dplyr::mutate(prot_desc = sub("^.*OS=(\\S*\\s+\\S+).*", "\\1", prot_desc)) %>% 
-			dplyr::filter(!is.na(prot_desc))
-	} else if (acc_type == "refseq_acc") {
-		species <- df %>%
-			dplyr::select(prot_desc) %>%
-			dplyr::mutate(prot_desc = gsub(".*\\s+\\[(.*)\\].*", "\\1", prot_desc))
-	}
-	
-	species <- species %>%
-		unique() %>%
-		unlist() %>%
-		.[. %in% sp_ls] %>%
-		purrr::map(~ names(sp_ls)[sp_ls == .x] %>% tolower)
-	
-	if (length(species) > 1) {
-		if (all(species %in% c("human", "mouse")))
-			species <- "pdx"
-		else
-			stop("Multiple species other than a PDX model of `Human and Mouse` not currently handled.",
-					 call. = FALSE)
-	} else {
-		species <- unlist(species)
-	}
-		
-	return(species)
 }
 
 
@@ -847,5 +655,4 @@ check_raws <- function(df) {
 
   return(tmtinj_raw)
 }
-
 

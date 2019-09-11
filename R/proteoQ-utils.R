@@ -21,7 +21,7 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
   
   id <- rlang::as_string(rlang::enexpr(id))
-  if(anal_type %in% c("ESGAGE", "GSVA")) id <- "entrez"
+  if (anal_type %in% c("ESGAGE", "GSVA")) id <- "entrez"
   
   NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
   
@@ -567,58 +567,282 @@ prnImp <- function (...) {
 }
 
 
+#'Species lookup
+sp_lookup <- function(species) {
+  switch(species, 
+         human = "hs",
+         mouse = "mm",
+         rat = "rn",
+         fly = "dm", 
+         bovine = "bt",
+         dog = "cf", 
+         crap = "crap", 
+         stop("Unknown `species`.", Call. = FALSE)
+  )    
+}
+
+
+#'Toxonomy lookup
+taxid_lookup <- function(species) {
+  switch (species,
+          human = 9606, 
+          mouse = 10090,
+          rat = 10116, 
+          fly = 7227, 
+          bovine = 9913,
+          dog = 9612, 
+          crap = 000000, 
+          stop("Unknown `species`.", Call. = FALSE)
+  )
+}
+
+
+add_entrez <- function (acc_lookup) {
+  # 1. find all speices and acc_types
+  sp_map <- c(
+    human = "hs",
+    mouse = "mm",
+    rat = "rn",
+    fly = "dm", 
+    bovine = "bt",
+    dog = "cf", 
+    crap = "crap"
+  )
+  
+  acc_map <- c(
+    uniprot_acc = "uniprot_",
+    uniprot_id = "uniprot_", 
+    refseq_acc = "refseq_"
+  )
+  
+  acc_type <- unique(acc_lookup$acc_type)
+  species <- unique(acc_lookup$species)
+  abbr_sp <- sp_map[species]
+  abbr_acc <- acc_map[acc_type]
+  
+  entrez_key <- switch(acc_type, 
+    uniprot_acc = "uniprot_acc", 
+    uniprot_id = "uniprot_acc", 
+    refseq_acc = "refseq_acc", 
+    stop("Unknown `accession type`.", Call. = FALSE)
+  )
+
+  stopifnot(length(acc_type) == 1)
+
+  # multiple uniprot_acc(s) can share the same entrez id
+  filelist <- paste0(abbr_acc, "entrez_", abbr_sp)
+  data(package = "proteoQ", list = filelist)
+  entrez <- purrr::map(filelist, ~ get(.x)) %>% bind_rows() 
+  
+  if (acc_type == "uniprot_id") {
+    acc_lookup <- left_join(acc_lookup, entrez, by = c("uniprot_acc" = entrez_key))
+  } else {
+    acc_lookup <- left_join(acc_lookup, entrez, by = c("prot_acc" = entrez_key))
+  }
+  
+  return(acc_lookup)
+}
+
+
+
+parse_uniprot_fasta <- function (df, fasta) {
+  
+  na_genes_by_acc <- function(acc_lookup, acc_type) {
+    acc_type <- tolower(acc_type)
+    
+    na_gene <- (is.na(acc_lookup$gene)) | (str_length(acc_lookup$gene) == 0)
+    acc_lookup$gene <- as.character(acc_lookup$gene)
+    acc_lookup$gene[na_gene] <- as.character(acc_lookup$prot_acc[na_gene])
+    
+    return(acc_lookup)
+  }
+  
+  my_lookup <- c(
+    "Homo sapiens" = "human",
+    "Mus musculus" = "mouse",
+    "Rattus norvegicus" = "rat",
+    "Drosophila melanogaster" = "fly",
+    "Bos taurus" = "bovine",
+    "Canis lupus familiaris" = "dog",
+    "Canis lupus" = "dog",
+    "crap" = "crap"
+  )
+  
+  
+  stopifnot ("prot_acc" %in% names(df))
+
+  acc_type <- parse_acc(df)
+
+  if(acc_type == "refseq_acc") {
+    key <- "refseq_acc"
+  } else if(acc_type == "uniprot_id") {
+    key <- "uniprot_id"
+  } else if (acc_type == "uniprot_acc") {
+    key <- "uniprot_acc"
+  } else {
+    stop("The type of protein accesion needs to one of \'uniprot_id\', \'uniprot_acc\' or \'refseq_acc\'",
+         call. = FALSE)
+  }
+  
+  if (!is.null(fasta)) {
+    if (all(file.exists(fasta))) {
+      fasta <- purrr::map(fasta, ~ {
+        seqinr::read.fasta(.x, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
+      }) %>% do.call(`c`, .) 
+      
+      if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
+        acc_lookup <- names(fasta) %>% 
+          gsub("^..\\|", "", .) %>% 
+          str_split("\\|", simplify = TRUE) %>% 
+          data.frame() %>% 
+          `colnames<-`(c("uniprot_acc", "uniprot_id")) %>% 
+          bind_cols(data.frame(fasta_name = names(fasta)), .) %>% 
+          dplyr::filter(.[[acc_type]] %in% unique(df$prot_acc)) %>% 
+          dplyr::filter(!duplicated(.[[acc_type]]))
+      } else if (acc_type == "refseq_acc") {
+        acc_lookup <- tibble(fasta_name = names(fasta), refseq_acc = fasta_name) %>% 
+          dplyr::filter(.[[acc_type]] %in% unique(df$prot_acc)) %>% 
+          dplyr::filter(!duplicated(.[[acc_type]]))
+      }
+      
+      fasta <- fasta %>% .[names(.) %in% unique(acc_lookup$fasta_name)] 
+      
+      if (length(fasta) == 0) {
+        stop("No fasta entries match protein accessions; probably wrong fasta file.", 
+             call. = FALSE)
+      } else {
+        write.fasta(sequences = fasta, names = seqinr::getAnnot(fasta), nbchar = 80, 
+                    file.out = file.path(dat_dir, "my_project.fasta"))
+      }
+      
+      if (acc_type == "uniprot_acc") {
+        names(fasta) <- gsub("^..\\|(.*)\\|.*$", "\\1", names(fasta))
+      } else if (acc_type == "uniprot_id") {
+        names(fasta) <- gsub("^.*\\|(.*)$", "\\1", names(fasta))
+      } else if (acc_type == "refseq_acc") {
+        names(fasta) <- gsub("\\.[^\\.]*$", "", names(fasta))
+      }
+      
+      fasta_smry <- dplyr::bind_cols(
+        prot_acc = names(fasta), 
+        prot_desc = seqinr::getAnnot(fasta) %>% 
+          purrr::map(., `[[`, 1) %>% 
+          unlist(), 
+        prot_mass = purrr::map_dbl(fasta, ~ {seqinr::getSequence(.x) %>% seqinr::pmw()}), 
+        length = getLength(fasta)
+      ) %>% 
+        dplyr::filter(!duplicated(.$prot_acc)) %>% 
+        dplyr::mutate(acc_type = acc_type)
+      
+      if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
+        fasta_smry <- fasta_smry %>% 
+          dplyr::mutate(prot_desc = gsub("^.*\\|.*\\s+?", "", prot_desc))
+      } else if (acc_type == "refseq_acc") {
+        fasta_smry <- fasta_smry %>% 
+          dplyr::mutate(prot_desc = gsub("^.*_.*\\s+?", "", prot_desc))
+      }
+      
+      acc_lookup <- fasta_smry %>% 
+        dplyr::left_join(acc_lookup, by = c("prot_acc" = acc_type))
+      rm(fasta_smry)
+      
+      if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
+        # add gene name
+        genes <- acc_lookup %>% dplyr::select(prot_acc, prot_desc)
+        
+        na_genes <- genes %>% 
+          dplyr::filter(!grepl("GN=", .$prot_desc)) %>% 
+          dplyr::mutate(gene = NA)
+        
+        genes <- genes %>% 
+          dplyr::filter(grepl("GN=", .$prot_desc)) %>% 
+          dplyr::mutate(gene = gsub("^.*GN=(\\S+)\\s*.*", "\\1", prot_desc)) %>% 
+          bind_rows(., na_genes)
+        
+        # add organism
+        na_org <- genes %>% 
+          dplyr::filter(!grepl("OS=", .$prot_desc)) %>% 
+          dplyr::mutate(organism = NA)
+        
+        acc_lookup <- genes %>% 
+          dplyr::filter(grepl("OS=", .$prot_desc)) %>% 
+          dplyr::mutate(organism = gsub("^.*OS=(.*?)=.*$", "\\1", prot_desc)) %>% 
+          dplyr::mutate(organism = gsub("\\s\\S*$", "", organism)) %>% 
+          bind_rows(., na_org) %>% 
+          dplyr::select(-prot_desc) %>% 
+          dplyr::right_join(acc_lookup, by = "prot_acc")
+        
+        acc_lookup <- acc_lookup %>% 
+          dplyr::mutate(species = my_lookup[.$organism]) %>% 
+          add_entrez(.) %>% 
+          na_genes_by_acc(acc_type)
+      } else if (acc_type == "refseq_acc") {
+        refseq_fns <- c("refseq_hs_crossref", "refseq_mm_crossref")
+        data(package = "proteoQ", list = refseq_fns)
+        
+        refseq_crossref <- purrr::map(refseq_fns, ~ {
+          get(.x)
+        }) %>% do.call(`rbind`, .) %>% 
+          dplyr::filter(!duplicated(.[[acc_type]]))
+        
+        stopifnot(acc_type %in% names(refseq_crossref))
+        
+        acc_lookup <- acc_lookup %>% 
+          left_join(refseq_crossref, by = c("prot_acc" = acc_type)) %>% 
+          dplyr::mutate(species = my_lookup[.$organism]) %>% 
+          na_genes_by_acc(acc_type)
+      }
+      
+    } else {
+      stop("Wrong FASTA file path(s) or name(s).", call. = FALSE)
+    }
+  } else {
+    stop("FASTA file not provided.")
+  }
+  
+  # write.table(acc_lookup, file.path(dat_dir, "acc_lookup.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
+  save(acc_lookup, file = file.path(dat_dir, "acc_lookup.rda"))
+  
+  return(acc_lookup)
+}
+
+
 #' Adds protein annotation
 #'
 #' \code{annotPrn} cross-referencing proteins among \code{uniprot_acc},
 #' \code{uniprot_id}, \code{refseq} and \code{entrez}.
 #'
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>% %$%
-annotPrn <- function (df, acc_type) {
-	stopifnot ("prot_acc" %in% names(df))
-  
-	acc_type <- find_acctype() %>% tolower()
-
-	if(acc_type == "refseq_acc") {
-		key <- "refseq_acc"
-	} else if(acc_type == "uniprot_id") {
-		key <- "uniprot_id"
-	} else if (acc_type == "uniprot_acc") {
-	  key <- "uniprot_acc"
-	} else {
-		stop("Unrecognized protein accesion type; need to one of \'uniprot_id\', \'uniprot_acc\' or \'refseq_acc\'",
-		     call. = FALSE)
-	}
-
-	lookup <- dbs$prn_annot %>%
-		dplyr::select(-status, -organism, -length) %>%
-		dplyr::filter(!duplicated(.[[key]])) # %>% 
-	  # dplyr::mutate(!!key := as.character(.[[key]]))
-
-	if(any(names(df) == "prot_desc")) lookup <- lookup %>% dplyr::select(-prot_desc)
+#' @import plyr dplyr purrr rlang seqinr stringr 
+#' @importFrom magrittr %>% %$% %T>% 
+annotPrn <- function (df, fasta) {
+	acc_lookup <- parse_uniprot_fasta(df, fasta)
+	
+	acc_lookup <- bind_cols(
+	  acc_lookup %>% 
+	    dplyr::select(prot_acc), 
+	  acc_lookup %>% 
+	    dplyr::select(-which(names(.) %in% names(df))) %>% 
+	    dplyr::select(-"organism", -"fasta_name"), 
+	) 
+	
+	# (1) multiple uniprot_acc(s) can share the same entrez id
+	# prot_acc    gene      acc_type   uniprot_acc species entrez
+	# A1AT1_MOUSE Serpina1a uniprot_id P07758      mouse    20703
+	# A1AT4_MOUSE Serpina1d uniprot_id Q00897      mouse    20703
+		
+	# (2) samee uniprot_acc can have different entrez ids
+	# From	To
+	# P02088	100503605
+	# P02088	101488143
+	# P02088	15129	
+	
+	# (3) ok that some uniprot_accs(s) have no corresponding entrez id
 
 	df <- df %>% 
-	  # dplyr::mutate(prot_acc = as.character(prot_acc)) %>% 
-		dplyr::left_join(lookup, by = c("prot_acc" = key)) 
-	
-	ind <- is.na(df$gene) | str_length(df$gen) == 0
-	if (acc_type %in% c("uniprot_id", "uniprot_acc") & sum(ind) > 0) {
-	  substi_gns <- df[ind, "prot_desc"] %>% 
-	    as.character(.) %>% 
-	    strsplit(., ' GN=', fixed = TRUE) %>% 
-	    plyr::ldply(., rbind) 
-	  
-	  if (ncol(substi_gns) > 1) {
-	    substi_gns <- substi_gns %$% gsub("\\s+.*", "", .[, 2])
-	    df[ind, "gene"] <- substi_gns
-	  }
-
-		rm(substi_gns)
-	}
-	
-	# annotate NA genes with prot_acc
-	ind <- is.na(df$gene) | str_length(df$gen) == 0
-	if(sum(ind) > 0) df[ind, "gene"] <- df[ind, "prot_acc"]
+	  dplyr::mutate(psm_index = row_number()) %>% 
+	  dplyr::left_join(acc_lookup, by = "prot_acc") %>% 
+	  dplyr::filter(!duplicated(psm_index)) %>% 
+	  dplyr::select(-psm_index)
 
 	return(df)
 }
@@ -631,31 +855,24 @@ annotPrn <- function (df, acc_type) {
 annotKin <- function (df, acc_type) {
 	stopifnot ("prot_acc" %in% names(df))
 	
-	# acc_type <- tolower(acc_type)
-	acc_type <- find_acctype() %>% tolower()
+  data(package = "proteoQ", kinase_lookup)
+  stopifnot(acc_type %in% names(kinase_lookup))
 
-	lookup <- kinase_lookup %>%
-		dplyr::select(refseq_acc, gene, kin_attr, kin_class, kin_order) %>%
-		dplyr::rename(gene_lookup = gene) %>%
-		dplyr::filter(!duplicated(.[["refseq_acc"]]))
+  lookup <- kinase_lookup %>% 
+    dplyr::select(acc_type, kin_attr, kin_class, kin_order) %>%
+    dplyr::filter(!duplicated(.)) %>% 
+    dplyr::filter(!is.na(.[[acc_type]])) 
+  
+  df <- df %>% 
+    dplyr::left_join(lookup, by = c("prot_acc" = acc_type))
 
-	if (acc_type == "refseq_acc") {
-		key <- "prot_acc"
-		df <- df %>% dplyr::left_join(lookup, by = c("prot_acc" = "refseq_acc"))
-	} else if (acc_type %in% c("uniprot_id", "uniprot_acc")) {
-		key <- "refseq_acc"
-		if (!key %in% names(df)) stop("Column key, 'refseq_acc', is missing for kinase annotation.", 
-		                              call. = FALSE)
-		df <- df %>% dplyr::left_join(lookup, by = "refseq_acc")
-	}
+	# higher priority for the names of genes from the lookup table
+	# kinases <- df[[key]] %in% lookup[["refseq_acc"]]
+	# if(sum(kinases) > 0) df$gene[kinases] <- as.character(df$gene_lookup[kinases])
 
-	# higher priority for genes from the lookup table
-	kinases <- df[[key]] %in% lookup[["refseq_acc"]]
-	if(sum(kinases) > 0) df$gene[kinases] <- as.character(df$gene_lookup[kinases])
-
-	df <- df %>%
-		dplyr::mutate(gene = as.factor(gene)) %>%
-		dplyr::select(-gene_lookup)
+	# df <- df %>%
+	# 	dplyr::mutate(gene = as.factor(gene)) %>%
+	# 	dplyr::select(-gene_lookup)
 
 	df$kin_attr[is.na(df$kin_attr)] <- FALSE
 
@@ -703,7 +920,7 @@ match_identifier <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene
 	                               header = TRUE, sep = "\t", comment.char = "#"),
 	                      error = function(e) NA)
 
-	if(!is.null(dim(call_pars))) {
+	if (!is.null(dim(call_pars))) {
 		id <- call_pars %>%
 			dplyr::filter(var == "id") %>%
 			dplyr::select("value.1") %>%
@@ -712,6 +929,54 @@ match_identifier <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene
 	}
 
 	return(id)
+}
+
+
+#' Matches the current id to the id in normPSM
+#' @param id.
+#'
+#' @import plyr dplyr purrr rlang
+#' @importFrom magrittr %>%
+match_normPSM_id <- function (id = c("pep_seq")) {
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
+
+  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPSM.txt"), check.names = FALSE,
+                                 header = TRUE, sep = "\t", comment.char = "#"),
+                        error = function(e) NA)
+  
+  if (!is.null(dim(call_pars))) {
+    id <- call_pars %>%
+      dplyr::filter(var == "group_psm_by") %>%
+      dplyr::select("value.1") %>%
+      unlist() %>%
+      as.character()
+  }
+  
+  return(id)
+}
+
+
+#' Matches the current id to the id in normPep
+#' @param id.
+#'
+#' @import plyr dplyr purrr rlang
+#' @importFrom magrittr %>%
+match_normPep_id <- function (id = c("gene")) {
+  stopifnot(id %in% c("gene", "prot_acc"))
+  
+  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPep.txt"), check.names = FALSE,
+                                 header = TRUE, sep = "\t", comment.char = "#"),
+                        error = function(e) NA)
+  
+  if (!is.null(dim(call_pars))) {
+    id <- call_pars %>%
+      dplyr::filter(var == "group_pep_by") %>%
+      dplyr::select("value.1") %>%
+      unlist() %>%
+      as.character()
+  }
+  
+  return(id)
 }
 
 
@@ -768,6 +1033,34 @@ match_frac <- function (fn_pars = "load_expts.txt") {
 	}
 
 	return(frac_smry)
+}
+
+
+#' Matches the name of fasta files to those in normPSM
+#'
+#' @param fasta.
+#'
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>%
+match_fasta <- function () {
+  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPSM.txt"), check.names = FALSE,
+                                 header = TRUE, sep = "\t", comment.char = "#"),
+                        error = function(e) NA)
+  
+  if (!is.null(dim(call_pars))) {
+    fasta <- call_pars %>%
+      dplyr::filter(var == "fasta") %>%
+      dplyr::select(-var) %>%
+      unlist() %>%
+      as.character()
+    
+    if (is_empty(fasta)) 
+      stop("No fasta file names(s) found from the call to `normPSM`.", call. = FALSE)
+  } else {
+    stop("No saved parameters found from the call to `normPSM`.", call. = FALSE)
+  }
+  
+  return(fasta)
 }
 
 
@@ -990,77 +1283,65 @@ subset_fasta <- function (df, fasta, acc_type) {
 #' @import plyr dplyr purrr rlang seqinr
 #' @importFrom magrittr %>%
 calc_cover <- function(df, id, fasta = NULL) {
+  stopifnot("acc_type" %in% names(df))
+  acc_type <- df$acc_type[1] %>% as.character()
+  
   id <- rlang::as_string(rlang::enexpr(id))
+  
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
-  acc_type <- find_acctype() %>% tolower()
+  load(file = file.path(dat_dir, "acc_lookup.rda"))
   
   if (acc_type == "refseq_acc") {
     key <- "refseq_acc"
-  } else if (acc_type %in% "uniprot_id") {
+  } else if (acc_type == "uniprot_id") {
     key <- "uniprot_id"
-  } else if (acc_type %in% "uniprot_acc") {
+  } else if (acc_type == "uniprot_acc") {
     key <- "uniprot_acc"
   } else {
     warning("Unkown accession type.")
   }
-
-  if (!is.null(fasta)) {
-    if (all(file.exists(fasta))) {
-      fasta <- subset_fasta(df, fasta, acc_type)
-      
-      if (length(fasta) == 0) {
-        stop("No fasta entries matched the type of protein accession. Check the correctness of fasta file.", 
-             call. = FALSE)
-      }
-      
-      if (length(fasta) <= 200) {
-        warning("Less than 200 entries in fasta match by protein accession. 
-                Make sure the fasta file is correct.")
-      }
-      
-      lookup <- data.frame(prot_acc = names(fasta), length = getLength(fasta)) %>%
-        dplyr::rename(!!key := prot_acc) %>%
-        dplyr::mutate(!!key := gsub(".*\\|", "", !!rlang::sym(key)))
-    } else {
-      cat(fasta, "\n")
-      stop("Not all fasta files were found.", call. = FALSE)
-    }
-  } else {
-    warning("Use pre-computed database to calculate protein coverages.")
-    lookup <- dbs$prn_annot %>%
-      dplyr::select(key, length) %>%
-      dplyr::filter(!is.na(.[[key]]), !duplicated(.[[key]]))
+  
+  if (length(fasta) == 0) {
+    stop("No fasta entries matched the type of protein accession. Check the correctness of fasta file.", 
+         call. = FALSE)
   }
   
+  if (length(fasta) <= 200) {
+    warning("Less than 200 entries in fasta match by protein accession. 
+            Make sure the fasta file is correct.")
+  }
+  
+
   df <- df %>%
     dplyr::select(prot_acc, pep_start, pep_end) %>%
-    dplyr::left_join(lookup, by = c("prot_acc" = key)) %>%
-    dplyr::filter(!is.na(length))
+    dplyr::mutate(index = row_number()) %>% 
+    dplyr::left_join(acc_lookup, by = "prot_acc") %>%
+    dplyr::filter(!is.na(length), !duplicated(index)) %>% 
+    dplyr::select(-index)
   
   if (nrow(df) == 0) stop("Probably incorrect accession types in the fasta file.", call. = FALSE)
   
   df <- df %>%
-    dplyr::filter(.[["pep_start"]] <= .[["length"]]) %>%
-    dplyr::filter(.[["pep_end"]] <= .[["length"]]) %>%
+    dplyr::filter(pep_start <= length) %>%
+    dplyr::filter(pep_end <= length) %>%
     split(.[["prot_acc"]], drop = TRUE) %>%
-    purrr::map(function (x) {
-      len <- x[1, "length"]
+    purrr::map(function (.x) {
+      len <- .x[1, "length"]
       aa_map <- rep(NA, len)
-      for (i in 1:nrow(x)) aa_map[x[i, ]$pep_start:x[i, ]$pep_end] <- TRUE
+      for (i in 1:nrow(.x)) aa_map[.x[i, ]$pep_start : .x[i, ]$pep_end] <- TRUE
       sum(aa_map, na.rm = TRUE)/len
     } ) %>%
     do.call("rbind", .) %>%
     data.frame(check.names = FALSE) %>%
     `colnames<-`("prot_cover") %>%
     tibble::rownames_to_column("prot_acc") %>%
-    dplyr::mutate(prot_cover = ifelse(prot_cover > 1, 1, prot_cover)) %>%
-    annotPrn(acc_type) %>%
+    dplyr::mutate(prot_cover = ifelse(prot_cover > 1, 1, prot_cover)) %>% 
     dplyr::group_by(!!rlang::sym(id)) %>%
     dplyr::select(!!rlang::sym(id), prot_cover) %>%
-    dplyr::summarise_all(~max(., na.rm = TRUE)) %>%
+    dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>%
     dplyr::mutate(prot_cover = round(prot_cover * 100, digits = 1)) %>%
     dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
-  
+
   return(df)
 }
 
@@ -1196,16 +1477,22 @@ rm_pval_whitespace <- function(df) {
 #' 
 #' @import dplyr purrr
 #' @importFrom magrittr %>%
-match_gsets <- function(gset_nm = "go_sets") {
-  stopifnot(all(gset_nm %in% c("go_sets", "kegg_sets", "c2_msig")))
+match_gsets <- function(gset_nm = "go_sets", species) {
+  allowed <- c("go_sets", "kegg_sets", "c2_msig")
+    
+  stopifnot(all(gset_nm %in% allowed))
+
+  load_dbs(species)
   
-  gsets <- dbs %>% .[names(.) %in% gset_nm]
+  gsets <- purrr::map(as.list(gset_nm), ~ {
+    get(.x)
+  })
+
   stopifnot(length(gsets) > 0)
   
   is_null <- purrr::map_lgl(gsets, ~ is.null(.x))
   gset_nm <- gset_nm[!is_null]
-  
-  
+
   purrr::walk2(is_null, names(is_null), 
                ~ if(.x) warning("Gene set: `", .y, "` not found", call. = FALSE))
   
@@ -1341,18 +1628,123 @@ annotPeppos_mq <- function (df, fasta){
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
 filters_in_call <- function (df, ...) {
-  dots <- enexprs(...)
+  dots <- rlang::enexprs(...)
   nms <- names(dots)
   
   for (i in seq_along(dots)) {
-    rows_expr <- dots[[nms[i]]]
-    rows_val <- try(eval_tidy(eval_bare(rows_expr), df))
-
-    stopifnot(is.logical(rows_val))
+    row_exprs <- dots[[nms[i]]] %>% 
+      rlang::eval_bare()
     
-    df <- df[rows_val, , drop = FALSE]
+    if (!rlang::is_list(row_exprs)) row_exprs <- list(row_exprs)
+    
+    row_vals <- row_exprs %>% 
+      purrr::map(eval_tidy, df) %>% 
+      purrr::reduce(`&`, .init = 1)
+
+    stopifnot(is.logical(row_vals))
+    
+    df <- df[row_vals, , drop = FALSE]
   }
   
   return(df)
+}
+
+
+#' Arrange rows
+#'
+#' @param df; data frame. 
+#'
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>%
+arrangers_in_call <- function(.df, ..., .na.last = TRUE) {
+  dots <- rlang::enexprs(...)
+  nms <- names(dots)
+  
+  for (i in seq_along(dots)) {
+    row_orders <- dots[[nms[i]]] %>% 
+      rlang::eval_bare()
+    
+    if (!rlang::is_list(row_orders)) row_orders <- list(row_orders)
+    
+    order_call <- rlang::expr(order(!!!row_orders, na.last = !!.na.last))
+    ord <- rlang::eval_tidy(order_call, .df)
+    stopifnot(length(ord) == nrow(.df))
+
+    .df <- .df[ord, , drop = FALSE]
+  }
+  
+  return(.df)
+}
+
+
+#' Calculates CV per TMT_Set and LCMS_injection
+calcSD_Splex <- function (df, id) {
+  df %>% 
+    dplyr::arrange(!!rlang::sym(id)) %>% 
+    dplyr::select(!!rlang::sym(id), grep("^log2_R[0-9]{3}", names(.))) %>%
+    dplyr::group_by(!!rlang::sym(id)) %>%
+    dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) 
+}
+
+
+#' Violin plots of CV per TMT_Set and LCMS_injection
+sd_violin <- function(df, id, filepath, width, height) {
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  df_sd <- df %>% 
+    dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.))) %>% 
+    `names<-`(gsub("^.*log2_R", "", names(.))) 
+  
+  Levels <- names(df_sd) %>% 
+    .[! . %in% id]
+  
+  df_sd <- df_sd %>%
+    tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
+    dplyr::rename(Channel := !!rlang::sym(id)) %>% 
+    dplyr::ungroup(Channel) %>% 
+    dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
+    dplyr::filter(!is.na(SD))
+  
+  p <- ggplot() +
+    geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
+    geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
+    stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
+                 shape=23, size=2, fill="white", alpha=.5) +
+    labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
+    scale_y_continuous(limits = c(0, .6), breaks = seq(0, .6, .2)) +
+    theme_psm_violin
+  
+  try(ggsave(filepath, p, width = width, height = height, units = "in"))
+  
+}
+
+
+#' Violin plots of reporter-ion intensity per TMT_Set and LCMS_injection
+rptr_violin <- function(df, filepath, width, height) {
+  df_int <- df %>% 
+    `names<-`(gsub("^N_I", "", names(.))) 
+  
+  Levels <- names(df_int)
+  
+  df_int <- df_int %>%
+    tidyr::gather(key = "Channel", value = "Intensity") %>%
+    dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
+    dplyr::filter(!is.na(Intensity))
+  
+  mean_int <- df_int %>% 
+    dplyr::group_by(Channel) %>% 
+    dplyr::summarise(Intensity = mean(log10(Intensity), na.rm = TRUE)) %>% 
+    dplyr::mutate(Intensity = round(Intensity, digit = 1))
+  
+  p <- ggplot() +
+    geom_violin(df_int, mapping = aes(x = Channel, y = log10(Intensity), fill = Channel), size = .25) +
+    geom_boxplot(df_int, mapping = aes(x = Channel, y = log10(Intensity)), width = 0.2, lwd = .2, fill = "white") +
+    stat_summary(df_int, mapping = aes(x = Channel, y = log10(Intensity)), fun.y = "mean", geom = "point",
+                 shape = 23, size = 2, fill = "white", alpha = .5) +
+    labs(title = expression("Reporter ions"), x = expression("Channel"), y = expression("Intensity ("*log[10]*")")) + 
+    geom_text(data = mean_int, aes(x = Channel, label = Intensity, y = Intensity + 0.2), size = 5, colour = "red", alpha = .5) + 
+    theme_psm_violin
+  
+  try(ggsave(filepath, p, width = width, height = height, units = "in"))
 }
 

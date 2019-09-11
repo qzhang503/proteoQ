@@ -4,16 +4,26 @@
 \alias{splitPSM}
 \title{Splits PSM tables}
 \usage{
-splitPSM(rptr_intco = 1000, rm_craps = FALSE, plot_violins = TRUE,
+splitPSM(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE,
+  rptr_intco = 1000, annot_kinases = FALSE, plot_rptr_int = TRUE,
   ...)
 }
 \arguments{
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search.}
 
 \item{rm_craps}{Logical; if TRUE, removes
 \code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.}
 
-\item{plot_violins}{Logical; if TRUE, prepares the violin plots of
+\item{rm_krts}{Logical; if TRUE, removes keratin entries from the output.}
+
+\item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
+
+\item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
+proteins.}
+
+\item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}
 }
 \description{
@@ -21,6 +31,6 @@ reporter-ion intensities.}
 separates PSM data by TMT experiment and LC/MS injection.
 }
 \examples{
-splitPSM(rptr_intco = 1000, rm_craps = TRUE, plot_violins = TRUE)
+splitPSM(rptr_intco = 1000, rm_craps = TRUE, plot_rptr_int = TRUE)
 
 }
