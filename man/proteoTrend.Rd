@@ -17,8 +17,9 @@ anal_prnTrend(...)
 plot_prnTrend(...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. Peptide data will be
-used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically by the program. Peptide data will be used at
+\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{task}{Character string; a signature for task dispatch in a function
@@ -51,27 +52,28 @@ divided into. The default is c(5:6).}
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation for all samples.}
 
-\item{df}{The name of input data file. By default, it will be determined by
-the value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined
+automatically by the value of \code{id}.}
 
 \item{filepath}{Use system default.}
 
 \item{filename}{Use system default.}
 
-\item{...}{Additional parameters for use in \code{plot_} functions: \cr
-\code{ymin}, the minimum y at \code{log2} scale; \cr \code{ymax}, the
-maximum y at \code{log2} scale; \cr \code{y_breaks}, the breaks in y-axis at
-\code{log2} scale; \cr \code{ncol}, the number of columns; \cr \code{nrow},
-the number of rows; \cr \code{width}, the width of plot; \cr \code{height},
-the height of plot.}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for use
+in \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2}
+scale; \cr \code{ymax}, the maximum y at \code{log2} scale; \cr
+\code{y_breaks}, the breaks in y-axis at \code{log2} scale; \cr \code{ncol},
+the number of columns; \cr \code{nrow}, the number of rows; \cr
+\code{width}, the width of plot; \cr \code{height}, the height of plot.}
 }
 \value{
 Trend classification and visualization of \code{log2FC}.
 }
 \description{
 \code{proteoTrend} analyzes and visualizes the trends of peptide or protein
-\code{log2FC}. Users should never call the method directly, but instead use
-the wrappers.
+\code{log2FC}. Users should avoid call the method directly, but instead use
+the following wrappers.
 
 \code{anal_prnTrend} is a wrapper of \code{\link{proteoTrend}} for the trend
 analysis of protein data
@@ -87,13 +89,23 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 anal_prnTrend(
   scale_log2r = TRUE,
   col_order = Order,
-  n_clust = c(5:6)
+  n_clust = c(5:8), 
+  
+  filter_by_npep = exprs(n_pep >= 2),
 )
 
 plot_prnTrend(
   scale_log2r = TRUE,
   col_order = Order,
-  n_clust = c(5:6)
+  n_clust = c(5:6), 
+)
+
+plot_prnTrend(
+  scale_log2r = TRUE,
+  col_order = Order,
+  n_clust = c(5:6), 
+  
+  filter_by_npep = exprs(n_pep >= 4),
 )
 
 }

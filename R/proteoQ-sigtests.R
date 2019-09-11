@@ -1,26 +1,46 @@
 #'Significance tests
 #'
-#'\code{proteoSigtest} performs significance tests of peptide or protein
-#'\code{log2FC}
+#'\code{proteoSigtest} performs significance tests aganist peptide or protein
+#'\code{log2FC}. Users should avoid call the method directly, but instead use
+#'the following wrappers.
+#'
+#'In general, special characters of \code{+} or \code{-} should be avoided from
+#'contrast terms. Occasionally, such as in biological studies, it may be
+#'convenient to use \code{A+B} to denote a condition of combined treatment of
+#'\code{A} and \code{B} . In the case, one can put the term(s) containing
+#'\code{+} or \code{-} into a pair of pointy brackets. The syntax in the
+#'following hypothetical example will compare the effects of \code{A}, \code{B},
+#'\code{A+B} and the average of \code{A} and \code{B} to control \code{C}:
+#'
+#'\code{prnSig(fml = ~ Term["A - C", "B - C", "<A + B> - C", "(A + B)/2 - C"])}
+#'
+#'Note that \code{<A + B>} stands for one sample and \code{(A + B)} has two
+#'samples in it.
 #'
 #'@inheritParams  proteoHist
 #'@inheritParams  proteoHM
+#'@param filename A file name to output results: \code{Peptide_pVals.txt} for
+#'  peptides and \code{Protein_pVals} for proteins.
 #'@param method Character string; the method of linear modeling. The default is
-#'  \code{limma}; at \code{method = lm}, the \code{lm()} in base R will be used
-#'  for models without random effects and the \code{\link[lmerTest]{lmer}}
-#'  will be used for models with random effects.
+#'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
+#'  for models without random effects and the \code{\link[lmerTest]{lmer}} will
+#'  be used for models with random effects.
 #'@param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
 #'  Entries with variances smaller than the threshold will be removed from
 #'  linear modeling.
 #'@param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
 #'  with \code{pVals} smaller than the threshold will be removed from multiple
 #'  test corrections.
-#'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with \code{log2FC}
-#'  smaller than the threshold will be removed from multiple test corrections.
-#'@param ... Contrasts for linear modeling. The syntax starts with a tilde,
-#'  followed by the name of an available column key in \code{expt_smry.xlsx} and
-#'  square brackets. The contrast groups are then quoted with multiple contrast
-#'  groups separated by commas.
+#'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
+#'  \code{log2FC} smaller than the threshold will be removed from multiple test
+#'  corrections.
+#'@param ... User-defined formulae for linear modeling. The syntax starts with a
+#'  tilde, followed by the name of an available column key in
+#'  \code{expt_smry.xlsx} and square brackets. The contrast groups are then
+#'  quoted with multiple contrast groups separated by commas. Additive random
+#'  effects are indicated by \code{+ (1|col_key_1) + (1|col_key_2)}... \cr \cr
+#'  \code{filter_}: Logical expression(s) for the row filtration of data; also
+#'  see \code{\link{normPSM}}.
 #'@return The primary output is
 #'  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
 #'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data.
@@ -30,7 +50,7 @@
 #'@export
 proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = NULL, filename = NULL,
 											impute_na = TRUE, complete_cases = FALSE, method = "limma",
-											var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), ...) {
+											var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -49,8 +69,7 @@ proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = 
 	#   !is_reference under "Reference" ->
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
 	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r,
-					filepath = !!filepath, filename = !!filename,
-					impute_na = impute_na,
+					filepath = !!filepath, filename = !!filename, impute_na = impute_na,
 					anal_type = "Model")(complete_cases = complete_cases, method = !!method, 
 					                     var_cutoff, pval_cutoff, logFC_cutoff, ...)
 }
@@ -59,10 +78,10 @@ proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = 
 #' Row Variance
 #'
 #' @importFrom magrittr %>%
-rowVars <- function (x, na.rm = TRUE) { # row variance
+rowVars <- function (x, na.rm = TRUE) {
 		sqr <- function(x) x * x
 		n <- rowSums(!is.na(x))
-		n[n <= 1] = NA
+		n[n <= 1] <- NA
 		return(rowSums(sqr(x - rowMeans(x,na.rm = na.rm)), na.rm = na.rm)/(n - 1))
 }
 
@@ -220,6 +239,11 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 	label_scheme_sub_sub <- label_scheme_sub %>%
 		dplyr::filter(!!sym(key_col) %in% elements) %>%
 		dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col)))
+	
+	if (nrow(label_scheme_sub_sub) == 0) {
+	  stop("No samples were found for formula ", formula, 
+	       "\nCheck the terms under column ", key_col, call. = FALSE)
+	}
 
 	design <- model.matrix(~0+label_scheme_sub_sub[[key_col]]) %>%
 		`colnames<-`(levels(label_scheme_sub_sub[[key_col]]))
@@ -278,10 +302,10 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 #' @importFrom magrittr %>%
 my_padj <- function(df_pval, pval_cutoff) {
 	df_pval %>%
-		purrr::map(~ . <= pval_cutoff)	%>%
-		purrr::map(~ ifelse(!., NA, .)) %>%
+		purrr::map(~ .x <= pval_cutoff)	%>%
+		purrr::map(~ ifelse(!.x, NA, .x)) %>%
 		purrr::map2(as.list(df_pval), `*`) %>%
-		purrr::map(~ p.adjust(., "BH")) %>%
+		purrr::map(~ p.adjust(.x, "BH")) %>%
 		dplyr::bind_cols() %>%
 		`names<-`(gsub("pVal", "adjP", colnames(.))) %>%
 		dplyr::mutate(rowname = rownames(df_pval)) %>%
@@ -298,13 +322,14 @@ my_padj <- function(df_pval, pval_cutoff) {
 lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 	nms <- rownames(pvals)
 
-	pass_pvals <- pvals %>% purrr::map(~ . <= pval_cutoff)
-	pass_fcs <- log2rs %>% purrr::map(~ abs(.) >= log2(logFC_cutoff))
-	pass_both <- purrr::map2(pass_pvals, pass_fcs, `&`) %>% purrr::map(~ ifelse(!., NA, .))
+	pass_pvals <- pvals %>% purrr::map(~ .x <= pval_cutoff)
+	pass_fcs <- log2rs %>% purrr::map(~ abs(.x) >= log2(logFC_cutoff))
+	pass_both <- purrr::map2(pass_pvals, pass_fcs, `&`) %>% 
+	  purrr::map(~ ifelse(!.x, NA, .x))
 
 	res_padj <- pvals %>%
 		purrr::map2(pass_both, `*`) %>%
-		purrr::map(~ p.adjust(., "BH")) %>%
+		purrr::map(~ p.adjust(.x, "BH")) %>%
 		data.frame(check.names = FALSE) %>%
 		`names<-`(gsub("pVal", "adjP", colnames(.))) %>%
 		`rownames<-`(nms) %>%
@@ -368,10 +393,12 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	df <- df %>% filterData(var_cutoff)
 
 	# ensure the same order in Sample_ID
-	df <- df %>% dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
+	df <- df %>% 
+	  dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
 
 	if(length(random_vars) > 0) {
-		design_random <- label_scheme_sub_sub[[random_vars[1]]] # choose only the first random variable
+		# only use the first random variable
+	  design_random <- label_scheme_sub_sub[[random_vars[1]]] 
 		corfit <- duplicateCorrelation(df, design = design, block = design_random)
 		fit <- df %>%
 			lmFit(design = design, block = design_random, correlation = corfit$consensus) %>%
@@ -398,7 +425,6 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 
 	res_lm <- lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff)
 
-	# lm or lmer
 	if (method %in% c("lmer", "lme", "lm")) {
 		fml_rhs <- gsub("\\[.*\\]", "", formula) %>% .[length(.)]
 		new_formula <- as.formula(paste("log2Ratio", "~", fml_rhs))
@@ -424,9 +450,9 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 
 		if(!purrr::is_empty(random_vars)) {
 			res_lm <- df_lm %>%
-				dplyr::mutate(model =
-				                purrr::map(data, ~ lmerTest::lmer(data = .x, formula = new_formula,
-				                                                  contrasts = contr_mat_lm))) %>%
+				dplyr::mutate(
+				  model = purrr::map(
+				    data, ~ lmerTest::lmer(data = .x, formula = new_formula, contrasts = contr_mat_lm))) %>%
 				dplyr::mutate(glance = purrr::map(model, broom.mixed::tidy)) %>%
 				tidyr::unnest(glance, .drop = TRUE) %>%
 				dplyr::filter(!grepl("Intercept", term), effect != "ran_pars") %>%
@@ -454,7 +480,8 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 		}
 	}
 
-	df_op <- res_lm %>% tibble::rownames_to_column(id) %>%
+	df_op <- res_lm %>% 
+	  tibble::rownames_to_column(id) %>%
 		dplyr::right_join(df_nms, by = id) %>%
 		tibble::column_to_rownames(var = id)
 }
@@ -476,18 +503,19 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	non_fml_dots <- dots[!map_lgl(dots, is_formula)]
 	dots <- dots[map_lgl(dots, is_formula)]
 
-	if(id %in% c("prot_acc", "gene")) {
+	if (id %in% c("prot_acc", "gene")) {
 		prnSig_formulas <- dots
 		save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.Rdata"))
 		rm(prnSig_formulas)
-	} else if(id %in% c("pep_seq", "pep_seq_mod")) {
+	} else if (id %in% c("pep_seq", "pep_seq_mod")) {
 		pepSig_formulas <- dots
 		save(pepSig_formulas, file = file.path(dat_dir, "Calls", "pepSig_formulas.Rdata"))
 		rm(pepSig_formulas)
 	}
 
-	df_op <- purrr::map(dots, ~ model_onechannel(df, id, ., label_scheme_sub, complete_cases,
-							 method, var_cutoff, pval_cutoff, logFC_cutoff, !!!non_fml_dots)) %>%
+	df_op <- purrr::map(dots, 
+	                    ~ model_onechannel(df, !!id, .x, label_scheme_sub, complete_cases, method, 
+	                                       var_cutoff, pval_cutoff, logFC_cutoff, !!!non_fml_dots)) %>%
 					do.call("cbind", .)
 }
 
@@ -500,17 +528,11 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 #'@rdname proteoSigtest
 #'
 #' @examples
-#'pepSig(
-#'  impute_na = FALSE, 
-#'  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-#'  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
-#')
-#'
 #'@import purrr
 #'@export
 pepSig <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Peptide\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -531,23 +553,41 @@ pepSig <- function (...) {
 #'
 #'@import purrr
 #' @examples
-#'prnSig(
-#'  impute_na = FALSE,
-#'  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-#'  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
-#')
+#' prnSig(
+#'   impute_na = FALSE,
+#'   W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", "W2.JHU.TMT2-W2.JHU.TMT1", "W2.PNNL.TMT2-W2.PNNL.TMT1"], # batches
+#'   W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # locations
+#' )
 #'
+#' prnSig(
+#'   impute_na = FALSE,
+#'   W2_loc_2 = ~ Term["(W2.BI.TMT2+W2.BI.TMT1)/2 - (W2.JHU.TMT2+W2.JHU.TMT1)/2"], # locations with batch average
+#' )
+#'
+#' prnSig(
+#'   impute_na = TRUE,
+#'   W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed effect
+#'   W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
+#' )
+#' 
+#' prnSig(
+#'   impute_na = TRUE,
+#'   method = lm,
+#'   W2_vs_W16_fix = ~ Term_3["W16-W2"], # one fixed effect
+#'   W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
+#'   W2_vs_W16_mix_2 = ~ Term_3["W16-W2"] + (1|TMT_Set) + (1|Color), # one fixed and two random effects
+#' )
+#' 
 #'@import purrr
 #'@export
 prnSig <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  # proteoSigtest(id = gene, ...)
 
   quietly_log <- purrr::quietly(proteoSigtest)(id = gene, ...)
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Protein\\Model\\log","prnSig_log.csv"), append = TRUE)
 }
+

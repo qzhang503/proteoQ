@@ -5,7 +5,7 @@
 \title{STRING outputs}
 \usage{
 getStringDB(db_path = "~\\\\proteoQ\\\\dbs\\\\string",
-  score_cutoff = 0.7, nseq_cutoff = 2, adjP = FALSE)
+  score_cutoff = 0.7, adjP = FALSE, ...)
 }
 \arguments{
 \item{db_path}{Character string; the local path for database(s).}
@@ -13,27 +13,26 @@ getStringDB(db_path = "~\\\\proteoQ\\\\dbs\\\\string",
 \item{score_cutoff}{Numeric; the threshold of the \code{combined_score} of
 protein-protein interaction.}
 
-\item{nseq_cutoff}{Positive integer. Proteins with the number of identifying
-peptides smaller than the cut-off value will be removed from further
-analysis.}
-
 \item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals.}
+
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data; also see \code{\link{normPSM}}.}
 }
 \description{
 \code{getStringDB} produces the \code{\href{https://string-db.org/}{STRING}}
 results of protein-protein interaction and protein expressions. The
 interaction file, \code{Protein_STRING_ppi.tsv}, and the expression file,
-\code{Protein_STRING_expr.tsv}, may be used by
-\code{\href{https://cytoscape.org/}{Cytoscape}} for further processing and
-analysis.
+\code{Protein_STRING_expr.tsv}, are compatible with
+\code{\href{https://cytoscape.org/}{Cytoscape}}.
 }
 \examples{
 \dontrun{
 getStringDB(
   db_path = "~\\\\proteoQ\\\\dbs\\\\string",
   score_cutoff = .9,
-  nseq_cutoff = 2,
-  adjP = FALSE
+  adjP = FALSE,
+  filter_by_sp = exprs(species \%in\% c("human", "mouse")), 
+  filter_by_npep = exprs(n_pep >= 2), 
 )
 }
 

@@ -10,9 +10,9 @@ cleanupPSM(rm_outliers = FALSE)
 \item{rm_outliers}{Logical; if TRUE, performs outlier removals.}
 }
 \description{
-\code{cleanupPSM} cleans up PSM tables with the option of outlier removals.
-The outlier removals will be assessed at the basis of per peptide per TMT
-channel.
+\code{cleanupPSM} removes PSM outliers after \code{rmPSMHeaders} and
+\code{splitPSM}. The outlier removals will be assessed at the basis of per
+peptide per TMT channel.
 }
 \details{
 Dixon's method will be used when 2 < n <= 25; Rosner's method will be used

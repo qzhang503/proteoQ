@@ -4,7 +4,7 @@
 \alias{annotPrn}
 \title{Adds protein annotation}
 \usage{
-annotPrn(df, acc_type)
+annotPrn(df, fasta)
 }
 \description{
 \code{annotPrn} cross-referencing proteins among \code{uniprot_acc},

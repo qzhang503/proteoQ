@@ -16,25 +16,23 @@ pepSig(...)
 prnSig(...)
 }
 \arguments{
-\item{df}{The name of input data file. By default, it will be determined by
-the value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined
+automatically by the value of \code{id}.}
 
-\item{id}{Character string to indicate the type of data. Peptide data will be
-used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically by the program. Peptide data will be used at
+\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation for all samples.}
 
 \item{filepath}{A file path to output results. By default, it will be
-determined by the name of the calling \code{function} and the value of
-\code{id} in the \code{call}.}
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} where the image type will be
-determined by the extension of the file name. A \code{.png} format will be
-used at default or an unrecognized file extension.}
+\item{filename}{A file name to output results: \code{Peptide_pVals.txt} for
+peptides and \code{Protein_pVals} for proteins.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
@@ -43,9 +41,9 @@ will be used.}
 missing values will be used.}
 
 \item{method}{Character string; the method of linear modeling. The default is
-\code{limma}; at \code{method = lm}, the \code{lm()} in base R will be used
-for models without random effects and the \code{\link[lmerTest]{lmer}}
-will be used for models with random effects.}
+\code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
+for models without random effects and the \code{\link[lmerTest]{lmer}} will
+be used for models with random effects.}
 
 \item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.
 Entries with variances smaller than the threshold will be removed from
@@ -55,13 +53,17 @@ linear modeling.}
 with \code{pVals} smaller than the threshold will be removed from multiple
 test corrections.}
 
-\item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with \code{log2FC}
-smaller than the threshold will be removed from multiple test corrections.}
+\item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with
+\code{log2FC} smaller than the threshold will be removed from multiple test
+corrections.}
 
-\item{...}{Contrasts for linear modeling. The syntax starts with a tilde,
-followed by the name of an available column key in \code{expt_smry.xlsx} and
-square brackets. The contrast groups are then quoted with multiple contrast
-groups separated by commas.}
+\item{...}{User-defined formulae for linear modeling. The syntax starts with a
+tilde, followed by the name of an available column key in
+\code{expt_smry.xlsx} and square brackets. The contrast groups are then
+quoted with multiple contrast groups separated by commas. Additive random
+effects are indicated by \code{+ (1|col_key_1) + (1|col_key_2)}... \cr \cr
+\code{filter_}: Logical expression(s) for the row filtration of data; also
+see \code{\link{normPSM}}.}
 }
 \value{
 The primary output is
@@ -69,8 +71,9 @@ The primary output is
  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data.
 }
 \description{
-\code{proteoSigtest} performs significance tests of peptide or protein
-\code{log2FC}
+\code{proteoSigtest} performs significance tests aganist peptide or protein
+\code{log2FC}. Users should avoid call the method directly, but instead use
+the following wrappers.
 
 \code{pepSig} is a wrapper of \code{\link{proteoSigtest}} for the
 significance tests of peptide data
@@ -78,17 +81,44 @@ significance tests of peptide data
 \code{prnSig} is a wrapper of \code{\link{proteoSigtest}} for the significance
 tests of protein data
 }
+\details{
+In general, special characters of \code{+} or \code{-} should be avoided from
+contrast terms. Occasionally, such as in biological studies, it may be
+convenient to use \code{A+B} to denote a condition of combined treatment of
+\code{A} and \code{B} . In the case, one can put the term(s) containing
+\code{+} or \code{-} into a pair of pointy brackets. The syntax in the
+following hypothetical example will compare the effects of \code{A}, \code{B},
+\code{A+B} and the average of \code{A} and \code{B} to control \code{C}:
+
+\code{prnSig(fml = ~ Term["A - C", "B - C", "<A + B> - C", "(A + B)/2 - C"])}
+
+Note that \code{<A + B>} stands for one sample and \code{(A + B)} has two
+samples in it.
+}
 \examples{
-pepSig(
- impute_na = FALSE, 
- W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
- W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
+prnSig(
+  impute_na = FALSE,
+  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", "W2.JHU.TMT2-W2.JHU.TMT1", "W2.PNNL.TMT2-W2.PNNL.TMT1"], # batches
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # locations
 )
 
 prnSig(
- impute_na = FALSE,
- W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
- W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"] # location effects
+  impute_na = FALSE,
+  W2_loc_2 = ~ Term["(W2.BI.TMT2+W2.BI.TMT1)/2 - (W2.JHU.TMT2+W2.JHU.TMT1)/2"], # locations with batch average
+)
+
+prnSig(
+  impute_na = TRUE,
+  W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed effect
+  W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
+)
+
+prnSig(
+  impute_na = TRUE,
+  method = lm,
+  W2_vs_W16_fix = ~ Term_3["W16-W2"], # one fixed effect
+  W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
+  W2_vs_W16_mix_2 = ~ Term_3["W16-W2"] + (1|TMT_Set) + (1|Color), # one fixed and two random effects
 )
 
 }

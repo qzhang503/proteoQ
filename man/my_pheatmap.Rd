@@ -4,8 +4,8 @@
 \alias{my_pheatmap}
 \title{A wrapper around pheatmap}
 \usage{
-my_pheatmap(mat, filename, annotation_col, color, annotation_colors,
-  breaks, ...)
+my_pheatmap(mat, filename, annotation_col, annotation_row, color,
+  annotation_colors, breaks, ...)
 }
 \description{
 A wrapper around pheatmap

@@ -7,11 +7,12 @@
 prepDM(df, id, scale_log2r, sub_grp, type = "ratio", anal_type)
 }
 \arguments{
-\item{df}{The name of input data file. By default, it will be determined by
-the value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined
+automatically by the value of \code{id}.}
 
-\item{id}{Character string to indicate the type of data. Peptide data will be
-used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically by the program. Peptide data will be used at
+\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
@@ -22,8 +23,8 @@ analysis.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories; Values include \code{anal_type =
-c("MDS", "PCA", "EucDist", "MA", "Heatmap", "Histogram", "Corrplot",
-"Trend", "NMF", "Model", ...)}.}
+c("PCA", "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model", 
+"NMF", "Purge", "Trend", ...)}.}
 }
 \value{
 A data frame tailored for subsequent analysis.

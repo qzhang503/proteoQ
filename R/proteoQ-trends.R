@@ -29,12 +29,12 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)
 	
-	fn_prx <- gsub("\\.csv$", "", filename)
-	fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
+	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+	fn_prefix <- gsub("\\.[^.]*$", "", filename)
 	
 	if (is.null(n_clust)) {
 	  n_clust <- c(5:6)
-	  fn_prx <- paste0(fn_prx, n_clust)
+	  fn_prefix <- paste0(fn_prefix, n_clust)
 	} else {
 	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
 	}
@@ -64,7 +64,7 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 		dplyr::filter(complete.cases(.[, !grepl(id, names(.))])) %>%
 		tibble::column_to_rownames(id)
 
-	purrr::walk(fn_prx, ~ {
+	purrr::walk(fn_prefix, ~ {
 	  n_clust <- gsub(".*_n(\\d+)$", "\\1", .x) %>% as.numeric()
 	  filename <- paste0(.x, ".csv")
 
@@ -106,22 +106,33 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
-  
-  fn_prx <- gsub("\\..*$", "", filename)
-  fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
-  
-  if (is.null(n_clust)) {
-    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\d+\\.csv$"))
-  } else {
-    stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
-    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\.csv$"))
-  }
-  
+
+  ins <- list.files(path = filepath, pattern = "_n\\d+\\.csv$")
+
+	if (is.null(n_clust)) {
+	  filelist <- ins
+	} else {
+	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
+	  
+	  ins_prefix <- gsub("\\.[^.]*$", "", ins)
+	  
+	  possible_prefix <- ins_prefix %>% 
+	    gsub("(.*)_n\\d+$", "\\1", .) %>% 
+	    unique() %>% 
+	    paste0("_n", n_clust)
+	  
+	  ok_prefix <- ins_prefix %>% 
+	    .[. %in% possible_prefix]
+	  rm(ins_prefix, possible_prefix)
+	  
+	  filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.csv$"))) %>% 
+	    unlist()
+	}
+	
   if(purrr::is_empty(filelist)) 
-    stop("Trend result file `", fn_prx, "... not found under ", filepath, 
+    stop("Missing trend results under ", filepath, 
          "\nCheck the setting in `scale_log2r` for a probable mismatch.", call. = FALSE)
-  
-  
+
   col_group <- rlang::enexpr(col_group)
   col_order <- rlang::enexpr(col_order)
   
@@ -152,6 +163,14 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
     legend.text.align = 0,
     legend.box = NULL
   )
+  
+  # filename extension will be used but prefix ignored
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
+  # if (!all.equal(ok_prefix, fn_prefix)) {
+  #   warning("Mismatches in file names; match names under file directory.")
+  # }
   
   purrr::walk(filelist, ~ {
     out_nm <- paste0(gsub("\\.csv$", "", .x), ".", fn_suffix)
@@ -224,26 +243,27 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'Clustering of data trends
 #'
 #'\code{proteoTrend} analyzes and visualizes the trends of peptide or protein
-#'\code{log2FC}. Users should never call the method directly, but instead use
-#'the wrappers.
+#'\code{log2FC}. Users should avoid call the method directly, but instead use
+#'the following wrappers.
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
 #'
 #'@inheritParams proteoNMF
 #'@inheritParams proteoEucDist
-#'@inheritParams proteoCorrplot
+#'@inheritParams proteoCorr
 #'@inheritParams info_anal
 #'@param n_clust Numeric vector; the number(s) of clusters that data will be
 #'  divided into. The default is c(5:6).
 #'@param filepath Use system default.
 #'@param filename Use system default.
-#'@param ... Additional parameters for use in \code{plot_} functions: \cr
-#'  \code{ymin}, the minimum y at \code{log2} scale; \cr \code{ymax}, the
-#'  maximum y at \code{log2} scale; \cr \code{y_breaks}, the breaks in y-axis at
-#'  \code{log2} scale; \cr \code{ncol}, the number of columns; \cr \code{nrow},
-#'  the number of rows; \cr \code{width}, the width of plot; \cr \code{height},
-#'  the height of plot.
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
+#'  data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for use
+#'  in \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2}
+#'  scale; \cr \code{ymax}, the maximum y at \code{log2} scale; \cr
+#'  \code{y_breaks}, the breaks in y-axis at \code{log2} scale; \cr \code{ncol},
+#'  the number of columns; \cr \code{nrow}, the number of rows; \cr
+#'  \code{width}, the width of plot; \cr \code{height}, the height of plot.
 #'@return Trend classification and visualization of \code{log2FC}.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -301,7 +321,9 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #' anal_prnTrend(
 #'   scale_log2r = TRUE,
 #'   col_order = Order,
-#'   n_clust = c(5:6)
+#'   n_clust = c(5:8), 
+#'   
+#'   filter_by_npep = exprs(n_pep >= 2),
 #' )
 #'
 #'@import purrr
@@ -311,8 +333,8 @@ anal_prnTrend <- function (...) {
   if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  quietly_log <- purrr::quietly(proteoTrend)(id = gene, anal_type = Trend, task = anal, ...)
+
+  quietly_log <- purrr::quietly(proteoTrend)(id = gene, task = anal, ...)
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Protein\\Trend\\log","anal_prnTrend_log.csv"), append = TRUE)
 }
@@ -329,7 +351,15 @@ anal_prnTrend <- function (...) {
 #' plot_prnTrend(
 #'   scale_log2r = TRUE,
 #'   col_order = Order,
-#'   n_clust = c(5:6)
+#'   n_clust = c(5:6), 
+#' )
+#'
+#' plot_prnTrend(
+#'   scale_log2r = TRUE,
+#'   col_order = Order,
+#'   n_clust = c(5:6), 
+#'   
+#'   filter_by_npep = exprs(n_pep >= 4),
 #' )
 #'
 #'@import purrr
@@ -339,8 +369,8 @@ plot_prnTrend <- function (...) {
   if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  quietly_log <- purrr::quietly(proteoTrend)(id = gene, anal_type = Trend, task = plot, ...)
+
+  quietly_log <- purrr::quietly(proteoTrend)(id = gene, task = plot, ...)
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Protein\\Trend\\log","plot_prnTrend_log.csv"), append = TRUE)
 }

@@ -3,13 +3,13 @@
 #'\code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
 #'(GSPA) aganist protein \code{log2FC} data
 #'
-#'The significance pVals of proteins are first obtained from
+#'The significance \code{pVals} of proteins are first obtained from
 #'\code{\link{prnSig}}, which involves moderated t-test using
-#'\code{\link[limma]{eBayes}}. The geometric mean of pVals are then each
+#'\code{\link[limma]{eBayes}}. The geometric mean of \code{pVals} are then each
 #'calculated for the groups of up or down regulated proteins. The quotient of
-#'the two pVals is used to prepsent the significance of gene set enrichment. The
-#'arguments \code{pval_cutoff} and \code{logFC_cutoff} are used to filter out
-#'low influence genes.
+#'the two \code{pVals} is used to prepsent the significance of gene set
+#'enrichment. The arguments \code{pval_cutoff} and \code{logFC_cutoff} are used
+#'to filter out low influence genes.
 #'
 #'The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 #'default.
@@ -18,19 +18,20 @@
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
-#'@param gset_nm Character vector containing the name(s) of gene sets for
-#'  enrichment analysis. The currently supported data sets are
-#'  \code{c("go_sets", "kegg_sets", "c2_msig")}.
+#'@param gset_nms Character vector containing the name(s) of gene sets for
+#'  enrichment analysis. The possible values are in \code{c("go_sets",
+#'  "kegg_sets", "c2_msig")}.
 #'@param filepath Use system default.
 #'@param filename Use system default.
 #'@param var_cutoff Not currently used.
 #'@param pval_cutoff The cut-off in significance \code{pVal}. Protein entries
-#'  with \code{pVals} smaller than the threshold will be removed from GSPA.
+#'  with \code{pVals} smaller than the threshold will be ignored.
 #'@param logFC_cutoff The cut-off in \code{log2FC}. Protein entries with
-#'  \code{log2FC} smaller than the threshold will be removed from GSPA.
+#'  \code{log2FC} smaller than the threshold will be ignored.
 #'@param min_size Minimum number of protein entries for consideration of a gene
 #'  set test.
-#'@param ... To be defined.
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
+#'  data; also see \code{\link{normPSM}}.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #' @examples
@@ -38,16 +39,19 @@
 #'   scale_log2r = TRUE,
 #'   impute_na = FALSE,
 #'   pval_cutoff = 5E-2,
-#'   gset_nm = c("go_sets", "kegg_sets"),
+#'   gset_nms = c("go_sets", "kegg_sets"),
+#'
+#'   filter_by_npep = exprs(n_pep >= 2),
+#'   # `filename(s)` will be automated,
 #' )
 #'
 #' \dontrun{
 #' }
 #'
 #'@export
-prnGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL, 
+proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL, 
 										filename = NULL, impute_na = TRUE, complete_cases = FALSE, 
-										gset_nm = "go_sets", 
+										gset_nms = "go_sets", 
 										var_cutoff = .5, pval_cutoff = 1E-2, logFC_cutoff = log2(1.2), 
 										min_size = 10, 
 										...) {
@@ -85,12 +89,33 @@ prnGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
+
 	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r,
 					filepath = !!filepath, filename = !!filename,
 					impute_na = impute_na,
-					anal_type = "GSPA")(complete_cases, gset_nm, 
+					anal_type = "GSPA")(complete_cases, gset_nms, 
 					                    var_cutoff, pval_cutoff, logFC_cutoff, min_size, 
 					                    !!!dots)
+}
+
+#'GSPA
+#'
+#'\code{prnGSPA} is a wrapper of \code{\link{proteoGSPA}} 
+#'
+#'@rdname proteoGSPA
+#'
+#'@import purrr
+#'@export
+prnGSPA <- function (...) {
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
+
+  quietly_log <- purrr::quietly(proteoGSPA)(id = gene, ...)
+  quietly_log$result <- NULL
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Protein\\GSPA\\log","prnGSPA_log.csv"), append = TRUE)
 }
 
 
@@ -103,19 +128,25 @@ prnGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
 #' @importFrom outliers grubbs.test
 #' @importFrom broom.mixed tidy
 gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, complete_cases = FALSE,
-                     gset_nm = "go_sets", var_cutoff = .5, pval_cutoff = 5E-2,
+                     gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 5E-2,
                      logFC_cutoff = log2(1.2), min_size = 6, ...) {
 
   id <- rlang::as_string(rlang::enexpr(id))
   dots = rlang::enexprs(...)
   
   fmls <- dots %>% .[grepl("~", .)]
-  dots <- dots[!names(dots) %in% names(fmls)]
+  dots <- dots %>% .[! names(.) %in% names(fmls)]
+
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
 
   if(purrr::is_empty(fmls))
     stop("No formula(s) of contrasts available.", call. = TRUE)
   
-  gsets <- match_gsets(gset_nm)
+  species <- df$species %>% unique() %>% as.character()
+  gsets <- load_dbs(gset_nms, species)
   
   formulas <- names(df) %>% 
     .[grepl("pVal", .)] %>% 
@@ -126,6 +157,10 @@ gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
     dplyr::bind_cols() %>%
     rowSums() %>%
     `>`(0)
+  
+  df <- df %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    arrangers_in_call(!!!arrange_dots)
 
   if (length(formulas) > 0) purrr::map(formulas, fml_gspa, df = df, col_ind = col_ind, 
                                        id = !!id, gsets = gsets, pval_cutoff, logFC_cutoff, 
@@ -230,9 +265,9 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
     `names<-`(gsub("^pVal\\s+\\((.*)\\)", "\\1", names(.))) %>% 
     tidyr::gather(key = contrast, value = p_val, -term)
   
-  fn_prx <- paste0(gsub("\\..*$", "", filename), "_", formula)
-  out_nm <- paste0(fn_prx, ".csv")
-  
+  fn_prefix <- paste0(gsub("\\.[^.]*$", "", filename), "_", formula)
+  out_nm <- paste0(fn_prefix, ".csv")
+
   dplyr::bind_cols(pval, adjp, log2fc) %>% 
     dplyr::mutate_at(.vars = grep("^p_val$|^adjP$", names(.)), format, scientific = TRUE, digits = 2) %>%
     dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2) %>%

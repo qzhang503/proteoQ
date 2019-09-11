@@ -4,7 +4,7 @@
 \alias{match_gsets}
 \title{Match the database of gene sets}
 \usage{
-match_gsets(gset_nm = "go_sets")
+match_gsets(gset_nm = "go_sets", species)
 }
 \description{
 Match the database of gene sets

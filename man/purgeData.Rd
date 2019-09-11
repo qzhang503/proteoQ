@@ -4,7 +4,7 @@
 \alias{purgeData}
 \title{Rmove SD outliers}
 \usage{
-purgeData(df, id, label_scheme, cv_cutoff = NULL, nseq_cutoff = 1, ...)
+purgeData(df, id, cv_cutoff = NULL, nseq_cutoff = 1, ...)
 }
 \description{
 \code{purgeData} removes entries with SD > cv_cutoff

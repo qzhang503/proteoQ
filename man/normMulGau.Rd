@@ -32,7 +32,7 @@ MGKernel}.}
 \item{range_log2r}{Numeric vector at length two; the range of the
 \code{log2FC} of peptide/protein entries for use in the scaling
 normalization of standard deviation across samples. The default is between
-the 20th and the 90th quantiles.}
+the 10th and the 90th quantiles.}
 
 \item{range_int}{Numeric vector at length two; the range of the
 \code{intensity} of reporter ions for use in the scaling normalization of
@@ -46,9 +46,11 @@ density estimates from an earlier analyis will be kept for the remaining
 samples. At the NULL default, the column key \code{Sample_ID} will be used,
 which results in the refit of the \code{log2FC} for all samples.}
 
-\item{...}{Additional parameters for \code{\link[mixtools]{normalmixEM}}:\cr
-\code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
-tolerance limit for declaring algorithm convergence.}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data; also see \code{\link{normPSM}}. \cr Additional parameters for
+\code{\link[mixtools]{normalmixEM}}:\cr \code{maxit}, the maximum number of
+iterations allowed; \cr \code{epsilon}, tolerance limit for declaring
+algorithm convergence.}
 }
 \value{
 A data frame.

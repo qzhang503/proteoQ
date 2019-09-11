@@ -4,10 +4,9 @@
 \alias{plotCorr}
 \title{Correlation plots}
 \usage{
-plotCorr(df = NULL, col_select = NULL, col_order = NULL,
-  label_scheme_sub = label_scheme_sub, use_log10 = TRUE,
-  scale_log2r = scale_log2r, min_int = min_int, max_int = max_int,
-  min_log2r = min_log2r, max_log2r = max_log2r, filepath = filepath,
+plotCorr(df = NULL, id, anal_type, data_select, col_select = NULL,
+  col_order = NULL, label_scheme_sub = label_scheme_sub,
+  scale_log2r = scale_log2r, filepath = filepath,
   filename = filename, ...)
 }
 \description{

@@ -15,8 +15,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
 
-	xmin <- eval(dots$xmin, env = caller_env())
-	xmax <- eval(dots$xmax, env = caller_env())
+	xmin <- eval(dots$xmin, env = caller_env()) # `xmin = -1` is `language`
+	xmax <- eval(dots$xmax, env = caller_env()) # `xmax = +1` is `language`
 	x_breaks <- eval(dots$x_breaks, env = caller_env())
 	binwidth <- eval(dots$binwidth, env = caller_env())
 	alpha <- eval(dots$alpha, env = caller_env())
@@ -24,25 +24,29 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 	width <- eval(dots$width, env = caller_env())
 	height <- eval(dots$height, env = caller_env())
 
-	if(is.null(xmin)) xmin <- -2
-	if(is.null(xmax)) xmax <- 2
-	if(is.null(x_breaks)) x_breaks <- 1
-	if(is.null(binwidth)) binwidth <- (xmax - xmin)/80
-	if(is.null(alpha)) alpha <- .8
-	if(is.null(ncol)) ncol <- 1
-	if(is.null(width)) width <- 4 * ncol + 2
-	if(is.null(height)) height <- length(label_scheme_sub$Sample_ID) * 4 / ncol
+	if (is.null(xmin)) xmin <- -2
+	if (is.null(xmax)) xmax <- 2
+	if (is.null(x_breaks)) x_breaks <- 1
+	if (is.null(binwidth)) binwidth <- (xmax - xmin)/80
+	if (is.null(alpha)) alpha <- .8
+	if (is.null(ncol)) ncol <- 5
+	if (is.null(width)) width <- 4 * ncol + 2
+	if (is.null(height)) height <- length(label_scheme_sub$Sample_ID) * 4 / ncol
 	
 	nm_idx <- names(dots) %in% c("xmin", "xmax", "x_breaks", "binwidth",
 	                             "ncol", "alpha", "width", "height")
 	dots[nm_idx] <- NULL
 
+	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+	dots <- dots %>% .[! . %in% lang_dots]
+	df <- df %>% filters_in_call(!!!lang_dots)
+	
 	by = (xmax - xmin)/200
 	nrow <- nrow(df)
 	x_label <- expression("Ratio ("*log[2]*")")
 	NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
 
-	if(!is.null(params)) {
+	if (!is.null(params)) {
 		n_comp <- max(params$Component)
 		nm_comps <- paste0("G", 1:n_comp)
 		nm_full <- c(nm_comps, paste(nm_comps, collapse = " + "))
@@ -114,7 +118,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 
 	seq <- c(-Inf, seq(4, 7, .5), Inf)
 
-	if(pep_pattern != "zzz") {
+	if (pep_pattern != "zzz") {
 	  df <- df %>% 
 	    dplyr::filter(grepl(paste0("[", pep_pattern, "]"), !!rlang::sym(id)))
 	  stopifnot(nrow(df) > 0)
@@ -153,8 +157,9 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 
 	if(show_vline) p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
 
-	filename <- gg_imgname(filename)
-	ggsave(file.path(filepath, filename), p, width = width, height = height, limitsize = FALSE, units = "in")
+	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), 
+	             width = width, height = height, limitsize = FALSE, dots)
+	do.call(ggsave, gg_args)
 }
 
 
@@ -162,17 +167,23 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'Histogram visualization
 #'
 #'\code{proteoHist} plots the histograms of protein or peptide \code{log2FC}.
+#'Users should avoid call the method directly, but instead use the following
+#'wrappers.
 #'
 #'In the histograms, the \code{log2FC} under each TMT channel are color-coded by
 #'their contributing reporter-ion intensity.
 #'
-#'The function matches the current \code{id} to those in the latest \code{call}
-#'to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-#'\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
-#'pep_seq_mod} will be matched to \code{id = pep_seq}.
+#'The function matches the current \code{id} to the grouping argument in the
+#'latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
+#'example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
+#'the setting of \code{id = pep_seq_mod} in the current call will be matched to
+#'\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
+#'was employed, the setting of \code{id = prot_acc} in the current call will be
+#'matched to \code{id = gene}.
 #'
-#'@param id Character string to indicate the type of data. Peptide data will be
-#'  used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+#'@param id Character string to indicate the type of data. The value will be
+#'  determined automatically by the program. Peptide data will be used at
+#'  \code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
 #'  \code{id = prot_acc} or \code{gene}.
 #'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
 #'  Samples corresponding to non-empty entries under the column key will be
@@ -182,28 +193,37 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'  of standard deviation for all samples.
 #'@param pep_pattern Character string containing one-letter representation of
 #'  amino acids. At the "zzz" default, all peptides will be used. Letters in the
-#'  character string are case sensitive. For example, \code{pep_pattern = "m"}
-#'  will extract peptides with oxidized methiones and \code{pep_pattern = "_"}
-#'  with N-terminal acetylation.
-#'@param show_curves Logical; if TRUE, shows the fitted curves.
+#'  character string are case sensitive. For example, \code{pep_pattern = "y"}
+#'  will extract peptides with tyrosine phosphorylation. To extract peptides
+#'  with N-terminal acetylation, use \code{pep_pattern = "_"}. The parameter
+#'  provides a means for high-level subsetting of peptide entries in a data set.
+#'  In general, one can use the \code{filter-in-function} feature described in
+#'  \code{?normPSM} to subset data.
+#'
+#'@param show_curves Logical; if TRUE, shows the fitted curves. The curve
+#'  parameters are based on the latest call to \code{normPep} or \code{normPrn}.
+#'  This feature can inform the effects of data filtration on the alignment of
+#'  \code{logFC} profiles.
 #'@param show_vline Logical; if TRUE, shows the vertical lines at \code{x = 0}.
-#'@param df The name of input data file. By default, it will be determined by
-#'  the value of \code{id}.
+#'@param df The name of input data file. By default, it will be determined
+#'  automatically by the value of \code{id}.
 #'@param filepath A file path to output results. By default, it will be
-#'  determined by the name of the calling \code{function} and the value of
-#'  \code{id} in the \code{call}.
+#'  determined automatically by the name of the calling function and the value
+#'  of \code{id} in the \code{call}.
 #'@param filename A representative file name to output image(s). By default, it
-#'  will be determined by the name of the current \code{call}. The image(s) are
-#'  saved via \code{\link[ggplot2]{ggsave}} where the image type will be
-#'  determined by the extension of the file name. A \code{.png} format will be
-#'  used at default or an unrecognized file extension.
-#'@param ... Additional parameters for plotting: \cr \code{xmin}, the minimum
-#'  \eqn{x} at a log2 scale; the default is -2. \cr \code{xmax}, the maximum
-#'  \eqn{x} at a log2 scale; the default is +2. \cr \code{x_breaks}, the breaks
-#'  in \eqn{x}-axis at a log2 scale; the default is 1. \cr \code{binwidth}, the
-#'  binwidth of \code{log2FC}; the default is \eqn{(xmax - xmin)/80}. \cr
-#'  \code{ncol}, the number of columns; the default is 1. \cr \code{width}, the
-#'  width of plot; \cr \code{height}, the height of plot.
+#'  will be determined automatically by the name of the current \code{call}. The
+#'  image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
+#'  will be determined by the extension of the file name. A \code{.png} format
+#'  will be used at default or an unrecognized file extension.
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
+#'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
+#'  plotting: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale; the default
+#'  is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the default is
+#'  +2. \cr \code{x_breaks}, the breaks in \eqn{x}-axis at a log2 scale; the
+#'  default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC}; the
+#'  default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of columns;
+#'  the default is 1. \cr \code{width}, the width of plot; \cr \code{height},
+#'  the height of plot.
 #'@return The histograms of \code{log2FC} under
 #'  \code{~\\dat_dir\\Peptide\\Histogram} or
 #'  \code{~\\dat_dir\\Protein\\Histogram}.
@@ -224,6 +244,7 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
+	pep_pattern <- rlang::as_string(rlang::enexpr(pep_pattern))
 	
 	reload_expts()
 
@@ -241,26 +262,71 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'@rdname proteoHist
 #'
 #' @examples
-#' # without scaling normalization
+#' ## visualization of normalization
+#' # without scaling
+#' pepHist(scale_log2r = FALSE)
+#'
+#' # with scaling
+#' pepHist(scale_log2r = TRUE)
+#'
+#' ## samples for use are indicated under a column, i.e. `Select`, in `expt_smry.xlsx`
+#' # peptides
+#' pepHist(col_select = Select)
+#'
+#' # proteins
+#' prnHist(col_select = Select)
+#'
+#' ## data filtration
+#' # phosphopeptide subset
 #' pepHist(
-#'   scale_log2r = FALSE,
-#'   xmin = -1,
-#'   xmax = 1,
-#'   ncol = 5
+#'   pep_pattern = "sty",
+#'   filename = "pepHist_fil_by_sty.png",
 #' )
 #'
-#' # with scaling normalization
+#' # recommended way to extract phosphopeptides
 #' pepHist(
-#'   scale_log2r = TRUE,
-#'   xmin = -1,
-#'   xmax = 1,
-#'   ncol = 5
+#'   filter_by = exprs(grepl("[sty]", pep_seq_mod)),
+#'   filename = "pepHist_fil_by_sty.png",
+#' )
+#'
+#' # exclude oxidized methione or deamidated asparagine
+#' pepHist(
+#'   filter_by = exprs(!grepl("[mn]", pep_seq_mod)),
+#'   filename = "pepHist_fil_no_mn.png",
+#' )
+#'
+#' ## between lead and lag
+#' # leading logFC profiles of peptides
+#' pepHist(
+#'   filename = "pepHist.png",
+#' )
+#'
+#' # lagging logFC profiles of peptides at
+#' #   (1) n_psm >= 10
+#' #   (2) and no methionine oxidation or asparagine deamidation
+#' # may exclude sample(s) with considerable offset(s) 
+#' #   between the 'bootstrapped' lead and lag from further analysis
+#' pepHist(
+#'   filter_by_npsm = exprs(n_psm >= 10),
+#'   filter_by_mn = exprs(!grepl("[mn]", pep_seq_mod)),
+#'   filename = "pepHist_filtered.png",
 #' )
 #'
 #' \dontrun{
+#' # sample selection
 #' pepHist(
-#'   col_select = "a_non_existed_column_key"
+#'   col_select = "a_column_key_not_in_`expt_smry.xlsx`",
 #' )
+#'
+#' # data filtration
+#' pepHist(
+#'   filter_by = exprs(!grepl("[m]", a_column_key_not_in_data_table)),
+#' )
+#'
+#' prnHist(
+#'   lhs_not_start_with_filter_ = exprs(n_psm >= 5),
+#' )
+#'
 #' }
 #'
 #'@import purrr
@@ -270,7 +336,7 @@ pepHist <- function (...) {
   if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Peptide\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+
   quietly_log <- purrr::quietly(proteoHist)(id = pep_seq, ...)
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Peptide\\Histogram\\log","pepHist_log.csv"), append = TRUE)  
@@ -282,18 +348,6 @@ pepHist <- function (...) {
 #'\code{prnHist} is a wrapper of \code{\link{proteoHist}} for protein data
 #'
 #'@rdname proteoHist
-#'
-#' @examples
-#' # no scaling normalization
-#' prnHist(
-#'   ncol = 10
-#' )
-#'
-#' # scaling normalization
-#' prnHist(
-#'   scale_log2r = TRUE,
-#'   ncol = 10
-#' )
 #'
 #'@import purrr
 #'@export

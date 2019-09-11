@@ -6,7 +6,7 @@
 \usage{
 splitPSM_mq(fasta = NULL, pep_unique_by = "group",
   corrected_int = FALSE, rptr_intco = 1000, rm_craps = FALSE,
-  rm_reverses = TRUE, plot_violins = TRUE, ...)
+  rm_reverses = TRUE, plot_rptr_int = TRUE, ...)
 }
 \arguments{
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
@@ -31,7 +31,7 @@ Otherwise, "Reporter intensity" values without corrections will be used.}
 \item{rm_reverses}{Logical; if TRUE, removes \code{Reverse} entries from
 MaxQuant peptide results.}
 
-\item{plot_violins}{Logical; if TRUE, prepares the violin plots of
+\item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}
 }
 \description{
@@ -39,6 +39,6 @@ reporter-ion intensities.}
 separates PSM data by TMT experiment and LC/MS injection.
 }
 \examples{
-splitPSM(rptr_intco = 1000, rm_craps = TRUE, plot_violins = TRUE)
+splitPSM(rptr_intco = 1000, rm_craps = TRUE, plot_rptr_int = TRUE)
 
 }

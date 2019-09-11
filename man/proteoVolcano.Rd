@@ -11,7 +11,7 @@ proteoVolcano(id = "gene", anal_type = "Volcano", df = NULL,
   scale_log2r = TRUE, filepath = NULL, filename = NULL,
   impute_na = TRUE, adjP = FALSE, show_labels = TRUE,
   pval_cutoff = 0.05, logFC_cutoff = log2(1.2), show_sig = "none",
-  gset_nm = "go_sets", ...)
+  gset_nms = "go_sets", ...)
 
 pepVol(...)
 
@@ -20,30 +20,31 @@ prnVol(...)
 gspaMap(...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. Peptide data will be
-used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically by the program. Peptide data will be used at
+\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories; Values include \code{anal_type =
-c("MDS", "PCA", "EucDist", "MA", "Heatmap", "Histogram", "Corrplot",
-"Trend", "NMF", "Model", ...)}.}
+c("PCA", "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model", 
+"NMF", "Purge", "Trend", ...)}.}
 
-\item{df}{The name of input data file. By default, it will be determined by
-the value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined
+automatically by the value of \code{id}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation for all samples.}
 
 \item{filepath}{A file path to output results. By default, it will be
-determined by the name of the calling \code{function} and the value of
-\code{id} in the \code{call}.}
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
 
 \item{filename}{A representative file name to output image(s). By default, it
-will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} where the image type will be
-determined by the extension of the file name. A \code{.png} format will be
-used at default or an unrecognized file extension.}
+will be determined automatically by the name of the current \code{call}. The
+image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
+will be determined by the extension of the file name. A \code{.png} format
+will be used at default or an unrecognized file extension.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
@@ -52,34 +53,35 @@ will be used.}
 
 \item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.}
 
-\item{pval_cutoff}{Numeric. \code{Gene sets} with enrichment \code{pVals} more
-significant than the threshold will be used for volcano plot visualization.
-The argument is not used in \code{prnVol} and \code{pepVol}.}
+\item{pval_cutoff}{Numeric. \code{Gene sets} with enrichment \code{pVals} less
+significant than the threshold will be excluded for volcano plot
+visualization. The argument is not used in \code{prnVol} and \code{pepVol}.}
 
-\item{logFC_cutoff}{Numeric. \code{Gene sets} with enrichment \code{log2FC}
-greater than the threshold will be used for volcano plot visualization. The
-cut-off is in a logarithmic base of 2, not in a linear scale. The argument
-is not used in \code{prnVol} and \code{pepVol}.}
+\item{logFC_cutoff}{Numeric. \code{Gene sets} with absolute enrichment
+\code{log2FC} less than the threshold will be excluded for volcano plot
+visualization. The cut-off is in a logarithmic base of 2, not in a linear
+scale. The argument is not used in \code{prnVol} and \code{pepVol}.}
 
 \item{show_sig}{Character string indicating the type of significance values to
 be shown on volcano plots. The default is \code{"none"}. Additional choices
 are from \code{c("pVal", "qVal")} where \code{pVal} or \code{qVal} will be
 shown, respectively, in the facet grid of plots.}
 
-\item{gset_nm}{Character vector containing the name(s) of gene sets for
-enrichment analysis. The currently supported data sets are
-\code{c("go_sets", "kegg_sets", "c2_msig")}.}
+\item{gset_nms}{Character vector containing the name(s) of gene sets for
+enrichment analysis. The possible values are in \code{c("go_sets",
+"kegg_sets", "c2_msig")}.}
 
-\item{...}{Additional parameters for plotting: \cr \code{xco}, the cut-off
-lines of fold changes at position \code{x}; the default is at \eqn{-1.2} and
-\eqn{+1.2}. \cr \code{yco}, the cut-off line of \code{pVal} at position
-\code{y}; the default is \eqn{0.05}. \cr \code{width}, the width of plot;
-\cr \code{height}, the height of plot.}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
+plotting: \cr \code{xco}, the cut-off lines of fold changes at position
+\code{x}; the default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the
+cut-off line of \code{pVal} at position \code{y}; the default is \eqn{0.05}.
+\cr \code{width}, the width of plot; \cr \code{height}, the height of plot.}
 }
 \description{
 \code{proteoVolcano} visualizes the volcano plots of peptide or protein data,
-or protein sub sets under the same gene sets. Users should never call the
-method directly, but instead use the wrappers.
+or protein subgroups under the same gene sets. Users should avoid call the
+method directly, but instead use the following wrappers.
 
 \code{pepVol} is a wrapper of \code{\link{proteoVolcano}} for peptide data
 
@@ -88,24 +90,39 @@ method directly, but instead use the wrappers.
 \code{gspaMap} is a wrapper of \code{\link{proteoVolcano}} for
 mapping of protein data by gene sets.
 }
+\details{
+By default, the value of \code{gset_nms} in \code{gspaMap(...)} will match to
+the one in the latest call to \code{\link{prnGSPA}}.
+}
 \examples{
-# protein volcano plot(s)
+# all
 prnVol(
-  scale_log2r = TRUE,
   show_labels = TRUE,
   xco = 1.2,
   yco = 0.01,
 )
 
-# protein volcano plot subsets by gene sets
+# kinases and n_pep >= 2
+prnVol(
+  show_labels = TRUE,
+  xco = 1.2,
+  yco = 0.01,
+
+  filter_by_kin = exprs(kin_attr, n_pep >= 2),
+  filename = "prnvol_kin_npep2.png"
+)
+
+# protein subgroups by gene sets
 gspaMap(
-  scale_log2r = TRUE,
   show_labels = TRUE,
   pval_cutoff = 5E-3,
   logFC_cutoff = log2(1.2),
-  # gset_nm = c("go_sets", "kegg_sets"),
+  gset_nms = c("go_sets"),
   show_sig = p,
   yco = 0.01,
+  
+  filter_by_npep = exprs(n_pep >= 2),
+  # `filename`(s) will be automated, 
 )
 
 \dontrun{

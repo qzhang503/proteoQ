@@ -3,6 +3,7 @@
 library(plyr)
 library(reshape2)
 library(dplyr)
+library(purrr)
 library(stringr)
 library(magrittr)
 
@@ -32,10 +33,22 @@ sp_lookup <- function(species) {
          fly = "dm", 
          bovine = "bt",
          dog = "cf", 
+         crap = "crap", 
          stop("Unknown `species`.", Call. = FALSE)
   )    
 }
 
+sp_lookup_annotdbi <- function(species) {
+  switch(species, 
+         human = "Hs",
+         mouse = "Mm",
+         rat = "Rn",
+         fly = "Dm", 
+         bovine = "Bt",
+         dog = "Cf", 
+         stop("Unknown `species`.", Call. = FALSE)
+  )    
+}
 
 #'Toxonomy lookup
 taxid_lookup <- function(species) {
@@ -46,13 +59,28 @@ taxid_lookup <- function(species) {
           fly = 7227, 
           bovine = 9913,
           dog = 9612, 
+          crap = 000000, 
           stop("Unknown `species`.", Call. = FALSE)
   )
 }
 
 
-#' map "from" to entrez
-#' res_entrez <- map_entrez(species, from = "egUNIPROT")
+
+
+#' Map uniprot or refseq to entrez
+#' 
+#' @examples
+#' \dontrun{
+#' species <- "rat"
+#' res <- map_entrez(species, from = "egUNIPROT")
+#' dir.create(file.path("~\\proteoQ\\dbs\\entrez\\to_unirpot"), recursive = TRUE, showWarnings = FALSE)
+#' write.table(res, file.path("~\\proteoQ\\dbs\\entrez\\to_unirpot", paste0("uniprot_entrez_", species, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE)
+#' 
+#' res <- map_entrez(species, from = "egREFSEQ")
+#' dir.create(file.path("~\\proteoQ\\dbs\\entrez\\to_refseq"), recursive = TRUE, showWarnings = FALSE)
+#' write.table(res, file.path("~\\proteoQ\\dbs\\entrez\\to_refseq", paste0("refseq_entrez_", species, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE)
+#' }
+#' @export
 map_entrez <- function(species, from) {
   sp_lookup_org <- function(species) {
     switch(species, 
@@ -66,12 +94,204 @@ map_entrez <- function(species, from) {
     )    
   }
   
+
+  taxid <- taxid_lookup(species)
+  abbr_species <- sp_lookup_org(species) 
+  lwr_species <- tolower(abbr_species)
+  
+  if (!requireNamespace(paste("org", abbr_species, "eg.db", sep = "."), quietly = TRUE)) 
+    BiocManager::install(paste("org", abbr_species, "eg.db", sep = "."))
+  
+  library(paste("org", abbr_species, "eg.db", sep = "."), character.only = TRUE)
+  
+  x <- get(paste("org", abbr_species, from, sep = "."))
+  mapped_genes <- mappedkeys(x) # "from" to entrez
+  
+  accessions <- as.list(x[mapped_genes]) %>% 
+    plyr::ldply(., rbind) %>% 
+    `names_pos<-`(., 1, c("entrez")) %>% 
+    `names_pos<-`(., 2:ncol(.), paste(from, 1:(length(.)-1), sep = ".")) %>% 
+    mutate_at(.vars = grep("^eg", names(.)), funs(as.character)) %>% 
+    melt(id = "entrez") %>% 
+    filter(!is.na(entrez), !is.na(value)) %>% 
+    dplyr::select(-c("variable")) 
+  
+  if (from == "egUNIPROT") {
+    accessions <- accessions %>% dplyr::rename(uniprot_acc = value)
+    path <- "~\\proteoQ\\dbs\\entrez\\to_unirpot"
+    out_nm <- paste0("uniprot_entrez_", lwr_species, ".txt")
+  } else if (from == "egREFSEQ") {
+    accessions <- accessions %>% dplyr::rename(refseq_acc = value)
+    path <- "~\\proteoQ\\dbs\\entrez\\to_refseq"
+    out_nm <- paste0("refseq_entrez_", lwr_species, ".txt")
+  }
+  
+  dir.create(file.path(path), recursive = TRUE, showWarnings = FALSE)
+  write.table(accessions, file.path(path, out_nm), sep = "\t", col.names = TRUE, row.names = FALSE)
+
+  # invisible(accessions)
+}
+
+
+species <- c("human", "mouse", "rat", "fly", "bovine", "dog")
+purrr::walk(species, map_entrez, "egUNIPROT")
+purrr::walk(species, map_entrez, "egREFSEQ")
+
+#' Make rda files
+foo <- function () {
+  path <- "~\\proteoQ\\dbs\\entrez\\to_unirpot"
+  filelist <- list.files(path = file.path(path), pattern = "^uniprot_entrez_.*\\.txt$")
+  # path <- "~\\proteoQ\\dbs\\entrez\\to_refseq"
+  # filelist <- list.files(path = file.path(path), pattern = "^refseq_entrez_.*\\.txt$")
+  
+  fn_prx <- gsub("(.*)\\.txt$", "\\1", filelist)
+  
+  purrr::walk(fn_prx, ~ {
+    assign(.x, read.csv(file.path(path, paste0(.x, ".txt")), 
+                        check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#"))
+    save(list = .x, file = file.path(path, paste0(.x, ".rda")))
+  })
+}
+
+foo()
+
+
+
+
+
+#' Map from acc_x to acc_y, acc_z... 
+#'
+#' \code{map_from_to} annotates the \code{from} accession to additional fields.
+#'
+#' @examples
+#' species <- c("human", "mouse")
+#' fasta <- c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+#'            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta") 
+#' purrr::walk2(as.list(species), as.list(fasta), map_from_to)
+#' @import dplyr purrr rlang seqinr
+#' @importFrom magrittr %>% %$%
+map_from_to <- function (species = "human", 
+                         fasta = "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+                         from = "REFSEQ", to = c("REFSEQ", "ENTREZID", "SYMBOL")) {
+
+  stopifnot(file.exists(fasta))
+  
+  to <- to %>% .[! . %in% from]
+  
+  taxid <- taxid_lookup(species)
+  abbr_species <- sp_lookup_annotdbi(species) 
+  lwr_species <- tolower(abbr_species)
+  
+  if (!requireNamespace(paste("org", abbr_species, "eg.db", sep = "."), quietly = TRUE)) 
+    BiocManager::install(paste("org", abbr_species, "eg.db", sep = "."))
+  
+  library(paste("org", abbr_species, "eg.db", sep = "."), character.only = TRUE)
+  
+  keys <- fasta %>% 
+    seqinr::read.fasta(seqtype = "AA", as.string = TRUE, set.attributes = TRUE) %>% 
+    names() %>% 
+    gsub("\\.[^\\.]*$", "", .) %>% 
+    unique()
+
+  accessions <- AnnotationDbi::select(get(paste("org", abbr_species, "eg.db", sep = ".")), 
+                                      keys = keys,
+                                      columns = to,
+                                      keytype = from)
+  
+  key_lookup <- c(
+    "REFSEQ" = "refseq_acc",
+    "ENTREZID" = "entrez",
+    "SYMBOL" = "gene"
+  )
+  
+  org_lookup <- c(
+    "human" = "Homo sapiens",
+    "mouse" = "Mus musculus", 
+    "rat" = "Rattus norvegicus", 
+    "fly" = "Drosophila melanogaster", 
+    "bovine" = "Bos taurus", 
+    "dog" = "Canis lupus familiaris", 
+    "crap" = "crap"
+  )
+  
+  # org_lookup[species]
+
+  accessions <- accessions %>% 
+    `colnames<-`(key_lookup[names(accessions)]) %>% 
+    dplyr::mutate(organism = org_lookup[species])
+  
+  if (from == "REFSEQ") {
+    out_path <- "~\\proteoQ\\dbs\\crossref\\refseq"
+    out_nm <- paste0("refseq_", lwr_species, "_crossref.txt")
+  }
+  
+  dir.create(file.path(out_path), recursive = TRUE, showWarnings = FALSE)
+  write.table(accessions, file.path(out_path, out_nm), sep = "\t", col.names = TRUE, row.names = FALSE)
+  
+}
+
+
+#' Make rda files
+foo <- function () {
+  path <- "~\\proteoQ\\dbs\\crossref\\refseq"
+  filelist <- list.files(path = file.path(path), pattern = "^refseq_.*\\.txt$")
+
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filelist)
+  fn_prefix <- gsub("\\.[^.]*$", "", filelist)
+  
+  purrr::walk(fn_prefix, ~ {
+    assign(.x, read.csv(file.path(path, paste0(.x, ".txt")), 
+                        check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#"))
+    save(list = .x, file = file.path(path, paste0(.x, ".rda")))
+  })
+}
+
+foo()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ------------------------------
+#' map "from" to entrez
+#' res_entrez <- map_entrez(species, from = "egUNIPROT")
+map_entrez_v1 <- function(species, from) {
+  sp_lookup_org <- function(species) {
+    switch(species, 
+           human = "Hs",
+           mouse = "Mm",
+           rat = "Rn",
+           fly = "Dm", 
+           bovine = "Bt",
+           dog = "Cf", 
+           crap = "crap", 
+           stop("Unknown `species`.", Call. = FALSE)
+    )    
+  }
+  
   abbr_species <- sp_lookup_org(species) 
   taxid <- taxid_lookup(species)
   
   if (!requireNamespace(paste("org", abbr_species, "eg.db", sep = "."), quietly = TRUE)) 
     BiocManager::install(paste("org", abbr_species, "eg.db", sep = "."))
-
+  
   library(paste("org", abbr_species, "eg.db", sep = "."), character.only = TRUE)
   
   x <- get(paste("org", abbr_species, from, sep = "."))
@@ -97,6 +317,7 @@ map_entrez <- function(species, from) {
 }
 
 
+
 #'Cross-ref file name lookup
 #'
 #'fn <- crossref_fn("human")
@@ -108,6 +329,7 @@ crossref_fn <- function(species) {
          dm = "~\\proteoQ\\dbs\\crossref\\dm\\uniprot-dm-filtered-organism__Drosophila+melanogaster+(Fruit+fly)+[722--.tab", 
          bt = "~\\proteoQ\\dbs\\crossref\\bt\\uniprot-reviewed_yes+AND+organism__Bos+taurus+[9913]_.tab", 
          cf = "~\\proteoQ\\dbs\\crossref\\cf\\uniprot-canis+lupus+familiaris-filtered-organism__Canis+lupus+familiaris+(--.tab", 
+         crap = "~\\proteoQ\\dbs\\crossref\\crap\\uniprot_craps.tab", 
          stop("Unknown `species`.", Call. = FALSE)
   )    
 }
@@ -117,12 +339,12 @@ crossref_fn <- function(species) {
 #'
 #'crossrefs <- arrange_crossrefs("human")
 arrange_crossrefs <- function (species) {
-  
   abbr_species <- sp_lookup(species) 
   taxid <- taxid_lookup(species)
-    
+  
   crossrefs <- crossref_fn(abbr_species) %>% 
-    read.csv(check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")
+    read.csv(check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
+    dplyr::select(-grep("^yourlist\\:", names(.)))
   
   refseq <- crossrefs %>% 
     dplyr::select("Entry name", "Cross-reference (RefSeq)") %$% 
@@ -140,12 +362,15 @@ arrange_crossrefs <- function (species) {
     dplyr::select(-"Cross-reference (RefSeq)") %>% 
     dplyr::mutate("Gene names" = gsub("\\s+.*", "", .$"Gene names")) %>% 
     dplyr::full_join(refseq, by = "Entry name")
-
+  
   rm(refseq)
   
-  res_entrez <- map_entrez(species, from = "egUNIPROT") %>% 
-    dplyr::rename("Entry" = "Uniprot_accession", "Entrez" = "entrez")
-    
+  if (species == "crap") {
+    res_entrez <- data.frame(Entrez = NA, Entry = unique(crossrefs$Entry))
+  } else {
+    res_entrez <- map_entrez(species, from = "egUNIPROT") %>% 
+      dplyr::rename("Entry" = "Uniprot_accession", "Entrez" = "entrez")
+  }
   
   crossrefs <- left_join(crossrefs, res_entrez, by = "Entry")
   # "uniprot_acc" "uniprot_id"  "status"      "prot_desc"   "gene"        "organism"    "length"      "refseq_acc"  "entrez" 
@@ -180,6 +405,33 @@ arrange_crossrefs <- function (species) {
 
 
 # crossrefs <- arrange_crossrefs("dog")
+
+
+
+
+
+
+
+
+# -----------------------------------------
+#' Make rda files
+foo <- function () {
+  path <- "~\\proteoQ\\dbs\\entrez\\to_unirpot"
+  filelist <- list.files(path = file.path(path), pattern = "^uniprot_entrez_.*\\.txt$")
+  # path <- "~\\proteoQ\\dbs\\entrez\\to_refseq"
+  # filelist <- list.files(path = file.path(path), pattern = "^refseq_entrez_.*\\.txt$")
+  
+  fn_prx <- gsub("(.*)\\.txt$", "\\1", filelist)
+
+  purrr::walk(fn_prx, ~ {
+    assign(.x, read.csv(file.path(path, paste0(.x, ".txt")), 
+           check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#"))
+    save(list = .x, file = file.path(path, paste0(.x, ".rda")))
+  })
+}
+
+foo()
+
 
 
 

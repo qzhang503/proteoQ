@@ -5,12 +5,13 @@
 \title{Reports peptide results}
 \usage{
 normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
-  "mean", "weighted.mean", "top.3", "mqpep"), rm_mq_krts = TRUE,
+  "mean", "weighted.mean", "top.3", "mqpep"),
+  group_pep_by = c("prot_acc", "gene"), rm_mq_krts = TRUE,
   rm_mq_craps = TRUE, rm_mq_reverses = TRUE, method_align = c("MC",
-  "MGKernel"), range_log2r = c(20, 90), range_int = c(5, 95),
-  n_comp = NULL, seed = NULL, fasta = NULL,
-  pep_unique_by = "group", annot_kinases = FALSE, col_refit = NULL,
-  cache = TRUE, ...)
+  "MGKernel"), range_log2r = c(10, 90), range_int = c(5, 95),
+  n_comp = NULL, seed = NULL, pep_unique_by = "group",
+  annot_kinases = FALSE, col_refit = NULL, cache = TRUE,
+  plot_log2FC_cv = TRUE, ...)
 }
 \arguments{
 \item{id}{Character string; the variable for summarisation of \code{PSMs} into
@@ -19,21 +20,15 @@ the primary sequences of peptides. The option \code{id = pep_seq_mod}
 corresponds to the summarisation by both the primary sequences and variable
 modifications of peptides. \code{PSMs} data with the same value in
 \code{pep_seq} or \code{pep_seq_mod} will be summarised into a single entry
-of peptide.}
+of peptide. Currently, the value of \code{id} will match automatically to
+the value of \code{group_psm_by} in \code{normPSM}.}
 
 \item{method_psm_pep}{Character string; the method to summarise the
- \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
- The descriptive statistics includes \code{c("mean", "median", "top.3",
- "weighted.mean")}. The \code{log10-intensity} of reporter ions at the
- \code{PSMs} levels will be the weight when summarising \code{log2FC} with
- \code{"top.3"} or \code{"weighted.mean"}.
-
- At \code{method_psm_pep = mqpep}, the PSM to peptide summarisation will be
- bypassed. Instead, MaxQuant peptide tables based on \code{peptides.txt} or
- \code{modificationSpecificPeptides.txt} will be taken. More specifically,
- the peptide table(s) without site modification information will be used at
- \code{id = pep_seq} and the peptide table(s) with site modification
- information will be used at \code{id = pep_seq_mod}.}
+\code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
+The descriptive statistics includes \code{c("mean", "median", "top.3",
+"weighted.mean")}. The \code{log10-intensity} of reporter ions at the
+\code{PSMs} levels will be the weight when summarising \code{log2FC} with
+\code{"top.3"} or \code{"weighted.mean"}.}
 
 \item{rm_mq_krts}{Logical; if TRUE, removes keratin entries from MaxQuant
 peptide results.}
@@ -55,7 +50,7 @@ the maximums of kernel density are zero. It is also possible to align the
 \item{range_log2r}{Numeric vector at length two; the range of the
 \code{log2FC} of peptide/protein entries for use in the scaling
 normalization of standard deviation across samples. The default is between
-the 20th and the 90th quantiles.}
+the 10th and the 90th quantiles.}
 
 \item{range_int}{Numeric vector at length two; the range of the
 \code{intensity} of reporter ions for use in the scaling normalization of
@@ -69,10 +64,6 @@ standard deviation across samples. The default is between the 5th and the
 
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
-
-\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
-prepended directory path. The \code{fasta} database(s) need to match those
-used in MS/MS ion search.}
 
 \item{pep_unique_by}{A character string for use in the filtration of peptide
 data from \code{MaxQuant}. The choice is in one of \code{c("group",
@@ -92,12 +83,17 @@ which results in the refit of the \code{log2FC} for all samples.}
 
 \item{cache}{Logical; if TRUE, use cache.}
 
-\item{...}{Additional parameters for \code{\link[mixtools]{normalmixEM}}:\cr
-\code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
-tolerance limit for declaring algorithm convergence.}
+\item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
+peptide \code{log2FC} for each sample.}
+
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data; also see \code{\link{normPSM}}. \cr Additional parameters for
+\code{\link[mixtools]{normalmixEM}}:\cr \code{maxit}, the maximum number of
+iterations allowed; \cr \code{epsilon}, tolerance limit for declaring
+algorithm convergence.}
 }
 \value{
-The primary output in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
+The primary output is in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
 }
 \description{
 \code{normPep} summarises
@@ -107,38 +103,41 @@ into peptides and normalizes the data across
 and \code{LC/MS} injections.
 }
 \details{
-See \code{\link{normPrn}} for the description of column keys in the output.
+In the primary output file, "\code{Peptide.txt}", values under columns
+\code{log2_R...} are logarithmic ratios at base 2 in relative to the
+\code{reference(s)} within each multiplex TMT set, or to the row means if no
+\code{reference(s)} are present. Values under columns \code{N_log2_R...} are
+\code{log2_R...} with median-centering alignment. Values under columns
+\code{Z_log2_R...} are \code{N_log2_R...} with scaling normalization. Values
+under columns \code{I...} are \code{reporter-ion intensity} before
+normalization. Values under columns \code{N_I...} are normalized \code{I...}.
+Values under columns \code{sd_log2_R...} are the standard deviation of the
+\code{log2FC} of proteins from ascribing peptides.
+
+Also see \code{\link{normPrn}} for more description of the column keys in the
+output.
 }
 \examples{
 \dontrun{
+# peptides results with examplary `filter_...`
 normPep(
- id = pep_seq_mod,
- fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
-           "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
- method_psm_pep = median,
- method_align = MGKernel,
- range_log2r = c(10, 95),
- range_int = c(5, 95),
- n_comp = 3,
- seed = 1234,
- maxit = 200,
- epsilon = 1e-05
+  group_pep_by = gene,
+  method_psm_pep = median,
+  method_align = MGKernel,
+  range_log2r = c(5, 95),
+  range_int = c(5, 95),
+  n_comp = 3,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05,
+
+  filter_by = exprs(n_psm >= 2),
+  # filter_by_sp = exprs(species == "human"),
 )
 
-# MaxQuant peptide table(s) without PSM information
-normPep(
- id = pep_seq,
- fasta = c("~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_hs_2013_07.fasta",
-           "~\\\\proteoQ\\\\dbs\\\\refseq\\\\refseq_mm_2013_07.fasta"),
- method_psm_pep = mqpep,
- method_align = MGKernel,
- range_log2r = c(10, 95),
- range_int = c(5, 95),
- n_comp = 3,
- seed = 1234,
- maxit = 200,
- epsilon = 1e-05
-)
+# examplary peptide purging; n: the number of peptides
+purgePep(max_cv = .5, min_n = 2)
+
 }
 }
 \seealso{

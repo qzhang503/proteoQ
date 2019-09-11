@@ -17,8 +17,9 @@ pepEucDist(...)
 prnEucDist(...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. Peptide data will be
-used at \code{id = pep_seq} or \code{pep_seq_mod}, and protein data at
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically by the program. Peptide data will be used at
+\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
 \code{id = prot_acc} or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -61,25 +62,25 @@ Typically, \code{adjEucDist = FALSE} if \code{reference samples} were split
 near the end of a sample handling process, for instance, at the stages
 immediately before or after TMT labeling.}
 
-\item{annot_cols}{A character vector of column names in \code{expt_smry.xlsx}.
-Values under the selected columns will be used to color-code sample IDs on
+\item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
+The values under the selected keys will be used to color-code sample IDs on
 the top of the indicated plot.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}.}
 
-\item{df}{The name of input data file. By default, it will be determined by
-the value of \code{id}.}
+\item{df}{The name of input data file. By default, it will be determined
+automatically by the value of \code{id}.}
 
 \item{filepath}{A file path to output results. By default, it will be
-determined by the name of the calling \code{function} and the value of
-\code{id} in the \code{call}.}
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
 
 \item{filename}{A representative file name to output image(s). By default, it
-will be determined by the name of the current \code{call}. The image(s) are
-saved via \code{\link[ggplot2]{ggsave}} where the image type will be
-determined by the extension of the file name. A \code{.png} format will be
-used at default or an unrecognized file extension.}
+will be determined automatically by the name of the current \code{call}. The
+image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
+will be determined by the extension of the file name. A \code{.png} format
+will be used at default or an unrecognized file extension.}
 
 \item{...}{Parameters inherited from \code{\link[pheatmap]{pheatmap}}}
 }
@@ -87,7 +88,8 @@ used at default or an unrecognized file extension.}
 Heat map visualization of distance matrices.
 }
 \description{
-\code{proteoEucDist} visualizes the heat map of Euclidean distances.
+\code{proteoEucDist} visualizes the heat map of Euclidean distances. Users
+should avoid call the method directly, but instead use the following wrappers.
 
 \code{pepEucDist} is a wrapper of \code{\link{proteoEucDist}} for peptide data
 
@@ -97,10 +99,13 @@ Heat map visualization of distance matrices.
 An Euclidean distance matrix of \code{log2FC} is returned by
 \code{\link[stats]{dist}} for heat map visualization.
 
-The function matches the current \code{id} to those in the latest \code{calls}
-to \code{\link{normPep}} or \code{\link{normPrn}}.  For example, if
-\code{pep_seq} was used in \code{\link{normPep}}, the current \code{id =
-pep_seq_mod} will be matched to \code{id = pep_seq}.
+The function matches the current \code{id} to the grouping argument in the
+latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
+example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
+the setting of \code{id = pep_seq_mod} in the current call will be matched to
+\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
+was employed, the setting of \code{id = prot_acc} in the current call will be
+matched to \code{id = gene}.
 }
 \examples{
 prnEucDist(
@@ -125,7 +130,9 @@ prnEucDist(
   cellwidth = 24,
   cellheight = 24,
   width = 14,
-  height = 12
+  height = 12, 
+  filter_by_npep = exprs(n_pep >= 5),
+  filename = "prnEucDist_filtered.png",
 )
 
 

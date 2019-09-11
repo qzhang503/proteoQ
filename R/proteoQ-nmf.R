@@ -3,23 +3,33 @@
 #' @import dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
 #' @importFrom NMF nmf
-nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, filename,
-                    complete_cases, ...) {
-  
+nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, scale_log2r, 
+                    filepath, filename, complete_cases, ...) {
+                    
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
+
   dots <- rlang::enexprs(...)
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  dots <- dots %>% .[! . %in% filter_dots]
+  df <- df %>% filters_in_call(!!!filter_dots)
+
+  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
+               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
+    .$log2R  
   
   col_group <- rlang::enexpr(col_group) # optional phenotypic information
 
-  fn_prx <- gsub("\\..*$", "", filename)
-  fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
-  
+	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% unique()
+	fn_prefix <- gsub("\\.[^.]*$", "", filename)
+
+	stopifnot(length(fn_suffix) == 1)
+	
   if (is.null(r)) {
     r <- c(4:8)
     nrun <- 5
-    fn_prx <- paste0(fn_prx, r)
+    fn_prefix <- paste0(fn_prefix, r)
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
     stopifnot(all(nrun >= 1) & all(nrun %% 1 == 0))
@@ -42,13 +52,15 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
   exampleSet <- ExpressionSet(assayData = exprs_data, phenoData = phenoData,
                               experimentData = experimentData)
 
-  purrr::walk(fn_prx, ~ {
+  purrr::walk(fn_prefix, ~ {
     r <- gsub(".*_r(\\d+)$", "\\1", .x) %>% as.numeric()
     
     res_nmf <- NMF::nmf(exampleSet, r, nrun = nrun)
     save(res_nmf, file = file.path(filepath, paste0(.x, ".rda")))
-    write.csv(res_nmf@consensus, file.path(filepath, paste0(.x, "_consensus.csv")), row.names = FALSE)
-    write.csv(coef(res_nmf) %>% as.matrix, file.path(filepath, paste0(.x, "_coef.csv")), row.names = FALSE)
+    write.csv(res_nmf@consensus, 
+              file.path(filepath, paste0(.x, "_consensus.csv")), row.names = FALSE)
+    write.csv(coef(res_nmf) %>% as.matrix, 
+              file.path(filepath, paste0(.x, "_coef.csv")), row.names = FALSE)
   })
 }
 
@@ -57,25 +69,48 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, filepath, file
 #'
 #' @import NMF dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFCon <- function(id, r, label_scheme_sub, filepath, fn_prx, ...) {
+plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
+  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
+ 
   if (is.null(r)) {
-    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\d+\\.rda$"))
+    filelist <- ins
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
-    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\.rda$"))
-  }
+    
+    ins_prefix <- gsub("\\.[^.]*$", "", ins)
+    
+    possible_prefix <- ins_prefix %>% 
+      gsub("(.*)_r\\d+$", "\\1", .) %>% 
+      unique() %>% 
+      paste0("_r", r)
+    
+    ok_prefix <- ins_prefix %>% 
+      .[. %in% possible_prefix]
+    rm(ins_prefix, possible_prefix)
+    
+    filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.rda$"))) %>% 
+      unlist()
+  } 
   
   if(purrr::is_empty(filelist)) 
-    stop("NMF result file `", fn_prx, "... not found under ", filepath, 
-         "\nCheck the setting in `scale_log2r` for a probable mismatch.", call. = FALSE)
+    stop("Missing NMF results under ", filepath, 
+         "\nCheck the setting in `scale_log2r` for a probable mismatch.", 
+         call. = FALSE)
+  
+  # both filename extension and prefix will be used but ignored
+  # only png for now
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
   purrr::walk(filelist, ~ {
+    # out_nm <- paste0(gsub("\\.rda$", "", .x), "_consensus.", fn_suffix)
     out_nm <- paste0(gsub("\\.rda$", "", .x), "_consensus.png")
+    
     load(file = file.path(file.path(filepath, .x)))
     
     D_matrix <- res_nmf@consensus
@@ -146,24 +181,46 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, fn_prx, ...) {
 #'
 #' @import NMF dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFCoef <- function(id, r, label_scheme_sub, filepath, fn_prx, ...) {
+plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
+  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
+  
   if (is.null(r)) {
-    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\d+\\.rda$"))
+    filelist <- ins
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
-    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\.rda$"))
-  }
-  
+    
+    ins_prefix <- gsub("\\.[^.]*$", "", ins)
+    
+    possible_prefix <- ins_prefix %>% 
+      gsub("(.*)_r\\d+$", "\\1", .) %>% 
+      unique() %>% 
+      paste0("_r", r)
+    
+    ok_prefix <- ins_prefix %>% 
+      .[. %in% possible_prefix]
+    rm(ins_prefix, possible_prefix)
+    
+    filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.rda$"))) %>%
+      unlist()
+  } 
+
   if(purrr::is_empty(filelist)) 
-    stop("NMF result file `", fn_prx, "... not found under ", filepath, 
-         "\nCheck the setting in `scale_log2r` for a probable mismatch.", call. = FALSE)
+    stop("Missing NMF results under ", filepath, 
+         "\nCheck the setting in `scale_log2r` for a probable mismatch.", 
+         call. = FALSE)
+  
+  # both filename extension and prefix will be used but ignored
+  # only png for now
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   purrr::walk(filelist, ~ {
+    # out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.", fn_suffix)
     out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.png")
     src_path <- file.path(filepath, .x)
     load(file = file.path(src_path))
@@ -234,25 +291,51 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, fn_prx, ...) {
 #'
 #' @import NMF dplyr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
+plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, 
+                        filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
+
+  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
+               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
+    .$log2R  
+  
+  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
   
   if (is.null(r)) {
-    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\d+\\.rda$"))
+    filelist <- ins
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
-    filelist <- list.files(path = filepath, pattern = paste0(fn_prx, "\\.rda$"))
-  }
+    
+    ins_prefix <- gsub("\\.[^.]*$", "", ins)
+    
+    possible_prefix <- ins_prefix %>% 
+      gsub("(.*)_r\\d+$", "\\1", .) %>% 
+      unique() %>% 
+      paste0("_r", r)
+    
+    ok_prefix <- ins_prefix %>% 
+      .[. %in% possible_prefix]
+    rm(ins, ins_prefix, possible_prefix)
+    
+    filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.rda$"))) %>%
+      unlist()
+  } 
   
   if(purrr::is_empty(filelist)) 
-    stop("NMF result file `", fn_prx, "... not found under ", filepath, 
-         "\nCheck the setting in `scale_log2r` for a probable mismatch.", call. = FALSE)
+    stop("Missing NMF results under ", filepath, 
+         "\nCheck the setting in `scale_log2r` for a probable mismatch.", 
+         call. = FALSE)
 
+  # both filename extension and prefix will be used but ignored
+  # only png for now
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  # fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
   purrr::walk(filelist, ~ {
-    fn_prx <- gsub("\\.rda$", "", .x)
+    fn_prefix <- gsub("\\.rda$", "", .x)
     r <- gsub(".*_r(\\d+)\\.rda$", "\\1", .x) %>% as.numeric()
     dir.create(file.path(filepath, r), recursive = TRUE, showWarnings = FALSE)
 
@@ -322,7 +405,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
       nrow <- nrow(df_sub)
       
       if (nrow > 0) {
-        fn_sub <- paste0(fn_prx, "_metagene", i, ".png")
+        fn_sub <- paste0(fn_prefix, "_metagene", i, ".", fn_suffix)
         width <- ncol(df_sub) * 2 + 2
         
         if (nrow > 300) {
@@ -338,11 +421,12 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
         }
         
         if (nrow <= 150) dots$show_rownames <- TRUE
-        
+
         p <- my_pheatmap(
           mat = df_sub,
           filename = file.path(filepath, r, fn_sub),
           annotation_col = annotation_col,
+          annotation_row = NA, 
           color = mypalette,
           annotation_colors = annotation_colors,
           breaks = color_breaks,
@@ -352,7 +436,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
         df_op <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ] %>%
           tibble::rownames_to_column(id)
         
-        write.csv(df_op, file.path(filepath, r, paste0(fn_prx, "_metagene", i, ".csv")),
+        write.csv(df_op, file.path(filepath, r, paste0(fn_prefix, "_metagene", i, ".csv")),
                   row.names = FALSE)
       }
     }
@@ -364,8 +448,8 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
 #'NMF analysis
 #'
 #'\code{proteoNMF} analyzes and visualizes the NMF clustering of peptide or
-#'protein \code{log2FC}. Users should never call the method directly, but
-#'instead use the wrappers.
+#'protein \code{log2FC}. Users should avoid call the method directly, but
+#'instead use the following wrappers.
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
@@ -384,9 +468,9 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, filepath, fn_prx, ...) {
 #'  factory.
 #'@param filepath Use system default.
 #'@param filename Use system default.
-#'@param ... In \code{anal_} functions: additional arguments are inherited from
+#'@param ... In \code{anal_} functions: additional arguments are for
 #'  \code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments are
-#'  inherited from \code{proteoEucDist}.
+#'  for \code{pheatmap}.
 #'@return NMF classification and visualization of \code{log2FC}.
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -433,12 +517,13 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'@examples
 #' library(NMF)
 #'
-#' # peptide data NMF at single r(ank)
+#' # peptide data NMF at two different r(ank)s
 #' anal_pepNMF(
 #'   scale_log2r = TRUE,
 #'   col_group = Group, # optional a priori knowledge of sample groups
-#'   r = 6,
-#'   nrun = 200
+#'   r = c(6, 8),
+#'   nrun = 200,
+#'   filter_by_npsm = exprs(n_psm >= 2),
 #' )
 #'
 #'@import purrr
@@ -463,12 +548,15 @@ anal_pepNMF <- function (...) {
 #'@rdname proteoNMF
 #' @examples
 #' # protein data NMF at multiple ranks
+#' library(NMF)
+#' 
 #' anal_prnNMF(
 #'   impute_na = FALSE,
 #'   scale_log2r = TRUE,
 #'   col_group = Group,
 #'   r = c(5:8),
-#'   nrun = 200
+#'   nrun = 200, 
+#'   filter_by_npep = exprs(n_pep >= 2),
 #' )
 #'
 #'@import purrr
@@ -478,7 +566,7 @@ anal_prnNMF <- function (...) {
   if(any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
 
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+
   quietly_log <- purrr::quietly(proteoNMF)(id = gene, task = anal, ...)
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Protein\\NMF\\log","anal_prnNMF_log.csv"), append = TRUE)  
@@ -496,11 +584,11 @@ anal_prnNMF <- function (...) {
 #'
 #' # peptide consensus heat maps at specific ranks
 #' plot_pepNMFCon(
-#'   r = c(3, 5),
+#'   r = c(5, 6),
 #'   annot_cols = c("Color", "Alpha", "Shape"),
 #'   annot_colnames = c("Lab", "Batch", "WHIM"),
 #'   width = 10,
-#'   height = 10
+#'   height = 10,
 #' )
 #'
 #' # peptide consensus heat maps at all available ranks
@@ -509,7 +597,7 @@ anal_prnNMF <- function (...) {
 #'   annot_cols = c("Color", "Alpha", "Shape"),
 #'   annot_colnames = c("Lab", "Batch", "WHIM"),
 #'   width = 10,
-#'   height = 10
+#'   height = 10,
 #' )
 #'
 #'@import purrr
@@ -541,11 +629,11 @@ plot_pepNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'
 #' # protein consensus heat maps at specific ranks
 #' plot_prnNMFCon(
-#'   r = c(3, 5),
+#'   r = c(7:8),
 #'   annot_cols = c("Color", "Alpha", "Shape"),
 #'   annot_colnames = c("Lab", "Batch", "WHIM"),
 #'   width = 10,
-#'   height = 10
+#'   height = 10,
 #' )
 #'
 #' # protein consensus heat maps at all available ranks
