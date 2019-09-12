@@ -6,8 +6,7 @@
 \usage{
 normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
   "mean", "weighted.mean", "top.3", "mqpep"),
-  group_pep_by = c("prot_acc", "gene"), rm_mq_krts = TRUE,
-  rm_mq_craps = TRUE, rm_mq_reverses = TRUE, method_align = c("MC",
+  group_pep_by = c("prot_acc", "gene"), method_align = c("MC",
   "MGKernel"), range_log2r = c(10, 90), range_int = c(5, 95),
   n_comp = NULL, seed = NULL, pep_unique_by = "group",
   annot_kinases = FALSE, col_refit = NULL, cache = TRUE,
@@ -29,12 +28,6 @@ The descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")}. The \code{log10-intensity} of reporter ions at the
 \code{PSMs} levels will be the weight when summarising \code{log2FC} with
 \code{"top.3"} or \code{"weighted.mean"}.}
-
-\item{rm_mq_krts}{Logical; if TRUE, removes keratin entries from MaxQuant
-peptide results.}
-
-\item{rm_mq_craps}{Logical; if TRUE, removes \code{Potential contaminant}
-entries from MaxQuant peptide results.}
 
 \item{method_align}{Character string or a list of gene symbols; the method to
 align the \code{log2FC} of peptide/protein entries across samples.

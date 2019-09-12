@@ -39,6 +39,10 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 
 	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 	dots <- dots %>% .[! . %in% lang_dots]
+	
+	# cat("Available column keys for data filtration: \n")
+	# cat(paste0(names(df), "\n"))
+	
 	df <- df %>% filters_in_call(!!!lang_dots)
 	
 	by = (xmax - xmin)/200

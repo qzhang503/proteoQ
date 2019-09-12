@@ -13,6 +13,10 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, sca
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
+  
+  # cat("Available column keys for data filtration: \n")
+  # cat(paste0(names(df), "\n"))
+  
   df <- df %>% filters_in_call(!!!filter_dots)
 
   df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 

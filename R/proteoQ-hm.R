@@ -128,7 +128,12 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
     dplyr::filter(!duplicated(!!rlang::sym(id)),
                   !is.na(!!rlang::sym(id)),
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
-    reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) %>% 
+    reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) 
+  
+  # cat("Available column keys for data filtration or row ordering: \n")
+  # cat(paste0(names(df), "\n"))
+  
+  df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
 

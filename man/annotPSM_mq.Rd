@@ -4,19 +4,31 @@
 \alias{annotPSM_mq}
 \title{Annotates PSM results}
 \usage{
-annotPSM_mq(expt_smry = "expt_smry.xlsx", fasta = NULL,
-  rm_krts = FALSE, plot_rptr_int = TRUE)
+annotPSM_mq(group_psm_by = "pep_seq", fasta = NULL,
+  expt_smry = "expt_smry.xlsx", rm_krts = FALSE,
+  plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...)
 }
 \arguments{
-\item{expt_smry}{A character string to the \code{.xlsx} file containing the
-metadata of TMT experiments. The default is "expt_smry.xlsx".}
+\item{group_psm_by}{A character string for the grouping of PSM entries. At the
+\code{pep_seq} default, descriptive statistics will be calculated based on
+the same \code{pep_seq} groups. At \code{group_psm_by = pep_seq_mod},
+peptides with different variable modifications will be treated as different
+species. The early decision in data grouping will inform the downstream
+purging (\code{\link{purgePSM}}) and summarization (\code{\link{normPep}})
+of PSM data.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search.}
 
+\item{expt_smry}{A character string to the \code{.xlsx} file containing the
+metadata of TMT experiments. The default is "expt_smry.xlsx".}
+
 \item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}
+
+\item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
+peptide \code{log2FC} for each sample.}
 }
 \description{
 \code{annotPSM_mq} adds fields of annotation to PSM tables.

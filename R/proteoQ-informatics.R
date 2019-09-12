@@ -251,6 +251,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 		  
+		  # cat("Available column keys for data filtration: \n")
+		  # cat(paste0(names(df), "\n"))
+		  
 		  df_mds <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
 		    scoreMDS(
@@ -281,6 +284,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
+		  
+		  # cat("Available column keys for data filtration: \n")
+		  # cat(paste0(names(df), "\n"))
 		  
 		  df_mds <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -314,6 +320,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
+		  
+		  # cat("Available column keys for data filtration: \n")
+		  # cat(paste0(names(df), "\n"))
 		  
 		  df_mds <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -391,7 +400,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           label_scheme_sub = label_scheme_sub, 
 		           scale_log2r = scale_log2r, 
 		           filepath = filepath, 
-		           filename = paste0(fn_prefix, ".", fn_suffix), 
+		           filename = paste0(fn_prefix, "_", data_select, ".", fn_suffix), 
 		           ...)
 		}
 	} else if (anal_type == "Trend") {
@@ -401,6 +410,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
+		  
+		  # cat("Available column keys for data filtration: \n")
+		  # cat(paste0(names(df), "\n"))
 		  
 		  df <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -478,6 +490,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
+		  
+		  # cat("Available column keys for data filtration: \n")
+		  # cat(paste0(names(df), "\n"))
 
 		  df_op <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 

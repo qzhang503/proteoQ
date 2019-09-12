@@ -22,6 +22,10 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
   
   lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% lang_dots]
+  
+  # cat("Available column keys for data filtration: \n")
+  # cat(paste0(names(df), "\n"))
+  
   df <- df %>% filters_in_call(!!!lang_dots)
 
 	col_select <- rlang::enexpr(col_select)

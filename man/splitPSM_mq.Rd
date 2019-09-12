@@ -6,7 +6,8 @@
 \usage{
 splitPSM_mq(fasta = NULL, pep_unique_by = "group",
   corrected_int = FALSE, rptr_intco = 1000, rm_craps = FALSE,
-  rm_reverses = TRUE, plot_rptr_int = TRUE, ...)
+  rm_reverses = TRUE, annot_kinases = FALSE, plot_rptr_int = TRUE,
+  ...)
 }
 \arguments{
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
@@ -30,6 +31,9 @@ Otherwise, "Reporter intensity" values without corrections will be used.}
 
 \item{rm_reverses}{Logical; if TRUE, removes \code{Reverse} entries from
 MaxQuant peptide results.}
+
+\item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
+proteins.}
 
 \item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}
