@@ -15,11 +15,11 @@ output:
   pdf_document:
     toc: yes
     number_sections: true
-  word_document:
-    toc: yes
   md_document:
     toc: yes
     variant: markdown_github
+  word_document:
+    toc: yes
   github_document:
     fig_caption: yes
     toc: yes
