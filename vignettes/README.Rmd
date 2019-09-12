@@ -5,24 +5,26 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
+  word_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
     keep_md: yes
     theme: united
     toc: yes
+    toc_depth: 4
     toc_float: yes
   pdf_document:
     toc: yes
     number_sections: true
-  md_document:
-    toc: yes
-    variant: markdown_github
-  word_document:
-    toc: yes
   github_document:
     fig_caption: yes
     toc: yes
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: markdown_github
 ---
 
 ---
@@ -477,20 +479,20 @@ We next process the PSM data from MaxQuant and perform peptide and protein norml
 ```{r mq_psm, eval = FALSE}
 # PSM
 normPSM(
-	group_psm_by = pep_seq, 
-	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-					"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  group_psm_by = pep_seq, 
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  rptr_intco = 3000,
+  rm_craps = TRUE,
+  rm_krts = FALSE,
   corrected_int = TRUE,
   rm_reverses = TRUE,
-	rptr_intco = 3000,
-	rm_craps = TRUE,
-	rm_krts = FALSE,
-	rm_outliers = FALSE, 
-	annot_kinases = TRUE,	
-	plot_rptr_int = TRUE, 
-	plot_log2FC_cv = TRUE, 
-	filter_peps = exprs(PEP <= 0.1), 
-	# filter_peps = exprs(`Missed cleavages` == 0), 
+  rm_outliers = FALSE, 
+  annot_kinases = TRUE,	
+  plot_rptr_int = TRUE, 
+  plot_log2FC_cv = TRUE, 
+  
+  filter_peps = exprs(PEP <= 0.1), 
 )
 
 # optional PSM purging
