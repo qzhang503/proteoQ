@@ -158,6 +158,9 @@ gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
     rowSums() %>%
     `>`(0)
   
+  # cat("Available column keys for data filtration: \n")
+  # cat(paste0(names(df), "\n"))
+  
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)

@@ -5,7 +5,7 @@
 \title{Splits PSM tables}
 \usage{
 splitPSM_sm(fasta = NULL, rptr_intco = 1000, rm_craps = FALSE,
-  plot_rptr_int = TRUE, ...)
+  annot_kinases = FALSE, plot_rptr_int = TRUE, ...)
 }
 \arguments{
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
@@ -16,6 +16,9 @@ used in MS/MS ion search.}
 
 \item{rm_craps}{Logical; if TRUE, removes
 \code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.}
+
+\item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
+proteins.}
 
 \item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}

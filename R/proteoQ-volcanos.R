@@ -220,6 +220,9 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
 	dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
 
+	# cat("Available column keys for data filtration: \n")
+	# cat(paste0(names(df), "\n"))
+	
 	df <- df %>% 
 	  filters_in_call(!!!filter_dots) %>% 
 	  arrangers_in_call(!!!arrange_dots)
@@ -248,22 +251,10 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 
 	plotVolcano(df, !!id, filepath, filename, adjP, show_labels, anal_type,
 							pval_cutoff, logFC_cutoff, show_sig, gset_nms, ...)
-
-	if (annot_kinases & anal_type == "Volcano") {
-		dir.create(file.path(filepath, "Kinases"), recursive = TRUE, showWarnings = FALSE)
-		df_kinase <- df %>% dplyr::filter(kin_attr)
-
-		plotVolcano(df = df_kinase,
-			id = !!id, filepath = file.path(filepath, "Kinases"),
-			filename = paste0(fn_prefix, "_Kinases.", fn_suffix),
-			adjP, show_labels, anal_type, 
-			pval_cutoff, logFC_cutoff, show_sig, gset_nms, ...)
-	}
-
 }
 
 
-#' Perform significance tests
+#' Plot volcanos
 #'
 #' @import limma stringr purrr dplyr rlang grid gridExtra gtable
 #' @importFrom magrittr %>%

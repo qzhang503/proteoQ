@@ -527,7 +527,6 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 #'
 #'@rdname proteoSigtest
 #'
-#' @examples
 #'@import purrr
 #'@export
 pepSig <- function (...) {

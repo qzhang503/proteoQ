@@ -132,7 +132,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	n_comp <- n_comp %>% as.integer()
 	stopifnot(n_comp >= 2)
 	
-	# dots <- rlang::enexprs(...)
 	dots <- rlang::enexprs(...)
 	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 	dots <- dots %>% .[! . %in% lang_dots]
@@ -146,9 +145,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	}
 	
 	id <- match_normPep_id()
-	
-	# if (is.null(fasta)) fasta <- match_fasta()
-	
+
 	col_refit <- rlang::enexpr(col_refit)
 	col_refit <- ifelse(is.null(col_refit), rlang::expr(Sample_ID), rlang::sym(col_refit))
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
@@ -180,7 +177,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 										header = TRUE, sep = "\t", comment.char = "#") %>% 
 			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 		
-		# summarise data from the same TMT experiment at different LCMS injections
 		df_num <- df %>% 
 				dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
 				dplyr::group_by(!!rlang::sym(id))
@@ -200,7 +196,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 				dplyr::summarise(n_psm = sum(n_psm))
 		write.csv(df_psm, file.path(dat_dir, "Protein\\cache", "prn_npsm.csv"), row.names = FALSE)
 		
-		# pep_id <- match_identifier("pep_seq") # depreciated
 		pep_id <- match_normPSM_id()
 		
 		df_seq <- df %>% 
@@ -243,10 +238,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		
 		df <- df %>% 
 		  .[rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0, ]
-		# df <- df[rowSums(!is.na(df[, grepl("N_log2_R", names(df))])) > 0, ] 
-		
-		# add prot_cover
-		# id_pep <- match_identifier("pep_seq")
 
 		load(file = file.path(dat_dir, "label_scheme.Rdata"))		
 		fasta <- seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
@@ -258,7 +249,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		  calc_cover(id = !!id, fasta = fasta) %>% 
 		  dplyr::right_join(df, by = id)
 		
-		# rm(pep_id)
 		write.csv(df, file.path(dat_dir, "Protein\\cache", "Protein_no_norm.csv"), row.names = FALSE)
 
 		if (gn_rollup) {
@@ -292,6 +282,9 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	                 check.names = FALSE, header = TRUE, comment.char = "#") %>% 
 	    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 	}
+	
+	cat("Available column keys for data filtration: \n")
+	cat(paste0(names(df), "\n"))
 	
 	df <- df %>% filters_in_call(!!!lang_dots)
 

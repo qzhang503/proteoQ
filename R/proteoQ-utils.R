@@ -1114,68 +1114,6 @@ replace_na_genes <- function(df, acc_type) {
 }
 
 
-#' Adds protein description
-#'
-#' \code{annotPrndesc} annotates protein descriptions based on the \code{fasta}
-#'
-#' @import plyr dplyr purrr rlang stringr seqinr
-#' @importFrom magrittr %>% %$%
-annotPrndesc <- function (df, fasta){
-  stopifnot("prot_acc" %in% names(df))
-  
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
-  acc_type <- find_acctype() %>% tolower()
-  
-  if (acc_type == "refseq_acc") {
-    key <- "refseq_acc"
-  } else if (acc_type %in% "uniprot_id") {
-    key <- "uniprot_id"
-  } else if (acc_type %in% "uniprot_acc") {
-    key <- "uniprot_acc"
-  } else {
-    warning("Unkown accession type.")
-  }
-  
-  df <- df %>% 
-    dplyr::mutate(prot_acc = gsub("^.*\\|(.*)\\|.*$", "\\1", prot_acc))
-  
-  if (!is.null(fasta)) {
-    if (all(file.exists(fasta))) {
-      fasta <- purrr::map(fasta, ~ {
-        seqinr::read.fasta(.x, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
-      }) %>% do.call(`c`, .) %>% 
-        `names<-`(gsub("^.*\\|(.*)\\|.*$", "\\1", names(.))) %>% 
-        .[names(.) %in% unique(df$prot_acc)]
-      
-      if (length(fasta) == 0) {
-        stop("No fasta entries match protein accessions; probably wrong fasta file.", 
-             call. = FALSE)
-      }
-      
-      lookup <- dplyr::bind_cols(
-        # prot_acc = seqinr::getName(fasta), 
-        prot_acc = names(fasta), 
-        prot_desc = seqinr::getAnnot(fasta) %>% 
-          purrr::map(., `[[`, 1) %>% 
-          unlist(), 
-        prot_mass = purrr::map_dbl(fasta, ~ {seqinr::getSequence(.x) %>% seqinr::pmw()})
-      ) %>% 
-        dplyr::filter(.$prot_acc %in% unique(df$prot_acc))
-    } else {
-      stop("Wrong FASTA file path or name.", call. = FALSE)
-    }
-  } else {
-    stop("FASTA file not provided.")
-  }
-  
-  rm(fasta)
-  
-  df %>% 
-    dplyr::left_join(lookup, by = "prot_acc") %>% 
-    dplyr::mutate(prot_mass = round(prot_mass, digits = 1))
-}
-
-
 #' Add peptide start and end positions
 #'
 #' \code{annotPeppos} annotates the start and the end positions of peptides in
@@ -1187,7 +1125,8 @@ annotPeppos <- function (df, fasta){
   stopifnot(all(c("prot_acc", "pep_seq") %in% names(df)))
   
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
-  acc_type <- find_acctype() %>% tolower()
+  acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
+  stopifnot(length(acc_type) == 1)
   
   if (acc_type == "refseq_acc") {
     key <- "refseq_acc"
@@ -1526,26 +1465,6 @@ match_gset_nm <- function (id = c("go_sets", "kegg_sets", "c2_msig")) {
 }
 
 
-#' Keratin removals
-#'
-#' @param id. 
-#'
-#' @import dplyr purrr rlang
-#' @importFrom magrittr %>%
-rm_krts <- function (df, acc_type) {
-  stopifnot("prot_acc" %in% names(df))
-  
-  krts <- dbs$prn_annot %>%
-    dplyr::filter(grepl("^krt[0-9]+", .$gene, ignore.case = TRUE)) %>%
-    dplyr::filter(!is.na(.[[acc_type]])) %>%
-    dplyr::select(acc_type) %>%
-    unlist()
-  
-  df %>%
-    dplyr::filter(! .$prot_acc %in% krts)  
-}
-
-
 #' Add start and end positions and preceding and succeeding residues of peptides
 #'
 #' \code{annotPeppos_mq} annotates start and end positions and the preceding and
@@ -1557,7 +1476,8 @@ annotPeppos_mq <- function (df, fasta){
   stopifnot(all(c("prot_acc", "pep_seq") %in% names(df)))
   
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
-  acc_type <- find_acctype() %>% tolower()
+  acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
+  stopifnot(length(acc_type) == 1)
   
   if (acc_type == "refseq_acc") {
     key <- "refseq_acc"
@@ -1722,7 +1642,7 @@ sd_violin <- function(df, id, filepath, width, height) {
 #' Violin plots of reporter-ion intensity per TMT_Set and LCMS_injection
 rptr_violin <- function(df, filepath, width, height) {
   df_int <- df %>% 
-    `names<-`(gsub("^N_I", "", names(.))) 
+    `names<-`(gsub("^N_I|^I", "", names(.))) 
   
   Levels <- names(df_int)
   

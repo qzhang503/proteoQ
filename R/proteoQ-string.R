@@ -250,6 +250,9 @@ getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, 
   arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
   select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
+  
+  # cat("Available column keys for data filtration: \n")
+  # cat(paste0(names(df), "\n"))
 
   df <- df %>% 
     dplyr::filter(!is.na(id), nchar(id) > 0) %>% 

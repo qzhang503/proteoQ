@@ -2,12 +2,12 @@
 % Please edit documentation in R/proteoQ-volcanos.R
 \name{plotVolcano}
 \alias{plotVolcano}
-\title{Perform significance tests}
+\title{Plot volcanos}
 \usage{
 plotVolcano(df = NULL, id = "gene", filepath = NULL,
   filename = NULL, adjP = FALSE, show_labels = TRUE, anal_type,
   pval_cutoff, logFC_cutoff, show_sig, gset_nms, ...)
 }
 \description{
-Perform significance tests
+Plot volcanos
 }
