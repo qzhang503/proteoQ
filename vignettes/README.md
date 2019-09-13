@@ -17,6 +17,7 @@
         samples](#renormalize-data-for-a-subset-of-samples)
     -   [1.4 Summarize MaxQuant results](#summarize-maxquant-results)
         -   [1.4.1 MaxQuant PSM tables](#maxquant-psm-tables)
+    -   [1.5 Workflow scripts](#workflow-scripts)
 -   [2 Basic informatics](#basic-informatics)
     -   [2.1 MDS and PCA plots](#mds-and-pca-plots)
     -   [2.2 Correlation plots](#correlation-plots)
@@ -56,11 +57,11 @@ be conveniently reproduced upon revisiting.
 The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/) and
 [MaxQuant](https://www.maxquant.org/) searches, for 6-, 10- or 11-plex
-TMT experiments. Peptide and protein results are then produced with
-users' selection of parameters in data filtration, alignment and
-normalization. The package further offers a suite of tools and
-functionalities in statistics, informatics and data visualization by
-creating 'wrappers' around published R routines.
+TMT experiments using Thermo's orbitrap mass analyzers. Peptide and
+protein results are then produced with users' selection of parameters in
+data filtration, alignment and normalization. The package further offers
+a suite of tools and functionalities in statistics, informatics and data
+visualization by creating 'wrappers' around published R routines.
 
 Installation
 ------------
@@ -752,9 +753,18 @@ normPrn(
 Following the normalizations and cleanups, we can carry out analogous
 data visualization using the intensity-coded histograms. Note that I
 have renamed some column keys in the PSM, peptide and protein tables to
-match their counterparts in Mascot. The changes allow me to keep the
+match their counterparts in `Mascot`. The changes allow me to keep the
 code more succinct. I apologize if you find it all more difficult to
 deal with the new names.
+
+### 1.5 Workflow scripts
+
+Scripts that were used in this document can be accessed via:
+
+``` r
+system.file("extdata", "mascot_scripts.R", package = "proteoQ")
+system.file("extdata", "maxquant_scripts.R", package = "proteoQ")
+```
 
 2 Basic informatics
 -------------------
