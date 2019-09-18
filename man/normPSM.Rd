@@ -4,7 +4,8 @@
 \alias{normPSM}
 \title{Reports PSM results}
 \usage{
-normPSM(group_psm_by = c("pep_seq", "pep_seq_mod"), dat_dir = NULL,
+normPSM(group_psm_by = c("pep_seq", "pep_seq_mod"),
+  group_pep_by = c("prot_acc", "gene"), dat_dir = NULL,
   expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx",
   fasta = NULL, pep_unique_by = "group", corrected_int = FALSE,
   rm_reverses = TRUE, rptr_intco = 1000, rm_craps = FALSE,
@@ -19,6 +20,12 @@ peptides with different variable modifications will be treated as different
 species. The early decision in data grouping will inform the downstream
 purging (\code{\link{purgePSM}}) and summarization (\code{\link{normPep}})
 of PSM data.}
+
+\item{group_pep_by}{A character string for the grouping of peptide entries. At
+the \code{prot_acc} default, descriptive statistics will be calculated based
+on the same \code{prot_acc} groups. At \code{group_pep_by = gene}, proteins
+with the same gene name but different accession numbers will be treated as
+one group.}
 
 \item{dat_dir}{A character string to the working directory.}
 
@@ -142,6 +149,7 @@ load_expts()
 # process PSMs with in-function filtration of data by `filter_`
 normPSM(
   group_psm_by = pep_seq, 
+  group_pep_by = prot_acc, 
   fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
             "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
   rptr_intco = 3000,
@@ -164,6 +172,11 @@ purgePSM(max_cv = .5, min_n = 2)
 dir.create("C:\\\\The\\\\MQ\\\\Example", recursive = TRUE, showWarnings = FALSE)
 dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
 
+# copy fasta 
+library(proteoQDA)
+copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
+copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
+
 # copy MaxQuant PSM data
 library(proteoQDB)
 cptac_mq_psm_1(dat_dir)
@@ -177,7 +190,45 @@ library(proteoQ)
 load_expts()
 
 # process MaxQuant PSMs
-#   under construction
+normPSM(
+  group_psm_by = pep_seq, 
+  group_pep_by = prot_acc, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+  corrected_int = TRUE,
+  rm_reverses = TRUE,
+  rptr_intco = 3000,
+  rm_craps = TRUE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE, 
+  annot_kinases = TRUE,	
+  plot_rptr_int = TRUE, 
+  plot_log2FC_cv = TRUE, 
+  
+  filter_peps = exprs(PEP <= 0.1), 
+)
+
+# unique peptides for quantitation;
+# the levels of uniqueness according to `pep_unique_by`
+normPSM(
+  group_psm_by = pep_seq, 
+  group_pep_by = prot_acc, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+  corrected_int = TRUE,
+  rm_reverses = TRUE,
+  rptr_intco = 3000,
+  rm_craps = TRUE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE, 
+  annot_kinases = TRUE,	
+  plot_rptr_int = TRUE, 
+  plot_log2FC_cv = TRUE, 
+  
+  # new column key `pep_isunique` not in original MaxQuant PSMs
+  filter_peps = exprs(PEP <= 0.1, pep_isunique == 1), 
+)
+
 }
 
 }

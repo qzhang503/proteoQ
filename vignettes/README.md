@@ -15,7 +15,8 @@
             proteins](#summarize-peptides-to-proteins)
     -   [1.3 Renormalize data for a subset of
         samples](#renormalize-data-for-a-subset-of-samples)
-    -   [1.4 Summarize MaxQuant results](#summarize-maxquant-results)
+    -   [1.4 Summarize MaxQuant results (under
+        construction)](#summarize-maxquant-results-under-construction)
         -   [1.4.1 MaxQuant PSM tables](#maxquant-psm-tables)
     -   [1.5 Workflow scripts](#workflow-scripts)
 -   [2 Basic informatics](#basic-informatics)
@@ -143,18 +144,19 @@ The workflow begins with PSM table(s) in a `.csv` format from the
 exporting PSM results, I typically set the option of
 `Include sub-set protein hits` to `0` with my opinionated choice in
 satisfying the principle of parsimony. The options of `Header` and
-`Peptide quantitation` should be checked to include the search
-parameters and quantitative values, respectively. The file name(s) of
-the exports will be taken as is.[1]
+`Peptide quantitation` under `Peptide Match Information` should be
+checked to include the search parameters and quantitative values,
+respectively. The selections of both `Start` and `End` are also
+recommend. The file name(s) of the exports will be taken as is.[1]
 
 <img src="images\mascot\mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
 The same peptide sequence under different PSM files can be assigned to
 different protein IDs when
 [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins
-from peptides using algorithms such as greedy set cover. To escape from
-the ambiguity in protein inference, I typically enable the option of
-`Merge MS/MS files into single search` in [Mascot
+from peptides using algorithms such as greedy set cover.[2] To escape
+from the ambiguity in protein inference, I typically enable the option
+of `Merge MS/MS files into single search` in [Mascot
 Daemon](http://www.matrixscience.com/daemon.html). If the option is
 disabled, peptide sequences that have been assigned to multiple protein
 IDs will be removed for now when constructing peptide reports.
@@ -182,7 +184,7 @@ experimental summary is `expt_smry.xlsx`. If samples were fractionated
 off-line prior to `LC/MS`, a second `Excel` template will also be filled
 out to link multiple `RAW` MS file names that are associated to the same
 sample IDs. The default file name for the fractionation summary is
-`frac_smry.xlsx`.[2] Unless otherwise mentioned, we will assume these
+`frac_smry.xlsx`.[3] Unless otherwise mentioned, we will assume these
 default file names throughout the document.
 
 Columns in the `expt_smry.xlsx` are approximately divided into the
@@ -252,6 +254,7 @@ The core utility for the processing of PSM data is `normPSM`:
 # process PSMs with in-function filtration of data by arguments `filter_`
 normPSM(
   group_psm_by = pep_seq, 
+  group_pep_by = gene, 
   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
   rptr_intco = 3000,
@@ -262,7 +265,7 @@ normPSM(
   plot_rptr_int = TRUE, 
   plot_log2FC_cv = TRUE, 
   
-  filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+  filter_peps = exprs(pep_expect <= .1, pep_score >= 15), 
   filter_by_more = exprs(pep_rank == 1),
 )
 ```
@@ -271,11 +274,13 @@ At `group_psm_by = pep_seq`, PSM entries with the same primary peptide
 sequence but different variable modifications will be grouped for
 analysis using descriptive statistics. At `group_psm_by = pep_seq_mod`,
 PSMs will be grouped according to the unique combination of the primary
-sequences and the variable modifications of peptides. The `fasta`
-argument points to the two RefSeq fasta files that were used in MS/MS
-searches. The `log2FC` of peptide data will be aligned by median
-centering across samples for PSM data. More description of `normPSM` can
-be found by accessing its help document via `?normPSM`.
+sequences and the variable modifications of peptides. Analogously,
+`group_pep_by` specify the grouping of peptides by either protein
+accession names or gene names. The `fasta` argument points to the two
+RefSeq fasta files that were used in MS/MS searches. The `log2FC` of
+peptide data will be aligned by median centering across samples for PSM
+data. More description of `normPSM` can be found by accessing its help
+document via `?normPSM`.
 
 PSM outliers will be assessed at a basis of per peptide and per sample
 at `rm_outliers = TRUE`, which can be a slow process for large data
@@ -285,15 +290,15 @@ executing `normPSM()`. We then visually inspect the distributions of
 reporter-ion intensity. Empirically, PSMs with reporter-ion intensity
 less than 3,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
-analysis.[3]
+analysis.[4]
 
 The `normPSM` function can take additional, user-defined arguments of
 `dot-dot-dot` (see Wickham 2019, ch. 6) for the row filtration of data
 using logical conditions. In the above example, we have limited
 ourselves to peptide entries with `pep_expect <= 0.1` and
-`pep_isunique == 1` by supplying the variable argument (vararg) of
-`filter_peps`. We further filtered the data at `pep_rank == 1` with a
-second vararg of `filter_by_more`. The creation and assignment of
+`pep_score >= 15` by supplying the variable argument (vararg) of
+`filter_peps`. We further filtered the data at `pep_rank == 1` with
+another vararg of `filter_by_more`. The creation and assignment of
 varargs need to follow a format of
 `filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the
 names of varargs on the lhs start with the character string of `filter_`
@@ -310,7 +315,7 @@ the expression(s) on the rhs of each vararg statment by performing a
 bare evaluation using `rlang::eval_bare`. Following that, a tidy
 evaluation by `rlang::eval_tidy` will be coupled to a local facility in
 `proteoQ` to do the real work of data filtrations ((see Wickham 2019,
-ch. 20))[4].
+ch. 20))[5].
 
 The approach of data filtration taken by `normPSM` might at first looks
 strange; however, it allows me to perform data filtration in a
@@ -327,11 +332,11 @@ forget what I have done.
 
 To finish our discussion of PSM processing, let us consider having one
 more bash in data cleanup. The `purgePSM` facility can be used for data
-purging by both the CV of peptides and the number of PSM
-identifications. Namely, quantitations that yields peptide CV greater
-than a user-supplied cut-off will be replaced with NA; similarly,
-quantitations with the number of observations less than a user-defined
-threshold will be substituted with NA.
+purging by both the CV and the number of PSM identifications of
+peptides. Namely, quantitations that yields peptide CV greater than a
+user-supplied cut-off will be replaced with NA; similarly, quantitations
+with the number of observations less than a user-defined threshold will
+be substituted with NA.
 
 Earlier this section, we have set `plot_log2FC_cv = TRUE` when calling
 `normPSM`. This will plot the distributions of the CV of peptide log2FC.
@@ -343,9 +348,9 @@ nullification:
 purgePSM ()
 ```
 
-Taking the sample entries under TMT experiment 1 in `label_scheme.xlsx`
-as an example, we can see that a small portion of peptides have CV
-greater than 0.5 at log2 scale.
+Taking the sample entries under `TMT_Set` one in `label_scheme.xlsx` as
+an example, we can see that a small portion of peptides have CV greater
+than 0.5 at log2 scale.
 
 <img src="images\psm\purge\psm_bf_purge.png" alt="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." width="45%" /><img src="images\psm\purge\psm_af_purge.png" alt="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." width="45%" />
 <p class="caption">
@@ -367,7 +372,7 @@ purgePSM (
 # equivalent to 
 purgePSM (
   max_cv = 0.5,
-  min_n =2,
+  min_n = 2,
 )
 ```
 
@@ -392,7 +397,7 @@ The core utility for the summary of PSMs to peptides is `normPep`:
 ``` r
 # peptide reports
 normPep(
-  group_pep_by = gene,
+  # group_pep_by = gene, # depreciated
   method_psm_pep = median,
   method_align = MGKernel,
   range_log2r = c(5, 95),
@@ -402,22 +407,18 @@ normPep(
   maxit = 200,
   epsilon = 1e-05,
 
-  filter_by = exprs(n_psm >= 2),
-  # filter_by_sp = exprs(species == "human"),
+  filter_by = exprs(pep_n_psm >= 2),
 )
 ```
 
-At `group_pep_by = gene`, peptide entries under the same gene name but
-different accession names will be grouped for analysis using descriptive
-statsitics. At `group_pep_by = prot_acc`, peptides will be grouped by
-unique accession names. The `log2FC` of peptide data will be aligned by
-median centering across samples by default. If `method_align = MGKernel`
-is chosen, `log2FC` will be aligned under the assumption of multiple
-Gaussian kernels.[5] The parameter `n_comp` defines the number of
-Gaussian kernels and `seed` set a seed for reproducible fittings. The
-parameters `range_log2r` and `range_int` define the range of `log2FC`
-and the range of reporter-ion intensity, respectively, for use in the
-scaling of standard deviation across samples.
+The `log2FC` of peptide data will be aligned by median centering across
+samples by default. If `method_align = MGKernel` is chosen, `log2FC`
+will be aligned under the assumption of multiple Gaussian kernels.[6]
+The parameter `n_comp` defines the number of Gaussian kernels and `seed`
+set a seed for reproducible fittings. The parameters `range_log2r` and
+`range_int` define the range of `log2FC` and the range of reporter-ion
+intensity, respectively, for use in the scaling of standard deviation
+across samples.
 
 In the examplary vararg statement of `filter_by`, we set a threshold in
 the minimum number of identifying PSMs for peptides. If we are not
@@ -454,9 +455,9 @@ specific:
 ``` r
 normPep(
   ...,
-  filter_by = exprs(n_psm >= 2),
-  filter_by_2 = exprs(`sd_log2_R126 (W2.BI.TR1.TMT1)` <= .052, 
-                      `sd_log2_R130N (W16.PNNL.TR4.TMT2)` <= .048)
+  filter_by = exprs(pep_n_psm >= 2),
+  filter_by_2 = exprs(`sd_log2_R126 (W2.BI.TR1.TMT1)` <= .52, 
+                      `sd_log2_R130N (W16.PNNL.TR4.TMT2)` <= .48)
 )
 ```
 
@@ -466,7 +467,7 @@ space(s) and/or special character(s) such as parenthesis.
 ##### 1.2.2.3 pepHist
 
 We next compare the `log2FC` profiles with and without scaling
-normalization:[6]
+normalization:[7]
 
 ``` r
 # without scaling
@@ -494,7 +495,7 @@ the `expt_smry.xlsx`).
 [![Select
 subsets](https://img.youtube.com/vi/3B5et8VY3hE/0.jpg)](https://www.youtube.com/embed/3B5et8VY3hE)
 
-We now are ready to plot histograms for each subset of the data.[7] In
+We now are ready to plot histograms for each subset of the data.[8] In
 this document, we only display the plots using the `BI` subset:
 
 ``` r
@@ -535,7 +536,7 @@ after the scaling normalization. However, such adjustment may cause
 artifacts when the standard deviaiton across samples are genuinely
 different. I typically test `scale_log2r` at both `TRUE` and `FALSE`,
 then make a choice in data scaling together with my a priori knowledge
-of the characteristics of both samples and references.[8] We will use
+of the characteristics of both samples and references.[9] We will use
 the same data set to illustrate the impacts of reference selections in
 scaling normalization in [Lab 3.1](###%203.1%20Reference%20choices).
 Alignment of `log2FC` against housekeeping or normalizer protein(s) is
@@ -569,7 +570,7 @@ normPrn(
     maxit = 200, 
     epsilon = 1e-05, 
     
-    filter_by = exprs(n_psm >= 3, n_pep >= 2),  
+    filter_by = exprs(prot_n_psm >= 3, prot_n_pep >= 2),    
 )
 ```
 
@@ -581,14 +582,14 @@ of ratio profiles:
 prnHist(
   scale_log2r = FALSE, 
   ncol = 10,
-  # filter_by = exprs(n_psm >= 10), # diy
+  # filter_by = exprs(pep_n_psm >= 10), 
 )
 
 # with scaling
 prnHist(
   scale_log2r = TRUE, 
   ncol = 10, 
-  # filter_by = exprs(n_psm >= 10), # diy
+  # filter_by = exprs(pep_n_psm >= 10), 
 )
 ```
 
@@ -632,7 +633,7 @@ linked to the newly created column:
 
 ``` r
 normPep(
-    group_pep_by = gene, 
+    # group_pep_by = gene, # depreciated
     method_psm_pep = median, 
     method_align = MGKernel, 
     range_log2r = c(5, 95), 
@@ -642,13 +643,15 @@ normPep(
     maxit = 200, 
     epsilon = 1e-05, 
     
-    filter_by = exprs(n_psm >= 2),
+    filter_by = exprs(prot_n_psm >= 2),
     # filter_by_sp = exprs(species == "human"), 
     col_refit = Select_sub,
 )
 ```
 
-### 1.4 Summarize MaxQuant results
+### 1.4 Summarize MaxQuant results (under construction)
+
+Under construction use `version 1.1` for now.
 
 In this section, we will process MaxQuant PSMs using the same set of
 data from CPTAC.
@@ -729,7 +732,7 @@ normPep(
     seed = 749662, 
     maxit = 200, 
     epsilon = 1e-05, 
-    # filter_by = exprs(n_psm >= 2),
+    # filter_by = exprs(pep_n_psm >= 2),
     # filter_by_sp = exprs(species == "human"), 
 )
 
@@ -746,7 +749,7 @@ normPrn(
     seed = 749662, 
     maxit = 200, 
     epsilon = 1e-05, 
-    # filter_by = exprs(n_pep >= 2),    
+    # filter_by = exprs(pep_n_pep >= 2),    
 )
 ```
 
@@ -1173,7 +1176,7 @@ anal_prnTrend(
   col_order = Order,
   n_clust = c(5:8), 
   
-  filter_by_npep = exprs(n_pep >= 2),
+  filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # visualization
@@ -1181,7 +1184,7 @@ plot_prnTrend(
   col_order = Order,
   n_clust = 6, 
   
-  filter_by_npep = exprs(n_pep >= 4),
+  filter_by_npep = exprs(prot_n_pep >= 4),
 )
 ```
 
@@ -1215,7 +1218,7 @@ anal_prnNMF(
   col_group = Group, # optional a priori knowledge of sample groups
   r = c(5:8),
   nrun = 200, 
-  filter_by_npep = exprs(n_pep >= 2),
+  filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # consensus heat map
@@ -1638,34 +1641,43 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
 [1] The default file names begin with letter `F`, followed by six digits
 and ends with `.csv` in name extension.
 
-[2] To extract the names of RAW MS files under a `raw_dir` folder:
+[2] There are cases that the same peptide sequence being assigned to
+different proteins remain unambiguous. For example, peptide `MENGQSTAAK`
+can be found from both the middle region of proteins `NP_510965` and the
+N-terminal of protein `NP_001129505`. In case of the additional
+information of peptide N-terminal acetylation, the sequence can only
+come from `NP_001129505` between the two candidate proteins. In addition
+to handling such exceptions, the nomenclature in `proteoQ` will annotate
+the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.
+
+[3] To extract the names of RAW MS files under a `raw_dir` folder:
 `extract_raws(raw_dir)`. Very occasionally, there may be RAW files
 without PSM contributions. In this case, the file names will be shown as
 missing by the program and need to be removed from `expt_smry.xlsx` or
 `frac_smry.xlsx`. The function `extract_psm_raws(dat_dir)` was developed
 to extract the list of RAW files that are actually present in PSM files.
 
-[3] The sample removal and PSM re-processing can be achieved by deleting
+[4] The sample removal and PSM re-processing can be achieved by deleting
 the corresponding entries under the column `Sample_ID` in
 `expt_smry.xlsx`, followed by the re-execution of `normPSM()`.
 
-[4] A pseudonym approach used in Tidyverse, such as `starts_with`,
+[5] A pseudonym approach used in Tidyverse, such as `starts_with`,
 `contains` may be easier to work with for logical conditions and need
 implementation.
 
-[5] Density kernel estimates can occasionally capture spikes in the
+[6] Density kernel estimates can occasionally capture spikes in the
 profiles of log2FC during data alignment. Users will need to inspect the
 alignment of ratio histograms and may optimize the data normalization in
 full with different combinations of tuning parameters or in part against
 a subset of samples, before proceeding to the next steps.
 
-[6] `normPep()` will report log2FC results both before and after the
+[7] `normPep()` will report log2FC results both before and after the
 scaling of standard deviations.
 
-[7] System parameters will be automatically updated from the modified
+[8] System parameters will be automatically updated from the modified
 `expt_smry.xlsx`
 
-[8] The default is `scale_log2r = TRUE` throughout the package. When
+[9] The default is `scale_log2r = TRUE` throughout the package. When
 calling functions involved parameter `scale_log2r`, users can specify
 explicitly `scale_log2r = FALSE` or define its value under the global
 environment.

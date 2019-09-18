@@ -932,12 +932,12 @@ match_identifier <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene
 }
 
 
-#' Matches the current id to the id in normPSM
+#' Matches the current pep_id to the pep_id in normPSM
 #' @param id.
 #'
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
-match_normPSM_id <- function (id = c("pep_seq")) {
+match_normPSM_pepid <- function (id = c("pep_seq")) {
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
 
   call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPSM.txt"), check.names = FALSE,
@@ -956,15 +956,15 @@ match_normPSM_id <- function (id = c("pep_seq")) {
 }
 
 
-#' Matches the current id to the id in normPep
+#' Matches the current prot_id to the prot_id in normPSM
 #' @param id.
 #'
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
-match_normPep_id <- function (id = c("gene")) {
-  stopifnot(id %in% c("gene", "prot_acc"))
+match_normPSM_protid <- function (id = c("prot_acc")) {
+  stopifnot(id %in% c("prot_acc", "gene"))
   
-  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPep.txt"), check.names = FALSE,
+  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPSM.txt"), check.names = FALSE,
                                  header = TRUE, sep = "\t", comment.char = "#"),
                         error = function(e) NA)
   
@@ -1114,32 +1114,97 @@ replace_na_genes <- function(df, acc_type) {
 }
 
 
-#' Add peptide start and end positions
+#' Find peptide start and end positions
 #'
-#' \code{annotPeppos} annotates the start and the end positions of peptides in
+#' \code{find_pep_pos} finds the start and the end positions of peptides in
 #' ascribed proteins description based on the \code{fasta}.
 #'
-#' @import dplyr purrr rlang stringr seqinr
+#' @import dplyr purrr rlang stringr seqinr tidyr
+#' @importFrom magrittr %>% %$%
+find_pep_pos <- function (prot_acc, pep_seq, fasta) {
+  fasta_sub <- fasta %>% .[names(.) == prot_acc]
+  pep_seq <- as.character(pep_seq)
+  
+  if (!rlang::is_empty(fasta_sub)) {
+    pep_pos <- stringr::str_locate(fasta_sub, pattern = pep_seq)
+    
+    pos_bf <- pep_pos[1] - 1
+    pos_af <- pep_pos[2] + 1
+    
+    pep_res_before <- stringr::str_sub(fasta_sub, pos_bf, pos_bf)
+    pep_res_after <- stringr::str_sub(fasta_sub, pos_af, pos_af)
+    
+    # Mascot can alter the original sequence in fasta
+    # prot_acc: "XP_003960355", original "QERFCQXK" becomes "QERFCQVK"
+    if (any(is.na(c(pep_res_before, pep_res_after)))) {
+      pep_pos <- cbind(pep_seq, pep_res_before = NA, start = NA, end = NA, 
+                       pep_res_after = NA, prot_acc = prot_acc, is_tryptic = NA)
+      
+      return(pep_pos)
+    }
+    
+    if (nchar(pep_res_before) == 0) pep_res_before <- "-"
+    if (nchar(pep_res_after) == 0) pep_res_after <- "-"
+    
+    # ADVSLPSMQGDLK|NP_612429: not "E.ADVSLPSMQGDLK.T" but "K.ADVSLPSMQGDLK.T"
+    if (pep_res_before %in% c("K", "R", "-")) { # the first match is tryptic
+      pep_pos <- cbind(pep_seq, pep_res_before, pep_pos, pep_res_after, prot_acc, is_tryptic = TRUE)
+    } else if (pep_res_before == "M" & pep_pos[1] == 2) { # the first match is also tryptic
+      pep_pos <- cbind(pep_seq, pep_res_before, pep_pos, pep_res_after, prot_acc, is_tryptic = TRUE)
+    } else { # the first match is non-tryptic
+      pep_seq_new <- paste0(c("K", "R"), pep_seq)
+      pep_pos_new_all <- purrr::map(pep_seq_new, ~ str_locate(fasta_sub, .x))
+      ok_pos <- purrr::map_lgl(pep_pos_new_all, ~ !is.na(.x[[1]]))
+      
+      if (sum(ok_pos) > 0) { # tryptic match existed
+        pep_pos_new <- pep_pos_new_all[[which(ok_pos)[1]]]
+        
+        pos_bf_new <- pep_pos_new[1]
+        pos_af_new <- pep_pos_new[2] + 1
+        
+        pep_res_before_new <- stringr::str_sub(fasta_sub, pos_bf_new, pos_bf_new)
+        pep_res_after_new <- stringr::str_sub(fasta_sub, pos_af_new, pos_af_new)
+        
+        pep_pos_new[1] <- pep_pos_new[1] + 1
+        
+        pep_pos <- cbind(pep_seq, pep_res_before_new, pep_pos_new, pep_res_after_new, prot_acc, is_tryptic = TRUE)        
+      } else { # no tryptic matches
+        pep_pos <- cbind(pep_seq, pep_res_before, pep_pos, pep_res_after, prot_acc, is_tryptic = FALSE)
+      }
+    }
+  } else { # no fasta matches
+    pep_pos <- cbind(pep_seq, pep_res_before = NA, start = NA, end = NA, 
+                     pep_res_after = NA, prot_acc = prot_acc, is_tryptic = FALSE)
+  }
+}
+
+
+#' Annotation of peptide positions and adjacent amino acid residues
+#'
+#' \code{annotPeppos} annotates the start and the end positions of peptides in
+#' ascribed proteins description based on the \code{fasta}. It also annotes the
+#' preceding and the following AA residues.
+#'
+#' @import dplyr purrr rlang stringr seqinr tidyr
 #' @importFrom magrittr %>% %$%
 annotPeppos <- function (df, fasta){
   stopifnot(all(c("prot_acc", "pep_seq") %in% names(df)))
-  
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
   acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
   stopifnot(length(acc_type) == 1)
   
-  if (acc_type == "refseq_acc") {
-    key <- "refseq_acc"
-  } else if (acc_type %in% "uniprot_id") {
-    key <- "uniprot_id"
-  } else if (acc_type %in% "uniprot_acc") {
-    key <- "uniprot_acc"
-  } else {
-    warning("Unkown accession type.")
-  }
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+
+  # ok cases that same `pep_seq` but different `prot_acc`
+  # (K)	MENGQSTAAK	(L) NP_510965
+  # (-)	MENGQSTAAK	(L) NP_001129505  
   
   df <- df %>% 
-    dplyr::mutate(prot_acc = gsub("^.*\\|(.*)\\|.*$", "\\1", prot_acc))
+    dplyr::mutate(prot_acc = gsub("^.*\\|(.*)\\|.*$", "\\1", prot_acc)) %>% 
+    dplyr::mutate(pep_prn = paste(pep_seq, prot_acc, sep = "|"))
+
+  df_pep_prn <- df %>% 
+    dplyr::filter(!duplicated(pep_prn)) %>% 
+    dplyr::select(c("pep_seq", "prot_acc")) 
   
   if (!is.null(fasta)) {
     if (all(file.exists(fasta))) {
@@ -1147,27 +1212,19 @@ annotPeppos <- function (df, fasta){
         seqinr::read.fasta(.x, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
       }) %>% do.call(`c`, .) %>% 
         `names<-`(gsub("^.*\\|(.*)\\|.*$", "\\1", names(.))) %>% 
-        .[names(.) %in% unique(df$prot_acc)]
+        .[names(.) %in% unique(df_pep_prn$prot_acc)]
       
       if (length(fasta) == 0) {
         stop("No fasta entries match protein accessions; probably wrong fasta files.", 
              call. = FALSE)
       }
       
-      pep_pos_all <- purrr::map2(as.list(df$prot_acc), as.list(df$pep_seq), ~ {
-        fasta_sub <- fasta %>% .[names(.) == .x]
-        pep_seq <- as.character(.y)
-        
-        if (!rlang::is_empty(fasta_sub)) {
-          pep_pos <- str_locate(fasta_sub, pattern = pep_seq)
-          pep_pos <- cbind(pep_seq, pep_pos)
-        } else {
-          pep_pos <- cbind(pep_seq, start = NA, end = NA)
-        }
-      }) %>% 
+      pep_pos_all <- purrr::map2(as.list(df_pep_prn$prot_acc), as.list(df_pep_prn$pep_seq), 
+                                 find_pep_pos, fasta) %>% 
         do.call(rbind, .) %>% 
-        `colnames<-`(c("pep_seq", "pep_start", "pep_end")) %>% 
-        data.frame(check.names = FALSE)
+        `colnames<-`(c("pep_seq", "pep_res_before", "pep_start", "pep_end", "pep_res_after", "prot_acc", "is_tryptic")) %>% 
+        data.frame(check.names = FALSE) %>% 
+        tidyr::unite(pep_prn, pep_seq, prot_acc, sep = "|", remove = TRUE)
     } else {
       stop("Wrong FASTA file path or names.", call. = FALSE)
     }
@@ -1177,7 +1234,14 @@ annotPeppos <- function (df, fasta){
   
   rm(fasta)
   
-  df %>% dplyr::left_join(pep_pos_all, by = "pep_seq")
+  if ("pep_res_before" %in% names(df)) pep_pos_all$pep_res_before <- NULL
+  if ("pep_res_after" %in% names(df)) pep_pos_all$pep_res_after <- NULL
+  if ("pep_start" %in% names(df)) pep_pos_all$pep_start <- NULL
+  if ("pep_end" %in% names(df)) pep_pos_all$pep_end <- NULL
+
+  df <- df %>% 
+    dplyr::left_join(pep_pos_all, by = "pep_prn") %>% 
+    dplyr::select(-pep_prn)
 }
 
 
@@ -1250,7 +1314,6 @@ calc_cover <- function(df, id, fasta = NULL) {
             Make sure the fasta file is correct.")
   }
   
-
   df <- df %>%
     dplyr::select(prot_acc, pep_start, pep_end) %>%
     dplyr::mutate(index = row_number()) %>% 
@@ -1280,9 +1343,10 @@ calc_cover <- function(df, id, fasta = NULL) {
     dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>%
     dplyr::mutate(prot_cover = round(prot_cover * 100, digits = 1)) %>%
     dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
-
+  
   return(df)
 }
+
 
 
 #' Matches formulas to those in calls to pepSig or prnSig
@@ -1465,82 +1529,6 @@ match_gset_nm <- function (id = c("go_sets", "kegg_sets", "c2_msig")) {
 }
 
 
-#' Add start and end positions and preceding and succeeding residues of peptides
-#'
-#' \code{annotPeppos_mq} annotates start and end positions and the preceding and
-#' succeeding residues of peptides.
-#'
-#' @import dplyr purrr rlang stringr seqinr
-#' @importFrom magrittr %>% %$%
-annotPeppos_mq <- function (df, fasta){
-  stopifnot(all(c("prot_acc", "pep_seq") %in% names(df)))
-  
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
-  acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
-  stopifnot(length(acc_type) == 1)
-  
-  if (acc_type == "refseq_acc") {
-    key <- "refseq_acc"
-  } else if (acc_type %in% "uniprot_id") {
-    key <- "uniprot_id"
-  } else if (acc_type %in% "uniprot_acc") {
-    key <- "uniprot_acc"
-  } else {
-    warning("Unkown accession type.")
-  }
-  
-  df <- df %>% 
-    dplyr::mutate(prot_acc = gsub("^.*\\|(.*)\\|.*$", "\\1", prot_acc))
-
-  if (!is.null(fasta)) {
-    if (all(file.exists(fasta))) {
-      fasta <- purrr::map(fasta, ~ {
-        seqinr::read.fasta(.x, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
-      }) %>% do.call(`c`, .) %>% 
-        `names<-`(gsub("^.*\\|(.*)\\|.*$", "\\1", names(.))) %>% 
-        .[names(.) %in% unique(df$prot_acc)]
-      
-      if (length(fasta) == 0) {
-        stop("No fasta entries match protein accessions; probably wrong fasta files.", 
-             call. = FALSE)
-      }
-      
-      pep_pos_all <- purrr::map2(as.list(df$prot_acc), as.list(df$pep_seq), ~ {
-        fasta_sub <- fasta %>% .[names(.) == .x]
-        pep_seq <- as.character(.y)
-        
-        if (!rlang::is_empty(fasta_sub)) {
-          pep_pos <- str_locate(fasta_sub, pattern = pep_seq)
-          pos_bf <- pep_pos[1] - 1
-          pos_af <- pep_pos[2] + 1
-          
-          pep_res_before <- str_sub(fasta_sub, pos_bf, pos_bf)
-          pep_res_after <- str_sub(fasta_sub, pos_af, pos_af)
-          
-          if (nchar(pep_res_before) == 0) pep_res_before <- "-"
-          if (nchar(pep_res_after) == 0) pep_res_after <- "-"
-          
-          pep_pos <- cbind(pep_seq, pep_res_before, pep_pos, pep_res_after)
-        } else {
-          pep_pos <- cbind(pep_seq, pep_res_before = NA, start = NA, end = NA, pep_res_after = NA)
-        }
-      }) %>% 
-        do.call(rbind, .) %>% 
-        `colnames<-`(c("pep_seq", "pep_res_before", "pep_start", "pep_end", "pep_res_after")) %>% 
-        data.frame(check.names = FALSE)
-    } else {
-      stop("Wrong FASTA file path or names.", call. = FALSE)
-    }
-  } else {
-    stop("FASTA file not provided.")
-  }
-  
-  rm(fasta)
-  
-  df %>% dplyr::left_join(pep_pos_all, by = "pep_seq")
-}
-
-
 #' Filter rows
 #'
 #' @param df; data frame. 
@@ -1666,5 +1654,26 @@ rptr_violin <- function(df, filepath, width, height) {
     theme_psm_violin
   
   try(ggsave(filepath, p, width = width, height = height, units = "in"))
+}
+
+
+#' phospho counts
+count_phosphopeps <- function() {
+  df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
+                 header = TRUE, sep = "\t", comment.char = "#") %>% 
+    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
+  
+  id <- match_normPSM_pepid()
+  
+  df_phos <- df %>% dplyr::filter(grepl("[sty]", .[[id]]))
+  
+  n_phos_peps <- nrow(df_phos)
+  n_phos_sites <- stringr::str_count(df_phos[[id]], "[sty]") %>% sum()
+  
+  write.csv(
+    data.frame(n_peps = n_phos_peps, n_sites = n_phos_sites), 
+    file.path(dat_dir, "Peptide\\cache", "phos_pep_nums.csv"), 
+    row.names = FALSE
+  )
 }
 

@@ -35,19 +35,20 @@ load_expts()
 ## part 2 --- summarization of PSMs to peptides and proteins
 # PSM tables
 normPSM(
-  group_psm_by = pep_seq, 
-  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
-  rptr_intco = 3000,
-  rm_craps = TRUE,
-  rm_krts = FALSE,
-  rm_outliers = FALSE, 
-  annot_kinases = TRUE, 
-  plot_rptr_int = TRUE, 
-  plot_log2FC_cv = TRUE, 
-  
-  filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
-  filter_by_more = exprs(pep_rank == 1),
+	group_psm_by = pep_seq, 
+	group_pep_by = gene, 
+	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+						"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+	rptr_intco = 3000,
+	rm_craps = TRUE,
+	rm_krts = FALSE,
+	rm_outliers = FALSE, 
+	annot_kinases = TRUE, 
+	plot_rptr_int = TRUE, 
+	plot_log2FC_cv = TRUE, 
+	
+	filter_peps = exprs(pep_expect <= .1, pep_score >= 15), 
+	filter_by_more = exprs(pep_rank == 1),
 )
 
 # optional: purge of PSM groups under the same peptide IDs
@@ -55,7 +56,6 @@ purgePSM(max_cv = 0.5, min_n = 2)
 
 # peptide tables
 normPep(
-	group_pep_by = gene, 
 	method_psm_pep = median, 
 	method_align = MGKernel, 
 	range_log2r = c(5, 95), 
@@ -88,7 +88,7 @@ pepHist(
 	xmax = 1,
 	ncol = 10, 
 	
-	filter_by = exprs(n_psm >= 10), 
+	filter_by = exprs(pep_n_psm >= 10), 
 	filename = "pepHist_npsm10.png", 
 )
 
@@ -108,7 +108,6 @@ pepHist(
 
 # renormalization of peptide data for selected samples
 normPep(
-	group_pep_by = gene, 
 	method_psm_pep = median, 
 	method_align = MGKernel, 
 	range_log2r = c(5, 95), 
@@ -132,6 +131,20 @@ normPrn(
 	epsilon = 1e-05, 
 )
 
+# examplary protein tables with data prefiltration
+normPrn(
+    method_pep_prn = median, 
+    method_align = MGKernel, 
+    range_log2r = c(20, 95), 
+    range_int = c(5, 95), 
+    n_comp = 2, 
+    seed = 749662, 
+    maxit = 200, 
+    epsilon = 1e-05, 
+    
+    filter_by = exprs(prot_n_psm >= 5, prot_n_pep >= 2),  
+)
+
 # protein histograms with scaling
 prnHist(
 	scale_log2r = TRUE,
@@ -146,7 +159,7 @@ prnHist(
 	xmin = -2,
 	xmax = 2,
 	ncol = 10, 
-	filter_by = exprs(n_psm >= 20), 
+	filter_by = exprs(prot_n_psm >= 20), 
 	filename = "prnHist_npsm_20.png", 	
 )
 
@@ -198,7 +211,7 @@ pepMDS(
 	show_ids = FALSE,
 	width = 10,
 	height = 3.75,
-	filter_by = exprs(n_psm >= 20), 
+	filter_by = exprs(pep_n_psm >= 20), 
 	filename = "pepMDS_npsm_20.png",	
 )
 
@@ -234,7 +247,7 @@ prnMDS(
 	show_ids = FALSE, 
 	width = 8,
 	height = 4,
-	filter_by = exprs(n_pep > 5), 
+	filter_by = exprs(prot_n_pep > 5), 
 	filename = "prnMDS_npep_5.png",		
 )
 
@@ -411,7 +424,7 @@ anal_prnTrend(
   scale_log2r = TRUE,
   col_order = Order,
   n_clust = c(5:8), 
-  filter_by_npep = exprs(n_pep >= 2),
+  filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # protein trend visualization with sample-order supervision
@@ -431,7 +444,7 @@ anal_prnNMF(
   col_group = Group,
   r = c(5:8),
   nrun = 200, 
-  filter_by_npep = exprs(n_pep >= 2),
+  filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # protein NMF: consensus heat maps

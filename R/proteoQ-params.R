@@ -352,6 +352,7 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #' # process PSMs with in-function filtration of data by `filter_`
 #' normPSM(
 #'   group_psm_by = pep_seq, 
+#'   group_pep_by = gene, 
 #'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
 #'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
 #'   rptr_intco = 3000,
@@ -372,7 +373,6 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'
 #' # peptides results with examplary `filter_...`
 #' normPep(
-#'   group_pep_by = gene, 
 #'   method_psm_pep = median, 
 #'   method_align = MGKernel, 
 #'   range_log2r = c(5, 95), 
@@ -382,7 +382,7 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'   maxit = 200, 
 #'   epsilon = 1e-05, 
 #'   
-#'   filter_by = exprs(n_psm >= 2),
+#'   filter_by = exprs(pep_n_psm >= 2),
 #'   # filter_by_sp = exprs(species == "human"), 
 #' )
 #' 
@@ -401,7 +401,7 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'   maxit = 200, 
 #'   epsilon = 1e-05, 
 #'   
-#'   filter_by = exprs(n_psm >= 5, n_pep >=2), 	
+#'   filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2), 	
 #' )
 #' 
 #' 
