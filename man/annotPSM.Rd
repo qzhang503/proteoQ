@@ -4,8 +4,8 @@
 \alias{annotPSM}
 \title{Annotates PSM results}
 \usage{
-annotPSM(group_psm_by = "pep_seq", fasta = NULL,
-  expt_smry = "expt_smry.xlsx", plot_rptr_int = TRUE,
+annotPSM(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
+  fasta = NULL, expt_smry = "expt_smry.xlsx", plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE, ...)
 }
 \arguments{
@@ -16,6 +16,12 @@ peptides with different variable modifications will be treated as different
 species. The early decision in data grouping will inform the downstream
 purging (\code{\link{purgePSM}}) and summarization (\code{\link{normPep}})
 of PSM data.}
+
+\item{group_pep_by}{A character string for the grouping of peptide entries. At
+the \code{prot_acc} default, descriptive statistics will be calculated based
+on the same \code{prot_acc} groups. At \code{group_pep_by = gene}, proteins
+with the same gene name but different accession numbers will be treated as
+one group.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those

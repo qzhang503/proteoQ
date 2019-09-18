@@ -2,11 +2,12 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{annotPeppos}
 \alias{annotPeppos}
-\title{Add peptide start and end positions}
+\title{Annotation of peptide positions and adjacent amino acid residues}
 \usage{
 annotPeppos(df, fasta)
 }
 \description{
 \code{annotPeppos} annotates the start and the end positions of peptides in
-ascribed proteins description based on the \code{fasta}.
+ascribed proteins description based on the \code{fasta}. It also annotes the
+preceding and the following AA residues.
 }

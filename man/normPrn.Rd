@@ -5,9 +5,10 @@
 \title{Reports Protein Results}
 \usage{
 normPrn(id = c("prot_acc", "gene"), method_pep_prn = c("median",
-  "mean", "weighted.mean", "top.3"), method_align = c("MC", "MGKernel"),
-  range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL,
-  seed = NULL, col_refit = NULL, cache = TRUE, ...)
+  "mean", "weighted.mean", "top.3"), use_unique_pep = TRUE,
+  method_align = c("MC", "MGKernel"), range_log2r = c(10, 90),
+  range_int = c(5, 95), n_comp = NULL, seed = NULL,
+  col_refit = NULL, cache = TRUE, ...)
 }
 \arguments{
 \item{id}{Character string; the variable to summarise peptides into proteins.
@@ -24,6 +25,10 @@ descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")}. The representative \code{log10-intensity} of reporter
 ions at the peptide levels (from \code{\link{normPep}}) will be the weigth
 when summarising \code{log2FC} with \code{top.3} or \code{weighted.mean}.}
+
+\item{use_unique_pep}{Logical; if TRUE, only peptides that are unique by
+protein groups or families will be used to summarise the \code{log2FC} and
+the \code{intensity} of peptides by protein entries.}
 
 \item{method_align}{Character string or a list of gene symbols; the method to
 align the \code{log2FC} of peptide/protein entries across samples.
@@ -116,16 +121,16 @@ normalization \cr }
 \dontrun{
 # proteins results with examplary `filter_...`
 normPrn(
-  method_pep_prn = median, 
-  method_align = MGKernel, 
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
-  n_comp = 2, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-  
-  filter_by = exprs(n_psm >= 5, n_pep >=2), 	
+  method_pep_prn = median,
+  method_align = MGKernel,
+  range_log2r = c(20, 95),
+  range_int = c(5, 95),
+  n_comp = 2,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05,
+
+  filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2),
 )
 
 }

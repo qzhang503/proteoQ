@@ -54,6 +54,8 @@ normPSM(
 	annot_kinases = TRUE,	
 	plot_rptr_int = TRUE, 
 	plot_log2FC_cv = TRUE, 
+	
+	# new column key `pep_isunique`
 	filter_peps = exprs(PEP <= 0.1), 
 )
 

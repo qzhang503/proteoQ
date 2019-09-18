@@ -26,5 +26,6 @@ smaller than \code{min_n} will be replaced with NA.}
 criteria.
 }
 \details{
-The CV of peptides are calculated from contributing PSMs.
+The CV of peptides are calculated from contributing PSMs. The calculation is
+per TMT experiment and per LCMS run.
 }

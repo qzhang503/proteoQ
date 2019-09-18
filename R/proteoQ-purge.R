@@ -380,7 +380,8 @@ purge_by_n <- function (df, id, min_n) {
 #'\code{purgePSM} removes \code{peptide} entries from PSM tables by selection
 #'criteria.
 #'
-#'The CV of peptides are calculated from contributing PSMs.
+#'The CV of peptides are calculated from contributing PSMs. The calculation is
+#'per TMT experiment and per LCMS run.
 #'
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv
@@ -400,7 +401,7 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
   
-  id <- match_normPSM_id()
+  id <- match_normPSM_pepid()
   
   stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
   stopifnot(min_n > 0 & min_n%%1 == 0)
@@ -458,7 +459,7 @@ purgePep <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
   
-  id <- match_normPep_id()
+  id <- match_normPSM_protid()
   
   stopifnot(id %in% c("prot_acc", "gene"))
   stopifnot(min_n > 0 & min_n%%1 == 0)
