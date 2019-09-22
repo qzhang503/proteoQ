@@ -279,10 +279,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 	}
 	
-	# cat("Available column keys for data filtration: \n")
-	# cat(paste0(names(df), "\n"))
-	# df <- df %>% filters_in_call(!!!lang_dots)
-
 	quietly_out <- purrr::quietly(normMulGau)(
 	  df = df, 
 	  method_align = method_align, 

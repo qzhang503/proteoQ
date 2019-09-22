@@ -1265,15 +1265,6 @@ splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = F
   # MaxQuant exception: empty string under `Proteins`
   df <- df %>% dplyr::filter(as.character(.$Proteins) > 0)
 
-  # added column key(s) before `filters_in_call`
-  if (pep_unique_by == "group") {
-    df <- df %>% 
-      dplyr::mutate(pep_isunique = ifelse(grepl(";", `Protein group IDs`), 0, 1))
-  } else if (pep_unique_by == "protein") {
-    df <- df %>% 
-      dplyr::mutate(pep_isunique = ifelse(grepl(";", prot_acc), 0, 1))
-  }
-  
   dots <- rlang::enexprs(...)
   lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% lang_dots]
@@ -1286,9 +1277,15 @@ splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = F
     filters_in_call(!!!lang_dots) %>% 
     dplyr::rename(ID = id)
   
-  ## users' decision
-  # df <- df %>% dplyr::filter(pep_isunique == 1)
-
+  # added column key(s) before `filters_in_call`
+  if (pep_unique_by == "group") {
+    df <- df %>% 
+      dplyr::mutate(pep_isunique = ifelse(grepl(";", `Protein group IDs`), 0, 1))
+  } else if (pep_unique_by == "protein") {
+    df <- df %>% 
+      dplyr::mutate(pep_isunique = ifelse(grepl(";", prot_acc), 0, 1))
+  }
+  
   if (corrected_int) {
     df <- df %>% 
       dplyr::select(-grep("^Reporter\\s{1}intensity\\s{1}\\d+$", names(.)))
@@ -1521,6 +1518,43 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 			  dplyr::mutate_at(vars(grep("^log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
 			  dplyr::mutate_at(vars(grep("^N_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
 			  dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 4))
+			
+			# add column `pep_n_psm`
+			pep_n_psm <- df %>%
+			  dplyr::select(!!rlang::sym(group_psm_by)) %>%
+			  dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+			  dplyr::summarise(pep_n_psm = n())
+			
+			prot_n_psm <- df %>%
+			  dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+			  dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+			  dplyr::summarise(prot_n_psm = n())
+			
+			prot_n_pep <- df %>%
+			  dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+			  dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
+			  dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+			  dplyr::summarise(prot_n_pep = n())
+			
+			df <- df %>% dplyr::left_join(pep_n_psm, by = group_psm_by)
+
+			df <- dplyr::bind_cols(
+			  df %>% dplyr::select(grep("^pep_", names(.))), 
+			  df %>% dplyr::select(-grep("^pep_", names(.))), 
+			)
+			
+			df <- list(df, prot_n_psm, prot_n_pep) %>%
+			  purrr::reduce(left_join, by = group_pep_by)
+			
+			df <- dplyr::bind_cols(
+			  df %>% dplyr::select(grep("^prot_", names(.))), 
+			  df %>% dplyr::select(-grep("^prot_", names(.))), 
+			)
+			
+			df <- dplyr::bind_cols(
+			  df %>% dplyr::select(-grep("[RI]{1}[0-9]{3}[NC]*", names(.))), 
+			  df %>% dplyr::select(grep("[RI]{1}[0-9]{3}[NC]*", names(.))), 
+			)
       
       write.table(df, file.path(dat_dir, "PSM", paste0(out_fn[injn_idx, 1], ".txt")),
                   sep = "\t", col.names = TRUE, row.names = FALSE)

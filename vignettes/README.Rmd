@@ -9,6 +9,14 @@ output:
     toc: yes
     toc_depth: 4
     variant: markdown_github
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  github_document:
+    fig_caption: yes
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -17,14 +25,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  github_document:
-    fig_caption: yes
-    toc: yes
-  word_document:
-    toc: yes
 ---
 
 ---
@@ -143,7 +143,7 @@ copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 ```
 
 #### 1.1.2 Prepare Mascot PSM data
-The workflow begins with PSM table(s) in a `.csv` format from the [Mascot](https://http://www.matrixscience.com/) search engine. When exporting PSM results, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. The options of `Header` and `Peptide quantitation` under `Peptide Match Information` should be checked to include the search parameters and quantitative values, respectively. The selections of both `Start` and `End` are also recommend. The file name(s) of the exports will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in name extension.]  
+The workflow begins with PSM table(s) in a `.csv` format from the [Mascot](https://http://www.matrixscience.com/) search engine. When exporting PSM results, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. The options of `Header` and `Peptide quantitation` under `Peptide Match Information` should be checked to include the search parameters and quantitative values, respectively. The selections of both `Start` and `End` are also recommended. The file name(s) of the exports will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in name extension.]  
 
 ```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_export <- "images\\mascot\\mascot_export.png"
@@ -223,7 +223,7 @@ At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence 
 
 PSM outliers will be assessed at a basis of per peptide and per sample at `rm_outliers = TRUE`, which can be a slow process for large data sets. To circumvent repeated efforts in the assessment of PSM outliers, we may set `rm_outliers = FALSE` and `plot_rptr_int = TRUE` when first executing `normPSM()`. We then visually inspect the distributions of reporter-ion intensity. Empirically, PSMs with reporter-ion intensity less than 3,000 are trimmed and  samples with median intensity that is 2/3 or less to the average of majority samples are removed from further analysis.^[The sample removal and PSM re-processing can be achieved by deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-execution of `normPSM()`.]   
 
-The `normPSM` function can take additional, user-defined arguments of `dot-dot-dot` [see @hwickham2019advr, ch. 6] for the row filtration of data using logical conditions. In the above example, we have limited ourselves to peptide entries with `pep_expect <= 0.1` and `pep_score >= 15` by supplying the variable argument (vararg) of `filter_peps`. We further filtered the data at `pep_rank == 1` with another vararg of `filter_by_more`. The creation and assignment of varargs need to follow a format of `filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the names of varargs on the lhs start with the character string of `filter_` to indicate the task of data filtration. On the rhs, `pep_expect`, `pep_isunique` and `pep_rank` are column keys that can be found from the PSM data.  
+The `normPSM` function can take additional, user-defined arguments of `dot-dot-dot` [see @hwickham2019advr, ch. 6] for the row filtration of data using logical conditions. In the above example, we have limited ourselves to peptide entries with `pep_expect <= 0.1` and `pep_score >= 15` by supplying the variable argument (vararg) of `filter_peps`. We further filtered the data at `pep_rank == 1` with another vararg of `filter_by_more`. The creation and assignment of varargs need to follow a format of `filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the names of varargs on the lhs start with the character string of `filter_` to indicate the task of data filtration. On the rhs, `pep_expect`, `pep_score` and `pep_rank` are column keys that can be found from the PSM data.  
 
 I am new to `R`. It looks like that base `R` does not support the direct assignment of logical expressions to function arguments. To get around this, I took advantage of the facility of non-standard evaluation in `rlang` package in that the logical conditions are supplied within the round parenthesis after `exprs`. Next, the `proteoQ` program will obtain the expression(s) on the rhs of each vararg statment by performing a bare evaluation using `rlang::eval_bare`. Following that, a tidy evaluation by `rlang::eval_tidy` will be coupled to a local facility in `proteoQ` to do the real work of data filtrations ([see @hwickham2019advr, ch. 20])^[A pseudonym approach used in Tidyverse, such as `starts_with`, `contains` may be easier to work with for logical conditions and need implementation.]. 
 
@@ -433,7 +433,6 @@ We then execute the following codes with argument `col_refit` being linked to th
   
 ```{r normPep_partial, eval = FALSE}
 normPep(
-	# group_pep_by = gene, # depreciated
 	method_psm_pep = median, 
 	method_align = MGKernel, 
 	range_log2r = c(5, 95), 
@@ -449,9 +448,7 @@ normPep(
 )
 ```
 
-### 1.4 Summarize MaxQuant results (under construction)
-Under construction use `version 1.1` for now...  
-
+### 1.4 Summarize MaxQuant results
 In this section, we will process MaxQuant PSMs using the same set of data from CPTAC.  
 
 #### 1.4.1 MaxQuant PSM tables
@@ -460,8 +457,14 @@ The name of a PSM file containg reporter-ion intensities is `msms.txt` defaulted
 The file sizes of the `msms.txt` are relatively large for data used in the demonstration. For simplicity, we will only use the subset that belong to batch one in the CPTAC example. Even so, direct installation by `devtools::install_github` is not yet feasible at this point for large files hosted through [LFS](https://git-lfs.github.com/). One resort is to install [Github Desktop](https://desktop.github.com/), find https://github.com/qiangzhang503/proteoQDB.git, fetch the files and make a local installation through something like `devtools::install(pkg  = "~\\GitHub\\proteoQDB")`. If all goes well with the local installation, we will load `proteoQDB` and copy over the PSM files therein to a working directory: 
 
 ```{r mq_psm_setup, include = TRUE, eval = FALSE}
-library(proteoQDB)
+# fasta files to database directory
+library(proteoQDA)
+copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
+copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 
+# examplary PSM data to working directory
+library(proteoQDB)
+dir.create("C:\\The\\MQ\\Example", recursive = TRUE, showWarnings = FALSE)
 dat_dir <- c("C:\\The\\MQ\\Example")
 cptac_mqpsm_txt(dat_dir)
 ```
@@ -469,9 +472,11 @@ cptac_mqpsm_txt(dat_dir)
 Similarly, we copy over the corresponding `expt_smry.xlsx` and `fract_smry.xlsx` files and load the experiment:  
 
 ```{r mq_psm_load, include = TRUE, eval = FALSE}
+# metadata to working directory
 cptac_mqpsm_expt(dat_dir)
 cptac_mqpsm_frac(dat_dir)
 
+# metadata upload
 library(proteoQ)
 load_expts()
 ```
@@ -482,13 +487,14 @@ We next process the PSM data from MaxQuant and perform peptide and protein norml
 # PSM
 normPSM(
   group_psm_by = pep_seq, 
+  group_pep_by = gene, 
   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
-  rptr_intco = 3000,
-  rm_craps = TRUE,
-  rm_krts = FALSE,
+  				"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  rptr_intco = 3000,					
   corrected_int = TRUE,
   rm_reverses = TRUE,
+  rm_craps = TRUE,
+  rm_krts = FALSE,
   rm_outliers = FALSE, 
   annot_kinases = TRUE,	
   plot_rptr_int = TRUE, 
@@ -502,17 +508,15 @@ purgePSM()
 
 # peptides
 normPep(
-	group_pep_by = gene, 
-	method_psm_pep = median, 
-	method_align = MGKernel, 
-	range_log2r = c(5, 95), 
-	range_int = c(5, 95), 
-	n_comp = 3, 
-	seed = 749662, 
-	maxit = 200, 
-	epsilon = 1e-05, 
-	# filter_by = exprs(pep_n_psm >= 2),
-	# filter_by_sp = exprs(species == "human"), 
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  # filter_by = exprs(pep_n_psm >= 2, species == "human"),
 )
 
 # optional peptide purging
@@ -520,15 +524,16 @@ purgePep()
 
 # proteins
 normPrn(
-	method_pep_prn = median, 
-	method_align = MGKernel, 
-	range_log2r = c(20, 95), 
-	range_int = c(5, 95), 
-	n_comp = 2, 
-	seed = 749662, 
-	maxit = 200, 
-	epsilon = 1e-05, 
-	# filter_by = exprs(pep_n_pep >= 2), 	
+  use_unique_pep = TRUE, 
+  method_pep_prn = median, 
+  method_align = MGKernel, 
+  range_log2r = c(20, 95), 
+  range_int = c(5, 95), 
+  n_comp = 2, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  filter_by = exprs(prot_n_pep >= 2),
 )
 ```
 
@@ -916,6 +921,7 @@ In this lab, we explore the effects of reference choices on data normalization. 
 
 ```{r W2 reference, eval = FALSE}
 # directory setup
+dir.create("C:\\The\\W2_ref\\Example", recursive = TRUE, showWarnings = FALSE)
 temp_dir <- "c:\\The\\W2_ref\\Example"
 library(proteoQDA)
 cptac_csv_1(temp_dir)
@@ -927,7 +933,8 @@ library(proteoQ)
 load_expts(temp_dir, expt_smry_ref_w2.xlsx)
 
 normPSM(
-	group_psm_by = pep_seq, 
+	group_psm_by = pep_seq,
+	group_pep_by = gene, 
 	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
 					"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
 	rptr_intco = 3000,
@@ -938,11 +945,10 @@ normPSM(
 	plot_rptr_int = TRUE, 
 	plot_log2FC_cv = TRUE, 
 	
-	filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+	filter_peps = exprs(pep_expect <= .1), 
 )
 
 normPep(
-	group_pep_by = gene, 
 	method_psm_pep = median, 
 	method_align = MGKernel, 
 	range_log2r = c(5, 95), 
@@ -971,6 +977,7 @@ We alternatively seek a "center-of-mass" representation for uses as references. 
 
 ```{r W2_and_W16 reference, eval = FALSE}
 # directory setup
+dir.create("C:\\The\\W2_W16_ref\\Example", recursive = TRUE, showWarnings = FALSE)
 temp_dir_2 <- "c:\\The\\W2_W16_ref\\Example"
 library(proteoQDA)
 cptac_csv_1(temp_dir_2)
@@ -983,7 +990,8 @@ load_expts(temp_dir_2, expt_smry_ref_w2_w16.xlsx)
 
 # PSM normalization
 normPSM(
-	group_psm_by = pep_seq, 
+	group_psm_by = pep_seq,
+	group_pep_by = gene, 
 	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
 					"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
 	rptr_intco = 3000,
@@ -994,12 +1002,11 @@ normPSM(
 	plot_rptr_int = TRUE, 
 	plot_log2FC_cv = TRUE, 
 	
-	filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+	filter_peps = exprs(pep_expect <= .1), 
 )
 
 # peptide normalization
 normPep(
-	group_pep_by = gene, 
 	method_psm_pep = median, 
 	method_align = MGKernel, 
 	range_log2r = c(5, 95), 
@@ -1041,7 +1048,8 @@ load_expts(temp_phospho_dir, expt_smry.xlsx)
 
 # PSM normalization
 normPSM(
-	group_psm_by = pep_seq_mod, 
+	group_psm_by = pep_seq_mod,
+	group_pep_by = gene, 
 	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
 					"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
 	rptr_intco = 3000,
@@ -1052,12 +1060,11 @@ normPSM(
 	plot_rptr_int = TRUE, 
 	plot_log2FC_cv = TRUE, 
 	
-	filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+	filter_peps = exprs(pep_expect <= .1), 
 )
 
 # peptide normalization
 normPep(
-	group_pep_by = gene, 
 	method_psm_pep = median, 
 	method_align = MGKernel, 
 	range_log2r = c(5, 95), 

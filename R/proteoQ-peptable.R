@@ -323,7 +323,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 										group_pep_by = c("prot_acc", "gene"), 
 										method_align = c("MC", "MGKernel"), range_log2r = c(10, 90),
 										range_int = c(5, 95), n_comp = NULL, seed = NULL, 
-										pep_unique_by = "group", 
 										annot_kinases = FALSE, 
 										col_refit = NULL, cache = TRUE, 
 										plot_log2FC_cv = TRUE, ...) {
@@ -355,7 +354,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	  id <- rlang::as_string(id)
 	  stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
 	}
-	
 	id <- match_normPSM_pepid()
 	
 	# depreciated; instead matched to normPSM()
@@ -366,7 +364,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	  group_pep_by <- rlang::as_string(group_pep_by)
 	  stopifnot(group_pep_by %in% c("prot_acc", "gene"))
 	}
-	
 	group_pep_by <- match_normPSM_protid()
 	
 	col_refit <- rlang::enexpr(col_refit)
@@ -414,8 +411,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	if (is.null(n_comp)) n_comp <- if(nrow(df) > 3000) 3L else 2L
 	n_comp <- n_comp %>% as.integer()
 	stopifnot(n_comp >= 2)
-	
-	pep_unique_by <- rlang::as_string(rlang::enexpr(pep_unique_by))
 	
 	dots <- rlang::enexprs(...)
 	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]

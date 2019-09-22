@@ -55,3 +55,6 @@ Imports:
     XML,
     downloader
 RoxygenNote: 6.1.1
+Remotes:
+  qzhang503/proteoQDA, 
+  qiangzhang503/proteoQDB

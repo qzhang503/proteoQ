@@ -8,9 +8,8 @@ normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
   "mean", "weighted.mean", "top.3", "mqpep"),
   group_pep_by = c("prot_acc", "gene"), method_align = c("MC",
   "MGKernel"), range_log2r = c(10, 90), range_int = c(5, 95),
-  n_comp = NULL, seed = NULL, pep_unique_by = "group",
-  annot_kinases = FALSE, col_refit = NULL, cache = TRUE,
-  plot_log2FC_cv = TRUE, ...)
+  n_comp = NULL, seed = NULL, annot_kinases = FALSE,
+  col_refit = NULL, cache = TRUE, plot_log2FC_cv = TRUE, ...)
 }
 \arguments{
 \item{id}{Character string; the variable for summarisation of \code{PSMs} into
@@ -64,12 +63,6 @@ standard deviation across samples. The default is between the 5th and the
 
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
-
-\item{pep_unique_by}{A character string for use in the filtration of peptide
-data from \code{MaxQuant}. The choice is in one of \code{c("group",
-"protein", "none")} At the \code{group} default, only peptides unique by
-protein groups will be kept. At \code{protein}, only peptides unique by
-protein entries will be kept. At \code{none}, all peptides will be kept.}
 
 \item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
 proteins.}

@@ -15,8 +15,7 @@
             proteins](#summarize-peptides-to-proteins)
     -   [1.3 Renormalize data for a subset of
         samples](#renormalize-data-for-a-subset-of-samples)
-    -   [1.4 Summarize MaxQuant results (under
-        construction)](#summarize-maxquant-results-under-construction)
+    -   [1.4 Summarize MaxQuant results](#summarize-maxquant-results)
         -   [1.4.1 MaxQuant PSM tables](#maxquant-psm-tables)
     -   [1.5 Workflow scripts](#workflow-scripts)
 -   [2 Basic informatics](#basic-informatics)
@@ -147,7 +146,7 @@ satisfying the principle of parsimony. The options of `Header` and
 `Peptide quantitation` under `Peptide Match Information` should be
 checked to include the search parameters and quantitative values,
 respectively. The selections of both `Start` and `End` are also
-recommend. The file name(s) of the exports will be taken as is.[1]
+recommended. The file name(s) of the exports will be taken as is.[1]
 
 <img src="images\mascot\mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
@@ -303,7 +302,7 @@ varargs need to follow a format of
 `filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the
 names of varargs on the lhs start with the character string of `filter_`
 to indicate the task of data filtration. On the rhs, `pep_expect`,
-`pep_isunique` and `pep_rank` are column keys that can be found from the
+`pep_score` and `pep_rank` are column keys that can be found from the
 PSM data.
 
 I am new to `R`. It looks like that base `R` does not support the direct
@@ -633,7 +632,6 @@ linked to the newly created column:
 
 ``` r
 normPep(
-    # group_pep_by = gene, # depreciated
     method_psm_pep = median, 
     method_align = MGKernel, 
     range_log2r = c(5, 95), 
@@ -649,9 +647,7 @@ normPep(
 )
 ```
 
-### 1.4 Summarize MaxQuant results (under construction)
-
-Under construction use `version 1.1` for now.
+### 1.4 Summarize MaxQuant results
 
 In this section, we will process MaxQuant PSMs using the same set of
 data from CPTAC.
@@ -676,8 +672,14 @@ with the local installation, we will load `proteoQDB` and copy over the
 PSM files therein to a working directory:
 
 ``` r
-library(proteoQDB)
+# fasta files to database directory
+library(proteoQDA)
+copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
+copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 
+# examplary PSM data to working directory
+library(proteoQDB)
+dir.create("C:\\The\\MQ\\Example", recursive = TRUE, showWarnings = FALSE)
 dat_dir <- c("C:\\The\\MQ\\Example")
 cptac_mqpsm_txt(dat_dir)
 ```
@@ -686,9 +688,11 @@ Similarly, we copy over the corresponding `expt_smry.xlsx` and
 `fract_smry.xlsx` files and load the experiment:
 
 ``` r
+# metadata to working directory
 cptac_mqpsm_expt(dat_dir)
 cptac_mqpsm_frac(dat_dir)
 
+# metadata upload
 library(proteoQ)
 load_expts()
 ```
@@ -703,13 +707,14 @@ backticks when applying varargs for data filtration.
 # PSM
 normPSM(
   group_psm_by = pep_seq, 
+  group_pep_by = gene, 
   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
-  rptr_intco = 3000,
-  rm_craps = TRUE,
-  rm_krts = FALSE,
+                "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  rptr_intco = 3000,                    
   corrected_int = TRUE,
   rm_reverses = TRUE,
+  rm_craps = TRUE,
+  rm_krts = FALSE,
   rm_outliers = FALSE, 
   annot_kinases = TRUE, 
   plot_rptr_int = TRUE, 
@@ -723,17 +728,15 @@ purgePSM()
 
 # peptides
 normPep(
-    group_pep_by = gene, 
-    method_psm_pep = median, 
-    method_align = MGKernel, 
-    range_log2r = c(5, 95), 
-    range_int = c(5, 95), 
-    n_comp = 3, 
-    seed = 749662, 
-    maxit = 200, 
-    epsilon = 1e-05, 
-    # filter_by = exprs(pep_n_psm >= 2),
-    # filter_by_sp = exprs(species == "human"), 
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  # filter_by = exprs(pep_n_psm >= 2, species == "human"),
 )
 
 # optional peptide purging
@@ -741,15 +744,16 @@ purgePep()
 
 # proteins
 normPrn(
-    method_pep_prn = median, 
-    method_align = MGKernel, 
-    range_log2r = c(20, 95), 
-    range_int = c(5, 95), 
-    n_comp = 2, 
-    seed = 749662, 
-    maxit = 200, 
-    epsilon = 1e-05, 
-    # filter_by = exprs(pep_n_pep >= 2),    
+  use_unique_pep = TRUE, 
+  method_pep_prn = median, 
+  method_align = MGKernel, 
+  range_log2r = c(20, 95), 
+  range_int = c(5, 95), 
+  n_comp = 2, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  filter_by = exprs(prot_n_pep >= 2),
 )
 ```
 
@@ -1308,6 +1312,7 @@ visualization of peptide `log2FC`.
 
 ``` r
 # directory setup
+dir.create("C:\\The\\W2_ref\\Example", recursive = TRUE, showWarnings = FALSE)
 temp_dir <- "c:\\The\\W2_ref\\Example"
 library(proteoQDA)
 cptac_csv_1(temp_dir)
@@ -1319,7 +1324,8 @@ library(proteoQ)
 load_expts(temp_dir, expt_smry_ref_w2.xlsx)
 
 normPSM(
-    group_psm_by = pep_seq, 
+    group_psm_by = pep_seq,
+    group_pep_by = gene, 
     fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
                     "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
     rptr_intco = 3000,
@@ -1330,11 +1336,10 @@ normPSM(
     plot_rptr_int = TRUE, 
     plot_log2FC_cv = TRUE, 
     
-    filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+    filter_peps = exprs(pep_expect <= .1), 
 )
 
 normPep(
-    group_pep_by = gene, 
     method_psm_pep = median, 
     method_align = MGKernel, 
     range_log2r = c(5, 95), 
@@ -1376,6 +1381,7 @@ the data summary and histogram visualization.
 
 ``` r
 # directory setup
+dir.create("C:\\The\\W2_W16_ref\\Example", recursive = TRUE, showWarnings = FALSE)
 temp_dir_2 <- "c:\\The\\W2_W16_ref\\Example"
 library(proteoQDA)
 cptac_csv_1(temp_dir_2)
@@ -1388,7 +1394,8 @@ load_expts(temp_dir_2, expt_smry_ref_w2_w16.xlsx)
 
 # PSM normalization
 normPSM(
-    group_psm_by = pep_seq, 
+    group_psm_by = pep_seq,
+    group_pep_by = gene, 
     fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
                     "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
     rptr_intco = 3000,
@@ -1399,12 +1406,11 @@ normPSM(
     plot_rptr_int = TRUE, 
     plot_log2FC_cv = TRUE, 
     
-    filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+    filter_peps = exprs(pep_expect <= .1), 
 )
 
 # peptide normalization
 normPep(
-    group_pep_by = gene, 
     method_psm_pep = median, 
     method_align = MGKernel, 
     range_log2r = c(5, 95), 
@@ -1456,7 +1462,8 @@ load_expts(temp_phospho_dir, expt_smry.xlsx)
 
 # PSM normalization
 normPSM(
-    group_psm_by = pep_seq_mod, 
+    group_psm_by = pep_seq_mod,
+    group_pep_by = gene, 
     fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
                     "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
     rptr_intco = 3000,
@@ -1467,12 +1474,11 @@ normPSM(
     plot_rptr_int = TRUE, 
     plot_log2FC_cv = TRUE, 
     
-    filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+    filter_peps = exprs(pep_expect <= .1), 
 )
 
 # peptide normalization
 normPep(
-    group_pep_by = gene, 
     method_psm_pep = median, 
     method_align = MGKernel, 
     range_log2r = c(5, 95), 
