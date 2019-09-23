@@ -227,6 +227,8 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
     # dplyr::mutate(log2Ratio = ifelse(is.na(log2Ratio), 0, log2Ratio))
   
   contrast_groups <- unique(df$contrast) %>% as.character()
+  
+  gsets <- gsets %>% .[purrr::map_lgl(., ~ length(.x) > min_size)]
 
   res <- purrr::map(gsets, gapa_summary, df, min_size * length(contrast_groups) * 2) 
   idx <- purrr::map_dbl(res, is.null)

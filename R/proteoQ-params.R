@@ -235,6 +235,8 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
   abbr_sp <- purrr::map_chr(species, sp_lookup)
   filelist <- map(abbr_sp, ~ paste0(gset_nms, "_", .x)) %>% unlist()
   
+  # added abbr_sp to GO terms
+  # $`hs|GO:0000018 regulation of DNA recombination`
   data(package = "proteoQ", list = filelist)
   gsets <- purrr::map(filelist, ~ try(get(.x))) %>% do.call(`c`, .)
   

@@ -249,6 +249,22 @@ foo <- function () {
 foo()
 
 
+# a case of same GO term but different species
+# add species name to GO data sets
+devtools::document("c:\\results\\r\\proteoq")
+species <- "rat"
+abbr_sp <- purrr::map_chr(species, sp_lookup)
+filename <- paste0("go_sets_", abbr_sp)
+data(package = "proteoQ", list = filename)
+
+temp <- get(filename)
+if (!grepl(paste0("^", abbr_sp), temp[1])) {
+  temp <- temp %>% 
+    `names<-`(paste(abbr_sp, names(.), sep = "_"))
+  assign(filename, temp)
+  save(list = filename, file = file.path("C:\\Results\\R\\proteoQ\\data", paste0(filename, ".RData")))
+}
+
 
 
 
@@ -481,9 +497,7 @@ save(list = "c2_msig_hs", file = file.path("C:\\Results\\R\\proteoQ\\data", past
 	
 	
 	
-	
-	
-	
+
 	
 	
 	
