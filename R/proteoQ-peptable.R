@@ -238,12 +238,13 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'  \code{pep_seq} or \code{pep_seq_mod} will be summarised into a single entry
 #'  of peptide. The value of \code{id} will match automatically to the value of
 #'  \code{group_psm_by} in \code{normPSM}.
-#'@param group_pep_by A character string for the grouping of peptide entries. At
-#'  the \code{prot_acc} default, descriptive statistics will be calculated based
-#'  on the same \code{prot_acc} groups. At \code{group_pep_by = gene}, proteins
-#'  with the same gene name but different accession numbers will be treated as
-#'  one group. The value of \code{group_pep_by} will match automatically to the
-#'  value of \code{group_pep_by} in \code{normPSM}.
+#'@param group_pep_by Depreciated: a character string for the grouping of
+#'  peptide entries. At the \code{prot_acc} default, descriptive statistics will
+#'  be calculated based on the same \code{prot_acc} groups. At
+#'  \code{group_pep_by = gene}, proteins with the same gene name but different
+#'  accession numbers will be treated as one group. The value of
+#'  \code{group_pep_by} will match automatically to the value of
+#'  \code{group_pep_by} in \code{normPSM}.
 #'@param method_psm_pep Character string; the method to summarise the
 #'  \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
 #'  The descriptive statistics includes \code{c("mean", "median", "top.3",
@@ -294,7 +295,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'
 #' @examples
 #' \dontrun{
-#' # peptides results with examplary `filter_...`
+#' # peptides results with exemplary `filter_...`
 #' normPep(
 #'   method_psm_pep = median,
 #'   method_align = MGKernel,
@@ -309,7 +310,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'   # filter_by_sp = exprs(species == "human"),
 #' )
 #'
-#' # examplary peptide purging; n: the number of peptides
+#' # exemplary peptide purging; n: the number of peptides under a protein
 #' purgePep(max_cv = .5, min_n = 2)
 #'
 #' }
@@ -323,7 +324,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 										group_pep_by = c("prot_acc", "gene"), 
 										method_align = c("MC", "MGKernel"), range_log2r = c(10, 90),
 										range_int = c(5, 95), n_comp = NULL, seed = NULL, 
-										pep_unique_by = "group", 
 										annot_kinases = FALSE, 
 										col_refit = NULL, cache = TRUE, 
 										plot_log2FC_cv = TRUE, ...) {
@@ -355,7 +355,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	  id <- rlang::as_string(id)
 	  stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
 	}
-	
 	id <- match_normPSM_pepid()
 	
 	# depreciated; instead matched to normPSM()
@@ -366,7 +365,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	  group_pep_by <- rlang::as_string(group_pep_by)
 	  stopifnot(group_pep_by %in% c("prot_acc", "gene"))
 	}
-	
 	group_pep_by <- match_normPSM_protid()
 	
 	col_refit <- rlang::enexpr(col_refit)
@@ -414,8 +412,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	if (is.null(n_comp)) n_comp <- if(nrow(df) > 3000) 3L else 2L
 	n_comp <- n_comp %>% as.integer()
 	stopifnot(n_comp >= 2)
-	
-	pep_unique_by <- rlang::as_string(rlang::enexpr(pep_unique_by))
 	
 	dots <- rlang::enexprs(...)
 	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]

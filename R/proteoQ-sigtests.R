@@ -438,7 +438,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 
 		smpl_levels <- names(df)
 		contr_levels <- attributes(contr_mat_lm[[key_col]])$dimnames$Contrasts
-
+		
 		df_lm <- df %>%
 			tibble::rownames_to_column(id) %>%
 			tidyr::gather(-id, key = Sample_ID, value = log2Ratio) %>%
@@ -454,10 +454,11 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 				  model = purrr::map(
 				    data, ~ lmerTest::lmer(data = .x, formula = new_formula, contrasts = contr_mat_lm))) %>%
 				dplyr::mutate(glance = purrr::map(model, broom.mixed::tidy)) %>%
-				tidyr::unnest(glance, .drop = TRUE) %>%
+			  tidyr::unnest(glance, keep_empty = TRUE) %>% 
 				dplyr::filter(!grepl("Intercept", term), effect != "ran_pars") %>%
 				dplyr::select(-c("group", "effect", "estimate", "std.error", "statistic", "df")) %>%
-				dplyr::mutate(term = gsub(key_col, "", term)) %>%
+				dplyr::mutate(term = gsub(key_col, "", term)) %>% 
+			  dplyr::select(-data, -model) %>% 
 				dplyr::mutate(term = factor(term, levels = contr_levels)) %>%
 				tidyr::spread(term , p.value) %>%
 				tibble::column_to_rownames(id) %>%
@@ -468,15 +469,16 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 				dplyr::mutate(model = purrr::map(data, ~ lm(data = .x, formula = new_formula,
 				                                            contrasts = contr_mat_lm))) %>%
 				dplyr::mutate(glance = purrr::map(model, broom::tidy)) %>%
-				tidyr::unnest(glance, .drop = TRUE) %>%
+			  tidyr::unnest(glance, keep_empty = TRUE) %>%	
 				dplyr::filter(!grepl("Intercept", term)) %>%
-				dplyr::select(-c("std.error", "estimate", "statistic")) %>%
-				dplyr::mutate(term = gsub(key_col, "", term)) %>%
-				dplyr::mutate(term = factor(term, levels = contr_levels)) %>%
-				tidyr::spread(term , p.value) %>%
+				dplyr::select(-c("std.error", "estimate", "statistic")) %>% 
+				dplyr::mutate(term = gsub(key_col, "", term)) %>% 
+			  dplyr::select(-data, -model) %>% 
+				dplyr::mutate(term = factor(term, levels = contr_levels))	%>% 
+				tidyr::spread(term , p.value)	%>% 
 				tibble::column_to_rownames(id) %>%
-				`names<-`(paste0("pVal (", names(.), ")")) %>%
-				lm_summary(log2rs, pval_cutoff, logFC_cutoff)
+				`names<-`(paste0("pVal (", names(.), ")"))  %>% 
+			  lm_summary(log2rs, pval_cutoff, logFC_cutoff)
 		}
 	}
 

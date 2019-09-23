@@ -18,7 +18,7 @@ library(proteoQDA)
 copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
 copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 
-# PSM data to working directory
+# examplary PSM data to working directory
 dir.create("C:\\The\\Mascot\\Example", recursive = TRUE, showWarnings = FALSE)
 dat_dir <- "C:\\The\\Mascot\\Example"
 cptac_csv_1(dat_dir)
@@ -133,19 +133,19 @@ normPrn(
 
 # examplary protein tables with data prefiltration
 normPrn(
-    method_pep_prn = median, 
-    method_align = MGKernel, 
-    range_log2r = c(20, 95), 
-    range_int = c(5, 95), 
-    n_comp = 2, 
-    seed = 749662, 
-    maxit = 200, 
-    epsilon = 1e-05, 
-    
-    filter_by = exprs(prot_n_psm >= 5, prot_n_pep >= 2),  
+	method_pep_prn = median, 
+	method_align = MGKernel, 
+	range_log2r = c(20, 95), 
+	range_int = c(5, 95), 
+	n_comp = 2, 
+	seed = 749662, 
+	maxit = 200, 
+	epsilon = 1e-05, 
+	
+	filter_by = exprs(prot_n_psm >= 5, prot_n_pep >= 2),  
 )
 
-# protein histograms with scaling
+# protein histograms with logFC scaling
 prnHist(
 	scale_log2r = TRUE,
 	xmin = -2,
@@ -153,7 +153,7 @@ prnHist(
 	ncol = 10, 
 )
 
-# protein histograms with scaling and filtration
+# protein histograms with logFC scaling and filtration
 prnHist(
 	scale_log2r = TRUE,
 	xmin = -2,
@@ -163,7 +163,7 @@ prnHist(
 	filename = "prnHist_npsm_20.png", 	
 )
 
-# protein histograms without scaling
+# protein histograms without logFC scaling
 prnHist(
 	scale_log2r = FALSE,
 	xmin = -2,
@@ -171,7 +171,7 @@ prnHist(
 	ncol = 10, 
 )
 
-# protein histograms of `BI` subset with scaling
+# protein histograms of `BI` subset with logFC scaling
 prnHist(
 	scale_log2r = TRUE,
 	col_select = BI, 
@@ -181,7 +181,7 @@ prnHist(
 	filename = Hist_BI_Z.png, 
 )
 
-# protein histograms of `BI` subset without scaling
+# protein histograms of `BI` subset without logFC scaling
 prnHist(
 	scale_log2r = FALSE,
 	col_select = BI, 
@@ -190,6 +190,9 @@ prnHist(
 	ncol = 5, 
 	filename = Hist_BI_N.png, 
 )
+
+# global setting in scaling normalization
+scale_log2r = TRUE
 
 
 ## part 3 --- basic informatics
@@ -339,7 +342,7 @@ prnEucDist(
 	filename = "EucDist_PNNL.png", 
 )
 
-# peptide log2FC correlation of PNNL subset with sample-order supervision
+# peptide logFC correlation of PNNL subset with sample-order supervision
 pepCorr_logFC(
 	col_select = PNNL,
 	col_order = Order, 
@@ -353,7 +356,7 @@ pepCorr_logInt(
 	filename = PNNL_ordint.png,
 )
 
-# protein log2FC correlation of WHIM2 subset with supervision
+# protein logFC correlation of WHIM2 subset with supervision
 prnCorr_logFC(
 	col_select = W2,
 	col_order = Group,
@@ -421,7 +424,6 @@ pepVol()
 
 # protein trend analysis with filtration and sample-order supervision
 anal_prnTrend(
-  scale_log2r = TRUE,
   col_order = Order,
   n_clust = c(5:8), 
   filter_by_npep = exprs(prot_n_pep >= 2),
@@ -429,7 +431,6 @@ anal_prnTrend(
 
 # protein trend visualization with sample-order supervision
 plot_prnTrend(
-  scale_log2r = TRUE,
   col_order = Order,
   n_clust = c(5:6), 
 )
@@ -440,7 +441,6 @@ library(NMF)
 # protein NMF: analysis with filtration
 anal_prnNMF(
   impute_na = FALSE,
-  scale_log2r = TRUE,
   col_group = Group,
   r = c(5:8),
   nrun = 200, 
@@ -468,7 +468,6 @@ plot_prnNMFCoef(
 plot_metaNMF(
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-
   fontsize = 8,
   fontsize_col = 5,
 )

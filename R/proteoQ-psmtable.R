@@ -991,22 +991,22 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'@inheritParams annotPSM
 #'@seealso \code{\link{normPep}} for peptides and \code{\link{normPrn}} for
 #'  proteins.
-#'@return Outputs are under the directory of \code{dat_dir\\PSM}. Primary
-#'  results are in \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt,
-#'  ...} The indeces of TMT experiment and LC/MS injection are indicated in the
-#'  file names.
+#'@return Outputs are under the directory of \code{PSM} sub to \code{dat_dir}.
+#'  Primary results are in \code{TMTset1_LCMSinj1_PSM_N.txt,
+#'  TMTset2_LCMSinj1_PSM_N.txt, ...} The indeces of TMT experiment and LC/MS
+#'  injection are indicated in the file names.
 #'
 #' @examples
 #' \dontrun{
 #' # Mascot example
-#' # set up a working directory
-#' dir.create("C:\\The\\Mascot\\Example", recursive = TRUE, showWarnings = FALSE)
-#' dat_dir <- c("C:\\The\\First\\Example")
-#'
-#' # copy fasta
+#' # copy fasta (does it once)
 #' library(proteoQDA)
 #' copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
 #' copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
+#' 
+#' # set up a working directory
+#' dir.create("C:\\The\\Mascot\\Example", recursive = TRUE, showWarnings = FALSE)
+#' dat_dir <- "C:\\The\\Mascot\\Example"
 #'
 #' # copy Mascot PSM data
 #' cptac_csv_1(dat_dir)
@@ -1021,42 +1021,43 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'
 #' # process PSMs with in-function filtration of data by `filter_`
 #' normPSM(
-#'   group_psm_by = pep_seq, 
-#'   group_pep_by = prot_acc, 
-#'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-#'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+#'   group_psm_by = pep_seq,
+#'   group_pep_by = prot_acc,
+#'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+#'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
 #'   rptr_intco = 3000,
 #'   rm_craps = TRUE,
 #'   rm_krts = FALSE,
-#'   rm_outliers = FALSE, 
-#'   annot_kinases = TRUE,	
-#'   plot_rptr_int = TRUE, 
-#'   plot_log2FC_cv = TRUE, 
-#'   
-#'   filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+#'   rm_outliers = FALSE,
+#'   annot_kinases = TRUE,
+#'   plot_rptr_int = TRUE,
+#'   plot_log2FC_cv = TRUE,
+#'
+#'   filter_peps = exprs(pep_expect <= .1),
 #'   filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
 #' )
 #'
-#' # examplary PSM purging; n: the number of PSMs
+#' # examplary PSM purging; n: the number of PSMs for a peptide
 #' purgePSM(max_cv = .5, min_n = 2)
-#' 
+#'
 #'
 #' # MaxQuant example
-#' dir.create("C:\\The\\MQ\\Example", recursive = TRUE, showWarnings = FALSE)
-#' dat_dir <- c("C:\\The\\MQ\\Example")
-#' 
-#' # copy fasta 
+#' # copy fasta if not yet already
 #' library(proteoQDA)
 #' copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
 #' copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
+#' 
+#' # set up a working directory
+#' dir.create("C:\\The\\MQ\\Example", recursive = TRUE, showWarnings = FALSE)
+#' dat_dir <- "C:\\The\\MQ\\Example"
 #'
 #' # copy MaxQuant PSM data
 #' library(proteoQDB)
-#' cptac_mq_psm_1(dat_dir)
+#' cptac_mqpsm_txt(dat_dir)
 #'
 #' # copy "expt_smry.xlsx" and "frac_smry.xlsx"
-#' cptac_expt_1(dat_dir)
-#' cptac_frac_1(dat_dir)
+#' cptac_mqpsm_expt(dat_dir)
+#' cptac_mqpsm_frac(dat_dir)
 #'
 #' # load experiments
 #' library(proteoQ)
@@ -1064,44 +1065,23 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'
 #' # process MaxQuant PSMs
 #' normPSM(
-#'   group_psm_by = pep_seq, 
-#'   group_pep_by = prot_acc, 
-#'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-#'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+#'   group_psm_by = pep_seq,
+#'   group_pep_by = prot_acc,
+#'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+#'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
 #'   corrected_int = TRUE,
 #'   rm_reverses = TRUE,
 #'   rptr_intco = 3000,
 #'   rm_craps = TRUE,
 #'   rm_krts = FALSE,
-#'   rm_outliers = FALSE, 
-#'   annot_kinases = TRUE,	
-#'   plot_rptr_int = TRUE, 
-#'   plot_log2FC_cv = TRUE, 
-#'   
-#'   filter_peps = exprs(PEP <= 0.1), 
+#'   rm_outliers = FALSE,
+#'   annot_kinases = TRUE,
+#'   plot_rptr_int = TRUE,
+#'   plot_log2FC_cv = TRUE,
+#'
+#'   filter_peps = exprs(PEP <= 0.1),
 #' )
-#' 
-#' # unique peptides for quantitation;
-#' # the levels of uniqueness according to `pep_unique_by`
-#' normPSM(
-#'   group_psm_by = pep_seq, 
-#'   group_pep_by = prot_acc, 
-#'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-#'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
-#'   corrected_int = TRUE,
-#'   rm_reverses = TRUE,
-#'   rptr_intco = 3000,
-#'   rm_craps = TRUE,
-#'   rm_krts = FALSE,
-#'   rm_outliers = FALSE, 
-#'   annot_kinases = TRUE,	
-#'   plot_rptr_int = TRUE, 
-#'   plot_log2FC_cv = TRUE, 
-#'   
-#'   # new column key `pep_isunique` not in original MaxQuant PSMs
-#'   filter_peps = exprs(PEP <= 0.1, pep_isunique == 1), 
-#' )
-#' 
+#'
 #' }
 #'
 #'@import rlang dplyr purrr ggplot2 RColorBrewer
@@ -1265,15 +1245,6 @@ splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = F
   # MaxQuant exception: empty string under `Proteins`
   df <- df %>% dplyr::filter(as.character(.$Proteins) > 0)
 
-  # added column key(s) before `filters_in_call`
-  if (pep_unique_by == "group") {
-    df <- df %>% 
-      dplyr::mutate(pep_isunique = ifelse(grepl(";", `Protein group IDs`), 0, 1))
-  } else if (pep_unique_by == "protein") {
-    df <- df %>% 
-      dplyr::mutate(pep_isunique = ifelse(grepl(";", prot_acc), 0, 1))
-  }
-  
   dots <- rlang::enexprs(...)
   lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% lang_dots]
@@ -1286,9 +1257,15 @@ splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = F
     filters_in_call(!!!lang_dots) %>% 
     dplyr::rename(ID = id)
   
-  ## users' decision
-  # df <- df %>% dplyr::filter(pep_isunique == 1)
-
+  # added column key(s) before `filters_in_call`
+  if (pep_unique_by == "group") {
+    df <- df %>% 
+      dplyr::mutate(pep_isunique = ifelse(grepl(";", `Protein group IDs`), 0, 1))
+  } else if (pep_unique_by == "protein") {
+    df <- df %>% 
+      dplyr::mutate(pep_isunique = ifelse(grepl(";", prot_acc), 0, 1))
+  }
+  
   if (corrected_int) {
     df <- df %>% 
       dplyr::select(-grep("^Reporter\\s{1}intensity\\s{1}\\d+$", names(.)))
@@ -1521,6 +1498,43 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 			  dplyr::mutate_at(vars(grep("^log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
 			  dplyr::mutate_at(vars(grep("^N_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
 			  dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 4))
+			
+			# add column `pep_n_psm`
+			pep_n_psm <- df %>%
+			  dplyr::select(!!rlang::sym(group_psm_by)) %>%
+			  dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+			  dplyr::summarise(pep_n_psm = n())
+			
+			prot_n_psm <- df %>%
+			  dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+			  dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+			  dplyr::summarise(prot_n_psm = n())
+			
+			prot_n_pep <- df %>%
+			  dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+			  dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
+			  dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+			  dplyr::summarise(prot_n_pep = n())
+			
+			df <- df %>% dplyr::left_join(pep_n_psm, by = group_psm_by)
+
+			df <- dplyr::bind_cols(
+			  df %>% dplyr::select(grep("^pep_", names(.))), 
+			  df %>% dplyr::select(-grep("^pep_", names(.))), 
+			)
+			
+			df <- list(df, prot_n_psm, prot_n_pep) %>%
+			  purrr::reduce(left_join, by = group_pep_by)
+			
+			df <- dplyr::bind_cols(
+			  df %>% dplyr::select(grep("^prot_", names(.))), 
+			  df %>% dplyr::select(-grep("^prot_", names(.))), 
+			)
+			
+			df <- dplyr::bind_cols(
+			  df %>% dplyr::select(-grep("[RI]{1}[0-9]{3}[NC]*", names(.))), 
+			  df %>% dplyr::select(grep("[RI]{1}[0-9]{3}[NC]*", names(.))), 
+			)
       
       write.table(df, file.path(dat_dir, "PSM", paste0(out_fn[injn_idx, 1], ".txt")),
                   sep = "\t", col.names = TRUE, row.names = FALSE)

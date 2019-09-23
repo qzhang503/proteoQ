@@ -308,8 +308,9 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #' # lagging logFC profiles of peptides at
 #' #   (1) n_psm >= 10
 #' #   (2) and no methionine oxidation or asparagine deamidation
-#' # may exclude sample(s) with considerable offset(s) 
-#' #   between the 'bootstrapped' lead and lag from further analysis
+#' # 
+#' # may be used for the identification of sample(s) with 
+#' #   considerable offset(s) between the lead and the lag
 #' pepHist(
 #'   filter_by_npsm = exprs(n_psm >= 10),
 #'   filter_by_mn = exprs(!grepl("[mn]", pep_seq_mod)),

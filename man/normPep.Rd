@@ -8,9 +8,8 @@ normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
   "mean", "weighted.mean", "top.3", "mqpep"),
   group_pep_by = c("prot_acc", "gene"), method_align = c("MC",
   "MGKernel"), range_log2r = c(10, 90), range_int = c(5, 95),
-  n_comp = NULL, seed = NULL, pep_unique_by = "group",
-  annot_kinases = FALSE, col_refit = NULL, cache = TRUE,
-  plot_log2FC_cv = TRUE, ...)
+  n_comp = NULL, seed = NULL, annot_kinases = FALSE,
+  col_refit = NULL, cache = TRUE, plot_log2FC_cv = TRUE, ...)
 }
 \arguments{
 \item{id}{Character string; the variable for summarisation of \code{PSMs} into
@@ -29,12 +28,13 @@ The descriptive statistics includes \code{c("mean", "median", "top.3",
 \code{PSMs} levels will be the weight when summarising \code{log2FC} with
 \code{"top.3"} or \code{"weighted.mean"}.}
 
-\item{group_pep_by}{A character string for the grouping of peptide entries. At
-the \code{prot_acc} default, descriptive statistics will be calculated based
-on the same \code{prot_acc} groups. At \code{group_pep_by = gene}, proteins
-with the same gene name but different accession numbers will be treated as
-one group. The value of \code{group_pep_by} will match automatically to the
-value of \code{group_pep_by} in \code{normPSM}.}
+\item{group_pep_by}{Depreciated: a character string for the grouping of
+peptide entries. At the \code{prot_acc} default, descriptive statistics will
+be calculated based on the same \code{prot_acc} groups. At
+\code{group_pep_by = gene}, proteins with the same gene name but different
+accession numbers will be treated as one group. The value of
+\code{group_pep_by} will match automatically to the value of
+\code{group_pep_by} in \code{normPSM}.}
 
 \item{method_align}{Character string or a list of gene symbols; the method to
 align the \code{log2FC} of peptide/protein entries across samples.
@@ -64,12 +64,6 @@ standard deviation across samples. The default is between the 5th and the
 
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
-
-\item{pep_unique_by}{A character string for use in the filtration of peptide
-data from \code{MaxQuant}. The choice is in one of \code{c("group",
-"protein", "none")} At the \code{group} default, only peptides unique by
-protein groups will be kept. At \code{protein}, only peptides unique by
-protein entries will be kept. At \code{none}, all peptides will be kept.}
 
 \item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
 proteins.}
@@ -119,7 +113,7 @@ output.
 }
 \examples{
 \dontrun{
-# peptides results with examplary `filter_...`
+# peptides results with exemplary `filter_...`
 normPep(
   method_psm_pep = median,
   method_align = MGKernel,
@@ -134,7 +128,7 @@ normPep(
   # filter_by_sp = exprs(species == "human"),
 )
 
-# examplary peptide purging; n: the number of peptides
+# exemplary peptide purging; n: the number of peptides under a protein
 purgePep(max_cv = .5, min_n = 2)
 
 }

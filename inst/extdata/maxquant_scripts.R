@@ -8,7 +8,7 @@ if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
 
-# data package with fasta and Mascot examples
+# data package containing fasta files
 devtools::install_github("qzhang503/proteoQDA")
 
 # ------------------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ library(proteoQDA)
 copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
 copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 
-# PSM data to working directory
+# examplary PSM data to working directory
 library(proteoQDB)
 dir.create("C:\\The\\MQ\\Example", recursive = TRUE, showWarnings = FALSE)
 dat_dir <- c("C:\\The\\MQ\\Example")
@@ -43,11 +43,12 @@ load_expts()
 # PSM tables
 normPSM(
 	group_psm_by = pep_seq, 
+	group_pep_by = gene, 
 	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
 					"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+	rptr_intco = 3000,					
   corrected_int = TRUE,
   rm_reverses = TRUE,
-	rptr_intco = 3000,
 	rm_craps = TRUE,
 	rm_krts = FALSE,
 	rm_outliers = FALSE, 
@@ -55,7 +56,6 @@ normPSM(
 	plot_rptr_int = TRUE, 
 	plot_log2FC_cv = TRUE, 
 	
-	# new column key `pep_isunique`
 	filter_peps = exprs(PEP <= 0.1), 
 )
 
@@ -64,7 +64,6 @@ purgePSM(max_cv = 0.5, min_n = 2)
 
 # peptide tables
 normPep(
-	group_pep_by = gene, 
 	method_psm_pep = median, 
 	method_align = MGKernel, 
 	range_log2r = c(5, 95), 
@@ -73,8 +72,7 @@ normPep(
 	seed = 749662, 
 	maxit = 200, 
 	epsilon = 1e-05, 
-	# filter_by = exprs(n_psm >= 2),
-	# filter_by_sp = exprs(species == "human"), 
+	# filter_by = exprs(pep_n_psm >= 2, species == "human"),
 )
 
 # optional: purge of peptide groups under the same protein IDs
@@ -98,13 +96,12 @@ pepHist(
 	xmin = -1, 
 	xmax = 1,
 	ncol = 10, 
-	filter_by = exprs(n_psm >= 10), 
+	filter_by = exprs(pep_n_psm >= 10), 
 	filename = "pepHist_npsm10.png", 
 )
 
 # renormalization of peptide data for selected samples
 normPep(
-	group_pep_by = gene, 
 	method_psm_pep = median, 
 	method_align = MGKernel, 
 	range_log2r = c(5, 95), 
@@ -118,6 +115,7 @@ normPep(
 
 # protein tables
 normPrn(
+	use_unique_pep = TRUE, 
 	method_pep_prn = median, 
 	method_align = MGKernel, 
 	range_log2r = c(20, 95), 
@@ -126,7 +124,7 @@ normPrn(
 	seed = 749662, 
 	maxit = 200, 
 	epsilon = 1e-05, 
-	# filter_by = exprs(n_pep >= 2), 	
+	filter_by = exprs(prot_n_pep >= 2),
 )
 
 # protein histograms with scaling
@@ -143,19 +141,12 @@ prnHist(
 	xmin = -2,
 	xmax = 2,
 	ncol = 10, 
-	filter_by = exprs(n_psm >= 20), 
-	filename = "prnHist_npsm_20.png", 	
+	filter_by = exprs(prot_n_psm >= 20), 
+	filename = "prnHist_npsm20.png", 	
 )
 
-# protein histograms of `BI` subset
-prnHist(
-	scale_log2r = TRUE,
-	col_select = BI, 
-	xmin = -2,
-	xmax = 2,
-	ncol = 5, 
-	filename = Hist_BI_Z.png, 
-)
+# global setting in scaling normalization
+scale_log2r = TRUE
 
 
 ## part 3 --- basic informatics
@@ -177,26 +168,8 @@ pepMDS(
 	show_ids = FALSE,
 	width = 10,
 	height = 3.75,
-	filter_by = exprs(n_psm >= 20), 
+	filter_by = exprs(pep_n_psm >= 20), 
 	filename = "pepMDS_npsm_20.png",	
-)
-
-# peptide MDS of JHU subset
-pepMDS(
-	col_select = JHU,
-	show_ids = FALSE,
-	width = 10,
-	height = 3.75,
-	filename = MDS_JHU.png,
-)
-
-# peptide MDS of JHU subset with new aesthetics
-pepMDS(
-  col_select = JHU,
-  col_fill = Shape, # WHIMs  
-  col_size = Alpha, # batches
-	show_ids = FALSE,
-  filename = MDS_JHU_new_aes.png,
 )
 
 # protein MDS
@@ -211,17 +184,8 @@ prnMDS(
 	show_ids = FALSE, 
 	width = 8,
 	height = 4,
-	filter_by = exprs(n_pep > 5), 
+	filter_by = exprs(prot_n_pep > 5), 
 	filename = "prnMDS_npep_5.png",		
-)
-
-# protein MDS of JHU subset
-prnMDS(
-	col_select = JHU,
-	show_ids = FALSE,
-	width = 8,
-	height = 4,
-	filename = "MDS_JHU.png",
 )
 
 # peptide PCA
@@ -300,6 +264,7 @@ pepCorr_logFC(
 )
 
 # peptide log10-intensity correlation of PNNL subset with supervision
+# create your own `PNNL` column in `expt_smry.xlsx` if not yet available
 pepCorr_logInt(
 	col_select = PNNL,
 	col_order = Order,
@@ -308,9 +273,9 @@ pepCorr_logInt(
 
 # protein log2FC correlation of WHIM2 subset with supervision
 prnCorr_logFC(
-	col_select = W2,
+	col_select = PNNL,
 	col_order = Group,
-	filename = W2_ord.png,
+	filename = PNNL_ord.png,
 )
 
 # protein heat maps of human subset with row-clustering and subtrees
@@ -375,15 +340,13 @@ pepVol()
 
 # protein trend analysis with filtration and sample-order supervision
 anal_prnTrend(
-  scale_log2r = TRUE,
   col_order = Order,
   n_clust = c(5:8), 
-  filter_by_npep = exprs(n_pep >= 2),
+  filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # protein trend visualization with sample-order supervision
 plot_prnTrend(
-  scale_log2r = TRUE,
   col_order = Order,
   n_clust = c(5:6), 
 )
@@ -394,11 +357,10 @@ library(NMF)
 # protein NMF: analysis with filtration
 anal_prnNMF(
   impute_na = FALSE,
-  scale_log2r = TRUE,
   col_group = Group,
   r = c(5:8),
   nrun = 200, 
-  filter_by_npep = exprs(n_pep >= 2),
+  filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # protein NMF: consensus heat maps

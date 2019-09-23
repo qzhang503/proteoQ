@@ -127,15 +127,15 @@ normPSM(
   plot_rptr_int = TRUE, 
   plot_log2FC_cv = TRUE, 
   
-  filter_peps = exprs(pep_expect <= .1, pep_isunique == 1), 
+  filter_peps = exprs(pep_expect <= .1), 
   filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
 )
 
-# examplary PSM purging; n: the number of PSMs
+# exemplary PSM purging; n: the number of PSMs under a peptide
 purgePSM(max_cv = .5, min_n = 2)
 
 
-# peptides results with examplary `filter_...`
+# peptides results with exemplary `filter_...`
 normPep(
   method_psm_pep = median, 
   method_align = MGKernel, 
@@ -150,7 +150,7 @@ normPep(
   # filter_by_sp = exprs(species == "human"), 
 )
 
-# examplary peptide purging; n: the number of peptides
+# exemplary peptide purging; n: the number of peptides under a protein
 purgePep(max_cv = .5, min_n = 2)
 
 
