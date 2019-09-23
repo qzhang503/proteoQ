@@ -24,12 +24,13 @@ The descriptive statistics includes \code{c("mean", "median", "top.3",
 \code{PSMs} levels will be the weight when summarising \code{log2FC} with
 \code{"top.3"} or \code{"weighted.mean"}.}
 
-\item{group_pep_by}{A character string for the grouping of peptide entries. At
-the \code{prot_acc} default, descriptive statistics will be calculated based
-on the same \code{prot_acc} groups. At \code{group_pep_by = gene}, proteins
-with the same gene name but different accession numbers will be treated as
-one group. The value of \code{group_pep_by} will match automatically to the
-value of \code{group_pep_by} in \code{normPSM}.}
+\item{group_pep_by}{Depreciated: a character string for the grouping of
+peptide entries. At the \code{prot_acc} default, descriptive statistics will
+be calculated based on the same \code{prot_acc} groups. At
+\code{group_pep_by = gene}, proteins with the same gene name but different
+accession numbers will be treated as one group. The value of
+\code{group_pep_by} will match automatically to the value of
+\code{group_pep_by} in \code{normPSM}.}
 }
 \value{
 Results in \code{.txt} files for each of TMT experiments and LC/MS

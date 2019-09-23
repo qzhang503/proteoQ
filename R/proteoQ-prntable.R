@@ -13,16 +13,17 @@
 #'proteins being kinases \cr kin_class      \tab Optional; the classes of
 #'kinases, e.g., TK, TKL... \cr kin_order      \tab Optional; the order of
 #'"kin_class" from the \code{\href{http://kinase.com/human/kinome/}{kinase tree
-#'diagram}} \cr n_pep \tab The number of significant peptide sequences matched
-#'to a proposed protein \cr n_psm \tab The number of significant MS/MS queries
-#'matched to a peptide sequence in peptide reports or to a proposed protein
-#'entry in protein reports. \cr pep_seq_mod    \tab One-letter representation of
-#'peptide sequences: amino acid residue(s) with variable modifications are in
-#'the lower cases; the acetylations of protein N-terminals indicated by '_' and
-#'the flanking residues on the N- or C-terminal side of peptides separated by
-#''.', e.g. "-._mAsGVAVSDGVIK.V"\cr prot_cover     \tab Protein sequence
-#'coverage calculated from all available raw files   \cr raw_file \tab MS file
-#'name(s) where peptides or proteins were identified \cr refseq_acc \tab
+#'diagram}} \cr prot_n_pep \tab The number of significant peptide sequences
+#'matched to a proposed protein \cr prot_n_psm \tab The number of significant
+#'MS/MS queries matched to a proposed protein. \cr pep_n_psm \tab The number of
+#'significant MS/MS queries matched to a proposed peptide sequence. \cr
+#'pep_seq_mod    \tab One-letter representation of peptide sequences: amino acid
+#'residue(s) with variable modifications are in the lower cases; the
+#'acetylations of protein N-terminals indicated by '_' and the flanking residues
+#'on the N- or C-terminal side of peptides separated by '.', e.g.
+#'"-._mAsGVAVSDGVIK.V"\cr prot_cover     \tab Protein sequence coverage
+#'calculated from all available raw files   \cr raw_file \tab MS file name(s)
+#'where peptides or proteins were identified \cr refseq_acc \tab
 #'\code{\href{https://www.ncbi.nlm.nih.gov/refseq/}{Protein RefSeq accession
 #'number}} \cr uniprot_acc    \tab
 #'\code{\href{https://www.uniprot.org/help/accession_numbers}{Protein UniProt

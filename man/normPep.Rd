@@ -28,12 +28,13 @@ The descriptive statistics includes \code{c("mean", "median", "top.3",
 \code{PSMs} levels will be the weight when summarising \code{log2FC} with
 \code{"top.3"} or \code{"weighted.mean"}.}
 
-\item{group_pep_by}{A character string for the grouping of peptide entries. At
-the \code{prot_acc} default, descriptive statistics will be calculated based
-on the same \code{prot_acc} groups. At \code{group_pep_by = gene}, proteins
-with the same gene name but different accession numbers will be treated as
-one group. The value of \code{group_pep_by} will match automatically to the
-value of \code{group_pep_by} in \code{normPSM}.}
+\item{group_pep_by}{Depreciated: a character string for the grouping of
+peptide entries. At the \code{prot_acc} default, descriptive statistics will
+be calculated based on the same \code{prot_acc} groups. At
+\code{group_pep_by = gene}, proteins with the same gene name but different
+accession numbers will be treated as one group. The value of
+\code{group_pep_by} will match automatically to the value of
+\code{group_pep_by} in \code{normPSM}.}
 
 \item{method_align}{Character string or a list of gene symbols; the method to
 align the \code{log2FC} of peptide/protein entries across samples.
@@ -112,7 +113,7 @@ output.
 }
 \examples{
 \dontrun{
-# peptides results with examplary `filter_...`
+# peptides results with exemplary `filter_...`
 normPep(
   method_psm_pep = median,
   method_align = MGKernel,
@@ -127,7 +128,7 @@ normPep(
   # filter_by_sp = exprs(species == "human"),
 )
 
-# examplary peptide purging; n: the number of peptides
+# exemplary peptide purging; n: the number of peptides under a protein
 purgePep(max_cv = .5, min_n = 2)
 
 }

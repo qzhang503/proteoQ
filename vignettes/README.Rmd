@@ -9,14 +9,6 @@ output:
     toc: yes
     toc_depth: 4
     variant: markdown_github
-  word_document:
-    toc: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  github_document:
-    fig_caption: yes
-    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -25,6 +17,14 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  github_document:
+    fig_caption: yes
+    toc: yes
+  word_document:
+    toc: yes
 ---
 
 ---
@@ -119,7 +119,7 @@ In this section I (Qiang Zhang) illustrate the following applications of `proteo
 * Removal of low-quality entries from PSM, peptide and protein data.
 * Summarization of MaxQuant PSM results.  
 
-The data set we will use in this section corresponds to the proteomics data from Mertins et al. [-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by `LC/MS` analysis. The raw PSM results from [Mascot](https://http://www.matrixscience.com/) or [MaxQuant](https://www.maxquant.org/) searches are stored in a companion R package, `proteoQDA`, and are accessbile through the following installation:  
+The data set we will use in this section corresponds to the proteomics data from Mertins et al. [-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by `LC/MS` analysis. The raw PSM results from [Mascot](https://http://www.matrixscience.com/) or [MaxQuant](https://www.maxquant.org/) searches are stored in companion packages, `proteoQDA` and `proteoQDB`, respectively. For `proteoQDA`, it is accessbile through the following installation:  
 
 ```{r proteoQDA, include = TRUE, eval = FALSE}
 devtools::install_github("qzhang503/proteoQDA")
@@ -130,11 +130,11 @@ We first set up a working directory for use in a Mascot example:
 
 ```{r dir_setup, include = TRUE, eval = FALSE}
 dir.create("C:\\The\\Mascot\\Example", recursive = TRUE, showWarnings = FALSE)
-dat_dir <- "c:\\The\\Mascot\\Example"
+dat_dir <- "C:\\The\\Mascot\\Example"
 ```
 
 #### 1.1.1 Prepare fasta databases
-RefSeq databases of human and mouse were used in MS/MS searches for the WHIM data sets. To properly annotate protein entries with `proteoQ`, we would need the fasta file(s) that were used in the database searches. In the example below, we copy over the corresponding fasta files, which are available in `proteoQDA` package, to a file folder under `home` directory:
+RefSeq databases of human and mouse were used in the MS/MS searches against the WHIM data sets. To properly annotate protein entries with `proteoQ`, we would need the fasta file(s) that were used in the database searches. In the example below, we copy over the corresponding fasta files, which are available in `proteoQDA` package, to a file folder sub to `home` directory:
 
 ```{r copy_fasta, include = TRUE, eval = FALSE}
 library(proteoQDA)
@@ -143,14 +143,14 @@ copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 ```
 
 #### 1.1.2 Prepare Mascot PSM data
-The workflow begins with PSM table(s) in a `.csv` format from the [Mascot](https://http://www.matrixscience.com/) search engine. When exporting PSM results, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. The options of `Header` and `Peptide quantitation` under `Peptide Match Information` should be checked to include the search parameters and quantitative values, respectively. The selections of both `Start` and `End` are also recommended. The file name(s) of the exports will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in name extension.]  
+The workflow begins with PSM table(s) in a `.csv` format from the [Mascot](https://http://www.matrixscience.com/) search engine. When exporting PSM results, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. Under `Peptide Match Information`, the options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The inclusion of both `Start` and `End` is recommended and the file name(s) of the exports will be taken as is.^[The default file names begin with letter `F`, followed by six digits and ends with `.csv` in name extension.]  
 
 ```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_export <- "images\\mascot\\mascot_export.png"
 knitr::include_graphics(c(img_export))
 ```
 
-The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover.^[There are cases that the same peptide sequence being assigned to different proteins remain unambiguous. For example, peptide `MENGQSTAAK` can be found from both the middle region of proteins `NP_510965` and the N-terminal of protein `NP_001129505`. In case of the additional information of peptide N-terminal acetylation, the sequence can only come from `NP_001129505` between the two candidate proteins. In addition to handling such exceptions, the nomenclature in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.] To escape from the ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html). If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed for now when constructing peptide reports.  
+The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To escape from the ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html).^[There are cases that the same peptide sequence being assigned to different proteins remain unambiguous. For example, peptide `MENGQSTAAK` can be found from either the middle region of protein `NP_510965` or the N-terminal of protein `NP_001129505`. In case of the additional information of peptide N-terminal acetylation, the sequence can only come from `NP_001129505` between the two candidate proteins. In addition to handling such exceptions, the nomenclature in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.] If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed for now when constructing peptide reports.  
 
 ```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_daemon <- "images\\mascot\\mascot_daemon.png"
@@ -180,7 +180,7 @@ cptac_expt_1(dat_dir)
 cptac_frac_1(dat_dir)
 ```
 
-We now have all the pieces that are required by `proteoQ` in place. Let's have a quick glance at the `expt_smry.xlsx` file. We note that no reference channels were indicated under the column `Reference`. With `proteoQ`, the `log2FC` of each species in a given sample is calculated either (*a*) in relative to the reference(s) within each multiplex TMT experiment or (*b*) to the mean of all samples in the same experiment if reference(s) are absent. Hence, the later approach will be employed to the examplary data set that we are working with. In this special case, the `mean(log2FC)` for a given species in each TMT experiment is averaged from five `WHIM2` and five `WHIM16` aliquots, which are biologically equivalent across TMT experiments.  
+We now have all the pieces that are required by `proteoQ` in place. Let's have a quick glance at the `expt_smry.xlsx` file. We note that no reference channels were indicated under the column `Reference`. With `proteoQ`, the `log2FC` of each species in a given sample is calculated either (*a*) in relative to the reference(s) within each multiplex TMT experiment or (*b*) to the mean of all samples in the same experiment if reference(s) are absent. Hence, the later approach will be employed to the exemplary data set that we are working with. In this special case, the `mean(log2FC)` for a given species in each TMT experiment is averaged from five `WHIM2` and five `WHIM16` aliquots, which are biologically equivalent across TMT experiments.  
 
 #### 1.1.4 Load experiment
 As a final step of the setup, we will load the experimental summary into a work space:  
@@ -260,7 +260,7 @@ purgePSM (
 )
 ```
 
-Peptide quantitations with single PSM identification, so-called one-hit wonders, will yield `infinite` CV and be nullified as well.  
+Peptide quantitations with single PSM identification, so-called one-hit wonders, will yield infinite CV and be nullified as well.  
 
 *NB:* CV is sensitive to outliers and some large CV in peptide quantitations may be merely due to a small number of bad measures. Although the option of `rm_outliers` was set to `FALSE` during our earlier call to `normPSM`, I think it is generally a good idea to have `rm_outliers = TRUE`.  
 
@@ -289,7 +289,7 @@ normPep(
 
 The `log2FC` of peptide data will be aligned by median centering across samples by default. If `method_align = MGKernel` is chosen, `log2FC` will be aligned under the assumption of multiple Gaussian kernels.^[Density kernel estimates can occasionally capture spikes in the profiles of log2FC during data alignment. Users will need to inspect the alignment of ratio histograms and may optimize the data normalization in full with different combinations of tuning parameters or in part against a subset of samples, before proceeding to the next steps.]  The parameter `n_comp` defines the number of Gaussian kernels and `seed` set a seed for reproducible fittings. The parameters `range_log2r` and `range_int` define the range of `log2FC` and the range of reporter-ion intensity, respectively, for use in the scaling of standard deviation across samples.  
 
-In the examplary vararg statement of `filter_by`, we set a threshold in the minimum number of identifying PSMs for peptides. If we are not interested in mouse peptides from the pdx samples, We can specify similarly that `species == "human"`, or more precisely, `species != "mouse"`. Sometimes, it may remain unclear on proper data filtration at the early stage of analysis. In that case, we may need additional quality assessments that we will soon explore. Alternatively, we may keep as much information as possible and apply varargs in downstream analysis. For more description of `normPep`, one can access its help document via `?normPep`.  
+In the exemplary vararg statement of `filter_by`, we set a threshold in the minimum number of identifying PSMs for peptides. If we are not interested in mouse peptides from the pdx samples, We can specify similarly that `species == "human"`, or more precisely, `species != "mouse"`. Sometimes, it may remain unclear on proper data filtration at the early stage of analysis. In that case, we may need additional quality assessments that we will soon explore. Alternatively, we may keep as much information as possible and apply varargs in downstream analysis. For more description of `normPep`, one can access its help document via `?normPep`.  
 
 ##### 1.2.2.2 purgePep
 Analogously to the PSM processing, we may remove probable low-quality entries of proteins by specifying the maximum CV and the minimum number of peptide observations:  
@@ -318,6 +318,8 @@ normPep(
 ```
 
 Backticks were used here to embrace column keys containing white space(s) and/or special character(s) such as parenthesis.  
+
+*NB:* The above CVs do not inform the uncertainty in sample handlings prior to the enzymatic breakdown of proteins in a MS-based proteomic workflow.  
 
 ##### 1.2.2.3 pepHist  
 We next compare the `log2FC` profiles with and without scaling normalization:^[`normPep()` will report log2FC results both before and after the scaling of standard deviations.]  
@@ -370,7 +372,7 @@ knitr::include_graphics(c(img1_path, img2_path))
 
 As expected, the widths of `log2FC` profiles become more comparable after the scaling normalization. However, such adjustment may cause artifacts when the standard deviaiton across samples are genuinely different. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the characteristics of both samples and references.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users can specify explicitly `scale_log2r = FALSE` or define its value under the global environment.] We will use the same data set to illustrate the impacts of reference selections in scaling normalization in [Lab 3.1](### 3.1 Reference choices). Alignment of `log2FC` against housekeeping or normalizer protein(s) is also available. This seems suitable when sometime the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
 
-It should also be noted that the curves of Gaussian density in histograms are based on the parameters from the latest call to `normPep`. There is a useful side effect when comparing leading and lagging profiles at different data filtration. This may aid the reveal of sample heteroscedasticity without the recourse to biological or technical replicates. More examples can be found from the help document via `?pepHist`.  
+It should also be noted that the curves of Gaussian density in histograms are based on the parameters from the latest call to `normPep`. There is a useful side effect when comparing leading and lagging profiles at different data filtration. This may aid the reveal of sample heteroscedasticity and inform the new parameters in renormalization. More examples can be found from the help document via `?pepHist`.  
 
 #### 1.2.3 Summarize peptides to proteins
 In this section, we summarise peptides to proteins, for example, using a two-component Gaussian kernel and customized filters.
@@ -457,12 +459,12 @@ The name of a PSM file containg reporter-ion intensities is `msms.txt` defaulted
 The file sizes of the `msms.txt` are relatively large for data used in the demonstration. For simplicity, we will only use the subset that belong to batch one in the CPTAC example. Even so, direct installation by `devtools::install_github` is not yet feasible at this point for large files hosted through [LFS](https://git-lfs.github.com/). One resort is to install [Github Desktop](https://desktop.github.com/), find https://github.com/qiangzhang503/proteoQDB.git, fetch the files and make a local installation through something like `devtools::install(pkg  = "~\\GitHub\\proteoQDB")`. If all goes well with the local installation, we will load `proteoQDB` and copy over the PSM files therein to a working directory: 
 
 ```{r mq_psm_setup, include = TRUE, eval = FALSE}
-# fasta files to database directory
+# fasta files to database directory if not yet available
 library(proteoQDA)
 copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
 copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 
-# examplary PSM data to working directory
+# exemplary PSM data to working directory
 library(proteoQDB)
 dir.create("C:\\The\\MQ\\Example", recursive = TRUE, showWarnings = FALSE)
 dat_dir <- c("C:\\The\\MQ\\Example")
@@ -922,44 +924,48 @@ In this lab, we explore the effects of reference choices on data normalization. 
 ```{r W2 reference, eval = FALSE}
 # directory setup
 dir.create("C:\\The\\W2_ref\\Example", recursive = TRUE, showWarnings = FALSE)
-temp_dir <- "c:\\The\\W2_ref\\Example"
+temp_dir <- "C:\\The\\W2_ref\\Example"
+
+# exemplary data
 library(proteoQDA)
 cptac_csv_1(temp_dir)
 cptac_expt_ref_w2(temp_dir)
 cptac_frac_1(temp_dir)
 
-# analysis
+# experiment upload
 library(proteoQ)
 load_expts(temp_dir, expt_smry_ref_w2.xlsx)
 
+# PSM normalization
 normPSM(
-	group_psm_by = pep_seq,
-	group_pep_by = gene, 
-	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-					"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
-	rptr_intco = 3000,
-	rm_craps = TRUE,
-	rm_krts = FALSE,
-	rm_outliers = FALSE, 
-	annot_kinases = TRUE,	
-	plot_rptr_int = TRUE, 
-	plot_log2FC_cv = TRUE, 
-	
-	filter_peps = exprs(pep_expect <= .1), 
+  group_psm_by = pep_seq,
+  group_pep_by = gene, 
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+  				"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  rptr_intco = 3000,
+  rm_craps = TRUE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE, 
+  annot_kinases = TRUE,	
+  plot_rptr_int = TRUE, 
+  plot_log2FC_cv = TRUE, 
+  
+  filter_peps = exprs(pep_expect <= .1), 
 )
 
+# Peptide normalization
 normPep(
-	method_psm_pep = median, 
-	method_align = MGKernel, 
-	range_log2r = c(5, 95), 
-	range_int = c(5, 95), 
-	n_comp = 3, 
-	seed = 749662, 
-	maxit = 200, 
-	epsilon = 1e-05, 
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
 )
 
-# visualization
+# histogram visualization
 pepHist(
   scale_log2r = FALSE, 
   ncol = 9,
@@ -978,7 +984,9 @@ We alternatively seek a "center-of-mass" representation for uses as references. 
 ```{r W2_and_W16 reference, eval = FALSE}
 # directory setup
 dir.create("C:\\The\\W2_W16_ref\\Example", recursive = TRUE, showWarnings = FALSE)
-temp_dir_2 <- "c:\\The\\W2_W16_ref\\Example"
+temp_dir_2 <- "C:\\The\\W2_W16_ref\\Example"
+
+# exemplary data
 library(proteoQDA)
 cptac_csv_1(temp_dir_2)
 expt_smry_ref_w2_w16(temp_dir_2)
@@ -990,19 +998,19 @@ load_expts(temp_dir_2, expt_smry_ref_w2_w16.xlsx)
 
 # PSM normalization
 normPSM(
-	group_psm_by = pep_seq,
-	group_pep_by = gene, 
-	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-					"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
-	rptr_intco = 3000,
-	rm_craps = TRUE,
-	rm_krts = FALSE,
-	rm_outliers = FALSE, 
-	annot_kinases = TRUE,	
-	plot_rptr_int = TRUE, 
-	plot_log2FC_cv = TRUE, 
-	
-	filter_peps = exprs(pep_expect <= .1), 
+  group_psm_by = pep_seq,
+  group_pep_by = gene, 
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+  				"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  rptr_intco = 3000,
+  rm_craps = TRUE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE, 
+  annot_kinases = TRUE,	
+  plot_rptr_int = TRUE, 
+  plot_log2FC_cv = TRUE, 
+  
+  filter_peps = exprs(pep_expect <= .1), 
 )
 
 # peptide normalization
@@ -1017,7 +1025,7 @@ normPep(
 	epsilon = 1e-05, 
 )
 
-# visualization
+# histogram visualization
 pepHist(
   scale_log2r = FALSE, 
   ncol = 8,
@@ -1032,11 +1040,14 @@ knitr::include_graphics(c(img_pep_ref_w2_w16))
 ```
 
 ### 3.2 Peptide subsets
-In addition to the global proteomes, the CPTAC publication contains phosphopeptide data from the same samples.[-@mertins2018np] In this lab, we will explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. We first performed a search aganist the combined data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset:  
+In addition to the global proteomes, the CPTAC publication contains phosphopeptide data from the same samples.[-@mertins2018np] In this lab, we will explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. We first performed a search against the combined data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset:  
 
 ```{r peptide subsets reference, eval = FALSE}
 # directory setup
-temp_phospho_dir <- "c:\\The\\Phosphopeptide\\Example"
+dir.create("C:\\The\\Phosphopeptide\\Example", recursive = TRUE, showWarnings = FALSE)
+temp_phospho_dir <- "C:\\The\\Phosphopeptide\\Example"
+
+# exemplary data
 library(proteoQDA)
 cptac_csv_2(temp_phospho_dir)
 cptac_expt_2(temp_phospho_dir)
@@ -1048,19 +1059,19 @@ load_expts(temp_phospho_dir, expt_smry.xlsx)
 
 # PSM normalization
 normPSM(
-	group_psm_by = pep_seq_mod,
-	group_pep_by = gene, 
-	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-					"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
-	rptr_intco = 3000,
-	rm_craps = TRUE,
-	rm_krts = FALSE,
-	rm_outliers = FALSE, 
-	annot_kinases = TRUE,	
-	plot_rptr_int = TRUE, 
-	plot_log2FC_cv = TRUE, 
-	
-	filter_peps = exprs(pep_expect <= .1), 
+  group_psm_by = pep_seq_mod,
+  group_pep_by = gene, 
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+  				"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  rptr_intco = 3000,
+  rm_craps = TRUE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE, 
+  annot_kinases = TRUE,	
+  plot_rptr_int = TRUE, 
+  plot_log2FC_cv = TRUE, 
+  
+  filter_peps = exprs(pep_expect <= .1), 
 )
 
 # peptide normalization
@@ -1111,16 +1122,20 @@ We start off by copying over the `expt_smry.xlsx` file, which contains a newly c
 
 ```{r one random effect, eval = FALSE}
 # directory setup
-temp_raneff_dir <- "c:\\The\\Random_effects\\Example"
+dir.create("C:\\The\\Random_effects\\Example", recursive = TRUE, showWarnings = FALSE)
+temp_raneff_dir <- "C:\\The\\Random_effects\\Example"
+
+# exemplary data
 library(proteoQDA)
 cptac_prn_1(temp_raneff_dir)
 cptac_expt_3(temp_raneff_dir)
 cptac_frac_3(temp_raneff_dir)
 
-# analysis
+# experiment upload
 library(proteoQ)
 load_expts(temp_raneff_dir, expt_smry.xlsx)
 
+# protein significance tests
 prnSig(
   impute_na = FALSE, 
   W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed effect only
@@ -1146,7 +1161,7 @@ prnImp(m = 5, maxit = 5)
 
 # significance tests
 prnSig(
-  impute_na = TRUE,
+  impute_na = TRUE, # otherwise coerce to complete cases 
   method = lm,
   W2_vs_W16_fix = ~ Term_3["W16-W2"], # one fixed effect
   W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
