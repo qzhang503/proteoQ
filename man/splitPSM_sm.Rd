@@ -2,7 +2,7 @@
 % Please edit documentation in R/sm_psm.R
 \name{splitPSM_sm}
 \alias{splitPSM_sm}
-\title{Splits PSM tables}
+\title{Splits PSM tables from \code{Spectrum Mill}}
 \usage{
 splitPSM_sm(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE,
   rptr_intco = 1000, annot_kinases = FALSE, plot_rptr_int = TRUE,
@@ -16,7 +16,7 @@ used in MS/MS ion search.}
 \item{rm_craps}{Logical; if TRUE, removes
 \code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.}
 
-\item{rm_krts}{Logical; if TRUE, removes keratin entries from the output.}
+\item{rm_krts}{Logical; if TRUE, removes keratin entries.}
 
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
 
@@ -27,10 +27,6 @@ proteins.}
 reporter-ion intensities.}
 }
 \description{
-\code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It
+\code{splitPSM_sm} splits the PSM outputs from \code{Spectrum Mill}. It
 separates PSM data by TMT experiment and LC/MS injection.
-}
-\examples{
-splitPSM_sm(rptr_intco = 1000, rm_craps = TRUE, plot_rptr_int = TRUE)
-
 }

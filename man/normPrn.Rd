@@ -93,7 +93,7 @@ proteins being kinases \cr kin_class      \tab Optional; the classes of
 kinases, e.g., TK, TKL... \cr kin_order      \tab Optional; the order of
 "kin_class" from the \code{\href{http://kinase.com/human/kinome/}{kinase tree
 diagram}} \cr prot_n_pep \tab The number of significant peptide sequences
-matched to a proposed protein \cr prot_n_psm \tab The number of significant
+matched to a proposed protein. \cr prot_n_psm \tab The number of significant
 MS/MS queries matched to a proposed protein. \cr pep_n_psm \tab The number of
 significant MS/MS queries matched to a proposed peptide sequence. \cr
 pep_seq_mod    \tab One-letter representation of peptide sequences: amino acid

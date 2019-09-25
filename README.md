@@ -63,6 +63,10 @@ data filtration, alignment and normalization. The package further offers
 a suite of tools and functionalities in statistics, informatics and data
 visualization by creating 'wrappers' around published R routines.
 
+Click
+[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)
+to render a html version of the README.
+
 Installation
 ------------
 
@@ -464,9 +468,10 @@ normPep(
 Backticks were used here to embrace column keys containing white
 space(s) and/or special character(s) such as parenthesis.
 
-*NB:* The above CVs do not inform the uncertainty in sample handlings
-prior to the enzymatic breakdown of proteins in a MS-based proteomic
-workflow.
+*NB:* The above single-sample CVs of proteins are based on ascribing
+peptides, which thus do not inform the uncertainty in sample handlings
+prior to the enzymatic breakdown of proteins in a typical MS-based
+proteomic workflow.
 
 ##### 1.2.2.3 pepHist
 
@@ -1239,7 +1244,6 @@ plot_prnNMFCon(
   height = 10, 
 )
 
-
 # coefficient heat map
 plot_prnNMFCoef(
   impute_na = FALSE,
@@ -1278,8 +1282,9 @@ of protein-protein interactions. More details can be found from
 getStringDB(
   db_path = "~\\proteoQ\\dbs\\string",
   score_cutoff = .9,
-  nseq_cutoff = 2,
-  adjP = FALSE, 
+  adjP = FALSE,
+  filter_by_sp = exprs(species %in% c("human", "mouse")), 
+  filter_by_npep = exprs(n_pep >= 2), 
 )
 ```
 
@@ -1524,7 +1529,7 @@ pepHist(
 Ideally, the profiles of the `log2FC` between the `phospho` subsets and
 the overall data would either align at the maximum density or perhaps
 offset by similar distance among replicated samples. In this example,
-the alginment at maximum density seems to be case. The observation
+the alginment at maximum density seems to be the case. The observation
 raises the possibility of measuring the stoichiometry of
 phosphoproteomes in relative to global data across sample types or
 conditions.
