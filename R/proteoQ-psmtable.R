@@ -1719,12 +1719,12 @@ splitPSM_sm <- function(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE, rptr_in
       dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
       dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) %>%
       dplyr::arrange(RAW_File, pep_seq, prot_acc) %>% 
-      dplyr::select(which(not_all_zero(.))) %>% 
+      # dplyr::select(which(not_all_zero(.))) %>% # empty channels are all NA too
       # a special case of redundant entries from Mascot
       dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
   } else {
     df_split <- df %>% 
-      dplyr::select(which(not_all_zero(.))) %>% 
+      # dplyr::select(which(not_all_zero(.))) %>% 
       dplyr::arrange(RAW_File, pep_seq, prot_acc)
   }
   
