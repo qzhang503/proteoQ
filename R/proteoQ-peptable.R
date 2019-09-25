@@ -661,8 +661,8 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	      "Peptide ID", "Mod. peptide ID", "Evidence ID", "Deamidation (N) site IDs", 
 	      "Oxidation (M) site IDs"
 	    )) %>% 
-	    dplyr::select(-grep("^Reporter mass deviation", names(.))) %>% 
-	    dplyr::select(which(not_all_zero(.)))
+	    dplyr::select(-grep("^Reporter mass deviation", names(.))) # %>% 
+	    # dplyr::select(which(not_all_zero(.))) # empty channels are all NA too
 	)
 
 	write.table(df, file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t",
