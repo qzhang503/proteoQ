@@ -2,12 +2,28 @@
 % Please edit documentation in R/sm_psm.R
 \name{annotPSM_sm}
 \alias{annotPSM_sm}
-\title{Annotates PSM results}
+\title{Annotates \code{Spectrum Mill} PSMs following \code{splitPSM_sm} and
+\code{cleanupPSM}}
 \usage{
-annotPSM_sm(fasta = NULL, expt_smry = "expt_smry.xlsx",
-  rm_krts = FALSE, plot_rptr_int = TRUE)
+annotPSM_sm(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
+  fasta = NULL, expt_smry = "expt_smry.xlsx", rm_krts = FALSE,
+  plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...)
 }
 \arguments{
+\item{group_psm_by}{A character string for the grouping of PSM entries. At the
+\code{pep_seq} default, descriptive statistics will be calculated based on
+the same \code{pep_seq} groups. At \code{group_psm_by = pep_seq_mod},
+peptides with different variable modifications will be treated as different
+species. The early decision in data grouping will inform the downstream
+purging (\code{\link{purgePSM}}) and summarization (\code{\link{normPep}})
+of PSM data.}
+
+\item{group_pep_by}{A character string for the grouping of peptide entries. At
+the \code{prot_acc} default, descriptive statistics will be calculated based
+on the same \code{prot_acc} groups. At \code{group_pep_by = gene}, proteins
+with the same gene name but different accession numbers will be treated as
+one group.}
+
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search.}
@@ -17,6 +33,9 @@ metadata of TMT experiments. The default is "expt_smry.xlsx".}
 
 \item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}
+
+\item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
+peptide \code{log2FC} for each sample.}
 }
 \description{
 \code{annotPSM_sm} adds fields of annotation to PSM tables.

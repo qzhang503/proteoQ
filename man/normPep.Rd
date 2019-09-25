@@ -101,15 +101,23 @@ In the primary output file, "\code{Peptide.txt}", values under columns
 \code{log2_R...} are logarithmic ratios at base 2 in relative to the
 \code{reference(s)} within each multiplex TMT set, or to the row means if no
 \code{reference(s)} are present. Values under columns \code{N_log2_R...} are
-\code{log2_R...} with median-centering alignment. Values under columns
-\code{Z_log2_R...} are \code{N_log2_R...} with scaling normalization. Values
-under columns \code{I...} are \code{reporter-ion intensity} before
-normalization. Values under columns \code{N_I...} are normalized \code{I...}.
-Values under columns \code{sd_log2_R...} are the standard deviation of the
-\code{log2FC} of proteins from ascribing peptides.
+aligned \code{log2_R...} according to \code{method_align} without scaling
+normalization. Values under columns \code{Z_log2_R...} are \code{N_log2_R...}
+with additional scaling normalization. Values under columns \code{I...} are
+\code{reporter-ion intensity} before normalization. Values under columns
+\code{N_I...} are normalized \code{I...}. Values under columns
+\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
+proteins from ascribing peptides.
 
 Also see \code{\link{normPrn}} for more description of the column keys in the
 output.
+
+The peptide counts in individual peptide tables,
+\code{TMTset1_LCMSinj1_Peptide_N.txt} et al., may be fewer than the entries
+indicated under the \code{prot_n_pep} column after the peptide
+removals/cleanups using \code{purgePSM}. Values under columns
+\code{N_log2_R...} are intermediate reports by median-centering
+\code{log2_R...} without scaling normalization.
 }
 \examples{
 \dontrun{

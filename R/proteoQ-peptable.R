@@ -26,8 +26,8 @@ newColnames <- function(i, x, label_scheme) {
 
 #' Peptide reports for individual TMT experiments
 #'
-#' \code{normPep_Splex} prepares peptide data for each TMT experiment at
-#' different LC/MS injections.
+#' \code{normPep_Splex} prepares peptide data for each TMT experiment at one or
+#' multiple LC/MS injections.
 #'
 #' @inheritParams normPep
 #' @return Results in \code{.txt} files for each of TMT experiments and LC/MS
@@ -36,7 +36,8 @@ newColnames <- function(i, x, label_scheme) {
 #' @examples
 #' 	normPep_Splex(
 #' 		id = pep_seq_mod,
-#' 		method_psm_pep = median
+#' 		method_psm_pep = median, 
+#' 		group_pep_by = prot_acc, 
 #' 	)
 #'
 #' \dontrun{
@@ -47,6 +48,8 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	        add = TRUE)
 
 	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx, injn_idx) {
+	  stopifnot("prot_acc" %in% names(df))
+	  
 	  id <- rlang::as_string(rlang::enexpr(id))
 	  
 	  channelInfo <- label_scheme %>%
@@ -55,12 +58,15 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	  
 	  df <- df[rowSums(!is.na(df[, grepl("^N_log2_R[0-9]{3}", names(df)), drop = FALSE])) > 0, ] %>%
 	    dplyr::arrange(!!rlang::sym(id), prot_acc) %>%
-	    # dplyr::filter(pep_isunique == 1) %>%
-	    dplyr::select(-grep("^R[0-9]{3}", names(.))) %>%
-	    dplyr::mutate(pep_scan_title = gsub("\\\\", "~~", pep_scan_title)) %>%
-	    dplyr::mutate(pep_scan_title = gsub("^File.*~~", "", pep_scan_title))
+	    dplyr::select(-grep("^R[0-9]{3}", names(.)))
 	  
-	  # summarise log2FC and intensity from the same `set_idx` but different LCMS injections
+	  if ("pep_scan_title" %in% names(df)) {
+	    df <- df %>% 
+	    dplyr::mutate(pep_scan_title = gsub("\\\\", "~~", pep_scan_title)) %>%
+	    dplyr::mutate(pep_scan_title = gsub("^File.*~~", "", pep_scan_title))	      
+	  }
+
+	  # summarise log2FC and intensity from the same `set_idx` at one or multiple LCMS injections
 	  if (method_psm_pep == "mean") {
 	    df_num <- aggrNums(mean)(df, !!rlang::sym(id), na.rm = TRUE)
 	  } else if (method_psm_pep == "top.3") {
@@ -71,38 +77,80 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	    df_num <- aggrNums(median)(df, !!rlang::sym(id), na.rm = TRUE)
 	  }
 
-	  df_score <- df %>% 
-	    dplyr::select(!!rlang::sym(id), pep_score) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise(pep_score = max(pep_score, na.rm = TRUE))
+	  if ("pep_score" %in% names(df)) {
+  	  df_score <- df %>% 
+  	    dplyr::select(!!rlang::sym(id), pep_score) %>% 
+  	    dplyr::group_by(!!rlang::sym(id)) %>% 
+  	    dplyr::summarise(pep_score = max(pep_score, na.rm = TRUE))
+	  } else {
+	    df_score <- df %>% 
+	      dplyr::filter(!duplicated(.[[id]])) %>% 
+	      dplyr::select(!!rlang::sym(id)) %>% 
+	      dplyr::mutate(pep_score = NA)
+	  }
 	  
-	  df_expect <- df %>% 
-	    dplyr::select(!!rlang::sym(id), pep_expect) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise(pep_expect = min(pep_expect, na.rm = TRUE))
+	  if ("pep_expect" %in% names(df)) {
+  	  df_expect <- df %>% 
+  	    dplyr::select(!!rlang::sym(id), pep_expect) %>% 
+  	    dplyr::group_by(!!rlang::sym(id)) %>% 
+  	    dplyr::summarise(pep_expect = min(pep_expect, na.rm = TRUE))
+	  } else {
+  	  df_expect <- df %>% 
+  	    dplyr::filter(!duplicated(.[[id]])) %>% 
+  	    dplyr::select(!!rlang::sym(id)) %>% 
+  	    dplyr::mutate(pep_expect = NA)
+	  }
+
+	  if ("pep_rank" %in% names(df)) {
+  	  df_rank <- df %>% 
+  	    dplyr::select(!!rlang::sym(id), pep_rank) %>% 
+  	    dplyr::group_by(!!rlang::sym(id)) %>% 
+  	    dplyr::summarise(pep_rank = min(pep_rank, na.rm = TRUE))
+	  } else {
+	    df_rank <- df %>% 
+	      dplyr::filter(!duplicated(.[[id]])) %>% 
+	      dplyr::select(!!rlang::sym(id)) %>% 
+	      dplyr::mutate(pep_rank = NA)
+	  }
+
+	  if ("pep_isbold" %in% names(df)) {
+  	  df_isbold <- df %>% 
+  	    dplyr::select(!!rlang::sym(id), pep_isbold) %>% 
+  	    dplyr::group_by(!!rlang::sym(id)) %>% 
+  	    dplyr::summarise(pep_isbold = max(pep_isbold, na.rm = TRUE))
+	  } else {
+	    df_isbold <- df %>% 
+	      dplyr::filter(!duplicated(.[[id]])) %>% 
+	      dplyr::select(!!rlang::sym(id)) %>% 
+	      dplyr::mutate(pep_isbold = NA)
+	  }
 	  
-	  df_rank <- df %>% 
-	    dplyr::select(!!rlang::sym(id), pep_rank) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise(pep_rank = min(pep_rank, na.rm = TRUE))
-	  
-	  df_isbold <- df %>% 
-	    dplyr::select(!!rlang::sym(id), pep_isbold) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise(pep_isbold = max(pep_isbold, na.rm = TRUE))
-	  
-	  df_exp_mr <- df %>% 
-	    dplyr::select(!!rlang::sym(id), pep_exp_mr) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise(pep_exp_mr = median(pep_exp_mr, na.rm = TRUE))
-	  
-	  df_exp_z <- df %>% 
-	    dplyr::select(!!rlang::sym(id), pep_exp_z) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise(pep_exp_z = median(pep_exp_z, na.rm = TRUE))
+	  if ("pep_exp_mr" %in% names(df)) {
+  	  df_exp_mr <- df %>% 
+  	    dplyr::select(!!rlang::sym(id), pep_exp_mr) %>% 
+  	    dplyr::group_by(!!rlang::sym(id)) %>% 
+  	    dplyr::summarise(pep_exp_mr = median(pep_exp_mr, na.rm = TRUE))
+	  } else {
+	    df_exp_mr <- df %>% 
+	      dplyr::filter(!duplicated(.[[id]])) %>% 
+	      dplyr::select(!!rlang::sym(id)) %>% 
+	      dplyr::mutate(pep_exp_mr = NA)
+	  }
+
+	  if ("pep_exp_z" %in% names(df)) {
+  	  df_exp_z <- df %>% 
+  	    dplyr::select(!!rlang::sym(id), pep_exp_z) %>% 
+  	    dplyr::group_by(!!rlang::sym(id)) %>% 
+  	    dplyr::summarise(pep_exp_z = median(pep_exp_z, na.rm = TRUE))
+	  } else {
+	    df_exp_z <- df %>% 
+	      dplyr::filter(!duplicated(.[[id]])) %>% 
+	      dplyr::select(!!rlang::sym(id)) %>% 
+	      dplyr::mutate(pep_exp_z = NA)
+	  }
 
 	  df_first <- df %>% 
-	    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% # already in `df_num`
+	    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
 	    dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score",
 	                                         "prot_matches", "prot_matches_sig", "prot_sequences", "prot_sequences_sig", 
 	                                         "pep_score", "pep_expect", "pep_rank", "pep_isbold", 
@@ -111,11 +159,13 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	                                         "raw_file", "pep_query", "pep_summed_mod_pos", "pep_local_mod_pos"))) %>% 
 	    dplyr::filter(!duplicated(!!rlang::sym(id)))
 	  
-	  df_first <- dplyr::bind_cols(
-	    df_first %>% dplyr::select(-pep_calc_mr), 
-	    df_first %>% dplyr::select(pep_calc_mr), 
-	  )
-	  
+	  if ("pep_calc_mr" %in% names(df)) {
+  	  df_first <- dplyr::bind_cols(
+  	    df_first %>% dplyr::select(-pep_calc_mr), 
+  	    df_first %>% dplyr::select(pep_calc_mr), 
+  	  )	    
+	  }
+
 	  if(id == "pep_seq_mod") {
 	    df_first <- df_first %>% dplyr::select(-pep_seq)
 	  } else {
@@ -132,11 +182,11 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	    df %>% dplyr::select(-grep("^pep_", names(.))), 
 	  )
 
-	  df <- cbind.data.frame(df[, !grepl("[I|log2_R][0-9]{3}", names(df)), drop = FALSE],
-	                         df[, grepl("[log2_R][0-9]{3}", names(df)), drop = FALSE],
-	                         df[, grepl("[I][0-9]{3}", names(df)), drop = FALSE]) %>%
-	    dplyr::mutate_at(.vars = grep("[I|log2_R][0-9]{3}", names(.)),
-	                     list(~ replace(.x, is.infinite(.x), NA) ))
+	  df <- cbind.data.frame(df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df)), drop = FALSE],
+	                         df[, grepl("I[0-9]{3}", names(df)), drop = FALSE], 
+	                         df[, grepl("log2_R[0-9]{3}", names(df)), drop = FALSE]) %>%
+	    dplyr::mutate_at(.vars = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)),
+	                     list(~ replace(.x, is.infinite(.x), NA)))
 	  
 	  # median-centered across TMT channels under the same multiplex experiment
 	  col_r <- grepl("^log2_R[0-9]{3}", names(df))
@@ -220,15 +270,23 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'\code{log2_R...} are logarithmic ratios at base 2 in relative to the
 #'\code{reference(s)} within each multiplex TMT set, or to the row means if no
 #'\code{reference(s)} are present. Values under columns \code{N_log2_R...} are
-#'\code{log2_R...} with median-centering alignment. Values under columns
-#'\code{Z_log2_R...} are \code{N_log2_R...} with scaling normalization. Values
-#'under columns \code{I...} are \code{reporter-ion intensity} before
-#'normalization. Values under columns \code{N_I...} are normalized \code{I...}.
-#'Values under columns \code{sd_log2_R...} are the standard deviation of the
-#'\code{log2FC} of proteins from ascribing peptides.
+#'aligned \code{log2_R...} according to \code{method_align} without scaling
+#'normalization. Values under columns \code{Z_log2_R...} are \code{N_log2_R...}
+#'with additional scaling normalization. Values under columns \code{I...} are
+#'\code{reporter-ion intensity} before normalization. Values under columns
+#'\code{N_I...} are normalized \code{I...}. Values under columns
+#'\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
+#'proteins from ascribing peptides.
 #'
 #'Also see \code{\link{normPrn}} for more description of the column keys in the
 #'output.
+#'
+#'The peptide counts in individual peptide tables,
+#'\code{TMTset1_LCMSinj1_Peptide_N.txt} et al., may be fewer than the entries
+#'indicated under the \code{prot_n_pep} column after the peptide
+#'removals/cleanups using \code{purgePSM}. Values under columns
+#'\code{N_log2_R...} are intermediate reports by median-centering
+#'\code{log2_R...} without scaling normalization.
 #'
 #'@param id Character string; the variable for summarisation of \code{PSMs} into
 #'  peptides. The option \code{id = pep_seq} corresponds to the summarisation by
@@ -522,7 +580,17 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		  df %>% select(grep("^prot_", names(.))), 
 		  df %>% select(-grep("^prot_", names(.))), 
 		)
-
+		
+		df <- dplyr::bind_cols(
+		  df %>% dplyr::select(-grep("[RI]{1}[0-9]{3}[NC]*", names(.))), 
+		  df %>% dplyr::select(grep("^I[0-9]{3}[NC]*", names(.))), 
+		  df %>% dplyr::select(grep("^N_I[0-9]{3}[NC]*", names(.))), 
+		  df %>% dplyr::select(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), 
+		  df %>% dplyr::select(grep("^log2_R[0-9]{3}[NC]*", names(.))), 
+		  df %>% dplyr::select(grep("^N_log2_R[0-9]{3}[NC]*", names(.))), 
+		  df %>% dplyr::select(grep("^Z_log2_R[0-9]{3}[NC]*", names(.))), 
+		)
+		
 		df <- df %>% 
 		  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
 		  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
@@ -573,7 +641,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	  df[, grepl("I[0-9]{3}", names(df))] %>%
 		dplyr::mutate_if(is.logical, as.numeric) %>%
 		round(., digits = 0)
-	
+
 	suppressWarnings(
 	  df <- df %>% 
 	    dplyr::select(-one_of(
@@ -593,7 +661,8 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	      "Peptide ID", "Mod. peptide ID", "Evidence ID", "Deamidation (N) site IDs", 
 	      "Oxidation (M) site IDs"
 	    )) %>% 
-	    dplyr::select(-grep("^Reporter mass deviation", names(.)))
+	    dplyr::select(-grep("^Reporter mass deviation", names(.))) # %>% 
+	    # dplyr::select(which(not_all_zero(.))) # empty channels are all NA too
 	)
 
 	write.table(df, file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t",

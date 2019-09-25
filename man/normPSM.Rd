@@ -57,7 +57,7 @@ MaxQuant peptide results.}
 \item{rm_craps}{Logical; if TRUE, removes
 \code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.}
 
-\item{rm_krts}{Logical; if TRUE, removes keratin entries from the output.}
+\item{rm_krts}{Logical; if TRUE, removes keratin entries.}
 
 \item{rm_outliers}{Logical; if TRUE, performs outlier removals.}
 
@@ -88,9 +88,6 @@ results from \code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}}
 experiments.
 }
 \details{
-The \code{PSM} files should be present under the working directory,
-\code{"dat_dir"}, specified by end users.
-
 In each primary output file, "\code{...PSM_N.txt}", values under columns
 \code{log2_R...} are logarithmic ratios at base 2 in relative to the
 \code{reference(s)} within each multiplex TMT set, or to the row means if no
@@ -106,8 +103,9 @@ variable modifications.
 \section{\code{Mascot}}{
  End users will export \code{PSM} data from
  \code{\href{https://http://www.matrixscience.com/}{Mascot}} at a \code{.csv}
- format. The header information should be included during the \code{.csv}
- export. The file name(s) should be defaulted by
+ format and store them under the file folder indicated by \code{dat_dir}. The
+ header information should be included during the \code{.csv} export. The
+ file name(s) should be defaulted by
  \code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with
  the letter \code{'F'}, followed by a six-digit number without space and
  ended with a \code{'.csv'} extension \code{(e.g., F004453.csv)}.
@@ -123,6 +121,16 @@ variable modifications.
  end with a \code{'.txt'} extension.
 }
 
+\section{\code{Spectrum Mill}}{
+ End users will copy over \code{PSMexport.1.ssv}
+ file(s) from
+ \code{\href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum
+  Mill}} to the \code{dat_dir} directory. In the case of multiple
+ \code{PSMexport} files for processing, the file names need to be compiled in
+ that they all start with \code{'PSMexport'} and end with a \code{'.ssv'}
+ extension.
+}
+
 \examples{
 \dontrun{
 # Mascot example
@@ -135,7 +143,7 @@ copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
 dir.create("C:\\\\The\\\\Mascot\\\\Example", recursive = TRUE, showWarnings = FALSE)
 dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
 
-# copy Mascot PSM data
+# copy Mascot PSM examples
 cptac_csv_1(dat_dir)
 
 # copy "expt_smry.xlsx" and "frac_smry.xlsx"
@@ -164,12 +172,12 @@ normPSM(
   filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
 )
 
-# examplary PSM purging; n: the number of PSMs for a peptide
+# exemplary PSM purging; n: the number of PSMs for a peptide
 purgePSM(max_cv = .5, min_n = 2)
 
 
 # MaxQuant example
-# copy fasta if not yet already
+# copy fasta if not yet available
 library(proteoQDA)
 copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
 copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
@@ -178,7 +186,7 @@ copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
 dir.create("C:\\\\The\\\\MQ\\\\Example", recursive = TRUE, showWarnings = FALSE)
 dat_dir <- "C:\\\\The\\\\MQ\\\\Example"
 
-# copy MaxQuant PSM data
+# copy MaxQuant PSM examples
 library(proteoQDB)
 cptac_mqpsm_txt(dat_dir)
 
@@ -190,7 +198,7 @@ cptac_mqpsm_frac(dat_dir)
 library(proteoQ)
 load_expts()
 
-# process MaxQuant PSMs
+# process MaxQuant PSM data
 normPSM(
   group_psm_by = pep_seq,
   group_pep_by = prot_acc,

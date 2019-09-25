@@ -16,7 +16,7 @@ used in MS/MS ion search.}
 \item{rm_craps}{Logical; if TRUE, removes
 \code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.}
 
-\item{rm_krts}{Logical; if TRUE, removes keratin entries from the output.}
+\item{rm_krts}{Logical; if TRUE, removes keratin entries.}
 
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
 

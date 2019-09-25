@@ -37,13 +37,14 @@ Results in \code{.txt} files for each of TMT experiments and LC/MS
   injections.
 }
 \description{
-\code{normPep_Splex} prepares peptide data for each TMT experiment at
-different LC/MS injections.
+\code{normPep_Splex} prepares peptide data for each TMT experiment at one or
+multiple LC/MS injections.
 }
 \examples{
 	normPep_Splex(
 		id = pep_seq_mod,
-		method_psm_pep = median
+		method_psm_pep = median, 
+		group_pep_by = prot_acc, 
 	)
 
 \dontrun{
