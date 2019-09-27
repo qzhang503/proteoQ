@@ -287,8 +287,8 @@ purPrn <- function (...) {
 #'
 #' @inheritParams proteoHist
 #' @param max_cv Numeric; the cut-off in CV. The CV are from the ascribing PSMs
-#'   for the filtration of peptides or ascribing peptides for the filtration of
-#'   proteins.
+#'   for the filtration of peptide entries or ascribing peptides for the
+#'   filtration of protein entries.
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
 purge_by_cv <- function (df, id, max_cv) {
@@ -380,8 +380,8 @@ purge_by_n <- function (df, id, min_n) {
 #'\code{purgePSM} removes \code{peptide} entries from PSM tables by selection
 #'criteria.
 #'
-#'The CV of peptides are calculated from contributing PSMs. The calculation is
-#'per TMT experiment and per LCMS run.
+#'The CV of peptides are calculated from contributing PSMs at the basis of per
+#'TMT experiment per LCMS run.
 #'
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv
@@ -444,7 +444,8 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
 #'\code{purgePep} removes \code{protein} entries from peptide table(s) by
 #'selection criteria.
 #'
-#'The CV of proteins are calculated from contributing peptides.
+#'The CV of proteins are calculated from contributing peptides at the basis of
+#'per TMT experiment per LCMS run.
 #'
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv

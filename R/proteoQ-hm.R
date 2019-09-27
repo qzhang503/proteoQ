@@ -363,24 +363,20 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'dissimilarities (\code{\link[stats]{dist}}). At \code{complet_cases = TRUE},
 #'the data subset that are complete without missing values will be used. At
 #'\code{impute_na = TRUE}, all data rows will be used with NA imputation (see
-#'\code{\link{imputeNA}}). At the default of \code{complet_cases = FALSE} and
+#'\code{\link{prnImp}}). At the default of \code{complet_cases = FALSE} and
 #'\code{impute_na = FALSE}, NA distances will be arbitrarily replaced with the
 #'mean value of the row-disance matrix for hierarchical row clustering.
 #'
-#'Data columns with complete missing values will be first removed prior to
-#'hierarchical column clustering. Similarly, NA distances in data columns will
-#'be replaced with the mean value of the column-distance matrix.
+#'Similar to data rows, data columns with complete missing values will be first
+#'removed prior to hierarchical column clustering. NA distances in data columns
+#'will be replaced with the mean value of the column-distance matrix.
 #'
 #'To avoid memory failure, row aggregation using the \code{kmeans_k} option
 #'(\code{\link[pheatmap]{pheatmap}}) may be considered for large data sets.
 #'
 #'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
-#'example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
-#'the setting of \code{id = pep_seq_mod} in the current call will be matched to
-#'\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
-#'was employed, the setting of \code{id = prot_acc} in the current call will be
-#'matched to \code{id = gene}.
+#'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
+#'for details.
 #'
 #'@inheritParams  proteoEucDist
 #'@param  col_benchmark Not used.
@@ -423,9 +419,8 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'   cellwidth = 14,
 #'   width = 18,
 #'   height = 12,
-#'   
-#'   filter_sp = exprs(species == "human", n_pep >= 2),
-#'   
+#'
+#'   filter_sp = exprs(species == "human", prot_n_pep >= 2),
 #'   filename = "prn_hu_npep2.png",
 #' )
 #'
@@ -445,10 +440,9 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'   cellwidth = 14,
 #'   width = 22,
 #'   height = 22,
-#'   
+#'
 #'   filter_kin = exprs(kin_attr, species == "human"),
 #'   arrange_kin = exprs(kin_order, gene),
-#'   
 #'   filename = "kin_hu_row_by_class.png",
 #' )
 #'
@@ -456,16 +450,16 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #' prnHM(
 #'   scale_log2r = TRUE,
 #'   annot_cols = c("Group"),
-#'   cluster_rows = FALSE, 
+#'   cluster_rows = FALSE,
 #'   clustering_distance_rows  = "maximum",
-#'   cutree_rows = 6, 
+#'   cutree_rows = 6,
 #'   show_rownames = FALSE,
 #'   show_colnames = TRUE,
 #'   fontsize_row = 3,
 #'   cellwidth = 14,
 #'   width = 22,
 #'   height = 22,
-#'   
+#'
 #'   filename = "cutree_overruled.png",
 #' )
 #'

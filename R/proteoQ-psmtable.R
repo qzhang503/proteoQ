@@ -14,7 +14,8 @@ extract_psm_raws <- function(dat_dir) {
   if (is.null(dat_dir)) {
     dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
     if (dat_dir == 1) 
-      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", 
+           call. = FALSE)
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
@@ -112,12 +113,11 @@ extract_psm_raws <- function(dat_dir) {
 #' \code{\href{https://http://www.matrixscience.com/}{Mascot}} outputs. It also
 #' removes the spacer columns in the fields of ratio and intensity values.
 #'
-#' @return Header file(s) and PSM table(s) without the header.
+#' @return Intermediate PSM table(s).
 #'
 #' @import dplyr
 #' @importFrom purrr walk
 #' @importFrom magrittr %>%
-#' @export
 rmPSMHeaders <- function () {
 	old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
@@ -181,13 +181,9 @@ rmPSMHeaders <- function () {
 #' @param rptr_intco Numeric; the threshold of reporter ion intensity.
 #' @param plot_rptr_int Logical; if TRUE, prepares the violin plots of
 #'   reporter-ion intensities.
-#' @examples
-#' splitPSM(rptr_intco = 1000, rm_craps = TRUE, plot_rptr_int = TRUE)
-#'
 #' @import dplyr tidyr
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
-#' @export
 splitPSM <- function(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE, rptr_intco = 1000, 
                      annot_kinases = FALSE, plot_rptr_int = TRUE, ...) {
 
@@ -459,9 +455,9 @@ Grubbs_outliers <- function(x, type = 10) {
 
 #' Cleans Up PSM results
 #'
-#' \code{cleanupPSM} removes PSM outliers after \code{rmPSMHeaders} and
-#' \code{splitPSM}. The outlier removals will be assessed at the basis of per
-#' peptide per TMT channel.
+#' \code{cleanupPSM} removes PSM outliers after \code{splitPSM},
+#' \code{splitPSM_mq} or \code{splitPSM_sm}. The outlier removals will be
+#' assessed at the basis of per peptide per TMT channel.
 #'
 #' Dixon's method will be used when 2 < n <= 25; Rosner's method will be used
 #' when n > 25
@@ -471,7 +467,6 @@ Grubbs_outliers <- function(x, type = 10) {
 #' @importFrom stringr str_split
 #' @importFrom outliers dixon.test
 #' @importFrom EnvStats rosnerTest
-#' @export
 cleanupPSM <- function(rm_outliers = FALSE) {
 	old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
@@ -641,7 +636,7 @@ mcPSM <- function(df, set_idx) {
 
 #'Annotates PSM results
 #'
-#'\code{annotPSM} adds fields of annotation to PSM tables after
+#'\code{annotPSM} adds fields of annotation to Mascot PSM tables after
 #'\code{rmPSMHeaders}, \code{splitPSM} and \code{cleanupPSM}.
 #'
 #'@param group_psm_by A character string for the grouping of PSM entries. At the
@@ -864,7 +859,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 
 			rm (nt_ace_var_mods, mod, df_sub, fn)
 
-			# add "pep_res_before" and "pep_res_after"
+			# paste "pep_res_before" and "pep_res_after"
 			df <- df %>%
 				dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
 				dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))
@@ -881,7 +876,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 			  dplyr::mutate_at(vars(grep("^N_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
 			  dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 4))
 			
-			# add column `pep_n_psm`
+			# add column `pep_n_psm` et al.
 			pep_n_psm <- df %>%
 			  dplyr::select(!!rlang::sym(group_psm_by)) %>%
 			  dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
@@ -985,9 +980,9 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'  that they all start with \code{'PSMexport'} and end with a \code{'.ssv'}
 #'  extension.
 #'
-#'@param ... \code{filter_}: Each one corresponds to a logical expression(s) for
-#'  the filtration of data rows. The \code{lhs} needs to start with
-#'  \code{filter_}. The logical condition(s) at the \code{rhs} needs to be
+#'@param ... \code{filter_}: Each argument corresponds to a logical
+#'  expression(s) for the filtration of data rows. The \code{lhs} needs to start
+#'  with \code{filter_}. The logical condition(s) at the \code{rhs} needs to be
 #'  enclosed in \code{exprs} with round parenthesis.
 #'@inheritParams load_expts
 #'@inheritParams splitPSM
@@ -1089,19 +1084,19 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'
 #' # process Spectrum Mill PSMs
 #' normPSM(
-#'   group_psm_by = pep_seq, 
+#'   group_psm_by = pep_seq,
 #'   group_pep_by = gene,
-#'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-#'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+#'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+#'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
 #'   rptr_intco = 3000,
 #'   rm_craps = TRUE,
 #'   rm_krts = FALSE,
-#'   rm_outliers = FALSE, 
-#'   annot_kinases = TRUE, 
-#'   plot_rptr_int = TRUE, 
-#'   plot_log2FC_cv = TRUE, 
-#'   
-#'   filter_peps = exprs(score >= 10), 
+#'   rm_outliers = FALSE,
+#'   annot_kinases = TRUE,
+#'   plot_rptr_int = TRUE,
+#'   plot_log2FC_cv = TRUE,
+#'
+#'   filter_peps = exprs(score >= 10),
 #' )
 #'
 #' }
@@ -1192,59 +1187,32 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
 #'\code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It
 #'separates PSM data by TMT experiment and LC/MS injection.
 #'
-#'@param pep_unique_by A character string for use in the filtration of peptide
-#'  data from \code{MaxQuant}. The choice is in one of \code{c("group",
-#'  "protein", "none")} At the \code{group} default, only peptides unique by
-#'  protein groups will be kept. At \code{protein}, only peptides unique by
-#'  protein entries will be kept. At \code{none}, all peptides will be kept.
+#'@param pep_unique_by A character string for the characterization of peptide
+#'  uniqueness from \code{MaxQuant} PSMs. The choice is one of
+#'  \code{c("group", "protein", "none")}. At the \code{group} default, the
+#'  uniqueness of peptides is by protein groups. At a more strigent criterion of
+#'  \code{protein}, the uniqueness of peptides is by protein entries. A new
+#'  column of \code{pep_isunique} will be added accordingly to the PSM reports.
+#'  At a trivia criterion of \code{none}, all values under \code{pep_unique_by}
+#'  will be set to \code{1}.
 #'@param corrected_int Logical. If TRUE, values under columns "Reporter
 #'  intensity corrected" in MaxQuant PSM results (\code{msms.txt}) will be used.
 #'  Otherwise, "Reporter intensity" values without corrections will be used.
 #'@param rm_reverses Logical; if TRUE, removes \code{Reverse} entries from
 #'  MaxQuant peptide results.
 #'@inheritParams splitPSM
-#' @examples
-#' splitPSM(rptr_intco = 1000, rm_craps = TRUE, plot_rptr_int = TRUE)
-#'
 #'@import dplyr tidyr
 #'@importFrom stringr str_split
 #'@importFrom magrittr %>%
-#'@export
 splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = FALSE, rptr_intco = 1000, 
                         rm_craps = FALSE, rm_reverses = TRUE, annot_kinases = FALSE, 
                         plot_rptr_int = TRUE, ...) {
-  
-  add_mascot_headers <- function (df) {
-    df %>% 
-      dplyr::mutate(pep_scan_title = RAW_File) %>% 
-      dplyr::mutate(prot_hit_num = NA) %>% 
-      dplyr::mutate(prot_family_member = NA) %>% 
-      dplyr::mutate(prot_score = NA) %>% 
-      dplyr::mutate(prot_matches = NA) %>% 
-      dplyr::mutate(prot_matches_sig = NA) %>% 
-      dplyr::mutate(prot_sequences = NA) %>% 
-      dplyr::mutate(prot_sequences_sig = NA) %>% 
-      dplyr::mutate(pep_query = NA) %>% 
-      dplyr::mutate(pep_rank = NA) %>% 
-      dplyr::mutate(pep_isbold = NA) %>% 
-      dplyr::mutate(pep_exp_mr = NA) %>% 
-      dplyr::mutate(pep_exp_z = NA) %>% 
-      dplyr::mutate(pep_calc_mr = NA) %>% 
-      dplyr::mutate(pep_exp_mz = NA) %>% 
-      dplyr::mutate(pep_delta = NA) %>% 
-      dplyr::mutate(pep_var_mod = NA) %>% 
-      dplyr::mutate(pep_var_mod_pos = NA) %>% 
-      dplyr::mutate(pep_summed_mod_pos = NA) %>% 
-      dplyr::mutate(pep_local_mod_pos = NA)
-  }
-  
   
   old_opt <- options(max.print = 99999)
   on.exit(options(old_opt), add = TRUE)
   
   old_dir <- getwd()
   on.exit(setwd(old_dir), add = TRUE)
-  
   on.exit(message("Split PSM by sample IDs and LCMS injections --- Completed."), add = TRUE)
   
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
@@ -1279,13 +1247,15 @@ splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = F
     filters_in_call(!!!lang_dots) %>% 
     dplyr::rename(ID = id)
   
-  # added column key(s) before `filters_in_call`
   if (pep_unique_by == "group") {
     df <- df %>% 
       dplyr::mutate(pep_isunique = ifelse(grepl(";", `Protein group IDs`), 0, 1))
   } else if (pep_unique_by == "protein") {
     df <- df %>% 
-      dplyr::mutate(pep_isunique = ifelse(grepl(";", prot_acc), 0, 1))
+      dplyr::mutate(pep_isunique = ifelse(grepl(";", Proteins), 0, 1))
+  } else if (pep_unique_by == "none") {
+    df <- df %>% 
+      dplyr::mutate(pep_isunique = 1)
   }
   
   if (corrected_int) {
@@ -1337,8 +1307,7 @@ splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = F
       ) 
 
     df <- df %>% 
-      dplyr::mutate(prot_acc = gsub("\\;.*", "", prot_acc)) # %>% 
-      # add_mascot_headers()
+      dplyr::mutate(prot_acc = gsub("\\;.*", "", prot_acc))
   }
   
   acc_type <- parse_acc(df)
@@ -1420,9 +1389,9 @@ splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = F
 }
 
 
-#' Annotates PSM results
+#' Annotates MaxQuant PSM results
 #'
-#' \code{annotPSM_mq} adds fields of annotation to PSM tables.
+#' \code{annotPSM_mq} adds fields of annotation to MaxQuant PSM tables.
 #'
 #'@inheritParams load_expts
 #'@inheritParams annotPSM
@@ -1430,7 +1399,6 @@ splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = F
 #' @importFrom stringr str_split
 #' @importFrom tidyr gather
 #' @importFrom magrittr %>%
-#' @export
 annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, expt_smry = "expt_smry.xlsx", 
                         rm_krts = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...) {
 	
@@ -1509,7 +1477,6 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
       
       if(TMT_plex > 0) df <- mcPSM(df, set_idx)
 			
-			# add SD columns
 			df <- df %>% 
 			  calcSD_Splex(group_psm_by) %>% 
 			  `names<-`(gsub("^log2_R", "sd_log2_R", names(.))) %>% 
@@ -1519,7 +1486,6 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 			  dplyr::mutate_at(vars(grep("^N_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
 			  dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 4))
 			
-			# add column `pep_n_psm`
 			pep_n_psm <- df %>%
 			  dplyr::select(!!rlang::sym(group_psm_by)) %>%
 			  dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
@@ -1690,7 +1656,6 @@ splitPSM_sm <- function(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE, rptr_in
   if (!any(c("pep_start", "pep_end") %in% names(df))) df <- df %>% annotPeppos(fasta)
   
   # M._sequence.c; -._sequence.c; n.sequence.c; -.sequence.c
-  # temp <- df %>% filter(pep_seq == "MENGQSTAAK")
   
   df <- df %>% 
     dplyr::mutate(pep_seq = toupper(pep_seq))
@@ -1719,12 +1684,11 @@ splitPSM_sm <- function(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE, rptr_in
       dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
       dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) %>%
       dplyr::arrange(RAW_File, pep_seq, prot_acc) %>% 
-      # dplyr::select(which(not_all_zero(.))) %>% # empty channels are all NA too
+      # dplyr::select(which(not_all_zero(.))) %>% # dont: empty channels are all NA too
       # a special case of redundant entries from Mascot
       dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
   } else {
     df_split <- df %>% 
-      # dplyr::select(which(not_all_zero(.))) %>% 
       dplyr::arrange(RAW_File, pep_seq, prot_acc)
   }
   
@@ -1823,7 +1787,6 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
     
     channelInfo <- channelInfo(label_scheme, set_idx)
     
-    # the same TMT experiment at one or multiple LCMS injections
     for (injn_idx in seq_along(sublist)) {
       df <- read.csv(file.path(dat_dir, "PSM\\cache", sublist[injn_idx]),
                      check.names = FALSE, header = TRUE, sep = "\t",
@@ -1881,7 +1844,7 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
         )
       }
       
-      # add "pep_res_before" and "pep_res_after"
+      # paste "pep_res_before" and "pep_res_after"
       df <- df %>%
         dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
         dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))

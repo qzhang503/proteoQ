@@ -7,7 +7,7 @@
 rmPSMHeaders()
 }
 \value{
-Header file(s) and PSM table(s) without the header.
+Intermediate PSM table(s).
 }
 \description{
 \code{rmPSMHeaders} removes the header of PSM from

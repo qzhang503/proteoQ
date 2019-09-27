@@ -11,9 +11,9 @@ purge_by_n(df, id, min_n)
 automatically by the value of \code{id}.}
 
 \item{id}{Character string to indicate the type of data. The value will be
-determined automatically by the program. Peptide data will be used at
-\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-\code{id = prot_acc} or \code{gene}.}
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
 entries in PSM tables with the number of identifying PSMs smaller than

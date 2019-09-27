@@ -12,14 +12,14 @@ normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
   col_refit = NULL, cache = TRUE, plot_log2FC_cv = TRUE, ...)
 }
 \arguments{
-\item{id}{Character string; the variable for summarisation of \code{PSMs} into
-peptides. The option \code{id = pep_seq} corresponds to the summarisation by
-the primary sequences of peptides. The option \code{id = pep_seq_mod}
-corresponds to the summarisation by both the primary sequences and variable
-modifications of peptides. \code{PSMs} data with the same value in
-\code{pep_seq} or \code{pep_seq_mod} will be summarised into a single entry
-of peptide. The value of \code{id} will match automatically to the value of
-\code{group_psm_by} in \code{normPSM}.}
+\item{id}{Depreciated: character string; the variable for summarisation of
+\code{PSMs} into peptides. The option \code{id = pep_seq} corresponds to the
+summarisation by the primary sequences of peptides. The option \code{id =
+pep_seq_mod} corresponds to the summarisation by both the primary sequences
+and variable modifications of peptides. \code{PSMs} data with the same value
+in \code{pep_seq} or \code{pep_seq_mod} will be summarised into a single
+entry of peptide. NB: the value of \code{id} will match automatically to the
+value of \code{group_psm_by} in \code{normPSM}.}
 
 \item{method_psm_pep}{Character string; the method to summarise the
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
@@ -32,7 +32,7 @@ The descriptive statistics includes \code{c("mean", "median", "top.3",
 peptide entries. At the \code{prot_acc} default, descriptive statistics will
 be calculated based on the same \code{prot_acc} groups. At
 \code{group_pep_by = gene}, proteins with the same gene name but different
-accession numbers will be treated as one group. The value of
+accession numbers will be treated as one group. NB: the value of
 \code{group_pep_by} will match automatically to the value of
 \code{group_pep_by} in \code{normPSM}.}
 
@@ -72,8 +72,8 @@ proteins.}
 Samples corresponding to non-empty entries under \code{col_refit} will be
 used in the refit of \code{log2FC} using multiple Gaussian kernels. The
 density estimates from an earlier analyis will be kept for the remaining
-samples. At the NULL default, the column key \code{Sample_ID} will be used,
-which results in the refit of the \code{log2FC} for all samples.}
+samples. At the \code{NULL} default, the column key of \code{Sample_ID} will
+be used, which results in the refit of the \code{log2FC} for all samples.}
 
 \item{cache}{Logical; if TRUE, use cache.}
 
@@ -109,6 +109,10 @@ with additional scaling normalization. Values under columns \code{I...} are
 \code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
 proteins from ascribing peptides.
 
+In general, median statistics is applied when summarising numeric values from
+PSMs to peptides. One exception is \code{pep_expect} where geometric mean is
+used.
+
 Also see \code{\link{normPrn}} for more description of the column keys in the
 output.
 
@@ -132,7 +136,7 @@ normPep(
   maxit = 200,
   epsilon = 1e-05,
 
-  filter_by = exprs(pep_n_psm >= 2),
+  # filter_by = exprs(pep_n_psm >= 2),
   # filter_by_sp = exprs(species == "human"),
 )
 

@@ -4,12 +4,12 @@
 #'(GSPA) aganist protein \code{log2FC} data
 #'
 #'The significance \code{pVals} of proteins are first obtained from
-#'\code{\link{prnSig}}, which involves moderated t-test using
-#'\code{\link[limma]{eBayes}}. The geometric mean of \code{pVals} are then each
-#'calculated for the groups of up or down regulated proteins. The quotient of
-#'the two \code{pVals} is used to prepsent the significance of gene set
-#'enrichment. The arguments \code{pval_cutoff} and \code{logFC_cutoff} are used
-#'to filter out low influence genes.
+#'\code{\link{prnSig}}, which involves linear modelings using
+#'\code{\link[limma]{eBayes}} or \code{\link[lmerTest]{lmer}}. The geometric
+#'mean of \code{pVals} are then each calculated for the groups of up or down
+#'regulated proteins. The quotient of the two \code{pVals} is used to prepsent
+#'the significance of gene set enrichment. The arguments \code{pval_cutoff} and
+#'\code{logFC_cutoff} are used to filter out low influence genes.
 #'
 #'The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 #'default.
@@ -41,7 +41,7 @@
 #'   pval_cutoff = 5E-2,
 #'   gset_nms = c("go_sets", "kegg_sets"),
 #'
-#'   filter_by_npep = exprs(n_pep >= 2),
+#'   filter_by_npep = exprs(prot_n_pep >= 2),
 #'   # `filename(s)` will be automated,
 #' )
 #'

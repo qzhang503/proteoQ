@@ -33,14 +33,14 @@ plot_metaNMF(annot_cols = NULL, annot_colnames = NULL, ...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. The value will be
-determined automatically by the program. Peptide data will be used at
-\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-\code{id = prot_acc} or \code{gene}.}
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the NULL default, the column key will
-be \code{Select}.}
+included in the indicated analysis. At the \code{NULL} default, the column
+key will be \code{Select}.}
 
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be
@@ -48,7 +48,7 @@ used for sample grouping in the indicated analysis. At the NULL default, the
 column key \code{Group} will be used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation for all samples.}
+of standard deviation across all samples.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
@@ -63,13 +63,14 @@ automatically by the value of \code{id}.}
 
 \item{filename}{Use system default.}
 
-\item{task}{Character string; a signature for task dispatch in a function
+\item{task}{Character string; a signature for task dispatching in a function
 factory.}
 
 \item{r}{Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
 The default is c(4:8)}
 
-\item{nrun}{Numeric; the number of runs in \code{\link[NMF]{nmf}}.}
+\item{nrun}{Numeric; the number of runs in \code{\link[NMF]{nmf}}. The default
+is 200.}
 
 \item{...}{In \code{anal_} functions: additional arguments are for
 \code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments are
@@ -124,7 +125,7 @@ anal_pepNMF(
   col_group = Group, # optional a priori knowledge of sample groups
   r = c(6, 8),
   nrun = 200,
-  filter_by_npsm = exprs(n_psm >= 2),
+  filter_by_npsm = exprs(pep_n_psm >= 2),
 )
 
 # protein data NMF at multiple ranks
@@ -136,7 +137,7 @@ anal_prnNMF(
   col_group = Group,
   r = c(5:8),
   nrun = 200, 
-  filter_by_npep = exprs(n_pep >= 2),
+  filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 

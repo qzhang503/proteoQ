@@ -18,19 +18,19 @@ prnHM(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. The value will be
-determined automatically by the program. Peptide data will be used at
-\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-\code{id = prot_acc} or \code{gene}.}
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the NULL default, the column key will
-be \code{Select}.}
+included in the indicated analysis. At the \code{NULL} default, the column
+key will be \code{Select}.}
 
 \item{col_benchmark}{Not used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation for all samples.}
+of standard deviation across all samples.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
@@ -49,7 +49,7 @@ of \code{id} in the \code{call}.}
 will be determined automatically by the name of the current \code{call}. The
 image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 will be determined by the extension of the file name. A \code{.png} format
-will be used at default or an unrecognized file extension.}
+will be used at default or at an unrecognized file extension.}
 
 \item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
 The values under the selected keys will be used to color-code sample IDs on
@@ -94,24 +94,20 @@ Data rows without non-missing pairs will result in NA distances in inter-row
 dissimilarities (\code{\link[stats]{dist}}). At \code{complet_cases = TRUE},
 the data subset that are complete without missing values will be used. At
 \code{impute_na = TRUE}, all data rows will be used with NA imputation (see
-\code{\link{imputeNA}}). At the default of \code{complet_cases = FALSE} and
+\code{\link{prnImp}}). At the default of \code{complet_cases = FALSE} and
 \code{impute_na = FALSE}, NA distances will be arbitrarily replaced with the
 mean value of the row-disance matrix for hierarchical row clustering.
 
-Data columns with complete missing values will be first removed prior to
-hierarchical column clustering. Similarly, NA distances in data columns will
-be replaced with the mean value of the column-distance matrix.
+Similar to data rows, data columns with complete missing values will be first
+removed prior to hierarchical column clustering. NA distances in data columns
+will be replaced with the mean value of the column-distance matrix.
 
 To avoid memory failure, row aggregation using the \code{kmeans_k} option
 (\code{\link[pheatmap]{pheatmap}}) may be considered for large data sets.
 
 The function matches the current \code{id} to the grouping argument in the
-latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
-example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
-the setting of \code{id = pep_seq_mod} in the current call will be matched to
-\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
-was employed, the setting of \code{id = prot_acc} in the current call will be
-matched to \code{id = gene}.
+latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
+for details.
 }
 \examples{
 # unsupervised row clustering
@@ -129,9 +125,8 @@ prnHM(
   cellwidth = 14,
   width = 18,
   height = 12,
-  
-  filter_sp = exprs(species == "human", n_pep >= 2),
-  
+
+  filter_sp = exprs(species == "human", prot_n_pep >= 2),
   filename = "prn_hu_npep2.png",
 )
 
@@ -151,10 +146,9 @@ prnHM(
   cellwidth = 14,
   width = 22,
   height = 22,
-  
+
   filter_kin = exprs(kin_attr, species == "human"),
   arrange_kin = exprs(kin_order, gene),
-  
   filename = "kin_hu_row_by_class.png",
 )
 
@@ -162,16 +156,16 @@ prnHM(
 prnHM(
   scale_log2r = TRUE,
   annot_cols = c("Group"),
-  cluster_rows = FALSE, 
+  cluster_rows = FALSE,
   clustering_distance_rows  = "maximum",
-  cutree_rows = 6, 
+  cutree_rows = 6,
   show_rownames = FALSE,
   show_colnames = TRUE,
   fontsize_row = 3,
   cellwidth = 14,
   width = 22,
   height = 22,
-  
+
   filename = "cutree_overruled.png",
 )
 

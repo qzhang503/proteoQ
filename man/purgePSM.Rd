@@ -10,8 +10,8 @@ purgePSM(dat_dir = NULL, max_cv = NULL, min_n = 1, ...)
 \item{dat_dir}{A character string to the working directory.}
 
 \item{max_cv}{Numeric; the cut-off in CV. The CV are from the ascribing PSMs
-for the filtration of peptides or ascribing peptides for the filtration of
-proteins.}
+for the filtration of peptide entries or ascribing peptides for the
+filtration of protein entries.}
 
 \item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
 entries in PSM tables with the number of identifying PSMs smaller than
@@ -26,6 +26,6 @@ smaller than \code{min_n} will be replaced with NA.}
 criteria.
 }
 \details{
-The CV of peptides are calculated from contributing PSMs. The calculation is
-per TMT experiment and per LCMS run.
+The CV of peptides are calculated from contributing PSMs at the basis of per
+TMT experiment per LCMS run.
 }

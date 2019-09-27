@@ -7,5 +7,5 @@
 logfcPep(df, label_scheme, set_idx)
 }
 \description{
-Median-centering normalization
+# not currently used?
 }

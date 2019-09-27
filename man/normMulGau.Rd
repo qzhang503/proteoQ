@@ -43,8 +43,8 @@ standard deviation across samples. The default is between the 5th and the
 Samples corresponding to non-empty entries under \code{col_refit} will be
 used in the refit of \code{log2FC} using multiple Gaussian kernels. The
 density estimates from an earlier analyis will be kept for the remaining
-samples. At the NULL default, the column key \code{Sample_ID} will be used,
-which results in the refit of the \code{log2FC} for all samples.}
+samples. At the \code{NULL} default, the column key of \code{Sample_ID} will
+be used, which results in the refit of the \code{log2FC} for all samples.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. \cr Additional parameters for
@@ -56,6 +56,6 @@ algorithm convergence.}
 A data frame.
 }
 \description{
-\code{normMulGau} normalizes \code{log2-ratios} under the assumption of multi
+\code{normMulGau} normalizes \code{log2FC} under the assumption of multi
 Gaussian kernels.
 }

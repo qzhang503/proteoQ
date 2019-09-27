@@ -42,7 +42,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 		                              header = TRUE, comment.char = "#", na.strings = c("", "NA")) %>%
 												dplyr::filter(rowSums(!is.na(.)) > 0)
 	} else {
-		stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
+		stop(filename, " needs to be '.xls' or '.xlsx'.")
 	}
 
 	must_have <- c("TMT_Channel", "TMT_Set", "LCMS_Injection", "RAW_File",
@@ -152,7 +152,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 }
 
 
-#' Loads the data of analyte prefractionation
+#' Loads the information of analyte prefractionation
 #'
 #' @import dplyr purrr tidyr openxlsx
 #' @importFrom magrittr %>%
@@ -189,7 +189,8 @@ prep_fraction_scheme <- function(dat_dir, filename) {
  	} else {
  	  assign(".auto_frac_smry", TRUE, envir = .GlobalEnv)
  	  
- 	  # warning: frac_smry.xlsx` data will be incorrect if based on wrong information from `expt_smry.xlsx`
+ 	  # warning: data in a auto-generated `frac_smry.xlsx` will be incorrect 
+ 	  #   if they were based on wrong information from `expt_smry.xlsx`
  	  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
  	  
  	  # in case forget to enter RAW_File names
@@ -223,9 +224,9 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 #' @examples
 #' load_dbs("human")
 #'
-#'@export
 #'@import dplyr rlang
 #'@importFrom magrittr %>%
+#'@export
 load_dbs <- function (gset_nms = "go_sets", species = "human") {
   allowed <- c("go_sets", "kegg_sets", "c2_msig")
   stopifnot(all(gset_nms %in% allowed))
@@ -235,8 +236,8 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
   abbr_sp <- purrr::map_chr(species, sp_lookup)
   filelist <- map(abbr_sp, ~ paste0(gset_nms, "_", .x)) %>% unlist()
   
-  # added abbr_sp to GO terms
-  # $`hs|GO:0000018 regulation of DNA recombination`
+  # added abbr_sp to make GO terms species specific 
+  # $`hs_GO:0000018 regulation of DNA recombination`
   data(package = "proteoQ", list = filelist)
   gsets <- purrr::map(filelist, ~ try(get(.x))) %>% do.call(`c`, .)
   
@@ -250,16 +251,17 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 
 
 
-#'Load experiments
+#'Load TMT experiments
 #'
 #'A function processes \code{.xlsx} files containing the metadata of TMT
 #'experiments
 #'
 #'@section \code{expt_smry.xlsx}: The \code{expt_smry.xlsx} files should be
-#'  located immediately under the file folder defined by the character vector of
-#'  \code{dat_dir}. The \code{Excel} spread sheet therein is comprised of three
-#'  tiers of fields: (1) essential, (2) optional default and (3) optional open.
-#'  The \code{essential} columns contain the mandatory information of TMT
+#'  located immediately under the file folder defined by the character vector
+#'  \code{dat_dir}. The tab containing the metadata of TMT experiments should be
+#'  named \code{Setup}. The \code{Excel} spread sheet therein is comprised of
+#'  three tiers of fields: (1) essential, (2) optional default and (3) optional
+#'  open. The \code{essential} columns contain the mandatory information of TMT
 #'  experiments. The \code{optional default} columns serve as the fields for
 #'  default lookups in sample selection, grouping, ordering, aesthetics, etc.
 #'  The \code{optional open} fields allow users to define their own analysis,
@@ -285,7 +287,12 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'  \code{Xcalibur} should be used. For analysis with off-line fractionations of
 #'  peptides before LC/MS, the \code{RAW_File} column should be left blank. The
 #'  correspondence between the fractions and \code{RAW_File} names should be
-#'  specified in a separate file, for example, \code{frac_smry.xlsx}.
+#'  specified in a separate file, for example, \code{frac_smry.xlsx}. The
+#'  utility \code{extract_raws(raw_dir)} can be used to extract the names of raw
+#'  MS files under the directory indicated by `raw_dir`. More details can be
+#'  found via \code{?extract_raws}. The utility \code{extract_psm_raws(dat_dir)}
+#'  extracts the names of raw MS files that are actually present in
+#'  \code{Mascot} PSM outputs.
 #'
 #'  \code{Reference}: reference entrie(s) are indicated with non-void string(s).
 #'
@@ -298,8 +305,8 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'  sample annotation by edge color\cr Shape \tab Aesthetic labels for sample
 #'  annotation by shape\cr Size \tab Aesthetic labels for sample annotation by
 #'  size \cr Alpha \tab Aesthetic labels for sample annotation by transparency
-#'  \cr Benchmark \tab Indicators of benchmark sample (groups) for use in heat
-#'  map visualizations.\cr}
+#'  \cr Benchmark \tab Depreciated; indicators of benchmark sample (groups) for
+#'  use in heat map visualizations.\cr}
 #'
 #'  \tabular{ll}{ \strong{Exemplary optional open column}   \tab
 #'  \strong{Descrption}\cr Term \tab Categorial terms for statistical modeling.
@@ -310,7 +317,7 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'
 #'@section \code{frac_smry.xlsx}: It is not necessary to prepare a
 #'  \code{frac_smry.xlsx} file if no peptide fractionations were performed in
-#'  TMT experiments.
+#'  TMT experiments. 
 #'
 #'  \tabular{ll}{ \strong{Column}   \tab \strong{Descrption}\cr TMT_Set \tab
 #'  v.s.  \cr LCMS_Injection   \tab v.s. \cr Fraction \tab Fraction indeces
@@ -334,7 +341,7 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #' dir.create("C:\\The\\Mascot\\Example", recursive = TRUE, showWarnings = FALSE)
 #' dat_dir <- c("C:\\The\\Mascot\\Example")
 #'
-#' # copy fasta
+#' # copy fasta (do it once)
 #' library(proteoQDA)
 #' copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
 #' copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
@@ -353,19 +360,19 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'
 #' # process PSMs with in-function filtration of data by `filter_`
 #' normPSM(
-#'   group_psm_by = pep_seq, 
-#'   group_pep_by = gene, 
-#'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-#'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+#'   group_psm_by = pep_seq,
+#'   group_pep_by = gene,
+#'   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+#'             "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
 #'   rptr_intco = 3000,
 #'   rm_craps = TRUE,
 #'   rm_krts = FALSE,
-#'   rm_outliers = FALSE, 
-#'   annot_kinases = TRUE,	
-#'   plot_rptr_int = TRUE, 
-#'   plot_log2FC_cv = TRUE, 
-#'   
-#'   filter_peps = exprs(pep_expect <= .1), 
+#'   rm_outliers = FALSE,
+#'   annot_kinases = TRUE,
+#'   plot_rptr_int = TRUE,
+#'   plot_log2FC_cv = TRUE,
+#'
+#'   filter_peps = exprs(pep_expect <= .1),
 #'   filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
 #' )
 #'
@@ -375,46 +382,46 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'
 #' # peptides results with exemplary `filter_...`
 #' normPep(
-#'   method_psm_pep = median, 
-#'   method_align = MGKernel, 
-#'   range_log2r = c(5, 95), 
-#'   range_int = c(5, 95), 
-#'   n_comp = 3, 
-#'   seed = 749662, 
-#'   maxit = 200, 
-#'   epsilon = 1e-05, 
-#'   
-#'   filter_by = exprs(pep_n_psm >= 2),
-#'   # filter_by_sp = exprs(species == "human"), 
+#'   method_psm_pep = median,
+#'   method_align = MGKernel,
+#'   range_log2r = c(5, 95),
+#'   range_int = c(5, 95),
+#'   n_comp = 3,
+#'   seed = 749662,
+#'   maxit = 200,
+#'   epsilon = 1e-05,
+#'
+#'   # filter_by = exprs(pep_n_psm >= 2),
+#'   # filter_by_sp = exprs(species == "human"),
 #' )
-#' 
+#'
 #' # exemplary peptide purging; n: the number of peptides under a protein
 #' purgePep(max_cv = .5, min_n = 2)
-#' 
-#' 
+#'
+#'
 #' # proteins results with examplary `filter_...`
 #' normPrn(
-#'   method_pep_prn = median, 
-#'   method_align = MGKernel, 
-#'   range_log2r = c(20, 95), 
-#'   range_int = c(5, 95), 
-#'   n_comp = 2, 
-#'   seed = 749662, 
-#'   maxit = 200, 
-#'   epsilon = 1e-05, 
-#'   
-#'   filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2), 	
+#'   method_pep_prn = median,
+#'   method_align = MGKernel,
+#'   range_log2r = c(20, 95),
+#'   range_int = c(5, 95),
+#'   n_comp = 2,
+#'   seed = 749662,
+#'   maxit = 200,
+#'   epsilon = 1e-05,
+#'
+#'   # filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2),
 #' )
-#' 
-#' 
-#' # validation steps in next
+#'
+#'
+#' # validation steps...
 #' ?pepHist
-#' 
+#'
 #' }
 #'
-#'@export
 #'@import dplyr rlang fs
 #'@importFrom magrittr %>%
+#'@export
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))

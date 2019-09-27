@@ -177,24 +177,24 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'In the histograms, the \code{log2FC} under each TMT channel are color-coded by
 #'their contributing reporter-ion intensity.
 #'
-#'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
-#'example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
-#'the setting of \code{id = pep_seq_mod} in the current call will be matched to
-#'\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
-#'was employed, the setting of \code{id = prot_acc} in the current call will be
-#'matched to \code{id = gene}.
-#'
+#'The function matches the current \code{id} to the grouping argument in
+#'\code{\link{normPSM}}. The value by \code{group_psm_by} or \code{group_pep_by}
+#'will be matched for peptide or protein data, respectively. For example, if
+#'\code{normPSM(group_psm_by = pep_seq, ...)} was called earlier, the setting of
+#'\code{id = pep_seq_mod} in the current \code{call} will be matched to \code{id
+#'= pep_seq}. Similarly, if \code{normPSM(group_pep_by = gene, ...)} was
+#'earlierly applied, the setting of \code{id = prot_acc} in the current
+#'\code{call} will be matched to \code{id = gene}.
 #'@param id Character string to indicate the type of data. The value will be
-#'  determined automatically by the program. Peptide data will be used at
-#'  \code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-#'  \code{id = prot_acc} or \code{gene}.
+#'  determined automatically. Peptide data will be used at \code{id = pep_seq}
+#'  or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+#'  or \code{gene}.
 #'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
 #'  Samples corresponding to non-empty entries under the column key will be
-#'  included in the indicated analysis. At the NULL default, the column key will
-#'  be \code{Select}.
+#'  included in the indicated analysis. At the \code{NULL} default, the column
+#'  key will be \code{Select}.
 #'@param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
-#'  of standard deviation for all samples.
+#'  of standard deviation across all samples.
 #'@param pep_pattern Character string containing one-letter representation of
 #'  amino acids. At the "zzz" default, all peptides will be used. Letters in the
 #'  character string are case sensitive. For example, \code{pep_pattern = "y"}
@@ -202,7 +202,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'  with N-terminal acetylation, use \code{pep_pattern = "_"}. The parameter
 #'  provides a means for high-level subsetting of peptide entries in a data set.
 #'  In general, one can use the \code{filter-in-function} feature described in
-#'  \code{?normPSM} to subset data.
+#'  \code{\link{normPSM}} to subset data.
 #'
 #'@param show_curves Logical; if TRUE, shows the fitted curves. The curve
 #'  parameters are based on the latest call to \code{normPep} or \code{normPrn}.
@@ -218,7 +218,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'  will be determined automatically by the name of the current \code{call}. The
 #'  image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 #'  will be determined by the extension of the file name. A \code{.png} format
-#'  will be used at default or an unrecognized file extension.
+#'  will be used at default or at an unrecognized file extension.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
 #'  plotting: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale; the default

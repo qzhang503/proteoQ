@@ -7,5 +7,5 @@
 normSD(x, center = 0, SD = 1)
 }
 \description{
-\code{normSD} normalizes the SD of \code{log2-ratios}.
+\code{normSD} normalizes the SD of \code{log2FC}.
 }

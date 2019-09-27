@@ -14,9 +14,9 @@ prnImp(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. The value will be
-determined automatically by the program. Peptide data will be used at
-\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-\code{id = prot_acc} or \code{gene}.}
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{...}{Parameters for \code{\link[mice]{mice}}}
 }
@@ -26,6 +26,8 @@ determined automatically by the program. Peptide data will be used at
 }
 \description{
 \code{imputeNA} imputes NA \code{log2FC} values in protein or peptide data.
+Users should avoid call the method directly, but instead use the following
+wrappers.
 
 \code{pepImp} is a wrapper of \code{\link{imputeNA}} for peptide data
 

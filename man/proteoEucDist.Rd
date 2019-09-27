@@ -18,14 +18,14 @@ prnEucDist(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. The value will be
-determined automatically by the program. Peptide data will be used at
-\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-\code{id = prot_acc} or \code{gene}.}
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the NULL default, the column key will
-be \code{Select}.}
+included in the indicated analysis. At the \code{NULL} default, the column
+key will be \code{Select}.}
 
 \item{col_group}{Not used.}
 
@@ -51,7 +51,7 @@ aesthetics in plots. At the NULL default, the column key \code{Alpha} will
 be used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation for all samples.}
+of standard deviation across all samples.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex Euclidean distance
 by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
@@ -80,7 +80,7 @@ of \code{id} in the \code{call}.}
 will be determined automatically by the name of the current \code{call}. The
 image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 will be determined by the extension of the file name. A \code{.png} format
-will be used at default or an unrecognized file extension.}
+will be used at default or at an unrecognized file extension.}
 
 \item{...}{Parameters inherited from \code{\link[pheatmap]{pheatmap}}}
 }
@@ -100,12 +100,8 @@ An Euclidean distance matrix of \code{log2FC} is returned by
 \code{\link[stats]{dist}} for heat map visualization.
 
 The function matches the current \code{id} to the grouping argument in the
-latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
-example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
-the setting of \code{id = pep_seq_mod} in the current call will be matched to
-\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
-was employed, the setting of \code{id = prot_acc} in the current call will be
-matched to \code{id = gene}.
+latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
+for details.
 }
 \examples{
 prnEucDist(
@@ -131,7 +127,7 @@ prnEucDist(
   cellheight = 24,
   width = 14,
   height = 12, 
-  filter_by_npep = exprs(n_pep >= 5),
+  filter_by_npep = exprs(prot_n_pep >= 5),
   filename = "prnEucDist_filtered.png",
 )
 

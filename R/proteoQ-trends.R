@@ -323,7 +323,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'   col_order = Order,
 #'   n_clust = c(5:8), 
 #'   
-#'   filter_by_npep = exprs(n_pep >= 2),
+#'   filter_by_npep = exprs(prot_n_pep >= 2),
 #' )
 #'
 #'@import purrr
@@ -359,7 +359,7 @@ anal_prnTrend <- function (...) {
 #'   col_order = Order,
 #'   n_clust = c(5:6), 
 #'   
-#'   filter_by_npep = exprs(n_pep >= 4),
+#'   filter_by_npep = exprs(prot_n_pep >= 4),
 #' )
 #'
 #'@import purrr

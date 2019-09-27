@@ -10,5 +10,5 @@ fitKernelDensity(df, n_comp = 3, seed = NULL, ...)
 A data frame.
 }
 \description{
-\code{fitKernelDensity} calculates the fitted density of \code{log2-ratios}.
+\code{fitKernelDensity} calculates the fitted density of \code{log2FC}.
 }

@@ -37,6 +37,6 @@ reporter-ion intensities.}
 peptide \code{log2FC} for each sample.}
 }
 \description{
-\code{annotPSM} adds fields of annotation to PSM tables after
+\code{annotPSM} adds fields of annotation to Mascot PSM tables after
 \code{rmPSMHeaders}, \code{splitPSM} and \code{cleanupPSM}.
 }

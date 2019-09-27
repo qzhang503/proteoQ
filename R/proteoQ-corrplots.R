@@ -319,16 +319,12 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'Correlation Plots
 #'
 #'\code{proteoCorr} plots Pearson correlation for both \code{logFC} and
-#'\code{intensities} data. Users should avoid call the method directly, but
+#'\code{intensity} data. Users should avoid call the method directly, but
 #'instead use the following wrappers.
 #'
 #'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
-#'example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
-#'the setting of \code{id = pep_seq_mod} in the current call will be matched to
-#'\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
-#'was employed, the setting of \code{id = prot_acc} in the current call will be
-#'matched to \code{id = gene}.
+#'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
+#'for details.
 #'
 #'@inheritParams proteoHist
 #'@param  col_order Character string to a column key in \code{expt_smry.xlsx}.
@@ -384,9 +380,10 @@ proteoCorr <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #' @examples
 #' pepCorr_logFC(
+#'  col_order = Order, 
 #'  width = 10,
 #'  height = 10,
-#'  filter_by = exprs(n_psm >= 3),
+#'  filter_by = exprs(pep_n_psm >= 3),
 #'  filename = pepcorr_logfc_npsm3.png,
 #' )
 #'
@@ -415,7 +412,7 @@ pepCorr_logFC <- function (...) {
 #' pepCorr_logInt(
 #'  width = 10,
 #'  height = 10,
-#'  filter_by = exprs(n_psm >= 3),
+#'  filter_by = exprs(pep_n_psm >= 3),
 #'  filename = pepcorr_int_npsm3.png,
 #' )
 #'
@@ -445,7 +442,7 @@ pepCorr_logInt <- function (...) {
 #' prnCorr_logFC(
 #'  width = 10,
 #'  height = 10,
-#'  filter_npep = exprs(n_pep >= 5),
+#'  filter_npep = exprs(prot_n_pep >= 5),
 #'  filename = prncorr_logfc_npep5.png,
 #' )
 #'
@@ -474,7 +471,7 @@ prnCorr_logFC <- function (...) {
 #' prnCorr_logInt(
 #'  width = 10,
 #'  height = 10,
-#'  filter_npep = exprs(n_pep >= 5),
+#'  filter_npep = exprs(prot_n_pep >= 5),
 #'  filename = prncorr_int_npep5.png,
 #' )
 #'

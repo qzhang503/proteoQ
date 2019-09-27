@@ -23,9 +23,9 @@ prnCorr_logInt(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. The value will be
-determined automatically by the program. Peptide data will be used at
-\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-\code{id = prot_acc} or \code{gene}.}
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{data_select}{The subset of data to be selected. At default, \code{logFC}
 will be used; at \code{logInt}, intensity with \code{log10} transformation
@@ -33,8 +33,8 @@ will be used.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the NULL default, the column key will
-be \code{Select}.}
+included in the indicated analysis. At the \code{NULL} default, the column
+key will be \code{Select}.}
 
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
 Numeric values under which will be used for the left-to-right arrangement of
@@ -42,7 +42,7 @@ samples in plots. At the NULL default, the column key \code{Order} will be
 used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation for all samples.}
+of standard deviation across all samples.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -55,7 +55,7 @@ of \code{id} in the \code{call}.}
 will be determined automatically by the name of the current \code{call}. The
 image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 will be determined by the extension of the file name. A \code{.png} format
-will be used at default or an unrecognized file extension.}
+will be used at default or at an unrecognized file extension.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. \cr Additional parameters for
@@ -68,7 +68,7 @@ Correlation plots.
 }
 \description{
 \code{proteoCorr} plots Pearson correlation for both \code{logFC} and
-\code{intensities} data. Users should avoid call the method directly, but
+\code{intensity} data. Users should avoid call the method directly, but
 instead use the following wrappers.
 
 \code{pepCorr_logFC} is a wrapper of \code{\link{proteoCorr}} for peptide logFC
@@ -85,39 +85,36 @@ intensity data.
 }
 \details{
 The function matches the current \code{id} to the grouping argument in the
-latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
-example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
-the setting of \code{id = pep_seq_mod} in the current call will be matched to
-\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
-was employed, the setting of \code{id = prot_acc} in the current call will be
-matched to \code{id = gene}.
+latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
+for details.
 }
 \examples{
 pepCorr_logFC(
+ col_order = Order, 
  width = 10,
  height = 10,
- filter_by = exprs(n_psm >= 3),
+ filter_by = exprs(pep_n_psm >= 3),
  filename = pepcorr_logfc_npsm3.png,
 )
 
 pepCorr_logInt(
  width = 10,
  height = 10,
- filter_by = exprs(n_psm >= 3),
+ filter_by = exprs(pep_n_psm >= 3),
  filename = pepcorr_int_npsm3.png,
 )
 
 prnCorr_logFC(
  width = 10,
  height = 10,
- filter_npep = exprs(n_pep >= 5),
+ filter_npep = exprs(prot_n_pep >= 5),
  filename = prncorr_logfc_npep5.png,
 )
 
 prnCorr_logInt(
  width = 10,
  height = 10,
- filter_npep = exprs(n_pep >= 5),
+ filter_npep = exprs(prot_n_pep >= 5),
  filename = prncorr_int_npep5.png,
 )
 

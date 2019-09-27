@@ -491,6 +491,5 @@ gspaMap(
 getStringDB(
   db_path = "~\\proteoQ\\dbs\\string",
   score_cutoff = .9,
-  nseq_cutoff = 2,
   adjP = FALSE, 
 )

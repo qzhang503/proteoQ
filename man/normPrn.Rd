@@ -11,13 +11,14 @@ normPrn(id = c("prot_acc", "gene"), method_pep_prn = c("median",
   col_refit = NULL, cache = TRUE, ...)
 }
 \arguments{
-\item{id}{Character string; the variable to summarise peptides into proteins.
-The option \code{prot_acc} corresponds to the summarisation by the accession
-numbers or entry names of proteins. The option \code{gene} corresponds to
-the summarisation by the gene names of proteins. At \code{id = gene}, data
-under the same gene name but different acccesssion numbers or entry names
-will be summarised into one entry. Currently, the value of \code{id} will
-match automatically to the value of \code{group_pep_by} in \code{normPep}.}
+\item{id}{Depreciated: character string; the variable to summarise peptides
+into proteins. The option \code{prot_acc} corresponds to the summarisation
+by the accession numbers or entry names of proteins. The option \code{gene}
+corresponds to the summarisation by the gene names of proteins. At \code{id
+= gene}, data under the same gene name but different acccesssion numbers or
+entry names will be summarised into one entry. NB: the value of \code{id}
+will match automatically to the value of \code{group_pep_by} in
+\code{normPSM}.}
 
 \item{method_pep_prn}{Character string; the method to summarise the
 \code{log2FC} and the \code{intensity} of peptides by protein entries. The
@@ -26,9 +27,14 @@ descriptive statistics includes \code{c("mean", "median", "top.3",
 ions at the peptide levels (from \code{\link{normPep}}) will be the weigth
 when summarising \code{log2FC} with \code{top.3} or \code{weighted.mean}.}
 
-\item{use_unique_pep}{Logical; if TRUE, only peptides that are unique by
-protein groups or families will be used to summarise the \code{log2FC} and
-the \code{intensity} of peptides by protein entries.}
+\item{use_unique_pep}{Logical; if TRUE, only entries that are \code{TRUE} or
+equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
+will be used, for summarising the \code{log2FC} and the \code{intensity} of
+peptides into protein values. The default is to use unique peptides only.
+For \code{MaxQuant} data, the levels of uniqueness are according to the
+\code{pep_unique_by} in \code{\link{normPSM}}. The argument currently do
+nothing to \code{Spectrum Mill} data where both unique and shared peptides
+will be kept.}
 
 \item{method_align}{Character string or a list of gene symbols; the method to
 align the \code{log2FC} of peptide/protein entries across samples.
@@ -63,8 +69,8 @@ MGKernel}.}
 Samples corresponding to non-empty entries under \code{col_refit} will be
 used in the refit of \code{log2FC} using multiple Gaussian kernels. The
 density estimates from an earlier analyis will be kept for the remaining
-samples. At the NULL default, the column key \code{Sample_ID} will be used,
-which results in the refit of the \code{log2FC} for all samples.}
+samples. At the \code{NULL} default, the column key of \code{Sample_ID} will
+be used, which results in the refit of the \code{log2FC} for all samples.}
 
 \item{cache}{Logical; if TRUE, use cache.}
 
@@ -86,25 +92,27 @@ For the analysis of Mascot results, the column keys are defined in
 \code{\href{http://www.matrixscience.com/help/csv_headers.html}{Matrix
 Science}} with the following additions:
 
-\tabular{ll}{ \strong{Header}   \tab \strong{Descrption}\cr entrez \tab
-\code{\href{https://www.ncbi.nlm.nih.gov/gene}{Protein Entrez ID}} \cr gene
-\tab Protein gene name \cr kin_attr       \tab Optional; the attribute of
-proteins being kinases \cr kin_class      \tab Optional; the classes of
-kinases, e.g., TK, TKL... \cr kin_order      \tab Optional; the order of
-"kin_class" from the \code{\href{http://kinase.com/human/kinome/}{kinase tree
-diagram}} \cr prot_n_pep \tab The number of significant peptide sequences
-matched to a proposed protein. \cr prot_n_psm \tab The number of significant
-MS/MS queries matched to a proposed protein. \cr pep_n_psm \tab The number of
-significant MS/MS queries matched to a proposed peptide sequence. \cr
-pep_seq_mod    \tab One-letter representation of peptide sequences: amino acid
-residue(s) with variable modifications are in the lower cases; the
-acetylations of protein N-terminals indicated by '_' and the flanking residues
-on the N- or C-terminal side of peptides separated by '.', e.g.
-"-._mAsGVAVSDGVIK.V"\cr prot_cover     \tab Protein sequence coverage
-calculated from all available raw files   \cr raw_file \tab MS file name(s)
-where peptides or proteins were identified \cr refseq_acc \tab
-\code{\href{https://www.ncbi.nlm.nih.gov/refseq/}{Protein RefSeq accession
-number}} \cr uniprot_acc    \tab
+\tabular{ll}{ \strong{Header}   \tab \strong{Descrption}\cr length \tab The
+number of amino acid residues for a proposed protein \cr acc_type \tab The
+type of accession names \cr entrez \tab
+\code{\href{https://www.ncbi.nlm.nih.gov/gene}{Protein Entrez ID}} \cr species
+\tab The species of a protein entry \cr gene \tab Protein gene name \cr
+kin_attr       \tab Optional; the attribute of proteins being kinases \cr
+kin_class      \tab Optional; the classes of kinases, e.g., TK, TKL... \cr
+kin_order      \tab Optional; the order of "kin_class" from the
+\code{\href{http://kinase.com/human/kinome/}{kinase tree diagram}} \cr
+prot_n_pep \tab The number of significant peptide sequences matched to a
+proposed protein. \cr prot_n_psm \tab The number of significant MS/MS queries
+matched to a proposed protein. \cr pep_n_psm \tab The number of significant
+MS/MS queries matched to a proposed peptide sequence. \cr pep_seq_mod    \tab
+One-letter representation of peptide sequences: amino acid residue(s) with
+variable modifications are in the lower cases; the acetylations of protein
+N-terminals indicated by '_' and the flanking residues on the N- or C-terminal
+side of peptides separated by '.', e.g. "-._mAsGVAVSDGVIK.V"\cr prot_cover
+\tab Protein sequence coverage calculated from all available raw files   \cr
+raw_file \tab MS file name(s) where peptides or proteins were identified \cr
+refseq_acc \tab \code{\href{https://www.ncbi.nlm.nih.gov/refseq/}{Protein
+RefSeq accession number}} \cr uniprot_acc    \tab
 \code{\href{https://www.uniprot.org/help/accession_numbers}{Protein UniProt
 accession number}} \cr uniprot_id     \tab
 \code{\href{https://www.uniprot.org/help/entry_name}{Protein UniProt entry
@@ -117,6 +125,9 @@ reference materials for indicated samples \cr N_log2_R (...) \tab Aligned
 \code{log2_R (...)} according to \code{method_align} without scaling
 normalization \cr Z_log2_R (...) \tab \code{N_log2_R (...)} with scaling
 normalization \cr }
+
+NB: PSM entries with no quantitative contributions are excluded from the
+calculations of \code{prot_n_pep}, \code{prot_n_psm} and \code{pep_n_psm}.
 }
 \examples{
 \dontrun{
@@ -131,7 +142,7 @@ normPrn(
   maxit = 200,
   epsilon = 1e-05,
 
-  filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2),
+  # filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2),
 )
 
 }

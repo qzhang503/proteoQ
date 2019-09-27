@@ -19,8 +19,8 @@
 #'
 #'@inheritParams  proteoHist
 #'@inheritParams  proteoHM
-#'@param filename A file name to output results: \code{Peptide_pVals.txt} for
-#'  peptides and \code{Protein_pVals} for proteins.
+#'@param filename A file name to output results. The default is
+#'  \code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.
 #'@param method Character string; the method of linear modeling. The default is
 #'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
 #'  for models without random effects and the \code{\link[lmerTest]{lmer}} will
@@ -350,12 +350,8 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 }
 
 
-#' Factorial model formula for interaction terms
-#' all factors under one channel in label_scheme_sub
-#' comparisons defined by contrasts
-#' var_cutoff to remove low-variance entries
-#' pval_cutoff for adjP
-#' logFC_cutoff
+#' Factorial model formula for interaction terms. All factors under one channel
+#' in `label_scheme_sub`
 #'
 #' @importFrom MASS ginv
 model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases, method, var_cutoff, 

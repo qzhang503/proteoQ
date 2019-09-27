@@ -276,6 +276,12 @@ not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
 not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
 
 
+#' Finds all-NaN column(s)
+is_all_nan <- function(x, ...) {
+  sum(is.nan(x), ...) == length(x)
+}
+
+
 #' Sets up the column annotation in heat maps
 #'
 #' @import dplyr rlang
@@ -419,6 +425,8 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'
 #'
 #'\code{imputeNA} imputes NA \code{log2FC} values in protein or peptide data.
+#'Users should avoid call the method directly, but instead use the following
+#'wrappers.
 #'
 #'@inheritParams proteoHist
 #'@param ... Parameters for \code{\link[mice]{mice}}
@@ -1654,6 +1662,13 @@ rptr_violin <- function(df, filepath, width, height) {
     theme_psm_violin
   
   try(ggsave(filepath, p, width = width, height = height, units = "in"))
+}
+
+
+#' geometric mean
+my_geomean <- function (x, ...) {
+  x <- log10(x) %>% mean(...)
+  10^x
 }
 
 

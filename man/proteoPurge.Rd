@@ -16,9 +16,9 @@ purPrn(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. The value will be
-determined automatically by the program. Peptide data will be used at
-\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-\code{id = prot_acc} or \code{gene}.}
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{cv_cutoff}{Numeric; the cut-off of CV. The CVs are from the ascribing
 PSMs for peptide data or ascribing peptides for protein data.}
@@ -41,7 +41,7 @@ of \code{id} in the \code{call}.}
 will be determined automatically by the name of the current \code{call}. The
 image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 will be determined by the extension of the file name. A \code{.png} format
-will be used at default or an unrecognized file extension.}
+will be used at default or at an unrecognized file extension.}
 
 \item{...}{Additional parameters for plotting yet to be defined.}
 }

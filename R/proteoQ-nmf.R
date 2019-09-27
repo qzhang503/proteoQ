@@ -467,8 +467,9 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'  column key \code{Group} will be used.
 #'@param r Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
 #'  The default is c(4:8)
-#'@param nrun Numeric; the number of runs in \code{\link[NMF]{nmf}}.
-#'@param task Character string; a signature for task dispatch in a function
+#'@param nrun Numeric; the number of runs in \code{\link[NMF]{nmf}}. The default
+#'  is 200.
+#'@param task Character string; a signature for task dispatching in a function
 #'  factory.
 #'@param filepath Use system default.
 #'@param filename Use system default.
@@ -527,7 +528,7 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'   col_group = Group, # optional a priori knowledge of sample groups
 #'   r = c(6, 8),
 #'   nrun = 200,
-#'   filter_by_npsm = exprs(n_psm >= 2),
+#'   filter_by_npsm = exprs(pep_n_psm >= 2),
 #' )
 #'
 #'@import purrr
@@ -560,7 +561,7 @@ anal_pepNMF <- function (...) {
 #'   col_group = Group,
 #'   r = c(5:8),
 #'   nrun = 200, 
-#'   filter_by_npep = exprs(n_pep >= 2),
+#'   filter_by_npep = exprs(prot_n_pep >= 2),
 #' )
 #'
 #'@import purrr

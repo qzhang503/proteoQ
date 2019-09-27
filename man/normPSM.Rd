@@ -39,11 +39,14 @@ peptide fractionation summary. The default is "frac_smry.xlsx".}
 prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search.}
 
-\item{pep_unique_by}{A character string for use in the filtration of peptide
-data from \code{MaxQuant}. The choice is in one of \code{c("group",
-"protein", "none")} At the \code{group} default, only peptides unique by
-protein groups will be kept. At \code{protein}, only peptides unique by
-protein entries will be kept. At \code{none}, all peptides will be kept.}
+\item{pep_unique_by}{A character string for the characterization of peptide
+uniqueness from \code{MaxQuant} PSMs. The choice is one of
+\code{c("group", "protein", "none")}. At the \code{group} default, the
+uniqueness of peptides is by protein groups. At a more strigent criterion of
+\code{protein}, the uniqueness of peptides is by protein entries. A new
+column of \code{pep_isunique} will be added accordingly to the PSM reports.
+At a trivia criterion of \code{none}, all values under \code{pep_unique_by}
+will be set to \code{1}.}
 
 \item{corrected_int}{Logical. If TRUE, values under columns "Reporter
 intensity corrected" in MaxQuant PSM results (\code{msms.txt}) will be used.
@@ -70,9 +73,9 @@ reporter-ion intensities.}
 \item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
 peptide \code{log2FC} for each sample.}
 
-\item{...}{\code{filter_}: Each one corresponds to a logical expression(s) for
-the filtration of data rows. The \code{lhs} needs to start with
-\code{filter_}. The logical condition(s) at the \code{rhs} needs to be
+\item{...}{\code{filter_}: Each argument corresponds to a logical
+expression(s) for the filtration of data rows. The \code{lhs} needs to start
+with \code{filter_}. The logical condition(s) at the \code{rhs} needs to be
 enclosed in \code{exprs} with round parenthesis.}
 }
 \value{
@@ -198,7 +201,7 @@ cptac_mqpsm_frac(dat_dir)
 library(proteoQ)
 load_expts()
 
-# process MaxQuant PSM data
+# process MaxQuant PSMs
 normPSM(
   group_psm_by = pep_seq,
   group_pep_by = prot_acc,
@@ -215,6 +218,23 @@ normPSM(
   plot_log2FC_cv = TRUE,
 
   filter_peps = exprs(PEP <= 0.1),
+)
+
+# process Spectrum Mill PSMs
+normPSM(
+  group_psm_by = pep_seq,
+  group_pep_by = gene,
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  rptr_intco = 3000,
+  rm_craps = TRUE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE,
+  annot_kinases = TRUE,
+  plot_rptr_int = TRUE,
+  plot_log2FC_cv = TRUE,
+
+  filter_peps = exprs(score >= 10),
 )
 
 }

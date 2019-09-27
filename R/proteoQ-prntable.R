@@ -7,25 +7,27 @@
 #'\code{\href{http://www.matrixscience.com/help/csv_headers.html}{Matrix
 #'Science}} with the following additions:
 #'
-#'\tabular{ll}{ \strong{Header}   \tab \strong{Descrption}\cr entrez \tab
-#'\code{\href{https://www.ncbi.nlm.nih.gov/gene}{Protein Entrez ID}} \cr gene
-#'\tab Protein gene name \cr kin_attr       \tab Optional; the attribute of
-#'proteins being kinases \cr kin_class      \tab Optional; the classes of
-#'kinases, e.g., TK, TKL... \cr kin_order      \tab Optional; the order of
-#'"kin_class" from the \code{\href{http://kinase.com/human/kinome/}{kinase tree
-#'diagram}} \cr prot_n_pep \tab The number of significant peptide sequences
-#'matched to a proposed protein. \cr prot_n_psm \tab The number of significant
-#'MS/MS queries matched to a proposed protein. \cr pep_n_psm \tab The number of
-#'significant MS/MS queries matched to a proposed peptide sequence. \cr
-#'pep_seq_mod    \tab One-letter representation of peptide sequences: amino acid
-#'residue(s) with variable modifications are in the lower cases; the
-#'acetylations of protein N-terminals indicated by '_' and the flanking residues
-#'on the N- or C-terminal side of peptides separated by '.', e.g.
-#'"-._mAsGVAVSDGVIK.V"\cr prot_cover     \tab Protein sequence coverage
-#'calculated from all available raw files   \cr raw_file \tab MS file name(s)
-#'where peptides or proteins were identified \cr refseq_acc \tab
-#'\code{\href{https://www.ncbi.nlm.nih.gov/refseq/}{Protein RefSeq accession
-#'number}} \cr uniprot_acc    \tab
+#'\tabular{ll}{ \strong{Header}   \tab \strong{Descrption}\cr length \tab The
+#'number of amino acid residues for a proposed protein \cr acc_type \tab The
+#'type of accession names \cr entrez \tab
+#'\code{\href{https://www.ncbi.nlm.nih.gov/gene}{Protein Entrez ID}} \cr species
+#'\tab The species of a protein entry \cr gene \tab Protein gene name \cr
+#'kin_attr       \tab Optional; the attribute of proteins being kinases \cr
+#'kin_class      \tab Optional; the classes of kinases, e.g., TK, TKL... \cr
+#'kin_order      \tab Optional; the order of "kin_class" from the
+#'\code{\href{http://kinase.com/human/kinome/}{kinase tree diagram}} \cr
+#'prot_n_pep \tab The number of significant peptide sequences matched to a
+#'proposed protein. \cr prot_n_psm \tab The number of significant MS/MS queries
+#'matched to a proposed protein. \cr pep_n_psm \tab The number of significant
+#'MS/MS queries matched to a proposed peptide sequence. \cr pep_seq_mod    \tab
+#'One-letter representation of peptide sequences: amino acid residue(s) with
+#'variable modifications are in the lower cases; the acetylations of protein
+#'N-terminals indicated by '_' and the flanking residues on the N- or C-terminal
+#'side of peptides separated by '.', e.g. "-._mAsGVAVSDGVIK.V"\cr prot_cover
+#'\tab Protein sequence coverage calculated from all available raw files   \cr
+#'raw_file \tab MS file name(s) where peptides or proteins were identified \cr
+#'refseq_acc \tab \code{\href{https://www.ncbi.nlm.nih.gov/refseq/}{Protein
+#'RefSeq accession number}} \cr uniprot_acc    \tab
 #'\code{\href{https://www.uniprot.org/help/accession_numbers}{Protein UniProt
 #'accession number}} \cr uniprot_id     \tab
 #'\code{\href{https://www.uniprot.org/help/entry_name}{Protein UniProt entry
@@ -39,22 +41,31 @@
 #'normalization \cr Z_log2_R (...) \tab \code{N_log2_R (...)} with scaling
 #'normalization \cr }
 #'
-#'@param id Character string; the variable to summarise peptides into proteins.
-#'  The option \code{prot_acc} corresponds to the summarisation by the accession
-#'  numbers or entry names of proteins. The option \code{gene} corresponds to
-#'  the summarisation by the gene names of proteins. At \code{id = gene}, data
-#'  under the same gene name but different acccesssion numbers or entry names
-#'  will be summarised into one entry. Currently, the value of \code{id} will
-#'  match automatically to the value of \code{group_pep_by} in \code{normPep}.
+#'NB: PSM entries with no quantitative contributions are excluded from the
+#'calculations of \code{prot_n_pep}, \code{prot_n_psm} and \code{pep_n_psm}.
+#'
+#'@param id Depreciated: character string; the variable to summarise peptides
+#'  into proteins. The option \code{prot_acc} corresponds to the summarisation
+#'  by the accession numbers or entry names of proteins. The option \code{gene}
+#'  corresponds to the summarisation by the gene names of proteins. At \code{id
+#'  = gene}, data under the same gene name but different acccesssion numbers or
+#'  entry names will be summarised into one entry. NB: the value of \code{id}
+#'  will match automatically to the value of \code{group_pep_by} in
+#'  \code{normPSM}.
 #'@param method_pep_prn Character string; the method to summarise the
 #'  \code{log2FC} and the \code{intensity} of peptides by protein entries. The
 #'  descriptive statistics includes \code{c("mean", "median", "top.3",
 #'  "weighted.mean")}. The representative \code{log10-intensity} of reporter
 #'  ions at the peptide levels (from \code{\link{normPep}}) will be the weigth
 #'  when summarising \code{log2FC} with \code{top.3} or \code{weighted.mean}.
-#'@param use_unique_pep Logical; if TRUE, only peptides that are unique by
-#'  protein groups or families will be used to summarise the \code{log2FC} and
-#'  the \code{intensity} of peptides by protein entries.
+#'@param use_unique_pep Logical; if TRUE, only entries that are \code{TRUE} or
+#'  equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
+#'  will be used, for summarising the \code{log2FC} and the \code{intensity} of
+#'  peptides into protein values. The default is to use unique peptides only.
+#'  For \code{MaxQuant} data, the levels of uniqueness are according to the
+#'  \code{pep_unique_by} in \code{\link{normPSM}}. The argument currently do
+#'  nothing to \code{Spectrum Mill} data where both unique and shared peptides
+#'  will be kept.
 #'@inheritParams normPep
 #'@inheritParams mixtools::normalmixEM
 #'@family aggregate functions
@@ -75,7 +86,7 @@
 #'   maxit = 200,
 #'   epsilon = 1e-05,
 #'
-#'   filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2),
+#'   # filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2),
 #' )
 #'
 #' }
@@ -203,8 +214,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	    df$prot_cover <- NA
 	  }
 		
-		if (use_unique_pep & "pep_isunique" %in% names(df)) 
-		  df <- df %>% dplyr::filter(pep_isunique == 1)
+		if (use_unique_pep & "pep_isunique" %in% names(df)) df <- df %>% dplyr::filter(pep_isunique == 1)
 
 		df_num <- df %>% 
 				dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
@@ -216,13 +226,57 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		                 weighted.mean = TMT_wt_mean(df_num, !!rlang::sym(id), na.rm = TRUE), 
 		                 median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
 		                 aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
+		
+		df <- df %>% 
+		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.)))
+
+		# MaxQuant keys
+		df_mq_rptr_mass_dev <- df %>% 
+		  dplyr::select(!!rlang::sym(id), grep("^Reporter mass deviation", names(.))) %>% 
+		  dplyr::group_by(!!rlang::sym(id)) %>% 
+		  dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+		
+		df <- df %>% 
+		  dplyr::select(-grep("^Reporter mass deviation", names(.)))	  
+		
+		mq_median_keys <- c(
+		  "Charge", "Mass", "PIF", "Fraction of total spectrum", "Mass error [ppm]", 
+		  "Mass error [Da]", "Base peak fraction", "Precursor Intensity", 
+		  "Precursor Apex Fraction", "Intensity coverage", "Peak coverage", 
+		  "Combinatorics"
+		)
+		
+		df_mq_med <- df %>% 
+		  dplyr::select(!!rlang::sym(id), which(names(.) %in% mq_median_keys)) %>% 
+		  dplyr::group_by(!!rlang::sym(id)) %>% 
+		  dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+		
+		df <- df %>% 
+		  dplyr::select(-which(names(.) %in% mq_median_keys))		
+		
+		# Spectrum Mill keys
+		sm_median_keys <- c(
+		  "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
+		  "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
+		  "precursorIsolationIntensity", "ratioReporterIonToPrecursor", 
+		  "matched_parent_mass", "delta_parent_mass", "delta_parent_mass_ppm")
+		
+		df_sm_med <- df %>% 
+		  dplyr::select(!!rlang::sym(id), which(names(.) %in% sm_median_keys)) %>% 
+		  dplyr::group_by(!!rlang::sym(id)) %>% 
+		  dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+		
+		df <- df %>% 
+		  dplyr::select(-which(names(.) %in% sm_median_keys))
 
 		df_first <- df %>% 
 		  dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
-		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
 		  dplyr::select(-grep("^pep_", names(.)))
-		
-		df <- list(df_first, df_num) %>% 
+
+		df <- list(df_first, 
+		           df_mq_rptr_mass_dev, df_mq_med, 
+		           df_sm_med, 
+		           df_num) %>% 
 		  purrr::reduce(left_join, by = id) %>% 
 		  data.frame(check.names = FALSE)
 
@@ -295,8 +349,8 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	purrr::walk(quietly_out[-1], write, 
 	            file.path(dat_dir, "Protein\\log","prn_MulGau_log.csv"), append = TRUE)
-	
-	df <- quietly_out$result %>% 
+
+	df <- df %>% 
 	  dplyr::filter(!nchar(as.character(.[["prot_acc"]])) == 0) %>% 
 	  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
 	  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 

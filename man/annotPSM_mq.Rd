@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-psmtable.R
 \name{annotPSM_mq}
 \alias{annotPSM_mq}
-\title{Annotates PSM results}
+\title{Annotates MaxQuant PSM results}
 \usage{
 annotPSM_mq(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   fasta = NULL, expt_smry = "expt_smry.xlsx", rm_krts = FALSE,
@@ -37,5 +37,5 @@ reporter-ion intensities.}
 peptide \code{log2FC} for each sample.}
 }
 \description{
-\code{annotPSM_mq} adds fields of annotation to PSM tables.
+\code{annotPSM_mq} adds fields of annotation to MaxQuant PSM tables.
 }

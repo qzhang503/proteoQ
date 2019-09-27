@@ -44,7 +44,7 @@ newColnames <- function(i, x, label_scheme) {
 #' }
 #' @import stringr dplyr purrr rlang  magrittr
 normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_pep_by = "prot_acc") {
-	on.exit(message("Generation of individual peptide tables by RAW filenames --- Completed."),
+	on.exit(message("Generation of individual peptide tables by TMT experiments --- Completed."),
 	        add = TRUE)
 
 	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx, injn_idx) {
@@ -55,10 +55,48 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	  channelInfo <- label_scheme %>%
 	    dplyr::filter(TMT_Set == set_idx) %>%
 	    channelInfo(set_idx)
-	  
+
 	  df <- df[rowSums(!is.na(df[, grepl("^N_log2_R[0-9]{3}", names(df)), drop = FALSE])) > 0, ] %>%
 	    dplyr::arrange(!!rlang::sym(id), prot_acc) %>%
 	    dplyr::select(-grep("^R[0-9]{3}", names(.)))
+	  
+	  df <- df %>% 
+	    dplyr::select(-which(names(.) %in% c(
+	      "prot_hit_num", "prot_family_member", "prot_score", 
+	      "prot_matches", "prot_matches_sig", "prot_sequences", "prot_sequences_sig", 
+	      "pep_var_mod", "pep_var_mod_pos", "pep_scan_title", 
+	      "pep_res_before", "pep_res_after", 
+	      "raw_file", "pep_query", "pep_summed_mod_pos", "pep_local_mod_pos")))
+	  
+	  df <- df %>% 
+	    dplyr::select(-which(names(.) %in% c(
+	      "Scan number", "Scan index", 
+	      "Deamidation (N) Probabilities", "Oxidation (M) Probabilities", 
+	      "Deamidation (N) Score Diffs", "Oxidation (M) Score Diffs", 
+	      "Acetyl (Protein N-term)", "Deamidation (N)", "Glu->pyro-Glu", "Oxidation (M)", 
+	      "Fragmentation", "Mass analyzer", "Type", 
+	      "Scan event number", "Isotope index", "Simple mass error [ppm]", 
+	      "Retention time", "Delta score", "Score diff", 
+	      "Localization prob", "Precursor Full ScanNumber", 
+	      "Precursor Apex Offset", "Precursor Apex Offset Time", 
+	      "Matches", "Intensities", 
+	      "Mass Deviations [Da]", "Mass Deviations [ppm]", 
+	      "Masses", "Number of Matches", 
+	      "Neutral loss level", "ETD identification type", 
+	      "Reverse", "All scores", 
+	      "All sequences", "All modified sequences", 
+	      "Reporter PIF", "Reporter fraction", 
+	      "ID", "Protein group IDs", 
+	      "Peptide ID", "Mod. peptide ID", "Evidence ID", 
+	      "Length"))) %>% 
+	    dplyr::select(-grep("site IDs$", names(.)))
+
+	  df <- df %>% 
+	    dplyr::select(-which(names(.) %in% c(
+	      "number", 
+	      "variableSites", "nterm", "previous_aa", "sequence", "next_aa", 
+	      "cys", "searchCycle", "L/H", "accession_numbers", "entry_name", 
+	      "matched_parent_mass"))) 
 	  
 	  if ("pep_scan_title" %in% names(df)) {
 	    df <- df %>% 
@@ -76,87 +114,68 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	  } else {
 	    df_num <- aggrNums(median)(df, !!rlang::sym(id), na.rm = TRUE)
 	  }
-
-	  if ("pep_score" %in% names(df)) {
-  	  df_score <- df %>% 
-  	    dplyr::select(!!rlang::sym(id), pep_score) %>% 
-  	    dplyr::group_by(!!rlang::sym(id)) %>% 
-  	    dplyr::summarise(pep_score = max(pep_score, na.rm = TRUE))
-	  } else {
-	    df_score <- df %>% 
-	      dplyr::filter(!duplicated(.[[id]])) %>% 
-	      dplyr::select(!!rlang::sym(id)) %>% 
-	      dplyr::mutate(pep_score = NA)
-	  }
 	  
-	  if ("pep_expect" %in% names(df)) {
-  	  df_expect <- df %>% 
-  	    dplyr::select(!!rlang::sym(id), pep_expect) %>% 
-  	    dplyr::group_by(!!rlang::sym(id)) %>% 
-  	    dplyr::summarise(pep_expect = min(pep_expect, na.rm = TRUE))
-	  } else {
-  	  df_expect <- df %>% 
-  	    dplyr::filter(!duplicated(.[[id]])) %>% 
-  	    dplyr::select(!!rlang::sym(id)) %>% 
-  	    dplyr::mutate(pep_expect = NA)
-	  }
-
-	  if ("pep_rank" %in% names(df)) {
-  	  df_rank <- df %>% 
-  	    dplyr::select(!!rlang::sym(id), pep_rank) %>% 
-  	    dplyr::group_by(!!rlang::sym(id)) %>% 
-  	    dplyr::summarise(pep_rank = min(pep_rank, na.rm = TRUE))
-	  } else {
-	    df_rank <- df %>% 
-	      dplyr::filter(!duplicated(.[[id]])) %>% 
-	      dplyr::select(!!rlang::sym(id)) %>% 
-	      dplyr::mutate(pep_rank = NA)
-	  }
-
-	  if ("pep_isbold" %in% names(df)) {
-  	  df_isbold <- df %>% 
-  	    dplyr::select(!!rlang::sym(id), pep_isbold) %>% 
-  	    dplyr::group_by(!!rlang::sym(id)) %>% 
-  	    dplyr::summarise(pep_isbold = max(pep_isbold, na.rm = TRUE))
-	  } else {
-	    df_isbold <- df %>% 
-	      dplyr::filter(!duplicated(.[[id]])) %>% 
-	      dplyr::select(!!rlang::sym(id)) %>% 
-	      dplyr::mutate(pep_isbold = NA)
-	  }
+	  df <- df %>% 
+	    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.)))
 	  
-	  if ("pep_exp_mr" %in% names(df)) {
-  	  df_exp_mr <- df %>% 
-  	    dplyr::select(!!rlang::sym(id), pep_exp_mr) %>% 
-  	    dplyr::group_by(!!rlang::sym(id)) %>% 
-  	    dplyr::summarise(pep_exp_mr = median(pep_exp_mr, na.rm = TRUE))
-	  } else {
-	    df_exp_mr <- df %>% 
-	      dplyr::filter(!duplicated(.[[id]])) %>% 
-	      dplyr::select(!!rlang::sym(id)) %>% 
-	      dplyr::mutate(pep_exp_mr = NA)
-	  }
+	  # Mascot keys or others converted to Mascot keys
+	  mascot_median_keys <- c("pep_score", "pep_rank", "pep_isbold", "pep_exp_mr", "pep_delta", 
+	                          "pep_exp_mz", "pep_exp_z")
+	  mascot_geomean_keys <- c("pep_expect")
+	  
+	  df_mascot_med <- df %>% 
+	    dplyr::select(!!rlang::sym(id), which(names(.) %in% mascot_median_keys)) %>% 
+	    dplyr::group_by(!!rlang::sym(id)) %>% 
+	    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
 
-	  if ("pep_exp_z" %in% names(df)) {
-  	  df_exp_z <- df %>% 
-  	    dplyr::select(!!rlang::sym(id), pep_exp_z) %>% 
-  	    dplyr::group_by(!!rlang::sym(id)) %>% 
-  	    dplyr::summarise(pep_exp_z = median(pep_exp_z, na.rm = TRUE))
-	  } else {
-	    df_exp_z <- df %>% 
-	      dplyr::filter(!duplicated(.[[id]])) %>% 
-	      dplyr::select(!!rlang::sym(id)) %>% 
-	      dplyr::mutate(pep_exp_z = NA)
-	  }
-
+	  df_mascot_geomean <- df %>% 
+	    dplyr::select(!!rlang::sym(id), which(names(.) %in% mascot_geomean_keys)) %>% 
+	    dplyr::group_by(!!rlang::sym(id)) %>% 
+	    dplyr::summarise_all(~ my_geomean(.x, na.rm = TRUE))
+	  
+	  df <- df %>% 
+	    dplyr::select(-which(names(.) %in% c(mascot_median_keys, mascot_geomean_keys)))
+	  
+	  # MaxQuant keys
+	  df_mq_rptr_mass_dev <- df %>% 
+	    dplyr::select(!!rlang::sym(id), grep("^Reporter mass deviation", names(.))) %>% 
+	    dplyr::group_by(!!rlang::sym(id)) %>% 
+	    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+	  
+	  df <- df %>% 
+	    dplyr::select(-grep("^Reporter mass deviation", names(.)))	  
+	  
+	  mq_median_keys <- c(
+	    "Charge", "Mass", "PIF", "Fraction of total spectrum", "Mass error [ppm]", 
+	    "Mass error [Da]", "Base peak fraction", "Precursor Intensity", 
+	    "Precursor Apex Fraction", "Intensity coverage", "Peak coverage", 
+	    "Combinatorics"
+	  )
+	  
+	  df_mq_med <- df %>% 
+	    dplyr::select(!!rlang::sym(id), which(names(.) %in% mq_median_keys)) %>% 
+	    dplyr::group_by(!!rlang::sym(id)) %>% 
+	    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+	  
+	  df <- df %>% 
+	    dplyr::select(-which(names(.) %in% mq_median_keys))
+	  
+	  # Spectrum Mill keys
+	  sm_median_keys <- c(
+	    "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
+	    "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
+	    "precursorIsolationIntensity", "ratioReporterIonToPrecursor", 
+	    "delta_parent_mass", "delta_parent_mass_ppm")
+	  
+	  df_sm_med <- df %>% 
+	    dplyr::select(!!rlang::sym(id), which(names(.) %in% sm_median_keys)) %>% 
+	    dplyr::group_by(!!rlang::sym(id)) %>% 
+	    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+	  
+	  df <- df %>% 
+	    dplyr::select(-which(names(.) %in% sm_median_keys))	  
+	  
 	  df_first <- df %>% 
-	    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-	    dplyr::select(-which(names(.) %in% c("prot_hit_num", "prot_family_member", "prot_score",
-	                                         "prot_matches", "prot_matches_sig", "prot_sequences", "prot_sequences_sig", 
-	                                         "pep_score", "pep_expect", "pep_rank", "pep_isbold", 
-	                                         "pep_exp_mr", "pep_exp_z", "pep_exp_mz", "pep_delta", "pep_var_mod", 
-	                                         "pep_var_mod_pos", "pep_scan_title", "pep_res_before", "pep_res_after", 
-	                                         "raw_file", "pep_query", "pep_summed_mod_pos", "pep_local_mod_pos"))) %>% 
 	    dplyr::filter(!duplicated(!!rlang::sym(id)))
 	  
 	  if ("pep_calc_mr" %in% names(df)) {
@@ -171,12 +190,15 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	  } else {
 	    df_first <- df_first %>% dplyr::select(-pep_seq_mod)
 	  }
-	  
-	  df <- list(df_first, df_exp_mr, df_exp_z, df_score, df_expect, df_rank, df_isbold, 
+
+	  df <- list(df_first, 
+	             df_mascot_med, df_mascot_geomean, 
+	             df_mq_rptr_mass_dev, df_mq_med, 
+	             df_sm_med, 
 	             df_num) %>%
 	    purrr::reduce(left_join, by = id) %>%
 	    data.frame(check.names = FALSE)
-	  
+
 	  df <- dplyr::bind_cols(
 	    df %>% dplyr::select(grep("^pep_", names(.))), 
 	    df %>% dplyr::select(-grep("^pep_", names(.))), 
@@ -278,6 +300,10 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
 #'proteins from ascribing peptides.
 #'
+#'In general, median statistics is applied when summarising numeric values from
+#'PSMs to peptides. One exception is \code{pep_expect} where geometric mean is
+#'used.
+#'
 #'Also see \code{\link{normPrn}} for more description of the column keys in the
 #'output.
 #'
@@ -288,19 +314,19 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'\code{N_log2_R...} are intermediate reports by median-centering
 #'\code{log2_R...} without scaling normalization.
 #'
-#'@param id Character string; the variable for summarisation of \code{PSMs} into
-#'  peptides. The option \code{id = pep_seq} corresponds to the summarisation by
-#'  the primary sequences of peptides. The option \code{id = pep_seq_mod}
-#'  corresponds to the summarisation by both the primary sequences and variable
-#'  modifications of peptides. \code{PSMs} data with the same value in
-#'  \code{pep_seq} or \code{pep_seq_mod} will be summarised into a single entry
-#'  of peptide. The value of \code{id} will match automatically to the value of
-#'  \code{group_psm_by} in \code{normPSM}.
+#'@param id Depreciated: character string; the variable for summarisation of
+#'  \code{PSMs} into peptides. The option \code{id = pep_seq} corresponds to the
+#'  summarisation by the primary sequences of peptides. The option \code{id =
+#'  pep_seq_mod} corresponds to the summarisation by both the primary sequences
+#'  and variable modifications of peptides. \code{PSMs} data with the same value
+#'  in \code{pep_seq} or \code{pep_seq_mod} will be summarised into a single
+#'  entry of peptide. NB: the value of \code{id} will match automatically to the
+#'  value of \code{group_psm_by} in \code{normPSM}.
 #'@param group_pep_by Depreciated: a character string for the grouping of
 #'  peptide entries. At the \code{prot_acc} default, descriptive statistics will
 #'  be calculated based on the same \code{prot_acc} groups. At
 #'  \code{group_pep_by = gene}, proteins with the same gene name but different
-#'  accession numbers will be treated as one group. The value of
+#'  accession numbers will be treated as one group. NB: the value of
 #'  \code{group_pep_by} will match automatically to the value of
 #'  \code{group_pep_by} in \code{normPSM}.
 #'@param method_psm_pep Character string; the method to summarise the
@@ -337,8 +363,8 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'  Samples corresponding to non-empty entries under \code{col_refit} will be
 #'  used in the refit of \code{log2FC} using multiple Gaussian kernels. The
 #'  density estimates from an earlier analyis will be kept for the remaining
-#'  samples. At the NULL default, the column key \code{Sample_ID} will be used,
-#'  which results in the refit of the \code{log2FC} for all samples.
+#'  samples. At the \code{NULL} default, the column key of \code{Sample_ID} will
+#'  be used, which results in the refit of the \code{log2FC} for all samples.
 #'@param cache Logical; if TRUE, use cache.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
@@ -364,7 +390,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'   maxit = 200,
 #'   epsilon = 1e-05,
 #'
-#'   filter_by = exprs(pep_n_psm >= 2),
+#'   # filter_by = exprs(pep_n_psm >= 2),
 #'   # filter_by_sp = exprs(species == "human"),
 #' )
 #'
@@ -478,6 +504,8 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	mget(names(formals()), rlang::current_env()) %>% save_call("normPep")
 
 	if (!(cache & file.exists(file.path(dat_dir, "Peptide", "Peptide.txt")))) {
+	  # leave the Splex results under the `Peptide` folder, 
+	  # so users can find the column keys for row filtration
 	  normPep_Splex(id = !!id, method_psm_pep = method_psm_pep, group_pep_by = group_pep_by)
 
 		df <- do.call(rbind,
@@ -642,28 +670,31 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		dplyr::mutate_if(is.logical, as.numeric) %>%
 		round(., digits = 0)
 
-	suppressWarnings(
-	  df <- df %>% 
-	    dplyr::select(-one_of(
-	      "m/z", "Scan number", "Scan index", "Length", "Deamidation (N) Probabilities", 
-	      "Oxidation (M) Probabilities", "Deamidation (N) Score Diffs", "Oxidation (M) Score Diffs", 
-	      "Acetyl (Protein N-term)", "Deamidation (N)", "Glu->pyro-Glu", "Oxidation (M)", 
-	      "Charge", "Fragmentation", "Mass analyzer", "Type", "Scan event number", 
-	      "Isotope index", "Mass", "Mass error [ppm]", "Mass error [Da]", 
-	      "Simple mass error [ppm]", "Retention time", "Delta score", "Score diff", 
-	      "Localization prob", "Combinatorics", "PIF", 
-	      "Fraction of total spectrum", "Base peak fraction", "Precursor Full ScanNumber", 
-	      "Precursor Intensity", "Precursor Apex Fraction", "Precursor Apex Offset", 
-	      "Precursor Apex Offset Time", "Matches", "Intensities", "Mass Deviations [Da]", 
-	      "Mass Deviations [ppm]", "Masses", "Number of Matches", "Intensity coverage", "Peak coverage", 
-	      "Neutral loss level", "ETD identification type", "Reverse", "All scores", "All sequences", 
-	      "All modified sequences", "Reporter PIF", "Reporter fraction", "ID", "Protein group IDs", 
-	      "Peptide ID", "Mod. peptide ID", "Evidence ID", "Deamidation (N) site IDs", 
-	      "Oxidation (M) site IDs"
-	    )) %>% 
-	    dplyr::select(-grep("^Reporter mass deviation", names(.))) # %>% 
-	    # dplyr::select(which(not_all_zero(.))) # empty channels are all NA too
-	)
+	run_scripts <- FALSE
+	if (run_scripts) {
+  	suppressWarnings(
+  	  df <- df %>% 
+  	    dplyr::select(-one_of(
+  	      "m/z", "Scan number", "Scan index", "Length", "Deamidation (N) Probabilities", 
+  	      "Oxidation (M) Probabilities", "Deamidation (N) Score Diffs", "Oxidation (M) Score Diffs", 
+  	      "Acetyl (Protein N-term)", "Deamidation (N)", "Glu->pyro-Glu", "Oxidation (M)", 
+  	      "Charge", "Fragmentation", "Mass analyzer", "Type", "Scan event number", 
+  	      "Isotope index", "Mass", "Mass error [ppm]", "Mass error [Da]", 
+  	      "Simple mass error [ppm]", "Retention time", "Delta score", "Score diff", 
+  	      "Localization prob", "Combinatorics", "PIF", 
+  	      "Fraction of total spectrum", "Base peak fraction", "Precursor Full ScanNumber", 
+  	      "Precursor Intensity", "Precursor Apex Fraction", "Precursor Apex Offset", 
+  	      "Precursor Apex Offset Time", "Matches", "Intensities", "Mass Deviations [Da]", 
+  	      "Mass Deviations [ppm]", "Masses", "Number of Matches", "Intensity coverage", "Peak coverage", 
+  	      "Neutral loss level", "ETD identification type", "Reverse", "All scores", "All sequences", 
+  	      "All modified sequences", "Reporter PIF", "Reporter fraction", "ID", "Protein group IDs", 
+  	      "Peptide ID", "Mod. peptide ID", "Evidence ID", "Deamidation (N) site IDs", 
+  	      "Oxidation (M) site IDs"
+  	    )) %>% 
+  	    dplyr::select(-grep("^Reporter mass deviation", names(.))) # %>% 
+  	  # dplyr::select(which(not_all_zero(.))) # empty channels are all NA too
+  	)	  
+	}
 
 	write.table(df, file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t",
 	            col.names = TRUE, row.names = FALSE)
@@ -683,6 +714,8 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 
 #' Median-centering normalization
+#' 
+#' # not currently used?
 #' 
 #' @import dplyr purrr rlang  magrittr
 logfcPep <- function(df, label_scheme, set_idx) {

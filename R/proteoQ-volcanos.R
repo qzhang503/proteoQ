@@ -43,13 +43,13 @@
 #'   yco = 0.01,
 #' )
 #'
-#' # kinases and n_pep >= 2
+#' # kinases and prot_n_pep >= 2
 #' prnVol(
 #'   show_labels = TRUE,
 #'   xco = 1.2,
 #'   yco = 0.01,
 #'
-#'   filter_by_kin = exprs(kin_attr, n_pep >= 2),
+#'   filter_by_kin = exprs(kin_attr, prot_n_pep >= 2),
 #'   filename = "prnvol_kin_npep2.png"
 #' )
 #'
@@ -62,7 +62,7 @@
 #'   show_sig = p,
 #'   yco = 0.01,
 #'   
-#'   filter_by_npep = exprs(n_pep >= 2),
+#'   filter_by_npep = exprs(prot_n_pep >= 2),
 #'   # `filename`(s) will be automated, 
 #' )
 #'

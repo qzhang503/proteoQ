@@ -14,12 +14,12 @@ prnGSPA(...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. The value will be
-determined automatically by the program. Peptide data will be used at
-\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-\code{id = prot_acc} or \code{gene}.}
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation for all samples.}
+of standard deviation across all samples.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -60,12 +60,12 @@ data; also see \code{\link{normPSM}}.}
 }
 \details{
 The significance \code{pVals} of proteins are first obtained from
-\code{\link{prnSig}}, which involves moderated t-test using
-\code{\link[limma]{eBayes}}. The geometric mean of \code{pVals} are then each
-calculated for the groups of up or down regulated proteins. The quotient of
-the two \code{pVals} is used to prepsent the significance of gene set
-enrichment. The arguments \code{pval_cutoff} and \code{logFC_cutoff} are used
-to filter out low influence genes.
+\code{\link{prnSig}}, which involves linear modelings using
+\code{\link[limma]{eBayes}} or \code{\link[lmerTest]{lmer}}. The geometric
+mean of \code{pVals} are then each calculated for the groups of up or down
+regulated proteins. The quotient of the two \code{pVals} is used to prepsent
+the significance of gene set enrichment. The arguments \code{pval_cutoff} and
+\code{logFC_cutoff} are used to filter out low influence genes.
 
 The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 default.
@@ -77,7 +77,7 @@ prnGSPA(
   pval_cutoff = 5E-2,
   gset_nms = c("go_sets", "kegg_sets"),
 
-  filter_by_npep = exprs(n_pep >= 2),
+  filter_by_npep = exprs(prot_n_pep >= 2),
   # `filename(s)` will be automated,
 )
 

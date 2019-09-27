@@ -20,19 +20,19 @@ prnSig(...)
 automatically by the value of \code{id}.}
 
 \item{id}{Character string to indicate the type of data. The value will be
-determined automatically by the program. Peptide data will be used at
-\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-\code{id = prot_acc} or \code{gene}.}
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation for all samples.}
+of standard deviation across all samples.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
-\item{filename}{A file name to output results: \code{Peptide_pVals.txt} for
-peptides and \code{Protein_pVals} for proteins.}
+\item{filename}{A file name to output results. The default is
+\code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}

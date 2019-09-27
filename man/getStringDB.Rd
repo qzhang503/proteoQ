@@ -19,9 +19,10 @@ protein-protein interaction.}
 data; also see \code{\link{normPSM}}.}
 }
 \description{
-\code{getStringDB} produces the \code{\href{https://string-db.org/}{STRING}}
-results of protein-protein interaction and protein expressions. The
-interaction file, \code{Protein_STRING_ppi.tsv}, and the expression file,
+\code{getStringDB} produces locally the
+\code{\href{https://string-db.org/}{STRING}} results of protein-protein
+interaction and protein expressions. The interaction file,
+\code{Protein_STRING_ppi.tsv}, and the expression file,
 \code{Protein_STRING_expr.tsv}, are compatible with
 \code{\href{https://cytoscape.org/}{Cytoscape}}.
 }
@@ -31,9 +32,12 @@ getStringDB(
   db_path = "~\\\\proteoQ\\\\dbs\\\\string",
   score_cutoff = .9,
   adjP = FALSE,
-  filter_by_sp = exprs(species \%in\% c("human", "mouse")), 
-  filter_by_npep = exprs(n_pep >= 2), 
+  filter_by_sp = exprs(species == "human"),
+  filter_by_npep = exprs(prot_n_pep >= 2),
 )
 }
 
+}
+\seealso{
+\code{\link{dl_stringdbs}} for database downloads.
 }

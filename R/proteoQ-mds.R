@@ -407,12 +407,8 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 #'distances.
 #'
 #'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
-#'example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
-#'the setting of \code{id = pep_seq_mod} in the current call will be matched to
-#'\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
-#'was employed, the setting of \code{id = prot_acc} in the current call will be
-#'matched to \code{id = gene}.
+#'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
+#'for details.
 #'
 #'@inheritParams  proteoHist
 #'@param  col_group Not used.
@@ -494,12 +490,8 @@ proteoMDS <- function (id = gene,
 #'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
 #'
 #'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
-#'example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
-#'the setting of \code{id = pep_seq_mod} in the current call will be matched to
-#'\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
-#'was employed, the setting of \code{id = prot_acc} in the current call will be
-#'matched to \code{id = gene}.
+#'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
+#'for details.
 #'
 #'@inheritParams proteoMDS
 #'
@@ -546,12 +538,8 @@ proteoPCA <- function (id = gene,
 #'\code{\link[stats]{dist}} for heat map visualization.
 #'
 #'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}} or \code{\link{normPep}}.  For
-#'example, if \code{normPSM(group_psm_by = pep_seq, ...)} was called earlier,
-#'the setting of \code{id = pep_seq_mod} in the current call will be matched to
-#'\code{id = pep_seq}. Similarly, if \code{normPep(group_pep_by = gene, ...)}
-#'was employed, the setting of \code{id = prot_acc} in the current call will be
-#'matched to \code{id = gene}.
+#'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
+#'for details.
 #'
 #'@inheritParams proteoMDS
 #'@param annot_cols A character vector of column keys in \code{expt_smry.xlsx}.
@@ -609,7 +597,7 @@ proteoEucDist <- function (id = gene,
 #' pepMDS(
 #'   scale_log2r = FALSE,
 #'   col_select = Select, 
-#'   filter_by_npsm = exprs(n_psm >= 10),
+#'   filter_by_npsm = exprs(pep_n_psm >= 10),
 #'   filename = "pepMDS_filtered.png",
 #' )
 #'
@@ -639,7 +627,7 @@ pepMDS <- function (...) {
 #'   col_color = Color,
 #'   col_shape = Shape,
 #'   show_ids = TRUE,
-#'   filter_by_npep = exprs(n_pep >= 5),
+#'   filter_by_npep = exprs(prot_n_pep >= 5),
 #'   filename = "prnMDS_filtered.png",
 #' )
 #'
@@ -676,7 +664,7 @@ prnMDS <- function (...) {
 #'   col_color = Color,
 #'   col_shape = Shape,
 #'   show_ids = TRUE,
-#'   filter_by_npsm = exprs(n_psm >= 10),
+#'   filter_by_npsm = exprs(pep_n_psm >= 10),
 #'   filename = "pepPCA_filtered.png",
 #' )
 #'
@@ -706,7 +694,7 @@ pepPCA <- function (...) {
 #'   col_color = Color,
 #'   col_shape = Shape,
 #'   show_ids = TRUE,
-#'   filter_by_npep = exprs(n_pep >= 5),
+#'   filter_by_npep = exprs(prot_n_pep >= 5),
 #'   filename = "prnPCA_filtered.png",
 #' )
 #'
@@ -782,7 +770,7 @@ pepEucDist <- function (...) {
 #'   cellheight = 24,
 #'   width = 14,
 #'   height = 12, 
-#'   filter_by_npep = exprs(n_pep >= 5),
+#'   filter_by_npep = exprs(prot_n_pep >= 5),
 #'   filename = "prnEucDist_filtered.png",
 #' )
 #'

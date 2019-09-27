@@ -11,13 +11,13 @@ purge_by_cv(df, id, max_cv)
 automatically by the value of \code{id}.}
 
 \item{id}{Character string to indicate the type of data. The value will be
-determined automatically by the program. Peptide data will be used at
-\code{id = pep_seq} or \code{pep_seq_mod}, and protein data will be used at
-\code{id = prot_acc} or \code{gene}.}
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{max_cv}{Numeric; the cut-off in CV. The CV are from the ascribing PSMs
-for the filtration of peptides or ascribing peptides for the filtration of
-proteins.}
+for the filtration of peptide entries or ascribing peptides for the
+filtration of protein entries.}
 }
 \description{
 \code{purge_by_cv} replaces the data entries at \code{group CV > max_cv} to

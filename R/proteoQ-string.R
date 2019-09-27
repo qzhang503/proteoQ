@@ -187,9 +187,10 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff) {
 
 #'STRING outputs
 #'
-#'\code{getStringDB} produces the \code{\href{https://string-db.org/}{STRING}}
-#'results of protein-protein interaction and protein expressions. The
-#'interaction file, \code{Protein_STRING_ppi.tsv}, and the expression file,
+#'\code{getStringDB} produces locally the
+#'\code{\href{https://string-db.org/}{STRING}} results of protein-protein
+#'interaction and protein expressions. The interaction file,
+#'\code{Protein_STRING_ppi.tsv}, and the expression file,
 #'\code{Protein_STRING_expr.tsv}, are compatible with
 #'\code{\href{https://cytoscape.org/}{Cytoscape}}.
 #'
@@ -197,15 +198,16 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff) {
 #'@param score_cutoff Numeric; the threshold of the \code{combined_score} of
 #'  protein-protein interaction.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. 
+#'  data; also see \code{\link{normPSM}}.
+#'@seealso \code{\link{dl_stringdbs}} for database downloads.
 #' @examples
 #' \dontrun{
 #' getStringDB(
 #'   db_path = "~\\proteoQ\\dbs\\string",
 #'   score_cutoff = .9,
 #'   adjP = FALSE,
-#'   filter_by_sp = exprs(species %in% c("human", "mouse")), 
-#'   filter_by_npep = exprs(n_pep >= 2), 
+#'   filter_by_sp = exprs(species == "human"),
+#'   filter_by_npep = exprs(prot_n_pep >= 2),
 #' )
 #' }
 #'

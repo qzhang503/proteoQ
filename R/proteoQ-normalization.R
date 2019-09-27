@@ -1,9 +1,9 @@
 #'Data normalization
 #'
-#'\code{normMulGau} normalizes \code{log2-ratios} under the assumption of multi
+#'\code{normMulGau} normalizes \code{log2FC} under the assumption of multi
 #'Gaussian kernels.
 #'
-#' @param df An input data frame
+#'@param df An input data frame
 #'@inheritParams mixtools::normalmixEM
 #'@inheritParams normPep
 #'@return A data frame.
@@ -186,6 +186,9 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		  `colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
 		  `rownames<-`(rownames(df))
 		
+		nan_cols <- map_lgl(df_z, is_all_nan, na.rm = TRUE)
+		df_z[, nan_cols] <- 0
+		
 		nm_log2r_z <- names(df) %>% 
 		  .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
 		  find_fit_nms(label_scheme_fit$Sample_ID)
@@ -357,7 +360,6 @@ sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 	args <- purrr::pmap(x[, names(x) %in% c("lambda", "mean", "sd")], list) %>%
 		`names<-`(x$Sample_ID)
 
-	# nm_comps <- paste("G", seq_len(length(args)), sep = ".")
 	nm_comps <- paste0("G", seq_len(length(args)))
 
 	Seq <- seq(xmin, xmax, by = by)
@@ -374,7 +376,7 @@ sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 
 #' Data normalization
 #'
-#' \code{normSD} normalizes the SD of \code{log2-ratios}.
+#' \code{normSD} normalizes the SD of \code{log2FC}.
 #'
 #' @import dplyr purrr rlang mixtools
 #' @importFrom magrittr %>%
@@ -395,7 +397,7 @@ normSD <- function (x, center = 0, SD = 1) {
 
 #' Data normalization
 #'
-#' \code{fitKernelDensity} calculates the fitted density of \code{log2-ratios}.
+#' \code{fitKernelDensity} calculates the fitted density of \code{log2FC}.
 #'
 #' @return A data frame.
 #'

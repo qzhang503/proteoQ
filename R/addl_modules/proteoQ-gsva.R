@@ -177,3 +177,91 @@ gsvaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
 }
 
 
+
+
+
+#' @importFrom magrittr %>%
+prep_gage <- function(contrast_groups, key = "term", pval_cutoff = 1E-2) {
+  gsea_res <- do.call(rbind,
+                      lapply(
+                        list.files(path = file.path(dat_dir, "Protein", "ESGAGE"), pattern = "_pVals.txt$", , full.names = TRUE),
+                        readr::read_tsv
+                      )
+  ) %>%
+    dplyr::select(-stat.mean, -set.size, -direction, -p.geomean, -q_geomean, -q.val) %>%
+    dplyr::filter(p.val < pval_cutoff)
+  
+  gsea_res <- gsea_res %>% dplyr::select(-p_geomean)
+  
+  gsea_res <- gsea_res %>%
+    dplyr::rename(p_val = p.val) %>%
+    dplyr::mutate(q_val = p.adjust(.$p_val, "BH")) %>%
+    dplyr::mutate(term = factor(term), contrast = factor(contrast, levels = contrast_groups)) %>%
+    dplyr::arrange(contrast) %>%
+    tidyr::complete(term, contrast)
+}
+
+
+#' @importFrom magrittr %>%
+#' @importFrom readr read_tsv
+prep_gsva <- function(contrast_groups, pval_cutoff = 1E-2) {
+  do.call(rbind,
+          lapply(
+            list.files(path = file.path(dat_dir, "Protein", "GSVA"), pattern = "_pVals.txt$", , full.names = TRUE),
+            readr::read_tsv
+          )
+  ) %>%
+    dplyr::select(-grep("\\.FC\\s+\\(", names(.))) %>%
+    dplyr::select(-grep("\\.log2Ratio\\s+\\(", names(.))) %>%
+    dplyr::select(-grep("\\.adjP\\s+\\(", names(.))) %>%
+    `names<-`(gsub(".*\\.pVal\\s+\\((.*)\\)$", "\\1", names(.))) %>%
+    tidyr::gather(key = contrast, value = p_val, -term) %>%
+    dplyr::filter(p_val < pval_cutoff) %>%
+    dplyr::mutate(q_val = p.adjust(.$p_val, "BH")) %>%
+    dplyr::mutate(term = factor(term), contrast = factor(contrast, levels = contrast_groups)) %>%
+    dplyr::arrange(contrast) %>%
+    tidyr::complete(term, contrast)
+}
+
+
+#'Volcano Plots of Protein \code{log2FC} under Given Gene Sets
+#'
+#'@seealso \code{\link{proteoVolcano}} for parameters
+#'@export
+gageMap <- function (...) {
+  err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
+  
+  proteoVolcano(id = "gene", anal_type = "mapGAGE", ...)
+}
+
+
+#'Volcano plots of protein \code{log2FC} under gene sets
+#'
+#'\code{gsvaMap} is a wrapper of \code{\link{proteoVolcano}} for mapping of
+#'protein data by gene sets.
+#'
+#'@export
+gsvaMap <- function (...) {
+  err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
+  
+  proteoVolcano(id = "gene", anal_type = "mapGSVA", ...)
+}
+
+
+#'Volcano Plots of GSVA Terms
+#'
+#'@seealso \code{\link{proteoVolcano}} for parameters
+#'@export
+gsvaVol <- function (...) {
+  err_msg <- "Don't call the function with arguments `id` and/or `anal_type`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
+  
+  proteoVolcano(id = "term", anal_type = "GSVA", ...)
+}
+
+
+
+
+

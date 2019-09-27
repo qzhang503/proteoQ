@@ -30,7 +30,3 @@ reporter-ion intensities.}
 \code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It
 separates PSM data by TMT experiment and LC/MS injection.
 }
-\examples{
-splitPSM(rptr_intco = 1000, rm_craps = TRUE, plot_rptr_int = TRUE)
-
-}
