@@ -261,7 +261,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   cat(paste0(names(df), "\n"))
   cat("\n")
   
-  # at "group_pep_by = gene", need 'gene' column from annotPrn()
+  # at "group_pep_by = gene", need column 'gene' from annotPrn()
   df <- df %>% 
     dplyr::mutate(prot_acc_orig = prot_acc) %>% 
     dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
