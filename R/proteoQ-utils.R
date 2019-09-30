@@ -740,7 +740,8 @@ parse_uniprot_fasta <- function (df, fasta) {
         length = getLength(fasta)
       ) %>% 
         dplyr::filter(!duplicated(.$prot_acc)) %>% 
-        dplyr::mutate(acc_type = acc_type)
+        dplyr::mutate(acc_type = acc_type) %>% 
+        dplyr::mutate(prot_mass = round(prot_mass, digits = 0))
       
       if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
         fasta_smry <- fasta_smry %>% 
@@ -1294,23 +1295,26 @@ subset_fasta <- function (df, fasta, acc_type) {
 #' @import plyr dplyr purrr rlang seqinr
 #' @importFrom magrittr %>%
 calc_cover <- function(df, id, fasta = NULL) {
-  stopifnot("acc_type" %in% names(df))
-  acc_type <- df$acc_type[1] %>% as.character()
-  
+  stopifnot(all(c("prot_acc", "gene", "pep_start", "pep_end") %in% names(df)))
+
+  if (all(is.factor(df$pep_start))) {
+    df$pep_start <- df$pep_start %>% as.character() %>% as.numeric()
+  }
+    
+  if (all(is.factor(df$pep_end))) {
+    df$pep_end <- df$pep_end %>% as.character() %>% as.numeric()
+  }
+
   id <- rlang::as_string(rlang::enexpr(id))
+  if (id == "gene") {
+    gn_rollup <- TRUE
+    id <- "prot_acc"
+  } else {
+    gn_rollup <- FALSE
+  }
   
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
   load(file = file.path(dat_dir, "acc_lookup.rda"))
-  
-  if (acc_type == "refseq_acc") {
-    key <- "refseq_acc"
-  } else if (acc_type == "uniprot_id") {
-    key <- "uniprot_id"
-  } else if (acc_type == "uniprot_acc") {
-    key <- "uniprot_acc"
-  } else {
-    warning("Unkown accession type.")
-  }
   
   if (length(fasta) == 0) {
     stop("No fasta entries matched the type of protein accession. Check the correctness of fasta file.", 
@@ -1322,16 +1326,16 @@ calc_cover <- function(df, id, fasta = NULL) {
             Make sure the fasta file is correct.")
   }
   
-  df <- df %>%
+  df_sels <- df %>%
     dplyr::select(prot_acc, pep_start, pep_end) %>%
     dplyr::mutate(index = row_number()) %>% 
     dplyr::left_join(acc_lookup, by = "prot_acc") %>%
     dplyr::filter(!is.na(length), !duplicated(index)) %>% 
     dplyr::select(-index)
   
-  if (nrow(df) == 0) stop("Probably incorrect accession types in the fasta file.", call. = FALSE)
+  if (nrow(df_sels) == 0) stop("Probably incorrect accession types in the fasta file.", call. = FALSE)
   
-  df <- df %>%
+  df_sels <- df_sels %>%
     dplyr::filter(pep_start <= length) %>%
     dplyr::filter(pep_end <= length) %>%
     split(.[["prot_acc"]], drop = TRUE) %>%
@@ -1345,16 +1349,34 @@ calc_cover <- function(df, id, fasta = NULL) {
     data.frame(check.names = FALSE) %>%
     `colnames<-`("prot_cover") %>%
     tibble::rownames_to_column("prot_acc") %>%
-    dplyr::mutate(prot_cover = ifelse(prot_cover > 1, 1, prot_cover)) %>% 
-    dplyr::group_by(!!rlang::sym(id)) %>%
-    dplyr::select(!!rlang::sym(id), prot_cover) %>%
-    dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>%
+    dplyr::mutate(prot_cover = ifelse(prot_cover > 1, 1, prot_cover)) 
+  
+  if (gn_rollup) {
+    df_sels <- df %>% 
+      dplyr::select(prot_acc, gene) %>% 
+      dplyr::filter(!duplicated(prot_acc)) %>% 
+      dplyr::left_join(df_sels, by = "prot_acc") %>% 
+      dplyr::select(-prot_acc) %>% 
+      dplyr::group_by(gene) %>% 
+      dplyr::summarise_all(~ max(.x, na.rm = TRUE))
+    
+    df_sels <- df %>% 
+      dplyr::select(prot_acc, gene) %>% 
+      dplyr::filter(!duplicated(prot_acc)) %>% 
+      dplyr::left_join(df_sels, by = "gene") %>% 
+      dplyr::select(-gene) 
+  }
+  
+  df <- df %>% 
+    dplyr::mutate(index = row_number()) %>% 
+    dplyr::left_join(df_sels, by = "prot_acc") %>% 
+    dplyr::filter(!duplicated(index)) %>% 
+    dplyr::select(-index) %>% 
     dplyr::mutate(prot_cover = round(prot_cover * 100, digits = 1)) %>%
     dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
-  
+
   return(df)
 }
-
 
 
 #' Matches formulas to those in calls to pepSig or prnSig

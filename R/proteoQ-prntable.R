@@ -200,20 +200,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	  cat(paste0(names(df), "\n"))
 	  df <- df %>% filters_in_call(!!!lang_dots)
 	  
-	  if (all(c("pep_start", "pep_end") %in% names(df))) {
-	    if ("prot_cover" %in% names(df)) {
-	      warning("`prot_cover` recalculated after data merging.\n")
-	      df$prot_cover <- NULL
-	    } 
-	    
-	    df <- df %>% 
-	      dplyr::select(prot_acc, acc_type, prot_desc, !!rlang::sym(pep_id), pep_start, pep_end) %>% 
-	      calc_cover(id = !!id, fasta = fasta) %>% 
-	      dplyr::right_join(df, by = id)		  
-	  } else {
-	    df$prot_cover <- NA
-	  }
-		
 		if (use_unique_pep & "pep_isunique" %in% names(df)) df <- df %>% dplyr::filter(pep_isunique == 1)
 
 		df_num <- df %>% 

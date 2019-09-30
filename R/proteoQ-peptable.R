@@ -63,7 +63,8 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	  df <- df %>% 
 	    dplyr::select(-which(names(.) %in% c(
 	      "prot_hit_num", "prot_family_member", "prot_score", 
-	      "prot_matches", "prot_matches_sig", "prot_sequences", "prot_sequences_sig", 
+	      "prot_matches", "prot_sequences", 
+	      # "prot_matches_sig", "prot_sequences_sig", 
 	      "pep_var_mod", "pep_var_mod_pos", "pep_scan_title", 
 	      "pep_res_before", "pep_res_after", 
 	      "raw_file", "pep_query", "pep_summed_mod_pos", "pep_local_mod_pos")))
@@ -669,32 +670,6 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	  df[, grepl("I[0-9]{3}", names(df))] %>%
 		dplyr::mutate_if(is.logical, as.numeric) %>%
 		round(., digits = 0)
-
-	run_scripts <- FALSE
-	if (run_scripts) {
-  	suppressWarnings(
-  	  df <- df %>% 
-  	    dplyr::select(-one_of(
-  	      "m/z", "Scan number", "Scan index", "Length", "Deamidation (N) Probabilities", 
-  	      "Oxidation (M) Probabilities", "Deamidation (N) Score Diffs", "Oxidation (M) Score Diffs", 
-  	      "Acetyl (Protein N-term)", "Deamidation (N)", "Glu->pyro-Glu", "Oxidation (M)", 
-  	      "Charge", "Fragmentation", "Mass analyzer", "Type", "Scan event number", 
-  	      "Isotope index", "Mass", "Mass error [ppm]", "Mass error [Da]", 
-  	      "Simple mass error [ppm]", "Retention time", "Delta score", "Score diff", 
-  	      "Localization prob", "Combinatorics", "PIF", 
-  	      "Fraction of total spectrum", "Base peak fraction", "Precursor Full ScanNumber", 
-  	      "Precursor Intensity", "Precursor Apex Fraction", "Precursor Apex Offset", 
-  	      "Precursor Apex Offset Time", "Matches", "Intensities", "Mass Deviations [Da]", 
-  	      "Mass Deviations [ppm]", "Masses", "Number of Matches", "Intensity coverage", "Peak coverage", 
-  	      "Neutral loss level", "ETD identification type", "Reverse", "All scores", "All sequences", 
-  	      "All modified sequences", "Reporter PIF", "Reporter fraction", "ID", "Protein group IDs", 
-  	      "Peptide ID", "Mod. peptide ID", "Evidence ID", "Deamidation (N) site IDs", 
-  	      "Oxidation (M) site IDs"
-  	    )) %>% 
-  	    dplyr::select(-grep("^Reporter mass deviation", names(.))) # %>% 
-  	  # dplyr::select(which(not_all_zero(.))) # empty channels are all NA too
-  	)	  
-	}
 
 	write.table(df, file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t",
 	            col.names = TRUE, row.names = FALSE)

@@ -181,10 +181,11 @@ rmPSMHeaders <- function () {
 #' @param rptr_intco Numeric; the threshold of reporter ion intensity.
 #' @param plot_rptr_int Logical; if TRUE, prepares the violin plots of
 #'   reporter-ion intensities.
-#' @import dplyr tidyr
+#' @import dplyr tidyr seqinr
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
-splitPSM <- function(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE, rptr_intco = 1000, 
+splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, 
+                     rm_craps = FALSE, rm_krts = FALSE, rptr_intco = 1000, 
                      annot_kinases = FALSE, plot_rptr_int = TRUE, ...) {
 
 	old_opt <- options(max.print = 99999)
@@ -260,10 +261,41 @@ splitPSM <- function(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE, rptr_intco
   cat(paste0(names(df), "\n"))
   cat("\n")
   
+  # at "group_pep_by = gene", need 'gene' column from annotPrn()
+  df <- df %>% 
+    dplyr::mutate(prot_acc_orig = prot_acc) %>% 
+    dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
+    annotPrn(fasta) %>% 
+    dplyr::mutate(prot_acc = prot_acc_orig) %>% 
+    dplyr::select(-prot_acc_orig)
+  
+  prot_matches_sig <- df %>%
+    dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+    dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+    dplyr::summarise(prot_matches_sig_new = n())
+  
+  prot_sequences_sig <- df %>%
+    dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+    dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
+    dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+    dplyr::summarise(prot_sequences_sig_new = n())
+  
+  df <- list(df, prot_matches_sig, prot_sequences_sig) %>% 
+    purrr::reduce(left_join, by = group_pep_by) %>% 
+    dplyr::mutate(prot_matches_sig = prot_matches_sig_new, 
+                  prot_sequences_sig = prot_sequences_sig_new) %>%
+    dplyr::select(-prot_matches_sig_new, -prot_sequences_sig_new)
+  
+  df <- dplyr::bind_cols(
+    df %>% dplyr::select(grep("^prot_", names(.))), 
+    df %>% dplyr::select(-grep("^prot_", names(.))), 
+  )
+
+  rm(prot_matches_sig, prot_sequences_sig)
+  
   df <- df %>% 
     filters_in_call(!!!lang_dots) %>% 
-    dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
-    annotPrn(fasta)
+    dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc))
 
   # re-apply craps after annotation
   # 'acc_type' will be NA for entries not found in fasta
@@ -289,9 +321,18 @@ splitPSM <- function(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE, rptr_intco
   
   if (annot_kinases) df <- annotKin(df, acc_type)
   
-  # `pep_start` and `pep_end` will be used for protein percent coverage calculation
-  if (!all(c("pep_start", "pep_end") %in% names(df))) df <- df %>% annotPeppos(fasta)
+  # `pep_start`, `pep_end` and `gene` will be used for protein percent coverage calculation
+  if (!all(c("pep_start", "pep_end", "gene") %in% names(df))) df <- df %>% annotPeppos(fasta)
   
+  if (!("prot_cover" %in% names(df) & length(filelist) == 1)) {
+    df$prot_cover <- NULL
+    
+    df <- df %>% 
+      calc_cover(id = !!rlang::sym(group_pep_by), 
+                 fasta = seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
+                                            seqtype = "AA", as.string = TRUE, set.attributes = TRUE))
+  } 
+
   if (length(grep("^R[0-9]{3}", names(df))) > 0) {
     df_split <- df %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
@@ -1164,16 +1205,16 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
   
   if (type == "mascot") {
     rmPSMHeaders()
-    splitPSM(fasta, rm_craps, rm_krts, rptr_intco, annot_kinases, plot_rptr_int, ...)
+    splitPSM(group_psm_by, group_pep_by, fasta, rm_craps, rm_krts, rptr_intco, annot_kinases, plot_rptr_int, ...)
     cleanupPSM(rm_outliers)
     annotPSM(group_psm_by, group_pep_by, fasta, expt_smry, plot_rptr_int, plot_log2FC_cv, ...)
   } else if (type == "mq") {
-    splitPSM_mq(fasta, pep_unique_by, corrected_int, rptr_intco, 
-                rm_craps, rm_reverses, annot_kinases, plot_rptr_int, ...)
+    splitPSM_mq(group_psm_by, group_pep_by, fasta, pep_unique_by, corrected_int, rptr_intco, rm_craps, 
+                rm_reverses, annot_kinases, plot_rptr_int, ...)
     cleanupPSM(rm_outliers)
 		annotPSM_mq(group_psm_by, group_pep_by, fasta, expt_smry, rm_krts, plot_rptr_int, plot_log2FC_cv, ...)
   } else if (type == "sm") {
-    splitPSM_sm(fasta, rm_craps, rm_krts, rptr_intco, annot_kinases, plot_rptr_int, ...)
+    splitPSM_sm(group_psm_by, group_pep_by, fasta, rm_craps, rm_krts, rptr_intco, annot_kinases, plot_rptr_int, ...)
     cleanupPSM(rm_outliers)
     annotPSM_sm(group_psm_by, group_pep_by, fasta, expt_smry, rm_krts, plot_rptr_int, plot_log2FC_cv, ...)
   }
@@ -1204,7 +1245,8 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
 #'@import dplyr tidyr
 #'@importFrom stringr str_split
 #'@importFrom magrittr %>%
-splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = FALSE, rptr_intco = 1000, 
+splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, 
+                        pep_unique_by = "group", corrected_int = FALSE, rptr_intco = 1000, 
                         rm_craps = FALSE, rm_reverses = TRUE, annot_kinases = FALSE, 
                         plot_rptr_int = TRUE, ...) {
   
@@ -1315,8 +1357,17 @@ splitPSM_mq <- function(fasta = NULL, pep_unique_by = "group", corrected_int = F
   
   df <- df %>% annotPrn(fasta)
   if (annot_kinases) df <- df %>% annotKin(acc_type)
-  if (!all(c("pep_start", "pep_end") %in% names(df))) df <- df %>% annotPeppos(fasta)
-
+  if (!all(c("pep_start", "pep_end", "gene") %in% names(df))) df <- df %>% annotPeppos(fasta)
+  
+  if (!("prot_cover" %in% names(df) & length(filelist) == 1)) {
+    df$prot_cover <- NULL
+    
+    df <- df %>% 
+      calc_cover(id = !!rlang::sym(group_pep_by), 
+                 fasta = seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
+                                            seqtype = "AA", as.string = TRUE, set.attributes = TRUE))
+  }
+  
   df <- cbind.data.frame(
     df[, grepl("^[a-z]", names(df))], 
     df[, grepl("^[A-Z]", names(df)) & !grepl("^[IR][0-9]{3}[NC]*", names(df))], 
@@ -1555,7 +1606,8 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 #' @import dplyr tidyr readr
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
-splitPSM_sm <- function(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE, rptr_intco = 1000, 
+splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, 
+                        rm_craps = FALSE, rm_krts = FALSE, rptr_intco = 1000, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, ...) {
   
   old_opt <- options(max.print = 99999)
@@ -1653,9 +1705,18 @@ splitPSM_sm <- function(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE, rptr_in
   }
   
   if (annot_kinases) df <- annotKin(df, acc_type)
-  if (!any(c("pep_start", "pep_end") %in% names(df))) df <- df %>% annotPeppos(fasta)
+  if (!all(c("pep_start", "pep_end", "gene") %in% names(df))) df <- df %>% annotPeppos(fasta)
   
   # M._sequence.c; -._sequence.c; n.sequence.c; -.sequence.c
+  
+  if (!("prot_cover" %in% names(df) & length(filelist) == 1)) {
+    df$prot_cover <- NULL
+    
+    df <- df %>% 
+      calc_cover(id = !!rlang::sym(group_pep_by), 
+                 fasta = seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
+                                            seqtype = "AA", as.string = TRUE, set.attributes = TRUE))
+  }
   
   df <- df %>% 
     dplyr::mutate(pep_seq = toupper(pep_seq))
