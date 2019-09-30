@@ -4,7 +4,8 @@
 \alias{splitPSM}
 \title{Splits PSM tables}
 \usage{
-splitPSM(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE,
+splitPSM(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
+  fasta = NULL, rm_craps = FALSE, rm_krts = FALSE,
   rptr_intco = 1000, annot_kinases = FALSE, plot_rptr_int = TRUE,
   ...)
 }

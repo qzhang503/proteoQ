@@ -4,7 +4,8 @@
 \alias{splitPSM_sm}
 \title{Splits PSM tables from \code{Spectrum Mill}}
 \usage{
-splitPSM_sm(fasta = NULL, rm_craps = FALSE, rm_krts = FALSE,
+splitPSM_sm(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
+  fasta = NULL, rm_craps = FALSE, rm_krts = FALSE,
   rptr_intco = 1000, annot_kinases = FALSE, plot_rptr_int = TRUE,
   ...)
 }
