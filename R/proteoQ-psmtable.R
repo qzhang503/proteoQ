@@ -165,10 +165,186 @@ rmPSMHeaders <- function () {
 }
 
 
+#' Add the `pep_seq_mod` field to Mascot PSMs
+#'
+#' @import dplyr
+#' @importFrom purrr walk
+#' @importFrom magrittr %>%
+#' @importFrom magrittr %T>%
+add_mascot_pepseqmod <- function(df) {
+  hd_fn <- list.files(path = file.path(dat_dir, "PSM\\cache"),
+                      pattern = "^F\\d+_header.txt$")
+  assign("df_header", readLines(file.path(dat_dir, "PSM\\cache", hd_fn[1])))
+  
+  # combine peptide sequences and modifications
+  fixed_mods <- df_header[((grep("Fixed modifications", df_header))[1] + 3) :
+                            ((grep("Variable modifications", df_header))[1] - 2)] %>%
+    gsub("\"", "", ., fixed = TRUE) %>%
+    data.frame() %>%
+    tidyr::separate(".", sep = ",", c("Mascot_abbr", "Description", "Delta_mass"))
+  
+  var_mods <- df_header[((grep("Variable modifications", df_header))[1] + 3) :
+                          ((grep("Search Parameters", df_header))[1] - 2)] %>%
+    gsub("\"", "", ., fixed = TRUE) %>%
+    data.frame() %>%
+    tidyr::separate(".", sep = ",", extra = "drop", c("Mascot_abbr", "Description", "Delta_mass")) %>%
+    dplyr::mutate(Abbr = Description) %>%
+    dplyr::mutate(Abbr = try(gsub("Acetyl (Protein N-term)", "_", .$Abbr, fixed = TRUE))) %>%
+    dplyr::mutate(Abbr = try(gsub("Deamidated (N)", "n", .$Abbr, fixed = TRUE))) %>%
+    dplyr::mutate(Abbr = try(gsub("Gln->pyro-Glu (N-term Q)", "q", .$Abbr, fixed = TRUE))) %>%
+    dplyr::mutate(Abbr = try(gsub("Oxidation (M)", "m", .$Abbr, fixed = TRUE))) %>%
+    dplyr::mutate(Abbr = try(gsub("Pyro-carbamidomethyl (N-term C)", "c", .$Abbr, fixed = TRUE))) %>%
+    dplyr::mutate(Abbr = try(gsub("Carbamidomethyl (C)", "C", .$Abbr, fixed = TRUE))) %>%
+    dplyr::mutate(Filename = Description) %>%
+    dplyr::mutate(Filename = try(gsub("Acetyl (Protein N-term)", "N_term_Ac", .$Filename, fixed = TRUE))) %>%
+    dplyr::mutate(Filename = try(gsub("Deamidated (N)", "Deamidated_N", .$Filename, fixed = TRUE))) %>%
+    dplyr::mutate(Filename = try(gsub("Gln->pyro-Glu (N-term Q)", "N_term_Q", .$Filename, fixed = TRUE))) %>%
+    dplyr::mutate(Filename = try(gsub("Oxidation (M)", "Oxidation_M", .$Filename, fixed = TRUE))) %>%
+    dplyr::mutate(Filename = try(gsub("Pyro-carbamidomethyl (N-term C)", "N_term_C", .$Filename, fixed = TRUE)))
+  
+  df$pep_seq_mod <- df$pep_seq
+  
+  # phosphorylation mods
+  phospho_mods <- var_mods %>% dplyr::filter(grepl("^Phospho", Description))
+  if (nrow(phospho_mods) > 0) var_mods <- var_mods %>%
+    dplyr::filter(!grepl("^Phospho", Description))
+  
+  # (1) Non-acetylated N-term variable modifications
+  NT_var_mods <- var_mods %>%
+    dplyr::filter(grepl("N-term", Description, fixed = TRUE)) %>%
+    dplyr::filter(!grepl("Acetyl (Protein N-term)", Description, fixed = TRUE))
+  
+  for (mod in NT_var_mods$Mascot_abbr) {
+    df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
+    
+    if (nrow(df_sub) > 0) {
+      locales <- 1 # always "1" since a N-term mod
+      
+      lowers <- substr(df_sub$pep_seq_mod, locales, locales) %>% tolower()
+      substr(df_sub$pep_seq_mod, locales, locales) <- lowers
+      
+      # fn <- var_mods[var_mods$Mascot_abbr == mod, "Filename"]
+      # try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods", paste0(fn, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE))
+      
+      df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
+    }
+  }
+  
+  # rm(NT_var_mods, mod, df_sub, locales, lowers, fn)
+  rm(NT_var_mods, mod, df_sub, locales, lowers)
+  
+  # (2) non-N-term variable modifications
+  nNT_var_mods <- var_mods[!grepl("N-term", var_mods$Description), ]
+  
+  for (mod in nNT_var_mods$Mascot_abbr) {
+    df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
+    
+    if (nrow(df_sub) > 0) {
+      # need to find all matches
+      pos_matrix  <- gregexpr(mod, df_sub$pep_var_mod_pos) %>%
+        plyr::ldply(., rbind) %>%
+        # "-2" to account for the characters, "0.", "1."..., in 'pep_var_mod_pos'
+        purrr::map(function(x) {x - 2}) %>%
+        data.frame(check.names = FALSE)
+      
+      for (k in 1:ncol(pos_matrix)) {
+        rows <- !is.na(pos_matrix[, k])
+        locales <- pos_matrix[rows, k]
+        
+        lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>% tolower()
+        substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
+      }
+      
+      # fn <- var_mods[var_mods$Mascot_abbr == mod, "Filename"]
+      # try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods", paste0(fn, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE))
+      
+      df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
+    }
+  }
+  
+  # rm(nNT_var_mods, mod, df_sub, pos_matrix, k, rows, locales, lowers, fn)
+  rm(nNT_var_mods, mod, df_sub, pos_matrix, k, rows, locales, lowers)
+  
+  # (3) phosphopeptides
+  if (nrow(phospho_mods) > 0) {
+    for (mod in phospho_mods$Mascot_abbr) {
+      df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
+      
+      if (nrow(df_sub) > 0) {
+        # find all matches
+        pos_matrix  <- gregexpr(mod, df_sub$pep_var_mod_pos) %>%
+          plyr::ldply(., rbind) %>%
+          purrr::map(function(x) {x - 2}) %>%
+          data.frame(check.names = FALSE)
+        
+        for (k in 1:ncol(pos_matrix)) {
+          rows <- !is.na(pos_matrix[, k])
+          locales <- pos_matrix[rows, k]
+          
+          lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>%
+            tolower()
+          substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
+          # fn <- phospho_mods[phospho_mods$Mascot_abbr == mod, "Filename"]
+          # try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods",paste0(fn, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE))
+        }
+        
+        df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
+      }
+    }
+    
+    # rm(phospho_mods, mod, df_sub, pos_matrix, k, rows, locales, lowers, fn)
+    rm(phospho_mods, mod, df_sub, pos_matrix, k, rows, locales, lowers)
+  }
+  
+  # (4) replace numeric symbols with mod names for non-ace N-term mods: for example 2 <- n
+  # nace_var_mods <- var_mods[!grepl("Acetyl (Protein N-term)", var_mods$Description, fixed = TRUE), ]
+  # for (mod in nace_var_mods$Mascot_abbr)
+  #   df$pep_seq_mod <- gsub(mod, nace_var_mods[nace_var_mods$Mascot_abbr == mod, ]$Abbr, df$pep_seq_mod)
+  
+  # (5) Add "_" for "Acetyl (Protein N-term)"
+  nt_ace_var_mods <- var_mods[grepl("Acetyl (Protein N-term)", var_mods$Description, fixed = TRUE), ]
+  
+  for (mod in nt_ace_var_mods$Mascot_abbr) {
+    df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
+    
+    if (nrow(df_sub) > 0) {
+      df_sub$pep_seq_mod <- paste0("_", df_sub$pep_seq_mod)
+      
+      # fn <- nt_ace_var_mods[nt_ace_var_mods$Mascot_abbr == mod, "Filename"]
+      # try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods", paste0(fn, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE))
+      
+      df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
+    }
+  }
+  
+  # rm(nt_ace_var_mods, mod, df_sub, fn)
+  rm(nt_ace_var_mods, mod, df_sub)
+  
+  # (6) paste "pep_res_before" and "pep_res_after"
+  df <- df %>%
+    dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
+    dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))
+  
+  purrr::walk2(var_mods$Description, var_mods$Filename, ~ {
+    df %>% 
+      dplyr::filter(grepl(.x, pep_var_mod, fixed = TRUE)) %>% 
+      write.table(file.path(dat_dir, "PSM\\individual_mods", paste0(.y, ".txt")), 
+                  sep = "\t", col.names = TRUE, row.names = FALSE)
+    
+  })
+  
+  
+  return(df)
+}
+
+
 #' Splits PSM tables
 #'
 #' \code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It
 #' separates PSM data by TMT experiment and LC/MS injection.
+#'
+#' Arguments \code{group_psm_by} and \code{group_pep_by} are used to update
+#' \code{prot_matches_sig} and \code{prot_sequences_sig} after data merge.
 #'
 #' @param fasta Character string(s) to the name(s) of fasta file(s) with
 #'   prepended directory path. The \code{fasta} database(s) need to match those
@@ -261,8 +437,9 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   cat(paste0(names(df), "\n"))
   cat("\n")
   
-  # at "group_pep_by = gene", need column 'gene' from annotPrn()
+  # need columns 'pep_seq_mod' and `gene` to calculate `prot_n_pep` et al.
   df <- df %>% 
+    add_mascot_pepseqmod() %>% 
     dplyr::mutate(prot_acc_orig = prot_acc) %>% 
     dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
     annotPrn(fasta) %>% 
@@ -704,276 +881,124 @@ mcPSM <- function(df, set_idx) {
 annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
                      fasta = NULL, expt_smry = "expt_smry.xlsx", 
                      plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...) {
-	
+  
   old_opt <- options(max.print = 99999)
-	on.exit(options(old_opt), add = TRUE)
+  on.exit(options(old_opt), add = TRUE)
+  
+  old_dir <- getwd()
+  on.exit(setwd(old_dir), add = TRUE)
+  
+  options(max.print = 5000000)
+  
+  hd_fn <- list.files(path = file.path(dat_dir, "PSM\\cache"),
+                      pattern = "^F\\d+_header.txt$")
+  assign("df_header", readLines(file.path(dat_dir, "PSM\\cache", hd_fn[1])))
+  
+  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  n_TMT_sets <- n_TMT_sets(label_scheme_full)
+  TMT_plex <- TMT_plex(label_scheme_full)
+  
+  filelist <- list.files(
+    path = file.path(dat_dir, "PSM\\cache"),
+    pattern = "^TMT.*LCMS.*_Clean.txt$"
+  ) %>%
+    reorder_files(n_TMT_sets)
+  
+  for (set_idx in seq_len(n_TMT_sets)) {
+    sublist <- filelist[grep(paste0("set*.", set_idx), filelist, ignore.case = TRUE)]
+    
+    out_fn <- data.frame(Filename =
+                           do.call('rbind', strsplit(as.character(sublist),
+                                                     '.txt', fixed = TRUE))) %>%
+      dplyr::mutate(Filename = gsub("_Clean", "_PSM_N", Filename))
+    
+    channelInfo <- channelInfo(label_scheme, set_idx)
+    
+    # LCMS injections under the same TMT experiment
+    for (injn_idx in seq_along(sublist)) {
+      df <- read.csv(file.path(dat_dir, "PSM\\cache", sublist[injn_idx]),
+                     check.names = FALSE, header = TRUE, sep = "\t",
+                     comment.char = "#") %>%
+        dplyr::mutate(pep_seq_mod = as.character(pep_seq)) %>%
+        dplyr::select(which(names(.) == "pep_seq_mod"),
+                      which(names(.) != "pep_seq_mod"))
+      
+      acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
+      stopifnot(length(acc_type) == 1)
+      
+      # can species be NA?
+      species <- df$species %>% unique() %>% as.character()
 
-	old_dir <- getwd()
-	on.exit(setwd(old_dir), add = TRUE)
-
-	options(max.print = 5000000)
-	
-	hd_fn <- list.files(path = file.path(dat_dir, "PSM\\cache"),
-	                    pattern = "^F\\d+_header.txt$")
-	assign("df_header", readLines(file.path(dat_dir, "PSM\\cache", hd_fn[1])))
-
-	load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
-	load(file = file.path(dat_dir, "label_scheme.Rdata"))
-	n_TMT_sets <- n_TMT_sets(label_scheme_full)
-	TMT_plex <- TMT_plex(label_scheme_full)
-
-	filelist <- list.files(
-								path = file.path(dat_dir, "PSM\\cache"),
-	              pattern = "^TMT.*LCMS.*_Clean.txt$"
-							) %>%
-		reorder_files(n_TMT_sets)
-
-	for (set_idx in seq_len(n_TMT_sets)) {
-	  sublist <- filelist[grep(paste0("set*.", set_idx), filelist, ignore.case = TRUE)]
-
-		out_fn <- data.frame(Filename =
-		                       do.call('rbind', strsplit(as.character(sublist),
-		                              '.txt', fixed = TRUE))) %>%
-			dplyr::mutate(Filename = gsub("_Clean", "_PSM_N", Filename))
-
-	  channelInfo <- channelInfo(label_scheme, set_idx)
-
-	  # LCMS injections under the same TMT experiment
-	  for (injn_idx in seq_along(sublist)) {
-			df <- read.csv(file.path(dat_dir, "PSM\\cache", sublist[injn_idx]),
-			               check.names = FALSE, header = TRUE, sep = "\t",
-			               comment.char = "#") %>%
-				dplyr::mutate(pep_seq_mod = as.character(pep_seq)) %>%
-				dplyr::select(which(names(.) == "pep_seq_mod"),
-				              which(names(.) != "pep_seq_mod"))
-
-			acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
-			stopifnot(length(acc_type) == 1)
-			
-			# can species be NA?
-			species <- df$species %>% unique() %>% as.character()
-
-			# combine peptide sequences and modifications
-			fixed_mods <- df_header[((grep("Fixed modifications", df_header))[1] + 3) :
-															((grep("Variable modifications", df_header))[1] - 2)] %>%
-				gsub("\"", "", ., fixed = TRUE) %>%
-				data.frame() %>%
-				tidyr::separate(".", sep = ",", c("Mascot_abbr", "Descption", "Delta_mass"))
-
-			var_mods <- df_header[((grep("Variable modifications", df_header))[1] + 3) :
-														((grep("Search Parameters", df_header))[1] - 2)] %>%
-				gsub("\"", "", ., fixed = TRUE) %>%
-				data.frame() %>%
-				tidyr::separate(".", sep = ",", extra = "drop", c("Mascot_abbr", "Descption", "Delta_mass")) %>%
-				dplyr::mutate(Abbr = Descption) %>%
-				dplyr::mutate(Abbr = try(gsub("Acetyl (Protein N-term)", "_", .$Abbr, fixed = TRUE))) %>%
-				dplyr::mutate(Abbr = try(gsub("Deamidated (N)", "n", .$Abbr, fixed = TRUE))) %>%
-				dplyr::mutate(Abbr = try(gsub("Gln->pyro-Glu (N-term Q)", "q", .$Abbr, fixed = TRUE))) %>%
-				dplyr::mutate(Abbr = try(gsub("Oxidation (M)", "m", .$Abbr, fixed = TRUE))) %>%
-				dplyr::mutate(Abbr = try(gsub("Pyro-carbamidomethyl (N-term C)", "c", .$Abbr, fixed = TRUE))) %>%
-				dplyr::mutate(Abbr = try(gsub("Carbamidomethyl (C)", "C", .$Abbr, fixed = TRUE))) %>%
-				dplyr::mutate(Filename = Descption) %>%
-				dplyr::mutate(Filename = try(gsub("Acetyl (Protein N-term)", "N_term_Ac", .$Filename, fixed = TRUE))) %>%
-				dplyr::mutate(Filename = try(gsub("Deamidated (N)", "Deamidated_N", .$Filename, fixed = TRUE))) %>%
-				dplyr::mutate(Filename = try(gsub("Gln->pyro-Glu (N-term Q)", "N_term_Q", .$Filename, fixed = TRUE))) %>%
-				dplyr::mutate(Filename = try(gsub("Oxidation (M)", "Oxidation_M", .$Filename, fixed = TRUE))) %>%
-				dplyr::mutate(Filename = try(gsub("Pyro-carbamidomethyl (N-term C)", "N_term_C", .$Filename, fixed = TRUE)))
-
-			# phosphorylation mods
-			phospho_mods <- var_mods %>% dplyr::filter(grepl("^Phospho", Descption))
-			if(nrow(phospho_mods) > 0) var_mods <- var_mods %>%
-			  dplyr::filter(!grepl("^Phospho", Descption))
-
-			# (1) Non-acetylated N-term variable modifications
-			NT_var_mods <- var_mods %>%
-			  dplyr::filter(grepl("N-term", Descption, fixed = TRUE)) %>%
-				dplyr::filter(!grepl("Acetyl (Protein N-term)", Descption, fixed = TRUE))
-
-			for (mod in NT_var_mods$Mascot_abbr) {
-				df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
-
-				if (nrow(df_sub) > 0) {
-					locales <- 1 # always "1" since a N-term mod
-
-					lowers <- substr(df_sub$pep_seq_mod, locales, locales) %>% tolower()
-					substr(df_sub$pep_seq_mod, locales, locales) <- lowers
-
-					fn <- var_mods[var_mods$Mascot_abbr == mod, "Filename"]
-					try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods", paste0(fn, ".txt")), 
-					                sep = "\t", col.names = TRUE, row.names = FALSE))
-
-					df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
-				}
-			}
-
-			rm (NT_var_mods, mod, df_sub, locales, lowers, fn)
-
-			# (2) non-N-term variable modifications
-			nNT_var_mods <- var_mods[!grepl("N-term", var_mods$Descption), ]
-
-			for (mod in nNT_var_mods$Mascot_abbr) {
-				df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
-
-				if (nrow(df_sub) > 0) {
-					# need to find all matches
-				  pos_matrix  <- gregexpr(mod, df_sub$pep_var_mod_pos) %>%
-						plyr::ldply(., rbind) %>%
-				    # "-2" to account for the characters, "0.", "1."..., in 'pep_var_mod_pos'
-				    purrr::map(function(x) {x - 2}) %>%
-						data.frame(check.names = FALSE)
-
-					for (k in 1:ncol(pos_matrix)) {
-						rows <- !is.na(pos_matrix[, k])
-						locales <- pos_matrix[rows, k]
-
-						lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>% tolower()
-						substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
-					}
-				  
-				  fn <- var_mods[var_mods$Mascot_abbr == mod, "Filename"]
-				  try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods", paste0(fn, ".txt")), 
-				                  sep = "\t", col.names = TRUE, row.names = FALSE))
-
-					df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
-				}
-			}
-
-			rm (nNT_var_mods, mod, df_sub, pos_matrix, k, rows, locales, lowers, fn)
-
-			# (3) phosphopeptides
-			if(nrow(phospho_mods) > 0) {
-				for (mod in phospho_mods$Mascot_abbr) {
-					df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
-
-					if (nrow(df_sub) > 0) {
-						# need to find all matches
-					  pos_matrix  <- gregexpr(mod, df_sub$pep_var_mod_pos) %>%
-							plyr::ldply(., rbind) %>%
-							purrr::map(function(x) {x - 2}) %>%
-							data.frame(check.names = FALSE)
-
-						for (k in 1:ncol(pos_matrix)) {
-							rows <- !is.na(pos_matrix[, k])
-							locales <- pos_matrix[rows, k]
-
-							lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>%
-							  tolower()
-							substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
-
-							fn <- phospho_mods[phospho_mods$Mascot_abbr == mod, "Filename"]
-							try(
-							  write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods",paste0(fn, ".txt")), 
-							              sep = "\t", col.names = TRUE, row.names = FALSE)							  
-							)
-						}
-
-						df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
-					}
-				}
-
-				rm (phospho_mods, mod, df_sub, pos_matrix, k, rows, locales, lowers, fn)
-			}
-
-			# (4) replace numeric symbols with mod names for non-ace N-term mods: for example 2 <- n
-			# nace_var_mods <- var_mods[!grepl("Acetyl (Protein N-term)", var_mods$Descption, fixed = TRUE), ]
-			# for (mod in nace_var_mods$Mascot_abbr)
-			#   df$pep_seq_mod <- gsub(mod, nace_var_mods[nace_var_mods$Mascot_abbr == mod, ]$Abbr, df$pep_seq_mod)
-
-			# (5) Add "_" for "Acetyl (Protein N-term)"
-			nt_ace_var_mods <- var_mods[grepl("Acetyl (Protein N-term)",
-			                                  var_mods$Descption, fixed = TRUE), ]
-
-			for (mod in nt_ace_var_mods$Mascot_abbr) {
-				df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
-
-				if (nrow(df_sub) > 0) {
-					# df_sub$pep_seq_mod <- paste0(paste0(substring(df_sub$pep_seq_mod, 1, 1), nt_ace_var_mods$Abbr),
-					#                              substring(df_sub$pep_seq_mod, 2)) # insert "_"
-				  df_sub$pep_seq_mod <- paste0("_", df_sub$pep_seq_mod)
-					fn <- nt_ace_var_mods[nt_ace_var_mods$Mascot_abbr == mod, "Filename"]
-					try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods", paste0(fn, ".txt")), 
-					                sep = "\t", col.names = TRUE, row.names = FALSE))
-
-					df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
-				}
-			}
-
-			rm (nt_ace_var_mods, mod, df_sub, fn)
-
-			# paste "pep_res_before" and "pep_res_after"
-			df <- df %>%
-				dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
-				dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))
-
-			if(TMT_plex > 0) df <- mcPSM(df, set_idx)
-
-			# add SD columns
-			df <- df %>% 
-			  calcSD_Splex(group_psm_by) %>% 
-			  `names<-`(gsub("^log2_R", "sd_log2_R", names(.))) %>% 
-			  dplyr::right_join(df, by = group_psm_by) %>% 
-			  dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
-			  dplyr::mutate_at(vars(grep("^log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
-			  dplyr::mutate_at(vars(grep("^N_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
-			  dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 4))
-			
-			# add column `pep_n_psm` et al.
-			pep_n_psm <- df %>%
-			  dplyr::select(!!rlang::sym(group_psm_by)) %>%
-			  dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
-			  dplyr::summarise(pep_n_psm = n())
-
-			prot_n_psm <- df %>%
-			  dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
-			  dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-			  dplyr::summarise(prot_n_psm = n())
-			
-			prot_n_pep <- df %>%
-			  dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
-			  dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
-			  dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-			  dplyr::summarise(prot_n_pep = n())
-
-			df <- df %>% dplyr::left_join(pep_n_psm, by = group_psm_by)
-			
-			df <- dplyr::bind_cols(
-			  df %>% dplyr::select(grep("^pep_", names(.))), 
-			  df %>% dplyr::select(-grep("^pep_", names(.))), 
-			)
-			
-			df <- list(df, prot_n_psm, prot_n_pep) %>%
-			  purrr::reduce(left_join, by = group_pep_by)
-			
-			df <- dplyr::bind_cols(
-			  df %>% dplyr::select(grep("^prot_", names(.))), 
-			  df %>% dplyr::select(-grep("^prot_", names(.))), 
-			)
-			
-			df <- dplyr::bind_cols(
-			  df %>% dplyr::select(-grep("[RI]{1}[0-9]{3}[NC]*", names(.))), 
-			  df %>% dplyr::select(grep("I[0-9]{3}[NC]*", names(.))), 
-			  df %>% dplyr::select(grep("R[0-9]{3}[NC]*", names(.))), 
-			)
-
-			write.table(df, file.path(dat_dir, "PSM", paste0(out_fn[injn_idx, 1], ".txt")),
-			            sep = "\t", col.names = TRUE, row.names = FALSE)
-			
-			if (plot_rptr_int & TMT_plex > 0) {
-			  df_int <- df %>% 
-			    .[, grepl("^N_I[0-9]{3}", names(.))]
-			  
-			  rptr_violin(df_int, file.path(dat_dir, "PSM\\rprt_int\\mc", 
-			                                paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 8, 8)
-			}
-			
-			if (plot_log2FC_cv & TMT_plex > 0) {
-			  sd_violin(df, !!group_psm_by, file.path(dat_dir, "PSM\\log2FC_cv\\raw", 
-			                                          paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 8, 8)
-			}
-			
-	  }
-
-	}
+      if(TMT_plex > 0) df <- mcPSM(df, set_idx)
+      
+      # add SD columns
+      df <- df %>% 
+        calcSD_Splex(group_psm_by) %>% 
+        `names<-`(gsub("^log2_R", "sd_log2_R", names(.))) %>% 
+        dplyr::right_join(df, by = group_psm_by) %>% 
+        dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
+        dplyr::mutate_at(vars(grep("^log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
+        dplyr::mutate_at(vars(grep("^N_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
+        dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 4))
+      
+      # add column `pep_n_psm` et al.
+      pep_n_psm <- df %>%
+        dplyr::select(!!rlang::sym(group_psm_by)) %>%
+        dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+        dplyr::summarise(pep_n_psm = n())
+      
+      prot_n_psm <- df %>%
+        dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+        dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+        dplyr::summarise(prot_n_psm = n())
+      
+      prot_n_pep <- df %>%
+        dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+        dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
+        dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+        dplyr::summarise(prot_n_pep = n())
+      
+      df <- df %>% dplyr::left_join(pep_n_psm, by = group_psm_by)
+      
+      df <- dplyr::bind_cols(
+        df %>% dplyr::select(grep("^pep_", names(.))), 
+        df %>% dplyr::select(-grep("^pep_", names(.))), 
+      )
+      
+      df <- list(df, prot_n_psm, prot_n_pep) %>%
+        purrr::reduce(left_join, by = group_pep_by)
+      
+      df <- dplyr::bind_cols(
+        df %>% dplyr::select(grep("^prot_", names(.))), 
+        df %>% dplyr::select(-grep("^prot_", names(.))), 
+      )
+      
+      df <- dplyr::bind_cols(
+        df %>% dplyr::select(-grep("[RI]{1}[0-9]{3}[NC]*", names(.))), 
+        df %>% dplyr::select(grep("I[0-9]{3}[NC]*", names(.))), 
+        df %>% dplyr::select(grep("R[0-9]{3}[NC]*", names(.))), 
+      )
+      
+      write.table(df, file.path(dat_dir, "PSM", paste0(out_fn[injn_idx, 1], ".txt")),
+                  sep = "\t", col.names = TRUE, row.names = FALSE)
+      
+      if (plot_rptr_int & TMT_plex > 0) {
+        df_int <- df %>% 
+          .[, grepl("^N_I[0-9]{3}", names(.))]
+        
+        rptr_violin(df_int, file.path(dat_dir, "PSM\\rprt_int\\mc", 
+                                      paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 8, 8)
+      }
+      
+      if (plot_log2FC_cv & TMT_plex > 0) {
+        sd_violin(df, !!group_psm_by, file.path(dat_dir, "PSM\\log2FC_cv\\raw", 
+                                                paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 8, 8)
+      }
+      
+    }
+    
+  }
 }
 
 
@@ -1225,17 +1250,23 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
 
 #'Splits PSM tables
 #'
-#'\code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It
+#'\code{splitPSM_mq} splits the PSM outputs after \code{rmPSMHeaders()}. It
 #'separates PSM data by TMT experiment and LC/MS injection.
 #'
+#'Different to \code{splitPSM} used in \code{Mascot} processes,
+#'\code{pep_seq_mod}, \code{prot_n_psm}, \code{prot_n_pep} and \code{pep_n_psm}
+#'are calculated later in \code{annotPSM_mq}. This is suitable mainly because
+#'there is no columns like \code{prot_matches_sig} and \code{prot_sequences_sig}
+#'need to be updated after data merging in \code{splitPSM_mq}.
+#'
 #'@param pep_unique_by A character string for the characterization of peptide
-#'  uniqueness from \code{MaxQuant} PSMs. The choice is one of
-#'  \code{c("group", "protein", "none")}. At the \code{group} default, the
-#'  uniqueness of peptides is by protein groups. At a more strigent criterion of
-#'  \code{protein}, the uniqueness of peptides is by protein entries. A new
-#'  column of \code{pep_isunique} will be added accordingly to the PSM reports.
-#'  At a trivia criterion of \code{none}, all values under \code{pep_unique_by}
-#'  will be set to \code{1}.
+#'  uniqueness from \code{MaxQuant} PSMs. The choice is one of \code{c("group",
+#'  "protein", "none")}. At the \code{group} default, the uniqueness of peptides
+#'  is by protein groups. At a more strigent criterion of \code{protein}, the
+#'  uniqueness of peptides is by protein entries. A new column of
+#'  \code{pep_isunique} will be added accordingly to the PSM reports. At a
+#'  trivia criterion of \code{none}, all values under \code{pep_unique_by} will
+#'  be set to \code{1}.
 #'@param corrected_int Logical. If TRUE, values under columns "Reporter
 #'  intensity corrected" in MaxQuant PSM results (\code{msms.txt}) will be used.
 #'  Otherwise, "Reporter intensity" values without corrections will be used.

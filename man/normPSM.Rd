@@ -40,13 +40,13 @@ prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search.}
 
 \item{pep_unique_by}{A character string for the characterization of peptide
-uniqueness from \code{MaxQuant} PSMs. The choice is one of
-\code{c("group", "protein", "none")}. At the \code{group} default, the
-uniqueness of peptides is by protein groups. At a more strigent criterion of
-\code{protein}, the uniqueness of peptides is by protein entries. A new
-column of \code{pep_isunique} will be added accordingly to the PSM reports.
-At a trivia criterion of \code{none}, all values under \code{pep_unique_by}
-will be set to \code{1}.}
+uniqueness from \code{MaxQuant} PSMs. The choice is one of \code{c("group",
+"protein", "none")}. At the \code{group} default, the uniqueness of peptides
+is by protein groups. At a more strigent criterion of \code{protein}, the
+uniqueness of peptides is by protein entries. A new column of
+\code{pep_isunique} will be added accordingly to the PSM reports. At a
+trivia criterion of \code{none}, all values under \code{pep_unique_by} will
+be set to \code{1}.}
 
 \item{corrected_int}{Logical. If TRUE, values under columns "Reporter
 intensity corrected" in MaxQuant PSM results (\code{msms.txt}) will be used.
