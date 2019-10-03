@@ -1,0 +1,46 @@
+Header	Descrption	Note
+prot_acc	Mascot: protein accession string	
+prot_desc	Mascot: protein description taken from Fasta title line	
+prot_mass	Mascot: protein mass	In Dalton
+prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Cf. 'prot_matches_sig' in PSM key list
+prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Cf. 'prot_sequences_sig' in PSM key list
+prot_cover	Mascot: protein sequence coverage	Calculated from the union of individual data sources
+prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Joint results from processed PSM tables; the counts exclude entries that are void in reporter-ion intensity or filtered by users
+prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. 'prot_n_psm'
+pep_seq	One-letter representation of peptide sequences	Cf. 'pep_seq' in PSM key list
+pep_seq_mod	'pep_seq' with variable modifications in the lower cases	Cf. 'pep_seq_mod' in PSM key list
+pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf. 'prot_n_psm'
+pep_isunique	Mascot: peptide sequence is unique to hit (grouping off) or family member (grouping on)	
+pep_start	"Mascot: ordinal position of first peptide residue in protein sequence
+"	Or by proteoQ if abscent from Mascot PSM exports
+pep_end	Mascot: ordinal position of last peptide residue in protein sequence	Cf. 'pep_start'
+pep_miss	Mascot: count of missed cleavage sites in peptide	
+pep_calc_mr	"Mascot: molecular mass calculated from matched peptide sequence
+"	
+pep_rank	"Mascot: peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.
+"	Median description from PSMs
+pep_isbold	"Mascot: if grouping enabled, then a significant PSM; otherwise, indicates this is the highest scoring protein that contains a match to this query."	Cf. 'pep_rank'
+pep_exp_mz	"Mascot: observed or experimental m/z value
+"	Cf. 'pep_rank'
+pep_exp_mr	"Mascot: molecular mass calculated from experimental m/z value
+"	Cf. 'pep_rank'
+pep_exp_z	"Mascot: observed or experimental charge
+"	Cf. 'pep_rank'
+pep_delta	Mascot: pep_exp_mr – pep_calc_mr	Cf. 'pep_rank'
+pep_score	Mascot: score for PSM	Cf. 'pep_rank'
+pep_expect	Mascot: expectation value for PSM	Geometric-mean description from PSMs
+gene	Protein gene name	
+length	The number of amino acid residues under a proposed protein	
+acc_type	The type of accession names	
+uniprot_id	Uniprot ID	Optional if UniProt Fasta is used; the key will become 'uniprot_acc' if the primary key is 'uniprot_id' in Mascot outputs
+species	The species of a protein entry	
+entrez	Protein Entrez ID	
+kin_attr	The attribute of proteins being kinases	"Optional at 'normPSM(annot_kinases = TRUE, ...)'"
+kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. 'kin_attr'
+kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. 'kin_attr'
+I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by 'method_pep_prn' in 'normPrn()' for indicated samples
+N_I... (...)	Normalized I... (...)	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity
+sd_log2_R (...)	Standard deviation of protein log2FC 	The s.d. of peptide log2FC are calculated from contributing peptides
+log2_R (...)	log2FC relative to reference materials for indicated samples	Before normalization
+N_log2_R (...)	Aligned log2_R (...) according to 'method_align' in 'normPrn()' without scaling normalization	
+Z_log2_R (...)	N_log2_R (...) with scaling normalization	

@@ -9,14 +9,6 @@ output:
     toc: yes
     toc_depth: 4
     variant: markdown_github
-  word_document:
-    toc: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  github_document:
-    fig_caption: yes
-    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -25,6 +17,14 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  github_document:
+    fig_caption: yes
+    toc: yes
+  word_document:
+    toc: yes
 ---
 
 ---
@@ -614,11 +614,12 @@ system.file("extdata", "maxquant_scripts.R", package = "proteoQ")
 ```
 
 ### 1.7 Column keys in outputs
-#### 1.7.1 Mascot outputs
-##### 1.7.1.1 PSMs
-PSMs are reported at the basis of per TMT experiment per series of LC/MS data acquisition. The names of the result files are `TMTset1_LCMSinj1_PSM_N.txt`, `TMTset2_LCMSinj1_PSM_N.txt` et al. with the indeces of TMT experiment and LC/MS injection index being indicated in the names.
 
-The column keys are defined in [`Matrix Science`](http://www.matrixscience.com/help/csv_headers.html) with the following additions or modifications:
+#### 1.7.1 Mascot outputs
+The results are reported at the levels of PSM, peptide and protein.  
+
+##### 1.7.1.1 PSMs
+PSMs are reported at the basis of per TMT experiment per series of LC/MS data acquisition. The names of the result files are `TMTset1_LCMSinj1_PSM_N.txt`, `TMTset2_LCMSinj1_PSM_N.txt` et al. with the indeces of TMT experiment and LC/MS injection index being indicated in the names. The column keys are defined in [`Matrix Science`](http://www.matrixscience.com/help/csv_headers.html) with the following additions or modifications:
 
 ```{r mascot_psm_keys, echo=FALSE, results="asis"}
 file <- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ")
@@ -627,7 +628,16 @@ knitr::kable(keys)
 ```
 
 ##### 1.7.1.2 Peptides
+The primary output file for peptide results is `Peptide.txt` with the following definition in column keys:  
+
+```{r mascot_peptide_keys, echo=FALSE, results="asis"}
+file <- system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ")
+keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
+knitr::kable(keys) 
+```
+
 ##### 1.7.1.3 Proteins
+The primary output file for peptide results is `Protein.txt` with the following definition in column keys:  
 
 ## 2 Basic informatics
 In this section I illustrate the following applications of `proteoQ`:  

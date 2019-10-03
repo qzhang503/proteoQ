@@ -1,20 +1,20 @@
 Header	Descrption	Note
-prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Joint Mascot 'prot_matches_sig' from individual data sources
-prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Joint Mascot 'prot_sequences_sig' from individual data sources
-prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	By TMT experiment and LC/MS series; the count excludes entries that are void in reporter-ion intensity or filtered in process
-prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	By TMT experiment and LC/MS series; the count excludes entries that are void in reporter-ion intensity or filtered in process
+prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Joint Mascot 'prot_matches_sig' from individual data sources; PSMs with void reporter-ion intensity are included.
+prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Joint Mascot 'prot_sequences_sig' from individual data sources; the counts may be greater than 'prot_sequences' when peptides with different variable modifications are treated as different species
+prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	By TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users
+prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. 'prot_n_psm'
 pep_seq	One-letter representation of peptide sequences	"The acetylations of protein N-terminals is indicated by '_' and the flanking residues on the N- or C-terminal side of peptides separated by '.', e.g. ""-._MASGVAVSDGVIK.V"""
-pep_seq_mod	'pep_seq' with variable modifications in the lower cases	"E.g. ""-._mAsGVAVSDGVIK.V"" with methionine oxidation and serine phosphorylation"
-pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	By TMT experiment and LC/MS series; the count excludes entries that are void in reporter-ion intensity or filtered in process
+pep_seq_mod	'pep_seq' with variable modifications in the lower cases	"E.g. ""-._mAsGVAVSDGVIK.V"" with a methionine oxidation and a serine phosphorylation"
+pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf. 'prot_n_psm'
 raw_file	MS file name(s) where peptides or proteins are identified	
 length	The number of amino acid residues under a proposed protein	
 acc_type	The type of accession names	
 entrez	Protein Entrez ID	
 gene	Protein gene name	
 species	The species of a protein entry	
-kin_attr	The attribute of proteins being kinases	Optional
-kin_class	"The classes of kinases, e.g., TK, TKL..."	Optional
-kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Optional
+kin_attr	The attribute of proteins being kinases	"Optional at 'normPSM(annot_kinases = TRUE, ...)'"
+kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. 'kin_attr'
+kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. 'kin_attr'
 I126 et al.	Reporter-ion intensity from MS/MS ion search	
 N_I126 et al.	Normalized reporter-ion intensity	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity
 sd_log2_R126 et al.	Standard deviation of peptide log2FC 	The s.d. of peptide log2FC are calculated from contributing PSMs

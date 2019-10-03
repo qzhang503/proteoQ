@@ -31,3 +31,7 @@ reporter-ion intensities.}
 \code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It
 separates PSM data by TMT experiment and LC/MS injection.
 }
+\details{
+Arguments \code{group_psm_by} and \code{group_pep_by} are used to update
+\code{prot_matches_sig} and \code{prot_sequences_sig} after data merge.
+}
