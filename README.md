@@ -13,11 +13,14 @@
             peptides](#summarize-psms-to-peptides)
         -   [1.2.3 Summarize peptides to
             proteins](#summarize-peptides-to-proteins)
-    -   [1.3 Renormalize data for a subset of
-        samples](#renormalize-data-for-a-subset-of-samples)
-    -   [1.4 Summarize MaxQuant results](#summarize-maxquant-results)
-        -   [1.4.1 MaxQuant PSM tables](#maxquant-psm-tables)
-    -   [1.5 Workflow scripts](#workflow-scripts)
+    -   [1.3 Renormalize data against column
+        subsets](#renormalize-data-against-column-subsets)
+    -   [1.4 Renormalize data against row
+        subsets](#renormalize-data-against-row-subsets)
+    -   [1.5 Summarize MaxQuant results](#summarize-maxquant-results)
+    -   [1.6 Workflow scripts](#workflow-scripts)
+    -   [1.7 Column keys in outputs](#column-keys-in-outputs)
+        -   [1.7.1 Mascot outputs](#mascot-outputs)
 -   [2 Basic informatics](#basic-informatics)
     -   [2.1 MDS and PCA plots](#mds-and-pca-plots)
     -   [2.2 Correlation plots](#correlation-plots)
@@ -428,7 +431,7 @@ In the exemplary vararg statement of `filter_by`, we set a threshold in
 the minimum number of identifying PSMs for peptides. If we are not
 interested in mouse peptides from the pdx samples, We can specify
 similarly that `species == "human"`, or more precisely,
-`species != "mouse"`. Sometimes, it may remain unclear on proper data
+`species != "mouse"`.[7] Sometimes, it may remain unclear on proper data
 filtration at the early stage of analysis. In that case, we may need
 additional quality assessments that we will soon explore. Alternatively,
 we may keep as much information as possible and apply varargs in
@@ -476,7 +479,7 @@ proteomic workflow.
 ##### 1.2.2.3 pepHist
 
 We next compare the `log2FC` profiles with and without scaling
-normalization:[7]
+normalization:[8]
 
 ``` r
 # without scaling
@@ -504,7 +507,7 @@ the `expt_smry.xlsx`).
 [![Select
 subsets](https://img.youtube.com/vi/3B5et8VY3hE/0.jpg)](https://www.youtube.com/embed/3B5et8VY3hE)
 
-We now are ready to plot histograms for each subset of the data.[8] In
+We now are ready to plot histograms for each subset of the data.[9] In
 this document, we only display the plots using the `BI` subset:
 
 ``` r
@@ -545,7 +548,7 @@ after the scaling normalization. However, such adjustment may cause
 artifacts when the standard deviaiton across samples are genuinely
 different. I typically test `scale_log2r` at both `TRUE` and `FALSE`,
 then make a choice in data scaling together with my a priori knowledge
-of the characteristics of both samples and references.[9] We will use
+of the characteristics of both samples and references.[10] We will use
 the same data set to illustrate the impacts of reference selections in
 scaling normalization in [Lab 3.1](###%203.1%20Reference%20choices).
 Alignment of `log2FC` against housekeeping or normalizer protein(s) is
@@ -620,7 +623,7 @@ workflow from this point on, and more importantly, prevent ourselves
 from peppering the values of `TRUE` or `FALSE` in `scale_log2r` from
 analysis to analysis.
 
-### 1.3 Renormalize data for a subset of samples
+### 1.3 Renormalize data against column subsets
 
 A multi-Gaussian kernel can fail capturing the `log2FC` profiles for a
 subset of samples. This is less an issue with a small number of samples.
@@ -657,17 +660,99 @@ normPep(
 )
 ```
 
-### 1.4 Summarize MaxQuant results
+### 1.4 Renormalize data against row subsets
+
+We have earlierly applied the varargs of `filter_` to subset data rows.
+With this type of arguments, data entries that have failed the
+filtration criteria will be removed for indicated analysis. This is
+often not an issue in informatic analysis and visualization as we do not
+typically store the altered inputs on external devices at the end.
+Sometimes we may however need to carry out similar tasks based on
+partial inputs and update the complete set of data for future uses. One
+of the circumstances is model parameterization by a data subset and to
+apply the finding(s) to update the complete set.
+
+Here we will apply the idea for ratio normalization against a subset of
+peptide entries and update the original peptide table. We use a second
+category of vararg termed `slice_` for data normalization based on
+certain rows of data. The utility can futher be coupled to the
+aforementioned `col_refit` argument for selected sample(s). In the
+following example, we normalize the `log2FC` using the partial data from
+argument `slice_at`, for samples under the column `Select_sub` in
+`expt_smry.xlsx`:
+
+``` r
+normPep(
+    method_psm_pep = median, 
+    method_align = MGKernel, 
+    range_log2r = c(5, 95), 
+    range_int = c(5, 95), 
+    n_comp = 3, 
+    seed = 749662, 
+    maxit = 200, 
+    epsilon = 1e-05, 
+    
+    # partial data from the selected sample(s) for use in normalization 
+    slice_at = exprs(prot_n_psm >= 10, pep_n_psm >= 3), 
+    
+    # refit samples under column Select_sub in expt_smry.xlsx
+    col_refit = Select_sub,
+)
+
+# visualization
+pepHist(
+    scale_log2r = TRUE,
+    show_curves = TRUE, 
+    show_vline = TRUE,
+    xmin = -2, 
+    xmax = 2,
+    ncol = 10,
+    filename = "norm_by_selrows_at_selcols.png",
+)
+```
+
+The normlization processes against partial data are `permutable` in that
+we can start from strict to loose conditions or *vice versa*. Also note
+that the effects on data normlization are additive. In the example shown
+below, we first normalize against samples under column `BI` with
+conditions by `slice_bi`, followed by additional procedures against the
+samples under column `JHU` with conditions by `slice_jhu`:
+
+``` r
+normPep(
+    method_psm_pep = median, 
+    method_align = MGKernel, 
+    range_log2r = c(5, 95), 
+    range_int = c(5, 95), 
+    n_comp = 3, 
+    seed = 749662, 
+    maxit = 200, 
+    epsilon = 1e-05, 
+    col_refit = BI,
+    slice_bi = exprs(prot_n_psm >= 5, pep_n_psm >= 3),
+)
+
+normPep(
+    method_psm_pep = median, 
+    method_align = MGKernel, 
+    range_log2r = c(5, 95), 
+    range_int = c(5, 95), 
+    n_comp = 3, 
+    seed = 749662, 
+    maxit = 200, 
+    epsilon = 1e-05, 
+    col_refit = JHU,
+    slice_jhu = exprs(prot_n_psm >= 5, prot_n_pep >= 3),
+)
+```
+
+### 1.5 Summarize MaxQuant results
 
 In this section, we will process MaxQuant PSMs using the same set of
-data from CPTAC.
-
-#### 1.4.1 MaxQuant PSM tables
-
-The name of a PSM file containg reporter-ion intensities is `msms.txt`
-defaulted by MaxQuant. In the event of multiple `msms.txt` files for
-processing, the names need to be formatted in that they all start with
-`msms` and end with the `.txt` extension.
+data from CPTAC. The name of a PSM file containg reporter-ion
+intensities is `msms.txt` defaulted by MaxQuant. In the event of
+multiple `msms.txt` files for processing, the names need to be formatted
+in that they all start with `msms` and end with the `.txt` extension.
 
 The file sizes of the `msms.txt` are relatively large for data used in
 the demonstration. For simplicity, we will only use the subset that
@@ -774,7 +859,7 @@ match their counterparts in `Mascot`. The changes allow me to keep the
 code more succinct. I apologize if you find it all more difficult to
 deal with the new names.
 
-### 1.5 Workflow scripts
+### 1.6 Workflow scripts
 
 Scripts that were used in this document can be accessed via:
 
@@ -782,6 +867,51 @@ Scripts that were used in this document can be accessed via:
 system.file("extdata", "mascot_scripts.R", package = "proteoQ")
 system.file("extdata", "maxquant_scripts.R", package = "proteoQ")
 ```
+
+### 1.7 Column keys in outputs
+
+#### 1.7.1 Mascot outputs
+
+##### 1.7.1.1 PSMs
+
+PSMs are reported at the basis of per TMT experiment per series of LC/MS
+data acquisition. The names of the result files are
+`TMTset1_LCMSinj1_PSM_N.txt`, `TMTset2_LCMSinj1_PSM_N.txt` et al. with
+the indeces of TMT experiment and LC/MS injection index being indicated
+in the names.
+
+The column keys are defined in
+[`Matrix Science`](http://www.matrixscience.com/help/csv_headers.html)
+with the following additions or modifications:
+
+| Header                | Descrption                                                                        | Note                                                                                                                                                                         |
+|:----------------------|:----------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| prot\_matches\_sig    | Count of PSMs that have significant scores under a proposed protein               | Joint Mascot prot\_matches\_sig from individual data sources                                                                                                                 |
+| prot\_sequences\_sig  | Count of distinct sequences that have significant scores under a proposed protein | Joint Mascot prot\_sequences\_sig from individual data sources                                                                                                               |
+| prot\_n\_psm          | Count of significant PSMs in quantitation under a proposed protein                | By TMT experiment and LC/MS series; the count excludes entries that are void in reporter-ion intensity or filtered in process                                                |
+| prot\_n\_pep          | Count of significant peptide sequences in quantitation under a proposed protein   | By TMT experiment and LC/MS series; the count excludes entries that are void in reporter-ion intensity or filtered in process                                                |
+| pep\_seq              | One-letter representation of peptide sequences                                    | The acetylations of protein N-terminals is indicated by '\_' and the flanking residues on the N- or C-terminal side of peptides separated by '.', e.g. "-.\_MASGVAVSDGVIK.V" |
+| pep\_seq\_mod         | pep\_seq with variable modifications in the lower cases                           | E.g. "-.\_mAsGVAVSDGVIK.V" with methionine oxidation and serine phosphorylation                                                                                              |
+| pep\_n\_psm           | Counts of significant PSMs in quantitation under a proposed peptide               | By TMT experiment and LC/MS series; the count excludes entries that are void in reporter-ion intensity or filtered in process                                                |
+| raw\_file             | MS file name(s) where peptides or proteins are identified                         |                                                                                                                                                                              |
+| length                | The number of amino acid residues under a proposed protein                        |                                                                                                                                                                              |
+| acc\_type             | The type of accession names                                                       |                                                                                                                                                                              |
+| entrez                | Protein Entrez ID                                                                 |                                                                                                                                                                              |
+| gene                  | Protein gene name                                                                 |                                                                                                                                                                              |
+| species               | The species of a protein entry                                                    |                                                                                                                                                                              |
+| kin\_attr             | The attribute of proteins being kinases                                           | Optional                                                                                                                                                                     |
+| kin\_class            | The classes of kinases, e.g., TK, TKL.                                            | Optional                                                                                                                                                                     |
+| kin\_order            | The order of "kin\_class" from the kinase tree diagram                            | Optional                                                                                                                                                                     |
+| I126 et al.           | Reporter-ion intensity from MS/MS ion search                                      |                                                                                                                                                                              |
+| N\_I126 et al.        | Normalized reporter-ion intensity                                                 | The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity                                                                             |
+| sd\_log2\_R126 et al. | Standard deviation of peptide log2FC                                              | The s.d. of peptide log2FC are calculated from contributing PSMs                                                                                                             |
+| R126 et al.           | Linear FC relative to TMT-126                                                     |                                                                                                                                                                              |
+| log2\_R126 et al.     | log2FC relative to TMT-126                                                        |                                                                                                                                                                              |
+| N\_log2\_R126 et al.  | Median-centered log2FC relative to TMT-126                                        |                                                                                                                                                                              |
+
+##### 1.7.1.2 Peptides
+
+##### 1.7.1.3 Proteins
 
 2 Basic informatics
 -------------------
@@ -1700,13 +1830,18 @@ alignment of ratio histograms and may optimize the data normalization in
 full with different combinations of tuning parameters or in part against
 a subset of samples, before proceeding to the next steps.
 
-[7] `normPep()` will report log2FC results both before and after the
+[7] Intermediate peptide results for each TMT plex and LCMS injection
+are purposely leave under the same file foler as that of `Peptide.txt`
+so that users can tell the column keys and explore more about the
+options in the row filtration of data.
+
+[8] `normPep()` will report log2FC results both before and after the
 scaling of standard deviations.
 
-[8] System parameters will be automatically updated from the modified
+[9] System parameters will be automatically updated from the modified
 `expt_smry.xlsx`
 
-[9] The default is `scale_log2r = TRUE` throughout the package. When
+[10] The default is `scale_log2r = TRUE` throughout the package. When
 calling functions involved parameter `scale_log2r`, users can specify
 explicitly `scale_log2r = FALSE` or define its value under the global
 environment.

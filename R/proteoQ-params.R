@@ -44,12 +44,25 @@ prep_label_scheme <- function(dat_dir, filename) {
 	} else {
 		stop(filename, " needs to be '.xls' or '.xlsx'.")
 	}
+	
+	label_scheme_full <- label_scheme_full %>% 
+	  dplyr::mutate(Sample_ID = ifelse(grepl("^Empty\\.[0-9]+", Sample_ID), NA, Sample_ID))
+	
+	check_tmt126 <- label_scheme_full %>% 
+	  dplyr::filter(TMT_Channel == "TMT-126") %>% 
+	  dplyr::filter(is.na(TMT_Set)|is.na(LCMS_Injection))
+	
+	if (nrow(check_tmt126) > 0) {
+	  stop("`TMT_Set` and/or `LCMS_Injection` indeces corresponding to `TMT-126` in `expt_smry.xlsx` cannot be empty.", 
+	       call. = FALSE)
+	}
+	rm(check_tmt126)
 
 	must_have <- c("TMT_Channel", "TMT_Set", "LCMS_Injection", "RAW_File",
 								"Sample_ID", "Reference")
 
 	missing_cols <- must_have[!must_have %in% names(label_scheme_full)]
-	if(length(missing_cols) > 0) {
+	if (length(missing_cols) > 0) {
 		purrr::walk(missing_cols, ~ cat(paste0("\'", ., "\' must be present in \'", filename, "\'\n")))
 		stop("Not all required columns are present in \'", filename, "\'", call. = TRUE)
 	}
@@ -115,7 +128,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 			print()
 
 		stop(paste(check_tmt$TMT_Channel, "are missing at set", check_tmt$TMT_Set, "injection",
-		           check_tmt$LCMS_Injection))
+		           check_tmt$LCMS_Injection, "\n"))
 	}
 
 	# check the uniqueness of RAW_File per TMT_Set and LCMS_Injection
@@ -434,7 +447,7 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
   
-  if(!fs::dir_exists(dat_dir)) {
+  if (!fs::dir_exists(dat_dir)) {
     stop(dat_dir, " not existed.", call. = FALSE)
   }
 
@@ -444,6 +457,25 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
   prep_fraction_scheme(dat_dir, frac_smry)
 }
 
+
+#' Reload the "expt_smry.xlsx" and "frac_smry.xlsx"
+#'
+#' @import rlang
+#' @importFrom magrittr %>%
+#' @importFrom fs file_info
+reload_expts <- function() {
+  expt_smry <- match_expt()
+  frac_smry <- match_frac()
+  
+  fi_xlsx <- fs::file_info(file.path(dat_dir, expt_smry))$change_time
+  
+  if (is.na(fi_xlsx)) stop("Time stamp of `expt_smry.xlsx` not available.")
+  
+  fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme.Rdata"))$change_time
+  if (fi_xlsx > fi_rda) {
+    load_expts(dat_dir = dat_dir, expt_smry = !!expt_smry, frac_smry = !!frac_smry)
+  }
+}
 
 
 #' Extracts the channel information in TMT experiments
@@ -526,6 +558,10 @@ simple_label_scheme <- function (dat_dir, label_scheme_full) {
 		dplyr::filter(!duplicated(Sample_ID), !is.na(Sample_ID)) %>%
 		dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
 		dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
+	
+	if (nrow(label_scheme) <(TMT_plex * n_TMT_sets(label_scheme))) {
+	  stop("Duplicated sample ID(s) in `expt_smry.xlsx`", call. = FALSE)
+	}
 
 	save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
 }

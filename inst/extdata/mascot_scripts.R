@@ -119,6 +119,24 @@ normPep(
 	col_refit = Select_sub,
 )
 
+# renormalization of peptide data subset for selected samples
+normPep(
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  
+  # refit samples under column Select_sub in expt_smry.xlsx
+  col_refit = Select_sub,
+  
+  # partial data from the selected sample(s) for use in normalization 
+  slice_by = exprs(prot_n_psm >= 10, pep_n_psm >= 3),
+)
+
 # protein tables
 normPrn(
 	method_pep_prn = median, 

@@ -401,9 +401,11 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
   
-  id <- match_normPSM_pepid()
+  group_psm_by <- match_normPSM_pepid()
+  group_pep_by <- match_normPSM_protid()
   
-  stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
+  stopifnot(group_psm_by %in% c("pep_seq", "pep_seq_mod"))
+  stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   stopifnot(min_n > 0 & min_n%%1 == 0)
   
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
@@ -413,7 +415,7 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
     reorder_files(n_TMT_sets(label_scheme_full))
   
   dir.create(file.path(dat_dir, "PSM\\Copy"), recursive = TRUE, showWarnings = FALSE)
-    
+
   for (fn in filelist) {
     file.copy(file.path(dat_dir, "PSM", fn), file.path(dat_dir, "PSM\\Copy", fn))
     
@@ -421,16 +423,46 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
                    header = TRUE, sep = "\t", comment.char = "#")
     
     df <- df %>% 
-      purge_by_cv(id, max_cv) %>% 
-      purge_by_n(id, min_n) %>% 
-      dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) %T>% 
-      write.table(file.path(dat_dir, "PSM", fn), sep = "\t", col.names = TRUE, row.names = FALSE)
+      purge_by_cv(group_psm_by, max_cv) %>% 
+      purge_by_n(group_psm_by, min_n) %>% 
+      dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
     
+    if ((!is.null(max_cv)) | (min_n > 1)) {
+      pep_n_psm <- df %>%
+        dplyr::select(!!rlang::sym(group_psm_by)) %>%
+        dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+        dplyr::summarise(pep_n_psm = n())
+      
+      prot_n_psm <- df %>%
+        dplyr::select(!!rlang::sym(group_pep_by)) %>%
+        dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+        dplyr::summarise(prot_n_psm = n())
+      
+      prot_n_pep <- df %>%
+        dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+        dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
+        dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+        dplyr::summarise(prot_n_pep = n())
+      
+      df <- df %>% 
+        dplyr::left_join(pep_n_psm, by = group_psm_by) %>% 
+        dplyr::mutate(pep_n_psm.x = pep_n_psm.y) %>% 
+        dplyr::rename("pep_n_psm" = "pep_n_psm.x") %>% 
+        dplyr::select(-pep_n_psm.y)
+  
+      df <- list(df, prot_n_psm, prot_n_pep) %>%
+        purrr::reduce(left_join, by = group_pep_by) %>% 
+        dplyr::mutate(prot_n_psm.x = prot_n_psm.y, prot_n_pep.x = prot_n_pep.y) %>% 
+        dplyr::rename(prot_n_psm = prot_n_psm.x, prot_n_pep = prot_n_pep.x) %>% 
+        dplyr::select(-prot_n_psm.y, -prot_n_pep.y) %T>% 
+        write.table(file.path(dat_dir, "PSM", fn), sep = "\t", col.names = TRUE, row.names = FALSE)      
+    }
+
     df %>% 
-      dplyr::select(id, grep("^sd_log2_R[0-9]{3}", names(.))) %>% 
-      dplyr::filter(!duplicated(.[[id]])) %>% 
+      dplyr::select(group_psm_by, grep("^sd_log2_R[0-9]{3}", names(.))) %>% 
+      dplyr::filter(!duplicated(.[[group_psm_by]])) %>% 
       dplyr::filter(rowSums(!is.na(.[grep("^sd_log2_R[0-9]{3}", names(.))])) > 0) %>%
-      sd_violin(!!id, 
+      sd_violin(!!group_psm_by, 
                 file.path(dat_dir, "PSM\\log2FC_cv\\purged", gsub("_PSM_N.txt", "_sd.png", fn)), 
                 8, 8)
   }
@@ -464,9 +496,11 @@ purgePep <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
   
-  id <- match_normPSM_protid()
-  
-  stopifnot(id %in% c("prot_acc", "gene"))
+  group_psm_by <- match_normPSM_pepid()
+  group_pep_by <- match_normPSM_protid()
+
+  stopifnot(group_psm_by %in% c("pep_seq", "pep_seq_mod"))
+  stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   stopifnot(min_n > 0 & min_n%%1 == 0)
   
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
@@ -474,24 +508,51 @@ purgePep <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Copy"), recursive = TRUE, showWarnings = FALSE)
   file.copy(file.path(dat_dir, "Peptide\\Peptide.txt"), file.path(dat_dir, "Peptide\\Copy\\Peptide.txt"))
-
+  
   fn <- file.path(dat_dir, "Peptide", "Peptide.txt")
   df <- read.csv(fn, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
-    purge_by_cv(id, max_cv) %>% 
-    purge_by_n(id, min_n) %>% 
-    dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) %T>% 
-    write.table(fn, sep = "\t", col.names = TRUE, row.names = FALSE)
+    purge_by_cv(group_pep_by, max_cv) %>% 
+    purge_by_n(group_pep_by, min_n) %>% 
+    dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) 
+  
+  if ((!is.null(max_cv)) | (min_n > 1)) {
+    pep_n_psm <- df %>%
+      dplyr::select(!!rlang::sym(group_psm_by), pep_n_psm) %>%
+      dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+      dplyr::summarise(pep_n_psm = sum(pep_n_psm)) %>% 
+      dplyr::arrange(!!rlang::sym(group_psm_by))
+    
+    prot_n_psm <- df %>% 
+      dplyr::select(pep_n_psm, !!rlang::sym(group_pep_by)) %>% 
+      dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+      dplyr::summarise(prot_n_psm = sum(pep_n_psm))
+    
+    prot_n_pep <- df %>% 
+      dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>% 
+      dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
+      dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+      dplyr::summarise(prot_n_pep = n())
+  
+    df <- df %>% 
+      dplyr::left_join(pep_n_psm, by = group_psm_by) %>% 
+      dplyr::mutate(pep_n_psm.x = pep_n_psm.y) %>% 
+      dplyr::rename("pep_n_psm" = "pep_n_psm.x") %>% 
+      dplyr::select(-pep_n_psm.y)
+    
+    df <- list(df, prot_n_psm, prot_n_pep) %>%
+      purrr::reduce(left_join, by = group_pep_by) %>% 
+      dplyr::mutate(prot_n_psm.x = prot_n_psm.y, prot_n_pep.x = prot_n_pep.y) %>% 
+      dplyr::rename(prot_n_psm = prot_n_psm.x, prot_n_pep = prot_n_pep.x) %>% 
+      dplyr::select(-prot_n_psm.y, -prot_n_pep.y) %T>% 
+      write.table(fn, sep = "\t", col.names = TRUE, row.names = FALSE)    
+  }
   
   df %>% 
-    dplyr::select(id, grep("^sd_log2_R[0-9]{3}", names(.))) %>% 
-    dplyr::filter(!duplicated(.[[id]])) %>% 
+    dplyr::select(group_pep_by, grep("^sd_log2_R[0-9]{3}", names(.))) %>% 
+    dplyr::filter(!duplicated(.[[group_pep_by]])) %>% 
     dplyr::filter(rowSums(!is.na(.[grep("^sd_log2_R[0-9]{3}", names(.))])) > 0) %>% 
-    sd_violin(!!id, file.path(dat_dir, "Peptide\\log2FC_cv\\purged", "Peptide_sd.png"), 
+    sd_violin(!!group_pep_by, file.path(dat_dir, "Peptide\\log2FC_cv\\purged", "Peptide_sd.png"), 
               8 * n_TMT_sets(label_scheme), 8)
-            
+  
   mget(names(formals()), rlang::current_env()) %>% save_call("purPSM")
 }
-
-
-
-
