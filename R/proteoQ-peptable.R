@@ -636,7 +636,18 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	} else {
 		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"),
 			check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>%
-			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0) %>% 
+			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0) 
+		
+		if (! id %in% names(df)) {
+		  try(unlink(file.path(dat_dir, "Peptide\\Peptide.txt")))
+		  try(unlink(file.path(dat_dir, "Protein\\Protein.txt")))
+		  
+		  stop("Column `", id, "` not found in `Peptide.txt`.", 
+		       "\nDeleted the older `Peptide.txt` and try `normPep(...)` again.", 
+		       call. = FALSE)
+		}
+		
+		df <- df %>% 
 		  dplyr::arrange(!!rlang::sym(id))
 	}
 	

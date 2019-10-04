@@ -1,0 +1,23 @@
+Header	Descrption	Note
+gene	Protein gene name	
+prot_cover	Protein sequence coverage	Cf. PSM keys
+prot_acc	Protein accession string	Mascot
+prot_desc	Protein description taken from Fasta title line	Mascot
+prot_mass	Protein mass	Mascot
+prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Cf. PSM keys
+prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Cf. PSM keys
+prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Cf. Peptide keys
+prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. Peptide keys
+length	The number of amino acid residues under a proposed protein	Cf. PSM keys
+acc_type	The type of accession names	
+uniprot_id	Uniprot ID	Cf. PSM keys
+entrez	Protein Entrez ID	
+species	The species of a protein entry	
+kin_attr	The attribute of proteins being kinases	Cf. PSM keys
+kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. PSM keys
+kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. PSM keys
+I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by 'method_pep_prn' in 'normPrn()' for indicated samples
+N_I... (...)	Normalized I... (...)	Cf. Peptide keys
+log2_R (...)	log2FC relative to reference materials for indicated samples	Before normalization
+N_log2_R (...)	Aligned log2_R (...) according to 'method_align' in 'normPrn()' without scaling normalization	
+Z_log2_R (...)	N_log2_R (...) with scaling normalization	
