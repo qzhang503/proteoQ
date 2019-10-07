@@ -116,94 +116,18 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	    df_num <- aggrNums(median)(df, !!rlang::sym(id), na.rm = TRUE)
 	  }
 	  
-	  df <- df %>% 
-	    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.)))
-	  
-	  # Mascot keys or others converted to Mascot keys
-	  mascot_median_keys <- c("pep_score", "pep_rank", "pep_isbold", "pep_exp_mr", "pep_delta", 
-	                          "pep_exp_mz", "pep_exp_z")
-	  mascot_geomean_keys <- c("pep_expect")
-	  
-	  df_mascot_med <- df %>% 
-	    dplyr::select(!!rlang::sym(id), which(names(.) %in% mascot_median_keys)) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-
-	  df_mascot_geomean <- df %>% 
-	    dplyr::select(!!rlang::sym(id), which(names(.) %in% mascot_geomean_keys)) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise_all(~ my_geomean(.x, na.rm = TRUE))
-	  
-	  df <- df %>% 
-	    dplyr::select(-which(names(.) %in% c(mascot_median_keys, mascot_geomean_keys)))
-	  
-	  # MaxQuant keys
-	  df_mq_rptr_mass_dev <- df %>% 
-	    dplyr::select(!!rlang::sym(id), grep("^Reporter mass deviation", names(.))) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-	  
-	  df <- df %>% 
-	    dplyr::select(-grep("^Reporter mass deviation", names(.)))	  
-	  
-	  mq_median_keys <- c(
-	    "Charge", "Mass", "PIF", "Fraction of total spectrum", "Mass error [ppm]", 
-	    "Mass error [Da]", "Base peak fraction", "Precursor Intensity", 
-	    "Precursor Apex Fraction", "Intensity coverage", "Peak coverage", 
-	    "Combinatorics"
-	  )
-	  
-	  df_mq_med <- df %>% 
-	    dplyr::select(!!rlang::sym(id), which(names(.) %in% mq_median_keys)) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-	  
-	  df <- df %>% 
-	    dplyr::select(-which(names(.) %in% mq_median_keys))
-	  
-	  # Spectrum Mill keys
-	  sm_median_keys <- c(
-	    "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
-	    "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
-	    "precursorIsolationIntensity", "ratioReporterIonToPrecursor", 
-	    "delta_parent_mass", "delta_parent_mass_ppm")
-	  
-	  df_sm_med <- df %>% 
-	    dplyr::select(!!rlang::sym(id), which(names(.) %in% sm_median_keys)) %>% 
-	    dplyr::group_by(!!rlang::sym(id)) %>% 
-	    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-	  
-	  df <- df %>% 
-	    dplyr::select(-which(names(.) %in% sm_median_keys))	  
-	  
 	  df_first <- df %>% 
-	    dplyr::filter(!duplicated(!!rlang::sym(id)))
+	    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
+	    med_summarise_keys(id)
+
+	  df <- list(df_first, df_num) %>%
+	    purrr::reduce(left_join, by = id)
 	  
-	  if ("pep_calc_mr" %in% names(df)) {
-  	  df_first <- dplyr::bind_cols(
-  	    df_first %>% dplyr::select(-pep_calc_mr), 
-  	    df_first %>% dplyr::select(pep_calc_mr), 
-  	  )	    
-	  }
-
 	  if (id == "pep_seq_mod") {
-	    df_first <- df_first %>% dplyr::select(-pep_seq)
+	    df <- df %>% dplyr::select(-pep_seq)
 	  } else {
-	    df_first <- df_first %>% dplyr::select(-pep_seq_mod)
+	    df <- df %>% dplyr::select(-pep_seq_mod)
 	  }
-
-	  df <- list(df_first, 
-	             df_mascot_med, df_mascot_geomean, 
-	             df_mq_rptr_mass_dev, df_mq_med, 
-	             df_sm_med, 
-	             df_num) %>%
-	    purrr::reduce(left_join, by = id) %>%
-	    data.frame(check.names = FALSE)
-
-	  df <- dplyr::bind_cols(
-	    df %>% dplyr::select(grep("^pep_", names(.))), 
-	    df %>% dplyr::select(-grep("^pep_", names(.))), 
-	  )
 
 	  df <- cbind.data.frame(df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df)), drop = FALSE],
 	                         df[, grepl("I[0-9]{3}", names(df)), drop = FALSE], 

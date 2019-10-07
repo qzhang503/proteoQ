@@ -223,9 +223,6 @@ add_mascot_pepseqmod <- function(df) {
       lowers <- substr(df_sub$pep_seq_mod, locales, locales) %>% tolower()
       substr(df_sub$pep_seq_mod, locales, locales) <- lowers
       
-      # fn <- var_mods[var_mods$Mascot_abbr == mod, "Filename"]
-      # try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods", paste0(fn, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE))
-      
       df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
     }
   }
@@ -254,10 +251,7 @@ add_mascot_pepseqmod <- function(df) {
         lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>% tolower()
         substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
       }
-      
-      # fn <- var_mods[var_mods$Mascot_abbr == mod, "Filename"]
-      # try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods", paste0(fn, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE))
-      
+
       df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
     }
   }
@@ -284,8 +278,6 @@ add_mascot_pepseqmod <- function(df) {
           lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>%
             tolower()
           substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
-          # fn <- phospho_mods[phospho_mods$Mascot_abbr == mod, "Filename"]
-          # try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods",paste0(fn, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE))
         }
         
         df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
@@ -309,10 +301,6 @@ add_mascot_pepseqmod <- function(df) {
     
     if (nrow(df_sub) > 0) {
       df_sub$pep_seq_mod <- paste0("_", df_sub$pep_seq_mod)
-      
-      # fn <- nt_ace_var_mods[nt_ace_var_mods$Mascot_abbr == mod, "Filename"]
-      # try(write.table(df_sub, file.path(dat_dir, "PSM\\individual_mods", paste0(fn, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE))
-      
       df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
     }
   }
@@ -427,7 +415,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
 	}
   
   # convenience craps removals where their uniprot afasta names ended with "|"
-  if(rm_craps) df <- df %>% dplyr::filter(!grepl("\\|.*\\|$", prot_acc))
+  if (rm_craps) df <- df %>% dplyr::filter(!grepl("\\|.*\\|$", prot_acc))
 
   dots <- rlang::enexprs(...)
   lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
@@ -438,6 +426,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   cat("\n")
   
   # need columns 'pep_seq_mod' and `gene` to calculate `prot_n_pep` et al.
+  # pep_seq: from MENGQSTAAK --> K.MENGQSTAAK.L
   df <- df %>% 
     add_mascot_pepseqmod() %>% 
     dplyr::mutate(prot_acc_orig = prot_acc) %>% 
@@ -463,10 +452,10 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
                   prot_sequences_sig = prot_sequences_sig_new) %>%
     dplyr::select(-prot_matches_sig_new, -prot_sequences_sig_new)
   
-  df <- dplyr::bind_cols(
-    df %>% dplyr::select(grep("^prot_", names(.))), 
-    df %>% dplyr::select(-grep("^prot_", names(.))), 
-  )
+  # df <- dplyr::bind_cols(
+  #   df %>% dplyr::select(grep("^prot_", names(.))), 
+  #   df %>% dplyr::select(-grep("^prot_", names(.))), 
+  # )
 
   rm(prot_matches_sig, prot_sequences_sig)
   
@@ -509,6 +498,16 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
                  fasta = seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
                                             seqtype = "AA", as.string = TRUE, set.attributes = TRUE))
   } 
+  
+  df <- dplyr::bind_cols(
+    df %>% dplyr::select(grep("^pep_", names(.))), 
+    df %>% dplyr::select(-grep("^pep_", names(.))), 
+  )
+  
+  df <- dplyr::bind_cols(
+    df %>% dplyr::select(grep("^prot_", names(.))), 
+    df %>% dplyr::select(-grep("^prot_", names(.))), 
+  )
 
   if (length(grep("^R[0-9]{3}", names(df))) > 0) {
     df_split <- df %>%
@@ -919,18 +918,15 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     for (injn_idx in seq_along(sublist)) {
       df <- read.csv(file.path(dat_dir, "PSM\\cache", sublist[injn_idx]),
                      check.names = FALSE, header = TRUE, sep = "\t",
-                     comment.char = "#") %>%
-        dplyr::mutate(pep_seq_mod = as.character(pep_seq)) %>%
-        dplyr::select(which(names(.) == "pep_seq_mod"),
-                      which(names(.) != "pep_seq_mod"))
-      
+                     comment.char = "#")
+
       acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
       stopifnot(length(acc_type) == 1)
       
       # can species be NA?
       species <- df$species %>% unique() %>% as.character()
 
-      if(TMT_plex > 0) df <- mcPSM(df, set_idx)
+      if (TMT_plex > 0) df <- mcPSM(df, set_idx)
       
       # add SD columns
       df <- df %>% 
