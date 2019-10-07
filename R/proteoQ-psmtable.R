@@ -425,8 +425,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   cat(paste0(names(df), "\n"))
   cat("\n")
   
-  # need columns 'pep_seq_mod' and `gene` to calculate `prot_n_pep` et al.
-  # pep_seq: from MENGQSTAAK --> K.MENGQSTAAK.L
+  # need columns 'pep_seq_mod' and `gene` for data grouping
+  # note changed pep_seq: from exemplary MENGQSTAAK -> K.MENGQSTAAK.L
   df <- df %>% 
     add_mascot_pepseqmod() %>% 
     dplyr::mutate(prot_acc_orig = prot_acc) %>% 
@@ -452,11 +452,6 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
                   prot_sequences_sig = prot_sequences_sig_new) %>%
     dplyr::select(-prot_matches_sig_new, -prot_sequences_sig_new)
   
-  # df <- dplyr::bind_cols(
-  #   df %>% dplyr::select(grep("^prot_", names(.))), 
-  #   df %>% dplyr::select(-grep("^prot_", names(.))), 
-  # )
-
   rm(prot_matches_sig, prot_sequences_sig)
   
   df <- df %>% 
@@ -924,7 +919,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       stopifnot(length(acc_type) == 1)
       
       # can species be NA?
-      species <- df$species %>% unique() %>% as.character()
+      species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
 
       if (TMT_plex > 0) df <- mcPSM(df, set_idx)
       

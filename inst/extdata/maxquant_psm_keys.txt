@@ -1,0 +1,37 @@
+Header	Descrption	Note
+prot_acc	Protein accession string	`Proteins` in MaxQuant
+prot_desc	Protein description taken from Fasta title line	
+prot_mass	Protein mass	
+prot_len	The number of amino acid residues under a proposed protein	
+prot_cover	Protein sequence coverage	Calculated from the union of individual data sources
+prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users
+prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. 'prot_n_psm'
+pep_seq_mod	'pep_seq' with variable modifications in the lower cases	"E.g. ""-._mAsGVAVSDGVIK.V"" with a methionine oxidation and a serine phosphorylation"
+pep_seq	One-letter representation of peptide sequences	"The acetylations of protein N-terminals is indicated by '_' and the flanking residues on the N- or C-terminal side of peptides separated by '.', e.g. ""-._MASGVAVSDGVIK.V"""
+pep_miss	Count of missed cleavage sites in peptide	`Missed cleavages` in MaxQuant
+pep_var_mod	Post-translational modifications contained within the identified peptide sequence.	`Modifications` in MaxQuant
+pep_expect	"Posterior Error Probability of the identification. This value essentially operates as a p-value, where smaller is more significant."	`PEP` in MaxQuant
+pep_score	Andromeda score for the best associated MS/MS spectrum.	`Score` in MaxQuant
+pep_isunique	"Peptide sequence is unique at the levels of protein groups, protein IDs or none"	Cf. proteoQ help document via `?normPSM`
+pep_res_before	pep_res_before	Flanking residue on N-term side of peptide
+pep_start	Ordinal position of first peptide residue in protein sequence	
+pep_end	Ordinal position of last peptide residue in protein sequence	
+pep_res_after	Flanking residue on C-term side of peptide	
+pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf. 'prot_n_psm'
+raw_file	MS file name(s) where peptides or proteins are identified	
+m/z	The mass-over-charge of the precursor ion.	From MaxQuant
+acc_type	The type of accession names	"One of 'refseq_acc', 'uniprot_acc' or 'uniprot_id'"
+entrez	Protein Entrez ID	
+gene	Protein gene name	
+species	The species of a protein entry	
+kin_attr	The attribute of proteins being kinases	"Optional at 'normPSM(annot_kinases = TRUE, ...)'"
+kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. 'kin_attr'
+kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. 'kin_attr'
+is_tryptic	"Logical; if TRUE, a sequence is a canonical tryptic peptide"	
+...	More column keys from MaxQuant	Cf. http://www.coxdocs.org/doku.php?id=maxquant:table:msmstable
+I126 et al.	Reporter-ion intensity	Corrected or not corrected from MaxQuant; c.f. `?normPSM`
+N_I126 et al.	Normalized reporter-ion intensity	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity
+sd_log2_R126 et al.	Standard deviation of peptide log2FC 	Calculated from contributing PSMs under each TMT channel
+R126 et al.	Linear FC relative to TMT-126	
+log2_R126 et al.	log2FC relative to TMT-126	
+N_log2_R126 et al.	Median-centered log2FC relative to TMT-126	

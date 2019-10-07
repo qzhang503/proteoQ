@@ -1260,6 +1260,8 @@ annotPeppos <- function (df, fasta){
   if ("pep_res_after" %in% names(df)) pep_pos_all$pep_res_after <- NULL
   if ("pep_start" %in% names(df)) pep_pos_all$pep_start <- NULL
   if ("pep_end" %in% names(df)) pep_pos_all$pep_end <- NULL
+  
+  df$pep_seq_bare <- NULL
 
   df <- df %>% 
     dplyr::left_join(pep_pos_all, by = "pep_prn") %>% 
