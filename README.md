@@ -1,48 +1,52 @@
--   [Introduction to proteoQ](#introduction-to-proteoq)
--   [Installation](#installation)
--   [1 Data normalization](#data-normalization)
-    -   [1.1 Set up experiment for Mascot
+  - [Introduction to proteoQ](#introduction-to-proteoq)
+  - [Installation](#installation)
+  - [1 Data normalization](#data-normalization)
+      - [1.1 Set up experiment for Mascot
         workflow](#set-up-experiment-for-mascot-workflow)
-        -   [1.1.1 Prepare fasta databases](#prepare-fasta-databases)
-        -   [1.1.2 Prepare Mascot PSM data](#prepare-mascot-psm-data)
-        -   [1.1.3 Prepare metadata](#prepare-metadata)
-        -   [1.1.4 Load experiment](#load-experiment)
-    -   [1.2 Summarise Mascot PSMs](#summarise-mascot-psms)
-        -   [1.2.1 Process PSMs](#process-psms)
-        -   [1.2.2 Summarize PSMs to
+          - [1.1.1 Prepare fasta databases](#prepare-fasta-databases)
+          - [1.1.2 Prepare Mascot PSM data](#prepare-mascot-psm-data)
+          - [1.1.3 Prepare metadata](#prepare-metadata)
+          - [1.1.4 Load experiment](#load-experiment)
+      - [1.2 Summarise Mascot PSMs](#summarise-mascot-psms)
+          - [1.2.1 Process PSMs](#process-psms)
+          - [1.2.2 Summarize PSMs to
             peptides](#summarize-psms-to-peptides)
-        -   [1.2.3 Summarize peptides to
+          - [1.2.3 Summarize peptides to
             proteins](#summarize-peptides-to-proteins)
-    -   [1.3 Renormalize data against column
+      - [1.3 Renormalize data against column
         subsets](#renormalize-data-against-column-subsets)
-    -   [1.4 Renormalize data against row
+      - [1.4 Renormalize data against row
         subsets](#renormalize-data-against-row-subsets)
-    -   [1.5 Summarize MaxQuant results](#summarize-maxquant-results)
-    -   [1.6 Workflow scripts](#workflow-scripts)
-    -   [1.7 Column keys in outputs](#column-keys-in-outputs)
-        -   [1.7.1 Mascot outputs](#mascot-outputs)
--   [2 Basic informatics](#basic-informatics)
-    -   [2.1 MDS and PCA plots](#mds-and-pca-plots)
-    -   [2.2 Correlation plots](#correlation-plots)
-    -   [2.3 Heat maps](#heat-maps)
-    -   [2.4 Significance tests and volcano plot
+      - [1.5 Summarize MaxQuant results](#summarize-maxquant-results)
+      - [1.6 Workflow scripts](#workflow-scripts)
+  - [2 Basic informatics](#basic-informatics)
+      - [2.1 MDS and PCA plots](#mds-and-pca-plots)
+      - [2.2 Correlation plots](#correlation-plots)
+      - [2.3 Heat maps](#heat-maps)
+      - [2.4 Significance tests and volcano plot
         visualization](#significance-tests-and-volcano-plot-visualization)
-    -   [2.5 Gene sets under volcano
+      - [2.5 Gene sets under volcano
         plots](#gene-sets-under-volcano-plots)
-    -   [2.6 Trend Analysis](#trend-analysis)
-    -   [2.7 NMF Analysis](#nmf-analysis)
-    -   [2.8 STRING Analysis](#string-analysis)
-    -   [2.9 Missing value imputation](#missing-value-imputation)
--   [3 Labs](#labs)
-    -   [3.1 Reference choices](#reference-choices)
-    -   [3.2 Peptide subsets](#peptide-subsets)
-    -   [3.3 Random effects](#random-effects)
-        -   [3.3.1 Single random effect](#single-random-effect)
-        -   [3.3.2 Multiple random effects](#multiple-random-effects)
--   [References](#references)
+      - [2.6 Trend Analysis](#trend-analysis)
+      - [2.7 NMF Analysis](#nmf-analysis)
+      - [2.8 STRING Analysis](#string-analysis)
+      - [2.9 Missing value imputation](#missing-value-imputation)
+  - [3 Labs](#labs)
+      - [3.1 Reference choices](#reference-choices)
+      - [3.2 Peptide subsets](#peptide-subsets)
+      - [3.3 Random effects](#random-effects)
+          - [3.3.1 Single random effect](#single-random-effect)
+          - [3.3.2 Multiple random effects](#multiple-random-effects)
+  - [4 Column keys](#column-keys)
+      - [4.1 Mascot](#mascot)
+          - [4.1.1 PSMs](#psms)
+          - [4.1.2 Peptides](#peptides)
+          - [4.1.3 Proteins](#proteins)
+      - [4.2 MaxQuant](#maxquant)
+          - [4.2.1 PSMs](#psms-1)
+  - [References](#references)
 
-Introduction to proteoQ
------------------------
+## Introduction to proteoQ
 
 Chemical labeling using tandem mass tag
 ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly
@@ -70,8 +74,7 @@ Click
 [here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)
 to render a html version of the README.
 
-Installation
-------------
+## Installation
 
 To install this package, start R (version "3.6.1") as **administrator**
 and enter:
@@ -86,19 +89,18 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("qzhang503/proteoQ")
 ```
 
-1 Data normalization
---------------------
+## 1 Data normalization
 
 In this section I (Qiang Zhang) illustrate the following applications of
 `proteoQ`:
 
--   Summarization of Mascot PSM results to normalized peptide and
+  - Summarization of Mascot PSM results to normalized peptide and
     protein data.
--   Visualization of quality metrics in normalized peptide and protein
+  - Visualization of quality metrics in normalized peptide and protein
     data.
--   Re-normalization of data in partial or in full.
--   Removal of low-quality entries from PSM, peptide and protein data.
--   Summarization of MaxQuant PSM results.
+  - Re-normalization of data in partial or in full.
+  - Removal of low-quality entries from PSM, peptide and protein data.
+  - Summarization of MaxQuant PSM results.
 
 The data set we will use in this section corresponds to the proteomics
 data from Mertins et al. (2018). In the study, two different breast
@@ -121,7 +123,8 @@ devtools::install_github("qzhang503/proteoQDA")
 
 ### 1.1 Set up experiment for Mascot workflow
 
-We first set up a working directory for use in a Mascot example:
+We first set up a working directory for use in a Mascot
+example:
 
 ``` r
 dir.create("C:\\The\\Mascot\\Example", recursive = TRUE, showWarnings = FALSE)
@@ -147,14 +150,14 @@ copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 
 The workflow begins with PSM table(s) in a `.csv` format from the
 [Mascot](https://http://www.matrixscience.com/) search engine. When
-exporting PSM results, I typically set the option of
-`Include sub-set protein hits` to `0` with my opinionated choice in
-satisfying the principle of parsimony. Under
-`Peptide Match Information`, the options of `Header` and
-`Peptide quantitation` should be checked to include the search
-parameters and quantitative values. The inclusion of both `Start` and
-`End` is recommended and the file name(s) of the exports will be taken
-as is.[1]
+exporting PSM results, I typically set the option of `Include sub-set
+protein hits` to `0` with my opinionated choice in satisfying the
+principle of parsimony. Under `Peptide Match Information`, the options
+of `Header` and `Peptide quantitation` should be checked to include the
+search parameters and quantitative values. The inclusion of both `Start`
+and `End` is recommended and the file name(s) of the exports will be
+taken as
+is.\[1\]
 
 <img src="images\mascot\mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
@@ -164,9 +167,10 @@ different protein IDs when
 from peptides using algorithms such as greedy set cover. To escape from
 the ambiguity in protein inference, I typically enable the option of
 `Merge MS/MS files into single search` in [Mascot
-Daemon](http://www.matrixscience.com/daemon.html).[2] If the option is
+Daemon](http://www.matrixscience.com/daemon.html).\[2\] If the option is
 disabled, peptide sequences that have been assigned to multiple protein
-IDs will be removed for now when constructing peptide reports.
+IDs will be removed for now when constructing peptide
+reports.
 
 <img src="images\mascot\mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 
@@ -191,7 +195,7 @@ experimental summary is `expt_smry.xlsx`. If samples were fractionated
 off-line prior to `LC/MS`, a second `Excel` template will also be filled
 out to link multiple `RAW` MS file names that are associated to the same
 sample IDs. The default file name for the fractionation summary is
-`frac_smry.xlsx`.[3] Unless otherwise mentioned, we will assume these
+`frac_smry.xlsx`.\[3\] Unless otherwise mentioned, we will assume these
 default file names throughout the document.
 
 Columns in the `expt_smry.xlsx` are approximately divided into the
@@ -206,7 +210,8 @@ other hand allow us to define our own analysis and aesthetics. For
 instance, we may openly define multiple columns of contrasts at
 different levels of granularity for uses in statistical modelings.
 Description of the column keys can be found from the help document by
-entering `?proteoQ::load_expts` from a `R` console.
+entering `?proteoQ::load_expts` from a `R`
+console.
 
 <img src="images\installation\three_tier_expt_smry.png" width="80%" style="display: block; margin: auto;" />
 
@@ -219,8 +224,8 @@ cptac_frac_1(dat_dir)
 ```
 
 We now have all the pieces that are required by `proteoQ` in place.
-Let's have a quick glance at the `expt_smry.xlsx` file. We note that no
-reference channels were indicated under the column `Reference`. With
+Let's have a quick glance at the `expt_smry.xlsx` file. We note that
+no reference channels were indicated under the column `Reference`. With
 `proteoQ`, the `log2FC` of each species in a given sample is calculated
 either (*a*) in relative to the reference(s) within each multiplex TMT
 experiment or (*b*) to the mean of all samples in the same experiment if
@@ -255,7 +260,8 @@ We start the section by processing the PSM files exported directly from
 
 ##### 1.2.1.1 normPSM
 
-The core utility for the processing of PSM data is `normPSM`:
+The core utility for the processing of PSM data is
+`normPSM`:
 
 ``` r
 # process PSMs with in-function filtration of data by arguments `filter_`
@@ -297,21 +303,20 @@ executing `normPSM()`. We then visually inspect the distributions of
 reporter-ion intensity. Empirically, PSMs with reporter-ion intensity
 less than 3,000 are trimmed and samples with median intensity that is
 2/3 or less to the average of majority samples are removed from further
-analysis.[4]
+analysis.\[4\]
 
 The `normPSM` function can take additional, user-defined arguments of
 `dot-dot-dot` (see Wickham 2019, ch. 6) for the row filtration of data
 using logical conditions. In the above example, we have limited
-ourselves to peptide entries with `pep_expect <= 0.1` and
-`pep_score >= 15` by supplying the variable argument (vararg) of
-`filter_peps`. We further filtered the data at `pep_rank == 1` with
-another vararg of `filter_by_more`. The creation and assignment of
-varargs need to follow a format of
-`filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the
-names of varargs on the lhs start with the character string of `filter_`
-to indicate the task of data filtration. On the rhs, `pep_expect`,
-`pep_score` and `pep_rank` are column keys that can be found from the
-PSM data.
+ourselves to peptide entries with `pep_expect <= 0.1` and `pep_score
+>= 15` by supplying the variable argument (vararg) of `filter_peps`. We
+further filtered the data at `pep_rank == 1` with another vararg of
+`filter_by_more`. The creation and assignment of varargs need to follow
+a format of `filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note
+that the names of varargs on the lhs start with the character string of
+`filter_` to indicate the task of data filtration. On the rhs,
+`pep_expect`, `pep_score` and `pep_rank` are column keys that can be
+found from the PSM data.
 
 I am new to `R`. It looks like that base `R` does not support the direct
 assignment of logical expressions to function arguments. To get around
@@ -322,7 +327,7 @@ the expression(s) on the rhs of each vararg statment by performing a
 bare evaluation using `rlang::eval_bare`. Following that, a tidy
 evaluation by `rlang::eval_tidy` will be coupled to a local facility in
 `proteoQ` to do the real work of data filtrations ((see Wickham 2019,
-ch. 20))[5].
+ch. 20))\[5\].
 
 The approach of data filtration taken by `normPSM` might at first looks
 strange; however, it allows me to perform data filtration in a
@@ -357,13 +362,10 @@ purgePSM ()
 
 Taking the sample entries under `TMT_Set` one in `label_scheme.xlsx` as
 an example, we can see that a small portion of peptides have CV greater
-than 0.5 at log2 scale.
+than 0.5 at log2
+scale.
 
-<img src="images\psm\purge\psm_bf_purge.png" alt="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." width="45%" /><img src="images\psm\purge\psm_af_purge.png" alt="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." width="45%" />
-<p class="caption">
-**Figure 1.** CV of peptide log2FC. Left: before purging; right: after
-purging.
-</p>
+<img src="images\psm\purge\psm_bf_purge.png" title="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." alt="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." width="45%" style="display: block; margin: auto;" /><img src="images\psm\purge\psm_af_purge.png" title="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." alt="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." width="45%" style="display: block; margin: auto;" />
 
 Quantitative differences greater than 0.5 at a log2 scale is big in TMT
 experiments, which can be largely ascribed to a phenomena called peptide
@@ -420,7 +422,7 @@ normPep(
 
 The `log2FC` of peptide data will be aligned by median centering across
 samples by default. If `method_align = MGKernel` is chosen, `log2FC`
-will be aligned under the assumption of multiple Gaussian kernels.[6]
+will be aligned under the assumption of multiple Gaussian kernels.\[6\]
 The parameter `n_comp` defines the number of Gaussian kernels and `seed`
 set a seed for reproducible fittings. The parameters `range_log2r` and
 `range_int` define the range of `log2FC` and the range of reporter-ion
@@ -430,8 +432,8 @@ across samples.
 In the exemplary vararg statement of `filter_by`, we set a threshold in
 the minimum number of identifying PSMs for peptides. If we are not
 interested in mouse peptides from the pdx samples, We can specify
-similarly that `species == "human"`, or more precisely,
-`species != "mouse"`.[7] Sometimes, it may remain unclear on proper data
+similarly that `species == "human"`, or more precisely, `species !=
+"mouse"`.\[7\] Sometimes, it may remain unclear on proper data
 filtration at the early stage of analysis. In that case, we may need
 additional quality assessments that we will soon explore. Alternatively,
 we may keep as much information as possible and apply varargs in
@@ -479,7 +481,7 @@ proteomic workflow.
 ##### 1.2.2.3 pepHist
 
 We next compare the `log2FC` profiles with and without scaling
-normalization:[8]
+normalization:\[8\]
 
 ``` r
 # without scaling
@@ -507,7 +509,7 @@ the `expt_smry.xlsx`).
 [![Select
 subsets](https://img.youtube.com/vi/3B5et8VY3hE/0.jpg)](https://www.youtube.com/embed/3B5et8VY3hE)
 
-We now are ready to plot histograms for each subset of the data.[9] In
+We now are ready to plot histograms for each subset of the data.\[9\] In
 this document, we only display the plots using the `BI` subset:
 
 ``` r
@@ -537,18 +539,14 @@ supply a file name, assuming that we want to keep the earlierly
 generated plots with default file names of `Peptide_Histogram_N.png` and
 `Peptide_Histogram_Z.png`.
 
-<img src="images\peptide\histogram\peptide_bi_gl1_n.png" alt="**Figure 2.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" /><img src="images\peptide\histogram\peptide_bi_gl1_z.png" alt="**Figure 2.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" />
-<p class="caption">
-**Figure 2.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`;
-right, `scale_log2r = TRUE`
-</p>
+<img src="images\peptide\histogram\peptide_bi_gl1_n.png" title="**Figure 2.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" alt="**Figure 2.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" style="display: block; margin: auto;" /><img src="images\peptide\histogram\peptide_bi_gl1_z.png" title="**Figure 2.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" alt="**Figure 2.** Histograms of peptide log2FC. Left: `scale_log2r = FALSE`; right, `scale_log2r = TRUE`" width="45%" style="display: block; margin: auto;" />
 
 As expected, the widths of `log2FC` profiles become more comparable
 after the scaling normalization. However, such adjustment may cause
 artifacts when the standard deviaiton across samples are genuinely
 different. I typically test `scale_log2r` at both `TRUE` and `FALSE`,
 then make a choice in data scaling together with my a priori knowledge
-of the characteristics of both samples and references.[10] We will use
+of the characteristics of both samples and references.\[10\] We will use
 the same data set to illustrate the impacts of reference selections in
 scaling normalization in [Lab 3.1](###%203.1%20Reference%20choices).
 Alignment of `log2FC` against housekeeping or normalizer protein(s) is
@@ -636,7 +634,8 @@ samples. This is the job of argument `col_refit`. Let's say we want to
 re-fit the `log2FC` for samples `W2.BI.TR2.TMT1` and `W2.BI.TR2.TMT2`.
 We simply add a column, which I named it `Select_sub`, to
 `expt_smry.xlsx` with the sample entries for re-fit being indicated
-under the column:
+under the
+column:
 
 <img src="images\peptide\histogram\partial_refit.png" width="80%" style="display: block; margin: auto;" />
 
@@ -760,11 +759,11 @@ belong to batch one in the CPTAC example. Even so, direct installation
 by `devtools::install_github` is not yet feasible at this point for
 large files hosted through [LFS](https://git-lfs.github.com/). One
 resort is to install [Github Desktop](https://desktop.github.com/), find
-<a href="https://github.com/qiangzhang503/proteoQDB.git" class="uri">https://github.com/qiangzhang503/proteoQDB.git</a>,
-fetch the files and make a local installation through something like
-`devtools::install(pkg  = "~\\GitHub\\proteoQDB")`. If all goes well
-with the local installation, we will load `proteoQDB` and copy over the
-PSM files therein to a working directory:
+<https://github.com/qiangzhang503/proteoQDB.git>, fetch the files and
+make a local installation through something like `devtools::install(pkg
+= "~\\GitHub\\proteoQDB")`. If all goes well with the local
+installation, we will load `proteoQDB` and copy over the PSM files
+therein to a working directory:
 
 ``` r
 # fasta files to database directory if not yet available
@@ -868,166 +867,12 @@ system.file("extdata", "mascot_scripts.R", package = "proteoQ")
 system.file("extdata", "maxquant_scripts.R", package = "proteoQ")
 ```
 
-### 1.7 Column keys in outputs
-
-#### 1.7.1 Mascot outputs
-
-The results are reported at the levels of PSM, peptide and protein. The
-order of column keys will be slightly different between databases of
-`RefSeq` or `Uniprot`.
-
-##### 1.7.1.1 PSMs
-
-PSMs are reported at the basis of per TMT experiment per series of LC/MS
-data acquisition. The names of the result files are
-`TMTset1_LCMSinj1_PSM_N.txt`, `TMTset2_LCMSinj1_PSM_N.txt` et al. with
-the indeces of TMT experiment and LC/MS injection index being indicated
-in the names. The column keys are defined in
-[`Matrix Science`](http://www.matrixscience.com/help/csv_headers.html)
-with the following additions or modifications:
-
-| Header                | Descrption                                                                                                                                                                         | Note                                                                                                                                                                                                   |
-|:----------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| prot\_hit\_num        | Ordinal number of the protein hit (or protein family when grouping enabled)                                                                                                        | Mascot                                                                                                                                                                                                 |
-| prot\_family\_member  | Ordinal number of the protein family member when grouping enabled                                                                                                                  | Mascot                                                                                                                                                                                                 |
-| prot\_acc             | Protein accession string                                                                                                                                                           | Mascot                                                                                                                                                                                                 |
-| prot\_desc            | Protein description taken from Fasta title line                                                                                                                                    | Mascot                                                                                                                                                                                                 |
-| prot\_score           | Protein Mascot score                                                                                                                                                               | Mascot                                                                                                                                                                                                 |
-| prot\_mass            | Protein mass                                                                                                                                                                       | Mascot                                                                                                                                                                                                 |
-| prot\_matches         | Count of PSMs                                                                                                                                                                      | Mascot                                                                                                                                                                                                 |
-| prot\_matches\_sig    | Count of PSMs that have significant scores under a proposed protein                                                                                                                | Joint Mascot prot\_matches\_sig from individual data sources; PSMs with void reporter-ion intensity are included.                                                                                      |
-| prot\_sequences       | Count of distinct sequences                                                                                                                                                        | Mascot                                                                                                                                                                                                 |
-| prot\_sequences\_sig  | Count of distinct sequences that have significant scores under a proposed protein                                                                                                  | Joint Mascot prot\_sequences\_sig from individual data sources; the counts may be greater than prot\_sequences when peptides with different variable modifications are treated as different identities |
-| prot\_cover           | Protein sequence coverage                                                                                                                                                          | Calculated from the union of individual data sources                                                                                                                                                   |
-| prot\_.               | Additional protein keys from Mascot PSM exports                                                                                                                                    | By users                                                                                                                                                                                               |
-| prot\_n\_psm          | Count of significant PSMs in quantitation under a proposed protein                                                                                                                 | By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users                                                                       |
-| prot\_n\_pep          | Count of significant peptide sequences in quantitation under a proposed protein                                                                                                    | Cf. prot\_n\_psm                                                                                                                                                                                       |
-| pep\_seq\_mod         | pep\_seq with variable modifications in the lower cases                                                                                                                            | E.g. "-.\_mAsGVAVSDGVIK.V" with a methionine oxidation and a serine phosphorylation                                                                                                                    |
-| pep\_query            | Ordinal number of query after sorting by Mr                                                                                                                                        | Mascot                                                                                                                                                                                                 |
-| pep\_rank             | Peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.                                                                                            | Mascot                                                                                                                                                                                                 |
-| pep\_isbold           | If grouping enabled, then a significant PSM. Otherwise, indicates this is the highest scoring protein that contains a match to this query.                                         | Mascot                                                                                                                                                                                                 |
-| pep\_isunique         | Peptide sequence is unique to hit (grouping off) or family member (grouping on)                                                                                                    | Mascot                                                                                                                                                                                                 |
-| pep\_exp\_mz          | Observed or experimental m/z value                                                                                                                                                 | Mascot                                                                                                                                                                                                 |
-| pep\_exp\_mr          | Molecular mass calculated from experimental m/z value                                                                                                                              | Mascot                                                                                                                                                                                                 |
-| pep\_exp\_z           | Observed or experimental charge                                                                                                                                                    | Mascot                                                                                                                                                                                                 |
-| pep\_calc\_mr         | Molecular mass calculated from matched peptide sequence                                                                                                                            | Mascot                                                                                                                                                                                                 |
-| pep\_delta            | pep\_exp\_mr - pep\_calc\_mr                                                                                                                                                       | Mascot                                                                                                                                                                                                 |
-| pep\_start            | Ordinal position of first peptide residue in protein sequence                                                                                                                      | Mascot; or proteoQ if absent from Mascot PSM exports                                                                                                                                                   |
-| pep\_end              | Ordinal position of last peptide residue in protein sequence                                                                                                                       | Cf. pep\_start                                                                                                                                                                                         |
-| pep\_miss             | Count of missed cleavage sites in peptide                                                                                                                                          | Mascot                                                                                                                                                                                                 |
-| pep\_score            | Mascot score for PSM                                                                                                                                                               | Mascot                                                                                                                                                                                                 |
-| pep\_expect           | Expectation value for PSM                                                                                                                                                          | Mascot                                                                                                                                                                                                 |
-| pep\_res\_before      | Flanking residue on N-term side of peptide                                                                                                                                         | Mascot                                                                                                                                                                                                 |
-| pep\_seq              | One-letter representation of peptide sequences                                                                                                                                     | The acetylations of protein N-terminals is indicated by '\_' and the flanking residues on the N- or C-terminal side of peptides separated by '.', e.g. "-.\_MASGVAVSDGVIK.V"                           |
-| pep\_res\_after       | Flanking residue on C-term side of peptide                                                                                                                                         | Mascot                                                                                                                                                                                                 |
-| pep\_var\_mod         | Variable modifications from all sources as list of names                                                                                                                           | Mascot                                                                                                                                                                                                 |
-| pep\_var\_mod\_pos    | Variable modifications as a string of digits, e.g. '0.0001000.0?. Non-zero digits identify mods according to key in export header. First and last positions are for terminus mods. | Mascot                                                                                                                                                                                                 |
-| pep\_summed\_mod\_pos | When two variable modifications occur at the same site, a string of digits defining the second mod                                                                                 | Mascot                                                                                                                                                                                                 |
-| pep\_local\_mod\_pos  | Query-level variable modifications as a string of digits. The names of the mods will be listed in pep\_var\_mod                                                                    | Mascot                                                                                                                                                                                                 |
-| pep\_scan\_title      | Scan title taken from peak list                                                                                                                                                    | Mascot                                                                                                                                                                                                 |
-| pep\_.                | Additional peptide keys from Mascot PSM exports                                                                                                                                    | By users                                                                                                                                                                                               |
-| pep\_n\_psm           | Counts of significant PSMs in quantitation under a proposed peptide                                                                                                                | Cf. prot\_n\_psm                                                                                                                                                                                       |
-| raw\_file             | MS file name(s) where peptides or proteins are identified                                                                                                                          |                                                                                                                                                                                                        |
-| gene                  | Protein gene name                                                                                                                                                                  |                                                                                                                                                                                                        |
-| length                | The number of amino acid residues under a proposed protein                                                                                                                         | Equivalent to the optional prot\_len in Mascot                                                                                                                                                         |
-| acc\_type             | The type of accession names                                                                                                                                                        | One of 'refseq\_acc', 'uniprot\_acc' or 'uniprot\_id'                                                                                                                                                  |
-| uniprot\_id           | Uniprot ID                                                                                                                                                                         | Optional with UniProt Fasta; the key will become uniprot\_acc if the primary key is uniprot\_id in Mascot outputs                                                                                      |
-| species               | The species of a protein entry                                                                                                                                                     |                                                                                                                                                                                                        |
-| entrez                | Protein Entrez ID                                                                                                                                                                  |                                                                                                                                                                                                        |
-| kin\_attr             | The attribute of proteins being kinases                                                                                                                                            | Optional at 'normPSM(annot\_kinases = TRUE, .)'                                                                                                                                                        |
-| kin\_class            | The classes of kinases, e.g., TK, TKL.                                                                                                                                             | Cf. kin\_attr                                                                                                                                                                                          |
-| kin\_order            | The order of "kin\_class" from the kinase tree diagram                                                                                                                             | Cf. kin\_attr                                                                                                                                                                                          |
-| I126 et al.           | Reporter-ion intensity from MS/MS ion search                                                                                                                                       | Mascot                                                                                                                                                                                                 |
-| N\_I126 et al.        | Normalized reporter-ion intensity                                                                                                                                                  | The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity                                                                                                       |
-| sd\_log2\_R126 et al. | Standard deviation of peptide log2FC                                                                                                                                               | Calculated from contributing PSMs under each TMT channel                                                                                                                                               |
-| R126 et al.           | Linear FC relative to TMT-126                                                                                                                                                      |                                                                                                                                                                                                        |
-| log2\_R126 et al.     | log2FC relative to TMT-126                                                                                                                                                         |                                                                                                                                                                                                        |
-| N\_log2\_R126 et al.  | Median-centered log2FC relative to TMT-126                                                                                                                                         |                                                                                                                                                                                                        |
-
-##### 1.7.1.2 Peptides
-
-The primary output file for peptide results is `Peptide.txt` with the
-following definition in column keys:
-
-| Header               | Descrption                                                                                                                                 | Note                                                                                                                             |
-|:---------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------|
-| prot\_acc            | Protein accession string                                                                                                                   | Mascot                                                                                                                           |
-| prot\_desc           | Protein description taken from Fasta title line                                                                                            | Mascot                                                                                                                           |
-| prot\_mass           | Protein mass                                                                                                                               | Mascot                                                                                                                           |
-| prot\_matches\_sig   | Count of PSMs that have significant scores under a proposed protein                                                                        | Cf. PSM keys                                                                                                                     |
-| prot\_sequences\_sig | Count of distinct sequences that have significant scores under a proposed protein                                                          | Cf. PSM keys                                                                                                                     |
-| prot\_cover          | Protein sequence coverage                                                                                                                  | Cf. PSM keys                                                                                                                     |
-| prot\_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                                                                         | Joint results from processed PSM tables; the counts exclude entries that are void in reporter-ion intensity or filtered by users |
-| prot\_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein                                                            | Cf. prot\_n\_psm                                                                                                                 |
-| pep\_seq             | One-letter representation of peptide sequences                                                                                             | Cf. PSM keys; the key will become pep\_seq\_mod at normPSM(group\_psm\_by = pep\_seq\_mod)                                       |
-| pep\_seq\_mod        | pep\_seq with variable modifications in the lower cases                                                                                    | Cf. PSM keys; the key will become pep\_seq at normPSM(group\_psm\_by = pep\_seq)                                                 |
-| pep\_n\_psm          | Counts of significant PSMs in quantitation under a proposed peptide                                                                        | Cf. prot\_n\_psm                                                                                                                 |
-| pep\_isunique        | Peptide sequence is unique to hit (grouping off) or family member (grouping on)                                                            | Mascot                                                                                                                           |
-| pep\_start           | Ordinal position of first peptide residue in protein sequence                                                                              | Mascot; or proteoQ if absent from Mascot PSM exports                                                                             |
-| pep\_end             | Mascot: ordinal position of last peptide residue in protein sequence                                                                       | Cf. pep\_start                                                                                                                   |
-| pep\_miss            | Count of missed cleavage sites in peptide                                                                                                  | Mascot                                                                                                                           |
-| pep\_calc\_mr        | Molecular mass calculated from matched peptide sequence                                                                                    | Mascot                                                                                                                           |
-| pep\_rank            | Peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.                                                    | Median description from PSMs                                                                                                     |
-| pep\_isbold          | If grouping enabled, then a significant PSM; otherwise, indicates this is the highest scoring protein that contains a match to this query. | Cf. pep\_rank                                                                                                                    |
-| pep\_exp\_mz         | Observed or experimental m/z value                                                                                                         | Cf. pep\_rank                                                                                                                    |
-| pep\_exp\_mr         | Molecular mass calculated from experimental m/z value                                                                                      | Cf. pep\_rank                                                                                                                    |
-| pep\_exp\_z          | Observed or experimental charge                                                                                                            | Cf. pep\_rank                                                                                                                    |
-| pep\_delta           | pep\_exp\_mr - pep\_calc\_mr                                                                                                               | Cf. pep\_rank                                                                                                                    |
-| pep\_score           | Mascot score for PSM                                                                                                                       | Cf. pep\_rank                                                                                                                    |
-| pep\_expect          | Expectation value for PSM                                                                                                                  | Geometric-mean description from PSMs                                                                                             |
-| gene                 | Protein gene name                                                                                                                          |                                                                                                                                  |
-| length               | The number of amino acid residues under a proposed protein                                                                                 | Cf. PSM keys                                                                                                                     |
-| acc\_type            | The type of accession names                                                                                                                |                                                                                                                                  |
-| uniprot\_id          | Uniprot ID                                                                                                                                 | Cf. PSM keys                                                                                                                     |
-| species              | The species of a protein entry                                                                                                             |                                                                                                                                  |
-| entrez               | Protein Entrez ID                                                                                                                          |                                                                                                                                  |
-| kin\_attr            | The attribute of proteins being kinases                                                                                                    | Cf. PSM keys                                                                                                                     |
-| kin\_class           | The classes of kinases, e.g., TK, TKL.                                                                                                     | Cf. PSM keys                                                                                                                     |
-| kin\_order           | The order of "kin\_class" from the kinase tree diagram                                                                                     | Cf. PSM keys                                                                                                                     |
-| I. (.)               | Reporter-ion intensity                                                                                                                     | Calculated from the descriptive statistics by method\_psm\_pep in normPep() for indicated samples                                |
-| N\_I. (.)            | Normalized I. (.)                                                                                                                          | The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity                                 |
-| sd\_log2\_R (.)      | Standard deviation of protein log2FC                                                                                                       | Calculated from contributing peptides under each sample                                                                          |
-| log2\_R (.)          | log2FC relative to reference materials for indicated samples                                                                               | Before normalization                                                                                                             |
-| N\_log2\_R (.)       | Aligned log2\_R (.) according to method\_align in normPep() without scaling normalization                                                  |                                                                                                                                  |
-| Z\_log2\_R (.)       | N\_log2\_R (.) with scaling normalization                                                                                                  |                                                                                                                                  |
-
-##### 1.7.1.3 Proteins
-
-The primary output file for peptide results is `Protein.txt` with the
-following definition in column keys:
-
-| Header               | Descrption                                                                                | Note                                                                                              |
-|:---------------------|:------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------|
-| gene                 | Protein gene name                                                                         |                                                                                                   |
-| prot\_cover          | Protein sequence coverage                                                                 | Cf. PSM keys                                                                                      |
-| prot\_acc            | Protein accession string                                                                  | Mascot                                                                                            |
-| prot\_desc           | Protein description taken from Fasta title line                                           | Mascot                                                                                            |
-| prot\_mass           | Protein mass                                                                              | Mascot                                                                                            |
-| prot\_matches\_sig   | Count of PSMs that have significant scores under a proposed protein                       | Cf. PSM keys                                                                                      |
-| prot\_sequences\_sig | Count of distinct sequences that have significant scores under a proposed protein         | Cf. PSM keys                                                                                      |
-| prot\_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                        | Cf. Peptide keys                                                                                  |
-| prot\_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein           | Cf. Peptide keys                                                                                  |
-| length               | The number of amino acid residues under a proposed protein                                | Cf. PSM keys                                                                                      |
-| acc\_type            | The type of accession names                                                               |                                                                                                   |
-| uniprot\_id          | Uniprot ID                                                                                | Cf. PSM keys                                                                                      |
-| entrez               | Protein Entrez ID                                                                         |                                                                                                   |
-| species              | The species of a protein entry                                                            |                                                                                                   |
-| kin\_attr            | The attribute of proteins being kinases                                                   | Cf. PSM keys                                                                                      |
-| kin\_class           | The classes of kinases, e.g., TK, TKL.                                                    | Cf. PSM keys                                                                                      |
-| kin\_order           | The order of "kin\_class" from the kinase tree diagram                                    | Cf. PSM keys                                                                                      |
-| I. (.)               | Reporter-ion intensity                                                                    | Calculated from the descriptive statistics by method\_pep\_prn in normPrn() for indicated samples |
-| N\_I. (.)            | Normalized I. (.)                                                                         | Cf. Peptide keys                                                                                  |
-| log2\_R (.)          | log2FC relative to reference materials for indicated samples                              | Before normalization                                                                              |
-| N\_log2\_R (.)       | Aligned log2\_R (.) according to method\_align in normPrn() without scaling normalization |                                                                                                   |
-| Z\_log2\_R (.)       | N\_log2\_R (.) with scaling normalization                                                 |                                                                                                   |
-
-2 Basic informatics
--------------------
+## 2 Basic informatics
 
 In this section I illustrate the following applications of `proteoQ`:
 
--   Basic informatic analysis against peptide and protein data.
--   Linear modeling using contrast fits
+  - Basic informatic analysis against peptide and protein data.
+  - Linear modeling using contrast fits
 
 Unless otherwise mentioned, the `in-function filtration` of data by
 varargs of `filter_` is available throughout this section of informatic
@@ -1046,10 +891,7 @@ pepMDS(
 )
 ```
 
-<img src="images\peptide\mds\peptide_mds.png" alt="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
-<p class="caption">
-**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`
-</p>
+<img src="images\peptide\mds\peptide_mds.png" title="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`" alt="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" style="display: block; margin: auto;" />
 
 It is clear that the WHIM2 and WHIM16 samples are well separated by the
 Euclidean distance of `log2FC` (**Figure 3A**). We next take the `JHU`
@@ -1065,11 +907,7 @@ pepMDS(
 )
 ```
 
-<img src="images\peptide\mds\mds_jhu.png" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="images\peptide\mds\mds_jhu_new_aes.png" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
-<p class="caption">
-**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left:
-original aesthetics; right, modefied aesthetics
-</p>
+<img src="images\peptide\mds\mds_jhu.png" title="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" style="display: block; margin: auto;" /><img src="images\peptide\mds\mds_jhu_new_aes.png" title="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" style="display: block; margin: auto;" />
 
 We immediately spot that all samples are coded with the same color
 (**Figure 3B**). This is not a surprise as the values under column
@@ -1149,12 +987,10 @@ WHIM subtypes and the batch numbers, respectively. Parameter
 `annot_colnames` allows us to rename the tracks from `Shape` and `Alpha`
 to `WHIM` and `Batch`, respectively, for better intuition. We can
 alternatively add columns `WHIM` and `Batch` if we choose not to recycle
-and rename columns `Shape` and `Alpha`.
+and rename columns `Shape` and
+`Alpha`.
 
-<img src="images\peptide\mds\eucdist_jhu.png" alt="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
-<p class="caption">
-**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`
-</p>
+<img src="images\peptide\mds\eucdist_jhu.png" title="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" alt="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" style="display: block; margin: auto;" />
 
 ### 2.2 Correlation plots
 
@@ -1190,11 +1026,7 @@ prnCorr_logFC(
 )
 ```
 
-<img src="images\peptide\corrplot\corr_pnnl.png" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" /><img src="images\protein\corrplot\corr_pnnl.png" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" />
-<p class="caption">
-**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left:
-peptide; right, protein
-</p>
+<img src="images\peptide\corrplot\corr_pnnl.png" title="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" style="display: block; margin: auto;" /><img src="images\protein\corrplot\corr_pnnl.png" title="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" style="display: block; margin: auto;" />
 
 To visualize the correlation of intensity data, we can use
 `pepCorr_logInt` and `prnCorr_logInt` for peptide and protein data,
@@ -1235,12 +1067,10 @@ found under the columns of `Group`, `Color`, `Alpha` and `Shape` in
 `expt_smary.xlsx`. For better convention, we rename them to `Group`,
 `Lab`, `Batch` and `WHIM` to reflect their sample characteristics. We
 further supplied a vararg of `filter_sp` where we assume exclusive
-interests in human proteins.
+interests in human
+proteins.
 
-<img src="images\protein\heatmap\protein.png" alt="**Figure 5A.** Heat map visualization of protein log2FC" width="80%" />
-<p class="caption">
-**Figure 5A.** Heat map visualization of protein log2FC
-</p>
+<img src="images\protein\heatmap\protein.png" title="**Figure 5A.** Heat map visualization of protein log2FC" alt="**Figure 5A.** Heat map visualization of protein log2FC" width="80%" style="display: block; margin: auto;" />
 
 Row ordering of data is also implemented in the heat map utility.
 
@@ -1274,12 +1104,10 @@ With the vararg, `arrange_kin`, we supervise the row ordering of kinases
 by values under the `kin_order` column and then those under the `gene`
 column. Analogous to the user-supplied `filter_` arguments, the row
 ordering varargs need to start with `arrange_` to indicate the task of
-row ordering.
+row
+ordering.
 
-<img src="images\protein\heatmap\kinase.png" alt="**Figure 5B.** Heat map visualization of kinase log2FC" width="80%" />
-<p class="caption">
-**Figure 5B.** Heat map visualization of kinase log2FC
-</p>
+<img src="images\protein\heatmap\kinase.png" title="**Figure 5B.** Heat map visualization of kinase log2FC" alt="**Figure 5B.** Heat map visualization of kinase log2FC" width="80%" style="display: block; margin: auto;" />
 
 ### 2.4 Significance tests and volcano plot visualization
 
@@ -1318,13 +1146,10 @@ The `prnVol` utility will by default match the formulae of contrasts
 with those in `prnSig`; the same is true for peptide analysis. The
 following plots show the batch difference between two TMT experiments
 for each of the three laboratories and the location difference between
-any two laboratories.
+any two
+laboratories.
 
-<img src="images\protein\volcplot\batches.png" alt="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" /><img src="images\protein\volcplot\locations.png" alt="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" />
-<p class="caption">
-**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between
-batches; right: between locations.
-</p>
+<img src="images\protein\volcplot\batches.png" title="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." alt="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" style="display: block; margin: auto auto auto 0;" /><img src="images\protein\volcplot\locations.png" title="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." alt="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" style="display: block; margin: auto auto auto 0;" />
 
 In general, the special characters of `+` and `-` in contrast terms need
 to be avoided in linear modeling. However, it may be sporadically
@@ -1332,7 +1157,8 @@ convenient to use `A+B` to denote a combined treatment of both `A` and
 `B`. In the case, we will put the term(s) containing `+` or `-` into a
 pair of pointy brackets. The syntax in the following hypothetical
 example will compare the effects of `A`, `B`, `A+B` and the average of
-`A` and `B` to control `C`.
+`A` and `B` to control
+`C`.
 
 ``` r
 # note that <A + B> is one condition whereas (A + B) contains two conditions
@@ -1401,13 +1227,10 @@ gspaMap(
 ```
 
 This will produce the volcano plots of proteins under gene sets that
-have passed our selection criteria. Here, we show one of the examples:
+have passed our selection criteria. Here, we show one of the
+examples:
 
-<img src="images\protein\volcplot\urogenital_system_development.png" alt="**Figure 7.** An example of volcano plots of protein log2FC under a gene set" width="80%" />
-<p class="caption">
-**Figure 7.** An example of volcano plots of protein log2FC under a gene
-set
-</p>
+<img src="images\protein\volcplot\urogenital_system_development.png" title="**Figure 7.** An example of volcano plots of protein log2FC under a gene set" alt="**Figure 7.** An example of volcano plots of protein log2FC under a gene set" width="80%" style="display: block; margin: auto;" />
 
 The list of gene sets will by default match those provided in `prnGSPA`.
 Despite in the above example, we chose to plot the results against gene
@@ -1446,12 +1269,10 @@ example, the `anal_prnTrend` and `plot_prnTrend` will both look into the
 field under the `expt_smry.xlsx::Order` column for sample arrangement.
 At `n_clust = 6`, the correspondence between protein IDs and their
 cluster assignments is summarised in file `Protein_Trend_Z_n6.csv`. The
-letter `Z` in the file name denotes the option of `scale_log2r = TRUE`.
+letter `Z` in the file name denotes the option of `scale_log2r =
+TRUE`.
 
-<img src="images\protein\trend\prn_trend_n6.png" alt="**Figure 8.** Trend analysis of protein log2FC." width="80%" />
-<p class="caption">
-**Figure 8.** Trend analysis of protein log2FC.
-</p>
+<img src="images\protein\trend\prn_trend_n6.png" title="**Figure 8.** Trend analysis of protein log2FC." alt="**Figure 8.** Trend analysis of protein log2FC." width="80%" style="display: block; margin: auto auto auto 0;" />
 
 ### 2.7 NMF Analysis
 
@@ -1504,11 +1325,7 @@ plot_metaNMF(
 )
 ```
 
-<img src="images\protein\nmf\prn_nmf_r6_consensus.png" alt="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" /><img src="images\protein\nmf\prn_nmf_r6_coef.png" alt="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" />
-<p class="caption">
-**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus;
-right: coefficients.
-</p>
+<img src="images\protein\nmf\prn_nmf_r6_consensus.png" title="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." alt="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images\protein\nmf\prn_nmf_r6_coef.png" title="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." alt="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients." width="45%" style="display: block; margin: auto auto auto 0;" />
 
 ### 2.8 STRING Analysis
 
@@ -1548,8 +1365,7 @@ Imputation of peptide and protein data are handle with `pepImp` and
 [`mice`](https://cran.r-project.org/web/packages/mice/mice.pdf) and
 `?prnImp`.
 
-3 Labs
-------
+## 3 Labs
 
 ### 3.1 Reference choices
 
@@ -1619,10 +1435,7 @@ the above argument is valid, a scaling normalize would moderate, and
 thus bias, the quantitative difference in proteomes between `WHIM2` and
 `WHIM16`.
 
-<img src="images\peptide\histogram\peptide_ref_w2.png" alt="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference." width="80%" />
-<p class="caption">
-**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference.
-</p>
+<img src="images\peptide\histogram\peptide_ref_w2.png" title="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference." alt="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference." width="80%" style="display: block; margin: auto;" />
 
 We alternatively seek a "center-of-mass" representation for uses as
 references. We select one `WHIM2` and one `WHIM16` from each 10-plex
@@ -1684,13 +1497,10 @@ pepHist(
 
 With the new reference, we have achieved `log2FC` profiles that are more
 comparable in breadth between `WHIM2` and `WHIM16` samples and a scaling
-normalization seems more suitable.
+normalization seems more
+suitable.
 
-<img src="images\peptide\histogram\peptide_ref_w2_w16.png" alt="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." width="80%" />
-<p class="caption">
-**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and
-WHIM16 reference.
-</p>
+<img src="images\peptide\histogram\peptide_ref_w2_w16.png" title="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." alt="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." width="80%" style="display: block; margin: auto;" />
 
 ### 3.2 Peptide subsets
 
@@ -1772,11 +1582,7 @@ raises the possibility of measuring the stoichiometry of
 phosphoproteomes in relative to global data across sample types or
 conditions.
 
-<img src="images\peptide\histogram\bi_cmbn_peptides.png" alt="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." width="45%" /><img src="images\peptide\histogram\bi_phospho_sub.png" alt="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." width="45%" />
-<p class="caption">
-**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left:
-global + phospho; right: phospho only.
-</p>
+<img src="images\peptide\histogram\bi_cmbn_peptides.png" title="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." alt="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images\peptide\histogram\bi_phospho_sub.png" title="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." alt="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." width="45%" style="display: block; margin: auto auto auto 0;" />
 
 ### 3.3 Random effects
 
@@ -1887,69 +1693,280 @@ read.csv(file.path(temp_raneff_dir, "Protein\\Model\\Protein_pVals.txt"),
 
 The correlation plots indicate that the random effects of batches and
 laboratory locations are much smaller than the fixed effect of the
-biological differences of `WHIM2` and `WHIM16`.
+biological differences of `WHIM2` and
+`WHIM16`.
 
-<img src="images\protein\model\raneff_models.png" alt="**Figure S3.** Pearson r of protein significance p-values." width="40%" />
-<p class="caption">
-**Figure S3.** Pearson r of protein significance p-values.
-</p>
+<img src="images\protein\model\raneff_models.png" title="**Figure S3.** Pearson r of protein significance p-values." alt="**Figure S3.** Pearson r of protein significance p-values." width="40%" style="display: block; margin: auto;" />
 
-References
-----------
+## 4 Column keys
+
+### 4.1 Mascot
+
+The results are reported at the levels of PSM, peptide and protein. The
+order of column keys will be slightly different between databases of
+`RefSeq` or `Uniprot` or different types of accessions from `Uniprot`.
+
+#### 4.1.1 PSMs
+
+PSMs are reported at the basis of per TMT experiment per series of LC/MS
+data acquisition. The names of the result files are
+`TMTset1_LCMSinj1_PSM_N.txt`, `TMTset2_LCMSinj1_PSM_N.txt` et al. with
+the indeces of TMT experiment and LC/MS injection index being indicated
+in the names. The column keys are defined in [`Matrix
+Science`](http://www.matrixscience.com/help/csv_headers.html) with the
+following additions or
+modifications:
+
+| Header                | Descrption                                                                                                                                                                         | Note                                                                                                                                                                                                   |
+| :-------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| prot\_hit\_num        | Ordinal number of the protein hit (or protein family when grouping enabled)                                                                                                        | Mascot                                                                                                                                                                                                 |
+| prot\_family\_member  | Ordinal number of the protein family member when grouping enabled                                                                                                                  | Mascot                                                                                                                                                                                                 |
+| prot\_acc             | Protein accession string                                                                                                                                                           | Mascot                                                                                                                                                                                                 |
+| prot\_desc            | Protein description taken from Fasta title line                                                                                                                                    | Mascot                                                                                                                                                                                                 |
+| prot\_score           | Protein Mascot score                                                                                                                                                               | Mascot                                                                                                                                                                                                 |
+| prot\_mass            | Protein mass                                                                                                                                                                       | Mascot                                                                                                                                                                                                 |
+| prot\_matches         | Count of PSMs                                                                                                                                                                      | Mascot                                                                                                                                                                                                 |
+| prot\_matches\_sig    | Count of PSMs that have significant scores under a proposed protein                                                                                                                | Joint Mascot prot\_matches\_sig from individual data sources; PSMs with void reporter-ion intensity are included.                                                                                      |
+| prot\_sequences       | Count of distinct sequences                                                                                                                                                        | Mascot                                                                                                                                                                                                 |
+| prot\_sequences\_sig  | Count of distinct sequences that have significant scores under a proposed protein                                                                                                  | Joint Mascot prot\_sequences\_sig from individual data sources; the counts may be greater than prot\_sequences when peptides with different variable modifications are treated as different identities |
+| prot\_cover           | Protein sequence coverage                                                                                                                                                          | Calculated from the union of individual data sources                                                                                                                                                   |
+| prot\_.               | Additional protein keys from Mascot PSM exports                                                                                                                                    | By users                                                                                                                                                                                               |
+| prot\_n\_psm          | Count of significant PSMs in quantitation under a proposed protein                                                                                                                 | By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users                                                                       |
+| prot\_n\_pep          | Count of significant peptide sequences in quantitation under a proposed protein                                                                                                    | Cf. prot\_n\_psm                                                                                                                                                                                       |
+| pep\_seq\_mod         | pep\_seq with variable modifications in the lower cases                                                                                                                            | E.g. "-.\_mAsGVAVSDGVIK.V" with a methionine oxidation and a serine phosphorylation                                                                                                                    |
+| pep\_query            | Ordinal number of query after sorting by Mr                                                                                                                                        | Mascot                                                                                                                                                                                                 |
+| pep\_rank             | Peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.                                                                                            | Mascot                                                                                                                                                                                                 |
+| pep\_isbold           | If grouping enabled, then a significant PSM. Otherwise, indicates this is the highest scoring protein that contains a match to this query.                                         | Mascot                                                                                                                                                                                                 |
+| pep\_isunique         | Peptide sequence is unique to hit (grouping off) or family member (grouping on)                                                                                                    | Mascot                                                                                                                                                                                                 |
+| pep\_exp\_mz          | Observed or experimental m/z value                                                                                                                                                 | Mascot                                                                                                                                                                                                 |
+| pep\_exp\_mr          | Molecular mass calculated from experimental m/z value                                                                                                                              | Mascot                                                                                                                                                                                                 |
+| pep\_exp\_z           | Observed or experimental charge                                                                                                                                                    | Mascot                                                                                                                                                                                                 |
+| pep\_calc\_mr         | Molecular mass calculated from matched peptide sequence                                                                                                                            | Mascot                                                                                                                                                                                                 |
+| pep\_delta            | pep\_exp\_mr - pep\_calc\_mr                                                                                                                                                       | Mascot                                                                                                                                                                                                 |
+| pep\_start            | Ordinal position of first peptide residue in protein sequence                                                                                                                      | Mascot; or proteoQ if absent from Mascot PSM exports                                                                                                                                                   |
+| pep\_end              | Ordinal position of last peptide residue in protein sequence                                                                                                                       | Cf. pep\_start                                                                                                                                                                                         |
+| pep\_miss             | Count of missed cleavage sites in peptide                                                                                                                                          | Mascot                                                                                                                                                                                                 |
+| pep\_score            | Mascot score for PSM                                                                                                                                                               | Mascot                                                                                                                                                                                                 |
+| pep\_expect           | Expectation value for PSM                                                                                                                                                          | Mascot                                                                                                                                                                                                 |
+| pep\_res\_before      | Flanking residue on N-term side of peptide                                                                                                                                         | Mascot                                                                                                                                                                                                 |
+| pep\_seq              | One-letter representation of peptide sequences                                                                                                                                     | The acetylations of protein N-terminals is indicated by '\_' and the flanking residues on the N- or C-terminal side of peptides separated by '.', e.g. "-.\_MASGVAVSDGVIK.V"                           |
+| pep\_res\_after       | Flanking residue on C-term side of peptide                                                                                                                                         | Mascot                                                                                                                                                                                                 |
+| pep\_var\_mod         | Variable modifications from all sources as list of names                                                                                                                           | Mascot                                                                                                                                                                                                 |
+| pep\_var\_mod\_pos    | Variable modifications as a string of digits, e.g. '0.0001000.0?. Non-zero digits identify mods according to key in export header. First and last positions are for terminus mods. | Mascot                                                                                                                                                                                                 |
+| pep\_summed\_mod\_pos | When two variable modifications occur at the same site, a string of digits defining the second mod                                                                                 | Mascot                                                                                                                                                                                                 |
+| pep\_local\_mod\_pos  | Query-level variable modifications as a string of digits. The names of the mods will be listed in pep\_var\_mod                                                                    | Mascot                                                                                                                                                                                                 |
+| pep\_scan\_title      | Scan title taken from peak list                                                                                                                                                    | Mascot                                                                                                                                                                                                 |
+| pep\_.                | Additional peptide keys from Mascot PSM exports                                                                                                                                    | By users                                                                                                                                                                                               |
+| pep\_n\_psm           | Counts of significant PSMs in quantitation under a proposed peptide                                                                                                                | Cf. prot\_n\_psm                                                                                                                                                                                       |
+| raw\_file             | MS file name(s) where peptides or proteins are identified                                                                                                                          |                                                                                                                                                                                                        |
+| gene                  | Protein gene name                                                                                                                                                                  |                                                                                                                                                                                                        |
+| length                | The number of amino acid residues under a proposed protein                                                                                                                         | Equivalent to the optional prot\_len in Mascot                                                                                                                                                         |
+| acc\_type             | The type of accession names                                                                                                                                                        | One of 'refseq\_acc', 'uniprot\_acc' or 'uniprot\_id'                                                                                                                                                  |
+| uniprot\_id           | Uniprot ID                                                                                                                                                                         | Optional with UniProt Fasta; the key will become uniprot\_acc if the primary key is uniprot\_id in Mascot outputs                                                                                      |
+| species               | The species of a protein entry                                                                                                                                                     |                                                                                                                                                                                                        |
+| entrez                | Protein Entrez ID                                                                                                                                                                  |                                                                                                                                                                                                        |
+| kin\_attr             | The attribute of proteins being kinases                                                                                                                                            | Optional at 'normPSM(annot\_kinases = TRUE, .)'                                                                                                                                                        |
+| kin\_class            | The classes of kinases, e.g., TK, TKL.                                                                                                                                             | Cf. kin\_attr                                                                                                                                                                                          |
+| kin\_order            | The order of "kin\_class" from the kinase tree diagram                                                                                                                             | Cf. kin\_attr                                                                                                                                                                                          |
+| I126 et al.           | Reporter-ion intensity from MS/MS ion search                                                                                                                                       | Mascot                                                                                                                                                                                                 |
+| N\_I126 et al.        | Normalized reporter-ion intensity                                                                                                                                                  | The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity                                                                                                       |
+| sd\_log2\_R126 et al. | Standard deviation of peptide log2FC                                                                                                                                               | Calculated from contributing PSMs under each TMT channel                                                                                                                                               |
+| R126 et al.           | Linear FC relative to TMT-126                                                                                                                                                      |                                                                                                                                                                                                        |
+| log2\_R126 et al.     | log2FC relative to TMT-126                                                                                                                                                         |                                                                                                                                                                                                        |
+| N\_log2\_R126 et al.  | Median-centered log2FC relative to TMT-126                                                                                                                                         |                                                                                                                                                                                                        |
+
+#### 4.1.2 Peptides
+
+The primary output file for peptide results is `Peptide.txt` with the
+following definition in column
+keys:
+
+| Header               | Descrption                                                                                                                                 | Note                                                                                                                             |
+| :------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| prot\_acc            | Protein accession string                                                                                                                   | Mascot                                                                                                                           |
+| prot\_desc           | Protein description taken from Fasta title line                                                                                            | Mascot                                                                                                                           |
+| prot\_mass           | Protein mass                                                                                                                               | Mascot                                                                                                                           |
+| prot\_matches\_sig   | Count of PSMs that have significant scores under a proposed protein                                                                        | Cf. PSM keys                                                                                                                     |
+| prot\_sequences\_sig | Count of distinct sequences that have significant scores under a proposed protein                                                          | Cf. PSM keys                                                                                                                     |
+| prot\_cover          | Protein sequence coverage                                                                                                                  | Cf. PSM keys                                                                                                                     |
+| prot\_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                                                                         | Joint results from processed PSM tables; the counts exclude entries that are void in reporter-ion intensity or filtered by users |
+| prot\_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein                                                            | Cf. prot\_n\_psm                                                                                                                 |
+| pep\_seq             | One-letter representation of peptide sequences                                                                                             | Cf. PSM keys; the key will become pep\_seq\_mod at normPSM(group\_psm\_by = pep\_seq\_mod)                                       |
+| pep\_seq\_mod        | pep\_seq with variable modifications in the lower cases                                                                                    | Cf. PSM keys; the key will become pep\_seq at normPSM(group\_psm\_by = pep\_seq)                                                 |
+| pep\_n\_psm          | Counts of significant PSMs in quantitation under a proposed peptide                                                                        | Cf. prot\_n\_psm                                                                                                                 |
+| pep\_isunique        | Peptide sequence is unique to hit (grouping off) or family member (grouping on)                                                            | Mascot                                                                                                                           |
+| pep\_start           | Ordinal position of first peptide residue in protein sequence                                                                              | Mascot; or proteoQ if absent from Mascot PSM exports                                                                             |
+| pep\_end             | Mascot: ordinal position of last peptide residue in protein sequence                                                                       | Cf. pep\_start                                                                                                                   |
+| pep\_miss            | Count of missed cleavage sites in peptide                                                                                                  | Mascot                                                                                                                           |
+| pep\_calc\_mr        | Molecular mass calculated from matched peptide sequence                                                                                    | Mascot                                                                                                                           |
+| pep\_rank            | Peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.                                                    | Median description from PSMs                                                                                                     |
+| pep\_isbold          | If grouping enabled, then a significant PSM; otherwise, indicates this is the highest scoring protein that contains a match to this query. | Cf. pep\_rank                                                                                                                    |
+| pep\_exp\_mz         | Observed or experimental m/z value                                                                                                         | Cf. pep\_rank                                                                                                                    |
+| pep\_exp\_mr         | Molecular mass calculated from experimental m/z value                                                                                      | Cf. pep\_rank                                                                                                                    |
+| pep\_exp\_z          | Observed or experimental charge                                                                                                            | Cf. pep\_rank                                                                                                                    |
+| pep\_delta           | pep\_exp\_mr - pep\_calc\_mr                                                                                                               | Cf. pep\_rank                                                                                                                    |
+| pep\_score           | Mascot score for PSM                                                                                                                       | Cf. pep\_rank                                                                                                                    |
+| pep\_expect          | Expectation value for PSM                                                                                                                  | Geometric-mean description from PSMs                                                                                             |
+| gene                 | Protein gene name                                                                                                                          |                                                                                                                                  |
+| length               | The number of amino acid residues under a proposed protein                                                                                 | Cf. PSM keys                                                                                                                     |
+| acc\_type            | The type of accession names                                                                                                                |                                                                                                                                  |
+| uniprot\_id          | Uniprot ID                                                                                                                                 | Cf. PSM keys                                                                                                                     |
+| species              | The species of a protein entry                                                                                                             |                                                                                                                                  |
+| entrez               | Protein Entrez ID                                                                                                                          |                                                                                                                                  |
+| kin\_attr            | The attribute of proteins being kinases                                                                                                    | Cf. PSM keys                                                                                                                     |
+| kin\_class           | The classes of kinases, e.g., TK, TKL.                                                                                                     | Cf. PSM keys                                                                                                                     |
+| kin\_order           | The order of "kin\_class" from the kinase tree diagram                                                                                     | Cf. PSM keys                                                                                                                     |
+| I. (.)               | Reporter-ion intensity                                                                                                                     | Calculated from the descriptive statistics by method\_psm\_pep in normPep() for indicated samples                                |
+| N\_I. (.)            | Normalized I. (.)                                                                                                                          | The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity                                 |
+| sd\_log2\_R (.)      | Standard deviation of protein log2FC                                                                                                       | Calculated from contributing peptides under each sample                                                                          |
+| log2\_R (.)          | log2FC relative to reference materials for indicated samples                                                                               | Before normalization                                                                                                             |
+| N\_log2\_R (.)       | Aligned log2\_R (.) according to method\_align in normPep() without scaling normalization                                                  |                                                                                                                                  |
+| Z\_log2\_R (.)       | N\_log2\_R (.) with scaling normalization                                                                                                  |                                                                                                                                  |
+
+#### 4.1.3 Proteins
+
+The primary output file for peptide results is `Protein.txt` with the
+following definition in column
+keys:
+
+| Header               | Descrption                                                                                | Note                                                                                              |
+| :------------------- | :---------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
+| gene                 | Protein gene name                                                                         |                                                                                                   |
+| prot\_cover          | Protein sequence coverage                                                                 | Cf. PSM keys                                                                                      |
+| prot\_acc            | Protein accession string                                                                  | Mascot                                                                                            |
+| prot\_desc           | Protein description taken from Fasta title line                                           | Mascot                                                                                            |
+| prot\_mass           | Protein mass                                                                              | Mascot                                                                                            |
+| prot\_matches\_sig   | Count of PSMs that have significant scores under a proposed protein                       | Cf. PSM keys                                                                                      |
+| prot\_sequences\_sig | Count of distinct sequences that have significant scores under a proposed protein         | Cf. PSM keys                                                                                      |
+| prot\_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                        | Cf. Peptide keys                                                                                  |
+| prot\_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein           | Cf. Peptide keys                                                                                  |
+| length               | The number of amino acid residues under a proposed protein                                | Cf. PSM keys                                                                                      |
+| acc\_type            | The type of accession names                                                               |                                                                                                   |
+| uniprot\_id          | Uniprot ID                                                                                | Cf. PSM keys                                                                                      |
+| entrez               | Protein Entrez ID                                                                         |                                                                                                   |
+| species              | The species of a protein entry                                                            |                                                                                                   |
+| kin\_attr            | The attribute of proteins being kinases                                                   | Cf. PSM keys                                                                                      |
+| kin\_class           | The classes of kinases, e.g., TK, TKL.                                                    | Cf. PSM keys                                                                                      |
+| kin\_order           | The order of "kin\_class" from the kinase tree diagram                                    | Cf. PSM keys                                                                                      |
+| I. (.)               | Reporter-ion intensity                                                                    | Calculated from the descriptive statistics by method\_pep\_prn in normPrn() for indicated samples |
+| N\_I. (.)            | Normalized I. (.)                                                                         | Cf. Peptide keys                                                                                  |
+| log2\_R (.)          | log2FC relative to reference materials for indicated samples                              | Before normalization                                                                              |
+| N\_log2\_R (.)       | Aligned log2\_R (.) according to method\_align in normPrn() without scaling normalization |                                                                                                   |
+| Z\_log2\_R (.)       | N\_log2\_R (.) with scaling normalization                                                 |                                                                                                   |
+
+### 4.2 MaxQuant
+
+#### 4.2.1 PSMs
+
+| Header                | Descrption                                                                                                                          | Note                                                                                                                                                                         |
+| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| prot\_acc             | Protein accession string                                                                                                            | `Proteins` in MaxQuant                                                                                                                                                       |
+| prot\_desc            | Protein description taken from Fasta title line                                                                                     |                                                                                                                                                                              |
+| prot\_mass            | Protein mass                                                                                                                        |                                                                                                                                                                              |
+| prot\_len             | The number of amino acid residues under a proposed protein                                                                          |                                                                                                                                                                              |
+| prot\_cover           | Protein sequence coverage                                                                                                           | Calculated from the union of individual data sources                                                                                                                         |
+| prot\_n\_psm          | Count of significant PSMs in quantitation under a proposed protein                                                                  | By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users                                             |
+| prot\_n\_pep          | Count of significant peptide sequences in quantitation under a proposed protein                                                     | Cf. prot\_n\_psm                                                                                                                                                             |
+| pep\_seq\_mod         | pep\_seq with variable modifications in the lower cases                                                                             | E.g. "-.\_mAsGVAVSDGVIK.V" with a methionine oxidation and a serine phosphorylation                                                                                          |
+| pep\_seq              | One-letter representation of peptide sequences                                                                                      | The acetylations of protein N-terminals is indicated by '\_' and the flanking residues on the N- or C-terminal side of peptides separated by '.', e.g. "-.\_MASGVAVSDGVIK.V" |
+| pep\_miss             | Count of missed cleavage sites in peptide                                                                                           | `Missed cleavages` in MaxQuant                                                                                                                                               |
+| pep\_var\_mod         | Post-translational modifications contained within the identified peptide sequence.                                                  | `Modifications` in MaxQuant                                                                                                                                                  |
+| pep\_expect           | Posterior Error Probability of the identification. This value essentially operates as a p-value, where smaller is more significant. | `PEP` in MaxQuant                                                                                                                                                            |
+| pep\_score            | Andromeda score for the best associated MS/MS spectrum.                                                                             | `Score` in MaxQuant                                                                                                                                                          |
+| pep\_isunique         | Peptide sequence is unique at the levels of protein groups, protein IDs or none                                                     | Cf. proteoQ help document via `?normPSM`                                                                                                                                     |
+| pep\_res\_before      | pep\_res\_before                                                                                                                    | Flanking residue on N-term side of peptide                                                                                                                                   |
+| pep\_start            | Ordinal position of first peptide residue in protein sequence                                                                       |                                                                                                                                                                              |
+| pep\_end              | Ordinal position of last peptide residue in protein sequence                                                                        |                                                                                                                                                                              |
+| pep\_res\_after       | Flanking residue on C-term side of peptide                                                                                          |                                                                                                                                                                              |
+| pep\_n\_psm           | Counts of significant PSMs in quantitation under a proposed peptide                                                                 | Cf. prot\_n\_psm                                                                                                                                                             |
+| raw\_file             | MS file name(s) where peptides or proteins are identified                                                                           |                                                                                                                                                                              |
+| m/z                   | The mass-over-charge of the precursor ion.                                                                                          | From MaxQuant                                                                                                                                                                |
+| acc\_type             | The type of accession names                                                                                                         | One of 'refseq\_acc', 'uniprot\_acc' or 'uniprot\_id'                                                                                                                        |
+| entrez                | Protein Entrez ID                                                                                                                   |                                                                                                                                                                              |
+| gene                  | Protein gene name                                                                                                                   |                                                                                                                                                                              |
+| species               | The species of a protein entry                                                                                                      |                                                                                                                                                                              |
+| kin\_attr             | The attribute of proteins being kinases                                                                                             | Optional at 'normPSM(annot\_kinases = TRUE, .)'                                                                                                                              |
+| kin\_class            | The classes of kinases, e.g., TK, TKL.                                                                                              | Cf. kin\_attr                                                                                                                                                                |
+| kin\_order            | The order of "kin\_class" from the kinase tree diagram                                                                              | Cf. kin\_attr                                                                                                                                                                |
+| is\_tryptic           | Logical; if TRUE, a sequence is a canonical tryptic peptide                                                                         |                                                                                                                                                                              |
+| .                     | More column keys from MaxQuant                                                                                                      | Cf. <http://www.coxdocs.org/doku.php?id=maxquant:table:msmstable>                                                                                                            |
+| I126 et al.           | Reporter-ion intensity                                                                                                              | Corrected or not corrected from MaxQuant; c.f. `?normPSM`                                                                                                                    |
+| N\_I126 et al.        | Normalized reporter-ion intensity                                                                                                   | The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity                                                                             |
+| sd\_log2\_R126 et al. | Standard deviation of peptide log2FC                                                                                                | Calculated from contributing PSMs under each TMT channel                                                                                                                     |
+| R126 et al.           | Linear FC relative to TMT-126                                                                                                       |                                                                                                                                                                              |
+| log2\_R126 et al.     | log2FC relative to TMT-126                                                                                                          |                                                                                                                                                                              |
+| N\_log2\_R126 et al.  | Median-centered log2FC relative to TMT-126                                                                                          |                                                                                                                                                                              |
+
+## References
+
+<div id="refs" class="references">
+
+<div id="ref-mertins2018np">
 
 Philipp, Martins. 2018. "Reproducible Workflow for Multiplexed
 Deep-Scale Proteome and Phosphoproteome Analysis of Tumor Tissues by
 Liquid Chromatography-Mass Spectrometry." *Nature Protocols* 13 (7):
 1632-61. <https://doi.org/10.1038/s41596-018-0006-9>.
 
+</div>
+
+<div id="ref-hwickham2019advr">
+
 Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
 <https://adv-r.hadley.nz/>.
 
-[1] The default file names begin with letter `F`, followed by six digits
-and ends with `.csv` in name extension.
+</div>
 
-[2] There are cases that the same peptide sequence being assigned to
-different proteins remain unambiguous. For example, peptide `MENGQSTAAK`
-can be found from either the middle region of protein `NP_510965` or the
-N-terminal of protein `NP_001129505`. In case of the additional
-information of peptide N-terminal acetylation, the sequence can only
-come from `NP_001129505` between the two candidate proteins. In addition
-to handling such exceptions, the nomenclature in `proteoQ` will annotate
-the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.
+</div>
 
-[3] To extract the names of RAW MS files under a `raw_dir` folder:
-`extract_raws(raw_dir)`. Very occasionally, there may be RAW files
-without PSM contributions. In this case, the file names will be shown as
-missing by the program and need to be removed from `expt_smry.xlsx` or
-`frac_smry.xlsx`. The function `extract_psm_raws(dat_dir)` was developed
-to extract the list of RAW files that are actually present in PSM files.
+1.  The default file names begin with letter `F`, followed by six digits
+    and ends with `.csv` in name extension.
 
-[4] The sample removal and PSM re-processing can be achieved by deleting
-the corresponding entries under the column `Sample_ID` in
-`expt_smry.xlsx`, followed by the re-execution of `normPSM()`.
+2.  There are cases that the same peptide sequence being assigned to
+    different proteins remain unambiguous. For example, peptide
+    `MENGQSTAAK` can be found from either the middle region of protein
+    `NP_510965` or the N-terminal of protein `NP_001129505`. In case of
+    the additional information of peptide N-terminal acetylation, the
+    sequence can only come from `NP_001129505` between the two candidate
+    proteins. In addition to handling such exceptions, the nomenclature
+    in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the
+    later as `-._MENGQSTAAK.L`.
 
-[5] A pseudonym approach used in Tidyverse, such as `starts_with`,
-`contains` may be easier to work with for logical conditions and need
-implementation.
+3.  To extract the names of RAW MS files under a `raw_dir` folder:
+    `extract_raws(raw_dir)`. Very occasionally, there may be RAW files
+    without PSM contributions. In this case, the file names will be
+    shown as missing by the program and need to be removed from
+    `expt_smry.xlsx` or `frac_smry.xlsx`. The function
+    `extract_psm_raws(dat_dir)` was developed to extract the list of RAW
+    files that are actually present in PSM files.
 
-[6] Density kernel estimates can occasionally capture spikes in the
-profiles of log2FC during data alignment. Users will need to inspect the
-alignment of ratio histograms and may optimize the data normalization in
-full with different combinations of tuning parameters or in part against
-a subset of samples, before proceeding to the next steps.
+4.  The sample removal and PSM re-processing can be achieved by deleting
+    the corresponding entries under the column `Sample_ID` in
+    `expt_smry.xlsx`, followed by the re-execution of `normPSM()`.
 
-[7] Intermediate peptide results for each TMT plex and LCMS injection
-are purposely leave under the same file foler as that of `Peptide.txt`
-so that users can tell the column keys and explore more about the
-options in the row filtration of data.
+5.  A pseudonym approach used in Tidyverse, such as `starts_with`,
+    `contains` may be easier to work with for logical conditions and
+    need implementation.
 
-[8] `normPep()` will report log2FC results both before and after the
-scaling of standard deviations.
+6.  Density kernel estimates can occasionally capture spikes in the
+    profiles of log2FC during data alignment. Users will need to inspect
+    the alignment of ratio histograms and may optimize the data
+    normalization in full with different combinations of tuning
+    parameters or in part against a subset of samples, before proceeding
+    to the next steps.
 
-[9] System parameters will be automatically updated from the modified
-`expt_smry.xlsx`
+7.  Intermediate peptide results for each TMT plex and LCMS injection
+    are purposely leave under the same file foler as that of
+    `Peptide.txt` so that users can tell the column keys and explore
+    more about the options in the row filtration of data.
 
-[10] The default is `scale_log2r = TRUE` throughout the package. When
-calling functions involved parameter `scale_log2r`, users can specify
-explicitly `scale_log2r = FALSE` or define its value under the global
-environment.
+8.  `normPep()` will report log2FC results both before and after the
+    scaling of standard deviations.
+
+9.  System parameters will be automatically updated from the modified
+    `expt_smry.xlsx`
+
+10. The default is `scale_log2r = TRUE` throughout the package. When
+    calling functions involved parameter `scale_log2r`, users can
+    specify explicitly `scale_log2r = FALSE` or define its value under
+    the global environment.

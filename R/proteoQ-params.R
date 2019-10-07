@@ -582,35 +582,6 @@ check_label_scheme <- function (label_scheme_full) {
 }
 
 
-#' Determine the protein accession type from PSM tables
-#'
-#' Find the protein accession from a non-cRAP entry and parse it.
-#'
-#' \code{parse_acc} parse the protein accession.
-parse_acc <- function(df) {
-  stopifnot("prot_acc" %in% names(df))
-  
-  prn_acc <- df %>%
-    dplyr::filter(!grepl("^REV__", prot_acc)) %>% 
-    dplyr::filter(!grepl("^CON__", prot_acc)) %>% 
-    dplyr::select(prot_acc) %>%
-    unlist %>%
-    .[1]
-
-  if (grepl("_[A-Z]+", prn_acc)) {
-    acc_type <- "uniprot_id"
-  } else if (grepl("^NP_[0-9]+", prn_acc)) {
-    acc_type <- "refseq_acc"
-  } else if (grepl("[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}", prn_acc)) {
-    acc_type <- "uniprot_acc"
-  } else {
-    stop("Unknown protein accession", call. = FALSE)
-  }
-  
-  return(acc_type)
-}
-
-
 #' Match scale_log2r
 #'
 #' \code{match_scale_log2r} matches the value of \code{scale_log2r} to the value
