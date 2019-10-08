@@ -4,38 +4,39 @@ prot_desc	Protein description taken from Fasta title line	Mascot
 prot_mass	Protein mass	Mascot
 prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Cf. PSM keys
 prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Cf. PSM keys
+prot_len	The number of amino acid residues under a proposed protein	Cf. PSM keys
 prot_cover	Protein sequence coverage	Cf. PSM keys
-prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Joint results from processed PSM tables; the counts exclude entries that are void in reporter-ion intensity or filtered by users
-prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. 'prot_n_psm'
-pep_seq	One-letter representation of peptide sequences	Cf. PSM keys; the key will become 'pep_seq_mod' at 'normPSM(group_psm_by = pep_seq_mod)'
-pep_seq_mod	'pep_seq' with variable modifications in the lower cases	Cf. PSM keys; the key will become 'pep_seq' at 'normPSM(group_psm_by = pep_seq)'
-pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf. 'prot_n_psm'
+prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Joint results from individual PSM tables; the counts exclude entries that are void in reporter-ion intensity or filtered by users
+prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. `prot_n_psm`
+pep_seq	One-letter representation of peptide sequences	Cf. PSM keys; the key will become `pep_seq_mod` at `normPSM(group_psm_by = pep_seq_mod)`
+pep_seq_mod	'pep_seq' with variable modifications in the lower cases	Cf. PSM keys; the key will become `pep_seq` at `normPSM(group_psm_by = pep_seq)`
+pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf. `prot_n_psm`
 pep_isunique	Peptide sequence is unique to hit (grouping off) or family member (grouping on)	Mascot
-pep_start	Ordinal position of first peptide residue in protein sequence	Mascot; or proteoQ if absent from Mascot PSM exports
-pep_end	Mascot: ordinal position of last peptide residue in protein sequence	Cf. 'pep_start'
-pep_miss	Count of missed cleavage sites in peptide	Mascot
 pep_calc_mr	Molecular mass calculated from matched peptide sequence	Mascot
+pep_start	Ordinal position of first peptide residue in protein sequence	Mascot; or proteoQ if absent from Mascot PSM exports
+pep_end	Mascot: ordinal position of last peptide residue in protein sequence	Cf. `pep_start`
+pep_miss	Count of missed cleavage sites in peptide	Mascot
 pep_rank	Peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.	Median description from PSMs
-pep_isbold	"If grouping enabled, then a significant PSM; otherwise, indicates this is the highest scoring protein that contains a match to this query."	Cf. 'pep_rank'
+pep_isbold	"If grouping enabled, then a significant PSM; otherwise, indicates this is the highest scoring protein that contains a match to this query."	Cf. `pep_rank`
 pep_exp_mz	"Observed or experimental m/z value
-"	Cf. 'pep_rank'
+"	Cf. `pep_rank`
 pep_exp_mr	"Molecular mass calculated from experimental m/z value
-"	Cf. 'pep_rank'
+"	Cf. `pep_rank`
 pep_exp_z	"Observed or experimental charge
-"	Cf. 'pep_rank'
-pep_delta	pep_exp_mr – pep_calc_mr	Cf. 'pep_rank'
-pep_score	Mascot score for PSM	Cf. 'pep_rank'
+"	Cf. `pep_rank`
+pep_delta	pep_exp_mr – pep_calc_mr	Cf. `pep_rank`
+pep_score	Mascot score for PSM	Cf. `pep_rank`
 pep_expect	Expectation value for PSM	Geometric-mean description from PSMs
 gene	Protein gene name	
-length	The number of amino acid residues under a proposed protein	Cf. PSM keys
 acc_type	The type of accession names	
 uniprot_id	Uniprot ID	Cf. PSM keys
-species	The species of a protein entry	
 entrez	Protein Entrez ID	
+species	The species of a protein entry	
 kin_attr	The attribute of proteins being kinases	Cf. PSM keys
 kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. PSM keys
 kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. PSM keys
-I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by 'method_psm_pep' in 'normPep()' for indicated samples
+is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic peptide	Cf. PSM keys
+I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by `method_psm_pep` in `normPep()` for indicated samples
 N_I... (...)	Normalized I... (...)	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity
 sd_log2_R (...)	Standard deviation of protein log2FC 	Calculated from contributing peptides under each sample
 log2_R (...)	log2FC relative to reference materials for indicated samples	Before normalization

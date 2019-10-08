@@ -1,4 +1,4 @@
-## part 0 --- installation
+## part 0 --- installations
 # proteoQ package
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
@@ -34,7 +34,7 @@ cptac_mqpsm_txt(dat_dir)
 cptac_mqpsm_expt(dat_dir)
 cptac_mqpsm_frac(dat_dir)
 
-# metadata upload
+# metadata to workspace
 library(proteoQ)
 load_expts()
 
@@ -56,7 +56,7 @@ normPSM(
 	plot_rptr_int = TRUE, 
 	plot_log2FC_cv = TRUE, 
 	
-	filter_peps = exprs(PEP <= 0.1), 
+	filter_psms_by = exprs(PEP <= 0.1), 
 )
 
 # optional: purge of PSM groups under the same peptide IDs
@@ -72,7 +72,7 @@ normPep(
 	seed = 749662, 
 	maxit = 200, 
 	epsilon = 1e-05, 
-	# filter_by = exprs(pep_n_psm >= 2, species == "human"),
+	# filter_peps_by = exprs(pep_n_psm >= 2, species == "human"),
 )
 
 # optional: purge of peptide groups under the same protein IDs
@@ -96,7 +96,7 @@ pepHist(
 	xmin = -1, 
 	xmax = 1,
 	ncol = 10, 
-	filter_by = exprs(pep_n_psm >= 10), 
+	filter_peps_by = exprs(pep_n_psm >= 10), 
 	filename = "pepHist_npsm10.png", 
 )
 
@@ -124,7 +124,7 @@ normPrn(
 	seed = 749662, 
 	maxit = 200, 
 	epsilon = 1e-05, 
-	filter_by = exprs(prot_n_pep >= 2),
+	filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
 # protein histograms with scaling
@@ -141,7 +141,7 @@ prnHist(
 	xmin = -2,
 	xmax = 2,
 	ncol = 10, 
-	filter_by = exprs(prot_n_psm >= 20), 
+	filter_prots_by = exprs(prot_n_psm >= 20), 
 	filename = "prnHist_npsm20.png", 	
 )
 
@@ -168,7 +168,7 @@ pepMDS(
 	show_ids = FALSE,
 	width = 10,
 	height = 3.75,
-	filter_by = exprs(pep_n_psm >= 20), 
+	filter_peps_by = exprs(pep_n_psm >= 20), 
 	filename = "pepMDS_npsm_20.png",	
 )
 

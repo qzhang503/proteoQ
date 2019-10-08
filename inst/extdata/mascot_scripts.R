@@ -1,4 +1,4 @@
-## part 0 --- installation
+## part 0 --- installations
 # proteoQ package
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
@@ -8,12 +8,12 @@ if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
 
-# data package with fasta and Mascot examples
+# data package with FASTA and Mascot examples
 devtools::install_github("qzhang503/proteoQDA")
 
 
 ## part 1 --- setup
-# fasta files to database directory
+# FASTA files to database directory
 library(proteoQDA)
 copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
 copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
@@ -27,7 +27,7 @@ cptac_csv_1(dat_dir)
 cptac_expt_1(dat_dir)
 cptac_frac_1(dat_dir)
 
-# metadata upload
+# metadata to workspace
 library(proteoQ)
 load_expts()
 
@@ -47,8 +47,8 @@ normPSM(
 	plot_rptr_int = TRUE, 
 	plot_log2FC_cv = TRUE, 
 	
-	filter_peps = exprs(pep_expect <= .1, pep_score >= 15), 
-	filter_by_more = exprs(pep_rank == 1),
+	filter_psms = exprs(pep_expect <= .1, pep_score >= 15), 
+	filter_more_psms = exprs(pep_rank == 1),
 )
 
 # optional: purge of PSM groups under the same peptide IDs
@@ -64,6 +64,7 @@ normPep(
 	seed = 749662, 
 	maxit = 200, 
 	epsilon = 1e-05, 
+	# filter_peps = exprs(pep_n_psm >= 2), 
 )
 
 # optional: purge of peptide groups under the same protein IDs
@@ -88,7 +89,7 @@ pepHist(
 	xmax = 1,
 	ncol = 10, 
 	
-	filter_by = exprs(pep_n_psm >= 10), 
+	filter_peps_by = exprs(pep_n_psm >= 10), 
 	filename = "pepHist_npsm10.png", 
 )
 
@@ -160,7 +161,8 @@ normPrn(
 	maxit = 200, 
 	epsilon = 1e-05, 
 	
-	filter_by = exprs(prot_n_psm >= 5, prot_n_pep >= 2),  
+	filter_prots_by = exprs(prot_n_psm >= 5, prot_n_pep >= 2),
+	# filter_peps_by = exprs(pep_n_psm >= 2),
 )
 
 # protein histograms with logFC scaling
@@ -232,7 +234,7 @@ pepMDS(
 	show_ids = FALSE,
 	width = 10,
 	height = 3.75,
-	filter_by = exprs(pep_n_psm >= 20), 
+	filter_peps_by = exprs(pep_n_psm >= 20), 
 	filename = "pepMDS_npsm_20.png",	
 )
 
@@ -268,7 +270,7 @@ prnMDS(
 	show_ids = FALSE, 
 	width = 8,
 	height = 4,
-	filter_by = exprs(prot_n_pep > 5), 
+	filter_prots_by = exprs(prot_n_pep > 5), 
 	filename = "prnMDS_npep_5.png",		
 )
 
