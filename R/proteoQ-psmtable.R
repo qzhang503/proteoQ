@@ -748,13 +748,13 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 
 			dfw_split <- do.call("rbind", lapply(dfw_split, locate_outliers, range_colRatios)) %>%
 					dplyr::mutate_at(.vars = grep("^X[0-9]{3}", names(.)), ~ replace(.x, is.infinite(.x), NA)) %>%
-					tidyr::unite(pep_seq_i, pep_seq, psm_index, sep = ".") %>%
+					tidyr::unite(pep_seq_i, pep_seq, psm_index, sep = ":") %>%
 					dplyr::mutate_at(.vars = grep("^X[0-9]{3}", names(.)), ~ replace(.x, !is.na(.x), 1))
 
 			df <- df %>%
-					tidyr::unite(pep_seq_i, pep_seq, psm_index, sep = ".") %>%
+					tidyr::unite(pep_seq_i, pep_seq, psm_index, sep = ":") %>%
 					dplyr::left_join(., dfw_split, by = "pep_seq_i") %>%
-					tidyr::separate(pep_seq_i, into = c("pep_seq", "psm_index"), remove = TRUE) %>%
+					tidyr::separate(pep_seq_i, into = c("pep_seq", "psm_index"), sep = ":", remove = TRUE) %>%
 					dplyr::select(-c("psm_index"))
 
 			rm(dfw_split, range_colRatios)
@@ -816,7 +816,7 @@ mcPSM <- function(df, set_idx) {
   
   col_sample <- grep("^I[0-9]{3}", names(dfw))
   
-  if(length(channelInfo$refChannels) > 0) {
+  if (length(channelInfo$refChannels) > 0) {
     ref_index <- channelInfo$refChannels
   } else {
     ref_index <- channelInfo$labeledChannels
