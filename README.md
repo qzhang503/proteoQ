@@ -369,11 +369,11 @@ scale.
 
 <img src="images\psm\purge\psm_bf_purge.png" title="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." alt="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." width="45%" style="display: block; margin: auto;" /><img src="images\psm\purge\psm_af_purge.png" title="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." alt="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." width="45%" style="display: block; margin: auto;" />
 
-Quantitative differences greater than 0.5 at a log2 scale is big in TMT
-experiments, which can be largely ascribed to a phenomena called peptide
-co-isolation and co-fragmentation in MS experiments. We might, for
-instance, choose a CV cut-off at 0.5 as an additional step in data
-cleanup:
+In general, quantitative differences greater than 0.5 at a log2 scale is
+big in TMT experiments,\[6\] which can be largely ascribed to a
+phenomena called peptide co-isolation and co-fragmentation in MS
+experiments. We might, for instance, choose a CV cut-off at 0.5 as an
+additional step in data cleanup:
 
 ``` r
 purgePSM (
@@ -424,7 +424,7 @@ normPep(
 
 The `log2FC` of peptide data will be aligned by median centering across
 samples by default. If `method_align = MGKernel` is chosen, `log2FC`
-will be aligned under the assumption of multiple Gaussian kernels.\[6\]
+will be aligned under the assumption of multiple Gaussian kernels.\[7\]
 The parameter `n_comp` defines the number of Gaussian kernels and `seed`
 set a seed for reproducible fittings. The parameters `range_log2r` and
 `range_int` define the range of `log2FC` and the range of reporter-ion
@@ -435,7 +435,7 @@ In the exemplary vararg statement of `filter_by`, we set a threshold in
 the minimum number of identifying PSMs for peptides. If we are not
 interested in mouse peptides from the pdx samples, We can specify
 similarly that `species == "human"`, or more precisely, `species !=
-"mouse"`.\[7\] Sometimes, it may remain unclear on proper data
+"mouse"`.\[8\] Sometimes, it may remain unclear on proper data
 filtration at the early stage of analysis. In that case, we may need
 additional quality assessments that we will soon explore. Alternatively,
 we may keep as much information as possible and apply varargs in
@@ -483,7 +483,7 @@ proteomic workflow.
 ##### 1.2.2.3 pepHist
 
 We next compare the `log2FC` profiles with and without scaling
-normalization:\[8\]
+normalization:\[9\]
 
 ``` r
 # without scaling
@@ -511,8 +511,8 @@ the `expt_smry.xlsx`).
 [![Select
 subsets](https://img.youtube.com/vi/3B5et8VY3hE/0.jpg)](https://www.youtube.com/embed/3B5et8VY3hE)
 
-We now are ready to plot histograms for each subset of the data.\[9\] In
-this document, we only display the plots using the `BI` subset:
+We now are ready to plot histograms for each subset of the data.\[10\]
+In this document, we only display the plots using the `BI` subset:
 
 ``` r
 # without scaling 
@@ -548,7 +548,7 @@ after the scaling normalization. However, such adjustment may cause
 artifacts when the standard deviaiton across samples are genuinely
 different. I typically test `scale_log2r` at both `TRUE` and `FALSE`,
 then make a choice in data scaling together with my a priori knowledge
-of the characteristics of both samples and references.\[10\] We will use
+of the characteristics of both samples and references.\[11\] We will use
 the same data set to illustrate the impacts of reference selections in
 scaling normalization in [Lab 3.1](###%203.1%20Reference%20choices).
 Alignment of `log2FC` against housekeeping or normalizer protein(s) is
@@ -2039,25 +2039,32 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
     `contains` may be easier to work with for logical conditions and
     need implementation.
 
-6.  Density kernel estimates can occasionally capture spikes in the
+6.  On top of technical variabilities, the ranges of CV may be further
+    subject to the choice of reference materials. As shown in Lab 3.1,
+    broader ranges of log2FC may be simply due to the more genuine
+    difference between sample groups in relative to the chosen
+    reference(s). The effect could analogously bias CV measures (figures
+    can be made by default upon the execution of `normPSM(...)`).
+
+7.  Density kernel estimates can occasionally capture spikes in the
     profiles of log2FC during data alignment. Users will need to inspect
     the alignment of ratio histograms and may optimize the data
     normalization in full with different combinations of tuning
     parameters or in part against a subset of samples, before proceeding
     to the next steps.
 
-7.  Intermediate peptide results for each TMT plex and LCMS injection
+8.  Intermediate peptide results for each TMT plex and LCMS injection
     are purposely leave under the same file foler as that of
     `Peptide.txt` so that users can tell the column keys and explore
     more about the options in the row filtration of data.
 
-8.  `normPep()` will report log2FC results both before and after the
+9.  `normPep()` will report log2FC results both before and after the
     scaling of standard deviations.
 
-9.  System parameters will be automatically updated from the modified
+10. System parameters will be automatically updated from the modified
     `expt_smry.xlsx`
 
-10. The default is `scale_log2r = TRUE` throughout the package. When
+11. The default is `scale_log2r = TRUE` throughout the package. When
     calling functions involved parameter `scale_log2r`, users can
-    specify explicitly `scale_log2r = FALSE` or define its value under
-    the global environment.
+    specify explicitly `scale_log2r = FALSE` if needed, or more
+    preferably define its value under the global environment.

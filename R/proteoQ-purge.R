@@ -386,7 +386,10 @@ purge_by_n <- function (df, id, min_n) {
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv
 #'@inheritParams purge_by_n
-#'@param ... Yet to be defined.
+#'@param ... Additional parameters for plotting: \cr \code{ymax}, the maximum
+#'  \eqn{y} at a log2 scale; the default is +0.6. \cr \code{y_breaks}, the
+#'  breaks in \eqn{y}-axis at a log2 scale; the default is 0.2. \cr
+#'  \code{width}, the width of plot. \cr \code{height}, the height of plot.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
@@ -463,8 +466,7 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
       dplyr::filter(!duplicated(.[[group_psm_by]])) %>% 
       dplyr::filter(rowSums(!is.na(.[grep("^sd_log2_R[0-9]{3}", names(.))])) > 0) %>%
       sd_violin(!!group_psm_by, 
-                file.path(dat_dir, "PSM\\log2FC_cv\\purged", gsub("_PSM_N.txt", "_sd.png", fn)), 
-                8, 8)
+                file.path(dat_dir, "PSM\\log2FC_cv\\purged", gsub("_PSM_N.txt", "_sd.png", fn)), ...)
   }
   
   mget(names(formals()), rlang::current_env()) %>% save_call("purPSM")
@@ -479,10 +481,10 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
 #'The CV of proteins are calculated from contributing peptides at the basis of
 #'per TMT experiment per LCMS run.
 #'
+#'@inheritParams purgePSM
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv
 #'@inheritParams purge_by_n
-#'@param ... Yet to be defined.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
@@ -547,12 +549,21 @@ purgePep <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, ...) {
       write.table(fn, sep = "\t", col.names = TRUE, row.names = FALSE)    
   }
   
+  dots <- rlang::enexprs(...)
+  width <- eval(dots$width, env = caller_env())
+  height <- eval(dots$height, env = caller_env())
+  
+  if (is.null(width)) width <- 8 * n_TMT_sets(label_scheme)
+  if (is.null(height)) height <- 8
+  
+  dots <- dots %>% .[! names(.) %in% c("width", "height")]
+
   df %>% 
     dplyr::select(group_pep_by, grep("^sd_log2_R[0-9]{3}", names(.))) %>% 
     dplyr::filter(!duplicated(.[[group_pep_by]])) %>% 
     dplyr::filter(rowSums(!is.na(.[grep("^sd_log2_R[0-9]{3}", names(.))])) > 0) %>% 
     sd_violin(!!group_pep_by, file.path(dat_dir, "Peptide\\log2FC_cv\\purged", "Peptide_sd.png"), 
-              8 * n_TMT_sets(label_scheme), 8)
-  
+              width = width, height = height, type = "log2_R", !!!dots)
+
   mget(names(formals()), rlang::current_env()) %>% save_call("purPSM")
 }

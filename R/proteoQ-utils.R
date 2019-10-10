@@ -1625,45 +1625,142 @@ arrangers_in_call <- function(.df, ..., .na.last = TRUE) {
 }
 
 
-#' Calculates CV per TMT_Set and LCMS_injection
-calcSD_Splex <- function (df, id) {
+#' Calculate PSM SDs
+calc_sd_fcts_psm <- function (df, range_log2r, range_int, set_idx, injn_idx) {
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  
+  label_scheme <- label_scheme %>% 
+    dplyr::filter(TMT_Set == set_idx, LCMS_Injection == injn_idx) %>% 
+    dplyr::mutate(tmt_nm = gsub("TMT-", "N_log2_R", TMT_Channel))
+  
+  label_scheme_sd <- label_scheme %>%
+    dplyr::filter(!Reference, !grepl("^Empty\\.", Sample_ID))	%>%
+    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = (.$Sample_ID)))
+  
+  SD <- df %>%
+    dplyr::select(grep("^N_log2_R|^N_I", names(.))) %>%
+    dblTrim(., range_log2r, range_int) %>%
+    `names<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.)))
+  
+  cf_SD <- SD/mean(SD %>% .[names(.) %in% label_scheme_sd$tmt_nm], na.rm = TRUE)
+  cf_SD <- cbind.data.frame(fct = cf_SD, SD) %>%
+    tibble::rownames_to_column("tmt_nm") %>%
+    dplyr::mutate(tmt_nm = factor(tmt_nm, levels = label_scheme$tmt_nm)) %>%
+    dplyr::arrange(tmt_nm)
+}
+
+
+#' Calculate CV per TMT_Set and LCMS_injection
+calcSD_Splex <- function (df, id, type = "log2_R") {
+  if (type == "log2_R") {
+    df <- df %>% 
+      dplyr::select(!!rlang::sym(id), grep("^log2_R[0-9]{3}", names(.)))
+  } else if (type == "N_log2_R") {
+    df <- df %>% 
+      dplyr::select(!!rlang::sym(id), grep("^N_log2_R[0-9]{3}", names(.)))
+  } else if (type == "Z_log2_R") {
+    df <- df %>% 
+      dplyr::select(!!rlang::sym(id), grep("^Z_log2_R[0-9]{3}", names(.)))
+  }
+  
   df %>% 
     dplyr::arrange(!!rlang::sym(id)) %>% 
-    dplyr::select(!!rlang::sym(id), grep("^log2_R[0-9]{3}", names(.))) %>%
     dplyr::group_by(!!rlang::sym(id)) %>%
-    dplyr::summarise_at(vars(starts_with("log2_R")), ~ sd(.x, na.rm = TRUE)) 
+    dplyr::summarise_at(vars(starts_with(type)), ~ sd(.x, na.rm = TRUE)) 
+}
+
+
+#' Add Z_log2_R, sd_N_log2_R and sd_Z_log2_R
+calc_more_psm_sd <- function (df, group_psm_by, range_log2r, range_int, set_idx, injn_idx) {
+  # SD columns for "N_log2_R"
+  df <- df %>% 
+    calcSD_Splex(group_psm_by, "N_log2_R") %>% 
+    `names<-`(gsub("^N_log2_R", "sd_N_log2_R", names(.))) %>% 
+    dplyr::right_join(df, by = group_psm_by)
+  
+  # "Z_log2_R" columns and their SD
+  cf_SD <- calc_sd_fcts_psm(df, range_log2r, range_int, set_idx, injn_idx)
+  
+  cf_x <- df %>%
+    dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
+    `colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
+    dplyr::summarise_all(~ median(.x, na.rm = TRUE)) 
+  
+  df <- mapply(normSD, df[,grepl("^N_log2_R[0-9]{3}", names(df))],
+               center = cf_x, SD = cf_SD$fct, SIMPLIFY = FALSE) %>%
+    data.frame(check.names = FALSE) %>%
+    `colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
+    cbind(df, .)
+  
+  df_z <- df %>% dplyr::select(grep("^Z_log2_R", names(.)))
+  nan_cols <- purrr::map_lgl(df_z, is_all_nan, na.rm = TRUE)
+  df_z[, nan_cols] <- 0
+  df[, grep("^Z_log2_R", names(df))] <- df_z
+  rm(df_z, nan_cols)
+
+  df <- df %>% 
+    calcSD_Splex(group_psm_by, "Z_log2_R") %>% 
+    `names<-`(gsub("^Z_log2_R", "sd_Z_log2_R", names(.))) %>% 
+    dplyr::right_join(df, by = group_psm_by)
+  
+  df <- dplyr::bind_cols(
+    df %>% dplyr::select(-grep("[RI]{1}[0-9]{3}[NC]*", names(.))), 
+    df %>% dplyr::select(grep("I[0-9]{3}[NC]*", names(.))), 
+    df %>% dplyr::select(grep("R[0-9]{3}[NC]*", names(.))), 
+  )
 }
 
 
 #' Violin plots of CV per TMT_Set and LCMS_injection
-sd_violin <- function(df, id, filepath, width, height) {
+sd_violin <- function(df, id, filepath, width, height, type = "log2_R", ...) {
   id <- rlang::as_string(rlang::enexpr(id))
+  dots <- rlang::enexprs(...)
   
-  df_sd <- df %>% 
-    dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.))) %>% 
+  if (rlang::is_missing(width)) width <- 8
+  if (rlang::is_missing(height)) height <- 8
+  
+  ymax <- eval(dots$ymax, env = caller_env()) # `xmax = +1` is `language`
+  y_breaks <- eval(dots$y_breaks, env = caller_env())
+  
+  if (is.null(ymax)) ymax <- .6
+  if (is.null(y_breaks)) y_breaks <- .2
+
+  if (type == "log2_R") {
+    df_sd <- df %>% 
+      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.)))
+  } else if (type == "N_log2_R") {
+    df_sd <- df %>% 
+      dplyr::select(id, grep("^sd_N_log2_R[0-9]{3}[NC]*", names(.)))
+  } else if (type == "Z_log2_R") {
+    df_sd <- df %>% 
+      dplyr::select(id, grep("^sd_Z_log2_R[0-9]{3}[NC]*", names(.)))
+  }
+  
+  df_sd <- df_sd %>% 
     `names<-`(gsub("^.*log2_R", "", names(.))) 
   
   Levels <- names(df_sd) %>% 
     .[! . %in% id]
   
-  df_sd <- df_sd %>%
-    tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
-    dplyr::rename(Channel := !!rlang::sym(id)) %>% 
-    dplyr::ungroup(Channel) %>% 
-    dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
-    dplyr::filter(!is.na(SD))
-  
-  p <- ggplot() +
-    geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
-    geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
-    stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
-                 shape=23, size=2, fill="white", alpha=.5) +
-    labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
-    scale_y_continuous(limits = c(0, .6), breaks = seq(0, .6, .2)) +
-    theme_psm_violin
-  
-  try(ggsave(filepath, p, width = width, height = height, units = "in"))
-  
+  if (!purrr::is_empty(Levels)) {
+    df_sd <- df_sd %>%
+      tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
+      dplyr::rename(Channel := !!rlang::sym(id)) %>% 
+      dplyr::ungroup(Channel) %>% 
+      dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
+      dplyr::filter(!is.na(SD))
+    
+    p <- ggplot() +
+      geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
+      geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
+      stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
+                   shape=23, size=2, fill="white", alpha=.5) +
+      labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
+      scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, y_breaks)) +
+      theme_psm_violin
+    
+    try(ggsave(filepath, p, width = width, height = height, units = "in"))    
+  }
 }
 
 

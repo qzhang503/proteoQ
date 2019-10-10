@@ -9,6 +9,14 @@ output:
     toc: yes
     toc_depth: 4
     variant: gfm
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  github_document:
+    fig_caption: yes
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -17,14 +25,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  github_document:
-    fig_caption: yes
-    toc: yes
-  word_document:
-    toc: yes
 ---
 
 ---
@@ -248,7 +248,7 @@ psm_purprn_af <- "images\\psm\\purge\\psm_af_purge.png"
 knitr::include_graphics(c(psm_purprn_br, psm_purprn_af))
 ```
 
-Quantitative differences greater than 0.5 at a log2 scale is big in TMT experiments, which can be largely ascribed to a phenomena called peptide co-isolation and co-fragmentation in MS experiments. We might, for instance, choose a CV cut-off at 0.5 as an additional step in data cleanup:  
+In general, quantitative differences greater than 0.5 at a log2 scale is big in TMT experiments,^[On top of technical variabilities, the ranges of CV may be further subject to the choice of reference materials. As shown in Lab 3.1, broader ranges of log2FC may be simply due to the more genuine difference between sample groups in relative to the chosen reference(s). The effect could analogously bias CV measures (figures can be made by default upon the execution of `normPSM(...)`).] which can be largely ascribed to a phenomena called peptide co-isolation and co-fragmentation in MS experiments. We might, for instance, choose a CV cut-off at 0.5 as an additional step in data cleanup:  
 
 ```{r PSM purge after, eval = FALSE}
 purgePSM (
@@ -372,7 +372,7 @@ img2_path <- "images\\peptide\\histogram\\peptide_bi_gl1_z.png"
 knitr::include_graphics(c(img1_path, img2_path))
 ```
 
-As expected, the widths of `log2FC` profiles become more comparable after the scaling normalization. However, such adjustment may cause artifacts when the standard deviaiton across samples are genuinely different. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the characteristics of both samples and references.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users can specify explicitly `scale_log2r = FALSE` or define its value under the global environment.] We will use the same data set to illustrate the impacts of reference selections in scaling normalization in [Lab 3.1](### 3.1 Reference choices). Alignment of `log2FC` against housekeeping or normalizer protein(s) is also available. This seems suitable when sometime the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
+As expected, the widths of `log2FC` profiles become more comparable after the scaling normalization. However, such adjustment may cause artifacts when the standard deviaiton across samples are genuinely different. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the characteristics of both samples and references.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users can specify explicitly `scale_log2r = FALSE` if needed, or more preferably define its value under the global environment.] We will use the same data set to illustrate the impacts of reference selections in scaling normalization in [Lab 3.1](### 3.1 Reference choices). Alignment of `log2FC` against housekeeping or normalizer protein(s) is also available. This seems suitable when sometime the quantities of proteins of interest are different across samples where the assumption of constitutive expression for the vast majority of proteins may not hold.  
 
 It should also be noted that the curves of Gaussian density in histograms are based on the parameters from the latest call to `normPep`. There is a useful side effect when comparing leading and lagging profiles at different data filtration. This may aid the reveal of sample heteroscedasticity and inform the new parameters in renormalization. More examples can be found from the help document via `?pepHist`.  
 

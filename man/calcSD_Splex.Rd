@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{calcSD_Splex}
 \alias{calcSD_Splex}
-\title{Calculates CV per TMT_Set and LCMS_injection}
+\title{Calculate CV per TMT_Set and LCMS_injection}
 \usage{
-calcSD_Splex(df, id)
+calcSD_Splex(df, id, type = "log2_R")
 }
 \description{
-Calculates CV per TMT_Set and LCMS_injection
+Calculate CV per TMT_Set and LCMS_injection
 }

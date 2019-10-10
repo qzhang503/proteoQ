@@ -19,7 +19,10 @@ entries in PSM tables with the number of identifying PSMs smaller than
 protein entries in peptide tables with the number of identifying peptides
 smaller than \code{min_n} will be replaced with NA.}
 
-\item{...}{Yet to be defined.}
+\item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
+\eqn{y} at a log2 scale; the default is +0.6. \cr \code{y_breaks}, the
+breaks in \eqn{y}-axis at a log2 scale; the default is 0.2. \cr
+\code{width}, the width of plot. \cr \code{height}, the height of plot.}
 }
 \description{
 \code{purgePep} removes \code{protein} entries from peptide table(s) by
