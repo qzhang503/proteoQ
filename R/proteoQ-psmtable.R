@@ -981,10 +981,13 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         rptr_violin(df_int, file.path(dat_dir, "PSM\\rprt_int\\mc", 
                                       paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 8, 8)
       }
-      
+
       if (plot_log2FC_cv & TMT_plex > 0) {
-        sd_violin(df, !!group_psm_by, file.path(dat_dir, "PSM\\log2FC_cv\\raw", 
-                                                paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 8, 8)
+        # df <- calc_more_psm_sd(df, group_psm_by, range_log2r = c(10, 90), range_int = c(5, 95), set_idx, injn_idx)
+
+        sd_violin(df, !!group_psm_by, 
+                  file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                  width = 8, height = 8, type = "log2_R")
       }
       
     }
@@ -1198,6 +1201,9 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
   dir.create(file.path(dat_dir, "PSM\\rprt_int\\raw"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM\\rprt_int\\mc"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\raw"), recursive = TRUE, showWarnings = FALSE)
+  # dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\raw\\log2FC"), recursive = TRUE, showWarnings = FALSE)
+  # dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\raw\\N_log2FC"), recursive = TRUE, showWarnings = FALSE)
+  # dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\raw\\Z_log2FC"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM\\individual_mods"), recursive = TRUE, showWarnings = FALSE)
   
@@ -1608,8 +1614,11 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
       }
       
       if (plot_log2FC_cv & TMT_plex > 0) {
-       sd_violin(df, !!group_psm_by, 
-                 file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 8, 8)
+        # df <- calc_more_psm_sd(df, group_psm_by, range_log2r = c(10, 90), range_int = c(5, 95), set_idx, injn_idx)
+        
+        sd_violin(df, !!group_psm_by, 
+                  file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                  width = 8, height = 8, type = "log2_R")
       }
     }
     
@@ -1995,8 +2004,11 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
       }
       
       if (plot_log2FC_cv & TMT_plex > 0) {
-        sd_violin(df, !!group_psm_by, file.path(dat_dir, "PSM\\log2FC_cv\\raw", 
-                                                paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 8, 8)
+        # df <- calc_more_psm_sd(df, group_psm_by, range_log2r = c(10, 90), range_int = c(5, 95), set_idx, injn_idx)
+
+        sd_violin(df, !!group_psm_by, 
+                  file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                  width = 8, height = 8, type = "log2_R")
       }
       
     }

@@ -6,13 +6,14 @@ prot_desc	Protein description taken from Fasta title line	Mascot
 prot_score	Protein Mascot score	Mascot
 prot_mass	Protein mass	Mascot
 prot_matches	Count of PSMs	Mascot
-prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Joint Mascot 'prot_matches_sig' from individual data sources; PSMs with void reporter-ion intensity are included.
+prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Joint Mascot `prot_matches_sig` from individual data sources; PSMs with void reporter-ion intensity are included.
 prot_sequences	Count of distinct sequences	Mascot
-prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Joint Mascot 'prot_sequences_sig' from individual data sources; the counts may be greater than 'prot_sequences' when peptides with different variable modifications are treated as different identities
+prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Joint Mascot `prot_sequences_sig` from individual data sources; the counts may be greater than `prot_sequences` when peptides with different variable modifications are treated as different identities
+prot_len	The number of amino acid residues under a proposed protein	Mascot; or proteoQ if absent from Mascot PSM exports
 prot_cover	Protein sequence coverage	Calculated from the union of individual data sources
 prot_...	Additional protein keys from Mascot PSM exports	By users
 prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users
-prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. 'prot_n_psm'
+prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. `prot_n_psm`
 pep_seq_mod	'pep_seq' with variable modifications in the lower cases	"E.g. ""-._mAsGVAVSDGVIK.V"" with a methionine oxidation and a serine phosphorylation"
 pep_query	Ordinal number of query after sorting by Mr	Mascot
 pep_rank	Peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.	Mascot
@@ -23,8 +24,8 @@ pep_exp_mr	Molecular mass calculated from experimental m/z value	Mascot
 pep_exp_z	Observed or experimental charge	Mascot
 pep_calc_mr	Molecular mass calculated from matched peptide sequence	Mascot
 pep_delta	pep_exp_mr – pep_calc_mr	Mascot
-pep_start	Ordinal position of first peptide residue in protein sequence	Mascot; or proteoQ if absent from Mascot PSM exports
-pep_end	Ordinal position of last peptide residue in protein sequence	Cf. 'pep_start'
+pep_start	Ordinal position of first peptide residue in protein sequence	Cf. `prot_len`
+pep_end	Ordinal position of last peptide residue in protein sequence	Cf. `prot_len`
 pep_miss	Count of missed cleavage sites in peptide	Mascot
 pep_score	Mascot score for PSM	Mascot
 pep_expect	Expectation value for PSM	Mascot
@@ -37,17 +38,17 @@ pep_summed_mod_pos	"When two variable modifications occur at the same site, a st
 pep_local_mod_pos	Query-level variable modifications as a string of digits. The names of the mods will be listed in pep_var_mod	Mascot
 pep_scan_title	Scan title taken from peak list	Mascot
 pep_...	Additional peptide keys from Mascot PSM exports	By users
-pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf. 'prot_n_psm'
+pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf. `prot_n_psm`
 raw_file	MS file name(s) where peptides or proteins are identified	
 gene	Protein gene name	
-length	The number of amino acid residues under a proposed protein	Equivalent to the optional 'prot_len' in Mascot
-acc_type	The type of accession names	"One of 'refseq_acc', 'uniprot_acc' or 'uniprot_id'"
-uniprot_id	Uniprot ID	Optional with UniProt Fasta; the key will become 'uniprot_acc' if the primary key is 'uniprot_id' in Mascot outputs
+acc_type	The type of accession names	"One of `refseq_acc`, `uniprot_acc` or `uniprot_id`"
+uniprot_id	Uniprot ID	Optional for UniProt Fasta; the key will become `uniprot_acc` if the primary one is `uniprot_id`
 species	The species of a protein entry	
 entrez	Protein Entrez ID	
-kin_attr	The attribute of proteins being kinases	"Optional at 'normPSM(annot_kinases = TRUE, ...)'"
-kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. 'kin_attr'
-kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. 'kin_attr'
+kin_attr	The attribute of proteins being kinases	"Optional at `normPSM(annot_kinases = TRUE, ...)`"
+kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. `kin_attr`
+kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. `kin_attr`
+is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic peptide	Optional when `pep_start` and `pep_end` are absent from Mascot PSMs
 I126 et al.	Reporter-ion intensity from MS/MS ion search	Mascot
 N_I126 et al.	Normalized reporter-ion intensity	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity
 sd_log2_R126 et al.	Standard deviation of peptide log2FC 	Calculated from contributing PSMs under each TMT channel

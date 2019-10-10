@@ -616,7 +616,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	    dplyr::filter(!duplicated(.[[group_pep_by]])) %>% 
 	    dplyr::filter(rowSums(!is.na(.[grep("^sd_log2_R[0-9]{3}", names(.))])) > 0) %>% 
 	    sd_violin(!!group_pep_by, file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
-	              8 * n_TMT_sets(label_scheme), 8)
+	              width = 8 * n_TMT_sets(label_scheme), height = 8, type = "log2_R")
 	}
 	
 }
