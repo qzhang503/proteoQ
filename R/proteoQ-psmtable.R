@@ -985,9 +985,10 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       if (plot_log2FC_cv & TMT_plex > 0) {
         # df <- calc_more_psm_sd(df, group_psm_by, range_log2r = c(10, 90), range_int = c(5, 95), set_idx, injn_idx)
 
+        # need addl columns in case of doubly trim of data at adjSD = TRUE
         sd_violin(df, !!group_psm_by, 
-                  file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
-                  width = 8, height = 8, type = "log2_R")
+                 file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                 width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
       }
       
     }
@@ -1201,9 +1202,6 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
   dir.create(file.path(dat_dir, "PSM\\rprt_int\\raw"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM\\rprt_int\\mc"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\raw"), recursive = TRUE, showWarnings = FALSE)
-  # dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\raw\\log2FC"), recursive = TRUE, showWarnings = FALSE)
-  # dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\raw\\N_log2FC"), recursive = TRUE, showWarnings = FALSE)
-  # dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\raw\\Z_log2FC"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "PSM\\individual_mods"), recursive = TRUE, showWarnings = FALSE)
   
@@ -1232,7 +1230,7 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
     annotPSM(group_psm_by, group_pep_by, fasta, expt_smry, plot_rptr_int, plot_log2FC_cv, ...)
   } else if (type == "mq") {
     splitPSM_mq(group_psm_by, group_pep_by, fasta, pep_unique_by, corrected_int, rptr_intco, rm_craps, 
-                rm_reverses, annot_kinases, plot_rptr_int, ...)
+               rm_reverses, annot_kinases, plot_rptr_int, ...)
     cleanupPSM(rm_outliers)
 		annotPSM_mq(group_psm_by, group_pep_by, fasta, expt_smry, rm_krts, plot_rptr_int, plot_log2FC_cv, ...)
   } else if (type == "sm") {
@@ -1617,8 +1615,8 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
         # df <- calc_more_psm_sd(df, group_psm_by, range_log2r = c(10, 90), range_int = c(5, 95), set_idx, injn_idx)
         
         sd_violin(df, !!group_psm_by, 
-                  file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
-                  width = 8, height = 8, type = "log2_R")
+                 file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                 width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
       }
     }
     
@@ -2007,8 +2005,8 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
         # df <- calc_more_psm_sd(df, group_psm_by, range_log2r = c(10, 90), range_int = c(5, 95), set_idx, injn_idx)
 
         sd_violin(df, !!group_psm_by, 
-                  file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
-                  width = 8, height = 8, type = "log2_R")
+                 file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                 width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
       }
       
     }
@@ -2048,7 +2046,5 @@ theme_psm_violin <- theme_bw() +
     legend.text.align = 0,
     legend.box = NULL
   )
-
-
 
 

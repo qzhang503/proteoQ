@@ -332,11 +332,14 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 #'
 #' @import dplyr purrr rlang mixtools
 #' @importFrom magrittr %>%
-dblTrim <- function(df, range_log2r, range_int) {
+dblTrim <- function(df, range_log2r, range_int, type_r = "N_log2_R", type_int = "N_I") {
 	df_trim <- df
-
+	
+	type_r <- paste0("^", type_r, "[0-9]{3}")
+	type_int <- paste0("^", type_int, "[0-9]{3}")
+	
 	# trim by log2-ratios
-	col_r <- grepl("^N_log2_R", names(df_trim))
+	col_r <- grepl(type_r, names(df_trim))
 	df_trim[, col_r] <- lapply(df_trim[, col_r], function (x) {
 			q_ratio <- quantile(x, probs = range_log2r/100, na.rm = TRUE)
 			x[x < q_ratio[1] | x > q_ratio[2]] <- NA
@@ -345,7 +348,7 @@ dblTrim <- function(df, range_log2r, range_int) {
 	)
 
 	# trim by intensity
-	col_int <- grepl("^N_I", names(df_trim))
+	col_int <- grepl(type_int, names(df_trim))
 	df_trim[, col_int] <- lapply(df_trim[, col_int], function (x) {
 			q_intensity <- quantile(x, probs = range_int/100, na.rm = TRUE)
 			x[x < q_intensity[1] | x > q_intensity[2]] <- NA
@@ -356,13 +359,13 @@ dblTrim <- function(df, range_log2r, range_int) {
 	# doubly trim
 	df_trim[!is.na(df_trim)] <- 1  # boolean matrix
 
-	df_trim <- mapply(`*`, df_trim[, grepl("^N_log2_R", names(df_trim))],
-	                  df_trim[, grepl("^N_I", names(df_trim))], SIMPLIFY = FALSE) %>%
+	df_trim <- mapply(`*`, df_trim[, grepl(type_r, names(df_trim))],
+	                  df_trim[, grepl(type_int, names(df_trim))], SIMPLIFY = FALSE) %>%
 		data.frame(check.names = FALSE) # doubly trimmed boolean matrix
 
-	df_trim[] <- mapply(`*`, df[, grepl("^N_log2_R", names(df))] , df_trim, SIMPLIFY = FALSE)
+	df_trim[] <- mapply(`*`, df[, grepl(type_r, names(df))] , df_trim, SIMPLIFY = FALSE)
 
-	sapply(df_trim, sd, na.rm=T)
+	sapply(df_trim, sd, na.rm = TRUE)
 }
 
 

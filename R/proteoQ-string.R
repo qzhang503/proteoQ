@@ -212,7 +212,6 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff) {
 #' }
 #'
 #'@inheritParams proteoVolcano
-#'@inheritParams proteoPurge
 #'@import dplyr purrr
 #'@export
 getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, adjP = FALSE, ...) {

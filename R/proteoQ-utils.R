@@ -1712,36 +1712,99 @@ calc_more_psm_sd <- function (df, group_psm_by, range_log2r, range_int, set_idx,
 
 
 #' Violin plots of CV per TMT_Set and LCMS_injection
-sd_violin <- function(df, id, filepath, width, height, type = "log2_R", ...) {
+sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = FALSE, is_psm = FALSE, 
+                      col_select = NULL, col_order = NULL, ...) {
+  
+  err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
+  
+  col_select <- rlang::enexpr(col_select)
+  col_order <- rlang::enexpr(col_order)
+  
+  col_select <- ifelse(is.null(col_select), rlang::expr(Select), rlang::sym(col_select))
+  col_order <- ifelse(is.null(col_order), rlang::expr(Order), rlang::sym(col_order))
+  
+  if (col_select == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+  if (col_order == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
+  
+  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  
+  if (is.null(label_scheme[[col_select]])) {
+    stop("Column \'", rlang::as_string(col_select), "\' does not exist.", call. = FALSE)
+  } else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
+    stop("No samples were selected under column \'", rlang::as_string(col_select), "\'.",
+         call. = FALSE)
+  }
+  
+  if (is.null(label_scheme[[col_order]])) {
+    warning("Column \'", rlang::as_string(col_order), "\' does not exist.
+			Samples will be arranged by the alphebatic order.", call. = FALSE)
+  } else if (sum(!is.na(label_scheme[[col_order]])) == 0) {
+    warning("No samples were specified under column \'", rlang::as_string(col_order), "\'.",
+            call. = FALSE)
+  }
+  
+  label_scheme_sub <- label_scheme %>% 
+    dplyr::mutate(new_id = paste0(TMT_Channel, " (", Sample_ID, ")")) %>% 
+    dplyr::mutate(new_id = gsub("TMT-", "", new_id)) %>% 
+    dplyr::select(Sample_ID, TMT_Set, new_id, !!col_select, !!col_order) %>%
+    dplyr::filter(!is.na(!!col_select))
+
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
   if (rlang::is_missing(width)) width <- 8
   if (rlang::is_missing(height)) height <- 8
   
-  ymax <- eval(dots$ymax, env = caller_env()) # `xmax = +1` is `language`
+  ymax <- eval(dots$ymax, env = caller_env())
   y_breaks <- eval(dots$y_breaks, env = caller_env())
+  ybreaks <- eval(dots$ybreaks, env = caller_env())
+  flip_coord <- eval(dots$flip_coord, env = caller_env())
   
   if (is.null(ymax)) ymax <- .6
   if (is.null(y_breaks)) y_breaks <- .2
+  if (is.null(ybreaks)) ybreaks <- .2
+  if (is.null(flip_coord)) flip_coord <- FALSE
+  
+  df <- df %>% dplyr::filter(!duplicated(.[[id]]))
 
   if (type == "log2_R") {
-    df_sd <- df %>% 
-      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.)))
+    df_sd <- df %>% dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.)))
   } else if (type == "N_log2_R") {
-    df_sd <- df %>% 
-      dplyr::select(id, grep("^sd_N_log2_R[0-9]{3}[NC]*", names(.)))
+    df_sd <- df %>% dplyr::select(id, grep("^sd_N_log2_R[0-9]{3}[NC]*", names(.)))
   } else if (type == "Z_log2_R") {
-    df_sd <- df %>% 
-      dplyr::select(id, grep("^sd_Z_log2_R[0-9]{3}[NC]*", names(.)))
+    df_sd <- df %>% dplyr::select(id, grep("^sd_Z_log2_R[0-9]{3}[NC]*", names(.)))
   }
   
+  # all-NA first removed for finding all-NaN columns
+  df_sd <- df_sd %>% 
+    dplyr::filter(rowSums(!is.na(.[grep("^.*log2_R[0-9]{3}", names(.))])) > 0)
+  
+  if (adjSD) {
+    SD <- df %>%
+      dplyr::select(grep("^log2_R[0-9]{3}|^I[0-9]{3}", names(.))) %>%
+      dblTrim(., range_log2r = c(0, 100), range_int = c(0, 100), type_r = "log2_R", type_int = "I")
+    
+    df_sd[, grep("^.*log2_R", names(df_sd))] <- df_sd[, grep("^.*log2_R", names(df_sd)), drop = FALSE] %>% 
+      sweep(., 2, sqrt(SD), "/")
+    
+    df_z <- df_sd %>% dplyr::select(grep("^.*log2_R[0-9]{3}", names(.)))
+    nan_cols <- purrr::map_lgl(df_z, is_all_nan, na.rm = TRUE)
+    df_z[, nan_cols] <- 0
+    df_sd[, grep("^.*_log2_R[0-9]{3}", names(df_sd))] <- df_z
+    
+    rm(df_z, nan_cols, SD)
+  }
+
+  # plots
   df_sd <- df_sd %>% 
     `names<-`(gsub("^.*log2_R", "", names(.))) 
   
-  Levels <- names(df_sd) %>% 
-    .[! . %in% id]
-  
+  if (!is_psm) {
+    df_sd <- df_sd %>% dplyr::select(id, which(names(.) %in% label_scheme_sub$new_id))
+  }
+
+  Levels <- names(df_sd) %>% .[! . %in% id]
+
   if (!purrr::is_empty(Levels)) {
     df_sd <- df_sd %>%
       tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
@@ -1751,15 +1814,24 @@ sd_violin <- function(df, id, filepath, width, height, type = "log2_R", ...) {
       dplyr::filter(!is.na(SD))
     
     p <- ggplot() +
-      geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25) +
+      geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25, draw_quantiles = c(.95, .99)) +
       geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
       stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
                    shape=23, size=2, fill="white", alpha=.5) +
       labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
-      scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, y_breaks)) +
+      # scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, y_breaks)) + 
+      scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, ybreaks)) + 
       theme_psm_violin
     
-    try(ggsave(filepath, p, width = width, height = height, units = "in"))    
+    if (flip_coord) {
+      p <- p + coord_flip()
+      width_temp <- width
+      width <- height
+      height <- width_temp
+      rm(width_temp)
+    }
+    
+    try(ggsave(filepath, p, width = width, height = height, units = "in"))
   }
 }
 
