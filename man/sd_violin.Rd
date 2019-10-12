@@ -4,7 +4,9 @@
 \alias{sd_violin}
 \title{Violin plots of CV per TMT_Set and LCMS_injection}
 \usage{
-sd_violin(df, id, filepath, width, height, type = "log2_R", ...)
+sd_violin(df, id, filepath, width, height, type = "log2_R",
+  adjSD = FALSE, is_psm = FALSE, col_select = NULL,
+  col_order = NULL, ...)
 }
 \description{
 Violin plots of CV per TMT_Set and LCMS_injection

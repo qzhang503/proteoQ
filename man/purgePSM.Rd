@@ -4,7 +4,8 @@
 \alias{purgePSM}
 \title{Purge PSM data}
 \usage{
-purgePSM(dat_dir = NULL, max_cv = NULL, min_n = 1, ...)
+purgePSM(dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE,
+  ...)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory.}
@@ -19,10 +20,16 @@ entries in PSM tables with the number of identifying PSMs smaller than
 protein entries in peptide tables with the number of identifying peptides
 smaller than \code{min_n} will be replaced with NA.}
 
-\item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
-\eqn{y} at a log2 scale; the default is +0.6. \cr \code{y_breaks}, the
-breaks in \eqn{y}-axis at a log2 scale; the default is 0.2. \cr
-\code{width}, the width of plot. \cr \code{height}, the height of plot.}
+\item{adjSD}{Logical; if TRUE, adjust the standard deviation in relative to
+the width of ratio profiles.}
+
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data; also see \code{\link{normPSM}}. Additional parameters for plotting:
+\cr \code{ymax}, the maximum \eqn{y} at a log2 scale; the default is +0.6.
+\cr \code{ybreaks}, the breaks in \eqn{y}-axis at a log2 scale; the default
+is 0.2. Note: \code{y_breaks} depreciated. \cr \code{width}, the width of
+plot. \cr \code{height}, the height of plot. \cr \code{flip_coord}, logical;
+if TRUE, flip \code{x} and \code{y} axis.}
 }
 \description{
 \code{purgePSM} removes \code{peptide} entries from PSM tables by selection
@@ -30,5 +37,6 @@ criteria.
 }
 \details{
 The CV of peptides are calculated from contributing PSMs at the basis of per
-TMT experiment per LCMS run.
+TMT experiment per LCMS run. In general, the CV will be greater for samples
+more different to reference material(s).
 }

@@ -175,7 +175,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
 		} else stop("Unknown `id`.", call. = FALSE)
 
-		if (anal_type %in% c("Purge", "Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
+		if (anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
 		  if (file.exists(fn_raw)) src_path <- fn_raw else
 		    stop(paste(fn_raw, "not found. \n Run functions `normPSM`, `normPep` and `normPrn` first.s"),
 		         call. = FALSE)
@@ -540,18 +540,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			           ...)
 		}
 
-	} else if(anal_type == "Purge") {
-	  function(cv_cutoff = NULL, nseq_cutoff = 1) {
-	    df <- df %>% purgeData(id = !!id, cv_cutoff = cv_cutoff, nseq_cutoff = nseq_cutoff)
-
-      if (id %in% c("pep_seq", "pep_seq_mod")) {
-	      write.table(df, file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t", 
-	                  col.names = TRUE, row.names = FALSE)
-      } else if (id %in% c("prot_acc", "gene")) {
-        write.table(df, file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", 
-                    col.names = TRUE, row.names = FALSE)	        
-      }
-	  }
 	}
 }
 

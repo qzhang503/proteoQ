@@ -611,12 +611,9 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	            col.names = TRUE, row.names = FALSE)
 	
 	if (plot_log2FC_cv & TMT_plex(label_scheme) > 0) {
-	  df %>% 
-	    dplyr::select(group_pep_by, grep("^sd_log2_R[0-9]{3}", names(.))) %>% 
-	    dplyr::filter(!duplicated(.[[group_pep_by]])) %>% 
-	    dplyr::filter(rowSums(!is.na(.[grep("^sd_log2_R[0-9]{3}", names(.))])) > 0) %>% 
-	    sd_violin(!!group_pep_by, file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
-	              width = 8 * n_TMT_sets(label_scheme), height = 8, type = "log2_R")
+	  sd_violin(df, !!group_pep_by, 
+	            file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
+	            width = 8 * n_TMT_sets(label_scheme), height = 8, type = "log2_R", adjSD = FALSE, is_psm = FALSE)
 	}
 	
 }

@@ -138,7 +138,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
   
   my_theme <- theme_bw() + theme(
     axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
-    axis.ticks.x  = element_blank(), # x-axis ticks
+    axis.ticks.x  = element_blank(), 
     axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
     axis.title.x = element_text(colour="black", size=24),
     axis.title.y = element_text(colour="black", size=24),

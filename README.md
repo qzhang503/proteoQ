@@ -33,6 +33,9 @@
       - [2.9 Missing value imputation](#missing-value-imputation)
   - [3 Labs](#labs)
       - [3.1 Reference choices](#reference-choices)
+          - [3.1.1 References on data
+            scaling](#references-on-data-scaling)
+          - [3.1.2 References on data CV](#references-on-data-cv)
       - [3.2 Peptide subsets](#peptide-subsets)
       - [3.3 Random effects](#random-effects)
           - [3.3.1 Single random effect](#single-random-effect)
@@ -369,11 +372,11 @@ scale.
 
 <img src="images\psm\purge\psm_bf_purge.png" title="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." alt="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." width="45%" style="display: block; margin: auto;" /><img src="images\psm\purge\psm_af_purge.png" title="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." alt="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging." width="45%" style="display: block; margin: auto;" />
 
-In general, quantitative differences greater than 0.5 at a log2 scale is
-big in TMT experiments,\[6\] which can be largely ascribed to a
-phenomena called peptide co-isolation and co-fragmentation in MS
-experiments. We might, for instance, choose a CV cut-off at 0.5 as an
-additional step in data cleanup:
+Quantitative differences greater than 0.5 at a log2 scale is relatively
+large in TMT experiments,\[6\] which can be mainly ascribed to a
+phenomena called peptide co-isolation and co-fragmentation in reporter
+ion-based MS experiments. We might, for instance, choose a CV cut-off at
+0.5 for peptides as an additional step in data cleanup:
 
 ``` r
 purgePSM (
@@ -387,14 +390,21 @@ purgePSM (
 )
 ```
 
-Peptide quantitations with single PSM identification, so-called one-hit
-wonders, will yield infinite CV and be nullified as well.
+While multiple PSMs carry information about the precision in peptide
+measures, the above single-sample variance does not inform sampling
+errors prior to peptide separations. For instance, the same peptide
+species from a given sample remain indistinguishable/exchangeable prior
+to the off-line fractionation. As a result, the CV shown by `normPSM` or
+`purgePSM` mainly tell us the uncertainty of measures beyond the point
+of peptide parting.
 
-*NB:* CV is sensitive to outliers and some large CV in peptide
-quantitations may be merely due to a small number of bad measures.
-Although the option of `rm_outliers` was set to `FALSE` during our
-earlier call to `normPSM`, I think it is generally a good idea to have
-`rm_outliers = TRUE`.
+*NB:* (1) Peptide quantitations with single PSM identification,
+so-called one-hit wonders, will yield infinite CV and be nullified as
+well. An option of keeping ohw is currently under construction. (2) CV
+is sensitive to outliers and some large CV in peptide quantitations may
+be merely due to a small number of bad measures. Although the option of
+`rm_outliers` was set to `FALSE` during our earlier call to `normPSM`, I
+think it is generally a good idea to have `rm_outliers = TRUE`.
 
 #### 1.2.2 Summarize PSMs to peptides
 
@@ -476,9 +486,14 @@ Backticks were used here to embrace column keys containing white
 space(s) and/or special character(s) such as parenthesis.
 
 *NB:* The above single-sample CVs of proteins are based on ascribing
-peptides, which thus do not inform the uncertainty in sample handlings
-prior to the enzymatic breakdown of proteins in a typical MS-based
-proteomic workflow.
+peptides, which thus do not inform the uncertainty in sample handling
+prior to the parting of protein entities, for example, the enzymatic
+breakdown of proteins in a typical MS-based proteomic workflow. On the
+other hand, the peptide log2FC have been previously summarized by the
+median statistics from contributing PSMs. Putting these two togother,
+the CV by `purgePep` describes approximately the uncentainty in sample
+handling from the breakdown of proteins to the off-line fractionation of
+peptides.
 
 ##### 1.2.2.3 pepHist
 
@@ -1372,9 +1387,13 @@ Imputation of peptide and protein data are handle with `pepImp` and
 ### 3.1 Reference choices
 
 In this lab, we explore the effects of reference choices on data
-normalization. We first copy data over to the file directory specified
-by `temp_dir`, followed by PSM, peptide normalization and histogram
-visualization of peptide `log2FC`.
+normalization and cleanup.
+
+#### 3.1.1 References on data scaling
+
+We first copy data over to the file directory specified by `temp_dir`,
+followed by PSM, peptide normalization and histogram visualization of
+peptide `log2FC`.
 
 ``` r
 # directory setup
@@ -1498,11 +1517,79 @@ pepHist(
 ```
 
 With the new reference, we have achieved `log2FC` profiles that are more
-comparable in breadth between `WHIM2` and `WHIM16` samples and a scaling
-normalization seems more
+comparable in breadth between `WHIM2` and `WHIM16` samples and a
+subsequent scaling normalization seems more
 suitable.
 
 <img src="images\peptide\histogram\peptide_ref_w2_w16.png" title="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." alt="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." width="80%" style="display: block; margin: auto;" />
+
+#### 3.1.2 References on data CV
+
+In this section, we explore the effects of reference choices on the CV
+of `log2FC`. For simplicity, we use the peptide data that link to the
+`BI` subset at batch number one. We first add a new column, let's say
+`BI_1`, in `expt_smry_ref_w2.xlsx` with the corresponding samples being
+indicated (section 1.3: Renormalize data agaist column subsets). We next
+visualize the distributions of proteins CV measured from contributing
+peptides before data
+removals:
+
+``` r
+# check the presence of column `BI_1` in `expt_smry_ref_w2.xlsx` before proceed
+# or update the `proteoQDA` package
+
+# experiment upload
+load_expts(temp_dir, expt_smry_ref_w2.xlsx)
+
+# `BI_1` subset
+purgePep(
+  col_select = BI_1, 
+  ymax = 1.2,
+  ybreaks = .5,
+  width = 8,
+  height = 8,
+  flip_coord = TRUE, 
+  filename = BI_1.png,
+)
+```
+
+Notice that the CV distributions of `WHIM2` are much narrower than those
+of `WHIM16` (Figure S1C). This seems to make intuitive sense given that
+the `log2FC` profiles of WHIM2 are much narrows as well (Figure S1A). We
+might adjust the CV in relative to the widths of `log2FC` profiles with
+`purgePep(adjSD = TRUE, ...)`. This could help the visualization but
+probably not solves directly our problem of finding low-quality data
+entries. One resort may be trimming data entries by percentiles.
+Alternative, we could perform sample-specific cleanup using the vararg
+approach:
+
+``` r
+# sample-specific thresholds
+purgePep(
+  col_select = BI_1, 
+  ymax = 1.2,
+  ybreaks = .5,
+  width = 8,
+  height = 8,
+  flip_coord = TRUE, 
+
+  filter_peps = exprs(
+    `sd_log2_R127N (W16.BI.TR1.TMT1)` < 1.1,
+    `sd_log2_R127C (W2.BI.TR2.TMT1)` < 0.35,
+    `sd_log2_R128N (W2.BI.TR3.TMT1)` < 0.4,
+    `sd_log2_R128C (W16.BI.TR2.TMT1)` < 1.0,
+    `sd_log2_R129N (W2.BI.TR4.TMT1)` < 0.4,
+    `sd_log2_R129C (W16.BI.TR3.TMT1)` < 1.0,
+    `sd_log2_R130N (W16.BI.TR4.TMT1)` < 1.0,
+    `sd_log2_R130C (W2.BI.TR5.TMT1)` < .45,
+    `sd_log2_R131 (W16.BI.TR5.TMT1)` < 1.0   
+  ),
+  
+  filename = BI_1_ssco.png,  
+)
+```
+
+<img src="images\peptide\purge\BI_1.png" title="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images\peptide\purge\BI_1_ssco.png" title="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" style="display: block; margin: auto auto auto 0;" />
 
 ### 3.2 Peptide subsets
 
@@ -2040,11 +2127,8 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
     need implementation.
 
 6.  On top of technical variabilities, the ranges of CV may be further
-    subject to the choice of reference materials. As shown in Lab 3.1,
-    broader ranges of log2FC may be simply due to the more genuine
-    difference between sample groups in relative to the chosen
-    reference(s). The effect could analogously bias CV measures (figures
-    can be made by default upon the execution of `normPSM(...)`).
+    subject to the choice of reference materials. Examples are available
+    in Lab 3.1.
 
 7.  Density kernel estimates can occasionally capture spikes in the
     profiles of log2FC during data alignment. Users will need to inspect
