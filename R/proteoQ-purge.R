@@ -9,23 +9,39 @@
 #'   filtration of protein entries.
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
-purge_by_cv <- function (df, id, max_cv) {
+purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
   if (!is.null(max_cv)) {
     stopifnot(is.numeric(max_cv))
-    
+
     df_sd_lgl <- df %>% 
-      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.))) %>% 
-      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), 
-                       ~ replace(.x, .x > max_cv, NA)) %>% 
-      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), 
-                       ~ replace(.x, !is.na(.x), 1)) %>% 
-      `names<-`(gsub("^sd_log2_R", "lgl_log2_sd", names(.))) %>% 
-      dplyr::filter(!duplicated(.[[id]]))
+      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.)))
     
+    if (id %in% c("pep_seq", "pep_seq_mod")) {
+      # remove duplicated PSMs under the same id
+      df_sd_lgl <- df_sd_lgl %>% 
+        dplyr::filter(!duplicated(.[[id]]))
+    } else if (id %in% c("prot_acc", "gene")) {
+      # no duplicated id, but protein `sd` under each channel can be a mix of non-NA (one value) and NA
+      # this is due to the `wide` joinining of data to form `Peptide.txt`
+      df_sd_lgl <- df_sd_lgl %>% 
+        dplyr::group_by(!!rlang::sym(id)) %>% 
+        dplyr::summarise_all(~ dplyr::first(na.omit(.x)))
+    }
+    
+    if (keep_ohw) {
+      df_sd_lgl <- df_sd_lgl %>% 
+        dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ replace(.x, is.na(.x), -1E-3))
+    }
+    
+    df_sd_lgl <- df_sd_lgl %>% 
+      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ replace(.x, .x > max_cv, NA)) %>% 
+      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ replace(.x, !is.na(.x), 1)) %>% 
+      `names<-`(gsub("^sd_log2_R", "lgl_log2_sd", names(.)))
+
     df <- df %>% 
       dplyr::arrange(!!rlang::sym(id)) %>% 
       dplyr::left_join(df_sd_lgl, by = id)
-    
+
     df[, grepl("^log2_R[0-9]{3}", names(df))] <-
       purrr::map2(as.list(df[, grepl("^log2_R[0-9]{3}", names(df))]),
                   as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
@@ -41,11 +57,6 @@ purge_by_cv <- function (df, id, max_cv) {
                   as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
       dplyr::bind_rows()
     
-    df[, grepl("^sd_log2_R[0-9]{3}", names(df))] <-
-      purrr::map2(as.list(df[, grepl("^sd_log2_R[0-9]{3}", names(df))]),
-                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
-      dplyr::bind_rows()
-    
     df[, grepl("^I[0-9]{3}", names(df))] <-
       purrr::map2(as.list(df[, grepl("^I[0-9]{3}", names(df))]),
                   as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
@@ -53,6 +64,11 @@ purge_by_cv <- function (df, id, max_cv) {
     
     df[, grepl("^N_I[0-9]{3}", names(df))] <-
       purrr::map2(as.list(df[, grepl("^N_I[0-9]{3}", names(df))]),
+                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+      dplyr::bind_rows()
+
+    df[, grepl("^sd_log2_R[0-9]{3}", names(df))] <-
+      purrr::map2(as.list(df[, grepl("^sd_log2_R[0-9]{3}", names(df))]),
                   as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
       dplyr::bind_rows()
     
@@ -107,6 +123,8 @@ purge_by_n <- function (df, id, min_n) {
 #'@inheritParams purge_by_n
 #'@param adjSD Logical; if TRUE, adjust the standard deviation in relative to
 #'  the width of ratio profiles.
+#'@param keep_ohw Logical; if TRUE, keep one-hit-wonders with unknown CV. The
+#'  default is TRUE.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}. Additional parameters for plotting:
 #'  \cr \code{ymax}, the maximum \eqn{y} at a log2 scale; the default is +0.6.
@@ -118,7 +136,7 @@ purge_by_n <- function (df, id, min_n) {
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
 #'@export
-purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, ...) {
+purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, keep_ohw = TRUE, ...) {
   dots <- rlang::enexprs(...)
   lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% lang_dots]
@@ -152,7 +170,7 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, .
     df <- read.csv(file.path(dat_dir, "PSM", fn), check.names = FALSE, 
                    header = TRUE, sep = "\t", comment.char = "#") %>% 
       filters_in_call(!!!lang_dots) %>% 
-      purge_by_cv(group_psm_by, max_cv) %>% 
+      purge_by_cv(group_psm_by, max_cv, keep_ohw) %>% 
       purge_by_n(group_psm_by, min_n) %>% 
       dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
     
@@ -218,7 +236,7 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, .
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
 #'@export
-purgePep <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, 
+purgePep <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, keep_ohw = TRUE, 
                       col_select = NULL, col_order = NULL, filename = NULL, ...) {
   
   dots <- rlang::enexprs(...)
@@ -262,7 +280,7 @@ purgePep <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE,
   fn <- file.path(dat_dir, "Peptide", "Peptide.txt")
   df <- read.csv(fn, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
     filters_in_call(!!!lang_dots) %>% 
-    purge_by_cv(group_pep_by, max_cv) %>% 
+    purge_by_cv(group_pep_by, max_cv, keep_ohw) %>% 
     purge_by_n(group_pep_by, min_n) %>% 
     dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) 
 
