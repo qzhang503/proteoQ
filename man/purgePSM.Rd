@@ -5,7 +5,7 @@
 \title{Purge PSM data}
 \usage{
 purgePSM(dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE,
-  ...)
+  keep_ohw = TRUE, ...)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory.}
@@ -22,6 +22,9 @@ smaller than \code{min_n} will be replaced with NA.}
 
 \item{adjSD}{Logical; if TRUE, adjust the standard deviation in relative to
 the width of ratio profiles.}
+
+\item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
+default is TRUE.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. Additional parameters for plotting:

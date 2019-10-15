@@ -4,7 +4,7 @@
 \alias{purge_by_cv}
 \title{Filter data groups by a CV cut-off}
 \usage{
-purge_by_cv(df, id, max_cv)
+purge_by_cv(df, id, max_cv, keep_ohw = TRUE)
 }
 \arguments{
 \item{df}{The name of input data file. By default, it will be determined

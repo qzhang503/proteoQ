@@ -5,7 +5,8 @@
 \title{Purge peptide data}
 \usage{
 purgePep(dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE,
-  col_select = NULL, col_order = NULL, filename = NULL, ...)
+  keep_ohw = TRUE, col_select = NULL, col_order = NULL,
+  filename = NULL, ...)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory.}
@@ -22,6 +23,9 @@ smaller than \code{min_n} will be replaced with NA.}
 
 \item{adjSD}{Logical; if TRUE, adjust the standard deviation in relative to
 the width of ratio profiles.}
+
+\item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
+default is TRUE.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under the column key will be
