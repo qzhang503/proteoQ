@@ -1,12 +1,49 @@
+#' Update data groups of `log2_R` etc. by logical matrix `lgl_log2_sd`
+sd_lgl_cleanup <- function (df) {
+  df[, grepl("^log2_R[0-9]{3}", names(df))] <-
+    purrr::map2(as.list(df[, grepl("^log2_R[0-9]{3}", names(df))]),
+                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+    dplyr::bind_cols()
+  
+  df[, grepl("^N_log2_R[0-9]{3}", names(df))] <-
+    purrr::map2(as.list(df[, grepl("^N_log2_R[0-9]{3}", names(df))]),
+                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+    dplyr::bind_cols()
+  
+  df[, grepl("^Z_log2_R[0-9]{3}", names(df))] <-
+    purrr::map2(as.list(df[, grepl("^Z_log2_R[0-9]{3}", names(df))]),
+                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+    dplyr::bind_cols()
+  
+  df[, grepl("^I[0-9]{3}", names(df))] <-
+    purrr::map2(as.list(df[, grepl("^I[0-9]{3}", names(df))]),
+                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+    dplyr::bind_cols()
+  
+  df[, grepl("^N_I[0-9]{3}", names(df))] <-
+    purrr::map2(as.list(df[, grepl("^N_I[0-9]{3}", names(df))]),
+                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+    dplyr::bind_cols()
+  
+  df[, grepl("^sd_log2_R[0-9]{3}", names(df))] <-
+    purrr::map2(as.list(df[, grepl("^sd_log2_R[0-9]{3}", names(df))]),
+                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+    dplyr::bind_cols()
+  
+  df <- df %>% 
+    dplyr::select(-grep("^lgl_log2_sd", names(.))) %>% 
+    dplyr::filter(rowSums(!is.na(.[, grep("^log2_R[0-9]{3}", names(.) )])) > 0)
+}
+
+
 #' Filter data groups by a CV cut-off
 #'
 #' \code{purge_by_cv} replaces the data entries at \code{group CV > max_cv} to
 #' NA.
 #'
 #' @inheritParams proteoHist
-#' @param max_cv Numeric; the cut-off in CV. The CV are from the ascribing PSMs
-#'   for the filtration of peptide entries or ascribing peptides for the
-#'   filtration of protein entries.
+#' @param max_cv Numeric; the cut-off in maximum CV. Values above the threshold
+#'   will be replaced with NA.
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
 purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
@@ -22,7 +59,7 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
         dplyr::filter(!duplicated(.[[id]]))
     } else if (id %in% c("prot_acc", "gene")) {
       # no duplicated id, but protein `sd` under each channel can be a mix of non-NA (one value) and NA
-      # this is due to the `wide` joinining of data to form `Peptide.txt`
+      # this is due to the `wide` joinining of data when forming `Peptide.txt`
       df_sd_lgl <- df_sd_lgl %>% 
         dplyr::group_by(!!rlang::sym(id)) %>% 
         dplyr::summarise_all(~ dplyr::first(na.omit(.x)))
@@ -40,41 +77,65 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
 
     df <- df %>% 
       dplyr::arrange(!!rlang::sym(id)) %>% 
-      dplyr::left_join(df_sd_lgl, by = id)
+      dplyr::left_join(df_sd_lgl, by = id) %>% 
+      sd_lgl_cleanup()
+  }
+  
+  return(df)
+}
 
-    df[, grepl("^log2_R[0-9]{3}", names(df))] <-
-      purrr::map2(as.list(df[, grepl("^log2_R[0-9]{3}", names(df))]),
-                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
-      dplyr::bind_rows()
-    
-    df[, grepl("^N_log2_R[0-9]{3}", names(df))] <-
-      purrr::map2(as.list(df[, grepl("^N_log2_R[0-9]{3}", names(df))]),
-                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
-      dplyr::bind_rows()
-    
-    df[, grepl("^Z_log2_R[0-9]{3}", names(df))] <-
-      purrr::map2(as.list(df[, grepl("^Z_log2_R[0-9]{3}", names(df))]),
-                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
-      dplyr::bind_rows()
-    
-    df[, grepl("^I[0-9]{3}", names(df))] <-
-      purrr::map2(as.list(df[, grepl("^I[0-9]{3}", names(df))]),
-                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
-      dplyr::bind_rows()
-    
-    df[, grepl("^N_I[0-9]{3}", names(df))] <-
-      purrr::map2(as.list(df[, grepl("^N_I[0-9]{3}", names(df))]),
-                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
-      dplyr::bind_rows()
 
-    df[, grepl("^sd_log2_R[0-9]{3}", names(df))] <-
-      purrr::map2(as.list(df[, grepl("^sd_log2_R[0-9]{3}", names(df))]),
-                  as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
-      dplyr::bind_rows()
+#' Filter data groups by quantiles of CV
+#'
+#' \code{purge_by_qt} replaces the data entries at \code{CV > quantile} with NA.
+#'
+#' @inheritParams proteoHist
+#' @param pt_cv Numeric between 0 and 1; the percentile of CV. Values above the
+#'   percentile threshold will be replaced with NA.
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>%
+purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
+  if (!is.null(pt_cv)) {
+    stopifnot(is.numeric(pt_cv))
+    if (pt_cv > 1) pt_cv <- pt_cv / 100
+    
+    df_sd_lgl <- df %>% 
+      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.)))
+    
+    if (id %in% c("pep_seq", "pep_seq_mod")) {
+      df_sd_lgl <- df_sd_lgl %>% 
+        dplyr::filter(!duplicated(.[[id]]))
+    } else if (id %in% c("prot_acc", "gene")) {
+      df_sd_lgl <- df_sd_lgl %>% 
+        dplyr::group_by(!!rlang::sym(id)) %>% 
+        dplyr::summarise_all(~ dplyr::first(na.omit(.x)))
+    }
+    
+    qts <- df_sd_lgl %>% 
+      .[, grepl("^sd_log2_R[0-9]{3}", names(.))] %>% 
+      purrr::map_dbl(~ quantile(.x, probs = pt_cv, na.rm = TRUE))
+    
+    if (keep_ohw) {
+      df_sd_lgl <- df_sd_lgl %>% 
+        dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ replace(.x, is.na(.x), -1E-3))
+    }
+    
+    df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]*", names(df_sd_lgl))] <- 
+      purrr::map2(as.list(df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]*", names(df_sd_lgl))]), 
+                  as.list(qts), ~ {
+                    .x[.x > .y] <- NA
+                    return(.x)
+                  }) %>% 
+      dplyr::bind_cols()
+    
+    df_sd_lgl <- df_sd_lgl %>% 
+      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), ~ replace(.x, !is.na(.x), 1)) %>% 
+      `names<-`(gsub("^sd_log2_R", "lgl_log2_sd", names(.)))
     
     df <- df %>% 
-      dplyr::select(-grep("^lgl_log2_sd", names(.))) %>% 
-      dplyr::filter(rowSums(!is.na(.[, grep("^log2_R[0-9]{3}", names(.) )])) > 0)
+      dplyr::arrange(!!rlang::sym(id)) %>% 
+      dplyr::left_join(df_sd_lgl, by = id) %>% 
+      sd_lgl_cleanup()
   }
   
   return(df)
@@ -115,28 +176,30 @@ purge_by_n <- function (df, id, min_n) {
 #'criteria.
 #'
 #'The CV of peptides are calculated from contributing PSMs at the basis of per
-#'TMT experiment per LCMS run. In general, the CV will be greater for samples
-#'more different to reference material(s).
+#'TMT experiment per series of LC/MS. Note that greater CV may be encountered
+#'for samples that are more different to reference material(s).
 #'
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv
 #'@inheritParams purge_by_n
+#'@inheritParams purge_by_qt
 #'@param adjSD Logical; if TRUE, adjust the standard deviation in relative to
 #'  the width of ratio profiles.
 #'@param keep_ohw Logical; if TRUE, keep one-hit-wonders with unknown CV. The
 #'  default is TRUE.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. Additional parameters for plotting:
-#'  \cr \code{ymax}, the maximum \eqn{y} at a log2 scale; the default is +0.6.
-#'  \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a log2 scale; the default
-#'  is 0.2. Note: \code{y_breaks} depreciated. \cr \code{width}, the width of
-#'  plot. \cr \code{height}, the height of plot. \cr \code{flip_coord}, logical;
-#'  if TRUE, flip \code{x} and \code{y} axis.
+#'@param ... Additional parameters for plotting: \cr \code{ymax}, the maximum
+#'  \eqn{y} at a log2 scale; the default is +0.6. \cr \code{ybreaks}, the breaks
+#'  in \eqn{y}-axis at a log2 scale; the default is 0.2. Note: \code{y_breaks}
+#'  depreciated. \cr \code{width}, the width of plot. \cr \code{height}, the
+#'  height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
+#'  \code{y} axis.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
 #'@export
-purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, keep_ohw = TRUE, ...) {
+purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1, 
+                      adjSD = FALSE, keep_ohw = TRUE, ...) {
+  
   dots <- rlang::enexprs(...)
   lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% lang_dots]
@@ -169,12 +232,15 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, k
     
     df <- read.csv(file.path(dat_dir, "PSM", fn), check.names = FALSE, 
                    header = TRUE, sep = "\t", comment.char = "#") %>% 
-      filters_in_call(!!!lang_dots) %>% 
+      # filters_in_call(!!!lang_dots) %>% 
+      purge_by_qt(group_psm_by, pt_cv, keep_ohw) %>% 
       purge_by_cv(group_psm_by, max_cv, keep_ohw) %>% 
       purge_by_n(group_psm_by, min_n) %>% 
       dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
     
-    if ((!is.null(max_cv)) | (min_n > 1) | (!rlang::is_empty(lang_dots))) {
+    cdns_changed <- any(!is.null(pt_cv), !is.null(max_cv), min_n > 1, !rlang::is_empty(lang_dots))
+      
+    if (cdns_changed) {
       pep_n_psm <- df %>%
         dplyr::select(!!rlang::sym(group_psm_by)) %>%
         dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
@@ -224,19 +290,25 @@ purgePSM <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, k
 #'\code{purgePep} removes \code{protein} entries from peptide table(s) by
 #'selection criteria.
 #'
-#'The CV of proteins are calculated from contributing peptides at the basis of
-#'per TMT experiment per LCMS run.
+#'The CV of proteins under each sample are first calculated from contributing
+#'peptides. In the event of multiple sereis of LC/MS injections, the CV of the
+#'same protein from different LC/MS will be summarised by median statistics.
+#'
+#'The data nullification will be applied column-wisely for all available
+#'samples. Argument \code{col_select} is merely used to subsettng samples for
+#'violin plot visualization.
 #'
 #'@inheritParams purgePSM
 #'@inheritParams proteoHist
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv
 #'@inheritParams purge_by_n
+#'@inheritParams purge_by_qt
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
 #'@export
-purgePep <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, keep_ohw = TRUE, 
+purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, keep_ohw = TRUE, 
                       col_select = NULL, col_order = NULL, filename = NULL, ...) {
   
   dots <- rlang::enexprs(...)
@@ -279,12 +351,15 @@ purgePep <- function (dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, k
   
   fn <- file.path(dat_dir, "Peptide", "Peptide.txt")
   df <- read.csv(fn, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
-    filters_in_call(!!!lang_dots) %>% 
+    # filters_in_call(!!!lang_dots) %>% 
+    purge_by_qt(group_pep_by, pt_cv, keep_ohw) %>% 
     purge_by_cv(group_pep_by, max_cv, keep_ohw) %>% 
     purge_by_n(group_pep_by, min_n) %>% 
     dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) 
 
-  if ((!is.null(max_cv)) | (min_n > 1) | (!rlang::is_empty(lang_dots))) {
+  cdns_changed <- any(!is.null(pt_cv), !is.null(max_cv), min_n > 1, !rlang::is_empty(lang_dots))
+  
+  if (cdns_changed) {
     pep_n_psm <- df %>%
       dplyr::select(!!rlang::sym(group_psm_by), pep_n_psm) %>%
       dplyr::group_by(!!rlang::sym(group_psm_by)) %>%

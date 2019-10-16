@@ -4,15 +4,17 @@
 \alias{purgePSM}
 \title{Purge PSM data}
 \usage{
-purgePSM(dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE,
-  keep_ohw = TRUE, ...)
+purgePSM(dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1,
+  adjSD = FALSE, keep_ohw = TRUE, ...)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory.}
 
-\item{max_cv}{Numeric; the cut-off in CV. The CV are from the ascribing PSMs
-for the filtration of peptide entries or ascribing peptides for the
-filtration of protein entries.}
+\item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
+percentile threshold will be replaced with NA.}
+
+\item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
+will be replaced with NA.}
 
 \item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
 entries in PSM tables with the number of identifying PSMs smaller than
@@ -26,13 +28,12 @@ the width of ratio profiles.}
 \item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
 default is TRUE.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. Additional parameters for plotting:
-\cr \code{ymax}, the maximum \eqn{y} at a log2 scale; the default is +0.6.
-\cr \code{ybreaks}, the breaks in \eqn{y}-axis at a log2 scale; the default
-is 0.2. Note: \code{y_breaks} depreciated. \cr \code{width}, the width of
-plot. \cr \code{height}, the height of plot. \cr \code{flip_coord}, logical;
-if TRUE, flip \code{x} and \code{y} axis.}
+\item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
+\eqn{y} at a log2 scale; the default is +0.6. \cr \code{ybreaks}, the breaks
+in \eqn{y}-axis at a log2 scale; the default is 0.2. Note: \code{y_breaks}
+depreciated. \cr \code{width}, the width of plot. \cr \code{height}, the
+height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
+\code{y} axis.}
 }
 \description{
 \code{purgePSM} removes \code{peptide} entries from PSM tables by selection
@@ -40,6 +41,6 @@ criteria.
 }
 \details{
 The CV of peptides are calculated from contributing PSMs at the basis of per
-TMT experiment per LCMS run. In general, the CV will be greater for samples
-more different to reference material(s).
+TMT experiment per series of LC/MS. Note that greater CV may be encountered
+for samples that are more different to reference material(s).
 }

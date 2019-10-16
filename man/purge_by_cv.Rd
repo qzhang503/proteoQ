@@ -15,9 +15,8 @@ determined automatically. Peptide data will be used at \code{id = pep_seq}
 or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
 or \code{gene}.}
 
-\item{max_cv}{Numeric; the cut-off in CV. The CV are from the ascribing PSMs
-for the filtration of peptide entries or ascribing peptides for the
-filtration of protein entries.}
+\item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
+will be replaced with NA.}
 }
 \description{
 \code{purge_by_cv} replaces the data entries at \code{group CV > max_cv} to

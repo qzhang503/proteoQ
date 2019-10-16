@@ -4,16 +4,18 @@
 \alias{purgePep}
 \title{Purge peptide data}
 \usage{
-purgePep(dat_dir = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE,
-  keep_ohw = TRUE, col_select = NULL, col_order = NULL,
-  filename = NULL, ...)
+purgePep(dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1,
+  adjSD = FALSE, keep_ohw = TRUE, col_select = NULL,
+  col_order = NULL, filename = NULL, ...)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory.}
 
-\item{max_cv}{Numeric; the cut-off in CV. The CV are from the ascribing PSMs
-for the filtration of peptide entries or ascribing peptides for the
-filtration of protein entries.}
+\item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
+percentile threshold will be replaced with NA.}
+
+\item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
+will be replaced with NA.}
 
 \item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
 entries in PSM tables with the number of identifying PSMs smaller than
@@ -38,19 +40,23 @@ image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 will be determined by the extension of the file name. A \code{.png} format
 will be used at default or at an unrecognized file extension.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. Additional parameters for plotting:
-\cr \code{ymax}, the maximum \eqn{y} at a log2 scale; the default is +0.6.
-\cr \code{ybreaks}, the breaks in \eqn{y}-axis at a log2 scale; the default
-is 0.2. Note: \code{y_breaks} depreciated. \cr \code{width}, the width of
-plot. \cr \code{height}, the height of plot. \cr \code{flip_coord}, logical;
-if TRUE, flip \code{x} and \code{y} axis.}
+\item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
+\eqn{y} at a log2 scale; the default is +0.6. \cr \code{ybreaks}, the breaks
+in \eqn{y}-axis at a log2 scale; the default is 0.2. Note: \code{y_breaks}
+depreciated. \cr \code{width}, the width of plot. \cr \code{height}, the
+height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
+\code{y} axis.}
 }
 \description{
 \code{purgePep} removes \code{protein} entries from peptide table(s) by
 selection criteria.
 }
 \details{
-The CV of proteins are calculated from contributing peptides at the basis of
-per TMT experiment per LCMS run.
+The CV of proteins under each sample are first calculated from contributing
+peptides. In the event of multiple sereis of LC/MS injections, the CV of the
+same protein from different LC/MS will be summarised by median statistics.
+
+The data nullification will be applied column-wisely for all available
+samples. Argument \code{col_select} is merely used to subsettng samples for
+violin plot visualization.
 }
