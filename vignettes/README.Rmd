@@ -9,6 +9,14 @@ output:
     toc: yes
     toc_depth: 4
     variant: gfm
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  github_document:
+    fig_caption: yes
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -17,14 +25,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  github_document:
-    fig_caption: yes
-    toc: yes
-  word_document:
-    toc: yes
 ---
 
 ---
@@ -78,6 +78,18 @@ references:
     month: 5
 ---
 
+<style>
+p.comment {
+background-color: #e5f5f9;
+padding: 10px;
+border: 1px solid black;
+margin-left: 0px;
+border-radius: 5px;
+}
+
+</style>
+
+
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -95,9 +107,11 @@ knitr::opts_chunk$set(
 ## Introduction to proteoQ
 Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the utilities of data filtration and ordering into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
 
-The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/) and [MaxQuant](https://www.maxquant.org/) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
+The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
 
+<p class="comment">
 Click [here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html) to render a html version of the README.  
+</p>
 
 ## Installation
 To install this package, start R (version "3.6.1") as **administrator** and enter:  
@@ -120,12 +134,10 @@ In this section I (Qiang Zhang) illustrate the following applications of `proteo
 * Re-normalization of data in partial or in full.
 * Removal of low-quality entries from PSM, peptide and protein data.
 * Summarization of MaxQuant PSM results.  
+* Summarization of Spectrum Mill PSM results.  
 
-The data set we will use in this section corresponds to the proteomics data from Mertins et al. [-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by `LC/MS` analysis. The raw PSM results from [Mascot](https://http://www.matrixscience.com/) or [MaxQuant](https://www.maxquant.org/) searches are stored in companion packages, `proteoQDA` and `proteoQDB`, respectively. For `proteoQDA`, it is accessbile through the following installation:  
-
-```{r proteoQDA, include = TRUE, eval = FALSE}
-devtools::install_github("qzhang503/proteoQDA")
-```
+The data set we will use in this section corresponds to the proteomics data from Mertins et al. [-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by `LC/MS` analysis. The raw PSM results from [Mascot](https://http://www.matrixscience.com/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) are 
+stored in a companion package, `proteoQDA`. The raw PSM results from [MaxQuant](https://www.maxquant.org/) searches are stored in a second companion package, `proteoQDB`.  
 
 ### 1.1 Set up experiment for Mascot workflow
 We first set up a working directory for use in a Mascot example:  
@@ -139,6 +151,8 @@ dat_dir <- "C:\\The\\Mascot\\Example"
 RefSeq databases of human and mouse were used in the MS/MS searches against the WHIM data sets. To properly annotate protein entries with `proteoQ`, we would need the fasta file(s) that were used in the database searches. In the example below, we copy over the corresponding fasta files, which are available in `proteoQDA` package, to a file folder sub to `home` directory:
 
 ```{r copy_fasta, include = TRUE, eval = FALSE}
+devtools::install_github("qzhang503/proteoQDA")
+
 library(proteoQDA)
 copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
 copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
@@ -216,7 +230,7 @@ normPSM(
   plot_rptr_int = TRUE, 
   plot_log2FC_cv = TRUE, 
   
-  filter_peps = exprs(pep_expect <= .1, pep_score >= 15), 
+  filter_psms = exprs(pep_expect <= .1, pep_score >= 15), 
   filter_by_more = exprs(pep_rank == 1),
 )
 ```
@@ -225,7 +239,7 @@ At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence 
 
 PSM outliers will be assessed at a basis of per peptide and per sample at `rm_outliers = TRUE`, which can be a slow process for large data sets. To circumvent repeated efforts in the assessment of PSM outliers, we may set `rm_outliers = FALSE` and `plot_rptr_int = TRUE` when first executing `normPSM()`. We then visually inspect the distributions of reporter-ion intensity. Empirically, PSMs with reporter-ion intensity less than 3,000 are trimmed and  samples with median intensity that is 2/3 or less to the average of majority samples are removed from further analysis.^[The sample removal and PSM re-processing can be achieved by deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-execution of `normPSM()`.]   
 
-The `normPSM` function can take additional, user-defined arguments of `dot-dot-dot` [see @hwickham2019advr, ch. 6] for the row filtration of data using logical conditions. In the above example, we have limited ourselves to peptide entries with `pep_expect <= 0.1` and `pep_score >= 15` by supplying the variable argument (vararg) of `filter_peps`. We further filtered the data at `pep_rank == 1` with another vararg of `filter_by_more`. The creation and assignment of varargs need to follow a format of `filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the names of varargs on the lhs start with the character string of `filter_` to indicate the task of data filtration. On the rhs, `pep_expect`, `pep_score` and `pep_rank` are column keys that can be found from the PSM data.  
+The `normPSM` function can take additional, user-defined arguments of `dot-dot-dot` [see @hwickham2019advr, ch. 6] for the row filtration of data using logical conditions. In the above example, we have limited ourselves to peptide entries with `pep_expect <= 0.1` and `pep_score >= 15` by supplying the variable argument (vararg) of `filter_psms`. We further filtered the data at `pep_rank == 1` with another vararg of `filter_by_more`. The creation and assignment of varargs need to follow a format of `filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the names of varargs on the lhs start with the character string of `filter_` to indicate the task of data filtration. On the rhs, `pep_expect`, `pep_score` and `pep_rank` are column keys that can be found from the PSM data. Backticks will be needed for column keys containing white space(s) and/or special character(s): `` `key with space (sample id in parenthesis)` ``. 
 
 I am new to `R`. It looks like that base `R` does not support the direct assignment of logical expressions to function arguments. To get around this, I took advantage of the facility of non-standard evaluation in `rlang` package in that the logical conditions are supplied within the round parenthesis after `exprs`. Next, the `proteoQ` program will obtain the expression(s) on the rhs of each vararg statment by performing a bare evaluation using `rlang::eval_bare`. Following that, a tidy evaluation by `rlang::eval_tidy` will be coupled to a local facility in `proteoQ` to do the real work of data filtrations ([see @hwickham2019advr, ch. 20])^[A pseudonym approach used in Tidyverse, such as `starts_with`, `contains` may be easier to work with for logical conditions and need implementation.]. 
 
@@ -234,37 +248,70 @@ The approach of data filtration taken by `normPSM` might at first looks strange;
 ##### 1.2.1.2 purgePSM
 To finish our discussion of PSM processing, let us consider having one more bash in data cleanup. The `purgePSM` facility can be used for data purging by both the CV and the number of PSM identifications of peptides. Namely, quantitations that yields peptide CV greater than a user-supplied cut-off will be replaced with NA; similarly, quantitations with the number of observations less than a user-defined threshold will be substituted with NA.  
 
+<p class="comment">
+Data nullification by `purgePSM` is an irreversible process. If you are still experimenting its features, make a copy of files `\PSM\TMTset1_LCMSinj1_PSM_N.txt` et al. before proceed. Similarly for `purgePep` that we will soon discuss, make a copy of file `Peptide\Peptide.txt` before proceed.
+</p>
+
 Earlier this section, we have set `plot_log2FC_cv = TRUE` when calling `normPSM`. This will plot the distributions of the CV of peptide log2FC. In the event of `plot_log2FC_cv = FALSE`, we can have a second chance in visualzing the distributions of peptide CV before any permanent data nullification:
 
 ```{r PSM purge before, eval = FALSE}
 purgePSM ()
 ```
 
-Taking the sample entries under `TMT_Set` one in `label_scheme.xlsx` as an example, we can see that a small portion of peptides have CV greater than 0.5 at log2 scale.  
+Taking the sample entries under `TMT_Set` one and `LCMS_Injection` one in `label_scheme.xlsx` as an example, we can see that a small portion of peptides have CV greater than 0.5 at log2 scale (**Figure 1A**).  
 
-```{r psm_purge_bf, echo=FALSE, fig.align='center', fig.cap="**Figure 1.** CV of peptide log2FC. Left: before purging; right: after purging.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-psm_purprn_br <- "images\\psm\\purge\\psm_bf_purge.png"
-psm_purprn_af <- "images\\psm\\purge\\psm_af_purge.png"
-knitr::include_graphics(c(psm_purprn_br, psm_purprn_af))
+```{r psm_purge_bf, echo=FALSE, fig.align='center', fig.cap="**Figure 1A-1C.** CV of peptide log2FC. Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile.", fig.show='hold', message=FALSE, warning=FALSE, out.width='30%'}
+psm_no_purge <- "images\\psm\\purge\\psm_no_purge.png"
+psm_maxcv_purge <- "images\\psm\\purge\\psm_maxcv_purge.png"
+psm_qt_purge <- "images\\psm\\purge\\psm_qt_purge.png"
+knitr::include_graphics(c(psm_no_purge, psm_maxcv_purge, psm_qt_purge))
 ```
 
-Quantitative differences greater than 0.5 at a log2 scale is relatively large in TMT experiments,^[On top of technical variabilities, the ranges of CV may be further subject to the choice of reference materials. Examples are available in Lab 3.1.] which can be mainly ascribed to a phenomena called peptide co-isolation and co-fragmentation in reporter ion-based MS experiments. We might, for instance, choose a CV cut-off at 0.5 for peptides as an additional step in data cleanup:  
+Quantitative differences greater than 0.5 at a log2 scale is relatively large in TMT experiments,^[On top of technical variabilities, the ranges of CV may be further subject to the choice of reference materials. Examples are available in Lab 3.1.] which can be in part ascribed to a phenomenum called peptide co-isolation and co-fragmentation in reporter ion-based MS experiments. We might, for instance, perform an additional cleanup by removing column-wisely data points with CV greater than 0.5 (**Figure 1B**):  
 
 ```{r PSM purge after, eval = FALSE}
 purgePSM (
   max_cv = 0.5,
 )
+```
 
-# equivalent to 
+The above method using a flat cut-off would probably fall short if the ranges of CV are vastly different across samples (see [Lab 3.1](### 3.1 Reference choices)). Alternatively, we can remove low-quality data points using a CV percentile, let's say at 95%, for each sample (**Figure 1C**):  
+
+```{r PSM purge after pt_cv, eval = FALSE}
+# copy back `\PSM\TMTset1_LCMSinj1_PSM_N.txt` before proceed
+# otherwise the net effect will be additive to the prior(s)
+purgePSM (
+  pt_cv = 0.95,
+)
+```
+
+Lastly, we might occasionally consider setting a minimum number of PSMs for peptides:  
+
+```{r PSM purge after min_n, eval = FALSE}
+purgePSM(
+  min_n = 2, 
+)
+```
+
+This is a harsh condition in data cleanup even at `min_n` as small as two, particularly for MS experiments that are operated under the mode of data-dependent acquistion where the priority is given to sampling diversity over multiplicativity.  
+
+In the event of multiple criteria being applied to nullify data, they follow the precedence of `pt_cv > max_cv > min_n`. When needed, we can overrule the default by executing `purgePSM` sequentially at a customized order:  
+
+```{r purge_manual_precedence, eval = FALSE}
+# at first no worse than 0.5
 purgePSM (
   max_cv = 0.5,
-  min_n = 2,
+)
+
+# next `pt_cv` additive to `max_cv`
+purgePSM (
+  pt_cv = 0.95,
 )
 ```
 
 While multiple PSMs carry information about the precision in peptide measures, the above single-sample variance does not inform sampling errors prior to peptide separations. For instance, the same peptide species from a given sample remain indistinguishable/exchangeable prior to the off-line fractionation. As a result, the CV shown by `normPSM` or `purgePSM` mainly tell us the uncertainty of measures beyond the point of peptide parting.  
 
-*NB:* (1) Peptide quantitations with single PSM identification, so-called one-hit wonders, will yield infinite CV and be nullified as well. An option of keeping ohw is currently under construction. (2) CV is sensitive to outliers and some large CV in peptide quantitations may be merely due to a small number of bad measures. Although the option of `rm_outliers` was set to `FALSE` during our earlier call to `normPSM`, I think it is generally a good idea to have `rm_outliers = TRUE`.  
+*NB:* CV is sensitive to outliers and some large CV in peptide quantitations may be merely due to a small number of bad measures. Although the option of `rm_outliers` was set to `FALSE` during our earlier call to `normPSM`, I think it is generally a good idea to have `rm_outliers = TRUE`.  
 
 #### 1.2.2 Summarize PSMs to peptides
 In this section, we summarise the PSM results to peptides with `normPep` and optional `purgePep`.  
@@ -275,7 +322,6 @@ The core utility for the summary of PSMs to peptides is `normPep`:
 ```{r PSM to peptides, eval = FALSE}
 # peptide reports
 normPep(
-  # group_pep_by = gene, # depreciated
   method_psm_pep = median,
   method_align = MGKernel,
   range_log2r = c(5, 95),
@@ -294,32 +340,30 @@ The `log2FC` of peptide data will be aligned by median centering across samples 
 In the exemplary vararg statement of `filter_by`, we set a threshold in the minimum number of identifying PSMs for peptides. If we are not interested in mouse peptides from the pdx samples, We can specify similarly that `species == "human"`, or more precisely, `species != "mouse"`.^[Intermediate peptide results for each TMT plex and LCMS injection are purposely leave under the same file foler as that of `Peptide.txt` so that users can tell the column keys and explore more about the options in the row filtration of data.] Sometimes, it may remain unclear on proper data filtration at the early stage of analysis. In that case, we may need additional quality assessments that we will soon explore. Alternatively, we may keep as much information as possible and apply varargs in downstream analysis. For more description of `normPep`, one can access its help document via `?normPep`.  
 
 ##### 1.2.2.2 purgePep
-Analogously to the PSM processing, we may remove probable low-quality entries of proteins by specifying the maximum CV and the minimum number of peptide observations:  
+Analogously to the PSM processing, we may nullify data points by specifying a CV cut-off and/or a minimum number of peptide observations:  
 
 ```{r Peptides purge after, eval = FALSE}
+# no purging
+purgePep()
+
+# or purge column-wisely by max CV
 purgePep (
   max_cv = 0.5,
+  filename = "by_maxcv.png",  
 )
 
-# equivalent to 
+# or purge column-wisely by CV percentile
 purgePep (
-  max_cv = 0.5,
+  pt_cv = 0.5,
+  filename = "by_ptcv.png",
+)
+
+# or row filtration by a two-peptides criterion 
+purgePep (
   min_n = 2,
+  filename = "by_2peps.png",
 )
 ```
-
-We can use a `vararg` approach if the cut-offs in CV need to be sample specific:  
-
-```{r PSM to peptides various CV thresholds, eval = FALSE}
-normPep(
-  ...,
-  filter_by = exprs(pep_n_psm >= 2),
-  filter_by_2 = exprs(`sd_log2_R126 (W2.BI.TR1.TMT1)` <= .52, 
-                      `sd_log2_R130N (W16.PNNL.TR4.TMT2)` <= .48)
-)
-```
-
-Backticks were used here to embrace column keys containing white space(s) and/or special character(s) such as parenthesis.  
 
 *NB:* The above single-sample CVs of proteins are based on ascribing peptides, which thus do not inform the uncertainty in sample handling prior to the parting of protein entities, for example, the enzymatic breakdown of proteins in a typical MS-based proteomic workflow. On the other hand, the peptide log2FC have been previously summarized by the median statistics from contributing PSMs. Putting these two togother, the CV by `purgePep` describes approximately the uncentainty in sample handling from the breakdown of proteins to the off-line fractionation of peptides.  
 
@@ -605,7 +649,29 @@ normPrn(
 
 Following the normalizations and cleanups, we can carry out analogous data visualization using the intensity-coded histograms. Note that I have renamed some column keys in the PSM, peptide and protein tables to match their counterparts in `Mascot`. The changes allow me to keep the code more succinct. I apologize if you find it all more difficult to deal with the new names.  
 
-### 1.6 Workflow scripts
+### 1.6 Summarize Spectrum Mill results
+The procedures that have been applied to Mascot and MaxQuant examples are also suitable for Spectrum Mill PSMs. There is one difference that the file names of PSMs need to start with `PSMexport` and end with the `ssv` extension. For simplicity, I will only show an exemple in PSM processing:  
+
+```{r sm_psm, eval = FALSE}
+normPSM(
+	group_psm_by = pep_seq_mod, 
+	group_pep_by = gene,
+	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+						"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+	rptr_intco = 3000,
+	rm_craps = TRUE,
+	rm_krts = FALSE,
+	rm_outliers = FALSE, 
+	annot_kinases = TRUE, 
+	plot_rptr_int = TRUE, 
+	plot_log2FC_cv = TRUE, 
+	
+	filter_peps = exprs(score >= 10), 
+)
+```
+
+
+### 1.7 Workflow scripts
 Scripts that were used in this document can be accessed via:  
 
 ```{r workflow_scripts, include = TRUE, eval = FALSE}
@@ -1108,12 +1174,13 @@ knitr::include_graphics(c(img_pep_ref_w2_w16))
 ```
 
 #### 3.1.2 References on data CV
-In this section, we explore the effects of reference choices on the CV of `log2FC`. For simplicity, we use the peptide data that link to the `BI` subset at batch number one. We first add a new column, let's say `BI_1`, in `expt_smry_ref_w2.xlsx` with the corresponding samples being indicated (section 1.3: Renormalize data agaist column subsets). We next visualize the distributions of proteins CV measured from contributing peptides before data removals:  
+In this section, we explore the effects of reference choices on the CV of `log2FC`. For simplicity, we will visualize the peptide data that link to the `BI` subset at batch number one. We first add a new column, let's say `BI_1`, in `expt_smry_ref_w2.xlsx` with the corresponding samples being indicated (see also section 1.3: Renormalize data agaist column subsets). We next display the distributions of proteins CV measured from contributing peptides before data removals (**Figure S1C**):  
+
+<p class="comment">
+<strong>Check</strong> the presence of column `BI_1` in `expt_smry_ref_w2.xlsx` before proceed; or update the `proteoQDA` package.  
+</p>
 
 ```{r W2 reference on CV, eval = FALSE}
-# check the presence of column `BI_1` in `expt_smry_ref_w2.xlsx` before proceed
-# or update the `proteoQDA` package
-
 # experiment upload
 load_expts(temp_dir, expt_smry_ref_w2.xlsx)
 
@@ -1129,37 +1196,24 @@ purgePep(
 )
 ```
 
-Notice that the CV distributions of `WHIM2` are much narrower than those of `WHIM16` (Figure S1C). This seems to make intuitive sense given that the `log2FC` profiles of WHIM2 are much narrows as well (Figure S1A). We might adjust the CV in relative to the widths of `log2FC` profiles with `purgePep(adjSD = TRUE, ...)`. This could help the visualization but probably not solves directly our problem of finding low-quality data entries. One resort may be trimming data entries by percentiles. Alternative, we could perform sample-specific cleanup using the vararg approach:  
+Notice that the CV distributions of `WHIM2` are much narrower than those of `WHIM16`. This seems to make intuitive sense given that the `log2FC` profiles of WHIM2 are much narrows as well (**Figure S1A**). We might adjust the CV in relative to the widths of `log2FC` profiles with `purgePep(adjSD = TRUE, ...)`. This could help the visualization but probably not solves directly our problem of finding low-quality data entries. One resort may be trimming data points by percentiles:  
 
 ```{r W2 reference vararg CV, eval = FALSE}
-# sample-specific thresholds
 purgePep(
   col_select = BI_1, 
+  pt_cv = .95, 
   ymax = 1.2,
   ybreaks = .5,
   width = 8,
   height = 8,
   flip_coord = TRUE, 
-
-  filter_peps = exprs(
-    `sd_log2_R127N (W16.BI.TR1.TMT1)` < 1.1,
-    `sd_log2_R127C (W2.BI.TR2.TMT1)` < 0.35,
-    `sd_log2_R128N (W2.BI.TR3.TMT1)` < 0.4,
-    `sd_log2_R128C (W16.BI.TR2.TMT1)` < 1.0,
-    `sd_log2_R129N (W2.BI.TR4.TMT1)` < 0.4,
-    `sd_log2_R129C (W16.BI.TR3.TMT1)` < 1.0,
-    `sd_log2_R130N (W16.BI.TR4.TMT1)` < 1.0,
-    `sd_log2_R130C (W2.BI.TR5.TMT1)` < .45,
-    `sd_log2_R131 (W16.BI.TR5.TMT1)` < 1.0   
-  ),
-  
-  filename = BI_1_ssco.png,  
+  filename = BI_1_pt_cv.png,  
 )
 ```
 
 ```{r W2_reference_CV_fig12, echo=FALSE, fig.align='left', fig.cap="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_peppurge_bf_1 <- "images\\peptide\\purge\\BI_1.png"
-img_peppurge_af_1 <- "images\\peptide\\purge\\BI_1_ssco.png"
+img_peppurge_af_1 <- "images\\peptide\\purge\\BI_1_pt_cv.png"
 knitr::include_graphics(c(img_peppurge_bf_1, img_peppurge_af_1))
 ```
 
