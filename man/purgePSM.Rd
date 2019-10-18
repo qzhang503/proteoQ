@@ -4,7 +4,7 @@
 \alias{purgePSM}
 \title{Purge PSM data}
 \usage{
-purgePSM(dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1,
+purgePSM(dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   adjSD = FALSE, keep_ohw = TRUE, ...)
 }
 \arguments{
@@ -15,12 +15,6 @@ percentile threshold will be replaced with NA.}
 
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
 will be replaced with NA.}
-
-\item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
-entries in PSM tables with the number of identifying PSMs smaller than
-\code{min_n} will be replaced with NA. When calling from \code{purgePep},
-protein entries in peptide tables with the number of identifying peptides
-smaller than \code{min_n} will be replaced with NA.}
 
 \item{adjSD}{Logical; if TRUE, adjust the standard deviation in relative to
 the width of ratio profiles.}

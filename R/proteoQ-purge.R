@@ -197,8 +197,7 @@ purge_by_n <- function (df, id, min_n) {
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
 #'@export
-purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1, 
-                      adjSD = FALSE, keep_ohw = TRUE, ...) {
+purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, keep_ohw = TRUE, ...) {
   
   dots <- rlang::enexprs(...)
   lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
@@ -217,7 +216,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1,
   
   stopifnot(group_psm_by %in% c("pep_seq", "pep_seq_mod"))
   stopifnot(group_pep_by %in% c("prot_acc", "gene"))
-  stopifnot(min_n > 0 & min_n%%1 == 0)
+  # stopifnot(min_n > 0 & min_n%%1 == 0)
   
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
@@ -235,11 +234,10 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1,
       # filters_in_call(!!!lang_dots) %>% 
       purge_by_qt(group_psm_by, pt_cv, keep_ohw) %>% 
       purge_by_cv(group_psm_by, max_cv, keep_ohw) %>% 
-      purge_by_n(group_psm_by, min_n) %>% 
       dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
     
-    cdns_changed <- any(!is.null(pt_cv), !is.null(max_cv), min_n > 1, !rlang::is_empty(lang_dots))
-      
+    cdns_changed <- any(!is.null(pt_cv), !is.null(max_cv))
+    
     if (cdns_changed) {
       pep_n_psm <- df %>%
         dplyr::select(!!rlang::sym(group_psm_by)) %>%
@@ -308,7 +306,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1,
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
 #'@export
-purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1, adjSD = FALSE, keep_ohw = TRUE, 
+purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, keep_ohw = TRUE, 
                       col_select = NULL, col_order = NULL, filename = NULL, ...) {
   
   dots <- rlang::enexprs(...)
@@ -341,7 +339,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1, ad
 
   stopifnot(group_psm_by %in% c("pep_seq", "pep_seq_mod"))
   stopifnot(group_pep_by %in% c("prot_acc", "gene"))
-  stopifnot(min_n > 0 & min_n%%1 == 0)
+  # stopifnot(min_n > 0 & min_n%%1 == 0)
   
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
@@ -354,10 +352,9 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, min_n = 1, ad
     # filters_in_call(!!!lang_dots) %>% 
     purge_by_qt(group_pep_by, pt_cv, keep_ohw) %>% 
     purge_by_cv(group_pep_by, max_cv, keep_ohw) %>% 
-    purge_by_n(group_pep_by, min_n) %>% 
     dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) 
 
-  cdns_changed <- any(!is.null(pt_cv), !is.null(max_cv), min_n > 1, !rlang::is_empty(lang_dots))
+  cdns_changed <- any(!is.null(pt_cv), !is.null(max_cv))
   
   if (cdns_changed) {
     pep_n_psm <- df %>%
