@@ -370,17 +370,19 @@ forget what I have done.
 ##### 1.2.1.2 purgePSM
 
 To finish our discussion of PSM processing, let us consider having one
-more bash in data cleanup. The `purgePSM` facility can be used for data
-purging by both the CV and the number of PSM identifications of
-peptides. Namely, quantitations that yields peptide CV greater than a
-user-supplied cut-off will be replaced with NA; similarly, quantitations
-with the number of observations less than a user-defined threshold will
-be substituted with NA.
+more bash in data cleanup. At present, the `purgePSM` facility can be
+used for data purging by the CV of peptides from contributing PSMs.
+Namely, quantitations that have yielded peptide CV greater than a
+user-supplied cut-off will be replaced with NA. This process takes place
+sample (column)-wisely by *flushing* away *inferior goods* under each
+data channel. The process is different to the above `filter_` in that
+there is no *row removals* with purging, not until all-NA rows are
+encountered.
 
 <p class="comment">
 
 Data nullification by `purgePSM` is an irreversible process. If you are
-still experimenting its features, make a copy of files
+still experimenting this feature, make a copy of files
 `\PSM\TMTset1_LCMSinj1_PSM_N.txt` et al. before proceed. Similarly for
 `purgePep` that we will soon discuss, make a copy of file
 `Peptide\Peptide.txt` before proceed.
@@ -424,31 +426,17 @@ low-quality data points using a CV percentile, let's say at 95%, for
 each sample (**Figure 1C**):
 
 ``` r
-# copy back `\PSM\TMTset1_LCMSinj1_PSM_N.txt` before proceed
+# copy back `\PSM\TMTset1_LCMSinj1_PSM_N.txt` et al. before proceed
 # otherwise the net effect will be additive to the prior(s)
 purgePSM (
   pt_cv = 0.95,
 )
 ```
 
-Lastly, we might occasionally consider setting a minimum number of PSMs
-for peptides:
-
-``` r
-purgePSM(
-  min_n = 2, 
-)
-```
-
-This is a harsh condition in data cleanup even at `min_n` as small as
-two, particularly for MS experiments that are operated under the mode of
-data-dependent acquistion where the priority is given to sampling
-diversity over multiplicativity.
-
-In the event of multiple criteria being applied to nullify data, they
-follow the precedence of `pt_cv > max_cv > min_n`. When needed, we can
-overrule the default by executing `purgePSM` sequentially at a
-customized order:
+In the event of both `pt_cv` and `max_cv` being applied to nullify data,
+they follow the precedence of `pt_cv > max_cv`. When needed, we can
+overrule the default by executing `purgePSM` sequentially at a custom
+order:
 
 ``` r
 # at first no worse than 0.5
@@ -456,7 +444,23 @@ purgePSM (
   max_cv = 0.5,
 )
 
-# next `pt_cv` additive to `max_cv`
+# next `pt_cv` on top of `max_cv`
+purgePSM (
+  pt_cv = 0.95,
+)
+```
+
+The data purge is also additive w.r.t. to repetative analysis. In the
+following example, we are actually perform data cleanup at a CV
+threshold of 90%:
+
+``` r
+# at first 95%
+purgePSM (
+  pt_cv = 0.95,
+)
+
+# next 95% of 95%
 purgePSM (
   pt_cv = 0.95,
 )
@@ -523,8 +527,8 @@ its help document via `?normPep`.
 
 ##### 1.2.2.2 purgePep
 
-Analogously to the PSM processing, we may nullify data points by
-specifying a CV cut-off and/or a minimum number of peptide observations:
+Analogously to the PSM processing, we may nullify data points of
+peptides by specifying a cut-off in their protein CVs:
 
 ``` r
 # no purging
@@ -540,12 +544,6 @@ purgePep (
 purgePep (
   pt_cv = 0.5,
   filename = "by_ptcv.png",
-)
-
-# or row filtration by a two-peptides criterion 
-purgePep (
-  min_n = 2,
-  filename = "by_2peps.png",
 )
 ```
 
@@ -1676,7 +1674,7 @@ purgePep(
 The following functions are typically coupled to the varargs of
 `filter_` or `slice_` for the subsetting of data rows based on their
 names. More information can be found from the help document via
-`?contain_str`.
+`?contain_str`.\[11\]
 
   - `contain_str`: contain a literal string; "PEPTIDES" contain\_str
     "TIDE".  
@@ -2315,3 +2313,6 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
     calling functions involved parameter `scale_log2r`, users can
     specify explicitly `scale_log2r = FALSE` if needed, or more
     preferably define its value under the global environment.
+
+11. I didn't cut the mustard by coming up with good names. Please drop
+    me a note if you think there are better ways to name them.
