@@ -362,7 +362,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			       ...)
 		}
 	} else if(anal_type == "Histogram") {
-		function(pep_pattern = pep_pattern, show_curves = show_curves, show_vline = show_vline, ...) {
+		function(pep_pattern = pep_pattern, show_curves = show_curves, show_vline = show_vline, scale_y = scale_y, ...) {
 			if (scale_log2r) {
 				fn_par <- file.path(filepath, "MGKernel_params_Z.txt")
 			} else {
@@ -384,7 +384,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			          scale_log2r = scale_log2r, 
 			          pep_pattern = pep_pattern, 
 			          show_curves = show_curves, 
-			          show_vline = show_vline,
+			          show_vline = show_vline, 
+			          scale_y = scale_y, 
 			          filepath = filepath, 
 			          filename = paste0(fn_prefix, ".", fn_suffix), 
 			          ...)

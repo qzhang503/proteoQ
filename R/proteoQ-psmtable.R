@@ -26,30 +26,30 @@ extract_psm_raws <- function(dat_dir) {
   if (purrr::is_empty(filelist))
     stop("Can't find PSM files(s) with `.csv` extension under ", dat_dir, call. = FALSE)
   
-  output_prefix <- gsub("\\.csv$", "", filelist)
-  
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
   TMT_plex <- TMT_plex(label_scheme)
   
   batchPSMheader_2 <- function(filelist, TMT_plex) {
     df <- readLines(file.path(dat_dir, filelist))
     
-    first_nonheader_row <- grep("pep_seq", df)
+    pep_seq_rows <- grep("pep_seq", df)
     
-    header <- df[1 : (first_nonheader_row - 1)]
-    header <- gsub("\"", "", header, fixed = TRUE)
-    
-    output_prefix <- gsub("\\.csv$", "", filelist)
-    write.table(header, file.path(dat_dir, "PSM\\temp",
-                                  paste0(output_prefix, "_header", ".txt")), 
-                sep = "\t", col.names = FALSE, row.names = FALSE)
-    
-    df <- df[first_nonheader_row : length(df)]
+    unassign_hits_row <- grep("Peptide matches not assigned to protein hits", df)
+    if (! purrr::is_empty(unassign_hits_row)) {
+      psm_end_row <- unassign_hits_row - 2
+    } else if (length(pep_seq_rows) > 1) {
+      psm_end_row <- pep_seq_rows[2] - 4
+    } else {
+      psm_end_row <- length(df)
+    }
+
+    df <- df[pep_seq_rows[1] : psm_end_row]
     df <- gsub("\"---\"", -1, df, fixed = TRUE)
     df <- gsub("\"###\"", -1, df, fixed = TRUE)
     
     df[1] <- paste0(df[1], paste(rep(",", TMT_plex * 4 -2), collapse = ''))
     
+    output_prefix <- gsub("\\.csv$", "", filelist)
     writeLines(df, file.path(dat_dir, "PSM\\temp", paste0(output_prefix, "_hdr_rm.csv")))
   }
   
@@ -69,7 +69,6 @@ extract_psm_raws <- function(dat_dir) {
   load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
   TMT_plex <- TMT_plex(label_scheme_full)
   
-  # remove the spacer columns in Mascot outputs
   r_start <- which(names(df) == "pep_scan_title") + 1
   int_end <- ncol(df)
   if(int_end > r_start) df <- df[, -c(seq(r_start, int_end, 2))]
@@ -138,27 +137,42 @@ rmPSMHeaders <- function () {
 	TMT_plex <- TMT_plex(label_scheme)
 
 	batchPSMheader <- function(filelist, TMT_plex) {
-		temp <- readLines(file.path(dat_dir, filelist))
+		data_all <- readLines(file.path(dat_dir, filelist))
 
-		first_nonheader_row <- grep("pep_seq", temp)
-		temp_header <- temp[1 : (first_nonheader_row - 1)]
-		temp_header <- gsub("\"", "", temp_header, fixed = TRUE)
+		pep_seq_rows <- grep("pep_seq", data_all)
+		data_header <- data_all[1 : (pep_seq_rows[1] - 1)]
+		data_header <- gsub("\"", "", data_header, fixed = TRUE)
 
 		output_prefix <- gsub("\\.csv$", "", filelist)
-		write.table(temp_header, file.path(dat_dir, "PSM\\cache",
+		write.table(data_header, file.path(dat_dir, "PSM\\cache",
 		            paste0(output_prefix, "_header", ".txt")),
 		            sep = "\t", col.names = FALSE, row.names = FALSE)
-		rm(temp_header)
-
-		# the remaining without header
-		temp <- temp[first_nonheader_row : length(temp)]
-		temp <- gsub("\"---\"", -1, temp, fixed = TRUE)
-		temp <- gsub("\"###\"", -1, temp, fixed = TRUE)
+		rm(data_header)
 		
-		temp[1] <- paste0(temp[1], paste(rep(",", TMT_plex * 4 -2), collapse = ''))
+		if (length(pep_seq_rows) > 1) {
+		  data_queries <- data_all[pep_seq_rows[2] : length(data_all)]
+		  data_queries <- gsub("\"", "", data_queries, fixed = TRUE)
+		  writeLines(data_queries, file.path(dat_dir, "PSM\\cache", paste0(output_prefix, "_queries.csv")))
+		  rm(data_queries)
+		}
 
-		writeLines(temp, file.path(dat_dir, "PSM\\cache", paste0(output_prefix, "_hdr_rm.csv")))
-		rm(temp)
+		unassign_hits_row <- grep("Peptide matches not assigned to protein hits", data_all)
+		if (! purrr::is_empty(unassign_hits_row)) {
+		  psm_end_row <- unassign_hits_row - 2
+		} else if (length(pep_seq_rows) > 1) {
+		  psm_end_row <- pep_seq_rows[2] - 4
+		} else {
+		  psm_end_row <- length(data_all)
+		}
+	
+		data_psm <- data_all[pep_seq_rows[1] : psm_end_row]
+		data_psm <- gsub("\"---\"", -1, data_psm, fixed = TRUE)
+		data_psm <- gsub("\"###\"", -1, data_psm, fixed = TRUE)
+		
+		data_psm[1] <- paste0(data_psm[1], paste(rep(",", TMT_plex * 4 -2), collapse = ''))
+		
+		writeLines(data_psm, file.path(dat_dir, "PSM\\cache", paste0(output_prefix, "_hdr_rm.csv")))
+		rm(data_psm)
 	}
 
 	purrr::walk(filelist, batchPSMheader, TMT_plex)
