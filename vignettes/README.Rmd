@@ -110,7 +110,7 @@ Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tan
 The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
 
 <p class="comment">
-Click [here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html) to render a html version of the README.  
+Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README.  
 </p>
 
 ## Installation
@@ -241,7 +241,7 @@ PSM outliers will be assessed at a basis of per peptide and per sample at `rm_ou
 
 The `normPSM` function can take additional, user-defined arguments of `dot-dot-dot` [see @hwickham2019advr, ch. 6] for the row filtration of data using logical conditions. In the above example, we have limited ourselves to peptide entries with `pep_expect <= 0.1` and `pep_score >= 15` by supplying the variable argument (vararg) of `filter_psms`. We further filtered the data at `pep_rank == 1` with another vararg of `filter_by_more`. The creation and assignment of varargs need to follow a format of `filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the names of varargs on the lhs start with the character string of `filter_` to indicate the task of data filtration. On the rhs, `pep_expect`, `pep_score` and `pep_rank` are column keys that can be found from the PSM data. Backticks will be needed for column keys containing white space(s) and/or special character(s): `` `key with space (sample id in parenthesis)` ``. 
 
-I am new to `R`. It looks like that base `R` does not support the direct assignment of logical expressions to function arguments. To get around this, I took advantage of the facility of non-standard evaluation in `rlang` package in that the logical conditions are supplied within the round parenthesis after `exprs`. Next, the `proteoQ` program will obtain the expression(s) on the rhs of each vararg statment by performing a bare evaluation using `rlang::eval_bare`. Following that, a tidy evaluation by `rlang::eval_tidy` will be coupled to a local facility in `proteoQ` to do the real work of data filtrations ([see @hwickham2019advr, ch. 20])^[A pseudonym approach used in Tidyverse, such as `starts_with`, `contains` may be easier to work with for logical conditions and need implementation.]. 
+I am new to `R`. It looks like that base `R` does not support the direct assignment of logical expressions to function arguments. To get around this, I took advantage of the facility of non-standard evaluation in `rlang` package in that the logical conditions are supplied within the round parenthesis after `exprs`. Next, the `proteoQ` program will obtain the expression(s) on the rhs of each vararg statment by performing a bare evaluation using `rlang::eval_bare`. Following that, a tidy evaluation by `rlang::eval_tidy` will be coupled to a local facility in `proteoQ` to do the real work of data filtrations ([see @hwickham2019advr, ch. 20]). 
 
 The approach of data filtration taken by `normPSM` might at first looks strange; however, it allows me to perform data filtration in a integrated way. As mentioned in the beginning, a central theme of `proteoQ` is to reduce or avoid direct data manipulations but utilizes metadata to control both data columns and rows. With the self-containedness in data filtration (and data ordering later), I can readily recall and reproduce what I had done when revisiting the system after an extended peroid. Otherwise, I would likely need *ad hoc* operations by mouse clicks or writing ephemeral R scripts, and soon forget what I have done.  
 
@@ -1218,10 +1218,24 @@ knitr::include_graphics(c(img_peppurge_bf_1, img_peppurge_af_1))
 ```
 
 
-### 3.2 Peptide subsets
-In addition to the global proteomes, the CPTAC publication contains phosphopeptide data from the same samples.[-@mertins2018np] In this lab, we will explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. We first performed a search against the combined data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset:  
+### 3.2 Data subsets
+The following functions are typically coupled to the varargs of `filter_` or `slice_` for the subsetting of data rows based on their names. More information can be found from the help document via `?contain_str`.  
 
-```{r peptide subsets reference, eval = FALSE}
+
+* `contain_str`: contain a literal string; "PEPTIDES" contain_str "TIDE".  
+* `contain_chars_in`: contain some of the characters in a literal string; "PEPTIDES" contain_chars_in "XP".  
+* `not_contain_str`: not contain a literal string; "PEPTIDES" not_contain_str "TED".
+* `not_contain_chars_in`: not contain any of the characters in a literal string; "PEPTIDES" not_contain_chars_in  "CAB".  
+* `start_with_str`: start with a literal string. "PEPTIDES" start_with_str "PEP". 
+* `end_with_str`: end with a literal string. "PEPTIDES" end_with_str "TIDES".  
+* `start_with_chars_in`: start with one of the characters in a literal string. "PEPTIDES" start_with_chars_in "XP".  
+* `ends_with_chars_in`: end with one of the characters in a literal string. "PEPTIDES" ends_with_chars_in "XS".  
+
+In this lab, we will apply `contain_chars_in` to subset peptide data using the CPTAC examples. In addition to the global proteomes, the CPTAC publication contains phosphopeptide data from the same samples. This allows us to explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. 
+
+We first performed a search against the combined data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset:  
+
+```{r phosphopeptide subsets reference, eval = FALSE}
 # directory setup
 dir.create("C:\\The\\Phosphopeptide\\Example", recursive = TRUE, showWarnings = FALSE)
 temp_phospho_dir <- "C:\\The\\Phosphopeptide\\Example"
@@ -1255,41 +1269,95 @@ normPSM(
 
 # peptide normalization
 normPep(
-	method_psm_pep = median, 
-	method_align = MGKernel, 
-	range_log2r = c(5, 95), 
-	range_int = c(5, 95), 
-	n_comp = 3, 
-	seed = 749662, 
-	maxit = 200, 
-	epsilon = 1e-05, 
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
 )
 
-# histograms for all peptides
+# (a) phospho subsets without y-scaling
 pepHist(
   col_select = BI, 
   scale_log2r = TRUE, 
+  filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
+  scale_y = FALSE, 
   ncol = 4, 
-  filename = "BI_all_peptides.png",
+  filename = "BI_pSTY_scaley_no.png",
 )
 
-# histograms for phosphopeptide subsets
+# (b) phospho subsets with y-scaling
 pepHist(
   col_select = BI, 
   scale_log2r = TRUE, 
-  pep_pattern = "sty", 
+  filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
+  scale_y = TRUE, 
   ncol = 4, 
-  filename = "BI_pSTY.png",
+  filename = "BI_pSTY_scaley_yes.png",
 )
+```
+
+Note that we have applied the new grammer of `contain_chars_in("sty", pep_seq_mod)` to extract character strings containing letters 's', 't' or 'y' under the `pep_seq_mod` column in `Peptide.txt`. This corresponds to the subsettting of peptides with phosphorylation(s) in serine, thereonine or tyrosine. 
+
+```{r phosphopeptide_subset_hist, echo=FALSE, fig.align='left', fig.cap="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_pep_phospho_scaley_no <- "images\\peptide\\histogram\\bi_phospho_scaley_no.png"
+img_pep_phospho_scaley_yes <- "images\\peptide\\histogram\\bi_phospho_scaley_yes.png"
+knitr::include_graphics(c(img_pep_phospho_scaley_no, img_pep_phospho_scaley_yes))
 ```
 
 Ideally, the profiles of the `log2FC` between the `phospho` subsets and the overall data would either align at the maximum density or perhaps offset by similar distance among replicated samples. In this example, the alginment at maximum density seems to be the case. The observation raises the possibility of measuring the stoichiometry of phosphoproteomes in relative to global data across sample types or conditions.  
 
-```{r peptide_subset_hist, echo=FALSE, fig.align='left', fig.cap="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_pep_gl_phospho <- "images\\peptide\\histogram\\bi_cmbn_peptides.png"
-img_pep_phospho <- "images\\peptide\\histogram\\bi_phospho_sub.png"
-knitr::include_graphics(c(img_pep_gl_phospho, img_pep_phospho))
+We can use the same approach for more data subsetting, for example, extracting N-terminal peptides with acetylation:  
+
+```{r ace_peptide subsets reference, eval = FALSE}
+# (c) N-term acetylation subsets without y-scaling
+pepHist(
+  col_select = BI, 
+  scale_log2r = TRUE, 
+  filter_peps = exprs(contain_chars_in("_", pep_seq_mod)), 
+  scale_y = FALSE, 
+  ncol = 4, 
+  filename = "BI_NAc_scaley_no.png",
+)
+
+# (d) N-term acetylation subsets with y-scaling
+pepHist(
+  col_select = BI, 
+  scale_log2r = TRUE, 
+  filter_peps = exprs(contain_chars_in("_", pep_seq_mod)), 
+  scale_y = TRUE, 
+  ncol = 4, 
+  filename = "BI_NAc_scaley_yes.png",
+)
 ```
+
+Note that we do not use `start_with_str` or `start_with_chars_in`. One of the reasons is that the one-letter representation of peptide sequences contain the flanking residues on the N-terminals.  
+
+```{r NAc_peptide_subset_hist, echo=FALSE, fig.align='left', fig.cap="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_nac_scaley_no <- "images\\peptide\\histogram\\bi_nac_scaley_no.png"
+img_bi_nac_scaley_yes <- "images\\peptide\\histogram\\bi_nac_scaley_yes.png"
+knitr::include_graphics(c(img_nac_scaley_no, img_bi_nac_scaley_yes))
+```
+
+In general, the pseudoname approach can be coupled to utilities in `proteoQ` that accept the varargs of `filter_` and `slice_`. In the following example, we assume that peptide sequences are under the column `pep_seq_mod` in `Peptide.txt` with variably modified residues in lower case. we can then exclude oxidized methione or deamidated asparagine from uses in data normalization:  
+
+```{r Protein_subnorm_pseudonames, eval = FALSE}
+normPrn(
+	method_pep_prn = median, 
+	method_align = MGKernel, 
+	range_log2r = c(5, 95), 
+	range_int = c(5, 95), 
+	n_comp = 2, 
+	seed = 749662, 
+	maxit = 200, 
+	epsilon = 1e-05, 
+	slice_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
+)
+```
+
 
 ### 3.3 Random effects
 Models that incorporate both fixed- and random-effects terms in a linear predictor expression are often termed mixed effects models.  

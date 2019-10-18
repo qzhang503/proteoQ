@@ -38,7 +38,7 @@
           - [3.1.1 References on data
             scaling](#references-on-data-scaling)
           - [3.1.2 References on data CV](#references-on-data-cv)
-      - [3.2 Peptide subsets](#peptide-subsets)
+      - [3.2 Data subsets](#data-subsets)
       - [3.3 Random effects](#random-effects)
           - [3.3.1 Single random effect](#single-random-effect)
           - [3.3.2 Multiple random effects](#multiple-random-effects)
@@ -93,7 +93,7 @@ creating 'wrappers' around published R routines.
 <p class="comment">
 
 Click
-[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)
+<strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong>
 to render a html version of the README.
 
 </p>
@@ -354,7 +354,7 @@ the expression(s) on the rhs of each vararg statment by performing a
 bare evaluation using `rlang::eval_bare`. Following that, a tidy
 evaluation by `rlang::eval_tidy` will be coupled to a local facility in
 `proteoQ` to do the real work of data filtrations ((see Wickham 2019,
-ch. 20))\[5\].
+ch. 20)).
 
 The approach of data filtration taken by `normPSM` might at first looks
 strange; however, it allows me to perform data filtration in a
@@ -405,7 +405,7 @@ peptides have CV greater than 0.5 at log2 scale (**Figure
 <img src="images\psm\purge\psm_no_purge.png" title="**Figure 1A-1C.** CV of peptide log2FC. Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." alt="**Figure 1A-1C.** CV of peptide log2FC. Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" style="display: block; margin: auto;" /><img src="images\psm\purge\psm_maxcv_purge.png" title="**Figure 1A-1C.** CV of peptide log2FC. Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." alt="**Figure 1A-1C.** CV of peptide log2FC. Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" style="display: block; margin: auto;" /><img src="images\psm\purge\psm_qt_purge.png" title="**Figure 1A-1C.** CV of peptide log2FC. Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." alt="**Figure 1A-1C.** CV of peptide log2FC. Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" style="display: block; margin: auto;" />
 
 Quantitative differences greater than 0.5 at a log2 scale is relatively
-large in TMT experiments,\[6\] which can be in part ascribed to a
+large in TMT experiments,\[5\] which can be in part ascribed to a
 phenomenum called peptide co-isolation and co-fragmentation in reporter
 ion-based MS experiments. We might, for instance, perform an additional
 cleanup by removing column-wisely data points with CV greater than 0.5
@@ -503,7 +503,7 @@ normPep(
 
 The `log2FC` of peptide data will be aligned by median centering across
 samples by default. If `method_align = MGKernel` is chosen, `log2FC`
-will be aligned under the assumption of multiple Gaussian kernels.\[7\]
+will be aligned under the assumption of multiple Gaussian kernels.\[6\]
 The parameter `n_comp` defines the number of Gaussian kernels and `seed`
 set a seed for reproducible fittings. The parameters `range_log2r` and
 `range_int` define the range of `log2FC` and the range of reporter-ion
@@ -514,7 +514,7 @@ In the exemplary vararg statement of `filter_by`, we set a threshold in
 the minimum number of identifying PSMs for peptides. If we are not
 interested in mouse peptides from the pdx samples, We can specify
 similarly that `species == "human"`, or more precisely, `species !=
-"mouse"`.\[8\] Sometimes, it may remain unclear on proper data
+"mouse"`.\[7\] Sometimes, it may remain unclear on proper data
 filtration at the early stage of analysis. In that case, we may need
 additional quality assessments that we will soon explore. Alternatively,
 we may keep as much information as possible and apply varargs in
@@ -562,7 +562,7 @@ peptides.
 ##### 1.2.2.3 pepHist
 
 We next compare the `log2FC` profiles with and without scaling
-normalization:\[9\]
+normalization:\[8\]
 
 ``` r
 # without scaling
@@ -590,8 +590,8 @@ the `expt_smry.xlsx`).
 [![Select
 subsets](https://img.youtube.com/vi/3B5et8VY3hE/0.jpg)](https://www.youtube.com/embed/3B5et8VY3hE)
 
-We now are ready to plot histograms for each subset of the data.\[10\]
-In this document, we only display the plots using the `BI` subset:
+We now are ready to plot histograms for each subset of the data.\[9\] In
+this document, we only display the plots using the `BI` subset:
 
 ``` r
 # without scaling 
@@ -627,7 +627,7 @@ after the scaling normalization. However, such adjustment may cause
 artifacts when the standard deviaiton across samples are genuinely
 different. I typically test `scale_log2r` at both `TRUE` and `FALSE`,
 then make a choice in data scaling together with my a priori knowledge
-of the characteristics of both samples and references.\[11\] We will use
+of the characteristics of both samples and references.\[10\] We will use
 the same data set to illustrate the impacts of reference selections in
 scaling normalization in [Lab 3.1](###%203.1%20Reference%20choices).
 Alignment of `log2FC` against housekeeping or normalizer protein(s) is
@@ -1671,15 +1671,39 @@ purgePep(
 
 <img src="images\peptide\purge\BI_1.png" title="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images\peptide\purge\BI_1_pt_cv.png" title="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" style="display: block; margin: auto auto auto 0;" />
 
-### 3.2 Peptide subsets
+### 3.2 Data subsets
 
-In addition to the global proteomes, the CPTAC publication contains
-phosphopeptide data from the same samples.(2018) In this lab, we will
-explore the stoichiometry of phosphopeptide subsets in relative to the
-combined data sets of `global + phospho` peptides. We first performed a
-search against the combined data. The search results are available in
-`proteoQDA`. We next copy the result files over, followed by the
-analysis and visualization of the `BI` subset:
+The following functions are typically coupled to the varargs of
+`filter_` or `slice_` for the subsetting of data rows based on their
+names. More information can be found from the help document via
+`?contain_str`.
+
+  - `contain_str`: contain a literal string; "PEPTIDES" contain\_str
+    "TIDE".  
+  - `contain_chars_in`: contain some of the characters in a literal
+    string; "PEPTIDES" contain\_chars\_in "XP".  
+  - `not_contain_str`: not contain a literal string; "PEPTIDES"
+    not\_contain\_str "TED".
+  - `not_contain_chars_in`: not contain any of the characters in a
+    literal string; "PEPTIDES" not\_contain\_chars\_in "CAB".  
+  - `start_with_str`: start with a literal string. "PEPTIDES"
+    start\_with\_str "PEP".
+  - `end_with_str`: end with a literal string. "PEPTIDES" end\_with\_str
+    "TIDES".  
+  - `start_with_chars_in`: start with one of the characters in a literal
+    string. "PEPTIDES" start\_with\_chars\_in "XP".  
+  - `ends_with_chars_in`: end with one of the characters in a literal
+    string. "PEPTIDES" ends\_with\_chars\_in "XS".
+
+In this lab, we will apply `contain_chars_in` to subset peptide data
+using the CPTAC examples. In addition to the global proteomes, the CPTAC
+publication contains phosphopeptide data from the same samples. This
+allows us to explore the stoichiometry of phosphopeptide subsets in
+relative to the combined data sets of `global + phospho` peptides.
+
+We first performed a search against the combined data. The search
+results are available in `proteoQDA`. We next copy the result files
+over, followed by the analysis and visualization of the `BI` subset:
 
 ``` r
 # directory setup
@@ -1715,33 +1739,45 @@ normPSM(
 
 # peptide normalization
 normPep(
-    method_psm_pep = median, 
-    method_align = MGKernel, 
-    range_log2r = c(5, 95), 
-    range_int = c(5, 95), 
-    n_comp = 3, 
-    seed = 749662, 
-    maxit = 200, 
-    epsilon = 1e-05, 
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
 )
 
-# histograms for all peptides
+# (a) phospho subsets without y-scaling
 pepHist(
   col_select = BI, 
   scale_log2r = TRUE, 
+  filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
+  scale_y = FALSE, 
   ncol = 4, 
-  filename = "BI_all_peptides.png",
+  filename = "BI_pSTY_scaley_no.png",
 )
 
-# histograms for phosphopeptide subsets
+# (b) phospho subsets with y-scaling
 pepHist(
   col_select = BI, 
   scale_log2r = TRUE, 
-  pep_pattern = "sty", 
+  filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
+  scale_y = TRUE, 
   ncol = 4, 
-  filename = "BI_pSTY.png",
+  filename = "BI_pSTY_scaley_yes.png",
 )
 ```
+
+Note that we have applied the new grammer of `contain_chars_in("sty",
+pep_seq_mod)` to extract character strings containing letters 's', 't'
+or 'y' under the `pep_seq_mod` column in `Peptide.txt`. This corresponds
+to the subsettting of peptides with phosphorylation(s) in serine,
+thereonine or
+tyrosine.
+
+<img src="images\peptide\histogram\bi_phospho_scaley_no.png" title="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." alt="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images\peptide\histogram\bi_phospho_scaley_yes.png" title="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." alt="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." width="45%" style="display: block; margin: auto auto auto 0;" />
 
 Ideally, the profiles of the `log2FC` between the `phospho` subsets and
 the overall data would either align at the maximum density or perhaps
@@ -1751,7 +1787,58 @@ raises the possibility of measuring the stoichiometry of
 phosphoproteomes in relative to global data across sample types or
 conditions.
 
-<img src="images\peptide\histogram\bi_cmbn_peptides.png" title="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." alt="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images\peptide\histogram\bi_phospho_sub.png" title="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." alt="**Figure S2A-S2B.** Histogram visualization of peptide log2FC. Left: global + phospho; right: phospho only." width="45%" style="display: block; margin: auto auto auto 0;" />
+We can use the same approach for more data subsetting, for example,
+extracting N-terminal peptides with acetylation:
+
+``` r
+# (c) N-term acetylation subsets without y-scaling
+pepHist(
+  col_select = BI, 
+  scale_log2r = TRUE, 
+  filter_peps = exprs(contain_chars_in("_", pep_seq_mod)), 
+  scale_y = FALSE, 
+  ncol = 4, 
+  filename = "BI_NAc_scaley_no.png",
+)
+
+# (d) N-term acetylation subsets with y-scaling
+pepHist(
+  col_select = BI, 
+  scale_log2r = TRUE, 
+  filter_peps = exprs(contain_chars_in("_", pep_seq_mod)), 
+  scale_y = TRUE, 
+  ncol = 4, 
+  filename = "BI_NAc_scaley_yes.png",
+)
+```
+
+Note that we do not use `start_with_str` or `start_with_chars_in`. One
+of the reasons is that the one-letter representation of peptide
+sequences contain the flanking residues on the
+N-terminals.
+
+<img src="images\peptide\histogram\bi_nac_scaley_no.png" title="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." alt="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images\peptide\histogram\bi_nac_scaley_yes.png" title="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." alt="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." width="45%" style="display: block; margin: auto auto auto 0;" />
+
+In general, the pseudoname approach can be coupled to utilities in
+`proteoQ` that accept the varargs of `filter_` and `slice_`. In the
+following example, we assume that peptide sequences are under the column
+`pep_seq_mod` in `Peptide.txt` with variably modified residues in lower
+case. we can then exclude oxidized methione or deamidated asparagine
+from uses in data normalization:
+
+``` r
+normPrn(
+    method_pep_prn = median, 
+    method_align = MGKernel, 
+    range_log2r = c(5, 95), 
+    range_int = c(5, 95), 
+    n_comp = 2, 
+    seed = 749662, 
+    maxit = 200, 
+    epsilon = 1e-05, 
+    slice_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
+)
+```
 
 ### 3.3 Random effects
 
@@ -2202,33 +2289,29 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
     the corresponding entries under the column `Sample_ID` in
     `expt_smry.xlsx`, followed by the re-execution of `normPSM()`.
 
-5.  A pseudonym approach used in Tidyverse, such as `starts_with`,
-    `contains` may be easier to work with for logical conditions and
-    need implementation.
-
-6.  On top of technical variabilities, the ranges of CV may be further
+5.  On top of technical variabilities, the ranges of CV may be further
     subject to the choice of reference materials. Examples are available
     in Lab 3.1.
 
-7.  Density kernel estimates can occasionally capture spikes in the
+6.  Density kernel estimates can occasionally capture spikes in the
     profiles of log2FC during data alignment. Users will need to inspect
     the alignment of ratio histograms and may optimize the data
     normalization in full with different combinations of tuning
     parameters or in part against a subset of samples, before proceeding
     to the next steps.
 
-8.  Intermediate peptide results for each TMT plex and LCMS injection
+7.  Intermediate peptide results for each TMT plex and LCMS injection
     are purposely leave under the same file foler as that of
     `Peptide.txt` so that users can tell the column keys and explore
     more about the options in the row filtration of data.
 
-9.  `normPep()` will report log2FC results both before and after the
+8.  `normPep()` will report log2FC results both before and after the
     scaling of standard deviations.
 
-10. System parameters will be automatically updated from the modified
+9.  System parameters will be automatically updated from the modified
     `expt_smry.xlsx`
 
-11. The default is `scale_log2r = TRUE` throughout the package. When
+10. The default is `scale_log2r = TRUE` throughout the package. When
     calling functions involved parameter `scale_log2r`, users can
     specify explicitly `scale_log2r = FALSE` if needed, or more
     preferably define its value under the global environment.

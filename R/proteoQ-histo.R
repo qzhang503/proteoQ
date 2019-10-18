@@ -4,13 +4,14 @@
 #' @importFrom magrittr %>%
 #' @importFrom tidyr gather
 plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep_pattern, 
-                       show_curves, show_vline, filepath = NULL, filename, ...) {
+                       show_curves, show_vline, scale_y, filepath = NULL, filename, ...) {
 
   stopifnot(nrow(label_scheme_sub) > 0)
   stopifnot(rlang::is_logical(scale_log2r))
   stopifnot(!grepl("[^A-z_]", pep_pattern))
   stopifnot(rlang::is_logical(show_curves))
   stopifnot(rlang::is_logical(show_vline))
+  stopifnot(rlang::is_logical(scale_y))
 
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
@@ -42,8 +43,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 	
 	# cat("Available column keys for data filtration: \n")
 	# cat(paste0(names(df), "\n"))
-	
-	df <- df %>% filters_in_call(!!!lang_dots)
+
+	if (scale_y) df <- df %>% filters_in_call(!!!lang_dots)
 	
 	by = (xmax - xmin)/200
 	nrow <- nrow(df)
@@ -128,6 +129,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 	  stopifnot(nrow(df) > 0)
 	}
 	
+	if (!scale_y) df <- df %>% filters_in_call(!!!lang_dots)
+	
 	df_melt <- df %>%
 		dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%
 		dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>%
@@ -195,20 +198,22 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'  key will be \code{Select}.
 #'@param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
 #'  of standard deviation across all samples.
-#'@param pep_pattern Character string containing one-letter representation of
-#'  amino acids. At the "zzz" default, all peptides will be used. Letters in the
-#'  character string are case sensitive. For example, \code{pep_pattern = "y"}
-#'  will extract peptides with tyrosine phosphorylation. To extract peptides
-#'  with N-terminal acetylation, use \code{pep_pattern = "_"}. The parameter
-#'  provides a means for high-level subsetting of peptide entries in a data set.
-#'  In general, one can use the \code{filter-in-function} feature described in
-#'  \code{\link{normPSM}} to subset data.
+#'@param pep_pattern Softely depreciated. Character string containing one-letter
+#'  representation of amino acids. At the "zzz" default, all peptides will be
+#'  used. Letters in the character string are case sensitive. For example,
+#'  \code{pep_pattern = "y"} will extract peptides with tyrosine
+#'  phosphorylation. To extract peptides with N-terminal acetylation, use
+#'  \code{pep_pattern = "_"}. The parameter provides a means for high-level
+#'  subsetting of peptide entries in a data set. In general, one can use the
+#'  \code{filter-in-function} feature described in \code{\link{normPSM}} to
+#'  subset data.
 #'
 #'@param show_curves Logical; if TRUE, shows the fitted curves. The curve
 #'  parameters are based on the latest call to \code{normPep} or \code{normPrn}.
 #'  This feature can inform the effects of data filtration on the alignment of
 #'  \code{logFC} profiles.
 #'@param show_vline Logical; if TRUE, shows the vertical lines at \code{x = 0}.
+#'@param scale_y Logical; if TRUE, scale data on the \code{y-axis}.
 #'@param df The name of input data file. By default, it will be determined
 #'  automatically by the value of \code{id}.
 #'@param filepath A file path to output results. By default, it will be
@@ -237,7 +242,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'@export
 proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                         col_select = NULL, scale_log2r = FALSE, pep_pattern = "zzz", 
-                        show_curves = TRUE, show_vline = TRUE, 
+                        show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 
   id <- rlang::enexpr(id)
@@ -255,7 +260,7 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = FALSE,
 	          df = !!df, filepath = !!filepath, filename = !!filename,
 	          anal_type = "Histogram")(pep_pattern = pep_pattern, show_curves = show_curves,
-	                                   show_vline = show_vline, ...)
+	                                   show_vline = show_vline, scale_y = scale_y, ...)
 }
 
 
@@ -280,14 +285,16 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #' # proteins
 #' prnHist(col_select = Select)
 #'
-#' ## data filtration
+#' ## row filtration of data
 #' # phosphopeptide subset
 #' pepHist(
-#'   pep_pattern = "sty",
+#'   scale_log2r = TRUE,
+#'   filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
+#'   scale_y = FALSE, 
 #'   filename = "pepHist_fil_by_sty.png",
 #' )
 #'
-#' # recommended way to extract phosphopeptides
+#' # or use `grepl` directly
 #' pepHist(
 #'   filter_by = exprs(grepl("[sty]", pep_seq_mod)),
 #'   filename = "pepHist_fil_by_sty.png",
@@ -295,7 +302,8 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #' # exclude oxidized methione or deamidated asparagine
 #' pepHist(
-#'   filter_by = exprs(!grepl("[mn]", pep_seq_mod)),
+#'   # filter_by = exprs(!grepl("[mn]", pep_seq_mod)),
+#'   filter_by = exprs(not_contain_chars_in("mn", pep_seq_mod)),
 #'   filename = "pepHist_fil_no_mn.png",
 #' )
 #'
@@ -313,7 +321,7 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #' #   considerable offset(s) between the lead and the lag
 #' pepHist(
 #'   filter_by_npsm = exprs(n_psm >= 10),
-#'   filter_by_mn = exprs(!grepl("[mn]", pep_seq_mod)),
+#'   filter_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
 #'   filename = "pepHist_filtered.png",
 #' )
 #'

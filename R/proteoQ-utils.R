@@ -1893,3 +1893,124 @@ count_phosphopeps <- function() {
   )
 }
 
+
+
+
+#' Row filtration helpers
+#'
+#' \code{contain_str}: contain a literal string; "PEPTIDES" contain_str "TIDE".
+#' @param match A character string containing the pattern for matching.
+#' @param vars A character string of the name of a variable. The default is
+#'   FALSE.
+#' @param ignore.case Logical; if TRUE, ignores case when matching.
+#' @examples
+#' \dontrun{
+#' pepHist(
+#'   col_select = BI,
+#'   scale_log2r = TRUE,
+#'   filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)),
+#'   scale_y = FALSE,
+#'   ncol = 4,
+#'   filename = "BI_pSTY_scaley_no.png",
+#' )
+#'
+#' }
+#' @export
+contain_str <- function (match, vars, ignore.case = FALSE) {
+  stopifnot(is_string(match), nchar(match) > 0)
+  grepl(match, vars, fixed = TRUE, ignore.case)
+}
+
+#' Row filtration helpers
+#'
+#' \code{contain_chars_in}: contain some of the characters in a literal string;
+#' "PEPTIDES" contain_chars_in "XP".
+#' @rdname contain_str
+#' @inheritParams purgePSM
+#' @export
+contain_chars_in <- function (match, vars, ignore.case = FALSE) {
+  stopifnot(is_string(match), nchar(match) > 0)
+  grepl(paste0("[", match, "]"), vars, fixed = FALSE, ignore.case)
+}
+
+#' Row filtration helpers
+#'
+#' \code{not_contain_str}" not contain a literal string; "PEPTIDES"
+#' not_contain_str "TED".
+#' @rdname contain_str
+#' @inheritParams purgePSM
+#' @export
+not_contain_str <- function (match, vars, ignore.case = FALSE) {
+  stopifnot(is_string(match), nchar(match) > 0)
+  !grepl(match, vars, fixed = TRUE, ignore.case)
+}
+
+#' Row filtration helpers
+#'
+#' \code{not_contain_chars_in}: not contain any of the characters in a literal
+#' string; "PEPTIDES" not_contain_chars_in  "CAB".
+#' @rdname contain_str
+#' @inheritParams purgePSM
+#' @export
+not_contain_chars_in <- function (match, vars, ignore.case = FALSE) {
+  stopifnot(is_string(match), nchar(match) > 0)
+  !grepl(paste0("[", match, "]"), vars, fixed = FALSE, ignore.case = FALSE)
+}
+
+#' Row filtration helpers
+#'
+#' \code{start_with_str}: start with a literal string. "PEPTIDES" start_with_str
+#' "PEP".
+#' @rdname contain_str
+#' @inheritParams purgePSM
+#' @export
+start_with_str <- function (match, vars, ignore.case = FALSE) {
+  stopifnot(is_string(match), nchar(match) > 0)
+  grepl(paste0("^", match), vars, fixed = TRUE, ignore.case)
+}
+
+#' Row filtration helpers
+#'
+#' \code{end_with_str}: end with a literal string. "PEPTIDES" end_with_str
+#' "TIDES".
+#' @rdname contain_str
+#' @inheritParams purgePSM
+#' @export
+end_with_str <- function (match, vars, ignore.case = FALSE) {
+  stopifnot(is_string(match), nchar(match) > 0)
+  grepl(paste0(match, "$"), vars, fixed = TRUE, ignore.case)
+}
+
+#' Row filtration helpers
+#'
+#' \code{start_with_chars_in}: start with one of the characters in a literal
+#' string. "PEPTIDES" start_with_chars_in "XP".
+#' @rdname contain_str
+#' @inheritParams purgePSM
+#' @export
+start_with_chars_in <- function (match, vars, ignore.case = FALSE) {
+  stopifnot(is_string(match), nchar(match) > 0)
+  grepl(paste0("^[", match, "]"), vars, fixed = FALSE, ignore.case)
+}
+
+#' Row filtration helpers
+#'
+#' \code{ends_with_chars_in}: end with one of the characters in a literal
+#' string. "PEPTIDES" ends_with_chars_in "XS".
+#' @rdname contain_str
+#' @inheritParams purgePSM
+#' @export
+ends_with_chars_in <- function (match, vars, ignore.case = FALSE) {
+  stopifnot(is_string(match), nchar(match) > 0)
+  grepl(paste0("[", match, "]$"), vars, fixed = FALSE, ignore.case)
+}
+
+rows_are_all <- function (match, vars, ignore.case = FALSE) {
+  stopifnot(is_string(match), nchar(match) > 0)
+  !grepl(paste0("[^", match, "]"), vars, fixed = FALSE, ignore.case = FALSE)
+}
+
+rows_are_not_all <- function (match, vars, ignore.case = FALSE) {
+  stopifnot(is_string(match), nchar(match) > 0)
+  grepl(paste0("[^", match, "]"), vars, fixed = FALSE, ignore.case = FALSE)
+}
