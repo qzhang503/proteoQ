@@ -5,18 +5,6 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
-  word_document:
-    toc: yes
-  github_document:
-    fig_caption: yes
-    toc: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  md_document:
-    toc: yes
-    toc_depth: 4
-    variant: gfm
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -25,6 +13,18 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  github_document:
+    fig_caption: yes
+    toc: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  word_document:
+    toc: yes
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: gfm
 ---
 
 ---
@@ -110,7 +110,7 @@ Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tan
 The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
 
 <p class="comment">
-Click **[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)** to render a html version of the README.  
+Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README.  
 </p>
 
 ## Installation
@@ -239,7 +239,7 @@ At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence 
 
 PSM outliers will be assessed at a basis of per peptide and per sample at `rm_outliers = TRUE`, which can be a slow process for large data sets. To circumvent repeated efforts in the assessment of PSM outliers, we may set `rm_outliers = FALSE` and `plot_rptr_int = TRUE` when first executing `normPSM()`. We then visually inspect the distributions of reporter-ion intensity. Empirically, PSMs with reporter-ion intensity less than 3,000 are trimmed and  samples with median intensity that is 2/3 or less to the average of majority samples are removed from further analysis.^[The sample removal and PSM re-processing can be achieved by deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-execution of `normPSM()`.]   
 
-The `normPSM` function can take additional, user-defined arguments of `dot-dot-dot` [see @hwickham2019advr, ch. 6] for the row filtration of data using logical conditions. In the above example, we have limited ourselves to peptide entries with `pep_expect <= 0.1` and `pep_score >= 15` by supplying the variable argument (vararg) of `filter_psms`. We further filtered the data at `pep_rank == 1` with another vararg of `filter_by_more`. The creation and assignment of varargs need to follow a format of `filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the names of varargs on the lhs start with the character string of `filter_` to indicate the task of data filtration. On the rhs, `pep_expect`, `pep_score` and `pep_rank` are column keys that can be found from the PSM data. Backticks will be needed for column keys containing white space(s) and/or special character(s): `` `key with space (sample id in parenthesis)` ``. 
+The `normPSM` function can take additional, user-defined arguments of `dot-dot-dot` [see @hwickham2019advr, ch. 6] for the row filtration of data using logical conditions. In the above example, we have limited ourselves to peptide entries with `pep_expect <= 0.1` and `pep_score >= 15` by supplying the variable argument (vararg) of `filter_psms`. We further filtered the data at `pep_rank == 1` with another vararg of `filter_by_more`. The creation and assignment of varargs need to follow a format of `filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the names of varargs on the lhs start with the character string of `filter_` to indicate the task of data filtration. On the rhs, `pep_expect`, `pep_score` and `pep_rank` are column keys that can be found from the PSM data. Backticks will be needed for column keys containing white space(s) and/or special character(s): `` `key with space (sample id in parenthesis)` ``.  
 
 I am new to `R`. It looks like that base `R` does not support the direct assignment of logical expressions to function arguments. To get around this, I took advantage of the facility of non-standard evaluation in `rlang` package in that the logical conditions are supplied within the round parenthesis after `exprs`. Next, the `proteoQ` program will obtain the expression(s) on the rhs of each vararg statment by performing a bare evaluation using `rlang::eval_bare`. Following that, a tidy evaluation by `rlang::eval_tidy` will be coupled to a local facility in `proteoQ` to do the real work of data filtrations ([see @hwickham2019advr, ch. 20]). 
 
