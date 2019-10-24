@@ -5,6 +5,14 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
+  word_document:
+    toc: yes
+  github_document:
+    fig_caption: yes
+    toc: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
   md_document:
     toc: yes
     toc_depth: 4
@@ -17,14 +25,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  github_document:
-    fig_caption: yes
-    toc: yes
-  word_document:
-    toc: yes
 ---
 
 ---
@@ -110,7 +110,7 @@ Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tan
 The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
 
 <p class="comment">
-Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README.  
+Click **[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)** to render a html version of the README.  
 </p>
 
 ## Installation

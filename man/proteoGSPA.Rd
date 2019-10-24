@@ -8,7 +8,8 @@
 proteoGSPA(id = gene, scale_log2r = TRUE, df = NULL,
   filepath = NULL, filename = NULL, impute_na = TRUE,
   complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 0.01, logFC_cutoff = log2(1.2), min_size = 10, ...)
+  pval_cutoff = 0.01, logFC_cutoff = log2(1.2), min_size = 10,
+  task = "anal", ...)
 
 prnGSPA(...)
 }

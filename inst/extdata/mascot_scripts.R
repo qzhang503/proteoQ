@@ -496,7 +496,7 @@ plot_metaNMF(
 prnGSPA(
   impute_na = FALSE, 
   pval_cutoff = 5E-2, 
-  gset_nm = c("go_sets", "kegg_sets"), 
+  gset_nms = c("go_sets", "kegg_sets"), 
 )
 
 # GSPA under volcano plots

@@ -73,9 +73,9 @@
 proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_log2r = TRUE,
 													filepath = NULL, filename = NULL, impute_na = TRUE, adjP = FALSE,
 													show_labels = TRUE, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-													show_sig = "none", gset_nms = "go_sets", ...) {
+													show_sig = "none", gset_nms = c("go_sets", "kegg_sets"), ...) {
 	
-  options(scipen=999)
+  options(scipen = 999)
 	options(warn = 1)
   
   old_opt <- options(max.print = 99999)
@@ -91,8 +91,8 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	stopifnot(rlang::is_double(pval_cutoff))
 	stopifnot(rlang::is_double(logFC_cutoff))
 
-	err_msg_1 <- "Unrecognized 'id'; needs to be \"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\" or \"term\""
-	err_msg_2 <- "Unrecognized 'anal_type'; needs to be \"Volcano\" or \"GSPA\""
+	err_msg_1 <- "Unrecognized 'id'; needs to be one of \"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\" or \"term\""
+	err_msg_2 <- "Unrecognized 'anal_type'; needs to be one of \"Volcano\" or \"GSPA\""
 	err_msg_3 <- "Volcano plots of peptides not available for GSPA."
 	err_msg_4 <- "GSPA results not found. Perform prnGSPA() first."
 
@@ -107,10 +107,8 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	filename <- rlang::enexpr(filename)	
 	show_sig <- rlang::as_string(rlang::enexpr(show_sig))
 	
-	prnGSPA_gset_nms <- match_gset_nm(gset_nms)
-	gset_nms <- gset_nms %>% .[. %in% prnGSPA_gset_nms]
+	gset_nms <- gset_nms %>% .[. %in% match_gset_nms(gset_nms)]
 	if (is.null(gset_nms)) stop ("Unknown gene sets.")
-	rm(prnGSPA_gset_nms)
 
 	if (id %in% c("prot_acc", "gene")) {
 	  cat(paste0("id = \"", id, "\"", " after parameter matching to normPrn()\n"))
@@ -211,9 +209,9 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	  dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
 	  dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
 	
+	species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
+	load_dbs(gset_nms = gset_nms, species = species)
 	
-	# filtration here...
-	# i.e. kinase volcano pnly
 	dots <- rlang::enexprs(...)
 	filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 	arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
@@ -229,7 +227,6 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 
-	# check the exisitence of "kinase" column
 	if (!any(names(df) == "kin_attr")) {
 		cat("Columns of kinase annoation not found.\n")
 		cat("Set 'annot_kinases = FALSE'.\n")
@@ -292,6 +289,7 @@ fml_volcano <- function (df, formula, col_ind, id,
                          filepath, filename, adjP, show_labels, anal_type, 
 												 pval_cutoff, logFC_cutoff, show_sig, gset_nms, 
                          ...) {
+  
   id <- rlang::as_string(rlang::enexpr(id))
   
   df <- df %>%
@@ -301,8 +299,7 @@ fml_volcano <- function (df, formula, col_ind, id,
   
   plotVolcano_sub(df = df, id = !!id, filepath = file.path(filepath, formula), 
                   filename = filename, adjP = adjP, show_labels = show_labels,
-                  anal_type = anal_type, gset_nms)(pval_cutoff, 
-                                                   logFC_cutoff, show_sig, subdir = formula, ...)
+                  anal_type = anal_type, gset_nms)(pval_cutoff, logFC_cutoff, show_sig, subdir = formula, ...)
 }
 
 
@@ -351,28 +348,12 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 				volcano_theme = volcano_theme, filepath = filepath, filename = filename,
 				adjP = adjP, show_labels = show_labels, ...)
 		}
-	} else if (anal_type == "mapGSVA") {
-		function(pval_cutoff = 1E-6, logFC_cutoff = log2(1.2), show_sig = "none", ...) {
-			gsea_res <- prep_gsva(contrast_groups, pval_cutoff)
-			gsets <- c(dbs$go_sets, dbs$kegg_sets, dbs$c2_msig)
-
-			gsVolcano(df, contrast_groups, gsea_res, gsea_key = "term", gsets, volcano_theme,
-				filepath, filename, adjP, show_labels, show_sig, pval_cutoff, ...)
-		}
-	} else if (anal_type == "mapGAGE") {
-		function(pval_cutoff = 1E-6, logFC_cutoff = log2(1.2), show_sig = "none", ...) {
-			gsea_res <- prep_gage(contrast_groups, key = "term", pval_cutoff)
-			gsets <- c(dbs$go_sets, dbs$kegg_sets, dbs$c2_msig)
-
-			gsVolcano(df, contrast_groups, gsea_res, gsea_key = "term", gsets, volcano_theme,
-				filepath, filename, adjP, show_labels, show_sig, pval_cutoff, ...)
-		}
 	} else if (anal_type == "mapGSPA")
 	  function(pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), show_sig = "none", subdir = formula, ...) {
 	    gsea_res <- do.call(rbind,
 	                        purrr::map(
 	                          list.files(path = file.path(dat_dir, "Protein\\GSPA", subdir), 
-	                                     pattern = "Protein_GSPA_.*\\.csv$", , full.names = TRUE),
+	                                     pattern = "^Protein_GSPA_.*\\.csv$", , full.names = TRUE),
 	                          readr::read_csv
 	                        )) %>% 
 	      dplyr::filter(.$term %in% names(gsets))
@@ -553,8 +534,10 @@ gsVolcano <- function(df, contrast_groups, gsea_res, gsea_key = "term", gsets, v
 	x_label <- expression("Ratio ("*log[2]*")")
 	y_label <- ifelse(adjP, expression("pVal ("*-log[10]*")"), expression("adjP ("*-log[10]*")"))
 	
-	if (nrow(gsea_res) == 0) stop("No GSEA terms availbale for volcano plots.")
-	
+	if (nrow(gsea_res) == 0) {
+	  stop("No GSEA terms availbale for volcano plots. Consider relax `pval_cutoff` and/or `logFC_cutoff`.")
+	}
+
 	N <- pmin(dplyr::n_distinct(gsea_res[[gsea_key]]), 100)
 	terms <- gsea_res %>%
 	  dplyr::arrange(p_val) %>% 
@@ -750,8 +733,7 @@ gspaMap <- function (...) {
   if (any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\mapGSPA\\log"), recursive = TRUE, showWarnings = FALSE)
-  load_dbs()
-  
+
   quietly_log <- purrr::quietly(proteoVolcano)(id = gene, anal_type = "mapGSPA", ...)
   quietly_log$result <- NULL
   purrr::walk(quietly_log, write, 
