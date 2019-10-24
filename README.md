@@ -19,12 +19,12 @@ output:
   pdf_document:
     toc: yes
     number_sections: true
+  word_document:
+    toc: yes
   md_document:
     toc: yes
     toc_depth: 4
     variant: gfm
-  word_document:
-    toc: yes
 ---
 
 ---
