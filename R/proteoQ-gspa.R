@@ -472,7 +472,7 @@ essential_gsets_interim <- function (out, df, filepath, filename, formula, all_s
 
 
 
-plot_GSPAhm <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
+plot_GSPAHM <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
   if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
   
@@ -481,9 +481,7 @@ plot_GSPAhm <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   
   dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  proteoGSPA(id = gene, task = plothm, 
-             annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, 
-             ...)
+  proteoGSPA(id = gene, task = plothm, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
   browser()
   
   quietly_log <- purrr::quietly(proteoGSPA)(id = gene, task = plothm, 
@@ -515,24 +513,132 @@ gspaHM <- function(id, label_scheme_sub, anal_type, scale_log2r,
   
   # need formula subdir
   # dots also contain annot_cols and annot_colnames
-  names(dots)
+  formulas <- names(fmls)
+  
   
   # df <- df %>% 
   #   filters_in_call(!!!filter_dots) %>% 
   #   arrangers_in_call(!!!arrange_dots)
   
-  # if (length(formulas) > 0) purrr::map(formulas, fml_gspahm, df = df, col_ind = col_ind, 
-  #                                      id = !!id, gsets = gsets, pval_cutoff, logFC_cutoff, 
-  #                                      filepath = filepath, filename = filename, min_size = min_size, 
-  #                                      !!!dots)
+  if (length(formulas) > 0) purrr::map(formulas, fml_gspahm, 
+                                      id = !!id, filepath = filepath, filename = filename, 
+                                      !!!dots)
 
-  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
+  # ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
 
 }
 
 
 
+fml_gspahm <- function (formula, id, filepath, filename, ...) {
 
+  # instead: load file "essmap_Protein_GSPA_Z_W2_bat.csv"
+  # all_by_greedy <- map_essential(all_sets, greedy_sets, out)
+  
+  dir.create(file.path(filepath, formula), recursive = TRUE, showWarnings = FALSE)
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  df <- prep_gspa(df = df, formula = formula, col_ind = col_ind, 
+                  pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff) 
+  
+  df <- df %>% 
+    dplyr::mutate(p_val = -log10(p_val)) %>% 
+    dplyr::mutate(valence = ifelse(.$log2Ratio > 0, "pos", "neg")) %>% 
+    dplyr::mutate(valence = factor(valence, levels = c("neg", "pos"))) 
+  
+  # imputation of NA to 0 increases the number of entries in descriptive "mean" calculation, 
+  # which is like a penalty function
+  df <- df %>% 
+    tidyr::complete(entrez, contrast, valence) %>% 
+    dplyr::mutate(p_val = ifelse(is.na(p_val), 0, p_val)) # %>% 
+  # dplyr::mutate(log2Ratio = ifelse(is.na(log2Ratio), 0, log2Ratio))
+  
+  contrast_groups <- unique(df$contrast) %>% as.character()
+  
+  gsets <- gsets %>% .[purrr::map_lgl(., ~ length(.x) > min_size)]
+  
+  res <- purrr::map(gsets, gapa_summary, df, min_size * length(contrast_groups) * 2) 
+  idx <- purrr::map_dbl(res, is.null)
+  
+  res <- res[!idx] %>% 
+    do.call(rbind, .) %>% 
+    tibble::rownames_to_column("term") %>% 
+    dplyr::mutate(term = factor(term)) %>% 
+    dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), ~ abs(.x)) %>% 
+    dplyr::group_by(term) %>% 
+    dplyr::arrange(term) %>% 
+    data.frame(check.names = FALSE) %>% 
+    dplyr::mutate_at(vars(grep("^pVal\\s+\\(", names(.))), ~ 1/10^.x)
+  
+  pass <- purrr::map(res[paste0("pVal (", contrast_groups, ")")], ~ .x <= pval_cutoff) %>%
+    dplyr::bind_cols() %>%
+    rowSums() %>%
+    `>`(0)
+  
+  res_pass <- res[pass, ]
+  
+  adjp <- res_pass %>% 
+    dplyr::select(grep("^pVal\\s+\\(", names(.))) %>% 
+    purrr::map(~ p.adjust(., "BH")) %>% 
+    data.frame(check.names = FALSE) %>% 
+    `names<-`(gsub("pVal", "q_val", colnames(.))) %>% 
+    `names<-`(gsub("^q_val\\s+\\((.*)\\)", "\\1", names(.))) %>% 
+    tidyr::gather(key = contrast, value = q_val) %>% 
+    dplyr::select(-contrast)
+  
+  log2fc <- res_pass %>% 
+    dplyr::select(grep("^log2Ratio\\s+\\(", names(.))) %>% 
+    `names<-`(gsub("^log2Ratio\\s+\\((.*)\\)", "\\1", names(.))) %>% 
+    tidyr::gather(key = contrast, value = log2fc) %>% 
+    dplyr::select(-contrast)
+  
+  pval <- res_pass %>% 
+    dplyr::select(-grep("^log2Ratio\\s+\\(", names(.))) %>% 
+    `names<-`(gsub("^pVal\\s+\\((.*)\\)", "\\1", names(.))) %>% 
+    tidyr::gather(key = contrast, value = p_val, -term)
+  
+  fn_prefix <- paste0(gsub("\\.[^.]*$", "", filename), "_", formula)
+  out_nm <- paste0(fn_prefix, ".csv")
+  
+  out <- dplyr::bind_cols(pval, adjp, log2fc) %>% 
+    dplyr::mutate_at(.vars = grep("^p_val$|^adjP$", names(.)), format, scientific = TRUE, digits = 2) %>%
+    dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2)
+  
+  # find essential sets
+  gsets <- gsets %>% 
+    .[!grepl("molecular_function$", names(.))] %>% 
+    .[!grepl("cellular_component$", names(.))] %>% 
+    .[!grepl("biological_process$", names(.))]
+  
+  all_sets <- purrr::map2(gsets, names(gsets), ~ {
+    .x %>% 
+      tibble() %>% 
+      dplyr::mutate(set = .y)
+  }) %>% 
+    bind_rows() %>% 
+    `names<-` (c("id", "term")) %>% 
+    dplyr::filter(id %in% unique(df$entrez)) %>% 
+    dplyr::select(c("term", "id")) %>% 
+    dplyr::filter(term %in% res_pass$term)
+  
+  # one id only assign to one term without overlap
+  # 969 significant ids in 124 terms
+  # non-redundant mapping of ids to greedy terms
+  # no redundant ids
+  greedy_sets <- all_sets %>% 
+    RcppGreedySetCover::greedySetCover(FALSE) %>% 
+    dplyr::select(term) %>% 
+    dplyr::filter(!duplicated(term)) %>% 
+    dplyr::mutate(is_essential = TRUE)
+  
+  out <- greedy_sets %>% dplyr::right_join(., out, by = "term") %T>% 
+    write.csv(file.path(filepath, formula, out_nm), row.names = FALSE)
+  
+  map_essential(all_sets, greedy_sets, out) %>% 
+    write.csv(file.path(filepath, formula, paste0("essmap_", fn_prefix, ".csv")), row.names = FALSE)
+  
+  invisible(out)
+}
 
 
 
