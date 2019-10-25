@@ -56,7 +56,8 @@ Imports:
     XML,
     downloader,
     backports,
-    RcppGreedySetCover
+    RcppGreedySetCover,
+    networkD3
 RoxygenNote: 6.1.1
 Remotes:
   qzhang503/proteoQDA, 
