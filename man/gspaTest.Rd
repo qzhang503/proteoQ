@@ -6,8 +6,9 @@
 \usage{
 gspaTest(df, id = "entrez", label_scheme_sub, filepath, filename,
   complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), min_size = 6, ...)
+  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.05,
+  min_size = 6, ...)
 }
 \description{
-logFC_cutoff subsets data for adjusted pvals
+logFC_cutoff setset of data before the calculation of adjusted pvals
 }

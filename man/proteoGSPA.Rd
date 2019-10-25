@@ -3,15 +3,18 @@
 \name{proteoGSPA}
 \alias{proteoGSPA}
 \alias{prnGSPA}
+\alias{prnGSPAHM}
 \title{GSPA of protein data}
 \usage{
 proteoGSPA(id = gene, scale_log2r = TRUE, df = NULL,
   filepath = NULL, filename = NULL, impute_na = TRUE,
   complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 0.01, logFC_cutoff = log2(1.2), min_size = 10,
-  task = "anal", ...)
+  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.01,
+  min_size = 10, task = "anal", ...)
 
 prnGSPA(...)
+
+prnGSPAHM(annot_cols = NULL, annot_colnames = NULL, ...)
 }
 \arguments{
 \item{id}{Character string to indicate the type of data. The value will be
@@ -41,23 +44,36 @@ enrichment analysis. The possible values are in \code{c("go_sets",
 
 \item{var_cutoff}{Not currently used.}
 
-\item{pval_cutoff}{The cut-off in significance \code{pVal}. Protein entries
+\item{pval_cutoff}{The cut-off in protein significance \code{pVal}. Entries
 with \code{pVals} smaller than the threshold will be ignored.}
 
-\item{logFC_cutoff}{The cut-off in \code{log2FC}. Protein entries with
+\item{logFC_cutoff}{The cut-off in protein \code{log2FC}. Entries with
 \code{log2FC} smaller than the threshold will be ignored.}
+
+\item{gspval_cutoff}{The cut-off in significance \code{pVal} of gene sets.
+Gene sets with \code{pVals} smaller than the threshold will be ignored.}
 
 \item{min_size}{Minimum number of protein entries for consideration of a gene
 set test.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
+
+\item{annot_cols}{For use in heat map visualization of gene sets. A character
+vector of column keys in \code{essmap_Protein_GSPA_...csv}. The values under
+the selected keys will be used to color-code sample IDs on the top of the
+indicated plot.}
+
+\item{annot_colnames}{For use in heat map visualization of gene sets. A
+character vector of replacement name(s) to annot_cols.}
 }
 \description{
 \code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
 (GSPA) aganist protein \code{log2FC} data
 
 \code{prnGSPA} is a wrapper of \code{\link{proteoGSPA}}
+
+\code{prnGSPAHM} is a wrapper of \code{\link{proteoGSPA}}
 }
 \details{
 The significance \code{pVals} of proteins are first obtained from
@@ -70,18 +86,56 @@ the significance of gene set enrichment. The arguments \code{pval_cutoff} and
 
 The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 default.
+
+\code{prnGSPAHM} visualizes the distance heat map between essential and all
+gene sets. The distance is \eqn{1 - x} where \eqn{x} is the percent overlap
+for ids under a gene set.
 }
 \examples{
 prnGSPA(
   scale_log2r = TRUE,
   impute_na = FALSE,
   pval_cutoff = 5E-2,
+  gspval_cutoff = 5E-3,
   gset_nms = c("go_sets", "kegg_sets"),
 
   filter_by_npep = exprs(prot_n_pep >= 2),
   # `filename(s)` will be automated,
 )
 
+
+# distances of GSPA terms
+prnGSPAHM(
+  filter_by = exprs(count >= 8, percent >= .20),
+  annot_cols = "source",
+  annot_colnames = "Essential set index",
+  
+  fontsize = 16,
+  fontsize_row = 20,
+  fontsize_col = 20,
+  fontsize_number = 8,
+  border_color = "grey60",
+  cellwidth = 24,
+  cellheight = 24,
+)
+
+# custom colors
+# `source` and `count` are column keys in `essmap_Protein_GSPA...csv`
+prnGSPAHM(
+  annot_cols = c("source", "count"),
+  annot_colnames = c("Essential set index", "Count"),	
+  filter_by = exprs(count >= 8, percent >= .20),
+  
+  fontsize = 16,
+  fontsize_row = 20,
+  fontsize_col = 20,
+  fontsize_number = 8,
+  border_color = "grey60",
+  cellwidth = 24,
+  cellheight = 24,
+  color = colorRampPalette(c("blue", "white", "red"))(100),
+  filename = "custom_colors.png"
+)
 \dontrun{
 }
 

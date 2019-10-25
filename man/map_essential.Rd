@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-gspa.R
 \name{map_essential}
 \alias{map_essential}
-\title{A helper function}
+\title{A helper function for mapping btw gene sets and essential gene sets}
 \usage{
 map_essential(all_sets, greedy_sets, out)
 }
 \description{
-A helper function
+A helper function for mapping btw gene sets and essential gene sets
 }

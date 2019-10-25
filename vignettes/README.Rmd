@@ -902,7 +902,7 @@ prnSig(
 In addition to the fixed effects shown above, significance tests with additive random effects are also supported. Analogous to protein data, peptide data can be analyzed and visualized with `pepSig` and `pepVol`. More examples can be found via `?prnSig` and [Lab 3.3](### 3.3 Random effects) in the document.  
 
 ### 2.5 Gene sets under volcano plots
-There are a handful of `R` tools for gene set enrichement analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can visualize the enrichment of gene sets under the context of volcano plots at given contrasts. Provided the richness of `R` utilities in linear modelings, the `preoteoQ` takes a naive approach thereafter to visualize the *asymmetricity* of protein probability *p*-values under volcano plots. In the analysis of Gene Set Probability Asymmetricity (`GSPA`), the significance `pVals` of proteins obtained from linear modeling are taken, followed by the calculation of the geometric mean of `pVals` for the groups of up- or down-regulated proteins within a gene set, as well as the corresponding mean `log2FC`. The quotient of the two `pVals` is then taken to represent the significance of enrichment, and the delta of the two `log2FC` for use as the fold change of enrichment. The arguments `pval_cutoff` and `logFC_cutoff` allow us to filter out low impact genes prior to the analysis. More details can be found from the help document via `?prnGSPA`. Note that there is no peptide counterpart for the enrichment analysis.  
+There are a handful of `R` tools for gene set enrichement analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can visualize the enrichment of gene sets under the context of volcano plots at given contrasts. Provided the richness of `R` utilities in linear modelings, the `preoteoQ` takes a naive approach thereafter to visualize the *asymmetricity* of protein probability *p*-values under volcano plots. In the analysis of Gene Set Probability Asymmetricity (`GSPA`), the significance `pVals` of proteins obtained from linear modeling are taken, followed by the calculation of the geometric mean of `pVals` for the groups of up- or down-regulated proteins within a gene set, as well as the corresponding mean `log2FC`. The quotient of the two `pVals` is then taken to represent the significance of enrichment, and the delta of the two `log2FC` for use as the fold change of enrichment. At the input levels, the arguments `pval_cutoff` and `logFC_cutoff` allow us to filter out low impact genes prior to the analysis. On the output levels, argument `gspval_cutoff` sets a threshold in gene set significance for reporting. More details can be found from the help document via `?prnGSPA`. Note that there is no peptide counterpart for the enrichment analysis.  
 
 We began with the analysis of `GSPA` against enrichment terms defined in GO and KEGG data sets:  
 
@@ -911,6 +911,7 @@ prnGSPA(
   impute_na = FALSE,
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-3,
   gset_nms = c("go_sets", "kegg_sets"),
 )
 ```
@@ -922,22 +923,55 @@ We next visualize the distribution of protein `log2FC` and `pVal` within gene se
 ```{r gspaMap, eval = FALSE}
 gspaMap(
   show_labels = TRUE,
-  pval_cutoff = 5E-3,
-  logFC_cutoff = log2(1.2),
+  pval_cutoff = 5E-3, # significance threshold for mapping
+  logFC_cutoff = log2(1.2), # FC threshold for mapping
   gset_nms = c("go_sets"),
   show_sig = p,
-  yco = 0.01,
+  xco = 1.2, # position of two vertical lines for FC
+  yco = 0.01, # position of a horizental line for pVal
 )
 ```
 
 This will produce the volcano plots of proteins under gene sets that have passed our selection criteria. Here, we show one of the examples:  
 
-```{r gspaMap_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 7.** An example of volcano plots of protein log2FC under a gene set", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r gspaMap_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_volcplot_gspa <- "images\\protein\\volcplot\\urogenital_system_development.png"
 knitr::include_graphics(c(img_volcplot_gspa))
 ```
 
-The list of gene sets will by default match those provided in `prnGSPA`. Despite in the above example, we chose to plot the results against gene sets in `GO`, not `KEGG`. More details can be accessed from the help document via `?gspaMap`.  
+The names of gene sets will by default match those provided in `prnGSPA`. Despite in the above example, we chose to plot the results against gene sets in `GO`, not `KEGG`. More details can be accessed from the help document via `?gspaMap`.  
+
+In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `essmap_Protein_GSPA_Z_...csv` files. We next invoke the `prnGSPAHM` utility to visualize the distance heat maps between gene sets:  
+
+```{r prnPSPAHM anal, eval = FALSE}
+prnGSPAHM(
+  filter_by = exprs(count >= 8, percent >= .20),
+  annot_cols = "source",
+  annot_colnames = "Essential set index",
+  
+  fontsize = 16,
+  fontsize_row = 20,
+  fontsize_col = 20,
+  fontsize_number = 8,
+  border_color = "grey60",
+  cellwidth = 24,
+  cellheight = 24,
+)
+```
+
+The end-user function is again a wrapper of `pheatmap` and passes additional arguments for graphic controls. More examples can be found via `?prnGSPA`. 
+
+```{r prnGSPAHM_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Heat map visualization of the distances of gene sets", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_volcplot_gspahm <- "images\\protein\\gspa\\prn_gspa.png"
+knitr::include_graphics(c(img_volcplot_gspahm))
+```
+
+Along side with the png, `prnGSPAHM` produces the networks of gene sets via [`networkD3`](http://christophergandrud.github.io/networkD3/), for interactive exploration of gene set redundancy.  
+
+<p class="comment">
+Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/gspa_network.html)</strong> to render the GSPA network.  
+</p>
+
 
 ### 2.6 Trend Analysis
 The following performs the trend analysis against protein expressions. More information can be found from [`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf) and `?anal_prnTrend`. Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.  

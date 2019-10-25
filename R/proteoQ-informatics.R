@@ -524,7 +524,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if(anal_type == "GSPA") {
 		function(complete_cases = FALSE, gset_nm = "go_sets", var_cutoff = .5,
-		         pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), min_size = 10, task = !!task, ...) {
+		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
+		         min_size = 10, task = !!task, ...) {
 
 		  # "id" only for tibbling rownames
 		  switch(rlang::as_string(rlang::enexpr(task)), 
@@ -538,29 +539,14 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                         var_cutoff = var_cutoff,
 		                         pval_cutoff = pval_cutoff, 
 		                         logFC_cutoff = logFC_cutoff, 
+		                         gspval_cutoff = gspval_cutoff,
 		                         min_size = min_size, 
 		                         ...), 
-		         plothm = gspaHM(id, label_scheme_sub, anal_type, scale_log2r, 
-		                             filepath, filename, ...), 
+		         plothm = gspaHM(filepath = filepath, 
+		                         filename = paste0(fn_prefix, ".", fn_suffix), 
+		                         ...), 
 		         stop("Invalid `task`.", Call. = TRUE)
 		  )
-		  
-		  run_scripts <- FALSE
-		  if (run_scripts) {
-  			df_op <- df %>% 
-  			  gspaTest(id = !!id, 
-  			           label_scheme_sub = label_scheme_sub,
-  			           filepath = filepath, 
-  			           filename = paste0(fn_prefix, ".csv"),
-  			           complete_cases = complete_cases, 
-  			           gset_nm = gset_nm, 
-  			           var_cutoff = var_cutoff,
-  			           pval_cutoff = pval_cutoff, 
-  			           logFC_cutoff = logFC_cutoff, 
-  			           min_size = min_size, 
-  			           ...)		    
-		  }
-
 		}
 
 	}
