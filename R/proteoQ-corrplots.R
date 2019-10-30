@@ -12,19 +12,15 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
   
   xmin <- eval(dots$xmin, env = caller_env()) # `xmin = -1` is `language`
   xmax <- eval(dots$xmax, env = caller_env()) # `xmax = +1` is `language`
-  x_breaks <- eval(dots$x_breaks, env = caller_env())
+  xbreaks <- eval(dots$xbreaks, env = caller_env())
   width <- eval(dots$width, env = caller_env())
   height <- eval(dots$height, env = caller_env())
 
-  nm_idx <- names(dots) %in% c("xmin", "xmax", "x_breaks", "width", "height")
-                               
-  dots[nm_idx] <- NULL
+  dots <- dots %>% 
+    .[! names(.) %in% c("xmin", "xmax", "xbreaks", "width", "height")]
   
   lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% lang_dots]
-  
-  # cat("Available column keys for data filtration: \n")
-  # cat(paste0(names(df), "\n"))
   
   df <- df %>% filters_in_call(!!!lang_dots)
 
@@ -42,13 +38,13 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
 	  y_label <- x_label <- expression("Ratio ("*log[2]*")")
 	  if (is.null(xmin)) xmin <- -2
 	  if (is.null(xmax)) xmax <- 2
-	  if (is.null(x_breaks)) x_breaks <- 1
+	  if (is.null(xbreaks)) xbreaks <- 1
 	} else if (data_select == "logInt") {
 	  df <- df %>% .$Intensity %>% log10()
 	  y_label <- x_label <- expression("Intensity ("*log[10]*")")
 	  if (is.null(xmin)) xmin <- 3.5
 	  if (is.null(xmax)) xmax <- 6
-	  if (is.null(x_breaks)) x_breaks <- 1
+	  if (is.null(xbreaks)) xbreaks <- 1
 	} else {
 	  stop("`data_select` nees to be either`logFC` or `logInt`.", call. = FALSE)
 	}
@@ -71,7 +67,7 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
 
 	plot_corr_sub(df = df, xlab = x_label, ylab = y_label,
 	              filename = filename, filepath = filepath,
-	              xmin = xmin, xmax = xmax, x_breaks = x_breaks, width = width, height = height, !!!dots)
+	              xmin = xmin, xmax = xmax, xbreaks = xbreaks, width = width, height = height, !!!dots)
 }
 
 
@@ -80,7 +76,7 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
 #' @import stringr dplyr ggplot2 GGally purrr rlang
 #' @importFrom magrittr %>%
 plot_corr_sub <- function (df, xlab, ylab, filename, filepath, 
-                           xmin, xmax, x_breaks, width, height, ...) {
+                           xmin, xmax, xbreaks, width, height, ...) {
                            
   my_fn <- function(data, mapping, method = "lm", ...){
     p <- ggplot(data = data, mapping = mapping) +
@@ -336,9 +332,11 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'  will be used.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
-#'  plotting: \cr \code{width}, the width of plot; \cr \code{height}, the height
-#'  of plot; \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity. \cr
-#'  \code{xmax}, the maximum \eqn{x} of logFC data or intensity data.
+#'  plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
+#'  of plot \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity \cr
+#'  \code{xmax}, the maximum \eqn{x} of logFC data or intensity data \cr
+#'  \code{xbreaks}, the breaks on \eqn{x} axis; the same breaks will be applied
+#'  to \eqn{y} axis.
 #'@return Correlation plots.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%

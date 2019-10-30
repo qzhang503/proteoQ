@@ -76,7 +76,8 @@ data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
 plotting: \cr \code{xco}, the cut-off lines of fold changes at position
 \code{x}; the default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the
 cut-off line of \code{pVal} at position \code{y}; the default is \eqn{0.05}.
-\cr \code{width}, the width of plot; \cr \code{height}, the height of plot.}
+\cr \code{width}, the width of plot; \cr \code{height}, the height of plot.
+\cr \code{nrow}, the number of rows in a plot.}
 }
 \description{
 \code{proteoVolcano} visualizes the volcano plots of peptide or protein data,
@@ -120,9 +121,9 @@ gspaMap(
   gset_nms = c("go_sets"),
   show_sig = p,
   yco = 0.01,
-  
+
   filter_by_npep = exprs(prot_n_pep >= 2),
-  # `filename`(s) will be automated, 
+  # `filename`(s) will be automated,
 )
 
 \dontrun{

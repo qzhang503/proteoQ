@@ -62,14 +62,15 @@ will be determined by the extension of the file name. A \code{.png} format
 will be used at default or at an unrecognized file extension.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr Additional parameters for
-plotting: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale; the default
-is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the default is
-+2. \cr \code{x_breaks}, the breaks in \eqn{x}-axis at a log2 scale; the
-default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC}; the
-default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of columns;
-the default is 1. \cr \code{width}, the width of plot; \cr \code{height},
-the height of plot.}
+data; also see \code{\link{normPSM}}. \cr Additional parameters for plotting
+with \code{ggplot2}: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale;
+the default is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the
+default is +2. \cr \code{xbreaks}, the breaks in \eqn{x}-axis at a log2
+scale; the default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC};
+the default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of
+columns; the default is 1. \cr \code{width}, the width of plot; \cr
+\code{height}, the height of plot. \cr \code{scales}, should the scales be
+fixed across panels; the default is "fixed" and the alternative is "free".}
 }
 \value{
 The histograms of \code{log2FC} under

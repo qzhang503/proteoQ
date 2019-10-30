@@ -4,7 +4,7 @@
 \alias{map_essential}
 \title{A helper function for mapping btw gene sets and essential gene sets}
 \usage{
-map_essential(all_sets, greedy_sets, out)
+map_essential(sig_sets, sig_greedy_terms)
 }
 \description{
 A helper function for mapping btw gene sets and essential gene sets

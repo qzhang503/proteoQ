@@ -59,9 +59,11 @@ will be used at default or at an unrecognized file extension.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. \cr Additional parameters for
-plotting: \cr \code{width}, the width of plot; \cr \code{height}, the height
-of plot; \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity. \cr
-\code{xmax}, the maximum \eqn{x} of logFC data or intensity data.}
+plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
+of plot \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity \cr
+\code{xmax}, the maximum \eqn{x} of logFC data or intensity data \cr
+\code{xbreaks}, the breaks on \eqn{x} axis; the same breaks will be applied
+to \eqn{y} axis.}
 }
 \value{
 Correlation plots.

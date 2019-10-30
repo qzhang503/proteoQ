@@ -251,9 +251,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 		  
-		  # cat("Available column keys for data filtration: \n")
-		  # cat(paste0(names(df), "\n"))
-		  
 		  df_mds <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
 		    scoreMDS(
@@ -284,9 +281,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
-		  
-		  # cat("Available column keys for data filtration: \n")
-		  # cat(paste0(names(df), "\n"))
 		  
 		  df_mds <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -320,9 +314,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
-		  
-		  # cat("Available column keys for data filtration: \n")
-		  # cat(paste0(names(df), "\n"))
 		  
 		  df_mds <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -361,7 +352,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			       annot_rows = annot_rows, 
 			       ...)
 		}
-	} else if(anal_type == "Histogram") {
+	} else if (anal_type == "Histogram") {
 		function(pep_pattern = pep_pattern, show_curves = show_curves, show_vline = show_vline, scale_y = scale_y, ...) {
 			if (scale_log2r) {
 				fn_par <- file.path(filepath, "MGKernel_params_Z.txt")
@@ -411,9 +402,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
-		  
-		  # cat("Available column keys for data filtration: \n")
-		  # cat(paste0(names(df), "\n"))
 		  
 		  df <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -491,9 +479,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
-		  
-		  # cat("Available column keys for data filtration: \n")
-		  # cat(paste0(names(df), "\n"))
 
 		  df_op <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -522,7 +507,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			openxlsx::writeData(wb, sheet = "Results", df_op)
 			saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), overwrite = TRUE) 
 		}
-	} else if(anal_type == "GSPA") {
+	} else if (anal_type == "GSPA") {
 		function(complete_cases = FALSE, gset_nm = "go_sets", var_cutoff = .5,
 		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
 		         min_size = 10, task = !!task, ...) {

@@ -14,9 +14,6 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, sca
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
   
-  # cat("Available column keys for data filtration: \n")
-  # cat(paste0(names(df), "\n"))
-  
   df <- df %>% filters_in_call(!!!filter_dots)
 
   df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
@@ -101,12 +98,12 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
       unlist()
   } 
   
-  if(purrr::is_empty(filelist)) 
+  if (purrr::is_empty(filelist)) 
     stop("Missing NMF results under ", filepath, 
          "\nCheck the setting in `scale_log2r` for a probable mismatch.", 
          call. = FALSE)
   
-  # both filename extension and prefix will be used but ignored
+  # both filename extension and prefix ignored
   # only png for now
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -122,9 +119,9 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
     n_color <- 500
     xmin <- 0
     xmax <- ceiling(max(D_matrix))
-    x_margin <- xmax/10
-    color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
-                      seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
+    xmargin <- xmax/10
+    color_breaks <- c(seq(xmin, xmargin, length = n_color/2)[1 : (n_color/2-1)],
+                      seq(xmargin, xmax, length = n_color/2)[2 : (n_color/2)])
     
     if (is.null(dots$width)) {
       width <- 1.35 * ncol(D_matrix)
@@ -171,9 +168,9 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
       annotation_colors <- eval(dots$annotation_colors, env = caller_env())
     }
     
-    png(file.path(filepath, out_nm), width = width, height = height, units="in", res = 300)
+    png(file.path(filepath, out_nm), width = width, height = height, units = "in", res = 300)
     consensusmap(res_nmf, annCol = annotation_col, 
-                 annColor=list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
+                 annColor = list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
                  tracks = c("basis:"), main = '', sub = '')
     dev.off()
     
@@ -213,12 +210,12 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, ...) {
       unlist()
   } 
 
-  if(purrr::is_empty(filelist)) 
+  if (purrr::is_empty(filelist)) 
     stop("Missing NMF results under ", filepath, 
          "\nCheck the setting in `scale_log2r` for a probable mismatch.", 
          call. = FALSE)
   
-  # both filename extension and prefix will be used but ignored
+  # both filename extension and prefix will be ignored
   # only png for now
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -234,9 +231,9 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, ...) {
     n_color <- 500
     xmin <- 0
     xmax <- ceiling(max(D_matrix))
-    x_margin <- xmax/10
-    color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
-                      seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
+    xmargin <- xmax/10
+    color_breaks <- c(seq(xmin, xmargin, length = n_color/2)[1 : (n_color/2-1)],
+                      seq(xmargin, xmax, length = n_color/2)[2 : (n_color/2)])
     
     if (is.null(dots$width)) {
       width <- 1.35 * ncol(D_matrix)
@@ -282,7 +279,7 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, ...) {
       annotation_colors <- eval(dots$annotation_colors, env = caller_env())
     }
     
-    png(file.path(filepath, out_nm), width = width, height = height, units ="in", res = 300)
+    png(file.path(filepath, out_nm), width = width, height = height, units = "in", res = 300)
     coefmap(res_nmf, annCol = annotation_col, 
             annColor = list(Type = 'Spectral', basis = 'Set3', consensus = 'YlOrRd:50'),
             tracks = c("basis:"))
@@ -328,12 +325,12 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
       unlist()
   } 
   
-  if(purrr::is_empty(filelist)) 
+  if (purrr::is_empty(filelist)) 
     stop("Missing NMF results under ", filepath, 
          "\nCheck the setting in `scale_log2r` for a probable mismatch.", 
          call. = FALSE)
 
-  # both filename extension and prefix will be used but ignored
+  # both filename extension and prefix will be ignored
   # only png for now
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
   # fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -361,15 +358,15 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
       xmax <- eval(dots$xmax, env = caller_env())
     }
     
-    if (is.null(dots$x_margin)) {
-      x_margin <- .1
+    if (is.null(dots$xmargin)) {
+      xmargin <- .1
     } else {
-      x_margin <- eval(dots$x_margin, env = caller_env())
+      xmargin <- eval(dots$xmargin, env = caller_env())
     }
     
     n_color <- 500
-    color_breaks <- c(seq(xmin, x_margin, length = n_color/2)[1 : (n_color/2-1)],
-                      seq(x_margin, xmax, length = n_color/2)[2 : (n_color/2)])
+    color_breaks <- c(seq(xmin, xmargin, length = n_color/2)[1 : (n_color/2-1)],
+                      seq(xmargin, xmax, length = n_color/2)[2 : (n_color/2)])
     
     if (is.null(dots$color)) {
       mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
@@ -414,7 +411,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
         
         if (nrow > 300) {
           height <- width * 1.5
-          dots$show_rownames = FALSE
+          dots$show_rownames <- FALSE
         } else {
           cellheight <- 5
           height <- cellheight * nrow + 8
@@ -425,7 +422,14 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
         }
         
         if (nrow <= 150) dots$show_rownames <- TRUE
-
+        
+        dots <- dots %>% 
+          .[!names(.) %in% c("annot_cols", "annot_colnames", "annot_rows", 
+                             "mat", "filename", "annotation_col", "annotation_row", 
+                             "color", "annotation_colors", "breaks")]
+        
+        # probably no need to handle `cluster_rows` and `cluster_cols` for metagenes
+        
         p <- my_pheatmap(
           mat = df_sub,
           filename = file.path(filepath, r, fn_sub),
@@ -474,7 +478,8 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'@param filepath Use system default.
 #'@param filename Use system default.
 #'@param ... In \code{anal_} functions: additional arguments are for
-#'  \code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments are
+#'  \code{\link[NMF]{nmf}}; in \code{plot_} functions: \code{width},
+#'  \code{height}; in \code{plot_metaNMF} functions: additional arguments are
 #'  for \code{pheatmap}.
 #'@return NMF classification and visualization of \code{log2FC}.
 #'@import NMF dplyr rlang ggplot2
@@ -535,7 +540,7 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'@export
 anal_pepNMF <- function (...) {
   err_msg <- "Don't call the function with arguments `id` and/or `task`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -568,7 +573,7 @@ anal_pepNMF <- function (...) {
 #'@export
 anal_prnNMF <- function (...) {
   err_msg <- "Don't call the function with arguments `id` and/or `task`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
 
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
 
@@ -609,7 +614,7 @@ anal_prnNMF <- function (...) {
 #'@export
 plot_pepNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
   
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
@@ -654,7 +659,7 @@ plot_pepNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'@export
 plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
 
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
@@ -689,7 +694,7 @@ plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'@export
 plot_pepNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
   
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
@@ -724,7 +729,7 @@ plot_pepNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'@export
 plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
 
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
@@ -759,7 +764,7 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'@export
 plot_metaNMF <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
 
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)

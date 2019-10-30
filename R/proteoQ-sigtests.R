@@ -151,58 +151,6 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 		contrs <- paste(new_levels[-1], new_levels[1], sep = "-")
 		elements <- new_levels
 	} else {
-		run_scripts <- FALSE
-		if (run_scripts) {
-  	  contrs <- fml[len] %>%
-  			gsub(".*\\[(.*)\\].*", "\\1", .) %>%
-  			gsub("\\\"", "", .) %>%
-  			str_split(",\\s*", simplify = TRUE) %>%
-  			as.character()
-  
-  		elements <- fml[len] %>%
-  			gsub(".*\\[(.*)\\].*", "\\1", .) %>%
-  			gsub("/[0-9]", "", .) %>% # "(A+B)/2-C"
-  			gsub("\\\"", "", .) %>%
-  			gsub("[\\(\\)]", "", .) %>%
-  			str_split("[,\\+\\-]\\s*", simplify = TRUE) %>%
-  			as.character() %>%
-  			unique()
-  		
-  		if (!is.null(dots$secret)) {
-  		  contrs <- fml[len] %>%
-  		    gsub(".*\\[(.*)\\].*", "\\1", .) %>%
-  		    gsub("\\\"", "", .) %>%
-  		    str_split(",\\s*", simplify = TRUE) %>%
-  		    as.character()
-  		  
-  		  new_contrs <- fml[len] %>%
-  		    gsub("^.*\\[(.*)\\].*", "\\1", .) %>% # may have random terms at the end
-  		    gsub("\\\"", "", .) %>% 
-  		    str_split(",\\s*", simplify = TRUE) %>% 
-  		    gsub("\\s+", "", .) %>% 
-  		    gsub("<([^>]*?)\\+([^>]*?)>", "<\\1.plus.\\2>", .) %>% 
-  		    gsub("<([^>]*?)\\-([^>]*?)>", "<\\1.minus.\\2>", .) %>% 
-  		    gsub("[ <>]+", "", .)
-  		  
-  		  new_elements <- new_contrs %>%
-  		    gsub("/[0-9]", "", .) %>% # (A+B+C)/3-D
-  		    gsub("[\\(\\)]", "", .) %>%
-  		    str_split("[\\+\\-]\\s*", simplify = TRUE) %>%
-  		    as.character() %>%
-  		    unique() %>% 
-  		    .[. != ""]
-  		  
-  		  elements <- new_elements %>% 
-  		    gsub(".plus.", "+", ., fixed = TRUE) %>% 
-  		    gsub(".minus.", "-", ., fixed = TRUE)
-  		  
-  		  cat("\ncontrs: ", contrs %>% as.character, "\n")
-  		  cat("new_contrs: ", new_contrs %>% as.character, "\n")
-  		  cat("elements: ", elements %>% as.character, "\n")
-  		  cat("new_elements: ", new_elements %>% as.character, "\n\n")
-  		}
-		}
-
 	  contrs <- fml[len] %>%
 	    gsub(".*\\[(.*)\\].*", "\\1", .) %>%
 	    gsub("\\\"", "", .) %>%
@@ -248,26 +196,6 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 	design <- model.matrix(~0+label_scheme_sub_sub[[key_col]]) %>%
 		`colnames<-`(levels(label_scheme_sub_sub[[key_col]]))
 
-	run_scripts <- FALSE
-	if (run_scripts) {
-	  if (!is.null(dots$secret)) {
-	    new_design_nms <- colnames(design) %>% 
-	      gsub("+", ".plus.", ., fixed = TRUE) %>% 
-	      gsub("-", ".minus.", ., fixed = TRUE)
-	    
-	    new_design <- design %>% 
-	      `colnames<-`(new_design_nms)
-	    
-	    contr_mat <- makeContrasts(contrasts = new_contrs, levels = data.frame(new_design)) %>% 
-	      `colnames<-`(contrs) %>% 
-	      `rownames<-`(colnames(design))
-	    
-	    rm(new_design_nms, new_design)
-	  } else {
-	    contr_mat <- makeContrasts(contrasts = contrs, levels = data.frame(design))
-	  }
-	}
-	
 	new_design_nms <- colnames(design) %>% 
 	  gsub("+", ".plus.", ., fixed = TRUE) %>% 
 	  gsub("-", ".minus.", ., fixed = TRUE)
@@ -383,7 +311,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 		tibble::rownames_to_column(id) %>%
 		dplyr::select(id)
 
-	if(complete_cases) df <- df[complete.cases(df), ]
+	if (complete_cases) df <- df[complete.cases(df), ]
 
 	# remove small-variance entries such as normalizers
 	df <- df %>% filterData(var_cutoff)
@@ -392,7 +320,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	df <- df %>% 
 	  dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
 
-	if(length(random_vars) > 0) {
+	if (length(random_vars) > 0) {
 		# only use the first random variable
 	  design_random <- label_scheme_sub_sub[[random_vars[1]]] 
 		corfit <- duplicateCorrelation(df, design = design, block = design_random)
@@ -444,7 +372,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 			dplyr::group_by(!!rlang::sym(id)) %>%
 			tidyr::nest()
 
-		if(!purrr::is_empty(random_vars)) {
+		if (!purrr::is_empty(random_vars)) {
 			res_lm <- df_lm %>%
 				dplyr::mutate(
 				  model = purrr::map(

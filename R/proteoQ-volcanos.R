@@ -31,6 +31,7 @@
 #'  \code{x}; the default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the
 #'  cut-off line of \code{pVal} at position \code{y}; the default is \eqn{0.05}.
 #'  \cr \code{width}, the width of plot; \cr \code{height}, the height of plot.
+#'  \cr \code{nrow}, the number of rows in a plot.
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -61,9 +62,9 @@
 #'   gset_nms = c("go_sets"),
 #'   show_sig = p,
 #'   yco = 0.01,
-#'   
+#'
 #'   filter_by_npep = exprs(prot_n_pep >= 2),
-#'   # `filename`(s) will be automated, 
+#'   # `filename`(s) will be automated,
 #' )
 #'
 #' \dontrun{
@@ -463,10 +464,10 @@ fullVolcano <- function(df, id = "gene", contrast_groups, volcano_theme = volcan
 		p <- p + geom_text(data = dfw_sub_top20, mapping = aes(x = log2Ratio, y = -log10(pVal), 
 		                                                       label = Index, color = Index), 
 		                   size = 3, alpha = .5, hjust = 0, nudge_x = 0.05, vjust = 0, nudge_y = 0.05)
-		p <- p + facet_wrap(~Contrast, nrow = nrow, labeller = label_value)
+		p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
 		p <- p + geom_table(data = dt, aes(table = !!rlang::sym(id)), x = -xmax*.85, y = ymax/2)
 	} else {
-		p <- p + facet_wrap(~Contrast, nrow = nrow, labeller = label_value)
+		p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
 	}
 
 	if(is.null(dots$width)) {
@@ -640,6 +641,12 @@ gsVolcano <- function(df, contrast_groups, gsea_res, gsea_key = "term", gsets, v
 
   		dt_pos <- ifelse(nrow(dfw_greater) > nrow(dfw_less), -xmax*.85, xmax*.6) # table position
   		myPalette <- c("#377EB8", "#E41A1C")
+  		
+  		if(is.null(dots$nrow)) {
+  		  nrow <- ifelse(length(unique(dfw_sub$Contrast)) > 3, 2, 1)
+  		} else {
+  		  nrow <- dots$nrow
+  		}
 
   		p <- ggplot() +
   			geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), size = 3, colour = "gray", shape = 20, alpha = .5) +
@@ -653,7 +660,7 @@ gsVolcano <- function(df, contrast_groups, gsea_res, gsea_key = "term", gsets, v
   			scale_x_continuous(limits = c(-xmax, xmax)) +
   			scale_y_continuous(limits = c(0, ymax)) +
   			volcano_theme
-  		p <- p + facet_wrap(~ newContrast, nrow = 1, labeller = label_value)
+  		p <- p + facet_wrap(~ newContrast, nrow = nrow, labeller = label_value)
 
   		if(show_labels)
   			p <- p + geom_text(data = dfw_sub_top20, mapping = aes(x = log2Ratio, y = -log10(pVal),

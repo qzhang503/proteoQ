@@ -17,32 +17,31 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
   dots <- rlang::enexprs(...)
 
 	xmin <- eval(dots$xmin, env = caller_env()) # `xmin = -1` is `language`
-	xmax <- eval(dots$xmax, env = caller_env()) # `xmax = +1` is `language`
-	x_breaks <- eval(dots$x_breaks, env = caller_env())
+	xmax <- eval(dots$xmax, env = caller_env()) 
+	xbreaks <- eval(dots$xbreaks, env = caller_env())
 	binwidth <- eval(dots$binwidth, env = caller_env())
 	alpha <- eval(dots$alpha, env = caller_env())
 	ncol <- eval(dots$ncol, env = caller_env())
 	width <- eval(dots$width, env = caller_env())
 	height <- eval(dots$height, env = caller_env())
+	scales <- eval(dots$scales, env = caller_env())
 
 	if (is.null(xmin)) xmin <- -2
 	if (is.null(xmax)) xmax <- 2
-	if (is.null(x_breaks)) x_breaks <- 1
+	if (is.null(xbreaks)) xbreaks <- 1
 	if (is.null(binwidth)) binwidth <- (xmax - xmin)/80
 	if (is.null(alpha)) alpha <- .8
 	if (is.null(ncol)) ncol <- 5
 	if (is.null(width)) width <- 4 * ncol + 2
 	if (is.null(height)) height <- length(label_scheme_sub$Sample_ID) * 4 / ncol
-	
-	nm_idx <- names(dots) %in% c("xmin", "xmax", "x_breaks", "binwidth",
-	                             "ncol", "alpha", "width", "height")
-	dots[nm_idx] <- NULL
+	if (is.null(scales)) scales <- "fixed"
+  
+	dots <- dots %>% 
+    .[! names(.) %in% c("xmin", "xmax", "xbreaks", "binwidth", "ncol", "alpha", 
+                        "width", "height", "scales")]
 
 	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 	dots <- dots %>% .[! . %in% lang_dots]
-	
-	# cat("Available column keys for data filtration: \n")
-	# cat(paste0(names(df), "\n"))
 
 	if (scale_y) df <- df %>% filters_in_call(!!!lang_dots)
 	
@@ -56,7 +55,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 		nm_comps <- paste0("G", 1:n_comp)
 		nm_full <- c(nm_comps, paste(nm_comps, collapse = " + "))
 
-		# Offset by the percentage of non-NA values
+		# offset by the percentage of non-NA values
 		perc_nna <- df %>%
 			dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}"), names(.))) %>%
 			`names<-`(gsub(".*_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>%
@@ -64,7 +63,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 
 		perc_nna <- perc_nna[names(perc_nna) %in% label_scheme_sub$Sample_ID]
 
-		# Density profiles
+		# density profiles
 		fit <- params %>%
 			dplyr::filter(.$Sample_ID %in% label_scheme_sub$Sample_ID) %>%
 			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
@@ -151,18 +150,18 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 		               color = "white", alpha = alpha, binwidth = binwidth, size = .1) +
 		scale_fill_brewer(palette = "Spectral", direction = -1) +
 		labs(title = "", x = x_label, y = expression("Frequency")) +
-		scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = x_breaks),
-		                   labels = as.character(seq(xmin, xmax, by = x_breaks))) +
-		my_theme +
-		facet_wrap(~ Sample_ID, ncol = ncol, scales = "free")
+		scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = xbreaks),
+		                   labels = as.character(seq(xmin, xmax, by = xbreaks))) +
+		facet_wrap(~ Sample_ID, ncol = ncol, scales = scales) + 
+	  my_theme
 
-	if(show_curves) p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable),
+	if (show_curves) p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable),
 	                                   size = .2) +
 											scale_colour_manual(values = myPalette, name = "Gaussian",
 											                    breaks = c(nm_comps, paste(nm_comps, collapse = " + ")),
 											                    labels = nm_full)
 
-	if(show_vline) p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
+	if (show_vline) p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
 
 	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), 
 	             width = width, height = height, limitsize = FALSE, dots)
@@ -225,14 +224,15 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'  will be determined by the extension of the file name. A \code{.png} format
 #'  will be used at default or at an unrecognized file extension.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
-#'  plotting: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale; the default
-#'  is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the default is
-#'  +2. \cr \code{x_breaks}, the breaks in \eqn{x}-axis at a log2 scale; the
-#'  default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC}; the
-#'  default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of columns;
-#'  the default is 1. \cr \code{width}, the width of plot; \cr \code{height},
-#'  the height of plot.
+#'  data; also see \code{\link{normPSM}}. \cr Additional parameters for plotting
+#'  with \code{ggplot2}: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale;
+#'  the default is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the
+#'  default is +2. \cr \code{xbreaks}, the breaks in \eqn{x}-axis at a log2
+#'  scale; the default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC};
+#'  the default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of
+#'  columns; the default is 1. \cr \code{width}, the width of plot; \cr
+#'  \code{height}, the height of plot. \cr \code{scales}, should the scales be
+#'  fixed across panels; the default is "fixed" and the alternative is "free".
 #'@return The histograms of \code{log2FC} under
 #'  \code{~\\dat_dir\\Peptide\\Histogram} or
 #'  \code{~\\dat_dir\\Protein\\Histogram}.

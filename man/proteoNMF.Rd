@@ -73,7 +73,8 @@ The default is c(4:8)}
 is 200.}
 
 \item{...}{In \code{anal_} functions: additional arguments are for
-\code{\link[NMF]{nmf}}; in \code{plot_} functions: additional arguments are
+\code{\link[NMF]{nmf}}; in \code{plot_} functions: \code{width},
+\code{height}; in \code{plot_metaNMF} functions: additional arguments are
 for \code{pheatmap}.}
 
 \item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.

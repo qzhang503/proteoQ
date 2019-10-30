@@ -9,7 +9,7 @@
 proteoHM(id = gene, col_select = NULL, col_benchmark = NULL,
   scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE,
   df = NULL, filepath = NULL, filename = NULL, xmin = -1,
-  xmax = 1, x_margin = 0.1, annot_cols = NULL,
+  xmax = 1, xmargin = 0.1, annot_cols = NULL,
   annot_colnames = NULL, annot_rows = NULL, ...)
 
 pepHM(...)
@@ -70,12 +70,13 @@ with \code{arrange_}. The logical condition(s) at the \code{rhs} needs to be
 enclosed in \code{exprs} with round parenthesis. \cr \cr Additional
 parameters for plotting: \cr \code{xmin}, the minimum \eqn{x} at a log2
 scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a log2
-scale; the default is +1 \cr \code{x_margin}, the margin in heat scales; the
+scale; the default is +1 \cr \code{xmargin}, the margin in heat scales; the
 default is 0.1 \cr \code{width}, the width of plot \cr \code{height}, the
 height of plot \cr \cr Additional arguments for
-\code{\link[pheatmap]{pheatmap}}. \cr \cr Arguments disabled for
-\code{pheatmap}: \cr \code{annotation_col}; use \code{annot_cols} instead
-\cr \code{annotation_row}; use \code{annot_rows} instead}
+\code{\link[pheatmap]{pheatmap}}, i.e., \code{cluster_rows}.... \cr \cr Note
+arguments disabled for \code{pheatmap}: \cr \code{annotation_col}; instead
+use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
+use keys indicated in \code{annot_rows}}
 }
 \value{
 Heat maps.
@@ -114,7 +115,7 @@ for details.
 prnHM(
   xmin = -1,
   xmax = 1,
-  x_margin = 0.1,
+  xmargin = 0.1,
   annot_cols = c("Group", "Color", "Alpha", "Shape"),
   annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
   cluster_rows = TRUE,
@@ -134,7 +135,7 @@ prnHM(
 prnHM(
   xmin = -1,
   xmax = 1,
-  x_margin = 0.1,
+  xmargin = 0.1,
   annot_cols = c("Group", "Color", "Alpha", "Shape"),
   annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
   cluster_rows = FALSE,
