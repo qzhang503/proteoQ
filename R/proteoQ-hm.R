@@ -1,4 +1,4 @@
-#' A wrapper around pheatmap
+#' A wrapper of pheatmap
 #'
 #' @import dplyr rlang pheatmap
 #' @importFrom magrittr %>%
@@ -11,17 +11,19 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, an
   annotation_colors <- rlang::enexpr(annotation_colors)
   breaks <- rlang::enexpr(breaks)
   
-  dots <- rlang::enexprs(...)
-  
-  nm_idx <- names(dots) %in% c("mat", "filename", "annotation_col", "color",
-                               "annotation_colors", "breaks", "annotation_row")
-  dots[nm_idx] <- NULL
+  dots <- rlang::enexprs(...) %>% 
+    .[! names(.) %in% c("mat", "filename", "annotation_col", "annotation_row", 
+                        "color", "annotation_colors", "breaks")]
 
   ph_call <- rlang::expr(
-    pheatmap(mat = !!mat, filename = !!filename, annotation_col = !!annotation_col, 
+    pheatmap(mat = !!mat, 
+             filename = !!filename, 
+             annotation_col = !!annotation_col, 
              annotation_row = !!annotation_row, 
              color = !!color,
-             annotation_colors = !!annotation_colors, breaks = !!breaks, !!!dots))
+             annotation_colors = !!annotation_colors, 
+             breaks = !!breaks, 
+             !!!dots))
   
   rlang::eval_bare(ph_call, env = caller_env())
 }
@@ -33,7 +35,7 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, an
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %T>%
 plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepath, filename,
-                   complete_cases, xmin = -1, xmax = 1, x_margin = .1, 
+                   complete_cases, xmin = -1, xmax = 1, xmargin = .1, 
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, ...) {
                    
   dir.create(file.path(filepath, "Subtrees"), recursive = TRUE, showWarnings = FALSE)
@@ -47,7 +49,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
 
-  # set up defaults as they are needed before calling pheatmap
+  # needed defaults before calling `pheatmap`
   if (is.null(dots$cluster_rows)) {
     cluster_rows <- TRUE
   } else {
@@ -74,9 +76,9 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   
   n_color <- 500
   if (is.null(dots$breaks)) {
-    color_breaks <- c(seq(from = xmin, -x_margin, length = n_color/2)[1:(n_color/2-1)],
-                      seq(-x_margin, x_margin, length = 3),
-                      seq(x_margin, xmax, length = n_color/2)[2:(n_color/2)])
+    color_breaks <- c(seq(from = xmin, -xmargin, length = n_color/2)[1:(n_color/2-1)],
+                      seq(-xmargin, xmargin, length = 3),
+                      seq(xmargin, xmax, length = n_color/2)[2:(n_color/2)])
   } else if (is.na(dots$breaks)) {
     color_breaks <- NA
   } else {
@@ -90,22 +92,6 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   } else {
     mypalette <- eval(dots$color, env = caller_env())
   }
-  
-  # mypalette <- colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(n_color)
-  # mypalette <- colorRampPalette(c("darkorange3", "white", "darkblue"))(n_color)
-  # image(matrix(1:n_color, nrow = n_color, ncol = 10),
-  #   col = mypalette, xaxt = "n", yaxt = "n", useRaster = TRUE)
-
-  # diabled "dots" for pheatmap 
-  # use `annot_col` and `annot_row` to form `annotation_col` and `annotation_row`...
-  dots$annotation_col <- NULL
-  dots$annotation_row <- NULL
-  
-  # removed from dots
-  nm_idx <- names(dots) %in% c("df", "id", "scale_log2r", "annot_kinases",
-                               "complete_cases", "label_scheme_sub", "filepath", "filename")
-  dots[nm_idx] <- NULL
-  
   
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -129,9 +115,6 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
                   !is.na(!!rlang::sym(id)),
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
     reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) 
-  
-  # cat("Available column keys for data filtration or row ordering: \n")
-  # cat(paste0(names(df), "\n"))
   
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
@@ -191,7 +174,6 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
     d[is.na(d)] <- .5 * max(d, na.rm = TRUE)
     h <- hclust(d)
     dots$cluster_rows <- h
-    
     rm(d, h)
   } else {
     dots$cluster_rows <- FALSE
@@ -202,13 +184,18 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
     d_cols[is.na(d_cols)] <- .5 * max(d_cols, na.rm = TRUE)
     h_cols <- hclust(d_cols)
     dots$cluster_cols <- h_cols
-    
     rm(d_cols, h_cols)
   } else {
     dots$cluster_cols <- FALSE
   }
   
   filename <- gg_imgname(filename)
+  
+  # form `annotation_col` and `annotation_row` from `annot_col` and `annot_row` 
+  dots <- dots %>% 
+    .[! names(.) %in% c("mat", "filename", "annotation_col", "annotation_row", 
+                        "clustering_distance_rows", "clustering_distance_cols", 
+                        "color", "annotation_colors", "breaks")]
   
   p <- my_pheatmap(
     mat = df_hm,
@@ -221,7 +208,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
     !!!dots
   )
   
-  # when cutree_rows is not NA
+  # subtrees
   cutree_rows <- eval(dots$cutree_rows, env = caller_env())
   
   if (!is.null(cutree_rows) & cluster_rows) {
@@ -229,7 +216,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
       Cluster <- data.frame(Cluster = cutree(p$tree_row, k = cutree_rows)) %>%
         dplyr::mutate(!!id := rownames(.)) %>%
         dplyr::left_join(df, by = id) %T>% 
-        write.csv(., file.path(filepath, "Subtrees", paste0(fn_prefix, " n-", cutree_rows, "_subtrees.csv")), 
+        write.csv(file.path(filepath, "Subtrees", paste0(fn_prefix, " n-", cutree_rows, "_subtrees.csv")), 
                   row.names = FALSE)
 
       Cluster <- Cluster %>%
@@ -247,7 +234,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
         
         if (cluster_rows) {
           d_sub <- dist(df_sub, method = clustering_distance_rows)
-          if(length(d_sub) == 0) next
+          if (length(d_sub) == 0) next
 
           d_sub[is.na(d_sub)] <- .5 * max(d_sub, na.rm = TRUE)
           
@@ -261,7 +248,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
         
         if (cluster_cols) {
           d_sub_col <- dist(t(df_sub), method = clustering_distance_cols)
-          if(length(d_sub_col) == 0) next
+          if (length(d_sub_col) == 0) next
           
           d_sub_col[is.na(d_sub_col)] <- .5 * max(d_sub_col, na.rm = TRUE)
           nrow_trans <- nrow(t(df_sub))
@@ -313,7 +300,8 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   }
   
   # to the benchmark group
-  if(sum(!is.na(label_scheme_sub[[col_benchmark]])) > 0) {
+  # not currently used
+  if (sum(!is.na(label_scheme_sub[[col_benchmark]])) > 0) {
     dfc <- ratio_toCtrl(df, !!rlang::sym(id), label_scheme_sub, nm_ctrl = !!col_benchmark)
     
     if (complete_cases) {
@@ -395,12 +383,13 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'  enclosed in \code{exprs} with round parenthesis. \cr \cr Additional
 #'  parameters for plotting: \cr \code{xmin}, the minimum \eqn{x} at a log2
 #'  scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a log2
-#'  scale; the default is +1 \cr \code{x_margin}, the margin in heat scales; the
+#'  scale; the default is +1 \cr \code{xmargin}, the margin in heat scales; the
 #'  default is 0.1 \cr \code{width}, the width of plot \cr \code{height}, the
 #'  height of plot \cr \cr Additional arguments for
-#'  \code{\link[pheatmap]{pheatmap}}. \cr \cr Arguments disabled for
-#'  \code{pheatmap}: \cr \code{annotation_col}; use \code{annot_cols} instead
-#'  \cr \code{annotation_row}; use \code{annot_rows} instead
+#'  \code{\link[pheatmap]{pheatmap}}, i.e., \code{cluster_rows}.... \cr \cr Note
+#'  arguments disabled for \code{pheatmap}: \cr \code{annotation_col}; instead
+#'  use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
+#'  use keys indicated in \code{annot_rows}
 #'@return Heat maps.
 #'
 #' @examples
@@ -408,7 +397,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #' prnHM(
 #'   xmin = -1,
 #'   xmax = 1,
-#'   x_margin = 0.1,
+#'   xmargin = 0.1,
 #'   annot_cols = c("Group", "Color", "Alpha", "Shape"),
 #'   annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
 #'   cluster_rows = TRUE,
@@ -428,7 +417,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #' prnHM(
 #'   xmin = -1,
 #'   xmax = 1,
-#'   x_margin = 0.1,
+#'   xmargin = 0.1,
 #'   annot_cols = c("Group", "Color", "Alpha", "Shape"),
 #'   annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
 #'   cluster_rows = FALSE,
@@ -471,7 +460,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
                       scale_log2r = TRUE,impute_na = FALSE, complete_cases = FALSE,
                       df = NULL, filepath = NULL, filename = NULL,
-                      xmin = -1, xmax = 1, x_margin = 0.1, 
+                      xmin = -1, xmax = 1, xmargin = 0.1, 
                       annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
@@ -489,7 +478,7 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
             scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath,
             filename = !!filename, anal_type = "Heatmap")(complete_cases = complete_cases,
                                                           xmin = xmin, xmax = xmax,
-                                                          x_margin = x_margin,
+                                                          xmargin = xmargin,
                                                           annot_cols = annot_cols, 
                                                           annot_colnames = annot_colnames, 
                                                           annot_rows = annot_rows, ...)

@@ -50,7 +50,7 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 		dplyr::group_by(Group) %>%
 		dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
 
-	if(rlang::as_string(col_order) %in% names(df_mean)) {
+	if (rlang::as_string(col_order) %in% names(df_mean)) {
 		df_mean <- df_mean %>%
 			dplyr::arrange(!!col_order) %>%
 			dplyr::rename(Order := !!col_order) %>%
@@ -69,12 +69,7 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	  filename <- paste0(.x, ".csv")
 
 	  df_fuzzy = new('ExpressionSet', exprs = as.matrix(df_mean))
-	  # mat <- Biobase::exprs(df_fuzzy)
-	  # featureNames(df_fuzzy)
-	  # phenoData(df_fuzzy)
-	  
 	  m1 <- mestimate(df_fuzzy)
-	  
 	  cl <- mfuzz(df_fuzzy, c = n_clust, m = m1)
 	  O <- Mfuzz::overlap(cl)
 	  
@@ -168,10 +163,6 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
-  # if (!all.equal(ok_prefix, fn_prefix)) {
-  #   warning("Mismatches in file names; match names under file directory.")
-  # }
-  
   purrr::walk(filelist, ~ {
     out_nm <- paste0(gsub("\\.csv$", "", .x), ".", fn_suffix)
     src_path <- file.path(filepath, .x)
@@ -195,29 +186,29 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
     
     ymin <- eval(dots$ymin, env = caller_env())
     ymax <- eval(dots$ymax, env = caller_env())
-    y_breaks <- eval(dots$y_breaks, env = caller_env())
+    ybreaks <- eval(dots$ybreaks, env = caller_env())
     ncol <- dots$ncol
     nrow <- dots$nrow
     width <- dots$width
     height <- dots$height
     
-    if(is.null(ymin)) ymin <- -2
-    if(is.null(ymax)) ymax <- 2
-    if(is.null(y_breaks)) y_breaks <- 1
-    if(is.null(ncol)) ncol <- 1
-    if(is.null(nrow)) nrow <- 2
+    if (is.null(ymin)) ymin <- -2
+    if (is.null(ymax)) ymax <- 2
+    if (is.null(ybreaks)) ybreaks <- 1
+    if (is.null(ncol)) ncol <- 1
+    if (is.null(nrow)) nrow <- 2
     
     dots$ymin <- NULL
     dots$ymax <- NULL
-    dots$y_breaks <- NULL
+    dots$ybreaks <- NULL
     dots$ncol <- NULL
     dots$nrow <- NULL
     
     x_label <- expression("Ratio ("*log[2]*")")
     
     n_clust <- length(unique(df$cl_cluster))
-    if(is.null(width)) width <- n_clust * 8 / nrow + 2
-    if(is.null(height)) height <- 8 * nrow
+    if (is.null(width)) width <- n_clust * 8 / nrow + 2
+    if (is.null(height)) height <- 8 * nrow
     
     dots$width <- NULL
     dots$height <- NULL
@@ -225,10 +216,6 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
     p <- ggplot(data = df,
                 mapping = aes(x = variable, y = value, group = !!rlang::sym(id))) +
       geom_line(colour = "white", alpha = .25) +
-      # stat_density2d(aes(fill = ..density..),
-      #                geom = "raster", alpha = .75, contour = FALSE) +
-      # scale_fill_distiller(limits = c(0,.5), palette = "Blues", direction = -1,
-      #                      na.value = brewer.pal(n = 9, name = "Blues")[1]) +
       scale_y_continuous(limits = c(ymin, ymax), breaks = c(ymin, 0, ymax)) +
       labs(title = "", x = "", y = x_label) +
       my_theme
@@ -261,9 +248,9 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'  data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for use
 #'  in \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2}
 #'  scale; \cr \code{ymax}, the maximum y at \code{log2} scale; \cr
-#'  \code{y_breaks}, the breaks in y-axis at \code{log2} scale; \cr \code{ncol},
-#'  the number of columns; \cr \code{nrow}, the number of rows; \cr
-#'  \code{width}, the width of plot; \cr \code{height}, the height of plot.
+#'  \code{ybreaks}, the breaks in y-axis at \code{log2} scale; \cr \code{nrow},
+#'  the number of rows; \cr \code{width}, the width of plot; \cr \code{height},
+#'  the height of plot.
 #'@return Trend classification and visualization of \code{log2FC}.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%

@@ -5,6 +5,16 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: gfm
+  github_document:
+    fig_caption: yes
+    toc: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -13,18 +23,8 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  github_document:
-    fig_caption: yes
-    toc: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
   word_document:
     toc: yes
-  md_document:
-    toc: yes
-    toc_depth: 4
-    variant: gfm
 ---
 
 ---
@@ -941,11 +941,15 @@ knitr::include_graphics(c(img_volcplot_gspa))
 
 The names of gene sets will by default match those provided in `prnGSPA`. Despite in the above example, we chose to plot the results against gene sets in `GO`, not `KEGG`. More details can be accessed from the help document via `?gspaMap`.  
 
-In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `essmap_Protein_GSPA_Z_...csv` files. We next invoke the `prnGSPAHM` utility to visualize the distance heat maps between gene sets:  
+In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `essmap_Protein_GSPA_Z_...csv` files.  
 
-```{r prnPSPAHM anal, eval = FALSE}
+### 2.6 Gene set networks
+Gene sets can overlap with one another to varying degrees. We need to ask the same question here: to what extent the signficant sets found from `GSPA` are redundant in relative to any of the essential sets determined by set cover, i.e., what is the intersect in gene IDs between a redundant set and an essential set? For this reason, we have calculated the `fraction` of overlap between gene sets when calling `prnGSPA`. The results are stored in output files such as `Protein\GSPA\essmap_Protein_GSPA_Z_W2_bat.csv`.  
+
+In this section, we first perform simple heat map visualization between all gene sets and essential groups.  
+
+```{r prnPSPAHM_all, eval = FALSE}
 prnGSPAHM(
-  filter_by = exprs(count >= 8, percent >= .20),
   annot_cols = "source",
   annot_colnames = "Essential set index",
   
@@ -956,24 +960,54 @@ prnGSPAHM(
   border_color = "grey60",
   cellwidth = 24,
   cellheight = 24,
+  filename = "all_sets.png", 
 )
 ```
 
-The end-user function is again a wrapper of `pheatmap` and passes additional arguments for graphic controls. More examples can be found via `?prnGSPA`. 
+The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs between two gene sets. The smaller the distance, the greater the overlap is between two gene sets. For convenience, a `distance` column is also made available in `essmap_Protein_GSPA_Z_W2_bat.csv`.  
 
-```{r prnGSPAHM_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Heat map visualization of the distances of gene sets", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_volcplot_gspahm <- "images\\protein\\gspa\\prn_gspa.png"
-knitr::include_graphics(c(img_volcplot_gspahm))
+```{r prnGSPAHM_all, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Heat map visualization of the distance between all and esstial gene sets", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_gspahm_all <- "images\\protein\\gspa\\all_sets.png"
+knitr::include_graphics(c(img_gspahm_all))
 ```
 
-Along side with the png, `prnGSPAHM` produces the networks of gene sets via [`networkD3`](http://christophergandrud.github.io/networkD3/), for interactive exploration of gene set redundancy.  
+As expected, we saw zero overlap between human and mouse gene sets. Within each organism, low-redundancy `red` cells have overwhelmed the heat map and might have impeded us from capturing high-redudancy terms in `blue`. We can, however, readily de-emphasize the `red` cells by data filtration using the `vararg` approach. In the example shown below, we chose to keep more redundant terms at distances smaller than or equal to 0.2:  
 
-<p class="comment">
-Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/gspa_network.html)</strong> to render the GSPA network.  
-</p>
+```{r prnPSPAHM_filtered, eval = FALSE}
+prnGSPAHM(
+  filter_by = exprs(distance <= .2),
+  filter_sp = exprs(start_with_str("hs", term)), 
+  annot_cols = "source",
+  annot_colnames = "Essential set index",
+
+  fontsize = 16,
+  fontsize_row = 20,
+  fontsize_col = 20,
+  fontsize_number = 8,
+  border_color = "grey60",
+  cellwidth = 24,
+  cellheight = 24,
+  filename = show_human_redundancy.png,
+)
+```
+
+Note that there is a second `vararg` expression, `exprs(start_with_str("hs", term))`. In this expression, we have used a pseudoname approach to subset terms starting with character string `hs` under the column `term` in `GSPA` result files, which corresponds to human gene sets for both GO and KEGG.^[This will work as GO terms of human start with `hs_` and KEGG terms with `hsa`.] More examples of the pseudoname approach can be found from [Lab 3.2](### 3.2 Data subsets) in this document. The `prnGSPAHM` function is again a wrapper of `pheatmap` and passes additional arguments for graphic controls. More examples can be found via `?prnGSPA`.  
+
+```{r prnGSPAHM_hs_d20, echo=FALSE, fig.align='center', fig.cap="**Figure 7C.** Heat map visualization of human gene sets at a distance cut-off 0.2", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_gspahm_hs_d20 <- "images\\protein\\gspa\\show_human_redundancy.png"
+knitr::include_graphics(c(img_gspahm_hs_d20))
+```
+
+Aside from heat maps, `prnGSPAHM` produces the networks of gene sets via [`networkD3`](http://christophergandrud.github.io/networkD3/), for interactive exploration of gene set redundancy.  
+
+```{r prnGSPAHM_networks, echo=FALSE, fig.align='center', fig.cap="**Figure 7D.** Snapshots of the networks of biological terms. Left, distance <= 0.8; right, distance <= 0.2.", fig.show='hold', message=FALSE, warning=FALSE, out.width='40%'}
+img_gspahm_connect <- "images\\protein\\gspa\\gspa_connet.png"
+img_gspahm_redund <- "images\\protein\\gspa\\gspa_redund.png"
+knitr::include_graphics(c(img_gspahm_connect, img_gspahm_redund))
+```
 
 
-### 2.6 Trend Analysis
+### 2.7 Trend Analysis
 The following performs the trend analysis against protein expressions. More information can be found from [`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf) and `?anal_prnTrend`. Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.  
 
 ```{r Protein trends, eval = FALSE}
@@ -1001,7 +1035,7 @@ img_prn_trends <- "images\\protein\\trend\\prn_trend_n6.png"
 knitr::include_graphics(c(img_prn_trends))
 ```
 
-### 2.7 NMF Analysis
+### 2.8 NMF Analysis
 The following performs the NMF analysis against protein data. More details can be found from [`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf) and `anal_prnNMF`.  
 
 ```{r Protein NMF, eval = FALSE}
@@ -1054,7 +1088,7 @@ img_nmf_coef <- "images\\protein\\nmf\\prn_nmf_r6_coef.png"
 knitr::include_graphics(c(img_nmf_con, img_nmf_coef))
 ```
 
-### 2.8 STRING Analysis
+### 2.9 STRING Analysis
 The following performs the [`STRING`](http://www.string-db.org) analysis of protein-protein interactions. More details can be found from `?getStringDB`.  
 
 ```{r Protein StringDB, eval = FALSE}

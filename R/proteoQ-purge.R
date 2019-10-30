@@ -189,10 +189,9 @@ purge_by_n <- function (df, id, min_n) {
 #'  default is TRUE.
 #'@param ... Additional parameters for plotting: \cr \code{ymax}, the maximum
 #'  \eqn{y} at a log2 scale; the default is +0.6. \cr \code{ybreaks}, the breaks
-#'  in \eqn{y}-axis at a log2 scale; the default is 0.2. Note: \code{y_breaks}
-#'  depreciated. \cr \code{width}, the width of plot. \cr \code{height}, the
-#'  height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
-#'  \code{y} axis.
+#'  in \eqn{y}-axis at a log2 scale; the default is 0.2. \cr \code{width}, the
+#'  width of plot. \cr \code{height}, the height of plot. \cr \code{flip_coord},
+#'  logical; if TRUE, flip \code{x} and \code{y} axis.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%

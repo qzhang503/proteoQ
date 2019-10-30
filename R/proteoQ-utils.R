@@ -1756,12 +1756,10 @@ sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = 
   if (rlang::is_missing(height)) height <- 8
   
   ymax <- eval(dots$ymax, env = caller_env())
-  y_breaks <- eval(dots$y_breaks, env = caller_env())
   ybreaks <- eval(dots$ybreaks, env = caller_env())
   flip_coord <- eval(dots$flip_coord, env = caller_env())
   
   if (is.null(ymax)) ymax <- .6
-  if (is.null(y_breaks)) y_breaks <- .2
   if (is.null(ybreaks)) ybreaks <- .2
   if (is.null(flip_coord)) flip_coord <- FALSE
   
@@ -1819,7 +1817,6 @@ sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = 
       stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun.y = "mean", geom = "point",
                    shape=23, size=2, fill="white", alpha=.5) +
       labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) +
-      # scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, y_breaks)) + 
       scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, ybreaks)) + 
       theme_psm_violin
     
@@ -1966,7 +1963,7 @@ not_contain_chars_in <- function (match, vars, ignore.case = FALSE) {
 #' @export
 start_with_str <- function (match, vars, ignore.case = FALSE) {
   stopifnot(is_string(match), nchar(match) > 0)
-  grepl(paste0("^", match), vars, fixed = TRUE, ignore.case)
+  grepl(paste0("^", match), vars, fixed = FALSE, ignore.case)
 }
 
 #' Row filtration helpers
@@ -1978,7 +1975,7 @@ start_with_str <- function (match, vars, ignore.case = FALSE) {
 #' @export
 end_with_str <- function (match, vars, ignore.case = FALSE) {
   stopifnot(is_string(match), nchar(match) > 0)
-  grepl(paste0(match, "$"), vars, fixed = TRUE, ignore.case)
+  grepl(paste0(match, "$"), vars, fixed = FALSE, ignore.case)
 }
 
 #' Row filtration helpers

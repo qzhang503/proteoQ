@@ -29,9 +29,10 @@
         visualization](#significance-tests-and-volcano-plot-visualization)
       - [2.5 Gene sets under volcano
         plots](#gene-sets-under-volcano-plots)
-      - [2.6 Trend Analysis](#trend-analysis)
-      - [2.7 NMF Analysis](#nmf-analysis)
-      - [2.8 STRING Analysis](#string-analysis)
+      - [2.6 Gene set networks](#gene-set-networks)
+      - [2.7 Trend Analysis](#trend-analysis)
+      - [2.8 NMF Analysis](#nmf-analysis)
+      - [2.9 STRING Analysis](#string-analysis)
       - [2.9 Missing value imputation](#missing-value-imputation)
   - [3 Labs](#labs)
       - [3.1 Reference choices](#reference-choices)

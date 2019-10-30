@@ -478,7 +478,8 @@ plot_prnNMFCon(
 
 # protein NMF: coefficients heat maps
 plot_prnNMFCoef(
-  annot_cols = c("Color", "Alpha", "Shape"),
+  impute_na = FALSE,
+	annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
   height = 10,
@@ -486,7 +487,8 @@ plot_prnNMFCoef(
 
 # protein NMF: metagene heat maps
 plot_metaNMF(
-  annot_cols = c("Color", "Alpha", "Shape"),
+  impute_na = FALSE,
+	annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   fontsize = 8,
   fontsize_col = 5,

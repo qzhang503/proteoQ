@@ -63,9 +63,9 @@ automatically by the value of \code{id}.}
 data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for use
 in \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2}
 scale; \cr \code{ymax}, the maximum y at \code{log2} scale; \cr
-\code{y_breaks}, the breaks in y-axis at \code{log2} scale; \cr \code{ncol},
-the number of columns; \cr \code{nrow}, the number of rows; \cr
-\code{width}, the width of plot; \cr \code{height}, the height of plot.}
+\code{ybreaks}, the breaks in y-axis at \code{log2} scale; \cr \code{nrow},
+the number of rows; \cr \code{width}, the width of plot; \cr \code{height},
+the height of plot.}
 }
 \value{
 Trend classification and visualization of \code{log2FC}.

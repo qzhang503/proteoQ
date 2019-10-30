@@ -54,26 +54,29 @@ with \code{pVals} smaller than the threshold will be ignored.}
 Gene sets with \code{pVals} smaller than the threshold will be ignored.}
 
 \item{min_size}{Minimum number of protein entries for consideration of a gene
-set test.}
+set test. The number is the sum of both up and down-expressed proteins after
+data filtration by `pval_cutoff`, `logFC_cutoff` or varargs `filter_`.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
 
-\item{annot_cols}{For use in heat map visualization of gene sets. A character
-vector of column keys in \code{essmap_Protein_GSPA_...csv}. The values under
-the selected keys will be used to color-code sample IDs on the top of the
-indicated plot.}
+\item{annot_cols}{A character vector of column keys that can be found in
+\code{essmap_Protein_GSPA_...csv} output files. The values under the
+selected keys will be used to color-code sample IDs on the top of heat maps
+by \code{prnGSPAHM}.}
 
-\item{annot_colnames}{For use in heat map visualization of gene sets. A
-character vector of replacement name(s) to annot_cols.}
+\item{annot_colnames}{A character vector of replacement name(s) to
+\code{annot_cols}.}
 }
 \description{
 \code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
-(GSPA) aganist protein \code{log2FC} data
+(GSPA) aganist protein \code{log2FC} data. Users should avoid call the method
+directly, but instead use the following wrappers.
 
-\code{prnGSPA} is a wrapper of \code{\link{proteoGSPA}}
+\code{prnGSPA} is a wrapper of \code{\link{proteoGSPA}} for enrichment analysis
 
-\code{prnGSPAHM} is a wrapper of \code{\link{proteoGSPA}}
+\code{prnGSPAHM} is a wrapper of \code{\link{proteoGSPA}} for heat map and
+network visualization
 }
 \details{
 The significance \code{pVals} of proteins are first obtained from
@@ -88,10 +91,37 @@ The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 default.
 
 \code{prnGSPAHM} visualizes the distance heat map between essential and all
-gene sets. The distance is \eqn{1 - x} where \eqn{x} is the percent overlap
+gene sets. The distance is \eqn{1 - f} where \eqn{f} is the fraction overlap
 for ids under a gene set.
 }
+\section{\code{Protein_GSPA_...csv}}{
+
+
+ \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab the name
+ of a gene set \cr is_essential \tab a logicial indicator of gene set
+ essentiality \cr count \tab the number of entrez IDs with significance
+ \code{pVal} <= \code{pval_cutoff} under a \code{term} \cr contrast \tab a
+ contrast of sample groups \cr p_val \tab significance p values \cr q_val
+ \tab \code{p_val} with \code{BH} adjustment for multiple tests \cr log2fc
+ \tab the fold change of a gene set at logarithmic base of 2 \cr }
+}
+
+\section{\code{essmap_Protein_GSPA_...csv}}{
+
+
+ \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr ess_term \tab the
+ name of an essential gene set \cr term \tab the name of a gene set \cr
+ ess_count \tab the number of entrez IDs under a \code{term} with matches to
+ a correspoding \code{ess_term} \cr fraction \tab a fraction of matches in
+ entrez IDs between a \code{term} and a \code{ess_term}; for example at
+ \code{fraction = 1} between a \code{term}, \eqn{x}, and an \code{ess_term},
+ \eqn{y}, all of the gene IDs under \eqn{x} are present in \eqn{y} \cr
+ distance \tab 1 - \code{fraction} \cr source \tab a numeric index of
+ essential gene sets \cr target \tab a numeric index of all gene sets \cr }
+}
+
 \examples{
+# enrichment analysis
 prnGSPA(
   scale_log2r = TRUE,
   impute_na = FALSE,
@@ -104,12 +134,14 @@ prnGSPA(
 )
 
 
-# distances of GSPA terms
+# distance heat map and network of GSPA terms
+# a `term` is subset to an `ess_term` if the distance is zero
+# `source` is a column key in `essmap_Protein_GSPA...csv`
 prnGSPAHM(
-  filter_by = exprs(count >= 8, percent >= .20),
+  filter_by = exprs(distance <= .2),
   annot_cols = "source",
   annot_colnames = "Essential set index",
-  
+
   fontsize = 16,
   fontsize_row = 20,
   fontsize_col = 20,
@@ -117,15 +149,32 @@ prnGSPAHM(
   border_color = "grey60",
   cellwidth = 24,
   cellheight = 24,
+  filename = show_redundancy_at_small_dist.png,
 )
 
-# custom colors
-# `source` and `count` are column keys in `essmap_Protein_GSPA...csv`
+# human terms only
 prnGSPAHM(
-  annot_cols = c("source", "count"),
-  annot_colnames = c("Essential set index", "Count"),	
-  filter_by = exprs(count >= 8, percent >= .20),
-  
+  filter_num = exprs(distance <= .8),
+  filter_sp = exprs(start_with_str("hs", term)),
+  annot_cols = "source",
+  annot_colnames = "Essential set index",
+
+  fontsize = 16,
+  fontsize_row = 20,
+  fontsize_col = 20,
+  fontsize_number = 8,
+  border_color = "grey60",
+  cellwidth = 24,
+  cellheight = 24,
+  filename = show_connectivity_at_large_dist.png,
+)
+
+# custom color palette
+prnGSPAHM(
+  annot_cols = c("source", "ess_count"),
+  annot_colnames = c("Essential set index", "Count"),
+  filter_by = exprs(ess_count >= 8, distance <= .80),
+
   fontsize = 16,
   fontsize_row = 20,
   fontsize_col = 20,
@@ -136,6 +185,7 @@ prnGSPAHM(
   color = colorRampPalette(c("blue", "white", "red"))(100),
   filename = "custom_colors.png"
 )
+
 \dontrun{
 }
 

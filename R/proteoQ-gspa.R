@@ -1,7 +1,8 @@
 #'GSPA of protein data
 #'
 #'\code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
-#'(GSPA) aganist protein \code{log2FC} data
+#'(GSPA) aganist protein \code{log2FC} data. Users should avoid call the method
+#'directly, but instead use the following wrappers.
 #'
 #'The significance \code{pVals} of proteins are first obtained from
 #'\code{\link{prnSig}}, which involves linear modelings using
@@ -15,8 +16,30 @@
 #'default.
 #'
 #'\code{prnGSPAHM} visualizes the distance heat map between essential and all
-#'gene sets. The distance is \eqn{1 - x} where \eqn{x} is the percent overlap
+#'gene sets. The distance is \eqn{1 - f} where \eqn{f} is the fraction overlap
 #'for ids under a gene set.
+#'
+#'@section \code{Protein_GSPA_...csv}:
+#'
+#'  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab the name
+#'  of a gene set \cr is_essential \tab a logicial indicator of gene set
+#'  essentiality \cr count \tab the number of entrez IDs with significance
+#'  \code{pVal} <= \code{pval_cutoff} under a \code{term} \cr contrast \tab a
+#'  contrast of sample groups \cr p_val \tab significance p values \cr q_val
+#'  \tab \code{p_val} with \code{BH} adjustment for multiple tests \cr log2fc
+#'  \tab the fold change of a gene set at logarithmic base of 2 \cr }
+#'
+#'@section \code{essmap_Protein_GSPA_...csv}:
+#'
+#'  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr ess_term \tab the
+#'  name of an essential gene set \cr term \tab the name of a gene set \cr
+#'  ess_count \tab the number of entrez IDs under a \code{term} with matches to
+#'  a correspoding \code{ess_term} \cr fraction \tab a fraction of matches in
+#'  entrez IDs between a \code{term} and a \code{ess_term}; for example at
+#'  \code{fraction = 1} between a \code{term}, \eqn{x}, and an \code{ess_term},
+#'  \eqn{y}, all of the gene IDs under \eqn{x} are present in \eqn{y} \cr
+#'  distance \tab 1 - \code{fraction} \cr source \tab a numeric index of
+#'  essential gene sets \cr target \tab a numeric index of all gene sets \cr }
 #'
 #'@inheritParams proteoSigtest
 #'@inheritParams  proteoEucDist
@@ -33,20 +56,22 @@
 #'@param logFC_cutoff The cut-off in protein \code{log2FC}. Entries with
 #'  \code{log2FC} smaller than the threshold will be ignored.
 #'@param min_size Minimum number of protein entries for consideration of a gene
-#'  set test.
+#'  set test. The number is the sum of both up and down-expressed proteins after
+#'  data filtration by `pval_cutoff`, `logFC_cutoff` or varargs `filter_`.
 #'@param gspval_cutoff The cut-off in significance \code{pVal} of gene sets.
 #'  Gene sets with \code{pVals} smaller than the threshold will be ignored.
-#'@param annot_cols For use in heat map visualization of gene sets. A character
-#'  vector of column keys in \code{essmap_Protein_GSPA_...csv}. The values under
-#'  the selected keys will be used to color-code sample IDs on the top of the
-#'  indicated plot.
-#'@param annot_colnames For use in heat map visualization of gene sets. A
-#'  character vector of replacement name(s) to annot_cols.
+#'@param annot_cols A character vector of column keys that can be found in
+#'  \code{essmap_Protein_GSPA_...csv} output files. The values under the
+#'  selected keys will be used to color-code sample IDs on the top of heat maps
+#'  by \code{prnGSPAHM}.
+#'@param annot_colnames A character vector of replacement name(s) to
+#'  \code{annot_cols}.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}.
 #'@import dplyr rlang ggplot2 networkD3
 #'@importFrom magrittr %>%
 #' @examples
+#' # enrichment analysis
 #' prnGSPA(
 #'   scale_log2r = TRUE,
 #'   impute_na = FALSE,
@@ -59,12 +84,14 @@
 #' )
 #'
 #'
-#' # distances of GSPA terms
+#' # distance heat map and network of GSPA terms
+#' # a `term` is subset to an `ess_term` if the distance is zero
+#' # `source` is a column key in `essmap_Protein_GSPA...csv`
 #' prnGSPAHM(
-#'   filter_by = exprs(count >= 8, percent >= .20),
+#'   filter_by = exprs(distance <= .2),
 #'   annot_cols = "source",
 #'   annot_colnames = "Essential set index",
-#'   
+#'
 #'   fontsize = 16,
 #'   fontsize_row = 20,
 #'   fontsize_col = 20,
@@ -72,15 +99,32 @@
 #'   border_color = "grey60",
 #'   cellwidth = 24,
 #'   cellheight = 24,
+#'   filename = show_redundancy_at_small_dist.png,
 #' )
 #'
-#' # custom colors
-#' # `source` and `count` are column keys in `essmap_Protein_GSPA...csv`
+#' # human terms only
 #' prnGSPAHM(
-#'   annot_cols = c("source", "count"),
-#'   annot_colnames = c("Essential set index", "Count"),	
-#'   filter_by = exprs(count >= 8, percent >= .20),
-#'   
+#'   filter_num = exprs(distance <= .8),
+#'   filter_sp = exprs(start_with_str("hs", term)),
+#'   annot_cols = "source",
+#'   annot_colnames = "Essential set index",
+#'
+#'   fontsize = 16,
+#'   fontsize_row = 20,
+#'   fontsize_col = 20,
+#'   fontsize_number = 8,
+#'   border_color = "grey60",
+#'   cellwidth = 24,
+#'   cellheight = 24,
+#'   filename = show_connectivity_at_large_dist.png,
+#' )
+#'
+#' # custom color palette
+#' prnGSPAHM(
+#'   annot_cols = c("source", "ess_count"),
+#'   annot_colnames = c("Essential set index", "Count"),
+#'   filter_by = exprs(ess_count >= 8, distance <= .80),
+#'
 #'   fontsize = 16,
 #'   fontsize_row = 20,
 #'   fontsize_col = 20,
@@ -91,6 +135,7 @@
 #'   color = colorRampPalette(c("blue", "white", "red"))(100),
 #'   filename = "custom_colors.png"
 #' )
+#'
 #' \dontrun{
 #' }
 #'
@@ -142,7 +187,7 @@ proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
 
 #'GSPA
 #'
-#'\code{prnGSPA} is a wrapper of \code{\link{proteoGSPA}} 
+#'\code{prnGSPA} is a wrapper of \code{\link{proteoGSPA}} for enrichment analysis
 #'
 #'@rdname proteoGSPA
 #'
@@ -199,7 +244,7 @@ gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
     rowSums() %>%
     `>`(0)
   
-  cat("Column keys for data filtration are in `Protein\\Model\\Protein_pVals.txt`.\n")
+  cat("Column keys available for data filtration are in `Protein\\Model\\Protein_pVals.txt`.\n")
 
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
@@ -262,7 +307,7 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
     dplyr::mutate(valence = factor(valence, levels = c("neg", "pos"))) 
   
   # imputation of NA to 0 increases the number of entries in descriptive "mean" calculation, 
-  # which is like a penalty function
+  # like a penalty function
   df <- df %>% 
     tidyr::complete(entrez, contrast, valence) %>% 
     dplyr::mutate(p_val = ifelse(is.na(p_val), 0, p_val)) # %>% 
@@ -315,13 +360,13 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
     dplyr::mutate_at(.vars = grep("^p_val$|^adjP$", names(.)), format, scientific = TRUE, digits = 2) %>%
     dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2)
   
-  # essential sets
+  # sig_sets: column "1" - significant gsets; column "2" - entrez ids can be found from `df`
   gsets <- gsets %>% 
     .[!grepl("molecular_function$", names(.))] %>% 
     .[!grepl("cellular_component$", names(.))] %>% 
     .[!grepl("biological_process$", names(.))]
   
-  all_sets <- purrr::map2(gsets, names(gsets), ~ {
+  sig_sets <- purrr::map2(gsets, names(gsets), ~ {
     .x %>% 
       tibble() %>% 
       dplyr::mutate(set = .y)
@@ -332,19 +377,24 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
     dplyr::select(c("term", "id")) %>% 
     dplyr::filter(term %in% res_pass$term)
   
-  greedy_sets <- all_sets %>% 
+  out <- sig_sets %>% 
+    dplyr::group_by(term) %>% 
+    dplyr::summarise(count = n()) %>% # the number of entries matched to input `df`
+    dplyr::right_join(., out, by = "term")
+
+  sig_greedy_terms <- sig_sets %>% 
     RcppGreedySetCover::greedySetCover(FALSE) %>% 
     dplyr::select(term) %>% 
-    dplyr::filter(!duplicated(term)) %>% 
-    dplyr::mutate(is_essential = TRUE)
+    dplyr::filter(!duplicated(term))
   
-  fn_prefix <- paste0(gsub("\\.[^.]*$", "", filename), "_", formula)
-  out_nm <- paste0(fn_prefix, ".csv")
+  fn_prefix <- paste0(gsub("\\.[^.]*$", "", filename), "_", formula)  
   
-  out <- greedy_sets %>% dplyr::right_join(., out, by = "term") %T>% 
-    write.csv(file.path(filepath, formula, out_nm), row.names = FALSE)
+  out <- sig_greedy_terms %>% 
+    dplyr::mutate(is_essential = TRUE) %>% 
+    dplyr::right_join(., out, by = "term") %T>% 
+    write.csv(file.path(filepath, formula, paste0(fn_prefix, ".csv")), row.names = FALSE)
 
-  map_essential(all_sets, greedy_sets, out) %>% 
+  map_essential(sig_sets, unique(sig_greedy_terms$term)) %>% 
     write.csv(file.path(filepath, formula, paste0("essmap_", fn_prefix, ".csv")), row.names = FALSE)
 }
 
@@ -392,32 +442,28 @@ prep_gspa <- function(df, formula, col_ind, pval_cutoff = 5E-2, logFC_cutoff = l
 #'
 #' @import purrr dplyr rlang RcppGreedySetCover
 #' @importFrom magrittr %>%
-map_essential <- function (all_sets, greedy_sets, out) {
-  greedy_sets_all <- all_sets %>% 
-    dplyr::filter(term %in% unique(greedy_sets$term))
+map_essential <- function (sig_sets, sig_greedy_terms) {
+  # sig_sets with terms that can be found in sig_greedy_terms
+  sig_greedy_sets <- sig_sets %>% dplyr::filter(term %in% sig_greedy_terms)
 
-  all_by_greedy <- purrr::map(unique(out$term), ~ {
-    curr_set <- all_sets %>% 
-      dplyr::filter(term %in% .x)
+  # distribution of sig_sets under sig_greedy_sets
+  purrr::map(unique(sig_sets$term), ~ {
+    curr_sig_set <- sig_sets %>% dplyr::filter(term %in% .x)
     
-    # distribution of curr_set under greedy_sets_all
-    greedy_sets_all %>% 
-      dplyr::filter(id %in% curr_set$id) %>% # limit the complete map to ids found in curr_set
+    sig_greedy_sets %>% 
+      dplyr::filter(id %in% curr_sig_set$id) %>% 
       dplyr::group_by(term) %>%
-      dplyr::summarise(n = n()) %>% # the count of ids from curr_set found in greedy sets
-      dplyr::mutate(percent = n/nrow(curr_set)) %>% 
-      dplyr::mutate(curr_set = .x)
-  }, all_sets, greedy_sets_all) %>% 
+      dplyr::summarise(ess_count = n()) %>% 
+      dplyr::mutate(fraction = ess_count/nrow(curr_sig_set)) %>% 
+      dplyr::mutate(curr_sig_set = .x)
+  }, sig_sets, sig_greedy_sets) %>% 
     dplyr::bind_rows() %>% 
-    dplyr::group_by(curr_set) %>%
-    dplyr::rename(ess_term = "term", count = "n") %>%
-    dplyr::rename(term = "curr_set") %>% 
-    dplyr::select(c("ess_term", "term", "count", "percent")) %>% 
-    dplyr::mutate(percent = round(percent, digits = 3)) %>% 
-    dplyr::ungroup(ess_term)
-
-  all_by_greedy <- all_by_greedy %>% 
-    # dplyr::filter(count > 10, percent >= .33) %>% 
+    dplyr::group_by(curr_sig_set) %>%
+    dplyr::rename(ess_term = "term", term = "curr_sig_set") %>%
+    dplyr::select(c("ess_term", "term", "ess_count", "fraction")) %>% 
+    dplyr::mutate(fraction = round(fraction, digits = 3)) %>% 
+    dplyr::ungroup(ess_term) %>% 
+    dplyr::mutate(distance = 1 - fraction) %>% 
     dplyr::mutate(term = factor(term, levels = unique(as.character(term)))) %>% 
     dplyr::mutate(ess_term = factor(ess_term, levels = levels(term))) %>%
     dplyr::mutate(source = as.numeric(ess_term), target = as.numeric(term)) 
@@ -426,7 +472,8 @@ map_essential <- function (all_sets, greedy_sets, out) {
 
 #'GSPA
 #'
-#'\code{prnGSPAHM} is a wrapper of \code{\link{proteoGSPA}} 
+#'\code{prnGSPAHM} is a wrapper of \code{\link{proteoGSPA}} for heat map and
+#'network visualization
 #'
 #'@rdname proteoGSPA
 #'
@@ -487,6 +534,8 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   all_by_greedy <- all_by_greedy %>% 
    filters_in_call(!!!filter_dots)
   
+  if (nrow(all_by_greedy) == 0) stop("No GSPA terms available after data filtration.")
+  
   if (!is.null(dim(all_by_greedy))) {
     message(paste("Essential GSPA loaded."))
   } else {
@@ -494,8 +543,8 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   }
 
   ess_vs_all <- all_by_greedy %>% 
-    dplyr::select(-which(names(.) %in% c("count", "source", "target"))) %>% 
-    tidyr::spread(term, percent) %>% 
+    dplyr::select(-which(names(.) %in% c("ess_count", "source", "target", "distance"))) %>% 
+    tidyr::spread(term, fraction) %>% 
     dplyr::mutate_at(vars(which(names(.) != "ess_term")), ~ {1 - .x}) %>% 
     tibble::column_to_rownames("ess_term")
   
@@ -576,9 +625,14 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
     !!!dots,
   )
 
-  # htmlwidgets
+  # networks
   cluster <- data.frame(cluster = cutree(ph$tree_col, h = max_d_col)) %>% 
     tibble::rownames_to_column("term")
+
+  all_by_greedy <- all_by_greedy %>% 
+    dplyr::mutate(term = factor(term, levels = unique(as.character(term)))) %>% 
+    dplyr::mutate(ess_term = factor(ess_term, levels = levels(term))) %>%
+    dplyr::mutate(source = as.numeric(ess_term), target = as.numeric(term)) 
 
   min_target <- min(all_by_greedy$target, na.rm = TRUE)
   all_by_greedy <- all_by_greedy %>% 
@@ -589,8 +643,9 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
     dplyr::left_join(cluster, by = "term")
   
   my_nodes <- all_by_greedy %>% 
-    dplyr::select(c("term", "cluster", "count")) %>% 
-    dplyr::filter(!duplicated(term)) %>% # temporary first count used
+    dplyr::arrange(-ess_count) %>% 
+    dplyr::select(c("term", "cluster", "ess_count")) %>% 
+    dplyr::filter(!duplicated(term)) %>% 
     dplyr::arrange(cluster) %>% 
     dplyr::mutate(term = factor(term, levels = as.character(term))) %>% 
     dplyr::arrange(term)
@@ -601,14 +656,14 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
     dplyr::mutate(source = as.numeric(term), target = as.numeric(ess_term)) %>% 
     dplyr::arrange(term) %>% 
     dplyr::mutate(source = source - 1, target = target -1) %>% 
-    dplyr::select(source, target, percent) %>% 
-    dplyr::mutate(percent = percent * 10) %>% 
+    dplyr::select(source, target, fraction) %>% 
+    dplyr::mutate(fraction = fraction * 10) %>% 
     dplyr::distinct() 
 
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   networkD3::forceNetwork(Links = my_links, Nodes = my_nodes, Source = "source",
-                          Target = "target", Value = "percent", NodeID = "term", Nodesize = "count", 
+                          Target = "target", Value = "fraction", NodeID = "term", Nodesize = "ess_count", 
                           Group = "cluster", opacity = 0.8, zoom = TRUE) %>% 
     networkD3::saveNetwork(file = file.path(filepath, formula, paste0(fn_prefix, ".html")))
 }
