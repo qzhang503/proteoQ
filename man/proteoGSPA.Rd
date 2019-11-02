@@ -14,13 +14,11 @@ proteoGSPA(id = gene, scale_log2r = TRUE, df = NULL,
 
 prnGSPA(...)
 
-prnGSPAHM(annot_cols = NULL, annot_colnames = NULL, ...)
+prnGSPAHM(...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. The value will be
-determined automatically. Peptide data will be used at \code{id = pep_seq}
-or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
-or \code{gene}.}
+\item{id}{Character string indicating the type of data. The value will be
+determined automatically.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples.}
@@ -28,9 +26,13 @@ of standard deviation across all samples.}
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
 
-\item{filepath}{Use system default.}
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
 
-\item{filename}{Use system default.}
+\item{filename}{A file name to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of id in the call.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}
@@ -40,33 +42,40 @@ missing values will be used.}
 
 \item{gset_nms}{Character vector containing the name(s) of gene sets for
 enrichment analysis. The possible values are in \code{c("go_sets",
-"kegg_sets", "c2_msig")}.}
+"kegg_sets")}.}
 
 \item{var_cutoff}{Not currently used.}
 
 \item{pval_cutoff}{The cut-off in protein significance \code{pVal}. Entries
-with \code{pVals} smaller than the threshold will be ignored.}
+with \code{pVals} less significant than the threshold will be ignored for
+enrichment analysis.}
 
 \item{logFC_cutoff}{The cut-off in protein \code{log2FC}. Entries with
-\code{log2FC} smaller than the threshold will be ignored.}
+absolute \code{log2FC} smaller than the threshold will be ignored for
+enrichment analysis.}
 
 \item{gspval_cutoff}{The cut-off in significance \code{pVal} of gene sets.
-Gene sets with \code{pVals} smaller than the threshold will be ignored.}
+Only enrichment terms with \code{pVals} more significant than the threshold
+will be reported.}
 
 \item{min_size}{Minimum number of protein entries for consideration of a gene
-set test. The number is the sum of both up and down-expressed proteins after
-data filtration by `pval_cutoff`, `logFC_cutoff` or varargs `filter_`.}
+set test. The number is the sum of up or down-expressed proteins after data
+filtration by \code{pval_cutoff}, \code{logFC_cutoff} or varargs
+\code{filter_}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}.}
-
-\item{annot_cols}{A character vector of column keys that can be found in
-\code{essmap_Protein_GSPA_...csv} output files. The values under the
-selected keys will be used to color-code sample IDs on the top of heat maps
-by \code{prnGSPAHM}.}
-
-\item{annot_colnames}{A character vector of replacement name(s) to
-\code{annot_cols}.}
+data; also see \code{\link{normPSM}}. \cr \cr \code{annot_cols} A character
+vector of column keys that can be found in \code{essmap_...csv}. The values
+under the selected keys will be used to color-code sample IDs on the top of
+heat maps by \code{prnGSPAHM}. \cr \cr \code{annot_colnames} A character
+vector of replacement name(s) to \code{annot_cols}. \cr \cr
+\code{annot_rows} A character vector of column keys that can be found from
+\code{essmeta_...csv} . The values under the selected keys will be used to
+color-code essential terms on the side of the heat maps. \cr \cr Additional
+arguments for \code{\link[pheatmap]{pheatmap}}, i.e., \code{fontsize }...
+\cr Note arguments disabled for \code{pheatmap}: \cr \code{annotation_col};
+instead use keys indicated in \code{annot_cols} \cr \code{annotation_row};
+instead use keys indicated in \code{annot_rows}}
 }
 \description{
 \code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
@@ -85,39 +94,44 @@ The significance \code{pVals} of proteins are first obtained from
 mean of \code{pVals} are then each calculated for the groups of up or down
 regulated proteins. The quotient of the two \code{pVals} is used to prepsent
 the significance of gene set enrichment. The arguments \code{pval_cutoff} and
-\code{logFC_cutoff} are used to filter out low influence genes.
+\code{logFC_cutoff} are used to filter out low influence genes. Additional
+subsetting of data via the \code{vararg} approach of \code{filter_} is
+feasible.
+
+The quality metrics of \code{size}, \code{ess_size} in output files are
+obtained after data filtration with the criteria specified by
+\code{pval_cutoff}, \code{logFC_cutoff} and/or \code{varargs}.
 
 The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 default.
 
 \code{prnGSPAHM} visualizes the distance heat map between essential and all
-gene sets. The distance is \eqn{1 - f} where \eqn{f} is the fraction overlap
-for ids under a gene set.
+gene sets. See below for the definition of distance.
 }
 \section{\code{Protein_GSPA_...csv}}{
 
 
- \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab the name
- of a gene set \cr is_essential \tab a logicial indicator of gene set
- essentiality \cr count \tab the number of entrez IDs with significance
- \code{pVal} <= \code{pval_cutoff} under a \code{term} \cr contrast \tab a
- contrast of sample groups \cr p_val \tab significance p values \cr q_val
- \tab \code{p_val} with \code{BH} adjustment for multiple tests \cr log2fc
- \tab the fold change of a gene set at logarithmic base of 2 \cr }
+ \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
+ set term \cr is_essential \tab a logicial indicator of gene set essentiality
+ \cr size \tab the number of IDs under a \code{term} \cr ess_size \tab the
+ number of IDs that can be found under a corresponding essential set \cr
+ contrast \tab a contrast of sample groups \cr p_val \tab significance p
+ values \cr q_val \tab \code{p_val} with \code{BH} adjustment of multiple
+ tests \cr log2fc \tab the fold change of a gene set at logarithmic base of 2
+ \cr }
 }
 
 \section{\code{essmap_Protein_GSPA_...csv}}{
 
 
- \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr ess_term \tab the
- name of an essential gene set \cr term \tab the name of a gene set \cr
- ess_count \tab the number of entrez IDs under a \code{term} with matches to
- a correspoding \code{ess_term} \cr fraction \tab a fraction of matches in
- entrez IDs between a \code{term} and a \code{ess_term}; for example at
- \code{fraction = 1} between a \code{term}, \eqn{x}, and an \code{ess_term},
- \eqn{y}, all of the gene IDs under \eqn{x} are present in \eqn{y} \cr
- distance \tab 1 - \code{fraction} \cr source \tab a numeric index of
- essential gene sets \cr target \tab a numeric index of all gene sets \cr }
+ \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
+ set term \cr ess_term \tab an essential gene set term \cr size \tab the
+ number of IDs under a \code{term} with matches to an \code{ess_term} \cr
+ ess_size \tab the number of essential IDs under a \code{term} with matches
+ to an \code{ess_term} \cr fraction \tab a fraction of matches in IDs between
+ a \code{term} and a \code{ess_term} \cr distance \tab 1 - \code{fraction}
+ \cr idx \tab a numeric index of \code{term} \cr ess_idx \tab a numeric index
+ of \code{ess_term} \cr }
 }
 
 \examples{
@@ -130,17 +144,18 @@ prnGSPA(
   gset_nms = c("go_sets", "kegg_sets"),
 
   filter_by_npep = exprs(prot_n_pep >= 2),
-  # `filename(s)` will be automated,
 )
 
 
 # distance heat map and network of GSPA terms
 # a `term` is subset to an `ess_term` if the distance is zero
-# `source` is a column key in `essmap_Protein_GSPA...csv`
+# `ess_idx` is a column key in `essmap_Protein_GSPA...csv`
+# `ess_size` is a column key in metadata file `essmeta_Protein_GSPA...csv`
 prnGSPAHM(
   filter_by = exprs(distance <= .2),
-  annot_cols = "source",
-  annot_colnames = "Essential set index",
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  annot_rows = "ess_size",
 
   fontsize = 16,
   fontsize_row = 20,
@@ -156,8 +171,8 @@ prnGSPAHM(
 prnGSPAHM(
   filter_num = exprs(distance <= .8),
   filter_sp = exprs(start_with_str("hs", term)),
-  annot_cols = "source",
-  annot_colnames = "Essential set index",
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
 
   fontsize = 16,
   fontsize_row = 20,
@@ -171,9 +186,9 @@ prnGSPAHM(
 
 # custom color palette
 prnGSPAHM(
-  annot_cols = c("source", "ess_count"),
-  annot_colnames = c("Essential set index", "Count"),
-  filter_by = exprs(ess_count >= 8, distance <= .80),
+  annot_cols = c("ess_idx", "ess_size"),
+  annot_colnames = c("Eset index", "Size"),
+  filter_by = exprs(ess_size >= 8, distance <= .80),
 
   fontsize = 16,
   fontsize_row = 20,

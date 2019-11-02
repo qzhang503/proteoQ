@@ -69,7 +69,7 @@ shown, respectively, in the facet grid of plots.}
 
 \item{gset_nms}{Character vector containing the name(s) of gene sets for
 enrichment analysis. The possible values are in \code{c("go_sets",
-"kegg_sets", "c2_msig")}.}
+"kegg_sets")}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for

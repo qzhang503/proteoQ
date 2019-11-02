@@ -15,6 +15,8 @@ output:
   pdf_document:
     toc: yes
     number_sections: true
+  word_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -23,8 +25,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  word_document:
-    toc: yes
 ---
 
 ---
@@ -944,14 +944,14 @@ The names of gene sets will by default match those provided in `prnGSPA`. Despit
 In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `essmap_Protein_GSPA_Z_...csv` files.  
 
 ### 2.6 Gene set networks
-Gene sets can overlap with one another to varying degrees. We need to ask the same question here: to what extent the signficant sets found from `GSPA` are redundant in relative to any of the essential sets determined by set cover, i.e., what is the intersect in gene IDs between a redundant set and an essential set? For this reason, we have calculated the `fraction` of overlap between gene sets when calling `prnGSPA`. The results are stored in output files such as `Protein\GSPA\essmap_Protein_GSPA_Z_W2_bat.csv`.  
+Gene sets can overlap with one another to varying degrees. We need to ask the same question here: to what extent the signficant sets found from `GSPA` are redundant in relative to any of the essential sets determined by set cover, i.e., what is the intersect in gene IDs between a redundant set and an essential set? For this reason, we have calculated the `fraction` of overlap between gene sets when calling `prnGSPA`. The results are stored in output files such as `Protein\GSPA\essmap_...csv`.  
 
 In this section, we first perform simple heat map visualization between all gene sets and essential groups.  
 
 ```{r prnPSPAHM_all, eval = FALSE}
 prnGSPAHM(
-  annot_cols = "source",
-  annot_colnames = "Essential set index",
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
   
   fontsize = 16,
   fontsize_row = 20,
@@ -964,21 +964,22 @@ prnGSPAHM(
 )
 ```
 
-The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs between two gene sets. The smaller the distance, the greater the overlap is between two gene sets. For convenience, a `distance` column is also made available in `essmap_Protein_GSPA_Z_W2_bat.csv`.  
+The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs between two gene sets. The smaller the distance, the greater the overlap is between two gene sets. For convenience, a `distance` column is also made available in the `essmap_...csv` file.  
 
 ```{r prnGSPAHM_all, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Heat map visualization of the distance between all and esstial gene sets", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_gspahm_all <- "images\\protein\\gspa\\all_sets.png"
 knitr::include_graphics(c(img_gspahm_all))
 ```
 
-As expected, we saw zero overlap between human and mouse gene sets. Within each organism, low-redundancy `red` cells have overwhelmed the heat map and might have impeded us from capturing high-redudancy terms in `blue`. We can, however, readily de-emphasize the `red` cells by data filtration using the `vararg` approach. In the example shown below, we chose to keep more redundant terms at distances smaller than or equal to 0.2:  
+As expected, we saw zero overlap between human and mouse gene sets. Within each organism, low-redundancy `red` cells overwhelm the heat map and might have impeded us from capturing high-redudancy terms in `blue`. We can, however, readily de-emphasize the `red` cells by data filtration. In the example shown below, we chose to keep more redundant terms at distances shorter than or equal to 0.2:  
 
 ```{r prnPSPAHM_filtered, eval = FALSE}
 prnGSPAHM(
   filter_by = exprs(distance <= .2),
   filter_sp = exprs(start_with_str("hs", term)), 
-  annot_cols = "source",
-  annot_colnames = "Essential set index",
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  annot_rows = "ess_size", 
 
   fontsize = 16,
   fontsize_row = 20,
