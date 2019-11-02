@@ -10,64 +10,81 @@
 #'mean of \code{pVals} are then each calculated for the groups of up or down
 #'regulated proteins. The quotient of the two \code{pVals} is used to prepsent
 #'the significance of gene set enrichment. The arguments \code{pval_cutoff} and
-#'\code{logFC_cutoff} are used to filter out low influence genes.
+#'\code{logFC_cutoff} are used to filter out low influence genes. Additional
+#'subsetting of data via the \code{vararg} approach of \code{filter_} is
+#'feasible.
+#'
+#'The quality metrics of \code{size}, \code{ess_size} in output files are
+#'obtained after data filtration with the criteria specified by
+#'\code{pval_cutoff}, \code{logFC_cutoff} and/or \code{varargs}.
 #'
 #'The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 #'default.
 #'
 #'\code{prnGSPAHM} visualizes the distance heat map between essential and all
-#'gene sets. The distance is \eqn{1 - f} where \eqn{f} is the fraction overlap
-#'for ids under a gene set.
+#'gene sets. See below for the definition of distance.
 #'
 #'@section \code{Protein_GSPA_...csv}:
 #'
-#'  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab the name
-#'  of a gene set \cr is_essential \tab a logicial indicator of gene set
-#'  essentiality \cr count \tab the number of entrez IDs with significance
-#'  \code{pVal} <= \code{pval_cutoff} under a \code{term} \cr contrast \tab a
-#'  contrast of sample groups \cr p_val \tab significance p values \cr q_val
-#'  \tab \code{p_val} with \code{BH} adjustment for multiple tests \cr log2fc
-#'  \tab the fold change of a gene set at logarithmic base of 2 \cr }
+#'  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
+#'  set term \cr is_essential \tab a logicial indicator of gene set essentiality
+#'  \cr size \tab the number of IDs under a \code{term} \cr ess_size \tab the
+#'  number of IDs that can be found under a corresponding essential set \cr
+#'  contrast \tab a contrast of sample groups \cr p_val \tab significance p
+#'  values \cr q_val \tab \code{p_val} with \code{BH} adjustment of multiple
+#'  tests \cr log2fc \tab the fold change of a gene set at logarithmic base of 2
+#'  \cr }
 #'
 #'@section \code{essmap_Protein_GSPA_...csv}:
 #'
-#'  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr ess_term \tab the
-#'  name of an essential gene set \cr term \tab the name of a gene set \cr
-#'  ess_count \tab the number of entrez IDs under a \code{term} with matches to
-#'  a correspoding \code{ess_term} \cr fraction \tab a fraction of matches in
-#'  entrez IDs between a \code{term} and a \code{ess_term}; for example at
-#'  \code{fraction = 1} between a \code{term}, \eqn{x}, and an \code{ess_term},
-#'  \eqn{y}, all of the gene IDs under \eqn{x} are present in \eqn{y} \cr
-#'  distance \tab 1 - \code{fraction} \cr source \tab a numeric index of
-#'  essential gene sets \cr target \tab a numeric index of all gene sets \cr }
+#'  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
+#'  set term \cr ess_term \tab an essential gene set term \cr size \tab the
+#'  number of IDs under a \code{term} with matches to an \code{ess_term} \cr
+#'  ess_size \tab the number of essential IDs under a \code{term} with matches
+#'  to an \code{ess_term} \cr fraction \tab a fraction of matches in IDs between
+#'  a \code{term} and a \code{ess_term} \cr distance \tab 1 - \code{fraction}
+#'  \cr idx \tab a numeric index of \code{term} \cr ess_idx \tab a numeric index
+#'  of \code{ess_term} \cr }
 #'
 #'@inheritParams proteoSigtest
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
+#'@param id Character string indicating the type of data. The value will be
+#'  determined automatically.
+#'@param filename A file name to output results. By default, it will be
+#'  determined automatically by the name of the calling function and the value
+#'  of id in the call.
 #'@param gset_nms Character vector containing the name(s) of gene sets for
 #'  enrichment analysis. The possible values are in \code{c("go_sets",
-#'  "kegg_sets", "c2_msig")}.
-#'@param filepath Use system default.
-#'@param filename Use system default.
+#'  "kegg_sets")}.
 #'@param var_cutoff Not currently used.
 #'@param pval_cutoff The cut-off in protein significance \code{pVal}. Entries
-#'  with \code{pVals} smaller than the threshold will be ignored.
+#'  with \code{pVals} less significant than the threshold will be ignored for
+#'  enrichment analysis.
 #'@param logFC_cutoff The cut-off in protein \code{log2FC}. Entries with
-#'  \code{log2FC} smaller than the threshold will be ignored.
+#'  absolute \code{log2FC} smaller than the threshold will be ignored for
+#'  enrichment analysis.
 #'@param min_size Minimum number of protein entries for consideration of a gene
-#'  set test. The number is the sum of both up and down-expressed proteins after
-#'  data filtration by `pval_cutoff`, `logFC_cutoff` or varargs `filter_`.
+#'  set test. The number is the sum of up or down-expressed proteins after data
+#'  filtration by \code{pval_cutoff}, \code{logFC_cutoff} or varargs
+#'  \code{filter_}.
 #'@param gspval_cutoff The cut-off in significance \code{pVal} of gene sets.
-#'  Gene sets with \code{pVals} smaller than the threshold will be ignored.
-#'@param annot_cols A character vector of column keys that can be found in
-#'  \code{essmap_Protein_GSPA_...csv} output files. The values under the
-#'  selected keys will be used to color-code sample IDs on the top of heat maps
-#'  by \code{prnGSPAHM}.
-#'@param annot_colnames A character vector of replacement name(s) to
-#'  \code{annot_cols}.
+#'  Only enrichment terms with \code{pVals} more significant than the threshold
+#'  will be reported.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}.
+#'  data; also see \code{\link{normPSM}}. \cr \cr \code{annot_cols} A character
+#'  vector of column keys that can be found in \code{essmap_...csv}. The values
+#'  under the selected keys will be used to color-code sample IDs on the top of
+#'  heat maps by \code{prnGSPAHM}. \cr \cr \code{annot_colnames} A character
+#'  vector of replacement name(s) to \code{annot_cols}. \cr \cr
+#'  \code{annot_rows} A character vector of column keys that can be found from
+#'  \code{essmeta_...csv} . The values under the selected keys will be used to
+#'  color-code essential terms on the side of the heat maps. \cr \cr Additional
+#'  arguments for \code{\link[pheatmap]{pheatmap}}, i.e., \code{fontsize }...
+#'  \cr Note arguments disabled for \code{pheatmap}: \cr \code{annotation_col};
+#'  instead use keys indicated in \code{annot_cols} \cr \code{annotation_row};
+#'  instead use keys indicated in \code{annot_rows}
 #'@import dplyr rlang ggplot2 networkD3
 #'@importFrom magrittr %>%
 #' @examples
@@ -80,17 +97,18 @@
 #'   gset_nms = c("go_sets", "kegg_sets"),
 #'
 #'   filter_by_npep = exprs(prot_n_pep >= 2),
-#'   # `filename(s)` will be automated,
 #' )
 #'
 #'
 #' # distance heat map and network of GSPA terms
 #' # a `term` is subset to an `ess_term` if the distance is zero
-#' # `source` is a column key in `essmap_Protein_GSPA...csv`
+#' # `ess_idx` is a column key in `essmap_Protein_GSPA...csv`
+#' # `ess_size` is a column key in metadata file `essmeta_Protein_GSPA...csv`
 #' prnGSPAHM(
 #'   filter_by = exprs(distance <= .2),
-#'   annot_cols = "source",
-#'   annot_colnames = "Essential set index",
+#'   annot_cols = "ess_idx",
+#'   annot_colnames = "Eset index",
+#'   annot_rows = "ess_size",
 #'
 #'   fontsize = 16,
 #'   fontsize_row = 20,
@@ -106,8 +124,8 @@
 #' prnGSPAHM(
 #'   filter_num = exprs(distance <= .8),
 #'   filter_sp = exprs(start_with_str("hs", term)),
-#'   annot_cols = "source",
-#'   annot_colnames = "Essential set index",
+#'   annot_cols = "ess_idx",
+#'   annot_colnames = "Eset index",
 #'
 #'   fontsize = 16,
 #'   fontsize_row = 20,
@@ -121,9 +139,9 @@
 #'
 #' # custom color palette
 #' prnGSPAHM(
-#'   annot_cols = c("source", "ess_count"),
-#'   annot_colnames = c("Essential set index", "Count"),
-#'   filter_by = exprs(ess_count >= 8, distance <= .80),
+#'   annot_cols = c("ess_idx", "ess_size"),
+#'   annot_colnames = c("Eset index", "Size"),
+#'   filter_by = exprs(ess_size >= 8, distance <= .80),
 #'
 #'   fontsize = 16,
 #'   fontsize_row = 20,
@@ -261,7 +279,7 @@ gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
 #' A helper function for GSPA
 #'
 #' @import purrr dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>%
 fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, 
                       filepath, filename, ...) {
   
@@ -297,75 +315,76 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
 
   dir.create(file.path(filepath, formula), recursive = TRUE, showWarnings = FALSE)
   id <- rlang::as_string(rlang::enexpr(id))
-  
-  df <- prep_gspa(df = df, formula = formula, col_ind = col_ind, 
-                  pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff) 
-  
-  df <- df %>% 
-    dplyr::mutate(p_val = -log10(p_val)) %>% 
-    dplyr::mutate(valence = ifelse(.$log2Ratio > 0, "pos", "neg")) %>% 
-    dplyr::mutate(valence = factor(valence, levels = c("neg", "pos"))) 
+  # fn_prefix <- paste0(gsub("\\.[^.]*$", "", filename), "_", formula)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   # imputation of NA to 0 increases the number of entries in descriptive "mean" calculation, 
-  # like a penalty function
-  df <- df %>% 
+  # like a penalty function  
+  df <- df %>% prep_gspa(formula = formula, col_ind = col_ind, 
+                         pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff) %>% 
+    dplyr::mutate(p_val = -log10(p_val)) %>% 
+    dplyr::mutate(valence = ifelse(.$log2Ratio > 0, "pos", "neg")) %>% 
+    dplyr::mutate(valence = factor(valence, levels = c("neg", "pos"))) %>% 
     tidyr::complete(entrez, contrast, valence) %>% 
     dplyr::mutate(p_val = ifelse(is.na(p_val), 0, p_val)) # %>% 
     # dplyr::mutate(log2Ratio = ifelse(is.na(log2Ratio), 0, log2Ratio))
-  
-  contrast_groups <- unique(df$contrast) %>% as.character()
-  gsets <- gsets %>% .[purrr::map_lgl(., ~ length(.x) > min_size)]
-  
-  res <- purrr::map(gsets, gapa_summary, df, min_size * length(contrast_groups) * 2) 
-  idx <- purrr::map_dbl(res, is.null)
 
-  res <- res[!idx] %>% 
-    do.call(rbind, .) %>% 
-    tibble::rownames_to_column("term") %>% 
-    dplyr::mutate(term = factor(term)) %>% 
-    dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), ~ abs(.x)) %>% 
-    dplyr::group_by(term) %>% 
-    dplyr::arrange(term) %>% 
-    data.frame(check.names = FALSE) %>% 
-    dplyr::mutate_at(vars(grep("^pVal\\s+\\(", names(.))), ~ 1/10^.x)
-
-  pass <- purrr::map(res[paste0("pVal (", contrast_groups, ")")], ~ .x <= gspval_cutoff) %>%
-    dplyr::bind_cols() %>%
-    rowSums() %>%
-    `>`(0)
-  
-  res_pass <- res[pass, ]
-  
-  adjp <- res_pass %>% 
-    dplyr::select(grep("^pVal\\s+\\(", names(.))) %>% 
-    purrr::map(~ p.adjust(., "BH")) %>% 
-    data.frame(check.names = FALSE) %>% 
-    `names<-`(gsub("pVal", "q_val", colnames(.))) %>% 
-    `names<-`(gsub("^q_val\\s+\\((.*)\\)", "\\1", names(.))) %>% 
-    tidyr::gather(key = contrast, value = q_val) %>% 
-    dplyr::select(-contrast)
-
-  log2fc <- res_pass %>% 
-    dplyr::select(grep("^log2Ratio\\s+\\(", names(.))) %>% 
-    `names<-`(gsub("^log2Ratio\\s+\\((.*)\\)", "\\1", names(.))) %>% 
-    tidyr::gather(key = contrast, value = log2fc) %>% 
-    dplyr::select(-contrast)
-  
-  pval <- res_pass %>% 
-    dplyr::select(-grep("^log2Ratio\\s+\\(", names(.))) %>% 
-    `names<-`(gsub("^pVal\\s+\\((.*)\\)", "\\1", names(.))) %>% 
-    tidyr::gather(key = contrast, value = p_val, -term)
-
-  out <- dplyr::bind_cols(pval, adjp, log2fc) %>% 
-    dplyr::mutate_at(.vars = grep("^p_val$|^adjP$", names(.)), format, scientific = TRUE, digits = 2) %>%
-    dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2)
-  
-  # sig_sets: column "1" - significant gsets; column "2" - entrez ids can be found from `df`
   gsets <- gsets %>% 
     .[!grepl("molecular_function$", names(.))] %>% 
     .[!grepl("cellular_component$", names(.))] %>% 
-    .[!grepl("biological_process$", names(.))]
+    .[!grepl("biological_process$", names(.))] %>%     
+    .[purrr::map_lgl(., ~ length(.x) > min_size)]
   
+  res_pass <- local({
+    contrast_groups <- unique(df$contrast) %>% as.character()
+    
+    res <- purrr::map(gsets, gapa_summary, df, min_size * length(contrast_groups) * 2) 
+    idx <- purrr::map_dbl(res, is.null)
+    
+    res <- res[!idx] %>% 
+      do.call(rbind, .) %>% 
+      tibble::rownames_to_column("term") %>% 
+      dplyr::mutate(term = factor(term)) %>% 
+      dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), ~ abs(.x)) %>% 
+      dplyr::group_by(term) %>% 
+      dplyr::arrange(term) %>% 
+      data.frame(check.names = FALSE) %>% 
+      dplyr::mutate_at(vars(grep("^pVal\\s+\\(", names(.))), ~ 1/10^.x)
+    
+    pass <- purrr::map(res[paste0("pVal (", contrast_groups, ")")], ~ .x <= gspval_cutoff) %>%
+      dplyr::bind_cols() %>%
+      rowSums() %>%
+      `>`(0)
+    
+    res_pass <- res[pass, ]
+  })
+  
+  out <- local({
+    adjp <- res_pass %>% 
+      dplyr::select(grep("^pVal\\s+\\(", names(.))) %>% 
+      purrr::map(~ p.adjust(., "BH")) %>% 
+      data.frame(check.names = FALSE) %>% 
+      `names<-`(gsub("pVal", "q_val", colnames(.))) %>% 
+      `names<-`(gsub("^q_val\\s+\\((.*)\\)", "\\1", names(.))) %>% 
+      tidyr::gather(key = contrast, value = q_val) %>% 
+      dplyr::select(-contrast)
+    
+    log2fc <- res_pass %>% 
+      dplyr::select(grep("^log2Ratio\\s+\\(", names(.))) %>% 
+      `names<-`(gsub("^log2Ratio\\s+\\((.*)\\)", "\\1", names(.))) %>% 
+      tidyr::gather(key = contrast, value = log2fc) %>% 
+      dplyr::select(-contrast)
+    
+    pval <- res_pass %>% 
+      dplyr::select(-grep("^log2Ratio\\s+\\(", names(.))) %>% 
+      `names<-`(gsub("^pVal\\s+\\((.*)\\)", "\\1", names(.))) %>% 
+      tidyr::gather(key = contrast, value = p_val, -term)
+    
+    dplyr::bind_cols(pval, adjp, log2fc) %>% 
+      dplyr::mutate_at(.vars = grep("^p_val$|^adjP$", names(.)), format, scientific = TRUE, digits = 2) %>%
+      dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2)
+  })
+
   sig_sets <- purrr::map2(gsets, names(gsets), ~ {
     .x %>% 
       tibble() %>% 
@@ -379,22 +398,28 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
   
   out <- sig_sets %>% 
     dplyr::group_by(term) %>% 
-    dplyr::summarise(count = n()) %>% # the number of entries matched to input `df`
-    dplyr::right_join(., out, by = "term")
+    dplyr::summarise(size = n()) %>% # the number of entries matched to input `df`
+    dplyr::right_join(out, by = "term")
 
-  sig_greedy_terms <- sig_sets %>% 
-    RcppGreedySetCover::greedySetCover(FALSE) %>% 
-    dplyr::select(term) %>% 
-    dplyr::filter(!duplicated(term))
-  
-  fn_prefix <- paste0(gsub("\\.[^.]*$", "", filename), "_", formula)  
-  
-  out <- sig_greedy_terms %>% 
-    dplyr::mutate(is_essential = TRUE) %>% 
-    dplyr::right_join(., out, by = "term") %T>% 
-    write.csv(file.path(filepath, formula, paste0(fn_prefix, ".csv")), row.names = FALSE)
+  res_greedy <- sig_sets %>% 
+    RcppGreedySetCover::greedySetCover(FALSE) # %T>% 
+    # write.csv(file.path(filepath, formula, paste0("resgreedy_", fn_prefix, ".csv")), row.names = FALSE)
 
-  map_essential(sig_sets, unique(sig_greedy_terms$term)) %>% 
+  sig_sets <- res_greedy %>% 
+    dplyr::group_by(term) %>% 
+    dplyr::summarise(ess_size = n()) %>% 
+    dplyr::right_join(out, by = "term") %>% 
+    dplyr::mutate(is_essential = ifelse(!is.na(ess_size), TRUE, FALSE)) %>% 
+    dplyr::select(term, is_essential, size, ess_size, contrast, p_val, q_val, log2fc) %T>% 
+    write.csv(file.path(filepath, formula, paste0(fn_prefix, ".csv")), row.names = FALSE) %>% 
+    dplyr::filter(is_essential) %>% 
+    dplyr::filter(!duplicated(term)) %>% 
+    dplyr::select(-contrast, -p_val, -q_val, -log2fc) %T>% 
+    write.csv(file.path(filepath, formula, paste0("essmeta_", fn_prefix, ".csv")), row.names = FALSE) %>% 
+    dplyr::select(term, ess_size) %>% 
+    dplyr::right_join(sig_sets, by = "term")
+
+  map_essential(sig_sets) %>% 
     write.csv(file.path(filepath, formula, paste0("essmap_", fn_prefix, ".csv")), row.names = FALSE)
 }
 
@@ -442,31 +467,39 @@ prep_gspa <- function(df, formula, col_ind, pval_cutoff = 5E-2, logFC_cutoff = l
 #'
 #' @import purrr dplyr rlang RcppGreedySetCover
 #' @importFrom magrittr %>%
-map_essential <- function (sig_sets, sig_greedy_terms) {
-  # sig_sets with terms that can be found in sig_greedy_terms
-  sig_greedy_sets <- sig_sets %>% dplyr::filter(term %in% sig_greedy_terms)
+map_essential <- function (sig_sets) {
+  ess_terms <- sig_sets %>% 
+    dplyr::filter(!is.na(ess_size), !duplicated(term)) %>% 
+    dplyr::select(term) %>% 
+    unlist
 
-  # distribution of sig_sets under sig_greedy_sets
+  sig_greedy_sets <- sig_sets %>% dplyr::filter(term %in% ess_terms)
+
   purrr::map(unique(sig_sets$term), ~ {
-    curr_sig_set <- sig_sets %>% dplyr::filter(term %in% .x)
+    curr_sig_set <- sig_sets %>% 
+      dplyr::filter(term %in% .x)
     
     sig_greedy_sets %>% 
       dplyr::filter(id %in% curr_sig_set$id) %>% 
       dplyr::group_by(term) %>%
-      dplyr::summarise(ess_count = n()) %>% 
-      dplyr::mutate(fraction = ess_count/nrow(curr_sig_set)) %>% 
+      dplyr::summarise(size = n()) %>% 
+      dplyr::left_join(curr_sig_set %>% 
+                         dplyr::select(c("term", "ess_size")) %>% 
+                         dplyr::filter(!duplicated(term)), 
+                       by = "term") %>% 
+      dplyr::mutate(fraction = size/nrow(curr_sig_set)) %>% 
       dplyr::mutate(curr_sig_set = .x)
   }, sig_sets, sig_greedy_sets) %>% 
     dplyr::bind_rows() %>% 
     dplyr::group_by(curr_sig_set) %>%
     dplyr::rename(ess_term = "term", term = "curr_sig_set") %>%
-    dplyr::select(c("ess_term", "term", "ess_count", "fraction")) %>% 
+    dplyr::select(c("term", "ess_term", "size", "ess_size", "fraction")) %>% 
     dplyr::mutate(fraction = round(fraction, digits = 3)) %>% 
     dplyr::ungroup(ess_term) %>% 
     dplyr::mutate(distance = 1 - fraction) %>% 
     dplyr::mutate(term = factor(term, levels = unique(as.character(term)))) %>% 
     dplyr::mutate(ess_term = factor(ess_term, levels = levels(term))) %>%
-    dplyr::mutate(source = as.numeric(ess_term), target = as.numeric(term)) 
+    dplyr::mutate(idx = as.numeric(term), ess_idx = as.numeric(ess_term)) 
 }
 
 
@@ -479,18 +512,10 @@ map_essential <- function (sig_sets, sig_greedy_terms) {
 #'
 #'@import purrr
 #'@export
-prnGSPAHM <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
-  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
-  
-  annot_cols <- rlang::enexpr(annot_cols)
-  annot_colnames <- rlang::enexpr(annot_colnames)
-  
+prnGSPAHM <- function (...) {
   dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  quietly_log <- purrr::quietly(proteoGSPA)(id = gene, task = plothm, 
-                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, 
-                                           ...)
+
+  quietly_log <- purrr::quietly(proteoGSPA)(id = gene, task = plothm, ...)
   purrr::walk(quietly_log, write, file.path(dat_dir, "Protein\\GSPA\\log","plot_hmGSPA_log.csv"), 
               append = TRUE)  
 }
@@ -525,17 +550,17 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
   
-  ins <- list.files(path = file.path(filepath, formula), pattern = "^essmap_Protein_GSPA_.*\\.csv$")
+  ins <- list.files(path = file.path(filepath, formula), pattern = "^essmap_.*\\.csv$")
   stopifnot(length(ins) == 1)
 
   all_by_greedy <- tryCatch(read.csv(file.path(filepath, formula, ins), check.names = FALSE, header = TRUE, 
-                                     comment.char = "#"), error = function(e) NA)
-  
-  all_by_greedy <- all_by_greedy %>% 
-   filters_in_call(!!!filter_dots)
+                                     comment.char = "#"), error = function(e) NA) %>% 
+    dplyr::mutate(ess_size = replace(ess_size, is.na(ess_size), Inf)) %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    dplyr::mutate(ess_size = replace(ess_size, is.infinite(ess_size), NA))
   
   if (nrow(all_by_greedy) == 0) stop("No GSPA terms available after data filtration.")
-  
+
   if (!is.null(dim(all_by_greedy))) {
     message(paste("Essential GSPA loaded."))
   } else {
@@ -543,7 +568,7 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   }
 
   ess_vs_all <- all_by_greedy %>% 
-    dplyr::select(-which(names(.) %in% c("ess_count", "source", "target", "distance"))) %>% 
+    dplyr::select(-which(names(.) %in% c("size", "ess_size", "idx", "ess_idx", "distance"))) %>% 
     tidyr::spread(term, fraction) %>% 
     dplyr::mutate_at(vars(which(names(.) != "ess_term")), ~ {1 - .x}) %>% 
     tibble::column_to_rownames("ess_term")
@@ -592,10 +617,23 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   if (is.null(annot_rows)) {
     annotation_row <- NA
   } else {
-    annotation_row <- ess_vs_all %>% 
-      tibble::rownames_to_column("ess_term") %>% 
-      dplyr::filter(!duplicated(ess_term)) %>% 
-      dplyr::select(ess_term)
+    meta_ins <- list.files(path = file.path(filepath, formula), pattern = "^essmeta_.*\\.csv$")
+    stopifnot(length(meta_ins) == 1)
+    
+    ess_meta <- tryCatch(read.csv(file.path(filepath, formula, meta_ins), check.names = FALSE, header = TRUE, 
+                                  comment.char = "#"), error = function(e) NA)
+    
+    annot_rows <- annot_rows %>% .[. %in% names(ess_meta)]
+    
+    if (is_empty(annot_rows)) {
+      annotation_row <- NA
+    } else {
+      annotation_row <- ess_meta %>% 
+        dplyr::rename(ess_term = term) %>% 
+        dplyr::select("ess_term", annot_rows) %>% 
+        dplyr::mutate(ess_term = factor(ess_term, levels = levels(all_by_greedy$ess_term))) %>% 
+        tibble::column_to_rownames("ess_term")
+    }
   }  
   
   if (is.null(dots$annotation_colors)) {
@@ -616,7 +654,7 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
     mat = ess_vs_all,
     filename = file.path(filepath, formula, filename),
     annotation_col = annotation_col,
-    annotation_row = NA, # not used
+    annotation_row = annotation_row, 
     color = mypalette,
     annotation_colors = annotation_colors, 
     breaks = NA, # not used
@@ -628,34 +666,50 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   # networks
   cluster <- data.frame(cluster = cutree(ph$tree_col, h = max_d_col)) %>% 
     tibble::rownames_to_column("term")
+  
+  all_by_greedy <- local({
+    essterms <- all_by_greedy$ess_term %>% unique() %>% as.character()
+    terms <- all_by_greedy$term %>% unique() %>% .[! . %in% essterms] %>% as.character()
+    universe <- union(essterms, terms)
 
-  all_by_greedy <- all_by_greedy %>% 
-    dplyr::mutate(term = factor(term, levels = unique(as.character(term)))) %>% 
-    dplyr::mutate(ess_term = factor(ess_term, levels = levels(term))) %>%
-    dplyr::mutate(source = as.numeric(ess_term), target = as.numeric(term)) 
+    all_by_greedy <- all_by_greedy %>% 
+      dplyr::select(-idx, -ess_idx) %>% 
+      dplyr::mutate(term = factor(term, levels = universe)) %>% 
+      dplyr::mutate(ess_term = factor(ess_term, levels = universe)) %>%
+      dplyr::mutate(source = as.numeric(term), target = as.numeric(ess_term))
+    
+    min_target <- min(all_by_greedy$target, na.rm = TRUE)
+    
+    all_by_greedy %>% 
+      dplyr::mutate(source = source - min_target, target = target - min_target) %>% 
+      dplyr::left_join(cluster, by = "term") %>% 
+      dplyr::mutate(term = factor(term, levels(ess_term)))
+  })
+  
+  my_nodes <- local({
+    my_nodes <- all_by_greedy %>% 
+      dplyr::arrange(-size) %>% 
+      dplyr::select(c("term", "cluster", "size")) %>% 
+      dplyr::filter(!duplicated(term)) %>% 
+      dplyr::arrange(cluster) %>% 
+      dplyr::arrange(term)
+    
+    # an `ess_term` may be missing from `term` after data row filtration
+    temp_nodes <- all_by_greedy %>% 
+      dplyr::select(c("ess_term", "cluster", "size")) %>% 
+      dplyr::filter(!duplicated(ess_term)) %>% 
+      dplyr::filter(! ess_term %in% my_nodes$term) %>% 
+      dplyr::arrange(cluster) %>% 
+      dplyr::arrange(ess_term) %>% 
+      dplyr::rename(term = ess_term)
+    
+    my_nodes <- bind_rows(my_nodes, temp_nodes) %>% 
+      dplyr::arrange(cluster) %>% 
+      dplyr::arrange(term)
+  })
 
-  min_target <- min(all_by_greedy$target, na.rm = TRUE)
-  all_by_greedy <- all_by_greedy %>% 
-    dplyr::mutate(source = source - min_target, target = target - min_target)
-  rm(min_target)
-  
-  all_by_greedy <- all_by_greedy %>% 
-    dplyr::left_join(cluster, by = "term")
-  
-  my_nodes <- all_by_greedy %>% 
-    dplyr::arrange(-ess_count) %>% 
-    dplyr::select(c("term", "cluster", "ess_count")) %>% 
-    dplyr::filter(!duplicated(term)) %>% 
-    dplyr::arrange(cluster) %>% 
-    dplyr::mutate(term = factor(term, levels = as.character(term))) %>% 
-    dplyr::arrange(term)
-  
   my_links <- all_by_greedy %>% 
-    dplyr::mutate(term = factor(term, levels = levels(my_nodes$term))) %>% 
-    dplyr::mutate(ess_term = factor(ess_term, levels = levels(my_nodes$term))) %>% 
-    dplyr::mutate(source = as.numeric(term), target = as.numeric(ess_term)) %>% 
     dplyr::arrange(term) %>% 
-    dplyr::mutate(source = source - 1, target = target -1) %>% 
     dplyr::select(source, target, fraction) %>% 
     dplyr::mutate(fraction = fraction * 10) %>% 
     dplyr::distinct() 
@@ -663,7 +717,7 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   networkD3::forceNetwork(Links = my_links, Nodes = my_nodes, Source = "source",
-                          Target = "target", Value = "fraction", NodeID = "term", Nodesize = "ess_count", 
+                          Target = "target", Value = "fraction", NodeID = "term", Nodesize = "size", 
                           Group = "cluster", opacity = 0.8, zoom = TRUE) %>% 
     networkD3::saveNetwork(file = file.path(filepath, formula, paste0(fn_prefix, ".html")))
 }

@@ -1101,6 +1101,46 @@ match_fasta <- function () {
 }
 
 
+#' Matches the name of GSPA result file
+#'
+#' @param anal_type
+#'
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>%
+match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL) {
+  stopifnot(!is.null(subdir))
+  
+  if (anal_type == "GSPA") {
+    call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "prnGSPA.txt"), check.names = FALSE, 
+                                   header = TRUE, sep = "\t", comment.char = "#"), 
+                          error = function(e) NA)    
+  }
+
+  if (!is.null(dim(call_pars))) {
+    filename <- call_pars %>%
+      dplyr::filter(var == "filename") %>% 
+      dplyr::select(-var) %>%
+      unlist() %>%
+      as.character() %>% 
+      unique()
+
+    if (is_empty(filename)) {
+      filename <- list.files(path = file.path(dat_dir, "Protein\\GSPA", subdir), 
+                             pattern = "^Protein_GSPA_.*\\.csv$", 
+                             full.names = FALSE)
+      
+      if (length(filename) > 1) stop("More than one result file found under `", sub_dir, "`", call. = FALSE)
+      
+      if (is_empty(filename)) stop("No result file found under `", sub_dir, "`", call. = FALSE)
+    }
+  } else {
+    stop("No saved parameters found from the call to `prnGSPA`.", call. = FALSE)
+  }
+  
+  return(filename)
+}
+
+
 #' Replaces NA genes
 #'
 #' @import plyr dplyr purrr rlang

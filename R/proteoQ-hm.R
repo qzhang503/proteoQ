@@ -386,7 +386,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'  scale; the default is +1 \cr \code{xmargin}, the margin in heat scales; the
 #'  default is 0.1 \cr \code{width}, the width of plot \cr \code{height}, the
 #'  height of plot \cr \cr Additional arguments for
-#'  \code{\link[pheatmap]{pheatmap}}, i.e., \code{cluster_rows}.... \cr \cr Note
+#'  \code{\link[pheatmap]{pheatmap}}, i.e., \code{cluster_rows}... \cr \cr Note
 #'  arguments disabled for \code{pheatmap}: \cr \code{annotation_col}; instead
 #'  use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
 #'  use keys indicated in \code{annot_rows}
