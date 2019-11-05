@@ -4,7 +4,7 @@
 \alias{add_mascot_pepseqmod}
 \title{Add the `pep_seq_mod` field to Mascot PSMs}
 \usage{
-add_mascot_pepseqmod(df)
+add_mascot_pepseqmod(df, use_lowercase_aa)
 }
 \description{
 Add the `pep_seq_mod` field to Mascot PSMs

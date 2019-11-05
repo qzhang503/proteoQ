@@ -332,7 +332,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                           filename = paste0(fn_prefix, ".", fn_suffix), !!!dots)
 		}
 	} else if (anal_type == "Heatmap") {
-		function(complete_cases = complete_cases, xmin = xmin, xmax = xmax, x_margin = x_margin,
+		function(complete_cases = complete_cases, xmin = xmin, xmax = xmax, xmargin = xmargin,
 		         annot_cols = annot_cols, annot_colnames = annot_colnames, 
 		         annot_rows = annot_rows, ...) {
 		         
@@ -346,7 +346,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			       complete_cases = complete_cases, 
 			       xmin = xmin, 
 			       xmax = xmax, 
-			       x_margin = x_margin,
+			       xmargin = xmargin,
 			       annot_cols = annot_cols, 
 			       annot_colnames = annot_colnames, 
 			       annot_rows = annot_rows, 
