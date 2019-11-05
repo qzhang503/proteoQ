@@ -749,8 +749,10 @@ parse_uniprot_fasta <- function (df, fasta) {
           dplyr::filter(!duplicated(.[[acc_type]]))
       }
       
-      fasta <- fasta %>% .[names(.) %in% unique(acc_lookup$fasta_name)] 
-      
+      fasta <- fasta %>% 
+        .[names(.) %in% unique(acc_lookup$fasta_name)] %>% 
+        .[! duplicated(names(.))]
+
       if (length(fasta) == 0) {
         stop("No fasta entries match protein accessions; probably wrong fasta file.", 
              call. = FALSE)

@@ -8,10 +8,6 @@ prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	By
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. `prot_n_psm`
 pep_seq	One-letter representation of peptide sequences	"The acetylations of protein N-terminals is indicated by '_' and the flanking residues on the N- or C-terminal side of peptides separated by '.', e.g. ""-._MASGVAVSDGVIK.V"""
 pep_seq_mod	'pep_seq' with variable modifications in the lower cases	"E.g. ""-._mAsGVAVSDGVIK.V"" with a methionine oxidation and a serine phosphorylation"
-pep_miss	Count of missed cleavage sites in peptide	`Missed cleavages` in MaxQuant
-pep_var_mod	Post-translational modifications contained within the identified peptide sequence.	`Modifications` in MaxQuant
-pep_expect	"Posterior Error Probability of the identification. This value essentially operates as a p-value, where smaller is more significant."	`PEP` in MaxQuant
-pep_score	Andromeda score for the best associated MS/MS spectrum.	`Score` in MaxQuant
 pep_isunique	"Peptide sequence is unique at the levels of protein groups, protein IDs or none"	Cf. proteoQ help document via `?normPSM`
 pep_res_before	Flanking residue on N-term side of peptide	
 pep_start	Ordinal position of first peptide residue in protein sequence	

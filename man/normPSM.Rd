@@ -10,7 +10,8 @@ normPSM(group_psm_by = c("pep_seq", "pep_seq_mod"),
   fasta = NULL, pep_unique_by = "group", corrected_int = FALSE,
   rm_reverses = TRUE, rptr_intco = 1000, rm_craps = FALSE,
   rm_krts = FALSE, rm_outliers = FALSE, annot_kinases = FALSE,
-  plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...)
+  plot_rptr_int = TRUE, plot_log2FC_cv = TRUE,
+  use_lowercase_aa = TRUE, ...)
 }
 \arguments{
 \item{group_psm_by}{A character string for the grouping of PSM entries. At the
@@ -40,13 +41,12 @@ prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search.}
 
 \item{pep_unique_by}{A character string for the characterization of peptide
-uniqueness from \code{MaxQuant} PSMs. The choice is one of \code{c("group",
-"protein", "none")}. At the \code{group} default, the uniqueness of peptides
-is by protein groups. At a more strigent criterion of \code{protein}, the
+uniqueness from \code{MaxQuant} PSMs. The choice is in \code{c("group",
+"protein")}. At the \code{group} default, the uniqueness of peptides is by
+protein groups. At a more strigent criterion of \code{protein}, the
 uniqueness of peptides is by protein entries. A new column of
-\code{pep_isunique} will be added accordingly to the PSM reports. At a
-trivia criterion of \code{none}, all values under \code{pep_unique_by} will
-be set to \code{1}.}
+\code{pep_isunique} will be added accordingly to the PSM reports. An earlier
+trivial option of \code{none} is depreciated.}
 
 \item{corrected_int}{Logical. If TRUE, values under columns "Reporter
 intensity corrected" in MaxQuant PSM results (\code{msms.txt}) will be used.
@@ -72,6 +72,13 @@ reporter-ion intensities.}
 
 \item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
 peptide \code{log2FC} for each sample.}
+
+\item{use_lowercase_aa}{Logical; if TRUE, use lower-case, one-letter
+representation to abbreviate the modifications of amino acid residues.
+Protein N-terminal acetylation (NAc) is instead viewed as an addition. An
+underscore, '_', is appended to the left of a peptide sequence to indicate
+NAc. Similarly, a tilde, '~', is appended to indicate other protein
+N-terminal additions.}
 
 \item{...}{\code{filter_}: Each argument corresponds to a logical
 expression(s) for the filtration of data rows. The \code{lhs} needs to start

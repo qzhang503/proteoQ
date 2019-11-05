@@ -7,7 +7,7 @@
 splitPSM(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   fasta = NULL, rm_craps = FALSE, rm_krts = FALSE,
   rptr_intco = 1000, annot_kinases = FALSE, plot_rptr_int = TRUE,
-  ...)
+  use_lowercase_aa = TRUE, ...)
 }
 \arguments{
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
@@ -26,6 +26,13 @@ proteins.}
 
 \item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}
+
+\item{use_lowercase_aa}{Logical; if TRUE, use lower-case, one-letter
+representation to abbreviate the modifications of amino acid residues.
+Protein N-terminal acetylation (NAc) is instead viewed as an addition. An
+underscore, '_', is appended to the left of a peptide sequence to indicate
+NAc. Similarly, a tilde, '~', is appended to indicate other protein
+N-terminal additions.}
 }
 \description{
 \code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It

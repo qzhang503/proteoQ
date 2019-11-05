@@ -226,6 +226,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 		  dplyr::select(-grep("^Reporter mass deviation", names(.)))	  
 		
 		mq_median_keys <- c(
+		  "Score", "Missed cleavages", "PEP", 
 		  "Charge", "Mass", "PIF", "Fraction of total spectrum", "Mass error [ppm]", 
 		  "Mass error [Da]", "Base peak fraction", "Precursor Intensity", 
 		  "Precursor Apex Fraction", "Intensity coverage", "Peak coverage", 

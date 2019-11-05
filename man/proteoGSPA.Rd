@@ -3,7 +3,6 @@
 \name{proteoGSPA}
 \alias{proteoGSPA}
 \alias{prnGSPA}
-\alias{prnGSPAHM}
 \title{GSPA of protein data}
 \usage{
 proteoGSPA(id = gene, scale_log2r = TRUE, df = NULL,
@@ -13,8 +12,6 @@ proteoGSPA(id = gene, scale_log2r = TRUE, df = NULL,
   min_size = 10, task = "anal", ...)
 
 prnGSPA(...)
-
-prnGSPAHM(...)
 }
 \arguments{
 \item{id}{Character string indicating the type of data. The value will be
@@ -64,18 +61,7 @@ filtration by \code{pval_cutoff}, \code{logFC_cutoff} or varargs
 \code{filter_}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr \cr \code{annot_cols} A character
-vector of column keys that can be found in \code{essmap_...csv}. The values
-under the selected keys will be used to color-code sample IDs on the top of
-heat maps by \code{prnGSPAHM}. \cr \cr \code{annot_colnames} A character
-vector of replacement name(s) to \code{annot_cols}. \cr \cr
-\code{annot_rows} A character vector of column keys that can be found from
-\code{essmeta_...csv} . The values under the selected keys will be used to
-color-code essential terms on the side of the heat maps. \cr \cr Additional
-arguments for \code{\link[pheatmap]{pheatmap}}, i.e., \code{fontsize }...
-\cr Note arguments disabled for \code{pheatmap}: \cr \code{annotation_col};
-instead use keys indicated in \code{annot_cols} \cr \code{annotation_row};
-instead use keys indicated in \code{annot_rows}}
+data; also see \code{\link{normPSM}}.}
 }
 \description{
 \code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
@@ -83,9 +69,6 @@ instead use keys indicated in \code{annot_rows}}
 directly, but instead use the following wrappers.
 
 \code{prnGSPA} is a wrapper of \code{\link{proteoGSPA}} for enrichment analysis
-
-\code{prnGSPAHM} is a wrapper of \code{\link{proteoGSPA}} for heat map and
-network visualization
 }
 \details{
 The significance \code{pVals} of proteins are first obtained from
@@ -98,42 +81,9 @@ the significance of gene set enrichment. The arguments \code{pval_cutoff} and
 subsetting of data via the \code{vararg} approach of \code{filter_} is
 feasible.
 
-The quality metrics of \code{size}, \code{ess_size} in output files are
-obtained after data filtration with the criteria specified by
-\code{pval_cutoff}, \code{logFC_cutoff} and/or \code{varargs}.
-
 The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
 default.
-
-\code{prnGSPAHM} visualizes the distance heat map between essential and all
-gene sets. See below for the definition of distance.
 }
-\section{\code{Protein_GSPA_...csv}}{
-
-
- \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
- set term \cr is_essential \tab a logicial indicator of gene set essentiality
- \cr size \tab the number of IDs under a \code{term} \cr ess_size \tab the
- number of IDs that can be found under a corresponding essential set \cr
- contrast \tab a contrast of sample groups \cr p_val \tab significance p
- values \cr q_val \tab \code{p_val} with \code{BH} adjustment of multiple
- tests \cr log2fc \tab the fold change of a gene set at logarithmic base of 2
- \cr }
-}
-
-\section{\code{essmap_Protein_GSPA_...csv}}{
-
-
- \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
- set term \cr ess_term \tab an essential gene set term \cr size \tab the
- number of IDs under a \code{term} with matches to an \code{ess_term} \cr
- ess_size \tab the number of essential IDs under a \code{term} with matches
- to an \code{ess_term} \cr fraction \tab a fraction of matches in IDs between
- a \code{term} and a \code{ess_term} \cr distance \tab 1 - \code{fraction}
- \cr idx \tab a numeric index of \code{term} \cr ess_idx \tab a numeric index
- of \code{ess_term} \cr }
-}
-
 \examples{
 # enrichment analysis
 prnGSPA(
@@ -144,61 +94,6 @@ prnGSPA(
   gset_nms = c("go_sets", "kegg_sets"),
 
   filter_by_npep = exprs(prot_n_pep >= 2),
-)
-
-
-# distance heat map and network of GSPA terms
-# a `term` is subset to an `ess_term` if the distance is zero
-# `ess_idx` is a column key in `essmap_Protein_GSPA...csv`
-# `ess_size` is a column key in metadata file `essmeta_Protein_GSPA...csv`
-prnGSPAHM(
-  filter_by = exprs(distance <= .2),
-  annot_cols = "ess_idx",
-  annot_colnames = "Eset index",
-  annot_rows = "ess_size",
-
-  fontsize = 16,
-  fontsize_row = 20,
-  fontsize_col = 20,
-  fontsize_number = 8,
-  border_color = "grey60",
-  cellwidth = 24,
-  cellheight = 24,
-  filename = show_redundancy_at_small_dist.png,
-)
-
-# human terms only
-prnGSPAHM(
-  filter_num = exprs(distance <= .8),
-  filter_sp = exprs(start_with_str("hs", term)),
-  annot_cols = "ess_idx",
-  annot_colnames = "Eset index",
-
-  fontsize = 16,
-  fontsize_row = 20,
-  fontsize_col = 20,
-  fontsize_number = 8,
-  border_color = "grey60",
-  cellwidth = 24,
-  cellheight = 24,
-  filename = show_connectivity_at_large_dist.png,
-)
-
-# custom color palette
-prnGSPAHM(
-  annot_cols = c("ess_idx", "ess_size"),
-  annot_colnames = c("Eset index", "Size"),
-  filter_by = exprs(ess_size >= 8, distance <= .80),
-
-  fontsize = 16,
-  fontsize_row = 20,
-  fontsize_col = 20,
-  fontsize_number = 8,
-  border_color = "grey60",
-  cellwidth = 24,
-  cellheight = 24,
-  color = colorRampPalette(c("blue", "white", "red"))(100),
-  filename = "custom_colors.png"
 )
 
 \dontrun{
