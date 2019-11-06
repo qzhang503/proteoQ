@@ -342,13 +342,14 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
   }
 
   purrr::walk2(var_mods$Description, var_mods$Filename, ~ {
-    df %>% 
+    try(
+      df %>% 
       dplyr::filter(grepl(.x, pep_var_mod, fixed = TRUE)) %>% 
-      try(write.table(file.path(dat_dir, "PSM\\individual_mods", paste0(.y, ".txt")), 
-                      sep = "\t", col.names = TRUE, row.names = FALSE))
+        write.table(file.path(dat_dir, "PSM\\individual_mods", paste0(.y, ".txt")), 
+                    sep = "\t", col.names = TRUE, row.names = FALSE)
+    )
   })
-  
-  
+
   return(df)
 }
 
@@ -1470,6 +1471,35 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
   } else {
     col_int <- NULL
   }  
+  
+  df <- local({
+    phos_idx <- grep("Phospho (STY) Probabilities", names(df), fixed = TRUE)
+
+    if (!is_empty(phos_idx)) {
+      phos <- df %>% 
+        dplyr::select(phos_idx) %>% 
+        purrr::map(~ str_extract_all(.x, "\\([^()]+\\)")) %>% 
+        .[[1]] %>% 
+        purrr::map(~ substring(.x, 2, nchar(.x) - 1)) %>% 
+        purrr::map(as.numeric) 
+      
+      phos_max <- phos %>% 
+        purrr::map(max, na.rm = TRUE) %>% 
+        unlist()
+
+      phos_sort <- phos %>% purrr::map(sort, decreasing = TRUE)
+      maxs <- phos_sort %>% purrr::map(`[`, 1) %>% unlist()
+      sec_maxs <- phos_sort %>% purrr::map(`[`, 2) %>% unlist()
+      
+      df <- bind_cols(df, pep_phospho_locprob = phos_max, pep_phospho_locdiff = maxs - sec_maxs) %>% 
+        dplyr::mutate(is_locprob_one = equals(1, pep_phospho_locprob)) %>% 
+        dplyr::mutate_at(vars("pep_phospho_locdiff"), ~ replace(.x, is_locprob_one, 1)) %>% 
+        dplyr::mutate_at(vars("pep_phospho_locprob"), ~ replace(.x, is.infinite(.x), NA)) %>% 
+        dplyr::select(-is_locprob_one)
+    }
+    
+    return(df)
+  })
   
   if (TMT_plex > 0) {
     df <- sweep(df[, col_int, drop = FALSE], 1, df[, "I126"], "/") %>% 

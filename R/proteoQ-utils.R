@@ -1630,6 +1630,8 @@ filters_in_call <- function (df, ...) {
     row_vals <- row_exprs %>% 
       purrr::map(eval_tidy, df) %>% 
       purrr::reduce(`&`, .init = 1)
+    
+    row_vals <- row_vals %>% ifelse(is.na(.), FALSE, .)
 
     stopifnot(is.logical(row_vals))
     
