@@ -27,12 +27,9 @@ proteins.}
 \item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
 reporter-ion intensities.}
 
-\item{use_lowercase_aa}{Logical; if TRUE, use lower-case, one-letter
-representation to abbreviate the modifications of amino acid residues.
-Protein N-terminal acetylation (NAc) is instead viewed as an addition. An
-underscore, '_', is appended to the left of a peptide sequence to indicate
-NAc. Similarly, a tilde, '~', is appended to indicate other protein
-N-terminal additions.}
+\item{use_lowercase_aa}{Logical; if TRUE, use lower-case and/or \code{^_~}
+one-letter representation to abbreviate the modifications of amino acid
+residues. See the table below for details.}
 }
 \description{
 \code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It

@@ -186,101 +186,57 @@ rmPSMHeaders <- function () {
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %T>%
 add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
+  hd_fn <- list.files(path = file.path(dat_dir, "PSM\\cache"), pattern = "^F\\d+_header.txt$")
+  
+  if (length(hd_fn) == 0) stop("No header file(s) found.")
+  if (length(hd_fn) > 1) warning("Multiple header files found; only the first will be used.")
+  
+  assign("df_header", readLines(file.path(dat_dir, "PSM\\cache", hd_fn[1])))
+  
+  fixed_mods <- df_header[((grep("Fixed modifications", df_header))[1] + 3) : 
+                            ((grep("Variable modifications", df_header))[1] - 2)] %>%
+    gsub("\"", "", ., fixed = TRUE) %>%
+    data.frame() %>%
+    tidyr::separate(".", sep = ",", c("Mascot_abbr", "Description", "Delta_mass"))
+  
+  var_mods <- df_header[((grep("Variable modifications", df_header))[1] + 3) :
+                          ((grep("Search Parameters", df_header))[1] - 2)] %>%
+    gsub("\"", "", ., fixed = TRUE) %>%
+    data.frame() %>%
+    tidyr::separate(".", sep = ",", extra = "drop", c("Mascot_abbr", "Description", "Delta_mass")) %>%
+    dplyr::mutate(Filename = gsub("[\\\\\\/\\:\\*\\?\\'\\<\\>\\|]", ".", Description))
+  
+  if (is.null(df$pep_seq)) stop("column `pep_seq` not found.")
+
+  if (nrow(var_mods) == 0) {
+    df$pep_seq_mod <- df$pep_seq
+    return(df)
+  } 
+
   if (!use_lowercase_aa) {
     df <- df %>%
       dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
       dplyr::mutate(pep_seq_mod = paste0(pep_seq, "[", pep_var_mod_pos, "]"))
   } else {
-    hd_fn <- list.files(path = file.path(dat_dir, "PSM\\cache"), pattern = "^F\\d+_header.txt$")
-    assign("df_header", readLines(file.path(dat_dir, "PSM\\cache", hd_fn[1])))
-    
-    fixed_mods <- df_header[((grep("Fixed modifications", df_header))[1] + 3) : 
-                              ((grep("Variable modifications", df_header))[1] - 2)] %>%
-      gsub("\"", "", ., fixed = TRUE) %>%
-      data.frame() %>%
-      tidyr::separate(".", sep = ",", c("Mascot_abbr", "Description", "Delta_mass"))
-    
-    var_mods <- df_header[((grep("Variable modifications", df_header))[1] + 3) :
-                            ((grep("Search Parameters", df_header))[1] - 2)] %>%
-      gsub("\"", "", ., fixed = TRUE) %>%
-      data.frame() %>%
-      tidyr::separate(".", sep = ",", extra = "drop", c("Mascot_abbr", "Description", "Delta_mass")) %>%
-      dplyr::mutate(Abbr = Description) %>%
-      dplyr::mutate(Abbr = try(gsub("Acetyl (Protein N-term)", "_", .$Abbr, fixed = TRUE))) %>%
-      dplyr::mutate(Abbr = try(gsub("Deamidated (N)", "n", .$Abbr, fixed = TRUE))) %>%
-      dplyr::mutate(Abbr = try(gsub("Gln->pyro-Glu (N-term Q)", "q", .$Abbr, fixed = TRUE))) %>%
-      dplyr::mutate(Abbr = try(gsub("Oxidation (M)", "m", .$Abbr, fixed = TRUE))) %>%
-      dplyr::mutate(Filename = gsub("[\\\\\\/\\:\\*\\?\\'\\<\\>\\|]", ".", Description)) 
-
     df$pep_seq_mod <- df$pep_seq
     
-    phospho_mods <- var_mods %>% dplyr::filter(grepl("^Phospho", Description))
-    
-    if (nrow(phospho_mods) > 0) var_mods <- var_mods %>%
-      dplyr::filter(!grepl("^Phospho", Description))
-    
-    # (1) Non-acetylated N-term variable modifications
+    # (1) non terminal modifications
     df <- local({
-      NT_var_mods <- var_mods %>%
-        dplyr::filter(grepl("N-term", Description, fixed = TRUE)) %>%
-        dplyr::filter(!grepl("Acetyl (Protein N-term)", Description, fixed = TRUE))
+      mod_tbl <- var_mods %>% 
+        dplyr::filter(!grepl("N-term", Description, fixed = TRUE)) %>% 
+        dplyr::filter(!grepl("C-term", Description, fixed = TRUE))
       
-      for (mod in NT_var_mods$Mascot_abbr) {
-        df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
-        
-        if (nrow(df_sub) > 0) {
-          locales <- 1 # always "1" since a N-term mod
-          
-          lowers <- substr(df_sub$pep_seq_mod, locales, locales) %>% tolower()
-          substr(df_sub$pep_seq_mod, locales, locales) <- lowers
-          
-          df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
-        }
-      }
-      
-      return(df)
-    })
-
-    # (2) non-N-term variable modifications
-    df <- local({
-      nNT_var_mods <- var_mods[!grepl("N-term", var_mods$Description), ]
-      
-      for (mod in nNT_var_mods$Mascot_abbr) {
-        df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
-        
-        if (nrow(df_sub) > 0) {
-          # find all matches
-          pos_matrix  <- gregexpr(mod, df_sub$pep_var_mod_pos) %>%
-            plyr::ldply(., rbind) %>%
-            # "-2" to account for the characters, "0.", "1."..., in 'pep_var_mod_pos'
-            purrr::map(function(x) {x - 2}) %>%
-            data.frame(check.names = FALSE)
-          
-          for (k in 1:ncol(pos_matrix)) {
-            rows <- !is.na(pos_matrix[, k])
-            locales <- pos_matrix[rows, k]
-            
-            lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>% tolower()
-            substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
-          }
-          
-          df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
-        }
-      }      
-      
-      return(df)
-    })
-    
-    # (3) phosphopeptides
-    df <- local({
-      if (nrow(phospho_mods) > 0) {
-        for (mod in phospho_mods$Mascot_abbr) {
-          df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
+      if (nrow(mod_tbl) > 0) {
+        var_mods <<- var_mods %>% dplyr::filter(! Mascot_abbr %in% mod_tbl$Mascot_abbr)
+  
+        for (mod in mod_tbl$Mascot_abbr) {
+          df_sub <- df %>% dplyr::filter(grepl(mod, pep_var_mod_pos))
+          df_rest <- df %>% dplyr::filter(!grepl(mod, pep_var_mod_pos))
           
           if (nrow(df_sub) > 0) {
-            # find all matches
             pos_matrix  <- gregexpr(mod, df_sub$pep_var_mod_pos) %>%
               plyr::ldply(., rbind) %>%
+              # "-2" to account for the characters, "0." ..., in 'pep_var_mod_pos'
               purrr::map(function(x) {x - 2}) %>%
               data.frame(check.names = FALSE)
             
@@ -288,54 +244,164 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
               rows <- !is.na(pos_matrix[, k])
               locales <- pos_matrix[rows, k]
               
-              lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>%
-                tolower()
+              lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>% tolower()
               substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
             }
             
-            df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
+            df <- rbind(df_rest, df_sub)
           }
-        }
-      }      
-      
-      return(df)
-    })
+        }        
+      }
 
-    # (4) appending (not replacement) mods: "_" for "Acetyl (Protein N-term)"
-    df <- local({
-      nt_ace_var_mods <- var_mods[grepl("Acetyl (Protein N-term)", var_mods$Description, fixed = TRUE), ]
-      
-      for (mod in nt_ace_var_mods$Mascot_abbr) {
-        df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
-        
-        if (nrow(df_sub) > 0) {
-          df_sub$pep_seq_mod <- paste0("_", df_sub$pep_seq_mod)
-          df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
-        }
-      }      
-      
-      return(df)
-    })
-
-
-    # (5) other appending mods: "~" for "Protein N-term" other than acetylation
-    df <- local({
-      other_prn_nt_mods <- var_mods[grepl("Protein N-term", var_mods$Description, fixed = TRUE), ] %>% 
-        dplyr::filter(!grepl("Acetyl (Protein N-term)", Description, fixed = TRUE))
-      
-      for (mod in other_prn_nt_mods$Mascot_abbr) {
-        df_sub <- df[grepl(mod, df$pep_var_mod_pos), ]
-        
-        if (nrow(df_sub) > 0) {
-          df_sub$pep_seq_mod <- paste0("~", df_sub$pep_seq_mod)
-          df <- rbind(df[!grepl(mod, df$pep_var_mod_pos), ], df_sub)
-        }
-      }      
-      
       return(df)
     })
     
-    # (6) paste "pep_res_before" and "pep_res_after"
+    # (2-1) add "_" to sequences from protein N-terminal acetylation
+    df <- local({
+      mod_tbl <- var_mods %>% 
+        dplyr::filter(grepl("Acetyl (Protein N-term)", Description, fixed = TRUE))
+      
+      nrow <- nrow(mod_tbl)
+      stopifnot(nrow <= 1)
+      
+      if (nrow == 1) {
+        mod <- mod_tbl$Mascot_abbr[1]
+        
+        var_mods <<- var_mods %>% dplyr::filter(! Mascot_abbr %in% mod_tbl$Mascot_abbr)
+
+        df_sub <- df %>% dplyr::filter(grepl(mod, pep_var_mod_pos))
+        df_rest <- df %>% dplyr::filter(!grepl(mod, pep_var_mod_pos))
+        
+        if (nrow(df_sub) > 0) {
+          df_sub <- df_sub %>% dplyr::mutate(pep_seq_mod = paste0("_", pep_seq_mod))
+          df <- rbind(df_rest, df_sub)
+        }        
+      }
+
+      return(df)
+    })
+    
+    # (2-2) add "_" to sequences from protein C-terminal amidation
+    df <- local({
+      mod_tbl <- var_mods %>% 
+        dplyr::filter(grepl("Amidated (Protein C-term)", Description, fixed = TRUE))
+
+      nrow <- nrow(mod_tbl)
+      stopifnot(nrow <= 1)
+      
+      if (nrow == 1) {
+        mod <- mod_tbl$Mascot_abbr[1]
+        
+        var_mods <<- var_mods %>% dplyr::filter(! Mascot_abbr %in% mod_tbl$Mascot_abbr)
+        
+        df_sub <- df %>% dplyr::filter(grepl(mod, pep_var_mod_pos))
+        df_rest <- df %>% dplyr::filter(!grepl(mod, pep_var_mod_pos))
+        
+        if (nrow(df_sub) > 0) {
+          df_sub <- df_sub %>% dplyr::mutate(pep_seq_mod = paste0(pep_seq_mod, "_"))
+          df <- rbind(df_rest, df_sub)
+        }        
+      }
+
+      return(df)
+    })
+    
+    # (3-1) "~" for "(Protein N-term)" other than acetylation
+    df <- local({
+      mod_tbl <- var_mods %>% 
+        dplyr::filter(grepl("Protein N-term", Description, fixed = TRUE)) %>%
+        dplyr::filter(!grepl("Acetyl (Protein N-term)", Description, fixed = TRUE))
+      
+      if (nrow(mod_tbl) > 0) {
+        var_mods <<- var_mods %>% dplyr::filter(! Mascot_abbr %in% mod_tbl$Mascot_abbr)
+  
+        for (mod in mod_tbl$Mascot_abbr) {
+          df_sub <- df %>% dplyr::filter(grepl(mod, pep_var_mod_pos))
+          df_rest <- df %>% dplyr::filter(!grepl(mod, pep_var_mod_pos))
+          
+          if (nrow(df_sub) > 0) {
+            df_sub <- df_sub %>% dplyr::mutate(pep_seq_mod = paste0("~", pep_seq_mod))
+            df <- rbind(df_rest, df_sub)
+          }
+        }        
+      }
+
+      return(df)
+    })
+    
+    # (3-2) "~" for "(Protein C-term)" other than amidation
+    df <- local({
+      mod_tbl <- var_mods %>% 
+        dplyr::filter(grepl("Protein C-term", Description, fixed = TRUE)) %>%
+        dplyr::filter(!grepl("Amidated (Protein C-term)", Description, fixed = TRUE))
+      
+      if (nrow(mod_tbl) > 0) {
+        var_mods <<- var_mods %>% dplyr::filter(! Mascot_abbr %in% mod_tbl$Mascot_abbr)
+  
+        for (mod in mod_tbl$Mascot_abbr) {
+          df_sub <- df %>% dplyr::filter(grepl(mod, pep_var_mod_pos))
+          df_rest <- df %>% dplyr::filter(!grepl(mod, pep_var_mod_pos))
+          
+          if (nrow(df_sub) > 0) {
+            df_sub <- df_sub %>% dplyr::mutate(pep_seq_mod = paste0(pep_seq_mod, "~"))
+            df <- rbind(df_rest, df_sub)
+          }
+        }        
+      }
+
+      return(df)
+    })
+    
+    # (4-1) "^" for peptide "(N-term)"  
+    df <- local({
+      mod_tbl <- var_mods %>% 
+        dplyr::filter(grepl("N-term", Description, fixed = TRUE)) %>% 
+        dplyr::filter(!grepl("Protein N-term", Description, fixed = TRUE))
+      
+      if (nrow(mod_tbl) > 0) {
+        var_mods <<- var_mods %>% dplyr::filter(! Mascot_abbr %in% mod_tbl$Mascot_abbr)
+  
+        for (mod in mod_tbl$Mascot_abbr) {
+          df_sub <- df %>% dplyr::filter(grepl(mod, pep_var_mod_pos))
+          df_rest <- df %>% dplyr::filter(!grepl(mod, pep_var_mod_pos))
+          
+          if (nrow(df_sub) > 0) {
+            df_sub <- df_sub %>% 
+              dplyr::mutate(pep_seq_mod = gsub("(^[_~]{0,1})(.)", paste0("\\1", "^", "\\2"), pep_seq_mod)) 
+            df <- rbind(df_rest, df_sub)
+          }
+        }        
+      }
+
+      return(df)
+    })
+    
+    # (4-2) "^" peptide "(C-term)" 
+    df <- local({
+      mod_tbl <- var_mods %>% 
+        dplyr::filter(grepl("C-term", Description, fixed = TRUE)) %>% 
+        dplyr::filter(!grepl("Protein C-term", Description, fixed = TRUE))
+      
+      if (nrow(mod_tbl) > 0) {
+        var_mods <<- var_mods %>% dplyr::filter(! Mascot_abbr %in% mod_tbl$Mascot_abbr)
+          
+        for (mod in mod_tbl$Mascot_abbr) {
+          df_sub <- df %>% dplyr::filter(grepl(mod, pep_var_mod_pos))
+          df_rest <- df %>% dplyr::filter(!grepl(mod, pep_var_mod_pos))
+          
+          if (nrow(df_sub) > 0) {
+            df_sub <- df_sub %>% 
+              dplyr::mutate(pep_seq_mod = gsub("(.)([_~]{0,1}$)", paste0("\\1", "^", "\\2"), pep_seq_mod)) 
+            
+            df <- rbind(df_rest, df_sub)
+          }
+        }        
+      }
+
+      return(df)
+    })
+
+    # (5) paste "pep_res_before" and "pep_res_after"
     df <- df %>%
       dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
       dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))
@@ -373,12 +439,9 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
 #' @param rptr_intco Numeric; the threshold of reporter ion intensity.
 #' @param plot_rptr_int Logical; if TRUE, prepares the violin plots of
 #'   reporter-ion intensities.
-#' @param use_lowercase_aa Logical; if TRUE, use lower-case, one-letter
-#'   representation to abbreviate the modifications of amino acid residues.
-#'   Protein N-terminal acetylation (NAc) is instead viewed as an addition. An
-#'   underscore, '_', is appended to the left of a peptide sequence to indicate
-#'   NAc. Similarly, a tilde, '~', is appended to indicate other protein
-#'   N-terminal additions.
+#' @param use_lowercase_aa Logical; if TRUE, use lower-case and/or \code{^_~}
+#'   one-letter representation to abbreviate the modifications of amino acid
+#'   residues. See the table below for details.
 #'
 #' @import dplyr tidyr seqinr
 #' @importFrom stringr str_split
@@ -1046,6 +1109,21 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'strings under \code{pep_seq_mod} denote peptide sequences with applicable
 #'variable modifications.
 #'
+#'The coding of \code{pep_seq_mod} at \code{use_lowercase_aa = TRUE}:
+#'
+#'\tabular{ll}{ \strong{Variable modification}   \tab \strong{Abbreviation}\cr
+#'Non-terminal \tab A letter from upper to lower case and the flanking residues
+#'on the N- or C-terminal side of the peptide separated by a dot, e.g.,
+#'\code{-.mtFPEADILLK.S} \cr N-term \tab A hat to the left of a peptide
+#'sequence, e.g., \code{K.^QDGTHVVEAVDATHIGK.L} \cr C-term \tab A hat to the
+#'right of a peptide sequence, e.g., \code{K.DAYYNLCLPQRPnMI^.-} \cr Acetyl
+#'(Protein N-term) \tab A underscore to the left of a peptide sequence, e.g.,
+#'\code{-._mAsGVAVSDGVIK.V}. \cr Amidated (Protein C-term) \tab A underscore to
+#'the right of a peptide sequence, e.g., \code{K.DAYYNLCLPQRPnMI_.-}. \cr Other
+#'(Protein N-term) \tab A tilde to the left of a peptide sequence, e.g.,
+#'\code{-.~mAsGVAVSDGVIK.V} \cr Other (Protein C-term) \tab An tilde to the
+#'right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
+#'
 #'@section \code{Mascot}: End users will export \code{PSM} data from
 #'  \code{\href{https://http://www.matrixscience.com/}{Mascot}} at a \code{.csv}
 #'  format and store them under the file folder indicated by \code{dat_dir}. The
@@ -1279,22 +1357,18 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %T>%
 add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
-  # (1) remove bracketing "_" from both the N- and the C- terminals of sequences
-  # (2-1) append "_" to sequences from protein N-terminal acetylation: "(ac)" -> "_"
-  # (2-2) append "_" to sequences from protein C-terminal amidation: "_(am)" -> "_"
-  # (3-1) other "(Protein N-term)": "~" for "(Protein N-term)" other than acetylation
-  # (3-2) other "(Protein C-term)": "~" for "(Protein C-term)" other than amidation
-  # (4-1) peptide "(N-term)": ":" 
-  # (4-2) peptide "(C-term)": ":" 
-  # (5) phospho: pS -> s, pT -> t, pY -> y
-  # (6) other N-terminal modifications not named with "N-term": (py)C -> c, (gl)Q -> q
-  # (7) non terminal modifications: M(ox) -> m
-  
-  nterm_tolower <- function(x) {
-    locales <- regexpr("@", x) + 1
-    lowers <- substr(x, locales, locales) %>% tolower()
-    substr(x, locales, locales) <- lowers
-    x <- gsub("@", "", x)
+
+  my_tolower <- function(x, ch = "^") {
+    locales <- gregexpr(ch, x) %>% .[[1]] %>% `+`(., 1)
+    lowers <- map(locales, ~ substr(x, .x, .x)) %>% tolower()
+    
+    for (i in seq_along(lowers)) {
+      substr(x, locales[i], locales[i]) <- lowers[i]
+    }
+    
+    x <- gsub(ch, "", x)
+    
+    return(x)
   }
   
   if (!use_lowercase_aa) {
@@ -1303,145 +1377,152 @@ add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
       # dplyr::mutate(pep_seq_mod = gsub("_", "", pep_seq_mod)) %>% 
       dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))
   } else {
-    df <- df %>% 
-      dplyr::mutate(pep_seq_mod = gsub("_", "", pep_seq_mod)) 
-    
-    df <- local({
-      nac <- df %>% 
-        dplyr::filter(grepl("Acetyl (Protein N-term)", Modifications, fixed = TRUE))
-      
-      rest <- df %>% 
-        dplyr::filter(!grepl("Acetyl (Protein N-term)", Modifications, fixed = TRUE))
-      
-      if (nrow(nac) > 0) {
-        nac <- nac %>% 
-          dplyr::mutate(pep_seq_mod = gsub("^\\(ac\\)", "_", pep_seq_mod))
-        
-        df <- rbind(rest, nac)
-      }
-      
-      return(df)
-    })
-    
-    df <- local({
-      cam <- df %>% 
-        dplyr::filter(grepl("Amidated (Protein C-term)", Modifications, fixed = TRUE))
-      
-      rest <- df %>% 
-        dplyr::filter(!grepl("Amidated (Protein C-term)", Modifications, fixed = TRUE))
-      
-      if (nrow(cam) > 0) {
-        cam <- cam %>% 
-          dplyr::mutate(pep_seq_mod = gsub("\\(am\\)$", "_", pep_seq_mod))
-        
-        df <- rbind(rest, cam)
-      }
-      
-      return(df)
-    })
+    run_scripts <- FALSE
+    if (run_scripts) {
+      temp <- df %>% 
+        tidyr::separate("pep_seq_mod", c("nt", "interior", "ct"), sep = "_") %>% 
+        dplyr::mutate(interior = gsub("A\\([^\\)]+\\)", "a", interior)) %>% 
+        dplyr::mutate(interior = gsub("C\\([^\\)]+\\)", "c", interior)) %>% 
+        dplyr::mutate(interior = gsub("D\\([^\\)]+\\)", "d", interior)) %>% 
+        dplyr::mutate(interior = gsub("E\\([^\\)]+\\)", "e", interior)) %>% 
+        dplyr::mutate(interior = gsub("F\\([^\\)]+\\)", "f", interior)) %>% 
+        dplyr::mutate(interior = gsub("G\\([^\\)]+\\)", "g", interior)) %>% 
+        dplyr::mutate(interior = gsub("H\\([^\\)]+\\)", "h", interior)) %>% 
+        dplyr::mutate(interior = gsub("I\\([^\\)]+\\)", "i", interior)) %>% 
+        dplyr::mutate(interior = gsub("K\\([^\\)]+\\)", "k", interior)) %>% 
+        dplyr::mutate(interior = gsub("L\\([^\\)]+\\)", "l", interior)) %>% 
+        dplyr::mutate(interior = gsub("M\\([^\\)]+\\)", "m", interior)) %>% 
+        dplyr::mutate(interior = gsub("N\\([^\\)]+\\)", "n", interior)) %>% 
+        dplyr::mutate(interior = gsub("P\\([^\\)]+\\)", "p", interior)) %>% 
+        dplyr::mutate(interior = gsub("Q\\([^\\)]+\\)", "q", interior)) %>% 
+        dplyr::mutate(interior = gsub("R\\([^\\)]+\\)", "r", interior)) %>% 
+        dplyr::mutate(interior = gsub("s\\([^\\)]+\\)", "s", interior)) %>% 
+        dplyr::mutate(interior = gsub("T\\([^\\)]+\\)", "t", interior)) %>% 
+        dplyr::mutate(interior = gsub("V\\([^\\)]+\\)", "v", interior)) %>% 
+        dplyr::mutate(interior = gsub("W\\([^\\)]+\\)", "w", interior)) %>% 
+        dplyr::mutate(interior = gsub("Y\\([^\\)]+\\)", "y", interior)) %>%
+        tidyr::unite(pep_seq_mod, nt, interior, ct, sep = ".", remove = TRUE)      
+    }
 
+
+    # (1) all non-terminal modifications: M(ox) -> m ...
+    df <- df %>% 
+      tidyr::separate("pep_seq_mod", c("nt", "interior", "ct"), sep = "_") %>% 
+      dplyr::mutate(interior = gsub("([A-Z]){1}\\([^\\(\\)]*\\)", paste0("@", "\\1"), interior)) %>% 
+      dplyr::mutate_at(vars("interior"), ~ map_chr(.x, my_tolower, "@")) %>% 
+      tidyr::unite(pep_seq_mod, nt, interior, ct, sep = ".", remove = TRUE)
+
+    # (2) phospho: pS -> s, pT -> t, pY -> y
+    df <- df %>% 
+      dplyr::mutate(pep_seq_mod = gsub("pS", "s", pep_seq_mod)) %>% 
+      dplyr::mutate(pep_seq_mod = gsub("pT", "t", pep_seq_mod)) %>% 
+      dplyr::mutate(pep_seq_mod = gsub("pY", "y", pep_seq_mod)) 
+
+    # (3-1) add "_" to sequences from protein N-terminal acetylation
     df <- local({
-      nac <- df %>% 
-        dplyr::filter(grepl("Acetyl (Protein N-term)", Modifications, fixed = TRUE))
+      n_ac <- df %>% dplyr::filter(grepl("Acetyl (Protein N-term)", Modifications, fixed = TRUE))
+      rest <- df %>% dplyr::filter(!grepl("Acetyl (Protein N-term)", Modifications, fixed = TRUE))
+      
+      if (nrow(n_ac) > 0) {
+        n_ac <- n_ac %>% dplyr::mutate(pep_seq_mod = gsub("^\\.\\(ac\\)", "_", pep_seq_mod))
+        df <- rbind(rest, n_ac)
+      }
+      
+      return(df)
+    })
+    
+    # (3-2) add "_" to sequences from protein C-terminal amidation
+    df <- local({
+      c_am <- df %>% dplyr::filter(grepl("Amidated (Protein C-term)", Modifications, fixed = TRUE))
+      rest <- df %>% dplyr::filter(!grepl("Amidated (Protein C-term)", Modifications, fixed = TRUE))
+      
+      if (nrow(c_am) > 0) {
+        c_am <- c_am %>% dplyr::mutate(pep_seq_mod = gsub("\\.\\(am\\)$", "_", pep_seq_mod))
+        df <- rbind(rest, c_am)
+      }
+      
+      return(df)
+    })
+    
+    # (4-1) "~" for "(Protein N-term)" other than acetylation
+    df <- local({
+      n_ac <- df %>% dplyr::filter(grepl("Acetyl (Protein N-term)", Modifications, fixed = TRUE))
       
       other_n <- df %>% 
         dplyr::filter(grepl("Protein N-term", Modifications, fixed = TRUE)) %>% 
         dplyr::filter(!grepl("Acetyl (Protein N-term)", Modifications, fixed = TRUE))
       
-      rest <- df %>% 
-        dplyr::filter(!grepl("Protein N-term", Modifications, fixed = TRUE))
+      rest <- df %>% dplyr::filter(!grepl("Protein N-term", Modifications, fixed = TRUE))
       
       if (nrow(other_n) > 0) {
-        other_n <- other_n %>% 
-          dplyr::mutate(pep_seq_mod = gsub("^\\([^\\(]*\\)", "~", pep_seq_mod))
-        
-        df <- rbind(rest, nac, other_n)
+        other_n <- other_n %>% dplyr::mutate(pep_seq_mod = gsub("^\\.\\([^\\(\\)]*\\)", "~", pep_seq_mod))
+        df <- rbind(rest, n_ac, other_n)
       }
       
       return(df)
-    })
+    })    
     
+    # (4-2) "~" for "(Protein C-term)" other than amidation
     df <- local({
-      cam <- df %>% 
-        dplyr::filter(grepl("Amidated (Protein C-term)", Modifications, fixed = TRUE))
+      c_am <- df %>% dplyr::filter(grepl("Amidated (Protein C-term)", Modifications, fixed = TRUE))
       
       other_c <- df %>% 
         dplyr::filter(grepl("Protein C-term", Modifications, fixed = TRUE)) %>% 
         dplyr::filter(!grepl("Amidated (Protein C-term)", Modifications, fixed = TRUE))
       
-      rest <- df %>% 
-        dplyr::filter(!grepl("Protein C-term", Modifications, fixed = TRUE))
+      rest <- df %>% dplyr::filter(!grepl("Protein C-term", Modifications, fixed = TRUE))
       
       if (nrow(other_c) > 0) {
-        other_c <- other_c %>% 
-          dplyr::mutate(pep_seq_mod = gsub("\\([^\\(\\)]*\\)$", "~", pep_seq_mod))
-        
-        df <- rbind(rest, cam, other_c)
+        other_c <- other_c %>% dplyr::mutate(pep_seq_mod = gsub("\\.\\([^\\(\\)]*\\)$", "~", pep_seq_mod))
+        df <- rbind(rest, c_am, other_c)
       }
       
       return(df)
     })
     
+    # (5-1) "^" peptide "(N-term)" modification
     df <- local({
-      nt <- df %>% 
-        dplyr::filter(grepl("(N-term)", Modifications, fixed = TRUE))
-      
-      rest <- df %>% 
-        dplyr::filter(!grepl("(N-term)", Modifications, fixed = TRUE))
+      nt <- df %>% dplyr::filter(grepl("(N-term)", Modifications, fixed = TRUE))
+      rest <- df %>% dplyr::filter(!grepl("(N-term)", Modifications, fixed = TRUE))
       
       if (nrow(nt) > 0) {
         nt <- nt %>% 
-          dplyr::mutate(pep_seq_mod = gsub("(^[_~]{0,1})\\([^\\(\\)]*\\)", paste0("\\1", ":"), pep_seq_mod)) 
+          dplyr::mutate(pep_seq_mod = gsub("^\\.([_~]{0,1})\\([^\\(\\)]*\\)", paste0("\\1", "^"), pep_seq_mod)) 
         
         df <- rbind(rest, nt)
       }
+      
+      return(df)
     })
     
+    # (5-2) "^" peptide "(C-term)" modification
     df <- local({
-      ct <- df %>% 
-        dplyr::filter(grepl("(C-term)", Modifications, fixed = TRUE))
+      ct <- df %>% dplyr::filter(grepl("(C-term)", Modifications, fixed = TRUE))
+      rest <- df %>% dplyr::filter(!grepl("(C-term)", Modifications, fixed = TRUE))
       
-      rest <- df %>% 
-        dplyr::filter(!grepl("(C-term)", Modifications, fixed = TRUE))
       
       if (nrow(ct) > 0) {
         ct <- ct %>% 
-          dplyr::mutate(pep_seq_mod = gsub("\\([^\\(\\)]*\\)([_~]{0,1}$)", paste0(":", "\\1"), pep_seq_mod)) 
-
+          dplyr::mutate(pep_seq_mod = gsub("\\.\\([^\\(\\)]*\\)([_~]{0,1}$)", paste0("^", "\\1"), pep_seq_mod)) 
+        
         df <- rbind(rest, ct)
       }
+      
+      return(df)
     })
     
     df <- df %>% 
-      dplyr::mutate(pep_seq_mod = gsub("pS", "s", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("pT", "t", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("pY", "y", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("(^[_~]{0,1})\\([^\\(\\)]*\\)(.)", paste0("\\1", "@", "\\2"), pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = nterm_tolower(pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("A\\([^\\)]+\\)", "a", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("C\\([^\\)]+\\)", "c", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("D\\([^\\)]+\\)", "d", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("E\\([^\\)]+\\)", "e", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("F\\([^\\)]+\\)", "f", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("G\\([^\\)]+\\)", "g", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("H\\([^\\)]+\\)", "h", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("I\\([^\\)]+\\)", "i", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("K\\([^\\)]+\\)", "k", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("L\\([^\\)]+\\)", "l", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("M\\([^\\)]+\\)", "m", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("N\\([^\\)]+\\)", "n", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("P\\([^\\)]+\\)", "p", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("Q\\([^\\)]+\\)", "q", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("R\\([^\\)]+\\)", "r", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("s\\([^\\)]+\\)", "s", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("T\\([^\\)]+\\)", "t", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("V\\([^\\)]+\\)", "v", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("W\\([^\\)]+\\)", "w", pep_seq_mod)) %>% 
-      dplyr::mutate(pep_seq_mod = gsub("Y\\([^\\)]+\\)", "y", pep_seq_mod)) %>% 
+      dplyr::mutate(pep_seq_mod = gsub("\\.", "", pep_seq_mod))
+    
+    # (6) other N- or C-terminal modifications better but not named with "N-term" or "C-term": 
+    #     (py)C -> c, (gl)Q -> q
+    df <- df %>% 
+      dplyr::mutate(pep_seq_mod = gsub("(^[_~]{0,1})\\([^\\(\\)]*\\)", paste0("\\1", "^"), pep_seq_mod)) %>% 
+      dplyr::mutate(pep_seq_mod = gsub("\\([^\\(\\)]*\\)([_~]{0,1}$)", paste0("^", "\\1"), pep_seq_mod)) %>% 
       dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = ".")) %>% 
       dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = "."))
   }
-
+  
   return(df)
 }
 
