@@ -163,44 +163,52 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	}
 
 	if (is.null(df)) {
-		err_msg <- "File doesn't exist."
+	  err_msg <- "File doesn't exist."
+	  
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    fn_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_pVals.txt")
+	    fn_imp <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
+	    fn_raw <- file.path(dat_dir, "Peptide", "Peptide.txt")
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
+	    fn_imp <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
+	    fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
+	  } else stop("Unknown `id`.", call. = FALSE)
 
-		if (id %in% c("pep_seq", "pep_seq_mod")) {
-			fn_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_pVals.txt")
-			fn_imp <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
-			fn_raw <- file.path(dat_dir, "Peptide", "Peptide.txt")
-		} else if (id %in% c("prot_acc", "gene")) {
-			fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
-			fn_imp <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
-			fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
-		} else stop("Unknown `id`.", call. = FALSE)
-
-		if (anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
-		  if (file.exists(fn_raw)) src_path <- fn_raw else
-		    stop(paste(fn_raw, "not found. \n Run functions `normPSM`, `normPep` and `normPrn` first.s"),
-		         call. = FALSE)
-		} else if (anal_type %in% c("Heatmap", "Trend", "NMF", "Model")) { # optional impute_na
-		  if (impute_na) {
-		    if (file.exists(fn_imp)) src_path <- fn_imp else
-		      stop(
-		        paste(fn_imp, "not found. \nImpute NA values with `pepImp` or `prnImp` or set `impute_na = FALSE`."), 
-		        call. = FALSE)
-		  } else {
-		    if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), call. = FALSE)
-		  }
-		} else if (anal_type %in% c("GSPA")) { # always use data with pVals
-			if (file.exists(fn_p)) src_path <- fn_p else
-				stop(paste(fn_p, "not found. \nRun `prnSig` first."), call. = FALSE)
-		}
-		
-		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
-		                        comment.char = "#"), error = function(e) NA)
-
-		if (!is.null(dim(df))) {
-			message(paste("File loaded:", gsub("\\\\", "/", src_path)))
-		} else {
-			stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
-		}
+	  if (anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
+	    if (file.exists(fn_raw)) src_path <- fn_raw else
+	      stop(paste(fn_raw, "not found. \n Run functions `normPSM`, `normPep` and `normPrn` first.s"), call. = FALSE)
+	  } else if (anal_type %in% c("Trend", "NMF", "Model")) { # optional impute_na but no p_vals
+	    if (impute_na) {
+	      if (file.exists(fn_imp)) src_path <- fn_imp else
+	        stop(paste(fn_imp, "not found. \nImpute NA values with `pepImp` or `prnImp` or set `impute_na = FALSE`."), call. = FALSE)
+	    } else {
+	      if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), call. = FALSE)
+	    }
+	  } else if (anal_type %in% c("GSPA")) { # always use data with pVals
+	    if (file.exists(fn_p)) src_path <- fn_p else
+	      stop(paste(fn_p, "not found. \nRun `prnSig` first."), call. = FALSE)
+	  } else if (anal_type %in% c("Heatmap")) { # optional impute_na and possible p_vals
+	    if (file.exists(fn_p)) { # may or may not be NA imputed
+	      src_path <- fn_p
+	    } else {
+	      if (impute_na) {
+	        if (file.exists(fn_imp)) src_path <- fn_imp else 
+	          stop(paste(fn_imp, "not found. \nImpute NA values with `pepImp` or `prnImp` or set `impute_na = FALSE`."), call. = FALSE)
+	      } else {
+	        if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), call. = FALSE)
+	      }
+	    }
+	  } 
+	  
+	  df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
+	                          comment.char = "#"), error = function(e) NA)
+	  
+	  if (!is.null(dim(df))) {
+	    message(paste("File loaded:", gsub("\\\\", "/", src_path)))
+	  } else {
+	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
+	  }
 	} else {
 	  if (id %in% c("pep_seq", "pep_seq_mod")) {
 	    fn_raw <- file.path(dat_dir, "Peptide", df)
@@ -217,7 +225,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
 	  }
 	}
-
+	
 	if (anal_type %in% c("Model", "GSPA")) {
 		label_scheme_sub <- label_scheme %>% # to be subset by the "key" in "formulae"
 			dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID), !Reference)

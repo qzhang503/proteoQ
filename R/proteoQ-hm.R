@@ -129,7 +129,8 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   
   df <- df %>%
     dplyr::select(-grep("log2_R[0-9]{3}", names(.))) %>%
-    dplyr::bind_cols(., dfR) %>%
+    dplyr::bind_cols(., dfR) %>% 
+    dplyr::filter(!is.na(.[[id]])) %>% 
     `rownames<-`(.[[id]])
   
   # generate `annotation_col` from keys in `annot_col`, et al.

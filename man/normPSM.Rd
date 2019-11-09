@@ -73,12 +73,9 @@ reporter-ion intensities.}
 \item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
 peptide \code{log2FC} for each sample.}
 
-\item{use_lowercase_aa}{Logical; if TRUE, use lower-case, one-letter
-representation to abbreviate the modifications of amino acid residues.
-Protein N-terminal acetylation (NAc) is instead viewed as an addition. An
-underscore, '_', is appended to the left of a peptide sequence to indicate
-NAc. Similarly, a tilde, '~', is appended to indicate other protein
-N-terminal additions.}
+\item{use_lowercase_aa}{Logical; if TRUE, use lower-case and/or \code{^_~}
+one-letter representation to abbreviate the modifications of amino acid
+residues. See the table below for details.}
 
 \item{...}{\code{filter_}: Each argument corresponds to a logical
 expression(s) for the filtration of data rows. The \code{lhs} needs to start
@@ -109,6 +106,21 @@ intensity}. Values under columns \code{sd_log2_R...} are the standard
 deviation of the \code{log2FC} of peptides from ascribing PSMs. Character
 strings under \code{pep_seq_mod} denote peptide sequences with applicable
 variable modifications.
+
+The coding of \code{pep_seq_mod} at \code{use_lowercase_aa = TRUE}:
+
+\tabular{ll}{ \strong{Variable modification}   \tab \strong{Abbreviation}\cr
+Non-terminal \tab A letter from upper to lower case and the flanking residues
+on the N- or C-terminal side of the peptide separated by a dot, e.g.,
+\code{-.mtFPEADILLK.S} \cr N-term \tab A hat to the left of a peptide
+sequence, e.g., \code{K.^QDGTHVVEAVDATHIGK.L} \cr C-term \tab A hat to the
+right of a peptide sequence, e.g., \code{K.DAYYNLCLPQRPnMI^.-} \cr Acetyl
+(Protein N-term) \tab A underscore to the left of a peptide sequence, e.g.,
+\code{-._mAsGVAVSDGVIK.V}. \cr Amidated (Protein C-term) \tab A underscore to
+the right of a peptide sequence, e.g., \code{K.DAYYNLCLPQRPnMI_.-}. \cr Other
+(Protein N-term) \tab A tilde to the left of a peptide sequence, e.g.,
+\code{-.~mAsGVAVSDGVIK.V} \cr Other (Protein C-term) \tab An tilde to the
+right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
 }
 \section{\code{Mascot}}{
  End users will export \code{PSM} data from
