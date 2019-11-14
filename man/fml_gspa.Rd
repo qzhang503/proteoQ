@@ -5,7 +5,8 @@
 \title{A helper function for GSPA}
 \usage{
 fml_gspa(df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff,
-  gspval_cutoff, min_size, filepath, filename, ...)
+  gspval_cutoff, min_size, max_size, min_greedy_size, filepath, filename,
+  ...)
 }
 \description{
 A helper function for GSPA

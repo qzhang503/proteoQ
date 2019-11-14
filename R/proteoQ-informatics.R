@@ -518,7 +518,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (anal_type == "GSPA") {
 		function(complete_cases = FALSE, gset_nm = "go_sets", var_cutoff = .5,
 		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
-		         min_size = 10, task = !!task, ...) {
+		         min_size = 10, max_size = Inf, min_greedy_size = 1, task = !!task, ...) {
 
 		  # "id" only for tibbling rownames
 		  switch(rlang::as_string(rlang::enexpr(task)), 
@@ -534,6 +534,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                         logFC_cutoff = logFC_cutoff, 
 		                         gspval_cutoff = gspval_cutoff,
 		                         min_size = min_size, 
+		                         max_size = max_size, 
+		                         min_greedy_size = min_greedy_size, 
 		                         ...), 
 		         plothm = gspaHM(filepath = filepath, 
 		                         filename = paste0(fn_prefix, ".", fn_suffix), 

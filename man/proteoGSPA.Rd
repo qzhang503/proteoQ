@@ -9,7 +9,8 @@ proteoGSPA(id = gene, scale_log2r = TRUE, df = NULL,
   filepath = NULL, filename = NULL, impute_na = TRUE,
   complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = 0.5,
   pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.01,
-  min_size = 10, task = "anal", ...)
+  min_size = 10, max_size = Inf, min_greedy_size = 1,
+  task = "anal", ...)
 
 prnGSPA(...)
 }
@@ -59,6 +60,14 @@ will be reported.}
 set test. The number is the sum of up or down-expressed proteins after data
 filtration by \code{pval_cutoff}, \code{logFC_cutoff} or varargs
 \code{filter_}.}
+
+\item{max_size}{Maximum number of protein entries for consideration of a gene
+set test. The number is the sum of up or down-expressed proteins after data
+filtration by \code{pval_cutoff}, \code{logFC_cutoff} or varargs
+\code{filter_}.}
+
+\item{min_greedy_size}{Minimum number of unique protein entries for a set to
+be considered essential.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
