@@ -1,4 +1,4 @@
-## part 0 --- installations
+## part 0 --- installation
 # proteoQ package
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
@@ -51,8 +51,31 @@ normPSM(
 	filter_more_psms = exprs(pep_rank == 1),
 )
 
+## DO NOT RUN
+# peptide sequences with different side-chain modifications will be treated as different species
+dontrun <- TRUE
+if (!dontrun) {
+	normPSM(
+		group_psm_by = pep_seq_mod, 
+		group_pep_by = gene, 
+		fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+							"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+		rptr_intco = 3000,
+		rm_craps = TRUE,
+		rm_krts = FALSE,
+		rm_outliers = FALSE, 
+		annot_kinases = TRUE, 
+		plot_rptr_int = TRUE, 
+		plot_log2FC_cv = TRUE, 
+		
+		filter_psms = exprs(pep_expect <= .1, pep_score >= 15), 
+		filter_more_psms = exprs(pep_rank == 1),
+	)
+}
+## END of DO NOT RUN
+
 # optional: purge of PSM groups under the same peptide IDs
-purgePSM(max_cv = 0.5, min_n = 2)
+purgePSM(pt_cv = 0.95)
 
 # peptide tables
 normPep(
@@ -64,11 +87,10 @@ normPep(
 	seed = 749662, 
 	maxit = 200, 
 	epsilon = 1e-05, 
-	# filter_peps = exprs(pep_n_psm >= 2), 
 )
 
 # optional: purge of peptide groups under the same protein IDs
-purgePep(max_cv = .5, min_n = 2)
+purgePep(pt_cv = 0.95)
 
 # peptide histograms with logFC scaling
 pepHist(
@@ -107,36 +129,39 @@ pepHist(
  filename = Hist_BI_Z.png, 
 )
 
-# renormalization of peptide data for selected samples
-normPep(
-	method_psm_pep = median, 
-	method_align = MGKernel, 
-	range_log2r = c(5, 95), 
-	range_int = c(5, 95), 
-	n_comp = 3, 
-	seed = 749662, 
-	maxit = 200, 
-	epsilon = 1e-05, 
-	col_refit = Select_sub,
-)
-
-# renormalization of peptide data subset for selected samples
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-  
-  # refit samples under column Select_sub in expt_smry.xlsx
-  col_refit = Select_sub,
-  
-  # partial data from the selected sample(s) for use in normalization 
-  slice_by = exprs(prot_n_psm >= 10, pep_n_psm >= 3),
-)
+## DO NOT RUN
+# renormalization of peptide data for selected samples under `Select_sub`
+dontrun <- TRUE
+if (!dontrun) {
+	normPep(
+		method_psm_pep = median, 
+		method_align = MGKernel, 
+		range_log2r = c(5, 95), 
+		range_int = c(5, 95), 
+		n_comp = 3, 
+		seed = 749662, 
+		maxit = 200, 
+		epsilon = 1e-05, 
+		
+		col_refit = Select_sub,
+	)
+	
+	# examplary renormalization based on partial data and for selected samples
+	normPep(
+		method_psm_pep = median, 
+		method_align = MGKernel, 
+		range_log2r = c(5, 95), 
+		range_int = c(5, 95), 
+		n_comp = 3, 
+		seed = 749662, 
+		maxit = 200, 
+		epsilon = 1e-05, 
+		
+		col_refit = Select_sub,
+		slice_by = exprs(prot_n_psm >= 10, pep_n_psm >= 3),
+	)
+}
+## END of DO NOT RUN
 
 # protein tables
 normPrn(
@@ -150,20 +175,24 @@ normPrn(
 	epsilon = 1e-05, 
 )
 
-# examplary protein tables with data prefiltration
-normPrn(
-	method_pep_prn = median, 
-	method_align = MGKernel, 
-	range_log2r = c(20, 95), 
-	range_int = c(5, 95), 
-	n_comp = 2, 
-	seed = 749662, 
-	maxit = 200, 
-	epsilon = 1e-05, 
-	
-	filter_prots_by = exprs(prot_n_psm >= 5, prot_n_pep >= 2),
-	# filter_peps_by = exprs(pep_n_psm >= 2),
-)
+## DO NOT RUN
+# examplary protein tables with data pre-filtration
+dontrun <- TRUE
+if (!dontrun) {
+	normPrn(
+		method_pep_prn = median, 
+		method_align = MGKernel, 
+		range_log2r = c(20, 95), 
+		range_int = c(5, 95), 
+		n_comp = 2, 
+		seed = 749662, 
+		maxit = 200, 
+		epsilon = 1e-05, 
+		
+		filter_prots_by = exprs(prot_n_psm >= 5, prot_n_pep >= 2),
+	)
+}
+## END of DO NOT RUN
 
 # protein histograms with logFC scaling
 prnHist(
@@ -211,7 +240,7 @@ prnHist(
 	filename = Hist_BI_N.png, 
 )
 
-# global setting in scaling normalization
+## PAUSE: think TWICE on the chioce of scaling normalization
 scale_log2r = TRUE
 
 
@@ -226,7 +255,7 @@ prnImp(m = 5, maxit = 5)
 pepMDS(
 	show_ids = FALSE,
 	width = 10,
-	height = 3.75,
+	height = 3.75,	
 )
 
 # peptide MDS with filtration
@@ -254,7 +283,7 @@ pepMDS(
   col_size = Alpha, # batches
   show_ids = FALSE,
 	width = 10,
-	height = 3.75,
+	height = 3.75,	
 	filename = "MDS_JHU_new_aes.png",
 )
 
@@ -387,7 +416,7 @@ prnCorr_logFC(
 prnHM(
 	xmin = -1, 
 	xmax = 1, 
-	x_margin = 0.1, 
+	xmargin = 0.1, 
 	annot_cols = c("Group", "Color", "Alpha", "Shape"), 
 	annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
 	cluster_rows = TRUE, 
@@ -396,8 +425,6 @@ prnHM(
 	show_colnames = TRUE, 
 	fontsize_row = 3, 
 	cellwidth = 14, 
-	width = 18, 
-	height = 12, 
 	filter_sp = exprs(species == "human"), 
 )
 
@@ -405,7 +432,7 @@ prnHM(
 prnHM(
 	xmin = -1, 
 	xmax = 1, 
-	x_margin = 0.1, 
+	xmargin = 0.1, 
 	annot_cols = c("Group", "Color", "Alpha", "Shape"), 
 	annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
 	cluster_rows = FALSE, 
@@ -415,32 +442,33 @@ prnHM(
 	fontsize_row = 2, 
 	cellheight = 2, 
 	cellwidth = 14, 
-	width = 22, 
-	height = 22, 
 	filter_kin = exprs(kin_attr),
 	arrange_kin = exprs(kin_order, gene),
 	filename = "kin_by_class.png", 
 )
 
-# protein significance tests
-prnSig(
-	impute_na = FALSE, 
-	W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-	W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-)
-
-# protein volcano plots
-prnVol()
 
 # peptide significance tests
 pepSig(
 	impute_na = FALSE, 
 	W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
 	W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
+	W16_vs_W2 = ~ Term_3["W16-W2"], 
 )
 
 # peptide volcano plots
 pepVol()
+
+# protein significance tests
+prnSig(
+	impute_na = FALSE, 
+	W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+	W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
+	W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+# protein volcano plots
+prnVol()
 
 # protein trend analysis with filtration and sample-order supervision
 anal_prnTrend(
@@ -472,8 +500,8 @@ plot_prnNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+	width = 10,
+	height = 10,
 )
 
 # protein NMF: coefficients heat maps
@@ -496,17 +524,57 @@ plot_metaNMF(
 
 # protein GSPA
 prnGSPA(
-  impute_na = FALSE, 
-  pval_cutoff = 5E-2, 
-  gset_nms = c("go_sets", "kegg_sets"), 
+  impute_na = FALSE,
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("go_sets", "kegg_sets"),
 )
+
+## DO NOT RUN
+# higer cut-off in gene set signficance and protein tables with data pre-filtration
+dontrun <- TRUE
+if (!dontrun) {
+	prnGSPA(
+		impute_na = FALSE,
+		pval_cutoff = 5E-2,
+		logFC_cutoff = log2(1.2),
+		gspval_cutoff = 5E-3,
+		gset_nms = c("go_sets", "kegg_sets"),
+
+		filter_by_npep = exprs(prot_n_pep >= 2),
+	)
+}
+## END of DO NOT RUN
 
 # GSPA under volcano plots
 gspaMap(
 	show_labels = TRUE, 
 	pval_cutoff = 5E-3, 
+	logFC_cutoff = log2(1.2),
 	show_sig = pVal, 
 	yco = 0.05, 
+	
+	# only proteins with two or more peptides will be visualized
+	filter_by_npep = exprs(prot_n_pep >= 2),
+)
+
+# protein GSPA distance heat map and network for human subset
+prnGSPAHM(
+  filter_sp = exprs(start_with_str("hs", term)), 
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  annot_rows = "ess_size", 
+  filename = show_connectivity_at_large_dist.png,
+)
+
+prnGSPAHM(
+  filter_by = exprs(distance <= .33),
+  filter_sp = exprs(start_with_str("hs", term)), 
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  annot_rows = "ess_size", 
+  filename = show_human_redundancy.png,
 )
 
 # STRING database

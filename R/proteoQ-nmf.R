@@ -109,7 +109,6 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
   purrr::walk(filelist, ~ {
-    # out_nm <- paste0(gsub("\\.rda$", "", .x), "_consensus.", fn_suffix)
     out_nm <- paste0(gsub("\\.rda$", "", .x), "_consensus.png")
     
     load(file = file.path(file.path(filepath, .x)))
@@ -123,16 +122,38 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
     color_breaks <- c(seq(xmin, xmargin, length = n_color/2)[1 : (n_color/2-1)],
                       seq(xmargin, xmax, length = n_color/2)[2 : (n_color/2)])
     
+    if (is.null(dots$units)) {
+      units <- "in"
+    } else {
+      units <- dots$units
+    }
+    
+    if (is.null(dots$res)) {
+      res <- 300
+    } else {
+      res <- dots$res
+    }
+    
     if (is.null(dots$width)) {
       width <- 1.35 * ncol(D_matrix)
     } else {
       width <- dots$width
     }
     
+    if (width > 40 & units == "in") {
+      warning("The plot width is reduced to 40")
+      width <- 40
+    }
+    
     if (is.null(dots$height)) {
       height <- 1.35 * ncol(D_matrix)
     } else {
       height <- dots$height
+    }
+    
+    if (height > 40 & units == "in") {
+      warning("The plot height is reduced to 40")
+      height <- 40
     }
     
     if (is.null(dots$color)) {
@@ -168,7 +189,7 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
       annotation_colors <- eval(dots$annotation_colors, env = caller_env())
     }
     
-    png(file.path(filepath, out_nm), width = width, height = height, units = "in", res = 300)
+    png(file.path(filepath, out_nm), width = width, height = height, units = units, res = res)
     consensusmap(res_nmf, annCol = annotation_col, 
                  annColor = list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
                  tracks = c("basis:"), main = '', sub = '')

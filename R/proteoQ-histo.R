@@ -43,7 +43,10 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 	dots <- dots %>% .[! . %in% lang_dots]
 
-	if (scale_y) df <- df %>% filters_in_call(!!!lang_dots)
+	if (scale_y) {
+	  df <- df %>% filters_in_call(!!!lang_dots)
+	  stopifnot(nrow(df) > 0)
+	}
 	
 	by = (xmax - xmin)/200
 	nrow <- nrow(df)
@@ -129,6 +132,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 	}
 	
 	if (!scale_y) df <- df %>% filters_in_call(!!!lang_dots)
+	
+	stopifnot(nrow(df) > 0)
 	
 	df_melt <- df %>%
 		dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%

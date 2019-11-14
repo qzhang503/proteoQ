@@ -53,6 +53,7 @@
 #'   scale_log2r = TRUE,
 #'   impute_na = FALSE,
 #'   pval_cutoff = 5E-2,
+#'   logFC_cutoff = log2(1.2),
 #'   gspval_cutoff = 5E-3,
 #'   gset_nms = c("go_sets", "kegg_sets"),
 #'
@@ -220,7 +221,6 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
 
   dir.create(file.path(filepath, formula), recursive = TRUE, showWarnings = FALSE)
   id <- rlang::as_string(rlang::enexpr(id))
-  # fn_prefix <- paste0(gsub("\\.[^.]*$", "", filename), "_", formula)
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   # imputation of NA to 0 increases the number of entries in descriptive "mean" calculation, 
@@ -264,11 +264,6 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
     res_pass <- res[pass, ]
   })
   
-  if (nrow(res_pass) > 250) {
-    stop(nrow(res_pass), " significant terms available for enrichment analysis.\n", 
-         "Consider a more strigent threshold in `gspval_cutoff`", call. = FALSE)
-  }
-
   out <- local({
     adjp <- res_pass %>% 
       dplyr::select(grep("^pVal\\s+\\(", names(.))) %>% 
@@ -312,8 +307,8 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
     dplyr::right_join(out, by = "term")
 
   res_greedy <- sig_sets %>% 
-    RcppGreedySetCover::greedySetCover(FALSE) # %T>% 
-    # write.csv(file.path(filepath, formula, paste0("resgreedy_", fn_prefix, ".csv")), row.names = FALSE)
+    RcppGreedySetCover::greedySetCover(FALSE) %T>% 
+    write.csv(file.path(filepath, formula, paste0("resgreedy_", fn_prefix, ".csv")), row.names = FALSE)
 
   sig_sets <- res_greedy %>% 
     dplyr::group_by(term) %>% 
@@ -479,36 +474,20 @@ map_essential <- function (sig_sets) {
 #' # `ess_idx` is a column key in `essmap_.*.csv`
 #' # `ess_size` is a column key in metadata file `essmeta_.*.csv`
 #' prnGSPAHM(
-#'   filter_by = exprs(distance <= .2),
+#'   filter_by = exprs(distance <= .6),
 #'   annot_cols = "ess_idx",
 #'   annot_colnames = "Eset index",
 #'   annot_rows = "ess_size",
-#'
-#'   fontsize = 16,
-#'   fontsize_row = 20,
-#'   fontsize_col = 20,
-#'   fontsize_number = 8,
-#'   border_color = "grey60",
-#'   cellwidth = 24,
-#'   cellheight = 24,
-#'   filename = show_redundancy_at_small_dist.png,
+#'   filename = show_some_redundancy.png,
 #' )
 #'
 #' # human terms only
 #' prnGSPAHM(
-#'   filter_num = exprs(distance <= .8),
+#'   filter_num = exprs(distance <= .95),
 #'   filter_sp = exprs(start_with_str("hs", term)),
 #'   annot_cols = "ess_idx",
 #'   annot_colnames = "Eset index",
-#'
-#'   fontsize = 16,
-#'   fontsize_row = 20,
-#'   fontsize_col = 20,
-#'   fontsize_number = 8,
-#'   border_color = "grey60",
-#'   cellwidth = 24,
-#'   cellheight = 24,
-#'   filename = show_connectivity_at_large_dist.png,
+#'   filename = show_more_connectivity.png,
 #' )
 #'
 #' # custom color palette
@@ -516,14 +495,6 @@ map_essential <- function (sig_sets) {
 #'   annot_cols = c("ess_idx", "ess_size"),
 #'   annot_colnames = c("Eset index", "Size"),
 #'   filter_by = exprs(ess_size >= 3, distance <= .80),
-#'
-#'   fontsize = 16,
-#'   fontsize_row = 20,
-#'   fontsize_col = 20,
-#'   fontsize_number = 8,
-#'   border_color = "grey60",
-#'   cellwidth = 24,
-#'   cellheight = 24,
 #'   color = colorRampPalette(c("blue", "white", "red"))(100),
 #'   filename = "custom_colors.png"
 #' )
@@ -572,7 +543,7 @@ gspaHM <- function(filepath, filename, ...) {
 
 #' A helper function for gspaHM
 #'
-#' @import purrr dplyr rlang
+#' @import purrr dplyr rlang pheatmap networkD3
 #' @importFrom magrittr %>%
 fml_gspahm <- function (formula, filepath, filename, ...) {
   dots <- rlang::enexprs(...)
@@ -587,11 +558,11 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
 
   all_by_greedy <- tryCatch(read.csv(file.path(filepath, formula, ins), check.names = FALSE, header = TRUE, 
                                      comment.char = "#"), error = function(e) NA) %>% 
-    dplyr::mutate(ess_size = replace(ess_size, is.na(ess_size), Inf)) %>% 
-    filters_in_call(!!!filter_dots) %>% 
-    dplyr::mutate(ess_size = replace(ess_size, is.infinite(ess_size), NA))
+    filters_in_call(!!!filter_dots)
   
   if (nrow(all_by_greedy) == 0) stop("No GSPA terms available after data filtration.")
+  
+  if (max(all_by_greedy$distance) == 0) stop("All-zero distance detected; try increase the cut-off in distance.")
 
   if (!is.null(dim(all_by_greedy))) {
     message(paste("Essential GSPA loaded."))
@@ -609,6 +580,7 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   d_col <- dist(t(ess_vs_all))
   max_d_row <- max(d_row, na.rm = TRUE)
   max_d_col <- max(d_col, na.rm = TRUE)
+  
   d_row[is.na(d_row)] <- 1.2 * max_d_row
   d_col[is.na(d_col)] <- 1.2 * max_d_col
 
@@ -675,13 +647,72 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   } else {
     annotation_colors <- eval(dots$annotation_colors, env = caller_env())
   }
-
+  
+  nrow <- nrow(ess_vs_all)
+  ncol <- ncol(ess_vs_all)
+  max_width <- 44
+  max_height <- 44
+  
+  if (is.null(dots$width)) {
+    if (ncol <= 150) {
+      fontsize <- 12
+      fontsize_col <- cellwidth <- 12
+      show_colnames <- TRUE
+      width <- ncol/1.2
+    } else {
+      fontsize <- fontsize_col <- 1
+      cellwidth <- NA
+      show_colnames <- FALSE
+      width <- max_width
+    }
+  } else {
+    width <- dots$width
+    if (is.null(dots$fontsize)) fontsize <- 1 else fontsize <- dots$fontsize
+    if (is.null(dots$fontsize_col)) fontsize_col <- 1 else fontsize_col <- dots$fontsize_col
+    if (is.null(dots$cellwidth)) cellwidth <- NA else cellwidth <- dots$cellwidth
+    if (is.null(dots$show_colnames)) show_colnames <- FALSE else show_colnames <- dots$show_colnames
+  }
+  
+  if (is.null(dots$height)) {
+    if (nrow <= 150) {
+      fontsize <- 12 
+      fontsize_row <- cellheight <- 12
+      show_rownames <- TRUE
+      height <- nrow/1.2
+    } else {
+      fontsize <- fontsize_row <- 1
+      cellheight <- NA
+      show_rownames <- FALSE
+      height <- max_height
+    }
+  } else {
+    height <- dots$height
+    if (is.null(dots$fontsize)) fontsize <- 1 else fontsize <- dots$fontsize
+    if (is.null(dots$fontsize_row)) fontsize_row <- 1 else fontsize_row <- dots$fontsize_row
+    if (is.null(dots$cellheight)) cellheight <- NA else cellheight <- dots$cellheight
+    if (is.null(dots$show_rownames)) show_rownames <- FALSE else show_rownames <- dots$show_rownames
+  }
+  
+  if ((!is.na(width)) & (width > max_width)) {
+    warning("The plot width is set to", max_width)
+    width <- max_width
+    height <- pmin(max_height, width * nrow / ncol)
+  } 
+  
+  if ((!is.na(height)) & (height > max_height)) {
+    warning("The plot height is set to", max_height)
+    height <- max_height
+    width <- pmin(max_width, height * ncol / nrow)
+  }
+  
   dots <- dots %>% 
     .[!names(.) %in% c("annot_cols", "annot_colnames", "annot_rows", 
                        "mat", "filename", "annotation_col", "annotation_row", 
                        "color", "annotation_colors", "breaks", 
-                       "cluster_rows", "cluster_cols")]
-                       
+                       "cluster_rows", "cluster_cols", 
+                       "width", "height", "fontsize_row", "fontsize_col", 
+                       "cellheight", "cellwidth")]
+  
   ph <- my_pheatmap(
     mat = ess_vs_all,
     filename = file.path(filepath, formula, filename),
@@ -692,9 +723,17 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
     breaks = NA, # not used
     cluster_rows =  hclust(d_row), 
     cluster_cols = hclust(d_col),
+    fontsize_row = fontsize_row,
+    fontsize_col = fontsize_col,
+    cellheight = cellheight,
+    cellwidth = cellwidth,
+    show_rownames = show_rownames,
+    show_colnames = show_colnames,
+    width = width, 
+    height = height, 
     !!!dots,
-  )
-
+  )  
+  
   # networks
   cluster <- data.frame(cluster = cutree(ph$tree_col, h = max_d_col)) %>% 
     tibble::rownames_to_column("term")

@@ -330,7 +330,9 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'
 #'@section \code{frac_smry.xlsx}: It is not necessary to prepare a
 #'  \code{frac_smry.xlsx} file if no peptide fractionations were performed in
-#'  TMT experiments. 
+#'  TMT experiments. However, if the name(s) of raw MS files were entered
+#'  erroneously in \code{expt_smry.xlsx}, the same mistake will be carried on to
+#'  the system-generated \code{frac_smry.xlsx}.
 #'
 #'  \tabular{ll}{ \strong{Column}   \tab \strong{Descrption}\cr TMT_Set \tab
 #'  v.s.  \cr LCMS_Injection   \tab v.s. \cr Fraction \tab Fraction indeces
@@ -389,8 +391,8 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'   filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
 #' )
 #'
-#' # exemplary PSM purging; n: the number of PSMs under a peptide
-#' purgePSM(max_cv = .5, min_n = 2)
+#' # exemplary PSM purging
+#' purgePSM(pt_cv = .95)
 #'
 #'
 #' # peptides results with exemplary `filter_...`
@@ -404,12 +406,11 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'   maxit = 200,
 #'   epsilon = 1e-05,
 #'
-#'   # filter_by = exprs(pep_n_psm >= 2),
 #'   # filter_by_sp = exprs(species == "human"),
 #' )
 #'
-#' # exemplary peptide purging; n: the number of peptides under a protein
-#' purgePep(max_cv = .5, min_n = 2)
+#' # exemplary peptide purging
+#' purgePep(pt_cv = .95)
 #'
 #'
 #' # proteins results with examplary `filter_...`
@@ -422,8 +423,6 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'   seed = 749662,
 #'   maxit = 200,
 #'   epsilon = 1e-05,
-#'
-#'   # filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2),
 #' )
 #'
 #'

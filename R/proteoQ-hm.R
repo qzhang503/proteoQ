@@ -185,7 +185,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
     d_cols[is.na(d_cols)] <- .5 * max(d_cols, na.rm = TRUE)
     h_cols <- hclust(d_cols)
     dots$cluster_cols <- h_cols
-    rm(d_cols, h_cols)
+    # rm(d_cols, h_cols) # h_cols also for subtrees
   } else {
     dots$cluster_cols <- FALSE
   }
@@ -235,15 +235,18 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
         
         if (cluster_rows) {
           d_sub <- dist(df_sub, method = clustering_distance_rows)
-          if (length(d_sub) == 0) next
-
-          d_sub[is.na(d_sub)] <- .5 * max(d_sub, na.rm = TRUE)
-          
-          nrow <- nrow(df_sub)
-          if (nrow <= 2) {
+          if (length(d_sub) == 0) {
             h_sub <- FALSE
+            nrow <- nrow(df_sub)
           } else {
-            h_sub <- hclust(d_sub)
+            d_sub[is.na(d_sub)] <- .5 * max(d_sub, na.rm = TRUE)
+            
+            nrow <- nrow(df_sub)
+            if (nrow <= 2) {
+              h_sub <- FALSE
+            } else {
+              h_sub <- hclust(d_sub)
+            }    
           }
         }
         
@@ -278,7 +281,8 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
             mat = df_sub,
             main = paste("Cluster", cluster_id),
             cluster_rows = h_sub,
-            cluster_cols = v_sub, 
+            # cluster_cols = v_sub, 
+            cluster_cols = h_cols, 
             show_rownames = show_rownames,
             show_colnames = TRUE,
             annotation_col = annotation_col,

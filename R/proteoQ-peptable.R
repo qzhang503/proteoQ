@@ -538,6 +538,19 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 		df <- list(df, prot_n_psm, prot_n_pep) %>%
 		  purrr::reduce(left_join, by = group_pep_by)
 		
+		if (("pep_seq_mod" %in% names(df)) & (match_normPSM_par("use_lowercase_aa") %>% as.logical())) {
+		  df <- df %>% 
+		    dplyr::mutate(pep_mod_protnt = ifelse(grepl("^[A-z\\-]\\.~", pep_seq_mod), TRUE, FALSE)) %>% 
+		    dplyr::mutate(pep_mod_protntac = ifelse(grepl("^[A-z\\-]\\._", pep_seq_mod), TRUE, FALSE)) %>% 
+		    dplyr::mutate(pep_mod_pepnt = ifelse(grepl("^[A-z\\-]\\.[_~]?\\^", pep_seq_mod), TRUE, FALSE)) %>% 
+		    dplyr::mutate(pep_mod_m = ifelse(grepl("m", pep_seq_mod), TRUE, FALSE)) %>% 
+		    dplyr::mutate(pep_mod_n = ifelse(grepl("n", pep_seq_mod), TRUE, FALSE)) %>% 
+		    dplyr::mutate(pep_mod_sty = ifelse(grepl("[sty]", pep_seq_mod), TRUE, FALSE)) %>% 
+		    dplyr::mutate(pep_mod_pepct = ifelse(grepl("[\\^]{1}[_~]?\\.[A-z\\-]{1}$", pep_seq_mod), TRUE, FALSE)) %>% 
+		    dplyr::mutate(pep_mod_protctam = ifelse(grepl("_{1}\\.[A-z\\-]{1}$", pep_seq_mod), TRUE, FALSE)) %>% 
+		    dplyr::mutate(pep_mod_protct = ifelse(grepl("~{1}\\.[A-z\\-]{1}$", pep_seq_mod), TRUE, FALSE))
+		}
+		
 		df <- dplyr::bind_cols(
 		  df %>% select(grep("^pep_", names(.))), 
 		  df %>% select(-grep("^pep_", names(.))), 

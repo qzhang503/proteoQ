@@ -90,6 +90,7 @@ prnGSPA(
   scale_log2r = TRUE,
   impute_na = FALSE,
   pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
   gspval_cutoff = 5E-3,
   gset_nms = c("go_sets", "kegg_sets"),
 

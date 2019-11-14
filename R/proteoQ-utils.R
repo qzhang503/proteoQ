@@ -1019,6 +1019,28 @@ match_normPSM_protid <- function (id = c("prot_acc")) {
 }
 
 
+#' Find the setting of current par in normPSM
+#' @param par
+#'
+#' @import plyr dplyr purrr rlang
+#' @importFrom magrittr %>%
+match_normPSM_par <- function (par = "use_lowercase_aa") {
+  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPSM.txt"), check.names = FALSE,
+                                 header = TRUE, sep = "\t", comment.char = "#"),
+                        error = function(e) NA)
+  
+  if (!is.null(dim(call_pars))) {
+    res <- call_pars %>%
+      dplyr::filter(var == par) %>%
+      dplyr::select("value.1") %>%
+      unlist() %>%
+      as.character()
+  }
+  
+  return(res)
+}
+
+
 #' Matches the file name containing the summary of TMT experiment
 #'
 #' The default file name is \code{expt_smry.xlsx}. The \code{match_expt} matches
