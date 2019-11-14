@@ -5,17 +5,6 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
-  github_document:
-    toc: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  word_document:
-    toc: yes
-  md_document:
-    toc: yes
-    toc_depth: 4
-    variant: gfm
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -24,6 +13,17 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  github_document:
+    toc: yes
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: gfm
+  word_document:
+    toc: yes
 ---
 
 ---
@@ -164,7 +164,7 @@ img_export <- "images\\mascot\\mascot_export.png"
 knitr::include_graphics(c(img_export))
 ```
 
-The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To escape from the ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html).^[There are cases that the same peptide sequence being assigned to different proteins remain unambiguous. For example, peptide `MENGQSTAAK` can be found from either the middle region of protein `NP_510965` or the N-terminal of protein `NP_001129505`. In case of the additional information of peptide N-terminal acetylation, the sequence can only come from `NP_001129505` between the two candidate proteins. In addition to handling such exceptions, the nomenclature in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.] If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed for now when constructing peptide reports.  
+The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To escape from the ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html).^[There are cases that the same peptide sequence being assigned to different proteins remain unambiguous. For example, peptide `MENGQSTAAK` can be found from either the middle region of protein `NP_510965` or the N-terminal of protein `NP_001129505`. In case of the additional information of protein, not peptide, N-terminal acetylation, the sequence can only come from `NP_001129505` between the two candidate proteins. In addition to handling such exceptions, the nomenclature in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.] If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed for now when constructing peptide reports.  
 
 ```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_daemon <- "images\\mascot\\mascot_daemon.png"
@@ -473,7 +473,7 @@ img_partial_refit <- "images\\peptide\\histogram\\partial_refit.png"
 knitr::include_graphics(c(img_partial_refit))
 ```
 
-We then execute the following codes with argument `col_refit` being linked to the newly created column:  
+We may then execute the following codes with argument `col_refit` being linked to the newly created column:  
   
 ```{r normPep_partial, eval = FALSE}
 normPep(
@@ -594,8 +594,8 @@ We next process the PSM data from MaxQuant and perform peptide and protein norml
 normPSM(
   group_psm_by = pep_seq, 
   group_pep_by = gene, 
-  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-  				"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
   rptr_intco = 3000,					
   corrected_int = TRUE,
   rm_reverses = TRUE,
@@ -650,19 +650,19 @@ The procedures that have been applied to Mascot and MaxQuant examples are also s
 
 ```{r sm_psm, eval = FALSE}
 normPSM(
-	group_psm_by = pep_seq_mod, 
-	group_pep_by = gene,
-	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-						"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
-	rptr_intco = 3000,
-	rm_craps = TRUE,
-	rm_krts = FALSE,
-	rm_outliers = FALSE, 
-	annot_kinases = TRUE, 
-	plot_rptr_int = TRUE, 
-	plot_log2FC_cv = TRUE, 
-	
-	filter_peps = exprs(score >= 10), 
+  group_psm_by = pep_seq_mod, 
+  group_pep_by = gene,
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  rptr_intco = 3000,
+  rm_craps = TRUE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE, 
+  annot_kinases = TRUE, 
+  plot_rptr_int = TRUE, 
+  plot_log2FC_cv = TRUE, 
+  
+  filter_peps = exprs(score >= 10), 
 )
 ```
 
@@ -774,21 +774,21 @@ knitr::include_graphics(c(img_pepEucDist))
 ```
 
 ### 2.2 Correlation plots
-In this section, we visualize the batch effects through correlation plots. The `proteoQ` tool currently limits itself to a maximum of 44 samples for a correlation plot. In the document, we will perform correlation analysis against the `PNNL` data subset. By default, samples will be arranged diagnoally from upper left to bottom right by the row order of `expt_smry.xlsx::Select`. We have learned from the earlier `MDS` analysis that the batch effects are smaller than the differences between `W2` and `W16`. We may wish to put the `TMT1` and `TMT2` groups adjacient to each other for visualization of more nuance batch effects, followed by the comparison of WHIM subtypes. We can achieve this by supervising sample IDs at a customized order. In the `expt_smry.xlsx`, We have prepared an `Order` column where samples within the `JHU` subset were arranged in the descending order of `W2.TMT1`, `W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look for the `Order` column for sample arrangement:  
+In this section, we visualize the batch effects through correlation plots. The `proteoQ` tool currently limits itself to a maximum of 44 samples for a correlation plot. In the document, we will perform correlation analysis against the `PNNL` data subset. By default, samples will be arranged by the alphabetical order for entries under the column `expt_smry.xlsx::Select`. We have learned from the earlier `MDS` analysis that the batch effects are smaller than the differences between `W2` and `W16`. We may wish to put the `TMT1` and `TMT2` groups adjacient to each other for visualization of more nuance batch effects, followed by the comparison of WHIM subtypes. We can achieve this by supervising sample IDs at a customized order. In the `expt_smry.xlsx`, We have prepared an `Order` column where samples within the `JHU` subset were arranged in the descending order of `W2.TMT1`, `W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look for the `Order` column for sample arrangement:  
 
 ```{r correlation, eval = FALSE}
 # peptide logFC
 pepCorr_logFC(
-	col_select = PNNL,
-	col_order = Order, 
-	filename = PNNL_pep_logfc.png,
+  col_select = PNNL,
+  col_order = Order, 
+  filename = PNNL_pep_logfc.png,
 )
 
 # protein logFC
 prnCorr_logFC(
-	col_select = W2,
-	col_order = Group,
-	filename = PNNL_prn_logfc.png,
+  col_select = W2,
+  col_order = Group,
+  filename = PNNL_prn_logfc.png,
 )
 ```
 
@@ -807,20 +807,18 @@ The following shows an example of protein heat map:
 
 ```{r Protein heat maps, eval = FALSE}
 prnHM(
-	xmin = -1, 
-	xmax = 1, 
-	x_margin = 0.1, 
-	annot_cols = c("Group", "Color", "Alpha", "Shape"), 
-	annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
-	cluster_rows = TRUE, 
-	cutree_rows = 10, 
-	show_rownames = FALSE, 
-	show_colnames = TRUE, 
-	fontsize_row = 3, 
-	cellwidth = 14, 
-	width = 18, 
-	height = 12, 
-	filter_sp = exprs(species == "human"),
+  xmin = -1, 
+  xmax = 1, 
+  xmargin = 0.1, 
+  annot_cols = c("Group", "Color", "Alpha", "Shape"), 
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
+  cluster_rows = TRUE, 
+  cutree_rows = 10, 
+  show_rownames = FALSE, 
+  show_colnames = TRUE, 
+  fontsize_row = 3, 
+  cellwidth = 14, 
+  filter_sp = exprs(species == "human"),
 )
 ```
 
@@ -835,23 +833,21 @@ Row ordering of data is also implemented in the heat map utility.
 
 ```{r Kinase heat maps, eval = FALSE}
 prnHM(
-	xmin = -1, 
-	xmax = 1, 
-	x_margin = 0.1, 
-	annot_cols = c("Group", "Color", "Alpha", "Shape"), 
-	annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
-	cluster_rows = FALSE, 
-	annot_rows = c("kin_class"), 
-	show_rownames = TRUE, 
-	show_colnames = TRUE, 
-	fontsize_row = 2, 
-	cellheight = 2, 
-	cellwidth = 14, 
-	width = 16, 
-	height = 11, 
-	filter_kin = exprs(kin_attr == TRUE, species == "human"),
-	arrange_kin = exprs(kin_order, gene),
-	filename = "hukin_by_class.png", 
+  xmin = -1, 
+  xmax = 1, 
+  xmargin = 0.1, 
+  annot_cols = c("Group", "Color", "Alpha", "Shape"), 
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
+  cluster_rows = FALSE, 
+  annot_rows = c("kin_class"), 
+  show_rownames = TRUE, 
+  show_colnames = TRUE, 
+  fontsize_row = 2, 
+  cellheight = 2, 
+  cellwidth = 14, 
+  filter_kin = exprs(kin_attr == TRUE, species == "human"),
+  arrange_kin = exprs(kin_order, gene),
+  filename = "hukin_by_class.png", 
 )
 ```
 
@@ -863,14 +859,18 @@ knitr::include_graphics(c(img_kinheat))
 ```
 
 ### 2.4 Significance tests and volcano plot visualization
-In this section, we perform the significance analysis of protein data. The approach of contrast fit (Chambers, J. M. Linear models, 1992; Gordon Smyth et al., `limma`) is taken in `proteoQ`. We will first define the contrast groups for significance tests. For this purpose, I have devided the samples by their WHIM subtypes, laboratory locations and batch numbers. This ends up with entries of `W2.BI.TMT1`, `W2.BI.TMT2` etc. under the `expt_smry.xlsx::Term` column. The interactive environment between the Excel file and the `proteoQ` tool allows us to enter more columns of contrasts when needed. For instance, we might also be interested in a more course comparison of inter-laboratory differences without batch effects. The corresponding contrasts of `W2.BI`, `W2.BI` etc. can be found under a pre-made column, `Term_2`. Having these columns in hand, we next perform significance tests and data visualization for protein data:  
+In this section, we first perform the significance analysis of protein data. The approach of contrast fit (Chambers, J. M. Linear models, 1992; Gordon Smyth et al., `limma`) is taken in `proteoQ`. We will first define the contrast groups for significance tests. For this purpose, I have devided the samples by their WHIM subtypes, laboratory locations and batch numbers. This ends up with entries of `W2.BI.TMT1`, `W2.BI.TMT2` etc. under the `expt_smry.xlsx::Term` column. The interactive environment between the Excel file and the `proteoQ` tool allows us to enter more columns of contrasts when needed. For instance, we might also be interested in a more course comparison of inter-laboratory differences without batch effects. The corresponding contrasts of `W2.BI`, `W16.BI` etc. can be found under a pre-made column, `Term_2`. Having these columns in hand, we next perform significance tests and data visualization for protein data:  
 
 ```{r SigTest, eval = FALSE}
 # significance tests
 prnSig(
   impute_na = FALSE, 
-  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", "W2.JHU.TMT2-W2.JHU.TMT1", "W2.PNNL.TMT2-W2.PNNL.TMT1"], # batches
-  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # locations
+  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
+                  "W2.JHU.TMT2-W2.JHU.TMT1", 
+                  "W2.PNNL.TMT2-W2.PNNL.TMT1"], # batches
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"], # locations
 )
 
 # volcano plots
@@ -909,7 +909,7 @@ prnGSPA(
   impute_na = FALSE,
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-3,
+  gspval_cutoff = 5E-2,
   gset_nms = c("go_sets", "kegg_sets"),
 )
 ```
@@ -926,7 +926,7 @@ gspaMap(
   gset_nms = c("go_sets"),
   show_sig = p,
   xco = 1.2, # position of two vertical lines for FC
-  yco = 0.01, # position of a horizental line for pVal
+  yco = 0.05, # position of a horizental line for pVal
 )
 ```
 
@@ -939,58 +939,42 @@ knitr::include_graphics(c(img_volcplot_gspa))
 
 The names of gene sets will by default match those provided in `prnGSPA`. Despite in the above example, we chose to plot the results against gene sets in `GO`, not `KEGG`. More details can be accessed from the help document via `?gspaMap`.  
 
-In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `essmap_Protein_GSPA_Z_...csv` files.  
+In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `essmap_.*.csv` files under the `Protein\GSPA` folder.  
 
 ### 2.6 Gene set networks
-Gene sets can overlap with one another to varying degrees. We need to ask the same question here: to what extent the signficant sets found from `GSPA` are redundant in relative to any of the essential sets determined by set cover, i.e., what is the intersect in gene IDs between a redundant set and an essential set? For this reason, we have calculated the `fraction` of overlap between gene sets when calling `prnGSPA`. The results are stored in output files such as `Protein\GSPA\essmap_...csv`.  
+Gene sets can overlap with one another to varying degrees. We need to ask the same question here: to what extent the signficant sets found from `GSPA` are redundant in relative to any of the essential sets determined by set cover, i.e., what is the intersect in gene IDs between a redundant set and an essential set? For this reason, we have calculated the `fraction` of overlap between gene sets when calling `prnGSPA`. The results are also available in output files such as `Protein\GSPA\essmap_.*.csv`.  
 
-In this section, we first perform simple heat map visualization between all gene sets and essential groups.  
+In this section, we first perform simple heat map visualization between all significant gene sets in columns and essential groups in rows.  
 
 ```{r prnPSPAHM_all, eval = FALSE}
 prnGSPAHM(
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
-  
-  fontsize = 16,
-  fontsize_row = 20,
-  fontsize_col = 20,
-  fontsize_number = 8,
-  border_color = "grey60",
-  cellwidth = 24,
-  cellheight = 24,
   filename = "all_sets.png", 
 )
 ```
 
-The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs between two gene sets. The smaller the distance, the greater the overlap is between two gene sets. For convenience, a `distance` column is also made available in the `essmap_...csv` file.  
+The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs between two gene sets. The smaller the distance, the greater the overlap is between two gene sets. For convenience, a `distance` column is also made available in the `essmap_.*.csv` file.  
 
-```{r prnGSPAHM_all, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Heat map visualization of the distance between all and esstial gene sets", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r prnGSPAHM_all, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_gspahm_all <- "images\\protein\\gspa\\all_sets.png"
 knitr::include_graphics(c(img_gspahm_all))
 ```
 
-As expected, we saw zero overlap between human and mouse gene sets. Within each organism, low-redundancy `red` cells overwhelm the heat map and might have impeded us from capturing high-redudancy terms in `blue`. We can, however, readily de-emphasize the `red` cells by data filtration. In the example shown below, we chose to keep more redundant terms at distances shorter than or equal to 0.2:  
+As expected, we saw zero overlap between human and mouse gene sets. Within each organism, low-redundancy `red` cells overwhelm the heat map and might have impeded us from capturing high-redudancy terms in `blue`. We can, however, readily de-emphasize the `red` cells by data filtration. In the example shown below, we chose to keep more redundant terms at distances shorter than or equal to 0.33:  
 
 ```{r prnPSPAHM_filtered, eval = FALSE}
 prnGSPAHM(
-  filter_by = exprs(distance <= .2),
+  filter_by = exprs(distance <= .33),
   filter_sp = exprs(start_with_str("hs", term)), 
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   annot_rows = "ess_size", 
-
-  fontsize = 16,
-  fontsize_row = 20,
-  fontsize_col = 20,
-  fontsize_number = 8,
-  border_color = "grey60",
-  cellwidth = 24,
-  cellheight = 24,
   filename = show_human_redundancy.png,
 )
 ```
 
-Note that there is a second `vararg` expression, `exprs(start_with_str("hs", term))`. In this expression, we have used a pseudoname approach to subset terms starting with character string `hs` under the column `term` in `GSPA` result files, which corresponds to human gene sets for both GO and KEGG.^[This will work as GO terms of human start with `hs_` and KEGG terms with `hsa`.] More examples of the pseudoname approach can be found from [Lab 3.2](### 3.2 Data subsets) in this document. The `prnGSPAHM` function is again a wrapper of `pheatmap` and passes additional arguments for graphic controls. More examples can be found via `?prnGSPA`.  
+Note that there is a second `vararg` expression, `exprs(start_with_str("hs", term))`. In this expression, we have used a pseudoname approach to subset terms starting with character string `hs` under the column `term` in `GSPA` result files, which corresponds to human gene sets for both GO and KEGG.^[This will work as GO terms of human start with `hs_` and KEGG terms with `hsa`.] More examples of the pseudoname approach can be found from [Lab 3.2](### 3.2 Data subsets) in this document. More examples of the utility can be found via `?prnGSPAHM`.  
 
 ```{r prnGSPAHM_hs_d20, echo=FALSE, fig.align='center', fig.cap="**Figure 7C.** Heat map visualization of human gene sets at a distance cut-off 0.2", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_gspahm_hs_d20 <- "images\\protein\\gspa\\show_human_redundancy.png"
@@ -1007,7 +991,7 @@ knitr::include_graphics(c(img_gspahm_connect, img_gspahm_redund))
 
 
 ### 2.7 Trend Analysis
-The following performs the trend analysis against protein expressions. More information can be found from [`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf) and `?anal_prnTrend`. Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.  
+The following performs the trend analysis against protein expressions. More information can be found from [`cmeans`](https://www.rdocumentation.org/packages/e1071/versions/1.7-2/topics/cmeans),  [`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf) and `?anal_prnTrend`. Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.  
 
 ```{r Protein trends, eval = FALSE}
 # soft clustering of protein expression data
@@ -1140,7 +1124,7 @@ normPSM(
   group_psm_by = pep_seq,
   group_pep_by = gene, 
   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-  				"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
   rptr_intco = 3000,
   rm_craps = TRUE,
   rm_krts = FALSE,
@@ -1200,7 +1184,7 @@ normPSM(
   group_psm_by = pep_seq,
   group_pep_by = gene, 
   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-  				"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
   rptr_intco = 3000,
   rm_craps = TRUE,
   rm_krts = FALSE,
@@ -1261,7 +1245,7 @@ purgePep(
 )
 ```
 
-Notice that the CV distributions of `WHIM2` are much narrower than those of `WHIM16`. This seems to make intuitive sense given that the `log2FC` profiles of WHIM2 are much narrows as well (**Figure S1A**). We might adjust the CV in relative to the widths of `log2FC` profiles with `purgePep(adjSD = TRUE, ...)`. This could help the visualization but probably not solves directly our problem of finding low-quality data entries. One resort may be trimming data points by percentiles:  
+Notice that the CV distributions of `WHIM2` are much narrower than those of `WHIM16`. This makes intuitive sense given that the `log2FC` profiles of WHIM2 are much narrows as well (**Figure S1A**). We might adjust the CV in relative to the widths of `log2FC` profiles with `purgePep(adjSD = TRUE, ...)`. This could help the visualization but probably not solves directly our problem of finding low-quality data entries. One resort may be trimming data points by percentiles:  
 
 ```{r W2 reference vararg CV, eval = FALSE}
 purgePep(
@@ -1284,7 +1268,7 @@ knitr::include_graphics(c(img_peppurge_bf_1, img_peppurge_af_1))
 
 
 ### 3.2 Data subsets
-The following functions are typically coupled to the varargs of `filter_` or `slice_` for the subsetting of data rows based on their names. More information can be found from the help document via `?contain_str`.^[I didn't cut the mustard by coming up with good names. Please drop me a note if you think there are better ways to name them.]  
+In this lab, we will first apply pseudoname approaches to subset data. The availble pesudonames include  
 
 
 * `contain_str`: contain a literal string; "PEPTIDES" contain_str "TIDE".  
@@ -1296,9 +1280,10 @@ The following functions are typically coupled to the varargs of `filter_` or `sl
 * `start_with_chars_in`: start with one of the characters in a literal string. "PEPTIDES" start_with_chars_in "XP".  
 * `ends_with_chars_in`: end with one of the characters in a literal string. "PEPTIDES" ends_with_chars_in "XS".  
 
-In this lab, we will apply `contain_chars_in` to subset peptide data using the CPTAC examples. In addition to the global proteomes, the CPTAC publication contains phosphopeptide data from the same samples. This allows us to explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. 
 
-We first performed a search against the combined data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset:  
+These functions are typically coupled to the varargs of `filter_` or `slice_` for the subsetting of data rows based on their names. More information can be found from the help document via `?contain_str`. In the following example, we will apply `contain_chars_in` to subset peptide data.  
+
+The CPTAC publication contains both global and phosphopeptide data from the same samples. This allows us to explore the stoichiometry of phosphopeptide subsets in relative to the combined data sets of `global + phospho` peptides. We first performed a search against the combined data. The search results are available in `proteoQDA`. We next copy the result files over, followed by the analysis and visualization of the `BI` subset:  
 
 ```{r phosphopeptide subsets reference, eval = FALSE}
 # directory setup
@@ -1316,11 +1301,12 @@ library(proteoQ)
 load_expts(temp_phospho_dir, expt_smry.xlsx)
 
 # PSM normalization
+# note that `group_psm_by = pep_seq_mod` 
 normPSM(
   group_psm_by = pep_seq_mod,
   group_pep_by = gene, 
   fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-  				"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
   rptr_intco = 3000,
   rm_craps = TRUE,
   rm_krts = FALSE,
@@ -1365,7 +1351,7 @@ pepHist(
 )
 ```
 
-Note that we have applied the new grammer of `contain_chars_in("sty", pep_seq_mod)` to extract character strings containing letters 's', 't' or 'y' under the `pep_seq_mod` column in `Peptide.txt`. This corresponds to the subsettting of peptides with phosphorylation(s) in serine, thereonine or tyrosine. 
+Note that we have applied the new grammer of `contain_chars_in("sty", pep_seq_mod)` to extract character strings containing lower-case letters 's', 't' or 'y' under the `pep_seq_mod` column in `Peptide.txt`. This corresponds to the subsettting of peptides with phosphorylation(s) in serine, thereonine or tyrosine.^[Details on the notation of peptide modifications can be found via `?normPSM`.]  
 
 ```{r phosphopeptide_subset_hist, echo=FALSE, fig.align='left', fig.cap="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_pep_phospho_scaley_no <- "images\\peptide\\histogram\\bi_phospho_scaley_no.png"
@@ -1375,14 +1361,14 @@ knitr::include_graphics(c(img_pep_phospho_scaley_no, img_pep_phospho_scaley_yes)
 
 Ideally, the profiles of the `log2FC` between the `phospho` subsets and the overall data would either align at the maximum density or perhaps offset by similar distance among replicated samples. In this example, the alginment at maximum density seems to be the case. The observation raises the possibility of measuring the stoichiometry of phosphoproteomes in relative to global data across sample types or conditions.  
 
-We can use the same approach for more data subsetting, for example, extracting N-terminal peptides with acetylation:  
+In addition to pseudonames, convenience columns such as `pep_mod_protntac` and `pep_mod_sty` are made available in `Peptide.txt`, to indicate the property of peptide modifications of protein N-terminal acetylation and phosphorylation, respectively. We can use alternatively the column keys to subset data, for example, extracting peptides from N-terminal acetylated proteins:  
 
 ```{r ace_peptide subsets reference, eval = FALSE}
 # (c) N-term acetylation subsets without y-scaling
 pepHist(
   col_select = BI, 
   scale_log2r = TRUE, 
-  filter_peps = exprs(contain_chars_in("_", pep_seq_mod)), 
+  filter_peps = exprs(pep_mod_protntac == TRUE), 
   scale_y = FALSE, 
   ncol = 4, 
   filename = "BI_NAc_scaley_no.png",
@@ -1392,14 +1378,12 @@ pepHist(
 pepHist(
   col_select = BI, 
   scale_log2r = TRUE, 
-  filter_peps = exprs(contain_chars_in("_", pep_seq_mod)), 
+  filter_peps = exprs(pep_mod_protntac), 
   scale_y = TRUE, 
   ncol = 4, 
   filename = "BI_NAc_scaley_yes.png",
 )
 ```
-
-Note that we do not use `start_with_str` or `start_with_chars_in`. One of the reasons is that the one-letter representation of peptide sequences contain the flanking residues on the N-terminals.  
 
 ```{r NAc_peptide_subset_hist, echo=FALSE, fig.align='left', fig.cap="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_nac_scaley_no <- "images\\peptide\\histogram\\bi_nac_scaley_no.png"
@@ -1407,22 +1391,37 @@ img_bi_nac_scaley_yes <- "images\\peptide\\histogram\\bi_nac_scaley_yes.png"
 knitr::include_graphics(c(img_nac_scaley_no, img_bi_nac_scaley_yes))
 ```
 
-In general, the pseudoname approach can be coupled to utilities in `proteoQ` that accept the varargs of `filter_` and `slice_`. In the following example, we assume that peptide sequences are under the column `pep_seq_mod` in `Peptide.txt` with variably modified residues in lower case. we can then exclude oxidized methione or deamidated asparagine from uses in data normalization:  
+Pseudonames and convience columns can be used interexchangeably for simple conditions. In the following example, we assume that peptide sequences are under the column `pep_seq_mod` in `Peptide.txt` with variably modified residues in lower case. we can exclude oxidized methione or deamidated asparagine from uses in data normalization:  
 
 ```{r Protein_subnorm_pseudonames, eval = FALSE}
 normPrn(
-	method_pep_prn = median, 
-	method_align = MGKernel, 
-	range_log2r = c(5, 95), 
-	range_int = c(5, 95), 
-	n_comp = 2, 
-	seed = 749662, 
-	maxit = 200, 
-	epsilon = 1e-05, 
-	slice_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
+  method_pep_prn = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 2, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  slice_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
 )
 ```
 
+or use alternatively the convience columns, `pep_mod_m` and `pep_mod_n`, for the same purpose:  
+
+```{r Protein_subnorm_pseudonames_2, eval = FALSE}
+normPrn(
+  method_pep_prn = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 2, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  slice_by_mn = exprs(pep_mod_m == FALSE, pep_mod_n == FALSE),
+)
+```
 
 ### 3.3 Random effects
 Models that incorporate both fixed- and random-effects terms in a linear predictor expression are often termed mixed effects models.  

@@ -51,7 +51,7 @@ normPSM(
 )
 
 # optional: purge of PSM groups under the same peptide IDs
-# purgePSM(max_cv = 0.5, min_n = 2)
+purgePSM(pt_cv = 0.5)
 
 # peptide tables
 normPep(
@@ -63,11 +63,10 @@ normPep(
 	seed = 749662, 
 	maxit = 200, 
 	epsilon = 1e-05, 
-	# filter_peps = exprs(pep_n_psm >= 2), 
 )
 
 # optional: purge of peptide groups under the same protein IDs
-# purgePep(max_cv = .5, min_n = 2)
+purgePep(pt_cv = .5)
 
 # peptide histograms with logFC scaling
 pepHist(
@@ -96,46 +95,47 @@ pepHist(
 pepHist(
  scale_log2r = FALSE, 
  col_select = BI,
- filename = Hist_BI_N.png, 
+ filename = hist_bi_n.png, 
 )
 
 # peptide histograms of `BI` subset with scaling
 pepHist(
  scale_log2r = TRUE, 
  col_select = BI,
- filename = Hist_BI_Z.png, 
+ filename = hist_bi_z.png, 
 )
 
-		# renormalization of peptide data for selected samples
-		normPep(
-			method_psm_pep = median, 
-			method_align = MGKernel, 
-			range_log2r = c(5, 95), 
-			range_int = c(5, 95), 
-			n_comp = 3, 
-			seed = 749662, 
-			maxit = 200, 
-			epsilon = 1e-05, 
-			col_refit = Select_sub,
-		)
+# renormalization of peptide data for selected samples under `Select_sub`
+normPep(
+	method_psm_pep = median, 
+	method_align = MGKernel, 
+	range_log2r = c(5, 95), 
+	range_int = c(5, 95), 
+	n_comp = 3, 
+	seed = 749662, 
+	maxit = 200, 
+	epsilon = 1e-05, 
+	col_refit = Select_sub,
+)
 
-		# renormalization of peptide data subset for selected samples
-		normPep(
-			method_psm_pep = median, 
-			method_align = MGKernel, 
-			range_log2r = c(5, 95), 
-			range_int = c(5, 95), 
-			n_comp = 3, 
-			seed = 749662, 
-			maxit = 200, 
-			epsilon = 1e-05, 
-			
-			# refit samples under column Select_sub in expt_smry.xlsx
-			col_refit = Select_sub,
-			
-			# partial data from the selected sample(s) for use in normalization 
-			slice_by = exprs(prot_n_psm >= 10, pep_n_psm >= 3),
-		)
+## 
+# renormalization of peptide data subset for selected samples
+normPep(
+	method_psm_pep = median, 
+	method_align = MGKernel, 
+	range_log2r = c(5, 95), 
+	range_int = c(5, 95), 
+	n_comp = 3, 
+	seed = 749662, 
+	maxit = 200, 
+	epsilon = 1e-05, 
+	
+	# refit samples under column Select_sub in expt_smry.xlsx
+	col_refit = Select_sub,
+	
+	# partial data from the selected sample(s) for use in normalization 
+	slice_by = exprs(prot_n_psm >= 10, pep_n_psm >= 3),
+)
 
 # protein tables
 normPrn(

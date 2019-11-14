@@ -60,7 +60,31 @@ normPSM(
 )
 
 # optional: purge of PSM groups under the same peptide IDs
-purgePSM(max_cv = 0.5, min_n = 2)
+purgePSM(pt_cv = 0.95)
+
+## DO NOT RUN
+# peptide sequences with different side-chain modifications will be treated as different species
+dontrun <- TRUE
+if (!dontrun) {
+	normPSM(
+		group_psm_by = pep_seq_mod, 
+		group_pep_by = gene, 
+		fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+						"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+		rptr_intco = 3000,					
+		corrected_int = TRUE,
+		rm_reverses = TRUE,
+		rm_craps = TRUE,
+		rm_krts = FALSE,
+		rm_outliers = FALSE, 
+		annot_kinases = TRUE,	
+		plot_rptr_int = TRUE, 
+		plot_log2FC_cv = TRUE, 
+		
+		filter_psms_by = exprs(PEP <= 0.1), 
+	)
+}
+## END of DO NOT RUN
 
 # peptide tables
 normPep(
@@ -72,11 +96,10 @@ normPep(
 	seed = 749662, 
 	maxit = 200, 
 	epsilon = 1e-05, 
-	# filter_peps_by = exprs(pep_n_psm >= 2, species == "human"),
 )
 
 # optional: purge of peptide groups under the same protein IDs
-purgePep(max_cv = .5, min_n = 2)
+purgePep(pt_cv = 0.95)
 
 # peptide histograms with logFC scaling
 pepHist(
@@ -100,18 +123,41 @@ pepHist(
 	filename = "pepHist_npsm10.png", 
 )
 
+## DO NOT RUN
+# renormalization of peptide data for selected samples under `Select_sub`
+dontrun <- TRUE
+if (!dontrun) {
+	normPep(
+		method_psm_pep = median, 
+		method_align = MGKernel, 
+		range_log2r = c(5, 95), 
+		range_int = c(5, 95), 
+		n_comp = 3, 
+		seed = 749662, 
+		maxit = 200, 
+		epsilon = 1e-05, 
+		col_refit = Select_sub,
+	)
+
+	# examplary renormalization based on partial data and for selected samples
+	normPep(
+		method_psm_pep = median, 
+		method_align = MGKernel, 
+		range_log2r = c(5, 95), 
+		range_int = c(5, 95), 
+		n_comp = 3, 
+		seed = 749662, 
+		maxit = 200, 
+		epsilon = 1e-05, 
+		
+		col_refit = Select_sub,
+		slice_by = exprs(prot_n_psm >= 10, pep_n_psm >= 3),
+	)
+}
+## END of DO NOT RUN
+
+
 # renormalization of peptide data for selected samples
-normPep(
-	method_psm_pep = median, 
-	method_align = MGKernel, 
-	range_log2r = c(5, 95), 
-	range_int = c(5, 95), 
-	n_comp = 3, 
-	seed = 749662, 
-	maxit = 200, 
-	epsilon = 1e-05, 
-	col_refit = Select_sub,
-)
 
 # protein tables
 normPrn(
@@ -282,7 +328,7 @@ prnCorr_logFC(
 prnHM(
 	xmin = -1, 
 	xmax = 1, 
-	x_margin = 0.1, 
+	xmargin = 0.1, 
 	annot_cols = c("Group", "Color", "Alpha", "Shape"), 
 	annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
 	cluster_rows = TRUE, 
@@ -291,8 +337,6 @@ prnHM(
 	show_colnames = TRUE, 
 	fontsize_row = 3, 
 	cellwidth = 14, 
-	width = 18, 
-	height = 12, 
 	filter_sp = exprs(species == "human"), 
 )
 
@@ -300,7 +344,7 @@ prnHM(
 prnHM(
 	xmin = -1, 
 	xmax = 1, 
-	x_margin = 0.1, 
+	xmargin = 0.1, 
 	annot_cols = c("Group", "Color", "Alpha", "Shape"), 
 	annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
 	cluster_rows = FALSE, 
@@ -311,8 +355,7 @@ prnHM(
 	fontsize_row = 2, 
 	cellheight = 2, 
 	cellwidth = 14, 
-	width = 22, 
-	height = 22, 
+ 
 	filter_kin = exprs(kin_attr),
 	arrange_kin = exprs(kin_order, gene),
 	filename = "kin_by_class.png", 
@@ -398,12 +441,51 @@ prnGSPA(
   gset_nms = c("go_sets", "kegg_sets"), 
 )
 
+## DO NOT RUN
+# higer cut-off in gene set signficance and protein tables with data pre-filtration
+dontrun <- TRUE
+if (!dontrun) {
+	prnGSPA(
+		impute_na = FALSE,
+		pval_cutoff = 5E-2,
+		logFC_cutoff = log2(1.2),
+		gspval_cutoff = 5E-3,
+		gset_nms = c("go_sets", "kegg_sets"),
+
+		filter_by_npep = exprs(prot_n_pep >= 2),
+	)
+}
+## END of DO NOT RUN
+
 # GSPA under volcano plots
 gspaMap(
 	show_labels = TRUE, 
 	pval_cutoff = 5E-3, 
+	logFC_cutoff = log2(1.2),
 	show_sig = pVal, 
 	yco = 0.05, 
+	
+	# only proteins with two or more peptides will be visualized
+	filter_by_npep = exprs(prot_n_pep >= 2),
+)
+
+
+# protein GSPA distance heat map and network for human subset
+prnGSPAHM(
+  filter_sp = exprs(start_with_str("hs", term)), 
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  annot_rows = "ess_size", 
+  filename = show_connectivity_at_large_dist.png,
+)
+
+prnGSPAHM(
+  filter_by = exprs(distance <= .33),
+  filter_sp = exprs(start_with_str("hs", term)), 
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  annot_rows = "ess_size", 
+  filename = show_human_redundancy.png,
 )
 
 # STRING database

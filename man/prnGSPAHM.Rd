@@ -80,36 +80,20 @@ prnGSPA(
 # `ess_idx` is a column key in `essmap_.*.csv`
 # `ess_size` is a column key in metadata file `essmeta_.*.csv`
 prnGSPAHM(
-  filter_by = exprs(distance <= .2),
+  filter_by = exprs(distance <= .6),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   annot_rows = "ess_size",
-
-  fontsize = 16,
-  fontsize_row = 20,
-  fontsize_col = 20,
-  fontsize_number = 8,
-  border_color = "grey60",
-  cellwidth = 24,
-  cellheight = 24,
-  filename = show_redundancy_at_small_dist.png,
+  filename = show_some_redundancy.png,
 )
 
 # human terms only
 prnGSPAHM(
-  filter_num = exprs(distance <= .8),
+  filter_num = exprs(distance <= .95),
   filter_sp = exprs(start_with_str("hs", term)),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
-
-  fontsize = 16,
-  fontsize_row = 20,
-  fontsize_col = 20,
-  fontsize_number = 8,
-  border_color = "grey60",
-  cellwidth = 24,
-  cellheight = 24,
-  filename = show_connectivity_at_large_dist.png,
+  filename = show_more_connectivity.png,
 )
 
 # custom color palette
@@ -117,14 +101,6 @@ prnGSPAHM(
   annot_cols = c("ess_idx", "ess_size"),
   annot_colnames = c("Eset index", "Size"),
   filter_by = exprs(ess_size >= 3, distance <= .80),
-
-  fontsize = 16,
-  fontsize_row = 20,
-  fontsize_col = 20,
-  fontsize_number = 8,
-  border_color = "grey60",
-  cellwidth = 24,
-  cellheight = 24,
   color = colorRampPalette(c("blue", "white", "red"))(100),
   filename = "custom_colors.png"
 )
