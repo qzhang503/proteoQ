@@ -4,8 +4,8 @@
 \alias{fml_gspa}
 \title{A helper function for GSPA}
 \usage{
-fml_gspa(df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff,
-  gspval_cutoff, min_size, max_size, min_greedy_size, filepath, filename,
+fml_gspa(formula, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size,
+  max_size, min_greedy_size, df, col_ind, id, gsets, filepath, filename,
   ...)
 }
 \description{

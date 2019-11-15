@@ -63,9 +63,9 @@ normPSM(
 purgePSM(pt_cv = 0.95)
 
 ## DO NOT RUN
-# peptide sequences with different side-chain modifications will be treated as different species
 dontrun <- TRUE
 if (!dontrun) {
+	# peptide sequences with different side-chain modifications as different species
 	normPSM(
 		group_psm_by = pep_seq_mod, 
 		group_pep_by = gene, 
@@ -124,9 +124,9 @@ pepHist(
 )
 
 ## DO NOT RUN
-# renormalization of peptide data for selected samples under `Select_sub`
 dontrun <- TRUE
 if (!dontrun) {
+	# renormalization of peptide data for selected samples under `Select_sub`
 	normPep(
 		method_psm_pep = median, 
 		method_align = MGKernel, 
@@ -156,9 +156,6 @@ if (!dontrun) {
 }
 ## END of DO NOT RUN
 
-
-# renormalization of peptide data for selected samples
-
 # protein tables
 normPrn(
 	use_unique_pep = TRUE, 
@@ -173,7 +170,7 @@ normPrn(
 	filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
-# protein histograms with scaling
+# protein histograms with logFC scaling
 prnHist(
 	scale_log2r = TRUE,
 	xmin = -2,
@@ -191,7 +188,7 @@ prnHist(
 	filename = "prnHist_npsm20.png", 	
 )
 
-# global setting in scaling normalization
+## PAUSE: think TWICE on the chioce of scaling normalization
 scale_log2r = TRUE
 
 
@@ -303,6 +300,7 @@ prnEucDist(
 )
 
 # peptide log2FC correlation of PNNL subset with sample-order supervision
+# create your own `PNNL` column in `expt_smry.xlsx` if not yet available
 pepCorr_logFC(
 	col_select = PNNL,
 	col_order = Order, 
@@ -310,14 +308,13 @@ pepCorr_logFC(
 )
 
 # peptide log10-intensity correlation of PNNL subset with supervision
-# create your own `PNNL` column in `expt_smry.xlsx` if not yet available
 pepCorr_logInt(
 	col_select = PNNL,
 	col_order = Order,
 	filename = PNNL_ordint.png,
 )
 
-# protein log2FC correlation of WHIM2 subset with supervision
+# protein log2FC correlation of PNNL subset with supervision
 prnCorr_logFC(
 	col_select = PNNL,
 	col_order = Group,
@@ -349,7 +346,7 @@ prnHM(
 	annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
 	cluster_rows = FALSE, 
 	annot_rows = c("kin_class"), 
-	# cutree_rows = 10, 
+	# cutree_rows = 10, # no cut-trees
 	show_rownames = TRUE, 
 	show_colnames = TRUE, 
 	fontsize_row = 2, 
@@ -381,7 +378,7 @@ pepSig(
 # peptide volcano plots
 pepVol()
 
-# protein trend analysis with filtration and sample-order supervision
+# c-means clustering of protein logFC with filtration and sample-order supervision
 anal_prnTrend(
   col_order = Order,
   n_clust = c(5:8), 
@@ -435,57 +432,73 @@ plot_metaNMF(
 )
 
 # protein GSPA
+# individualized parameters and with data pre-filtration
 prnGSPA(
-	impute_na = FALSE, 
-	pval_cutoff = 5E-2, 
-  gset_nms = c("go_sets", "kegg_sets"), 
+	fml_nms = c("W16_vs_W2_fine", "W16_vs_W2_course"), # formulae used in `prnSig()`
+	pval_cutoff = c(5E-2, 5E-4), # respective protein pVal cut-offs for each formula
+	logFC_cutoff = log2(1.2), # the same protein log2FC cut-off for all formulae
+	gspval_cutoff = c(5E-2, 1E-6), # gene-set pVal cut-offs 
+	max_size = c(Inf, 120), # maxixmum sizes of gene sets for consideration
+	
+	gset_nms = c("go_sets", "kegg_sets"), # the gene sets 
+	filter_by_npep = exprs(prot_n_pep >= 2), # only consider proteins with two or more identifying peptides
+	impute_na = FALSE,
+)
+
+
+gspaMap(
+	fml_nms = c("W16_vs_W2_fine", "W16_vs_W2_course"),
+	pval_cutoff = c(5E-4, 5E-5),
+	logFC_cutoff = log2(1.2),
+	
+	show_sig = pVal,
+	show_labels = TRUE,
+	yco = 0.05,
+	filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 ## DO NOT RUN
-# higer cut-off in gene set signficance and protein tables with data pre-filtration
 dontrun <- TRUE
 if (!dontrun) {
+	# may be too inclusive for sample groups that are vastly different
 	prnGSPA(
-		impute_na = FALSE,
-		pval_cutoff = 5E-2,
-		logFC_cutoff = log2(1.2),
-		gspval_cutoff = 5E-3,
+		pval_cutoff = 5E-2, # protein pVal threshold
+		logFC_cutoff = log2(1.2), # protein log2FC threshold
+		gspval_cutoff = 5E-3, # gene-set threshold
 		gset_nms = c("go_sets", "kegg_sets"),
+		impute_na = FALSE,
+	)
 
+	# GSPA under volcano plots
+	gspaMap(
+		show_labels = TRUE, 
+		pval_cutoff = 5E-5, # gene set threshold
+		logFC_cutoff = log2(1.2), # gene set log2FC threshold
+		show_sig = pVal, 
+		yco = 0.05, 
+		
+		# only proteins with two or more identifying peptides will be visualized
 		filter_by_npep = exprs(prot_n_pep >= 2),
 	)
 }
 ## END of DO NOT RUN
 
-# GSPA under volcano plots
-gspaMap(
-	show_labels = TRUE, 
-	pval_cutoff = 5E-3, 
-	logFC_cutoff = log2(1.2),
-	show_sig = pVal, 
-	yco = 0.05, 
-	
-	# only proteins with two or more peptides will be visualized
-	filter_by_npep = exprs(prot_n_pep >= 2),
-)
-
-
 # protein GSPA distance heat map and network for human subset
 prnGSPAHM(
-  filter_sp = exprs(start_with_str("hs", term)), 
-  annot_cols = "ess_idx",
-  annot_colnames = "Eset index",
-  annot_rows = "ess_size", 
-  filename = show_connectivity_at_large_dist.png,
+	filter_sp = exprs(start_with_str("hs", term)), 
+	annot_cols = "ess_idx",
+	annot_colnames = "Eset index",
+	annot_rows = "ess_size", 
+	filename = show_connectivity_at_large_dist.png,
 )
 
 prnGSPAHM(
-  filter_by = exprs(distance <= .33),
-  filter_sp = exprs(start_with_str("hs", term)), 
-  annot_cols = "ess_idx",
-  annot_colnames = "Eset index",
-  annot_rows = "ess_size", 
-  filename = show_human_redundancy.png,
+	filter_by = exprs(distance <= .33),
+	filter_sp = exprs(start_with_str("hs", term)), 
+	annot_cols = "ess_idx",
+	annot_colnames = "Eset index",
+	annot_rows = "ess_size", 
+	filename = show_human_redundancy.png,
 )
 
 # STRING database

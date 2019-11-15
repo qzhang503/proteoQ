@@ -11,7 +11,7 @@ proteoVolcano(id = "gene", anal_type = "Volcano", df = NULL,
   scale_log2r = TRUE, filepath = NULL, filename = NULL,
   impute_na = TRUE, adjP = FALSE, show_labels = TRUE,
   pval_cutoff = 0.05, logFC_cutoff = log2(1.2), show_sig = "none",
-  gset_nms = c("go_sets", "kegg_sets"), ...)
+  gset_nms = c("go_sets", "kegg_sets"), fml_nms = NULL, ...)
 
 pepVol(...)
 
@@ -53,23 +53,29 @@ will be used.}
 
 \item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.}
 
-\item{pval_cutoff}{Numeric. \code{Gene sets} with enrichment \code{pVals} less
-significant than the threshold will be excluded for volcano plot
-visualization. The argument is not used in \code{prnVol} and \code{pepVol}.}
+\item{pval_cutoff}{Numeric value or vector. \code{Gene sets} with enrichment
+\code{pVals} less significant than the threshold will be excluded for
+volcano plot visualization. The argument is not used in \code{prnVol} and
+\code{pepVol}.}
 
-\item{logFC_cutoff}{Numeric. \code{Gene sets} with absolute enrichment
-\code{log2FC} less than the threshold will be excluded for volcano plot
-visualization. The cut-off is in a logarithmic base of 2, not in a linear
-scale. The argument is not used in \code{prnVol} and \code{pepVol}.}
+\item{logFC_cutoff}{Numeric value or vector. \code{Gene sets} with absolute
+enrichment \code{log2FC} less than the threshold will be excluded for
+volcano plot visualization. The cut-off is in a logarithmic base of 2, not
+in a linear scale. The argument is not used in \code{prnVol} and
+\code{pepVol}.}
 
 \item{show_sig}{Character string indicating the type of significance values to
 be shown on volcano plots. The default is \code{"none"}. Additional choices
 are from \code{c("pVal", "qVal")} where \code{pVal} or \code{qVal} will be
 shown, respectively, in the facet grid of plots.}
 
-\item{gset_nms}{Character vector containing the name(s) of gene sets for
-enrichment analysis. The possible values are in \code{c("go_sets",
-"kegg_sets")}.}
+\item{gset_nms}{Character string or vector containing the name(s) of gene sets
+for enrichment analysis. The possible values are in \code{c("go_sets",
+"kegg_sets")}. Note that the currently supported species are human, mouse
+and rat.}
+
+\item{fml_nms}{Character string or vector; the formula name(s) matched to
+those in \code{\link{prnSig}}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
@@ -96,6 +102,7 @@ By default, the value of \code{gset_nms} in \code{gspaMap(...)} will match to
 the one in the latest call to \code{\link{prnGSPA}}.
 }
 \examples{
+\dontrun{
 # all
 prnVol(
   show_labels = TRUE,
@@ -108,25 +115,35 @@ prnVol(
   show_labels = TRUE,
   xco = 1.2,
   yco = 0.01,
-
   filter_by_kin = exprs(kin_attr, prot_n_pep >= 2),
   filename = "prnvol_kin_npep2.png"
 )
 
+
 # protein subgroups by gene sets
+# only proteins with two or more identifying peptides will be visualized
 gspaMap(
-  show_labels = TRUE,
   pval_cutoff = 5E-3,
   logFC_cutoff = log2(1.2),
   gset_nms = c("go_sets"),
   show_sig = p,
+  show_labels = TRUE,
   yco = 0.01,
-
   filter_by_npep = exprs(prot_n_pep >= 2),
-  # `filename`(s) will be automated,
+  # `filename`(s) will be automated, i.e., by gene-set names
 )
 
-\dontrun{
+# customized thresholds for the corresponding formulae in `prnSig()`
+gspaMap(
+  fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
+  pval_cutoff = c(5E-2, 5E-2, 1E-10),
+  logFC_cutoff = log2(1.2),
+  
+  show_sig = pVal,
+  show_labels = TRUE,
+  yco = 0.05,
+  filter_by_npep = exprs(prot_n_pep >= 2),
+)
 }
 
 }

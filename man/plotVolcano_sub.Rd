@@ -5,8 +5,8 @@
 \title{Plot volcanos}
 \usage{
 plotVolcano_sub(df = NULL, id = "gene", filepath = NULL,
-  filename = NULL, adjP = FALSE, show_labels = TRUE, anal_type,
-  gset_nms = "go_sets")
+  filename = NULL, adjP = FALSE, show_labels = TRUE,
+  anal_type = "Volcano", gset_nms = "go_sets", ...)
 }
 \description{
 Plot volcanos

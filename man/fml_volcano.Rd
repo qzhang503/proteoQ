@@ -4,9 +4,8 @@
 \alias{fml_volcano}
 \title{Formula specific volcano plots}
 \usage{
-fml_volcano(df, formula, col_ind, id, filepath, filename, adjP,
-  show_labels, anal_type, pval_cutoff, logFC_cutoff, show_sig, gset_nms,
-  ...)
+fml_volcano(formula, pval_cutoff, logFC_cutoff, df, col_ind, id, filepath,
+  filename, adjP, show_labels, anal_type, show_sig, gset_nms, ...)
 }
 \description{
 Formula specific volcano plots
