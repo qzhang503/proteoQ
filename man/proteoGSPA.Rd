@@ -8,8 +8,9 @@
 proteoGSPA(id = gene, scale_log2r = TRUE, df = NULL,
   filepath = NULL, filename = NULL, impute_na = TRUE,
   complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.01,
-  min_size = 10, task = "anal", ...)
+  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.05,
+  min_size = 10, max_size = Inf, min_greedy_size = 1,
+  fml_nms = NULL, task = "anal", ...)
 
 prnGSPA(...)
 }
@@ -37,28 +38,44 @@ will be used.}
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used.}
 
-\item{gset_nms}{Character vector containing the name(s) of gene sets for
-enrichment analysis. The possible values are in \code{c("go_sets",
-"kegg_sets")}.}
+\item{gset_nms}{Character string or vector containing the name(s) of gene sets
+for enrichment analysis. The possible values are in \code{c("go_sets",
+"kegg_sets")}. Note that the currently supported species are human, mouse
+and rat.}
 
 \item{var_cutoff}{Not currently used.}
 
-\item{pval_cutoff}{The cut-off in protein significance \code{pVal}. Entries
-with \code{pVals} less significant than the threshold will be ignored for
-enrichment analysis.}
+\item{pval_cutoff}{Numeric value or vector; the cut-off in protein
+significance \code{pVal}. Entries with \code{pVals} less significant than
+the threshold will be ignored during enrichment analysis.}
 
-\item{logFC_cutoff}{The cut-off in protein \code{log2FC}. Entries with
-absolute \code{log2FC} smaller than the threshold will be ignored for
-enrichment analysis.}
+\item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
+\code{log2FC}. Entries with absolute \code{log2FC} smaller than the
+threshold will be ignored during enrichment analysis.}
 
-\item{gspval_cutoff}{The cut-off in significance \code{pVal} of gene sets.
-Only enrichment terms with \code{pVals} more significant than the threshold
-will be reported.}
+\item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
+significance \code{pVal}. Only enrichment terms with \code{pVals} more
+significant than the threshold will be reported.}
 
-\item{min_size}{Minimum number of protein entries for consideration of a gene
-set test. The number is the sum of up or down-expressed proteins after data
-filtration by \code{pval_cutoff}, \code{logFC_cutoff} or varargs
-\code{filter_}.}
+\item{min_size}{Numeric value or vector; minimum number of protein entries for
+consideration in gene set tests. The number is the sum of up or
+down-expressed proteins after data filtration by \code{pval_cutoff},
+\code{logFC_cutoff} or varargs expressions under \code{filter_}.}
+
+\item{max_size}{Numeric value or vector; maximum number of protein entries for
+consideration in gene set tests. The number is the sum of up or
+down-expressed proteins after data filtration by \code{pval_cutoff},
+\code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
+in infinite. For samples that are vastly different between contrasts,
+essential gene sets may be blackholed with trivial terms such as cell parts,
+molecular functions et al. In cases like this, a smaller \code{max_size} may
+be considered.}
+
+\item{min_greedy_size}{Numeric value or vector; minimum number of unique
+protein entries for a gene set to be considered essential.}
+
+\item{fml_nms}{Character string or vector; the formula name(s) matched to
+those in \code{\link{prnSig}}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
@@ -81,23 +98,52 @@ the significance of gene set enrichment. The arguments \code{pval_cutoff} and
 subsetting of data via the \code{vararg} approach of \code{filter_} is
 feasible.
 
-The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
+The formula(e) of contrast(s) used in \code{\link{prnSig}} will be taken by
 default.
 }
 \examples{
-# enrichment analysis
-prnGSPA(
-  scale_log2r = TRUE,
+\dontrun{
+# prior tests of significance in protein abundance changes
+prnSig(
   impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-3,
-  gset_nms = c("go_sets", "kegg_sets"),
-
-  filter_by_npep = exprs(prot_n_pep >= 2),
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"],
 )
 
-\dontrun{
+
+# gene-set enrichment tests
+prnGSPA(
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("go_sets", "kegg_sets"),
+  impute_na = FALSE,
+)
+
+# only proteins with two or more identifying peptides
+prnGSPA(
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("go_sets", "kegg_sets"),
+  filter_by_npep = exprs(prot_n_pep >= 2),
+  impute_na = FALSE,
+)
+
+# customized thresholds for the corresponding formulae in `prnSig()`
+prnGSPA(
+  fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
+  pval_cutoff = c(5E-2, 5E-2, 1E-10),
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = c(5E-2, 5E-2, 1E-5),
+  max_size = c(Inf, Inf, 120),
+
+  gset_nms = c("go_sets", "kegg_sets"),
+  filter_by_npep = exprs(prot_n_pep >= 2),
+  impute_na = FALSE,
+)
+
 }
 
 }

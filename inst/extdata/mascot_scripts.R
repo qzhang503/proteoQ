@@ -52,9 +52,9 @@ normPSM(
 )
 
 ## DO NOT RUN
-# peptide sequences with different side-chain modifications will be treated as different species
 dontrun <- TRUE
 if (!dontrun) {
+	# peptide sequences with different side-chain modifications as different species
 	normPSM(
 		group_psm_by = pep_seq_mod, 
 		group_pep_by = gene, 
@@ -130,9 +130,9 @@ pepHist(
 )
 
 ## DO NOT RUN
-# renormalization of peptide data for selected samples under `Select_sub`
 dontrun <- TRUE
 if (!dontrun) {
+	# renormalization of peptide data for selected samples under `Select_sub`
 	normPep(
 		method_psm_pep = median, 
 		method_align = MGKernel, 
@@ -176,9 +176,9 @@ normPrn(
 )
 
 ## DO NOT RUN
-# examplary protein tables with data pre-filtration
 dontrun <- TRUE
 if (!dontrun) {
+	# examplary protein tables with data pre-filtration
 	normPrn(
 		method_pep_prn = median, 
 		method_align = MGKernel, 
@@ -464,13 +464,13 @@ prnSig(
 	impute_na = FALSE, 
 	W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
 	W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-	W16_vs_W2 = ~ Term_3["W16-W2"], 
+	W16_vs_W2 = ~ Term_3["W16-W2"], # between two WHIMs
 )
 
 # protein volcano plots
 prnVol()
 
-# protein trend analysis with filtration and sample-order supervision
+# c-means clustering of protein logFC with filtration and sample-order supervision
 anal_prnTrend(
   col_order = Order,
   n_clust = c(5:8), 
@@ -524,57 +524,70 @@ plot_metaNMF(
 
 # protein GSPA
 prnGSPA(
-  impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
-  gset_nms = c("go_sets", "kegg_sets"),
+	pval_cutoff = 5E-2, # protein pVal threshold
+	logFC_cutoff = log2(1.2), # protein log2FC threshold
+	gspval_cutoff = 5E-2, # gene-set threshold
+	gset_nms = c("go_sets", "kegg_sets"),
+	impute_na = FALSE,
+)
+
+# GSPA under volcano plots
+gspaMap(
+	show_labels = TRUE, 
+	pval_cutoff = 5E-2, # gene set threshold
+	logFC_cutoff = log2(1.2), # gene set log2FC threshold
+	show_sig = pVal, 
+	yco = 0.05, 
+	
+	# only proteins with two or more identifying peptides will be visualized
+	filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 ## DO NOT RUN
-# higer cut-off in gene set signficance and protein tables with data pre-filtration
 dontrun <- TRUE
 if (!dontrun) {
+	# individualized parameters and with data pre-filtration
 	prnGSPA(
+		fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"), # formulae used in `prnSig()`
+		pval_cutoff = c(5E-2, 5E-2, 1E-5), # respective protein pVal cut-offs for each formula
+		logFC_cutoff = log2(1.2), # the same protein log2FC cut-off for all formulae
+		gspval_cutoff = c(5E-3, 5E-3, 1E-6), # gene-set pVal cut-offs 
+		max_size = c(Inf, Inf, 120), # maxixmum sizes of gene sets for consideration
+		
+		gset_nms = c("go_sets", "kegg_sets"), # the gene sets 
+		filter_by_npep = exprs(prot_n_pep >= 2), # only consider proteins with two or more identifying peptides
 		impute_na = FALSE,
-		pval_cutoff = 5E-2,
+	)
+	
+	gspaMap(
+		fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
+		pval_cutoff = c(5E-2, 5E-2, 1E-10),
 		logFC_cutoff = log2(1.2),
-		gspval_cutoff = 5E-3,
-		gset_nms = c("go_sets", "kegg_sets"),
-
+		
+		show_sig = pVal,
+		show_labels = TRUE,
+		yco = 0.05,
 		filter_by_npep = exprs(prot_n_pep >= 2),
 	)
 }
 ## END of DO NOT RUN
 
-# GSPA under volcano plots
-gspaMap(
-	show_labels = TRUE, 
-	pval_cutoff = 5E-3, 
-	logFC_cutoff = log2(1.2),
-	show_sig = pVal, 
-	yco = 0.05, 
-	
-	# only proteins with two or more peptides will be visualized
-	filter_by_npep = exprs(prot_n_pep >= 2),
-)
-
 # protein GSPA distance heat map and network for human subset
 prnGSPAHM(
-  filter_sp = exprs(start_with_str("hs", term)), 
-  annot_cols = "ess_idx",
-  annot_colnames = "Eset index",
-  annot_rows = "ess_size", 
-  filename = show_connectivity_at_large_dist.png,
+	filter_sp = exprs(start_with_str("hs", term)), 
+	annot_cols = "ess_idx",
+	annot_colnames = "Eset index",
+	annot_rows = "ess_size", 
+	filename = show_connectivity_at_large_dist.png,
 )
 
 prnGSPAHM(
-  filter_by = exprs(distance <= .33),
-  filter_sp = exprs(start_with_str("hs", term)), 
-  annot_cols = "ess_idx",
-  annot_colnames = "Eset index",
-  annot_rows = "ess_size", 
-  filename = show_human_redundancy.png,
+	filter_by = exprs(distance <= .33),
+	filter_sp = exprs(start_with_str("hs", term)), 
+	annot_cols = "ess_idx",
+	annot_colnames = "Eset index",
+	annot_rows = "ess_size", 
+	filename = show_human_redundancy.png,
 )
 
 # STRING database

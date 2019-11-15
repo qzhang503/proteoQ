@@ -5,8 +5,10 @@
 \title{Plot volcanos}
 \usage{
 plotVolcano(df = NULL, id = "gene", filepath = NULL,
-  filename = NULL, adjP = FALSE, show_labels = TRUE, anal_type,
-  pval_cutoff, logFC_cutoff, show_sig, gset_nms, ...)
+  filename = NULL, adjP = FALSE, show_labels = TRUE,
+  anal_type = "Volcano", pval_cutoff = 0.05,
+  logFC_cutoff = log2(1.2), show_sig = "none",
+  gset_nms = c("go_sets", "kegg_sets"), ...)
 }
 \description{
 Plot volcanos

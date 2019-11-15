@@ -4,7 +4,7 @@
 \alias{fullVolcano}
 \title{Volcano plots for all proteins or peptides in a data set}
 \usage{
-fullVolcano(df, id = "gene", contrast_groups,
+fullVolcano(df = NULL, id = "gene", contrast_groups = NULL,
   volcano_theme = volcano_theme, filepath = NULL, filename = NULL,
   adjP = FALSE, show_labels = TRUE, ...)
 }

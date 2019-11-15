@@ -14,7 +14,7 @@
 #'subsetting of data via the \code{vararg} approach of \code{filter_} is
 #'feasible.
 #'
-#'The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
+#'The formula(e) of contrast(s) used in \code{\link{prnSig}} will be taken by
 #'default.
 #'
 #'@inheritParams proteoSigtest
@@ -26,48 +26,91 @@
 #'@param filename A file name to output results. By default, it will be
 #'  determined automatically by the name of the calling function and the value
 #'  of id in the call.
-#'@param gset_nms Character vector containing the name(s) of gene sets for
-#'  enrichment analysis. The possible values are in \code{c("go_sets",
-#'  "kegg_sets")}.
+#'@param gset_nms Character string or vector containing the name(s) of gene sets
+#'  for enrichment analysis. The possible values are in \code{c("go_sets",
+#'  "kegg_sets")}. Note that the currently supported species are human, mouse
+#'  and rat.
 #'@param var_cutoff Not currently used.
-#'@param pval_cutoff The cut-off in protein significance \code{pVal}. Entries
-#'  with \code{pVals} less significant than the threshold will be ignored for
-#'  enrichment analysis.
-#'@param logFC_cutoff The cut-off in protein \code{log2FC}. Entries with
-#'  absolute \code{log2FC} smaller than the threshold will be ignored for
-#'  enrichment analysis.
-#'@param min_size Minimum number of protein entries for consideration of a gene
-#'  set test. The number is the sum of up or down-expressed proteins after data
-#'  filtration by \code{pval_cutoff}, \code{logFC_cutoff} or varargs
-#'  \code{filter_}.
-#'@param gspval_cutoff The cut-off in significance \code{pVal} of gene sets.
-#'  Only enrichment terms with \code{pVals} more significant than the threshold
-#'  will be reported.
+#'@param pval_cutoff Numeric value or vector; the cut-off in protein
+#'  significance \code{pVal}. Entries with \code{pVals} less significant than
+#'  the threshold will be ignored during enrichment analysis.
+#'@param logFC_cutoff Numeric value or vector; the cut-off in protein
+#'  \code{log2FC}. Entries with absolute \code{log2FC} smaller than the
+#'  threshold will be ignored during enrichment analysis.
+#'@param min_size Numeric value or vector; minimum number of protein entries for
+#'  consideration in gene set tests. The number is the sum of up or
+#'  down-expressed proteins after data filtration by \code{pval_cutoff},
+#'  \code{logFC_cutoff} or varargs expressions under \code{filter_}.
+#'@param max_size Numeric value or vector; maximum number of protein entries for
+#'  consideration in gene set tests. The number is the sum of up or
+#'  down-expressed proteins after data filtration by \code{pval_cutoff},
+#'  \code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
+#'  in infinite. For samples that are vastly different between contrasts,
+#'  essential gene sets may be blackholed with trivial terms such as cell parts,
+#'  molecular functions et al. In cases like this, a smaller \code{max_size} may
+#'  be considered.
+#'@param min_greedy_size Numeric value or vector; minimum number of unique
+#'  protein entries for a gene set to be considered essential.
+#'@param gspval_cutoff Numeric value or vector; the cut-off in gene-set
+#'  significance \code{pVal}. Only enrichment terms with \code{pVals} more
+#'  significant than the threshold will be reported.
+#'@param fml_nms Character string or vector; the formula name(s) matched to
+#'  those in \code{\link{prnSig}}.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}.
 #'@import dplyr rlang ggplot2 networkD3
 #'@importFrom magrittr %>%
 #' @examples
-#' # enrichment analysis
-#' prnGSPA(
-#'   scale_log2r = TRUE,
+#' \dontrun{
+#' # prior tests of significance in protein abundance changes
+#' prnSig(
 #'   impute_na = FALSE,
-#'   pval_cutoff = 5E-2,
-#'   logFC_cutoff = log2(1.2),
-#'   gspval_cutoff = 5E-3,
-#'   gset_nms = c("go_sets", "kegg_sets"),
-#'
-#'   filter_by_npep = exprs(prot_n_pep >= 2),
+#'   W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+#'   W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"],
+#'   W16_vs_W2 = ~ Term_3["W16-W2"],
 #' )
 #'
-#' \dontrun{
+#'
+#' # gene-set enrichment tests
+#' prnGSPA(
+#'   pval_cutoff = 5E-2,
+#'   logFC_cutoff = log2(1.2),
+#'   gspval_cutoff = 5E-2,
+#'   gset_nms = c("go_sets", "kegg_sets"),
+#'   impute_na = FALSE,
+#' )
+#'
+#' # only proteins with two or more identifying peptides
+#' prnGSPA(
+#'   pval_cutoff = 5E-2,
+#'   logFC_cutoff = log2(1.2),
+#'   gspval_cutoff = 5E-2,
+#'   gset_nms = c("go_sets", "kegg_sets"),
+#'   filter_by_npep = exprs(prot_n_pep >= 2),
+#'   impute_na = FALSE,
+#' )
+#'
+#' # customized thresholds for the corresponding formulae in `prnSig()`
+#' prnGSPA(
+#'   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
+#'   pval_cutoff = c(5E-2, 5E-2, 1E-10),
+#'   logFC_cutoff = log2(1.2),
+#'   gspval_cutoff = c(5E-2, 5E-2, 1E-5),
+#'   max_size = c(Inf, Inf, 120),
+#'
+#'   gset_nms = c("go_sets", "kegg_sets"),
+#'   filter_by_npep = exprs(prot_n_pep >= 2),
+#'   impute_na = FALSE,
+#' )
+#'
 #' }
 #'
 #'@export
 proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL, 
                         impute_na = TRUE, complete_cases = FALSE, gset_nms = "go_sets", 
                         var_cutoff = .5, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                        gspval_cutoff = 1E-2, min_size = 10, task = "anal", ...) {
+                        gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
+                        fml_nms = NULL, task = "anal", ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -82,22 +125,18 @@ proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
 	dots <- rlang::enexprs(...)
 	fmls <- dots %>% .[grepl("^\\s*~", .)]
 	dots <- dots[!names(dots) %in% names(fmls)]
+	dots <- concat_fml_dots(fmls, fml_nms, dots)
 	
-	if (purrr::is_empty(fmls)) {
-	  fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.Rdata")
-	  if (file.exists(fml_file)) {
-	    load(file = fml_file)
-	    dots <- c(dots, prnSig_formulas)
-	  } else {
-	    stop("Run `prnSig()` first.")
-	  }
-	} else {
-	  match_fmls(fmls)
-	  dots <- c(dots, fmls)
+	curr_call <- mget(names(formals()), rlang::current_env()) %>% 
+	  .[names(.) != "..."] %>% 
+	  c(dots) 
+	
+	if (task == "anal") {
+	  curr_call %>% save_call("prnGSPA")
+	} else if (task == "plothm") {
+	  curr_call %>% save_call("prnGSPAHM")
 	}
-	
-	mget(names(formals()), rlang::current_env()) %>% save_call("prnGSPA")
-	
+
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
@@ -105,7 +144,8 @@ proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
 	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r, 
 	          filepath = !!filepath, filename = !!filename, impute_na = impute_na, 
 	          anal_type = "GSPA")(complete_cases, gset_nms, 
-	                              var_cutoff, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, 
+	                              var_cutoff, pval_cutoff, logFC_cutoff, gspval_cutoff, 
+	                              min_size, max_size, min_greedy_size, 
 	                              task = !!task, !!!dots)
 }
 
@@ -140,7 +180,8 @@ prnGSPA <- function (...) {
 #' @importFrom broom.mixed tidy
 gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, complete_cases = FALSE,
                      gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 5E-2,
-                     logFC_cutoff = log2(1.2), gspval_cutoff = 5E-2, min_size = 6, ...) {
+                     logFC_cutoff = log2(1.2), gspval_cutoff = 5E-2, 
+                     min_size = 6, max_size = Inf, min_greedy_size = 1, ...) {
 
   id <- rlang::as_string(rlang::enexpr(id))
   dots = rlang::enexprs(...)
@@ -161,8 +202,14 @@ gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
   formulas <- names(df) %>% 
     .[grepl("pVal", .)] %>% 
     gsub("(.*)\\.pVal.*", "\\1", .) %>% 
-    unique()
+    unique() %>% 
+    .[. %in% names(fmls)]
   
+  fmls <- fmls %>% .[names(.) %in% formulas]
+  formulas <- formulas %>% .[map_dbl(., ~ which(.x == names(fmls)))]
+
+  if (is_empty(formulas)) stop("No formula matached; compare the formula name(s) with those in `prnSig(..)`")
+
   col_ind <- purrr::map(formulas, ~ grepl(.x, names(df))) %>%
     dplyr::bind_cols() %>%
     rowSums() %>%
@@ -173,12 +220,9 @@ gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
-
-  if (length(formulas) > 0) purrr::map(formulas, fml_gspa, df = df, col_ind = col_ind, 
-                                       id = !!id, gsets = gsets, pval_cutoff, logFC_cutoff, 
-                                       gspval_cutoff = gspval_cutoff, min_size = min_size, 
-                                       filepath = filepath, filename = filename, 
-                                       !!!dots)
+  
+  purrr::pmap(list(formulas, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size, min_greedy_size),
+              fml_gspa, df, col_ind, id = !!id, gsets, filepath, filename, !!!dots)
 }
 
 
@@ -186,14 +230,14 @@ gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
 #'
 #' @import purrr dplyr rlang
 #' @importFrom magrittr %>% %T>%
-fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, 
-                      filepath, filename, ...) {
-  
+fml_gspa <- function (formula, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size, min_greedy_size, 
+                      df, col_ind, id, gsets, filepath, filename, ...) {
+
   gapa_summary <- function(gsets, df, min_size = 1) {
     df_sub <- df %>% 
       dplyr::filter(.[["entrez"]] %in% gsets) 
     
-    if (nrow(df_sub) > min_size) {
+    if (nrow(df_sub) >= min_size) {
       delta_p <- df_sub %>% 
         dplyr::group_by(contrast, valence) %>% 
         dplyr::summarise(p_val = mean(p_val, na.rm = TRUE)) %>% 
@@ -223,8 +267,7 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
   id <- rlang::as_string(rlang::enexpr(id))
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
-  # imputation of NA to 0 increases the number of entries in descriptive "mean" calculation, 
-  # like a penalty function  
+  # penaltize with NA imputation to 0 to increases the number of entries in descriptive "mean" calculation
   df <- df %>% prep_gspa(formula = formula, col_ind = col_ind, 
                          pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff) %>% 
     dplyr::mutate(p_val = -log10(p_val)) %>% 
@@ -238,7 +281,8 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
     .[!grepl("molecular_function$", names(.))] %>% 
     .[!grepl("cellular_component$", names(.))] %>% 
     .[!grepl("biological_process$", names(.))] %>%     
-    .[purrr::map_lgl(., ~ length(.x) > min_size)]
+    .[purrr::map_lgl(., ~ length(.x) >= min_size)] %>% 
+    .[purrr::map_lgl(., ~ length(.x) <= max_size)]
   
   res_pass <- local({
     contrast_groups <- unique(df$contrast) %>% as.character()
@@ -308,11 +352,12 @@ fml_gspa <- function (df, formula, col_ind, id, gsets, pval_cutoff, logFC_cutoff
 
   res_greedy <- sig_sets %>% 
     RcppGreedySetCover::greedySetCover(FALSE) %T>% 
-    write.csv(file.path(filepath, formula, paste0("resgreedy_", fn_prefix, ".csv")), row.names = FALSE)
-
-  sig_sets <- res_greedy %>% 
+    write.csv(file.path(filepath, formula, paste0("resgreedy_", fn_prefix, ".csv")), row.names = FALSE) %>% 
     dplyr::group_by(term) %>% 
     dplyr::summarise(ess_size = n()) %>% 
+    dplyr::filter(ess_size >= min_greedy_size)
+  
+  sig_sets <- res_greedy %>% 
     dplyr::right_join(out, by = "term") %>% 
     dplyr::mutate(is_essential = ifelse(!is.na(ess_size), TRUE, FALSE)) %>% 
     dplyr::select(term, is_essential, size, ess_size, contrast, p_val, q_val, log2fc) %T>% 
@@ -494,7 +539,7 @@ map_essential <- function (sig_sets) {
 #' prnGSPAHM(
 #'   annot_cols = c("ess_idx", "ess_size"),
 #'   annot_colnames = c("Eset index", "Size"),
-#'   filter_by = exprs(ess_size >= 3, distance <= .80),
+#'   filter_by = exprs(distance <= .95),
 #'   color = colorRampPalette(c("blue", "white", "red"))(100),
 #'   filename = "custom_colors.png"
 #' )
@@ -562,7 +607,9 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   
   if (nrow(all_by_greedy) == 0) stop("No GSPA terms available after data filtration.")
   
-  if (max(all_by_greedy$distance) == 0) stop("All-zero distance detected; try increase the cut-off in distance.")
+  if (max(all_by_greedy$distance) == 0) stop("Identical, all-zero distance detected; 
+                                             try lower the criteria in data filtrations
+                                             or rerun `prnGSPA` at more relaxed `gspval_cutoff` threshold.")
 
   if (!is.null(dim(all_by_greedy))) {
     message(paste("Essential GSPA loaded."))
@@ -584,6 +631,18 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   d_row[is.na(d_row)] <- 1.2 * max_d_row
   d_col[is.na(d_col)] <- 1.2 * max_d_col
 
+  if (is.infinite(max_d_row)) {
+    cluster_rows <- FALSE
+  } else {
+    cluster_rows <- hclust(d_row)
+  }
+
+  if (is.infinite(max_d_col)) {
+    cluster_cols <- FALSE
+  } else {
+    cluster_cols <- hclust(d_col)
+  }
+  
   if (is.null(dots$color)) {
     mypalette <- colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
   } else {
@@ -658,7 +717,7 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
       fontsize <- 12
       fontsize_col <- cellwidth <- 12
       show_colnames <- TRUE
-      width <- ncol/1.2
+      width <- pmax(ncol/1.2, 8)
     } else {
       fontsize <- fontsize_col <- 1
       cellwidth <- NA
@@ -678,7 +737,7 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
       fontsize <- 12 
       fontsize_row <- cellheight <- 12
       show_rownames <- TRUE
-      height <- nrow/1.2
+      height <- pmax(nrow/1.2, 8)
     } else {
       fontsize <- fontsize_row <- 1
       cellheight <- NA
@@ -712,7 +771,7 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
                        "cluster_rows", "cluster_cols", 
                        "width", "height", "fontsize_row", "fontsize_col", 
                        "cellheight", "cellwidth")]
-  
+
   ph <- my_pheatmap(
     mat = ess_vs_all,
     filename = file.path(filepath, formula, filename),
@@ -721,8 +780,8 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
     color = mypalette,
     annotation_colors = annotation_colors, 
     breaks = NA, # not used
-    cluster_rows =  hclust(d_row), 
-    cluster_cols = hclust(d_col),
+    cluster_rows = cluster_rows, 
+    cluster_cols = cluster_cols,
     fontsize_row = fontsize_row,
     fontsize_col = fontsize_col,
     cellheight = cellheight,

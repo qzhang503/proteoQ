@@ -1153,7 +1153,7 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL) {
                              pattern = "^Protein_GSPA_.*\\.csv$", 
                              full.names = FALSE)
       
-      if (length(filename) > 1) stop("More than one result file found under `", sub_dir, "`", call. = FALSE)
+      if (length(filename) > 1) stop("More than one result file found under `", subdir, "`", call. = FALSE)
       
       if (is_empty(filename)) stop("No result file found under `", sub_dir, "`", call. = FALSE)
     }
@@ -2076,4 +2076,32 @@ rows_are_all <- function (match, vars, ignore.case = FALSE) {
 rows_are_not_all <- function (match, vars, ignore.case = FALSE) {
   stopifnot(is_string(match), nchar(match) > 0)
   grepl(paste0("[^", match, "]"), vars, fixed = FALSE, ignore.case = FALSE)
+}
+
+
+#' Concatenate formula(e) to varargs of dots
+concat_fml_dots <- function(fmls, fml_nms, dots) {
+  if (purrr::is_empty(fmls)) {
+    fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.Rdata")
+    if (file.exists(fml_file)) {
+      load(file = fml_file)
+      
+      if (!is.null(fml_nms)) {
+        stopifnot(all(fml_nms %in% names(prnSig_formulas)))
+        stopifnot(all(names(prnSig_formulas) %in% fml_nms))
+        
+        prnSig_formulas <- prnSig_formulas %>% 
+          .[map_dbl(names(.), ~ which(.x == fml_nms))]
+      }
+      
+      dots <- c(dots, prnSig_formulas)
+    } else {
+      stop("Run `prnSig()` first.")
+    }
+  } else {
+    match_fmls(fmls)
+    dots <- c(dots, fmls)
+  }
+  
+  return(dots)
 }
