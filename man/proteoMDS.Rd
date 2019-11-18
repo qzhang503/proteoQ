@@ -9,7 +9,7 @@
 proteoMDS(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
   col_size = NULL, col_alpha = NULL, scale_log2r = TRUE,
-  adjEucDist = FALSE, classical = TRUE, show_ids = TRUE,
+  adjEucDist = FALSE, classical = TRUE, k = 3, show_ids = TRUE,
   annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL,
   ...)
 
@@ -64,7 +64,11 @@ near the end of a sample handling process, for instance, at the stages
 immediately before or after TMT labeling.}
 
 \item{classical}{Logical; performs metric MDS at TRUE and non-metric MDS at
-FALSE.}
+FALSE (see also \code{\link[stats]{cmdscale}} and
+\code{\link[MASS]{isoMDS}}).}
+
+\item{k}{Numeric; The desired dimension for the solution passed to
+\code{\link[stats]{cmdscale}}.}
 
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots.}
@@ -114,7 +118,7 @@ for details.
 }
 \examples{
 pepMDS(
-  scale_log2r = FALSE,
+  scale_log2r = TRUE,
   col_select = Select, 
   filter_by_npsm = exprs(pep_n_psm >= 10),
   filename = "pepMDS_filtered.png",

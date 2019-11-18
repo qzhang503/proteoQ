@@ -6,8 +6,8 @@
 \usage{
 plotPCA(df, col_color = NULL, col_fill = NULL, col_shape = NULL,
   col_size = NULL, col_alpha = NULL,
-  label_scheme_sub = label_scheme_sub, prop_var, pr_bi, prop_var_bi,
-  filepath, filename, show_ids, ...)
+  label_scheme_sub = label_scheme_sub, prop_var, filepath, filename,
+  show_ids, ...)
 }
 \description{
 Plots PCA

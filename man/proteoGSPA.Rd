@@ -74,8 +74,8 @@ be considered.}
 \item{min_greedy_size}{Numeric value or vector; minimum number of unique
 protein entries for a gene set to be considered essential.}
 
-\item{fml_nms}{Character string or vector; the formula name(s) matched to
-those in \code{\link{prnSig}}.}
+\item{fml_nms}{Character string or vector; the forumula name(s). By default,
+the names match to those used in \code{\link{prnSig}}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}

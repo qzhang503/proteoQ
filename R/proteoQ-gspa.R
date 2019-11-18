@@ -54,8 +54,8 @@
 #'@param gspval_cutoff Numeric value or vector; the cut-off in gene-set
 #'  significance \code{pVal}. Only enrichment terms with \code{pVals} more
 #'  significant than the threshold will be reported.
-#'@param fml_nms Character string or vector; the formula name(s) matched to
-#'  those in \code{\link{prnSig}}.
+#'@param fml_nms Character string or vector; the forumula name(s). By default,
+#'  the names match to those used in \code{\link{prnSig}}.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}.
 #'@import dplyr rlang ggplot2 networkD3

@@ -4,7 +4,7 @@
 \alias{plotEucDist}
 \title{Plots EucDist}
 \usage{
-plotEucDist(D, annot_cols, filepath, filename, annot_colnames, ...)
+plotEucDist(D, annot_cols, annot_colnames, filepath, filename, ...)
 }
 \description{
 Plots EucDist

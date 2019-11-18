@@ -2,11 +2,11 @@
 % Please edit documentation in R/proteoQ-mds.R
 \name{scoreMDS}
 \alias{scoreMDS}
-\title{Scores MDS and PCA}
+\title{Scores MDS}
 \usage{
 scoreMDS(df, id, label_scheme_sub, anal_type, scale_log2r,
-  adjEucDist = FALSE, classical, ...)
+  adjEucDist = FALSE, classical, k = 3, ...)
 }
 \description{
-Scores MDS and PCA
+Scores MDS
 }

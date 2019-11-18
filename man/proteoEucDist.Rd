@@ -82,7 +82,7 @@ image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 will be determined by the extension of the file name. A \code{.png} format
 will be used at default or at an unrecognized file extension.}
 
-\item{...}{Parameters inherited from \code{\link[pheatmap]{pheatmap}}}
+\item{...}{Parameters for \code{\link[pheatmap]{pheatmap}}}
 }
 \value{
 Heat map visualization of distance matrices.
@@ -104,6 +104,12 @@ latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
 for details.
 }
 \examples{
+pepEucDist(
+  annot_cols = c("Peptide_Yield", "Group"),
+  width = 16,
+  height = 12,
+)
+
 prnEucDist(
   scale_log2r = TRUE,
   annot_cols = c("Peptide_Yield", "Group"),
@@ -125,8 +131,6 @@ prnEucDist(
   border_color = "grey60",
   cellwidth = 24,
   cellheight = 24,
-  width = 14,
-  height = 12, 
   filter_by_npep = exprs(prot_n_pep >= 5),
   filename = "prnEucDist_filtered.png",
 )
