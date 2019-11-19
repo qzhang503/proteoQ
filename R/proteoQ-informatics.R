@@ -11,8 +11,10 @@
 #' @import dplyr rlang ggplot2 pheatmap openxlsx
 #' @importFrom magrittr %>%
 info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order = NULL,
-                       col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL,
-                       col_alpha = NULL, col_benchmark = NULL, scale_log2r = TRUE,
+                       col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+                       color_brewer = NULL, fill_brewer = NULL, 
+                       size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
+                       col_benchmark = NULL, scale_log2r = TRUE,
                        impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL,
                        anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
                                      "NMF", "Trend")) {
@@ -34,7 +36,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
 	col_benchmark <- rlang::enexpr(col_benchmark)
-	
+
 	col_select <- ifelse(is.null(col_select), rlang::expr(Select), rlang::sym(col_select))
 	col_group <- ifelse(is.null(col_group), rlang::expr(Group), rlang::sym(col_group))
 	col_order <- ifelse(is.null(col_order), rlang::expr(Order), rlang::sym(col_order))
@@ -55,6 +57,15 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if (col_alpha == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if (col_benchmark == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	
+	color_brewer <- rlang::enexpr(color_brewer)
+	fill_brewer <- rlang::enexpr(fill_brewer)
+	if (!is.null(color_brewer)) color_brewer <- rlang::as_string(color_brewer)
+	if (!is.null(fill_brewer)) fill_brewer <- rlang::as_string(fill_brewer)
+	
+	size_manual <- rlang::enexpr(size_manual)
+	shape_manual <- rlang::enexpr(shape_manual)
+	alpha_manual <- rlang::enexpr(alpha_manual)
+
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
@@ -275,6 +286,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		            col_shape = !!col_shape, 
 		            col_size = !!col_size, 
 		            col_alpha = !!col_alpha, 
+		            color_brewer = !!color_brewer,
+		            fill_brewer = !!fill_brewer, 
+		            size_manual = size_manual,
+		            shape_manual = shape_manual,
+		            alpha_manual = alpha_manual, 
 		            label_scheme_sub = label_scheme_sub, 
 		            filepath = filepath, 
 		            filename = paste0(fn_prefix, ".", fn_suffix), 
@@ -306,6 +322,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		            col_shape = !!col_shape, 
 		            col_size = !!col_size, 
 		            col_alpha = !!col_alpha, 
+		            color_brewer = !!color_brewer,
+		            fill_brewer = !!fill_brewer, 
+		            size_manual = size_manual,
+		            shape_manual = shape_manual,
+		            alpha_manual = alpha_manual, 
 		            label_scheme_sub = label_scheme_sub, 
 		            prop_var = df_pca$prop_var, 
 		            filepath = filepath, 

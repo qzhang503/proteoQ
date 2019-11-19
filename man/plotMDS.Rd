@@ -5,8 +5,10 @@
 \title{Plots MDS}
 \usage{
 plotMDS(df, col_color = NULL, col_fill = NULL, col_shape = NULL,
-  col_size = NULL, col_alpha = NULL,
-  label_scheme_sub = label_scheme_sub, filepath, filename, show_ids, ...)
+  col_size = NULL, col_alpha = NULL, color_brewer = NULL,
+  fill_brewer = NULL, size_manual = NULL, shape_manual = NULL,
+  alpha_manual = NULL, label_scheme_sub = label_scheme_sub, filepath,
+  filename, show_ids, ...)
 }
 \description{
 Plots MDS

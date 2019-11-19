@@ -21,6 +21,7 @@ devtools::install_github("qzhang503/proteoQDA")
 ## part 1 --- setup
 # fasta files to database directory
 library(proteoQDA)
+dir.create("~\\proteoQ\\dbs\\fasta\\refseq", recursive = TRUE, showWarnings = FALSE)
 copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
 copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 
