@@ -494,16 +494,17 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'   i.e., \code{color_brewer = Set1}.
 #'@param fill_brewer Character string to the name of a color brewer for use in
 #'  \href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_fill_brewer},
-#'  i.e., \code{fill_brewer = Spectral}.
-#'@param size_manual Numeric vector to the scale of sizes of objects in a plot,
-#'  i.e., \code{size_manual = c(8, 12)}. See also
-#'  \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2}.
-#'@param shape_manual Numeric vector to the scale of shape IDs, i.e.,
-#'  \code{shape_manual = c(5, 15)}. See also
-#'  \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2}.
-#'@param alpha_manual Numeric vector to the scale of transparency of objects in
-#'  a plot, i.e., \code{alpha_manual = c(.5, .9)}. See also
-#'  \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2}.
+#'   i.e., \code{fill_brewer = Spectral}.
+#'@param size_manual Numeric vector to the scale of sizes for use in
+#'  \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_size_manual},
+#'   i.e., \code{size_manual = c(8, 12)}.
+#'@param shape_manual Numeric vector to the scale of shape IDs for use in
+#'  \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_shape_manual},
+#'   i.e., \code{shape_manual = c(5, 15)}. .
+#'@param alpha_manual Numeric vector to the scale of transparency of objects for
+#'  use in
+#'  \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_alpha_manual}
+#'   , i.e., \code{alpha_manual = c(.5, .9)}.
 #'@param adjEucDist Logical; if TRUE, adjusts the inter-plex Euclidean distance
 #'  by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
 #'  \code{reference samples} from each TMT plex undergo approximately the same
@@ -696,8 +697,11 @@ proteoEucDist <- function (id = gene, col_select = NULL, col_group = NULL, col_c
 #'
 #'@rdname proteoMDS
 #'
-#' @example inst/extdata/examples/mascot.R
-#' @example inst/extdata/examples/maxquant.R
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@example inst/extdata/examples/imputeNA_examples.R
 #' 
 #'@import purrr
 #'@export
@@ -722,9 +726,10 @@ pepMDS <- function (...) {
 #'  preparation, \code{\link{pepImp}} for NA value imputation and
 #'  \code{\link{pepSig}} for linear modelings.
 #' @examples
-#' # ==========================
+#' # ===================================
 #' # MDS
-#' # ==========================
+#' # ===================================
+#' scale_log2r <- TRUE
 #' 
 #' # peptide
 #' pepMDS(
@@ -784,8 +789,11 @@ prnMDS <- function (...) {
 #'  preparation, \code{\link{pepImp}} for NA value imputation and
 #'  \code{\link{pepSig}} for linear modelings.
 #'  
-#' @example inst/extdata/examples/mascot.R
-#' @example inst/extdata/examples/maxquant.R
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@example inst/extdata/examples/imputeNA_examples.R
 #'
 #'@import purrr
 #'@export
@@ -808,9 +816,10 @@ pepPCA <- function (...) {
 #'@rdname proteoPCA
 #'
 #' @examples
-#' # ==========================
+#' # ===================================
 #' # PCA
-#' # ==========================
+#' # ===================================
+#' scale_log2r <- TRUE
 #' 
 #' # peptide
 #' pepPCA(
@@ -866,8 +875,11 @@ prnPCA <- function (...) {
 #'
 #'@rdname proteoEucDist
 #'
-#' @example inst/extdata/examples/mascot.R
-#' @example inst/extdata/examples/maxquant.R
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@example inst/extdata/examples/imputeNA_examples.R
 #'
 #'@import purrr
 #'@export
@@ -892,9 +904,10 @@ pepEucDist <- function (...) {
 #'  preparation, \code{\link{pepImp}} for NA value imputation and
 #'  \code{\link{pepSig}} for linear modelings.
 #' @examples
-#' # ==========================
+#' # ===================================
 #' # Euclidean distance
-#' # ==========================
+#' # ===================================
+#' scale_log2r <- TRUE
 #' 
 #' # peptide
 #' pepEucDist(

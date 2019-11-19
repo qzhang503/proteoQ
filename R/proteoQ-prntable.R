@@ -73,23 +73,9 @@
 #'  peptides.
 #'@return The primary output is in "\code{~\\dat_dir\\Protein\\Protein.txt}".
 #'
-#' @examples
-#' \dontrun{
-#' # proteins results with examplary `filter_...`
-#' normPrn(
-#'   method_pep_prn = median,
-#'   method_align = MGKernel,
-#'   range_log2r = c(20, 95),
-#'   range_int = c(5, 95),
-#'   n_comp = 2,
-#'   seed = 749662,
-#'   maxit = 200,
-#'   epsilon = 1e-05,
-#'
-#'   # filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2),
-#' )
-#'
-#' }
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/normPSM_examples.R
+#'@example inst/extdata/examples/normPrn_examples.R
 #'@import stringr dplyr tidyr purrr data.table rlang mixtools
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%

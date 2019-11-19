@@ -274,26 +274,51 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'\code{pepHist} is a wrapper of \code{\link{proteoHist}} for peptide data
 #'
 #'@rdname proteoHist
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@import purrr
+#'@export
+pepHist <- function (...) {
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  dir.create(file.path(dat_dir, "Peptide\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
+
+  quietly_log <- purrr::quietly(proteoHist)(id = pep_seq, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\Histogram\\log","pepHist_log.csv"), append = TRUE)  
+}
+
+
+#'Visualizes the histograms of protein \code{log2FC}
+#'
+#'\code{prnHist} is a wrapper of \code{\link{proteoHist}} for protein data
+#'
+#'@rdname proteoHist
 #'
 #' @examples
-#' ## visualization of normalization
-#' # without scaling
+#' # ===================================
+#' # Histogram
+#' # ===================================
+#' ## (1) visualization of normalization
+#' # peptide data without log2FC scaling
 #' pepHist(scale_log2r = FALSE)
 #'
 #' # with scaling
 #' pepHist(scale_log2r = TRUE)
 #'
-#' ## samples for use are indicated under a column, i.e. `Select`, in `expt_smry.xlsx`
-#' # peptides
+#' ## (2) sample selections
+#' # sample IDs indicated under column `Select` in `expt_smry.xlsx`
 #' pepHist(col_select = Select)
 #'
-#' # proteins
+#' # protein data
 #' prnHist(col_select = Select)
-#'
-#' ## row filtration of data
+#' 
+#' ## (3) row filtration of data
 #' # phosphopeptide subset
 #' pepHist(
-#'   scale_log2r = TRUE,
 #'   filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
 #'   scale_y = FALSE, 
 #'   filename = "pepHist_fil_by_sty.png",
@@ -312,18 +337,15 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'   filename = "pepHist_fil_no_mn.png",
 #' )
 #'
-#' ## between lead and lag
-#' # leading logFC profiles of peptides
+#' ## (4) between lead and lag
+#' # leading profiles
 #' pepHist(
 #'   filename = "pepHist.png",
 #' )
 #'
-#' # lagging logFC profiles of peptides at
+#' # lagging profiles at
 #' #   (1) n_psm >= 10
 #' #   (2) and no methionine oxidation or asparagine deamidation
-#' # 
-#' # may be used for the identification of sample(s) with 
-#' #   considerable offset(s) between the lead and the lag
 #' pepHist(
 #'   filter_by_npsm = exprs(n_psm >= 10),
 #'   filter_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
@@ -346,26 +368,6 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #' )
 #'
 #' }
-#'
-#'@import purrr
-#'@export
-pepHist <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Peptide\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
-
-  quietly_log <- purrr::quietly(proteoHist)(id = pep_seq, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Histogram\\log","pepHist_log.csv"), append = TRUE)  
-}
-
-
-#'Visualizes the histograms of protein \code{log2FC}
-#'
-#'\code{prnHist} is a wrapper of \code{\link{proteoHist}} for protein data
-#'
-#'@rdname proteoHist
 #'
 #'@import purrr
 #'@export

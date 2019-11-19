@@ -37,3 +37,114 @@ The CV of peptides are calculated from contributing PSMs at the basis of per
 TMT experiment per series of LC/MS. Note that greater CV may be encountered
 for samples that are more different to reference material(s).
 }
+\examples{
+# ===================================
+# Fasta and PSM files
+# ===================================
+library(proteoQDA)
+fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
+dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs(fasta_dir)
+copy_refseq_mm(fasta_dir)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_csv_1(dat_dir)
+  cptac_expt_1(dat_dir)
+  cptac_frac_1(dat_dir)
+  
+  # Maxquant
+  #   to install package `proteoQDB` containing MaxQuant examples: 
+  #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+  #    (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+  library(proteoQDB)
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_mqpsm_txt(dat_dir)
+  cptac_mqpsm_expt(dat_dir)
+  cptac_mqpsm_frac(dat_dir)	
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+
+# ===================================
+# PSM
+# ===================================
+library(proteoQ)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  load_expts()
+	
+  normPSM(
+    group_psm_by = pep_seq_mod,
+    group_pep_by = prot_acc,
+    fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+              "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+    rptr_intco = 3000,
+    rm_craps = TRUE,
+    rm_krts = FALSE,
+    rm_outliers = FALSE,
+    annot_kinases = TRUE,
+    plot_rptr_int = TRUE,
+    plot_log2FC_cv = TRUE,
+    
+    filter_peps = exprs(pep_expect <= .1),
+    filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
+  )
+
+  # MaxQuant
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  load_expts()
+	
+  normPSM(
+    group_psm_by = pep_seq_mod,
+    group_pep_by = prot_acc,
+    fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+              "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+    corrected_int = TRUE,
+    rm_reverses = TRUE,
+    rptr_intco = 3000,
+    rm_craps = TRUE,
+    rm_krts = FALSE,
+    rm_outliers = FALSE,
+    annot_kinases = TRUE,
+    plot_rptr_int = TRUE,
+    plot_log2FC_cv = TRUE,
+    
+    filter_peps = exprs(PEP <= 0.1),
+  )
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+
+
+# ===================================
+# PSM cleanup by CV
+# ===================================
+# percent CV
+purgePSM(pt_cv = .95)
+
+# max CV
+purgePSM(max_cv = .5)
+
+# `max_cv` then `pt_cv`
+purgePSM(max_cv = .5)
+purgePSM(pt_cv = .95)
+
+# actually 90\% CV 
+purgePSM(pt_cv = .95)
+purgePSM(pt_cv = .95)
+}
+\seealso{
+\code{\link{purgePep}} for peptide data purging.
+}

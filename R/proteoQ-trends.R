@@ -254,6 +254,13 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'@return Trend classification and visualization of \code{log2FC}.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
+#'
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@example inst/extdata/examples/imputeNA_examples.R
+#'
 #'@export
 proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                          task = "anal", 
@@ -305,6 +312,11 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'@rdname proteoTrend
 #'
 #' @examples
+#' # ===================================
+#' # Trend
+#' # ===================================
+#' scale_log2r <- TRUE
+#' 
 #' anal_prnTrend(
 #'   scale_log2r = TRUE,
 #'   col_order = Order,

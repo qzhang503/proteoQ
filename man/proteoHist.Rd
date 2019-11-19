@@ -100,24 +100,106 @@ earlierly applied, the setting of \code{id = prot_acc} in the current
 \code{call} will be matched to \code{id = gene}.
 }
 \examples{
-## visualization of normalization
-# without scaling
+# ===================================
+# Fasta and PSM files
+# ===================================
+library(proteoQDA)
+fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
+dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs(fasta_dir)
+copy_refseq_mm(fasta_dir)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_csv_1(dat_dir)
+  cptac_expt_1(dat_dir)
+  cptac_frac_1(dat_dir)
+  
+  # Maxquant
+  #   to install package `proteoQDB` containing MaxQuant examples: 
+  #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+  #    (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+  library(proteoQDB)
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_mqpsm_txt(dat_dir)
+  cptac_mqpsm_expt(dat_dir)
+  cptac_mqpsm_frac(dat_dir)	
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+
+# ===================================
+# PSM
+# ===================================
+library(proteoQ)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+
+  # Maxquant
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+
+load_expts()
+
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+)
+
+
+# ===================================
+# Peptide
+# ===================================
+normPep(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 749662, 
+)
+
+
+# ===================================
+# Protein
+# ===================================
+normPrn(
+  method_align = MGKernel, 
+  n_comp = 2, 
+  seed = 749662, 
+)
+
+
+# ===================================
+# Histogram
+# ===================================
+## (1) visualization of normalization
+# peptide data without log2FC scaling
 pepHist(scale_log2r = FALSE)
 
 # with scaling
 pepHist(scale_log2r = TRUE)
 
-## samples for use are indicated under a column, i.e. `Select`, in `expt_smry.xlsx`
-# peptides
+## (2) sample selections
+# sample IDs indicated under column `Select` in `expt_smry.xlsx`
 pepHist(col_select = Select)
 
-# proteins
+# protein data
 prnHist(col_select = Select)
 
-## row filtration of data
+## (3) row filtration of data
 # phosphopeptide subset
 pepHist(
-  scale_log2r = TRUE,
   filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
   scale_y = FALSE, 
   filename = "pepHist_fil_by_sty.png",
@@ -136,18 +218,15 @@ pepHist(
   filename = "pepHist_fil_no_mn.png",
 )
 
-## between lead and lag
-# leading logFC profiles of peptides
+## (4) between lead and lag
+# leading profiles
 pepHist(
   filename = "pepHist.png",
 )
 
-# lagging logFC profiles of peptides at
+# lagging profiles at
 #   (1) n_psm >= 10
 #   (2) and no methionine oxidation or asparagine deamidation
-# 
-# may be used for the identification of sample(s) with 
-#   considerable offset(s) between the lead and the lag
 pepHist(
   filter_by_npsm = exprs(n_psm >= 10),
   filter_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),

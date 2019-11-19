@@ -154,112 +154,115 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
 }
 
 \examples{
-\dontrun{
-# Mascot example
-# copy fasta (does it once)
+# ===================================
+# Fasta and PSM files
+# ===================================
 library(proteoQDA)
-copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
-copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
+fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
+dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs(fasta_dir)
+copy_refseq_mm(fasta_dir)
 
-# set up a working directory
-dir.create("C:\\\\The\\\\Mascot\\\\Example", recursive = TRUE, showWarnings = FALSE)
-dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-
-# copy Mascot PSM examples
-cptac_csv_1(dat_dir)
-
-# copy "expt_smry.xlsx" and "frac_smry.xlsx"
-cptac_expt_1(dat_dir)
-cptac_frac_1(dat_dir)
-
-# load experiments
-library(proteoQ)
-load_expts()
-
-# process PSMs with in-function filtration of data by `filter_`
-normPSM(
-  group_psm_by = pep_seq,
-  group_pep_by = prot_acc,
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-  rptr_intco = 3000,
-  rm_craps = TRUE,
-  rm_krts = FALSE,
-  rm_outliers = FALSE,
-  annot_kinases = TRUE,
-  plot_rptr_int = TRUE,
-  plot_log2FC_cv = TRUE,
-
-  filter_peps = exprs(pep_expect <= .1),
-  filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
-)
-
-# exemplary PSM purging; n: the number of PSMs for a peptide
-purgePSM(max_cv = .5, min_n = 2)
-
-
-# MaxQuant example
-# copy fasta if not yet available
-library(proteoQDA)
-copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
-copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
-
-# set up a working directory
-dir.create("C:\\\\The\\\\MQ\\\\Example", recursive = TRUE, showWarnings = FALSE)
-dat_dir <- "C:\\\\The\\\\MQ\\\\Example"
-
-# copy MaxQuant PSM examples
-library(proteoQDB)
-cptac_mqpsm_txt(dat_dir)
-
-# copy "expt_smry.xlsx" and "frac_smry.xlsx"
-cptac_mqpsm_expt(dat_dir)
-cptac_mqpsm_frac(dat_dir)
-
-# load experiments
-library(proteoQ)
-load_expts()
-
-# process MaxQuant PSMs
-normPSM(
-  group_psm_by = pep_seq,
-  group_pep_by = prot_acc,
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-  corrected_int = TRUE,
-  rm_reverses = TRUE,
-  rptr_intco = 3000,
-  rm_craps = TRUE,
-  rm_krts = FALSE,
-  rm_outliers = FALSE,
-  annot_kinases = TRUE,
-  plot_rptr_int = TRUE,
-  plot_log2FC_cv = TRUE,
-
-  filter_peps = exprs(PEP <= 0.1),
-)
-
-# process Spectrum Mill PSMs
-normPSM(
-  group_psm_by = pep_seq,
-  group_pep_by = gene,
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-  rptr_intco = 3000,
-  rm_craps = TRUE,
-  rm_krts = FALSE,
-  rm_outliers = FALSE,
-  annot_kinases = TRUE,
-  plot_rptr_int = TRUE,
-  plot_log2FC_cv = TRUE,
-
-  filter_peps = exprs(score >= 10),
-)
-
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_csv_1(dat_dir)
+  cptac_expt_1(dat_dir)
+  cptac_frac_1(dat_dir)
+  
+  # Maxquant
+  #   to install package `proteoQDB` containing MaxQuant examples: 
+  #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+  #    (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+  library(proteoQDB)
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_mqpsm_txt(dat_dir)
+  cptac_mqpsm_expt(dat_dir)
+  cptac_mqpsm_frac(dat_dir)	
 }
+## END of RUN `Mascot or Maxquant but not both`
 
+
+# ===================================
+# PSM
+# ===================================
+library(proteoQ)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  load_expts()
+	
+  normPSM(
+    group_psm_by = pep_seq_mod,
+    group_pep_by = prot_acc,
+    fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+              "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+    rptr_intco = 3000,
+    rm_craps = TRUE,
+    rm_krts = FALSE,
+    rm_outliers = FALSE,
+    annot_kinases = TRUE,
+    plot_rptr_int = TRUE,
+    plot_log2FC_cv = TRUE,
+    
+    filter_peps = exprs(pep_expect <= .1),
+    filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
+  )
+
+  # MaxQuant
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  load_expts()
+	
+  normPSM(
+    group_psm_by = pep_seq_mod,
+    group_pep_by = prot_acc,
+    fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+              "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+    corrected_int = TRUE,
+    rm_reverses = TRUE,
+    rptr_intco = 3000,
+    rm_craps = TRUE,
+    rm_krts = FALSE,
+    rm_outliers = FALSE,
+    annot_kinases = TRUE,
+    plot_rptr_int = TRUE,
+    plot_log2FC_cv = TRUE,
+    
+    filter_peps = exprs(PEP <= 0.1),
+  )
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+
+
+# ===================================
+# PSM cleanup by CV
+# ===================================
+# percent CV
+purgePSM(pt_cv = .95)
+
+# max CV
+purgePSM(max_cv = .5)
+
+# `max_cv` then `pt_cv`
+purgePSM(max_cv = .5)
+purgePSM(pt_cv = .95)
+
+# actually 90\% CV 
+purgePSM(pt_cv = .95)
+purgePSM(pt_cv = .95)
 }
 \seealso{
-\code{\link{normPep}} for peptides and \code{\link{normPrn}} for
- proteins.
+\code{\link{load_expts}} for experiment setup, \code{\link{normPep}}
+ for peptide data normalization, \code{\link{normPrn}} for protein data
+ normalization.
 }
