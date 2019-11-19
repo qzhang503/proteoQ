@@ -8,10 +8,11 @@
 \usage{
 proteoMDS(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
-  col_size = NULL, col_alpha = NULL, scale_log2r = TRUE,
-  adjEucDist = FALSE, classical = TRUE, show_ids = TRUE,
-  annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL,
-  ...)
+  col_size = NULL, col_alpha = NULL, color_brewer = NULL,
+  fill_brewer = NULL, size_manual = NULL, shape_manual = NULL,
+  alpha_manual = NULL, scale_log2r = TRUE, adjEucDist = FALSE,
+  classical = TRUE, k = 3, show_ids = TRUE, annot_cols = NULL,
+  df = NULL, filepath = NULL, filename = NULL, ...)
 
 pepMDS(...)
 
@@ -51,6 +52,26 @@ Values under which will be used for the \code{alpha} (transparency)
 aesthetics in plots. At the NULL default, the column key \code{Alpha} will
 be used.}
 
+\item{color_brewer}{Character string to the name of a color brewer for use in
+\href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_color_brewer},
+ i.e., \code{color_brewer = Set1}.}
+
+\item{fill_brewer}{Character string to the name of a color brewer for use in
+\href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_fill_brewer},
+i.e., \code{fill_brewer = Spectral}.}
+
+\item{size_manual}{Numeric vector to the scale of sizes of objects in a plot,
+i.e., \code{size_manual = c(8, 12)}. See also
+\href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2}.}
+
+\item{shape_manual}{Numeric vector to the scale of shape IDs, i.e.,
+\code{shape_manual = c(5, 15)}. See also
+\href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2}.}
+
+\item{alpha_manual}{Numeric vector to the scale of transparency of objects in
+a plot, i.e., \code{alpha_manual = c(.5, .9)}. See also
+\href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2}.}
+
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples.}
 
@@ -64,7 +85,11 @@ near the end of a sample handling process, for instance, at the stages
 immediately before or after TMT labeling.}
 
 \item{classical}{Logical; performs metric MDS at TRUE and non-metric MDS at
-FALSE.}
+FALSE (see also \code{\link[stats]{cmdscale}} and
+\code{\link[MASS]{isoMDS}}).}
+
+\item{k}{Numeric; The desired dimension for the solution passed to
+\code{\link[stats]{cmdscale}}.}
 
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots.}
@@ -113,13 +138,183 @@ latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
 for details.
 }
 \examples{
+## =========================================================================================
+## Mascot workflow
+## =========================================================================================
+
+## part 1 --- setup
+# FASTA files to database directory
+library(proteoQDA)
+dir.create("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq", recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
+copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
+
+# examplary Mascot PSM data to working directory
+dir.create("C:\\\\The\\\\Mascot\\\\Example", recursive = TRUE, showWarnings = FALSE)
+dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+cptac_csv_1(dat_dir)
+
+# metadata to working directory
+cptac_expt_1(dat_dir)
+cptac_frac_1(dat_dir)
+
+# metadata to workspace
+library(proteoQ)
+load_expts()
+
+
+## part 2 --- summarization of PSMs to peptides and proteins
+# PSM tables
+normPSM(
+	group_psm_by = pep_seq, 
+	group_pep_by = gene, 
+	fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+						"~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+	rptr_intco = 3000,
+	rm_craps = TRUE,
+	rm_krts = FALSE,
+	rm_outliers = FALSE, 
+	annot_kinases = TRUE, 
+	plot_rptr_int = TRUE, 
+	plot_log2FC_cv = TRUE, 
+	
+	filter_psms = exprs(pep_expect <= .1, pep_score >= 15), 
+)
+
+# peptide tables
+normPep(
+	method_psm_pep = median, 
+	method_align = MGKernel, 
+	range_log2r = c(5, 95), 
+	range_int = c(5, 95), 
+	n_comp = 3, 
+	seed = 749662, 
+	maxit = 200, 
+	epsilon = 1e-05, 
+)
+
+# protein tables
+normPrn(
+	method_pep_prn = median, 
+	method_align = MGKernel, 
+	range_log2r = c(20, 95), 
+	range_int = c(5, 95), 
+	n_comp = 2, 
+	seed = 749662, 
+	maxit = 200, 
+	epsilon = 1e-05, 
+)
+
+## global setting of scaling normalization
+scale_log2r = TRUE
+
+# optional: peptide NA imputation (warning: may take a while)
+pepImp(m = 2, maxit = 2)
+
+# optional: protein NA imputation
+prnImp(m = 5, maxit = 5)
+
+
+## =========================================================================================
+## or MaxQuant workflow
+## =========================================================================================
+
+# special guide for the installation of data package proteoQDB containing MaxQuant examples: 
+#  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+#  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+
+## part 1 --- setup
+# fasta files to database directory
+library(proteoQDA)
+dir.create("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq", recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
+copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
+
+# examplary PSM data to working directory
+library(proteoQDB)
+dir.create("C:\\\\The\\\\MQ\\\\Example", recursive = TRUE, showWarnings = FALSE)
+dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+cptac_mqpsm_txt(dat_dir)
+
+# metadata to working directory
+cptac_mqpsm_expt(dat_dir)
+cptac_mqpsm_frac(dat_dir)
+
+# metadata to workspace
+library(proteoQ)
+load_expts()
+
+
+## part 2 --- summarization of PSMs to peptides and proteins
+# PSM tables
+normPSM(
+	group_psm_by = pep_seq, 
+	group_pep_by = gene, 
+	fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+					"~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+	rptr_intco = 3000,					
+	corrected_int = TRUE,
+	rm_reverses = TRUE,
+	rm_craps = TRUE,
+	rm_krts = FALSE,
+	rm_outliers = FALSE, 
+	annot_kinases = TRUE,	
+	plot_rptr_int = TRUE, 
+	plot_log2FC_cv = TRUE, 
+	
+	filter_psms_by = exprs(PEP <= 0.1), 
+)
+
+# peptide tables
+normPep(
+	method_psm_pep = median, 
+	method_align = MGKernel, 
+	range_log2r = c(5, 95), 
+	range_int = c(5, 95), 
+	n_comp = 3, 
+	seed = 749662, 
+	maxit = 200, 
+	epsilon = 1e-05, 
+)
+
+# protein tables
+normPrn(
+	use_unique_pep = TRUE, 
+	method_pep_prn = median, 
+	method_align = MGKernel, 
+	range_log2r = c(20, 95), 
+	range_int = c(5, 95), 
+	n_comp = 2, 
+	seed = 749662, 
+	maxit = 200, 
+	epsilon = 1e-05, 
+	filter_prots_by = exprs(prot_n_pep >= 2),
+)
+
+## global setting of scaling normalization
+scale_log2r = TRUE
+
+
+# optional: peptide NA imputation (warning: may take a while)
+pepImp(m = 2, maxit = 2)
+
+# optional: protein NA imputation
+prnImp(m = 5, maxit = 5)
+
+
+# ==========================
+# MDS
+# ==========================
+
+# peptide
 pepMDS(
-  scale_log2r = FALSE,
+  scale_log2r = TRUE,
   col_select = Select, 
   filter_by_npsm = exprs(pep_n_psm >= 10),
   filename = "pepMDS_filtered.png",
 )
 
+# protein
 prnMDS(
   scale_log2r = TRUE,
   col_color = Color,
@@ -129,6 +324,15 @@ prnMDS(
   filename = "prnMDS_filtered.png",
 )
 
+# custom palette
+prnMDS(
+  scale_log2r = TRUE,
+  col_shape = Shape,
+  color_brewer = "Set1",
+  show_ids = TRUE,
+  filename = "my_palette.png",
+)
+
 \dontrun{
 prnMDS(
   col_color = "column_key_not_existed",
@@ -136,4 +340,9 @@ prnMDS(
 )
 }
 
+}
+\seealso{
+\code{\link{load_expts}} for PSM, peptide and protein data
+ preparation, \code{\link{pepImp}} for NA value imputation and
+ \code{\link{pepSig}} for linear modelings.
 }

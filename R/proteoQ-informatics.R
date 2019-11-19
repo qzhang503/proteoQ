@@ -11,8 +11,10 @@
 #' @import dplyr rlang ggplot2 pheatmap openxlsx
 #' @importFrom magrittr %>%
 info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order = NULL,
-                       col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL,
-                       col_alpha = NULL, col_benchmark = NULL, scale_log2r = TRUE,
+                       col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+                       color_brewer = NULL, fill_brewer = NULL, 
+                       size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
+                       col_benchmark = NULL, scale_log2r = TRUE,
                        impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL,
                        anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
                                      "NMF", "Trend")) {
@@ -34,7 +36,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
 	col_benchmark <- rlang::enexpr(col_benchmark)
-	
+
 	col_select <- ifelse(is.null(col_select), rlang::expr(Select), rlang::sym(col_select))
 	col_group <- ifelse(is.null(col_group), rlang::expr(Group), rlang::sym(col_group))
 	col_order <- ifelse(is.null(col_order), rlang::expr(Order), rlang::sym(col_order))
@@ -55,6 +57,15 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if (col_alpha == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if (col_benchmark == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	
+	color_brewer <- rlang::enexpr(color_brewer)
+	fill_brewer <- rlang::enexpr(fill_brewer)
+	if (!is.null(color_brewer)) color_brewer <- rlang::as_string(color_brewer)
+	if (!is.null(fill_brewer)) fill_brewer <- rlang::as_string(fill_brewer)
+	
+	size_manual <- rlang::enexpr(size_manual)
+	shape_manual <- rlang::enexpr(shape_manual)
+	alpha_manual <- rlang::enexpr(alpha_manual)
+
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
@@ -252,14 +263,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	force(col_benchmark)
 
 	if (anal_type == "MDS") {
-		function(adjEucDist = adjEucDist, classical = classical, show_ids = show_ids,
-		         annot_cols = NULL, ...) {
-
+		function(adjEucDist = FALSE, classical = TRUE, k = 3, show_ids = TRUE, annot_cols = NULL, ...) {
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 		  
-		  df_mds <- df %>% 
+		  df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
 		    scoreMDS(
 		      id = !!id, 
@@ -268,15 +277,20 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		      scale_log2r = scale_log2r, 
 		      adjEucDist = adjEucDist, 
 		      classical = classical, 
-		      !!!filter_dots)
-
-		  df_mds$MDS %>% 
-		    cmbn_meta(label_scheme_sub) %>% 
+		      k = k, 
+		      !!!filter_dots) %>% 
+		    cmbn_meta(label_scheme_sub) %T>% 
+		    write.csv(file.path(filepath, paste0("res_", fn_prefix, ".csv")), row.names = FALSE) %>% 
 		    plotMDS(col_color = !!col_color, 
 		            col_fill = !!col_fill, 
 		            col_shape = !!col_shape, 
 		            col_size = !!col_size, 
 		            col_alpha = !!col_alpha, 
+		            color_brewer = !!color_brewer,
+		            fill_brewer = !!fill_brewer, 
+		            size_manual = size_manual,
+		            shape_manual = shape_manual,
+		            alpha_manual = alpha_manual, 
 		            label_scheme_sub = label_scheme_sub, 
 		            filepath = filepath, 
 		            filename = paste0(fn_prefix, ".", fn_suffix), 
@@ -284,65 +298,66 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		            !!!dots)
 		}
 	} else if (anal_type == "PCA") {
-		function(show_ids = show_ids, annot_cols = NULL, ...) {
-			
+		function(type = obs, show_ids = TRUE, annot_cols = NULL, ...) {
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 		  
-		  df_mds <- df %>% 
+		  type <- rlang::as_string(rlang::enexpr(type))
+		  
+		  df_pca <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
-		    scoreMDS(
+		    scorePCA(
 		      id = !!id, 
 		      label_scheme_sub = label_scheme_sub, 
 		      anal_type = anal_type, 
 		      scale_log2r = scale_log2r, 
-		      adjEucDist = FALSE, 
-		      classical = TRUE, 
+		      type = type, 
 		      !!!filter_dots)
 		  
-		  df_mds$PCA %>% 
+		  df_pca$PCA %>% 
 		    cmbn_meta(label_scheme_sub) %>% 
 		    plotPCA(col_color = !!col_color, 
 		            col_fill = !!col_fill, 
 		            col_shape = !!col_shape, 
 		            col_size = !!col_size, 
 		            col_alpha = !!col_alpha, 
+		            color_brewer = !!color_brewer,
+		            fill_brewer = !!fill_brewer, 
+		            size_manual = size_manual,
+		            shape_manual = shape_manual,
+		            alpha_manual = alpha_manual, 
 		            label_scheme_sub = label_scheme_sub, 
-		            prop_var = df_mds$prop_var, 
-		            pr_bi = df_mds$pr_bi, 
-		            prop_var_bi = df_mds$prop_var_bi, 
+		            prop_var = df_pca$prop_var, 
 		            filepath = filepath, 
 		            filename = paste0(fn_prefix, ".", fn_suffix), 
-		            show_ids = show_ids, !!!dots)
+		            show_ids = show_ids, 
+		            !!!dots)
 		}
 	} else if (anal_type == "EucDist") {
-		function(adjEucDist = adjEucDist, annot_cols = NULL, annot_colnames = NULL, ...) {
-			
+		function(adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, ...) {
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
-		  
-		  df_mds <- df %>% 
+
+		  df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
-		    scoreMDS(
+		    scoreEucDist(
 		      id = !!id, 
 		      label_scheme_sub = label_scheme_sub, 
 		      anal_type = anal_type, 
 		      scale_log2r = scale_log2r, 
 		      adjEucDist = adjEucDist, 
-		      classical = TRUE, 
-		      !!!filter_dots)
-		    
-		  df_mds$D %>% plotEucDist(annot_cols, 
-		                           annot_colnames, 
-		                           filepath = filepath, 
-		                           filename = paste0(fn_prefix, ".", fn_suffix), !!!dots)
+		      !!!filter_dots) %>% 
+		    plotEucDist(annot_cols, 
+		                annot_colnames, 
+		                filepath, 
+		                filename = paste0(fn_prefix, ".", fn_suffix), 
+		                !!!dots)
 		}
 	} else if (anal_type == "Heatmap") {
-		function(complete_cases = complete_cases, xmin = xmin, xmax = xmax, xmargin = xmargin,
-		         annot_cols = annot_cols, annot_colnames = annot_colnames, 
-		         annot_rows = annot_rows, ...) {
+		function(complete_cases = FALSE, xmin = -1, xmax = 1, xmargin = 0.1,
+		         annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, ...) {
 		         
 		  plotHM(df = df, 
 		         id = !!id, 
@@ -361,7 +376,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			       ...)
 		}
 	} else if (anal_type == "Histogram") {
-		function(pep_pattern = pep_pattern, show_curves = show_curves, show_vline = show_vline, scale_y = scale_y, ...) {
+		function(pep_pattern = "zzz", show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, ...) {
 			if (scale_log2r) {
 				fn_par <- file.path(filepath, "MGKernel_params_Z.txt")
 			} else {
@@ -404,7 +419,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           ...)
 		}
 	} else if (anal_type == "Trend") {
-		function(n_clust = n_clust, complete_cases = complete_cases, task = !!task, ...) {
+		function(n_clust = NULL, complete_cases = FALSE, task = anal, ...) {
 		  fn_prefix <- paste0(fn_prefix, "_n", n_clust)
 		  
 		  dots <- rlang::enexprs(...)
@@ -440,7 +455,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  )
 		}
 	} else if (anal_type == "NMF") {
-		function(r = r, nrun = nrun, complete_cases = complete_cases, task = !!task, ...) {
+		function(r = NULL, nrun = 200, complete_cases = FALSE, task = anal, ...) {
 		  fn_prefix <- paste0(fn_prefix, "_r", r)
 		  
 		  switch(rlang::as_string(rlang::enexpr(task)), 
@@ -518,7 +533,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (anal_type == "GSPA") {
 		function(complete_cases = FALSE, gset_nm = "go_sets", var_cutoff = .5,
 		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
-		         min_size = 10, max_size = Inf, min_greedy_size = 1, task = !!task, ...) {
+		         min_size = 10, max_size = Inf, min_greedy_size = 1, task = anal, ...) {
 
 		  # "id" only for tibbling rownames
 		  switch(rlang::as_string(rlang::enexpr(task)), 

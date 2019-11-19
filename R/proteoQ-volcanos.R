@@ -14,9 +14,10 @@
 #'@param adjP Logical; if TRUE, use Benjamini-Hochberg pVals.
 #'@param show_labels Logical; if TRUE, shows the labels of top twenty entries.
 #'@param show_sig Character string indicating the type of significance values to
-#'  be shown on volcano plots. The default is \code{"none"}. Additional choices
-#'  are from \code{c("pVal", "qVal")} where \code{pVal} or \code{qVal} will be
-#'  shown, respectively, in the facet grid of plots.
+#'  be shown on the volcano plots of gene sets. The default is \code{"none"}.
+#'  Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
+#'  \code{qVal} will be shown, respectively, in the facet grid of the plots. The
+#'  argument is not used in \code{prnVol} and \code{pepVol}.
 #'@param pval_cutoff Numeric value or vector. \code{Gene sets} with enrichment
 #'  \code{pVals} less significant than the threshold will be excluded for
 #'  volcano plot visualization. The argument is not used in \code{prnVol} and
@@ -26,6 +27,8 @@
 #'  volcano plot visualization. The cut-off is in a logarithmic base of 2, not
 #'  in a linear scale. The argument is not used in \code{prnVol} and
 #'  \code{pepVol}.
+#'@param gset_nms Character string or vector containing the name(s) of gene
+#'  sets. The argument is not used in \code{prnVol} and \code{pepVol}.
 #'@inheritParams proteoSigtest
 #'@inheritParams proteoGSPA
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
@@ -76,7 +79,7 @@
 #'   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
 #'   pval_cutoff = c(5E-2, 5E-2, 1E-10),
 #'   logFC_cutoff = log2(1.2),
-#'   
+#'
 #'   show_sig = pVal,
 #'   show_labels = TRUE,
 #'   yco = 0.05,
@@ -86,10 +89,11 @@
 #'
 #'@export
 proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_log2r = TRUE,
-													filepath = NULL, filename = NULL, impute_na = TRUE, adjP = FALSE,
-													show_labels = TRUE, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-													show_sig = "none", gset_nms = c("go_sets", "kegg_sets"), 
-													fml_nms = NULL, ...) {
+                           filepath = NULL, filename = NULL, fml_nms = NULL, 
+                           impute_na = TRUE, adjP = FALSE, show_labels = TRUE, 
+                           pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
+                           show_sig = "none", gset_nms = c("go_sets", "kegg_sets"), 
+                           ...) {
 	
   options(scipen = 999)
 	options(warn = 1)
@@ -193,6 +197,7 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 
 		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE,
 		                        sep = "\t", comment.char = "#"), error = function(e) NA)
+		
 		if (!is.null(dim(df))) {
 			message(paste("File loaded:", gsub("\\\\", "/", src_path)))
 		} else {
@@ -292,7 +297,7 @@ plotVolcano <- function(df = NULL, id = "gene", filepath = NULL, filename = NULL
   fmls <- fmls %>% .[names(.) %in% formulas]
   formulas <- formulas %>% .[map_dbl(., ~ which(.x == names(fmls)))]
   
-  if (is_empty(formulas)) stop("No formula matached; compare the formula name(s) with those in `prnSig(..)`")
+  if (is_empty(formulas)) stop("No formula matached; compare the formula name(s) with those in `prnSig(...)`")
   
   sub_dirs <- file.path(filepath, formulas)
   purrr::walk(sub_dirs, ~ dir.create(.x, recursive = TRUE, showWarnings = FALSE))
@@ -341,12 +346,12 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 
 	volcano_theme <- theme_bw() +
 	  theme(
-		axis.text.x  = element_text(angle=0, vjust=0.5, size=24),
-		axis.ticks.x  = element_blank(),
-		axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
-		axis.title.x = element_text(colour="black", size=24),
-		axis.title.y = element_text(colour="black", size=24),
-		plot.title = element_text(face="bold", colour="black", size=20, hjust=.5, vjust=.5),
+		axis.text.x = element_text(angle = 0, vjust = 0.5, size = 24),
+		axis.ticks.x = element_blank(),
+		axis.text.y = element_text(angle = 0, vjust = 0.5, size = 24),
+		axis.title.x = element_text(colour = "black", size = 24),
+		axis.title.y = element_text(colour="black", size = 24),
+		plot.title = element_text(face = "bold", colour = "black", size = 14, hjust = .5, vjust = .5),
 
 		panel.grid.major.x = element_blank(),
 		panel.grid.minor.x = element_blank(),
@@ -359,8 +364,8 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 		legend.key = element_rect(colour = NA, fill = 'transparent'),
 		legend.background = element_rect(colour = NA,  fill = "transparent"),
 		legend.position = "none",
-		legend.title = element_text(colour="black", size=18),
-		legend.text = element_text(colour="black", size=18),
+		legend.title = element_text(colour="black", size = 18),
+		legend.text = element_text(colour="black", size = 18),
 		legend.text.align = 0,
 		legend.box = NULL
 	 )
@@ -494,8 +499,8 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, volcano_
 		volcano_theme
 
 	if (show_labels) {
-		p <- p + geom_text(data = dfw_sub_top20, mapping = aes(x = log2Ratio, y = -log10(pVal), 
-		                                                       label = Index, color = Index), 
+		p <- p + geom_text(data = dfw_sub_top20, 
+		                   mapping = aes(x = log2Ratio, y = -log10(pVal), label = Index, color = Index),
 		                   size = 3, alpha = .5, hjust = 0, nudge_x = 0.05, vjust = 0, nudge_y = 0.05)
 		p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
 		p <- p + geom_table(data = dt, aes(table = !!rlang::sym(id)), x = -xmax*.85, y = ymax/2)
@@ -558,8 +563,8 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, volcano_
 #'
 #' @import dplyr rlang ggplot2
 #' @importFrom magrittr %>%
-gsVolcano <- function(df = NULL, contrast_groups = NULL, gsea_res = NULL, gsea_key = "term", gsets, 
-                      volcano_theme, filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE,
+gsVolcano <- function(df = NULL, contrast_groups = NULL, gsea_res = NULL, gsea_key = "term", gsets = NULL, 
+                      volcano_theme = NULL, filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE,
                       show_sig = "none", pval_cutoff = 1E-6, logFC_cutoff = log2(1.2), ...) {
 
 	dots <- rlang::enexprs(...)
@@ -776,66 +781,51 @@ GeomTable <- ggproto(
 	"GeomTable",
 	Geom,
 	required_aes = c("x", "y",  "table"),
-	default_aes = aes(
-	widthx = 10,
-	widthy = 10,
-	rownames = NA
-	),
+	default_aes = aes(widthx = 10, widthy = 10, rownames = NA),
 	draw_key = draw_key_blank,
 
 	draw_panel = function(data, panel_scales, coord) {
-	if (nrow(data) != 1) {
-		stop(
-		sprintf(
-			"only one table per panel allowed, got %s (%s)",
-			nrow(data),
-			as.character(data)
-		),
-		call. = FALSE
-		)
-	}
-	wx = data$widthx / 2
-	wy = data$widthy / 2
+  	if (nrow(data) != 1) {
+  		stop(sprintf("only one table per panel allowed, got %s (%s)", 
+  		             nrow(data), 
+  		             as.character(data)), 
+  		     call. = FALSE)
+  	}
+	  
+	  wx = data$widthx / 2
+	  wy = data$widthy / 2
 
-	corners <-
-		data.frame(x = c(data$x - wx, data$x + wx),
-				 y = c(data$y - wy, data$y + wy))
-	d <- coord$transform(corners, panel_scales)
+  	corners <- data.frame(x = c(data$x - wx, data$x + wx), y = c(data$y - wy, data$y + wy))
+  	d <- coord$transform(corners, panel_scales)
+  
+  	table = read.csv(text = data$table, header = TRUE)
+  	if (!is.na(data$rownames)) {
+  		rownames(table) <-
+  		unlist(strsplit(data$rownames, "|", fixed = TRUE))
+  	}
+  
+  	x_rng <- range(d$x, na.rm = TRUE)
+  	y_rng <- range(d$y, na.rm = TRUE)
 
-	table = read.csv(text = data$table, header = TRUE)
-	if (!is.na(data$rownames)) {
-		rownames(table) <-
-		unlist(strsplit(data$rownames, "|", fixed = TRUE))
-	}
-
-	x_rng <- range(d$x, na.rm = TRUE)
-	y_rng <- range(d$y, na.rm = TRUE)
-
-	vp <-
-		viewport(
-		x = mean(x_rng),
-		y = mean(y_rng),
-		width = diff(x_rng),
-		height = diff(y_rng),
-		just = c("center", "center")
-		)
-
-	grob <- tableGrob(table, rows = NULL, col = NULL,
-	                  theme = ttheme_minimal(core = list(fg_params=list(cex = .7)),
-	                                         colhead = list(fg_params=list(cex = .7), parse=TRUE),
-	                                         rowhead = list(fg_params=list(cex = .7))))
-	grob$heights <- grob$heights*.6
-
-	## add a line across the header
-	# grob <- gtable_add_grob(
-	#   grob,
-	#   grobs = segmentsGrob(y1 = unit(0, "npc"), gp = gpar(lwd = 2.0)),
-	#   t = 1,
-	#   b = 1,
-	#   l = 1,
-	#   r = ncol(d) + 1
-	# )
-	editGrob(grob, vp = vp, name = paste(grob$name, facet_id()))
+  	vp <- viewport(x = mean(x_rng), y = mean(y_rng), width = diff(x_rng), height = diff(y_rng), 
+  	               just = c("center", "center"))
+  	  
+  	grob <- tableGrob(table, rows = NULL, col = NULL,
+  	                  theme = ttheme_minimal(core = list(fg_params=list(cex = .7)),
+  	                                         colhead = list(fg_params=list(cex = .7), parse=TRUE),
+  	                                         rowhead = list(fg_params=list(cex = .7))))
+  	grob$heights <- grob$heights*.6
+  
+  	## add a line across the header
+  	# grob <- gtable_add_grob(
+  	#   grob,
+  	#   grobs = segmentsGrob(y1 = unit(0, "npc"), gp = gpar(lwd = 2.0)),
+  	#   t = 1,
+  	#   b = 1,
+  	#   l = 1,
+  	#   r = ncol(d) + 1
+  	# )
+  	editGrob(grob, vp = vp, name = paste(grob$name, facet_id()))
 	}
 )
 
