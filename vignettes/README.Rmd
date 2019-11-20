@@ -16,13 +16,13 @@ output:
   pdf_document:
     toc: yes
     number_sections: true
-  github_document:
+  word_document:
     toc: yes
   md_document:
     toc: yes
     toc_depth: 4
     variant: gfm
-  word_document:
+  github_document:
     toc: yes
 ---
 
@@ -58,23 +58,6 @@ references:
   issued:
     year: 2018
     month: 7
-    
-- id: wangyy2011proteomics
-  title: Reversed-phase chromatography with multiple fraction concatenation strategy for proteome profiling of human MCF10A cells
-  author:
-  - family: Wang
-    given: Y
-  container-title: Proteomics.
-  volume: 11
-  URL: 'https://10.1002/pmic.201000722'
-  DOI: 10.1002/pmic.201000722
-  issue: 10
-  publisher: Wiley Online Library
-  page: 2019-2026
-  type: article-journal
-  issued:
-    year: 2011
-    month: 5
 ---
 
 <style>
@@ -942,9 +925,13 @@ The names of gene sets will by default match those provided in `prnGSPA`. Despit
 In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `essmap_.*.csv` files under the `Protein\GSPA` folder.  
 
 ### 2.6 Gene set networks
-Gene sets can overlap with one another to varying degrees. We need to ask the same question here: to what extent the signficant sets found from `GSPA` are redundant in relative to any of the essential sets determined by set cover, i.e., what is the intersect in gene IDs between a redundant set and an essential set? For this reason, we have calculated the `fraction` of overlap between gene sets when calling `prnGSPA`. The results are also available in output files such as `Protein\GSPA\essmap_.*.csv`.  
+In the above section, we have plotted the enrichment of gene sets by individual GO or KEGG terms. Depending on how much the sample groups contrast to each other, we could have produced tens or hundreds of plots where many of them may never get viewed. Besides, gene sets can be redundant with overlaps to one another to varying degrees. A means to communicate the gene set results at high levels is to present them as hierarchical trees or grouped networks.  
 
-In this section, we first perform simple heat map visualization between all significant gene sets in columns and essential groups in rows.  
+In this section, we will visualize the connectivity of significant gene sets by both distance heat maps and networks. For simplicity, the heat maps or networks will be constructed only between gene sets and essential gene sets. As mentioned in section `Gene sets under volcano plots`, the essential gene sets were approximated with greedy set cover. This will reduce the dimensionality of data from $n * n$ to $n * m$ ($m \le n$).  
+
+We next gauge the redundancy of a gene set in relative to an essential set by counting the numbers of intersecting gene IDs. This is documented as the `fraction` of overlap between gene sets when calling `prnGSPA`. The values are available in output files such as `Protein\GSPA\essmap_.*.csv`. For network visualization, the gene sets are further classified by their distance using hierarchial clustering.  
+
+In this following, we first perform simple heat map visualization between all significant gene sets in columns and essential groups in rows.  
 
 ```{r prnPSPAHM_all, eval = FALSE}
 prnGSPAHM(
