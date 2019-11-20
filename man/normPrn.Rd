@@ -130,8 +130,79 @@ NB: PSM entries with no quantitative contributions are excluded from the
 calculations of \code{prot_n_pep}, \code{prot_n_psm} and \code{pep_n_psm}.
 }
 \examples{
-\dontrun{
-# proteins results with examplary `filter_...`
+# ===================================
+# Prerequisite Fasta and PSM files
+# ===================================
+library(proteoQDA)
+fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
+dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs(fasta_dir)
+copy_refseq_mm(fasta_dir)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_csv_1(dat_dir)
+  cptac_expt_1(dat_dir)
+  cptac_frac_1(dat_dir)
+  
+  # Maxquant
+  #   to install package `proteoQDB` containing MaxQuant examples: 
+  #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+  #    (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+  library(proteoQDB)
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_mqpsm_txt(dat_dir)
+  cptac_mqpsm_expt(dat_dir)
+  cptac_mqpsm_frac(dat_dir)	
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+
+# ===================================
+# Prerequisite PSM normalization
+# ===================================
+library(proteoQ)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+
+  # Maxquant
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+
+load_expts()
+
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+)
+
+
+# ===================================
+# Prerequisite peptide normalization
+# ===================================
+normPep(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 749662, 
+)
+
+
+# ===================================
+# Protein normalization
+# ===================================
 normPrn(
   method_pep_prn = median,
   method_align = MGKernel,
@@ -141,11 +212,96 @@ normPrn(
   seed = 749662,
   maxit = 200,
   epsilon = 1e-05,
-
-  # filter_by = exprs(prot_n_psm >= 5, prot_n_pep >=2),
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
 )
 
-}
+# renormalization against selected samples
+normPrn(
+  method_pep_prn = median,
+  method_align = MGKernel,
+  range_log2r = c(20, 95),
+  range_int = c(5, 95),
+  n_comp = 2,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05,
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
+  
+  # selected samples
+  col_refit = Select_sub,	
+)
+
+# renormalization based on selected rows
+normPrn(
+  method_pep_prn = median,
+  method_align = MGKernel,
+  range_log2r = c(20, 95),
+  range_int = c(5, 95),
+  n_comp = 2,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05,
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
+  
+  # selected rows 
+  slice_at = exprs(prot_n_psm >= 10), 
+)
+
+# renormalization against selected sample columns and data rows
+normPrn(
+  method_pep_prn = median,
+  method_align = MGKernel,
+  range_log2r = c(20, 95),
+  range_int = c(5, 95),
+  n_comp = 2,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05,
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique),
+	
+  slice_at = exprs(prot_n_psm >= 10), 
+  col_refit = Select_sub,
+)
+
+# addtive renormalization against selected sample columns and data rows
+# first
+normPrn(
+  method_pep_prn = median,
+  method_align = MGKernel,
+  range_log2r = c(20, 95),
+  range_int = c(5, 95),
+  n_comp = 2,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05,
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique),
+	
+  slice_at = exprs(prot_n_psm >= 10), 
+  col_refit = W2,
+)
+
+# then
+normPrn(
+  method_pep_prn = median,
+  method_align = MGKernel,
+  range_log2r = c(20, 95),
+  range_int = c(5, 95),
+  n_comp = 2,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05,
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique),
+	
+  slice_at = exprs(prot_n_psm >= 5), 
+  col_refit = W16,
+)
+
+
+
+
+
+
+
 }
 \seealso{
 \code{\link{normPSM}} for PSMs and \code{\link{normPep}} for

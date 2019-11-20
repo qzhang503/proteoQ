@@ -86,6 +86,103 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 \code{impute_na = FALSE}
 }
 \examples{
+# ===================================
+# Prerequisite Fasta and PSM files
+# ===================================
+library(proteoQDA)
+fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
+dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs(fasta_dir)
+copy_refseq_mm(fasta_dir)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_csv_1(dat_dir)
+  cptac_expt_1(dat_dir)
+  cptac_frac_1(dat_dir)
+  
+  # Maxquant
+  #   to install package `proteoQDB` containing MaxQuant examples: 
+  #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+  #    (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+  library(proteoQDB)
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_mqpsm_txt(dat_dir)
+  cptac_mqpsm_expt(dat_dir)
+  cptac_mqpsm_frac(dat_dir)	
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+
+# ===================================
+# Prerequisite PSM normalization
+# ===================================
+library(proteoQ)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+
+  # Maxquant
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+
+load_expts()
+
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+)
+
+
+# ===================================
+# Prerequisite peptide normalization
+# ===================================
+normPep(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 749662, 
+)
+
+
+# ===================================
+# Prerequisite protein normalization
+# ===================================
+normPrn(
+  method_align = MGKernel, 
+  n_comp = 2, 
+  seed = 749662, 
+)
+
+
+# ===================================
+# Optional NA imputation
+# ===================================
+# peptide
+pepImp(m = 2, maxit = 2)
+
+# protein
+prnImp(m = 5, maxit = 5)
+
+
+
+# ===================================
+# Trend
+# ===================================
+scale_log2r <- TRUE
+
+# protein data with sample order supervision
 anal_prnTrend(
   scale_log2r = TRUE,
   col_order = Order,
@@ -94,12 +191,14 @@ anal_prnTrend(
   filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
+# visualization
 plot_prnTrend(
   scale_log2r = TRUE,
   col_order = Order,
   n_clust = c(5:6), 
 )
 
+# only proteins with four or more identifying peptides
 plot_prnTrend(
   scale_log2r = TRUE,
   col_order = Order,

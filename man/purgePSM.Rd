@@ -37,3 +37,84 @@ The CV of peptides are calculated from contributing PSMs at the basis of per
 TMT experiment per series of LC/MS. Note that greater CV may be encountered
 for samples that are more different to reference material(s).
 }
+\examples{
+# ===================================
+# Prerequisite Fasta and PSM files
+# ===================================
+library(proteoQDA)
+fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
+dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs(fasta_dir)
+copy_refseq_mm(fasta_dir)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_csv_1(dat_dir)
+  cptac_expt_1(dat_dir)
+  cptac_frac_1(dat_dir)
+  
+  # Maxquant
+  #   to install package `proteoQDB` containing MaxQuant examples: 
+  #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+  #    (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+  library(proteoQDB)
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_mqpsm_txt(dat_dir)
+  cptac_mqpsm_expt(dat_dir)
+  cptac_mqpsm_frac(dat_dir)	
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+
+# ===================================
+# Prerequisite PSM normalization
+# ===================================
+library(proteoQ)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+
+  # Maxquant
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+
+load_expts()
+
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+)
+
+
+# ===================================
+# PSM cleanup by CV
+# ===================================
+# by percent CV
+purgePSM(pt_cv = .95)
+
+# by max CV
+purgePSM(max_cv = .5)
+
+# by `max_cv` then by `pt_cv`
+purgePSM(max_cv = .5)
+purgePSM(pt_cv = .95)
+
+# actually 90\% CV 
+purgePSM(pt_cv = .95)
+purgePSM(pt_cv = .95)
+}
+\seealso{
+\code{\link{purgePep}} for peptide data purging.
+}

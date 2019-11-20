@@ -376,14 +376,11 @@ proteoCorr <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #'@rdname proteoCorr
 #'
-#' @examples
-#' pepCorr_logFC(
-#'  col_order = Order, 
-#'  width = 10,
-#'  height = 10,
-#'  filter_by = exprs(pep_n_psm >= 3),
-#'  filename = pepcorr_logfc_npsm3.png,
-#' )
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@example inst/extdata/examples/imputeNA_examples.R
 #'
 #'@import purrr
 #'@export
@@ -407,6 +404,21 @@ pepCorr_logFC <- function (...) {
 #'@rdname proteoCorr
 #'
 #' @examples
+#' # ===================================
+#' # Correlation
+#' # ===================================
+#' scale_log2r <- TRUE
+#' 
+#' # peptide data with sample ID ordering
+#' pepCorr_logFC(
+#'  col_order = Order, 
+#'  width = 10,
+#'  height = 10,
+#'  filter_by = exprs(pep_n_psm >= 3),
+#'  filename = pepcorr_logfc_npsm3.png,
+#' )
+#'
+#' # peptide intensity
 #' pepCorr_logInt(
 #'  width = 10,
 #'  height = 10,
@@ -437,6 +449,7 @@ pepCorr_logInt <- function (...) {
 #'@rdname proteoCorr
 #'
 #' @examples
+#' # protein log2FC
 #' prnCorr_logFC(
 #'  width = 10,
 #'  height = 10,
@@ -466,6 +479,7 @@ prnCorr_logFC <- function (...) {
 #'@rdname proteoCorr
 #'
 #' @examples
+#' # protein intensity
 #' prnCorr_logInt(
 #'  width = 10,
 #'  height = 10,

@@ -99,31 +99,59 @@ system.file("extdata", "expt_smry.xlsx", package = "proteoQ")
 # An examplary "frac_smry.xlsx"
 system.file("extdata", "frac_smry.xlsx", package = "proteoQ")
 
-\dontrun{
-# set up a working directory
-dir.create("C:\\\\The\\\\Mascot\\\\Example", recursive = TRUE, showWarnings = FALSE)
-dat_dir <- c("C:\\\\The\\\\Mascot\\\\Example")
 
-# copy fasta (do it once)
+# ===================================
+# Fasta and PSM files
+# ===================================
+# fasta
 library(proteoQDA)
-copy_refseq_hs("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
-copy_refseq_mm("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq")
+fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
+dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs(fasta_dir)
+copy_refseq_mm(fasta_dir)
 
-# copy Mascot PSM data
-cptac_csv_1(dat_dir)
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  
+  # PSM
+  cptac_csv_1(dat_dir)
+  
+  # "expt_smry.xlsx" and "frac_smry.xlsx"
+  cptac_expt_1(dat_dir)
+  cptac_frac_1(dat_dir)
+  
+  # or Maxquant
+  #   to install package `proteoQDB` containing MaxQuant examples: 
+  #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+  #    (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+  library(proteoQDB)
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+	
+  # PSM
+  cptac_mqpsm_txt(dat_dir)
+  
+  # "expt_smry.xlsx" and "frac_smry.xlsx"
+  cptac_mqpsm_expt(dat_dir)
+  cptac_mqpsm_frac(dat_dir)	
+}
+## END of RUN `Mascot or Maxquant but not both`
 
-# copy "expt_smry.xlsx" and "frac_smry.xlsx"
-cptac_expt_1(dat_dir)
-cptac_frac_1(dat_dir)
 
+# ===================================
+# PSM, peptide and protein processing
+# ===================================
 # load experiments
 library(proteoQ)
 load_expts()
 
-
-# process PSMs with in-function filtration of data by `filter_`
+# PSM processing with in-function filtration of data by `filter_`
 normPSM(
-  group_psm_by = pep_seq,
+  group_psm_by = pep_seq_mod,
   group_pep_by = gene,
   fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
             "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
@@ -142,7 +170,6 @@ normPSM(
 # exemplary PSM purging
 purgePSM(pt_cv = .95)
 
-
 # peptides results with exemplary `filter_...`
 normPep(
   method_psm_pep = median,
@@ -153,13 +180,11 @@ normPep(
   seed = 749662,
   maxit = 200,
   epsilon = 1e-05,
-
   # filter_by_sp = exprs(species == "human"),
 )
 
 # exemplary peptide purging
 purgePep(pt_cv = .95)
-
 
 # proteins results with examplary `filter_...`
 normPrn(
@@ -171,12 +196,8 @@ normPrn(
   seed = 749662,
   maxit = 200,
   epsilon = 1e-05,
+  filter_prns = exprs(prot_n_pep >= 2)
 )
 
-
-# validation steps...
-?pepHist
-
-}
 
 }

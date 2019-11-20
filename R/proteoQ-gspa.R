@@ -60,50 +60,13 @@
 #'  data; also see \code{\link{normPSM}}.
 #'@import dplyr rlang ggplot2 networkD3
 #'@importFrom magrittr %>%
-#' @examples
-#' \dontrun{
-#' # prior tests of significance in protein abundance changes
-#' prnSig(
-#'   impute_na = FALSE,
-#'   W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
-#'   W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"],
-#'   W16_vs_W2 = ~ Term_3["W16-W2"],
-#' )
 #'
-#'
-#' # gene-set enrichment tests
-#' prnGSPA(
-#'   pval_cutoff = 5E-2,
-#'   logFC_cutoff = log2(1.2),
-#'   gspval_cutoff = 5E-2,
-#'   gset_nms = c("go_sets", "kegg_sets"),
-#'   impute_na = FALSE,
-#' )
-#'
-#' # only proteins with two or more identifying peptides
-#' prnGSPA(
-#'   pval_cutoff = 5E-2,
-#'   logFC_cutoff = log2(1.2),
-#'   gspval_cutoff = 5E-2,
-#'   gset_nms = c("go_sets", "kegg_sets"),
-#'   filter_by_npep = exprs(prot_n_pep >= 2),
-#'   impute_na = FALSE,
-#' )
-#'
-#' # customized thresholds for the corresponding formulae in `prnSig()`
-#' prnGSPA(
-#'   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
-#'   pval_cutoff = c(5E-2, 5E-2, 1E-10),
-#'   logFC_cutoff = log2(1.2),
-#'   gspval_cutoff = c(5E-2, 5E-2, 1E-5),
-#'   max_size = c(Inf, Inf, 120),
-#'
-#'   gset_nms = c("go_sets", "kegg_sets"),
-#'   filter_by_npep = exprs(prot_n_pep >= 2),
-#'   impute_na = FALSE,
-#' )
-#'
-#' }
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@example inst/extdata/examples/imputeNA_examples.R
+#'@example inst/extdata/examples/gspa_examples.R
 #'
 #'@export
 proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL, 
@@ -501,51 +464,13 @@ map_essential <- function (sig_sets) {
 #'  use keys indicated in \code{annot_rows}
 #'@import purrr
 #'
-#' @examples
-#' # enrichment analysis
-#' prnGSPA(
-#'   scale_log2r = TRUE,
-#'   impute_na = FALSE,
-#'   pval_cutoff = 5E-2,
-#'   gspval_cutoff = 5E-3,
-#'   gset_nms = c("go_sets", "kegg_sets"),
-#'
-#'   filter_by_npep = exprs(prot_n_pep >= 2),
-#' )
-#'
-#'
-#' # distance heat map and network of GSPA terms
-#' # a `term` is a subset of an `ess_term` if the distance is zero
-#' # `ess_idx` is a column key in `essmap_.*.csv`
-#' # `ess_size` is a column key in metadata file `essmeta_.*.csv`
-#' prnGSPAHM(
-#'   filter_by = exprs(distance <= .6),
-#'   annot_cols = "ess_idx",
-#'   annot_colnames = "Eset index",
-#'   annot_rows = "ess_size",
-#'   filename = show_some_redundancy.png,
-#' )
-#'
-#' # human terms only
-#' prnGSPAHM(
-#'   filter_num = exprs(distance <= .95),
-#'   filter_sp = exprs(start_with_str("hs", term)),
-#'   annot_cols = "ess_idx",
-#'   annot_colnames = "Eset index",
-#'   filename = show_more_connectivity.png,
-#' )
-#'
-#' # custom color palette
-#' prnGSPAHM(
-#'   annot_cols = c("ess_idx", "ess_size"),
-#'   annot_colnames = c("Eset index", "Size"),
-#'   filter_by = exprs(distance <= .95),
-#'   color = colorRampPalette(c("blue", "white", "red"))(100),
-#'   filename = "custom_colors.png"
-#' )
-#'
-#' \dontrun{
-#' }
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@example inst/extdata/examples/imputeNA_examples.R
+#'@example inst/extdata/examples/sigtest_min.R
+#'@example inst/extdata/examples/prnGSPAHM_examples.R
 #'
 #'@seealso \code{\link{prnGSPA}} for gene set enrichment analysis.
 #'@export

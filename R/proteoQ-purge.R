@@ -195,6 +195,10 @@ purge_by_n <- function (df, id, min_n) {
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/purgePSM_examples.R
+#'@seealso \code{\link{purgePep}} for peptide data purging.
 #'@export
 purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, keep_ohw = TRUE, ...) {
   
@@ -304,6 +308,11 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/purgePep_examples.R
+#'@seealso \code{\link{purgePSM}} for PSM data purging.
 #'@export
 purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, keep_ohw = TRUE, 
                       col_select = NULL, col_order = NULL, filename = NULL, ...) {

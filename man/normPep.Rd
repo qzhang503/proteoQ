@@ -124,8 +124,69 @@ removals/cleanups using \code{purgePSM}. Values under columns
 \code{log2_R...} without scaling normalization.
 }
 \examples{
-\dontrun{
-# peptides results with exemplary `filter_...`
+# ===================================
+# Prerequisite Fasta and PSM files
+# ===================================
+library(proteoQDA)
+fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
+dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs(fasta_dir)
+copy_refseq_mm(fasta_dir)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_csv_1(dat_dir)
+  cptac_expt_1(dat_dir)
+  cptac_frac_1(dat_dir)
+  
+  # Maxquant
+  #   to install package `proteoQDB` containing MaxQuant examples: 
+  #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+  #    (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+  library(proteoQDB)
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_mqpsm_txt(dat_dir)
+  cptac_mqpsm_expt(dat_dir)
+  cptac_mqpsm_frac(dat_dir)	
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+
+# ===================================
+# Prerequisite PSM normalization
+# ===================================
+library(proteoQ)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+
+  # Maxquant
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+
+load_expts()
+
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+)
+
+
+# ===================================
+# Peptide normalization
+# ===================================
 normPep(
   method_psm_pep = median,
   method_align = MGKernel,
@@ -135,15 +196,101 @@ normPep(
   seed = 749662,
   maxit = 200,
   epsilon = 1e-05,
-
-  # filter_by = exprs(pep_n_psm >= 2),
   # filter_by_sp = exprs(species == "human"),
 )
 
-# exemplary peptide purging; n: the number of peptides under a protein
-purgePep(max_cv = .5, min_n = 2)
+# renormalization against selected samples
+normPep(
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  
+  # selected samples
+  col_refit = Select_sub,
+)
 
-}
+# renormalization based on selected rows
+normPep(
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  
+  # selected rows 
+  slice_at = exprs(prot_n_psm >= 10, pep_n_psm >= 3), 
+)
+
+# renormalization against selected sample columns and data rows
+normPep(
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+	
+  col_refit = Select_sub,
+  slice_at = exprs(prot_n_psm >= 10, pep_n_psm >= 3), 
+)
+
+# addtive renormalization against selected sample columns and data rows
+# first
+normPep(
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+	
+  col_refit = W2,
+  slice_at = exprs(prot_n_psm >= 5, pep_n_psm >= 3), 
+)
+
+# then
+normPep(
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+	
+  col_refit = W16,
+  slice_at = exprs(prot_n_psm >= 8, pep_n_psm >= 4), 
+)
+
+# ===================================
+# Peptide cleanup by CV
+# ===================================
+# by percent CV
+purgePep(pt_cv = .95)
+
+# by max CV
+purgePep(max_cv = .5)
+
+# by `max_cv` then by `pt_cv`
+purgePep(max_cv = .5)
+purgePep(pt_cv = .95)
+
+# actually 90\% CV 
+purgePep(pt_cv = .95)
+purgePep(pt_cv = .95)
 }
 \seealso{
 \code{\link{normPSM}} for PSM an \code{\link{normPrn}} for proteins.

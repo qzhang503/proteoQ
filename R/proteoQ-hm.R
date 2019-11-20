@@ -116,9 +116,17 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
     reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) 
   
+  # remove white space before NA in scientific notation
+  df <- df %>% 
+    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
+    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
+    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
+  
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
+  
+  if (nrow(df) == 0) stop("No rows available after data filtratin.", call. = FALSE)
 
   dfR <- df %>%
     dplyr::select(grep(NorZ_ratios, names(.))) %>%
@@ -397,7 +405,76 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'  use keys indicated in \code{annot_rows}
 #'@return Heat maps.
 #'
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@example inst/extdata/examples/imputeNA_examples.R
+#'@example inst/extdata/examples/sigtest_optional_min.R
+#'
+#'@import NMF dplyr rlang ggplot2
+#'@importFrom magrittr %>%
+#'@export
+proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
+                      scale_log2r = TRUE,impute_na = FALSE, complete_cases = FALSE,
+                      df = NULL, filepath = NULL, filename = NULL,
+                      xmin = -1, xmax = 1, xmargin = 0.1, 
+                      annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, ...) {
+
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  id <- rlang::enexpr(id)
+  col_select <- rlang::enexpr(col_select)
+  col_benchmark <- rlang::enexpr(col_benchmark)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
+            scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath,
+            filename = !!filename, anal_type = "Heatmap")(complete_cases = complete_cases,
+                                                          xmin = xmin, xmax = xmax,
+                                                          xmargin = xmargin,
+                                                          annot_cols = annot_cols, 
+                                                          annot_colnames = annot_colnames, 
+                                                          annot_rows = annot_rows, ...)
+}
+
+
+#'Visualizes peptide heat maps
+#'
+#'\code{pepHM} is a wrapper function of \code{\link{proteoHM}} for peptide data
+#'
+#'@rdname proteoHM
+#'
+#'@import purrr
+#'@export
+pepHM <- function (...) {
+  err_msg <- "Don't call the function with argument `id`.\n"
+  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  
+  dir.create(file.path(dat_dir, "Peptide\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  quietly_log <- purrr::quietly(proteoHM)(id = pep_seq, ...)
+  purrr::walk(quietly_log, write, 
+              file.path(dat_dir, "Peptide\\Heatmap\\log","pepHM_log.csv"), append = TRUE)  
+}
+
+
+#'Visualizes protein heat maps
+#'
+#'\code{prnHM} is a wrapper function of \code{\link{proteoHM}} for protein data
+#'
+#'@rdname proteoHM
+#'
 #' @examples
+#' # ===================================
+#' # Heat map
+#' # ===================================
+#' scale_log2r <- TRUE
+#' 
 #' # unsupervised row clustering
 #' prnHM(
 #'   xmin = -1,
@@ -457,65 +534,31 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'   filename = "cutree_overruled.png",
 #' )
 #'
+#' # Mascot example with `prnSig()` being executed
+#' # `W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` is a column key in `Model\Protein_pVals.txt`
+#' prnHM(
+#'   xmin = -1,
+#'   xmax = 1,
+#'   xmargin = 0.1,
+#'   annot_cols = c("Group", "Color", "Alpha", "Shape"),
+#'   annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+#'   cluster_rows = TRUE,
+#'   # cutree_rows = 10,
+#'   show_rownames = TRUE,
+#'   show_colnames = TRUE,
+#'   fontsize_row = 5,
+#'   cellwidth = 14,
+#'   # width = 18,
+#'   # height = 12,
+#'
+#'   filter_sp = exprs(species == "human", prot_n_pep >= 2),
+#'   filter_by = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+#'   filename = "pval_cutoff_at_1e6.png", 
+#' )
+#' 
 #' \dontrun{
 #' }
-#'@import NMF dplyr rlang ggplot2
-#'@importFrom magrittr %>%
-#'@export
-proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
-                      scale_log2r = TRUE,impute_na = FALSE, complete_cases = FALSE,
-                      df = NULL, filepath = NULL, filename = NULL,
-                      xmin = -1, xmax = 1, xmargin = 0.1, 
-                      annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, ...) {
-
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  
-  id <- rlang::enexpr(id)
-  col_select <- rlang::enexpr(col_select)
-  col_benchmark <- rlang::enexpr(col_benchmark)
-  df <- rlang::enexpr(df)
-  filepath <- rlang::enexpr(filepath)
-  filename <- rlang::enexpr(filename)
-  
-  reload_expts()
-  
-  info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
-            scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath,
-            filename = !!filename, anal_type = "Heatmap")(complete_cases = complete_cases,
-                                                          xmin = xmin, xmax = xmax,
-                                                          xmargin = xmargin,
-                                                          annot_cols = annot_cols, 
-                                                          annot_colnames = annot_colnames, 
-                                                          annot_rows = annot_rows, ...)
-}
-
-
-#'Visualizes peptide heat maps
-#'
-#'\code{pepHM} is a wrapper function of \code{\link{proteoHM}} for peptide data
-#'
-#'@rdname proteoHM
-#'
-#'@import purrr
-#'@export
-pepHM <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Peptide\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  quietly_log <- purrr::quietly(proteoHM)(id = pep_seq, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Heatmap\\log","pepHM_log.csv"), append = TRUE)  
-}
-
-
-#'Visualizes protein heat maps
-#'
-#'\code{prnHM} is a wrapper function of \code{\link{proteoHM}} for protein data
-#'
-#'@rdname proteoHM
-#'
+#' 
 #'@import purrr
 #'@export
 prnHM <- function (...) {

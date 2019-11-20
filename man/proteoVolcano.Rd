@@ -101,8 +101,165 @@ By default, the value of \code{gset_nms} in \code{gspaMap(...)} will match to
 the one in the latest call to \code{\link{prnGSPA}}.
 }
 \examples{
-\dontrun{
-# all
+# ===================================
+# Prerequisite Fasta and PSM files
+# ===================================
+library(proteoQDA)
+fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
+dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs(fasta_dir)
+copy_refseq_mm(fasta_dir)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_csv_1(dat_dir)
+  cptac_expt_1(dat_dir)
+  cptac_frac_1(dat_dir)
+  
+  # Maxquant
+  #   to install package `proteoQDB` containing MaxQuant examples: 
+  #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+  #    (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+  library(proteoQDB)
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+  cptac_mqpsm_txt(dat_dir)
+  cptac_mqpsm_expt(dat_dir)
+  cptac_mqpsm_frac(dat_dir)	
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+
+# ===================================
+# Prerequisite PSM normalization
+# ===================================
+library(proteoQ)
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
+
+  # Maxquant
+  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+
+load_expts()
+
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+)
+
+
+# ===================================
+# Prerequisite peptide normalization
+# ===================================
+normPep(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 749662, 
+)
+
+
+# ===================================
+# Prerequisite protein normalization
+# ===================================
+normPrn(
+  method_align = MGKernel, 
+  n_comp = 2, 
+  seed = 749662, 
+)
+
+
+# ===================================
+# Optional NA imputation
+# ===================================
+# peptide
+pepImp(m = 2, maxit = 2)
+
+# protein
+prnImp(m = 5, maxit = 5)
+
+
+
+# ===================================
+# Prerequisite significance tests
+# for use with `pepVol` and `prnVol`
+# ===================================
+scale_log2r <- TRUE
+
+## RUN `Mascot or Maxquant but not both`
+dontrun <- TRUE
+if (!dontrun) {
+  # Mascot
+  # peptide significance tests
+  pepSig(
+    impute_na = FALSE, 
+    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
+    W16_vs_W2 = ~ Term_3["W16-W2"], 
+  )
+  
+  # protein significance tests
+  prnSig(
+    impute_na = FALSE, 
+    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
+    W16_vs_W2 = ~ Term_3["W16-W2"], # between two WHIMs
+  )
+  
+  	
+  # MaxQuant
+  # peptide significance tests
+  pepSig(
+    impute_na = FALSE, 
+    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
+    W16_vs_W2_course = ~ Term_2["W16-W2"], 
+  )
+  
+  # protein significance tests
+  prnSig(
+    impute_na = FALSE, 
+    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
+    W16_vs_W2_course = ~ Term_2["W16-W2"], 
+  )
+}
+## END of RUN `Mascot or Maxquant but not both`
+
+
+# ===================================
+# Prerequisite gene-set tests
+# for use with `gspaMap()`
+# ===================================
+prnGSPA(
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("go_sets", "kegg_sets"),
+  impute_na = FALSE,
+)
+
+
+
+# ===================================
+# Volcano plot
+# ===================================
+scale_log2r <- TRUE
+
+# all peptides
+pepVol()
+
+# all proteins
 prnVol(
   show_labels = TRUE,
   xco = 1.2,
@@ -120,7 +277,7 @@ prnVol(
 
 
 # protein subgroups by gene sets
-# only proteins with two or more identifying peptides will be visualized
+# filtered by proteins with two or more identifying peptides for visualization
 gspaMap(
   pval_cutoff = 5E-3,
   logFC_cutoff = log2(1.2),
@@ -143,6 +300,10 @@ gspaMap(
   yco = 0.05,
   filter_by_npep = exprs(prot_n_pep >= 2),
 )
-}
 
+}
+\seealso{
+\code{\link{prnGSPA}} for enrichment analysis against gene sets,
+ \code{\link{gspaMap}} for the visualization of gene sets under volcano
+ plots.
 }

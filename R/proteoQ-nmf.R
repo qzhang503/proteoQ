@@ -505,6 +505,12 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'@return NMF classification and visualization of \code{log2FC}.
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@example inst/extdata/examples/imputeNA_examples.R
+#'
 #'@export
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                        col_select = NULL, col_group = NULL, scale_log2r = TRUE, impute_na = TRUE, 
@@ -546,9 +552,15 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #'@rdname proteoNMF
 #'@examples
+#'
+#' # ===================================
+#' # NMF
+#' # ===================================
+#' scale_log2r <- TRUE
+#' 
 #' library(NMF)
 #'
-#' # peptide data NMF at two different r(ank)s
+#' # peptide NMF at two different r(ank)s
 #' anal_pepNMF(
 #'   scale_log2r = TRUE,
 #'   col_group = Group, # optional a priori knowledge of sample groups
@@ -578,7 +590,7 @@ anal_pepNMF <- function (...) {
 #'
 #'@rdname proteoNMF
 #' @examples
-#' # protein data NMF at multiple ranks
+#' # protein NMF over a range of ranks
 #' library(NMF)
 #' 
 #' anal_prnNMF(
@@ -772,7 +784,8 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
 #' @examples
-#' # metagenes heat maps at all available ranks; additional arguments are from `pheatmap`
+#' # metagenes heat maps at all available ranks
+#' # additional arguments for `pheatmap`
 #' plot_metaNMF(
 #'   annot_cols = c("Color", "Alpha", "Shape"),
 #'   annot_colnames = c("Lab", "Batch", "WHIM"),

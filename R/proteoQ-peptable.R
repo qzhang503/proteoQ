@@ -315,27 +315,10 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'
 #'@return The primary output is in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
 #'
-#' @examples
-#' \dontrun{
-#' # peptides results with exemplary `filter_...`
-#' normPep(
-#'   method_psm_pep = median,
-#'   method_align = MGKernel,
-#'   range_log2r = c(5, 95),
-#'   range_int = c(5, 95),
-#'   n_comp = 3,
-#'   seed = 749662,
-#'   maxit = 200,
-#'   epsilon = 1e-05,
-#'
-#'   # filter_by = exprs(pep_n_psm >= 2),
-#'   # filter_by_sp = exprs(species == "human"),
-#' )
-#'
-#' # exemplary peptide purging; n: the number of peptides under a protein
-#' purgePep(max_cv = .5, min_n = 2)
-#'
-#' }
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_examples.R
+#'@example inst/extdata/examples/purgePep_examples.R
 #'@import stringr dplyr tidyr purrr data.table rlang
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
