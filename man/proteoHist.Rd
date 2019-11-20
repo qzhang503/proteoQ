@@ -101,7 +101,7 @@ earlierly applied, the setting of \code{id = prot_acc} in the current
 }
 \examples{
 # ===================================
-# Fasta and PSM files
+# Prerequisite Fasta and PSM files
 # ===================================
 library(proteoQDA)
 fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
@@ -134,7 +134,7 @@ if (!dontrun) {
 
 
 # ===================================
-# PSM
+# Prerequisite PSM normalization
 # ===================================
 library(proteoQ)
 
@@ -161,7 +161,7 @@ normPSM(
 
 
 # ===================================
-# Peptide
+# Prerequisite peptide normalization
 # ===================================
 normPep(
   method_align = MGKernel, 
@@ -171,7 +171,7 @@ normPep(
 
 
 # ===================================
-# Protein
+# Prerequisite protein normalization
 # ===================================
 normPrn(
   method_align = MGKernel, 
@@ -183,19 +183,19 @@ normPrn(
 # ===================================
 # Histogram
 # ===================================
-## (1) visualization of normalization
-# peptide data without log2FC scaling
+## (1) effects of data scaling
+# peptide without log2FC scaling
 pepHist(scale_log2r = FALSE)
 
 # with scaling
 pepHist(scale_log2r = TRUE)
 
-## (2) sample selections
+## (2) sample column selection
 # sample IDs indicated under column `Select` in `expt_smry.xlsx`
 pepHist(col_select = Select)
 
-# protein data
-prnHist(col_select = Select)
+# protein data for samples under column `W2` in `expt_smry.xlsx`
+prnHist(col_select = W2)
 
 ## (3) row filtration of data
 # phosphopeptide subset

@@ -1,5 +1,5 @@
 # ===================================
-# PSM
+# Prerequisite PSM normalization
 # ===================================
 library(proteoQ)
 

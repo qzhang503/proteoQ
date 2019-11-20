@@ -196,7 +196,7 @@ purge_by_n <- function (df, id, min_n) {
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
 #'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/normPSM_examples.R
+#'@example inst/extdata/examples/pepseqmod_min.R
 #'@example inst/extdata/examples/purgePSM_examples.R
 #'@seealso \code{\link{purgePep}} for peptide data purging.
 #'@export
@@ -309,8 +309,8 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
 #'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/normPSM_examples.R
-#'@example inst/extdata/examples/normPep_examples.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
 #'@example inst/extdata/examples/purgePep_examples.R
 #'@seealso \code{\link{purgePSM}} for PSM data purging.
 #'@export

@@ -409,6 +409,7 @@ pepCorr_logFC <- function (...) {
 #' # ===================================
 #' scale_log2r <- TRUE
 #' 
+#' # peptide data with sample ID ordering
 #' pepCorr_logFC(
 #'  col_order = Order, 
 #'  width = 10,
@@ -417,6 +418,7 @@ pepCorr_logFC <- function (...) {
 #'  filename = pepcorr_logfc_npsm3.png,
 #' )
 #'
+#' # peptide intensity
 #' pepCorr_logInt(
 #'  width = 10,
 #'  height = 10,
@@ -447,6 +449,7 @@ pepCorr_logInt <- function (...) {
 #'@rdname proteoCorr
 #'
 #' @examples
+#' # protein log2FC
 #' prnCorr_logFC(
 #'  width = 10,
 #'  height = 10,
@@ -476,6 +479,7 @@ prnCorr_logFC <- function (...) {
 #'@rdname proteoCorr
 #'
 #' @examples
+#' # protein intensity
 #' prnCorr_logInt(
 #'  width = 10,
 #'  height = 10,

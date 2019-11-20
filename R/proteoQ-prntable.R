@@ -74,7 +74,8 @@
 #'@return The primary output is in "\code{~\\dat_dir\\Protein\\Protein.txt}".
 #'
 #'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/normPSM_examples.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
 #'@example inst/extdata/examples/normPrn_examples.R
 #'@import stringr dplyr tidyr purrr data.table rlang mixtools
 #'@importFrom magrittr %>%

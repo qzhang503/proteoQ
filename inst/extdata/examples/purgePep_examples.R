@@ -1,13 +1,13 @@
 # ===================================
 # Peptide cleanup by CV
 # ===================================
-# percent CV
+# by percent CV
 purgePep(pt_cv = .95)
 
-# max CV
+# by max CV
 purgePep(max_cv = .5)
 
-# `max_cv` then `pt_cv`
+# by `max_cv` then by `pt_cv`
 purgePep(max_cv = .5)
 purgePep(pt_cv = .95)
 

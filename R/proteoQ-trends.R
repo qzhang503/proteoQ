@@ -317,6 +317,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #' # ===================================
 #' scale_log2r <- TRUE
 #' 
+#' # protein data with sample order supervision
 #' anal_prnTrend(
 #'   scale_log2r = TRUE,
 #'   col_order = Order,
@@ -347,12 +348,14 @@ anal_prnTrend <- function (...) {
 #'@rdname proteoTrend
 #'
 #' @examples
+#' # visualization
 #' plot_prnTrend(
 #'   scale_log2r = TRUE,
 #'   col_order = Order,
 #'   n_clust = c(5:6), 
 #' )
 #'
+#' # only proteins with four or more identifying peptides
 #' plot_prnTrend(
 #'   scale_log2r = TRUE,
 #'   col_order = Order,

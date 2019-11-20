@@ -302,19 +302,19 @@ pepHist <- function (...) {
 #' # ===================================
 #' # Histogram
 #' # ===================================
-#' ## (1) visualization of normalization
-#' # peptide data without log2FC scaling
+#' ## (1) effects of data scaling
+#' # peptide without log2FC scaling
 #' pepHist(scale_log2r = FALSE)
 #'
 #' # with scaling
 #' pepHist(scale_log2r = TRUE)
 #'
-#' ## (2) sample selections
+#' ## (2) sample column selection
 #' # sample IDs indicated under column `Select` in `expt_smry.xlsx`
 #' pepHist(col_select = Select)
 #'
-#' # protein data
-#' prnHist(col_select = Select)
+#' # protein data for samples under column `W2` in `expt_smry.xlsx`
+#' prnHist(col_select = W2)
 #' 
 #' ## (3) row filtration of data
 #' # phosphopeptide subset

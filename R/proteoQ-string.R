@@ -200,16 +200,13 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff) {
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}.
 #'@seealso \code{\link{dl_stringdbs}} for database downloads.
-#' @examples
-#' \dontrun{
-#' getStringDB(
-#'   db_path = "~\\proteoQ\\dbs\\string",
-#'   score_cutoff = .9,
-#'   adjP = FALSE,
-#'   filter_by_sp = exprs(species == "human"),
-#'   filter_by_npep = exprs(prot_n_pep >= 2),
-#' )
-#' }
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
+#'@example inst/extdata/examples/imputeNA_examples.R
+#'@example inst/extdata/examples/sigtest_optional_min.R
+#'@example inst/extdata/examples/getStringDB_examples.R
 #'
 #'@inheritParams proteoVolcano
 #'@import dplyr purrr

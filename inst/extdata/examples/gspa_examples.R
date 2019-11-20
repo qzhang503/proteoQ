@@ -24,7 +24,7 @@ if (!dontrun) {
     impute_na = FALSE,
   )
 
-  # only proteins with two or more identifying peptides
+  # only for proteins with two or more identifying peptides
   prnGSPA(
     pval_cutoff = 5E-2,
     logFC_cutoff = log2(1.2),

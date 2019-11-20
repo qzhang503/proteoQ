@@ -131,7 +131,7 @@ calculations of \code{prot_n_pep}, \code{prot_n_psm} and \code{pep_n_psm}.
 }
 \examples{
 # ===================================
-# Fasta and PSM files
+# Prerequisite Fasta and PSM files
 # ===================================
 library(proteoQDA)
 fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
@@ -164,7 +164,7 @@ if (!dontrun) {
 
 
 # ===================================
-# PSM
+# Prerequisite PSM normalization
 # ===================================
 library(proteoQ)
 
@@ -173,71 +173,35 @@ dontrun <- TRUE
 if (!dontrun) {
   # Mascot
   dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  load_expts()
-	
-  normPSM(
-    group_psm_by = pep_seq_mod,
-    group_pep_by = prot_acc,
-    fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-              "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-    rptr_intco = 3000,
-    rm_craps = TRUE,
-    rm_krts = FALSE,
-    rm_outliers = FALSE,
-    annot_kinases = TRUE,
-    plot_rptr_int = TRUE,
-    plot_log2FC_cv = TRUE,
-    
-    filter_peps = exprs(pep_expect <= .1),
-    filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
-  )
 
-  # MaxQuant
+  # Maxquant
   dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  load_expts()
-	
-  normPSM(
-    group_psm_by = pep_seq_mod,
-    group_pep_by = prot_acc,
-    fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-              "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-    corrected_int = TRUE,
-    rm_reverses = TRUE,
-    rptr_intco = 3000,
-    rm_craps = TRUE,
-    rm_krts = FALSE,
-    rm_outliers = FALSE,
-    annot_kinases = TRUE,
-    plot_rptr_int = TRUE,
-    plot_log2FC_cv = TRUE,
-    
-    filter_peps = exprs(PEP <= 0.1),
-  )
 }
 ## END of RUN `Mascot or Maxquant but not both`
 
+dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
+load_expts()
 
-# ===================================
-# Peptide
-# ===================================
-normPep(
-  method_psm_pep = median,
-  method_align = MGKernel,
-  range_log2r = c(5, 95),
-  range_int = c(5, 95),
-  n_comp = 3,
-  seed = 749662,
-  maxit = 200,
-  epsilon = 1e-05,
-  # filter_by_sp = exprs(species == "human"),
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
 )
 
 
 # ===================================
-# Protein
+# Prerequisite peptide normalization
+# ===================================
+normPep(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 749662, 
+)
+
+
+# ===================================
+# Protein normalization
 # ===================================
 normPrn(
   method_pep_prn = median,
@@ -248,7 +212,7 @@ normPrn(
   seed = 749662,
   maxit = 200,
   epsilon = 1e-05,
-  filter_by = exprs(prot_n_pep >=2, pep_isunique),
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
 )
 
 # renormalization against selected samples
@@ -261,13 +225,13 @@ normPrn(
   seed = 749662,
   maxit = 200,
   epsilon = 1e-05,
-  filter_by = exprs(prot_n_pep >=2, pep_isunique),
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
   
   # selected samples
   col_refit = Select_sub,	
 )
 
-# renormalization against selected samples
+# renormalization based on selected rows
 normPrn(
   method_pep_prn = median,
   method_align = MGKernel,
@@ -277,13 +241,13 @@ normPrn(
   seed = 749662,
   maxit = 200,
   epsilon = 1e-05,
-  filter_by = exprs(prot_n_pep >=2, pep_isunique),
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
   
   # selected rows 
   slice_at = exprs(prot_n_psm >= 10), 
 )
 
-# renormalization against selected samples using partial data
+# renormalization against selected sample columns and data rows
 normPrn(
   method_pep_prn = median,
   method_align = MGKernel,
@@ -293,11 +257,44 @@ normPrn(
   seed = 749662,
   maxit = 200,
   epsilon = 1e-05,
-  filter_by = exprs(prot_n_pep >=2, pep_isunique),
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique),
+	
   slice_at = exprs(prot_n_psm >= 10), 
   col_refit = Select_sub,
 )
 
+# addtive renormalization against selected sample columns and data rows
+# first
+normPrn(
+  method_pep_prn = median,
+  method_align = MGKernel,
+  range_log2r = c(20, 95),
+  range_int = c(5, 95),
+  n_comp = 2,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05,
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique),
+	
+  slice_at = exprs(prot_n_psm >= 10), 
+  col_refit = W2,
+)
+
+# then
+normPrn(
+  method_pep_prn = median,
+  method_align = MGKernel,
+  range_log2r = c(20, 95),
+  range_int = c(5, 95),
+  n_comp = 2,
+  seed = 749662,
+  maxit = 200,
+  epsilon = 1e-05,
+  filter_by = exprs(prot_n_pep >= 2, pep_isunique),
+	
+  slice_at = exprs(prot_n_psm >= 5), 
+  col_refit = W16,
+)
 
 
 

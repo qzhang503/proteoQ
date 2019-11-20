@@ -119,7 +119,7 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 }
 \examples{
 # ===================================
-# Fasta and PSM files
+# Prerequisite Fasta and PSM files
 # ===================================
 library(proteoQDA)
 fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
@@ -152,7 +152,7 @@ if (!dontrun) {
 
 
 # ===================================
-# PSM
+# Prerequisite PSM normalization
 # ===================================
 library(proteoQ)
 
@@ -179,7 +179,7 @@ normPSM(
 
 
 # ===================================
-# Peptide
+# Prerequisite peptide normalization
 # ===================================
 normPep(
   method_align = MGKernel, 
@@ -189,7 +189,7 @@ normPep(
 
 
 # ===================================
-# Protein
+# Prerequisite protein normalization
 # ===================================
 normPrn(
   method_align = MGKernel, 
@@ -199,12 +199,12 @@ normPrn(
 
 
 # ===================================
-# NA imputation
+# Optional NA imputation
 # ===================================
-# optional peptide NA imputation
+# peptide
 pepImp(m = 2, maxit = 2)
 
-# optional protein NA imputation
+# protein
 prnImp(m = 5, maxit = 5)
 
 
@@ -217,7 +217,7 @@ scale_log2r <- TRUE
 
 library(NMF)
 
-# peptide data NMF at two different r(ank)s
+# peptide NMF at two different r(ank)s
 anal_pepNMF(
   scale_log2r = TRUE,
   col_group = Group, # optional a priori knowledge of sample groups
@@ -226,7 +226,7 @@ anal_pepNMF(
   filter_by_npsm = exprs(pep_n_psm >= 2),
 )
 
-# protein data NMF at multiple ranks
+# protein NMF over a range of ranks
 library(NMF)
 
 anal_prnNMF(
@@ -294,7 +294,8 @@ plot_prnNMFCoef(
   height = 10
 )
 
-# metagenes heat maps at all available ranks; additional arguments are from `pheatmap`
+# metagenes heat maps at all available ranks
+# additional arguments for `pheatmap`
 plot_metaNMF(
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),

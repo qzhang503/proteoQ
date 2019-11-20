@@ -1,5 +1,5 @@
 # ===================================
-# Peptide
+# Prerequisite peptide normalization
 # ===================================
 normPep(
   method_align = MGKernel, 

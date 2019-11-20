@@ -316,7 +316,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'@return The primary output is in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
 #'
 #'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/normPSM_examples.R
+#'@example inst/extdata/examples/pepseqmod_min.R
 #'@example inst/extdata/examples/normPep_examples.R
 #'@example inst/extdata/examples/purgePep_examples.R
 #'@import stringr dplyr tidyr purrr data.table rlang

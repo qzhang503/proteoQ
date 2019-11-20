@@ -92,7 +92,7 @@ for details.
 }
 \examples{
 # ===================================
-# Fasta and PSM files
+# Prerequisite Fasta and PSM files
 # ===================================
 library(proteoQDA)
 fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
@@ -125,7 +125,7 @@ if (!dontrun) {
 
 
 # ===================================
-# PSM
+# Prerequisite PSM normalization
 # ===================================
 library(proteoQ)
 
@@ -152,7 +152,7 @@ normPSM(
 
 
 # ===================================
-# Peptide
+# Prerequisite peptide normalization
 # ===================================
 normPep(
   method_align = MGKernel, 
@@ -162,7 +162,7 @@ normPep(
 
 
 # ===================================
-# Protein
+# Prerequisite protein normalization
 # ===================================
 normPrn(
   method_align = MGKernel, 
@@ -172,12 +172,12 @@ normPrn(
 
 
 # ===================================
-# NA imputation
+# Optional NA imputation
 # ===================================
-# optional peptide NA imputation
+# peptide
 pepImp(m = 2, maxit = 2)
 
-# optional protein NA imputation
+# protein
 prnImp(m = 5, maxit = 5)
 
 
@@ -187,6 +187,7 @@ prnImp(m = 5, maxit = 5)
 # ===================================
 scale_log2r <- TRUE
 
+# peptide data with sample ID ordering
 pepCorr_logFC(
  col_order = Order, 
  width = 10,
@@ -195,6 +196,7 @@ pepCorr_logFC(
  filename = pepcorr_logfc_npsm3.png,
 )
 
+# peptide intensity
 pepCorr_logInt(
  width = 10,
  height = 10,
@@ -202,6 +204,7 @@ pepCorr_logInt(
  filename = pepcorr_int_npsm3.png,
 )
 
+# protein log2FC
 prnCorr_logFC(
  width = 10,
  height = 10,
@@ -209,6 +212,7 @@ prnCorr_logFC(
  filename = prncorr_logfc_npep5.png,
 )
 
+# protein intensity
 prnCorr_logInt(
  width = 10,
  height = 10,

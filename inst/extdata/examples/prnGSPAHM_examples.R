@@ -1,7 +1,7 @@
 # ===================================
-# Heat maps of enriched gene sets
+# Distance heat maps of gene sets
+# (also interactive networks)
 # ===================================
-# distance heat map and network of GSPA terms
 # a `term` is a subset of an `ess_term` if the distance is zero
 # `ess_idx` is a column key in `essmap_.*.csv`
 # `ess_size` is a column key in metadata file `essmeta_.*.csv`
@@ -28,7 +28,7 @@ prnGSPAHM(
   annot_colnames = c("Eset index", "Size"),
   filter_by = exprs(distance <= .95),
   color = colorRampPalette(c("blue", "white", "red"))(100),
-  filename = "custom_colors.png"
+  filename = "custom_colors.png",
 )
 
 

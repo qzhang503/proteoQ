@@ -1,6 +1,6 @@
 # ===================================
-# Prerequisite significance tests
-# for use with `pepVol` and `prnVol`
+# Optional significance tests
+# (for data filtration by pVals...)
 # ===================================
 scale_log2r <- TRUE
 
@@ -41,19 +41,5 @@ if (!dontrun) {
   )
 }
 ## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite gene-set tests
-# for use with `gspaMap()`
-# ===================================
-prnGSPA(
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
-  gset_nms = c("go_sets", "kegg_sets"),
-  impute_na = FALSE,
-)
-
 
 

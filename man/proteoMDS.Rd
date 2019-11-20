@@ -140,7 +140,7 @@ for details.
 }
 \examples{
 # ===================================
-# Fasta and PSM files
+# Prerequisite Fasta and PSM files
 # ===================================
 library(proteoQDA)
 fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
@@ -173,7 +173,7 @@ if (!dontrun) {
 
 
 # ===================================
-# PSM
+# Prerequisite PSM normalization
 # ===================================
 library(proteoQ)
 
@@ -200,7 +200,7 @@ normPSM(
 
 
 # ===================================
-# Peptide
+# Prerequisite peptide normalization
 # ===================================
 normPep(
   method_align = MGKernel, 
@@ -210,7 +210,7 @@ normPep(
 
 
 # ===================================
-# Protein
+# Prerequisite protein normalization
 # ===================================
 normPrn(
   method_align = MGKernel, 
@@ -220,12 +220,12 @@ normPrn(
 
 
 # ===================================
-# NA imputation
+# Optional NA imputation
 # ===================================
-# optional peptide NA imputation
+# peptide
 pepImp(m = 2, maxit = 2)
 
-# optional protein NA imputation
+# protein
 prnImp(m = 5, maxit = 5)
 
 

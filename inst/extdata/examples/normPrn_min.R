@@ -1,5 +1,5 @@
 # ===================================
-# Protein
+# Prerequisite protein normalization
 # ===================================
 normPrn(
   method_align = MGKernel, 

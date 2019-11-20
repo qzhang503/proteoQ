@@ -1,5 +1,5 @@
 ## part 0 --- installation
-# proteoQ package
+# package proteoQ
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install(c("Biobase", "Mfuzz", "limma"))
@@ -8,7 +8,7 @@ if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
 
-# data package with FASTA and Mascot examples
+# data package: FASTA and Mascot examples
 devtools::install_github("qzhang503/proteoQDA")
 
 
@@ -36,7 +36,7 @@ load_expts()
 ## part 2 --- summarization of PSMs to peptides and proteins
 # PSM tables
 normPSM(
-	group_psm_by = pep_seq, 
+	group_psm_by = pep_seq_mod, 
 	group_pep_by = gene, 
 	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
 						"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
@@ -55,9 +55,9 @@ normPSM(
 ## DO NOT RUN
 dontrun <- TRUE
 if (!dontrun) {
-	# peptide sequences with different side-chain modifications as different species
+	# peptide sequences with different side-chain modifications treated as the same species
 	normPSM(
-		group_psm_by = pep_seq_mod, 
+		group_psm_by = pep_seq, 
 		group_pep_by = gene, 
 		fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
 							"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
@@ -75,7 +75,7 @@ if (!dontrun) {
 }
 ## END of DO NOT RUN
 
-# optional: purge of PSM groups under the same peptide IDs
+# optional: cleanup of PSM groups under the same peptide IDs by CV
 purgePSM(pt_cv = 0.95)
 
 # peptide tables
@@ -90,7 +90,7 @@ normPep(
 	epsilon = 1e-05, 
 )
 
-# optional: purge of peptide groups under the same protein IDs
+# optional: cleanup of peptide groups under the same protein IDs by CV
 purgePep(pt_cv = 0.95)
 
 # peptide histograms with logFC scaling
@@ -143,11 +143,10 @@ if (!dontrun) {
 		seed = 749662, 
 		maxit = 200, 
 		epsilon = 1e-05, 
-		
 		col_refit = Select_sub,
 	)
 	
-	# examplary renormalization based on partial data and for selected samples
+	# examplary renormalization based on partial data and for selected samples only
 	normPep(
 		method_psm_pep = median, 
 		method_align = MGKernel, 
@@ -157,14 +156,15 @@ if (!dontrun) {
 		seed = 749662, 
 		maxit = 200, 
 		epsilon = 1e-05, 
-		
-		col_refit = Select_sub,
 		slice_by = exprs(prot_n_psm >= 10, pep_n_psm >= 3),
+		col_refit = Select_sub,
 	)
 }
 ## END of DO NOT RUN
 
 # protein tables
+#  (1) exclude shared peptides
+#  (2) exclude proteins with less than two identifying peptides
 normPrn(
 	method_pep_prn = median, 
 	method_align = MGKernel, 
@@ -174,23 +174,57 @@ normPrn(
 	seed = 749662, 
 	maxit = 200, 
 	epsilon = 1e-05, 
+	filter_by = exprs(pep_isunique == TRUE, prot_n_pep >= 2),
 )
 
 ## DO NOT RUN
 dontrun <- TRUE
 if (!dontrun) {
-	# examplary protein tables with data pre-filtration
+	# renormalization against selected samples
 	normPrn(
-		method_pep_prn = median, 
-		method_align = MGKernel, 
-		range_log2r = c(20, 95), 
-		range_int = c(5, 95), 
-		n_comp = 2, 
-		seed = 749662, 
-		maxit = 200, 
-		epsilon = 1e-05, 
+		method_pep_prn = median,
+		method_align = MGKernel,
+		range_log2r = c(20, 95),
+		range_int = c(5, 95),
+		n_comp = 2,
+		seed = 749662,
+		maxit = 200,
+		epsilon = 1e-05,
+		filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
 		
-		filter_prots_by = exprs(prot_n_psm >= 5, prot_n_pep >= 2),
+		# selected samples
+		col_refit = Select_sub,	
+	)
+	
+	# renormalization based on partial data 
+	normPrn(
+		method_pep_prn = median,
+		method_align = MGKernel,
+		range_log2r = c(20, 95),
+		range_int = c(5, 95),
+		n_comp = 2,
+		seed = 749662,
+		maxit = 200,
+		epsilon = 1e-05,
+		filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
+		
+		# selected rows 
+		slice_at = exprs(prot_n_psm >= 10), 
+	)
+	
+	# renormalization against selected samples using partial data
+	normPrn(
+		method_pep_prn = median,
+		method_align = MGKernel,
+		range_log2r = c(20, 95),
+		range_int = c(5, 95),
+		n_comp = 2,
+		seed = 749662,
+		maxit = 200,
+		epsilon = 1e-05,
+		filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
+		slice_at = exprs(prot_n_psm >= 10), 
+		col_refit = Select_sub,
 	)
 }
 ## END of DO NOT RUN
@@ -241,7 +275,7 @@ prnHist(
 	filename = Hist_BI_N.png, 
 )
 
-## PAUSE: think TWICE on the chioce of scaling normalization
+## PAUSE: decide on the chioce of scaling normalization
 scale_log2r = TRUE
 
 
@@ -259,7 +293,7 @@ pepMDS(
 	height = 3.75,	
 )
 
-# peptide MDS with filtration
+# peptide MDS with data filtration
 pepMDS(
 	show_ids = FALSE,
 	width = 10,
@@ -295,7 +329,7 @@ prnMDS(
 	height = 4,
 )
 
-# protein MDS with filtration
+# protein MDS with data filtration
 prnMDS(
 	show_ids = FALSE, 
 	width = 8,
@@ -399,7 +433,7 @@ pepCorr_logFC(
 	filename = PNNL_ord.png
 )
 
-# peptide log10-intensity correlation of PNNL subset with supervision
+# peptide log10-intensity correlation of PNNL subset with sample-order supervision
 pepCorr_logInt(
 	col_select = PNNL,
 	col_order = Order,

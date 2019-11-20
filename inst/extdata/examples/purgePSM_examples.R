@@ -1,13 +1,13 @@
 # ===================================
 # PSM cleanup by CV
 # ===================================
-# percent CV
+# by percent CV
 purgePSM(pt_cv = .95)
 
-# max CV
+# by max CV
 purgePSM(max_cv = .5)
 
-# `max_cv` then `pt_cv`
+# by `max_cv` then by `pt_cv`
 purgePSM(max_cv = .5)
 purgePSM(pt_cv = .95)
 

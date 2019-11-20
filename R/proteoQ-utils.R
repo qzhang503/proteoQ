@@ -432,6 +432,10 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'@param ... Parameters for \code{\link[mice]{mice}}
 #'@return \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
 #'  for protein data.
+#'@example inst/extdata/examples/fasta_psm.R
+#'@example inst/extdata/examples/pepseqmod_min.R
+#'@example inst/extdata/examples/normPep_min.R
+#'@example inst/extdata/examples/normPrn_min.R
 #'@import dplyr purrr rlang mice
 #'@importFrom magrittr %>%
 #'@export
@@ -536,12 +540,13 @@ imputeNA <- function (id, ...) {
 #'@rdname imputeNA
 #'
 #' @examples
-#' \dontrun{
+#' # ===================================
+#' # Peptide NA imputation
+#' # ===================================
 #' pepImp(
 #'   m = 3,
 #'   maxit = 3,
 #' )
-#' }
 #'
 #'@export
 pepImp <- function (...) {
@@ -559,12 +564,13 @@ pepImp <- function (...) {
 #'@rdname imputeNA
 #'
 #' @examples
-#' \dontrun{
+#' # ===================================
+#' # Protein NA imputation
+#' # ===================================
 #' prnImp(
 #'   m = 5,
 #'   maxit = 5,
 #' )
-#' }
 #'
 #'@export
 prnImp <- function (...) {

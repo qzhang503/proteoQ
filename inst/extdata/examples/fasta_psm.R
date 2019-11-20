@@ -1,5 +1,5 @@
 # ===================================
-# Fasta and PSM files
+# Prerequisite Fasta and PSM files
 # ===================================
 library(proteoQDA)
 fasta_dir <- "~\\proteoQ\\dbs\\fasta\\refseq"

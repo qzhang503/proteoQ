@@ -39,7 +39,7 @@ for samples that are more different to reference material(s).
 }
 \examples{
 # ===================================
-# Fasta and PSM files
+# Prerequisite Fasta and PSM files
 # ===================================
 library(proteoQDA)
 fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
@@ -72,7 +72,7 @@ if (!dontrun) {
 
 
 # ===================================
-# PSM
+# Prerequisite PSM normalization
 # ===================================
 library(proteoQ)
 
@@ -81,63 +81,33 @@ dontrun <- TRUE
 if (!dontrun) {
   # Mascot
   dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  load_expts()
-	
-  normPSM(
-    group_psm_by = pep_seq_mod,
-    group_pep_by = prot_acc,
-    fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-              "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-    rptr_intco = 3000,
-    rm_craps = TRUE,
-    rm_krts = FALSE,
-    rm_outliers = FALSE,
-    annot_kinases = TRUE,
-    plot_rptr_int = TRUE,
-    plot_log2FC_cv = TRUE,
-    
-    filter_peps = exprs(pep_expect <= .1),
-    filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
-  )
 
-  # MaxQuant
+  # Maxquant
   dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  load_expts()
-	
-  normPSM(
-    group_psm_by = pep_seq_mod,
-    group_pep_by = prot_acc,
-    fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-              "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-    corrected_int = TRUE,
-    rm_reverses = TRUE,
-    rptr_intco = 3000,
-    rm_craps = TRUE,
-    rm_krts = FALSE,
-    rm_outliers = FALSE,
-    annot_kinases = TRUE,
-    plot_rptr_int = TRUE,
-    plot_log2FC_cv = TRUE,
-    
-    filter_peps = exprs(PEP <= 0.1),
-  )
 }
 ## END of RUN `Mascot or Maxquant but not both`
 
+dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+
+load_expts()
+
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+)
 
 
 # ===================================
 # PSM cleanup by CV
 # ===================================
-# percent CV
+# by percent CV
 purgePSM(pt_cv = .95)
 
-# max CV
+# by max CV
 purgePSM(max_cv = .5)
 
-# `max_cv` then `pt_cv`
+# by `max_cv` then by `pt_cv`
 purgePSM(max_cv = .5)
 purgePSM(pt_cv = .95)
 

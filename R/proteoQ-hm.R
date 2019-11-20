@@ -116,9 +116,17 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
     reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) 
   
+  # remove white space before NA in scientific notation
+  df <- df %>% 
+    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
+    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
+    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
+  
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
+  
+  if (nrow(df) == 0) stop("No rows available after data filtratin.", call. = FALSE)
 
   dfR <- df %>%
     dplyr::select(grep(NorZ_ratios, names(.))) %>%
@@ -402,6 +410,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'@example inst/extdata/examples/normPep_min.R
 #'@example inst/extdata/examples/normPrn_min.R
 #'@example inst/extdata/examples/imputeNA_examples.R
+#'@example inst/extdata/examples/sigtest_optional_min.R
 #'
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -525,6 +534,28 @@ pepHM <- function (...) {
 #'   filename = "cutree_overruled.png",
 #' )
 #'
+#' # Mascot example with `prnSig()` being executed
+#' # `W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` is a column key in `Model\Protein_pVals.txt`
+#' prnHM(
+#'   xmin = -1,
+#'   xmax = 1,
+#'   xmargin = 0.1,
+#'   annot_cols = c("Group", "Color", "Alpha", "Shape"),
+#'   annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+#'   cluster_rows = TRUE,
+#'   # cutree_rows = 10,
+#'   show_rownames = TRUE,
+#'   show_colnames = TRUE,
+#'   fontsize_row = 5,
+#'   cellwidth = 14,
+#'   # width = 18,
+#'   # height = 12,
+#'
+#'   filter_sp = exprs(species == "human", prot_n_pep >= 2),
+#'   filter_by = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+#'   filename = "pval_cutoff_at_1e6.png", 
+#' )
+#' 
 #' \dontrun{
 #' }
 #' 

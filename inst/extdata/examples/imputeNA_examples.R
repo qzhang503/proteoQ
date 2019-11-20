@@ -1,10 +1,10 @@
 # ===================================
-# NA imputation
+# Optional NA imputation
 # ===================================
-# optional peptide NA imputation
+# peptide
 pepImp(m = 2, maxit = 2)
 
-# optional protein NA imputation
+# protein
 prnImp(m = 5, maxit = 5)
 
 

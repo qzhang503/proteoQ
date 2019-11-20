@@ -1,5 +1,5 @@
 # ===================================
-# Peptide
+# Peptide normalization
 # ===================================
 normPep(
   method_psm_pep = median,
@@ -43,7 +43,7 @@ normPep(
   slice_at = exprs(prot_n_psm >= 10, pep_n_psm >= 3), 
 )
 
-# renormalization against selected samples using partial data
+# renormalization against selected sample columns and data rows
 normPep(
   method_psm_pep = median, 
   method_align = MGKernel, 
@@ -53,8 +53,39 @@ normPep(
   seed = 749662, 
   maxit = 200, 
   epsilon = 1e-05, 
-  slice_at = exprs(prot_n_psm >= 10, pep_n_psm >= 3), 
+	
   col_refit = Select_sub,
+  slice_at = exprs(prot_n_psm >= 10, pep_n_psm >= 3), 
 )
 
+# addtive renormalization against selected sample columns and data rows
+# first
+normPep(
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+	
+  col_refit = W2,
+  slice_at = exprs(prot_n_psm >= 5, pep_n_psm >= 3), 
+)
+
+# then
+normPep(
+  method_psm_pep = median, 
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+	
+  col_refit = W16,
+  slice_at = exprs(prot_n_psm >= 8, pep_n_psm >= 4), 
+)
 
