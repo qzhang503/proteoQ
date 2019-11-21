@@ -3,7 +3,7 @@ title: "Package proteoQ"
 author:
 - name: Qiang Zhang
 - name: R. Reid Townsend
-date: "2019-11-20"
+date: "2019-11-21"
 output:
   html_document:
     fig_caption: yes

@@ -236,7 +236,7 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
           if (nrow(df_sub) > 0) {
             pos_matrix  <- gregexpr(mod, df_sub$pep_var_mod_pos) %>%
               plyr::ldply(., rbind) %>%
-              # "-2" to account for the characters, "0." ..., in 'pep_var_mod_pos'
+              # "-2" to account for the two characters, "0." ..., in 'pep_var_mod_pos'
               purrr::map(function(x) {x - 2}) %>%
               data.frame(check.names = FALSE)
             
@@ -1244,7 +1244,7 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
   } else if (type == "sm") {
     splitPSM_sm(group_psm_by, group_pep_by, fasta, rm_craps, rm_krts, rptr_intco, annot_kinases, plot_rptr_int, ...)
     cleanupPSM(rm_outliers)
-    annotPSM_sm(group_psm_by, group_pep_by, fasta, expt_smry, rm_krts, plot_rptr_int, plot_log2FC_cv, ...)
+    annotPSM_sm(group_psm_by, group_pep_by, fasta, expt_smry, rm_krts, plot_rptr_int, plot_log2FC_cv, use_lowercase_aa, ...)
   }
 }
 
@@ -1274,37 +1274,8 @@ add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
   if (!use_lowercase_aa) {
     df <- df %>%
       dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
-      # dplyr::mutate(pep_seq_mod = gsub("_", "", pep_seq_mod)) %>% 
       dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))
   } else {
-    run_scripts <- FALSE
-    if (run_scripts) {
-      temp <- df %>% 
-        tidyr::separate("pep_seq_mod", c("nt", "interior", "ct"), sep = "_") %>% 
-        dplyr::mutate(interior = gsub("A\\([^\\)]+\\)", "a", interior)) %>% 
-        dplyr::mutate(interior = gsub("C\\([^\\)]+\\)", "c", interior)) %>% 
-        dplyr::mutate(interior = gsub("D\\([^\\)]+\\)", "d", interior)) %>% 
-        dplyr::mutate(interior = gsub("E\\([^\\)]+\\)", "e", interior)) %>% 
-        dplyr::mutate(interior = gsub("F\\([^\\)]+\\)", "f", interior)) %>% 
-        dplyr::mutate(interior = gsub("G\\([^\\)]+\\)", "g", interior)) %>% 
-        dplyr::mutate(interior = gsub("H\\([^\\)]+\\)", "h", interior)) %>% 
-        dplyr::mutate(interior = gsub("I\\([^\\)]+\\)", "i", interior)) %>% 
-        dplyr::mutate(interior = gsub("K\\([^\\)]+\\)", "k", interior)) %>% 
-        dplyr::mutate(interior = gsub("L\\([^\\)]+\\)", "l", interior)) %>% 
-        dplyr::mutate(interior = gsub("M\\([^\\)]+\\)", "m", interior)) %>% 
-        dplyr::mutate(interior = gsub("N\\([^\\)]+\\)", "n", interior)) %>% 
-        dplyr::mutate(interior = gsub("P\\([^\\)]+\\)", "p", interior)) %>% 
-        dplyr::mutate(interior = gsub("Q\\([^\\)]+\\)", "q", interior)) %>% 
-        dplyr::mutate(interior = gsub("R\\([^\\)]+\\)", "r", interior)) %>% 
-        dplyr::mutate(interior = gsub("s\\([^\\)]+\\)", "s", interior)) %>% 
-        dplyr::mutate(interior = gsub("T\\([^\\)]+\\)", "t", interior)) %>% 
-        dplyr::mutate(interior = gsub("V\\([^\\)]+\\)", "v", interior)) %>% 
-        dplyr::mutate(interior = gsub("W\\([^\\)]+\\)", "w", interior)) %>% 
-        dplyr::mutate(interior = gsub("Y\\([^\\)]+\\)", "y", interior)) %>%
-        tidyr::unite(pep_seq_mod, nt, interior, ct, sep = ".", remove = TRUE)      
-    }
-
-
     # (1) all non-terminal modifications: M(ox) -> m ...
     df <- df %>% 
       tidyr::separate("pep_seq_mod", c("nt", "interior", "ct"), sep = "_") %>% 
@@ -1577,10 +1548,6 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
       dplyr::rename(
         pep_seq = Sequence, 
         prot_acc = Proteins, 
-        # pep_miss = `Missed cleavages`,
-        # pep_score = `Score`,
-        # pep_expect = PEP, 
-        # pep_var_mod = Modifications, 
         RAW_File = `Raw file`, 
       ) 
 
@@ -1862,7 +1829,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
   df <- df %>% 
     filters_in_call(!!!lang_dots) %>% 
     dplyr::rename(prot_acc = accession_number) %>% 
-    dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
+    # dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
     annotPrn(fasta)  
   
   if (TMT_plex == 11) {
@@ -1891,13 +1858,13 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
     
     df <- df %>% 
       dplyr::rename(
-        pep_exp_z = parent_charge, 
-        pep_score = `score`,
-        pep_var_mod = modifications, 
+        # pep_exp_z = parent_charge, 
+        # pep_score = `score`,
+        # pep_var_mod = modifications, 
         RAW_File = `filename`
       ) %>% 
       dplyr::mutate(RAW_File = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", RAW_File)) %>% 
-      dplyr::mutate(pep_seq = toupper(sequence)) %>% # for now
+      dplyr::mutate(pep_seq = toupper(sequence)) %>% 
       dplyr::mutate(pep_miss = ifelse(.$next_aa == "(-)", str_count(pep_seq, "[KR]"), str_count(pep_seq, "[KR]") - 1))
   }
   
@@ -1960,8 +1927,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
       dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
       dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) %>%
       dplyr::arrange(RAW_File, pep_seq, prot_acc) %>% 
-      # dplyr::select(which(not_all_zero(.))) %>% # dont: empty channels are all NA too
-      # a special case of redundant entries from Mascot
+      # dplyr::select(which(not_all_zero(.))) %>% # don't: empty channels are all NA too
       dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
   } else {
     df_split <- df %>% 
@@ -2030,9 +1996,8 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 #' @importFrom stringr str_split
 #' @importFrom tidyr gather
 #' @importFrom magrittr %>%
-annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, 
-                        expt_smry = "expt_smry.xlsx", rm_krts = FALSE, 
-                        plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...) {
+annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, expt_smry = "expt_smry.xlsx", 
+                        rm_krts = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, use_lowercase_aa = TRUE, ...) {
   
   old_opt <- options(max.print = 99999)
   on.exit(options(old_opt), add = TRUE)
@@ -2080,51 +2045,97 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
           dplyr::filter(!grepl("^krt[0-9]+", gene, ignore.case = TRUE))
       }
       
-      df_sub <- df %>% dplyr::filter(!is.na(.$variableSites))
-      
-      pos_matrix <- df_sub %>% 
-        dplyr::select(variableSites) %>% 
-        dplyr::mutate(variableSites = as.character(variableSites)) %$% 
-        stringr::str_split(.$variableSites, " ") %>% 
-        plyr::ldply(., rbind) %>% 
-        `names<-`(paste0("mod_", names(.))) %>% 
-        purrr::map(~ gsub("[A-z]", "", .)) %>% 
-        dplyr::bind_cols() %>% 
-        dplyr::mutate_at(.vars = grep("^mod_", names(.)), as.numeric) %>% 
-        dplyr::bind_cols(df_sub %>% dplyr::select(pep_seq, pep_start)) %>% 
-        dplyr::mutate_at(.vars = grep("^mod_", names(.)), ~ {.x + 1 - pep_start}) %>% 
-        dplyr::select(-pep_seq, -pep_start) %>% 
-        data.frame(check.names = FALSE)
-      
-      for (k in 1:ncol(pos_matrix)) {
-        rows <- !is.na(pos_matrix[, k])
-        locales <- pos_matrix[rows, k]
+      if (!use_lowercase_aa) {
+        df <- df %>% 
+          dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
+          dplyr::mutate(pep_seq_mod = paste0(pep_seq, "[", variableSites, "]"))
+      } else {
+        # (1) mods under column `variableSites`
+        df <- local({
+          if (!is_empty(which(names(df) == "variableSites"))) {
+            df_sub <- df %>% dplyr::filter(!is.na(variableSites))
+            
+            if (nrow(df_sub) > 0) {
+              pos_matrix <- df_sub %>% 
+                dplyr::select(variableSites) %>% 
+                dplyr::mutate(variableSites = as.character(variableSites)) %$% 
+                stringr::str_split(.$variableSites, " ") %>% 
+                plyr::ldply(., rbind) %>% 
+                `names<-`(paste0("mod_", names(.))) %>% 
+                purrr::map(~ gsub("[A-z]", "", .)) %>% 
+                dplyr::bind_cols() %>% 
+                dplyr::mutate_at(.vars = grep("^mod_", names(.)), as.numeric) %>% 
+                dplyr::bind_cols(df_sub %>% dplyr::select(pep_seq, pep_start)) %>% 
+                dplyr::mutate_at(.vars = grep("^mod_", names(.)), ~ {.x + 1 - pep_start}) %>% 
+                dplyr::select(-pep_seq, -pep_start) %>% 
+                data.frame(check.names = FALSE)
+              
+              for (k in seq_along(pos_matrix)) {
+                rows <- !is.na(pos_matrix[, k])
+                locales <- pos_matrix[rows, k]
+                
+                lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>% tolower()
+                substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
+              }
+              
+              df <- dplyr::bind_rows(
+                df %>% dplyr::filter(is.na(variableSites)), 
+                df_sub
+              )            
+            }
+          }
+  
+          return(df)
+        })
+  
+        # (2-1) protein n-term acetylation
+        if (!is_empty(which(names(df) == "nterm"))) {
+          df_sub <- df %>% dplyr::filter(nterm == "Acetyl")
+    
+          if (nrow(df_sub) > 0) {
+            df_sub$pep_seq_mod <- paste0("_", df_sub$pep_seq_mod)
+    
+            df <- dplyr::bind_rows(
+              df %>% dplyr::filter(nterm != "Acetyl"), 
+              df_sub
+            )
+          }        
+        }
+  
+        # (2-2) protein C-terminal amidation
+        if (!is_empty(which(names(df) == "cterm"))) {
+          # hypothetical; no yet known how it will be named in SM
+          df_sub <- df %>% dplyr::filter(grepl("^Amidate", cterm))
+          
+          if (nrow(df_sub) > 0) {
+            df_sub$pep_seq_mod <- paste0(df_sub$pep_seq_mod, "_")
+            
+            df <- dplyr::bind_rows(
+              df %>% dplyr::filter(!grepl("^Amidate", cterm)), 
+              df_sub
+            )
+          }
+        }
         
-        lowers <- substr(df_sub$pep_seq_mod[rows], locales, locales) %>% tolower()
-        substr(df_sub$pep_seq_mod[rows], locales, locales) <- lowers
+        # (3-1) other protien n-term not yet defined in SM
+        # ...
+        
+        # (3-2) other protien c-term not yet defined in SM
+        # ...
+        
+        # (4-1) peptide "(N-term)" modification: 
+        #   only "Pyroglutamic acid (N-termQ)" and under column `variableSites`;
+        #   as a result, becomes lower-case `q` after step (1)
+        
+        # (4-2) peptide "(C-term)" modification not yet defined in SM
+        # ...
+  
+        # paste "pep_res_before" and "pep_res_after"
+        df <- df %>%
+          dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
+          dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))        
       }
-      
-      df <- dplyr::bind_rows(
-        df %>% dplyr::filter(is.na(.$variableSites)), 
-        df_sub
-      )
-      
-      # n-term mods
-      df_sub <- df %>% dplyr::filter(!grepl("^TMT", .$nterm))
-      
-      if (nrow(df_sub) > 0) {
-        df_sub$pep_seq_mod <- paste0("_", df_sub$pep_seq_mod)
-        df <- dplyr::bind_rows(
-          df %>% dplyr::filter(grepl("^TMT", .$nterm)), 
-          df_sub
-        )
-      }
-      
-      # paste "pep_res_before" and "pep_res_after"
-      df <- df %>%
-        dplyr::mutate(pep_seq = paste(pep_res_before, pep_seq, pep_res_after, sep = ".")) %>%
-        dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))
-      
+
       # median centering
       if (TMT_plex > 0) df <- mcPSM(df, set_idx)
       

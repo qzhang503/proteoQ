@@ -107,7 +107,7 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 
 	  df <- df %>% 
 	    dplyr::select(-which(names(.) %in% c(
-	      "number", 
+	      "number", "modifications", 
 	      "variableSites", "nterm", "previous_aa", "sequence", "next_aa", 
 	      "cys", "searchCycle", "L/H", "accession_numbers", "entry_name", 
 	      "matched_parent_mass"))) 
@@ -683,6 +683,7 @@ med_summarise_keys <- function(df, id) {
   
   # Spectrum Mill keys
   sm_median_keys <- c(
+    "score", "parent_charge", 
     "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
     "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
     "precursorIsolationIntensity", "ratioReporterIonToPrecursor", 

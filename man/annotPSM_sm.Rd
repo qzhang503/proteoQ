@@ -7,7 +7,8 @@
 \usage{
 annotPSM_sm(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   fasta = NULL, expt_smry = "expt_smry.xlsx", rm_krts = FALSE,
-  plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...)
+  plot_rptr_int = TRUE, plot_log2FC_cv = TRUE,
+  use_lowercase_aa = TRUE, ...)
 }
 \arguments{
 \item{group_psm_by}{A character string for the grouping of PSM entries. At the
