@@ -22,6 +22,7 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
   
   id <- rlang::as_string(rlang::enexpr(id))
   if (anal_type %in% c("ESGAGE", "GSVA")) id <- "entrez"
+  if ((anal_type %in% c("GSEA")) & (id != "gene")) stop("Primary ID is not `gene`.")
   
   NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
   
@@ -286,36 +287,41 @@ is_all_nan <- function(x, ...) {
 #'
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
-colAnnot <- function (annot_cols = NULL, sample_ids, annot_colnames = NULL) {
-	if(is.null(annot_cols)) return(NA)
+colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NULL) {
+	if (is.null(annot_cols)) return(NA)
 
   load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	exists <- annot_cols %in% names(label_scheme)
 
-	if(sum(!exists) > 0) {
+	if (sum(!exists) > 0) {
 		warning(paste0("Column '", annot_cols[!exists], "'",
 		               " not found in \'label_scheme\' and will be skipped."))
 		annot_cols <- annot_cols[exists]
 	}
 
-	if(length(annot_cols) == 0) return(NA)
+	if (length(annot_cols) == 0) return(NA)
 
 	x <- label_scheme %>%
 		dplyr::filter(Sample_ID %in% sample_ids) %>%
-		dplyr::select(annot_cols, Sample_ID) %>%
-		dplyr::select(which(not_all_NA(.))) %>%
+		dplyr::select(annot_cols, Sample_ID) 
+	
+	idx <- !not_all_NA(x)
+	if (sum(idx) > 0) stop("No aesthetics defined under column `", names(x)[idx], "`")
+
+	x <- x %>%
+		# dplyr::select(which(not_all_NA(.))) %>%
 		dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]),
 		              !is.na(.[["Sample_ID"]])) %>%
 		data.frame(check.names = FALSE) %>%
 		`rownames<-`(.[["Sample_ID"]])
 
-	if(any(duplicated(x[["Sample_ID"]]))) stop("Duplicated sample IDs found\n")
+	if (any(duplicated(x[["Sample_ID"]]))) stop("Duplicated sample IDs found\n")
 
-	if(!"Sample_ID" %in% annot_cols) x <- x %>% dplyr::select(-Sample_ID)
+	if (!"Sample_ID" %in% annot_cols) x <- x %>% dplyr::select(-Sample_ID)
 
-	if(ncol(x) == 0) return(NA)
+	if (ncol(x) == 0) return(NA)
 
-	if("TMT_Set" %in% names(x)) {
+	if ("TMT_Set" %in% names(x)) {
 		x <- x %>%
 			tibble::rownames_to_column() %>%
 			mutate(TMT_Set, as.factor(TMT_Set)) %>%
@@ -1464,28 +1470,28 @@ calc_cover <- function(df, id, fasta = NULL) {
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 match_fmls <- function(formulas) {
-  fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.Rdata")
+  fml_file <-  file.path(dat_dir, "Calls\\pepSig_formulas.Rdata")
 
-  if(file.exists(fml_file)) {
+  if (file.exists(fml_file)) {
     load(file = fml_file)
   } else {
-    stop("Run `prnSig()` first.")
+    stop("Run `pepSig()` first.")
   }
   
 	fml_chr <- formulas %>%
 		as.character() %>%
 		gsub("\\s+", "", .)
 
-	prnSig_chr <- prnSig_formulas %>%
+	pepSig_chr <- pepSig_formulas %>%
 		purrr::map(~ .[is_call(.)]) %>%
 		as.character() %>%
 		gsub("\\s+", "", .)
 
-	ok <- purrr::map_lgl(fml_chr, ~ . %in% prnSig_chr)
+	ok <- purrr::map_lgl(fml_chr, ~ . %in% pepSig_chr)
 
-	if(!all(ok))
+	if (!all(ok))
 		stop("Formula match failed: ", formulas[[which(!ok)]],
-		     " not found in the latest call to 'prnSig(...)'.")
+		     " not found in the latest call to 'pepSig(...)'.")
 }
 
 
@@ -1900,7 +1906,8 @@ sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = 
       rm(width_temp)
     }
     
-    try(ggsave(filepath, p, width = width, height = height, units = "in"))
+    dots <- dots %>% .[! names(.) %in% c("width", "height", "in", "limitsize")]
+    try(ggsave(filepath, p, width = width, height = height, units = "in", limitsize = FALSE))
   }
 }
 
@@ -2086,21 +2093,23 @@ rows_are_not_all <- function (match, vars, ignore.case = FALSE) {
 
 
 #' Concatenate formula(e) to varargs of dots
-concat_fml_dots <- function(fmls, fml_nms, dots) {
+concat_fml_dots <- function(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type = "zzz") {
+  if ((!is_empty(fmls)) & (anal_type == "GSEA")) return(c(dots, fmls))
+  
   if (purrr::is_empty(fmls)) {
-    fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.Rdata")
+    fml_file <-  file.path(dat_dir, "Calls\\pepSig_formulas.Rdata")
     if (file.exists(fml_file)) {
       load(file = fml_file)
       
       if (!is.null(fml_nms)) {
-        stopifnot(all(fml_nms %in% names(prnSig_formulas)))
-        stopifnot(all(names(prnSig_formulas) %in% fml_nms))
+        stopifnot(all(fml_nms %in% names(pepSig_formulas)))
+        stopifnot(all(names(pepSig_formulas) %in% fml_nms))
         
-        prnSig_formulas <- prnSig_formulas %>% 
+        pepSig_formulas <- pepSig_formulas %>% 
           .[map_dbl(names(.), ~ which(.x == fml_nms))]
       }
       
-      dots <- c(dots, prnSig_formulas)
+      dots <- c(dots, pepSig_formulas)
     } else {
       stop("Run `prnSig()` first.")
     }
@@ -2110,4 +2119,40 @@ concat_fml_dots <- function(fmls, fml_nms, dots) {
   }
   
   return(dots)
+}
+
+
+#' Roll up genes
+gn_rollup <- function (df, cols) {
+  if (! "gene" %in% names(df)) return(df)
+  
+  dfa <- df %>% 
+    dplyr::select(gene, cols) %>% 
+    dplyr::filter(!is.na(gene)) %>% 
+    dplyr::group_by(gene) %>% 
+    dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
+
+  dfb <- df %>% 
+    dplyr::select(-cols) %>% 
+    dplyr::select(-which(names(.) %in% c("prot_cover"))) %>% 
+    dplyr::filter(!is.na(gene)) %>% 
+    dplyr::filter(!duplicated(gene))
+  
+  if ("prot_cover" %in% names(df)) {
+    dfc <- df %>% 
+      dplyr::select(gene, prot_cover) %>% 
+      dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
+      dplyr::group_by(gene) %>% 
+      dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
+      dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 
+      dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+  } else {
+    dfc <- df %>% 
+      dplyr::select(gene) %>% 
+      dplyr::mutate(prot_cover = NA)
+  }
+  
+  df <- list(dfc, dfb, dfa) %>% 
+    purrr::reduce(right_join, by = "gene") %>% 
+    dplyr::filter(!is.na(gene), !duplicated(gene))
 }

@@ -7,7 +7,7 @@
 gsVolcano(df = NULL, contrast_groups = NULL, gsea_res = NULL,
   gsea_key = "term", gsets = NULL, volcano_theme = NULL,
   filepath = NULL, filename = NULL, adjP = FALSE,
-  show_labels = TRUE, show_sig = "none", pval_cutoff = 1e-06,
+  show_labels = TRUE, show_sig = "none", pval_cutoff = 0.000001,
   logFC_cutoff = log2(1.2), ...)
 }
 \description{

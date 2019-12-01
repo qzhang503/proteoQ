@@ -55,7 +55,8 @@
 #'  significance \code{pVal}. Only enrichment terms with \code{pVals} more
 #'  significant than the threshold will be reported.
 #'@param fml_nms Character string or vector; the forumula name(s). By default,
-#'  the names match to those used in \code{\link{prnSig}}.
+#'  the names match to those used in \code{\link{pepSig}} or
+#'  \code{\link{prnSig}}.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}.
 #'@import dplyr rlang ggplot2 networkD3
@@ -88,7 +89,7 @@ proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
 	dots <- rlang::enexprs(...)
 	fmls <- dots %>% .[grepl("^\\s*~", .)]
 	dots <- dots[!names(dots) %in% names(fmls)]
-	dots <- concat_fml_dots(fmls, fml_nms, dots)
+	dots <- concat_fml_dots(fmls = fmls, fml_nms = fml_nms, dots = dots, anal_type = "GSPA")
 	
 	curr_call <- mget(names(formals()), rlang::current_env()) %>% 
 	  .[names(.) != "..."] %>% 
@@ -106,9 +107,10 @@ proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
 
 	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r, 
 	          filepath = !!filepath, filename = !!filename, impute_na = impute_na, 
-	          anal_type = "GSPA")(complete_cases, gset_nms, 
-	                              var_cutoff, pval_cutoff, logFC_cutoff, gspval_cutoff, 
-	                              min_size, max_size, min_greedy_size, 
+	          anal_type = "GSPA")(complete_cases = complete_cases, gset_nms = gset_nms, 
+	                              var_cutoff = var_cutoff, pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
+	                              gspval_cutoff = gspval_cutoff, 
+	                              min_size = min_size, max_size = max_size, min_greedy_size = min_greedy_size, 
 	                              task = !!task, !!!dots)
 }
 
@@ -141,10 +143,12 @@ prnGSPA <- function (...) {
 #' @importFrom magrittr %>% %$% %T>%
 #' @importFrom outliers grubbs.test
 #' @importFrom broom.mixed tidy
-gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, complete_cases = FALSE,
+gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
+                     filepath = NULL, filename = NULL, complete_cases = FALSE,
                      gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 5E-2,
                      logFC_cutoff = log2(1.2), gspval_cutoff = 5E-2, 
-                     min_size = 6, max_size = Inf, min_greedy_size = 1, ...) {
+                     min_size = 6, max_size = Inf, min_greedy_size = 1, 
+                     scale_log2r = TRUE, anal_type = "GSPA", ...) {
 
   id <- rlang::as_string(rlang::enexpr(id))
   dots = rlang::enexprs(...)
@@ -159,24 +163,28 @@ gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
 
   if (purrr::is_empty(fmls)) stop("Formula(s) of contrasts not available.", call. = FALSE)
 
-  species <- df$species %>% unique() %>% as.character()
+  species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
   gsets <- load_dbs(gset_nms, species)
   
-  formulas <- names(df) %>% 
-    .[grepl("pVal", .)] %>% 
+  stopifnot(length(gsets) > 0)
+
+  fml_nms <- names(df) %>% 
+    .[grepl("pVal\\s*\\(", .)] %>% 
     gsub("(.*)\\.pVal.*", "\\1", .) %>% 
     unique() %>% 
     .[. %in% names(fmls)]
   
-  fmls <- fmls %>% .[names(.) %in% formulas]
-  formulas <- formulas %>% .[map_dbl(., ~ which(.x == names(fmls)))]
+  fmls <- fmls %>% .[names(.) %in% fml_nms]
+  fml_nms <- fml_nms %>% .[map_dbl(., ~ which(.x == names(fmls)))]
 
-  if (is_empty(formulas)) stop("No formula matached; compare the formula name(s) with those in `prnSig(..)`")
+  if (is_empty(fml_nms)) stop("No formula matached; compare the formula name(s) with those in `prnSig(..)`")
 
-  col_ind <- purrr::map(formulas, ~ grepl(.x, names(df))) %>%
+  col_ind <- purrr::map(fml_nms, ~ grepl(.x, names(df))) %>%
     dplyr::bind_cols() %>%
     rowSums() %>%
     `>`(0)
+  
+  stopifnot(sum(col_ind) > 0)
   
   cat("Column keys available for data filtration are in `Protein\\Model\\Protein_pVals.txt`.\n")
 
@@ -184,8 +192,23 @@ gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
   
-  purrr::pmap(list(formulas, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size, min_greedy_size),
-              fml_gspa, df, col_ind, id = !!id, gsets, filepath, filename, !!!dots)
+  # var_cutoff only for GSEA
+  # min_greedy_size and gspval_cutoff only for GSPA
+  if (anal_type == "GSPA") {
+    purrr::pmap(list(fmls, fml_nms, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size, min_greedy_size), 
+                fml_gspa, df = df, col_ind = col_ind, id = !!id, gsets = gsets, label_scheme_sub = label_scheme_sub, 
+                complete_cases = complete_cases, scale_log2r = scale_log2r, 
+                filepath = filepath, filename = filename, !!!dots)
+  } else if (anal_type == "GSEA") {
+    # need scale_log2r for var_cutoff
+    # need formula for pval_cutoff and logFC_cutoff
+    purrr::pmap(list(fmls, fml_nms, var_cutoff, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size), 
+                fml_gsea, df, col_ind, id = !!id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
+                filepath, filename, !!!dots)
+    
+  } else {
+    stop("Unhandled task.")
+  }
 }
 
 
@@ -193,8 +216,9 @@ gspaTest <- function(df, id = "entrez", label_scheme_sub, filepath, filename, co
 #'
 #' @import purrr dplyr rlang
 #' @importFrom magrittr %>% %T>%
-fml_gspa <- function (formula, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size, min_greedy_size, 
-                      df, col_ind, id, gsets, filepath, filename, ...) {
+fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size, min_greedy_size, 
+                      df, col_ind, id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
+                      filepath, filename, ...) {
 
   gapa_summary <- function(gsets, df, min_size = 1) {
     df_sub <- df %>% 
@@ -226,12 +250,12 @@ fml_gspa <- function (formula, pval_cutoff, logFC_cutoff, gspval_cutoff, min_siz
     }
   }  
 
-  dir.create(file.path(filepath, formula), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(filepath, fml_nm), recursive = TRUE, showWarnings = FALSE)
   id <- rlang::as_string(rlang::enexpr(id))
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   # penaltize with NA imputation to 0 to increases the number of entries in descriptive "mean" calculation
-  df <- df %>% prep_gspa(formula = formula, col_ind = col_ind, 
+  df <- df %>% prep_gspa(id = "entrez", fml_nm = fml_nm, col_ind = col_ind, 
                          pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff) %>% 
     dplyr::mutate(p_val = -log10(p_val)) %>% 
     dplyr::mutate(valence = ifelse(.$log2Ratio > 0, "pos", "neg")) %>% 
@@ -257,7 +281,7 @@ fml_gspa <- function (formula, pval_cutoff, logFC_cutoff, gspval_cutoff, min_siz
       do.call(rbind, .) %>% 
       tibble::rownames_to_column("term") %>% 
       dplyr::mutate(term = factor(term)) %>% 
-      dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), ~ abs(.x)) %>% 
+      dplyr::mutate_at(.vars = grep("^pVal\\s+\\(", names(.)), ~ abs(.x)) %>% 
       dplyr::group_by(term) %>% 
       dplyr::arrange(term) %>% 
       data.frame(check.names = FALSE) %>% 
@@ -315,7 +339,7 @@ fml_gspa <- function (formula, pval_cutoff, logFC_cutoff, gspval_cutoff, min_siz
 
   res_greedy <- sig_sets %>% 
     RcppGreedySetCover::greedySetCover(FALSE) %T>% 
-    write.csv(file.path(filepath, formula, paste0("resgreedy_", fn_prefix, ".csv")), row.names = FALSE) %>% 
+    write.csv(file.path(filepath, fml_nm, paste0("resgreedy_", fn_prefix, ".csv")), row.names = FALSE) %>% 
     dplyr::group_by(term) %>% 
     dplyr::summarise(ess_size = n()) %>% 
     dplyr::filter(ess_size >= min_greedy_size)
@@ -324,53 +348,56 @@ fml_gspa <- function (formula, pval_cutoff, logFC_cutoff, gspval_cutoff, min_siz
     dplyr::right_join(out, by = "term") %>% 
     dplyr::mutate(is_essential = ifelse(!is.na(ess_size), TRUE, FALSE)) %>% 
     dplyr::select(term, is_essential, size, ess_size, contrast, p_val, q_val, log2fc) %T>% 
-    write.csv(file.path(filepath, formula, paste0(fn_prefix, ".csv")), row.names = FALSE) %>% 
+    write.csv(file.path(filepath, fml_nm, paste0(fn_prefix, ".csv")), row.names = FALSE) %>% 
     dplyr::filter(is_essential) %>% 
     dplyr::filter(!duplicated(term)) %>% 
     dplyr::select(-contrast, -p_val, -q_val, -log2fc) %T>% 
-    write.csv(file.path(filepath, formula, paste0("essmeta_", fn_prefix, ".csv")), row.names = FALSE) %>% 
+    write.csv(file.path(filepath, fml_nm, paste0("essmeta_", fn_prefix, ".csv")), row.names = FALSE) %>% 
     dplyr::select(term, ess_size) %>% 
     dplyr::right_join(sig_sets, by = "term")
 
   map_essential(sig_sets) %>% 
-    write.csv(file.path(filepath, formula, paste0("essmap_", fn_prefix, ".csv")), row.names = FALSE)
+    write.csv(file.path(filepath, fml_nm, paste0("essmap_", fn_prefix, ".csv")), row.names = FALSE)
 }
 
 
 #' A helper function for GSPA
 #'
+#' @import purrr dplyr rlang
 #' @importFrom magrittr %>%
 #' @importFrom readr read_tsv
-prep_gspa <- function(df, formula, col_ind, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2)) {
+prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2)) {
+  id <- as_string(enexpr(id))
+  
   df <- df %>%
-    dplyr::select(grep(formula, names(.), fixed = TRUE)) %>%
-    `colnames<-`(gsub(paste0(formula, "."), "", names(.))) %>%
+    dplyr::select(grep(fml_nm, names(.), fixed = TRUE)) %>%
+    `colnames<-`(gsub(paste0(fml_nm, "."), "", names(.))) %>%
     dplyr::bind_cols(df[, !col_ind, drop = FALSE], .) %>% 
-    rm_pval_whitespace %>% 
-    dplyr::select(grep("^entrez$|^pVal|^log2Ratio", names(.))) %>% 
-    dplyr::mutate(entrez = as.character(entrez)) 
+    rm_pval_whitespace() %>% 
+    dplyr::select(id, grep("^pVal|^log2Ratio", names(.))) %>% 
+    dplyr::mutate(!!id := as.character(.[[id]]))
   
   contrast_groups <- names(df[grep("^log2Ratio\\s+\\(", names(df))]) %>%
     gsub("^log2Ratio\\s+\\(|\\)$", "", .)
-
+  
   pvals <- df %>% 
     dplyr::select(-grep("^log2Ratio\\s+\\(", names(.))) %>% 
     `names<-`(gsub("^pVal\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
-    tidyr::gather(key = contrast, value = p_val, -entrez) # %>% 
-    # tidyr::unite(key, entrez, contrast, sep = "_", remove = FALSE) 
+    tidyr::gather(key = contrast, value = p_val, -id) # %>% 
+    # tidyr::unite(key, id, contrast, sep = "_", remove = FALSE) 
   
   log2rs <- df %>% 
     dplyr::select(-grep("^pVal\\s+\\(", names(.))) %>% 
     `names<-`(gsub("^log2Ratio\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
-    tidyr::gather(key = contrast, value = log2Ratio, -entrez) %>% 
-    dplyr::select(-entrez, -contrast)
+    tidyr::gather(key = contrast, value = log2Ratio, -id) %>% 
+    dplyr::select(-id, -contrast)
   
   df <- dplyr::bind_cols(pvals, log2rs) %>% 
-    dplyr::filter(p_val <= pval_cutoff) %>% 
+    dplyr::filter(p_val <= pval_cutoff) %>% # NA will be removed
     dplyr::filter(abs(log2Ratio) >= logFC_cutoff) %>% 
-    dplyr::filter(!is.na(entrez)) %>% 
+    dplyr::filter(!is.na(id)) %>% 
     dplyr::mutate(contrast = factor(contrast, levels = contrast_groups)) %>%
-    dplyr::arrange(contrast) # %>% 
+    dplyr::arrange(contrast) 
 
   return(df)
 }
@@ -504,9 +531,9 @@ gspaHM <- function(filepath, filename, ...) {
   if (purrr::is_empty(fmls))
     stop("No formula(s) of contrasts available.", call. = TRUE)
   
-  formulas <- names(fmls)
-  if (length(formulas) > 0) {
-    purrr::walk(formulas, fml_gspahm, filepath, filename, !!!dots)
+  fml_nms <- names(fmls)
+  if (length(fml_nms) > 0) {
+    purrr::walk(fml_nms, fml_gspahm, filepath, filename, !!!dots)
   }
 }
 
@@ -515,7 +542,7 @@ gspaHM <- function(filepath, filename, ...) {
 #'
 #' @import purrr dplyr rlang pheatmap networkD3
 #' @importFrom magrittr %>%
-fml_gspahm <- function (formula, filepath, filename, ...) {
+fml_gspahm <- function (fml_nm, filepath, filename, ...) {
   dots <- rlang::enexprs(...)
   
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
@@ -523,10 +550,10 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
   
-  ins <- list.files(path = file.path(filepath, formula), pattern = "^essmap_.*\\.csv$")
+  ins <- list.files(path = file.path(filepath, fml_nm), pattern = "^essmap_.*\\.csv$")
   stopifnot(length(ins) == 1)
 
-  all_by_greedy <- tryCatch(read.csv(file.path(filepath, formula, ins), check.names = FALSE, header = TRUE, 
+  all_by_greedy <- tryCatch(read.csv(file.path(filepath, fml_nm, ins), check.names = FALSE, header = TRUE, 
                                      comment.char = "#"), error = function(e) NA) %>% 
     filters_in_call(!!!filter_dots)
   
@@ -605,10 +632,10 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   if (is.null(annot_rows)) {
     annotation_row <- NA
   } else {
-    meta_ins <- list.files(path = file.path(filepath, formula), pattern = "^essmeta_.*\\.csv$")
+    meta_ins <- list.files(path = file.path(filepath, fml_nm), pattern = "^essmeta_.*\\.csv$")
     stopifnot(length(meta_ins) == 1)
     
-    ess_meta <- tryCatch(read.csv(file.path(filepath, formula, meta_ins), check.names = FALSE, header = TRUE, 
+    ess_meta <- tryCatch(read.csv(file.path(filepath, fml_nm, meta_ins), check.names = FALSE, header = TRUE, 
                                   comment.char = "#"), error = function(e) NA)
     
     annot_rows <- annot_rows %>% .[. %in% names(ess_meta)]
@@ -699,7 +726,7 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
 
   ph <- my_pheatmap(
     mat = ess_vs_all,
-    filename = file.path(filepath, formula, filename),
+    filename = file.path(filepath, fml_nm, filename),
     annotation_col = annotation_col,
     annotation_row = annotation_row, 
     color = mypalette,
@@ -774,7 +801,7 @@ fml_gspahm <- function (formula, filepath, filename, ...) {
   networkD3::forceNetwork(Links = my_links, Nodes = my_nodes, Source = "source",
                           Target = "target", Value = "fraction", NodeID = "term", Nodesize = "size", 
                           Group = "cluster", opacity = 0.8, zoom = TRUE) %>% 
-    networkD3::saveNetwork(file = file.path(filepath, formula, paste0(fn_prefix, ".html")))
+    networkD3::saveNetwork(file = file.path(filepath, fml_nm, paste0(fn_prefix, ".html")))
 }
 
 

@@ -4,10 +4,12 @@
 \alias{gspaTest}
 \title{Perform GSPA tests}
 \usage{
-gspaTest(df, id = "entrez", label_scheme_sub, filepath, filename,
-  complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.05,
-  min_size = 6, max_size = Inf, min_greedy_size = 1, ...)
+gspaTest(df = NULL, id = "entrez", label_scheme_sub = NULL,
+  filepath = NULL, filename = NULL, complete_cases = FALSE,
+  gset_nms = "go_sets", var_cutoff = 0.5, pval_cutoff = 0.05,
+  logFC_cutoff = log2(1.2), gspval_cutoff = 0.05, min_size = 6,
+  max_size = Inf, min_greedy_size = 1, scale_log2r = TRUE,
+  anal_type = "GSPA", ...)
 }
 \description{
 logFC_cutoff setset of data before the calculation of adjusted pvals

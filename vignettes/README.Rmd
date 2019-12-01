@@ -90,9 +90,7 @@ Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tan
 
 The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
 
-<p class="comment">
 Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README.  
-</p>
 
 ## Installation
 To install this package, start R (version "3.6.1") as **administrator** and enter:  
@@ -923,6 +921,8 @@ knitr::include_graphics(c(img_volcplot_gspa))
 The names of gene sets will by default match those provided in `prnGSPA`. Despite in the above example, we chose to plot the results against gene sets in `GO`, not `KEGG`. More details can be accessed from the help document via `?gspaMap`.  
 
 In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `essmap_.*.csv` files under the `Protein\GSPA` folder.  
+
+The utility in `proteoQ` for conventional GSEA analysis is `prnGSEA()`. Details can be found via `?prnGSEA` from an R console.  
 
 ### 2.6 Gene set networks
 In the above section, we have plotted the enrichment of gene sets by individual GO or KEGG terms. Depending on how much the sample groups contrast to each other, we could have produced tens or hundreds of plots where many of them may never get viewed. Besides, gene sets can be redundant with overlaps to one another to varying degrees. A means to communicate the gene set results at high levels is to present them as hierarchical trees or grouped networks.  

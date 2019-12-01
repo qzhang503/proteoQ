@@ -4,7 +4,7 @@
 \alias{filterData}
 \title{Filter rows by variance quantiles}
 \usage{
-filterData(df, var_cutoff = 0.001)
+filterData(df, cols = NULL, var_cutoff = 0.001)
 }
 \description{
 Filter rows by variance quantiles

@@ -4,7 +4,7 @@
 \alias{fml_gspahm}
 \title{A helper function for gspaHM}
 \usage{
-fml_gspahm(formula, filepath, filename, ...)
+fml_gspahm(fml_nm, filepath, filename, ...)
 }
 \description{
 A helper function for gspaHM
