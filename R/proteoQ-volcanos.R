@@ -261,7 +261,7 @@ plotVolcano <- function(df = NULL, id = "gene", filepath = NULL, filename = NULL
   fmls <- fmls %>% .[names(.) %in% formulas]
   formulas <- formulas %>% .[map_dbl(., ~ which(.x == names(fmls)))]
   
-  if (is_empty(formulas)) stop("No formula matached; compare the formula name(s) with those in `prnSig(...)`")
+  if (is_empty(formulas)) stop("No formula matched; compare the formula name(s) with those in `prnSig(...)`")
   
   sub_dirs <- file.path(filepath, formulas)
   purrr::walk(sub_dirs, ~ dir.create(.x, recursive = TRUE, showWarnings = FALSE))

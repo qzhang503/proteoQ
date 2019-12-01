@@ -12,7 +12,7 @@
 #'   prnPCA, pepEucDist, prnEucDist, pepHM, prnHM, anal_pepNMF, anal_prnNMF,
 #'   plot_pepNMFCon, plot_prnNMFCon, plot_pepNMFCoef, plot_prnNMFCoef,
 #'   plot_metaNMF, anal_prnTrend, plot_prnTrend, pepSig, prnSig, pepVol, prnVol,
-#'   prnGSPA, gspaMap, getStringDB, pepImp, prnImp
+#'   prnGSPA, gspaMap, getStringDB, pepImp, prnImp, prnGSVA
 #'
 #' @docType package
 #' @name proteoQ

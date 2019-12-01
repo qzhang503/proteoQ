@@ -47,7 +47,8 @@ will be determined by the extension of the file name. A \code{.png} format
 will be used at default or at an unrecognized file extension.}
 
 \item{fml_nms}{Character string or vector; the forumula name(s). By default,
-the names match to those used in \code{\link{prnSig}}.}
+the names match to those used in \code{\link{pepSig}} or
+\code{\link{prnSig}}.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used.}

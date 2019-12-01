@@ -172,7 +172,76 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 		fn_prefix <- gsub("\\.[^.]*$", "", filename)
 	}
-
+	
+	err_msg2 <- "not found. \n Run functions `normPSM()`, `normPep()` and `normPrn()` first."
+	err_msg3 <- "not found. \nImpute NA values with `pepImp()` or `prnImp()` or set `impute_na = FALSE`."
+	err_msg4 <- "not found. \nRun `prnSig(impute_na = TRUE)` first."
+	err_msg5 <- "not found. \nRun `prnSig()` first."
+	
+	if (is.null(df)) {
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    fn_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_pVals.txt")
+	    fn_imp_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_impNA_pvals.txt")
+	    fn_raw <- file.path(dat_dir, "Peptide", "Peptide.txt")
+	    fn_imp <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
+	    fn_imp_p <- file.path(dat_dir, "Protein\\Model", "Protein_impNA_pvals.txt")
+	    fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
+	    fn_imp <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
+	  } else stop("Unknown `id`.", call. = FALSE)
+	  
+	  if (anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
+	    if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
+	  } else if (anal_type %in% c("Trend", "NMF", "Model", "GSVA")) { # optional impute_na but no p_vals
+	    if (impute_na) {
+	      if (file.exists(fn_imp)) src_path <- fn_imp else stop(paste(fn_imp, err_msg3), call. = FALSE)
+	    } else {
+	      if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
+	    }
+	  } else if (anal_type %in% c("GSPA", "GSEA")) { # always use data with pVals
+	    if (impute_na) {
+	      if (file.exists(fn_imp_p)) src_path <- fn_imp_p else stop(paste(fn_imp_p, err_msg4), call. = FALSE)
+	    } else {
+	      if (file.exists(fn_p)) src_path <- fn_p else stop(paste(fn_p, err_msg5), call. = FALSE)
+	    }
+	  } else if (anal_type %in% c("Heatmap")) { # optional impute_na and possible p_vals
+	    if (impute_na) {
+	      if (file.exists(fn_imp_p)) src_path <- fn_imp_p else if (file.exists(fn_imp)) src_path <- fn_imp else 
+	        stop(paste(fn_imp, err_msg3), call. = FALSE)
+	    } else {
+	      if (file.exists(fn_p)) src_path <- fn_p else if (file.exists(fn_raw)) src_path <- fn_raw else 
+	        stop(paste(fn_raw, err_msg2), call. = FALSE)
+	    }
+	  } 
+	  
+	  df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
+	                          comment.char = "#"), error = function(e) NA)
+	  
+	  if (!is.null(dim(df))) {
+	    message(paste("File loaded:", gsub("\\\\", "/", src_path)))
+	  } else {
+	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
+	  }
+	} else {
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    fn_raw <- file.path(dat_dir, "Peptide", df)
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    fn_raw <- file.path(dat_dir, "Protein", df)
+	  }
+	  
+	  df <- tryCatch(read.csv(fn_raw, check.names = FALSE, header = TRUE, sep = "\t",
+	                          comment.char = "#"), error = function(e) NA)
+	  
+	  if (!is.null(dim(df))) {
+	    message(paste("File loaded:", gsub("\\\\", "/", fn_raw)))
+	  } else {
+	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
+	  }
+	}
+	
+	run_scripts <- FALSE
+	if (run_scripts) {
 	if (is.null(df)) {
 	  err_msg <- "File doesn't exist."
 	  
@@ -189,7 +258,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  if (anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
 	    if (file.exists(fn_raw)) src_path <- fn_raw else
 	      stop(paste(fn_raw, "not found. \n Run functions `normPSM`, `normPep` and `normPrn` first.s"), call. = FALSE)
-	  } else if (anal_type %in% c("Trend", "NMF", "Model")) { # optional impute_na but no p_vals
+	  } else if (anal_type %in% c("Trend", "NMF", "Model", "GSVA")) { # optional impute_na but no p_vals
 	    if (impute_na) {
 	      if (file.exists(fn_imp)) src_path <- fn_imp else
 	        stop(paste(fn_imp, "not found. \nImpute NA values with `pepImp` or `prnImp` or set `impute_na = FALSE`."), call. = FALSE)
@@ -199,7 +268,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  } else if (anal_type %in% c("GSPA")) { # always use data with pVals
 	    if (file.exists(fn_p)) src_path <- fn_p else
 	      stop(paste(fn_p, "not found. \nRun `prnSig` first."), call. = FALSE)
-	  } else if (anal_type %in% c("Heatmap")) { # optional impute_na and possible p_vals
+	  } else if (anal_type %in% c("Heatmap", "GSEA")) { # optional impute_na and possible p_vals
 	    if (file.exists(fn_p)) { # may or may not be NA imputed
 	      src_path <- fn_p
 	    } else {
@@ -235,9 +304,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  } else {
 	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
 	  }
+	}	  
+	  
 	}
-	
-	if (anal_type %in% c("Model", "GSPA")) {
+
+	if (anal_type %in% c("Model", "GSPA", "GSVA", "GSEA")) {
 		label_scheme_sub <- label_scheme %>% # to be subset by the "key" in "formulae"
 			dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID), !Reference)
 	} else {
@@ -250,18 +321,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if (nrow(label_scheme_sub) == 0)
 	  stop(paste0("No samples or conditions were defined for \"", anal_type, "\""))
 	
-	force(scale_log2r)
-	force(anal_type)
-	force(col_select)
-	force(col_group)
-	force(col_order)
-	force(col_color)
-	force(col_fill)
-	force(col_shape)
-	force(col_size)
-	force(col_alpha)
-	force(col_benchmark)
-
+	
 	if (anal_type == "MDS") {
 		function(adjEucDist = FALSE, classical = TRUE, k = 3, show_ids = TRUE, annot_cols = NULL, ...) {
 		  dots <- rlang::enexprs(...)
@@ -502,6 +562,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
+		  
+		  fn_prefix2 <- ifelse(impute_na, "_impNA_pvals.txt", "_pVals.txt")
 
 		  df_op <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -522,7 +584,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		            !!!dots) %>%
 		    tibble::rownames_to_column(id) %>%
 		    dplyr::right_join(df, ., by = id) %T>% 
-		    write.table(file.path(filepath, paste0(data_type, "_pVals.txt")), sep = "\t",
+		    write.table(file.path(filepath, paste0(data_type, fn_prefix2)), sep = "\t",
 		                col.names = TRUE, row.names = FALSE)
 		    
 			wb <- createWorkbook("proteoQ")
@@ -531,7 +593,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), overwrite = TRUE) 
 		}
 	} else if (anal_type == "GSPA") {
-		function(complete_cases = FALSE, gset_nm = "go_sets", var_cutoff = .5,
+		function(complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = .5,
 		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
 		         min_size = 10, max_size = Inf, min_greedy_size = 1, task = anal, ...) {
 
@@ -543,7 +605,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                         filepath = filepath, 
 		                         filename = paste0(fn_prefix, ".csv"),
 		                         complete_cases = complete_cases, 
-		                         gset_nm = gset_nm, 
+		                         gset_nms = gset_nms, 
 		                         var_cutoff = var_cutoff,
 		                         pval_cutoff = pval_cutoff, 
 		                         logFC_cutoff = logFC_cutoff, 
@@ -551,6 +613,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                         min_size = min_size, 
 		                         max_size = max_size, 
 		                         min_greedy_size = min_greedy_size, 
+		                         scale_log2r = scale_log2r, 
+		                         anal_type = anal_type, 
 		                         ...), 
 		         plothm = gspaHM(filepath = filepath, 
 		                         filename = paste0(fn_prefix, ".", fn_suffix), 
@@ -559,7 +623,69 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  )
 		}
 
-	}
+	} else if(anal_type == "GSVA") {
+	  function(complete_cases = FALSE, lm_method = "limma", gset_nms = "go_sets", var_cutoff = .5,
+	           pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
+	    
+	    dots <- rlang::enexprs(...)
+	    filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+	    dots <- dots %>% .[! . %in% filter_dots]
+	    
+	    species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
+	    gsets <- load_dbs(gset_nms, species)
+	    
+	    stopifnot(length(gsets) > 0)
+
+	    df_log2r <- df %>% 
+	      filters_in_call(!!!filter_dots) %>% 
+	      prepDM(id = id, 
+	             scale_log2r = scale_log2r, 
+	             sub_grp = label_scheme_sub$Sample_ID, 
+	             anal_type = anal_type) %>% 
+	      .$log2R %>% 
+	      gsvaTest(id = !!id, 
+	               label_scheme_sub = label_scheme_sub, 
+	               filepath = filepath, 
+	               filename = paste0(fn_prefix, ".csv"), 
+	               complete_cases = complete_cases, 
+	               lm_method = lm_method, 
+	               gsets = gsets, 
+	               var_cutoff = var_cutoff, 
+	               pval_cutoff = pval_cutoff, 
+	               logFC_cutoff = logFC_cutoff, ...)
+	  }
+	} else if (anal_type == "GSEA") {
+	  function(complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = .5,
+	           pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
+	           min_size = 10, max_size = Inf, min_greedy_size = 1, task = anal, ...) {
+
+	    switch(rlang::as_string(rlang::enexpr(task)), 
+	           anal = gspaTest(df = df, 
+	                           id = !!id, 
+	                           label_scheme_sub = label_scheme_sub,
+	                           filepath = filepath, 
+	                           filename = paste0(fn_prefix, ".csv"),
+	                           complete_cases = complete_cases, 
+	                           gset_nms = gset_nms, 
+	                           var_cutoff = var_cutoff,
+	                           pval_cutoff = pval_cutoff, 
+	                           logFC_cutoff = logFC_cutoff, 
+	                           gspval_cutoff = gspval_cutoff,
+	                           min_size = min_size, 
+	                           max_size = max_size, 
+	                           min_greedy_size = 1, 
+	                           scale_log2r = scale_log2r, 
+	                           anal_type = anal_type, 
+	                           ...), 
+	           plothm = gseaHM(filepath = filepath, 
+	                           filename = paste0(fn_prefix, ".", fn_suffix), 
+	                           ...), 
+	           stop("Invalid `task`.", Call. = TRUE)
+	    )
+	  }
+	  
+	} 
+	
 }
 
 

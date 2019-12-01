@@ -50,6 +50,7 @@ Imports:
     statmod,
     EnvStats,
     GGally,
+		GSVA,
     NMF,
     RColorBrewer,
     RCurl,

@@ -96,19 +96,25 @@ rowVars <- function (x, na.rm = TRUE) {
 #'
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
-filterData <- function (df, var_cutoff = 1E-3) {
-	df <- df %>%
-		dplyr::mutate(Variance = rowVars(.)) %>%
-		dplyr::mutate(rowname = rownames(df))
-
-	Quantile <- quantile(df$Variance, probs = var_cutoff, na.rm = TRUE)
-
-	df %>%
-		dplyr::filter(Variance >= pmax(Quantile, 1E-3)) %>%
-		dplyr::select(-Variance) %>%
-		tibble::column_to_rownames()
+filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
+  if (is.null(cols)) cols <- 1:ncol(df)
+  
+  if (length(cols) > 1) {
+    df <- df %>% 
+      dplyr::select(cols) %>% 
+      dplyr::mutate(Variance = rowVars(.)) %>%
+      dplyr::mutate(rowname = rownames(df))
+    
+    Quantile <- quantile(df$Variance, probs = var_cutoff, na.rm = TRUE)
+    
+    df <- df %>%
+      dplyr::filter(Variance >= pmax(Quantile, 1E-3)) %>%
+      dplyr::select(-Variance) %>%
+      tibble::column_to_rownames()
+  }
+  
+  return(df)
 }
-
 
 #' Prepare formulas
 #'
@@ -306,11 +312,11 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	id <- rlang::as_string(rlang::enexpr(id))
 
 	fml_ops <- prepFml(formula, label_scheme_sub, ...)
-		contr_mat <- fml_ops$contr_mat
-		design <- fml_ops$design
-		key_col <- fml_ops$key_col
-		random_vars <- fml_ops$random_vars
-		label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
+	contr_mat <- fml_ops$contr_mat
+	design <- fml_ops$design
+	key_col <- fml_ops$key_col
+	random_vars <- fml_ops$random_vars
+	label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
 
 	# keep the name list as some rows may drop in procedures such as filtration
 	df_nms <- df %>%
@@ -320,7 +326,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	if (complete_cases) df <- df[complete.cases(df), ]
 
 	# remove small-variance entries such as normalizers
-	df <- df %>% filterData(var_cutoff)
+	df <- df %>% filterData(var_cutoff = var_cutoff)
 
 	# ensure the same order in Sample_ID
 	df <- df %>% 
@@ -434,17 +440,21 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	
 	non_fml_dots <- dots[!map_lgl(dots, is_formula)]
 	dots <- dots[map_lgl(dots, is_formula)]
-
-	if (id %in% c("prot_acc", "gene")) {
-		prnSig_formulas <- dots
-		save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.Rdata"))
-		rm(prnSig_formulas)
-	} else if (id %in% c("pep_seq", "pep_seq_mod")) {
-		pepSig_formulas <- dots
-		save(pepSig_formulas, file = file.path(dat_dir, "Calls", "pepSig_formulas.Rdata"))
-		rm(pepSig_formulas)
+	
+	if (id %in% c("pep_seq", "pep_seq_mod")) {
+	  pepSig_formulas <- dots
+	  save(pepSig_formulas, file = file.path(dat_dir, "Calls", "pepSig_formulas.Rdata"))
+	  rm(pepSig_formulas)
+	} else if (id %in% c("prot_acc", "gene")) {
+	  if (is_empty(dots)) {
+	    prnSig_formulas <- dots <- concat_fml_dots()
+	  } else {
+	    prnSig_formulas <- dots
+	  }
+	  save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.Rdata"))
+	  rm(prnSig_formulas)
 	}
-
+	
 	df_op <- purrr::map(dots, 
 	                    ~ model_onechannel(df, !!id, .x, label_scheme_sub, complete_cases, method, 
 	                                       var_cutoff, pval_cutoff, logFC_cutoff, !!!non_fml_dots)) %>%

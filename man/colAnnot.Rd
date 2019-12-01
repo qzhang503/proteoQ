@@ -4,7 +4,7 @@
 \alias{colAnnot}
 \title{Sets up the column annotation in heat maps}
 \usage{
-colAnnot(annot_cols = NULL, sample_ids, annot_colnames = NULL)
+colAnnot(annot_cols = NULL, sample_ids = NULL, annot_colnames = NULL)
 }
 \description{
 Sets up the column annotation in heat maps

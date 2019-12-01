@@ -526,6 +526,7 @@ match_logi_gv <- function(var, val) {
     stopifnot(rlang::is_logical(gvar))
     return(gvar)
   } else {
+    warning("Set globally `scale_log2_r = TRUE`.", immediate. = TRUE)
     return(val)
   }
 }

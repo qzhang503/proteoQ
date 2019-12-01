@@ -413,16 +413,6 @@ prnHM(
 	filename = "kin_by_class.png", 
 )
 
-# protein significance tests
-prnSig(
-	impute_na = FALSE, 
-	W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-	W16_vs_W2_course = ~ Term_2["W16-W2"], 
-)
-
-# protein volcano plots
-prnVol()
-
 # peptide significance tests
 pepSig(
 	impute_na = FALSE, 
@@ -432,6 +422,16 @@ pepSig(
 
 # peptide volcano plots
 pepVol()
+
+# protein significance tests
+prnSig(
+	impute_na = FALSE, 
+	# W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
+	# W16_vs_W2_course = ~ Term_2["W16-W2"], 
+)
+
+# protein volcano plots
+prnVol()
 
 # c-means clustering of protein logFC with filtration and sample-order supervision
 anal_prnTrend(
