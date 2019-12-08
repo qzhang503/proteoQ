@@ -6,10 +6,11 @@ library(proteoQ)
 ## RUN `Mascot or Maxquant but not both`
 dontrun <- TRUE
 if (!dontrun) {
-  # Mascot
+  ## Mascot
   dat_dir <- "C:\\The\\Mascot\\Example"
-
-  # Maxquant
+  
+	
+  ## Maxquant
   dat_dir <- c("C:\\The\\MQ\\Example")
 }
 ## END of RUN `Mascot or Maxquant but not both`

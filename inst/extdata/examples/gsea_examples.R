@@ -7,7 +7,6 @@ scale_log2r <- TRUE
 dontrun <- TRUE
 if (!dontrun) {
   ## Mascot
-	
   # suggested prior significance tests of peptide log2FC
   # (1a) no NA imputation; output: Peptide_pVals.txt
   pepSig(

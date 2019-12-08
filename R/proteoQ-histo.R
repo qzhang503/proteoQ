@@ -246,7 +246,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'@importFrom magrittr %>%
 #'@export
 proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                        col_select = NULL, scale_log2r = FALSE, pep_pattern = "zzz", 
+                        col_select = NULL, scale_log2r = TRUE, pep_pattern = "zzz", 
                         show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 

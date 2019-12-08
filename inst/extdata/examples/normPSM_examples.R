@@ -4,9 +4,11 @@
 library(proteoQ)
 
 ## RUN `Mascot or Maxquant but not both`
+# see README at https://github.com/qzhang503/proteoQ for details about 
+#   the applications of variable arguments (varargs)
 dontrun <- TRUE
 if (!dontrun) {
-  # Mascot
+  ## Mascot
   dat_dir <- "C:\\The\\Mascot\\Example"
   dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
   load_expts()
@@ -24,11 +26,13 @@ if (!dontrun) {
     plot_rptr_int = TRUE,
     plot_log2FC_cv = TRUE,
     
-    filter_peps = exprs(pep_expect <= .1),
+		# vararg statement(s)
+    filter_psms_at = exprs(pep_expect <= .1),
     filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
   )
 
-  # MaxQuant
+  
+  ## MaxQuant
   dat_dir <- c("C:\\The\\MQ\\Example")
   dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
   load_expts()
@@ -48,7 +52,7 @@ if (!dontrun) {
     plot_rptr_int = TRUE,
     plot_log2FC_cv = TRUE,
     
-    filter_peps = exprs(PEP <= 0.1),
+    filter_psms_at = exprs(PEP <= 0.1),
   )
 }
 ## END of RUN `Mascot or Maxquant but not both`

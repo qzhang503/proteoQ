@@ -16,6 +16,7 @@ pep_calc_mr	Molecular mass calculated from matched peptide sequence	Mascot
 pep_start	Ordinal position of first peptide residue in protein sequence	Mascot; or proteoQ if absent from Mascot PSM exports
 pep_end	Mascot: ordinal position of last peptide residue in protein sequence	Cf. `pep_start`
 pep_miss	Count of missed cleavage sites in peptide	Mascot
+pep_len	Number of amino acid residues in a peptide sequence	Cf. PSM keys
 pep_rank	Peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.	Median description from PSMs
 pep_isbold	"If grouping enabled, then a significant PSM; otherwise, indicates this is the highest scoring protein that contains a match to this query."	Cf. `pep_rank`
 pep_exp_mz	"Observed or experimental m/z value

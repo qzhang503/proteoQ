@@ -43,8 +43,10 @@ newColnames <- function(i, x, label_scheme) {
 #' \dontrun{
 #' }
 #' @import stringr dplyr purrr rlang  magrittr
-normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_pep_by = "prot_acc") {
-	on.exit(message("Generation of individual peptide tables by TMT experiments --- Completed."),
+normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", 
+                           group_pep_by = "prot_acc", cache = TRUE) {
+	
+  on.exit(message("Generation of individual peptide tables by TMT experiments --- Completed."),
 	        add = TRUE)
 
 	calcPepide <- function(df, label_scheme, id, method_psm_pep, set_idx, injn_idx) {
@@ -114,8 +116,8 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	  
 	  if ("pep_scan_title" %in% names(df)) {
 	    df <- df %>% 
-	    dplyr::mutate(pep_scan_title = gsub("\\\\", "~~", pep_scan_title)) %>%
-	    dplyr::mutate(pep_scan_title = gsub("^File.*~~", "", pep_scan_title))	      
+  	    dplyr::mutate(pep_scan_title = gsub("\\\\", "~~", pep_scan_title)) %>%
+  	    dplyr::mutate(pep_scan_title = gsub("^File.*~~", "", pep_scan_title))
 	  }
 
 	  # summarise log2FC and intensity from the same `set_idx` at one or multiple LCMS injections
@@ -148,19 +150,22 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 	    dplyr::mutate_at(.vars = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)),
 	                     list(~ replace(.x, is.infinite(.x), NA)))
 	  
-	  # median-centered across TMT channels under the same multiplex experiment
-	  col_r <- grepl("^log2_R[0-9]{3}", names(df))
-	  cf <- apply(df[, col_r, drop = FALSE], 2, median, na.rm = TRUE)
-	  df <- cbind(df[, -grep("^N_log2_R[0-9]{3}", names(df))],
-	              sweep(df[, col_r], 2, cf, "-") %>%
-	                `colnames<-`(paste("N", colnames(.), sep="_")))
-	  
-	  col_int <- grepl("^I[0-9]{3}", names(df))
-	  df  <- cbind(df[, -grep("^N_I[0-9]{3}", names(df))],
-	               sweep(df[, col_int, drop=FALSE], 2, 2^cf, "/") %>%
-	                 `colnames<-`(paste("N", colnames(.), sep="_")))
-	  
-	  rm(cf, col_r, col_int)
+	  df <- local({
+  	  # median-centered across TMT channels under the same multiplex experiment
+  	  col_r <- grepl("^log2_R[0-9]{3}", names(df))
+  	  cf <- apply(df[, col_r, drop = FALSE], 2, median, na.rm = TRUE)
+  	  df <- cbind(df[, -grep("^N_log2_R[0-9]{3}", names(df))],
+  	              sweep(df[, col_r], 2, cf, "-") %>%
+  	                `colnames<-`(paste("N", colnames(.), sep="_")))
+  	  
+  	  col_int <- grepl("^I[0-9]{3}", names(df))
+  	  df  <- cbind(df[, -grep("^N_I[0-9]{3}", names(df))],
+  	               sweep(df[, col_int, drop=FALSE], 2, 2^cf, "/") %>%
+  	                 `colnames<-`(paste("N", colnames(.), sep="_")))
+
+  	  return(df)
+	  })
+
 	  
 	  df <- df %>% 
 	    calcSD_Splex(group_pep_by) %>% 
@@ -191,30 +196,32 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 		reorder_files(n_TMT_sets(label_scheme_full))
 
 	purrr::walk(as.list(filelist), ~ {
-		fn_prx <- gsub("_PSM_N.txt", "", .x, fixed = TRUE)
-
+	  fn_prx <- gsub("_PSM_N.txt", "", .x, fixed = TRUE)
 		set_idx <- as.integer(gsub(".*TMTset(\\d+)_.*", "\\1", fn_prx))
 		injn_idx <- as.integer(gsub(".*LCMSinj(\\d+).*", "\\1", fn_prx))
+		fn_pep <- file.path(dat_dir, "Peptide", paste0("TMTset", set_idx, "_LCMSinj", injn_idx, "_Peptide_N.txt"))
 
-		df <- read.csv(file.path(dat_dir, "PSM", .x), check.names = FALSE, header = TRUE,
-		               sep = "\t", comment.char = "#") %>% 
-		  dplyr::select(-grep("^sd_log2_R", names(.))) %>% 
-		  calcPepide(label_scheme = label_scheme, id = !!id, method_psm_pep = method_psm_pep, 
-		             set_idx = set_idx, injn_idx = injn_idx)
-		
-		df <- dplyr::bind_cols(
-		  df %>% dplyr::select(grep("^pep_", names(.))), 
-		  df %>% dplyr::select(-grep("^pep_", names(.))), 
-		)
-		
-		df <- dplyr::bind_cols(
-		  df %>% dplyr::select(grep("^prot_", names(.))),
-		  df %>% dplyr::select(-grep("^prot_", names(.))),
-		)
-
-		write.table(df, file.path(dat_dir, "Peptide", paste0(fn_prx, "_Peptide_N", ".txt")),
-		            sep = "\t", col.names = TRUE, row.names = FALSE)
-	})
+		if (!(cache & file.exists(fn_pep))) {
+  		df <- read.csv(file.path(dat_dir, "PSM", .x), check.names = FALSE, header = TRUE,
+  		               sep = "\t", comment.char = "#") %>% 
+  		  dplyr::select(-grep("^sd_log2_R", names(.))) %>% 
+  		  calcPepide(label_scheme = label_scheme, id = !!id, method_psm_pep = method_psm_pep, 
+  		             set_idx = set_idx, injn_idx = injn_idx)
+  		
+  		df <- dplyr::bind_cols(
+  		  df %>% dplyr::select(grep("^pep_", names(.))), 
+  		  df %>% dplyr::select(-grep("^pep_", names(.))), 
+  		)
+  		
+  		df <- dplyr::bind_cols(
+  		  df %>% dplyr::select(grep("^prot_", names(.))),
+  		  df %>% dplyr::select(-grep("^prot_", names(.))),
+  		)
+  		
+  		write.table(df, file.path(dat_dir, "Peptide", paste0(fn_prx, "_Peptide_N", ".txt")), 
+  		            sep = "\t", col.names = TRUE, row.names = FALSE)		  
+		}
+	}, cache = cache)
 }
 
 
@@ -311,7 +318,8 @@ normPep_Splex <- function (id = "pep_seq_mod", method_psm_pep = "median", group_
 #'  algorithm convergence.
 #'@inheritParams normPSM
 #'@inheritParams mixtools::normalmixEM
-#'@seealso \code{\link{normPSM}} for PSM an \code{\link{normPrn}} for proteins.
+#'@seealso \code{\link{normPSM}} for PSM data normalization and
+#'  \code{\link{normPrn}} for protein data normalization.
 #'
 #'@return The primary output is in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
 #'
@@ -413,22 +421,16 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	
 	stopifnot(range_int[1] < range_int[2] & 
 	            range_int[1] >= 0 & range_int[2] <= 100)
-	
-	if (is.null(n_comp)) n_comp <- if(nrow(df) > 3000) 3L else 2L
-	n_comp <- n_comp %>% as.integer()
-	stopifnot(n_comp >= 2)
+
+	normPep_Splex(id = !!id, method_psm_pep = method_psm_pep, group_pep_by = group_pep_by, cache = cache)
 	
 	dots <- rlang::enexprs(...)
-	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-	dots <- dots %>% .[! . %in% lang_dots]
+	filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+	ok_filters <- identical_dots(call_nm = "normPep", curr_dots = filter_dots, pattern = "^filter_") 
+	mget(names(formals()), rlang::current_env()) %>% c(dots) %>% save_call("normPep")
+	dots <- dots %>% .[! . %in% filter_dots]
 
-	mget(names(formals()), rlang::current_env()) %>% save_call("normPep")
-
-	if (!(cache & file.exists(file.path(dat_dir, "Peptide", "Peptide.txt")))) {
-	  # leave the Splex results under the `Peptide` folder, 
-	  # so users can find the column keys for row filtration
-	  normPep_Splex(id = !!id, method_psm_pep = method_psm_pep, group_pep_by = group_pep_by)
-
+	if (!(cache & ok_filters & file.exists(file.path(dat_dir, "Peptide", "Peptide.txt")))) {
 		df <- do.call(rbind,
 			lapply(list.files(path = file.path(dat_dir, "Peptide"), 
 			                  pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"),
@@ -439,21 +441,23 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 
 		cat("Available column keys in PSM tables for data filtration: \n")
 		cat(paste0(names(df), "\n"))
-		df <- df %>% filters_in_call(!!!lang_dots)
-
-		dup_peps <- df %>%
-			dplyr::select(!!rlang::sym(id), prot_acc) %>%
-			dplyr::group_by(!!rlang::sym(id)) %>%
-			dplyr::summarise(N = n_distinct(prot_acc)) %>%
-			dplyr::filter(N > 1)
-
-		if (nrow(dup_peps) > 0) {
-		  df <- df %>% dplyr::filter(! (!!rlang::sym(id) %in% dup_peps[[id]]))
-		  write.csv(dup_peps, file.path(dat_dir, "Peptide", "dbl_dipping_peptides.csv"), row.names = FALSE)
-		}
+		df <- df %>% filters_in_call(!!!filter_dots)
 		
-		write.csv(df, file.path(dat_dir, "Peptide\\cache", "unambi_peptides.csv"), row.names = FALSE)
-		rm(dup_peps)
+		df <- local({
+  		dup_peps <- df %>%
+  			dplyr::select(!!rlang::sym(id), prot_acc) %>%
+  			dplyr::group_by(!!rlang::sym(id)) %>%
+  			dplyr::summarise(N = n_distinct(prot_acc)) %>%
+  			dplyr::filter(N > 1)
+  
+  		if (nrow(dup_peps) > 0) {
+  		  write.csv(dup_peps, file.path(dat_dir, "Peptide", "dbl_dipping_peptides.csv"), row.names = FALSE)
+  		  df <- df %>% dplyr::filter(! (!!rlang::sym(id) %in% dup_peps[[id]]))
+  		}
+  		
+  		write.csv(df, file.path(dat_dir, "Peptide\\cache", "unambi_peptides.csv"), row.names = FALSE)
+  		return(df)
+		})
 
 		# median summarisation of data from the same TMT experiment at different LCMS injections
 		df_num <- df %>% 
@@ -565,11 +569,24 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 			dplyr::filter(!duplicated(.[[id]])) %>% 
 		  dplyr::filter(rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0) %>% 
 		  dplyr::arrange(!!rlang::sym(id)) %T>%
-		  write.csv(file.path(dat_dir, "Peptide\\cache", "Peptide_no_norm.csv"), row.names = FALSE)		  
+		  write.csv(file.path(dat_dir, "Peptide\\cache", "Peptide_no_norm.csv"), row.names = FALSE)	
+		
+		df <- normMulGau(
+		  df = df,
+		  method_align = "MC",
+		  n_comp = 1L,
+		  range_log2r = range_log2r,
+		  range_int = range_int,
+		  filepath = file.path(dat_dir, "Peptide\\Histogram"),
+		  # no Z_log2_R yet available
+		  #   use col_refit = expr(Sample_ID) not `col_refit` to get all Z_log2_R
+		  #   why: users may specify `col_refit` only partial to Sample_ID entries
+		  col_refit = rlang::expr(Sample_ID), 
+		)
 	} else {
-		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"),
-			check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>%
-			filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0) 
+		df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), 
+		               check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
+		  dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0) 
 		
 		if (! id %in% names(df)) {
 		  try(unlink(file.path(dat_dir, "Peptide\\Peptide.txt")))
@@ -595,7 +612,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
 	  col_refit = col_refit, 
 	  !!!dots
 	)
-	
+
 	purrr::walk(quietly_out[-1], write, 
 	            file.path(dat_dir, "Peptide\\log","pep_MulGau_log.csv"), append = TRUE)
 	

@@ -107,9 +107,10 @@ deviation of the \code{log2FC} of peptides from ascribing PSMs. Character
 strings under \code{pep_seq_mod} denote peptide sequences with applicable
 variable modifications.
 
-The coding of \code{pep_seq_mod} at \code{use_lowercase_aa = TRUE}:
+\cr\strong{Nomenclature of \code{pep_seq_mod}} (\code{use_lowercase_aa =
+TRUE)}:
 
-\tabular{ll}{ \strong{Variable modification}   \tab \strong{Abbreviation}\cr
+\tabular{ll}{ \emph{Variable modification}   \tab \emph{Abbreviation}\cr
 Non-terminal \tab A letter from upper to lower case and the flanking residues
 on the N- or C-terminal side of the peptide separated by a dot, e.g.,
 \code{-.mtFPEADILLK.S} \cr N-term \tab A hat to the left of a peptide
@@ -166,17 +167,18 @@ copy_refseq_mm(fasta_dir)
 ## RUN `Mascot or Maxquant but not both`
 dontrun <- TRUE
 if (!dontrun) {
-  # Mascot
+  ## Mascot
   dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
   dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
   cptac_csv_1(dat_dir)
   cptac_expt_1(dat_dir)
   cptac_frac_1(dat_dir)
   
-  # Maxquant
-  #   to install package `proteoQDB` containing MaxQuant examples: 
-  #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #    (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
+	
+  ## Maxquant
+  #  to install package `proteoQDB` containing MaxQuant examples: 
+  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
+  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
   library(proteoQDB)
   dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
   dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
@@ -193,9 +195,11 @@ if (!dontrun) {
 library(proteoQ)
 
 ## RUN `Mascot or Maxquant but not both`
+# see README at https://github.com/qzhang503/proteoQ for details about 
+#   the applications of variable arguments (varargs)
 dontrun <- TRUE
 if (!dontrun) {
-  # Mascot
+  ## Mascot
   dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
   dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
   load_expts()
@@ -213,11 +217,13 @@ if (!dontrun) {
     plot_rptr_int = TRUE,
     plot_log2FC_cv = TRUE,
     
-    filter_peps = exprs(pep_expect <= .1),
+		# vararg statement(s)
+    filter_psms_at = exprs(pep_expect <= .1),
     filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
   )
 
-  # MaxQuant
+  
+  ## MaxQuant
   dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
   dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
   load_expts()
@@ -237,7 +243,7 @@ if (!dontrun) {
     plot_rptr_int = TRUE,
     plot_log2FC_cv = TRUE,
     
-    filter_peps = exprs(PEP <= 0.1),
+    filter_psms_at = exprs(PEP <= 0.1),
   )
 }
 ## END of RUN `Mascot or Maxquant but not both`

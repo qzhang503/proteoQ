@@ -7,7 +7,7 @@
 gsvaTest(df = NULL, id = "entrez", label_scheme_sub = NULL,
   filepath = NULL, filename = NULL, complete_cases = FALSE,
   lm_method = "limma", gsets = NULL, var_cutoff = 0.5,
-  pval_cutoff = 0.0001, logFC_cutoff = log2(1.1), ...)
+  pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), ...)
 }
 \description{
 logFC_cutoff subsets data for adjusted pvals
