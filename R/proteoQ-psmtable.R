@@ -443,8 +443,7 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
 #'   one-letter representation to abbreviate the modifications of amino acid
 #'   residues. See the table below for details.
 #'
-#' @import dplyr tidyr seqinr
-#' @importFrom stringr str_split
+#' @import dplyr tidyr seqinr stringr
 #' @importFrom magrittr %>%
 splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, 
                      rm_craps = FALSE, rm_krts = FALSE, rptr_intco = 1000, 
@@ -525,6 +524,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   # need columns 'pep_seq_mod' and `gene` for data grouping
   # note changed pep_seq: from such as MENGQSTAAK to K.MENGQSTAAK.L
   df <- df %>% 
+    dplyr::mutate(pep_len = str_length(pep_seq)) %>% 
     add_mascot_pepseqmod(use_lowercase_aa) %>% 
     dplyr::mutate(prot_acc_orig = prot_acc) %>% 
     dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
@@ -1109,9 +1109,10 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'strings under \code{pep_seq_mod} denote peptide sequences with applicable
 #'variable modifications.
 #'
-#'The coding of \code{pep_seq_mod} at \code{use_lowercase_aa = TRUE}:
+#'\cr\strong{Nomenclature of \code{pep_seq_mod}} (\code{use_lowercase_aa =
+#'TRUE)}:
 #'
-#'\tabular{ll}{ \strong{Variable modification}   \tab \strong{Abbreviation}\cr
+#'\tabular{ll}{ \emph{Variable modification}   \tab \emph{Abbreviation}\cr
 #'Non-terminal \tab A letter from upper to lower case and the flanking residues
 #'on the N- or C-terminal side of the peptide separated by a dot, e.g.,
 #'\code{-.mtFPEADILLK.S} \cr N-term \tab A hat to the left of a peptide

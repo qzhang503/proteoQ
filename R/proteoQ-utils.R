@@ -941,8 +941,9 @@ annotKin <- function (df, acc_type) {
 save_call <- function(call_pars, fn) {
 	dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)
 	save(fn, file = file.path(dat_dir, "Calls", paste0(fn, "_call.Rdata")))
-
+	
 	call_pars[names(call_pars) == "..."] <- NULL
+	save(call_pars, file = file.path(dat_dir, "Calls", paste0(fn, ".rda")))
 
 	purrr::map(call_pars , as.character) %>%
 		do.call('rbind', .) %>%
@@ -2155,4 +2156,14 @@ gn_rollup <- function (df, cols) {
   df <- list(dfc, dfb, dfa) %>% 
     purrr::reduce(right_join, by = "gene") %>% 
     dplyr::filter(!is.na(gene), !duplicated(gene))
+}
+
+
+#' Compare dot-dot-dot between prior and current
+identical_dots <- function(call_nm, curr_dots, pattern) {
+  file <- file.path(dat_dir, "Calls", paste0(call_nm, ".rda"))
+  if (!file.exists(file)) return(FALSE)
+  
+  load(file = file)
+  identical(call_pars %>% .[grepl(pattern, names(.))], curr_dots)
 }

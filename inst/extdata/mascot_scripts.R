@@ -1,9 +1,5 @@
 ## part 0 --- installation
 # package proteoQ
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install(c("Biobase", "Mfuzz", "limma"))
-
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")

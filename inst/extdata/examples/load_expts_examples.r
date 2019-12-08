@@ -18,7 +18,7 @@ copy_refseq_mm(fasta_dir)
 ## RUN `Mascot or Maxquant but not both`
 dontrun <- TRUE
 if (!dontrun) {
-  # Mascot
+  ## Mascot
   dat_dir <- "C:\\The\\Mascot\\Example"
   dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
   
@@ -29,7 +29,8 @@ if (!dontrun) {
   cptac_expt_1(dat_dir)
   cptac_frac_1(dat_dir)
   
-  # or Maxquant
+	
+  ## Maxquant
   #   to install package `proteoQDB` containing MaxQuant examples: 
   #    (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
   #    (2) local installation of proteoQDB, e.g., devtools::install("~\\my_dir\\proteoQDB")
@@ -55,6 +56,8 @@ library(proteoQ)
 load_expts()
 
 # PSM processing with in-function filtration of data by `filter_`
+# see README at https://github.com/qzhang503/proteoQ for details about 
+#   the applications of variable arguments (varargs)
 normPSM(
   group_psm_by = pep_seq_mod,
   group_pep_by = gene,
@@ -67,8 +70,9 @@ normPSM(
   annot_kinases = TRUE,
   plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE,
-
-  filter_peps = exprs(pep_expect <= .1),
+  
+  # vararg statement(s)
+  filter_psms_at = exprs(pep_expect <= .1),
   filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
 )
 

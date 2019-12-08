@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.1.1.4
+Version: 1.1.1.5
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -9,7 +9,7 @@ Authors@R:
 Description: Data Processing and Informatic Analysis of Mass Spectrometrirc Data.  
     It reads and processes data from multiplex TMT experiments in mass Spectrometry. 
 		It further provides basic informatic analysis.
-biocViews: Biobase, Mfuzz, limma
+biocViews: 
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -37,6 +37,7 @@ Imports:
     e1071,
     grid,
     gridExtra,
+		limma,
     lme4,
     lmerTest,
     mice,
@@ -48,9 +49,12 @@ Imports:
     rlang,
     seqinr,
     statmod,
+		Biobase,
+		BiocManager,
     EnvStats,
     GGally,
 		GSVA,
+		Mfuzz,
     NMF,
     RColorBrewer,
     RCurl,

@@ -5,7 +5,7 @@
 \title{Peptide reports for individual TMT experiments}
 \usage{
 normPep_Splex(id = "pep_seq_mod", method_psm_pep = "median",
-  group_pep_by = "prot_acc")
+  group_pep_by = "prot_acc", cache = TRUE)
 }
 \arguments{
 \item{id}{Depreciated: character string; the variable for summarisation of
@@ -31,6 +31,8 @@ be calculated based on the same \code{prot_acc} groups. At
 accession numbers will be treated as one group. NB: the value of
 \code{group_pep_by} will match automatically to the value of
 \code{group_pep_by} in \code{normPSM}.}
+
+\item{cache}{Logical; if TRUE, use cache.}
 }
 \value{
 Results in \code{.txt} files for each of TMT experiments and LC/MS

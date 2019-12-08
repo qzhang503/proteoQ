@@ -129,15 +129,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	stopifnot(range_int[1] < range_int[2] & 
 	            range_int[1] >= 0 & range_int[2] <= 100)
-	
-	if (is.null(n_comp)) n_comp <- if(nrow(df) > 3000) 3L else 2L
-	n_comp <- n_comp %>% as.integer()
-	stopifnot(n_comp >= 2)
-	
-	dots <- rlang::enexprs(...)
-	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-	dots <- dots %>% .[! . %in% lang_dots]
-	
+
 	# depreciated
 	id <- rlang::enexpr(id)
 	if (id == rlang::expr(c("prot_acc", "gene"))) {
@@ -163,7 +155,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 			Use column \'Sample_ID\' instead.", call. = FALSE)
 	}
 	
-	mget(names(formals()), rlang::current_env()) %>% save_call("normPrn")
+	# mget(names(formals()), rlang::current_env()) %>% save_call("normPrn")
 	stopifnot(id %in% c("prot_acc", "gene"))
 
 	if (id == "gene") {
@@ -175,7 +167,13 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	stopifnot(id == "prot_acc")
 	
-	if (!(cache & file.exists(file.path(dat_dir, "Protein", "Protein.txt")))) {
+	dots <- rlang::enexprs(...)
+	filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+	ok_filters <- identical_dots(call_nm = "normPrn", curr_dots = filter_dots, pattern = "^filter_")
+	mget(names(formals()), rlang::current_env()) %>% c(dots) %>% save_call("normPrn")
+	dots <- dots %>% .[! . %in% filter_dots]
+	
+	if (!(cache & ok_filters & file.exists(file.path(dat_dir, "Protein", "Protein.txt")))) {
 	  fasta <- seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
 	                              seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
 	  
@@ -185,7 +183,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	  
 	  cat("Available column keys for data filtration: \n")
 	  cat(paste0(names(df), "\n"))
-	  df <- df %>% filters_in_call(!!!lang_dots)
+	  df <- df %>% filters_in_call(!!!filter_dots)
 	  
 		if (use_unique_pep & "pep_isunique" %in% names(df)) df <- df %>% dplyr::filter(pep_isunique == 1)
 

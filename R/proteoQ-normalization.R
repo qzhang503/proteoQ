@@ -13,6 +13,27 @@
 normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range_int, filepath, 
                        col_refit = NULL, ...) {
 
+  # check n_comp
+  find_n_comp <- function (n_comp, method_align) {
+    if (is.null(n_comp)) {
+      if (method_align == "MGKernel") {
+        n_comp <- ifelse(nrow(df) > 3000, 3L, 2L)
+        n_comp <- n_comp %>% as.integer()
+      } else if (method_align == "MC") {
+        n_comp <- 1L
+      } else {
+        n_comp <- 1L
+      }
+    } else {
+      stopifnot(n_comp >= 1)
+      if (method_align == "MGKernel") stopifnot(n_comp >= 2)
+    }
+    
+    return(n_comp)
+  }
+  
+  
+  # find the x at max density
   my_which_max <- function (params, label_scheme) {
     fit <- params %>%
       split(., .$Sample_ID) %>%
@@ -21,7 +42,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
       dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
       dplyr::arrange(Sample_ID)
     
-    ## Calibration coefficients for centering ratio profiles
+    # Calibration coefficients for centering ratio profiles
     cf_x <- fit %>%
       dplyr::group_by(Sample_ID) %>%
       dplyr::filter(Sum == max(Sum, na.rm = TRUE)) %>%
@@ -38,13 +59,15 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
         dplyr::mutate(x = 0)
     }
     
-    cf_x <- dplyr::bind_rows(cf_x, cf_empty) %>% # add back the empty samples
+    # add back the empty samples
+    cf_x <- dplyr::bind_rows(cf_x, cf_empty) %>% 
       data.frame(check.names = FALSE) %>%
-      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% # avoid mismatch
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
       dplyr::arrange(Sample_ID)
   }
   
  
+  # SD for all non-trival samples
   calc_sd_fcts <- function (df, range_log2r, range_int, label_scheme) {
     label_scheme_sd <- label_scheme %>%
       dplyr::filter(!Reference, !grepl("^Empty\\.", Sample_ID))	%>%
@@ -63,6 +86,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   }
   
   
+  # sample IDS for used in the current fitting
   find_fit_nms <- function(nm_a, nm_b) {
     ind <- purrr::map(nm_b, ~ grepl(.x, nm_a)) %>% 
       purrr::reduce(`|`)
@@ -70,10 +94,12 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   }
   
   
+  # compare to prior n_comp value
   ok_file_ncomp <- function(filepath, filename, n_comp) {
     if (file.exists(file.path(filepath, filename))) {
       params <- read.table(file.path(filepath, filename), 
                            check.names = FALSE, header = TRUE, comment.char = "#")
+      
       n_comp == dplyr::n_distinct(params$Component)
     } else {
       return(FALSE)
@@ -81,11 +107,71 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   }
   
 
+  # update df
+  update_df <- function (df, label_scheme_fit, cf_x_fit, cf_SD_fit) {
+    nm_log2r_n <- names(df) %>% 
+      .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+      find_fit_nms(label_scheme_fit$Sample_ID)
+    
+    nm_int_n <- names(df) %>% 
+      .[grepl("^N_I[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+      find_fit_nms(label_scheme_fit$Sample_ID)
+    
+    nm_log2r_z <- names(df) %>% 
+      .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+      find_fit_nms(label_scheme_fit$Sample_ID)  
+    
+    df_z <- mapply(normSD, df[, nm_log2r_n, drop = FALSE], 
+                   center = cf_x_fit$x, SD = cf_SD_fit$fct, SIMPLIFY = FALSE) %>%
+      data.frame(check.names = FALSE) %>%
+      `colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
+      `rownames<-`(rownames(df))    
+    
+    nan_cols <- purrr::map_lgl(df_z, is_all_nan, na.rm = TRUE)
+    df_z[, nan_cols] <- 0
+    rm(nan_cols)
+    
+    if (is_empty(nm_log2r_z)) {
+      df <- cbind(df, df_z)
+      
+      nm_log2r_z <- names(df) %>% 
+        .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+        find_fit_nms(label_scheme_fit$Sample_ID)
+    } else {
+      df[, nm_log2r_z] <- df_z
+    }
+    
+    # aligned log2FC and intensity after the calculation of "df_z"
+    df[, nm_log2r_n] <- sweep(df[, nm_log2r_n, drop = FALSE], 2, cf_x_fit$x, "-")
+    df[, nm_int_n] <- sweep(df[, nm_int_n, drop = FALSE], 2, 2^cf_x_fit$x, "/")    
+    
+    env_bind(caller_env(), nm_log2r_z = nm_log2r_z)
+    
+    return(df)
+  }
+  
+  
+  plot_foo <- function () {
+    # Pass arguments by row
+    args <- params %>% dplyr::select(c("lambda", "mean", "sd")) %>% pmap(list)
+    
+    # Define the function, i.e., normal density function with the weight of lambda
+    wt_dnorm <- function(x, lambda, mean, sd) lambda * length(x) * dnorm(x, mean, sd)
+    
+    # The wrapper of stat_function(); easier to pass "x"
+    stat_dnorm <- function(x, args) stat_function(aes(x), fun = wt_dnorm, n = 100, args = args, size = .2)
+    
+    # Pass the list of "args" to the wrapper function "stat_dnorm()" for plotting
+    # ggplot() + lapply(args, stat_dnorm, x = seq(-2, 2, 0.1))
+  }
+  
+  
   dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
 
 	dots <- rlang::enexprs(...)
 	slice_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^slice_", names(.))]
 	dots <- dots %>% .[! . %in% slice_dots]
+	n_comp <- find_n_comp(n_comp, method_align)
 
 	if (!purrr::is_empty(dots)) {
 		data.frame(dots) %>%
@@ -94,23 +180,31 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 			            sep = "\t", col.names = TRUE, row.names = FALSE)
 	}
 
-	if ((!ok_file_ncomp(filepath, "MGKernel_params_N.txt", n_comp)) & col_refit != rlang::expr(sample_ID)) {
-	  warning("Missing `MGKernel_params_N.txt` or different `n_comp`; 
-	          normalization against all samples and all data rows instead.")
-	  col_refit <- rlang::expr(Sample_ID)
-	  slice_dots <- NULL
+	# if different `n_comp` between two `method_align = MGKernel`, force `col_refit` to all samples
+	# if `n_comp` is given but with `method_align = MC`, ignore difference in n_comp
+	
+	ok_N_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_N.txt", n_comp)
+	ok_Z_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)
+	
+	if (method_align == "MGKernel") {
+  	if ((!ok_N_ncomp) & (col_refit != rlang::expr(sample_ID))) {
+  	  warning("Missing `MGKernel_params_N.txt` or different `n_comp`; 
+  	          normalization against all sample columns and all data rows instead.")
+  	  col_refit <- rlang::expr(Sample_ID)
+  	  slice_dots <- NULL
+  	}
+  
+  	if ((!ok_Z_ncomp) & (col_refit != rlang::expr(sample_ID))) {
+  	  warning("Missing `MGKernel_params_Z.txt` or different `n_comp`; 
+  	          normalization against all sample columns and all data rows instead.")
+  	  col_refit <- rlang::expr(Sample_ID)
+  	  slice_dots <- NULL
+  	}	  
 	}
 
-	if ((!ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)) & col_refit != rlang::expr(sample_ID)) {
-	  warning("Missing `MGKernel_params_Z.txt` or different `n_comp`; 
-	          normalization against all samples and all data rows instead.")
-	  col_refit <- rlang::expr(Sample_ID)
-	  slice_dots <- NULL
-	}
-	
 	load(file = file.path(dat_dir, "label_scheme.Rdata"))
 	label_scheme_fit <- label_scheme %>% .[!is.na(.[[col_refit]]), ]
-
+	
 	nm_log2r_n <- names(df) %>% 
 	  .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
 	  find_fit_nms(label_scheme_fit$Sample_ID)
@@ -118,11 +212,10 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	nm_int_n <- names(df) %>% 
 	  .[grepl("^N_I[0-9]{3}[NC]*\\s+\\(", .)] %>% 
 	  find_fit_nms(label_scheme_fit$Sample_ID)
-	
+
 	if (method_align == "MGKernel") {
 		print(paste("Number of Gaussian components =", n_comp))
 
-	  # N_log2_R... from the inputs are median centered in the first pass
 	  params_sub <- df %>% 
 	    filters_in_call(!!!slice_dots) %>% 
 	    dplyr::select(nm_log2r_n) %>% 
@@ -131,7 +224,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
 	    dplyr::arrange(Sample_ID, Component)
 
-    if (!ok_file_ncomp(filepath, "MGKernel_params_N.txt", n_comp)) {
+    if (!ok_N_ncomp) {
       # earlierly forced `col_refit = Sample_ID` if detected different `n_comp` 
       # so if not `ok`, `params_sub` must be for all samples
       params <- params_sub
@@ -148,17 +241,15 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
         try(unlink(file.path(dat_dir, "Protein\\Histogram\\MGKernel_params_[NZ].txt")))
         try(unlink(file.path(dat_dir, "Protein\\Protein.txt")))
         stop("`MGKernel_params` files contain Sample_ID(s) not in `expt_smry.xlsx` and are removed; 
-             try the normalization again.")
+             start the normalization over again.")
       }
 	    
 	    rows <- params$Sample_ID %in% params_sub$Sample_ID
 	    params[rows, ] <- params_sub	      
     }
 
-	  # standard deviation
 	  cf_SD <- calc_sd_fcts(df, range_log2r, range_int, label_scheme)
 
-	  # x values at max density
 		cf_x <- my_which_max(params, label_scheme) %>%
 			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
 			dplyr::arrange(Sample_ID) 
@@ -170,64 +261,12 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 			write.table(., file = file.path(filepath, "MGKernel_params_N.txt"), sep = "\t",
 			            col.names = TRUE, row.names = FALSE)
 		
-
-		# ========================================================================================
-		# not run
-		#
-		# Pass arguments by row
-		args <- params %>%
-						dplyr::select(c("lambda", "mean", "sd")) %>% pmap(list)
-
-		# Define the function, i.e., normal density function with the weight of lambda
-		wt_dnorm <- function(x, lambda, mean, sd) lambda * length(x) * dnorm(x, mean, sd)
-
-		# The wrapper of stat_function(); easier to pass "x"
-		stat_dnorm <- function(x, args) stat_function(aes(x), fun = wt_dnorm, n = 100, args = args, size = .2)
-
-		# Pass the list of "args" to the wrapper function "stat_dnorm()" for plotting
-		# ggplot() + lapply(args, stat_dnorm, x = seq(-2, 2, 0.1))
-		#
-		# ========================================================================================
+		cf_SD_fit <- cf_SD %>% dplyr::filter(Sample_ID %in% label_scheme_fit$Sample_ID)
+		cf_x_fit <- cf_x %>% dplyr::filter(Sample_ID %in% label_scheme_fit$Sample_ID)
+		df <- update_df(df, label_scheme_fit, cf_x_fit, cf_SD_fit)
 		
-		cf_SD_fit <- cf_SD %>% 
-		  dplyr::filter(Sample_ID %in% label_scheme_fit[[col_refit]])
-		
-		cf_x_fit <- cf_x %>% 
-		  dplyr::filter(Sample_ID %in% label_scheme_fit[[col_refit]])
-
-		# data with MGKernel alignment and scaling normalization
-		df_z <- mapply(normSD, df[, nm_log2r_n, drop = FALSE], 
-		               center = cf_x_fit$x, SD = cf_SD_fit$fct, SIMPLIFY = FALSE) %>%
-		  data.frame(check.names = FALSE) %>%
-		  `colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
-		  `rownames<-`(rownames(df))
-		
-		nan_cols <- purrr::map_lgl(df_z, is_all_nan, na.rm = TRUE)
-		df_z[, nan_cols] <- 0
-		rm(nan_cols)
-		
-		nm_log2r_z <- names(df) %>% 
-		  .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-		  find_fit_nms(label_scheme_fit$Sample_ID)
-		
-		if (rlang::is_empty(nm_log2r_z)) {
-		  df <- cbind(df, df_z)
-		  
-		  nm_log2r_z <- names(df) %>% 
-		    .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-		    find_fit_nms(label_scheme_fit$Sample_ID)
-		} else {
-		  df[, nm_log2r_z] <- df_z
-		}
-		
-		# aligned log2FC and intensity after the calculation of "df_z"
-		df[, nm_log2r_n] <- sweep(df[, nm_log2r_n, drop = FALSE], 2, cf_x_fit$x, "-")
-		df[, nm_int_n] <- sweep(df[, nm_int_n, drop = FALSE], 2, 2^cf_x_fit$x, "/")
-
-		# separate fits of Z_log2_r for curve parameters only...
-		if (!ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)) {
-		  # earlierly forced `col_refit = Sample_ID` if detected different `n_comp` 
-		  # so if not `ok`, `params_sub` must be for all samples
+		# separate fits of Z_log2_R for updating curve parameters only
+		if (!ok_Z_ncomp) {
 		  params_z <- df[, nm_log2r_z, drop = FALSE] %>%
 		    `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
 		    fitKernelDensity(n_comp = n_comp, seed, !!!dots) %>% 
@@ -259,33 +298,42 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		            sep = "\t", col.names = TRUE, row.names = FALSE)
 
 	} else if (method_align == "MC") {
-	  cf_SD <- calc_sd_fcts(df, range_log2r, range_int, label_scheme)
+	  # profile widths not affected by selected cols and rows
+	  sd_coefs <- df %>% calc_sd_fcts(range_log2r, range_int, label_scheme)
 	  
-	  cf_x <- df %>%
-			dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
-			`colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
-			dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
-			unlist() %>%
-			data.frame(x = .) %>%
-			tibble::rownames_to_column("Sample_ID") %>%
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
-			dplyr::arrange(Sample_ID)
-		
-		df <- df[, !grepl("^Z_log2_R[0-9]{3}", names(df)), drop = FALSE]
-
-		df <- mapply(normSD, df[,grepl("^N_log2_R[0-9]{3}", names(df))],
-		             center = cf_x$x, SD = cf_SD$fct, SIMPLIFY = FALSE) %>% # scale to the same SD
-				data.frame(check.names = FALSE) %>%
-				`colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
-				cbind(df, .)
-
-		df[, grepl("^N_log2_R[0-9]{3}", names(df))] <-
-		  sweep(df[, grepl("^N_log2_R[0-9]{3}", names(df))], 2, cf_x$x, "-")
-		df[, grepl("^N_I[0-9]{3}", names(df))] <-
-		  sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 2, 2^cf_x$x, "/")
-
+	  x_vals <- df %>%
+	    dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
+	    `colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
+	    dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
+	    unlist() %>%
+	    data.frame(x = .) %>%
+	    tibble::rownames_to_column("Sample_ID") %>%
+	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+	    dplyr::arrange(Sample_ID)
+	  
+	  x_vals <- local({
+	    x_vals_fit <- df %>%
+	      filters_in_call(!!!slice_dots) %>% 
+	      dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
+	      `colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
+	      dplyr::select(which(names(.) %in% label_scheme_fit$Sample_ID)) %>% 
+	      dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
+	      unlist() %>%
+	      data.frame(x = .) %>%
+	      tibble::rownames_to_column("Sample_ID") %>%
+	      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+	      dplyr::arrange(Sample_ID)
+	    
+	    rows <- x_vals$Sample_ID %in% x_vals_fit$Sample_ID
+	    x_vals[rows, ] <- x_vals_fit
+	    
+	    return(x_vals)
+	  })
+	  
+	  df <- update_df(df, label_scheme, x_vals, sd_coefs)
 	} else { # method_align <- c("YWHAE", "CBR4")
-		if(!all(method_align %in% df[["gene"]])) {
+		# depreciated
+	  if(!all(method_align %in% df[["gene"]])) {
 			stop(paste(setdiff(method_align, df[["gene"]]),
 			           "in 'method_align' not found in gene names."), call. = TRUE)
 		}
@@ -406,12 +454,12 @@ sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 normSD <- function (x, center = 0, SD = 1) {
 	if (sum(is.na(x)) == length(x)) {
 		x
-	} else if ((sum(is.na(x))+sum(x==0, na.rm=T)) == length(x)) {
+	} else if ((sum(is.na(x)) + sum(x == 0, na.rm = TRUE)) == length(x)) {
 		x[1:length(x)] <- NaN
 	} else if (all(x == 0)) {
 		x
 	} else {
-		x <- (x-center)/SD
+		x <- (x - center) / SD
 	}
 	return (x)
 }
