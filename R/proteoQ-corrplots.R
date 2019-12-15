@@ -390,9 +390,11 @@ pepCorr_logFC <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  quietly_log <- purrr::quietly(proteoCorr)(id = pep_seq, data_select = "logFC", ...)
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logFC", ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Corrplot\\log","pepCorr_log.csv"), append = TRUE)
+              file.path(dat_dir, "Peptide\\Corrplot\\log\\pepCorr_log.csv"), append = TRUE)
 }
 
 
@@ -434,9 +436,12 @@ pepCorr_logInt <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoCorr)(id = pep_seq, data_select = "logInt", ...)
+  
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logInt", ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Corrplot\\log","pepCorr_log.csv"), append = TRUE)
+              file.path(dat_dir, "Peptide\\Corrplot\\log\\pepCorr_log.csv"), append = TRUE)
 }
 
 
@@ -465,9 +470,11 @@ prnCorr_logFC <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoCorr)(id = gene, data_select = "logFC", ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logFC", ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Corrplot\\log","prnCorr_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\Corrplot\\log\\prnCorr_log.csv"), append = TRUE)
 }
 
 
@@ -494,10 +501,12 @@ prnCorr_logInt <- function (...) {
   if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  id <- match_normPSM_protid()
 
-  quietly_log <- purrr::quietly(proteoCorr)(id = gene, data_select = "logInt", ...)
+  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logInt", ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Corrplot\\log","prnCorr_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\Corrplot\\log\\prnCorr_log.csv"), append = TRUE)
 }
 
 

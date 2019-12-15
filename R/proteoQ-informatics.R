@@ -70,7 +70,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 
-	load(file = file.path(dat_dir, "label_scheme.Rdata"))
+	load(file = file.path(dat_dir, "label_scheme.rda"))
 	
 	if (is.null(label_scheme[[col_select]])) {
 		stop("Column \'", rlang::as_string(col_select), "\' does not exist.", call. = FALSE)
@@ -142,9 +142,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	id <- rlang::as_string(rlang::enexpr(id))
 	if (length(id) != 1)
 	  stop("\'id\' must be one of \'pep_seq\', \'pep_seq_mod\', \'prot_acc\' or \'gene\'")
-
-	cat(paste0("id = \"", id, "\"", " by the current call\n"))
-	id <- match_identifier(id)
 
 	if (id %in% c("prot_acc", "gene")) {
 	  cat(paste0("id = \"", id, "\"", " after parameter matching to normPrn()\n"))

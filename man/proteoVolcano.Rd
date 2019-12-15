@@ -9,7 +9,7 @@
 \usage{
 proteoVolcano(id = "gene", anal_type = "Volcano", df = NULL,
   scale_log2r = TRUE, filepath = NULL, filename = NULL,
-  fml_nms = NULL, impute_na = TRUE, adjP = FALSE,
+  fml_nms = NULL, impute_na = FALSE, adjP = FALSE,
   show_labels = TRUE, pval_cutoff = 0.05, logFC_cutoff = log2(1.2),
   show_sig = "none", gset_nms = c("go_sets", "kegg_sets"), ...)
 

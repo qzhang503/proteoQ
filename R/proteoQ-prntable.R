@@ -1,3 +1,247 @@
+pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
+  load(file = file.path(dat_dir, "label_scheme.rda"))
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  filter_dots <- rlang::enexprs(...) %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  
+  fn_fasta <- file.path(dat_dir, "my_project.fasta")
+  stopifnot(file.exists(fn_fasta))
+  fasta <- seqinr::read.fasta(fn_fasta, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
+  
+  df <- read.csv(file.path(dat_dir, "Peptide\\Peptide.txt"), check.names = FALSE, 
+                 header = TRUE, sep = "\t", comment.char = "#") %>% 
+    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
+  
+  df <- df %>% filters_in_call(!!!filter_dots)
+  
+  if (use_unique_pep & "pep_isunique" %in% names(df)) df <- df %>% dplyr::filter(pep_isunique == 1)
+  
+  df_num <- df %>% 
+    dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
+    dplyr::group_by(!!rlang::sym(id))
+  
+  df_num <- switch(method_pep_prn, 
+                   mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
+                   top.3 = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
+                   weighted.mean = TMT_wt_mean(df_num, !!rlang::sym(id), na.rm = TRUE), 
+                   median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
+                   aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
+  
+  df <- df %>% 
+    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.)))
+  
+  df_mq_rptr_mass_dev <- df %>% 
+    dplyr::select(!!rlang::sym(id), grep("^Reporter mass deviation", names(.))) %>% 
+    dplyr::group_by(!!rlang::sym(id)) %>% 
+    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+  
+  df <- df %>% 
+    dplyr::select(-grep("^Reporter mass deviation", names(.)))	  
+  
+  mq_median_keys <- c(
+    "Score", "Missed cleavages", "PEP", 
+    "Charge", "Mass", "PIF", "Fraction of total spectrum", "Mass error [ppm]", 
+    "Mass error [Da]", "Base peak fraction", "Precursor Intensity", 
+    "Precursor Apex Fraction", "Intensity coverage", "Peak coverage", 
+    "Combinatorics"
+  )
+  
+  df_mq_med <- df %>% 
+    dplyr::select(!!rlang::sym(id), which(names(.) %in% mq_median_keys)) %>% 
+    dplyr::group_by(!!rlang::sym(id)) %>% 
+    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+  
+  df <- df %>% 
+    dplyr::select(-which(names(.) %in% mq_median_keys))		
+  
+  sm_median_keys <- c(
+    "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
+    "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
+    "precursorIsolationIntensity", "ratioReporterIonToPrecursor", 
+    "matched_parent_mass", "delta_parent_mass", "delta_parent_mass_ppm")
+  
+  df_sm_med <- df %>% 
+    dplyr::select(!!rlang::sym(id), which(names(.) %in% sm_median_keys)) %>% 
+    dplyr::group_by(!!rlang::sym(id)) %>% 
+    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+  
+  df <- df %>% 
+    dplyr::select(-which(names(.) %in% sm_median_keys))
+  
+  df_first <- df %>% 
+    dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
+    dplyr::select(-grep("^pep_", names(.)))    
+  
+  df <- list(df_first, 
+             df_mq_rptr_mass_dev, df_mq_med, 
+             df_sm_med, 
+             df_num) %>% 
+    purrr::reduce(left_join, by = id) %>% 
+    data.frame(check.names = FALSE)
+  
+  rm(df_num, df_first)
+  
+  df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
+    df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
+    dplyr::mutate_if(is.integer, as.numeric) %>% 
+    round(., digits = 3)
+  
+  df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
+    df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
+    dplyr::mutate_if(is.integer, as.numeric) %>% 
+    round(., digits = 0)
+  
+  df <- cbind.data.frame(
+    df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df))], 
+    df[, grep("^I[0-9]{3}", names(df))], 
+    df[, grep("^N_I[0-9]{3}", names(df))], 
+    df[, grep("^log2_R[0-9]{3}", names(df))], 
+    df[, grep("^N_log2_R[0-9]{3}", names(df))], 
+    df[, grep("^Z_log2_R[0-9]{3}", names(df))])
+  
+  df <- df %>% 
+    .[rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0, ]
+  
+  if (gn_rollup) {
+    dfa <- df %>% 
+      dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
+      dplyr::filter(!is.na(gene)) %>% 
+      dplyr::group_by(gene) %>% 
+      dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
+    
+    dfb <- df %>% 
+      dplyr::select(-prot_cover, -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
+      dplyr::filter(!is.na(gene)) %>% 
+      dplyr::filter(!duplicated(.$gene))
+    
+    dfc <- df %>% 
+      dplyr::select(gene, prot_cover) %>% 
+      dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
+      dplyr::group_by(gene) %>% 
+      dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
+      dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 
+      dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+    
+    df <- list(dfc, dfb, dfa) %>% 
+      purrr::reduce(right_join, by = "gene") %>% 
+      dplyr::filter(!is.na(gene), !duplicated(gene))
+  }
+  
+  return(df)
+}
+
+
+
+standPrn <- function (method_align = c("MC", "MGKernel"), 
+                    range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL, seed = NULL, 
+                    col_refit = NULL, cache = TRUE, ...) {
+  
+  dir.create(file.path(dat_dir, "Protein\\Histogram"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein\\cache"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  old_opt <- options(max.print = 99999)
+  on.exit(options(old_opt), add = TRUE)
+  options(max.print = 2000000)
+  
+  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("standPrn"), add = TRUE)
+  
+  reload_expts()
+  
+  method_align <- rlang::enexpr(method_align)
+  if (method_align == rlang::expr(c("MC", "MGKernel"))) {
+    method_align <- "MC"
+  } else {
+    method_align <- rlang::as_string(method_align)
+    if(! method_align %in% c("MC", "MGKernel")) 
+      warning("Assume the value of 'method_align' is a list of housekeeping proteins")
+  }
+  
+  stopifnot(length(range_log2r) == 2)
+  stopifnot(length(range_int) == 2)
+  
+  if (range_log2r[2] <= 1) range_log2r <- range_log2r * 100
+  if (range_int[2] <= 1) range_int <- range_int * 100
+  
+  stopifnot(range_log2r[1] < range_log2r[2] & 
+              range_log2r[1] >= 0 & range_log2r[2] <= 100)
+  
+  stopifnot(range_int[1] < range_int[2] & 
+              range_int[1] >= 0 & range_int[2] <= 100)
+  
+  id <- match_normPSM_protid()
+  pep_id <- match_normPSM_pepid()
+  
+  col_refit <- rlang::enexpr(col_refit)
+  col_refit <- ifelse(is.null(col_refit), rlang::expr(Sample_ID), rlang::sym(col_refit))
+  load(file = file.path(dat_dir, "label_scheme.rda"))
+  
+  if (is.null(label_scheme[[col_refit]])) {
+    col_refit <- rlang::expr(Sample_ID)
+    warning("Column \'", rlang::as_string(col_refit), "\' does not exist.
+			Use column \'Sample_ID\' instead.", call. = FALSE)
+  } else if (sum(!is.na(label_scheme[[col_refit]])) == 0) {
+    col_refit <- rlang::expr(Sample_ID)
+    warning("No samples were specified under column \'", rlang::as_string(col_refit), "\'.
+			Use column \'Sample_ID\' instead.", call. = FALSE)
+  }
+  
+  dots <- rlang::enexprs(...)
+  
+  filename <- file.path(dat_dir, "Protein\\Protein.txt")
+  
+  if (!file.exists(filename)) {
+    stop(filename, " not found; run `Pep2Prn` first.")
+  }
+  
+  df <- read.csv(filename, sep = "\t", check.names = FALSE, header = TRUE, comment.char = "#") %>% 
+    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)  
+  
+  quietly_out <- purrr::quietly(normMulGau)(
+    df = df, 
+    method_align = method_align, 
+    n_comp = n_comp, 
+    seed = seed, 
+    range_log2r = range_log2r, 
+    range_int = range_int, 
+    filepath = file.path(dat_dir, "Protein\\Histogram"), 
+    col_refit = col_refit, 
+    !!!dots,
+  )
+  
+  purrr::walk(quietly_out[-1], write, 
+              file.path(dat_dir, "Protein\\log","prn_MulGau_log.csv"), append = TRUE)
+  
+  df <- quietly_out$result %>% 
+    dplyr::filter(!nchar(as.character(.[["prot_acc"]])) == 0) %>% 
+    dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
+    dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
+    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
+    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %T>% 
+    write.table(., file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #'Reports Protein Results
 #'
 #'\code{normPrn} summarises peptides into proteins and performs data
@@ -93,11 +337,9 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	
 	old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
-	
-	old_dir <- getwd()
-	on.exit(setwd(old_dir), add = TRUE)
-
 	options(max.print = 2000000) 
+	
+	on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("normPrn"), add = TRUE)
 	
 	reload_expts()
 	
@@ -143,7 +385,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 
 	col_refit <- rlang::enexpr(col_refit)
 	col_refit <- ifelse(is.null(col_refit), rlang::expr(Sample_ID), rlang::sym(col_refit))
-	load(file = file.path(dat_dir, "label_scheme.Rdata"))
+	load(file = file.path(dat_dir, "label_scheme.rda"))
 	
 	if (is.null(label_scheme[[col_refit]])) {
 	  col_refit <- rlang::expr(Sample_ID)
@@ -155,7 +397,6 @@ normPrn <- function (id = c("prot_acc", "gene"),
 			Use column \'Sample_ID\' instead.", call. = FALSE)
 	}
 	
-	# mget(names(formals()), rlang::current_env()) %>% save_call("normPrn")
 	stopifnot(id %in% c("prot_acc", "gene"))
 
 	if (id == "gene") {
@@ -170,137 +411,140 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	dots <- rlang::enexprs(...)
 	filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 	ok_filters <- identical_dots(call_nm = "normPrn", curr_dots = filter_dots, pattern = "^filter_")
-	mget(names(formals()), rlang::current_env()) %>% c(dots) %>% save_call("normPrn")
-	dots <- dots %>% .[! . %in% filter_dots]
+	nonfilter_dots <- dots %>% .[! . %in% filter_dots]
 	
-	if (!(cache & ok_filters & file.exists(file.path(dat_dir, "Protein", "Protein.txt")))) {
-	  fasta <- seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
-	                              seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
-	  
-	  df <- read.csv(file.path(dat_dir, "Peptide\\Peptide.txt"), check.names = FALSE, 
-		               header = TRUE, sep = "\t", comment.char = "#") %>% 
-			dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
-	  
-	  cat("Available column keys for data filtration: \n")
-	  cat(paste0(names(df), "\n"))
-	  df <- df %>% filters_in_call(!!!filter_dots)
-	  
-		if (use_unique_pep & "pep_isunique" %in% names(df)) df <- df %>% dplyr::filter(pep_isunique == 1)
+	if (!(cache & ok_filters & file.exists(file.path(dat_dir, "Protein\\Protein.txt")))) {
+	  df <- pep_to_prn(!!id, method_pep_prn, use_unique_pep, gn_rollup, !!!filter_dots)
 
-		df_num <- df %>% 
-				dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-				dplyr::group_by(!!rlang::sym(id))
+	  run_scripts <- FALSE
+	  if (run_scripts) {
+	    fasta <- seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
+	                                seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
+	    
+	    df <- read.csv(file.path(dat_dir, "Peptide\\Peptide.txt"), check.names = FALSE, 
+	                   header = TRUE, sep = "\t", comment.char = "#") %>% 
+	      dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
+	    
+	    cat("Available column keys for data filtration: \n")
+	    cat(paste0(names(df), "\n"))
+	    
+	    df <- df %>% filters_in_call(!!!filter_dots)
+	    
+	    if (use_unique_pep & "pep_isunique" %in% names(df)) df <- df %>% dplyr::filter(pep_isunique == 1)
+	    
+	    df_num <- df %>% 
+	      dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
+	      dplyr::group_by(!!rlang::sym(id))
+	    
+	    df_num <- switch(method_pep_prn, 
+	                     mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
+	                     top.3 = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
+	                     weighted.mean = TMT_wt_mean(df_num, !!rlang::sym(id), na.rm = TRUE), 
+	                     median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
+	                     aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
+	    
+	    df <- df %>% 
+	      dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.)))
+	    
+	    df_mq_rptr_mass_dev <- df %>% 
+	      dplyr::select(!!rlang::sym(id), grep("^Reporter mass deviation", names(.))) %>% 
+	      dplyr::group_by(!!rlang::sym(id)) %>% 
+	      dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+	    
+	    df <- df %>% 
+	      dplyr::select(-grep("^Reporter mass deviation", names(.)))	  
+	    
+	    mq_median_keys <- c(
+	      "Score", "Missed cleavages", "PEP", 
+	      "Charge", "Mass", "PIF", "Fraction of total spectrum", "Mass error [ppm]", 
+	      "Mass error [Da]", "Base peak fraction", "Precursor Intensity", 
+	      "Precursor Apex Fraction", "Intensity coverage", "Peak coverage", 
+	      "Combinatorics"
+	    )
+	    
+	    df_mq_med <- df %>% 
+	      dplyr::select(!!rlang::sym(id), which(names(.) %in% mq_median_keys)) %>% 
+	      dplyr::group_by(!!rlang::sym(id)) %>% 
+	      dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+	    
+	    df <- df %>% 
+	      dplyr::select(-which(names(.) %in% mq_median_keys))		
+	    
+	    sm_median_keys <- c(
+	      "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
+	      "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
+	      "precursorIsolationIntensity", "ratioReporterIonToPrecursor", 
+	      "matched_parent_mass", "delta_parent_mass", "delta_parent_mass_ppm")
+	    
+	    df_sm_med <- df %>% 
+	      dplyr::select(!!rlang::sym(id), which(names(.) %in% sm_median_keys)) %>% 
+	      dplyr::group_by(!!rlang::sym(id)) %>% 
+	      dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+	    
+	    df <- df %>% 
+	      dplyr::select(-which(names(.) %in% sm_median_keys))
+	    
+	    df_first <- df %>% 
+	      dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
+	      dplyr::select(-grep("^pep_", names(.)))
+	    
+	    df <- list(df_first, 
+	               df_mq_rptr_mass_dev, df_mq_med, 
+	               df_sm_med, 
+	               df_num) %>% 
+	      purrr::reduce(left_join, by = id) %>% 
+	      data.frame(check.names = FALSE)
+	    
+	    rm(df_num, df_first)
+	    
+	    df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
+	      df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
+	      dplyr::mutate_if(is.integer, as.numeric) %>% 
+	      round(., digits = 3)
+	    
+	    df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
+	      df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
+	      dplyr::mutate_if(is.integer, as.numeric) %>% 
+	      round(., digits = 0)
+	    
+	    df <- cbind.data.frame(
+	      df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df))], 
+	      df[, grep("^I[0-9]{3}", names(df))], 
+	      df[, grep("^N_I[0-9]{3}", names(df))], 
+	      df[, grep("^log2_R[0-9]{3}", names(df))], 
+	      df[, grep("^N_log2_R[0-9]{3}", names(df))], 
+	      df[, grep("^Z_log2_R[0-9]{3}", names(df))])
+	    
+	    df <- df %>% 
+	      .[rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0, ]
+	    
+	    if (gn_rollup) {
+	      dfa <- df %>% 
+	        dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
+	        dplyr::filter(!is.na(gene)) %>% 
+	        dplyr::group_by(gene) %>% 
+	        dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
+	      
+	      dfb <- df %>% 
+	        dplyr::select(-prot_cover, -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
+	        dplyr::filter(!is.na(gene)) %>% 
+	        dplyr::filter(!duplicated(.$gene))
+	      
+	      dfc <- df %>% 
+	        dplyr::select(gene, prot_cover) %>% 
+	        dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
+	        dplyr::group_by(gene) %>% 
+	        dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
+	        dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 
+	        dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+	      
+	      df <- list(dfc, dfb, dfa) %>% 
+	        purrr::reduce(right_join, by = "gene") %>% 
+	        dplyr::filter(!is.na(gene), !duplicated(gene))
+	    }
+	    
+	  }
 
-		df_num <- switch(method_pep_prn, 
-		                 mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
-		                 top.3 = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
-		                 weighted.mean = TMT_wt_mean(df_num, !!rlang::sym(id), na.rm = TRUE), 
-		                 median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
-		                 aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
-		
-		df <- df %>% 
-		  dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.)))
-
-		# MaxQuant keys
-		df_mq_rptr_mass_dev <- df %>% 
-		  dplyr::select(!!rlang::sym(id), grep("^Reporter mass deviation", names(.))) %>% 
-		  dplyr::group_by(!!rlang::sym(id)) %>% 
-		  dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-		
-		df <- df %>% 
-		  dplyr::select(-grep("^Reporter mass deviation", names(.)))	  
-		
-		mq_median_keys <- c(
-		  "Score", "Missed cleavages", "PEP", 
-		  "Charge", "Mass", "PIF", "Fraction of total spectrum", "Mass error [ppm]", 
-		  "Mass error [Da]", "Base peak fraction", "Precursor Intensity", 
-		  "Precursor Apex Fraction", "Intensity coverage", "Peak coverage", 
-		  "Combinatorics"
-		)
-		
-		df_mq_med <- df %>% 
-		  dplyr::select(!!rlang::sym(id), which(names(.) %in% mq_median_keys)) %>% 
-		  dplyr::group_by(!!rlang::sym(id)) %>% 
-		  dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-		
-		df <- df %>% 
-		  dplyr::select(-which(names(.) %in% mq_median_keys))		
-		
-		# Spectrum Mill keys
-		sm_median_keys <- c(
-		  "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
-		  "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
-		  "precursorIsolationIntensity", "ratioReporterIonToPrecursor", 
-		  "matched_parent_mass", "delta_parent_mass", "delta_parent_mass_ppm")
-		
-		df_sm_med <- df %>% 
-		  dplyr::select(!!rlang::sym(id), which(names(.) %in% sm_median_keys)) %>% 
-		  dplyr::group_by(!!rlang::sym(id)) %>% 
-		  dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-		
-		df <- df %>% 
-		  dplyr::select(-which(names(.) %in% sm_median_keys))
-
-		df_first <- df %>% 
-		  dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
-		  dplyr::select(-grep("^pep_", names(.)))
-
-		df <- list(df_first, 
-		           df_mq_rptr_mass_dev, df_mq_med, 
-		           df_sm_med, 
-		           df_num) %>% 
-		  purrr::reduce(left_join, by = id) %>% 
-		  data.frame(check.names = FALSE)
-
-		rm(df_num, df_first)
-
-		df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
-				df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
-				dplyr::mutate_if(is.integer, as.numeric) %>% 
-				round(., digits = 3)
-
-		df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
-				df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
-				dplyr::mutate_if(is.integer, as.numeric) %>% 
-				round(., digits = 0)
-	
-		df <- cbind.data.frame(
-				df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df))], 
-				df[, grep("^I[0-9]{3}", names(df))], 
-				df[, grep("^N_I[0-9]{3}", names(df))], 
-				df[, grep("^log2_R[0-9]{3}", names(df))], 
-				df[, grep("^N_log2_R[0-9]{3}", names(df))], 
-				df[, grep("^Z_log2_R[0-9]{3}", names(df))])
-		
-		df <- df %>% 
-		  .[rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0, ]
-
-		if (gn_rollup) {
-		  dfa <- df %>% 
-		    dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
-		    dplyr::filter(!is.na(gene)) %>% # proteins with empty "gene" but "prot_acc" will be kept 
-		    dplyr::group_by(gene) %>% 
-		    dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
-		  
-		  dfb <- df %>% 
-		    dplyr::select(-prot_cover, -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
-		    dplyr::filter(!is.na(gene)) %>% 
-		    dplyr::filter(!duplicated(.$gene))
-		  
-		  dfc <- df %>% 
-		    dplyr::select(gene, prot_cover) %>% 
-		    dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
-		    dplyr::group_by(gene) %>% 
-		    dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
-		    dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 
-		    dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
-		  
-		  # the number of unique gene in psm_data may be shorter than those in 
-		  # dfa and dfb for the reason of empty "genes" in dfa 
-		  df <- list(dfc, dfb, dfa) %>% 
-		    purrr::reduce(right_join, by = "gene") %>% 
-		    dplyr::filter(!is.na(gene), !duplicated(gene))
-		}
 	} else {
 	  df <- read.csv(file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", 
 	                 check.names = FALSE, header = TRUE, comment.char = "#") %>% 
@@ -316,7 +560,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	  range_int = range_int, 
 	  filepath = file.path(dat_dir, "Protein\\Histogram"), 
 	  col_refit = col_refit, 
-	  !!!dots
+	  !!!nonfilter_dots,
 	)
 	
 	purrr::walk(quietly_out[-1], write, 
@@ -330,3 +574,9 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	  dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %T>% 
 	  write.table(., file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 }
+
+
+
+
+
+

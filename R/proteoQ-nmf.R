@@ -577,7 +577,9 @@ anal_pepNMF <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoNMF)(id = pep_seq, task = anal, ...)
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = anal, ...)
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Peptide\\NMF\\log","anal_pepNMF_log.csv"), append = TRUE)  
 }
@@ -609,10 +611,12 @@ anal_prnNMF <- function (...) {
   if (any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
 
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  id <- match_normPSM_protid()
 
-  quietly_log <- purrr::quietly(proteoNMF)(id = gene, task = anal, ...)
+  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = anal, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log","anal_prnNMF_log.csv"), append = TRUE)  
+              file.path(dat_dir, "Protein\\NMF\\log\\anal_prnNMF_log.csv"), append = TRUE)  
 }
 
 
@@ -654,8 +658,11 @@ plot_pepNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoNMF)(id = pep_seq, task = plotcon, 
-                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcon, 
+                                           annot_cols = !!annot_cols, 
+                                           annot_colnames = !!annot_colnames, ...)
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Peptide\\NMF\\log","plot_pepNMFCon_log.csv"), append = TRUE)
 }
@@ -699,10 +706,13 @@ plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoNMF)(id = gene, task = plotcon, 
-                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcon, 
+                                           annot_cols = !!annot_cols, 
+                                           annot_colnames = !!annot_colnames, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log","plot_prnNMFCon_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\NMF\\log\\plot_prnNMFCon_log.csv"), append = TRUE)
 }
 
 
@@ -734,8 +744,11 @@ plot_pepNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoNMF)(id = pep_seq, task = plotcoef, 
-                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcoef, 
+                                           annot_cols = !!annot_cols, 
+                                           annot_colnames = !!annot_colnames, ...)
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Peptide\\NMF\\log","plot_pepNMFCoef_log.csv"), append = TRUE)
 }
@@ -769,10 +782,13 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoNMF)(id = gene, task = plotcoef, 
-                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcoef, 
+                                           annot_cols = !!annot_cols, 
+                                           annot_colnames = !!annot_colnames, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log","plot_prnNMFCoef_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\NMF\\log\\plot_prnNMFCoef_log.csv"), append = TRUE)
 }
 
 
@@ -805,10 +821,13 @@ plot_metaNMF <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoNMF)(id = gene, task = plotmeta, 
-                                           annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotmeta, 
+                                           annot_cols = !!annot_cols, 
+                                           annot_colnames = !!annot_colnames, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log","plot_metaNMF_log.csv"), append = TRUE)  
+              file.path(dat_dir, "Protein\\NMF\\log\\plot_metaNMF_log.csv"), append = TRUE)  
 }
 
 

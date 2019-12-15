@@ -166,7 +166,7 @@ plotEucDist <- function (D, annot_cols, annot_colnames, filepath, filename, ...)
 	                             "annotation_colors", "breaks")
 	dots[nm_idx] <- NULL
 
-	load(file = file.path(dat_dir, "label_scheme.Rdata"))
+	load(file = file.path(dat_dir, "label_scheme.rda"))
 	n_TMT_sets <- n_TMT_sets(label_scheme)
 	max_width <- 77
 
@@ -711,9 +711,11 @@ pepMDS <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\MDS\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoMDS)(id = pep_seq, ...)
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoMDS)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
-              file.path(dat_dir, "Peptide\\MDS\\log","pepMDS_log.csv"), append = TRUE)
+              file.path(dat_dir, "Peptide\\MDS\\log\\pepMDS_log.csv"), append = TRUE)
 }
 
 
@@ -773,9 +775,11 @@ prnMDS <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\MDS\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  quietly_log <- purrr::quietly(proteoMDS)(id = gene, ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoMDS)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
-              file.path(dat_dir, "Protein\\MDS\\log","prnMDS_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\MDS\\log\\prnMDS_log.csv"), append = TRUE)
 }
 
 
@@ -803,9 +807,11 @@ pepPCA <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\PCA\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoPCA)(id = pep_seq, ...)
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoPCA)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
-              file.path(dat_dir, "Peptide\\PCA\\log","pepPCA_log.csv"), append = TRUE)
+              file.path(dat_dir, "Peptide\\PCA\\log\\pepPCA_log.csv"), append = TRUE)
 }
 
 
@@ -863,9 +869,11 @@ prnPCA <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\PCA\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoPCA)(id = gene, ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoPCA)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
-              file.path(dat_dir, "Protein\\PCA\\log","prnPCA_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\PCA\\log\\prnPCA_log.csv"), append = TRUE)
 }
 
 
@@ -889,9 +897,11 @@ pepEucDist <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\EucDist\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoEucDist)(id = pep_seq, ...)
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoEucDist)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
-              file.path(dat_dir, "Peptide\\EucDist\\log","pepEucDist_log.csv"), append = TRUE)
+              file.path(dat_dir, "Peptide\\EucDist\\log\\pepEucDist_log.csv"), append = TRUE)
 }
 
 
@@ -959,7 +969,9 @@ prnEucDist <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\EucDist\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  quietly_log <- purrr::quietly(proteoEucDist)(id = gene, ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoEucDist)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
-              file.path(dat_dir, "Protein\\EucDist\\log","prnEucDist_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\EucDist\\log\\prnEucDist_log.csv"), append = TRUE)
 }

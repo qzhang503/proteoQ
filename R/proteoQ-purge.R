@@ -221,8 +221,8 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   # stopifnot(min_n > 0 & min_n%%1 == 0)
   
-  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  load(file = file.path(dat_dir, "label_scheme.rda"))
   
   filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
     reorder_files(n_TMT_sets(label_scheme_full))
@@ -349,8 +349,8 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   # stopifnot(min_n > 0 & min_n%%1 == 0)
   
-  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  load(file = file.path(dat_dir, "label_scheme.rda"))
 
   dir.create(file.path(dat_dir, "Peptide\\Copy"), recursive = TRUE, showWarnings = FALSE)
   file.copy(file.path(dat_dir, "Peptide\\Peptide.txt"), file.path(dat_dir, "Peptide\\Copy\\Peptide.txt"))

@@ -155,7 +155,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 		           "unique samples in the above combination of TMT sets and LCMS injections." ))
 	}
 
-	save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.Rdata"))
+	save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.rda"))
 
 	wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
 	openxlsx::writeData(wb, sheet = "Setup", label_scheme_full)
@@ -204,7 +204,7 @@ prep_fraction_scheme <- function(dat_dir, filename) {
  	  
  	  # warning: data in a auto-generated `frac_smry.xlsx` will be incorrect 
  	  #   if they were based on wrong information from `expt_smry.xlsx`
- 	  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
+ 	  load(file = file.path(dat_dir, "label_scheme_full.rda"))
  	  
  	  # in case forget to enter RAW_File names
  	  if (anyNA(label_scheme_full$RAW_File)) stop("Enter RAW file names in the experimental summary file")
@@ -221,7 +221,7 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 		openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
  	}
 	
-	save(fraction_scheme, file = file.path(dat_dir, "fraction_scheme.Rdata"))
+	save(fraction_scheme, file = file.path(dat_dir, "fraction_scheme.rda"))
 }
 
 
@@ -362,7 +362,22 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
   }
   
   if (!fs::dir_exists(dat_dir)) {
-    stop(dat_dir, " not existed.", call. = FALSE)
+    new_dat_dir <- fs::path_expand_r(dat_dir)
+    new_dat_dir2 <- fs::path_expand(dat_dir)
+    
+    if (fs::dir_exists(new_dat_dir)) {
+      dat_dir <- new_dat_dir
+      assign("dat_dir", dat_dir, envir = .GlobalEnv)
+      cat("dat_dir <- \"", dat_dir, "\"", sep = "")
+    } else if (fs::dir_exists(new_dat_di2r)) {
+      dat_dir <- new_dat_di2r
+      assign("dat_dir", dat_dir, envir = .GlobalEnv)
+      cat("dat_dir <- \"", dat_dir, "\"", sep = "")
+    } else {
+      stop(dat_dir, " not existed.", call. = FALSE)
+    }
+    
+    rm(new_dat_dir, new_dat_dir2)
   }
 
 	mget(names(formals()), rlang::current_env()) %>% save_call("load_expts")
@@ -385,7 +400,7 @@ reload_expts <- function() {
   
   if (is.na(fi_xlsx)) stop("Time stamp of `expt_smry.xlsx` not available.")
   
-  fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme.Rdata"))$change_time
+  fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme.rda"))$change_time
   if (fi_xlsx > fi_rda) {
     load_expts(dat_dir = dat_dir, expt_smry = !!expt_smry, frac_smry = !!frac_smry)
   }
@@ -477,7 +492,7 @@ simple_label_scheme <- function (dat_dir, label_scheme_full) {
 	  stop("Duplicated sample ID(s) in `expt_smry.xlsx`", call. = FALSE)
 	}
 
-	save(label_scheme, file = file.path(dat_dir, "label_scheme.Rdata"))
+	save(label_scheme, file = file.path(dat_dir, "label_scheme.rda"))
 }
 
 #' Checks the uniqueness of sample IDs in \code{label_scheme_full}
@@ -485,7 +500,7 @@ simple_label_scheme <- function (dat_dir, label_scheme_full) {
 #' \code{check_label_scheme} will stop the analysis if the number of unique
 #' samples are less than expected.
 check_label_scheme <- function (label_scheme_full) {
-	load(file = file.path(dat_dir, "label_scheme.Rdata"))
+	load(file = file.path(dat_dir, "label_scheme.rda"))
 
 	TMT_plex <- TMT_plex(label_scheme)
 	if(!is.null(TMT_plex)) {
@@ -539,9 +554,9 @@ match_logi_gv <- function(var, val) {
 check_raws <- function(df) {
   stopifnot ("RAW_File" %in% names(df))
   
-  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
-  load(file = file.path(dat_dir, "fraction_scheme.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  load(file = file.path(dat_dir, "label_scheme.rda"))
+  load(file = file.path(dat_dir, "fraction_scheme.rda"))
 
   ## program-generated frac_smry.xlsx may be based on wrong information from expt_smry.xlsx
   ls_raws <- label_scheme_full$RAW_File %>% unique()
@@ -558,7 +573,7 @@ check_raws <- function(df) {
     
     unlink(file.path(dat_dir, fn_frac))
     prep_fraction_scheme(dat_dir, fn_frac)
-    load(file = file.path(dat_dir, "fraction_scheme.Rdata"))
+    load(file = file.path(dat_dir, "fraction_scheme.rda"))
   }
 
   tmtinj_raw <- fraction_scheme %>%

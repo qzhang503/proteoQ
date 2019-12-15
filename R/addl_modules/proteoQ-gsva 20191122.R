@@ -32,14 +32,15 @@
 #')
 #'
 #'@export
-prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL, 
-                     impute_na = TRUE, complete_cases = FALSE, lm_method = "limma", 
-                     gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4, 
-                     logFC_cutoff = log2(1.1), ...) {
+prnGSVA <- function (id = gene,
+										scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL,
+										impute_na = TRUE, complete_cases = FALSE, lm_method = "limma",
+										gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4,
+										logFC_cutoff = log2(1.1), ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  id <- match_normPSM_protid()
 
+  id <- rlang::enexpr(id)
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
@@ -54,7 +55,7 @@ prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = 
 	dots <- dots[!names(dots) %in% names(fmls)]
 	
 	if(purrr::is_empty(fmls)) {
-	  fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.rda")
+	  fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.Rdata")
 	  if(file.exists(fml_file)) {
 	    load(file = fml_file)
 	    dots <- c(dots, prnSig_formulas)
@@ -66,7 +67,7 @@ prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = 
 	  dots <- c(dots, fmls)
 	}
 	
-	# load(file = file.path(dat_dir, "Calls\\prnSig_formulas.rda"))
+	# load(file = file.path(dat_dir, "Calls\\prnSig_formulas.Rdata"))
 	# dots <- c(rlang::enexprs(...), prnSig_formulas)
 		
 	# Sample selection criteria:

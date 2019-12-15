@@ -443,7 +443,7 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	
 	if (id %in% c("pep_seq", "pep_seq_mod")) {
 	  pepSig_formulas <- dots
-	  save(pepSig_formulas, file = file.path(dat_dir, "Calls", "pepSig_formulas.Rdata"))
+	  save(pepSig_formulas, file = file.path(dat_dir, "Calls", "pepSig_formulas.rda"))
 	  rm(pepSig_formulas)
 	} else if (id %in% c("prot_acc", "gene")) {
 	  if (is_empty(dots)) {
@@ -451,7 +451,7 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	  } else {
 	    prnSig_formulas <- dots
 	  }
-	  save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.Rdata"))
+	  save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.rda"))
 	  rm(prnSig_formulas)
 	}
 	
@@ -477,9 +477,11 @@ pepSig <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoSigtest)(id = pep_seq, ...)
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoSigtest)(id = !!id, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Model\\log","pepSig_log.csv"), append = TRUE)
+              file.path(dat_dir, "Peptide\\Model\\log\\pepSig_log.csv"), append = TRUE)
 }
 
 
@@ -561,9 +563,11 @@ prnSig <- function (...) {
   if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  id <- match_normPSM_protid()
 
-  quietly_log <- purrr::quietly(proteoSigtest)(id = gene, ...)
+  quietly_log <- purrr::quietly(proteoSigtest)(id = !!id, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Model\\log","prnSig_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\Model\\log\\prnSig_log.csv"), append = TRUE)
 }
 

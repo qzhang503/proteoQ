@@ -100,7 +100,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
   NorZ_ratios_to_ctrl <- paste("toCtrl", NorZ_ratios, sep = "_")
   
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme.rda"))
   acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
   stopifnot(length(acc_type) == 1)
 
@@ -457,9 +457,11 @@ pepHM <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoHM)(id = pep_seq, ...)
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoHM)(id = !!id, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Heatmap\\log","pepHM_log.csv"), append = TRUE)  
+              file.path(dat_dir, "Peptide\\Heatmap\\log\\pepHM_log.csv"), append = TRUE)  
 }
 
 
@@ -566,10 +568,12 @@ prnHM <- function (...) {
   if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  id <- match_normPSM_protid()
 
-  quietly_log <- purrr::quietly(proteoHM)(id = gene, ...)
+  quietly_log <- purrr::quietly(proteoHM)(id = !!id, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Heatmap\\log","prnHM_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\Heatmap\\log\\prnHM_log.csv"), append = TRUE)
 }
 
 

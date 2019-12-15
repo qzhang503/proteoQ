@@ -4,17 +4,12 @@
 \alias{prnGSVA}
 \title{GSVA of protein data}
 \usage{
-prnGSVA(id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
+prnGSVA(scale_log2r = TRUE, df = NULL, filepath = NULL,
   filename = NULL, impute_na = TRUE, complete_cases = FALSE,
   lm_method = "limma", gset_nms = "go_sets", var_cutoff = 0.5,
   pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), ...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. The value will be
-determined automatically. Peptide data will be used at \code{id = pep_seq}
-or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
-or \code{gene}.}
-
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples.}
 

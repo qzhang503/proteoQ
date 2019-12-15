@@ -233,7 +233,7 @@ getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, 
   df <- read.csv(src_path, check.names = FALSE, stringsAsFactors = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#")
   
-  id <- match_identifier("gene")
+  id <- match_normPSM_protid()
   stopifnot(id %in% names(df))
   stopifnot("species" %in% names(df))
   

@@ -42,7 +42,6 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
       dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
       dplyr::arrange(Sample_ID)
     
-    # Calibration coefficients for centering ratio profiles
     cf_x <- fit %>%
       dplyr::group_by(Sample_ID) %>%
       dplyr::filter(Sum == max(Sum, na.rm = TRUE)) %>%
@@ -170,11 +169,11 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 
 	dots <- rlang::enexprs(...)
 	slice_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^slice_", names(.))]
-	dots <- dots %>% .[! . %in% slice_dots]
+	nonslice_dots <- dots %>% .[! . %in% slice_dots]
 	n_comp <- find_n_comp(n_comp, method_align)
 
-	if (!purrr::is_empty(dots)) {
-		data.frame(dots) %>%
+	if (!purrr::is_empty(nonslice_dots)) {
+		data.frame(nonslice_dots) %>%
 			bind_cols(n_comp = n_comp) %>%
 			write.table(., file = file.path(filepath, "normalmixEM_pars.txt"),
 			            sep = "\t", col.names = TRUE, row.names = FALSE)
@@ -202,7 +201,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   	}	  
 	}
 
-	load(file = file.path(dat_dir, "label_scheme.Rdata"))
+	load(file = file.path(dat_dir, "label_scheme.rda"))
 	label_scheme_fit <- label_scheme %>% .[!is.na(.[[col_refit]]), ]
 	
 	nm_log2r_n <- names(df) %>% 
@@ -220,7 +219,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	    filters_in_call(!!!slice_dots) %>% 
 	    dplyr::select(nm_log2r_n) %>% 
 	    `names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
-	    fitKernelDensity(n_comp = n_comp, seed = seed, !!!dots) %>% 
+	    fitKernelDensity(n_comp = n_comp, seed = seed, !!!nonslice_dots) %>% 
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
 	    dplyr::arrange(Sample_ID, Component)
 
@@ -269,7 +268,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		if (!ok_Z_ncomp) {
 		  params_z <- df[, nm_log2r_z, drop = FALSE] %>%
 		    `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
-		    fitKernelDensity(n_comp = n_comp, seed, !!!dots) %>% 
+		    fitKernelDensity(n_comp = n_comp, seed, !!!nonslice_dots) %>% 
 		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
 		    dplyr::arrange(Sample_ID, Component) %>% 
 		    dplyr::mutate(x = 0)
@@ -278,7 +277,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		    filters_in_call(!!!slice_dots) %>% 
 		    dplyr::select(nm_log2r_z) %>% 
 		    `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
-		    fitKernelDensity(n_comp = n_comp, seed, !!!dots) %>% 
+		    fitKernelDensity(n_comp = n_comp, seed, !!!nonslice_dots) %>% 
 		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
 		    dplyr::arrange(Sample_ID, Component)
 		  
@@ -298,7 +297,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		            sep = "\t", col.names = TRUE, row.names = FALSE)
 
 	} else if (method_align == "MC") {
-	  # profile widths not affected by selected cols and rows
+	  # profile widths not to be affected by the selection of cols and rows
 	  sd_coefs <- df %>% calc_sd_fcts(range_log2r, range_int, label_scheme)
 	  
 	  x_vals <- df %>%
@@ -405,11 +404,11 @@ dblTrim <- function(df, range_log2r, range_int, type_r = "N_log2_R", type_int = 
 	)
 
 	# doubly trim
-	df_trim[!is.na(df_trim)] <- 1  # boolean matrix
+	df_trim[!is.na(df_trim)] <- 1
 
 	df_trim <- mapply(`*`, df_trim[, grepl(type_r, names(df_trim))],
 	                  df_trim[, grepl(type_int, names(df_trim))], SIMPLIFY = FALSE) %>%
-		data.frame(check.names = FALSE) # doubly trimmed boolean matrix
+		data.frame(check.names = FALSE)
 
 	df_trim[] <- mapply(`*`, df[, grepl(type_r, names(df))] , df_trim, SIMPLIFY = FALSE)
 
@@ -479,7 +478,7 @@ fitKernelDensity <- function (df, n_comp = 3, seed = NULL, ...) {
 		dots <- rlang::enexprs(...)
 		x <- rlang::enexpr(x)
 		
-		if(!is.null(dots$k)) {
+		if (!is.null(dots$k)) {
 			cat(paste("k =", dots$k, "replaced by", paste("n_comp =", n_comp, "\n")))
 			dots$k <- NULL
 		}

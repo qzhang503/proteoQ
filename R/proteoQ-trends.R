@@ -334,9 +334,11 @@ anal_prnTrend <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  quietly_log <- purrr::quietly(proteoTrend)(id = gene, task = anal, ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoTrend)(id = !!id, task = anal, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Trend\\log","anal_prnTrend_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\Trend\\log\\anal_prnTrend_log.csv"), append = TRUE)
 }
 
 
@@ -371,9 +373,11 @@ plot_prnTrend <- function (...) {
   if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  id <- match_normPSM_protid()
 
-  quietly_log <- purrr::quietly(proteoTrend)(id = gene, task = plot, ...)
+  quietly_log <- purrr::quietly(proteoTrend)(id = !!id, task = plot, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Trend\\log","plot_prnTrend_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\Trend\\log\\plot_prnTrend_log.csv"), append = TRUE)
 }
 

@@ -128,7 +128,9 @@ prnGSPA <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoGSPA)(id = gene, task = anal, ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoGSPA)(id = !!id, task = anal, ...)
   quietly_log$result <- NULL
   purrr::walk(quietly_log, write, 
               file.path(dat_dir, "Protein\\GSPA\\log","prnGSPA_log.csv"), append = TRUE)

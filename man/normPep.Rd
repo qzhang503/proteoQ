@@ -5,11 +5,11 @@
 \title{Reports peptide results}
 \usage{
 normPep(id = c("pep_seq", "pep_seq_mod"), method_psm_pep = c("median",
-  "mean", "weighted.mean", "top.3", "mqpep"),
-  group_pep_by = c("prot_acc", "gene"), method_align = c("MC",
-  "MGKernel"), range_log2r = c(10, 90), range_int = c(5, 95),
-  n_comp = NULL, seed = NULL, annot_kinases = FALSE,
-  col_refit = NULL, cache = TRUE, plot_log2FC_cv = TRUE, ...)
+  "mean", "weighted.mean", "top.3"), group_pep_by = c("prot_acc",
+  "gene"), method_align = c("MC", "MGKernel"), range_log2r = c(10, 90),
+  range_int = c(5, 95), n_comp = NULL, seed = NULL,
+  annot_kinases = FALSE, col_refit = NULL, cache = TRUE,
+  plot_log2FC_cv = TRUE, ...)
 }
 \arguments{
 \item{id}{Depreciated: character string; the variable for summarisation of
