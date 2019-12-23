@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-psmtable.R
 \name{PSM2Pep}
 \alias{PSM2Pep}
-\title{Initial compilation of peptide tables from PSMs}
+\title{Interim peptide tables}
 \usage{
 PSM2Pep(method_psm_pep = c("median", "mean", "weighted.mean", "top.3"),
   ...)
@@ -11,89 +11,51 @@ PSM2Pep(method_psm_pep = c("median", "mean", "weighted.mean", "top.3"),
 \item{method_psm_pep}{Character string; the method to summarise the
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
 The descriptive statistics includes \code{c("mean", "median", "top.3",
-"weighted.mean")}. The \code{log10-intensity} of reporter ions at the
-\code{PSMs} levels will be the weight when summarising \code{log2FC} with
-\code{"top.3"} or \code{"weighted.mean"}.}
+"weighted.mean")} with \code{median} being the default. The
+\code{log10-intensity} of reporter ions at the \code{PSMs} levels will be
+the weight when summarising \code{log2FC} with \code{"top.3"} or
+\code{"weighted.mean"}.}
+
+\item{...}{Not currently used.}
 }
 \value{
 Tables under \code{PSM} folder for each TMT experiment and LC/MS
- injection.
+ series: \code{TMTset1_LCMSinj1_PSM_N.txt}, \code{TMTset1_LCMSinj2_PSM_N.txt}...
 }
 \description{
 \code{PSM2Pep} summarises
 \code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs}} to
-peptides by individual TMT experiments and LC/MS injections.
+peptides by individual TMT experiments and LC/MS series.
 }
 \details{
-In general, median statistics is applied when summarising numeric values from
-PSMs to peptides. One exception is \code{pep_expect} where geometric mean is
-used.
+In general, fields other than \code{log2FC} and \code{intensity} are
+summarized with median statistics. One exception is with \code{pep_expect} in
+Mascot or \code{PEP} in MaxQuant where geometric mean is applied.
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
 # PSMs to peptides
 # ===================================
-PSM2Pep(method_psm_pep = median)
+
+## !!!require the brief working example in `?load_expts`
+
+# default median statistics
+PSM2Pep()
+
+# mean statistics
+PSM2Pep(method_psm_pep = mean)
+
+}
+\seealso{
+\code{\link{load_expts}} for a minimal working example in data normalization \cr
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{purgePSM}} for extended examples in PSM data purging \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
+ \code{\link{purgePep}} for extended examples in peptide data purging \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{prnHist}} for extended examples in protein data histogram visualization.
 }

@@ -438,10 +438,7 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'@param ... Parameters for \code{\link[mice]{mice}}
 #'@return \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
 #'  for protein data.
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
+#'  
 #'@import dplyr purrr rlang mice
 #'@importFrom magrittr %>%
 #'@export
@@ -1135,6 +1132,38 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL) {
 }
 
 
+#' Matches impute_na
+#' @param id.
+#'
+#' @import plyr dplyr purrr rlang
+#' @importFrom magrittr %>%
+match_sigTest_imputena <- function (id = c("prot_acc")) {
+  stopifnot(is_string(id))
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
+  
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
+    call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls\\pepSig.txt"), check.names = FALSE,
+                                   header = TRUE, sep = "\t", comment.char = "#"),
+                          error = function(e) NA)
+  } else if (id %in% c("prot_acc", "gene")) {
+    call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls\\prnSig.txt"), check.names = FALSE,
+                                   header = TRUE, sep = "\t", comment.char = "#"),
+                          error = function(e) NA)
+  }
+  
+  if (!is.null(dim(call_pars))) {
+    impute_na <- call_pars %>%
+      dplyr::filter(var == "impute_na") %>%
+      dplyr::select("value.1") %>%
+      unlist() %>%
+      as.character() %>% 
+      as.logical()
+  }
+  
+  return(impute_na)
+}
+
+
 #' Replaces NA genes
 #'
 #' @import plyr dplyr purrr rlang
@@ -1473,8 +1502,8 @@ to_linfc <- function(df) {
 #'
 #' @examples
 #' \dontrun{
-#' # Supposed that RAW MS files are stored under "C:\my_raw"
-#' extract_raws("C:\\my_raw")
+#' # Supposed that RAW MS files are stored under "~\my_raw"
+#' extract_raws("~\\my_raw")
 #' }
 #'
 #' @import dplyr purrr

@@ -17,6 +17,7 @@
 #'The formula(e) of contrast(s) used in \code{\link{prnSig}} will be taken by
 #'default.
 #'
+#'@inheritParams proteoVolcano
 #'@inheritParams proteoSigtest
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
@@ -54,8 +55,8 @@
 #'@param gspval_cutoff Numeric value or vector; the cut-off in gene-set
 #'  significance \code{pVal}. Only enrichment terms with \code{pVals} more
 #'  significant than the threshold will be reported.
-#'@param fml_nms Character string or vector; the forumula name(s). By default,
-#'  the names match to those used in \code{\link{pepSig}} or
+#'@param fml_nms Character string or vector; the formula name(s). By default,
+#'  the names will match those used in \code{\link{pepSig}} or
 #'  \code{\link{prnSig}}.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}.
@@ -71,7 +72,7 @@
 #'
 #'@export
 proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL, 
-                        impute_na = TRUE, complete_cases = FALSE, gset_nms = "go_sets", 
+                        impute_na = NULL, complete_cases = FALSE, gset_nms = "go_sets", 
                         var_cutoff = .5, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                         gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
                         fml_nms = NULL, task = "anal", ...) {
@@ -83,6 +84,8 @@ proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	task <- rlang::enexpr(task)
+	
+	if (is.null(impute_na)) impute_na <- match_sigTest_imputena(as_string(id))
 
 	stopifnot(is_logical(scale_log2r), is_logical(impute_na), is_logical(complete_cases))
 

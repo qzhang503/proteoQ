@@ -51,7 +51,7 @@ aesthetics in plots. At the NULL default, the column key \code{Alpha} will
 be used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex Euclidean distance
 by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
@@ -64,10 +64,11 @@ immediately before or after TMT labeling.}
 
 \item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
 The values under the selected keys will be used to color-code sample IDs on
-the top of the indicated plot.}
+the top of the indicated plot. The default is NULL without column
+annotation.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
-\code{annot_cols}.}
+\code{annot_cols}. The default is NULL with no replacement.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -105,117 +106,26 @@ for details.
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
 # Euclidean distance
 # ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+# global option
 scale_log2r <- TRUE
 
-# peptide
 pepEucDist(
-  annot_cols = c("Peptide_Yield", "Group"),
-  width = 16,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  width = 14,
   height = 12,
 )
 
-# protein
 prnEucDist(
-  scale_log2r = TRUE,
-  annot_cols = c("Peptide_Yield", "Group"),
-  annot_colnames = c("New_Yield", "New_Group"),
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
 
-  # parameters for `pheatmap`
+  # arguments for `pheatmap`
   display_numbers = TRUE,
   number_color = "grey30",
   number_format = "\%.1f",
@@ -231,22 +141,39 @@ prnEucDist(
   border_color = "grey60",
   cellwidth = 24,
   cellheight = 24,
-  filter_by_npep = exprs(prot_n_pep >= 5),
-  filename = "prnEucDist_filtered.png",
+  
+  filter_prots_by_npep = exprs(prot_n_pep >= 5),
+  filename = "filter.png",
 )
 
 
-\dontrun{
+## Not run: 
 prnEucDist(
   col_color = "column_key_not_existed",
   col_shape = "another_missing_column_key",
   annot_cols = c("bad_column_key", "yet_another_bad_column_key")
 )
-}
+## End(Not run)
+
 
 }
 \seealso{
-\code{\link{load_expts}} for PSM, peptide and protein data
- preparation, \code{\link{pepImp}} for NA value imputation and
- \code{\link{pepSig}} for linear modelings.
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
 }

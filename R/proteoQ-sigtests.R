@@ -27,13 +27,13 @@
 #'  be used for models with random effects.
 #'@param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
 #'  Entries with variances smaller than the threshold will be removed from
-#'  linear modeling.
+#'  linear modeling. The default is 1E-3.
 #'@param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
 #'  with \code{pVals} smaller than the threshold will be removed from multiple
-#'  test corrections.
+#'  test corrections. The default is \code{1} without pVal cut-offs.
 #'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
 #'  \code{log2FC} smaller than the threshold will be removed from multiple test
-#'  corrections.
+#'  corrections. The default is at \code{log2(1)}  without fold change cut-offs.
 #'@param ... User-defined formulae for linear modeling. The syntax starts with a
 #'  tilde, followed by the name of an available column key in
 #'  \code{expt_smry.xlsx} and square brackets. The contrast groups are then
@@ -43,13 +43,31 @@
 #'  see \code{\link{normPSM}}.
 #'@return The primary output is
 #'  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
-#'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data.
+#'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. \cr
+#'  \cr At \code{impute_na = TRUE}, the corresponding outputs are
+#'  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
+#'@example inst/extdata/examples/prnSig_.R
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+#'  normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
+#'  peptide summarization \cr \code{\link{mergePep}} for extended examples in
+#'  peptide data merging \cr \code{\link{standPep}} for extended examples in
+#'  peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
+#'  in peptide to protein summarization \cr \code{\link{standPrn}} for extended
+#'  examples in protein data normalization. \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
+#'  data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr \code{\link{pepImp}} and
+#'  \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
+#'  and \code{\link{prnSig}} for significance tests \cr \code{\link{pepHM}} and
+#'  \code{\link{prnHM}} for heat map visualization \cr \code{\link{pepMDS}} and
+#'  \code{\link{prnMDS}} for MDS visualization \cr \code{\link{pepPCA}} and
+#'  \code{\link{prnPcA}} for PCA visualization \cr
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -58,7 +76,18 @@ proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = 
 											impute_na = TRUE, complete_cases = FALSE, method = "limma",
 											var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), ...) {
 
+  on.exit(
+    if (id %in% c("pep_seq", "pep_seq_mod")) {
+      mget(names(formals()), current_env()) %>% c(dots) %>% save_call("pepSig")
+    } else if (id %in% c("prot_acc", "gene")) {
+      mget(names(formals()), current_env()) %>% c(dots) %>% save_call("prnSig")
+    }
+    , add = TRUE
+  )
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  dots <- rlang::enexprs(...)
 
 	id <- rlang::enexpr(id)
 	df <- rlang::enexpr(df)
@@ -495,67 +524,6 @@ pepSig <- function (...) {
 #'@rdname proteoSigtest
 #'
 #'@import purrr
-#' @examples
-#' # ===================================
-#' # Significance test
-#' # ===================================
-#' scale_log2r <- TRUE
-#' 
-#' # Mascot examples (MaxQuant examples are different in contrasts)
-#' # peptide significance tests
-#' pepSig(
-#'   impute_na = FALSE, 
-#'   W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-#'   W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-#'   W16_vs_W2 = ~ Term_3["W16-W2"], 
-#' )
-#' 
-#' # protein significance tests
-#' prnSig(
-#'   impute_na = FALSE,
-#'   W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", "W2.JHU.TMT2-W2.JHU.TMT1", "W2.PNNL.TMT2-W2.PNNL.TMT1"], # batches
-#'   W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # locations
-#'   W16_vs_W2 = ~ Term_3["W16-W2"],
-#' )
-#'
-#' # averaged batch effect
-#' prnSig(
-#'   impute_na = FALSE,
-#'   W2_loc_2 = ~ Term["(W2.BI.TMT2+W2.BI.TMT1)/2 - (W2.JHU.TMT2+W2.JHU.TMT1)/2"], # locations with batch average
-#' )
-#'
-#' # single random effect
-#' prnSig(
-#'   impute_na = TRUE,
-#'   W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed effect
-#'   W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
-#' )
-#' 
-#' # one to multiple random effect
-#' prnSig(
-#'   impute_na = TRUE,
-#'   method = lm,
-#'   W2_vs_W16_fix = ~ Term_3["W16-W2"], # one fixed effect
-#'   W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
-#'   W2_vs_W16_mix_2 = ~ Term_3["W16-W2"] + (1|TMT_Set) + (1|Color), # one fixed and two random effects
-#' )
-#' 
-#' 
-#' # MaxQuant examples
-#' # peptide significance tests
-#' pepSig(
-#'   impute_na = FALSE, 
-#'   W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-#'   W16_vs_W2_course = ~ Term_2["W16-W2"], 
-#' )
-#' 
-#' # protein significance tests
-#' prnSig(
-#'   impute_na = FALSE, 
-#'   W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-#'   W16_vs_W2_course = ~ Term_2["W16-W2"], 
-#' )
-#' 
 #'@import purrr
 #'@export
 prnSig <- function (...) {

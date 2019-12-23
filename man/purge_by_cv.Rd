@@ -16,7 +16,8 @@ or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
 or \code{gene}.}
 
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
-will be replaced with NA.}
+will be replaced with NA. The default is NULL with no data trimming by max
+CV.}
 }
 \description{
 \code{purge_by_cv} replaces the data entries at \code{group CV > max_cv} to

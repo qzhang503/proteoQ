@@ -54,27 +54,32 @@ be used.}
 
 \item{color_brewer}{Character string to the name of a color brewer for use in
 \href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_color_brewer},
- i.e., \code{color_brewer = Set1}.}
+ i.e., \code{color_brewer = Set1}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
 
 \item{fill_brewer}{Character string to the name of a color brewer for use in
 \href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_fill_brewer},
- i.e., \code{fill_brewer = Spectral}.}
+ i.e., \code{fill_brewer = Spectral}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
 
 \item{size_manual}{Numeric vector to the scale of sizes for use in
 \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_size_manual},
- i.e., \code{size_manual = c(8, 12)}.}
+ i.e., \code{size_manual = c(8, 12)}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
 
 \item{shape_manual}{Numeric vector to the scale of shape IDs for use in
 \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_shape_manual},
- i.e., \code{shape_manual = c(5, 15)}. .}
+ i.e., \code{shape_manual = c(5, 15)}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
 
 \item{alpha_manual}{Numeric vector to the scale of transparency of objects for
 use in
 \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_alpha_manual}
- , i.e., \code{alpha_manual = c(.5, .9)}.}
+ , i.e., \code{alpha_manual = c(.5, .9)}. At the NULL default, the setting
+in \code{ggplot2} will be used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex Euclidean distance
 by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
@@ -87,13 +92,13 @@ immediately before or after TMT labeling.}
 
 \item{classical}{Logical; performs metric MDS at TRUE and non-metric MDS at
 FALSE (see also \code{\link[stats]{cmdscale}} and
-\code{\link[MASS]{isoMDS}}).}
+\code{\link[MASS]{isoMDS}}). The default is TRUE.}
 
 \item{k}{Numeric; The desired dimension for the solution passed to
-\code{\link[stats]{cmdscale}}.}
+\code{\link[stats]{cmdscale}}. The default is 3.}
 
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
-plots.}
+plots. The default is TRUE.}
 
 \item{annot_cols}{Not used.}
 
@@ -111,7 +116,7 @@ will be determined by the extension of the file name. A \code{.png} format
 will be used at default or at an unrecognized file extension.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr Additional parameters for
+data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
 \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
 height of plot \cr \code{...}}
 }
@@ -133,147 +138,74 @@ An Euclidean distance matrix of \code{log2FC} is returned by
 (\code{\link[stats]{cmdscale}}) or non-metric (\code{\link[MASS]{isoMDS}})
 MDS. The default is metric MDS with the input dissimilarities being euclidean
 distances.
-
-The function matches the current \code{id} to the grouping argument in the
-latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
-for details.
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
 # MDS
 # ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+# global option
 scale_log2r <- TRUE
 
-# peptide
 pepMDS(
-  scale_log2r = TRUE,
   col_select = Select, 
-  filter_by_npsm = exprs(pep_n_psm >= 10),
-  filename = "pepMDS_filtered.png",
+  filter_peps_by = exprs(pep_n_psm >= 10),
+  show_ids = FALSE, 
+  filename = "peps_rowfil.png",
 )
 
-# protein
+pepMDS(
+  col_select = BI, 
+  col_shape = Shape,   
+  col_color = Alpha, 
+  filter_peps_by = exprs(pep_n_psm >= 10),
+  show_ids = FALSE, 
+  filename = "peps_rowfil_colsel.png",
+)
+
 prnMDS(
-  scale_log2r = TRUE,
   col_color = Color,
   col_shape = Shape,
-  show_ids = TRUE,
-  filter_by_npep = exprs(prot_n_pep >= 5),
-  filename = "prnMDS_filtered.png",
+  show_ids = FALSE,
+  filter_peps_by = exprs(prot_n_pep >= 5),
+  filename = "prns_rowfil.png",
 )
 
 # custom palette
 prnMDS(
-  scale_log2r = TRUE,
   col_shape = Shape,
   color_brewer = Set1,
-  show_ids = TRUE,
+  show_ids = FALSE,
   filename = "my_palette.png",
 )
 
-\dontrun{
+## Not run: 
 prnMDS(
   col_color = "column_key_not_existed",
   col_shape = "another_missing_column_key"
 )
-}
 
+## End(Not run)
 }
 \seealso{
-\code{\link{load_expts}} for PSM, peptide and protein data
- preparation, \code{\link{pepImp}} for NA value imputation and
- \code{\link{pepSig}} for linear modelings.
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
 }

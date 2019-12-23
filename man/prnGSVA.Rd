@@ -11,7 +11,7 @@ prnGSVA(scale_log2r = TRUE, df = NULL, filepath = NULL,
 }
 \arguments{
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -21,25 +21,25 @@ automatically by the value of \code{id}.}
 \item{filename}{Use system default.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used.}
+will be used. The default is FALSE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used.}
+missing values will be used. The default is FALSE.}
 
 \item{lm_method}{Character string indicating the linear modeling method for
 significance assessment of GSVA enrichment scores}
 
 \item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.
 Entries with variances smaller than the threshold will be removed from
-linear modeling.}
+linear modeling. The default is 1E-3.}
 
 \item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
 with \code{pVals} smaller than the threshold will be removed from multiple
-test corrections.}
+test corrections. The default is \code{1} without pVal cut-offs.}
 
 \item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with
 \code{log2FC} smaller than the threshold will be removed from multiple test
-corrections.}
+corrections. The default is at \code{log2(1)}  without fold change cut-offs.}
 
 \item{...}{Parameters for \code{\link[pheatmap]{pheatmap}}}
 

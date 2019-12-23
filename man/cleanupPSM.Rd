@@ -7,7 +7,10 @@
 cleanupPSM(rm_outliers = FALSE)
 }
 \arguments{
-\item{rm_outliers}{Logical; if TRUE, performs outlier removals.}
+\item{rm_outliers}{Logical; if TRUE, PSM outlier removals will be performed
+for peptides with more than two identifying PSMs. Dixon's method will be
+used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
+25}. The default is FALSE.}
 }
 \description{
 \code{cleanupPSM} removes PSM outliers after \code{splitPSM},
@@ -15,6 +18,6 @@ cleanupPSM(rm_outliers = FALSE)
 assessed at the basis of per peptide per TMT channel.
 }
 \details{
-Dixon's method will be used when 2 < n <= 25; Rosner's method will be used
-when n > 25
+Dixon's method will be used when \eqn{2 < n \le 25}; Rosner's method will be
+used when \eqn{n > 25}.
 }

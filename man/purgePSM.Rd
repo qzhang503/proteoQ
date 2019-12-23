@@ -8,13 +8,16 @@ purgePSM(dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   adjSD = FALSE, keep_ohw = TRUE, ...)
 }
 \arguments{
-\item{dat_dir}{A character string to the working directory.}
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
 
 \item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
-percentile threshold will be replaced with NA.}
+percentile threshold will be replaced with NA. The default is NULL with no
+data trimming by CV percentile.}
 
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
-will be replaced with NA.}
+will be replaced with NA. The default is NULL with no data trimming by max
+CV.}
 
 \item{adjSD}{Logical; if TRUE, adjust the standard deviation in relative to
 the width of ratio profiles.}
@@ -23,14 +26,15 @@ the width of ratio profiles.}
 default is TRUE.}
 
 \item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
-\eqn{y} at a log2 scale; the default is +0.6. \cr \code{ybreaks}, the breaks
-in \eqn{y}-axis at a log2 scale; the default is 0.2. \cr \code{width}, the
-width of plot. \cr \code{height}, the height of plot. \cr \code{flip_coord},
-logical; if TRUE, flip \code{x} and \code{y} axis.}
+\eqn{y} at a log2 scale. \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a
+log2 scale. \cr \code{width}, the width of plot. \cr \code{height}, the
+height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
+\code{y} axis.}
 }
 \description{
 \code{purgePSM} removes \code{peptide} entries from PSM tables by selection
-criteria.
+criteria. It further plots the distributions of \code{log2FC} by TMT
+experiments and LC/MS series.
 }
 \details{
 The CV of peptides are calculated from contributing PSMs at the basis of per
@@ -39,70 +43,15 @@ for samples that are more different to reference material(s).
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
 # PSM cleanup by CV
 # ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+## additional examples
+# visualization only
+purgePSM()
+
 # by percent CV
 purgePSM(pt_cv = .95)
 
@@ -116,7 +65,18 @@ purgePSM(pt_cv = .95)
 # actually 90\% CV 
 purgePSM(pt_cv = .95)
 purgePSM(pt_cv = .95)
+
 }
 \seealso{
-\code{\link{purgePep}} for peptide data purging.
+\code{\link{load_expts}} for a minimal working example in data normalization \cr
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{purgePSM}} for extended examples in PSM data purging \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
+ \code{\link{purgePep}} for extended examples in peptide data purging \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{prnHist}} for extended examples in protein data histogram visualization.
 }

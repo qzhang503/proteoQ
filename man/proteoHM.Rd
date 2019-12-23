@@ -8,9 +8,9 @@
 \usage{
 proteoHM(id = gene, col_select = NULL, col_benchmark = NULL,
   scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE,
-  df = NULL, filepath = NULL, filename = NULL, xmin = -1,
-  xmax = 1, xmargin = 0.1, annot_cols = NULL,
-  annot_colnames = NULL, annot_rows = NULL, ...)
+  df = NULL, filepath = NULL, filename = NULL, annot_cols = NULL,
+  annot_colnames = NULL, annot_rows = NULL, xmin = -1, xmax = 1,
+  xmargin = 0.1, ...)
 
 pepHM(...)
 
@@ -30,13 +30,13 @@ key will be \code{Select}.}
 \item{col_benchmark}{Not used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used.}
+will be used. The default is FALSE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used.}
+missing values will be used. The default is FALSE.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -53,33 +53,44 @@ will be used at default or at an unrecognized file extension.}
 
 \item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
 The values under the selected keys will be used to color-code sample IDs on
-the top of the indicated plot.}
+the top of the indicated plot. The default is NULL without column
+annotation.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
-\code{annot_cols}.}
+\code{annot_cols}. The default is NULL with no replacement.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
 input files of \code{Peptide.txt}, \code{Protein.txt} et al. The values
 under the selected keys will be used to color-code peptides or proteins on
-the side of the indicated plot.}
+the side of the indicated plot. The default is NULL without row annotation.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr \code{arrange_}: Logical
+\item{xmin}{Numeric; the minimum x at a log2 scale. The default is -1.}
+
+\item{xmax}{Numeric; the maximum  x at a log2 scale. The default is 1.}
+
+\item{xmargin}{Numeric; the margin in heat scales. The default is 0.1.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+of data against the column keys in \code{Peptide.txt} or \code{Protein.txt}.
+Each statement contains to a list of logical expression(s). The \code{lhs}
+needs to start with \code{filter_}. The logical condition(s) at the
+\code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. For
+example, \code{pep_len} is a column key present in \code{Mascot} peptide
+tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
+exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
+See also \code{\link{pepHist}}. \cr \cr \code{arrange_}: Logical
 expression(s) for the row ordering of data. The \code{lhs} needs to start
 with \code{arrange_}. The logical condition(s) at the \code{rhs} needs to be
 enclosed in \code{exprs} with round parenthesis. \cr \cr Additional
-parameters for plotting: \cr \code{xmin}, the minimum \eqn{x} at a log2
-scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a log2
-scale; the default is +1 \cr \code{xmargin}, the margin in heat scales; the
-default is 0.1 \cr \code{width}, the width of plot \cr \code{height}, the
-height of plot \cr \cr Additional arguments for
+parameters for plotting: \cr \code{width}, the width of plot \cr
+\code{height}, the height of plot \cr \cr Additional arguments for
 \code{\link[pheatmap]{pheatmap}}, i.e., \code{cluster_rows}... \cr \cr Note
 arguments disabled for \code{pheatmap}: \cr \code{annotation_col}; instead
 use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
 use keys indicated in \code{annot_rows}}
 }
 \value{
-Heat maps.
+Heat maps and optional sub trees.
 }
 \description{
 \code{proteoHM} visualizes the heat maps of protein or peptide \code{log2FC}.
@@ -99,180 +110,23 @@ the data subset that are complete without missing values will be used. At
 \code{impute_na = FALSE}, NA distances will be arbitrarily replaced with the
 mean value of the row-disance matrix for hierarchical row clustering.
 
-Similar to data rows, data columns with complete missing values will be first
-removed prior to hierarchical column clustering. NA distances in data columns
-will be replaced with the mean value of the column-distance matrix.
+Similar to data rows, NA distances in data columns will be replaced with the
+mean value of the column-distance matrix.
 
 To avoid memory failure, row aggregation using the \code{kmeans_k} option
 (\code{\link[pheatmap]{pheatmap}}) may be considered for large data sets.
-
-The function matches the current \code{id} to the grouping argument in the
-latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
-for details.
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
-# Optional significance tests
-# (for data filtration by pVals...)
-# ===================================
-scale_log2r <- TRUE
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  # peptide significance tests
-	# (1a) no NA imputation; output: Peptide_pVals.txt
-  pepSig(
-    impute_na = FALSE, 
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-    W16_vs_W2 = ~ Term_3["W16-W2"], 
-  )
-  
-  # (1b) or NA imputation; output: Peptide_impNA_pvals.txt
-  pepSig(
-    impute_na = TRUE, 
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-    W16_vs_W2 = ~ Term_3["W16-W2"], 
-  )
-	
-  # protein significance tests
-  # all formulae in the latest `pepSig()` will be assessed by default 
-  # (2a) no NA imputation; output: Protein_pVals.txt
-  prnSig(impute_na = FALSE)
-  
-  # (2b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(impute_na = TRUE)
-  
-	
-  ## MaxQuant
-  # peptide significance tests
-	# (1a) no NA imputation; output: Peptide_pVals.txt
-  pepSig(
-    impute_na = FALSE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )
-	
-  # (1b) or NA imputation; output: Peptide_impNA_pvals.txt
-  pepSig(
-    impute_na = TRUE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )
-  
-  # protein significance tests
-	# formula(e) in the latest `pepSig()` will be taken by default
-  # (2a) no NA imputation; output: Protein_pVals.txt
-  prnSig(impute_na = FALSE)
-  
-  # (2b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(impute_na = TRUE)
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
 # Heat map
 # ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+# global option
 scale_log2r <- TRUE
 
-# unsupervised row clustering
+# row clustering
 prnHM(
   xmin = -1,
   xmax = 1,
@@ -287,12 +141,12 @@ prnHM(
   cellwidth = 14,
   width = 18,
   height = 12,
-
   filter_sp = exprs(species == "human", prot_n_pep >= 2),
-  filename = "prn_hu_npep2.png",
+  filename = "huprns_npep2.png",
 )
 
 # rows ordered by kinase classes then by gene names
+# (error if `normPSM(annot_kinases = FALSE, ...)`)
 prnHM(
   xmin = -1,
   xmax = 1,
@@ -308,10 +162,9 @@ prnHM(
   cellwidth = 14,
   width = 22,
   height = 22,
-
   filter_kin = exprs(kin_attr, species == "human"),
   arrange_kin = exprs(kin_order, gene),
-  filename = "kin_hu_row_by_class.png",
+  filename = "hukins_rows_by_class.png",
 )
 
 # `cutree_rows` ignored at `cluster_rows = FALSE`
@@ -327,12 +180,22 @@ prnHM(
   cellwidth = 14,
   width = 22,
   height = 22,
-
   filename = "cutree_overruled.png",
 )
 
-# Mascot example with `prnSig()` being executed
-# `W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` is a column key in `Model\\Protein_pVals.txt`
+
+## significance tests for pVal columns
+# (`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` is a column key in Peptide_pVals.txt)
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = FALSE)
+
+# now can have row filtration by pVals
 prnHM(
   xmin = -1,
   xmax = 1,
@@ -340,20 +203,142 @@ prnHM(
   annot_cols = c("Group", "Color", "Alpha", "Shape"),
   annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
   cluster_rows = TRUE,
-  # cutree_rows = 10,
+  cutree_rows = 10,
   show_rownames = TRUE,
   show_colnames = TRUE,
-  fontsize_row = 5,
+  fontsize_row = 3,
   cellwidth = 14,
-  # width = 18,
-  # height = 12,
-
   filter_sp = exprs(species == "human", prot_n_pep >= 2),
   filter_by = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
   filename = "pval_cutoff_at_1e6.png", 
 )
 
-\dontrun{
-}
 
+## impute NA
+# peptide
+pepImp(m = 2, maxit = 2)
+
+# protein
+prnImp(m = 5, maxit = 5)
+
+# with NA imputation
+prnHM(
+  impute_na = TRUE, 
+  xmin = -1,
+  xmax = 1,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  cutree_rows = 10,
+  show_rownames = FALSE,
+  show_colnames = TRUE,
+  fontsize_row = 3,
+  cellwidth = 14,
+  cellheight = 4,
+  width = 18,
+  height = 12,
+  filter_sp = exprs(species == "human", prot_n_pep >= 2),
+  filename = "huprns_npep2_impna.png",
+)
+
+
+# peptides under selected protein(s)
+pepHM(
+  xmin = -2,
+  xmax = 2,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  annot_rows = c("gene"),
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  fontsize_row = 10,
+  cellwidth = 12,
+  cellheight = 12,
+  width = 18,
+  height = 12,
+  filter_by = exprs(gene \%in\% c("NCL", "Ncl")),
+  filename = "ncl_all.png",
+)
+
+# rows ordered by gene 
+pepHM(
+  xmin = -2,
+  xmax = 2,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = FALSE,
+  annot_rows = c("gene"),
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  fontsize_row = 10,
+  cellwidth = 12,
+  cellheight = 12,
+  width = 18,
+  height = 12,
+  
+  filter_by = exprs(gene \%in\% c("NCL", "Ncl")),
+  arrange_peps_by = exprs(gene),
+  filename = "ncl_rows_by_gene.png",
+)
+
+# ordered by sequence 
+# (may try `exprs(pep_seq)` if `pep_seq_mod` not a column key in `Peptide.txt`)
+pepHM(
+  xmin = -2,
+  xmax = 2,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = FALSE,
+  annot_rows = c("gene"),
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  fontsize_row = 10,
+  cellwidth = 12,
+  cellheight = 12,
+  width = 18,
+  height = 12,
+  filter_by = exprs(gene \%in\% c("NCL", "Ncl")),
+  arrange_peps_by = exprs(pep_seq_mod),
+  filename = "ncl_rows_by_seq.png",
+)
+
+# sample selection
+pepHM(
+  col_select = BI_1, 
+  xmin = -2,
+  xmax = 2,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  annot_rows = c("gene"),
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  fontsize_row = 10,
+  cellwidth = 12,
+  cellheight = 12,
+  width = 18,
+  height = 12,
+  filter_by = exprs(gene \%in\% c("NCL", "Ncl")),
+  arrange_peps_by = exprs(gene),  
+  filename = "ncl_bi1.png",
+)
+
+}
+\seealso{
+\code{\link{load_expts}} for a minimal working example in data
+ normalization \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+ extended examples in histogram visualization. \cr \code{\link{contain_str}},
+ \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings
+ \cr \code{\link{pepImp}} and \code{\link{prnImp}} for missing value
+ imputation \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+ significance tests \cr
 }

@@ -9,7 +9,7 @@
 \usage{
 proteoVolcano(id = "gene", anal_type = "Volcano", df = NULL,
   scale_log2r = TRUE, filepath = NULL, filename = NULL,
-  fml_nms = NULL, impute_na = FALSE, adjP = FALSE,
+  fml_nms = NULL, impute_na = NULL, adjP = FALSE,
   show_labels = TRUE, pval_cutoff = 0.05, logFC_cutoff = log2(1.2),
   show_sig = "none", gset_nms = c("go_sets", "kegg_sets"), ...)
 
@@ -26,15 +26,16 @@ or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
 or \code{gene}.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
-method dispatch in function factories; Values include \code{anal_type =
-c("PCA", "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model", 
+method dispatch in function factories. The value will be determined
+automatically. Examplary values include \code{anal_type = c("PCA",
+"Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", ...)}.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
@@ -46,36 +47,43 @@ image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 will be determined by the extension of the file name. A \code{.png} format
 will be used at default or at an unrecognized file extension.}
 
-\item{fml_nms}{Character string or vector; the forumula name(s). By default,
-the names match to those used in \code{\link{pepSig}} or
+\item{fml_nms}{Character string or vector; the formula name(s). By default,
+the names will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used.}
+\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
+the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+protein data.}
 
-\item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals.}
+\item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals in volcano plots.
+The default is FALSE.}
 
-\item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.}
+\item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.
+The default is TRUE.}
 
-\item{pval_cutoff}{Numeric value or vector. \code{Gene sets} with enrichment
-\code{pVals} less significant than the threshold will be excluded for
-volcano plot visualization. The argument is not used in \code{prnVol} and
-\code{pepVol}.}
+\item{pval_cutoff}{Numeric value or vector for uses with
+\code{\link{gspaMap}}. \code{Gene sets} with enrichment \code{pVals} less
+significant than the threshold will be excluded from volcano plot
+visualization. The default signficance is 0.05 for all formulae matched to
+or specified in argument \code{fml_nms}. Formula-specific threshold is
+allowed by supplying a vector of cut-off values.}
 
-\item{logFC_cutoff}{Numeric value or vector. \code{Gene sets} with absolute
-enrichment \code{log2FC} less than the threshold will be excluded for
-volcano plot visualization. The cut-off is in a logarithmic base of 2, not
-in a linear scale. The argument is not used in \code{prnVol} and
-\code{pepVol}.}
+\item{logFC_cutoff}{Numeric value or vector for uses with
+\code{\link{gspaMap}}. \code{Gene sets} with absolute enrichment
+\code{log2FC} less than the threshold will be excluded from volcano plot
+visualization. The default magnitude is \code{log2(1.2) } for all formulae
+matched to or specified in argument \code{fml_nms}. Formula-specific
+threshold is allowed by supplying a vector of absolute values in
+\code{log2FC}.}
 
 \item{show_sig}{Character string indicating the type of significance values to
-be shown on the volcano plots of gene sets. The default is \code{"none"}.
+be shown with \code{\link{gspaMap}}. The default is \code{"none"}.
 Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
-\code{qVal} will be shown, respectively, in the facet grid of the plots. The
-argument is not used in \code{prnVol} and \code{pepVol}.}
+\code{qVal} will be shown, respectively, in the facet grid of the plots.}
 
-\item{gset_nms}{Character string or vector containing the name(s) of gene
-sets. The argument is not used in \code{prnVol} and \code{pepVol}.}
+\item{gset_nms}{Character vector containing the name(s) of gene sets for uses
+with \code{\link{gspaMap}}. By default, the names will match those used in
+\code{\link{prnGSPA}}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
@@ -97,171 +105,39 @@ method directly, but instead use the following wrappers.
 \code{gspaMap} is a wrapper of \code{\link{proteoVolcano}} for
 mapping of protein data by gene sets.
 }
-\details{
-By default, the value of \code{gset_nms} in \code{gspaMap(...)} will match to
-the one in the latest call to \code{\link{prnGSPA}}.
-}
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
+# Volcano plots
 # ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
 
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
+## !!!require the brief working example in `?load_expts`
 
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
-# Prerequisite significance tests
-# for use with `pepVol` and `prnVol`
-# ===================================
+# global option
 scale_log2r <- TRUE
 
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  # peptide significance tests
-	# (1a) no NA imputation; output: Peptide_pVals.txt
-  pepSig(
-    impute_na = FALSE, 
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-    W16_vs_W2 = ~ Term_3["W16-W2"], 
-  )
-	
-  # (1b) or NA imputation; output: Peptide_impNA_pvals.txt
-  pepSig(
-    impute_na = TRUE, 
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-    W16_vs_W2 = ~ Term_3["W16-W2"], 
-  )	
-  
-  # protein significance tests
-  # all formulae in the latest `pepSig()` will be assessed by default 
-  # (2a) no NA imputation; output: Protein_pVals.txt
-  prnSig(impute_na = FALSE)
-  
-  # (2b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(impute_na = TRUE)
-	
-	
-  ## MaxQuant
-  # peptide significance tests
-	# (1a) no NA imputation; output: Peptide_pVals.txt
-  pepSig(
-    impute_na = FALSE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )
-	
-  # (1b) or NA imputation; output: Peptide_impNA_pvals.txt
-  pepSig(
-    impute_na = TRUE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )		
-  
-  # protein significance tests
-	# formula(e) in the latest `pepSig()` will be taken by default
-  # (2a) no NA imputation; output: Protein_pVals.txt
-  prnSig(impute_na = FALSE)
-  
-  # (2b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(impute_na = TRUE)
-}
-## END of RUN `Mascot or Maxquant but not both`
+## for all peptides or proteins
+# all peptides
+pepVol()
+
+# all proteins
+prnVol(
+  show_labels = TRUE,
+  xco = 1.2,
+  yco = 0.01,
+)
+
+# kinases and prot_n_pep >= 2
+prnVol(
+  show_labels = TRUE,
+  xco = 1.2,
+  yco = 0.01,
+  filter_prots_by_kin = exprs(kin_attr, prot_n_pep >= 2),
+  filename = "kin_npep2.png"
+)
 
 
-# ===================================
-# Prerequisite gene-set tests
-# for use with `gspaMap()`
-# ===================================
+## protein subgroups by gene sets
+# GSPA
 prnGSPA(
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
@@ -270,7 +146,29 @@ prnGSPA(
   impute_na = FALSE,
 )
 
+# filtered by proteins with two or more identifying peptides for visualization
+gspaMap(
+  pval_cutoff = 5E-3,
+  logFC_cutoff = log2(1.2),
+  gset_nms = c("go_sets"),
+  show_sig = pVal,
+  show_labels = TRUE,
+  yco = 0.01,
+  filter_prots_by_npep = exprs(prot_n_pep >= 2),
+  # `filename`(s) will be automated, i.e., by gene-set names
+)
 
+# customized thresholds for the corresponding formulae in `pepSig` or `prnSig()`
+gspaMap(
+  fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
+  pval_cutoff = c(5E-2, 5E-2, 1E-10),
+  logFC_cutoff = log2(1.2),
+  
+  show_sig = pVal,
+  show_labels = TRUE,
+  yco = 0.05,
+  filter_by_npep = exprs(prot_n_pep >= 2),
+)
 
 # ===================================
 # Volcano plot
@@ -324,7 +222,26 @@ gspaMap(
 
 }
 \seealso{
-\code{\link{prnGSPA}} for enrichment analysis against gene sets,
- \code{\link{gspaMap}} for the visualization of gene sets under volcano
- plots.
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+ normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
+ peptide summarization \cr \code{\link{mergePep}} for extended examples in
+ peptide data merging \cr \code{\link{standPep}} for extended examples in
+ peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
+ in peptide to protein summarization \cr \code{\link{standPrn}} for extended
+ examples in protein data normalization. \cr \code{\link{pepHist}} and
+ \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
+ data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+ \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+ \code{\link{start_with_str}}, \code{\link{end_with_str}},
+ \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+ data subsetting by character strings \cr \code{\link{pepImp}} and
+ \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
+ and \code{\link{prnSig}} for significance tests \cr \code{\link{pepVol}} and
+ \code{\link{prnVol}} for volcano plot visualization \cr
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
 }

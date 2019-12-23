@@ -19,7 +19,7 @@ prnGSEA(...)
 determined automatically.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -32,11 +32,12 @@ of \code{id} in the \code{call}.}
 determined automatically by the name of the calling function and the value
 of id in the call.}
 
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used.}
+\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
+the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+protein data.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used.}
+missing values will be used. The default is FALSE.}
 
 \item{gset_nms}{Not currently used. Character string or vector containing the
 name(s) of gene sets for enrichment analysis. The possible values are in
@@ -77,8 +78,8 @@ this, a smaller \code{max_size} may be considered.}
 \item{min_greedy_size}{Not currently used. Numeric value or vector; minimum
 number of unique protein entries for a gene set to be considered essential.}
 
-\item{fml_nms}{Character string or vector; the forumula name(s). By default,
-the names match to those used in \code{\link{pepSig}} or
+\item{fml_nms}{Character string or vector; the formula name(s). By default,
+the names will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
@@ -111,193 +112,4 @@ phenotype labels are then reformed in reflection of the original group names,
 weights and directions, i.e., \code{0.5xgrpA&0.5xgrpB	-0.5xgrpC&-0.5xgrpD}.
 The corresponding \code{.gct} and \code{.cls} files can be used with the
 online or the github version of R-GSEA.
-}
-\examples{
-# ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
-# Significance test
-# ===================================
-scale_log2r <- TRUE
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  # suggested prior significance tests of peptide log2FC
-  # (1a) no NA imputation; output: Peptide_pVals.txt
-  pepSig(
-    impute_na = FALSE, 
-    cmbn_contrs = ~ Term["(W16.BI.TMT1+W16.BI.TMT2)/2-(W2.JHU.TMT1+W2.JHU.TMT2)/2"],
-    W16_vs_W2_fine = ~ Term["W16.BI.TMT1-W2.BI.TMT1", "W16.JHU.TMT1-W2.JHU.TMT1", "W16.PNNL.TMT1-W2.PNNL.TMT1"],
-  )
-	
-  # (1b) or NA imputation; output: Peptide_impNA_pvals.txt
-  pepSig(
-    impute_na = TRUE, 
-    cmbn_contrs = ~ Term["(W16.BI.TMT1+W16.BI.TMT2)/2-(W2.JHU.TMT1+W2.JHU.TMT2)/2"],
-    W16_vs_W2_fine = ~ Term["W16.BI.TMT1-W2.BI.TMT1", "W16.JHU.TMT1-W2.JHU.TMT1", "W16.PNNL.TMT1-W2.PNNL.TMT1"],
-  )
-	
-  # required prior significance tests of protein log2FC
-  # all formulae in the latest `pepSig()` will be assessed by default 
-  # (2a) no NA imputation; output: Protein_pVals.txt
-  prnSig(impute_na = FALSE)
-
-  # (2b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(impute_na = TRUE)
-
-	
-  ## MaxQuant
-  # suggested prior significance tests of peptide log2FC
-  # (1a) no NA imputation; output: Peptide_pVals.txt
-  pepSig(
-    impute_na = FALSE, 
-    cmbn_contrs = ~ Term["(W16.BI+W16.JHU+W16.PNNL)/3-(W2.BI+W2.JHU+W2.PNNL)/3"],
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-  )
-	
-  # (1b) or NA imputation; output: Peptide_impNA_pvals.txt
-  pepSig(
-    impute_na = TRUE, 
-    cmbn_contrs = ~ Term["(W16.BI+W16.JHU+W16.PNNL)/3-(W2.BI+W2.JHU+W2.PNNL)/3"],
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-  )
-  
-  # see the above Mascot example for remaining steps
-  
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-## examples
-# (1a) all human proteins; input: Protein_pVals.txt
-prnGSEA(
-  impute_na = FALSE, 
-  var_cutoff = 0, 
-  pval_cutoff = 1, 
-  logFC_cutoff = log2(1), 
-  filter_by_sp = exprs(species == "human"), 
-)
-
-# (1b) all human proteins; input: Protein_impNA_pvals.txt
-prnGSEA(
-  impute_na = TRUE, 
-  var_cutoff = 0, 
-  pval_cutoff = 1, 
-  logFC_cutoff = log2(1), 
-  filter_by_sp = exprs(species == "human"), 
-)
-
-# (2) prefiltration by variances, pVals and logFCs
-prnGSEA(
-  impute_na = FALSE, 
-  var_cutoff = 0.5,     
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  filter_by_sp = exprs(species == "human"), 
-)
-
-# (3) cases that are complete with no missing values
-prnGSEA(
-  impute_na = FALSE, 
-  var_cutoff = 0.5,     
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  complete_cases = TRUE, 
-  filter_by_sp = exprs(species == "human"), 
-)
-
-
 }

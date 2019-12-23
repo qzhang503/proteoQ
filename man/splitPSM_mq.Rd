@@ -5,40 +5,43 @@
 \title{Splits PSM tables}
 \usage{
 splitPSM_mq(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
-  fasta = NULL, pep_unique_by = "group", corrected_int = FALSE,
+  fasta = NULL, pep_unique_by = "group", corrected_int = TRUE,
   rptr_intco = 1000, rm_craps = FALSE, rm_reverses = TRUE,
   annot_kinases = FALSE, plot_rptr_int = TRUE, ...)
 }
 \arguments{
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
-used in MS/MS ion search.}
+used in MS/MS ion search. There is no default and users need to provide the
+correct file path(s) and name(s).}
 
-\item{pep_unique_by}{A character string for the characterization of peptide
-uniqueness from \code{MaxQuant} PSMs. The choice is in \code{c("group",
-"protein")}. At the \code{group} default, the uniqueness of peptides is by
-protein groups. At a more strigent criterion of \code{protein}, the
-uniqueness of peptides is by protein entries. A new column of
-\code{pep_isunique} will be added accordingly to the PSM reports. An earlier
-trivial option of \code{none} is depreciated.}
+\item{pep_unique_by}{A character string for annotating the uniqueness of
+peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
+uniqueness of peptides is by protein groups. At a more strigent criterion of
+\code{protein}, the uniqueness of peptides is by protein entries. A new
+column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
+be added to the PSM reports.}
 
-\item{corrected_int}{Logical. If TRUE, values under columns "Reporter
-intensity corrected" in MaxQuant PSM results (\code{msms.txt}) will be used.
-Otherwise, "Reporter intensity" values without corrections will be used.}
+\item{corrected_int}{A logical argument for uses with \code{MaxQuant} data. At
+the TRUE default, values under columns "Reporter intensity corrected..." in
+\code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
+"Reporter intensity" values without corrections will be used.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
+\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
+default is 1,000.}
 
-\item{rm_craps}{Logical; if TRUE, removes
-\code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.}
+\item{rm_craps}{Logical; if TRUE,
+\code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins will be removed.
+The default is FALSE.}
 
-\item{rm_reverses}{Logical; if TRUE, removes \code{Reverse} entries from
-MaxQuant peptide results.}
+\item{rm_reverses}{A logical argument for uses with \code{MaxQuant} data. At
+the TRUE default, \code{Reverse} entries will be removed.}
 
-\item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
-proteins.}
+\item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins
+will be annotated with their kinase attributes. The default is FALSE.}
 
-\item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
-reporter-ion intensities.}
+\item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
+intensities will be plotted. The default is TRUE.}
 }
 \description{
 \code{splitPSM_mq} splits the PSM outputs after \code{rmPSMHeaders()}. It

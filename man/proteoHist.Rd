@@ -7,9 +7,9 @@
 \title{Histogram visualization}
 \usage{
 proteoHist(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
-  col_select = NULL, scale_log2r = TRUE, pep_pattern = "zzz",
-  show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, df = NULL,
-  filepath = NULL, filename = NULL, ...)
+  col_select = NULL, scale_log2r = TRUE, show_curves = TRUE,
+  show_vline = TRUE, scale_y = TRUE, df = NULL, filepath = NULL,
+  filename = NULL, ...)
 
 pepHist(...)
 
@@ -27,26 +27,20 @@ included in the indicated analysis. At the \code{NULL} default, the column
 key will be \code{Select}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
-\item{pep_pattern}{Softely depreciated. Character string containing one-letter
-representation of amino acids. At the "zzz" default, all peptides will be
-used. Letters in the character string are case sensitive. For example,
-\code{pep_pattern = "y"} will extract peptides with tyrosine
-phosphorylation. To extract peptides with N-terminal acetylation, use
-\code{pep_pattern = "_"}. The parameter provides a means for high-level
-subsetting of peptide entries in a data set. In general, one can use the
-\code{filter-in-function} feature described in \code{\link{normPSM}} to
-subset data.}
+\item{show_curves}{Logical; if TRUE, shows the fitted curves. At the TRUE default, the curve
+parameters are based on the latest call to \code{\link{standPep}} or
+\code{\link{standPrn}} with \code{method_align = MGKernel}. This feature can
+inform the effects of data filtration on the alignment of \code{logFC}
+profiles. Also see \code{\link{standPep}} and \code{\link{standPrn}} for
+more examples.}
 
-\item{show_curves}{Logical; if TRUE, shows the fitted curves. The curve
-parameters are based on the latest call to \code{normPep} or \code{normPrn}.
-This feature can inform the effects of data filtration on the alignment of
-\code{logFC} profiles.}
+\item{show_vline}{Logical; if TRUE, shows the vertical lines at \code{x = 0}.
+The default is TRUE.}
 
-\item{show_vline}{Logical; if TRUE, shows the vertical lines at \code{x = 0}.}
-
-\item{scale_y}{Logical; if TRUE, scale data on the \code{y-axis}.}
+\item{scale_y}{Logical; if TRUE, scale data on the \code{y-axis}. The default
+is TRUE.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -61,8 +55,15 @@ image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 will be determined by the extension of the file name. A \code{.png} format
 will be used at default or at an unrecognized file extension.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr Additional parameters for plotting
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+of data against the column keys in \code{Peptide.txt} or \code{Protein.txt}.
+Each statement contains to a list of logical expression(s). The \code{lhs}
+needs to start with \code{filter_}. The logical condition(s) at the
+\code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. \cr
+\cr For example, \code{pep_len} is a column key present in \code{Mascot}
+peptide tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
+exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
+See also \code{\link{normPSM}}. \cr \cr Additional parameters for plotting
 with \code{ggplot2}: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale;
 the default is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the
 default is +2. \cr \code{xbreaks}, the breaks in \eqn{x}-axis at a log2
@@ -76,6 +77,8 @@ fixed across panels; the default is "fixed" and the alternative is "free".}
 The histograms of \code{log2FC} under
  \code{~\\dat_dir\\Peptide\\Histogram} or
  \code{~\\dat_dir\\Protein\\Histogram}.
+
+Histograms of \code{log2FC}
 }
 \description{
 \code{proteoHist} plots the histograms of protein or peptide \code{log2FC}.
@@ -89,102 +92,31 @@ wrappers.
 \details{
 In the histograms, the \code{log2FC} under each TMT channel are color-coded by
 their contributing reporter-ion intensity.
-
-The function matches the current \code{id} to the grouping argument in
-\code{\link{normPSM}}. The value by \code{group_psm_by} or \code{group_pep_by}
-will be matched for peptide or protein data, respectively. For example, if
-\code{normPSM(group_psm_by = pep_seq, ...)} was called earlier, the setting of
-\code{id = pep_seq_mod} in the current \code{call} will be matched to \code{id
-= pep_seq}. Similarly, if \code{normPSM(group_pep_by = gene, ...)} was
-earlierly applied, the setting of \code{id = prot_acc} in the current
-\code{call} will be matched to \code{id = gene}.
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
+# Histogram
 # ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
 
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
+## !!!require the brief working example in `?load_expts`
 
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
+# examplary `MGKernel` alignment
+standPep(
   method_align = MGKernel, 
   n_comp = 3, 
   seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
 )
 
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
+standPrn(
   method_align = MGKernel, 
   n_comp = 2, 
   seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
 )
 
-
-# ===================================
-# Histogram
-# ===================================
 ## (1) effects of data scaling
 # peptide without log2FC scaling
 pepHist(scale_log2r = FALSE)
@@ -194,48 +126,48 @@ pepHist(scale_log2r = TRUE)
 
 ## (2) sample column selection
 # sample IDs indicated under column `Select` in `expt_smry.xlsx`
-pepHist(col_select = Select)
+pepHist(col_select = Select, filename = colsel.png)
 
 # protein data for samples under column `W2` in `expt_smry.xlsx`
-prnHist(col_select = W2)
+prnHist(col_select = W2, filename = w2.png)
 
 ## (3) row filtration of data
-# phosphopeptide subset
+# exclude oxidized methione or deamidated asparagine
+pepHist(
+  # filter_by = exprs(!grepl("[mn]", pep_seq_mod)),
+  filter_by = exprs(not_contain_chars_in("mn", pep_seq_mod)),
+  filename = "no_mn.png",
+)
+
+# phosphopeptide subset (error message if no matches)
 pepHist(
   filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
   scale_y = FALSE, 
-  filename = "pepHist_fil_by_sty.png",
+  filename = phospho.png,
 )
 
 # or use `grepl` directly
 pepHist(
   filter_by = exprs(grepl("[sty]", pep_seq_mod)),
-  filename = "pepHist_fil_by_sty.png",
-)
-
-# exclude oxidized methione or deamidated asparagine
-pepHist(
-  # filter_by = exprs(!grepl("[mn]", pep_seq_mod)),
-  filter_by = exprs(not_contain_chars_in("mn", pep_seq_mod)),
-  filename = "pepHist_fil_no_mn.png",
+  filename = same_phospho.png,
 )
 
 ## (4) between lead and lag
 # leading profiles
 pepHist(
-  filename = "pepHist.png",
+  filename = lead.png,
 )
 
 # lagging profiles at
 #   (1) n_psm >= 10
 #   (2) and no methionine oxidation or asparagine deamidation
 pepHist(
-  filter_by_npsm = exprs(n_psm >= 10),
-  filter_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
-  filename = "pepHist_filtered.png",
+  filter_peps_by_npsm = exprs(pep_n_psm >= 10),
+  filter_peps_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
+  filename = lag.png,
 )
 
-\dontrun{
+## Not run: 
 # sample selection
 pepHist(
   col_select = "a_column_key_not_in_`expt_smry.xlsx`",
@@ -250,6 +182,20 @@ prnHist(
   lhs_not_start_with_filter_ = exprs(n_psm >= 5),
 )
 
+## End(Not run)
 }
-
+\seealso{
+\code{\link{load_expts}} for a minimal working example in data normalization \cr
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{purgePSM}} for extended examples in PSM data purging \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{purgePep}} for extended examples in peptide data purging \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
 }

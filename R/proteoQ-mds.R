@@ -467,10 +467,6 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'MDS. The default is metric MDS with the input dissimilarities being euclidean
 #'distances.
 #'
-#'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
-#'for details.
-#'
 #'@inheritParams  proteoHist
 #'@param  col_group Not used.
 #'@param  col_color Character string to a column key in \code{expt_smry.xlsx}.
@@ -491,20 +487,25 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'  be used.
 #'@param color_brewer Character string to the name of a color brewer for use in
 #'  \href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_color_brewer},
-#'   i.e., \code{color_brewer = Set1}.
+#'   i.e., \code{color_brewer = Set1}. At the NULL default, the setting in
+#'  \code{ggplot2} will be used.
 #'@param fill_brewer Character string to the name of a color brewer for use in
 #'  \href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_fill_brewer},
-#'   i.e., \code{fill_brewer = Spectral}.
+#'   i.e., \code{fill_brewer = Spectral}. At the NULL default, the setting in
+#'  \code{ggplot2} will be used.
 #'@param size_manual Numeric vector to the scale of sizes for use in
 #'  \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_size_manual},
-#'   i.e., \code{size_manual = c(8, 12)}.
+#'   i.e., \code{size_manual = c(8, 12)}. At the NULL default, the setting in
+#'  \code{ggplot2} will be used.
 #'@param shape_manual Numeric vector to the scale of shape IDs for use in
 #'  \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_shape_manual},
-#'   i.e., \code{shape_manual = c(5, 15)}. .
+#'   i.e., \code{shape_manual = c(5, 15)}. At the NULL default, the setting in
+#'  \code{ggplot2} will be used.
 #'@param alpha_manual Numeric vector to the scale of transparency of objects for
 #'  use in
 #'  \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_alpha_manual}
-#'   , i.e., \code{alpha_manual = c(.5, .9)}.
+#'   , i.e., \code{alpha_manual = c(.5, .9)}. At the NULL default, the setting
+#'  in \code{ggplot2} will be used.
 #'@param adjEucDist Logical; if TRUE, adjusts the inter-plex Euclidean distance
 #'  by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
 #'  \code{reference samples} from each TMT plex undergo approximately the same
@@ -515,16 +516,36 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'  immediately before or after TMT labeling.
 #'@param classical Logical; performs metric MDS at TRUE and non-metric MDS at
 #'  FALSE (see also \code{\link[stats]{cmdscale}} and
-#'  \code{\link[MASS]{isoMDS}}).
+#'  \code{\link[MASS]{isoMDS}}). The default is TRUE.
 #'@param k Numeric; The desired dimension for the solution passed to
-#'  \code{\link[stats]{cmdscale}}.
+#'  \code{\link[stats]{cmdscale}}. The default is 3.
 #'@param show_ids Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
-#'  plots.
+#'  plots. The default is TRUE.
 #'@param annot_cols Not used.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
+#'  data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
 #'  \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
 #'  height of plot \cr \code{...}
+#'
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'@example inst/extdata/examples/prnMDS_.R
 #'
 #'@return MDS plots.
 #'@import dplyr rlang ggplot2
@@ -580,14 +601,29 @@ proteoMDS <- function (id = gene,
 #'
 #'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
 #'
-#'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
-#'for details.
-#'
 #'@inheritParams proteoMDS
 #'@param type Character string indicating the type of PCA. At the \code{type =
 #'  obs} default, the components are by observations; at \code{type = feats},
 #'  the components are by features.
+#'
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'@example inst/extdata/examples/prnPCA_.R
 #'
 #'@return PCA plots.
 #'@import dplyr rlang ggplot2
@@ -650,11 +686,31 @@ proteoPCA <- function (id = gene, type = "obs",
 #'@inheritParams proteoMDS
 #'@param annot_cols A character vector of column keys in \code{expt_smry.xlsx}.
 #'  The values under the selected keys will be used to color-code sample IDs on
-#'  the top of the indicated plot.
+#'  the top of the indicated plot. The default is NULL without column
+#'  annotation.
 #'@param annot_colnames A character vector of replacement name(s) to
-#'  \code{annot_cols}.
+#'  \code{annot_cols}. The default is NULL with no replacement.
 #'@param ... Parameters for \code{\link[pheatmap]{pheatmap}}
 #'
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'@example inst/extdata/examples/prnEucDist_.R
 #'@return Heat map visualization of distance matrices.
 #'
 #'@import dplyr rlang ggplot2
@@ -697,12 +753,6 @@ proteoEucDist <- function (id = gene, col_select = NULL, col_group = NULL, col_c
 #'
 #'@rdname proteoMDS
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
-#' 
 #'@import purrr
 #'@export
 pepMDS <- function (...) {
@@ -724,49 +774,7 @@ pepMDS <- function (...) {
 #'\code{prnMDS} is a wrapper of \code{\link{proteoMDS}} for protein data
 #'
 #'@rdname proteoMDS
-#'@seealso \code{\link{load_expts}} for PSM, peptide and protein data
-#'  preparation, \code{\link{pepImp}} for NA value imputation and
-#'  \code{\link{pepSig}} for linear modelings.
-#' @examples
-#' # ===================================
-#' # MDS
-#' # ===================================
-#' scale_log2r <- TRUE
-#' 
-#' # peptide
-#' pepMDS(
-#'   scale_log2r = TRUE,
-#'   col_select = Select, 
-#'   filter_by_npsm = exprs(pep_n_psm >= 10),
-#'   filename = "pepMDS_filtered.png",
-#' )
-#'
-#' # protein
-#' prnMDS(
-#'   scale_log2r = TRUE,
-#'   col_color = Color,
-#'   col_shape = Shape,
-#'   show_ids = TRUE,
-#'   filter_by_npep = exprs(prot_n_pep >= 5),
-#'   filename = "prnMDS_filtered.png",
-#' )
-#'
-#' # custom palette
-#' prnMDS(
-#'   scale_log2r = TRUE,
-#'   col_shape = Shape,
-#'   color_brewer = Set1,
-#'   show_ids = TRUE,
-#'   filename = "my_palette.png",
-#' )
-#'
-#' \dontrun{
-#' prnMDS(
-#'   col_color = "column_key_not_existed",
-#'   col_shape = "another_missing_column_key"
-#' )
-#' }
-#'
+#'  
 #'@import purrr
 #'@export
 prnMDS <- function (...) {
@@ -788,16 +796,6 @@ prnMDS <- function (...) {
 #'\code{pepPCA} is a wrapper of \code{\link{proteoPCA}} for peptide data.
 #'
 #'@rdname proteoPCA
-#'
-#'@seealso \code{\link{load_expts}} for PSM, peptide and protein data
-#'  preparation, \code{\link{pepImp}} for NA value imputation and
-#'  \code{\link{pepSig}} for linear modelings.
-#'  
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
 #'
 #'@import purrr
 #'@export
@@ -821,46 +819,6 @@ pepPCA <- function (...) {
 #'
 #'@rdname proteoPCA
 #'
-#' @examples
-#' # ===================================
-#' # PCA
-#' # ===================================
-#' scale_log2r <- TRUE
-#' 
-#' # peptide
-#' pepPCA(
-#'   scale_log2r = TRUE,
-#'   col_color = Color,
-#'   col_shape = Shape,
-#'   show_ids = TRUE,
-#'   filter_by_npsm = exprs(pep_n_psm >= 10),
-#'   filename = "pepPCA_filtered.png",
-#' )
-#' 
-#' # protein
-#' prnPCA(
-#'   scale_log2r = TRUE,
-#'   col_color = Color,
-#'   col_shape = Shape,
-#'   show_ids = TRUE,
-#'   filter_by_npep = exprs(prot_n_pep >= 5),
-#'   filename = "prnPCA_filtered.png",
-#' )
-#'
-#' # by features
-#' prnPCA(
-#'   type = feats,
-#'   scale_log2r = TRUE,
-#'   filename = "prnPCA_by_feats.png",
-#' )
-#'
-#' \dontrun{
-#' prnPCA(
-#'   col_color = "column_key_not_existed",
-#'   col_shape = "another_missing_column_key"
-#' )
-#' }
-#'
 #'@import purrr
 #'@export
 prnPCA <- function (...) {
@@ -883,12 +841,6 @@ prnPCA <- function (...) {
 #'
 #'@rdname proteoEucDist
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
-#'
 #'@import purrr
 #'@export
 pepEucDist <- function (...) {
@@ -910,57 +862,6 @@ pepEucDist <- function (...) {
 #'\code{prnEucDist} is a wrapper of \code{\link{proteoEucDist}} for protein data
 #'
 #'@rdname proteoEucDist
-#'@seealso \code{\link{load_expts}} for PSM, peptide and protein data
-#'  preparation, \code{\link{pepImp}} for NA value imputation and
-#'  \code{\link{pepSig}} for linear modelings.
-#' @examples
-#' # ===================================
-#' # Euclidean distance
-#' # ===================================
-#' scale_log2r <- TRUE
-#' 
-#' # peptide
-#' pepEucDist(
-#'   annot_cols = c("Peptide_Yield", "Group"),
-#'   width = 16,
-#'   height = 12,
-#' )
-#' 
-#' # protein
-#' prnEucDist(
-#'   scale_log2r = TRUE,
-#'   annot_cols = c("Peptide_Yield", "Group"),
-#'   annot_colnames = c("New_Yield", "New_Group"),
-#'
-#'   # parameters for `pheatmap`
-#'   display_numbers = TRUE,
-#'   number_color = "grey30",
-#'   number_format = "%.1f",
-#'   clustering_distance_rows = "euclidean",
-#'   clustering_distance_cols = "euclidean",
-#'   fontsize = 16,
-#'   fontsize_row = 20,
-#'   fontsize_col = 20,
-#'   fontsize_number = 8,
-#'   cluster_rows = TRUE,
-#'   show_rownames = TRUE,
-#'   show_colnames = TRUE,
-#'   border_color = "grey60",
-#'   cellwidth = 24,
-#'   cellheight = 24,
-#'   filter_by_npep = exprs(prot_n_pep >= 5),
-#'   filename = "prnEucDist_filtered.png",
-#' )
-#'
-#'
-#' \dontrun{
-#' prnEucDist(
-#'   col_color = "column_key_not_existed",
-#'   col_shape = "another_missing_column_key",
-#'   annot_cols = c("bad_column_key", "yet_another_bad_column_key")
-#' )
-#' }
-#'
 #'@import purrr
 #'@export
 prnEucDist <- function (...) {

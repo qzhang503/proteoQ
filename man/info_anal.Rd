@@ -15,8 +15,9 @@ info_anal(id = gene, col_select = NULL, col_group = NULL,
 }
 \arguments{
 \item{anal_type}{Character string; the type of analysis that are preset for
-method dispatch in function factories; Values include \code{anal_type =
-c("PCA", "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model", 
+method dispatch in function factories. The value will be determined
+automatically. Examplary values include \code{anal_type = c("PCA",
+"Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", ...)}.}
 }
 \value{

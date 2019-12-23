@@ -1,139 +1,65 @@
-pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
-  load(file = file.path(dat_dir, "label_scheme.rda"))
-  id <- rlang::as_string(rlang::enexpr(id))
-  
-  filter_dots <- rlang::enexprs(...) %>% 
-    .[purrr::map_lgl(., is.language)] %>% 
-    .[grepl("^filter_", names(.))]
-  
-  fn_fasta <- file.path(dat_dir, "my_project.fasta")
-  stopifnot(file.exists(fn_fasta))
-  fasta <- seqinr::read.fasta(fn_fasta, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
-  
-  df <- read.csv(file.path(dat_dir, "Peptide\\Peptide.txt"), check.names = FALSE, 
-                 header = TRUE, sep = "\t", comment.char = "#") %>% 
-    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
-  
-  df <- df %>% filters_in_call(!!!filter_dots)
-  
-  if (use_unique_pep & "pep_isunique" %in% names(df)) df <- df %>% dplyr::filter(pep_isunique == 1)
-  
-  df_num <- df %>% 
-    dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-    dplyr::group_by(!!rlang::sym(id))
-  
-  df_num <- switch(method_pep_prn, 
-                   mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
-                   top.3 = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
-                   weighted.mean = TMT_wt_mean(df_num, !!rlang::sym(id), na.rm = TRUE), 
-                   median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
-                   aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
-  
-  df <- df %>% 
-    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.)))
-  
-  df_mq_rptr_mass_dev <- df %>% 
-    dplyr::select(!!rlang::sym(id), grep("^Reporter mass deviation", names(.))) %>% 
-    dplyr::group_by(!!rlang::sym(id)) %>% 
-    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-  
-  df <- df %>% 
-    dplyr::select(-grep("^Reporter mass deviation", names(.)))	  
-  
-  mq_median_keys <- c(
-    "Score", "Missed cleavages", "PEP", 
-    "Charge", "Mass", "PIF", "Fraction of total spectrum", "Mass error [ppm]", 
-    "Mass error [Da]", "Base peak fraction", "Precursor Intensity", 
-    "Precursor Apex Fraction", "Intensity coverage", "Peak coverage", 
-    "Combinatorics"
-  )
-  
-  df_mq_med <- df %>% 
-    dplyr::select(!!rlang::sym(id), which(names(.) %in% mq_median_keys)) %>% 
-    dplyr::group_by(!!rlang::sym(id)) %>% 
-    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-  
-  df <- df %>% 
-    dplyr::select(-which(names(.) %in% mq_median_keys))		
-  
-  sm_median_keys <- c(
-    "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
-    "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
-    "precursorIsolationIntensity", "ratioReporterIonToPrecursor", 
-    "matched_parent_mass", "delta_parent_mass", "delta_parent_mass_ppm")
-  
-  df_sm_med <- df %>% 
-    dplyr::select(!!rlang::sym(id), which(names(.) %in% sm_median_keys)) %>% 
-    dplyr::group_by(!!rlang::sym(id)) %>% 
-    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-  
-  df <- df %>% 
-    dplyr::select(-which(names(.) %in% sm_median_keys))
-  
-  df_first <- df %>% 
-    dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
-    dplyr::select(-grep("^pep_", names(.)))    
-  
-  df <- list(df_first, 
-             df_mq_rptr_mass_dev, df_mq_med, 
-             df_sm_med, 
-             df_num) %>% 
-    purrr::reduce(left_join, by = id) %>% 
-    data.frame(check.names = FALSE)
-  
-  rm(df_num, df_first)
-  
-  df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
-    df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
-    dplyr::mutate_if(is.integer, as.numeric) %>% 
-    round(., digits = 3)
-  
-  df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
-    df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
-    dplyr::mutate_if(is.integer, as.numeric) %>% 
-    round(., digits = 0)
-  
-  df <- cbind.data.frame(
-    df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df))], 
-    df[, grep("^I[0-9]{3}", names(df))], 
-    df[, grep("^N_I[0-9]{3}", names(df))], 
-    df[, grep("^log2_R[0-9]{3}", names(df))], 
-    df[, grep("^N_log2_R[0-9]{3}", names(df))], 
-    df[, grep("^Z_log2_R[0-9]{3}", names(df))])
-  
-  df <- df %>% 
-    .[rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0, ]
-  
-  if (gn_rollup) {
-    dfa <- df %>% 
-      dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
-      dplyr::filter(!is.na(gene)) %>% 
-      dplyr::group_by(gene) %>% 
-      dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
-    
-    dfb <- df %>% 
-      dplyr::select(-prot_cover, -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
-      dplyr::filter(!is.na(gene)) %>% 
-      dplyr::filter(!duplicated(.$gene))
-    
-    dfc <- df %>% 
-      dplyr::select(gene, prot_cover) %>% 
-      dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
-      dplyr::group_by(gene) %>% 
-      dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
-      dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 
-      dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
-    
-    df <- list(dfc, dfb, dfa) %>% 
-      purrr::reduce(right_join, by = "gene") %>% 
-      dplyr::filter(!is.na(gene), !duplicated(gene))
-  }
-  
-  return(df)
-}
-
-
-
+#'Standardize protein results
+#'
+#'\code{standPrn} standardizes protein results from \code{\link{Pep2Prn}} with
+#'additional choices in data alignment. The utility further supports iterative
+#'normalization against data under selected sample columns, data rows or both.
+#'
+#'In the primary output file, "\code{Protein.txt}", values under columns
+#'\code{log2_R...} are logarithmic ratios at base 2 in relative to the
+#'\code{reference(s)} within each multiplex TMT set, or to the row means if no
+#'\code{reference(s)} are present. Values under columns \code{N_log2_R...} are
+#'aligned \code{log2_R...} according to \code{method_align} without scaling
+#'normalization. Values under columns \code{Z_log2_R...} are \code{N_log2_R...}
+#'with additional scaling normalization. Values under columns \code{I...} are
+#'\code{reporter-ion intensity} before normalization. Values under columns
+#'\code{N_I...} are normalized \code{I...}. Values under columns
+#'\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
+#'proteins from ascribing peptides.
+#'
+#'@param ... \code{slice_}: Variable argument statements for the identification
+#'  of row subsets. The partial data will be taken for parameterizing the
+#'  alignment of \code{log2FC} across samples. The full data set will be updated
+#'  subsequently with the newly derived paramters. Note that there is no data
+#'  entry removals from the complete data set with the \code{slice_} procedure.
+#'  \cr \cr The variable argument statements should be in the following format:
+#'  each of the statement contains a list of logical expression(s). The
+#'  \code{lhs} needs to start with \code{slice_}. The logical condition(s) at
+#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+#'  For example, \code{prot_n_pep} is a column key present in
+#'  \code{Protein.txt}. The \code{slice_prns_at = exprs(prot_n_pep >= 5)} will
+#'  extract protein entries with five or more identifying peptide sequences for
+#'  \code{log2FC} alignment. Protein entries with less than five identifying
+#'  sequences will remain in \code{Protein.txt} but not used in the
+#'  parameterization. See also \code{\link{normPSM}} for the variable arguments
+#'  of \code{filter_}. \cr \cr Additional parameters from
+#'  \code{\link[mixtools]{normalmixEM}}, i.e., \cr \code{maxit}, the maximum
+#'  number of iterations allowed; \cr \code{epsilon}, tolerance limit for
+#'  declaring algorithm convergence.
+#'@inheritParams normPSM
+#'@inheritParams standPep
+#'@inheritParams mixtools::normalmixEM
+#'@seealso \code{\link{load_expts}} for a minimal working example in data
+#'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+#'  normalization \cr \code{\link{purgePSM}} for extended examples in PSM data
+#'  purging \cr \code{\link{PSM2Pep}} for extended examples in PSM to peptide
+#'  summarization \cr \code{\link{mergePep}} for extended examples in peptide
+#'  data merging \cr \code{\link{standPep}} for extended examples in peptide
+#'  data normalization \cr \code{\link{pepHist}} for extended examples in
+#'  peptide data histogram visualization. \cr \code{\link{purgePep}} for
+#'  extended examples in peptide data purging \cr \code{\link{Pep2Prn}} for
+#'  extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{prnHist}} for extended examples in protein data histogram
+#'  visualization.
+#'
+#'@return The primary output is in \code{...\\Protein\\Protein.txt}.
+#'
+#'@example inst/extdata/examples/normPrn_.R
+#'@import stringr dplyr tidyr purrr data.table rlang
+#'@importFrom magrittr %>%
+#'@importFrom magrittr %T>%
+#'@importFrom plyr ddply
+#'@export
 standPrn <- function (method_align = c("MC", "MGKernel"), 
                     range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL, seed = NULL, 
                     col_refit = NULL, cache = TRUE, ...) {
@@ -315,12 +241,10 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
 #'@family aggregate functions
 #'@seealso \code{\link{normPSM}} for PSMs and \code{\link{normPep}} for
 #'  peptides.
+#'@example inst/extdata/examples/depreciated/load_expts_old.R
+#'@example inst/extdata/examples/depreciated/normPrn_examples.R
 #'@return The primary output is in "\code{~\\dat_dir\\Protein\\Protein.txt}".
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_examples.R
 #'@import stringr dplyr tidyr purrr data.table rlang mixtools
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%

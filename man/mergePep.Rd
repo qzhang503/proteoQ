@@ -2,27 +2,40 @@
 % Please edit documentation in R/proteoQ-peptable.R
 \name{mergePep}
 \alias{mergePep}
-\title{Merge of peptide table(s)}
+\title{Merge peptide table(s) into one}
 \usage{
 mergePep(plot_log2FC_cv = TRUE, ...)
 }
 \arguments{
-\item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
-peptide \code{log2FC} for each sample.}
+\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
+\code{log2FC} will be plotted. The default is TRUE.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}.}
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+of data against the column keys in individual peptide tables of
+\code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt}, etc.
+Each statement contains to a list of logical expression(s). The \code{lhs}
+needs to start with \code{filter_}. The logical condition(s) at the
+\code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. \cr
+\cr For example, \code{pep_len} is a column key present in \code{Mascot}
+peptide tables of \code{TMTset1_LCMSinj1_Peptide_N.txt},
+\code{TMTset1_LCMSinj2_Peptide_N.txt} etc. The statement
+\code{filter_peps_at = exprs(pep_len <= 50)} will remove peptide entries
+with \code{pep_len > 50}. See also \code{\link{normPSM}}.}
 }
 \value{
-The primary output is in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
+The primary output is in \code{...\\Peptide\\Peptide.txt}.
 }
 \description{
-\code{mergePep} merges peptide table(s) from \code{PSM2Pep} into one interim
-\code{Peptide.txt}. The utility is required, even for experiments with one
+\code{mergePep} merges individual peptide table(s),
+\code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt} etc.,
+into one interim \code{Peptide.txt}. The \code{log2FC} values in the interim
+result are centered with the medians at zero (median centering). The utility
+is typically applied after the conversion of PSMs to peptides via
+\code{\link{PSM2Pep}} and is required even for a minimal experiment with one
 multiplex TMT and one LCMS injection.
 }
 \details{
-In the primary output file, "\code{Peptide.txt}", values under columns
+In the interim output file, "\code{Peptide.txt}", values under columns
 \code{log2_R...} are logarithmic ratios at base 2 in relative to the
 \code{reference(s)} within each multiplex TMT set, or to the row means if no
 \code{reference(s)} are present. Values under columns \code{N_log2_R...} are
@@ -33,324 +46,53 @@ intensity} before normalization. Values under columns \code{N_I...} are
 normalized \code{I...}. Values under columns \code{sd_log2_R...} are the
 standard deviation of the \code{log2FC} of proteins from ascribing peptides.
 
-Also see \code{\link{normPrn}} for more description of the column keys in the
-output.
+Description of the column keys in the output: \cr \code{system.file("extdata",
+"mascot_peptide_keys.txt", package = "proteoQ")} \cr
+\code{system.file("extdata", "maxquant_peptide_keys.txt", package =
+"proteoQ")}
 
 The peptide counts in individual peptide tables,
-\code{TMTset1_LCMSinj1_Peptide_N.txt} et al., may be fewer than the entries
+\code{TMTset1_LCMSinj1_Peptide_N.txt} etc., may be fewer than the entries
 indicated under the \code{prot_n_pep} column after the peptide
-removals/cleanups using \code{purgePSM}. Values under columns
-\code{N_log2_R...} are intermediate reports by median-centering
-\code{log2_R...} without scaling normalization.
+removals/cleanups using \code{purgePSM}.
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
+# Merge peptide data
 # ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
 
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
+## !!!require the brief working example in `?load_expts`
 
+# everything included
+mergePep()
 
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
+# row filtrations aganist column keys in `TMTset1_LCMSinj1_Peptide_N.txt`...
+# (with Mascot column keys)
+mergePep(
+  filter_peps_by_sp = exprs(species == "human", pep_len <= 50),
 )
 
-
-# ===================================
-# Peptide normalization
-# ===================================
-normPep(
-  method_psm_pep = median,
-  method_align = MGKernel,
-  range_log2r = c(5, 95),
-  range_int = c(5, 95),
-  n_comp = 3,
-  seed = 749662,
-  maxit = 200,
-  epsilon = 1e-05,
-	
-  # filter_by_sp = exprs(species == "human"),
+# (with MaxQuant column keys)
+mergePep(
+  filter_peps_by_sp = exprs(species == "human", `Missed cleavages` <= 3),
 )
 
-# renormalization against selected samples
-# see README at https://github.com/qzhang503/proteoQ for details about 
-#   the selection of sample columns and data rows
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-  
-  # selected samples
-  col_refit = Select_sub,
+# (with Spectrum Mill column keys)
+mergePep(
+  filter_peps_by_sp = exprs(species == "human", pep_miss <= 3),
 )
 
-# renormalization based on selected rows
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-  
-  # selected rows 
-  slice_at = exprs(prot_n_psm >= 10, pep_n_psm >= 3), 
-)
-
-# renormalization against selected sample columns and data rows
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-	
-  col_refit = Select_sub,
-  slice_at = exprs(prot_n_psm >= 10, pep_n_psm >= 3), 
-)
-
-# addtive renormalization against selected sample columns and data rows
-# first
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-	
-  col_refit = W2,
-  slice_at = exprs(prot_n_psm >= 5, pep_n_psm >= 3), 
-)
-
-# then
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-	
-  col_refit = W16,
-  slice_at = exprs(prot_n_psm >= 8, pep_n_psm >= 4), 
-)
-
-# ===================================
-# Mixed-bed (1): begin with MGKernel
-# ===================================
-# (1-1) aligned by `MGKernel`
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 883, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-  filter_peps_by = exprs(pep_len <= 50),
-)
-
-pepHist(scale_log2r = TRUE)
-pepHist(scale_log2r = FALSE)
-
-# (1-1) followed by median centering for samples specified by `col_refit`
-normPep(
-  range_log2r = c(5, 95),
-  range_int = c(5, 95),  
-  
-  n_comp = 3,
-  seed = 749662,
-  maxit = 200,
-  epsilon = 1e-05,
-  col_refit = Select_sub, 
-
-  filter_peps_by = exprs(pep_len <= 50),
-)
-
-# `MGKernel_params_N.txt` available for side-effects
-pepHist(scale_log2r = TRUE, filename = "sel_mc_z.png",)
-pepHist(scale_log2r = FALSE, filename = "sel_mc_n.png",)
-
-# (1-3) aligned by median-centering for all samples
-normPep()
-
-# `MGKernel_params_N.txt` available for side-effects
-pepHist(scale_log2r = TRUE, filename = "mc_z.png",)
-pepHist(scale_log2r = FALSE, filename = "mc_n.png",)
-
-# (1-4) followed by `MGKernel` for samples specified by `col_refit`
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 883, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-  col_refit = Select_sub, 
-  filter_peps_by = exprs(pep_len <= 50),
-)
-
-# updated `MGKernel_params_N.txt` for selected samples
-pepHist(scale_log2r = TRUE, filename = "sel_mG_z.png",)
-pepHist(scale_log2r = FALSE, filename = "sel_mG_n.png",)
-
-# (1-5) fresh start with a different `n_comp = 2`
-# will overrule `col_refit` to all samples
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
-  n_comp = 2, 
-  seed = 883, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-  col_refit = Select_sub, 
-  filter_peps_by = exprs(pep_len <= 50),
-)
-
-# updated `MGKernel_params_N.txt` for all samples
-pepHist(scale_log2r = TRUE, filename = "all_mG2_z.png",)
-pepHist(scale_log2r = FALSE, filename = "all_mG2_n.png",)
-
-
-# ===================================
-# Mixed-bed (2): begin with MC
-# ===================================
-unlink(file.path(dat_dir, "Peptide\\\\Histogram"), recursive  = TRUE)
-unlink(file.path(dat_dir, "Peptide\\\\Peptide.txt"))
-
-# (2-1) median centering
-normPep()
-
-# `MGKernel_params_N.txt` not yet available
-pepHist(scale_log2r = TRUE, filename = "mc_z.png",)
-pepHist(scale_log2r = FALSE, filename = "mc_n.png",)
-
-# (2-2) this is the first `MGKernel`: 
-#   `MGKernel_params_N.txt` not yet available
-#   so will overrule `col_refit` to all samples
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 883, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-  col_refit = Select_sub, 
-  filter_peps_by = exprs(pep_len <= 50),
-)
-
-# `MGKernel_params_N.txt` available
-pepHist(scale_log2r = TRUE, filename = "all_mG_z.png",)
-pepHist(scale_log2r = FALSE, filename = "all_mG_n.png",)
-
-
-
-
-# ===================================
-# Mixed-bed (3): begin with MC
-# ===================================
-# following Mixed-bed (2) examples
-# normalized against housekeeping proteins for selected samples
-normPep(
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
-  col_refit = Select_sub,
-  slice_hskp = exprs(gene \%in\% c("ACTB", "GAPDH")),
-)
-
-# `MGKernel_params_N.txt` available for side effects
-pepHist(scale_log2r = TRUE, filename = "sel_hskp_z.png",)
-pepHist(scale_log2r = FALSE, filename = "sel_hskp_n.png",)
-# ===================================
-# Peptide cleanup by CV
-# ===================================
-# by percent CV
-purgePep(pt_cv = .95)
-
-# by max CV
-purgePep(max_cv = .5)
-
-# by `max_cv` then by `pt_cv`
-purgePep(max_cv = .5)
-purgePep(pt_cv = .95)
-
-# actually 90\% CV 
-purgePep(pt_cv = .95)
-purgePep(pt_cv = .95)
 }
 \seealso{
-\code{\link{normPSM}} for PSM data normalization and
- \code{\link{normPrn}} for protein data normalization.
+\code{\link{load_expts}} for a minimal working example in data normalization \cr
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{purgePSM}} for extended examples in PSM data purging \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
+ \code{\link{purgePep}} for extended examples in peptide data purging \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{prnHist}} for extended examples in protein data histogram visualization.
 }

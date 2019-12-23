@@ -39,10 +39,11 @@ key will be \code{Select}.}
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
 Numeric values under which will be used for the left-to-right arrangement of
 samples in plots. At the NULL default, the column key \code{Order} will be
-used.}
+used. If values under column \code{Order} are left blank, samples will be
+ordered by their names.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -92,134 +93,85 @@ for details.
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
 # Correlation
 # ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+# global option
 scale_log2r <- TRUE
 
-# peptide data with sample ID ordering
+# peptide log2FC with sample ID ordering
+#(no more than 40 samples for visualization)
 pepCorr_logFC(
- col_order = Order, 
- width = 10,
- height = 10,
- filter_by = exprs(pep_n_psm >= 3),
- filename = pepcorr_logfc_npsm3.png,
-)
-
-# peptide intensity
-pepCorr_logInt(
- width = 10,
- height = 10,
- filter_by = exprs(pep_n_psm >= 3),
- filename = pepcorr_int_npsm3.png,
+  col_select = BI,
+  col_order = Order, 
+  width = 25,
+  height = 25,
+  filter_peps_by = exprs(pep_n_psm >= 3),
+  filename = bi_npsm3.png,
 )
 
 # protein log2FC
 prnCorr_logFC(
- width = 10,
- height = 10,
- filter_npep = exprs(prot_n_pep >= 5),
- filename = prncorr_logfc_npep5.png,
+  col_select = W2,
+  col_order = Order, 
+  width = 40,
+  height = 40,
+  filter_npep = exprs(prot_n_pep >= 2),
+  filename = w2_npep2.png,
+)
+
+
+## Not run: 
+# at most 40 samples
+pepCorr_logFC(
+  col_order = Order, 
+  width = 40,
+  height = 40,
+  filter_peps_by = exprs(pep_n_psm >= 3),
+  filename = too_many_cols.png,
+)
+
+# peptide intensity, often no interplex comparison
+# (modest correlation in interplex reporter-ion intensity at data-dependant acquistion)
+pepCorr_logInt(
+  width = 10,
+  height = 10,
+  filter_by = exprs(pep_n_psm >= 3),
+  filename = pepcorr_int_npsm3.png,
 )
 
 # protein intensity
 prnCorr_logInt(
- width = 10,
- height = 10,
- filter_npep = exprs(prot_n_pep >= 5),
- filename = prncorr_int_npep5.png,
+  width = 10,
+  height = 10,
+  filter_npep = exprs(prot_n_pep >= 5),
+  filename = prncorr_int_npep5.png,
 )
 
+## End(Not run)
+
+}
+\seealso{
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+ normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
+ peptide summarization \cr \code{\link{mergePep}} for extended examples in
+ peptide data merging \cr \code{\link{standPep}} for extended examples in
+ peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
+ in peptide to protein summarization \cr \code{\link{standPrn}} for extended
+ examples in protein data normalization. \cr \code{\link{pepHist}} and
+ \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
+ data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+ \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+ \code{\link{start_with_str}}, \code{\link{end_with_str}},
+ \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+ data subsetting by character strings \cr \code{\link{pepImp}} and
+ \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
+ and \code{\link{prnSig}} for significance tests \cr \code{\link{pepHM}} and
+ \code{\link{prnHM}} for heat map visualization \cr \code{\link{pepMDS}} and
+ \code{\link{prnMDS}} for MDS visualization \cr \code{\link{pepPCA}} and
+ \code{\link{prnPcA}} for PCA visualization \cr
 }

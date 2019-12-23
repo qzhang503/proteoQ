@@ -6,7 +6,7 @@
 \title{GSPA of protein data}
 \usage{
 proteoGSPA(id = gene, scale_log2r = TRUE, df = NULL,
-  filepath = NULL, filename = NULL, impute_na = TRUE,
+  filepath = NULL, filename = NULL, impute_na = NULL,
   complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = 0.5,
   pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.05,
   min_size = 10, max_size = Inf, min_greedy_size = 1,
@@ -19,7 +19,7 @@ prnGSPA(...)
 determined automatically.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -32,11 +32,12 @@ of \code{id} in the \code{call}.}
 determined automatically by the name of the calling function and the value
 of id in the call.}
 
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used.}
+\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
+the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+protein data.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used.}
+missing values will be used. The default is FALSE.}
 
 \item{gset_nms}{Character string or vector containing the name(s) of gene sets
 for enrichment analysis. The possible values are in \code{c("go_sets",
@@ -74,8 +75,8 @@ be considered.}
 \item{min_greedy_size}{Numeric value or vector; minimum number of unique
 protein entries for a gene set to be considered essential.}
 
-\item{fml_nms}{Character string or vector; the forumula name(s). By default,
-the names match to those used in \code{\link{pepSig}} or
+\item{fml_nms}{Character string or vector; the formula name(s). By default,
+the names will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
@@ -101,201 +102,4 @@ feasible.
 
 The formula(e) of contrast(s) used in \code{\link{prnSig}} will be taken by
 default.
-}
-\examples{
-# ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
-# Significance test
-# ===================================
-scale_log2r <- TRUE
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  # prior significance tests in protein abundance changes
-	# (a) no NA imputation; output: Protein_pVals.txt
-  prnSig(
-    impute_na = FALSE,
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"],
-    W16_vs_W2 = ~ Term_3["W16-W2"],
-  )
-
-  # (b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(
-    impute_na = TRUE,
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"],
-    W16_vs_W2 = ~ Term_3["W16-W2"],
-  )
-
-  # gene-set enrichment tests
-	# Protein_pVals.txt will be loaded at `impute_na = FALSE`
-  prnGSPA(
-    pval_cutoff = 5E-2,
-    logFC_cutoff = log2(1.2),
-    gspval_cutoff = 5E-2,
-    gset_nms = c("go_sets", "kegg_sets"),
-    impute_na = FALSE,
-  )
-
-  # for proteins with two or more identifying peptides
-  prnGSPA(
-    pval_cutoff = 5E-2,
-    logFC_cutoff = log2(1.2),
-    gspval_cutoff = 5E-2,
-    gset_nms = c("go_sets", "kegg_sets"),
-    filter_by_npep = exprs(prot_n_pep >= 2),
-    impute_na = FALSE,
-  )
-
-  # customized thresholds for the corresponding formulae in `prnSig()`
-  prnGSPA(
-    fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"), # formulae used in `prnSig()`
-    pval_cutoff = c(5E-2, 5E-2, 1E-10), # respective protein pVal cut-offs for each formula
-    logFC_cutoff = log2(1.2), # i.e., the same protein log2FC cut-off for all formulae
-    gspval_cutoff = c(5E-2, 5E-2, 1E-5), # gene-set pVal cut-offs 
-    max_size = c(Inf, Inf, 120), # maxixmum sizes of gene sets for consideration
-    
-    gset_nms = c("go_sets", "kegg_sets"), # the gene sets 
-    filter_by_npep = exprs(prot_n_pep >= 2), # only consider proteins with two or more identifying peptides
-    impute_na = FALSE, 
-  )
-
-
-  ## MaxQuant
-  # prior significance tests in protein abundance changes
-	# (a) no NA imputation; output: Protein_pVals.txt	
-  prnSig(
-    impute_na = FALSE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )
-	
-  # (b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(
-    impute_na = TRUE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )
-	
-  # gene-set enrichment tests
-	# Protein_pVals.txt will be loaded at `impute_na = FALSE`	
-  prnGSPA(
-    pval_cutoff = 5E-2,
-    logFC_cutoff = log2(1.2),
-    gspval_cutoff = 5E-2,
-    gset_nms = c("go_sets", "kegg_sets"),
-    impute_na = FALSE,
-  )
-	
-  # customized thresholds for the corresponding formulae in `prnSig()`
-  prnGSPA(
-    fml_nms = c("W16_vs_W2_fine", "W16_vs_W2_course"), # formulae used in `prnSig()`
-    pval_cutoff = c(5E-2, 5E-4), # respective protein pVal cut-offs for each formula
-    logFC_cutoff = log2(1.2), # i.e., the same protein log2FC cut-off for all formulae
-    gspval_cutoff = c(5E-2, 1E-6), # gene-set pVal cut-offs 
-    max_size = c(Inf, 120), # maxixmum sizes of gene sets for consideration
-    
-    gset_nms = c("go_sets", "kegg_sets"), # the gene sets 
-    filter_by_npep = exprs(prot_n_pep >= 2), # only consider proteins with two or more identifying peptides
-    impute_na = FALSE,
-  )
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
 }

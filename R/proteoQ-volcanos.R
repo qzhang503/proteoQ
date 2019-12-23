@@ -4,31 +4,37 @@
 #'or protein subgroups under the same gene sets. Users should avoid call the
 #'method directly, but instead use the following wrappers.
 #'
-#'By default, the value of \code{gset_nms} in \code{gspaMap(...)} will match to
-#'the one in the latest call to \code{\link{prnGSPA}}.
-#'
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
 #'@inheritParams  prnGSPA
-#'@param adjP Logical; if TRUE, use Benjamini-Hochberg pVals.
+#'@param impute_na Logical. At the NULL default, the TRUE or FALSE will match
+#'  the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+#'  protein data.
+#'@param adjP Logical; if TRUE, use Benjamini-Hochberg pVals in volcano plots.
+#'  The default is FALSE.
 #'@param show_labels Logical; if TRUE, shows the labels of top twenty entries.
+#'  The default is TRUE.
 #'@param show_sig Character string indicating the type of significance values to
-#'  be shown on the volcano plots of gene sets. The default is \code{"none"}.
+#'  be shown with \code{\link{gspaMap}}. The default is \code{"none"}.
 #'  Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
-#'  \code{qVal} will be shown, respectively, in the facet grid of the plots. The
-#'  argument is not used in \code{prnVol} and \code{pepVol}.
-#'@param pval_cutoff Numeric value or vector. \code{Gene sets} with enrichment
-#'  \code{pVals} less significant than the threshold will be excluded for
-#'  volcano plot visualization. The argument is not used in \code{prnVol} and
-#'  \code{pepVol}.
-#'@param logFC_cutoff Numeric value or vector. \code{Gene sets} with absolute
-#'  enrichment \code{log2FC} less than the threshold will be excluded for
-#'  volcano plot visualization. The cut-off is in a logarithmic base of 2, not
-#'  in a linear scale. The argument is not used in \code{prnVol} and
-#'  \code{pepVol}.
-#'@param gset_nms Character string or vector containing the name(s) of gene
-#'  sets. The argument is not used in \code{prnVol} and \code{pepVol}.
+#'  \code{qVal} will be shown, respectively, in the facet grid of the plots.
+#'@param pval_cutoff Numeric value or vector for uses with
+#'  \code{\link{gspaMap}}. \code{Gene sets} with enrichment \code{pVals} less
+#'  significant than the threshold will be excluded from volcano plot
+#'  visualization. The default signficance is 0.05 for all formulae matched to
+#'  or specified in argument \code{fml_nms}. Formula-specific threshold is
+#'  allowed by supplying a vector of cut-off values.
+#'@param logFC_cutoff Numeric value or vector for uses with
+#'  \code{\link{gspaMap}}. \code{Gene sets} with absolute enrichment
+#'  \code{log2FC} less than the threshold will be excluded from volcano plot
+#'  visualization. The default magnitude is \code{log2(1.2) } for all formulae
+#'  matched to or specified in argument \code{fml_nms}. Formula-specific
+#'  threshold is allowed by supplying a vector of absolute values in
+#'  \code{log2FC}.
+#'@param gset_nms Character vector containing the name(s) of gene sets for uses
+#'  with \code{\link{gspaMap}}. By default, the names will match those used in
+#'  \code{\link{prnGSPA}}.
 #'@inheritParams proteoSigtest
 #'@inheritParams proteoGSPA
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
@@ -42,19 +48,33 @@
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
-#'@example inst/extdata/examples/sigtest_min.R
-#'@seealso \code{\link{prnGSPA}} for enrichment analysis against gene sets,
-#'  \code{\link{gspaMap}} for the visualization of gene sets under volcano
-#'  plots.
+#'@example inst/extdata/examples/prnVol_.R
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+#'  normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
+#'  peptide summarization \cr \code{\link{mergePep}} for extended examples in
+#'  peptide data merging \cr \code{\link{standPep}} for extended examples in
+#'  peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
+#'  in peptide to protein summarization \cr \code{\link{standPrn}} for extended
+#'  examples in protein data normalization. \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
+#'  data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr \code{\link{pepImp}} and
+#'  \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
+#'  and \code{\link{prnSig}} for significance tests \cr \code{\link{pepVol}} and
+#'  \code{\link{prnVol}} for volcano plot visualization \cr
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
 #'@export
 proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_log2r = TRUE,
                            filepath = NULL, filename = NULL, fml_nms = NULL, 
-                           impute_na = FALSE, adjP = FALSE, show_labels = TRUE, 
+                           impute_na = NULL, adjP = FALSE, show_labels = TRUE, 
                            pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                            show_sig = "none", gset_nms = c("go_sets", "kegg_sets"), 
                            ...) {
@@ -73,21 +93,14 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
   
 	on.exit(options(old_opt), add = TRUE)
 
-	stopifnot(rlang::is_logical(scale_log2r))
-	stopifnot(rlang::is_logical(impute_na))
-	stopifnot(rlang::is_logical(adjP))
-	stopifnot(rlang::is_logical(show_labels))
-	stopifnot(rlang::is_double(pval_cutoff))
-	stopifnot(rlang::is_double(logFC_cutoff))
-
 	err_msg_1 <- "Unrecognized 'id'; needs to be one of \"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\" or \"term\""
 	err_msg_2 <- "Unrecognized 'anal_type'; needs to be one of \"Volcano\" or \"GSPA\""
 	err_msg_3 <- "Volcano plots of peptides not available for GSPA."
 	err_msg_4 <- "GSPA results not found. Perform prnGSPA() first."
-	err_msg_5 <- "Perform pepSig() first."
-	err_msg_6 <- "Perform both pepImp() and pepSig(impute_na = TRUE) first."
-	err_msg_7 <- "Perform prnSig() first."
-	err_msg_8 <- "Perform both prnImp() and prnSig(impute_na = TRUE) first."
+	err_msg_5 <- "Peptide_pVals.txt not found at impute_na = FALSE. Perform pepSig(impute_na = FALSE) first."
+	err_msg_6 <- "Peptide_impNA_pVals.txt not found at impute_na = TRUE. Perform both pepImp() and pepSig(impute_na = TRUE) first."
+	err_msg_7 <- "Protein_pVals.txt not found at impute_na = FALSE. Perform prnSig(impute_na = FALSE) first."
+	err_msg_8 <- "Protein_impNA_pVals.txt not found at impute_na = TRUE. Perform both prnImp() and prnSig(impute_na = TRUE) first."
 
 	scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -96,6 +109,14 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)	
 	show_sig <- rlang::as_string(rlang::enexpr(show_sig))
+	if (is.null(impute_na)) impute_na <- match_sigTest_imputena(as_string(id))
+	
+	stopifnot(is_logical(scale_log2r))
+	stopifnot(is_logical(impute_na))
+	stopifnot(is_logical(adjP))
+	stopifnot(is_logical(show_labels))
+	stopifnot(is_double(pval_cutoff))
+	stopifnot(is_double(logFC_cutoff))
 	
 	gset_nms <- gset_nms %>% .[. %in% match_gset_nms(gset_nms)]
 	if (is.null(gset_nms)) stop ("Unknown gene sets.")

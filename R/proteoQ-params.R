@@ -266,27 +266,26 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 
 #'Load TMT experiments
 #'
-#'A function processes \code{.xlsx} files containing the metadata of TMT
+#'\code{load_expts} processes \code{.xlsx} files containing the metadata of TMT
 #'experiments
 #'
 #'@section \code{expt_smry.xlsx}: The \code{expt_smry.xlsx} files should be
-#'  located immediately under the file folder defined by the character vector
-#'  \code{dat_dir}. The tab containing the metadata of TMT experiments should be
-#'  named \code{Setup}. The \code{Excel} spread sheet therein is comprised of
-#'  three tiers of fields: (1) essential, (2) optional default and (3) optional
-#'  open. The \code{essential} columns contain the mandatory information of TMT
-#'  experiments. The \code{optional default} columns serve as the fields for
-#'  default lookups in sample selection, grouping, ordering, aesthetics, etc.
-#'  The \code{optional open} fields allow users to define their own analysis,
-#'  aesthetics, etc.
+#'  located immediately under the file folder defined by \code{dat_dir}. The tab
+#'  containing the metadata of TMT experiments should be named \code{Setup}. The
+#'  \code{Excel} spread sheet therein is comprised of three tiers of fields: (1)
+#'  essential, (2) optional default and (3) optional open. The \code{essential}
+#'  columns contain the mandatory information of TMT experiments. The
+#'  \code{optional default} columns serve as the fields for default lookups in
+#'  sample selection, grouping, ordering, aesthetics, etc. The \code{optional
+#'  open} fields allow users to define their own analysis, aesthetics, etc.
 #'
 #'  \tabular{ll}{ \strong{Essential column}   \tab \strong{Descrption}\cr
 #'  Sample_ID \tab Unique sample IDs \cr TMT_Channel \tab TMT channel names:
 #'  \code{126}, \code{127N}, \code{127C} et al. \cr TMT_Set \tab TMT experiment
-#'  indeces  \cr LCMS_Injection   \tab LC/MS injection indeces under a
-#'  \code{TMT_Set} \cr RAW_File \tab MS data filenames originated by
-#'  \code{Xcalibur} with or without the \code{.raw} extension \cr Reference \tab
-#'  Labels indicating reference samples in TMT experiments \cr }
+#'  indeces 1, 2, 3, ... \cr LCMS_Injection   \tab LC/MS injection indeces 1, 2,
+#'  3, ... under a \code{TMT_Set} \cr RAW_File \tab MS data file names
+#'  originated by \code{Xcalibur} with or without the \code{.raw} extension \cr
+#'  Reference \tab Labels indicating reference samples in TMT experiments \cr }
 #'
 #'  \code{Sample_ID}: values should be unique for entries at a unique
 #'  combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for
@@ -295,17 +294,27 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'  the same value in \code{Sample_ID}. No white space or special characters are
 #'  allowed.
 #'
-#'  \code{RAW_File}: \code{OS} file names may be altered by MS users and thus
-#'  different to those recorded in \code{Xcalibur}. The original names by
-#'  \code{Xcalibur} should be used. For analysis with off-line fractionations of
-#'  peptides before LC/MS, the \code{RAW_File} column should be left blank. The
-#'  correspondence between the fractions and \code{RAW_File} names should be
-#'  specified in a separate file, for example, \code{frac_smry.xlsx}. The
-#'  utility \code{extract_raws(raw_dir)} can be used to extract the names of raw
-#'  MS files under the directory indicated by `raw_dir`. More details can be
-#'  found via \code{?extract_raws}. The utility \code{extract_psm_raws(dat_dir)}
-#'  extracts the names of raw MS files that are actually present in
-#'  \code{Mascot} PSM outputs.
+#'  \code{RAW_File}: for analysis with off-line fractionations of peptides
+#'  before LC/MS, the \code{RAW_File} column should be left blank. Instead, the
+#'  correspondence between the fraction numbers and \code{RAW_File} names should
+#'  be specified in a separate file, for example, \code{frac_smry.xlsx}. For
+#'  analysis without off-line fractionations, it is recommended as well to leave
+#'  the field under the \code{RAW_File} column blank and instead enter the MS
+#'  file names in \code{frac_smry.xlsx}.
+#'
+#'  The set of \code{RAW_File} names in \code{frac_smry.xlsx} needs to be
+#'  identical to those in PSM data. Note that \code{OS} file names may be
+#'  altered by MS users and thus different to those recorded in \code{Xcalibur}.
+#'  The original names by \code{Xcalibur} should be used. MS files may
+#'  occasionally have no contributions to PSM findings. These MS file names
+#'  should be removed from \code{frac_smry.xlsx}.
+#'
+#'  Utilities \code{extract_raws()} and \code{extract_psm_raws()} may aid
+#'  matching MS file names between \code{frac_smry.xlsx} and PSM data. Utility
+#'  \code{extract_raws()} extracts the list of MS file names under a file
+#'  folder. For help, try \code{?extract_raws}. Utility
+#'  \code{extract_psm_raws()} extracts the list of MS file names that are
+#'  actually present in PSM data. For help, try \code{?extract_psm_raws}.
 #'
 #'  \code{Reference}: reference entrie(s) are indicated with non-void string(s).
 #'
@@ -318,8 +327,7 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'  sample annotation by edge color\cr Shape \tab Aesthetic labels for sample
 #'  annotation by shape\cr Size \tab Aesthetic labels for sample annotation by
 #'  size \cr Alpha \tab Aesthetic labels for sample annotation by transparency
-#'  \cr Benchmark \tab Depreciated; indicators of benchmark sample (groups) for
-#'  use in heat map visualizations.\cr}
+#'  \cr \cr}
 #'
 #'  \tabular{ll}{ \strong{Exemplary optional open column}   \tab
 #'  \strong{Descrption}\cr Term \tab Categorial terms for statistical modeling.
@@ -328,23 +336,31 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'  handling \cr}
 #'
 #'
-#'@section \code{frac_smry.xlsx}: It is not necessary to prepare a
-#'  \code{frac_smry.xlsx} file if no peptide fractionations were performed in
-#'  TMT experiments. However, if the name(s) of raw MS files were entered
-#'  erroneously in \code{expt_smry.xlsx}, the same mistake will be carried on to
-#'  the system-generated \code{frac_smry.xlsx}.
-#'
-#'  \tabular{ll}{ \strong{Column}   \tab \strong{Descrption}\cr TMT_Set \tab
-#'  v.s.  \cr LCMS_Injection   \tab v.s. \cr Fraction \tab Fraction indeces
-#'  under a \code{TMT_Set} \cr RAW_File \tab v.s. }
-#'
-#'@param dat_dir A character string to the working directory.
+#'@section \code{frac_smry.xlsx}: \tabular{ll}{ \strong{Column}   \tab
+#'  \strong{Descrption}\cr TMT_Set \tab v.s.  \cr LCMS_Injection   \tab v.s. \cr
+#'  Fraction \tab Fraction indeces under a \code{TMT_Set} \cr RAW_File \tab v.s.
+#'  }
+#'@seealso 
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{purgePSM}} for extended examples in PSM data purging \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
+#'  \code{\link{purgePep}} for extended examples in peptide data purging \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{prnHist}} for extended examples in protein data histogram visualization. 
+#'  
+#'@param dat_dir A character string to the working directory. The default is to
+#'  match the value under the global environment.
 #'@param expt_smry A character string to the \code{.xlsx} file containing the
-#'  metadata of TMT experiments. The default is "expt_smry.xlsx".
+#'  metadata of TMT experiments. The default is \code{expt_smry.xlsx}.
 #'@param frac_smry A character string to the \code{.xlsx} file containing
-#'  peptide fractionation summary. The default is "frac_smry.xlsx".
+#'  peptide fractionation summary. The default is \code{frac_smry.xlsx}.
 #'
-#'@example inst/extdata/examples/load_expts_examples.R
+#'@example inst/extdata/examples/load_expts_.R
+#'
 #'
 #'@import dplyr rlang fs
 #'@importFrom magrittr %>%

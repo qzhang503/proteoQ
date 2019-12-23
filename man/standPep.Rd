@@ -2,76 +2,79 @@
 % Please edit documentation in R/proteoQ-peptable.R
 \name{standPep}
 \alias{standPep}
-\title{Standardise peptide results}
+\title{Standardize peptide results}
 \usage{
 standPep(method_align = c("MC", "MGKernel"), col_refit = NULL,
   range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL,
   seed = NULL, plot_log2FC_cv = FALSE, ...)
 }
 \arguments{
-\item{method_align}{Character string or a list of gene symbols; the method to
-align the \code{log2FC} of peptide/protein entries across samples.
-\code{MC}: median-centering; \code{MGKernel}: the kernal density defined by
-multiple Gaussian functions (\code{\link[mixtools]{normalmixEM}}). At
-\code{method_align = "MC"}, the ratio profiles of each sample will be
-aligned in that the medians of the \code{log2FC} are zero. At
-\code{method_align = "MGKernel"}, the \code{log2FC} will be aligned in that
-the maximums of kernel density are zero. It is also possible to align the
-\code{log2FC} to the median of a list of user-supplied genes:
-\code{method_align = c("ACTB", "GAPDH", ...)}.}
+\item{method_align}{Character string indicating the method in aligning
+\code{log2FC} across samples. \code{MC}: median-centering; \code{MGKernel}:
+the kernal density defined by multiple Gaussian functions
+(\code{\link[mixtools]{normalmixEM}}). At the \code{MC} default, the ratio
+profiles of each sample will be aligned in that the medians of the
+\code{log2FC} are zero. At \code{MGKernel}, the ratio profiles of each
+sample will be aligned in that the \code{log2FC} at the maximums of kernel
+desity are zero.}
 
-\item{col_refit}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_refit} will be
-used in the refit of \code{log2FC} using multiple Gaussian kernels. The
-density estimates from an earlier analyis will be kept for the remaining
-samples. At the \code{NULL} default, the column key of \code{Sample_ID} will
-be used, which results in the refit of the \code{log2FC} for all samples.}
+\item{col_refit}{Character string to a column key in \code{expt_smry.xlsx}. At
+the \code{NULL} default, the column key of \code{Sample_ID} in
+\code{expt_smry.xlsx} will be used, which results in the (re)normalization
+of the \code{log2FC} for all samples. Otherwise, samples corresponding to
+non-empty entries under the ascribing column key will be used in the
+renormalization with the alignment method given in \code{method_align}.}
 
-\item{range_log2r}{Numeric vector at length two; the range of the
-\code{log2FC} of peptide/protein entries for use in the scaling
+\item{range_log2r}{Numeric vector at length two. The argument specifies the
+range of the \code{log2FC} for use in the scaling normalization of standard
+deviation across samples. The default is between the 10th and the 90th
+quantiles.}
+
+\item{range_int}{Numeric vector at length two. The argument specifies the
+range of the \code{intensity} of reporter ions for use in the scaling
 normalization of standard deviation across samples. The default is between
-the 10th and the 90th quantiles.}
-
-\item{range_int}{Numeric vector at length two; the range of the
-\code{intensity} of reporter ions for use in the scaling normalization of
-standard deviation across samples. The default is between the 5th and the
-95th quantiles.}
+the 5th and the 95th quantiles.}
 
 \item{n_comp}{Integer; the number of Gaussian components to be used with
-\code{method_align = "MGKernel"}. A typical value is 2 or 3. The variable
+\code{method_align = MGKernel}. A typical value is 2 or 3. The variable
 \code{n_comp} overwrites the augument \code{k} in
 \code{\link[mixtools]{normalmixEM}}.}
 
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
 
-\item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
-peptide \code{log2FC} for each sample.}
+\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
+\code{log2FC} will be plotted. The default is TRUE.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr Additional parameters for
-\code{\link[mixtools]{normalmixEM}}:\cr \code{maxit}, the maximum number of
-iterations allowed; \cr \code{epsilon}, tolerance limit for declaring
-algorithm convergence.}
-
-\item{method_psm_pep}{Character string; the method to summarise the
-\code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
-The descriptive statistics includes \code{c("mean", "median", "top.3",
-"weighted.mean")}. The \code{log10-intensity} of reporter ions at the
-\code{PSMs} levels will be the weight when summarising \code{log2FC} with
-\code{"top.3"} or \code{"weighted.mean"}.}
-
-\item{cache}{Logical; if TRUE, use cache.}
+\item{...}{\code{slice_}: variable argument statements for the identification
+of row subsets. The partial data will be taken for parameterizing the
+alignment of \code{log2FC} across samples. The full data set will be updated
+subsequently with the newly derived paramters. Note that there is no data
+entry removals from the complete data set with the \code{slice_} procedure.
+\cr \cr The variable argument statements should be in the following format:
+each of the statement contains a list of logical expression(s). The
+\code{lhs} needs to start with \code{slice_}. The logical condition(s) at
+the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+For example, \code{pep_len} is a column key present in \code{Peptide.txt}
+with \code{Mascot} workflows. The \code{slice_peps_at = exprs(pep_len >= 10,
+pep_len <= 50)} will extract peptide entries with the number of amino acid
+residues betwen 10 and 50 for \code{log2FC} alignment. Shorter or longer
+peptide sequences will remain in \code{Peptide.txt} but not used in the
+parameterization. See also \code{\link{normPSM}} for the variable arguments
+of \code{filter_}. \cr \cr Additional parameters from
+\code{\link[mixtools]{normalmixEM}}, i.e., \cr \code{maxit}, the maximum
+number of iterations allowed; \cr \code{epsilon}, tolerance limit for
+declaring algorithm convergence.}
 }
 \value{
-The primary output is in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
+The primary output is in \code{...\\Peptide\\Peptide.txt}.
 }
 \description{
-\code{normPep} summarises
-\code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs}}
-into peptides and normalizes the data across
-\code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}} experiments
-and \code{LC/MS} injections.
+\code{standPep} standardizes peptide results from \code{\link{mergePep}} with
+additional choices in data alignment. The utility is typically applied after
+the assembly of peptide data via \code{\link{mergePep}}. It further supports
+iterative normalization against data under selected sample columns, data rows
+or both.
 }
 \details{
 In the primary output file, "\code{Peptide.txt}", values under columns
@@ -86,328 +89,331 @@ with additional scaling normalization. Values under columns \code{I...} are
 \code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
 proteins from ascribing peptides.
 
-In general, median statistics is applied when summarising numeric values from
-PSMs to peptides. One exception is \code{pep_expect} where geometric mean is
-used.
+In general, median statistics is applied when summarising numeric peptide data
+from different LCMS series. One exception is \code{pep_expect} with Mascot
+workflow where geometric mean is used.
 
-Also see \code{\link{normPrn}} for more description of the column keys in the
-output.
-
-The peptide counts in individual peptide tables,
-\code{TMTset1_LCMSinj1_Peptide_N.txt} et al., may be fewer than the entries
-indicated under the \code{prot_n_pep} column after the peptide
-removals/cleanups using \code{purgePSM}. Values under columns
-\code{N_log2_R...} are intermediate reports by median-centering
-\code{log2_R...} without scaling normalization.
+Description of the column keys in the inputs and outputs: \cr
+\code{system.file("extdata",
+"mascot_peptide_keys.txt", package = "proteoQ")} \cr
+\code{system.file("extdata", "maxquant_peptide_keys.txt", package =
+"proteoQ")}
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
 # Peptide normalization
 # ===================================
-normPep(
-  method_psm_pep = median,
-  method_align = MGKernel,
-  range_log2r = c(5, 95),
-  range_int = c(5, 95),
-  n_comp = 3,
-  seed = 749662,
-  maxit = 200,
-  epsilon = 1e-05,
-	
-  # filter_by_sp = exprs(species == "human"),
-)
 
-# renormalization against selected samples
-# see README at https://github.com/qzhang503/proteoQ for details about 
-#   the selection of sample columns and data rows
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-  
-  # selected samples
-  col_refit = Select_sub,
-)
-
-# renormalization based on selected rows
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-  
-  # selected rows 
-  slice_at = exprs(prot_n_psm >= 10, pep_n_psm >= 3), 
-)
-
-# renormalization against selected sample columns and data rows
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-	
-  col_refit = Select_sub,
-  slice_at = exprs(prot_n_psm >= 10, pep_n_psm >= 3), 
-)
-
-# addtive renormalization against selected sample columns and data rows
-# first
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-	
-  col_refit = W2,
-  slice_at = exprs(prot_n_psm >= 5, pep_n_psm >= 3), 
-)
-
-# then
-normPep(
-  method_psm_pep = median, 
-  method_align = MGKernel, 
-  range_log2r = c(5, 95), 
-  range_int = c(5, 95), 
-  n_comp = 3, 
-  seed = 749662, 
-  maxit = 200, 
-  epsilon = 1e-05, 
-	
-  col_refit = W16,
-  slice_at = exprs(prot_n_psm >= 8, pep_n_psm >= 4), 
-)
+## !!!require the brief working example in `?load_expts`
 
 # ===================================
-# Mixed-bed (1): begin with MGKernel
+# (1) `MGKernel`
 # ===================================
-# (1-1) aligned by `MGKernel`
-normPep(
-  method_psm_pep = median, 
+
+# !!! initial `Peptide.txt` results from `mergePep()` aligned by median centering (MC)
+# !!! the first `MGKernel` normalization will apply to all samples
+# !!! succeeding `MGKernel` normalization(s) will apply to all samples if toggling `n_comp` (see section 4)
+
+# (1.1) the first `MGKernel` after `mergePep()`
+# (default double trimming by log2FC and intensity percentiles also apply)
+standPep(
   method_align = MGKernel, 
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+)
+
+# histograms for all data rows
+# (for samplicity only plot against samples indicated under `expt_smry.xlsx::BI_1`)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = bi1.png)
+
+# human subset
+# (a little off in relative to all data rows)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human.png)
+
+# mouse subset 
+# (a lot off in relative to all data rows)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "mouse"), filename = bi1_mouse.png)
+
+# (1.2) additive step to (1.1): against `expt_smry.xlsx::W2` samples and based on their human subset
+standPep(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  col_refit = W2,  
+  slice_peps_by = exprs(species == "human"),
+)
+
+# human subset 
+# (W2 samples are now aligned)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human_slicehuw2.png)
+
+# (1.3) additive to (1.2): against `expt_smry.xlsx::W16` samples and based on their human subset
+standPep(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  col_refit = W16,  
+  slice_peps_by = exprs(species == "human"),
+)
+
+# human subset 
+# (W16 samples are now also aligned)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human_slicehuw16.png)
+
+# side effects: to recaptulate the misalignment between human data and human + mouse data
+# (this is because density curves are based on the latest `standPep` at `method_align = MGKernel`)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = bi1_recap.png)
+
+
+# ===================================
+# (2) Mixed-bed
+# ===================================
+# start over
+unlink(file.path(dat_dir, "Peptide"), recursive = TRUE, force = TRUE)
+PSM2Pep()
+mergePep()
+
+# data in initial `Peptide.txt` from `mergePep()` are aligned by MC
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+
+# (2.1) the first `MGKernel` alignment against all samples using all data rows
+standPep(
+  method_align = MGKernel, 
   n_comp = 3, 
   seed = 883, 
   maxit = 200, 
   epsilon = 1e-05, 
-  filter_peps_by = exprs(pep_len <= 50),
 )
 
-pepHist(scale_log2r = TRUE)
-pepHist(scale_log2r = FALSE)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG.png)
 
-# (1-1) followed by median centering for samples specified by `col_refit`
-normPep(
-  range_log2r = c(5, 95),
-  range_int = c(5, 95),  
+# (2.2) followed by MC against selected samples using all data rows
+# (arguments `n_comp`, `seed`, `maxit`, `epsilon` have no effects at `method_align = MC`)
+standPep(
+  method_align = MC,
   
   n_comp = 3,
-  seed = 749662,
+  seed = 883,
   maxit = 200,
   epsilon = 1e-05,
+  
   col_refit = Select_sub, 
-
-  filter_peps_by = exprs(pep_len <= 50),
 )
 
-# `MGKernel_params_N.txt` available for side-effects
-pepHist(scale_log2r = TRUE, filename = "sel_mc_z.png",)
-pepHist(scale_log2r = FALSE, filename = "sel_mc_n.png",)
+# the net result is mixed-bed alignment of MGKernel and MC
+# (with samples indicated by `Select_sub` aligned by MC and the remaining by MGKernel)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mix.png)
 
-# (1-3) aligned by median-centering for all samples
-normPep()
 
-# `MGKernel_params_N.txt` available for side-effects
-pepHist(scale_log2r = TRUE, filename = "mc_z.png",)
-pepHist(scale_log2r = FALSE, filename = "mc_n.png",)
+# ===================================
+# (3) Mixed-bed against data subset
+# ===================================
+# start over
+unlink(file.path(dat_dir, "Peptide"), recursive = TRUE, force = TRUE)
+PSM2Pep()
+mergePep()
 
-# (1-4) followed by `MGKernel` for samples specified by `col_refit`
-normPep(
-  method_psm_pep = median, 
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+
+# (3.1) MC alignment for all samples, but only selected data rows used for normalization
+standPep(
+  method_align = MC, 
+  slice_peps_by = exprs(prot_n_psm >= 10),
+)
+
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc_selrows.png)
+
+# (3.2) change to `MGKernel` for all samples using selected data rows
+standPep(
   method_align = MGKernel, 
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
   n_comp = 3, 
-  seed = 883, 
+  seed = 400, 
+  maxit = 200, 
+  epsilon = 1e-05,
+  
+  # will be forced to all samples since this is the first `MGKernel`
+  col_refit = Select_sub, 
+
+  slice_peps_by = exprs(prot_n_psm >= 10),
+)
+
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG_selrows.png)
+
+# (3.3) back to MC for selected samples using selected data rows
+# (mixed-bed again, but based on data subset by `prot_n_psm >= 10`)
+standPep(
+  method_align = MC, 
+  col_refit = Select_sub, 
+  slice_peps_by = exprs(prot_n_psm >= 10),
+)
+
+# side-effects comparing `MC` and `MGKernel`
+# (density curves are from the preceding `MGKernel` in (3.2))
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mix_selcols_selrows.png)
+
+
+# ===================================
+# (4) Modified `n_comp`
+# ===================================
+# start over
+unlink(file.path(dat_dir, "Peptide"), recursive = TRUE, force = TRUE)
+PSM2Pep()
+mergePep()
+
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+
+# (4.1) first `MGKernel` at `n_comp = 3` for all samples
+standPep(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 400, 
   maxit = 200, 
   epsilon = 1e-05, 
-  col_refit = Select_sub, 
-  filter_peps_by = exprs(pep_len <= 50),
 )
 
-# updated `MGKernel_params_N.txt` for selected samples
-pepHist(scale_log2r = TRUE, filename = "sel_mG_z.png",)
-pepHist(scale_log2r = FALSE, filename = "sel_mG_n.png",)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG3.png)
 
-# (1-5) fresh start with a different `n_comp = 2`
-# will overrule `col_refit` to all samples
-normPep(
-  method_psm_pep = median, 
+# (4.2) a fresh start with a different `n_comp`
+# (in that `col_refit = Select_sub` ignored; instead apply `MGKernel` to all samples)
+standPep(
   method_align = MGKernel, 
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
   n_comp = 2, 
-  seed = 883, 
+  seed = 400, 
   maxit = 200, 
-  epsilon = 1e-05, 
+  epsilon = 1e-05,
+  
+  # ignored
   col_refit = Select_sub, 
-  filter_peps_by = exprs(pep_len <= 50),
 )
 
-# updated `MGKernel_params_N.txt` for all samples
-pepHist(scale_log2r = TRUE, filename = "all_mG2_z.png",)
-pepHist(scale_log2r = FALSE, filename = "all_mG2_n.png",)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG2.png)
 
 
 # ===================================
-# Mixed-bed (2): begin with MC
+# (5) housekeeping normalizers: 
+#     suggest `method_align = MC`
 # ===================================
-unlink(file.path(dat_dir, "Peptide\\\\Histogram"), recursive  = TRUE)
-unlink(file.path(dat_dir, "Peptide\\\\Peptide.txt"))
+# start over
+unlink(file.path(dat_dir, "Peptide"), recursive = TRUE, force = TRUE)
+PSM2Pep()
+mergePep()
 
-# (2-1) median centering
-normPep()
+# initial `Peptide.txt` from `mergePep()` is aligned by MC
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
 
-# `MGKernel_params_N.txt` not yet available
-pepHist(scale_log2r = TRUE, filename = "mc_z.png",)
-pepHist(scale_log2r = FALSE, filename = "mc_n.png",)
+# (GAPDH more abundant in W16 according to MC alignment)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filter_ = exprs(gene == "GAPDH"), filename = mcGAPDH.png)
 
-# (2-2) this is the first `MGKernel`: 
-#   `MGKernel_params_N.txt` not yet available
-#   so will overrule `col_refit` to all samples
-normPep(
-  method_psm_pep = median, 
+# heat map for `BI_1` samples
+# (outputs under `Peptide\\Heatmap` folder; for help, ?pepHM)
+pepHM(
+  col_select = BI_1, 
+  xmin = -2,
+  xmax = 2,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  annot_rows = c("gene"),
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  fontsize_row = 10,
+  cellwidth = 12,
+  cellheight = 12,
+  width = 18,
+  height = 12,
+  
+  filter_by = exprs(gene \%in\% c("GAPDH")),
+  filename = "mcGAPDH.png",
+)
+
+# heat map for all samples
+# (no GAPDH under `JHU_TMT1` and `PNNL_TMT1`; will be problematic data alignment next)
+pepHM(
+  # col_select = BI_1, 
+  xmin = -2,
+  xmax = 2,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  annot_rows = c("gene"),
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  fontsize_row = 10,
+  cellwidth = 12,
+  cellheight = 12,
+  width = 18,
+  height = 12,
+  
+  filter_by = exprs(gene \%in\% c("GAPDH")),
+  filename = "mcGAPDH_all.png",
+)
+
+# renormalize against GAPDH for all samples
+# (not to use `MGkernel` as may not have enough data entries from housekeeper(s))
+standPep(
+  method_align = MC, 
+  slice_hskp = exprs(gene \%in\% c("GAPDH")),
+)
+
+# (now log2FC profiles aligned by GAPDH for `BI_1` samples)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = wrong_hskp.png)
+
+# (no histograms for `JHU_TMT1` and `PNNL_TMT1` samples)
+pepHist(scale_log2r = TRUE, filename = wrong_hskp_all.png)
+
+# not to keep the above example with no data under `JHU_TMT1` and `PNNL_TMT1`
+# (surely need different normalizer(s))
+unlink(file.path(dat_dir, "Peptide"), recursive = TRUE, force = TRUE)
+
+
+## Not run: 
+PSM2Pep()
+mergePep()
+
+# change to `MGKernel`
+standPep(
   method_align = MGKernel, 
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
   n_comp = 3, 
-  seed = 883, 
+  seed = 400, 
   maxit = 200, 
   epsilon = 1e-05, 
-  col_refit = Select_sub, 
-  filter_peps_by = exprs(pep_len <= 50),
 )
 
-# `MGKernel_params_N.txt` available
-pepHist(scale_log2r = TRUE, filename = "all_mG_z.png",)
-pepHist(scale_log2r = FALSE, filename = "all_mG_n.png",)
+pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG.png)
 
-
-
-
-# ===================================
-# Mixed-bed (3): begin with MC
-# ===================================
-# following Mixed-bed (2) examples
-# normalized against housekeeping proteins for selected samples
-normPep(
-  range_log2r = c(20, 95), 
-  range_int = c(5, 95), 
-  col_refit = Select_sub,
-  slice_hskp = exprs(gene \%in\% c("ACTB", "GAPDH")),
+# then renormalize against data from GAPDH
+# (error: too few entries for fitting with multiple Gaussians)
+standPep(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 400, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  
+  col_refit = W2, 
+  slice_hskp = exprs(gene \%in\% c("GAPDH")),
 )
+## End(Not run)
 
-# `MGKernel_params_N.txt` available for side effects
-pepHist(scale_log2r = TRUE, filename = "sel_hskp_z.png",)
-pepHist(scale_log2r = FALSE, filename = "sel_hskp_n.png",)
-# ===================================
-# Peptide cleanup by CV
-# ===================================
-# by percent CV
-purgePep(pt_cv = .95)
-
-# by max CV
-purgePep(max_cv = .5)
-
-# by `max_cv` then by `pt_cv`
-purgePep(max_cv = .5)
-purgePep(pt_cv = .95)
-
-# actually 90\% CV 
-purgePep(pt_cv = .95)
-purgePep(pt_cv = .95)
 }
 \seealso{
-\code{\link{normPSM}} for PSM data normalization and
- \code{\link{normPrn}} for protein data normalization.
+\code{\link{load_expts}} for a minimal working example in data normalization \cr
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{purgePSM}} for extended examples in PSM data purging \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
+ \code{\link{purgePep}} for extended examples in peptide data purging \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{prnHist}} for extended examples in protein data histogram visualization.
 }

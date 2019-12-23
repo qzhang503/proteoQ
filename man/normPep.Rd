@@ -65,8 +65,8 @@ standard deviation across samples. The default is between the 5th and the
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
 
-\item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
-proteins.}
+\item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins
+will be annotated with their kinase attributes. The default is FALSE.}
 
 \item{col_refit}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_refit} will be
@@ -77,8 +77,8 @@ be used, which results in the refit of the \code{log2FC} for all samples.}
 
 \item{cache}{Logical; if TRUE, use cache.}
 
-\item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
-peptide \code{log2FC} for each sample.}
+\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
+\code{log2FC} will be plotted. The default is TRUE.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. \cr Additional parameters for
@@ -125,69 +125,76 @@ removals/cleanups using \code{purgePSM}. Values under columns
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
+# Fasta and PSM files
 # ===================================
+# fasta (all platforms)
 library(proteoQDA)
 fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
 dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
 copy_refseq_hs(fasta_dir)
 copy_refseq_mm(fasta_dir)
 
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
+# working directory (all platforms)
+dat_dir <- "~\\\\proteoQ\\\\examples"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
-load_expts()
+# metadata (all platforms)
+copy_global_exptsmry(dat_dir)
+cptac_global_fracsmry(dat_dir)
 
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
+# PSM (choose one of the platforms)
+choose_one <- TRUE
+if (!choose_one) {
+  # Mascot
+  copy_global_mascot(dat_dir)
+  
+  # or MaxQuant
+  copy_global_maxquant(dat_dir)
+  
+  # or Spectrum Mill
+  copy_global_sm(dat_dir)
+}
 
 
 # ===================================
-# Peptide normalization
+# PSM, peptide and protein processing
+# ===================================
+library(proteoQ)
+dat_dir <- "~\\\\proteoQ\\\\examples"
+load_expts()
+
+# PSM data standardization
+normPSM(
+  # alternative to default
+  group_psm_by = pep_seq_mod, 
+  group_pep_by = gene, 
+  annot_kinases = TRUE, 
+  
+  # no default and required
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+)
+
+# optional PSM purging
+purgePSM()
+
+# peptide data standardization
+normPep()
+
+# peptide data histograms
+pepHist()
+
+# optional peptide purging
+purgePep()
+
+# protein data standardization
+normPrn()
+
+# protein data histogram
+prnHist()
+
+# ===================================
+# More in peptide normalization
 # ===================================
 normPep(
   method_psm_pep = median,

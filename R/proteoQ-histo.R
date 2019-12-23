@@ -3,12 +3,11 @@
 #' @import dplyr purrr rlang mixtools ggplot2 RColorBrewer
 #' @importFrom magrittr %>%
 #' @importFrom tidyr gather
-plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep_pattern, 
+plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, 
                        show_curves, show_vline, scale_y, filepath = NULL, filename, ...) {
 
   stopifnot(nrow(label_scheme_sub) > 0)
   stopifnot(rlang::is_logical(scale_log2r))
-  stopifnot(!grepl("[^A-z_]", pep_pattern))
   stopifnot(rlang::is_logical(show_curves))
   stopifnot(rlang::is_logical(show_vline))
   stopifnot(rlang::is_logical(scale_y))
@@ -125,12 +124,6 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 
 	seq <- c(-Inf, seq(4, 7, .5), Inf)
 
-	if (pep_pattern != "zzz") {
-	  df <- df %>% 
-	    dplyr::filter(grepl(paste0("[", pep_pattern, "]"), !!rlang::sym(id)))
-	  stopifnot(nrow(df) > 0)
-	}
-	
 	if (!scale_y) df <- df %>% filters_in_call(!!!lang_dots)
 	
 	stopifnot(nrow(df) > 0)
@@ -184,14 +177,6 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'In the histograms, the \code{log2FC} under each TMT channel are color-coded by
 #'their contributing reporter-ion intensity.
 #'
-#'The function matches the current \code{id} to the grouping argument in
-#'\code{\link{normPSM}}. The value by \code{group_psm_by} or \code{group_pep_by}
-#'will be matched for peptide or protein data, respectively. For example, if
-#'\code{normPSM(group_psm_by = pep_seq, ...)} was called earlier, the setting of
-#'\code{id = pep_seq_mod} in the current \code{call} will be matched to \code{id
-#'= pep_seq}. Similarly, if \code{normPSM(group_pep_by = gene, ...)} was
-#'earlierly applied, the setting of \code{id = prot_acc} in the current
-#'\code{call} will be matched to \code{id = gene}.
 #'@param id Character string to indicate the type of data. The value will be
 #'  determined automatically. Peptide data will be used at \code{id = pep_seq}
 #'  or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
@@ -201,23 +186,17 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'  included in the indicated analysis. At the \code{NULL} default, the column
 #'  key will be \code{Select}.
 #'@param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
-#'  of standard deviation across all samples.
-#'@param pep_pattern Softely depreciated. Character string containing one-letter
-#'  representation of amino acids. At the "zzz" default, all peptides will be
-#'  used. Letters in the character string are case sensitive. For example,
-#'  \code{pep_pattern = "y"} will extract peptides with tyrosine
-#'  phosphorylation. To extract peptides with N-terminal acetylation, use
-#'  \code{pep_pattern = "_"}. The parameter provides a means for high-level
-#'  subsetting of peptide entries in a data set. In general, one can use the
-#'  \code{filter-in-function} feature described in \code{\link{normPSM}} to
-#'  subset data.
-#'
-#'@param show_curves Logical; if TRUE, shows the fitted curves. The curve
-#'  parameters are based on the latest call to \code{normPep} or \code{normPrn}.
-#'  This feature can inform the effects of data filtration on the alignment of
-#'  \code{logFC} profiles.
+#'  of standard deviation across all samples. The default is TRUE.
+#'@param show_curves Logical; if TRUE, shows the fitted curves. At the TRUE default, the curve
+#'  parameters are based on the latest call to \code{\link{standPep}} or
+#'  \code{\link{standPrn}} with \code{method_align = MGKernel}. This feature can
+#'  inform the effects of data filtration on the alignment of \code{logFC}
+#'  profiles. Also see \code{\link{standPep}} and \code{\link{standPrn}} for
+#'  more examples.
 #'@param show_vline Logical; if TRUE, shows the vertical lines at \code{x = 0}.
-#'@param scale_y Logical; if TRUE, scale data on the \code{y-axis}.
+#'  The default is TRUE.
+#'@param scale_y Logical; if TRUE, scale data on the \code{y-axis}. The default
+#'  is TRUE.
 #'@param df The name of input data file. By default, it will be determined
 #'  automatically by the value of \code{id}.
 #'@param filepath A file path to output results. By default, it will be
@@ -228,8 +207,15 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'  image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 #'  will be determined by the extension of the file name. A \code{.png} format
 #'  will be used at default or at an unrecognized file extension.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. \cr Additional parameters for plotting
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  of data against the column keys in \code{Peptide.txt} or \code{Protein.txt}.
+#'  Each statement contains to a list of logical expression(s). The \code{lhs}
+#'  needs to start with \code{filter_}. The logical condition(s) at the
+#'  \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. \cr
+#'  \cr For example, \code{pep_len} is a column key present in \code{Mascot}
+#'  peptide tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
+#'  exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
+#'  See also \code{\link{normPSM}}. \cr \cr Additional parameters for plotting
 #'  with \code{ggplot2}: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale;
 #'  the default is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the
 #'  default is +2. \cr \code{xbreaks}, the breaks in \eqn{x}-axis at a log2
@@ -238,33 +224,52 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, pep
 #'  columns; the default is 1. \cr \code{width}, the width of plot; \cr
 #'  \code{height}, the height of plot. \cr \code{scales}, should the scales be
 #'  fixed across panels; the default is "fixed" and the alternative is "free".
+#'@seealso \code{\link{load_expts}} for a minimal working example in data normalization \cr
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{purgePSM}} for extended examples in PSM data purging \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{purgePep}} for extended examples in peptide data purging \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'
 #'@return The histograms of \code{log2FC} under
 #'  \code{~\\dat_dir\\Peptide\\Histogram} or
 #'  \code{~\\dat_dir\\Protein\\Histogram}.
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
+#'
+#'@example inst/extdata/examples/prnHist_.R
+#'
+#'@return Histograms of \code{log2FC}
 #'@export
 proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                        col_select = NULL, scale_log2r = TRUE, pep_pattern = "zzz", 
+                        col_select = NULL, scale_log2r = TRUE, 
                         show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 
   id <- rlang::enexpr(id)
-	if(length(id) != 1) id <- rlang::expr(gene)
+	# if (length(id) != 1) id <- rlang::expr(gene)
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
+	
+	stopifnot(is_logical(scale_log2r), is_logical(show_curves), is_logical(show_vline), is_logical(scale_y))
 
 	col_select <- rlang::enexpr(col_select)
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
-	pep_pattern <- rlang::as_string(rlang::enexpr(pep_pattern))
-	
+
 	reload_expts()
 
 	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = FALSE,
 	          df = !!df, filepath = !!filepath, filename = !!filename,
-	          anal_type = "Histogram")(pep_pattern = pep_pattern, show_curves = show_curves,
+	          anal_type = "Histogram")(show_curves = show_curves,
 	                                   show_vline = show_vline, scale_y = scale_y, ...)
 }
 
@@ -274,15 +279,11 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'\code{pepHist} is a wrapper of \code{\link{proteoHist}} for peptide data
 #'
 #'@rdname proteoHist
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
 #'@import purrr
 #'@export
 pepHist <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Peptide\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
 
@@ -299,77 +300,6 @@ pepHist <- function (...) {
 #'\code{prnHist} is a wrapper of \code{\link{proteoHist}} for protein data
 #'
 #'@rdname proteoHist
-#'
-#' @examples
-#' # ===================================
-#' # Histogram
-#' # ===================================
-#' ## (1) effects of data scaling
-#' # peptide without log2FC scaling
-#' pepHist(scale_log2r = FALSE)
-#'
-#' # with scaling
-#' pepHist(scale_log2r = TRUE)
-#'
-#' ## (2) sample column selection
-#' # sample IDs indicated under column `Select` in `expt_smry.xlsx`
-#' pepHist(col_select = Select)
-#'
-#' # protein data for samples under column `W2` in `expt_smry.xlsx`
-#' prnHist(col_select = W2)
-#' 
-#' ## (3) row filtration of data
-#' # phosphopeptide subset
-#' pepHist(
-#'   filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
-#'   scale_y = FALSE, 
-#'   filename = "pepHist_fil_by_sty.png",
-#' )
-#'
-#' # or use `grepl` directly
-#' pepHist(
-#'   filter_by = exprs(grepl("[sty]", pep_seq_mod)),
-#'   filename = "pepHist_fil_by_sty.png",
-#' )
-#'
-#' # exclude oxidized methione or deamidated asparagine
-#' pepHist(
-#'   # filter_by = exprs(!grepl("[mn]", pep_seq_mod)),
-#'   filter_by = exprs(not_contain_chars_in("mn", pep_seq_mod)),
-#'   filename = "pepHist_fil_no_mn.png",
-#' )
-#'
-#' ## (4) between lead and lag
-#' # leading profiles
-#' pepHist(
-#'   filename = "pepHist.png",
-#' )
-#'
-#' # lagging profiles at
-#' #   (1) n_psm >= 10
-#' #   (2) and no methionine oxidation or asparagine deamidation
-#' pepHist(
-#'   filter_by_npsm = exprs(n_psm >= 10),
-#'   filter_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
-#'   filename = "pepHist_filtered.png",
-#' )
-#'
-#' \dontrun{
-#' # sample selection
-#' pepHist(
-#'   col_select = "a_column_key_not_in_`expt_smry.xlsx`",
-#' )
-#'
-#' # data filtration
-#' pepHist(
-#'   filter_by = exprs(!grepl("[m]", a_column_key_not_in_data_table)),
-#' )
-#'
-#' prnHist(
-#'   lhs_not_start_with_filter_ = exprs(n_psm >= 5),
-#' )
-#'
-#' }
 #'
 #'@import purrr
 #'@export

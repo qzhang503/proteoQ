@@ -3,8 +3,9 @@
 #' \code{info_anal} produces functions for selected informatic analysis.
 #'
 #' @param anal_type Character string; the type of analysis that are preset for
-#'   method dispatch in function factories; Values include \code{anal_type =
-#'   c("PCA", "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model", 
+#'   method dispatch in function factories. The value will be determined
+#'   automatically. Examplary values include \code{anal_type = c("PCA",
+#'   "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 #'   "NMF", "Purge", "Trend", ...)}.
 #' @return a function to the given \code{anal_type}.
 #'
@@ -172,18 +173,18 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	
 	err_msg2 <- "not found. \n Run functions `normPSM()`, `normPep()` and `normPrn()` first."
 	err_msg3 <- "not found. \nImpute NA values with `pepImp()` or `prnImp()` or set `impute_na = FALSE`."
-	err_msg4 <- "not found. \nRun `prnSig(impute_na = TRUE)` first."
-	err_msg5 <- "not found. \nRun `prnSig()` first."
+	err_msg4 <- "not found at impute_na = TRUE. \nRun `prnSig(impute_na = TRUE)` first."
+	err_msg5 <- "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
 	
 	if (is.null(df)) {
 	  if (id %in% c("pep_seq", "pep_seq_mod")) {
 	    fn_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_pVals.txt")
-	    fn_imp_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_impNA_pvals.txt")
+	    fn_imp_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_impNA_pVals.txt")
 	    fn_raw <- file.path(dat_dir, "Peptide", "Peptide.txt")
 	    fn_imp <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
 	  } else if (id %in% c("prot_acc", "gene")) {
 	    fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
-	    fn_imp_p <- file.path(dat_dir, "Protein\\Model", "Protein_impNA_pvals.txt")
+	    fn_imp_p <- file.path(dat_dir, "Protein\\Model", "Protein_impNA_pVals.txt")
 	    fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
 	    fn_imp <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
 	  } else stop("Unknown `id`.", call. = FALSE)
@@ -237,74 +238,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  }
 	}
 	
-	run_scripts <- FALSE
-	if (run_scripts) {
-	if (is.null(df)) {
-	  err_msg <- "File doesn't exist."
-	  
-	  if (id %in% c("pep_seq", "pep_seq_mod")) {
-	    fn_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_pVals.txt")
-	    fn_imp <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
-	    fn_raw <- file.path(dat_dir, "Peptide", "Peptide.txt")
-	  } else if (id %in% c("prot_acc", "gene")) {
-	    fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
-	    fn_imp <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
-	    fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
-	  } else stop("Unknown `id`.", call. = FALSE)
-
-	  if (anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
-	    if (file.exists(fn_raw)) src_path <- fn_raw else
-	      stop(paste(fn_raw, "not found. \n Run functions `normPSM`, `normPep` and `normPrn` first.s"), call. = FALSE)
-	  } else if (anal_type %in% c("Trend", "NMF", "Model", "GSVA")) { # optional impute_na but no p_vals
-	    if (impute_na) {
-	      if (file.exists(fn_imp)) src_path <- fn_imp else
-	        stop(paste(fn_imp, "not found. \nImpute NA values with `pepImp` or `prnImp` or set `impute_na = FALSE`."), call. = FALSE)
-	    } else {
-	      if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), call. = FALSE)
-	    }
-	  } else if (anal_type %in% c("GSPA")) { # always use data with pVals
-	    if (file.exists(fn_p)) src_path <- fn_p else
-	      stop(paste(fn_p, "not found. \nRun `prnSig` first."), call. = FALSE)
-	  } else if (anal_type %in% c("Heatmap", "GSEA")) { # optional impute_na and possible p_vals
-	    if (file.exists(fn_p)) { # may or may not be NA imputed
-	      src_path <- fn_p
-	    } else {
-	      if (impute_na) {
-	        if (file.exists(fn_imp)) src_path <- fn_imp else 
-	          stop(paste(fn_imp, "not found. \nImpute NA values with `pepImp` or `prnImp` or set `impute_na = FALSE`."), call. = FALSE)
-	      } else {
-	        if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), call. = FALSE)
-	      }
-	    }
-	  } 
-	  
-	  df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
-	                          comment.char = "#"), error = function(e) NA)
-	  
-	  if (!is.null(dim(df))) {
-	    message(paste("File loaded:", gsub("\\\\", "/", src_path)))
-	  } else {
-	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
-	  }
-	} else {
-	  if (id %in% c("pep_seq", "pep_seq_mod")) {
-	    fn_raw <- file.path(dat_dir, "Peptide", df)
-	  } else if (id %in% c("prot_acc", "gene")) {
-	    fn_raw <- file.path(dat_dir, "Protein", df)
-	  }
-	  
-	  df <- tryCatch(read.csv(fn_raw, check.names = FALSE, header = TRUE, sep = "\t",
-	                          comment.char = "#"), error = function(e) NA)
-	  
-	  if (!is.null(dim(df))) {
-	    message(paste("File loaded:", gsub("\\\\", "/", fn_raw)))
-	  } else {
-	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
-	  }
-	}	  
-	  
-	}
-
 	if (anal_type %in% c("Model", "GSPA", "GSVA", "GSEA")) {
 		label_scheme_sub <- label_scheme %>% # to be subset by the "key" in "formulae"
 			dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID), !Reference)
@@ -424,16 +357,16 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			       filepath = filepath, 
 			       filename = paste0(fn_prefix, ".", fn_suffix),
 			       complete_cases = complete_cases, 
-			       xmin = xmin, 
-			       xmax = xmax, 
-			       xmargin = xmargin,
 			       annot_cols = annot_cols, 
 			       annot_colnames = annot_colnames, 
 			       annot_rows = annot_rows, 
+			       xmin = xmin, 
+			       xmax = xmax, 
+			       xmargin = xmargin,
 			       ...)
 		}
 	} else if (anal_type == "Histogram") {
-		function(pep_pattern = "zzz", show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, ...) {
+		function(show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, ...) {
 			if (scale_log2r) {
 				fn_par <- file.path(filepath, "MGKernel_params_Z.txt")
 			} else {
@@ -453,7 +386,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			          label_scheme_sub = label_scheme_sub, 
 			          params = params,
 			          scale_log2r = scale_log2r, 
-			          pep_pattern = pep_pattern, 
 			          show_curves = show_curves, 
 			          show_vline = show_vline, 
 			          scale_y = scale_y, 
@@ -560,7 +492,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 		  
-		  fn_prefix2 <- ifelse(impute_na, "_impNA_pvals.txt", "_pVals.txt")
+		  fn_prefix2 <- ifelse(impute_na, "_impNA_pVals.txt", "_pVals.txt")
 
 		  df_op <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 

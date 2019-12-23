@@ -4,13 +4,24 @@
 \alias{extract_psm_raws}
 \title{Extract RAW file names from Mascot PSM outputs}
 \usage{
-extract_psm_raws(dat_dir)
+extract_psm_raws(type = c("mascot", "maxquant", "spectrum_mill"),
+  dat_dir = NULL)
+}
+\arguments{
+\item{type}{Character string indicating the type of PSM.}
+
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
 }
 \description{
 \code{extract_psm_raws} extracts the RAW file names from the PSM data under
 the current working directory.
 }
 \examples{
-extract_psm_raws()
+extract_psm_raws(mascot)
+
+extract_psm_raws(maxquant)
+
+extract_psm_raws(spectrum_mill)
 
 }

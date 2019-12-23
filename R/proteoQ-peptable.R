@@ -37,10 +37,13 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
   filter_dots <- rlang::enexprs(...) %>% 
     .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   
+  filelist <- list.files(path = file.path(dat_dir, "Peptide"), 
+                         pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"), full.names = TRUE)
+  
+  if (is_empty(filelist)) stop("No individual peptide tables; run `PSM2Pep()` first.")
+
   df <- do.call(rbind, 
-                purrr::map(list.files(path = file.path(dat_dir, "Peptide"), 
-                                      pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"), 
-                                      full.names = TRUE), read.csv, check.names = FALSE, header = TRUE, 
+                purrr::map(filelist, read.csv, check.names = FALSE, header = TRUE, 
                            sep = "\t", comment.char = "#")) %>%
     dplyr::mutate(TMT_Set = factor(TMT_Set)) %>%
     dplyr::arrange(TMT_Set) 
@@ -241,6 +244,7 @@ med_summarise_keys <- function(df, id) {
     "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
     "precursorIsolationIntensity", "ratioReporterIonToPrecursor", 
     "delta_parent_mass", "delta_parent_mass_ppm")
+  sm_geomean_keys <- NA
   
   df_sm_med <- df %>% 
     dplyr::select(!!rlang::sym(id), which(names(.) %in% sm_median_keys)) %>% 
@@ -305,13 +309,17 @@ fmt_num_cols <- function (df) {
 }
 
 
-#'Merge of peptide table(s)
+#'Merge peptide table(s) into one
 #'
-#'\code{mergePep} merges peptide table(s) from \code{PSM2Pep} into one interim
-#'\code{Peptide.txt}. The utility is required, even for experiments with one
+#'\code{mergePep} merges individual peptide table(s),
+#'\code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt} etc.,
+#'into one interim \code{Peptide.txt}. The \code{log2FC} values in the interim
+#'result are centered with the medians at zero (median centering). The utility
+#'is typically applied after the conversion of PSMs to peptides via
+#'\code{\link{PSM2Pep}} and is required even for a minimal experiment with one
 #'multiplex TMT and one LCMS injection.
 #'
-#'In the primary output file, "\code{Peptide.txt}", values under columns
+#'In the interim output file, "\code{Peptide.txt}", values under columns
 #'\code{log2_R...} are logarithmic ratios at base 2 in relative to the
 #'\code{reference(s)} within each multiplex TMT set, or to the row means if no
 #'\code{reference(s)} are present. Values under columns \code{N_log2_R...} are
@@ -322,28 +330,42 @@ fmt_num_cols <- function (df) {
 #'normalized \code{I...}. Values under columns \code{sd_log2_R...} are the
 #'standard deviation of the \code{log2FC} of proteins from ascribing peptides.
 #'
-#'Also see \code{\link{normPrn}} for more description of the column keys in the
-#'output.
+#'Description of the column keys in the output: \cr \code{system.file("extdata",
+#'"mascot_peptide_keys.txt", package = "proteoQ")} \cr
+#'\code{system.file("extdata", "maxquant_peptide_keys.txt", package =
+#'"proteoQ")}
 #'
 #'The peptide counts in individual peptide tables,
-#'\code{TMTset1_LCMSinj1_Peptide_N.txt} et al., may be fewer than the entries
+#'\code{TMTset1_LCMSinj1_Peptide_N.txt} etc., may be fewer than the entries
 #'indicated under the \code{prot_n_pep} column after the peptide
-#'removals/cleanups using \code{purgePSM}. Values under columns
-#'\code{N_log2_R...} are intermediate reports by median-centering
-#'\code{log2_R...} without scaling normalization.
+#'removals/cleanups using \code{purgePSM}.
 #'
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}.
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  of data against the column keys in individual peptide tables of
+#'  \code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt}, etc.
+#'  Each statement contains to a list of logical expression(s). The \code{lhs}
+#'  needs to start with \code{filter_}. The logical condition(s) at the
+#'  \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. \cr
+#'  \cr For example, \code{pep_len} is a column key present in \code{Mascot}
+#'  peptide tables of \code{TMTset1_LCMSinj1_Peptide_N.txt},
+#'  \code{TMTset1_LCMSinj2_Peptide_N.txt} etc. The statement
+#'  \code{filter_peps_at = exprs(pep_len <= 50)} will remove peptide entries
+#'  with \code{pep_len > 50}. See also \code{\link{normPSM}}.
 #'@inheritParams normPSM
-#'@seealso \code{\link{normPSM}} for PSM data normalization and
-#'  \code{\link{normPrn}} for protein data normalization.
+#'@seealso \code{\link{load_expts}} for a minimal working example in data normalization \cr
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{purgePSM}} for extended examples in PSM data purging \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
+#'  \code{\link{purgePep}} for extended examples in peptide data purging \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{prnHist}} for extended examples in protein data histogram visualization. 
+#'@return The primary output is in \code{...\\Peptide\\Peptide.txt}.
 #'
-#'@return The primary output is in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
-#'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_examples.R
-#'@example inst/extdata/examples/purgePep_examples.R
+#'@example inst/extdata/examples/mergePep_.R
 #'@import stringr dplyr tidyr purrr data.table rlang
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
@@ -385,13 +407,14 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 }
 
 
-#'Standardise peptide results
+#'Standardize peptide results
 #'
-#'\code{normPep} summarises
-#'\code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs}}
-#'into peptides and normalizes the data across
-#'\code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}} experiments
-#'and \code{LC/MS} injections.
+#'\code{standPep} standardizes peptide results from \code{\link{mergePep}} with
+#'additional choices in data alignment. The utility is typically applied after
+#'the assembly of peptide data via \code{\link{mergePep}}. It further supports
+#'iterative normalization against data under selected sample columns, data rows
+#'or both.
+#'
 #'
 #'In the primary output file, "\code{Peptide.txt}", values under columns
 #'\code{log2_R...} are logarithmic ratios at base 2 in relative to the
@@ -405,73 +428,80 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
 #'proteins from ascribing peptides.
 #'
-#'In general, median statistics is applied when summarising numeric values from
-#'PSMs to peptides. One exception is \code{pep_expect} where geometric mean is
-#'used.
+#'In general, median statistics is applied when summarising numeric peptide data
+#'from different LCMS series. One exception is \code{pep_expect} with Mascot
+#'workflow where geometric mean is used.
 #'
-#'Also see \code{\link{normPrn}} for more description of the column keys in the
-#'output.
+#'Description of the column keys in the inputs and outputs: \cr
+#'\code{system.file("extdata",
+#'"mascot_peptide_keys.txt", package = "proteoQ")} \cr
+#'\code{system.file("extdata", "maxquant_peptide_keys.txt", package =
+#'"proteoQ")}
 #'
-#'The peptide counts in individual peptide tables,
-#'\code{TMTset1_LCMSinj1_Peptide_N.txt} et al., may be fewer than the entries
-#'indicated under the \code{prot_n_pep} column after the peptide
-#'removals/cleanups using \code{purgePSM}. Values under columns
-#'\code{N_log2_R...} are intermediate reports by median-centering
-#'\code{log2_R...} without scaling normalization.
-#'
-#'@param method_psm_pep Character string; the method to summarise the
-#'  \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
-#'  The descriptive statistics includes \code{c("mean", "median", "top.3",
-#'  "weighted.mean")}. The \code{log10-intensity} of reporter ions at the
-#'  \code{PSMs} levels will be the weight when summarising \code{log2FC} with
-#'  \code{"top.3"} or \code{"weighted.mean"}.
-#'@param method_align Character string or a list of gene symbols; the method to
-#'  align the \code{log2FC} of peptide/protein entries across samples.
-#'  \code{MC}: median-centering; \code{MGKernel}: the kernal density defined by
-#'  multiple Gaussian functions (\code{\link[mixtools]{normalmixEM}}). At
-#'  \code{method_align = "MC"}, the ratio profiles of each sample will be
-#'  aligned in that the medians of the \code{log2FC} are zero. At
-#'  \code{method_align = "MGKernel"}, the \code{log2FC} will be aligned in that
-#'  the maximums of kernel density are zero. It is also possible to align the
-#'  \code{log2FC} to the median of a list of user-supplied genes:
-#'  \code{method_align = c("ACTB", "GAPDH", ...)}.
-#'@param range_log2r Numeric vector at length two; the range of the
-#'  \code{log2FC} of peptide/protein entries for use in the scaling
+#'@param method_align Character string indicating the method in aligning
+#'  \code{log2FC} across samples. \code{MC}: median-centering; \code{MGKernel}:
+#'  the kernal density defined by multiple Gaussian functions
+#'  (\code{\link[mixtools]{normalmixEM}}). At the \code{MC} default, the ratio
+#'  profiles of each sample will be aligned in that the medians of the
+#'  \code{log2FC} are zero. At \code{MGKernel}, the ratio profiles of each
+#'  sample will be aligned in that the \code{log2FC} at the maximums of kernel
+#'  desity are zero.
+#'@param col_refit Character string to a column key in \code{expt_smry.xlsx}. At
+#'  the \code{NULL} default, the column key of \code{Sample_ID} in
+#'  \code{expt_smry.xlsx} will be used, which results in the (re)normalization
+#'  of the \code{log2FC} for all samples. Otherwise, samples corresponding to
+#'  non-empty entries under the ascribing column key will be used in the
+#'  renormalization with the alignment method given in \code{method_align}.
+#'@param range_log2r Numeric vector at length two. The argument specifies the
+#'  range of the \code{log2FC} for use in the scaling normalization of standard
+#'  deviation across samples. The default is between the 10th and the 90th
+#'  quantiles.
+#'@param range_int Numeric vector at length two. The argument specifies the
+#'  range of the \code{intensity} of reporter ions for use in the scaling
 #'  normalization of standard deviation across samples. The default is between
-#'  the 10th and the 90th quantiles.
-#'@param range_int Numeric vector at length two; the range of the
-#'  \code{intensity} of reporter ions for use in the scaling normalization of
-#'  standard deviation across samples. The default is between the 5th and the
-#'  95th quantiles.
+#'  the 5th and the 95th quantiles.
 #'@param n_comp Integer; the number of Gaussian components to be used with
-#'  \code{method_align = "MGKernel"}. A typical value is 2 or 3. The variable
+#'  \code{method_align = MGKernel}. A typical value is 2 or 3. The variable
 #'  \code{n_comp} overwrites the augument \code{k} in
 #'  \code{\link[mixtools]{normalmixEM}}.
 #'@param seed Integer; a seed for reproducible fitting at \code{method_align =
 #'  MGKernel}.
-#'@param col_refit Character string to a column key in \code{expt_smry.xlsx}.
-#'  Samples corresponding to non-empty entries under \code{col_refit} will be
-#'  used in the refit of \code{log2FC} using multiple Gaussian kernels. The
-#'  density estimates from an earlier analyis will be kept for the remaining
-#'  samples. At the \code{NULL} default, the column key of \code{Sample_ID} will
-#'  be used, which results in the refit of the \code{log2FC} for all samples.
-#'@param cache Logical; if TRUE, use cache.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
-#'  \code{\link[mixtools]{normalmixEM}}:\cr \code{maxit}, the maximum number of
-#'  iterations allowed; \cr \code{epsilon}, tolerance limit for declaring
-#'  algorithm convergence.
+#'@param ... \code{slice_}: variable argument statements for the identification
+#'  of row subsets. The partial data will be taken for parameterizing the
+#'  alignment of \code{log2FC} across samples. The full data set will be updated
+#'  subsequently with the newly derived paramters. Note that there is no data
+#'  entry removals from the complete data set with the \code{slice_} procedure.
+#'  \cr \cr The variable argument statements should be in the following format:
+#'  each of the statement contains a list of logical expression(s). The
+#'  \code{lhs} needs to start with \code{slice_}. The logical condition(s) at
+#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+#'  For example, \code{pep_len} is a column key present in \code{Peptide.txt}
+#'  with \code{Mascot} workflows. The \code{slice_peps_at = exprs(pep_len >= 10,
+#'  pep_len <= 50)} will extract peptide entries with the number of amino acid
+#'  residues betwen 10 and 50 for \code{log2FC} alignment. Shorter or longer
+#'  peptide sequences will remain in \code{Peptide.txt} but not used in the
+#'  parameterization. See also \code{\link{normPSM}} for the variable arguments
+#'  of \code{filter_}. \cr \cr Additional parameters from
+#'  \code{\link[mixtools]{normalmixEM}}, i.e., \cr \code{maxit}, the maximum
+#'  number of iterations allowed; \cr \code{epsilon}, tolerance limit for
+#'  declaring algorithm convergence.
 #'@inheritParams normPSM
 #'@inheritParams mixtools::normalmixEM
-#'@seealso \code{\link{normPSM}} for PSM data normalization and
-#'  \code{\link{normPrn}} for protein data normalization.
+#'@seealso \code{\link{load_expts}} for a minimal working example in data normalization \cr
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{purgePSM}} for extended examples in PSM data purging \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
+#'  \code{\link{purgePep}} for extended examples in peptide data purging \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{prnHist}} for extended examples in protein data histogram visualization. 
+#'@return The primary output is in \code{...\\Peptide\\Peptide.txt}.
 #'
-#'@return The primary output is in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
+#'@example inst/extdata/examples/normPep_.R
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_examples.R
-#'@example inst/extdata/examples/purgePep_examples.R
 #'@import stringr dplyr tidyr purrr data.table rlang
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
@@ -558,6 +588,54 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_refit = NULL, rang
 
 
 
+#'Interim protein data
+#'
+#'\code{Pep2Prn} summarises \code{Peptide.txt} to an interim protein report in
+#'\code{Protein.txt}.
+#'
+#'Fields other than \code{log2FC} and \code{intensity} are summarized with
+#'median statistics.
+#'
+#'@param method_pep_prn Character string; the method to summarise the
+#'  \code{log2FC} and the \code{intensity} of peptides by protein entries. The
+#'  descriptive statistics includes \code{c("mean", "median", "top.3",
+#'  "weighted.mean")} with \code{median} being the default. The representative
+#'  \code{log10-intensity} of reporter ions at the peptide levels (from
+#'  \code{\link{standPep}}) will be the weigth when summarising \code{log2FC}
+#'  with \code{top.3} or \code{weighted.mean}.
+#'@param use_unique_pep Logical. If TRUE, only entries that are \code{TRUE} or
+#'  equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
+#'  will be used, for summarising the \code{log2FC} and the \code{intensity} of
+#'  peptides into protein values. The default is to use unique peptides only.
+#'  For \code{MaxQuant} data, the levels of uniqueness are according to the
+#'  \code{pep_unique_by} in \code{\link{normPSM}}. The argument currently do
+#'  nothing to \code{Spectrum Mill} data where both unique and shared peptides
+#'  will be kept.
+#'@param ... \code{filter_}: Variable argument statements for the filtration of
+#'  data rows. Each statement contains a list of logical expression(s). The
+#'  \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+#'  For example, \code{pep_len} is a column key present in \code{Peptide.txt}
+#'  with \code{Mascot} workflows. The statement of \code{filter_peps_at =
+#'  exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
+#'@seealso \code{\link{load_expts}} for a minimal working example in data
+#'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+#'  normalization \cr \code{\link{purgePSM}} for extended examples in PSM data
+#'  purging \cr \code{\link{PSM2Pep}} for extended examples in PSM to peptide
+#'  summarization \cr \code{\link{mergePep}} for extended examples in peptide
+#'  data merging \cr \code{\link{standPep}} for extended examples in peptide
+#'  data normalization \cr \code{\link{pepHist}} for extended examples in
+#'  peptide data histogram visualization. \cr \code{\link{purgePep}} for
+#'  extended examples in peptide data purging \cr \code{\link{Pep2Prn}} for
+#'  extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{prnHist}} for extended examples in protein data histogram
+#'  visualization.
+#'@return The primary output in "\code{...\\Protein\\Protein.txt}".
+#'
+#'@example inst/extdata/examples/Pep2Prn_.R
+#'@import stringr dplyr purrr rlang  magrittr
+#'@export
 Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), 
                      use_unique_pep = TRUE, ...) {
   
@@ -566,9 +644,8 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
   dir.create(file.path(dat_dir, "Protein\\log"), recursive = TRUE, showWarnings = FALSE)
   
   old_opt <- options(max.print = 99999)
-  on.exit(options(old_opt), add = TRUE)
   options(max.print = 2000000)
-  
+  on.exit(options(old_opt), add = TRUE)
   on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("Pep2Prn"), add = TRUE)
   
   reload_expts()
@@ -597,8 +674,21 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   
-  df <- pep_to_prn(!!id, method_pep_prn, use_unique_pep, gn_rollup, !!!filter_dots)
+  df <- pep_to_prn(!!id, method_pep_prn, use_unique_pep, gn_rollup, !!!filter_dots) 
   
+  to_mc <- TRUE
+  if (to_mc) {
+    df <- normMulGau(
+      df = df,
+      method_align = "MC",
+      n_comp = 1L,
+      range_log2r = c(0, 100),
+      range_int = c(0, 100),
+      filepath = file.path(dat_dir, "Protein\\Histogram"),
+      col_refit = rlang::expr(Sample_ID), 
+    )    
+  }
+
   df <- df %>% 
     dplyr::filter(!nchar(as.character(.[["prot_acc"]])) == 0) %>% 
     dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
@@ -609,6 +699,140 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
 }
 
 
+#'Helper of Pep2Prn
+pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
+  load(file = file.path(dat_dir, "label_scheme.rda"))
+  id <- rlang::as_string(rlang::enexpr(id))
+  
+  filter_dots <- rlang::enexprs(...) %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  
+  fn_fasta <- file.path(dat_dir, "my_project.fasta")
+  stopifnot(file.exists(fn_fasta))
+  fasta <- seqinr::read.fasta(fn_fasta, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
+  
+  df <- read.csv(file.path(dat_dir, "Peptide\\Peptide.txt"), check.names = FALSE, 
+                 header = TRUE, sep = "\t", comment.char = "#") %>% 
+    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
+  
+  df <- df %>% filters_in_call(!!!filter_dots)
+  
+  if (use_unique_pep & "pep_isunique" %in% names(df)) df <- df %>% dplyr::filter(pep_isunique == 1)
+  
+  df_num <- df %>% 
+    dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
+    dplyr::group_by(!!rlang::sym(id))
+  
+  df_num <- switch(method_pep_prn, 
+                   mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
+                   top.3 = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
+                   weighted.mean = TMT_wt_mean(df_num, !!rlang::sym(id), na.rm = TRUE), 
+                   median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
+                   aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
+  
+  df <- df %>% 
+    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.)))
+  
+  df_mq_rptr_mass_dev <- df %>% 
+    dplyr::select(!!rlang::sym(id), grep("^Reporter mass deviation", names(.))) %>% 
+    dplyr::group_by(!!rlang::sym(id)) %>% 
+    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+  
+  df <- df %>% 
+    dplyr::select(-grep("^Reporter mass deviation", names(.)))	  
+  
+  mq_median_keys <- c(
+    "Score", "Missed cleavages", "PEP", 
+    "Charge", "Mass", "PIF", "Fraction of total spectrum", "Mass error [ppm]", 
+    "Mass error [Da]", "Base peak fraction", "Precursor Intensity", 
+    "Precursor Apex Fraction", "Intensity coverage", "Peak coverage", 
+    "Combinatorics"
+  )
+  
+  df_mq_med <- df %>% 
+    dplyr::select(!!rlang::sym(id), which(names(.) %in% mq_median_keys)) %>% 
+    dplyr::group_by(!!rlang::sym(id)) %>% 
+    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+  
+  df <- df %>% 
+    dplyr::select(-which(names(.) %in% mq_median_keys))		
+  
+  sm_median_keys <- c(
+    "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
+    "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
+    "precursorIsolationIntensity", "ratioReporterIonToPrecursor", 
+    "matched_parent_mass", "delta_parent_mass", "delta_parent_mass_ppm")
+  
+  df_sm_med <- df %>% 
+    dplyr::select(!!rlang::sym(id), which(names(.) %in% sm_median_keys)) %>% 
+    dplyr::group_by(!!rlang::sym(id)) %>% 
+    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+  
+  df <- df %>% 
+    dplyr::select(-which(names(.) %in% sm_median_keys))
+  
+  df_first <- df %>% 
+    dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
+    dplyr::select(-grep("^pep_", names(.)))    
+  
+  df <- list(df_first, 
+             df_mq_rptr_mass_dev, df_mq_med, 
+             df_sm_med, 
+             df_num) %>% 
+    purrr::reduce(left_join, by = id) %>% 
+    data.frame(check.names = FALSE)
+  
+  rm(df_num, df_first)
+  
+  df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
+    df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
+    dplyr::mutate_if(is.integer, as.numeric) %>% 
+    round(., digits = 3)
+  
+  df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
+    df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
+    dplyr::mutate_if(is.integer, as.numeric) %>% 
+    round(., digits = 0)
+  
+  df <- cbind.data.frame(
+    df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df))], 
+    df[, grep("^I[0-9]{3}", names(df))], 
+    df[, grep("^N_I[0-9]{3}", names(df))], 
+    df[, grep("^log2_R[0-9]{3}", names(df))], 
+    df[, grep("^N_log2_R[0-9]{3}", names(df))], 
+    df[, grep("^Z_log2_R[0-9]{3}", names(df))])
+  
+  df <- df %>% 
+    .[rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0, ]
+  
+  if (gn_rollup) {
+    dfa <- df %>% 
+      dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
+      dplyr::filter(!is.na(gene)) %>% 
+      dplyr::group_by(gene) %>% 
+      dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
+    
+    dfb <- df %>% 
+      dplyr::select(-prot_cover, -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
+      dplyr::filter(!is.na(gene)) %>% 
+      dplyr::filter(!duplicated(.$gene))
+    
+    dfc <- df %>% 
+      dplyr::select(gene, prot_cover) %>% 
+      dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
+      dplyr::group_by(gene) %>% 
+      dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
+      dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 
+      dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+    
+    df <- list(dfc, dfb, dfa) %>% 
+      purrr::reduce(right_join, by = "gene") %>% 
+      dplyr::filter(!is.na(gene), !duplicated(gene))
+  }
+  
+  return(df)
+}
 
 
 
@@ -728,10 +952,9 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
 #'
 #'@return The primary output is in \code{~\\dat_dir\\Peptide\\Peptide.txt}.
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_examples.R
-#'@example inst/extdata/examples/purgePep_examples.R
+#'@example inst/extdata/examples/depreciated/load_expts_old.R
+#'@example inst/extdata/examples/depreciated/normPep_examples.R
+#'@example inst/extdata/examples/depreciated/purgePep_examples.R
 #'@import stringr dplyr tidyr purrr data.table rlang
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%

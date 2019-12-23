@@ -35,8 +35,9 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, an
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %T>%
 plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepath, filename,
-                   complete_cases, xmin = -1, xmax = 1, xmargin = .1, 
-                   annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, ...) {
+                   complete_cases, annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, 
+                   xmin = -1, xmax = 1, xmargin = .1, ...) {
+                   
                    
   dir.create(file.path(filepath, "Subtrees"), recursive = TRUE, showWarnings = FALSE)
   
@@ -132,9 +133,9 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
     dplyr::select(grep(NorZ_ratios, names(.))) %>%
     `colnames<-`(label_scheme$Sample_ID) %>%
     dplyr::select(which(names(.) %in% sample_ids)) %>%
-    dplyr::select(which(not_all_zero(.))) %>%
+    # dplyr::select(which(not_all_zero(.))) %>%
     dplyr::select(as.character(sample_ids)) # ensure the same order
-  
+
   df <- df %>%
     dplyr::select(-grep("log2_R[0-9]{3}", names(.))) %>%
     dplyr::bind_cols(., dfR) %>% 
@@ -368,58 +369,67 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'\code{impute_na = FALSE}, NA distances will be arbitrarily replaced with the
 #'mean value of the row-disance matrix for hierarchical row clustering.
 #'
-#'Similar to data rows, data columns with complete missing values will be first
-#'removed prior to hierarchical column clustering. NA distances in data columns
-#'will be replaced with the mean value of the column-distance matrix.
+#'Similar to data rows, NA distances in data columns will be replaced with the
+#'mean value of the column-distance matrix.
 #'
 #'To avoid memory failure, row aggregation using the \code{kmeans_k} option
 #'(\code{\link[pheatmap]{pheatmap}}) may be considered for large data sets.
 #'
-#'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
-#'for details.
 #'
 #'@inheritParams  proteoEucDist
 #'@param  col_benchmark Not used.
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
-#'  will be used.
+#'  will be used. The default is FALSE.
 #'@param complete_cases Logical; if TRUE, only cases that are complete with no
-#'  missing values will be used.
+#'  missing values will be used. The default is FALSE.
 #'@param annot_rows A character vector of column keys that can be found from
 #'  input files of \code{Peptide.txt}, \code{Protein.txt} et al. The values
 #'  under the selected keys will be used to color-code peptides or proteins on
-#'  the side of the indicated plot.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. \cr \code{arrange_}: Logical
+#'  the side of the indicated plot. The default is NULL without row annotation.
+#'@param xmin  Numeric; the minimum x at a log2 scale. The default is -1.
+#'@param xmax  Numeric; the maximum  x at a log2 scale. The default is 1.
+#'@param xmargin  Numeric; the margin in heat scales. The default is 0.1.
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  of data against the column keys in \code{Peptide.txt} or \code{Protein.txt}.
+#'  Each statement contains to a list of logical expression(s). The \code{lhs}
+#'  needs to start with \code{filter_}. The logical condition(s) at the
+#'  \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. For
+#'  example, \code{pep_len} is a column key present in \code{Mascot} peptide
+#'  tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
+#'  exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
+#'  See also \code{\link{pepHist}}. \cr \cr \code{arrange_}: Logical
 #'  expression(s) for the row ordering of data. The \code{lhs} needs to start
 #'  with \code{arrange_}. The logical condition(s) at the \code{rhs} needs to be
 #'  enclosed in \code{exprs} with round parenthesis. \cr \cr Additional
-#'  parameters for plotting: \cr \code{xmin}, the minimum \eqn{x} at a log2
-#'  scale; the default is -1 \cr \code{xmax}, the maximum \eqn{x} at a log2
-#'  scale; the default is +1 \cr \code{xmargin}, the margin in heat scales; the
-#'  default is 0.1 \cr \code{width}, the width of plot \cr \code{height}, the
-#'  height of plot \cr \cr Additional arguments for
+#'  parameters for plotting: \cr \code{width}, the width of plot \cr
+#'  \code{height}, the height of plot \cr \cr Additional arguments for
 #'  \code{\link[pheatmap]{pheatmap}}, i.e., \code{cluster_rows}... \cr \cr Note
 #'  arguments disabled for \code{pheatmap}: \cr \code{annotation_col}; instead
 #'  use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
 #'  use keys indicated in \code{annot_rows}
-#'@return Heat maps.
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
-#'@example inst/extdata/examples/sigtest_optional_min.R
+#'@seealso \code{\link{load_expts}} for a minimal working example in data
+#'  normalization \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'  extended examples in histogram visualization. \cr \code{\link{contain_str}},
+#'  \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings
+#'  \cr \code{\link{pepImp}} and \code{\link{prnImp}} for missing value
+#'  imputation \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'  significance tests \cr
 #'
+#'@example inst/extdata/examples/prnHM_.R
+#'
+#'@return Heat maps and optional sub trees.
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
 proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
                       scale_log2r = TRUE,impute_na = FALSE, complete_cases = FALSE,
                       df = NULL, filepath = NULL, filename = NULL,
-                      xmin = -1, xmax = 1, xmargin = 0.1, 
-                      annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, ...) {
+                      annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
+                      xmin = -1, xmax = 1, xmargin = 0.1, ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -435,8 +445,7 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
   info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
             scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath,
             filename = !!filename, anal_type = "Heatmap")(complete_cases = complete_cases,
-                                                          xmin = xmin, xmax = xmax,
-                                                          xmargin = xmargin,
+                                                          xmin = xmin, xmax = xmax, xmargin = xmargin,
                                                           annot_cols = annot_cols, 
                                                           annot_colnames = annot_colnames, 
                                                           annot_rows = annot_rows, ...)
@@ -471,96 +480,6 @@ pepHM <- function (...) {
 #'
 #'@rdname proteoHM
 #'
-#' @examples
-#' # ===================================
-#' # Heat map
-#' # ===================================
-#' scale_log2r <- TRUE
-#' 
-#' # unsupervised row clustering
-#' prnHM(
-#'   xmin = -1,
-#'   xmax = 1,
-#'   xmargin = 0.1,
-#'   annot_cols = c("Group", "Color", "Alpha", "Shape"),
-#'   annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
-#'   cluster_rows = TRUE,
-#'   cutree_rows = 10,
-#'   show_rownames = FALSE,
-#'   show_colnames = TRUE,
-#'   fontsize_row = 3,
-#'   cellwidth = 14,
-#'   width = 18,
-#'   height = 12,
-#'
-#'   filter_sp = exprs(species == "human", prot_n_pep >= 2),
-#'   filename = "prn_hu_npep2.png",
-#' )
-#'
-#' # rows ordered by kinase classes then by gene names
-#' prnHM(
-#'   xmin = -1,
-#'   xmax = 1,
-#'   xmargin = 0.1,
-#'   annot_cols = c("Group", "Color", "Alpha", "Shape"),
-#'   annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
-#'   cluster_rows = FALSE,
-#'   annot_rows = c("kin_class"),
-#'   show_rownames = TRUE,
-#'   show_colnames = TRUE,
-#'   fontsize_row = 2,
-#'   cellheight = 2,
-#'   cellwidth = 14,
-#'   width = 22,
-#'   height = 22,
-#'
-#'   filter_kin = exprs(kin_attr, species == "human"),
-#'   arrange_kin = exprs(kin_order, gene),
-#'   filename = "kin_hu_row_by_class.png",
-#' )
-#'
-#' # `cutree_rows` ignored at `cluster_rows = FALSE`
-#' prnHM(
-#'   scale_log2r = TRUE,
-#'   annot_cols = c("Group"),
-#'   cluster_rows = FALSE,
-#'   clustering_distance_rows  = "maximum",
-#'   cutree_rows = 6,
-#'   show_rownames = FALSE,
-#'   show_colnames = TRUE,
-#'   fontsize_row = 3,
-#'   cellwidth = 14,
-#'   width = 22,
-#'   height = 22,
-#'
-#'   filename = "cutree_overruled.png",
-#' )
-#'
-#' # Mascot example with `prnSig()` being executed
-#' # `W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` is a column key in `Model\Protein_pVals.txt`
-#' prnHM(
-#'   xmin = -1,
-#'   xmax = 1,
-#'   xmargin = 0.1,
-#'   annot_cols = c("Group", "Color", "Alpha", "Shape"),
-#'   annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
-#'   cluster_rows = TRUE,
-#'   # cutree_rows = 10,
-#'   show_rownames = TRUE,
-#'   show_colnames = TRUE,
-#'   fontsize_row = 5,
-#'   cellwidth = 14,
-#'   # width = 18,
-#'   # height = 12,
-#'
-#'   filter_sp = exprs(species == "human", prot_n_pep >= 2),
-#'   filter_by = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
-#'   filename = "pval_cutoff_at_1e6.png", 
-#' )
-#' 
-#' \dontrun{
-#' }
-#' 
 #'@import purrr
 #'@export
 prnHM <- function (...) {
