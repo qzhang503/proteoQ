@@ -43,7 +43,7 @@ used. If values under column \code{Order} are left blank, samples will be
 ordered by their names.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used. The default is FALSE.}
+will be used. The default is TRUE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}

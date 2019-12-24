@@ -76,8 +76,15 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
-  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
- 
+  # both filename extension and prefix ignored
+  # only png for now
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
+  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
+  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$") 
+  if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
+
   if (is.null(r)) {
     filelist <- ins
   } else {
@@ -99,14 +106,7 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
   } 
   
   if (purrr::is_empty(filelist)) 
-    stop("Missing NMF results under ", filepath, 
-         "\nCheck the setting in `scale_log2r` for a probable mismatch.", 
-         call. = FALSE)
-  
-  # both filename extension and prefix ignored
-  # only png for now
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+    stop("Missing or mismatched NMF results under ", filepath, call. = FALSE)
 
   purrr::walk(filelist, ~ {
     out_nm <- paste0(gsub("\\.rda$", "", .x), "_consensus.png")
@@ -209,8 +209,15 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, ...) {
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
-  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
+  # both filename extension and prefix will be ignored
+  # only png for now
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
+  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
+  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
+  if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
+
   if (is.null(r)) {
     filelist <- ins
   } else {
@@ -232,15 +239,8 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, ...) {
   } 
 
   if (purrr::is_empty(filelist)) 
-    stop("Missing NMF results under ", filepath, 
-         "\nCheck the setting in `scale_log2r` for a probable mismatch.", 
-         call. = FALSE)
-  
-  # both filename extension and prefix will be ignored
-  # only png for now
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
+    stop("Missing or mismatched NMF results under ", filepath, call. = FALSE)
+
   purrr::walk(filelist, ~ {
     # out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.", fn_suffix)
     out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.png")
@@ -323,8 +323,14 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
   df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
                sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
     .$log2R  
+
+  # only png
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
+  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
   ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
+  if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   
   if (is.null(r)) {
     filelist <- ins
@@ -347,15 +353,8 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
   } 
   
   if (purrr::is_empty(filelist)) 
-    stop("Missing NMF results under ", filepath, 
-         "\nCheck the setting in `scale_log2r` for a probable mismatch.", 
-         call. = FALSE)
+    stop("Missing or mismatched NMF results under ", filepath, call. = FALSE)
 
-  # both filename extension and prefix will be ignored
-  # only png for now
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  # fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
   purrr::walk(filelist, ~ {
     fn_prefix <- gsub("\\.rda$", "", .x)
     r <- gsub(".*_r(\\d+)\\.rda$", "\\1", .x) %>% as.numeric()
@@ -481,11 +480,13 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'instead use the following wrappers.
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
-#'\code{impute_na = FALSE}
+#'\code{impute_na = FALSE}.
 #'
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
+#'@param impute_na Logical; if TRUE, data with the imputation of missing values
+#'  will be used. The default is TRUE.
 #'@param col_group Character string to a column key in \code{expt_smry.xlsx}.
 #'  Samples corresponding to non-empty entries under \code{col_group} will be
 #'  used for sample grouping in the indicated analysis. At the NULL default, the
@@ -500,14 +501,54 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'@param filepath Use system default.
 #'@param filename Use system default.
 #'@param ... In \code{anal_} functions: additional arguments are for
-#'  \code{\link[NMF]{nmf}}; in \code{plot_} functions: \code{width},
-#'  \code{height}; in \code{plot_metaNMF} functions: additional arguments are
-#'  for \code{pheatmap}.
+#'  \code{\link[NMF]{nmf}}; \cr in \code{plot_} functions: \code{width},
+#'  \code{height}; \cr in \code{plot_metaNMF} functions: additional arguments
+#'  are for \code{pheatmap}.
 #'@return NMF classification and visualization of \code{log2FC}.
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@example inst/extdata/examples/prnNMF_.R
 #'
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr 
+#'
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+#'  
+#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  
 #'@export
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                        col_select = NULL, col_group = NULL, scale_log2r = TRUE, impute_na = TRUE, 
@@ -548,24 +589,6 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'analysis of peptide data
 #'
 #'@rdname proteoNMF
-#'@examples
-#'
-#' # ===================================
-#' # NMF
-#' # ===================================
-#' scale_log2r <- TRUE
-#' 
-#' library(NMF)
-#'
-#' # peptide NMF at two different r(ank)s
-#' anal_pepNMF(
-#'   scale_log2r = TRUE,
-#'   col_group = Group, # optional a priori knowledge of sample groups
-#'   r = c(6, 8),
-#'   nrun = 200,
-#'   filter_by_npsm = exprs(pep_n_psm >= 2),
-#' )
-#'
 #'@import purrr
 #'@export
 anal_pepNMF <- function (...) {
@@ -588,19 +611,6 @@ anal_pepNMF <- function (...) {
 #'analysis of protein data
 #'
 #'@rdname proteoNMF
-#' @examples
-#' # protein NMF over a range of ranks
-#' library(NMF)
-#' 
-#' anal_prnNMF(
-#'   impute_na = FALSE,
-#'   scale_log2r = TRUE,
-#'   col_group = Group,
-#'   r = c(5:8),
-#'   nrun = 200, 
-#'   filter_by_npep = exprs(prot_n_pep >= 2),
-#' )
-#'
 #'@import purrr
 #'@export
 anal_prnNMF <- function (...) {
@@ -624,26 +634,6 @@ anal_prnNMF <- function (...) {
 #'
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
-#' @examples
-#'
-#' # peptide consensus heat maps at specific ranks
-#' plot_pepNMFCon(
-#'   r = c(5, 6),
-#'   annot_cols = c("Color", "Alpha", "Shape"),
-#'   annot_colnames = c("Lab", "Batch", "WHIM"),
-#'   width = 10,
-#'   height = 10,
-#' )
-#'
-#' # peptide consensus heat maps at all available ranks
-#' plot_pepNMFCon(
-#'   impute_na = FALSE,
-#'   annot_cols = c("Color", "Alpha", "Shape"),
-#'   annot_colnames = c("Lab", "Batch", "WHIM"),
-#'   width = 10,
-#'   height = 10,
-#' )
-#'
 #'@import purrr
 #'@export
 plot_pepNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
@@ -672,26 +662,6 @@ plot_pepNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
-#' @examples
-#'
-#' # protein consensus heat maps at specific ranks
-#' plot_prnNMFCon(
-#'   r = c(7:8),
-#'   annot_cols = c("Color", "Alpha", "Shape"),
-#'   annot_colnames = c("Lab", "Batch", "WHIM"),
-#'   width = 10,
-#'   height = 10,
-#' )
-#'
-#' # protein consensus heat maps at all available ranks
-#' plot_prnNMFCon(
-#'   impute_na = FALSE,
-#'   annot_cols = c("Color", "Alpha", "Shape"),
-#'   annot_colnames = c("Lab", "Batch", "WHIM"),
-#'   width = 10,
-#'   height = 10
-#' )
-#'
 #'@import purrr
 #'@export
 plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
@@ -720,16 +690,6 @@ plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
-#' @examples
-#'
-#' # peptide coefficient heat maps at all ranks
-#' plot_pepNMFCoef(
-#'   annot_cols = c("Color", "Alpha", "Shape"),
-#'   annot_colnames = c("Lab", "Batch", "WHIM"),
-#'   width = 10,
-#'   height = 10
-#' )
-#'
 #'@import purrr
 #'@export
 plot_pepNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
@@ -758,16 +718,6 @@ plot_pepNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
-#' @examples
-#'
-#' # protein coefficient heat maps at all ranks
-#' plot_prnNMFCoef(
-#'   annot_cols = c("Color", "Alpha", "Shape"),
-#'   annot_colnames = c("Lab", "Batch", "WHIM"),
-#'   width = 10,
-#'   height = 10
-#' )
-#'
 #'@import purrr
 #'@export
 plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
@@ -796,17 +746,6 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
 #'
 #'@rdname proteoNMF
 #'@inheritParams  proteoEucDist
-#' @examples
-#' # metagenes heat maps at all available ranks
-#' # additional arguments for `pheatmap`
-#' plot_metaNMF(
-#'   annot_cols = c("Color", "Alpha", "Shape"),
-#'   annot_colnames = c("Lab", "Batch", "WHIM"),
-#'
-#'   fontsize = 8,
-#'   fontsize_col = 5
-#' )
-#'
 #'@import purrr
 #'@export
 plot_metaNMF <- function (annot_cols = NULL, annot_colnames = NULL, ...) {

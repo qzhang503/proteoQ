@@ -52,7 +52,7 @@ performed if the fields under the indicated group column is empty.}
 of standard deviation across all samples. The default is TRUE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used. The default is FALSE.}
+will be used. The default is TRUE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
@@ -74,9 +74,9 @@ The default is c(4:8)}
 is 200.}
 
 \item{...}{In \code{anal_} functions: additional arguments are for
-\code{\link[NMF]{nmf}}; in \code{plot_} functions: \code{width},
-\code{height}; in \code{plot_metaNMF} functions: additional arguments are
-for \code{pheatmap}.}
+\code{\link[NMF]{nmf}}; \cr in \code{plot_} functions: \code{width},
+\code{height}; \cr in \code{plot_metaNMF} functions: additional arguments
+are for \code{pheatmap}.}
 
 \item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
 The values under the selected keys will be used to color-code sample IDs on
@@ -117,143 +117,128 @@ visualization of the metagene heat maps of protein data
 }
 \details{
 The option of \code{complete_cases} will be forced to \code{TRUE} at
-\code{impute_na = FALSE}
+\code{impute_na = FALSE}.
 }
 \examples{
 # ===================================
-# NMF analysis
+# NMF
 # ===================================
 
 ## !!!require the brief working example in `?load_expts`
 
-# global option
-scale_log2r <- TRUE
-
-# required
-library(NMF)
-
-## analysis
-# peptides, at two different r(ank)s
-anal_pepNMF(
-  col_group = Group,
-  r = c(6, 8),
-  nrun = 200,
-  filter_peps_by_npsm = exprs(pep_n_psm >= 2),
-)
-
-# proteins, over a range of ranks
-anal_prnNMF(
-  impute_na = FALSE,
-  col_group = Group,
-  r = c(5:8),
-  nrun = 200, 
-  filter_prots_by_npep = exprs(prot_n_pep >= 2),
-)
-
-## consensus heat maps
-# peptides, at specific ranks
-plot_pepNMFCon(
-  r = c(5, 6),
-  annot_cols = c("Color", "Alpha", "Shape"),
-  annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
-)
-
-# peptides, at all available ranks
-plot_pepNMFCon(
-  impute_na = FALSE,
-  annot_cols = c("Color", "Alpha", "Shape"),
-  annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
-)
-
-# proteins, at specific ranks
-plot_prnNMFCon(
-  r = c(7:8),
-  annot_cols = c("Color", "Alpha", "Shape"),
-  annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
-)
-
-# proteins, at all available ranks
-plot_prnNMFCon(
-  impute_na = FALSE,
-  annot_cols = c("Color", "Alpha", "Shape"),
-  annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10
-)
-
-## coefficient heat maps
-# peptides, at all ranks
-plot_pepNMFCoef(
-  annot_cols = c("Color", "Alpha", "Shape"),
-  annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10
-)
-
-# proteins, at all ranks
-plot_prnNMFCoef(
-  annot_cols = c("Color", "Alpha", "Shape"),
-  annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10
-)
-
-## metagene heat maps 
-# at all available ranks
-# additional arguments for `pheatmap`
-plot_metaNMF(
-  annot_cols = c("Color", "Alpha", "Shape"),
-  annot_colnames = c("Lab", "Batch", "WHIM"),
-  fontsize = 8,
-  fontsize_col = 5
-)
-
-
-# ===================================
-# NMF
-# ===================================
+## global option
 scale_log2r <- TRUE
 
 library(NMF)
 
-# peptide NMF at two different r(ank)s
-anal_pepNMF(
-  scale_log2r = TRUE,
-  col_group = Group, # optional a priori knowledge of sample groups
-  r = c(6, 8),
-  nrun = 200,
-  filter_by_npsm = exprs(pep_n_psm >= 2),
-)
-
-# protein NMF over a range of ranks
-library(NMF)
-
+# ===================================
+# Analysis
+# ===================================
+## base (proteins)
 anal_prnNMF(
   impute_na = FALSE,
-  scale_log2r = TRUE,
   col_group = Group,
-  r = c(5:8),
-  nrun = 200, 
-  filter_by_npep = exprs(prot_n_pep >= 2),
+  r = c(3:4),
+  nrun = 20, 
 )
 
+## row filtration (proteins)
+anal_prnNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  r = c(3:4),
+  nrun = 20, 
+  filter_prots = exprs(prot_n_pep >= 3),
+)
 
-# peptide consensus heat maps at specific ranks
-plot_pepNMFCon(
-  r = c(5, 6),
+## additional row filtration by pVals (proteins, impute_na = FALSE)
+# if not yet, run prerequisitive significance tests at `impute_na = FALSE`
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = FALSE)
+
+# (`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` is now a column key)
+anal_prnNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  r = c(3:4),
+  nrun = 20, 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3), 
+  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+)
+
+## additional row filtration by pVals (impute_na = TRUE)
+# if not yet, run prerequisitive NA imputation
+pepImp(m = 2, maxit = 2)
+prnImp(m = 5, maxit = 5)
+
+# if not yet, run prerequisitive significance tests at `impute_na = TRUE`
+pepSig(
+  impute_na = TRUE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = TRUE)
+
+anal_prnNMF(
+  impute_na = TRUE,
+  col_group = Group,
+  r = c(3:4),
+  nrun = 20, 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3), 
+  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+)
+
+## analogous peptides
+anal_pepNMF(
+  impute_na = TRUE,
+  col_group = Group,
+  r = c(3:4),
+  nrun = 20, 
+  filter_peps = exprs(pep_n_psm >= 2),
+  filter_prots_by_npep = exprs(prot_n_pep >= 3), 
+  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+)
+
+# ===================================
+# consensus heat maps
+# ===================================
+## no NA imputation 
+# proteins, all available ranks
+plot_prnNMFCon(
+  impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
   height = 10,
 )
 
-# peptide consensus heat maps at all available ranks
+# proteins, specific rank(s)
+plot_prnNMFCon(
+  impute_na = FALSE,
+  r = 3,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10,
+)
+
+# analogous peptides
 plot_pepNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
@@ -262,51 +247,179 @@ plot_pepNMFCon(
   height = 10,
 )
 
-
-# protein consensus heat maps at specific ranks
+## NA imputation 
+# proteins, all available ranks
 plot_prnNMFCon(
-  r = c(7:8),
+  impute_na = TRUE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
   height = 10,
 )
 
-# protein consensus heat maps at all available ranks
+# proteins, specific rank(s)
 plot_prnNMFCon(
-  impute_na = FALSE,
+  impute_na = TRUE,
+  r = 3,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
-  height = 10
+  height = 10,
 )
 
-
-# peptide coefficient heat maps at all ranks
-plot_pepNMFCoef(
+# analogous peptides
+plot_pepNMFCon(
+  impute_na = TRUE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
-  height = 10
+  height = 10,
 )
 
-
-# protein coefficient heat maps at all ranks
+# ===================================
+# coefficient heat maps
+# ===================================
+## no NA imputation 
+# proteins, all available ranks
 plot_prnNMFCoef(
+  impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
-  height = 10
+  height = 10,
 )
 
-# metagenes heat maps at all available ranks
-# additional arguments for `pheatmap`
-plot_metaNMF(
+# proteins, specific rank(s)
+plot_prnNMFCoef(
+  impute_na = FALSE,
+  r = 3,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-
-  fontsize = 8,
-  fontsize_col = 5
+  width = 10,
+  height = 10,
 )
 
+# analogous peptides
+plot_pepNMFCoef(
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10,
+)
+
+## NA imputation 
+# proteins, all available ranks
+plot_prnNMFCoef(
+  impute_na = TRUE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10,
+)
+
+# proteins, specific rank(s)
+plot_prnNMFCoef(
+  impute_na = TRUE,
+  r = 3,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10,
+)
+
+# analogous peptides
+plot_pepNMFCoef(
+  impute_na = TRUE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10,
+)
+
+# ===================================
+# Metagene heat maps
+# ===================================
+## no NA imputation 
+# proteins, all available ranks
+plot_metaNMF(
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  
+  # additional arguments for `pheatmap`
+  fontsize = 8,
+  fontsize_col = 5,
+)
+
+# proteins, specific rank(s)
+plot_metaNMF(
+  impute_na = FALSE,
+  r = 3,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  fontsize = 8,
+  fontsize_col = 5,
+)
+
+## NA imputation 
+# proteins, all available ranks
+plot_metaNMF(
+  impute_na = TRUE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  fontsize = 8,
+  fontsize_col = 5,
+)
+
+# proteins, specific rank(s)
+plot_metaNMF(
+  impute_na = TRUE,
+  r = 3,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  fontsize = 8,
+  fontsize_col = 5,
+)
+}
+\seealso{
+\code{\link{load_expts}} for a reduced working example in data normalization \cr 
+
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+ 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+ \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+ 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ 
+ \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
 }

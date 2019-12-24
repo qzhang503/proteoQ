@@ -105,7 +105,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		        call. = FALSE)
 	}
 
-	if(is.null(label_scheme[[col_fill]])) {
+	if (is.null(label_scheme[[col_fill]])) {
 		warning("Column \'", rlang::as_string(col_fill), "\' does not exist.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_fill]])) == 0) {
 		warning("No samples were specified under column \'", rlang::as_string(col_fill), "\'.",
@@ -119,7 +119,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		        call. = FALSE)
 	}
 
-	if(is.null(label_scheme[[col_size]])) {
+	if (is.null(label_scheme[[col_size]])) {
 		warning("Column \'", rlang::as_string(col_size), "\' does not exist.")
 	} else if (sum(!is.na(label_scheme[[col_size]])) == 0) {
 		warning("No samples were specified under column \'", rlang::as_string(col_size), "\'.",
@@ -191,7 +191,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  
 	  if (anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
 	    if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
-	  } else if (anal_type %in% c("Trend", "NMF", "Model", "GSVA")) { # optional impute_na but no p_vals
+	  } else if (anal_type %in% c("Model")) { # optional impute_na but no p_vals
 	    if (impute_na) {
 	      if (file.exists(fn_imp)) src_path <- fn_imp else stop(paste(fn_imp, err_msg3), call. = FALSE)
 	    } else {
@@ -203,7 +203,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	    } else {
 	      if (file.exists(fn_p)) src_path <- fn_p else stop(paste(fn_p, err_msg5), call. = FALSE)
 	    }
-	  } else if (anal_type %in% c("Heatmap")) { # optional impute_na and possible p_vals
+	  } else if (anal_type %in% c("Heatmap", "Trend", "NMF", "GSVA")) { # optional impute_na and possible p_vals
 	    if (impute_na) {
 	      if (file.exists(fn_imp_p)) src_path <- fn_imp_p else if (file.exists(fn_imp)) src_path <- fn_imp else 
 	        stop(paste(fn_imp, err_msg3), call. = FALSE)
@@ -445,8 +445,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "NMF") {
 		function(r = NULL, nrun = 200, complete_cases = FALSE, task = anal, ...) {
-		  fn_prefix <- paste0(fn_prefix, "_r", r)
-		  
+		  fn_prefix <- fn_prefix %>% 
+		    ifelse(impute_na, paste0(., "_impNA"), .) %>% 
+		    paste0(., "_r", r)
+
 		  switch(rlang::as_string(rlang::enexpr(task)), 
 		         anal = nmfTest(df = df, 
 		                        id = !!id, 

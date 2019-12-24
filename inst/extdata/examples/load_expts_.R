@@ -73,6 +73,46 @@ Pep2Prn(use_unique_pep = TRUE)
 # protein data standardization
 standPrn()
 
-# protein data histogram
+# protein data histograms
 prnHist()
+
+# ===================================
+# Optional significance tests
+# (no NA imputation)
+# ===================================
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
+                  "W2.JHU.TMT2-W2.JHU.TMT1", 
+                  "W2.PNNL.TMT2-W2.PNNL.TMT1"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = FALSE)
+
+# ===================================
+# optional NA imputation
+# ===================================
+pepImp(m = 2, maxit = 2)
+prnImp(m = 5, maxit = 5)
+
+# ===================================
+# Optional significance tests
+# (with NA imputation)
+# ===================================
+pepSig(
+  impute_na = TRUE, 
+  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
+                  "W2.JHU.TMT2-W2.JHU.TMT1", 
+                  "W2.PNNL.TMT2-W2.PNNL.TMT1"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = TRUE)
 
