@@ -68,7 +68,7 @@ the top of the indicated plot. The default is NULL without column
 annotation.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
-\code{annot_cols}. The default is NULL with no replacement.}
+\code{annot_cols}. The default is NULL without name replacement.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}

@@ -1,22 +1,30 @@
 #'Downloads STRING databases
 #'
 #'@param species Character string; the species. The currently supported species
-#'  include \code{human, mouse, rat, fly, bovine, dog}. 
-#'@param db_path Character string; the local path for database(s).
-#'@param overwrite Logical; if TRUE, overwrite the databse(s).
-#' @examples
-#' \dontrun{
-#' dl_stringdbs(
-#'   species = human,
-#'   db_path = "~\\proteoQ\\dbs\\string"
-#' )
-#' }
-#'
+#'  include \code{human, mouse, rat, fly, bovine, dog}. The default is
+#'  \code{human}.
+#'@param db_path Character string; the local path for database(s). The default is \code{"~\\proteoQ\\dbs\\string"}.
+#'@param overwrite Logical; if TRUE, overwrite the databse(s). The default is FALSE.
 #'@import rlang dplyr magrittr purrr fs downloader
+#'@seealso \code{\link{getStringDB}} for protein-protein interaction networks.
 #'@export
-dl_stringdbs <- function(species = NULL, db_path = "~\\proteoQ\\dbs\\string", overwrite = FALSE) {
-  species <- rlang::enexpr(species)
-  species <- ifelse(is.null(species), find_species(), rlang::as_string(species))
+dl_stringdbs <- function(species = "human", db_path = "~\\proteoQ\\dbs\\string", overwrite = FALSE) {
+  species <- rlang::as_string(rlang::enexpr(species))
+
+  if (!fs::dir_exists(db_path)) {
+    new_db_path <- fs::path_expand_r(db_path)
+    new_db_path2 <- fs::path_expand(db_path)
+    
+    if (fs::dir_exists(new_db_path)) {
+      db_path <- new_db_path
+    } else if (fs::dir_exists(new_db_path2)) {
+      db_path <- new_db_path2
+    } else {
+      stop(db_path, " not existed.", call. = FALSE)
+    }
+    
+    rm(new_db_path, new_db_path2)
+  }
 
   urls <- switch(species, 
                  human = c(
@@ -187,7 +195,7 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff) {
 
 #'STRING outputs
 #'
-#'\code{getStringDB} produces locally the
+#'\code{getStringDB} prepares locally the
 #'\code{\href{https://string-db.org/}{STRING}} results of protein-protein
 #'interaction and protein expressions. The interaction file,
 #'\code{Protein_STRING_ppi.tsv}, and the expression file,
@@ -195,21 +203,19 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff) {
 #'\code{\href{https://cytoscape.org/}{Cytoscape}}.
 #'
 #'@inheritParams dl_stringdbs
-#'@param score_cutoff Numeric; the threshold of the \code{combined_score} of
-#'  protein-protein interaction.
+#'@param score_cutoff Numeric; the threshold in the \code{combined_score} of
+#'  protein-protein interaction. The default is 0.7. 
+#'@param adjP Logical. At the FALSE default, unadjusted pVals from
+#'  \code{\link{prnSig}} will be used in PPI reports; otherwise, the
+#'  Benjamini-Hochberg pVals will be used in the reports.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}.
-#'@seealso \code{\link{dl_stringdbs}} for database downloads.
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
-#'@example inst/extdata/examples/sigtest_optional_min.R
-#'@example inst/extdata/examples/getStringDB_examples.R
+#'@seealso \code{\link{dl_stringdbs}} for database downloads. \cr 
+#' \code{\link{prnSig}} for significance tests \cr 
+#'@example inst/extdata/examples/getStringDB_.R
 #'
 #'@inheritParams proteoVolcano
-#'@import dplyr purrr
+#'@import dplyr purrr fs
 #'@export
 getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, adjP = FALSE, ...) {
   stopifnot(rlang::is_logical(adjP))
@@ -218,6 +224,21 @@ getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, 
   if (score_cutoff <= 1) score_cutoff <- score_cutoff * 1000
   
   dir.create(file.path(dat_dir, "Protein\\String\\cache"), recursive = TRUE, showWarnings = FALSE)
+  
+  if (!fs::dir_exists(db_path)) {
+    new_db_path <- fs::path_expand_r(db_path)
+    new_db_path2 <- fs::path_expand(db_path)
+    
+    if (fs::dir_exists(new_db_path)) {
+      db_path <- new_db_path
+    } else if (fs::dir_exists(new_db_path2)) {
+      db_path <- new_db_path2
+    } else {
+      stop(db_path, " not existed.", call. = FALSE)
+    }
+    
+    rm(new_db_path, new_db_path2)
+  }
   
   fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
   fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")

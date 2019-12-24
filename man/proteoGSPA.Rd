@@ -40,19 +40,25 @@ protein data.}
 missing values will be used. The default is FALSE.}
 
 \item{gset_nms}{Character string or vector containing the name(s) of gene sets
-for enrichment analysis. The possible values are in \code{c("go_sets",
-"kegg_sets")}. Note that the currently supported species are human, mouse
-and rat.}
+for enrichment analysis. The default is \code{"go_sets"}. The possible
+values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
+supported species are human, mouse and rat.}
 
 \item{var_cutoff}{Not currently used.}
 
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
-the threshold will be ignored during enrichment analysis.}
+the threshold will be ignored during enrichment analysis. The default is
+0.05 for all formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of cut-off
+values.}
 
 \item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
-\code{log2FC}. Entries with absolute \code{log2FC} smaller than the
-threshold will be ignored during enrichment analysis.}
+\code{log2FC}. The default magnitude is \code{log2(1.2)} for all formulae
+matched to or specified in argument \code{fml_nms}. Entries with absolute
+\code{log2FC} smaller than the threshold will be ignored during enrichment
+analysis. Formula-specific threshold is allowed by supplying a vector of
+absolute values in \code{log2FC}.}
 
 \item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
 significance \code{pVal}. Only enrichment terms with \code{pVals} more
@@ -61,29 +67,33 @@ significant than the threshold will be reported.}
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
 consideration in gene set tests. The number is the sum of up or
 down-expressed proteins after data filtration by \code{pval_cutoff},
-\code{logFC_cutoff} or varargs expressions under \code{filter_}.}
+\code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
+is 10 for all formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of sizes.}
 
 \item{max_size}{Numeric value or vector; maximum number of protein entries for
 consideration in gene set tests. The number is the sum of up or
 down-expressed proteins after data filtration by \code{pval_cutoff},
 \code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
-in infinite. For samples that are vastly different between contrasts,
-essential gene sets may be blackholed with trivial terms such as cell parts,
-molecular functions et al. In cases like this, a smaller \code{max_size} may
-be considered.}
+in infinite for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of sizes.}
 
 \item{min_greedy_size}{Numeric value or vector; minimum number of unique
-protein entries for a gene set to be considered essential.}
+protein entries for a gene set to be considered essential. The default in
+\code{1} for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of sizes.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
-the names will match those used in \code{\link{pepSig}} or
+the formula(e) will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
 }
 \description{
-\code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
+\code{proteoGSPA} performs the analysis of Gene Set Probability Asymmetricity
 (GSPA) aganist protein \code{log2FC} data. Users should avoid call the method
 directly, but instead use the following wrappers.
 
@@ -99,7 +109,78 @@ the significance of gene set enrichment. The arguments \code{pval_cutoff} and
 \code{logFC_cutoff} are used to filter out low influence genes. Additional
 subsetting of data via the \code{vararg} approach of \code{filter_} is
 feasible.
+}
+\examples{
+# ===================================
+# GSPA tests
+# ===================================
 
-The formula(e) of contrast(s) used in \code{\link{prnSig}} will be taken by
-default.
+## !!!require the brief working example in `?load_expts`
+
+# global option
+scale_log2r <- TRUE
+
+## prerequisites in significance tests
+# (see also ?prnSig)
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"], # location effects
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = FALSE)
+
+
+## gene-set enrichment tests
+prnGSPA(
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("go_sets", "kegg_sets"),
+  impute_na = FALSE,
+)
+
+# only include proteins with two or more identifying peptides
+prnGSPA(
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("go_sets", "kegg_sets"),
+  filter_prots_by_npep = exprs(prot_n_pep >= 2),
+  impute_na = FALSE,
+)
+
+# customized thresholds
+# (formula names defined a priori in `pepSig(...)`)
+prnGSPA(
+  fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
+  pval_cutoff = c(5E-2, 5E-2, 1E-10), 
+  logFC_cutoff = c(log2(1.05), log2(1.1), log2(1.2)), 
+  gspval_cutoff = c(5E-2, 5E-2, 1E-5), 
+  max_size = c(Inf, Inf, 120), 
+  gset_nms = c("go_sets", "kegg_sets"), 
+  filter_by_npep = exprs(prot_n_pep >= 2), 
+  impute_na = FALSE, 
+)
+
+}
+\seealso{
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
 }

@@ -5,7 +5,7 @@
 \title{GSVA of protein data}
 \usage{
 prnGSVA(scale_log2r = TRUE, df = NULL, filepath = NULL,
-  filename = NULL, impute_na = TRUE, complete_cases = FALSE,
+  filename = NULL, impute_na = NULL, complete_cases = FALSE,
   lm_method = "limma", gset_nms = "go_sets", var_cutoff = 0.5,
   pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), ...)
 }
@@ -20,50 +20,86 @@ automatically by the value of \code{id}.}
 
 \item{filename}{Use system default.}
 
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used. The default is FALSE.}
+\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
+the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+protein data.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 
 \item{lm_method}{Character string indicating the linear modeling method for
-significance assessment of GSVA enrichment scores}
+significance assessment of GSVA enrichment scores. The default is
+\code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
+for models without random effects and the \code{\link[lmerTest]{lmer}} will
+be used for models with random effects.}
 
-\item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.
-Entries with variances smaller than the threshold will be removed from
-linear modeling. The default is 1E-3.}
+\item{gset_nms}{Character string or vector containing the name(s) of gene sets
+for enrichment analysis. The default is \code{"go_sets"}. The possible
+values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
+supported species are human, mouse and rat.}
 
-\item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
-with \code{pVals} smaller than the threshold will be removed from multiple
-test corrections. The default is \code{1} without pVal cut-offs.}
+\item{var_cutoff}{Numeric; the cut-off in the variances of protein log2FC.
+Entries with variances smaller than the threshold will be removed from GSVA.
+The default is 0.5.}
 
-\item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with
-\code{log2FC} smaller than the threshold will be removed from multiple test
-corrections. The default is at \code{log2(1)}  without fold change cut-offs.}
+\item{pval_cutoff}{Numeric; the cut-off in enrichment pVals. Terms with
+enrichment pVals smaller than the threshold will be removed from multiple
+test corrections. The default is 1e-04.}
 
-\item{...}{Parameters for \code{\link[pheatmap]{pheatmap}}}
+\item{logFC_cutoff}{Numeric; the cut-off in enrichment log2FC. Terms with
+absolute log2FC smaller than the threshold will be removed from multiple
+test corrections. The default is at log2(1.1).}
 
-\item{gset_nm}{Character vector of the name(s) of gene sets. The currently
-available data sets include c("go_sets", "kegg_sets", "c2_msig").}
-
-\item{Parameters}{for \code{\link[GSVA]{gsva}}}
+\item{...}{Arguments for \code{\link{GSVA::gsva}}}
 }
 \description{
 \code{prnGSVA} performs the GSVA aganist protein \code{log2FC}
 }
 \details{
-The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
+The formula(s) of contrast(s) used in \code{\link{pepSig}} will be taken by
 default.
 }
 \examples{
+# ===================================
+# GSVA
+# ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+# global option
+scale_log2r <- TRUE
+
+# base
 prnGSVA(
- scale_log2r = TRUE, 
- impute_na = FALSE, 
- min.sz = 10, 
- verbose = FALSE, 
- parallel.sz = 0, 
- mx.diff = TRUE, 
- gset_nms = c("go_sets", "kegg_sets"), 
+  min.sz = 10,
+  verbose = FALSE,
+  parallel.sz = 0,
+  mx.diff = TRUE,
+  gset_nms = c("go_sets", "kegg_sets"),
 )
 
+# row filtration
+prnGSVA(
+  min.sz = 10,
+  verbose = FALSE,
+  parallel.sz = 0,
+  mx.diff = TRUE,
+  gset_nms = "go_sets",
+  filter_prots = exprs(prot_n_pep >= 3), 
+)
+
+}
+\seealso{
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
 }

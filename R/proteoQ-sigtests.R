@@ -30,21 +30,25 @@
 #'  linear modeling. The default is 1E-3.
 #'@param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
 #'  with \code{pVals} smaller than the threshold will be removed from multiple
-#'  test corrections. The default is \code{1} without pVal cut-offs.
+#'  test corrections. The default is at \code{1} to include all entries.
 #'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
-#'  \code{log2FC} smaller than the threshold will be removed from multiple test
-#'  corrections. The default is at \code{log2(1)}  without fold change cut-offs.
+#'  absolute \code{log2FC} smaller than the threshold will be removed from
+#'  multiple test corrections. The default is at \code{log2(1)} to include all
+#'  entries.
 #'@param ... User-defined formulae for linear modeling. The syntax starts with a
 #'  tilde, followed by the name of an available column key in
 #'  \code{expt_smry.xlsx} and square brackets. The contrast groups are then
-#'  quoted with multiple contrast groups separated by commas. Additive random
-#'  effects are indicated by \code{+ (1|col_key_1) + (1|col_key_2)}... \cr \cr
-#'  \code{filter_}: Logical expression(s) for the row filtration of data; also
-#'  see \code{\link{normPSM}}.
+#'  quoted with one to multiple contrast groups separated by commas. The default
+#'  column key is \code{Term} in `expt_smry.xlsx`: \cr \code{~ Term["A - C", "B
+#'  - C"]}. \cr Additive random effects are indicated by \code{+ (1|col_key_1) +
+#'  (1|col_key_2)}... Currently only a syntax of single contrast are supported
+#'  for uses with random effects: \cr \code{~ Term["A - C"] + (1|col_key_1) +
+#'  (1|col_key_2)} \cr \cr \code{filter_}: Logical expression(s) for the row
+#'  filtration of data; also see \code{\link{normPSM}}.
 #'@return The primary output is
 #'  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
-#'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. \cr
-#'  \cr At \code{impute_na = TRUE}, the corresponding outputs are
+#'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. At
+#'  \code{impute_na = TRUE}, the corresponding outputs are
 #'  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 #'
 #'@example inst/extdata/examples/prnSig_.R

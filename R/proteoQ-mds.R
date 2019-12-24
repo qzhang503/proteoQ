@@ -689,7 +689,7 @@ proteoPCA <- function (id = gene, type = "obs",
 #'  the top of the indicated plot. The default is NULL without column
 #'  annotation.
 #'@param annot_colnames A character vector of replacement name(s) to
-#'  \code{annot_cols}. The default is NULL with no replacement.
+#'  \code{annot_cols}. The default is NULL without name replacement.
 #'@param ... Parameters for \code{\link[pheatmap]{pheatmap}}
 #'
 #'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr

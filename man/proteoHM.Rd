@@ -57,7 +57,7 @@ the top of the indicated plot. The default is NULL without column
 annotation.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
-\code{annot_cols}. The default is NULL with no replacement.}
+\code{annot_cols}. The default is NULL without name replacement.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
 input files of \code{Peptide.txt}, \code{Protein.txt} et al. The values

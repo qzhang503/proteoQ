@@ -45,7 +45,8 @@ key will be \code{Select}.}
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be
 used for sample grouping in the indicated analysis. At the NULL default, the
-column key \code{Group} will be used.}
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
@@ -64,7 +65,7 @@ automatically by the value of \code{id}.}
 \item{filename}{Use system default.}
 
 \item{task}{Character string; a signature for task dispatching in a function
-factory.}
+factory. The value will be determined automatically.}
 
 \item{r}{Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
 The default is c(4:8)}
@@ -83,14 +84,14 @@ the top of the indicated plot. The default is NULL without column
 annotation.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
-\code{annot_cols}. The default is NULL with no replacement.}
+\code{annot_cols}. The default is NULL without name replacement.}
 }
 \value{
 NMF classification and visualization of \code{log2FC}.
 }
 \description{
 \code{proteoNMF} analyzes and visualizes the NMF clustering of peptide or
-protein \code{log2FC}. Users should avoid call the method directly, but
+protein \code{log2FC}. Users should avoid calling the method directly, but
 instead use the following wrappers.
 
 \code{anal_pepNMF} is a wrapper of \code{\link{proteoNMF}} for the NMF
@@ -119,6 +120,100 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 \code{impute_na = FALSE}
 }
 \examples{
+# ===================================
+# NMF analysis
+# ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+# global option
+scale_log2r <- TRUE
+
+# required
+library(NMF)
+
+## analysis
+# peptides, at two different r(ank)s
+anal_pepNMF(
+  col_group = Group,
+  r = c(6, 8),
+  nrun = 200,
+  filter_peps_by_npsm = exprs(pep_n_psm >= 2),
+)
+
+# proteins, over a range of ranks
+anal_prnNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  r = c(5:8),
+  nrun = 200, 
+  filter_prots_by_npep = exprs(prot_n_pep >= 2),
+)
+
+## consensus heat maps
+# peptides, at specific ranks
+plot_pepNMFCon(
+  r = c(5, 6),
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10,
+)
+
+# peptides, at all available ranks
+plot_pepNMFCon(
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10,
+)
+
+# proteins, at specific ranks
+plot_prnNMFCon(
+  r = c(7:8),
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10,
+)
+
+# proteins, at all available ranks
+plot_prnNMFCon(
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10
+)
+
+## coefficient heat maps
+# peptides, at all ranks
+plot_pepNMFCoef(
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10
+)
+
+# proteins, at all ranks
+plot_prnNMFCoef(
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 10,
+  height = 10
+)
+
+## metagene heat maps 
+# at all available ranks
+# additional arguments for `pheatmap`
+plot_metaNMF(
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  fontsize = 8,
+  fontsize_col = 5
+)
+
 
 # ===================================
 # NMF

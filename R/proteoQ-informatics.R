@@ -581,7 +581,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	               gsets = gsets, 
 	               var_cutoff = var_cutoff, 
 	               pval_cutoff = pval_cutoff, 
-	               logFC_cutoff = logFC_cutoff, ...)
+	               logFC_cutoff = logFC_cutoff, !!!dots)
 	  }
 	} else if (anal_type == "GSEA") {
 	  function(complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = .5,

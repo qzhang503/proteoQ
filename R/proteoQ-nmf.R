@@ -477,7 +477,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'NMF analysis
 #'
 #'\code{proteoNMF} analyzes and visualizes the NMF clustering of peptide or
-#'protein \code{log2FC}. Users should avoid call the method directly, but
+#'protein \code{log2FC}. Users should avoid calling the method directly, but
 #'instead use the following wrappers.
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
@@ -489,13 +489,14 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'@param col_group Character string to a column key in \code{expt_smry.xlsx}.
 #'  Samples corresponding to non-empty entries under \code{col_group} will be
 #'  used for sample grouping in the indicated analysis. At the NULL default, the
-#'  column key \code{Group} will be used.
+#'  column key \code{Group} will be used. No data annotation by groups will be
+#'  performed if the fields under the indicated group column is empty.
 #'@param r Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
 #'  The default is c(4:8)
 #'@param nrun Numeric; the number of runs in \code{\link[NMF]{nmf}}. The default
 #'  is 200.
 #'@param task Character string; a signature for task dispatching in a function
-#'  factory.
+#'  factory. The value will be determined automatically.
 #'@param filepath Use system default.
 #'@param filename Use system default.
 #'@param ... In \code{anal_} functions: additional arguments are for
@@ -505,11 +506,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'@return NMF classification and visualization of \code{log2FC}.
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
+#'@example inst/extdata/examples/prnNMF_.R
 #'
 #'@export
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 

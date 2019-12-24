@@ -48,7 +48,7 @@ will be determined by the extension of the file name. A \code{.png} format
 will be used at default or at an unrecognized file extension.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
-the names will match those used in \code{\link{pepSig}} or
+the formula(e) will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
 \item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
@@ -137,7 +137,7 @@ prnVol(
 
 
 ## protein subgroups by gene sets
-# GSPA
+# prerequisite analysis of GSPA
 prnGSPA(
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
@@ -159,61 +159,12 @@ gspaMap(
 )
 
 # customized thresholds for the corresponding formulae in `pepSig` or `prnSig()`
+# (may be suitable with the examplary differences in `W16_vs_W2` being much greater than `W2_bat`...)
 gspaMap(
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
   pval_cutoff = c(5E-2, 5E-2, 1E-10),
   logFC_cutoff = log2(1.2),
   
-  show_sig = pVal,
-  show_labels = TRUE,
-  yco = 0.05,
-  filter_by_npep = exprs(prot_n_pep >= 2),
-)
-
-# ===================================
-# Volcano plot
-# ===================================
-scale_log2r <- TRUE
-
-# all peptides
-pepVol()
-
-# all proteins
-prnVol(
-  show_labels = TRUE,
-  xco = 1.2,
-  yco = 0.01,
-)
-
-# kinases and prot_n_pep >= 2
-prnVol(
-  show_labels = TRUE,
-  xco = 1.2,
-  yco = 0.01,
-  filter_by_kin = exprs(kin_attr, prot_n_pep >= 2),
-  filename = "prnvol_kin_npep2.png"
-)
-
-
-# protein subgroups by gene sets
-# filtered by proteins with two or more identifying peptides for visualization
-gspaMap(
-  pval_cutoff = 5E-3,
-  logFC_cutoff = log2(1.2),
-  gset_nms = c("go_sets"),
-  show_sig = p,
-  show_labels = TRUE,
-  yco = 0.01,
-  filter_by_npep = exprs(prot_n_pep >= 2),
-  # `filename`(s) will be automated, i.e., by gene-set names
-)
-
-# customized thresholds for the corresponding formulae in `prnSig()`
-gspaMap(
-  fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
-  pval_cutoff = c(5E-2, 5E-2, 1E-10),
-  logFC_cutoff = log2(1.2),
-
   show_sig = pVal,
   show_labels = TRUE,
   yco = 0.05,

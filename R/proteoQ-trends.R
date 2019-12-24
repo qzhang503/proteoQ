@@ -229,8 +229,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 
 #'Clustering of data trends
 #'
-#'\code{proteoTrend} analyzes and visualizes the trends of peptide or protein
-#'\code{log2FC}. Users should avoid call the method directly, but instead use
+#'\code{proteoTrend} analyzes and visualizes the trends of protein
+#'\code{log2FC}. Users should avoid calling the method directly, but instead use
 #'the following wrappers.
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
@@ -255,11 +255,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
+#'@example inst/extdata/examples/prnTrend_.R
 #'
 #'@export
 proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
@@ -311,21 +307,6 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #'@rdname proteoTrend
 #'
-#' @examples
-#' # ===================================
-#' # Trend
-#' # ===================================
-#' scale_log2r <- TRUE
-#' 
-#' # protein data with sample order supervision
-#' anal_prnTrend(
-#'   scale_log2r = TRUE,
-#'   col_order = Order,
-#'   n_clust = c(5:8), 
-#'   
-#'   filter_by_npep = exprs(prot_n_pep >= 2),
-#' )
-#'
 #'@import purrr
 #'@export
 anal_prnTrend <- function (...) {
@@ -348,23 +329,6 @@ anal_prnTrend <- function (...) {
 #'visualization of the trends in protein data
 #'
 #'@rdname proteoTrend
-#'
-#' @examples
-#' # visualization
-#' plot_prnTrend(
-#'   scale_log2r = TRUE,
-#'   col_order = Order,
-#'   n_clust = c(5:6), 
-#' )
-#'
-#' # only proteins with four or more identifying peptides
-#' plot_prnTrend(
-#'   scale_log2r = TRUE,
-#'   col_order = Order,
-#'   n_clust = c(5:6), 
-#'   
-#'   filter_by_npep = exprs(prot_n_pep >= 4),
-#' )
 #'
 #'@import purrr
 #'@export

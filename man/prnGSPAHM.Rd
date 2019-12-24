@@ -10,18 +10,20 @@ prnGSPAHM(annot_cols = NULL, annot_colnames = NULL,
 \arguments{
 \item{annot_cols}{A character vector of column keys that can be found in
 \code{essmap_.*.csv}. The values under the selected keys will be used to
-color-code enrichment terms on the top of heat maps.}
+color-code enrichment terms on the top of heat maps. The default is NULL
+without column annotation.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
-\code{annot_cols}. The default is NULL with no replacement.}
+\code{annot_cols}. The default is NULL without name replacement.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
 \code{essmeta_.*.csv} . The values under the selected keys will be used to
-color-code essential terms on the side of heat maps.}
+color-code essential terms on the side of heat maps. The default is NULL
+without row annotation.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. \cr \cr Additional arguments for
-\code{\link[pheatmap]{pheatmap}}, i.e., \code{fontsize }... \cr Note
+\code{\link[pheatmap]{pheatmap}}, i.e., \code{fontsize }... \cr \cr Note
 arguments disabled from \code{pheatmap}: \cr \code{annotation_col}; instead
 use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
 use keys indicated in \code{annot_rows}}
@@ -62,6 +64,84 @@ varargs of \code{filter_}.
  of \code{ess_term} \cr }
 }
 
+\examples{
+# ===================================
+# Heat maps of GSPA
+# ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+# global option
+scale_log2r <- TRUE
+
+## prerequisites in significance and enrichment tests
+# (see also ?prnSig, ?prnGSPA)
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"], # location effects
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = FALSE)
+
+prnGSPA(
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("go_sets", "kegg_sets"),
+  impute_na = FALSE,
+)
+
+# ===================================
+# Distance heat maps of gene sets
+# (also interactive networks)
+# ===================================
+# a `term` is a subset of an `ess_term` if the distance is zero
+prnGSPAHM(
+  filter_by = exprs(distance <= .6),
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  annot_rows = "ess_size",
+  filename = show_some_redundancy.png,
+)
+
+# human terms only
+prnGSPAHM(
+  filter_num = exprs(distance <= .95),
+  filter_sp = exprs(start_with_str("hs", term)),
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  filename = show_more_connectivity.png,
+)
+
+# custom color palette
+prnGSPAHM(
+  annot_cols = c("ess_idx", "ess_size"),
+  annot_colnames = c("Eset index", "Size"),
+  filter_by = exprs(distance <= .95),
+  color = colorRampPalette(c("blue", "white", "red"))(100),
+  filename = "custom_colors.png",
+)
+
+
+}
 \seealso{
-\code{\link{prnGSPA}} for gene set enrichment analysis.
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
 }

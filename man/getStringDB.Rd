@@ -8,25 +8,53 @@ getStringDB(db_path = "~\\\\proteoQ\\\\dbs\\\\string",
   score_cutoff = 0.7, adjP = FALSE, ...)
 }
 \arguments{
-\item{db_path}{Character string; the local path for database(s).}
+\item{db_path}{Character string; the local path for database(s). The default is \code{"~\\proteoQ\\dbs\\string"}.}
 
-\item{score_cutoff}{Numeric; the threshold of the \code{combined_score} of
-protein-protein interaction.}
+\item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
+protein-protein interaction. The default is 0.7.}
 
-\item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals in volcano plots.
-The default is FALSE.}
+\item{adjP}{Logical. At the FALSE default, unadjusted pVals from
+\code{\link{prnSig}} will be used in PPI reports; otherwise, the
+Benjamini-Hochberg pVals will be used in the reports.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
 }
 \description{
-\code{getStringDB} produces locally the
+\code{getStringDB} prepares locally the
 \code{\href{https://string-db.org/}{STRING}} results of protein-protein
 interaction and protein expressions. The interaction file,
 \code{Protein_STRING_ppi.tsv}, and the expression file,
 \code{Protein_STRING_expr.tsv}, are compatible with
 \code{\href{https://cytoscape.org/}{Cytoscape}}.
 }
+\examples{
+# ===================================
+# String DB
+# ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+string_dir <- "~\\\\proteoQ\\\\dbs\\\\string"
+dir.create(string_dir, recursive = TRUE, showWarnings = FALSE)
+
+# download
+dl_stringdbs(
+  species = human,
+  db_path = string_dir,
+)
+
+# protein-protein interaction network
+getStringDB(
+  db_path = string_dir,
+  score_cutoff = .9,
+  adjP = FALSE,
+  filter_by_sp = exprs(species == "human"),
+  filter_prots_by = exprs(prot_n_pep >= 2),
+)
+
+}
 \seealso{
-\code{\link{dl_stringdbs}} for database downloads.
+\code{\link{dl_stringdbs}} for database downloads. \cr 
+\code{\link{prnSig}} for significance tests \cr
 }

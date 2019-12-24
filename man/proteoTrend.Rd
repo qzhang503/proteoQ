@@ -23,7 +23,7 @@ or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
 or \code{gene}.}
 
 \item{task}{Character string; a signature for task dispatching in a function
-factory.}
+factory. The value will be determined automatically.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under the column key will be
@@ -33,7 +33,8 @@ key will be \code{Select}.}
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be
 used for sample grouping in the indicated analysis. At the NULL default, the
-column key \code{Group} will be used.}
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
 
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
 Numeric values under which will be used for the left-to-right arrangement of
@@ -72,8 +73,8 @@ the height of plot.}
 Trend classification and visualization of \code{log2FC}.
 }
 \description{
-\code{proteoTrend} analyzes and visualizes the trends of peptide or protein
-\code{log2FC}. Users should avoid call the method directly, but instead use
+\code{proteoTrend} analyzes and visualizes the trends of protein
+\code{log2FC}. Users should avoid calling the method directly, but instead use
 the following wrappers.
 
 \code{anal_prnTrend} is a wrapper of \code{\link{proteoTrend}} for the trend
@@ -88,32 +89,32 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 }
 \examples{
 # ===================================
-# Trend
+# Trend analysis
 # ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+# global option
 scale_log2r <- TRUE
 
-# protein data with sample order supervision
+# analysis 
+# (with sample order supervision)
 anal_prnTrend(
-  scale_log2r = TRUE,
   col_order = Order,
   n_clust = c(5:8), 
-  
   filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # visualization
 plot_prnTrend(
-  scale_log2r = TRUE,
   col_order = Order,
   n_clust = c(5:6), 
 )
 
-# only proteins with four or more identifying peptides
+# subsets visualization
+# (proteins with four or more identifying peptides)
 plot_prnTrend(
-  scale_log2r = TRUE,
   col_order = Order,
-  n_clust = c(5:6), 
-  
   filter_by_npep = exprs(prot_n_pep >= 4),
 )
 

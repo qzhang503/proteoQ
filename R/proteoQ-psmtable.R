@@ -1,3 +1,31 @@
+#' Extract RAW MS file names
+#'
+#' Extract a list of \code{RAW} file names that can be passed to \code{frac_smry.xlsx}
+#'
+#' @examples
+#' \dontrun{
+#' # Supposed that RAW MS files are stored under "~\my_raw"
+#' extract_raws("~\\my_raw")
+#' }
+#'
+#' @import dplyr purrr
+#' @importFrom magrittr %>%
+#' @importFrom magrittr %T>%
+#' @importFrom tools md5sum
+#' @export
+extract_raws <- function(raw_dir) {
+  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+  if (dat_dir == 1) 
+    stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+
+  fns <- names(tools::md5sum(dir(raw_dir, pattern = "\\.raw$", full.names = FALSE)))
+  data.frame(Index = seq_along(fns), RAW_File = fns) %T>% 
+    write.table(file.path(dat_dir, "raw_list.txt"), sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+		
+	message("RAW MS file names in ", file.path(dat_dir, "raw_list.txt"))
+}
+
+
 #' Extract RAW file names from Mascot PSM outputs
 #'
 #' \code{extract_psm_raws} extracts the RAW file names from the PSM data under
@@ -81,7 +109,7 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
     
     if (!purrr::is_empty(raws)) {
       data.frame(RAW_File = raws) %>% 
-        write.table(file.path(dat_dir, "mascot_psm_raws.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
+        write.table(file.path(dat_dir, "mascot_psm_raws.txt"), sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
       message("MS file names in ", file.path(dat_dir, "mascot_psm_raws.txt"))
     }
     
@@ -98,7 +126,7 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
     
     if (!purrr::is_empty(raws)) {
       data.frame(RAW_File = raws) %>% 
-        write.table(file.path(dat_dir, "sm_psm_raws.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
+        write.table(file.path(dat_dir, "sm_psm_raws.txt"), sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
       message("MS file names in ", file.path(dat_dir, "sm_psm_raws.txt"))
     }
   }
@@ -113,7 +141,7 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
     
     if (!purrr::is_empty(raws)) {
       data.frame(RAW_File = raws) %>% 
-        write.table(file.path(dat_dir, "mq_psm_raws.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
+        write.table(file.path(dat_dir, "mq_psm_raws.txt"), sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
       message("MS file names in ", file.path(dat_dir, "mq_psm_raws.txt"))
     }
   }

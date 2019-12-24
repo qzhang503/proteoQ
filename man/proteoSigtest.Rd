@@ -51,25 +51,29 @@ linear modeling. The default is 1E-3.}
 
 \item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
 with \code{pVals} smaller than the threshold will be removed from multiple
-test corrections. The default is \code{1} without pVal cut-offs.}
+test corrections. The default is at \code{1} to include all entries.}
 
 \item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with
-\code{log2FC} smaller than the threshold will be removed from multiple test
-corrections. The default is at \code{log2(1)}  without fold change cut-offs.}
+absolute \code{log2FC} smaller than the threshold will be removed from
+multiple test corrections. The default is at \code{log2(1)} to include all
+entries.}
 
 \item{...}{User-defined formulae for linear modeling. The syntax starts with a
 tilde, followed by the name of an available column key in
 \code{expt_smry.xlsx} and square brackets. The contrast groups are then
-quoted with multiple contrast groups separated by commas. Additive random
-effects are indicated by \code{+ (1|col_key_1) + (1|col_key_2)}... \cr \cr
-\code{filter_}: Logical expression(s) for the row filtration of data; also
-see \code{\link{normPSM}}.}
+quoted with one to multiple contrast groups separated by commas. The default
+column key is \code{Term} in `expt_smry.xlsx`: \cr \code{~ Term["A - C", "B
+- C"]}. \cr Additive random effects are indicated by \code{+ (1|col_key_1) +
+(1|col_key_2)}... Currently only a syntax of single contrast are supported
+for uses with random effects: \cr \code{~ Term["A - C"] + (1|col_key_1) +
+(1|col_key_2)} \cr \cr \code{filter_}: Logical expression(s) for the row
+filtration of data; also see \code{\link{normPSM}}.}
 }
 \value{
 The primary output is
  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
- \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. \cr
- \cr At \code{impute_na = TRUE}, the corresponding outputs are
+ \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. At
+ \code{impute_na = TRUE}, the corresponding outputs are
  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 }
 \description{
@@ -107,8 +111,9 @@ samples in it.
 # global option
 scale_log2r <- TRUE
 
-# peptide significance tests
-# (`Term`, `Term_2`, `Term_3` are column keys in `expt_smry.xlsx`)
+## significance tests and volcano plot visualization
+# peptide
+# (`Term`, `Term_2`, `Term_3` are user-defined, column keys in `expt_smry.xlsx`)
 pepSig(
   impute_na = FALSE, 
   W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
@@ -120,37 +125,73 @@ pepSig(
   W16_vs_W2 = ~ Term_3["W16-W2"], 
 )
 
-# protein significance tests
+pepVol()
+
+# protein
 # (formulae matched to `pepSig` by default)
 prnSig(impute_na = FALSE)
+prnVol()
 
-# averaged batch effect
-prnSig(
+# note the incongruity in peptide and protein fold changes
+# (no measures for peptides but for proteins)
+
+#  sequence | sample_1 | sample_2 |    FC  
+# --------------------------------------------
+# prnX_pep1 |   2.15   |   NA     |    NA
+# prnX_pep2 |    NA    |  1.05    |    NA
+ 
+#  protein  | sample_1 | sample_2 |    FC  
+# --------------------------------------------
+#   prnX    |   2.15   |   1.05   |   2.05
+
+## averaged batch effect
+# (suggest always both `pepSig` and `prnSig` for consistent formulae)
+pepSig(
   impute_na = FALSE,
   W2_loc_2 = ~ Term["(W2.BI.TMT2+W2.BI.TMT1)/2 - (W2.JHU.TMT2+W2.JHU.TMT1)/2"], 
 )
 
+prnSig(impute_na = FALSE)
 
-# impute NA
+pepVol()
+prnVol()
+
+
+## impute NA
 # (suggested for models with random effects)
 pepImp(m = 2, maxit = 2)
 prnImp(m = 5, maxit = 5)
 
-# single random effect
-prnSig(
+## random effects
+# single
+pepSig(
   impute_na = TRUE,
   W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed
   W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random
 )
 
-# one to multiple random effect
-prnSig(
+prnSig(impute_na = TRUE)
+
+pepVol()
+prnVol()
+
+# one to multiple
+# (method `lm` for multiple random)
+pepSig(
   impute_na = TRUE,
   method = lm,
   W2_vs_W16_fix = ~ Term_3["W16-W2"], # one fixed
   W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random
   W2_vs_W16_mix_2 = ~ Term_3["W16-W2"] + (1|TMT_Set) + (1|Color), # one fixed and two randoms
 )
+
+prnSig(
+  impute_na = TRUE,
+  method = lm,
+)
+
+pepVol()
+prnVol()
 
 }
 \seealso{

@@ -263,7 +263,7 @@ plotVolcano <- function(df = NULL, id = "gene", filepath = NULL, filename = NULL
   fmls <- fmls %>% .[names(.) %in% fml_nms]
   fml_nms <- fml_nms %>% .[map_dbl(., ~ which(.x == names(fmls)))]
   
-  if (is_empty(fml_nms)) stop("No formula matched; compare the formula name(s) with those in `prnSig(...)`")
+  if (is_empty(fml_nms)) stop("No formula matched; compare the formula name(s) with those in `pepSig(...)` and `prnSig(...)`")
   
   sub_dirs <- file.path(filepath, fml_nms)
   purrr::walk(sub_dirs, ~ dir.create(.x, recursive = TRUE, showWarnings = FALSE))
@@ -724,57 +724,6 @@ pepVol <- function (...) {
 #'
 #'@rdname proteoVolcano
 #'
-#' @examples
-#' # ===================================
-#' # Volcano plot
-#' # ===================================
-#' scale_log2r <- TRUE
-#' 
-#' # all peptides
-#' pepVol()
-#' 
-#' # all proteins
-#' prnVol(
-#'   show_labels = TRUE,
-#'   xco = 1.2,
-#'   yco = 0.01,
-#' )
-#'
-#' # kinases and prot_n_pep >= 2
-#' prnVol(
-#'   show_labels = TRUE,
-#'   xco = 1.2,
-#'   yco = 0.01,
-#'   filter_by_kin = exprs(kin_attr, prot_n_pep >= 2),
-#'   filename = "prnvol_kin_npep2.png"
-#' )
-#'
-#'
-#' # protein subgroups by gene sets
-#' # filtered by proteins with two or more identifying peptides for visualization
-#' gspaMap(
-#'   pval_cutoff = 5E-3,
-#'   logFC_cutoff = log2(1.2),
-#'   gset_nms = c("go_sets"),
-#'   show_sig = p,
-#'   show_labels = TRUE,
-#'   yco = 0.01,
-#'   filter_by_npep = exprs(prot_n_pep >= 2),
-#'   # `filename`(s) will be automated, i.e., by gene-set names
-#' )
-#'
-#' # customized thresholds for the corresponding formulae in `prnSig()`
-#' gspaMap(
-#'   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
-#'   pval_cutoff = c(5E-2, 5E-2, 1E-10),
-#'   logFC_cutoff = log2(1.2),
-#'
-#'   show_sig = pVal,
-#'   show_labels = TRUE,
-#'   yco = 0.05,
-#'   filter_by_npep = exprs(prot_n_pep >= 2),
-#' )
-#' 
 #'@import purrr
 #'@export
 prnVol <- function (...) {

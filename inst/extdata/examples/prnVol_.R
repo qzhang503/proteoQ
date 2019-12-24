@@ -29,7 +29,7 @@ prnVol(
 
 
 ## protein subgroups by gene sets
-# GSPA
+# prerequisite analysis of GSPA
 prnGSPA(
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
@@ -51,6 +51,7 @@ gspaMap(
 )
 
 # customized thresholds for the corresponding formulae in `pepSig` or `prnSig()`
+# (may be suitable with the examplary differences in `W16_vs_W2` being much greater than `W2_bat`...)
 gspaMap(
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
   pval_cutoff = c(5E-2, 5E-2, 1E-10),
