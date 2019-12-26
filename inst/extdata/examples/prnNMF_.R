@@ -44,14 +44,14 @@ pepSig(
 
 prnSig(impute_na = FALSE)
 
-# (`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` is now a column key)
+# (`W16_vs_W2.pVal (W16-W2)` now a column key)
 anal_prnNMF(
   impute_na = FALSE,
   col_group = Group,
   r = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
-  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )
 
 ## additional row filtration by pVals (impute_na = TRUE)
@@ -79,7 +79,7 @@ anal_prnNMF(
   r = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
-  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )
 
 ## analogous peptides
@@ -88,9 +88,17 @@ anal_pepNMF(
   col_group = Group,
   r = c(3:4),
   nrun = 20, 
-  filter_peps = exprs(pep_n_psm >= 2),
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
-  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+)
+
+anal_pepNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  r = c(3:4),
+  nrun = 20, 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )
 
 # ===================================

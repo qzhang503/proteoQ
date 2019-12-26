@@ -218,13 +218,21 @@ prnSig(impute_na = TRUE)
 }
 \seealso{
 \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{purgePSM}} for extended examples in PSM data purging \cr
  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
  \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
- \code{\link{purgePep}} for extended examples in peptide data purging \cr
  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{prnHist}} for extended examples in protein data histogram visualization.
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr
 }

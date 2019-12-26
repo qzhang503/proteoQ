@@ -171,7 +171,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'Histogram visualization
 #'
 #'\code{proteoHist} plots the histograms of protein or peptide \code{log2FC}.
-#'Users should avoid call the method directly, but instead use the following
+#'Users should avoid calling the method directly, but instead use the following
 #'wrappers.
 #'
 #'In the histograms, the \code{log2FC} under each TMT channel are color-coded by
@@ -187,12 +187,12 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'  key will be \code{Select}.
 #'@param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
 #'  of standard deviation across all samples. The default is TRUE.
-#'@param show_curves Logical; if TRUE, shows the fitted curves. At the TRUE default, the curve
-#'  parameters are based on the latest call to \code{\link{standPep}} or
-#'  \code{\link{standPrn}} with \code{method_align = MGKernel}. This feature can
-#'  inform the effects of data filtration on the alignment of \code{logFC}
-#'  profiles. Also see \code{\link{standPep}} and \code{\link{standPrn}} for
-#'  more examples.
+#'@param show_curves Logical; if TRUE, shows the fitted curves. At the TRUE
+#'  default, the curve parameters are based on the latest call to
+#'  \code{\link{standPep}} or \code{\link{standPrn}} with \code{method_align =
+#'  MGKernel}. This feature can inform the effects of data filtration on the
+#'  alignment of \code{logFC} profiles. Also see \code{\link{standPep}} and
+#'  \code{\link{standPrn}} for more examples.
 #'@param show_vline Logical; if TRUE, shows the vertical lines at \code{x = 0}.
 #'  The default is TRUE.
 #'@param scale_y Logical; if TRUE, scale data on the \code{y-axis}. The default
@@ -208,7 +208,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'  will be determined by the extension of the file name. A \code{.png} format
 #'  will be used at default or at an unrecognized file extension.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
-#'  of data against the column keys in \code{Peptide.txt} or \code{Protein.txt}.
+#'  of data against the column keys in \code{Peptide.txt}, \code{Protein.txt} etc.
 #'  Each statement contains to a list of logical expression(s). The \code{lhs}
 #'  needs to start with \code{filter_}. The logical condition(s) at the
 #'  \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. \cr
@@ -224,23 +224,26 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'  columns; the default is 1. \cr \code{width}, the width of plot; \cr
 #'  \code{height}, the height of plot. \cr \code{scales}, should the scales be
 #'  fixed across panels; the default is "fixed" and the alternative is "free".
-#'@seealso \code{\link{load_expts}} for a minimal working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{purgePSM}} for extended examples in PSM data purging \cr
 #'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
 #'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
 #'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{purgePep}} for extended examples in peptide data purging \cr
 #'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
 #'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
 #'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
 #'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
 #'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
 #'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'
-#'@return The histograms of \code{log2FC} under
-#'  \code{~\\dat_dir\\Peptide\\Histogram} or
-#'  \code{~\\dat_dir\\Protein\\Histogram}.
+#'  
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%

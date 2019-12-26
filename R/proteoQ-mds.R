@@ -458,7 +458,7 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'Visualization of MDS plots
 #'
 #'\code{proteoMDS} visualizes the results from multidimensional scaling (MDS).
-#'Users should avoid call the method directly, but instead use the following
+#'Users should avoid calling the method directly, but instead use the following
 #'wrappers.
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
@@ -527,24 +527,26 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'  \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
 #'  height of plot \cr \code{...}
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+#'  normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
+#'  peptide summarization \cr \code{\link{mergePep}} for extended examples in
+#'  peptide data merging \cr \code{\link{standPep}} for extended examples in
+#'  peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
+#'  in peptide to protein summarization \cr \code{\link{standPrn}} for extended
+#'  examples in protein data normalization. \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
+#'  data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr \code{\link{pepImp}} and
+#'  \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
+#'  and \code{\link{prnSig}} for significance tests \cr \code{\link{pepHM}} and
+#'  \code{\link{prnHM}} for heat map visualization \cr \code{\link{pepMDS}} and
+#'  \code{\link{prnMDS}} for MDS visualization \cr \code{\link{pepPCA}} and
+#'  \code{\link{prnPcA}} for PCA visualization \cr
 #'@example inst/extdata/examples/prnMDS_.R
 #'
 #'@return MDS plots.
@@ -596,7 +598,7 @@ proteoMDS <- function (id = gene,
 #'Visualization of PCA plots
 #'
 #'\code{proteoPCA} visualizes the results from principal component analysis
-#'(PCA). Users should avoid call the method directly, but instead use the
+#'(PCA). Users should avoid calling the method directly, but instead use the
 #'following wrappers.
 #'
 #'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
@@ -606,23 +608,25 @@ proteoMDS <- function (id = gene,
 #'  obs} default, the components are by observations; at \code{type = feats},
 #'  the components are by features.
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+#'  normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
+#'  peptide summarization \cr \code{\link{mergePep}} for extended examples in
+#'  peptide data merging \cr \code{\link{standPep}} for extended examples in
+#'  peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
+#'  in peptide to protein summarization \cr \code{\link{standPrn}} for extended
+#'  examples in protein data normalization. \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
+#'  data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr \code{\link{pepImp}} and
+#'  \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
+#'  and \code{\link{prnSig}} for significance tests \cr \code{\link{pepHM}} and
+#'  \code{\link{prnHM}} for heat map visualization \cr \code{\link{pepMDS}} and
+#'  \code{\link{prnMDS}} for MDS visualization \cr
 #'@example inst/extdata/examples/prnPCA_.R
 #'
 #'@return PCA plots.
@@ -674,14 +678,11 @@ proteoPCA <- function (id = gene, type = "obs",
 #'Visualization of the Euclidean distance matrix
 #'
 #'\code{proteoEucDist} visualizes the heat map of Euclidean distances. Users
-#'should avoid call the method directly, but instead use the following wrappers.
+#'should avoid calling the method directly, but instead use the following
+#'wrappers.
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
 #'\code{\link[stats]{dist}} for heat map visualization.
-#'
-#'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
-#'for details.
 #'
 #'@inheritParams proteoMDS
 #'@param annot_cols A character vector of column keys in \code{expt_smry.xlsx}.
@@ -692,24 +693,26 @@ proteoPCA <- function (id = gene, type = "obs",
 #'  \code{annot_cols}. The default is NULL without name replacement.
 #'@param ... Parameters for \code{\link[pheatmap]{pheatmap}}
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+#'  normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
+#'  peptide summarization \cr \code{\link{mergePep}} for extended examples in
+#'  peptide data merging \cr \code{\link{standPep}} for extended examples in
+#'  peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
+#'  in peptide to protein summarization \cr \code{\link{standPrn}} for extended
+#'  examples in protein data normalization. \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
+#'  data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr \code{\link{pepImp}} and
+#'  \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
+#'  and \code{\link{prnSig}} for significance tests \cr \code{\link{pepHM}} and
+#'  \code{\link{prnHM}} for heat map visualization \cr \code{\link{pepMDS}} and
+#'  \code{\link{prnMDS}} for MDS visualization \cr \code{\link{pepPCA}} and
+#'  \code{\link{prnPcA}} for PCA visualization \cr
 #'@example inst/extdata/examples/prnEucDist_.R
 #'@return Heat map visualization of distance matrices.
 #'

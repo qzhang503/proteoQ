@@ -15,9 +15,9 @@ of data against the column keys in individual peptide tables of
 \code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt}, etc.
 Each statement contains to a list of logical expression(s). The \code{lhs}
 needs to start with \code{filter_}. The logical condition(s) at the
-\code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. \cr
-\cr For example, \code{pep_len} is a column key present in \code{Mascot}
-peptide tables of \code{TMTset1_LCMSinj1_Peptide_N.txt},
+\code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. For
+example, \code{pep_len} is a column key present in \code{Mascot} peptide
+tables of \code{TMTset1_LCMSinj1_Peptide_N.txt},
 \code{TMTset1_LCMSinj2_Peptide_N.txt} etc. The statement
 \code{filter_peps_at = exprs(pep_len <= 50)} will remove peptide entries
 with \code{pep_len > 50}. See also \code{\link{normPSM}}.}
@@ -31,8 +31,8 @@ The primary output is in \code{...\\Peptide\\Peptide.txt}.
 into one interim \code{Peptide.txt}. The \code{log2FC} values in the interim
 result are centered with the medians at zero (median centering). The utility
 is typically applied after the conversion of PSMs to peptides via
-\code{\link{PSM2Pep}} and is required even for a minimal experiment with one
-multiplex TMT and one LCMS injection.
+\code{\link{PSM2Pep}} and is required even for a experiment with one multiplex
+TMT and one LCMS injection.
 }
 \details{
 In the interim output file, "\code{Peptide.txt}", values under columns
@@ -84,15 +84,24 @@ mergePep(
 
 }
 \seealso{
-\code{\link{load_expts}} for a minimal working example in data normalization \cr
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{purgePSM}} for extended examples in PSM data purging \cr
  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
  \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
- \code{\link{purgePep}} for extended examples in peptide data purging \cr
  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{prnHist}} for extended examples in protein data histogram visualization.
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr
 }

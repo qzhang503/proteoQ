@@ -88,7 +88,7 @@ table below for details. The default is TRUE.}
 data rows. Each statement contains to a list of logical expression(s). The
 \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
 the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-\cr \cr For example, \code{pep_expect} is a column key present in \code{Mascot} PSM
+For example, \code{pep_expect} is a column key present in \code{Mascot} PSM
 exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove PSM
 entries with \code{pep_expect > 0.1}.}
 }
@@ -229,15 +229,17 @@ normPSM(
 
 }
 \seealso{
-\code{\link{load_expts}} for a minimal working example in data normalization \cr
- \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{purgePSM}} for extended examples in PSM data purging \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
- \code{\link{purgePep}} for extended examples in peptide data purging \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{prnHist}} for extended examples in protein data histogram visualization.
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+ normalization \cr \code{\link{purgePSM}} for extended examples in PSM data
+ purging \cr \code{\link{PSM2Pep}} for extended examples in PSM to peptide
+ summarization \cr \code{\link{mergePep}} for extended examples in peptide
+ data merging \cr \code{\link{standPep}} for extended examples in peptide
+ data normalization \cr \code{\link{pepHist}} for extended examples in
+ peptide data histogram visualization. \cr \code{\link{purgePep}} for
+ extended examples in peptide data purging \cr \code{\link{Pep2Prn}} for
+ extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization.
+ \cr \code{\link{prnHist}} for extended examples in protein data histogram
+ visualization.
 }

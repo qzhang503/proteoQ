@@ -238,6 +238,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  }
 	}
 	
+	df <- df %>% rm_pval_whitespace()
+	
 	if (anal_type %in% c("Model", "GSPA", "GSVA", "GSEA")) {
 		label_scheme_sub <- label_scheme %>% # to be subset by the "key" in "formulae"
 			dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID), !Reference)
@@ -251,13 +253,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if (nrow(label_scheme_sub) == 0)
 	  stop(paste0("No samples or conditions were defined for \"", anal_type, "\""))
 	
-	
 	if (anal_type == "MDS") {
 		function(adjEucDist = FALSE, classical = TRUE, k = 3, show_ids = TRUE, annot_cols = NULL, ...) {
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
-		  
+
 		  df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
 		    scoreMDS(
@@ -294,7 +295,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- dots %>% .[! . %in% filter_dots]
 		  
 		  type <- rlang::as_string(rlang::enexpr(type))
-		  
+
 		  df_pca <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
 		    scorePCA(
@@ -348,7 +349,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (anal_type == "Heatmap") {
 		function(complete_cases = FALSE, xmin = -1, xmax = 1, xmargin = 0.1,
 		         annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, ...) {
-		         
+
 		  plotHM(df = df, 
 		         id = !!id, 
 		         scale_log2r = scale_log2r, 
@@ -409,12 +410,14 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "Trend") {
 		function(n_clust = NULL, complete_cases = FALSE, task = anal, ...) {
-		  fn_prefix <- paste0(fn_prefix, "_n", n_clust)
-		  
+		  fn_prefix <- fn_prefix %>% 
+		    ifelse(impute_na, paste0(., "_impNA"), .) %>% 
+		    paste0(., "_n", n_clust)
+
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
-		  
+
 		  df <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
 		    prepDM(id = !!id, scale_log2r = scale_log2r, 

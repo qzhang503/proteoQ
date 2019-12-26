@@ -43,8 +43,7 @@ pepSig(
 
 prnSig(impute_na = FALSE)
 
-# (`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` is now a column key)
-# W16_vs_W2.pVal (W16-W2)
+# (`W16_vs_W2.pVal (W16-W2)` is now a column key)
 prnGSVA(
   min.sz = 10,
   verbose = FALSE,
@@ -52,7 +51,7 @@ prnGSVA(
   mx.diff = TRUE,
   gset_nms = "go_sets",
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
-  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )
 
 ## additional row filtration by pVals (impute_na = TRUE)
@@ -82,5 +81,5 @@ prnGSVA(
   mx.diff = TRUE,
   gset_nms = "go_sets",
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
-  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )

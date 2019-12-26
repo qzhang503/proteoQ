@@ -166,14 +166,14 @@ pepSig(
 
 prnSig(impute_na = FALSE)
 
-# (`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` is now a column key)
+# (`W16_vs_W2.pVal (W16-W2)` now a column key)
 anal_prnNMF(
   impute_na = FALSE,
   col_group = Group,
   r = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
-  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )
 
 ## additional row filtration by pVals (impute_na = TRUE)
@@ -201,7 +201,7 @@ anal_prnNMF(
   r = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
-  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )
 
 ## analogous peptides
@@ -210,9 +210,17 @@ anal_pepNMF(
   col_group = Group,
   r = c(3:4),
   nrun = 20, 
-  filter_peps = exprs(pep_n_psm >= 2),
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
-  filter_prots_by_pval = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+)
+
+anal_pepNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  r = c(3:4),
+  nrun = 20, 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )
 
 # ===================================
@@ -383,7 +391,7 @@ plot_metaNMF(
 )
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data normalization \cr 
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
@@ -404,8 +412,8 @@ plot_metaNMF(
  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
  
- \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
  \code{\link{prnGSVA}} for gene set variance analysis \cr 
  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 

@@ -37,7 +37,7 @@ prnGSPA(
   logFC_cutoff = log2(1.2),
   gspval_cutoff = 5E-2,
   gset_nms = c("go_sets", "kegg_sets"),
-  filter_prots_by_npep = exprs(prot_n_pep >= 2),
+  filter_prots_by_npep = exprs(prot_n_pep >= 3),
 )
 
 ## customized thresholds
@@ -50,7 +50,7 @@ prnGSPA(
   gspval_cutoff = c(5E-2, 5E-2, 1E-5), 
   max_size = c(Inf, Inf, 120), 
   gset_nms = c("go_sets", "kegg_sets"), 
-  filter_by_npep = exprs(prot_n_pep >= 2), 
+  filter_by_npep = exprs(prot_n_pep >= 3), 
 )
 
 ## NA imputation
@@ -78,6 +78,37 @@ prnGSPA(
   logFC_cutoff = log2(1.2),
   gspval_cutoff = 5E-2,
   gset_nms = c("go_sets", "kegg_sets"),
-  filter_prots_by_npep = exprs(prot_n_pep >= 2),
+  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+)
+
+# ===================================
+# Distance heat maps of gene sets
+# (also interactive networks)
+# ===================================
+# a `term` is a subset of an `ess_term` if the distance is zero
+prnGSPAHM(
+  filter_by = exprs(distance <= .6),
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  annot_rows = "ess_size",
+  filename = show_some_redundancy.png,
+)
+
+# human terms only
+prnGSPAHM(
+  filter_num = exprs(distance <= .95),
+  filter_sp = exprs(start_with_str("hs", term)),
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  filename = show_more_connectivity.png,
+)
+
+# custom color palette
+prnGSPAHM(
+  annot_cols = c("ess_idx", "ess_size"),
+  annot_colnames = c("Eset index", "Size"),
+  filter_by = exprs(distance <= .95),
+  color = colorRampPalette(c("blue", "white", "red"))(100),
+  filename = "custom_colors.png",
 )
 

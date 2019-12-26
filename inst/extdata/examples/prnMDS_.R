@@ -7,6 +7,7 @@
 # global option
 scale_log2r <- TRUE
 
+# peptides, all samples
 pepMDS(
   col_select = Select, 
   filter_peps_by = exprs(pep_n_psm >= 10),
@@ -14,6 +15,7 @@ pepMDS(
   filename = "peps_rowfil.png",
 )
 
+# peptides, selected samples
 pepMDS(
   col_select = BI, 
   col_shape = Shape,   
@@ -23,6 +25,7 @@ pepMDS(
   filename = "peps_rowfil_colsel.png",
 )
 
+# proteins
 prnMDS(
   col_color = Color,
   col_shape = Shape,
@@ -31,7 +34,7 @@ prnMDS(
   filename = "prns_rowfil.png",
 )
 
-# custom palette
+# proteins, custom palette
 prnMDS(
   col_shape = Shape,
   color_brewer = Set1,

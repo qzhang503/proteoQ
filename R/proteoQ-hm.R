@@ -358,7 +358,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'Visualization of heat maps
 #'
 #'\code{proteoHM} visualizes the heat maps of protein or peptide \code{log2FC}.
-#'Users should avoid call the method directly, but instead use the following
+#'Users should avoid calling the method directly, but instead use the following
 #'wrappers.
 #'
 #'Data rows without non-missing pairs will result in NA distances in inter-row
@@ -390,17 +390,19 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'@param xmax  Numeric; the maximum  x at a log2 scale. The default is 1.
 #'@param xmargin  Numeric; the margin in heat scales. The default is 0.1.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
-#'  of data against the column keys in \code{Peptide.txt} or \code{Protein.txt}.
-#'  Each statement contains to a list of logical expression(s). The \code{lhs}
-#'  needs to start with \code{filter_}. The logical condition(s) at the
-#'  \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. For
-#'  example, \code{pep_len} is a column key present in \code{Mascot} peptide
+#'  of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
+#'  etc. Each statement contains to a list of logical expression(s). The
+#'  \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+#'  For example, \code{pep_len} is a column key present in \code{Mascot} peptide
 #'  tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
 #'  exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-#'  See also \code{\link{pepHist}}. \cr \cr \code{arrange_}: Logical
-#'  expression(s) for the row ordering of data. The \code{lhs} needs to start
-#'  with \code{arrange_}. The logical condition(s) at the \code{rhs} needs to be
-#'  enclosed in \code{exprs} with round parenthesis. \cr \cr Additional
+#'  See also \code{\link{pepHist}}, \code{\link{normPSM}}. \cr \cr
+#'  \code{arrange_}: Logical expression(s) for the row ordering of data. The
+#'  \code{lhs} needs to start with \code{arrange_}. The logical condition(s) at
+#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+#'  For example, \code{arrange_peps_by = exprs(gene, prot_n_pep)} will arrange
+#'  entries by \code{gene}, then by \code{prot_n_pep}. \cr \cr Additional
 #'  parameters for plotting: \cr \code{width}, the width of plot \cr
 #'  \code{height}, the height of plot \cr \cr Additional arguments for
 #'  \code{\link[pheatmap]{pheatmap}}, i.e., \code{cluster_rows}... \cr \cr Note
@@ -408,16 +410,45 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'  use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
 #'  use keys indicated in \code{annot_rows}
 #'
-#'@seealso \code{\link{load_expts}} for a minimal working example in data
-#'  normalization \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
-#'  extended examples in histogram visualization. \cr \code{\link{contain_str}},
-#'  \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings
-#'  \cr \code{\link{pepImp}} and \code{\link{prnImp}} for missing value
-#'  imputation \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
-#'  significance tests \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+#'  
+#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
 #'
 #'@example inst/extdata/examples/prnHM_.R
 #'

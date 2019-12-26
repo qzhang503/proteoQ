@@ -10,7 +10,7 @@
 
 # !!! initial `Protein.txt` results from `Pep2Prn()` aligned by median centering (MC)
 # !!! the first `MGKernel` normalization will apply to all samples
-# !!! succeeding `MGKernel` normalization(s) will apply to all samples if toggling `n_comp` (see section 4)
+# !!! succeeding `MGKernel` normalization(s) will also apply to all samples if changing `n_comp` (see section 4)
 
 # fresh start of `Protein.txt` (for demonstration)
 unlink(file.path(dat_dir, "Protein"), recursive = TRUE, force = TRUE)
@@ -132,7 +132,7 @@ standPrn(
 
 prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mc_selrows.png)
 
-# (3.2) change to `MGKernel` for all samples using selected data rows
+# (3.2) first `MGKernel` for all samples using selected data rows
 standPrn(
   method_align = MGKernel, 
   n_comp = 3, 
@@ -141,7 +141,7 @@ standPrn(
   epsilon = 1e-05,
   
   # will be forced to all samples since this is the first `MGKernel`
-  col_refit = Select_sub, 
+  # col_refit = Select_sub, 
 
   slice_peps_by = exprs(prot_n_psm >= 10),
 )
@@ -181,8 +181,8 @@ standPrn(
 
 prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mG3.png)
 
-# (4.2) a fresh start with a different `n_comp`
-# (in that `col_refit = Select_sub` ignored; instead apply `MGKernel` to all samples)
+# (4.2) a fresh start since changing `n_comp`
+# (e.g. `col_refit = Select_sub` ignored; instead apply `MGKernel` to all samples)
 standPrn(
   method_align = MGKernel, 
   n_comp = 2, 

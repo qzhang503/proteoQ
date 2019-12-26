@@ -90,7 +90,8 @@ Heat map visualization of distance matrices.
 }
 \description{
 \code{proteoEucDist} visualizes the heat map of Euclidean distances. Users
-should avoid call the method directly, but instead use the following wrappers.
+should avoid calling the method directly, but instead use the following
+wrappers.
 
 \code{pepEucDist} is a wrapper of \code{\link{proteoEucDist}} for peptide data
 
@@ -99,10 +100,6 @@ should avoid call the method directly, but instead use the following wrappers.
 \details{
 An Euclidean distance matrix of \code{log2FC} is returned by
 \code{\link[stats]{dist}} for heat map visualization.
-
-The function matches the current \code{id} to the grouping argument in the
-latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
-for details.
 }
 \examples{
 # ===================================
@@ -111,7 +108,7 @@ for details.
 
 ## !!!require the brief working example in `?load_expts`
 
-# global option
+## global option
 scale_log2r <- TRUE
 
 pepEucDist(
@@ -142,7 +139,7 @@ prnEucDist(
   cellwidth = 24,
   cellheight = 24,
   
-  filter_prots_by_npep = exprs(prot_n_pep >= 5),
+  filter_prots_by = exprs(prot_n_pep >= 5),
   filename = "filter.png",
 )
 
@@ -158,22 +155,24 @@ prnEucDist(
 
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data normalization \cr
- \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
- \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+ normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
+ peptide summarization \cr \code{\link{mergePep}} for extended examples in
+ peptide data merging \cr \code{\link{standPep}} for extended examples in
+ peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
+ in peptide to protein summarization \cr \code{\link{standPrn}} for extended
+ examples in protein data normalization. \cr \code{\link{pepHist}} and
+ \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
+ data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+ \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+ \code{\link{start_with_str}}, \code{\link{end_with_str}},
+ \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+ data subsetting by character strings \cr \code{\link{pepImp}} and
+ \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
+ and \code{\link{prnSig}} for significance tests \cr \code{\link{pepHM}} and
+ \code{\link{prnHM}} for heat map visualization \cr \code{\link{pepMDS}} and
+ \code{\link{prnMDS}} for MDS visualization \cr \code{\link{pepPCA}} and
+ \code{\link{prnPcA}} for PCA visualization \cr
 }

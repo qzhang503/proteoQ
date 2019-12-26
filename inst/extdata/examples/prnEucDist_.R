@@ -4,7 +4,7 @@
 
 ## !!!require the brief working example in `?load_expts`
 
-# global option
+## global option
 scale_log2r <- TRUE
 
 pepEucDist(
@@ -35,7 +35,7 @@ prnEucDist(
   cellwidth = 24,
   cellheight = 24,
   
-  filter_prots_by_npep = exprs(prot_n_pep >= 5),
+  filter_prots_by = exprs(prot_n_pep >= 5),
   filename = "filter.png",
 )
 

@@ -29,12 +29,12 @@ key will be \code{Select}.}
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
 
-\item{show_curves}{Logical; if TRUE, shows the fitted curves. At the TRUE default, the curve
-parameters are based on the latest call to \code{\link{standPep}} or
-\code{\link{standPrn}} with \code{method_align = MGKernel}. This feature can
-inform the effects of data filtration on the alignment of \code{logFC}
-profiles. Also see \code{\link{standPep}} and \code{\link{standPrn}} for
-more examples.}
+\item{show_curves}{Logical; if TRUE, shows the fitted curves. At the TRUE
+default, the curve parameters are based on the latest call to
+\code{\link{standPep}} or \code{\link{standPrn}} with \code{method_align =
+MGKernel}. This feature can inform the effects of data filtration on the
+alignment of \code{logFC} profiles. Also see \code{\link{standPep}} and
+\code{\link{standPrn}} for more examples.}
 
 \item{show_vline}{Logical; if TRUE, shows the vertical lines at \code{x = 0}.
 The default is TRUE.}
@@ -56,7 +56,7 @@ will be determined by the extension of the file name. A \code{.png} format
 will be used at default or at an unrecognized file extension.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
-of data against the column keys in \code{Peptide.txt} or \code{Protein.txt}.
+of data against the column keys in \code{Peptide.txt}, \code{Protein.txt} etc.
 Each statement contains to a list of logical expression(s). The \code{lhs}
 needs to start with \code{filter_}. The logical condition(s) at the
 \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. \cr
@@ -74,15 +74,11 @@ columns; the default is 1. \cr \code{width}, the width of plot; \cr
 fixed across panels; the default is "fixed" and the alternative is "free".}
 }
 \value{
-The histograms of \code{log2FC} under
- \code{~\\dat_dir\\Peptide\\Histogram} or
- \code{~\\dat_dir\\Protein\\Histogram}.
-
 Histograms of \code{log2FC}
 }
 \description{
 \code{proteoHist} plots the histograms of protein or peptide \code{log2FC}.
-Users should avoid call the method directly, but instead use the following
+Users should avoid calling the method directly, but instead use the following
 wrappers.
 
 \code{pepHist} is a wrapper of \code{\link{proteoHist}} for peptide data
@@ -100,7 +96,7 @@ their contributing reporter-ion intensity.
 
 ## !!!require the brief working example in `?load_expts`
 
-# examplary `MGKernel` alignment
+## examplary `MGKernel` alignment
 standPep(
   method_align = MGKernel, 
   n_comp = 3, 
@@ -185,17 +181,24 @@ prnHist(
 ## End(Not run)
 }
 \seealso{
-\code{\link{load_expts}} for a minimal working example in data normalization \cr
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{purgePSM}} for extended examples in PSM data purging \cr
  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
  \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{purgePep}} for extended examples in peptide data purging \cr
  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr
 }

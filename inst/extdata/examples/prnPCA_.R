@@ -4,9 +4,10 @@
 
 ## !!!require the brief working example in `?load_expts`
 
-# global option
+## global option
 scale_log2r <- TRUE
 
+# peptides, all samples
 pepPCA(
   col_select = Select, 
   filter_peps_by = exprs(pep_n_psm >= 10),
@@ -14,6 +15,7 @@ pepPCA(
   filename = "peps_rowfil.png",
 )
 
+# peptides, samples under column `BI`
 pepPCA(
   col_select = BI, 
   col_shape = Shape,   
@@ -23,6 +25,7 @@ pepPCA(
   filename = "peps_rowfil_colsel.png",
 )
 
+# proteins
 prnPCA(
   col_color = Color,
   col_shape = Shape,
@@ -31,7 +34,7 @@ prnPCA(
   filename = "prns_rowfil.png",
 )
 
-# custom palette
+# proteins, custom palette
 prnPCA(
   col_shape = Shape,
   color_brewer = Set1,
@@ -39,7 +42,7 @@ prnPCA(
   filename = "my_palette.png",
 )
 
-# by features
+# proteins, by features
 prnPCA(
   type = feats,
   scale_log2r = TRUE,
@@ -51,7 +54,6 @@ prnPCA(
   col_color = "column_key_not_existed",
   col_shape = "another_missing_column_key"
 )
-
 ## End(Not run)
 
 

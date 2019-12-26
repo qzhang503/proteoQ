@@ -509,7 +509,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'@importFrom magrittr %>%
 #'@example inst/extdata/examples/prnNMF_.R
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr 
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
 #'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
@@ -530,8 +530,8 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
 #'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
 #'  
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
 #'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
 #'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
 #'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 

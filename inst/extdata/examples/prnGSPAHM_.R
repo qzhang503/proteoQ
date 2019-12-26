@@ -4,7 +4,7 @@
 
 ## !!!require the brief working example in `?load_expts`
 
-# global option
+## global option
 scale_log2r <- TRUE
 
 ## prerequisites in significance and enrichment tests

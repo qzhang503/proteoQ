@@ -94,28 +94,146 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 
 ## !!!require the brief working example in `?load_expts`
 
-# global option
+## global option
 scale_log2r <- TRUE
 
-# analysis 
-# (with sample order supervision)
+# ===================================
+# Analysis
+# ===================================
+# base (proteins, with sample order supervision)
 anal_prnTrend(
+  impute_na = FALSE,
   col_order = Order,
-  n_clust = c(5:8), 
-  filter_by_npep = exprs(prot_n_pep >= 2),
+  n_clust = c(5:6), 
 )
 
-# visualization
+## row filtration (proteins)
+anal_prnTrend(
+  impute_na = FALSE,
+  col_order = Order,
+  n_clust = c(5:6), 
+  filter_prots = exprs(prot_n_pep >= 3),
+)
+
+## additional row filtration by pVals (proteins, impute_na = FALSE)
+# if not yet, run prerequisitive significance tests at `impute_na = FALSE`
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = FALSE)
+
+# (`W16_vs_W2.pVal (W16-W2)` now a column key)
+anal_prnTrend(
+  impute_na = FALSE,
+  col_order = Order,
+  n_clust = c(5:6), 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+)
+
+## additional row filtration by pVals (impute_na = TRUE)
+# if not yet, run prerequisitive NA imputation
+pepImp(m = 2, maxit = 2)
+prnImp(m = 5, maxit = 5)
+
+# if not yet, run prerequisitive significance tests at `impute_na = TRUE`
+pepSig(
+  impute_na = TRUE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = TRUE)
+
+anal_prnTrend(
+  impute_na = TRUE,
+  col_order = Order,
+  n_clust = c(5:6), 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+)
+
+# ===================================
+# Visualization
+# ===================================
+## no NA imputation 
 plot_prnTrend(
+  impute_na = FALSE, 
+  col_order = Order,
+)
+
+plot_prnTrend(
+  impute_na = FALSE, 
   col_order = Order,
   n_clust = c(5:6), 
 )
 
 # subsets visualization
-# (proteins with four or more identifying peptides)
 plot_prnTrend(
+  impute_na = FALSE, 
   col_order = Order,
-  filter_by_npep = exprs(prot_n_pep >= 4),
+  filter_prots = exprs(prot_n_pep >= 4),
 )
 
+## NA imputation
+plot_prnTrend(
+  impute_na = TRUE,
+  col_order = Order,
+  filter_prots = exprs(prot_n_pep >= 4),
+)
+
+}
+\seealso{
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+ 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+ \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+ 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ 
+ \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
 }

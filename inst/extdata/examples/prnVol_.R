@@ -4,7 +4,7 @@
 
 ## !!!require the brief working example in `?load_expts`
 
-# global option
+## global option
 scale_log2r <- TRUE
 
 ## for all peptides or proteins
@@ -31,11 +31,11 @@ prnVol(
 ## protein subgroups by gene sets
 # prerequisite analysis of GSPA
 prnGSPA(
+  impute_na = FALSE,
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
   gspval_cutoff = 5E-2,
   gset_nms = c("go_sets", "kegg_sets"),
-  impute_na = FALSE,
 )
 
 # filtered by proteins with two or more identifying peptides for visualization
@@ -60,6 +60,6 @@ gspaMap(
   show_sig = pVal,
   show_labels = TRUE,
   yco = 0.05,
-  filter_by_npep = exprs(prot_n_pep >= 2),
+  filter_prots = exprs(prot_n_pep >= 2),
 )
 

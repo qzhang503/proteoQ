@@ -4,7 +4,7 @@
 
 ## !!!require the brief working example in `?load_expts`
 
-# examplary `MGKernel` alignment
+## examplary `MGKernel` alignment
 standPep(
   method_align = MGKernel, 
   n_comp = 3, 

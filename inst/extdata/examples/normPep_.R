@@ -10,7 +10,7 @@
 
 # !!! initial `Peptide.txt` results from `mergePep()` aligned by median centering (MC)
 # !!! the first `MGKernel` normalization will apply to all samples
-# !!! succeeding `MGKernel` normalization(s) will apply to all samples if toggling `n_comp` (see section 4)
+# !!! succeeding `MGKernel` normalization(s) will also apply to all samples if changing `n_comp` (see section 4)
 
 # (1.1) the first `MGKernel` after `mergePep()`
 # (default double trimming by log2FC and intensity percentiles also apply)
@@ -127,7 +127,7 @@ standPep(
 
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc_selrows.png)
 
-# (3.2) change to `MGKernel` for all samples using selected data rows
+# (3.2) first `MGKernel` for all samples using selected data rows
 standPep(
   method_align = MGKernel, 
   n_comp = 3, 
@@ -136,7 +136,7 @@ standPep(
   epsilon = 1e-05,
   
   # will be forced to all samples since this is the first `MGKernel`
-  col_refit = Select_sub, 
+  # col_refit = Select_sub, 
 
   slice_peps_by = exprs(prot_n_psm >= 10),
 )
@@ -177,8 +177,8 @@ standPep(
 
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG3.png)
 
-# (4.2) a fresh start with a different `n_comp`
-# (in that `col_refit = Select_sub` ignored; instead apply `MGKernel` to all samples)
+# (4.2) a fresh start since changing `n_comp`
+# (e.g. `col_refit = Select_sub` ignored; instead apply `MGKernel` to all samples)
 standPep(
   method_align = MGKernel, 
   n_comp = 2, 
@@ -254,7 +254,7 @@ pepHM(
   filename = "mcGAPDH_all.png",
 )
 
-# renormalize against GAPDH for all samples
+# first renormalize against GAPDH for all samples
 # (not to use `MGkernel` as may not have enough data entries from housekeeper(s))
 standPep(
   method_align = MC, 
@@ -264,7 +264,7 @@ standPep(
 # (now log2FC profiles aligned by GAPDH for `BI_1` samples)
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = wrong_hskp.png)
 
-# (no histograms for `JHU_TMT1` and `PNNL_TMT1` samples)
+# (no histograms for `JHU_TMT1` and `PNNL_TMT1` samples as no GAPDH underneath)
 pepHist(scale_log2r = TRUE, filename = wrong_hskp_all.png)
 
 # not to keep the above example with no data under `JHU_TMT1` and `PNNL_TMT1`

@@ -1,63 +1,97 @@
-## part 0 --- installation
-# package proteoQ
+# ==============================================
+# part 0 --- installation
+# ==============================================
+# proteoQ package
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
 
-# data package: FASTA and Mascot examples
+# data package: FASTA and PSM examples
 devtools::install_github("qzhang503/proteoQDA")
 
 
-## part 1 --- setup
-# FASTA files to database directory
+# ==============================================
+# part 1 --- setup
+# ==============================================
+# FASTA (all platforms)
 library(proteoQDA)
-dir.create("~\\proteoQ\\dbs\\fasta\\refseq", recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
-copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
+fasta_dir <- "~\\proteoQ\\dbs\\fasta\\refseq"
+dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
+copy_refseq_hs(fasta_dir)
+copy_refseq_mm(fasta_dir)
 
-# examplary PSM data to working directory
-dir.create("C:\\The\\Mascot\\Example", recursive = TRUE, showWarnings = FALSE)
-dat_dir <- "C:\\The\\Mascot\\Example"
-cptac_csv_1(dat_dir)
+# working directory (all platforms)
+dat_dir <- "~\\proteoQ\\examples"
+dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
-# metadata to working directory
-cptac_expt_1(dat_dir)
-cptac_frac_1(dat_dir)
+# metadata (all platforms)
+copy_global_exptsmry(dat_dir)
+cptac_global_fracsmry(dat_dir)
 
+# PSM (choose one of the platforms)
+choose_one <- TRUE
+if (choose_one) {
+  # Mascot
+  copy_global_mascot(dat_dir)
+  
+  ## or MaxQuant
+  # copy_global_maxquant(dat_dir)
+  
+  ## or Spectrum Mill
+  # copy_global_sm(dat_dir)
+}
+
+# ==============================================
+# part 2 --- PSMs to peptides and proteins
+# ==============================================
 # metadata to workspace
 library(proteoQ)
+dat_dir <- "~\\proteoQ\\examples"
 load_expts()
 
-
-## part 2 --- summarization of PSMs to peptides and proteins
 # PSM tables
 normPSM(
 	group_psm_by = pep_seq_mod, 
 	group_pep_by = gene, 
 	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
 						"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
-	rptr_intco = 3000,
+	rptr_intco = 1000,
 	rm_craps = TRUE,
 	rm_krts = FALSE,
 	rm_outliers = FALSE, 
 	annot_kinases = TRUE, 
 	plot_rptr_int = TRUE, 
 	plot_log2FC_cv = TRUE, 
-	
-	filter_psms = exprs(pep_expect <= .1, pep_score >= 15), 
-	filter_more_psms = exprs(pep_rank == 1),
 )
 
 ## DO NOT RUN
 dontrun <- TRUE
 if (!dontrun) {
+  # PSM filtration via varargs
+  normPSM(
+    group_psm_by = pep_seq_mod, 
+    group_pep_by = gene, 
+    fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
+              "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+    rptr_intco = 1000,
+    rm_craps = TRUE,
+    rm_krts = FALSE,
+    rm_outliers = FALSE, 
+    annot_kinases = TRUE, 
+    plot_rptr_int = TRUE, 
+    plot_log2FC_cv = TRUE, 
+    
+    filter_psms = exprs(pep_expect <= .1, pep_score >= 15), 
+    filter_more_psms = exprs(pep_rank == 1),
+  )
+  
 	# peptide sequences with different side-chain modifications treated as the same species
 	normPSM(
 		group_psm_by = pep_seq, 
 		group_pep_by = gene, 
 		fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
 							"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
-		rptr_intco = 3000,
+		rptr_intco = 1000,
 		rm_craps = TRUE,
 		rm_krts = FALSE,
 		rm_outliers = FALSE, 
@@ -72,22 +106,76 @@ if (!dontrun) {
 ## END of DO NOT RUN
 
 # optional: cleanup of PSM groups under the same peptide IDs by CV
-purgePSM(pt_cv = 0.95)
+purgePSM()
 
-# peptide tables
-normPep(
-	method_psm_pep = median, 
-	method_align = MGKernel, 
-	range_log2r = c(5, 95), 
-	range_int = c(5, 95), 
-	n_comp = 3, 
-	seed = 749662, 
-	maxit = 200, 
-	epsilon = 1e-05, 
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  purgePSM(pt_cv = 0.95)
+}
+## END of DO NOT RUN
+
+# PSMs to peptides
+PSM2Pep()
+
+# peptide data merging
+# (columns keys in TMTset1_LCMSinj1_Peptide_N.txt... suitable for varargs of `filter_`)
+mergePep()
+
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  # exclude long peptide sequences
+  mergePep(
+    filter_peps_at = exprs(pep_len <= 100),
+  )
+}
+## END of DO NOT RUN
+
+# peptide data standardization by human subset
+# (column keys in Peptide.txt suitable for parameterization via varargs of `slice_`)
+standPep(
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  slice_peps_by = exprs(species == "human"),
 )
 
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  # ---------------------------------------------
+  # see ?standPep for mixed-bed and more examples
+  # ---------------------------------------------
+  
+  # renormalization against selected samples
+  standPep(
+    method_align = MGKernel, 
+    range_log2r = c(5, 95), 
+    range_int = c(5, 95), 
+    n_comp = 3, 
+    seed = 749662, 
+    maxit = 200, 
+    epsilon = 1e-05, 
+    slice_peps_by = exprs(species == "human"),
+    col_refit = Select_sub,	
+  )
+}
+## END of DO NOT RUN
+
 # optional: cleanup of peptide groups under the same protein IDs by CV
-purgePep(pt_cv = 0.95)
+purgePep()
+
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  purgePep(pt_cv = 0.95)
+}
+## END of DO NOT RUN
 
 # peptide histograms with logFC scaling
 pepHist(
@@ -126,102 +214,60 @@ pepHist(
  filename = Hist_BI_Z.png, 
 )
 
-## DO NOT RUN
-dontrun <- TRUE
-if (!dontrun) {
-	# renormalization of peptide data for selected samples under `Select_sub`
-	normPep(
-		method_psm_pep = median, 
-		method_align = MGKernel, 
-		range_log2r = c(5, 95), 
-		range_int = c(5, 95), 
-		n_comp = 3, 
-		seed = 749662, 
-		maxit = 200, 
-		epsilon = 1e-05, 
-		col_refit = Select_sub,
-	)
-	
-	# examplary renormalization based on partial data and for selected samples only
-	normPep(
-		method_psm_pep = median, 
-		method_align = MGKernel, 
-		range_log2r = c(5, 95), 
-		range_int = c(5, 95), 
-		n_comp = 3, 
-		seed = 749662, 
-		maxit = 200, 
-		epsilon = 1e-05, 
-		slice_by = exprs(prot_n_psm >= 10, pep_n_psm >= 3),
-		col_refit = Select_sub,
-	)
-}
-## END of DO NOT RUN
-
-# protein tables
-#  (1) exclude shared peptides
-#  (2) exclude proteins with less than two identifying peptides
-normPrn(
-	method_pep_prn = median, 
-	method_align = MGKernel, 
-	range_log2r = c(20, 95), 
-	range_int = c(5, 95), 
-	n_comp = 2, 
-	seed = 749662, 
-	maxit = 200, 
-	epsilon = 1e-05, 
-	filter_by = exprs(pep_isunique == TRUE, prot_n_pep >= 2),
+# peptides to proteins
+# (column keys in `Peptide.txt` suitable for varargs of `filter_`)
+Pep2Prn(
+  use_unique_pep = TRUE,
 )
 
 ## DO NOT RUN
 dontrun <- TRUE
 if (!dontrun) {
-	# renormalization against selected samples
-	normPrn(
-		method_pep_prn = median,
-		method_align = MGKernel,
-		range_log2r = c(20, 95),
-		range_int = c(5, 95),
-		n_comp = 2,
-		seed = 749662,
-		maxit = 200,
-		epsilon = 1e-05,
-		filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
-		
-		# selected samples
-		col_refit = Select_sub,	
-	)
-	
-	# renormalization based on partial data 
-	normPrn(
-		method_pep_prn = median,
-		method_align = MGKernel,
-		range_log2r = c(20, 95),
-		range_int = c(5, 95),
-		n_comp = 2,
-		seed = 749662,
-		maxit = 200,
-		epsilon = 1e-05,
-		filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
-		
-		# selected rows 
-		slice_at = exprs(prot_n_psm >= 10), 
-	)
-	
-	# renormalization against selected samples using partial data
-	normPrn(
-		method_pep_prn = median,
-		method_align = MGKernel,
-		range_log2r = c(20, 95),
-		range_int = c(5, 95),
-		n_comp = 2,
-		seed = 749662,
-		maxit = 200,
-		epsilon = 1e-05,
-		filter_by = exprs(prot_n_pep >= 2, pep_isunique == TRUE),
-		slice_at = exprs(prot_n_psm >= 10), 
-		col_refit = Select_sub,
-	)
+  # two more unique peptides in protein identification
+  Pep2Prn(
+    use_unique_pep = TRUE,
+    filter_peps = exprs(prot_n_pep >= 2),
+  )
+  
+  # phosphopeptides only
+  Pep2Prn(
+    use_unique_pep = TRUE,
+    filter_peps = exprs(pep_mod_sty == TRUE),
+  )
+}
+## END of DO NOT RUN
+
+# protein data standardization by human subset
+standPrn(
+  method_align = MGKernel, 
+  range_log2r = c(5, 95), 
+  range_int = c(5, 95), 
+  n_comp = 2, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  slice_peps_by = exprs(species == "human"),
+)
+
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+	# ---------------------------------------------
+  # see ?standPrn for mixed-bed and more examples
+  # ---------------------------------------------
+  
+  # renormalization against selected samples
+  standPrn(
+    method_align = MGKernel, 
+    range_log2r = c(5, 95), 
+    range_int = c(5, 95), 
+    n_comp = 2, 
+    seed = 749662, 
+    maxit = 200, 
+    epsilon = 1e-05, 
+    slice_peps_by = exprs(species == "human"),
+    col_refit = Select_sub,	
+  )
 }
 ## END of DO NOT RUN
 
@@ -274,14 +320,51 @@ prnHist(
 ## PAUSE: decide on the chioce of scaling normalization
 scale_log2r = TRUE
 
+# ==============================================
+# part 3 --- linear modeling
+# ==============================================
+# significance tests (no NA imputation)
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
+                  "W2.JHU.TMT2-W2.JHU.TMT1", 
+                  "W2.PNNL.TMT2-W2.PNNL.TMT1"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
 
-## part 3 --- basic informatics
-# optional: peptide NA imputation (warning: may take a while)
+prnSig(impute_na = FALSE)
+
+# volcano plots
+pepVol()
+prnVol()
+
+# Optional significance tests (with NA imputation)
 pepImp(m = 2, maxit = 2)
-
-# optional: protein NA imputation
 prnImp(m = 5, maxit = 5)
 
+pepSig(
+  impute_na = TRUE, 
+  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
+                  "W2.JHU.TMT2-W2.JHU.TMT1", 
+                  "W2.PNNL.TMT2-W2.PNNL.TMT1"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = TRUE)
+
+# volcano plots
+pepVol()
+prnVol()
+
+# ==============================================
+# part 4 --- basic informatics
+# ==============================================
 # peptide MDS
 pepMDS(
 	show_ids = FALSE,
@@ -429,13 +512,6 @@ pepCorr_logFC(
 	filename = PNNL_ord.png
 )
 
-# peptide log10-intensity correlation of PNNL subset with sample-order supervision
-pepCorr_logInt(
-	col_select = PNNL,
-	col_order = Order,
-	filename = PNNL_ordint.png,
-)
-
 # protein logFC correlation of WHIM2 subset with supervision
 prnCorr_logFC(
 	col_select = W2,
@@ -477,26 +553,6 @@ prnHM(
 	arrange_kin = exprs(kin_order, gene),
 	filename = "kin_by_class.png", 
 )
-
-
-# peptide significance tests
-pepSig(
-	impute_na = FALSE, 
-	W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-	W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-	W16_vs_W2 = ~ Term_3["W16-W2"], 
-)
-
-# peptide volcano plots
-pepVol()
-
-# protein significance tests
-prnSig(
-	impute_na = FALSE, 
-)
-
-# protein volcano plots
-prnVol()
 
 # c-means clustering of protein logFC with filtration and sample-order supervision
 anal_prnTrend(

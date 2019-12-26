@@ -71,17 +71,19 @@ the side of the indicated plot. The default is NULL without row annotation.}
 \item{xmargin}{Numeric; the margin in heat scales. The default is 0.1.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
-of data against the column keys in \code{Peptide.txt} or \code{Protein.txt}.
-Each statement contains to a list of logical expression(s). The \code{lhs}
-needs to start with \code{filter_}. The logical condition(s) at the
-\code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. For
-example, \code{pep_len} is a column key present in \code{Mascot} peptide
+of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
+etc. Each statement contains to a list of logical expression(s). The
+\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+For example, \code{pep_len} is a column key present in \code{Mascot} peptide
 tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
 exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-See also \code{\link{pepHist}}. \cr \cr \code{arrange_}: Logical
-expression(s) for the row ordering of data. The \code{lhs} needs to start
-with \code{arrange_}. The logical condition(s) at the \code{rhs} needs to be
-enclosed in \code{exprs} with round parenthesis. \cr \cr Additional
+See also \code{\link{pepHist}}, \code{\link{normPSM}}. \cr \cr
+\code{arrange_}: Logical expression(s) for the row ordering of data. The
+\code{lhs} needs to start with \code{arrange_}. The logical condition(s) at
+the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+For example, \code{arrange_peps_by = exprs(gene, prot_n_pep)} will arrange
+entries by \code{gene}, then by \code{prot_n_pep}. \cr \cr Additional
 parameters for plotting: \cr \code{width}, the width of plot \cr
 \code{height}, the height of plot \cr \cr Additional arguments for
 \code{\link[pheatmap]{pheatmap}}, i.e., \code{cluster_rows}... \cr \cr Note
@@ -94,7 +96,7 @@ Heat maps and optional sub trees.
 }
 \description{
 \code{proteoHM} visualizes the heat maps of protein or peptide \code{log2FC}.
-Users should avoid call the method directly, but instead use the following
+Users should avoid calling the method directly, but instead use the following
 wrappers.
 
 \code{pepHM} is a wrapper function of \code{\link{proteoHM}} for peptide data
@@ -123,9 +125,10 @@ To avoid memory failure, row aggregation using the \code{kmeans_k} option
 
 ## !!!require the brief working example in `?load_expts`
 
-# global option
+## global option
 scale_log2r <- TRUE
 
+## proteins
 # row clustering
 prnHM(
   xmin = -1,
@@ -183,19 +186,22 @@ prnHM(
   filename = "cutree_overruled.png",
 )
 
-
-## significance tests for pVal columns
-# (`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` is a column key in Peptide_pVals.txt)
+## additional row filtration by pVals (proteins, impute_na = FALSE)
+# if not yet, run prerequisitive significance tests at `impute_na = FALSE`
 pepSig(
   impute_na = FALSE, 
-  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
   W16_vs_W2 = ~ Term_3["W16-W2"], 
 )
 
 prnSig(impute_na = FALSE)
 
-# now can have row filtration by pVals
+# (`W16_vs_W2.pVal (W16-W2)` now a column key)
 prnHM(
   xmin = -1,
   xmax = 1,
@@ -209,19 +215,29 @@ prnHM(
   fontsize_row = 3,
   cellwidth = 14,
   filter_sp = exprs(species == "human", prot_n_pep >= 2),
-  filter_by = exprs(`W2_bat.pVal ((W2.BI.TMT2-W2.BI.TMT1))` <= 1e-6), 
+  filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
   filename = "pval_cutoff_at_1e6.png", 
 )
 
-
-## impute NA
-# peptide
+## additional row filtration by pVals (proteins, impute_na = TRUE)
+# if not yet, run prerequisitive NA imputation
 pepImp(m = 2, maxit = 2)
-
-# protein
 prnImp(m = 5, maxit = 5)
 
-# with NA imputation
+# if not yet, run prerequisitive significance tests at `impute_na = TRUE`
+pepSig(
+  impute_na = TRUE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = TRUE)
+
 prnHM(
   impute_na = TRUE, 
   xmin = -1,
@@ -238,12 +254,13 @@ prnHM(
   cellheight = 4,
   width = 18,
   height = 12,
-  filter_sp = exprs(species == "human", prot_n_pep >= 2),
-  filename = "huprns_npep2_impna.png",
+  filter_prots_by_sp_npep = exprs(species == "human", prot_n_pep >= 3),
+  filter_prots_by_pvals = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+  filename = "huprns_fil_impna.png",
 )
 
-
-# peptides under selected protein(s)
+## peptides
+# under selected protein(s)
 pepHM(
   xmin = -2,
   xmax = 2,
@@ -285,8 +302,8 @@ pepHM(
   filename = "ncl_rows_by_gene.png",
 )
 
-# ordered by sequence 
-# (may try `exprs(pep_seq)` if `pep_seq_mod` not a column key in `Peptide.txt`)
+# rows ordered by sequence 
+# (may try alternatively `exprs(pep_seq)` if `pep_seq_mod` not a column key in `Peptide.txt`)
 pepHM(
   xmin = -2,
   xmax = 2,
@@ -307,7 +324,29 @@ pepHM(
   filename = "ncl_rows_by_seq.png",
 )
 
-# sample selection
+# more options
+pepHM(
+  xmin = -2,
+  xmax = 2,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = FALSE,
+  annot_rows = c("gene", "W16_vs_W2.pVal (W16-W2)"),
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  fontsize_row = 10,
+  cellwidth = 12,
+  cellheight = 12,
+  width = 18,
+  height = 12,
+  filter_by = exprs(gene \%in\% c("NCL", "Ncl")),
+  filter_prots_by_pvals = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-5), 
+  arrange_by = exprs(gene, -`W16_vs_W2.pVal (W16-W2)`), 
+  filename = "ncl_more.png",
+)
+
+# selected samples
 pepHM(
   col_select = BI_1, 
   xmin = -2,
@@ -331,14 +370,43 @@ pepHM(
 
 }
 \seealso{
-\code{\link{load_expts}} for a minimal working example in data
- normalization \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
- extended examples in histogram visualization. \cr \code{\link{contain_str}},
- \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
- \code{\link{ends_with_chars_in}} for data subsetting by character strings
- \cr \code{\link{pepImp}} and \code{\link{prnImp}} for missing value
- imputation \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
- significance tests \cr
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+ 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+ \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+ 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ 
+ \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
 }

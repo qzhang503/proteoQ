@@ -112,7 +112,7 @@ Description of the column keys in the inputs and outputs: \cr
 
 # !!! initial `Peptide.txt` results from `mergePep()` aligned by median centering (MC)
 # !!! the first `MGKernel` normalization will apply to all samples
-# !!! succeeding `MGKernel` normalization(s) will apply to all samples if toggling `n_comp` (see section 4)
+# !!! succeeding `MGKernel` normalization(s) will also apply to all samples if changing `n_comp` (see section 4)
 
 # (1.1) the first `MGKernel` after `mergePep()`
 # (default double trimming by log2FC and intensity percentiles also apply)
@@ -229,7 +229,7 @@ standPep(
 
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc_selrows.png)
 
-# (3.2) change to `MGKernel` for all samples using selected data rows
+# (3.2) first `MGKernel` for all samples using selected data rows
 standPep(
   method_align = MGKernel, 
   n_comp = 3, 
@@ -238,7 +238,7 @@ standPep(
   epsilon = 1e-05,
   
   # will be forced to all samples since this is the first `MGKernel`
-  col_refit = Select_sub, 
+  # col_refit = Select_sub, 
 
   slice_peps_by = exprs(prot_n_psm >= 10),
 )
@@ -279,8 +279,8 @@ standPep(
 
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mG3.png)
 
-# (4.2) a fresh start with a different `n_comp`
-# (in that `col_refit = Select_sub` ignored; instead apply `MGKernel` to all samples)
+# (4.2) a fresh start since changing `n_comp`
+# (e.g. `col_refit = Select_sub` ignored; instead apply `MGKernel` to all samples)
 standPep(
   method_align = MGKernel, 
   n_comp = 2, 
@@ -356,7 +356,7 @@ pepHM(
   filename = "mcGAPDH_all.png",
 )
 
-# renormalize against GAPDH for all samples
+# first renormalize against GAPDH for all samples
 # (not to use `MGkernel` as may not have enough data entries from housekeeper(s))
 standPep(
   method_align = MC, 
@@ -366,7 +366,7 @@ standPep(
 # (now log2FC profiles aligned by GAPDH for `BI_1` samples)
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = wrong_hskp.png)
 
-# (no histograms for `JHU_TMT1` and `PNNL_TMT1` samples)
+# (no histograms for `JHU_TMT1` and `PNNL_TMT1` samples as no GAPDH underneath)
 pepHist(scale_log2r = TRUE, filename = wrong_hskp_all.png)
 
 # not to keep the above example with no data under `JHU_TMT1` and `PNNL_TMT1`
@@ -405,15 +405,24 @@ standPep(
 
 }
 \seealso{
-\code{\link{load_expts}} for a minimal working example in data normalization \cr
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{purgePSM}} for extended examples in PSM data purging \cr
  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
  \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{pepHist}} for extended examples in peptide data histogram visualization. \cr 
- \code{\link{purgePep}} for extended examples in peptide data purging \cr
  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{prnHist}} for extended examples in protein data histogram visualization.
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr
 }
