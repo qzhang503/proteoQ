@@ -457,7 +457,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'@importFrom magrittr %>%
 #'@export
 proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
-                      scale_log2r = TRUE,impute_na = FALSE, complete_cases = FALSE,
+                      scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
                       df = NULL, filepath = NULL, filename = NULL,
                       annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                       xmin = -1, xmax = 1, xmargin = 0.1, ...) {

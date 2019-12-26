@@ -127,7 +127,11 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)	
 	show_sig <- rlang::as_string(rlang::enexpr(show_sig))
-	if (is.null(impute_na)) impute_na <- match_sigTest_imputena(as_string(id))
+	if (is.null(impute_na)) {
+	  impute_na <- match_sigTest_imputena(as_string(id))
+	  warning("`impute_na` not specified and matches to the latest `pepSig` as ", impute_na, 
+	          call. = FALSE)
+	}
 	
 	stopifnot(is_logical(scale_log2r))
 	stopifnot(is_logical(impute_na))
@@ -160,6 +164,10 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 		fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 		fn_prefix <- gsub("\\.[^.]*$", "", filename)
 	}
+	
+	fn_prefix <- fn_prefix %>% 
+	  ifelse(impute_na, paste0(., "_impNA"), .) 	
+	
 	filename <- paste0(fn_prefix, ".", fn_suffix)
 
 	if (is.null(df)) {

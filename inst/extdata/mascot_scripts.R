@@ -13,43 +13,42 @@ devtools::install_github("qzhang503/proteoQDA")
 # ==============================================
 # part 1 --- setup
 # ==============================================
-# FASTA (all platforms)
 library(proteoQDA)
+
+# FASTA (all platforms)
 fasta_dir <- "~\\proteoQ\\dbs\\fasta\\refseq"
 dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
 copy_refseq_hs(fasta_dir)
 copy_refseq_mm(fasta_dir)
 
-# working directory (all platforms)
+# metadata (all platforms)
 dat_dir <- "~\\proteoQ\\examples"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-# metadata (all platforms)
 copy_global_exptsmry(dat_dir)
 cptac_global_fracsmry(dat_dir)
 
-# PSM (choose one of the platforms)
+# PSM data (choose one of the platforms)
 choose_one <- TRUE
 if (choose_one) {
-  # Mascot
+  ## Mascot
   copy_global_mascot(dat_dir)
   
-  ## or MaxQuant
+  ## MaxQuant
   # copy_global_maxquant(dat_dir)
   
-  ## or Spectrum Mill
+  ## Spectrum Mill
   # copy_global_sm(dat_dir)
 }
 
+
 # ==============================================
-# part 2 --- PSMs to peptides and proteins
+# part 2 --- PSMs to peptides and to proteins
 # ==============================================
 # metadata to workspace
 library(proteoQ)
-dat_dir <- "~\\proteoQ\\examples"
-load_expts()
+load_expts(dat_dir)
 
-# PSM tables
+# PSM standardization
 normPSM(
 	group_psm_by = pep_seq_mod, 
 	group_pep_by = gene, 
@@ -67,7 +66,8 @@ normPSM(
 ## DO NOT RUN
 dontrun <- TRUE
 if (!dontrun) {
-  # PSM filtration via varargs
+  ## Mascot
+  # columns keys in PSM files suitable for varargs of `filter_`
   normPSM(
     group_psm_by = pep_seq_mod, 
     group_pep_by = gene, 
@@ -102,6 +102,18 @@ if (!dontrun) {
 		filter_psms = exprs(pep_expect <= .1, pep_score >= 15), 
 		filter_more_psms = exprs(pep_rank == 1),
 	)
+	
+	## MaxQuant (e.g. `PEP` is column key in MaxQuant)
+	normPSM(
+	  ...,
+	  filter_psms_by = exprs(PEP <= 0.1), 
+	)
+	
+	# Spectrum Mill (e.g. `score` is column key in SM)
+	normPSM(
+	  ...,
+	  filter_psms_by = exprs(score >= 10), 
+	)	
 }
 ## END of DO NOT RUN
 
@@ -119,16 +131,17 @@ if (!dontrun) {
 PSM2Pep()
 
 # peptide data merging
-# (columns keys in TMTset1_LCMSinj1_Peptide_N.txt... suitable for varargs of `filter_`)
 mergePep()
 
 ## DO NOT RUN
 dontrun <- TRUE
 if (!dontrun) {
-  # exclude long peptide sequences
-  mergePep(
-    filter_peps_at = exprs(pep_len <= 100),
-  )
+  ## Mascot
+  # columns keys in TMTset1_LCMSinj1_Peptide_N.txt... suitable for varargs of `filter_`
+  mergePep(filter_peps_at = exprs(pep_len <= 100))
+  
+  ## MaxQuant (e.g. `Length` is MaxQuant column key)
+  mergePep(filter_peps_at = exprs(Length <= 100))
 }
 ## END of DO NOT RUN
 
@@ -149,10 +162,10 @@ standPep(
 dontrun <- TRUE
 if (!dontrun) {
   # ---------------------------------------------
-  # see ?standPep for mixed-bed and more examples
+  # see ?standPep for mixed-bed examples and more 
   # ---------------------------------------------
   
-  # renormalization against selected samples
+  # renormalization against selected samples with human data
   standPep(
     method_align = MGKernel, 
     range_log2r = c(5, 95), 
@@ -187,49 +200,60 @@ pepHist(
 	ncol = 10, 
 )
 
-# peptide histograms with scaling and filtration
+# peptide histograms without logFC scaling
 pepHist(
-	scale_log2r = TRUE,
+	scale_log2r = FALSE,
 	show_curves = TRUE, 
 	show_vline = TRUE,
 	xmin = -1, 
 	xmax = 1,
 	ncol = 10, 
-	
-	filter_peps_by = exprs(pep_n_psm >= 10), 
-	filename = "pepHist_npsm10.png", 
-)
-
-# peptide histograms of `BI` subset without scaling
-pepHist(
- scale_log2r = FALSE, 
- col_select = BI,
- filename = Hist_BI_N.png, 
-)
-
-# peptide histograms of `BI` subset with scaling
-pepHist(
- scale_log2r = TRUE, 
- col_select = BI,
- filename = Hist_BI_Z.png, 
-)
-
-# peptides to proteins
-# (column keys in `Peptide.txt` suitable for varargs of `filter_`)
-Pep2Prn(
-  use_unique_pep = TRUE,
 )
 
 ## DO NOT RUN
 dontrun <- TRUE
 if (!dontrun) {
-  # two more unique peptides in protein identification
+  # row filtration
+  pepHist(
+    scale_log2r = TRUE,
+    show_curves = TRUE, 
+    show_vline = TRUE,
+    xmin = -1, 
+    xmax = 1,
+    ncol = 10, 
+    filter_peps_by = exprs(pep_n_psm >= 10), 
+    filename = npsm10.png, 
+  )
+  
+  # `BI` subset without scaling
+  pepHist(
+   scale_log2r = FALSE, 
+   col_select = BI,
+   filename = bi_n.png, 
+  )
+  
+  # `BI` subset with scaling
+  pepHist(
+   scale_log2r = TRUE, 
+   col_select = BI,
+   filename = bi_z.png, 
+  )  
+}
+## END of DO NOT RUN
+
+# peptides to proteins
+Pep2Prn(use_unique_pep = TRUE)
+
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  # column keys in `Peptide.txt` suitable for varargs of `filter_`
   Pep2Prn(
     use_unique_pep = TRUE,
     filter_peps = exprs(prot_n_pep >= 2),
   )
   
-  # phosphopeptides only
+  # phosphopeptide subset
   Pep2Prn(
     use_unique_pep = TRUE,
     filter_peps = exprs(pep_mod_sty == TRUE),
@@ -253,10 +277,10 @@ standPrn(
 dontrun <- TRUE
 if (!dontrun) {
 	# ---------------------------------------------
-  # see ?standPrn for mixed-bed and more examples
+  # see ?standPrn for mixed-bed examples and more
   # ---------------------------------------------
   
-  # renormalization against selected samples
+  # renormalization against selected samples with human data
   standPrn(
     method_align = MGKernel, 
     range_log2r = c(5, 95), 
@@ -279,16 +303,6 @@ prnHist(
 	ncol = 10, 
 )
 
-# protein histograms with logFC scaling and filtration
-prnHist(
-	scale_log2r = TRUE,
-	xmin = -2,
-	xmax = 2,
-	ncol = 10, 
-	filter_by = exprs(prot_n_psm >= 20), 
-	filename = "prnHist_npsm_20.png", 	
-)
-
 # protein histograms without logFC scaling
 prnHist(
 	scale_log2r = FALSE,
@@ -297,32 +311,42 @@ prnHist(
 	ncol = 10, 
 )
 
-# protein histograms of `BI` subset with logFC scaling
-prnHist(
-	scale_log2r = TRUE,
-	col_select = BI, 
-	xmin = -2,
-	xmax = 2,
-	ncol = 5, 
-	filename = Hist_BI_Z.png, 
-)
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  # row filtration
+  prnHist(
+    scale_log2r = TRUE,
+    xmin = -2,
+    xmax = 2,
+    ncol = 10, 
+    filter_by = exprs(prot_n_psm >= 20), 
+    filename = npsm20.png, 	
+  )
 
-# protein histograms of `BI` subset without logFC scaling
-prnHist(
-	scale_log2r = FALSE,
-	col_select = BI, 
-	xmin = -2,
-	xmax = 2,
-	ncol = 5, 
-	filename = Hist_BI_N.png, 
-)
+  # `BI` subset without scaling
+  prnHist(
+    scale_log2r = FALSE, 
+    col_select = BI,
+    filename = bi_n.png, 
+  )
+  
+  # `BI` subset with scaling
+  prnHist(
+    scale_log2r = TRUE, 
+    col_select = BI,
+    filename = bi_z.png, 
+  )  
+}
+## END of DO NOT RUN
 
-## PAUSE: decide on the chioce of scaling normalization
-scale_log2r = TRUE
 
 # ==============================================
 # part 3 --- linear modeling
 # ==============================================
+## !!! decision on scaling normalization
+scale_log2r = TRUE
+
 # significance tests (no NA imputation)
 pepSig(
   impute_na = FALSE, 
@@ -338,8 +362,8 @@ pepSig(
 prnSig(impute_na = FALSE)
 
 # volcano plots
-pepVol()
-prnVol()
+pepVol(impute_na = FALSE)
+prnVol(impute_na = FALSE)
 
 # Optional significance tests (with NA imputation)
 pepImp(m = 2, maxit = 2)
@@ -359,95 +383,109 @@ pepSig(
 prnSig(impute_na = TRUE)
 
 # volcano plots
-pepVol()
-prnVol()
+pepVol(impute_na = TRUE)
+prnVol(impute_na = TRUE)
+
 
 # ==============================================
 # part 4 --- basic informatics
 # ==============================================
-# peptide MDS
+### MDS
+# peptide
 pepMDS(
 	show_ids = FALSE,
 	width = 10,
 	height = 3.75,	
 )
 
-# peptide MDS with data filtration
-pepMDS(
-	show_ids = FALSE,
-	width = 10,
-	height = 3.75,
-	filter_peps_by = exprs(pep_n_psm >= 20), 
-	filename = "pepMDS_npsm_20.png",	
-)
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  # row filtration
+  pepMDS(
+  	show_ids = FALSE,
+  	width = 10,
+  	height = 3.75,
+  	filter_peps_by = exprs(pep_n_psm >= 20), 
+  	filename = npsm20.png,	
+  )
+  
+  # JHU subset
+  pepMDS(
+  	col_select = JHU,
+  	show_ids = FALSE,
+  	width = 10,
+  	height = 3.75,
+  	filename = jhu.png,
+  )
+  
+  # JHU subset with new aesthetics
+  pepMDS(
+    col_select = JHU,
+    col_fill = Shape, # WHIMs  
+    col_size = Alpha, # batches
+    show_ids = FALSE,
+  	width = 10,
+  	height = 3.75,	
+  	filename = jhu_new_aes.png,
+  )  
+}
+## END of DO NOT RUN
 
-# peptide MDS of JHU subset
-pepMDS(
-	col_select = JHU,
-	show_ids = FALSE,
-	width = 10,
-	height = 3.75,
-	filename = "MDS_JHU.png",
-)
-
-# peptide MDS of JHU subset with new aesthetics
-pepMDS(
-  col_select = JHU,
-  col_fill = Shape, # WHIMs  
-  col_size = Alpha, # batches
-  show_ids = FALSE,
-	width = 10,
-	height = 3.75,	
-	filename = "MDS_JHU_new_aes.png",
-)
-
-# protein MDS
+# protein
 prnMDS(
 	show_ids = FALSE, 
 	width = 8,
 	height = 4,
 )
 
-# protein MDS with data filtration
-prnMDS(
-	show_ids = FALSE, 
-	width = 8,
-	height = 4,
-	filter_prots_by = exprs(prot_n_pep > 5), 
-	filename = "prnMDS_npep_5.png",		
-)
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  # row filtration
+  prnMDS(
+  	show_ids = FALSE, 
+  	width = 8,
+  	height = 4,
+  	filter_prots_by = exprs(prot_n_pep > 5), 
+  	filename = npep5.png,		
+  )
+  
+  # JHU subset
+  prnMDS(
+  	col_select = JHU,
+  	show_ids = FALSE,
+  	width = 8,
+  	height = 4,
+  	filename = jhu.png,
+  )
+  
+  # JHU subset with new aesthetics
+  prnMDS(
+  	col_select = JHU,
+  	col_color = Alpha,
+  	col_alpha = Size,
+  	show_ids = FALSE,
+  	width = 8,
+  	height = 4,
+  	filename = jhu_new_aes.png,
+  )  
+}
+## END of DO NOT RUN
 
-# protein MDS of JHU subset
-prnMDS(
-	col_select = JHU,
-	show_ids = FALSE,
-	width = 8,
-	height = 4,
-	filename = "MDS_JHU.png",
-)
-
-# protein MDS of JHU subset with new aesthetics
-prnMDS(
-	col_select = JHU,
-	col_color = Alpha,
-	col_alpha = Size,
-	show_ids = FALSE,
-	width = 8,
-	height = 4,
-	filename = "MDS_JHU_new_aes.png",
-)
-
-# peptide PCA
+### PCA
+# peptide
 pepPCA(
 	show_ids = FALSE,
 )
 
-# protein PCA
+# protein
 prnPCA(
 	show_ids = FALSE, 
 )
 
-# peptide EucDist of PNNL subset
+### Euclidean distance
+# peptide, PNNL subset
 pepEucDist(
 	col_select = PNNL,
 	annot_cols = c("Shape", "Alpha"),
@@ -473,10 +511,10 @@ pepEucDist(
 	cellheight = 24, 
 	width = 14,
 	height = 12, 
-	filename = "EucDist_PNNL.png", 
+	filename = pnnl.png, 
 )
 
-# protein EucDist of PNNL subset
+# protein, PNNL subset
 prnEucDist(
 	col_select = PNNL,
 	annot_cols = c("Shape", "Alpha"),
@@ -502,24 +540,26 @@ prnEucDist(
 	cellheight = 24, 
 	width = 14,
 	height = 12, 
-	filename = "EucDist_PNNL.png", 
+	filename = pnnl.png, 
 )
 
-# peptide logFC correlation of PNNL subset with sample-order supervision
+### correlation
+# peptide logFC, PNNL subset with sample-order supervision
 pepCorr_logFC(
 	col_select = PNNL,
 	col_order = Order, 
-	filename = PNNL_ord.png
+	filename = pnnl_ord.png
 )
 
-# protein logFC correlation of WHIM2 subset with supervision
+# protein logFC, WHIM2 subset with supervision
 prnCorr_logFC(
 	col_select = W2,
 	col_order = Group,
-	filename = W2_ord.png,
+	filename = w2_ord.png,
 )
 
-# protein heat maps of human subset with row-clustering and subtrees
+### heat map
+# protein, human subset with row-clustering and subtrees
 prnHM(
 	xmin = -1, 
 	xmax = 1, 
@@ -533,9 +573,10 @@ prnHM(
 	fontsize_row = 3, 
 	cellwidth = 14, 
 	filter_sp = exprs(species == "human"), 
+	filename = hu.png,
 )
 
-# protein heat maps of kniases subset with row supervision by kinase classes
+# protein, kniase subset with row supervision by kinase classes
 prnHM(
 	xmin = -1, 
 	xmax = 1, 
@@ -551,35 +592,48 @@ prnHM(
 	cellwidth = 14, 
 	filter_kin = exprs(kin_attr),
 	arrange_kin = exprs(kin_order, gene),
-	filename = "kin_by_class.png", 
+	filename = hukin.png, 
 )
 
-# c-means clustering of protein logFC with filtration and sample-order supervision
+### trend
+# protein analysis, row filtration and sample-order supervision
 anal_prnTrend(
   col_order = Order,
-  n_clust = c(5:8), 
-  filter_by_npep = exprs(prot_n_pep >= 2),
+  n_clust = c(5:6), 
+  filter_by_npep = exprs(prot_n_pep >= 3),
 )
 
-# protein trend visualization with sample-order supervision
+# protein visualization, sample-order supervision
 plot_prnTrend(
   col_order = Order,
-  n_clust = c(5:6), 
 )
 
-# NMF package
+### NMF
 library(NMF)
 
-# protein NMF: analysis with filtration
+# analysis, protein
 anal_prnNMF(
   impute_na = FALSE,
   col_group = Group,
-  r = c(5:8),
-  nrun = 200, 
-  filter_by_npep = exprs(prot_n_pep >= 2),
+  r = c(5:6),
+  nrun = 20, 
 )
 
-# protein NMF: consensus heat maps
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  # row filtration
+  anal_prnNMF(
+    impute_na = FALSE,
+    col_group = Group,
+    r = c(5:6),
+    nrun = 20, 
+    filter_prots = exprs(prot_n_pep >= 2),
+  )
+}
+## END of DO NOT RUN
+
+# consensus heat maps, protein
 plot_prnNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
@@ -588,7 +642,7 @@ plot_prnNMFCon(
 	height = 10,
 )
 
-# protein NMF: coefficients heat maps
+# coefficients heat maps, protein
 plot_prnNMFCoef(
   impute_na = FALSE,
 	annot_cols = c("Color", "Alpha", "Shape"),
@@ -597,7 +651,7 @@ plot_prnNMFCoef(
   height = 10,
 )
 
-# protein NMF: metagene heat maps
+# metagene heat maps, protein
 plot_metaNMF(
   impute_na = FALSE,
 	annot_cols = c("Color", "Alpha", "Shape"),
@@ -606,57 +660,57 @@ plot_metaNMF(
   fontsize_col = 5,
 )
 
-# protein GSPA
+### GSPA
+# analysis, protein
 prnGSPA(
+  impute_na = FALSE,
 	pval_cutoff = 5E-2, # protein pVal threshold
 	logFC_cutoff = log2(1.2), # protein log2FC threshold
 	gspval_cutoff = 5E-2, # gene-set threshold
 	gset_nms = c("go_sets", "kegg_sets"),
-	impute_na = FALSE,
 )
 
-# GSPA under volcano plots
+# volcano plot visualization, protein
 gspaMap(
+  impute_na = FALSE,
 	show_labels = TRUE, 
 	pval_cutoff = 5E-2, # gene set threshold
 	logFC_cutoff = log2(1.2), # gene set log2FC threshold
 	show_sig = pVal, 
 	yco = 0.05, 
-	
-	# only proteins with two or more identifying peptides will be visualized
-	filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 ## DO NOT RUN
 dontrun <- TRUE
 if (!dontrun) {
-	# individualized parameters and with data pre-filtration
+	# individualized parameters and with row filtration
 	prnGSPA(
+	  impute_na = FALSE,
 		fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"), # formulae used in `prnSig()`
 		pval_cutoff = c(5E-2, 5E-2, 1E-5), # respective protein pVal cut-offs for each formula
-		logFC_cutoff = log2(1.2), # the same protein log2FC cut-off for all formulae
+		logFC_cutoff = c(log2(1.1), log2(1.1), log2(1.2)), # protein log2FC cut-offs
 		gspval_cutoff = c(5E-3, 5E-3, 1E-6), # gene-set pVal cut-offs 
 		max_size = c(Inf, Inf, 120), # maxixmum sizes of gene sets for consideration
 		
-		gset_nms = c("go_sets", "kegg_sets"), # the gene sets 
-		filter_by_npep = exprs(prot_n_pep >= 2), # only consider proteins with two or more identifying peptides
-		impute_na = FALSE,
+		gset_nms = c("go_sets", "kegg_sets"), 
+		filter_prots = exprs(prot_n_pep >= 2), 
 	)
 	
 	gspaMap(
+	  impute_na = FALSE,
 		fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
 		pval_cutoff = c(5E-2, 5E-2, 1E-10),
 		logFC_cutoff = log2(1.2),
-		
 		show_sig = pVal,
 		show_labels = TRUE,
 		yco = 0.05,
-		filter_by_npep = exprs(prot_n_pep >= 2),
+		filter_prots = exprs(prot_n_pep >= 2),
 	)
 }
 ## END of DO NOT RUN
 
-# protein GSPA distance heat map and network for human subset
+### GSPA distance heat map and network 
+# human subset
 prnGSPAHM(
 	filter_sp = exprs(start_with_str("hs", term)), 
 	annot_cols = "ess_idx",
@@ -674,9 +728,69 @@ prnGSPAHM(
 	filename = show_human_redundancy.png,
 )
 
-# STRING database
-getStringDB(
-  db_path = "~\\proteoQ\\dbs\\string",
-  score_cutoff = .9,
-  adjP = FALSE, 
+### GSVA
+prnGSVA(
+  impute_na = FALSE,
+  min.sz = 10,
+  verbose = FALSE,
+  parallel.sz = 0,
+  mx.diff = TRUE,
+  gset_nms = "go_sets",
 )
+
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  # row filtration
+  prnGSVA(
+    impute_na = FALSE,
+    min.sz = 10,
+    verbose = FALSE,
+    parallel.sz = 0,
+    mx.diff = TRUE,
+    gset_nms = c("go_sets", "kegg_sets"),
+    filter_prots = exprs(prot_n_pep >= 3), 
+  )
+}
+## END of DO NOT RUN
+
+### GSEA
+prnGSEA(
+  var_cutoff = 0, 
+  pval_cutoff = 1, 
+  logFC_cutoff = log2(1), 
+  filter_by_sp = exprs(species == "human"), 
+)
+
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  # prefiltration by variances, pVals and logFCs...
+  prnGSEA(
+    var_cutoff = 0.5,     
+    pval_cutoff = 5E-2,
+    logFC_cutoff = log2(1.2),
+    filter_by_sp = exprs(species == "human"), 
+  )
+}
+## END of DO NOT RUN
+
+### STRING database
+string_dir <- "~\\proteoQ\\dbs\\string"
+dir.create(string_dir, recursive = TRUE, showWarnings = FALSE)
+
+# download
+dl_stringdbs(
+  species = human,
+  db_path = string_dir,
+)
+
+# protein-protein interaction network
+getStringDB(
+  db_path = string_dir,
+  score_cutoff = .9,
+  adjP = FALSE,
+  filter_by_sp = exprs(species == "human"),
+  filter_prots_by = exprs(prot_n_pep >= 2),
+)
+

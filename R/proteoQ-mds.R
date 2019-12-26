@@ -5,7 +5,7 @@
 plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
                      color_brewer = NULL, fill_brewer = NULL, 
                      size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
-                     label_scheme_sub = label_scheme_sub, filepath, filename,
+                     label_scheme_sub = label_scheme_sub, filepath, filename, complete_cases, 
                      show_ids, ...) {
 
   dots <- rlang::enexprs(...)
@@ -468,6 +468,7 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'distances.
 #'
 #'@inheritParams  proteoHist
+#'@inheritParams proteoHM
 #'@param  col_group Not used.
 #'@param  col_color Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{color} aesthetics in plots. At
@@ -558,7 +559,8 @@ proteoMDS <- function (id = gene,
 											col_shape = NULL, col_size = NULL, col_alpha = NULL,
 											color_brewer = NULL, fill_brewer = NULL, 
 											size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
-											scale_log2r = TRUE, adjEucDist = FALSE, classical = TRUE, k = 3, 
+											scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
+											adjEucDist = FALSE, classical = TRUE, k = 3, 
 											show_ids = TRUE, annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
@@ -589,8 +591,9 @@ proteoMDS <- function (id = gene,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
 		color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
 		size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
-		scale_log2r = scale_log2r, impute_na = FALSE, df = !!df, filepath = !!filepath, filename = !!filename,
-		anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, k = k, show_ids = show_ids,
+		scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath, filename = !!filename,
+		anal_type = "MDS")(complete_cases = complete_cases, 
+		                   adjEucDist = adjEucDist, classical = classical, k = k, show_ids = show_ids,
 		                   annot_cols = annot_cols, ...)
 }
 
@@ -604,6 +607,8 @@ proteoMDS <- function (id = gene,
 #'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
 #'
 #'@inheritParams proteoMDS
+#'@inheritParams proteoHM
+#'@param complete_cases Logical; always TRUE for PCA. 
 #'@param type Character string indicating the type of PCA. At the \code{type =
 #'  obs} default, the components are by observations; at \code{type = feats},
 #'  the components are by features.
@@ -638,7 +643,8 @@ proteoPCA <- function (id = gene, type = "obs",
                        col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
                        color_brewer = NULL, fill_brewer = NULL, 
                        size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
-                       scale_log2r = TRUE, show_ids = TRUE, annot_cols = NULL, 
+                       scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
+                       show_ids = TRUE, annot_cols = NULL, 
                        df = NULL, filepath = NULL, filename = NULL, ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
@@ -670,8 +676,9 @@ proteoPCA <- function (id = gene, type = "obs",
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha, 
 		color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
 		size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
-		scale_log2r = scale_log2r, impute_na = FALSE, df = !!df, filepath = !!filepath, filename = !!filename,
-		anal_type = "PCA")(type = !!type, show_ids = show_ids, annot_cols = annot_cols, ...)
+		scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath, filename = !!filename,
+		anal_type = "PCA")(complete_cases = complete_cases, 
+		                   type = !!type, show_ids = show_ids, annot_cols = annot_cols, ...)
 }
 
 
@@ -685,6 +692,7 @@ proteoPCA <- function (id = gene, type = "obs",
 #'\code{\link[stats]{dist}} for heat map visualization.
 #'
 #'@inheritParams proteoMDS
+#'@inheritParams proteoHM
 #'@param annot_cols A character vector of column keys in \code{expt_smry.xlsx}.
 #'  The values under the selected keys will be used to color-code sample IDs on
 #'  the top of the indicated plot. The default is NULL without column
@@ -721,7 +729,8 @@ proteoPCA <- function (id = gene, type = "obs",
 #'@export
 proteoEucDist <- function (id = gene, col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL, 
                            col_shape = NULL, col_size = NULL, col_alpha = NULL, 
-                           scale_log2r = TRUE, adjEucDist = FALSE, 
+                           scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
+                           adjEucDist = FALSE, 
                            annot_cols = NULL, annot_colnames = NULL, 
                            df = NULL, filepath = NULL, filename = NULL, ...) {
 
@@ -744,9 +753,10 @@ proteoEucDist <- function (id = gene, col_select = NULL, col_group = NULL, col_c
 	info_anal(id = !!id,
 		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
-		scale_log2r = scale_log2r, impute_na = FALSE, df = !!df, filepath = !!filepath, filename = !!filename,
-		anal_type = "EucDist")(adjEucDist = adjEucDist,
-		annot_cols = annot_cols, annot_colnames = annot_colnames, ...)
+		scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath, filename = !!filename,
+		anal_type = "EucDist")(complete_cases = complete_cases, adjEucDist = adjEucDist, 
+		                       annot_cols = annot_cols, annot_colnames = annot_colnames, ...)
+		
 }
 
 

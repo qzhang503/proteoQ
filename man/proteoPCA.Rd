@@ -11,8 +11,9 @@ proteoPCA(id = gene, type = "obs", col_select = NULL,
   col_shape = NULL, col_size = NULL, col_alpha = NULL,
   color_brewer = NULL, fill_brewer = NULL, size_manual = NULL,
   shape_manual = NULL, alpha_manual = NULL, scale_log2r = TRUE,
-  show_ids = TRUE, annot_cols = NULL, df = NULL, filepath = NULL,
-  filename = NULL, ...)
+  impute_na = FALSE, complete_cases = FALSE, show_ids = TRUE,
+  annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL,
+  ...)
 
 pepPCA(...)
 
@@ -84,6 +85,11 @@ in \code{ggplot2} will be used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
+
+\item{complete_cases}{Logical; always TRUE for PCA.}
 
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots. The default is TRUE.}

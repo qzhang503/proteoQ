@@ -165,6 +165,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if (is.null(filename)) {
 		fn_prefix <- paste(data_type, anal_type, sep = "_")
 		fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
+		fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
 		fn_suffix <- "png"
 	} else {
 		fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
@@ -189,7 +190,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	    fn_imp <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
 	  } else stop("Unknown `id`.", call. = FALSE)
 	  
-	  if (anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
+	  if (anal_type %in% c("Histogram", "Corrplot", "MA")) { # never impute_na
 	    if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
 	  } else if (anal_type %in% c("Model")) { # optional impute_na but no p_vals
 	    if (impute_na) {
@@ -203,7 +204,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	    } else {
 	      if (file.exists(fn_p)) src_path <- fn_p else stop(paste(fn_p, err_msg5), call. = FALSE)
 	    }
-	  } else if (anal_type %in% c("Heatmap", "Trend", "NMF", "GSVA")) { # optional impute_na and possible p_vals
+	  } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", "NMF", "GSVA")) { # optional impute_na and possible p_vals
 	    if (impute_na) {
 	      if (file.exists(fn_imp_p)) src_path <- fn_imp_p else if (file.exists(fn_imp)) src_path <- fn_imp else 
 	        stop(paste(fn_imp, err_msg3), call. = FALSE)
@@ -254,10 +255,19 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  stop(paste0("No samples or conditions were defined for \"", anal_type, "\""))
 	
 	if (anal_type == "MDS") {
-		function(adjEucDist = FALSE, classical = TRUE, k = 3, show_ids = TRUE, annot_cols = NULL, ...) {
+		function(complete_cases = FALSE, 
+		         adjEucDist = FALSE, classical = TRUE, k = 3, show_ids = TRUE, annot_cols = NULL, ...) {
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
+
+		  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
+		  
+		  col_nms <- df %>%
+		    dplyr::select(grep(NorZ_ratios, names(.))) %>% 
+		    names(.)
+
+		  if (complete_cases) df <- df %>% dplyr::filter(complete.cases(.[, names(.) %in% col_nms]))
 
 		  df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -285,15 +295,24 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		            label_scheme_sub = label_scheme_sub, 
 		            filepath = filepath, 
 		            filename = paste0(fn_prefix, ".", fn_suffix), 
+		            complete_cases = complete_cases, 
 		            show_ids = show_ids, 
 		            !!!dots)
 		}
 	} else if (anal_type == "PCA") {
-		function(type = obs, show_ids = TRUE, annot_cols = NULL, ...) {
+		function(complete_cases = FALSE, type = obs, show_ids = TRUE, annot_cols = NULL, ...) {
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 		  
+		  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
+		  
+		  col_nms <- df %>%
+		    dplyr::select(grep(NorZ_ratios, names(.))) %>% 
+		    names(.)
+		  
+		  if (complete_cases) df <- df %>% dplyr::filter(complete.cases(.[, names(.) %in% col_nms]))
+
 		  type <- rlang::as_string(rlang::enexpr(type))
 
 		  df_pca <- df %>% 
@@ -326,10 +345,18 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		            !!!dots)
 		}
 	} else if (anal_type == "EucDist") {
-		function(adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, ...) {
+		function(complete_cases = FALSE, adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, ...) {
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
+
+		  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
+		  
+		  col_nms <- df %>%
+		    dplyr::select(grep(NorZ_ratios, names(.))) %>% 
+		    names(.)
+		  
+		  if (complete_cases) df <- df %>% dplyr::filter(complete.cases(.[, names(.) %in% col_nms]))
 
 		  df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
