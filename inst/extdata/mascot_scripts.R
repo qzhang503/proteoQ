@@ -16,29 +16,28 @@ devtools::install_github("qzhang503/proteoQDA")
 library(proteoQDA)
 
 # FASTA (all platforms)
-fasta_dir <- "~\\proteoQ\\dbs\\fasta\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-# metadata (all platforms)
-dat_dir <- "~\\proteoQ\\examples"
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-copy_global_exptsmry(dat_dir)
-cptac_global_fracsmry(dat_dir)
+copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
+copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
 
 # PSM data (choose one of the platforms)
+dat_dir <- "~\\proteoQ\\examples"
+dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+
 choose_one <- TRUE
 if (choose_one) {
   ## Mascot
   copy_global_mascot(dat_dir)
   
   ## MaxQuant
-  # copy_global_maxquant(dat_dir)
+  copy_global_maxquant(dat_dir)
   
   ## Spectrum Mill
-  # copy_global_sm(dat_dir)
+  copy_global_sm(dat_dir)
 }
+
+# metadata (all platforms)
+copy_global_exptsmry(dat_dir)
+cptac_global_fracsmry(dat_dir)
 
 
 # ==============================================
@@ -342,12 +341,13 @@ if (!dontrun) {
 
 
 # ==============================================
-# part 3 --- linear modeling
+# part 3 --- significance tests
 # ==============================================
 ## !!! decision on scaling normalization
-scale_log2r = TRUE
+scale_log2r <- TRUE
 
-# significance tests (no NA imputation)
+## no NA imputation
+# peptides
 pepSig(
   impute_na = FALSE, 
   W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
@@ -359,13 +359,14 @@ pepSig(
   W16_vs_W2 = ~ Term_3["W16-W2"], 
 )
 
+# proteins
 prnSig(impute_na = FALSE)
 
 # volcano plots
 pepVol(impute_na = FALSE)
 prnVol(impute_na = FALSE)
 
-# Optional significance tests (with NA imputation)
+## NA imputation (optional)
 pepImp(m = 2, maxit = 2)
 prnImp(m = 5, maxit = 5)
 
@@ -382,7 +383,6 @@ pepSig(
 
 prnSig(impute_na = TRUE)
 
-# volcano plots
 pepVol(impute_na = TRUE)
 prnVol(impute_na = TRUE)
 
@@ -390,6 +390,9 @@ prnVol(impute_na = TRUE)
 # ==============================================
 # part 4 --- basic informatics
 # ==============================================
+## !!! decision on scaling normalization
+scale_log2r <- TRUE
+
 ### MDS
 # peptide
 pepMDS(

@@ -133,7 +133,7 @@ pepCorr_logFC(
   filename = too_many_cols.png,
 )
 
-# perhaps no interplex comparison of peptide intensity
+# interplex comparison of peptide intensity
 # (modest correlation in interplex reporter-ion intensity at data-dependant acquistion)
 pepCorr_logInt(
   width = 10,

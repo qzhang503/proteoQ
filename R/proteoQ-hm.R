@@ -117,12 +117,15 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
     reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) 
   
-  # remove white space before NA in scientific notation
-  df <- df %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
-  
+  run_scripts <- FALSE
+  if (run_scripts) {
+    # remove white space before NA in scientific notation
+    df <- df %>% 
+      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
+      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
+      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)    
+  }
+
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)

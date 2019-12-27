@@ -2086,3 +2086,26 @@ identical_dots <- function(call_nm, curr_dots, pattern) {
   load(file = file)
   identical(call_pars %>% .[grepl(pattern, names(.))], curr_dots)
 }
+
+
+#' Complete cases among sample IDs in label_scheme_sub, not label_scheme
+my_complete_cases <- function (df, scale_log2r, label_scheme_sub) {
+  load(file = file.path(dat_dir, "label_scheme.rda"))
+  
+  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
+  
+  rows <- df %>%
+    dplyr::select(grep(NorZ_ratios, names(.))) %>%
+    `colnames<-`(label_scheme$Sample_ID) %>%
+    dplyr::select(which(names(.) %in% label_scheme_sub$Sample_ID)) %>% 
+    complete.cases(.)
+  
+  if (sum(rows) == 0) stop("None of the cases are complete.", call. = FALSE)
+  
+  df <- df[rows, ]
+}
+
+
+
+
+

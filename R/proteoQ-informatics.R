@@ -192,7 +192,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  
 	  if (anal_type %in% c("Histogram", "Corrplot", "MA")) { # never impute_na
 	    if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
-	  } else if (anal_type %in% c("Model")) { # optional impute_na but no p_vals
+	  } else if (anal_type %in% c("Model")) { # optional impute_na but no pVals
 	    if (impute_na) {
 	      if (file.exists(fn_imp)) src_path <- fn_imp else stop(paste(fn_imp, err_msg3), call. = FALSE)
 	    } else {
@@ -261,13 +261,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 
-		  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
-		  
-		  col_nms <- df %>%
-		    dplyr::select(grep(NorZ_ratios, names(.))) %>% 
-		    names(.)
-
-		  if (complete_cases) df <- df %>% dplyr::filter(complete.cases(.[, names(.) %in% col_nms]))
+		  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
 
 		  df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -305,13 +299,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 		  
-		  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
-		  
-		  col_nms <- df %>%
-		    dplyr::select(grep(NorZ_ratios, names(.))) %>% 
-		    names(.)
-		  
-		  if (complete_cases) df <- df %>% dplyr::filter(complete.cases(.[, names(.) %in% col_nms]))
+		  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
 
 		  type <- rlang::as_string(rlang::enexpr(type))
 
@@ -350,13 +338,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 
-		  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
-		  
-		  col_nms <- df %>%
-		    dplyr::select(grep(NorZ_ratios, names(.))) %>% 
-		    names(.)
-		  
-		  if (complete_cases) df <- df %>% dplyr::filter(complete.cases(.[, names(.) %in% col_nms]))
+		  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
 
 		  df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
