@@ -6,7 +6,7 @@
 \usage{
 standPrn(method_align = c("MC", "MGKernel"), range_log2r = c(10, 90),
   range_int = c(5, 95), n_comp = NULL, seed = NULL,
-  col_refit = NULL, cache = TRUE, ...)
+  col_select = NULL, cache = TRUE, ...)
 }
 \arguments{
 \item{method_align}{Character string indicating the method in aligning
@@ -36,7 +36,7 @@ the 5th and the 95th quantiles.}
 \item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
 MGKernel}.}
 
-\item{col_refit}{Character string to a column key in \code{expt_smry.xlsx}. At
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}. At
 the \code{NULL} default, the column key of \code{Sample_ID} in
 \code{expt_smry.xlsx} will be used, which results in the (re)normalization
 of the \code{log2FC} for all samples. Otherwise, samples corresponding to

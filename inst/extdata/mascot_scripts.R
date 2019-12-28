@@ -174,7 +174,7 @@ if (!dontrun) {
     maxit = 200, 
     epsilon = 1e-05, 
     slice_peps_by = exprs(species == "human"),
-    col_refit = Select_sub,	
+    col_select = Select_sub,	
   )
 }
 ## END of DO NOT RUN
@@ -289,7 +289,7 @@ if (!dontrun) {
     maxit = 200, 
     epsilon = 1e-05, 
     slice_peps_by = exprs(species == "human"),
-    col_refit = Select_sub,	
+    col_select = Select_sub,	
   )
 }
 ## END of DO NOT RUN

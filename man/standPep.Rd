@@ -4,7 +4,7 @@
 \alias{standPep}
 \title{Standardize peptide results}
 \usage{
-standPep(method_align = c("MC", "MGKernel"), col_refit = NULL,
+standPep(method_align = c("MC", "MGKernel"), col_select = NULL,
   range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL,
   seed = NULL, plot_log2FC_cv = FALSE, ...)
 }
@@ -18,7 +18,7 @@ profiles of each sample will be aligned in that the medians of the
 sample will be aligned in that the \code{log2FC} at the maximums of kernel
 desity are zero.}
 
-\item{col_refit}{Character string to a column key in \code{expt_smry.xlsx}. At
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}. At
 the \code{NULL} default, the column key of \code{Sample_ID} in
 \code{expt_smry.xlsx} will be used, which results in the (re)normalization
 of the \code{log2FC} for all samples. Otherwise, samples corresponding to

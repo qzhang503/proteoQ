@@ -69,7 +69,7 @@
 #'@export
 standPrn <- function (method_align = c("MC", "MGKernel"), 
                     range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL, seed = NULL, 
-                    col_refit = NULL, cache = TRUE, ...) {
+                    col_select = NULL, cache = TRUE, ...) {
   
   dir.create(file.path(dat_dir, "Protein\\Histogram"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Protein\\cache"), recursive = TRUE, showWarnings = FALSE)
@@ -107,17 +107,17 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   id <- match_normPSM_protid()
   pep_id <- match_normPSM_pepid()
   
-  col_refit <- rlang::enexpr(col_refit)
-  col_refit <- ifelse(is.null(col_refit), rlang::expr(Sample_ID), rlang::sym(col_refit))
+  col_select <- rlang::enexpr(col_select)
+  col_select <- ifelse(is.null(col_select), rlang::expr(Sample_ID), rlang::sym(col_select))
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  if (is.null(label_scheme[[col_refit]])) {
-    col_refit <- rlang::expr(Sample_ID)
-    warning("Column \'", rlang::as_string(col_refit), "\' does not exist.
+  if (is.null(label_scheme[[col_select]])) {
+    col_select <- rlang::expr(Sample_ID)
+    warning("Column \'", rlang::as_string(col_select), "\' does not exist.
 			Use column \'Sample_ID\' instead.", call. = FALSE)
-  } else if (sum(!is.na(label_scheme[[col_refit]])) == 0) {
-    col_refit <- rlang::expr(Sample_ID)
-    warning("No samples were specified under column \'", rlang::as_string(col_refit), "\'.
+  } else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
+    col_select <- rlang::expr(Sample_ID)
+    warning("No samples were specified under column \'", rlang::as_string(col_select), "\'.
 			Use column \'Sample_ID\' instead.", call. = FALSE)
   }
   
@@ -140,7 +140,7 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     range_log2r = range_log2r, 
     range_int = range_int, 
     filepath = file.path(dat_dir, "Protein\\Histogram"), 
-    col_refit = col_refit, 
+    col_select = col_select, 
     !!!dots,
   )
   
@@ -260,7 +260,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
                      method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), 
                      use_unique_pep = TRUE, method_align = c("MC", "MGKernel"), 
                      range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL, seed = NULL, 
-                     col_refit = NULL, cache = TRUE, ...) {
+                     col_select = NULL, cache = TRUE, ...) {
 
 	dir.create(file.path(dat_dir, "Protein\\Histogram"), recursive = TRUE, showWarnings = FALSE)
 	dir.create(file.path(dat_dir, "Protein\\cache"), recursive = TRUE, showWarnings = FALSE)
@@ -314,17 +314,17 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	id <- match_normPSM_protid()
 	pep_id <- match_normPSM_pepid()
 
-	col_refit <- rlang::enexpr(col_refit)
-	col_refit <- ifelse(is.null(col_refit), rlang::expr(Sample_ID), rlang::sym(col_refit))
+	col_select <- rlang::enexpr(col_select)
+	col_select <- ifelse(is.null(col_select), rlang::expr(Sample_ID), rlang::sym(col_select))
 	load(file = file.path(dat_dir, "label_scheme.rda"))
 	
-	if (is.null(label_scheme[[col_refit]])) {
-	  col_refit <- rlang::expr(Sample_ID)
-	  warning("Column \'", rlang::as_string(col_refit), "\' does not exist.
+	if (is.null(label_scheme[[col_select]])) {
+	  col_select <- rlang::expr(Sample_ID)
+	  warning("Column \'", rlang::as_string(col_select), "\' does not exist.
 			Use column \'Sample_ID\' instead.", call. = FALSE)
-	} else if (sum(!is.na(label_scheme[[col_refit]])) == 0) {
-	  col_refit <- rlang::expr(Sample_ID)
-	  warning("No samples were specified under column \'", rlang::as_string(col_refit), "\'.
+	} else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
+	  col_select <- rlang::expr(Sample_ID)
+	  warning("No samples were specified under column \'", rlang::as_string(col_select), "\'.
 			Use column \'Sample_ID\' instead.", call. = FALSE)
 	}
 	
@@ -490,7 +490,7 @@ normPrn <- function (id = c("prot_acc", "gene"),
 	  range_log2r = range_log2r, 
 	  range_int = range_int, 
 	  filepath = file.path(dat_dir, "Protein\\Histogram"), 
-	  col_refit = col_refit, 
+	  col_select = col_select, 
 	  !!!nonfilter_dots,
 	)
 	

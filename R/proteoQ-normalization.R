@@ -11,7 +11,7 @@
 #'@import dplyr purrr rlang mixtools
 #'@importFrom magrittr %>%
 normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range_int, filepath, 
-                       col_refit = NULL, ...) {
+                       col_select = NULL, ...) {
 
   # check n_comp
   find_n_comp <- function (n_comp, method_align) {
@@ -179,28 +179,28 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 			            sep = "\t", col.names = TRUE, row.names = FALSE)
 	}
 
-	# if different `n_comp` between two `method_align = MGKernel`, force `col_refit` to all samples
+	# if different `n_comp` between two `method_align = MGKernel`, force `col_select` to all samples
 	# if `n_comp` is given but with `method_align = MC`, ignore difference in n_comp
 	
 	ok_N_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_N.txt", n_comp)
 	ok_Z_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)
 	
 	if (method_align == "MGKernel") {
-  	if ((!ok_N_ncomp) & (col_refit != rlang::expr(sample_ID))) {
+  	if ((!ok_N_ncomp) & (col_select != rlang::expr(sample_ID))) {
   	  warning("Missing `MGKernel_params_N.txt` or different `n_comp`; 
   	          normalization against all sample columns instead.")
-  	  col_refit <- rlang::expr(Sample_ID)
+  	  col_select <- rlang::expr(Sample_ID)
   	}
   
-  	if ((!ok_Z_ncomp) & (col_refit != rlang::expr(sample_ID))) {
+  	if ((!ok_Z_ncomp) & (col_select != rlang::expr(sample_ID))) {
   	  warning("Missing `MGKernel_params_Z.txt` or different `n_comp`; 
   	          normalization against all sample columns instead.")
-  	  col_refit <- rlang::expr(Sample_ID)
+  	  col_select <- rlang::expr(Sample_ID)
   	}	  
 	}
 
 	load(file = file.path(dat_dir, "label_scheme.rda"))
-	label_scheme_fit <- label_scheme %>% .[!is.na(.[[col_refit]]), ]
+	label_scheme_fit <- label_scheme %>% .[!is.na(.[[col_select]]), ]
 	
 	nm_log2r_n <- names(df) %>% 
 	  .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
@@ -222,7 +222,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	    dplyr::arrange(Sample_ID, Component)
 
     if (!ok_N_ncomp) {
-      # earlierly forced `col_refit = Sample_ID` if detected different `n_comp` 
+      # earlierly forced `col_select = Sample_ID` if detected different `n_comp` 
       # so if not `ok`, `params_sub` must be for all samples
       params <- params_sub
     } else {
@@ -242,7 +242,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
       }
 	    
 	    rows <- params$Sample_ID %in% params_sub$Sample_ID
-	    params[rows, ] <- params_sub	      
+	    params[rows, ] <- params_sub
     }
     
 	  # profile widths based on all sample columns and data rows
@@ -512,9 +512,18 @@ fitKernelDensity <- function (df, n_comp = 3, seed = NULL, ...) {
 	}
 
 	dots <- rlang::enexprs(...)
-	
-	min_n <- purrr::map_dbl(df, ~ (!is.na(.x)) %>% sum()) %>% min()
-	
+
+	min_n <- local({
+	  ok_nan_cols <- df %>% 
+      purrr::map_lgl(not_all_nan, na.rm = TRUE)
+	  
+	  min_n <- df %>% 
+      .[, ok_nan_cols, drop = FALSE] %>% 
+      .[, not_all_NA(.), drop = FALSE] %>% 
+      purrr::map_dbl(., ~ (!is.na(.x)) %>% sum()) %>% 
+      min()
+	})
+
 	if (min_n < 50) stop("Too few data points for fitting with multiple Gaussian functions.")
 
 	lapply(df, nmix_params, n_comp, seed = seed, !!!dots) %>%

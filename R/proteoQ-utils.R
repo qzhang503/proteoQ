@@ -278,6 +278,12 @@ not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
 
 
 #' Finds all-NaN column(s)
+not_all_nan <- function(x, ...) {
+  sum(is.nan(x), ...) != length(x)
+}
+
+
+#' Finds all-NaN column(s)
 is_all_nan <- function(x, ...) {
   sum(is.nan(x), ...) == length(x)
 }
@@ -1756,8 +1762,8 @@ sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = 
   
   ymax <- eval(dots$ymax, env = caller_env())
   ybreaks <- eval(dots$ybreaks, env = caller_env())
-  flip_coord <- eval(dots$flip_coord, env = caller_env())
   
+  flip_coord <- eval(dots$flip_coord, env = caller_env())
   if (is.null(flip_coord)) flip_coord <- FALSE
   
   df <- df %>% dplyr::filter(!duplicated(.[[id]]))
@@ -1814,8 +1820,13 @@ sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = 
                    shape=23, size=2, fill="white", alpha=.5) +
       labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) 
     
-    if (!is.null(ymax)) p <- p + scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, ybreaks))
-    
+    if (!is.null(ymax)) {
+      if (is.null(ybreaks)) {
+        ybreaks <- ifelse(ymax > 1, 0.5, ifelse(ymax > 0.5, 0.2, 0.1))
+      }
+      p <- p + scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, ybreaks))
+    }
+
     p <- p + theme_psm_violin
 
     if (flip_coord) {

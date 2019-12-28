@@ -6,8 +6,8 @@
 median summarisation of data from the same TMT experiment at different LCMS injections
 summed `pep_n_psm`, `prot_n_psm` and `prot_n_pep` after data merging
 no Z_log2_R yet available
-  use col_refit = expr(Sample_ID) not `col_refit` to get all Z_log2_R
-  why: users may specify `col_refit` only partial to Sample_ID entries}
+  use col_select = expr(Sample_ID) not `col_select` to get all Z_log2_R
+  why: users may specify `col_select` only partial to Sample_ID entries}
 \usage{
 normPep_Mplex(id = "pep_seq_mod", group_pep_by = "prot_acc", ...)
 }
@@ -16,6 +16,6 @@ combined peptide reports across multiple TMT experiments
 median summarisation of data from the same TMT experiment at different LCMS injections
 summed `pep_n_psm`, `prot_n_psm` and `prot_n_pep` after data merging
 no Z_log2_R yet available
-  use col_refit = expr(Sample_ID) not `col_refit` to get all Z_log2_R
-  why: users may specify `col_refit` only partial to Sample_ID entries
+  use col_select = expr(Sample_ID) not `col_select` to get all Z_log2_R
+  why: users may specify `col_select` only partial to Sample_ID entries
 }

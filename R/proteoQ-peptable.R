@@ -28,8 +28,8 @@ newColnames <- function(i, x, label_scheme) {
 #' median summarisation of data from the same TMT experiment at different LCMS injections
 #' summed `pep_n_psm`, `prot_n_psm` and `prot_n_pep` after data merging
 #' no Z_log2_R yet available
-#'   use col_refit = expr(Sample_ID) not `col_refit` to get all Z_log2_R
-#'   why: users may specify `col_refit` only partial to Sample_ID entries
+#'   use col_select = expr(Sample_ID) not `col_select` to get all Z_log2_R
+#'   why: users may specify `col_select` only partial to Sample_ID entries
 normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
   id <- rlang::as_string(rlang::enexpr(id))
@@ -182,7 +182,7 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
     range_log2r = c(0, 100),
     range_int = c(0, 100),
     filepath = file.path(dat_dir, "Peptide\\Histogram"),
-    col_refit = rlang::expr(Sample_ID), 
+    col_select = rlang::expr(Sample_ID), 
   )
 }
 
@@ -455,7 +455,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'  \code{log2FC} are zero. At \code{MGKernel}, the ratio profiles of each
 #'  sample will be aligned in that the \code{log2FC} at the maximums of kernel
 #'  desity are zero.
-#'@param col_refit Character string to a column key in \code{expt_smry.xlsx}. At
+#'@param col_select Character string to a column key in \code{expt_smry.xlsx}. At
 #'  the \code{NULL} default, the column key of \code{Sample_ID} in
 #'  \code{expt_smry.xlsx} will be used, which results in the (re)normalization
 #'  of the \code{log2FC} for all samples. Otherwise, samples corresponding to
@@ -526,7 +526,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'@importFrom magrittr %T>%
 #'@importFrom plyr ddply
 #'@export
-standPep <- function (method_align = c("MC", "MGKernel"), col_refit = NULL, range_log2r = c(10, 90), 
+standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, range_log2r = c(10, 90), 
                     range_int = c(5, 95), n_comp = NULL, seed = NULL, plot_log2FC_cv = FALSE, ...) {
 
   old_opt <- options(max.print = 99999)
@@ -552,16 +552,16 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_refit = NULL, rang
     method_align <- rlang::as_string(method_align)
   }
   
-  col_refit <- rlang::enexpr(col_refit)
-  col_refit <- ifelse(is.null(col_refit), rlang::expr(Sample_ID), rlang::sym(col_refit))
+  col_select <- rlang::enexpr(col_select)
+  col_select <- ifelse(is.null(col_select), rlang::expr(Sample_ID), rlang::sym(col_select))
   
-  if (is.null(label_scheme[[col_refit]])) {
-    col_refit <- rlang::expr(Sample_ID)
-    warning("Column \'", rlang::as_string(col_refit), "\' does not exist.
+  if (is.null(label_scheme[[col_select]])) {
+    col_select <- rlang::expr(Sample_ID)
+    warning("Column \'", rlang::as_string(col_select), "\' does not exist.
 			Use column \'Sample_ID\' instead.", call. = FALSE)
-  } else if (sum(!is.na(label_scheme[[col_refit]])) == 0) {
-    col_refit <- rlang::expr(Sample_ID)
-    warning("No samples were specified under column \'", rlang::as_string(col_refit), "\'.
+  } else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
+    col_select <- rlang::expr(Sample_ID)
+    warning("No samples were specified under column \'", rlang::as_string(col_select), "\'.
 			Use column \'Sample_ID\' instead.", call. = FALSE)
   }
   
@@ -586,7 +586,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_refit = NULL, rang
     range_log2r = range_log2r,
     range_int = range_int,
     filepath = file.path(dat_dir, "Peptide\\Histogram"),
-    col_refit = col_refit, 
+    col_select = col_select, 
     !!!dots, 
   )
   
@@ -712,7 +712,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
       range_log2r = c(0, 100),
       range_int = c(0, 100),
       filepath = file.path(dat_dir, "Protein\\Histogram"),
-      col_refit = rlang::expr(Sample_ID), 
+      col_select = rlang::expr(Sample_ID), 
     )    
   }
 
@@ -960,8 +960,8 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
 #'  \code{\link[mixtools]{normalmixEM}}.
 #'@param seed Integer; a seed for reproducible fitting at \code{method_align =
 #'  MGKernel}.
-#'@param col_refit Character string to a column key in \code{expt_smry.xlsx}.
-#'  Samples corresponding to non-empty entries under \code{col_refit} will be
+#'@param col_select Character string to a column key in \code{expt_smry.xlsx}.
+#'  Samples corresponding to non-empty entries under \code{col_select} will be
 #'  used in the refit of \code{log2FC} using multiple Gaussian kernels. The
 #'  density estimates from an earlier analyis will be kept for the remaining
 #'  samples. At the \code{NULL} default, the column key of \code{Sample_ID} will
@@ -993,7 +993,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
                      method_align = c("MC", "MGKernel"), range_log2r = c(10, 90),
                      range_int = c(5, 95), n_comp = NULL, seed = NULL, 
                      annot_kinases = FALSE, 
-                     col_refit = NULL, cache = TRUE, 
+                     col_select = NULL, cache = TRUE, 
                      plot_log2FC_cv = TRUE, ...) {
   
   dir.create(file.path(dat_dir, "Peptide\\cache"), recursive = TRUE, showWarnings = FALSE)
@@ -1033,15 +1033,15 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
   }
   group_pep_by <- match_normPSM_protid()
   
-  col_refit <- rlang::enexpr(col_refit)
-  col_refit <- ifelse(is.null(col_refit), rlang::expr(Sample_ID), rlang::sym(col_refit))
-  if (is.null(label_scheme[[col_refit]])) {
-    col_refit <- rlang::expr(Sample_ID)
-    warning("Column \'", rlang::as_string(col_refit), "\' does not exist.
+  col_select <- rlang::enexpr(col_select)
+  col_select <- ifelse(is.null(col_select), rlang::expr(Sample_ID), rlang::sym(col_select))
+  if (is.null(label_scheme[[col_select]])) {
+    col_select <- rlang::expr(Sample_ID)
+    warning("Column \'", rlang::as_string(col_select), "\' does not exist.
 			Use column \'Sample_ID\' instead.", call. = FALSE)
-  } else if (sum(!is.na(label_scheme[[col_refit]])) == 0) {
-    col_refit <- rlang::expr(Sample_ID)
-    warning("No samples were specified under column \'", rlang::as_string(col_refit), "\'.
+  } else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
+    col_select <- rlang::expr(Sample_ID)
+    warning("No samples were specified under column \'", rlang::as_string(col_select), "\'.
 			Use column \'Sample_ID\' instead.", call. = FALSE)
   }
   
@@ -1095,7 +1095,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
     range_log2r = range_log2r,
     range_int = range_int,
     filepath = file.path(dat_dir, "Peptide\\Histogram"),
-    col_refit = col_refit, 
+    col_select = col_select, 
     !!!nonfilter_dots, 
   )
   
