@@ -2,35 +2,17 @@
 % Please edit documentation in R/proteoQ-peptable.R
 \name{normPep_Splex}
 \alias{normPep_Splex}
-\title{Peptide reports for individual TMT experiments}
+\title{Helper of calcPepide() for individual peptide reports}
 \usage{
-normPep_Splex(id = "pep_seq_mod", method_psm_pep = "median",
-  group_pep_by = "prot_acc", cache = TRUE)
+normPep_Splex(method_psm_pep = "median", cache = TRUE)
 }
 \arguments{
-\item{id}{Depreciated: character string; the variable for summarisation of
-\code{PSMs} into peptides. The option \code{id = pep_seq} corresponds to the
-summarisation by the primary sequences of peptides. The option \code{id =
-pep_seq_mod} corresponds to the summarisation by both the primary sequences
-and variable modifications of peptides. \code{PSMs} data with the same value
-in \code{pep_seq} or \code{pep_seq_mod} will be summarised into a single
-entry of peptide. NB: the value of \code{id} will match automatically to the
-value of \code{group_psm_by} in \code{normPSM}.}
-
 \item{method_psm_pep}{Character string; the method to summarise the
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
 The descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")}. The \code{log10-intensity} of reporter ions at the
 \code{PSMs} levels will be the weight when summarising \code{log2FC} with
 \code{"top.3"} or \code{"weighted.mean"}.}
-
-\item{group_pep_by}{Depreciated: a character string for the grouping of
-peptide entries. At the \code{prot_acc} default, descriptive statistics will
-be calculated based on the same \code{prot_acc} groups. At
-\code{group_pep_by = gene}, proteins with the same gene name but different
-accession numbers will be treated as one group. NB: the value of
-\code{group_pep_by} will match automatically to the value of
-\code{group_pep_by} in \code{normPSM}.}
 
 \item{cache}{Logical; if TRUE, use cache.}
 }

@@ -5,8 +5,7 @@
 \title{Plots histograms}
 \usage{
 plotHisto(df = NULL, id, label_scheme_sub, params, scale_log2r,
-  pep_pattern, show_curves, show_vline, scale_y, filepath = NULL,
-  filename, ...)
+  show_curves, show_vline, scale_y, filepath = NULL, filename, ...)
 }
 \description{
 Plots histograms

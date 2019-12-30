@@ -1,0 +1,252 @@
+# ===================================
+# Protein normalization
+# ===================================
+
+## !!! run the minimal working example in `?load_expts` before the following extended examples
+
+# ===================================
+# (1) `MGKernel`
+# ===================================
+# (1.1) first-pass normalization: against all sample columns and all data rows  
+# (default double trimming by log2FC and intensity percentiles also apply)
+standPrn(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+)
+
+# visualization of histograms containing all data rows
+# (for samplicity only for samples under `expt_smry.xlsx::BI_1` and with ratio scaling)
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = bi1.png)
+
+# visualization of the human subset aided by `filter_by` 
+# (a little off in relative to the whole data set)
+prnHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human.png)
+
+# visualization of the mouse subset 
+# (a lot off in relative to the whole data set)
+prnHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "mouse"), filename = bi1_mouse.png)
+
+# (1.2) additive normalization to (1.1): against `expt_smry.xlsx::W2` samples and based on their human subset
+standPrn(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  col_refit = W2,  
+  slice_peps_by = exprs(species == "human"),
+)
+
+# visualization of human subset 
+# (W2 samples are now aligned)
+prnHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human_slicehu.png)
+
+# (1.3) additive normalization to (1.2): against `expt_smry.xlsx::W16` samples and based on their human subset
+standPrn(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 749662, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  col_refit = W16,  
+  slice_peps_by = exprs(species == "human"),
+)
+
+# visualization of human subset 
+# (W16 samples are now also aligned)
+prnHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human_slicehu2.png)
+
+# side effects: to recaptulate the misalignment between human- and all-data rows
+# (curves based on the latest `standPrn` at `method_align = MGKernel`)
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = bi1_recap.png)
+
+
+# ===================================
+# (2) Mixed-bed
+# ===================================
+library(proteoQ)
+dat_dir <- "~\\proteoQ\\examples"
+load_expts()
+
+# start over for demonstration purpose
+unlink(file.path(dat_dir, "Protein"), recursive = TRUE, force = TRUE)
+Pep2Prn(use_unique_pep = TRUE)
+
+# for simplicity, only visualize samples under `expt_smry.xlsx::BI_1`
+# (initial `Protein.txt` from `Pep2Prn()` always aligned by median centering (MC))
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+
+# (2.1) the first `MGKernel` alignment against all samples using all data rows
+standPrn(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 883, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+)
+
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mG.png)
+
+# (2.2) followed by MC against selected samples using all data rows
+standPrn(
+  method_align = MC, 
+  n_comp = 3,
+  seed = 883,
+  maxit = 200,
+  epsilon = 1e-05,
+  col_refit = Select_sub, 
+)
+
+# the net result is mixed-bed alignment of MGKernel and MC
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mix.png)
+
+
+# ===================================
+# (3) more MC to MGKernel examples
+# ===================================
+# start over
+unlink(file.path(dat_dir, "Protein"), recursive = TRUE, force = TRUE)
+Pep2Prn(use_unique_pep = TRUE)
+
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+
+# (3.1) also MC alignment for all samples but using only selected data rows
+# (at `method_align = MC`, `n_comp`, `seed`, `maxit`, `epsilon` will be ignored)
+standPrn(
+  method_align = MC, 
+  n_comp = 3, 
+  seed = 400, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  slice_peps_by = exprs(prot_n_psm >= 10),
+)
+
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mc_selrows.png)
+
+# (3.2) change to `MGKernel` for all samples using selected data rows
+# (first-pass `MGKernel` will apply to all samples)
+standPrn(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 400, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  slice_peps_by = exprs(prot_n_psm >= 10),
+)
+
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mG_selrows.png)
+
+# (3.3) back to MC for selected samples using selected data rows
+# mixed-bed again: MC for samples indicated by Select_sub and MGKernel for the rest
+standPrn(
+  method_align = MC, 
+  n_comp = 3, 
+  seed = 883, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  col_refit = Select_sub, 
+  slice_peps_by = exprs(prot_n_psm >= 10),
+)
+
+# with the first `MGKernel` in (3.2), density curves are available for 
+# the side-effects comparing `MC` and `MGKernel`
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mix_selcols_selrows.png)
+
+
+# ===================================
+# (4) changed `n_comp`
+# ===================================
+# start over
+unlink(file.path(dat_dir, "Protein"), recursive = TRUE, force = TRUE)
+Pep2Prn(use_unique_pep = TRUE)
+
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+
+# (4.1) change to `MGKernel` for all samples
+standPrn(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 400, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+)
+
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mG3.png)
+
+# (4.2) fresh start with a different `n_comp`
+# will ignore `col_refit = Select_sub` and apply to all samples 
+standPrn(
+  method_align = MGKernel, 
+  col_refit = Select_sub, 
+  n_comp = 2, 
+  seed = 400, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+)
+
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mG2.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ===================================
+# (5) housekeeping normalizers
+# ===================================
+# start over
+unlink(file.path(dat_dir, "Protein"), recursive = TRUE, force = TRUE)
+Pep2Prn(use_unique_pep = TRUE)
+
+# (initial `Protein.txt` from `Pep2Prn()` aligned by MC)
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
+
+# (5.1) change to `MGKernel`
+standPrn(
+  method_align = MGKernel, 
+  n_comp = 3, 
+  seed = 400, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+)
+
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mG.png)
+
+# (5.2) renormalize against data from selected proteins for selected sample(s)
+# (error: too few entries for fitting with multiple Gaussians)
+standPrn(
+  method_align = MGKernel, 
+  col_refit = W2, 
+  n_comp = 3, 
+  seed = 400, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  slice_hskp = exprs(gene %in% c("ACTB", "GAPDH")),
+)
+
+# (5.3) try again with `MC`
+# (two-point normalization using the median of "ACTB" and "GAPDH")
+standPrn(
+  method_align = MC, 
+  col_refit = W2, 
+  n_comp = 3, 
+  seed = 400, 
+  maxit = 200, 
+  epsilon = 1e-05, 
+  slice_hskp = exprs(gene %in% c("ACTB", "GAPDH")),
+)
+
+# consistently lower levels in the median of "ACTB" and "GAPDH" in W2 than W16
+prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mc_selcols_selrowshskp.png)
+

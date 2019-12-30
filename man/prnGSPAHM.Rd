@@ -10,18 +10,20 @@ prnGSPAHM(annot_cols = NULL, annot_colnames = NULL,
 \arguments{
 \item{annot_cols}{A character vector of column keys that can be found in
 \code{essmap_.*.csv}. The values under the selected keys will be used to
-color-code enrichment terms on the top of heat maps.}
+color-code enrichment terms on the top of heat maps. The default is NULL
+without column annotation.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
-\code{annot_cols}.}
+\code{annot_cols}. The default is NULL without name replacement.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
 \code{essmeta_.*.csv} . The values under the selected keys will be used to
-color-code essential terms on the side of heat maps.}
+color-code essential terms on the side of heat maps. The default is NULL
+without row annotation.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. \cr \cr Additional arguments for
-\code{\link[pheatmap]{pheatmap}}, i.e., \code{fontsize }... \cr Note
+\code{\link[pheatmap]{pheatmap}}, i.e., \code{fontsize }... \cr \cr Note
 arguments disabled from \code{pheatmap}: \cr \code{annotation_col}; instead
 use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
 use keys indicated in \code{annot_rows}}
@@ -64,165 +66,29 @@ varargs of \code{filter_}.
 
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
+# Heat maps of GSPA
 # ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
 
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
+## !!!require the brief working example in `?load_expts`
 
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
-# Prerequisite significance tests
-# for use with `pepVol` and `prnVol`
-# ===================================
+## global option
 scale_log2r <- TRUE
 
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  # peptide significance tests
-	# (1a) no NA imputation; output: Peptide_pVals.txt
-  pepSig(
-    impute_na = FALSE, 
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-    W16_vs_W2 = ~ Term_3["W16-W2"], 
-  )
-	
-  # (1b) or NA imputation; output: Peptide_impNA_pvals.txt
-  pepSig(
-    impute_na = TRUE, 
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-    W16_vs_W2 = ~ Term_3["W16-W2"], 
-  )	
-  
-  # protein significance tests
-  # all formulae in the latest `pepSig()` will be assessed by default 
-  # (2a) no NA imputation; output: Protein_pVals.txt
-  prnSig(impute_na = FALSE)
-  
-  # (2b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(impute_na = TRUE)
-	
-	
-  ## MaxQuant
-  # peptide significance tests
-	# (1a) no NA imputation; output: Peptide_pVals.txt
-  pepSig(
-    impute_na = FALSE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )
-	
-  # (1b) or NA imputation; output: Peptide_impNA_pvals.txt
-  pepSig(
-    impute_na = TRUE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )		
-  
-  # protein significance tests
-	# formula(e) in the latest `pepSig()` will be taken by default
-  # (2a) no NA imputation; output: Protein_pVals.txt
-  prnSig(impute_na = FALSE)
-  
-  # (2b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(impute_na = TRUE)
-}
-## END of RUN `Mascot or Maxquant but not both`
+## prerequisites in significance and enrichment tests
+# (see also ?prnSig, ?prnGSPA)
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"], # location effects
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
 
+prnSig(impute_na = FALSE)
 
-# ===================================
-# Prerequisite gene-set tests
-# for use with `gspaMap()`
-# ===================================
 prnGSPA(
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
@@ -231,15 +97,11 @@ prnGSPA(
   impute_na = FALSE,
 )
 
-
-
 # ===================================
 # Distance heat maps of gene sets
 # (also interactive networks)
 # ===================================
 # a `term` is a subset of an `ess_term` if the distance is zero
-# `ess_idx` is a column key in `essmap_.*.csv`
-# `ess_size` is a column key in metadata file `essmeta_.*.csv`
 prnGSPAHM(
   filter_by = exprs(distance <= .6),
   annot_cols = "ess_idx",
@@ -267,8 +129,45 @@ prnGSPAHM(
 )
 
 
-
 }
 \seealso{
-\code{\link{prnGSPA}} for gene set enrichment analysis.
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+ 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+ \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+ 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ 
+ \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
 }

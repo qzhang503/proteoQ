@@ -5,7 +5,7 @@
 \title{Data normalization}
 \usage{
 normMulGau(df, method_align, n_comp, seed = NULL, range_log2r, range_int,
-  filepath, col_refit = NULL, ...)
+  filepath, col_select = NULL, ...)
 }
 \arguments{
 \item{df}{An input data frame}
@@ -39,8 +39,8 @@ the 10th and the 90th quantiles.}
 standard deviation across samples. The default is between the 5th and the
 95th quantiles.}
 
-\item{col_refit}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_refit} will be
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_select} will be
 used in the refit of \code{log2FC} using multiple Gaussian kernels. The
 density estimates from an earlier analyis will be kept for the remaining
 samples. At the \code{NULL} default, the column key of \code{Sample_ID} will

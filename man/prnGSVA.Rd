@@ -4,19 +4,14 @@
 \alias{prnGSVA}
 \title{GSVA of protein data}
 \usage{
-prnGSVA(id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL,
-  filename = NULL, impute_na = TRUE, complete_cases = FALSE,
+prnGSVA(scale_log2r = TRUE, df = NULL, filepath = NULL,
+  filename = NULL, impute_na = NULL, complete_cases = FALSE,
   lm_method = "limma", gset_nms = "go_sets", var_cutoff = 0.5,
   pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), ...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. The value will be
-determined automatically. Peptide data will be used at \code{id = pep_seq}
-or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
-or \code{gene}.}
-
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -25,50 +20,170 @@ automatically by the value of \code{id}.}
 
 \item{filename}{Use system default.}
 
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used.}
+\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
+the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+protein data.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used.}
+missing values will be used. The default is FALSE.}
 
 \item{lm_method}{Character string indicating the linear modeling method for
-significance assessment of GSVA enrichment scores}
+significance assessment of GSVA enrichment scores. The default is
+\code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
+for models without random effects and the \code{\link[lmerTest]{lmer}} will
+be used for models with random effects.}
 
-\item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.
-Entries with variances smaller than the threshold will be removed from
-linear modeling.}
+\item{gset_nms}{Character string or vector containing the name(s) of gene sets
+for enrichment analysis. The default is \code{"go_sets"}. The possible
+values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
+supported species are human, mouse and rat.}
 
-\item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
-with \code{pVals} smaller than the threshold will be removed from multiple
-test corrections.}
+\item{var_cutoff}{Numeric; the cut-off in the variances of protein log2FC.
+Entries with variances smaller than the threshold will be removed from GSVA.
+The default is 0.5.}
 
-\item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with
-\code{log2FC} smaller than the threshold will be removed from multiple test
-corrections.}
+\item{pval_cutoff}{Numeric; the cut-off in enrichment pVals. Terms with
+enrichment pVals smaller than the threshold will be removed from multiple
+test corrections. The default is 1e-04.}
 
-\item{...}{Parameters for \code{\link[pheatmap]{pheatmap}}}
+\item{logFC_cutoff}{Numeric; the cut-off in enrichment log2FC. Terms with
+absolute log2FC smaller than the threshold will be removed from multiple
+test corrections. The default is at log2(1.1).}
 
-\item{gset_nm}{Character vector of the name(s) of gene sets. The currently
-available data sets include c("go_sets", "kegg_sets", "c2_msig").}
-
-\item{Parameters}{for \code{\link[GSVA]{gsva}}}
+\item{...}{Arguments for \code{\link{GSVA::gsva}}}
 }
 \description{
 \code{prnGSVA} performs the GSVA aganist protein \code{log2FC}
 }
 \details{
-The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
+The formula(s) of contrast(s) used in \code{\link{pepSig}} will be taken by
 default.
 }
 \examples{
+# ===================================
+# GSVA
+# ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+## global option
+scale_log2r <- TRUE
+
+## base
 prnGSVA(
- scale_log2r = TRUE, 
- impute_na = FALSE, 
- min.sz = 10, 
- verbose = FALSE, 
- parallel.sz = 0, 
- mx.diff = TRUE, 
- gset_nms = c("go_sets", "kegg_sets"), 
+  impute_na = FALSE,
+  min.sz = 10,
+  verbose = FALSE,
+  parallel.sz = 0,
+  mx.diff = TRUE,
+  gset_nms = "go_sets",
 )
 
+## row filtration
+prnGSVA(
+  impute_na = FALSE,
+  min.sz = 10,
+  verbose = FALSE,
+  parallel.sz = 0,
+  mx.diff = TRUE,
+  gset_nms = c("go_sets", "kegg_sets"),
+  filter_prots = exprs(prot_n_pep >= 3), 
+)
+
+## additional row filtration by pVals (impute_na = FALSE)
+# if not yet, run prerequisitive significance tests at `impute_na = FALSE`
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
+                  "W2.JHU.TMT2-W2.JHU.TMT1", 
+                  "W2.PNNL.TMT2-W2.PNNL.TMT1"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = FALSE)
+
+# (`W16_vs_W2.pVal (W16-W2)` is now a column key)
+prnGSVA(
+  min.sz = 10,
+  verbose = FALSE,
+  parallel.sz = 0,
+  mx.diff = TRUE,
+  gset_nms = "go_sets",
+  filter_prots_by_npep = exprs(prot_n_pep >= 3), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+)
+
+## additional row filtration by pVals (impute_na = TRUE)
+# if not yet, run prerequisitive NA imputation
+pepImp(m = 2, maxit = 2)
+prnImp(m = 5, maxit = 5)
+
+# if not yet, run prerequisitive significance tests at `impute_na = TRUE`
+pepSig(
+  impute_na = TRUE, 
+  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
+                  "W2.JHU.TMT2-W2.JHU.TMT1", 
+                  "W2.PNNL.TMT2-W2.PNNL.TMT1"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = TRUE)
+
+prnGSVA(
+  impute_na = TRUE, 
+  min.sz = 10,
+  verbose = FALSE,
+  parallel.sz = 0,
+  mx.diff = TRUE,
+  gset_nms = "go_sets",
+  filter_prots_by_npep = exprs(prot_n_pep >= 3), 
+  filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+)
+}
+\seealso{
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
+
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+ 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+ \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+ 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ 
+ \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
 }

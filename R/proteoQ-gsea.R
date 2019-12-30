@@ -52,7 +52,7 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 
 #'GSEA of protein data
 #'
-#'\code{prnGSEA} prepares data for the analysis of
+#'\code{proteoGSEA} prepares data for the analysis of
 #'\code{\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA}} aganist
 #'protein \code{log2FC} data. Users should avoid calling the method directly,
 #'but instead use the following wrappers.
@@ -66,7 +66,7 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'\code{Protein_impNA_pVals.txt}. These outputs can be used with online
 #'\code{\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA}}.
 #'
-#'The current GSEA may not yet support the comparisons between two grouped
+#'The current GSEA may not support the comparisons between two grouped
 #'conditions, i.e.,  (grpA + grpB) versus (grpC + grpD). The \code{prnGSEA}
 #'utility further breaks the input data into pairs of groups according to the
 #'formulae and contrasts defined in \code{pepSig} or \code{prnSig}. The
@@ -80,46 +80,68 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
-#'@param gset_nms Not currently used. Character string or vector containing the
-#'  name(s) of gene sets for enrichment analysis. The possible values are in
-#'  \code{c("go_sets", "kegg_sets")}. Note that the currently supported species
-#'  are human, mouse and rat.
+#'@param impute_na Logical. At the NULL default, the TRUE or FALSE will match
+#'  the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+#'  protein data.
+#'@param gset_nms Not currently used.
 #'@param var_cutoff Numeric value or vector; the cut-off in the variance of
 #'  protein \code{log2FC} across samples. Entries with \code{variances} less
-#'  than the threshold will be removed.
-#'@param min_size Not currently used. Numeric value or vector; minimum number of
-#'  protein entries for consideration in gene set tests. The number is the sum
-#'  of up or down-expressed proteins after data filtration by
-#'  \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
-#'  \code{filter_}.
-#'@param max_size Not currently used. Numeric value or vector; maximum number of
-#'  protein entries for consideration in gene set tests. The number is the sum
-#'  of up or down-expressed proteins after data filtration by
-#'  \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
-#'  \code{filter_}. The default in infinite. For samples that are vastly
-#'  different between contrasts, essential gene sets may be blackholed with
-#'  trivial terms such as cell parts, molecular functions et al. In cases like
-#'  this, a smaller \code{max_size} may be considered.
-#'@param min_greedy_size Not currently used. Numeric value or vector; minimum
-#'  number of unique protein entries for a gene set to be considered essential.
-#'@param gspval_cutoff Not currently used. Numeric value or vector; the cut-off in
-#'  gene-set significance \code{pVal}. Only enrichment terms with \code{pVals}
-#'  more significant than the threshold will be reported.
+#'  than the threshold will be removed for enrichment analysis. The default is
+#'  0.5.
+#'@param min_size Not currently used.
+#'@param max_size Not currently used.
+#'@param min_greedy_size Not currently used.
+#'@param gspval_cutoff Not currently used.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}.
 #'@import dplyr rlang ggplot2 networkD3
 #'@importFrom magrittr %>%
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
-#'@example inst/extdata/examples/gsea_examples.R
+#'@example inst/extdata/examples/prnGSEA_.R
 #'
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+#'  
+#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  
 #'@export
 proteoGSEA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL, 
-                        impute_na = TRUE, complete_cases = FALSE, gset_nms = "go_sets", 
+                        impute_na = NULL, complete_cases = FALSE, gset_nms = "go_sets", 
                         var_cutoff = .5, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                         gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
                         fml_nms = NULL, task = "anal", ...) {
@@ -131,7 +153,8 @@ proteoGSEA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   task <- rlang::enexpr(task)
-  
+  if (is.null(impute_na)) impute_na <- match_sigTest_imputena(as_string(id))
+
   stopifnot(is_logical(scale_log2r), is_logical(impute_na), is_logical(complete_cases))
   
   dots <- rlang::enexprs(...)
@@ -177,7 +200,9 @@ prnGSEA <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\GSEA\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  quietly_log <- purrr::quietly(proteoGSEA)(id = gene, task = anal, ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoGSEA)(id = !!id, task = anal, ...)
   quietly_log$result <- NULL
   purrr::walk(quietly_log, write, file.path(dat_dir, "Protein\\GSEA\\log","prnGSEA_log.csv"), append = TRUE)
 }

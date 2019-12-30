@@ -2,85 +2,95 @@
 % Please edit documentation in R/proteoQ-psmtable.R
 \name{normPSM}
 \alias{normPSM}
-\title{Reports PSM results}
+\title{Standardization of PSM results}
 \usage{
 normPSM(group_psm_by = c("pep_seq", "pep_seq_mod"),
   group_pep_by = c("prot_acc", "gene"), dat_dir = NULL,
   expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx",
-  fasta = NULL, pep_unique_by = "group", corrected_int = FALSE,
+  fasta = NULL, pep_unique_by = "group", corrected_int = TRUE,
   rm_reverses = TRUE, rptr_intco = 1000, rm_craps = FALSE,
   rm_krts = FALSE, rm_outliers = FALSE, annot_kinases = FALSE,
   plot_rptr_int = TRUE, plot_log2FC_cv = TRUE,
   use_lowercase_aa = TRUE, ...)
 }
 \arguments{
-\item{group_psm_by}{A character string for the grouping of PSM entries. At the
-\code{pep_seq} default, descriptive statistics will be calculated based on
-the same \code{pep_seq} groups. At \code{group_psm_by = pep_seq_mod},
-peptides with different variable modifications will be treated as different
-species. The early decision in data grouping will inform the downstream
-purging (\code{\link{purgePSM}}) and summarization (\code{\link{normPep}})
-of PSM data.}
+\item{group_psm_by}{A character string specifying the method in PSM grouping.
+At the \code{pep_seq} default, descriptive statistics will be calculated
+based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
+alternative, peptides with different variable modifications will be treated
+as different species and descriptive statistics will be calculated based on
+the same \code{pep_seq_mod} groups.}
 
-\item{group_pep_by}{A character string for the grouping of peptide entries. At
-the \code{prot_acc} default, descriptive statistics will be calculated based
-on the same \code{prot_acc} groups. At \code{group_pep_by = gene}, proteins
-with the same gene name but different accession numbers will be treated as
-one group.}
+\item{group_pep_by}{A character string specifying the method in peptide
+grouping. At the \code{prot_acc} default, descriptive statistics will be
+calculated based on the same \code{prot_acc} groups. At the \code{gene}
+alternative, proteins with the same gene name but different accession
+numbers will be treated as one group.}
 
-\item{dat_dir}{A character string to the working directory.}
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
 
 \item{expt_smry}{A character string to the \code{.xlsx} file containing the
-metadata of TMT experiments. The default is "expt_smry.xlsx".}
+metadata of TMT experiments. The default is \code{expt_smry.xlsx}.}
 
 \item{frac_smry}{A character string to the \code{.xlsx} file containing
-peptide fractionation summary. The default is "frac_smry.xlsx".}
+peptide fractionation summary. The default is \code{frac_smry.xlsx}.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
-used in MS/MS ion search.}
+used in MS/MS ion search. There is no default and users need to provide the
+correct file path(s) and name(s).}
 
-\item{pep_unique_by}{A character string for the characterization of peptide
-uniqueness from \code{MaxQuant} PSMs. The choice is in \code{c("group",
-"protein")}. At the \code{group} default, the uniqueness of peptides is by
-protein groups. At a more strigent criterion of \code{protein}, the
-uniqueness of peptides is by protein entries. A new column of
-\code{pep_isunique} will be added accordingly to the PSM reports. An earlier
-trivial option of \code{none} is depreciated.}
+\item{pep_unique_by}{A character string for annotating the uniqueness of
+peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
+uniqueness of peptides is by protein groups. At a more strigent criterion of
+\code{protein}, the uniqueness of peptides is by protein entries. A new
+column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
+be added to the PSM reports.}
 
-\item{corrected_int}{Logical. If TRUE, values under columns "Reporter
-intensity corrected" in MaxQuant PSM results (\code{msms.txt}) will be used.
-Otherwise, "Reporter intensity" values without corrections will be used.}
+\item{corrected_int}{A logical argument for uses with \code{MaxQuant} data. At
+the TRUE default, values under columns "Reporter intensity corrected..." in
+\code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
+"Reporter intensity" values without corrections will be used.}
 
-\item{rm_reverses}{Logical; if TRUE, removes \code{Reverse} entries from
-MaxQuant peptide results.}
+\item{rm_reverses}{A logical argument for uses with \code{MaxQuant} data. At
+the TRUE default, \code{Reverse} entries will be removed.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
+\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
+default is 1,000.}
 
-\item{rm_craps}{Logical; if TRUE, removes
-\code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.}
+\item{rm_craps}{Logical; if TRUE,
+\code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins will be removed.
+The default is FALSE.}
 
-\item{rm_krts}{Logical; if TRUE, removes keratin entries.}
+\item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
+is FALSE.}
 
-\item{rm_outliers}{Logical; if TRUE, performs outlier removals.}
+\item{rm_outliers}{Logical; if TRUE, PSM outlier removals will be performed
+for peptides with more than two identifying PSMs. Dixon's method will be
+used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
+25}. The default is FALSE.}
 
-\item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
-proteins.}
+\item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins
+will be annotated with their kinase attributes. The default is FALSE.}
 
-\item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
-reporter-ion intensities.}
+\item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
+intensities will be plotted. The default is TRUE.}
 
-\item{plot_log2FC_cv}{Logical; if TRUE, prepares the violin plots of the CV of
-peptide \code{log2FC} for each sample.}
+\item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
+\code{log2FC} will be plotted. The default is TRUE.}
 
-\item{use_lowercase_aa}{Logical; if TRUE, use lower-case and/or \code{^_~}
-one-letter representation to abbreviate the modifications of amino acid
-residues. See the table below for details.}
+\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
+residues will be abbreviated with lower-case and/or \code{^_~}. See the
+table below for details. The default is TRUE.}
 
-\item{...}{\code{filter_}: Each argument corresponds to a logical
-expression(s) for the filtration of data rows. The \code{lhs} needs to start
-with \code{filter_}. The logical condition(s) at the \code{rhs} needs to be
-enclosed in \code{exprs} with round parenthesis.}
+\item{...}{\code{filter_}: Variable argument statements for the filtration of
+data rows. Each statement contains to a list of logical expression(s). The
+\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+For example, \code{pep_expect} is a column key present in \code{Mascot} PSM
+exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove PSM
+entries with \code{pep_expect > 0.1}.}
 }
 \value{
 Outputs are under the directory of \code{PSM} sub to \code{dat_dir}.
@@ -89,7 +99,7 @@ Outputs are under the directory of \code{PSM} sub to \code{dat_dir}.
  injection are indicated in the file names.
 }
 \description{
-\code{normPSM} reports
+\code{normPSM} standarizes
 \code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}}
 results from \code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}}
 experiments.
@@ -107,8 +117,7 @@ deviation of the \code{log2FC} of peptides from ascribing PSMs. Character
 strings under \code{pep_seq_mod} denote peptide sequences with applicable
 variable modifications.
 
-\cr\strong{Nomenclature of \code{pep_seq_mod}} (\code{use_lowercase_aa =
-TRUE)}:
+\cr \strong{Nomenclature of \code{pep_seq_mod}}:
 
 \tabular{ll}{ \emph{Variable modification}   \tab \emph{Abbreviation}\cr
 Non-terminal \tab A letter from upper to lower case and the flanking residues
@@ -130,8 +139,8 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
  header information should be included during the \code{.csv} export. The
  file name(s) should be defaulted by
  \code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with
- the letter \code{'F'}, followed by a six-digit number without space and
- ended with a \code{'.csv'} extension \code{(e.g., F004453.csv)}.
+ the letter \code{'F'}, followed by digits without space and ended with a
+ \code{'.csv'} extension \code{(e.g., F004453.csv)}.
 
  See \code{\link{normPrn}} for the description of column keys in the output.
 }
@@ -156,119 +165,81 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
 
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
 # PSM normalization
 # ===================================
-library(proteoQ)
 
-## RUN `Mascot or Maxquant but not both`
-# see README at https://github.com/qzhang503/proteoQ for details about 
-#   the applications of variable arguments (varargs)
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  load_expts()
-	
-  normPSM(
-    group_psm_by = pep_seq_mod,
-    group_pep_by = prot_acc,
-    fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-              "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-    rptr_intco = 3000,
-    rm_craps = TRUE,
-    rm_krts = FALSE,
-    rm_outliers = FALSE,
-    annot_kinases = TRUE,
-    plot_rptr_int = TRUE,
-    plot_log2FC_cv = TRUE,
-    
-		# vararg statement(s)
-    filter_psms_at = exprs(pep_expect <= .1),
-    filter_by_more = exprs(pep_rank == 1, pep_exp_z > 1),
-  )
+## !!!require the brief working example in `?load_expts`
 
+## additional examples
+# Mascot
+normPSM(
+  group_psm_by = pep_seq_mod,
+  group_pep_by = prot_acc,
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
   
-  ## MaxQuant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  load_expts()
-	
-  normPSM(
-    group_psm_by = pep_seq_mod,
-    group_pep_by = prot_acc,
-    fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-              "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-    corrected_int = TRUE,
-    rm_reverses = TRUE,
-    rptr_intco = 3000,
-    rm_craps = TRUE,
-    rm_krts = FALSE,
-    rm_outliers = FALSE,
-    annot_kinases = TRUE,
-    plot_rptr_int = TRUE,
-    plot_log2FC_cv = TRUE,
-    
-    filter_psms_at = exprs(PEP <= 0.1),
-  )
-}
-## END of RUN `Mascot or Maxquant but not both`
+  # variable argument statement(s)
+  filter_psms_at = exprs(pep_expect <= .1),
+  filter_psms_more = exprs(pep_rank == 1, pep_exp_z > 1),
+)
+
+# MaxQuant
+normPSM(
+  group_psm_by = pep_seq_mod,
+  group_pep_by = prot_acc,
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  corrected_int = TRUE,
+  rm_reverses = TRUE,
+  
+  # vararg statement(s)
+  filter_psms_at = exprs(PEP <= 0.1),
+)
+
+# Spectrum Mill
+normPSM(
+  group_psm_by = pep_seq_mod,
+  group_pep_by = prot_acc,
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  
+  # vararg statement(s)
+  filter_psms = exprs(score >= 10),
+)
 
 
+## Not run: 
+# wrong fasta 
+normPSM(
+  fasta = "~\\\\proteoQ\\\\dbs\\\\fasta\\\\wrong.fasta",
+)
 
-# ===================================
-# PSM cleanup by CV
-# ===================================
-# by percent CV
-purgePSM(pt_cv = .95)
+# no mouse entry annotation
+normPSM(
+  fasta = "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+)
 
-# by max CV
-purgePSM(max_cv = .5)
+# bad vararg statement
+normPSM(
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  filter_psms_at = exprs(column_key_not_in_psm_tables <= .1),
+)
+## End(Not run)
 
-# by `max_cv` then by `pt_cv`
-purgePSM(max_cv = .5)
-purgePSM(pt_cv = .95)
-
-# actually 90\% CV 
-purgePSM(pt_cv = .95)
-purgePSM(pt_cv = .95)
 }
 \seealso{
-\code{\link{load_expts}} for experiment setup, \code{\link{normPep}}
- for peptide data normalization, \code{\link{normPrn}} for protein data
- normalization.
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+ normalization \cr \code{\link{purgePSM}} for extended examples in PSM data
+ purging \cr \code{\link{PSM2Pep}} for extended examples in PSM to peptide
+ summarization \cr \code{\link{mergePep}} for extended examples in peptide
+ data merging \cr \code{\link{standPep}} for extended examples in peptide
+ data normalization \cr \code{\link{pepHist}} for extended examples in
+ peptide data histogram visualization. \cr \code{\link{purgePep}} for
+ extended examples in peptide data purging \cr \code{\link{Pep2Prn}} for
+ extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization.
+ \cr \code{\link{prnHist}} for extended examples in protein data histogram
+ visualization.
 }

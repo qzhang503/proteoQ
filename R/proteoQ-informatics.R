@@ -3,8 +3,9 @@
 #' \code{info_anal} produces functions for selected informatic analysis.
 #'
 #' @param anal_type Character string; the type of analysis that are preset for
-#'   method dispatch in function factories; Values include \code{anal_type =
-#'   c("PCA", "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model", 
+#'   method dispatch in function factories. The value will be determined
+#'   automatically. Examplary values include \code{anal_type = c("PCA",
+#'   "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 #'   "NMF", "Purge", "Trend", ...)}.
 #' @return a function to the given \code{anal_type}.
 #'
@@ -70,7 +71,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 
-	load(file = file.path(dat_dir, "label_scheme.Rdata"))
+	load(file = file.path(dat_dir, "label_scheme.rda"))
 	
 	if (is.null(label_scheme[[col_select]])) {
 		stop("Column \'", rlang::as_string(col_select), "\' does not exist.", call. = FALSE)
@@ -104,7 +105,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		        call. = FALSE)
 	}
 
-	if(is.null(label_scheme[[col_fill]])) {
+	if (is.null(label_scheme[[col_fill]])) {
 		warning("Column \'", rlang::as_string(col_fill), "\' does not exist.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_fill]])) == 0) {
 		warning("No samples were specified under column \'", rlang::as_string(col_fill), "\'.",
@@ -118,7 +119,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		        call. = FALSE)
 	}
 
-	if(is.null(label_scheme[[col_size]])) {
+	if (is.null(label_scheme[[col_size]])) {
 		warning("Column \'", rlang::as_string(col_size), "\' does not exist.")
 	} else if (sum(!is.na(label_scheme[[col_size]])) == 0) {
 		warning("No samples were specified under column \'", rlang::as_string(col_size), "\'.",
@@ -143,9 +144,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if (length(id) != 1)
 	  stop("\'id\' must be one of \'pep_seq\', \'pep_seq_mod\', \'prot_acc\' or \'gene\'")
 
-	cat(paste0("id = \"", id, "\"", " by the current call\n"))
-	id <- match_identifier(id)
-
 	if (id %in% c("prot_acc", "gene")) {
 	  cat(paste0("id = \"", id, "\"", " after parameter matching to normPrn()\n"))
 		data_type <- "Protein"
@@ -167,6 +165,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if (is.null(filename)) {
 		fn_prefix <- paste(data_type, anal_type, sep = "_")
 		fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
+		fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
 		fn_suffix <- "png"
 	} else {
 		fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
@@ -175,25 +174,25 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	
 	err_msg2 <- "not found. \n Run functions `normPSM()`, `normPep()` and `normPrn()` first."
 	err_msg3 <- "not found. \nImpute NA values with `pepImp()` or `prnImp()` or set `impute_na = FALSE`."
-	err_msg4 <- "not found. \nRun `prnSig(impute_na = TRUE)` first."
-	err_msg5 <- "not found. \nRun `prnSig()` first."
+	err_msg4 <- "not found at impute_na = TRUE. \nRun `prnSig(impute_na = TRUE)` first."
+	err_msg5 <- "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
 	
 	if (is.null(df)) {
 	  if (id %in% c("pep_seq", "pep_seq_mod")) {
 	    fn_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_pVals.txt")
-	    fn_imp_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_impNA_pvals.txt")
+	    fn_imp_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_impNA_pVals.txt")
 	    fn_raw <- file.path(dat_dir, "Peptide", "Peptide.txt")
 	    fn_imp <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
 	  } else if (id %in% c("prot_acc", "gene")) {
 	    fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
-	    fn_imp_p <- file.path(dat_dir, "Protein\\Model", "Protein_impNA_pvals.txt")
+	    fn_imp_p <- file.path(dat_dir, "Protein\\Model", "Protein_impNA_pVals.txt")
 	    fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
 	    fn_imp <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
 	  } else stop("Unknown `id`.", call. = FALSE)
 	  
-	  if (anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
+	  if (anal_type %in% c("Histogram", "Corrplot", "MA")) { # never impute_na
 	    if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
-	  } else if (anal_type %in% c("Trend", "NMF", "Model", "GSVA")) { # optional impute_na but no p_vals
+	  } else if (anal_type %in% c("Model")) { # optional impute_na but no pVals
 	    if (impute_na) {
 	      if (file.exists(fn_imp)) src_path <- fn_imp else stop(paste(fn_imp, err_msg3), call. = FALSE)
 	    } else {
@@ -205,7 +204,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	    } else {
 	      if (file.exists(fn_p)) src_path <- fn_p else stop(paste(fn_p, err_msg5), call. = FALSE)
 	    }
-	  } else if (anal_type %in% c("Heatmap")) { # optional impute_na and possible p_vals
+	  } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", "NMF", "GSVA")) { # optional impute_na and possible p_vals
 	    if (impute_na) {
 	      if (file.exists(fn_imp_p)) src_path <- fn_imp_p else if (file.exists(fn_imp)) src_path <- fn_imp else 
 	        stop(paste(fn_imp, err_msg3), call. = FALSE)
@@ -240,74 +239,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  }
 	}
 	
-	run_scripts <- FALSE
-	if (run_scripts) {
-	if (is.null(df)) {
-	  err_msg <- "File doesn't exist."
-	  
-	  if (id %in% c("pep_seq", "pep_seq_mod")) {
-	    fn_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_pVals.txt")
-	    fn_imp <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
-	    fn_raw <- file.path(dat_dir, "Peptide", "Peptide.txt")
-	  } else if (id %in% c("prot_acc", "gene")) {
-	    fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
-	    fn_imp <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
-	    fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
-	  } else stop("Unknown `id`.", call. = FALSE)
-
-	  if (anal_type %in% c("Histogram", "Corrplot", "MDS", "PCA", "EucDist", "MA")) { # never impute_na
-	    if (file.exists(fn_raw)) src_path <- fn_raw else
-	      stop(paste(fn_raw, "not found. \n Run functions `normPSM`, `normPep` and `normPrn` first.s"), call. = FALSE)
-	  } else if (anal_type %in% c("Trend", "NMF", "Model", "GSVA")) { # optional impute_na but no p_vals
-	    if (impute_na) {
-	      if (file.exists(fn_imp)) src_path <- fn_imp else
-	        stop(paste(fn_imp, "not found. \nImpute NA values with `pepImp` or `prnImp` or set `impute_na = FALSE`."), call. = FALSE)
-	    } else {
-	      if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), call. = FALSE)
-	    }
-	  } else if (anal_type %in% c("GSPA")) { # always use data with pVals
-	    if (file.exists(fn_p)) src_path <- fn_p else
-	      stop(paste(fn_p, "not found. \nRun `prnSig` first."), call. = FALSE)
-	  } else if (anal_type %in% c("Heatmap", "GSEA")) { # optional impute_na and possible p_vals
-	    if (file.exists(fn_p)) { # may or may not be NA imputed
-	      src_path <- fn_p
-	    } else {
-	      if (impute_na) {
-	        if (file.exists(fn_imp)) src_path <- fn_imp else 
-	          stop(paste(fn_imp, "not found. \nImpute NA values with `pepImp` or `prnImp` or set `impute_na = FALSE`."), call. = FALSE)
-	      } else {
-	        if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, "not found."), call. = FALSE)
-	      }
-	    }
-	  } 
-	  
-	  df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
-	                          comment.char = "#"), error = function(e) NA)
-	  
-	  if (!is.null(dim(df))) {
-	    message(paste("File loaded:", gsub("\\\\", "/", src_path)))
-	  } else {
-	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
-	  }
-	} else {
-	  if (id %in% c("pep_seq", "pep_seq_mod")) {
-	    fn_raw <- file.path(dat_dir, "Peptide", df)
-	  } else if (id %in% c("prot_acc", "gene")) {
-	    fn_raw <- file.path(dat_dir, "Protein", df)
-	  }
-	  
-	  df <- tryCatch(read.csv(fn_raw, check.names = FALSE, header = TRUE, sep = "\t",
-	                          comment.char = "#"), error = function(e) NA)
-	  
-	  if (!is.null(dim(df))) {
-	    message(paste("File loaded:", gsub("\\\\", "/", fn_raw)))
-	  } else {
-	    stop(paste("Non-existed file or directory:", gsub("\\\\", "/", fn_raw)))
-	  }
-	}	  
-	  
-	}
-
+	df <- df %>% rm_pval_whitespace()
+	
 	if (anal_type %in% c("Model", "GSPA", "GSVA", "GSEA")) {
 		label_scheme_sub <- label_scheme %>% # to be subset by the "key" in "formulae"
 			dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID), !Reference)
@@ -321,13 +254,15 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if (nrow(label_scheme_sub) == 0)
 	  stop(paste0("No samples or conditions were defined for \"", anal_type, "\""))
 	
-	
 	if (anal_type == "MDS") {
-		function(adjEucDist = FALSE, classical = TRUE, k = 3, show_ids = TRUE, annot_cols = NULL, ...) {
+		function(complete_cases = FALSE, 
+		         adjEucDist = FALSE, classical = TRUE, k = 3, show_ids = TRUE, annot_cols = NULL, ...) {
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
-		  
+
+		  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+
 		  df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
 		    scoreMDS(
@@ -354,17 +289,20 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		            label_scheme_sub = label_scheme_sub, 
 		            filepath = filepath, 
 		            filename = paste0(fn_prefix, ".", fn_suffix), 
+		            complete_cases = complete_cases, 
 		            show_ids = show_ids, 
 		            !!!dots)
 		}
 	} else if (anal_type == "PCA") {
-		function(type = obs, show_ids = TRUE, annot_cols = NULL, ...) {
+		function(complete_cases = FALSE, type = obs, show_ids = TRUE, annot_cols = NULL, ...) {
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 		  
+		  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+
 		  type <- rlang::as_string(rlang::enexpr(type))
-		  
+
 		  df_pca <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
 		    scorePCA(
@@ -395,10 +333,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		            !!!dots)
 		}
 	} else if (anal_type == "EucDist") {
-		function(adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, ...) {
+		function(complete_cases = FALSE, adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, ...) {
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
+
+		  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
 
 		  df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -418,7 +358,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (anal_type == "Heatmap") {
 		function(complete_cases = FALSE, xmin = -1, xmax = 1, xmargin = 0.1,
 		         annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, ...) {
-		         
+
 		  plotHM(df = df, 
 		         id = !!id, 
 		         scale_log2r = scale_log2r, 
@@ -427,16 +367,16 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			       filepath = filepath, 
 			       filename = paste0(fn_prefix, ".", fn_suffix),
 			       complete_cases = complete_cases, 
-			       xmin = xmin, 
-			       xmax = xmax, 
-			       xmargin = xmargin,
 			       annot_cols = annot_cols, 
 			       annot_colnames = annot_colnames, 
 			       annot_rows = annot_rows, 
+			       xmin = xmin, 
+			       xmax = xmax, 
+			       xmargin = xmargin,
 			       ...)
 		}
 	} else if (anal_type == "Histogram") {
-		function(pep_pattern = "zzz", show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, ...) {
+		function(show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, ...) {
 			if (scale_log2r) {
 				fn_par <- file.path(filepath, "MGKernel_params_Z.txt")
 			} else {
@@ -456,7 +396,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			          label_scheme_sub = label_scheme_sub, 
 			          params = params,
 			          scale_log2r = scale_log2r, 
-			          pep_pattern = pep_pattern, 
 			          show_curves = show_curves, 
 			          show_vline = show_vline, 
 			          scale_y = scale_y, 
@@ -480,12 +419,14 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "Trend") {
 		function(n_clust = NULL, complete_cases = FALSE, task = anal, ...) {
-		  fn_prefix <- paste0(fn_prefix, "_n", n_clust)
-		  
+		  fn_prefix <- fn_prefix %>% 
+		    ifelse(impute_na, paste0(., "_impNA"), .) %>% 
+		    paste0(., "_n", n_clust)
+
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
-		  
+
 		  df <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
 		    prepDM(id = !!id, scale_log2r = scale_log2r, 
@@ -516,8 +457,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "NMF") {
 		function(r = NULL, nrun = 200, complete_cases = FALSE, task = anal, ...) {
-		  fn_prefix <- paste0(fn_prefix, "_r", r)
-		  
+		  fn_prefix <- fn_prefix %>% 
+		    ifelse(impute_na, paste0(., "_impNA"), .) %>% 
+		    paste0(., "_r", r)
+
 		  switch(rlang::as_string(rlang::enexpr(task)), 
 		         anal = nmfTest(df = df, 
 		                        id = !!id, 
@@ -563,7 +506,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
 		  
-		  fn_prefix2 <- ifelse(impute_na, "_impNA_pvals.txt", "_pVals.txt")
+		  fn_prefix2 <- ifelse(impute_na, "_impNA_pVals.txt", "_pVals.txt")
 
 		  df_op <- df %>% 
 		    filters_in_call(!!!filter_dots) %>% 
@@ -652,7 +595,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	               gsets = gsets, 
 	               var_cutoff = var_cutoff, 
 	               pval_cutoff = pval_cutoff, 
-	               logFC_cutoff = logFC_cutoff, ...)
+	               logFC_cutoff = logFC_cutoff, !!!dots)
 	  }
 	} else if (anal_type == "GSEA") {
 	  function(complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = .5,

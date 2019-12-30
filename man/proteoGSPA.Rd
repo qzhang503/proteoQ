@@ -6,7 +6,7 @@
 \title{GSPA of protein data}
 \usage{
 proteoGSPA(id = gene, scale_log2r = TRUE, df = NULL,
-  filepath = NULL, filename = NULL, impute_na = TRUE,
+  filepath = NULL, filename = NULL, impute_na = NULL,
   complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = 0.5,
   pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.05,
   min_size = 10, max_size = Inf, min_greedy_size = 1,
@@ -19,7 +19,7 @@ prnGSPA(...)
 determined automatically.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -32,26 +32,33 @@ of \code{id} in the \code{call}.}
 determined automatically by the name of the calling function and the value
 of id in the call.}
 
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used.}
+\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
+the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+protein data.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used.}
+missing values will be used. The default is FALSE.}
 
 \item{gset_nms}{Character string or vector containing the name(s) of gene sets
-for enrichment analysis. The possible values are in \code{c("go_sets",
-"kegg_sets")}. Note that the currently supported species are human, mouse
-and rat.}
+for enrichment analysis. The default is \code{"go_sets"}. The possible
+values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
+supported species are human, mouse and rat.}
 
 \item{var_cutoff}{Not currently used.}
 
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
-the threshold will be ignored during enrichment analysis.}
+the threshold will be ignored during enrichment analysis. The default is
+0.05 for all formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of cut-off
+values.}
 
 \item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
-\code{log2FC}. Entries with absolute \code{log2FC} smaller than the
-threshold will be ignored during enrichment analysis.}
+\code{log2FC}. The default magnitude is \code{log2(1.2)} for all formulae
+matched to or specified in argument \code{fml_nms}. Entries with absolute
+\code{log2FC} smaller than the threshold will be ignored during enrichment
+analysis. Formula-specific threshold is allowed by supplying a vector of
+absolute values in \code{log2FC}.}
 
 \item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
 significance \code{pVal}. Only enrichment terms with \code{pVals} more
@@ -60,29 +67,33 @@ significant than the threshold will be reported.}
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
 consideration in gene set tests. The number is the sum of up or
 down-expressed proteins after data filtration by \code{pval_cutoff},
-\code{logFC_cutoff} or varargs expressions under \code{filter_}.}
+\code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
+is 10 for all formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of sizes.}
 
 \item{max_size}{Numeric value or vector; maximum number of protein entries for
 consideration in gene set tests. The number is the sum of up or
 down-expressed proteins after data filtration by \code{pval_cutoff},
 \code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
-in infinite. For samples that are vastly different between contrasts,
-essential gene sets may be blackholed with trivial terms such as cell parts,
-molecular functions et al. In cases like this, a smaller \code{max_size} may
-be considered.}
+in infinite for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of sizes.}
 
 \item{min_greedy_size}{Numeric value or vector; minimum number of unique
-protein entries for a gene set to be considered essential.}
+protein entries for a gene set to be considered essential. The default in
+\code{1} for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of sizes.}
 
-\item{fml_nms}{Character string or vector; the forumula name(s). By default,
-the names match to those used in \code{\link{pepSig}} or
+\item{fml_nms}{Character string or vector; the formula name(s). By default,
+the formula(e) will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
 }
 \description{
-\code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
+\code{proteoGSPA} performs the analysis of Gene Set Probability Asymmetricity
 (GSPA) aganist protein \code{log2FC} data. Users should avoid call the method
 directly, but instead use the following wrappers.
 
@@ -98,204 +109,161 @@ the significance of gene set enrichment. The arguments \code{pval_cutoff} and
 \code{logFC_cutoff} are used to filter out low influence genes. Additional
 subsetting of data via the \code{vararg} approach of \code{filter_} is
 feasible.
-
-The formula(e) of contrast(s) used in \code{\link{prnSig}} will be taken by
-default.
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
+# GSPA tests
 # ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
 
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
+## !!!require the brief working example in `?load_expts`
 
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
-# Significance test
-# ===================================
+## global option
 scale_log2r <- TRUE
 
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  # prior significance tests in protein abundance changes
-	# (a) no NA imputation; output: Protein_pVals.txt
-  prnSig(
-    impute_na = FALSE,
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"],
-    W16_vs_W2 = ~ Term_3["W16-W2"],
-  )
+## base
+# prerequisites in significance tests (impute_na = FALSE)
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
 
-  # (b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(
-    impute_na = TRUE,
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"],
-    W16_vs_W2 = ~ Term_3["W16-W2"],
-  )
+prnSig(impute_na = FALSE)
 
-  # gene-set enrichment tests
-	# Protein_pVals.txt will be loaded at `impute_na = FALSE`
-  prnGSPA(
-    pval_cutoff = 5E-2,
-    logFC_cutoff = log2(1.2),
-    gspval_cutoff = 5E-2,
-    gset_nms = c("go_sets", "kegg_sets"),
-    impute_na = FALSE,
-  )
+prnGSPA(
+  impute_na = FALSE,
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("go_sets", "kegg_sets"),
+)
 
-  # for proteins with two or more identifying peptides
-  prnGSPA(
-    pval_cutoff = 5E-2,
-    logFC_cutoff = log2(1.2),
-    gspval_cutoff = 5E-2,
-    gset_nms = c("go_sets", "kegg_sets"),
-    filter_by_npep = exprs(prot_n_pep >= 2),
-    impute_na = FALSE,
-  )
+## row filtration
+prnGSPA(
+  impute_na = FALSE,
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("go_sets", "kegg_sets"),
+  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+)
 
-  # customized thresholds for the corresponding formulae in `prnSig()`
-  prnGSPA(
-    fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"), # formulae used in `prnSig()`
-    pval_cutoff = c(5E-2, 5E-2, 1E-10), # respective protein pVal cut-offs for each formula
-    logFC_cutoff = log2(1.2), # i.e., the same protein log2FC cut-off for all formulae
-    gspval_cutoff = c(5E-2, 5E-2, 1E-5), # gene-set pVal cut-offs 
-    max_size = c(Inf, Inf, 120), # maxixmum sizes of gene sets for consideration
-    
-    gset_nms = c("go_sets", "kegg_sets"), # the gene sets 
-    filter_by_npep = exprs(prot_n_pep >= 2), # only consider proteins with two or more identifying peptides
-    impute_na = FALSE, 
-  )
+## customized thresholds
+# (formula names defined a priori in `pepSig(...)`)
+prnGSPA(
+  impute_na = FALSE, 
+  fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
+  pval_cutoff = c(5E-2, 5E-2, 1E-10), 
+  logFC_cutoff = c(log2(1.05), log2(1.1), log2(1.2)), 
+  gspval_cutoff = c(5E-2, 5E-2, 1E-5), 
+  max_size = c(Inf, Inf, 120), 
+  gset_nms = c("go_sets", "kegg_sets"), 
+  filter_by_npep = exprs(prot_n_pep >= 3), 
+)
 
+## NA imputation
+# if not yet, run prerequisitive NA imputation
+pepImp(m = 2, maxit = 2)
+prnImp(m = 5, maxit = 5)
 
-  ## MaxQuant
-  # prior significance tests in protein abundance changes
-	# (a) no NA imputation; output: Protein_pVals.txt	
-  prnSig(
-    impute_na = FALSE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )
-	
-  # (b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(
-    impute_na = TRUE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )
-	
-  # gene-set enrichment tests
-	# Protein_pVals.txt will be loaded at `impute_na = FALSE`	
-  prnGSPA(
-    pval_cutoff = 5E-2,
-    logFC_cutoff = log2(1.2),
-    gspval_cutoff = 5E-2,
-    gset_nms = c("go_sets", "kegg_sets"),
-    impute_na = FALSE,
-  )
-	
-  # customized thresholds for the corresponding formulae in `prnSig()`
-  prnGSPA(
-    fml_nms = c("W16_vs_W2_fine", "W16_vs_W2_course"), # formulae used in `prnSig()`
-    pval_cutoff = c(5E-2, 5E-4), # respective protein pVal cut-offs for each formula
-    logFC_cutoff = log2(1.2), # i.e., the same protein log2FC cut-off for all formulae
-    gspval_cutoff = c(5E-2, 1E-6), # gene-set pVal cut-offs 
-    max_size = c(Inf, 120), # maxixmum sizes of gene sets for consideration
-    
-    gset_nms = c("go_sets", "kegg_sets"), # the gene sets 
-    filter_by_npep = exprs(prot_n_pep >= 2), # only consider proteins with two or more identifying peptides
-    impute_na = FALSE,
-  )
+# if not yet, run prerequisitive significance tests at `impute_na = TRUE`
+pepSig(
+  impute_na = TRUE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = TRUE)
+
+prnGSPA(
+  impute_na = TRUE,
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("go_sets", "kegg_sets"),
+  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+)
+
+# ===================================
+# Distance heat maps of gene sets
+# (also interactive networks)
+# ===================================
+# a `term` is a subset of an `ess_term` if the distance is zero
+prnGSPAHM(
+  filter_by = exprs(distance <= .6),
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  annot_rows = "ess_size",
+  filename = show_some_redundancy.png,
+)
+
+# human terms only
+prnGSPAHM(
+  filter_num = exprs(distance <= .95),
+  filter_sp = exprs(start_with_str("hs", term)),
+  annot_cols = "ess_idx",
+  annot_colnames = "Eset index",
+  filename = show_more_connectivity.png,
+)
+
+# custom color palette
+prnGSPAHM(
+  annot_cols = c("ess_idx", "ess_size"),
+  annot_colnames = c("Eset index", "Size"),
+  filter_by = exprs(distance <= .95),
+  color = colorRampPalette(c("blue", "white", "red"))(100),
+  filename = "custom_colors.png",
+)
+
 }
-## END of RUN `Mascot or Maxquant but not both`
+\seealso{
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
 
-
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+ 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+ \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+ 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ 
+ \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
 }

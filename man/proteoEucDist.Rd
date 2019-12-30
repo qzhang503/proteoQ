@@ -9,8 +9,9 @@
 proteoEucDist(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
   col_size = NULL, col_alpha = NULL, scale_log2r = TRUE,
-  adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL,
-  df = NULL, filepath = NULL, filename = NULL, ...)
+  impute_na = FALSE, complete_cases = FALSE, adjEucDist = FALSE,
+  annot_cols = NULL, annot_colnames = NULL, df = NULL,
+  filepath = NULL, filename = NULL, ...)
 
 pepEucDist(...)
 
@@ -51,7 +52,13 @@ aesthetics in plots. At the NULL default, the column key \code{Alpha} will
 be used.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex Euclidean distance
 by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
@@ -64,10 +71,11 @@ immediately before or after TMT labeling.}
 
 \item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
 The values under the selected keys will be used to color-code sample IDs on
-the top of the indicated plot.}
+the top of the indicated plot. The default is NULL without column
+annotation.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
-\code{annot_cols}.}
+\code{annot_cols}. The default is NULL without name replacement.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -89,7 +97,8 @@ Heat map visualization of distance matrices.
 }
 \description{
 \code{proteoEucDist} visualizes the heat map of Euclidean distances. Users
-should avoid call the method directly, but instead use the following wrappers.
+should avoid calling the method directly, but instead use the following
+wrappers.
 
 \code{pepEucDist} is a wrapper of \code{\link{proteoEucDist}} for peptide data
 
@@ -98,124 +107,29 @@ should avoid call the method directly, but instead use the following wrappers.
 \details{
 An Euclidean distance matrix of \code{log2FC} is returned by
 \code{\link[stats]{dist}} for heat map visualization.
-
-The function matches the current \code{id} to the grouping argument in the
-latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
-for details.
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
 # Euclidean distance
 # ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+## global option
 scale_log2r <- TRUE
 
-# peptide
 pepEucDist(
-  annot_cols = c("Peptide_Yield", "Group"),
-  width = 16,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  width = 14,
   height = 12,
 )
 
-# protein
 prnEucDist(
-  scale_log2r = TRUE,
-  annot_cols = c("Peptide_Yield", "Group"),
-  annot_colnames = c("New_Yield", "New_Group"),
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
 
-  # parameters for `pheatmap`
+  # arguments for `pheatmap`
   display_numbers = TRUE,
   number_color = "grey30",
   number_format = "\%.1f",
@@ -231,22 +145,114 @@ prnEucDist(
   border_color = "grey60",
   cellwidth = 24,
   cellheight = 24,
-  filter_by_npep = exprs(prot_n_pep >= 5),
-  filename = "prnEucDist_filtered.png",
+  
+  filter_prots_by = exprs(prot_n_pep >= 5),
+  filename = "filter.png",
 )
 
+## additional row filtration by pVals (proteins, impute_na = FALSE)
+# if not yet, run prerequisitive significance tests at `impute_na = FALSE`
+pepSig(
+  impute_na = FALSE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
 
-\dontrun{
+prnSig(impute_na = FALSE)
+
+# (`W16_vs_W2.pVal (W16-W2)` now a column key)
+prnEucDist(
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  width = 14,
+  height = 12,
+  filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+  filename = pvalcutoff.png, 
+)
+
+# analogous peptides
+pepEucDist(
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  width = 14,
+  height = 12,
+  filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+  filename = pvalcutoff.png, 
+)
+
+## additional row filtration by pVals (proteins, impute_na = TRUE)
+# if not yet, run prerequisitive NA imputation
+pepImp(m = 2, maxit = 2)
+prnImp(m = 5, maxit = 5)
+
+# if not yet, run prerequisitive significance tests at `impute_na = TRUE`
+pepSig(
+  impute_na = TRUE, 
+  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
+                  "(W2.JHU.TMT2-W2.JHU.TMT1)", 
+                  "(W2.PNNL.TMT2-W2.PNNL.TMT1)"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
+  W16_vs_W2 = ~ Term_3["W16-W2"], 
+)
+
+prnSig(impute_na = TRUE)
+
+prnEucDist(
+  impute_na = TRUE,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  width = 14,
+  height = 12,
+  filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+  filename = filpvals_impna.png, 
+)
+
+# analogous peptides
+pepEucDist(
+  impute_na = TRUE,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  width = 14,
+  height = 12,
+  filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+  filename = filpvals_impna.png, 
+)
+
+## Not run: 
 prnEucDist(
   col_color = "column_key_not_existed",
   col_shape = "another_missing_column_key",
   annot_cols = c("bad_column_key", "yet_another_bad_column_key")
 )
-}
+## End(Not run)
 
 }
 \seealso{
-\code{\link{load_expts}} for PSM, peptide and protein data
- preparation, \code{\link{pepImp}} for NA value imputation and
- \code{\link{pepSig}} for linear modelings.
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr \code{\link{normPSM}} for extended examples in PSM data
+ normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
+ peptide summarization \cr \code{\link{mergePep}} for extended examples in
+ peptide data merging \cr \code{\link{standPep}} for extended examples in
+ peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
+ in peptide to protein summarization \cr \code{\link{standPrn}} for extended
+ examples in protein data normalization. \cr \code{\link{pepHist}} and
+ \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
+ data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+ \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+ \code{\link{start_with_str}}, \code{\link{end_with_str}},
+ \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+ data subsetting by character strings \cr \code{\link{pepImp}} and
+ \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
+ and \code{\link{prnSig}} for significance tests \cr \code{\link{pepHM}} and
+ \code{\link{prnHM}} for heat map visualization \cr \code{\link{pepMDS}} and
+ \code{\link{prnMDS}} for MDS visualization \cr \code{\link{pepPCA}} and
+ \code{\link{prnPcA}} for PCA visualization \cr
 }

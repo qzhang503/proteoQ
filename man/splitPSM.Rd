@@ -12,24 +12,28 @@ splitPSM(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 \arguments{
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
-used in MS/MS ion search.}
+used in MS/MS ion search. There is no default and users need to provide the
+correct file path(s) and name(s).}
 
-\item{rm_craps}{Logical; if TRUE, removes
-\code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins.}
+\item{rm_craps}{Logical; if TRUE,
+\code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins will be removed.
+The default is FALSE.}
 
-\item{rm_krts}{Logical; if TRUE, removes keratin entries.}
+\item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
+is FALSE.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity.}
+\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
+default is 1,000.}
 
-\item{annot_kinases}{Logical; if TRUE, annotates kinase attributes of
-proteins.}
+\item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins
+will be annotated with their kinase attributes. The default is FALSE.}
 
-\item{plot_rptr_int}{Logical; if TRUE, prepares the violin plots of
-reporter-ion intensities.}
+\item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
+intensities will be plotted. The default is TRUE.}
 
-\item{use_lowercase_aa}{Logical; if TRUE, use lower-case and/or \code{^_~}
-one-letter representation to abbreviate the modifications of amino acid
-residues. See the table below for details.}
+\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
+residues will be abbreviated with lower-case and/or \code{^_~}. See the
+table below for details. The default is TRUE.}
 }
 \description{
 \code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It

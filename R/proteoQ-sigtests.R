@@ -1,7 +1,7 @@
 #'Significance tests
 #'
 #'\code{proteoSigtest} performs significance tests aganist peptide or protein
-#'\code{log2FC}. Users should avoid call the method directly, but instead use
+#'\code{log2FC}. Users should avoid calling the method directly, but instead use
 #'the following wrappers.
 #'
 #'In general, special characters of \code{+} or \code{-} should be avoided from
@@ -27,29 +27,70 @@
 #'  be used for models with random effects.
 #'@param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
 #'  Entries with variances smaller than the threshold will be removed from
-#'  linear modeling.
+#'  linear modeling. The default is 1E-3.
 #'@param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
 #'  with \code{pVals} smaller than the threshold will be removed from multiple
-#'  test corrections.
+#'  test corrections. The default is at \code{1} to include all entries.
 #'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
-#'  \code{log2FC} smaller than the threshold will be removed from multiple test
-#'  corrections.
+#'  absolute \code{log2FC} smaller than the threshold will be removed from
+#'  multiple test corrections. The default is at \code{log2(1)} to include all
+#'  entries.
 #'@param ... User-defined formulae for linear modeling. The syntax starts with a
 #'  tilde, followed by the name of an available column key in
 #'  \code{expt_smry.xlsx} and square brackets. The contrast groups are then
-#'  quoted with multiple contrast groups separated by commas. Additive random
-#'  effects are indicated by \code{+ (1|col_key_1) + (1|col_key_2)}... \cr \cr
-#'  \code{filter_}: Logical expression(s) for the row filtration of data; also
-#'  see \code{\link{normPSM}}.
+#'  quoted with one to multiple contrast groups separated by commas. The default
+#'  column key is \code{Term} in `expt_smry.xlsx`: \cr \code{~ Term["A - C", "B
+#'  - C"]}. \cr Additive random effects are indicated by \code{+ (1|col_key_1) +
+#'  (1|col_key_2)}... Currently only a syntax of single contrast are supported
+#'  for uses with random effects: \cr \code{~ Term["A - C"] + (1|col_key_1) +
+#'  (1|col_key_2)} \cr \cr \code{filter_}: Logical expression(s) for the row
+#'  filtration of data; also see \code{\link{normPSM}}.
 #'@return The primary output is
 #'  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
-#'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data.
+#'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. At
+#'  \code{impute_na = TRUE}, the corresponding outputs are
+#'  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
+#'@example inst/extdata/examples/prnSig_.R
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+#'  
+#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -58,7 +99,18 @@ proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = 
 											impute_na = TRUE, complete_cases = FALSE, method = "limma",
 											var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), ...) {
 
+  on.exit(
+    if (id %in% c("pep_seq", "pep_seq_mod")) {
+      mget(names(formals()), current_env()) %>% c(dots) %>% save_call("pepSig")
+    } else if (id %in% c("prot_acc", "gene")) {
+      mget(names(formals()), current_env()) %>% c(dots) %>% save_call("prnSig")
+    }
+    , add = TRUE
+  )
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  dots <- rlang::enexprs(...)
 
 	id <- rlang::enexpr(id)
 	df <- rlang::enexpr(df)
@@ -443,7 +495,7 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	
 	if (id %in% c("pep_seq", "pep_seq_mod")) {
 	  pepSig_formulas <- dots
-	  save(pepSig_formulas, file = file.path(dat_dir, "Calls", "pepSig_formulas.Rdata"))
+	  save(pepSig_formulas, file = file.path(dat_dir, "Calls", "pepSig_formulas.rda"))
 	  rm(pepSig_formulas)
 	} else if (id %in% c("prot_acc", "gene")) {
 	  if (is_empty(dots)) {
@@ -451,7 +503,7 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	  } else {
 	    prnSig_formulas <- dots
 	  }
-	  save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.Rdata"))
+	  save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.rda"))
 	  rm(prnSig_formulas)
 	}
 	
@@ -477,9 +529,11 @@ pepSig <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoSigtest)(id = pep_seq, ...)
+  id <- match_normPSM_pepid()
+  
+  quietly_log <- purrr::quietly(proteoSigtest)(id = !!id, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Model\\log","pepSig_log.csv"), append = TRUE)
+              file.path(dat_dir, "Peptide\\Model\\log\\pepSig_log.csv"), append = TRUE)
 }
 
 
@@ -493,67 +547,6 @@ pepSig <- function (...) {
 #'@rdname proteoSigtest
 #'
 #'@import purrr
-#' @examples
-#' # ===================================
-#' # Significance test
-#' # ===================================
-#' scale_log2r <- TRUE
-#' 
-#' # Mascot examples (MaxQuant examples are different in contrasts)
-#' # peptide significance tests
-#' pepSig(
-#'   impute_na = FALSE, 
-#'   W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-#'   W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-#'   W16_vs_W2 = ~ Term_3["W16-W2"], 
-#' )
-#' 
-#' # protein significance tests
-#' prnSig(
-#'   impute_na = FALSE,
-#'   W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", "W2.JHU.TMT2-W2.JHU.TMT1", "W2.PNNL.TMT2-W2.PNNL.TMT1"], # batches
-#'   W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # locations
-#'   W16_vs_W2 = ~ Term_3["W16-W2"],
-#' )
-#'
-#' # averaged batch effect
-#' prnSig(
-#'   impute_na = FALSE,
-#'   W2_loc_2 = ~ Term["(W2.BI.TMT2+W2.BI.TMT1)/2 - (W2.JHU.TMT2+W2.JHU.TMT1)/2"], # locations with batch average
-#' )
-#'
-#' # single random effect
-#' prnSig(
-#'   impute_na = TRUE,
-#'   W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed effect
-#'   W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
-#' )
-#' 
-#' # one to multiple random effect
-#' prnSig(
-#'   impute_na = TRUE,
-#'   method = lm,
-#'   W2_vs_W16_fix = ~ Term_3["W16-W2"], # one fixed effect
-#'   W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
-#'   W2_vs_W16_mix_2 = ~ Term_3["W16-W2"] + (1|TMT_Set) + (1|Color), # one fixed and two random effects
-#' )
-#' 
-#' 
-#' # MaxQuant examples
-#' # peptide significance tests
-#' pepSig(
-#'   impute_na = FALSE, 
-#'   W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-#'   W16_vs_W2_course = ~ Term_2["W16-W2"], 
-#' )
-#' 
-#' # protein significance tests
-#' prnSig(
-#'   impute_na = FALSE, 
-#'   W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-#'   W16_vs_W2_course = ~ Term_2["W16-W2"], 
-#' )
-#' 
 #'@import purrr
 #'@export
 prnSig <- function (...) {
@@ -561,9 +554,11 @@ prnSig <- function (...) {
   if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  id <- match_normPSM_protid()
 
-  quietly_log <- purrr::quietly(proteoSigtest)(id = gene, ...)
+  quietly_log <- purrr::quietly(proteoSigtest)(id = !!id, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Model\\log","prnSig_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\Model\\log\\prnSig_log.csv"), append = TRUE)
 }
 

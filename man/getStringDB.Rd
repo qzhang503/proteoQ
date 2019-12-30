@@ -8,18 +8,20 @@ getStringDB(db_path = "~\\\\proteoQ\\\\dbs\\\\string",
   score_cutoff = 0.7, adjP = FALSE, ...)
 }
 \arguments{
-\item{db_path}{Character string; the local path for database(s).}
+\item{db_path}{Character string; the local path for database(s). The default is \code{"~\\proteoQ\\dbs\\string"}.}
 
-\item{score_cutoff}{Numeric; the threshold of the \code{combined_score} of
-protein-protein interaction.}
+\item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
+protein-protein interaction. The default is 0.7.}
 
-\item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals.}
+\item{adjP}{Logical. At the FALSE default, unadjusted pVals from
+\code{\link{prnSig}} will be used in PPI reports; otherwise, the
+Benjamini-Hochberg pVals will be used in the reports.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
 }
 \description{
-\code{getStringDB} produces locally the
+\code{getStringDB} prepares locally the
 \code{\href{https://string-db.org/}{STRING}} results of protein-protein
 interaction and protein expressions. The interaction file,
 \code{Protein_STRING_ppi.tsv}, and the expression file,
@@ -28,173 +30,31 @@ interaction and protein expressions. The interaction file,
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
-# ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
-# Optional significance tests
-# (for data filtration by pVals...)
-# ===================================
-scale_log2r <- TRUE
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  # peptide significance tests
-	# (1a) no NA imputation; output: Peptide_pVals.txt
-  pepSig(
-    impute_na = FALSE, 
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-    W16_vs_W2 = ~ Term_3["W16-W2"], 
-  )
-  
-  # (1b) or NA imputation; output: Peptide_impNA_pvals.txt
-  pepSig(
-    impute_na = TRUE, 
-    W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-    W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
-    W16_vs_W2 = ~ Term_3["W16-W2"], 
-  )
-	
-  # protein significance tests
-  # all formulae in the latest `pepSig()` will be assessed by default 
-  # (2a) no NA imputation; output: Protein_pVals.txt
-  prnSig(impute_na = FALSE)
-  
-  # (2b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(impute_na = TRUE)
-  
-	
-  ## MaxQuant
-  # peptide significance tests
-	# (1a) no NA imputation; output: Peptide_pVals.txt
-  pepSig(
-    impute_na = FALSE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )
-	
-  # (1b) or NA imputation; output: Peptide_impNA_pvals.txt
-  pepSig(
-    impute_na = TRUE, 
-    W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-    W16_vs_W2_course = ~ Term_2["W16-W2"], 
-  )
-  
-  # protein significance tests
-	# formula(e) in the latest `pepSig()` will be taken by default
-  # (2a) no NA imputation; output: Protein_pVals.txt
-  prnSig(impute_na = FALSE)
-  
-  # (2b) or NA imputation; output: Protein_impNA_pvals.txt
-  prnSig(impute_na = TRUE)
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-
-# ===================================
 # String DB
 # ===================================
+
+## !!!require the brief working example in `?load_expts`
+
+string_dir <- "~\\\\proteoQ\\\\dbs\\\\string"
+dir.create(string_dir, recursive = TRUE, showWarnings = FALSE)
+
+# download
+dl_stringdbs(
+  species = human,
+  db_path = string_dir,
+)
+
+# protein-protein interaction network
 getStringDB(
-  db_path = "~\\\\proteoQ\\\\dbs\\\\string",
+  db_path = string_dir,
   score_cutoff = .9,
   adjP = FALSE,
   filter_by_sp = exprs(species == "human"),
-  filter_by_npep = exprs(prot_n_pep >= 2),
+  filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
 }
 \seealso{
-\code{\link{dl_stringdbs}} for database downloads.
+\code{\link{dl_stringdbs}} for database downloads. \cr 
+\code{\link{prnSig}} for significance tests \cr
 }

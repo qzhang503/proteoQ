@@ -2,61 +2,103 @@
 #'
 #'\code{prnGSVA} performs the GSVA aganist protein \code{log2FC}
 #'
-#'The formula(s) of contrast(s) used in \code{\link{prnSig}} will be taken by
+#'The formula(s) of contrast(s) used in \code{\link{pepSig}} will be taken by
 #'default.
 #'
 #'
+#'@inheritParams proteoSigtest
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
-#'@inheritParams proteoSigtest
+#'@inheritParams proteoGSPA
+#'@param impute_na Logical. At the NULL default, the TRUE or FALSE will match
+#'  the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+#'  protein data.
 #'@param lm_method Character string indicating the linear modeling method for
-#'  significance assessment of GSVA enrichment scores
-#'@param gset_nm Character vector of the name(s) of gene sets. The currently
-#'  available data sets include c("go_sets", "kegg_sets", "c2_msig").
+#'  significance assessment of GSVA enrichment scores. The default is
+#'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
+#'  for models without random effects and the \code{\link[lmerTest]{lmer}} will
+#'  be used for models with random effects.
+#'@param var_cutoff Numeric; the cut-off in the variances of protein log2FC.
+#'  Entries with variances smaller than the threshold will be removed from GSVA.
+#'  The default is 0.5.
+#'@param pval_cutoff Numeric; the cut-off in enrichment pVals. Terms with
+#'  enrichment pVals smaller than the threshold will be removed from multiple
+#'  test corrections. The default is 1e-04.
+#'@param logFC_cutoff Numeric; the cut-off in enrichment log2FC. Terms with
+#'  absolute log2FC smaller than the threshold will be removed from multiple
+#'  test corrections. The default is at log2(1.1).
 #'@param filepath Use system default.
 #'@param filename Use system default.
-#'@param Parameters for \code{\link[GSVA]{gsva}}
+#'@param ... Arguments for \code{\link{GSVA::gsva}}
 #'
+#'@example inst/extdata/examples/prnGSVA_.R
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+#'  
+#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  
 #'@import dplyr rlang ggplot2 GSVA
 #'@importFrom magrittr %>%
-#' @examples
-#'prnGSVA(
-#'  scale_log2r = TRUE, 
-#'  impute_na = FALSE, 
-#'  min.sz = 10, 
-#'  verbose = FALSE, 
-#'  parallel.sz = 0, 
-#'  mx.diff = TRUE, 
-#'  gset_nms = c("go_sets", "kegg_sets"), 
-#')
-#'
 #'@export
-prnGSVA <- function (id = gene,
-										scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL,
-										impute_na = TRUE, complete_cases = FALSE, lm_method = "limma",
-										gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4,
-										logFC_cutoff = log2(1.1), ...) {
+prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL, 
+                     impute_na = NULL, complete_cases = FALSE, lm_method = "limma", 
+                     gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4, 
+                     logFC_cutoff = log2(1.1), ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-
-  id <- rlang::enexpr(id)
+  id <- match_normPSM_protid()
+  
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	lm_method <- rlang::as_string(rlang::enexpr(lm_method))
+	if (is.null(impute_na)) impute_na <- match_sigTest_imputena(id)
+	
+	stopifnot(is_logical(scale_log2r), is_logical(impute_na), is_logical(complete_cases))
 
-	stopifnot(rlang::is_logical(scale_log2r))
-	stopifnot(rlang::is_logical(impute_na))
-	stopifnot(rlang::is_logical(complete_cases))
-	
-	dots = rlang::enexprs(...)
-	fmls <- dots %>% .[grepl("~", .)]
+	dots <- rlang::enexprs(...)
+	fmls <- dots %>% .[grepl("^\\s*~", .)]
 	dots <- dots[!names(dots) %in% names(fmls)]
-	
-	if(purrr::is_empty(fmls)) {
-	  fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.Rdata")
-	  if(file.exists(fml_file)) {
+
+	if (purrr::is_empty(fmls)) {
+	  fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.rda")
+	  if (file.exists(fml_file)) {
 	    load(file = fml_file)
 	    dots <- c(dots, prnSig_formulas)
 	  } else {
@@ -67,7 +109,7 @@ prnGSVA <- function (id = gene,
 	  dots <- c(dots, fmls)
 	}
 	
-	# load(file = file.path(dat_dir, "Calls\\prnSig_formulas.Rdata"))
+	# load(file = file.path(dat_dir, "Calls\\prnSig_formulas.rda"))
 	# dots <- c(rlang::enexprs(...), prnSig_formulas)
 		
 	# Sample selection criteria:
@@ -90,9 +132,9 @@ prnGSVA <- function (id = gene,
 #' @importFrom outliers grubbs.test
 #' @importFrom broom.mixed tidy
 gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, filepath = NULL, filename = NULL, 
-                     complete_cases = FALSE, lm_method = "limma", gsets = NULL, var_cutoff = .5, pval_cutoff = 1E-4, 
-                     logFC_cutoff = log2(1.1), ...) {
-  
+                     complete_cases = FALSE, lm_method = "limma", gsets = NULL, 
+                     var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
+
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
@@ -108,15 +150,6 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, filepath
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
   
   if (purrr::is_empty(fmls)) stop("Formula(s) of contrasts not available.", call. = FALSE)
-  
-  run_scripts <- FALSE
-  if (run_scripts) {
-    is_null <- purrr::map_lgl(gsets, ~ is.null(.x))
-    purrr::walk2(is_null, names(is_null), ~ {
-      if (.x) warning("Gene set: `", .y, "` not found", call. = FALSE)
-    })
-    gsets[is_null] <- NULL    
-  }
   
   stopifnot(length(gsets) > 0)
   

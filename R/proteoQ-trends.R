@@ -101,8 +101,14 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
-
+  
+  # filename extension will be used but prefix ignored
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
+  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
   ins <- list.files(path = filepath, pattern = "_n\\d+\\.csv$")
+  if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
 
 	if (is.null(n_clust)) {
 	  filelist <- ins
@@ -159,10 +165,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
     legend.box = NULL
   )
   
-  # filename extension will be used but prefix ignored
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
+
   purrr::walk(filelist, ~ {
     out_nm <- paste0(gsub("\\.csv$", "", .x), ".", fn_suffix)
     src_path <- file.path(filepath, .x)
@@ -229,8 +232,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 
 #'Clustering of data trends
 #'
-#'\code{proteoTrend} analyzes and visualizes the trends of peptide or protein
-#'\code{log2FC}. Users should avoid call the method directly, but instead use
+#'\code{proteoTrend} analyzes and visualizes the trends of protein
+#'\code{log2FC}. Users should avoid calling the method directly, but instead use
 #'the following wrappers.
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
@@ -255,12 +258,48 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/normPrn_min.R
-#'@example inst/extdata/examples/imputeNA_examples.R
+#'@example inst/extdata/examples/prnTrend_.R
 #'
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+#'  
+#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  
 #'@export
 proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                          task = "anal", 
@@ -311,21 +350,6 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'
 #'@rdname proteoTrend
 #'
-#' @examples
-#' # ===================================
-#' # Trend
-#' # ===================================
-#' scale_log2r <- TRUE
-#' 
-#' # protein data with sample order supervision
-#' anal_prnTrend(
-#'   scale_log2r = TRUE,
-#'   col_order = Order,
-#'   n_clust = c(5:8), 
-#'   
-#'   filter_by_npep = exprs(prot_n_pep >= 2),
-#' )
-#'
 #'@import purrr
 #'@export
 anal_prnTrend <- function (...) {
@@ -334,9 +358,11 @@ anal_prnTrend <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  quietly_log <- purrr::quietly(proteoTrend)(id = gene, task = anal, ...)
+  id <- match_normPSM_protid()
+  
+  quietly_log <- purrr::quietly(proteoTrend)(id = !!id, task = anal, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Trend\\log","anal_prnTrend_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\Trend\\log\\anal_prnTrend_log.csv"), append = TRUE)
 }
 
 
@@ -347,23 +373,6 @@ anal_prnTrend <- function (...) {
 #'
 #'@rdname proteoTrend
 #'
-#' @examples
-#' # visualization
-#' plot_prnTrend(
-#'   scale_log2r = TRUE,
-#'   col_order = Order,
-#'   n_clust = c(5:6), 
-#' )
-#'
-#' # only proteins with four or more identifying peptides
-#' plot_prnTrend(
-#'   scale_log2r = TRUE,
-#'   col_order = Order,
-#'   n_clust = c(5:6), 
-#'   
-#'   filter_by_npep = exprs(prot_n_pep >= 4),
-#' )
-#'
 #'@import purrr
 #'@export
 plot_prnTrend <- function (...) {
@@ -371,9 +380,11 @@ plot_prnTrend <- function (...) {
   if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  id <- match_normPSM_protid()
 
-  quietly_log <- purrr::quietly(proteoTrend)(id = gene, task = plot, ...)
+  quietly_log <- purrr::quietly(proteoTrend)(id = !!id, task = plot, ...)
   purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Trend\\log","plot_prnTrend_log.csv"), append = TRUE)
+              file.path(dat_dir, "Protein\\Trend\\log\\plot_prnTrend_log.csv"), append = TRUE)
 }
 

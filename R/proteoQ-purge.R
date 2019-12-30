@@ -43,7 +43,8 @@ sd_lgl_cleanup <- function (df) {
 #'
 #' @inheritParams proteoHist
 #' @param max_cv Numeric; the cut-off in maximum CV. Values above the threshold
-#'   will be replaced with NA.
+#'   will be replaced with NA. The default is NULL with no data trimming by max
+#'   CV.
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
 purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
@@ -91,7 +92,8 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
 #'
 #' @inheritParams proteoHist
 #' @param pt_cv Numeric between 0 and 1; the percentile of CV. Values above the
-#'   percentile threshold will be replaced with NA.
+#'   percentile threshold will be replaced with NA. The default is NULL with no
+#'   data trimming by CV percentile.
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
 purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
@@ -145,7 +147,7 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
 #' Filter data groups by a minimal number of observations (n_obs)
 #'
 #' \code{purge_by_n} replaces the data entries at \code{group n_obs < min_n} to
-#' NA.
+#' NA. 
 #'
 #' @inheritParams proteoHist
 #' @param min_n Positive integer. When calling from \code{purgePSM}, peptide
@@ -173,7 +175,8 @@ purge_by_n <- function (df, id, min_n) {
 #'Purge PSM data
 #'
 #'\code{purgePSM} removes \code{peptide} entries from PSM tables by selection
-#'criteria.
+#'criteria. It further plots the distributions of \code{log2FC} by TMT
+#'experiments and LC/MS series.
 #'
 #'The CV of peptides are calculated from contributing PSMs at the basis of per
 #'TMT experiment per series of LC/MS. Note that greater CV may be encountered
@@ -188,17 +191,35 @@ purge_by_n <- function (df, id, min_n) {
 #'@param keep_ohw Logical; if TRUE, keep one-hit-wonders with unknown CV. The
 #'  default is TRUE.
 #'@param ... Additional parameters for plotting: \cr \code{ymax}, the maximum
-#'  \eqn{y} at a log2 scale; the default is +0.6. \cr \code{ybreaks}, the breaks
-#'  in \eqn{y}-axis at a log2 scale; the default is 0.2. \cr \code{width}, the
-#'  width of plot. \cr \code{height}, the height of plot. \cr \code{flip_coord},
-#'  logical; if TRUE, flip \code{x} and \code{y} axis.
+#'  \eqn{y} at a log2 scale. \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a
+#'  log2 scale. \cr \code{width}, the width of plot. \cr \code{height}, the
+#'  height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
+#'  \code{y} axis.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/purgePSM_examples.R
-#'@seealso \code{\link{purgePep}} for peptide data purging.
+#'@example inst/extdata/examples/purgePSM_.R
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  
 #'@export
 purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, keep_ohw = TRUE, ...) {
   
@@ -221,8 +242,8 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   # stopifnot(min_n > 0 & min_n%%1 == 0)
   
-  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  load(file = file.path(dat_dir, "label_scheme.rda"))
   
   filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
     reorder_files(n_TMT_sets(label_scheme_full))
@@ -288,8 +309,8 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 
 #'Purge peptide data
 #'
-#'\code{purgePep} removes \code{protein} entries from peptide table(s) by
-#'selection criteria.
+#'\code{purgePep} removes \code{protein} entries from \code{Peptide.txt} by
+#'selection criteria. It further plots the distributions of \code{log2FC}.
 #'
 #'The CV of proteins under each sample are first calculated from contributing
 #'peptides. In the event of multiple sereis of LC/MS injections, the CV of the
@@ -297,7 +318,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'
 #'The data nullification will be applied column-wisely for all available
 #'samples. Argument \code{col_select} is merely used to subsettng samples for
-#'violin plot visualization.
+#'the visualization of \code{log2FC} distributions.
 #'
 #'@inheritParams purgePSM
 #'@inheritParams proteoHist
@@ -308,11 +329,28 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
-#'@example inst/extdata/examples/fasta_psm.R
-#'@example inst/extdata/examples/pepseqmod_min.R
-#'@example inst/extdata/examples/normPep_min.R
-#'@example inst/extdata/examples/purgePep_examples.R
-#'@seealso \code{\link{purgePSM}} for PSM data purging.
+#'@example inst/extdata/examples/purgePep_.R
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  
 #'@export
 purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, keep_ohw = TRUE, 
                       col_select = NULL, col_order = NULL, filename = NULL, ...) {
@@ -349,8 +387,8 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   # stopifnot(min_n > 0 & min_n%%1 == 0)
   
-  load(file = file.path(dat_dir, "label_scheme_full.Rdata"))
-  load(file = file.path(dat_dir, "label_scheme.Rdata"))
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  load(file = file.path(dat_dir, "label_scheme.rda"))
 
   dir.create(file.path(dat_dir, "Peptide\\Copy"), recursive = TRUE, showWarnings = FALSE)
   file.copy(file.path(dat_dir, "Peptide\\Peptide.txt"), file.path(dat_dir, "Peptide\\Copy\\Peptide.txt"))

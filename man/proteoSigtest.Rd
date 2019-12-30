@@ -25,7 +25,7 @@ or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
 or \code{gene}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples.}
+of standard deviation across all samples. The default is TRUE.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
@@ -35,10 +35,10 @@ of \code{id} in the \code{call}.}
 \code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used.}
+will be used. The default is FALSE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used.}
+missing values will be used. The default is FALSE.}
 
 \item{method}{Character string; the method of linear modeling. The default is
 \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
@@ -47,32 +47,38 @@ be used for models with random effects.}
 
 \item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.
 Entries with variances smaller than the threshold will be removed from
-linear modeling.}
+linear modeling. The default is 1E-3.}
 
 \item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
 with \code{pVals} smaller than the threshold will be removed from multiple
-test corrections.}
+test corrections. The default is at \code{1} to include all entries.}
 
 \item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with
-\code{log2FC} smaller than the threshold will be removed from multiple test
-corrections.}
+absolute \code{log2FC} smaller than the threshold will be removed from
+multiple test corrections. The default is at \code{log2(1)} to include all
+entries.}
 
 \item{...}{User-defined formulae for linear modeling. The syntax starts with a
 tilde, followed by the name of an available column key in
 \code{expt_smry.xlsx} and square brackets. The contrast groups are then
-quoted with multiple contrast groups separated by commas. Additive random
-effects are indicated by \code{+ (1|col_key_1) + (1|col_key_2)}... \cr \cr
-\code{filter_}: Logical expression(s) for the row filtration of data; also
-see \code{\link{normPSM}}.}
+quoted with one to multiple contrast groups separated by commas. The default
+column key is \code{Term} in `expt_smry.xlsx`: \cr \code{~ Term["A - C", "B
+- C"]}. \cr Additive random effects are indicated by \code{+ (1|col_key_1) +
+(1|col_key_2)}... Currently only a syntax of single contrast are supported
+for uses with random effects: \cr \code{~ Term["A - C"] + (1|col_key_1) +
+(1|col_key_2)} \cr \cr \code{filter_}: Logical expression(s) for the row
+filtration of data; also see \code{\link{normPSM}}.}
 }
 \value{
 The primary output is
  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
- \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data.
+ \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. At
+ \code{impute_na = TRUE}, the corresponding outputs are
+ \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 }
 \description{
 \code{proteoSigtest} performs significance tests aganist peptide or protein
-\code{log2FC}. Users should avoid call the method directly, but instead use
+\code{log2FC}. Users should avoid calling the method directly, but instead use
 the following wrappers.
 
 \code{pepSig} is a wrapper of \code{\link{proteoSigtest}} for the
@@ -97,156 +103,130 @@ samples in it.
 }
 \examples{
 # ===================================
-# Prerequisite Fasta and PSM files
+# Significance tests
 # ===================================
-library(proteoQDA)
-fasta_dir <- "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
-copy_refseq_hs(fasta_dir)
-copy_refseq_mm(fasta_dir)
 
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_csv_1(dat_dir)
-  cptac_expt_1(dat_dir)
-  cptac_frac_1(dat_dir)
-  
-	
-  ## Maxquant
-  #  to install package `proteoQDB` containing MaxQuant examples: 
-  #  (1) clone https://github.com/qiangzhang503/proteoQDB.git through `Github Desktop`
-  #  (2) local installation of proteoQDB, e.g., devtools::install("~\\\\my_dir\\\\proteoQDB")
-  library(proteoQDB)
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-  dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-  cptac_mqpsm_txt(dat_dir)
-  cptac_mqpsm_expt(dat_dir)
-  cptac_mqpsm_frac(dat_dir)	
-}
-## END of RUN `Mascot or Maxquant but not both`
+## !!!require the brief working example in `?load_expts`
 
-
-# ===================================
-# Prerequisite PSM normalization
-# ===================================
-library(proteoQ)
-
-## RUN `Mascot or Maxquant but not both`
-dontrun <- TRUE
-if (!dontrun) {
-  ## Mascot
-  dat_dir <- "C:\\\\The\\\\Mascot\\\\Example"
-  
-	
-  ## Maxquant
-  dat_dir <- c("C:\\\\The\\\\MQ\\\\Example")
-}
-## END of RUN `Mascot or Maxquant but not both`
-
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
-load_expts()
-
-normPSM(
-  group_psm_by = pep_seq_mod, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta", 
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"), 
-)
-
-
-# ===================================
-# Prerequisite peptide normalization
-# ===================================
-normPep(
-  method_align = MGKernel, 
-  n_comp = 3, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Prerequisite protein normalization
-# ===================================
-normPrn(
-  method_align = MGKernel, 
-  n_comp = 2, 
-  seed = 749662, 
-)
-
-
-# ===================================
-# Optional NA imputation
-# ===================================
-# peptide
-pepImp(m = 2, maxit = 2)
-
-# protein
-prnImp(m = 5, maxit = 5)
-
-
-
-# ===================================
-# Significance test
-# ===================================
+## global option
 scale_log2r <- TRUE
 
-# Mascot examples (MaxQuant examples are different in contrasts)
-# peptide significance tests
+## peptides (`Term` etc. are user-defined column keys in expt_smry.xlsx)
 pepSig(
   impute_na = FALSE, 
-  W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", "(W2.JHU.TMT2-W2.JHU.TMT1)", "(W2.PNNL.TMT2-W2.PNNL.TMT1)"], # batch effects
-  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # location effects
+  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
+                  "W2.JHU.TMT2-W2.JHU.TMT1", 
+                  "W2.PNNL.TMT2-W2.PNNL.TMT1"],
+  W2_loc = ~ Term_2["W2.BI-W2.JHU", 
+                    "W2.BI-W2.PNNL", 
+                    "W2.JHU-W2.PNNL"],
   W16_vs_W2 = ~ Term_3["W16-W2"], 
 )
 
-# protein significance tests
-prnSig(
+pepVol()
+
+## proteins (formulae matched to `pepSig` by default)
+prnSig(impute_na = FALSE)
+prnVol()
+
+# note the incongruity in peptide and protein fold changes
+# (no measures for peptides but for proteins)
+
+#  sequence |   ref    | sample_1 | sample_2 |  log2FC   
+# -------------------------------------------------------
+# prnX_pep1 |    0     |   1.15   |    NA    |    NA
+# prnX_pep2 |    0     |    NA    |   0.05   |    NA
+
+
+#  protein  |   ref    | sample_1 | sample_2 |  log2FC   
+# -------------------------------------------------------
+#   prnX    |    0     |   1.15   |    0.05  |   1.10
+
+## averaged batch effect
+# (suggest run both `pepSig` and `prnSig` for consistency)
+pepSig(
   impute_na = FALSE,
-  W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", "W2.JHU.TMT2-W2.JHU.TMT1", "W2.PNNL.TMT2-W2.PNNL.TMT1"], # batches
-  W2_loc = ~ Term_2["W2.BI-W2.JHU", "W2.BI-W2.PNNL", "W2.JHU-W2.PNNL"], # locations
-  W16_vs_W2 = ~ Term_3["W16-W2"],
+  W2_loc_2 = ~ Term["(W2.BI.TMT2+W2.BI.TMT1)/2 - (W2.JHU.TMT2+W2.JHU.TMT1)/2"], 
 )
 
-# averaged batch effect
-prnSig(
-  impute_na = FALSE,
-  W2_loc_2 = ~ Term["(W2.BI.TMT2+W2.BI.TMT1)/2 - (W2.JHU.TMT2+W2.JHU.TMT1)/2"], # locations with batch average
-)
+prnSig(impute_na = FALSE)
 
-# single random effect
-prnSig(
+pepVol()
+prnVol()
+
+## random effects
+# NA imputation (suggested for models with random effects)
+pepImp(m = 2, maxit = 2)
+prnImp(m = 5, maxit = 5)
+
+# single
+pepSig(
   impute_na = TRUE,
-  W2_vs_W16_fix = ~ Term_3["W16-W2"], # fixed effect
-  W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
+  W2_vs_W16_fix = ~ Term_3["W16-W2"],
+  W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set),
 )
 
-# one to multiple random effect
+prnSig(impute_na = TRUE)
+
+pepVol()
+prnVol()
+
+# one to multiple (method `lm` for multiple random)
+pepSig(
+  impute_na = TRUE,
+  method = lm,
+  W2_vs_W16_fix = ~ Term_3["W16-W2"],
+  W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set),
+  W2_vs_W16_mix_2 = ~ Term_3["W16-W2"] + (1|TMT_Set) + (1|Color),
+)
+
 prnSig(
   impute_na = TRUE,
   method = lm,
-  W2_vs_W16_fix = ~ Term_3["W16-W2"], # one fixed effect
-  W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
-  W2_vs_W16_mix_2 = ~ Term_3["W16-W2"] + (1|TMT_Set) + (1|Color), # one fixed and two random effects
 )
 
+pepVol()
+prnVol()
 
-# MaxQuant examples
-# peptide significance tests
-pepSig(
-  impute_na = FALSE, 
-  W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-  W16_vs_W2_course = ~ Term_2["W16-W2"], 
-)
+}
+\seealso{
+\code{\link{load_expts}} for a reduced working example in data normalization \cr
 
-# protein significance tests
-prnSig(
-  impute_na = FALSE, 
-  W16_vs_W2_fine = ~ Term["W16.BI-W2.BI", "W16.JHU-W2.JHU", "W16.PNNL-W2.PNNL"],
-  W16_vs_W2_course = ~ Term_2["W16-W2"], 
-)
-
+ \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+ 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+ \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+ 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ 
+ \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
 }

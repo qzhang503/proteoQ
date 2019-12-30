@@ -4,26 +4,21 @@
 \alias{dl_stringdbs}
 \title{Downloads STRING databases}
 \usage{
-dl_stringdbs(species = NULL, db_path = "~\\\\proteoQ\\\\dbs\\\\string",
-  overwrite = FALSE)
+dl_stringdbs(species = "human",
+  db_path = "~\\\\proteoQ\\\\dbs\\\\string", overwrite = FALSE)
 }
 \arguments{
 \item{species}{Character string; the species. The currently supported species
-include \code{human, mouse, rat, fly, bovine, dog}.}
+include \code{human, mouse, rat, fly, bovine, dog}. The default is
+\code{human}.}
 
-\item{db_path}{Character string; the local path for database(s).}
+\item{db_path}{Character string; the local path for database(s). The default is \code{"~\\proteoQ\\dbs\\string"}.}
 
-\item{overwrite}{Logical; if TRUE, overwrite the databse(s).}
+\item{overwrite}{Logical; if TRUE, overwrite the databse(s). The default is FALSE.}
 }
 \description{
 Downloads STRING databases
 }
-\examples{
-\dontrun{
-dl_stringdbs(
-  species = human,
-  db_path = "~\\\\proteoQ\\\\dbs\\\\string"
-)
-}
-
+\seealso{
+\code{\link{getStringDB}} for protein-protein interaction networks.
 }
