@@ -135,7 +135,7 @@ standPrn(
   seed = 749662, 
   maxit = 200, 
   epsilon = 1e-05, 
-  col_refit = W2,  
+  col_select = W2,  
   slice_peps_by = exprs(species == "human"),
 )
 
@@ -150,7 +150,7 @@ standPrn(
   seed = 749662, 
   maxit = 200, 
   epsilon = 1e-05, 
-  col_refit = W16,  
+  col_select = W16,  
   slice_peps_by = exprs(species == "human"),
 )
 
@@ -194,7 +194,7 @@ standPrn(
   maxit = 200,
   epsilon = 1e-05,
   
-  col_refit = Select_sub, 
+  col_select = Select_sub, 
 )
 
 # the net result is mixed-bed alignment of MGKernel and MC
@@ -228,7 +228,7 @@ standPrn(
   epsilon = 1e-05,
   
   # will be forced to all samples since this is the first `MGKernel`
-  # col_refit = Select_sub, 
+  # col_select = Select_sub, 
 
   slice_peps_by = exprs(prot_n_psm >= 10),
 )
@@ -239,7 +239,7 @@ prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mG_selrows.png)
 # (mixed-bed again, but based on data subset by `prot_n_psm >= 10`)
 standPrn(
   method_align = MC, 
-  col_refit = Select_sub, 
+  col_select = Select_sub, 
   slice_peps_by = exprs(prot_n_psm >= 10),
 )
 
@@ -269,7 +269,7 @@ standPrn(
 prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mG3.png)
 
 # (4.2) a fresh start since changing `n_comp`
-# (e.g. `col_refit = Select_sub` ignored; instead apply `MGKernel` to all samples)
+# (e.g. `col_select = Select_sub` ignored; instead apply `MGKernel` to all samples)
 standPrn(
   method_align = MGKernel, 
   n_comp = 2, 
@@ -278,7 +278,7 @@ standPrn(
   epsilon = 1e-05,
   
   # ignored
-  col_refit = Select_sub, 
+  col_select = Select_sub, 
 )
 
 prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mG2.png)
@@ -357,7 +357,7 @@ standPrn(
   maxit = 200, 
   epsilon = 1e-05, 
   
-  col_refit = W2, 
+  col_select = W2, 
   slice_hskp = exprs(gene \%in\% c("GAPDH")),
 )
 ## End(Not run)

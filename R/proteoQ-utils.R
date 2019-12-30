@@ -2042,7 +2042,7 @@ concat_fml_dots <- function(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type 
       
       dots <- c(dots, pepSig_formulas)
     } else {
-      stop("Run `prnSig()` first.")
+      stop("Run both `pepSig()` and `prnSig()` first.")
     }
   } else {
     match_fmls(fmls)

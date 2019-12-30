@@ -146,7 +146,7 @@ dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 # metadata (all platforms)
 copy_global_exptsmry(dat_dir)
-cptac_global_fracsmry(dat_dir)
+copy_global_fracsmry(dat_dir)
 
 # PSM (choose one of the platforms)
 choose_one <- TRUE
