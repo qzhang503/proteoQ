@@ -119,6 +119,19 @@ proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
                         gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
                         fml_nms = NULL, task = "anal", ...) {
 
+  on.exit(
+    if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod") & task == "anal") {
+      mget(names(formals()), current_env()) %>% 
+        c(dots) %>% 
+        save_call(paste0(task, "_pepGSPA"))
+    } else if (rlang::as_string(id) %in% c("prot_acc", "gene") & task == "anal") {
+      mget(names(formals()), current_env()) %>% 
+        c(dots) %>% 
+        save_call(paste0(task, "_prnGSPA"))
+    }
+    , add = TRUE
+  )
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
   id <- rlang::enexpr(id)
@@ -136,14 +149,17 @@ proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
 	dots <- dots[!names(dots) %in% names(fmls)]
 	dots <- concat_fml_dots(fmls = fmls, fml_nms = fml_nms, dots = dots, anal_type = "GSPA")
 	
-	curr_call <- mget(names(formals()), rlang::current_env()) %>% 
-	  .[names(.) != "..."] %>% 
-	  c(dots) 
-	
-	if (task == "anal") {
-	  curr_call %>% save_call("prnGSPA")
-	} else if (task == "plothm") {
-	  curr_call %>% save_call("prnGSPAHM")
+	run_scripts <- FALSE
+	if (run_scripts) {
+  	curr_call <- mget(names(formals()), rlang::current_env()) %>% 
+  	  .[names(.) != "..."] %>% 
+  	  c(dots) 
+  	
+  	if (task == "anal") {
+  	  curr_call %>% save_call("prnGSPA")
+  	} else if (task == "plothm") {
+  	  curr_call %>% save_call("prnGSPAHM")
+  	}	  
 	}
 
 	# Sample selection criteria:
@@ -173,7 +189,7 @@ prnGSPA <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
   quietly_log <- purrr::quietly(proteoGSPA)(id = !!id, task = anal, ...)
   quietly_log$result <- NULL
@@ -633,6 +649,11 @@ fml_gspahm <- function (fml_nm, filepath, filename, ...) {
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
   
   ins <- list.files(path = file.path(filepath, fml_nm), pattern = "^essmap_.*\\.csv$")
+  
+  scale_log2r <- match_logi_gv("scale_log2r", TRUE)
+  if (scale_log2r) ins <- ins %>% .[grepl("^essmap_Protein_GSPA_Z", .)] else 
+    ins <- ins %>% .[grepl("^essmap_Protein_GSPA_N", .)]
+
   stopifnot(length(ins) == 1)
 
   all_by_greedy <- tryCatch(read.csv(file.path(filepath, fml_nm, ins), check.names = FALSE, header = TRUE, 
@@ -715,6 +736,10 @@ fml_gspahm <- function (fml_nm, filepath, filename, ...) {
     annotation_row <- NA
   } else {
     meta_ins <- list.files(path = file.path(filepath, fml_nm), pattern = "^essmeta_.*\\.csv$")
+    
+    if (scale_log2r) meta_ins <- meta_ins %>% .[grepl("^essmeta_Protein_GSPA_Z", .)] else 
+      meta_ins <- meta_ins %>% .[grepl("^essmeta_Protein_GSPA_N", .)]
+    
     stopifnot(length(meta_ins) == 1)
     
     ess_meta <- tryCatch(read.csv(file.path(filepath, fml_nm, meta_ins), check.names = FALSE, header = TRUE, 

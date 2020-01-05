@@ -34,8 +34,9 @@ automatically. Examplary values include \code{anal_type = c("PCA",
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+\item{scale_log2r}{Not used for full volcano plots by \code{pepVol} or 
+\code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
+for \code{gspaMap}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value

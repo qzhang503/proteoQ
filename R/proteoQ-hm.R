@@ -500,7 +500,7 @@ pepHM <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   
   quietly_log <- purrr::quietly(proteoHM)(id = !!id, ...)
   purrr::walk(quietly_log, write, 
@@ -522,7 +522,7 @@ prnHM <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
 
   quietly_log <- purrr::quietly(proteoHM)(id = !!id, ...)
   purrr::walk(quietly_log, write, 

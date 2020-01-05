@@ -428,7 +428,7 @@ pepCorr_logFC <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   
   quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logFC", ...)
   purrr::walk(quietly_log, write, 
@@ -452,7 +452,7 @@ pepCorr_logInt <- function (...) {
   dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
   
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   
   quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logInt", ...)
   purrr::walk(quietly_log, write, 
@@ -476,7 +476,7 @@ prnCorr_logFC <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
   quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logFC", ...)
   purrr::walk(quietly_log, write, 
@@ -499,7 +499,7 @@ prnCorr_logInt <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
 
   quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logInt", ...)
   purrr::walk(quietly_log, write, 

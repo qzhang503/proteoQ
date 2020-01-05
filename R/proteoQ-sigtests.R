@@ -103,6 +103,8 @@ proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = 
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), current_env()) %>% c(dots) %>% save_call("pepSig")
     } else if (id %in% c("prot_acc", "gene")) {
+      load(file.path(dat_dir, "Calls\\prnSig_formulas.rda"))
+      dots <- my_union(dots, prnSig_formulas)
       mget(names(formals()), current_env()) %>% c(dots) %>% save_call("prnSig")
     }
     , add = TRUE
@@ -498,7 +500,9 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	  save(pepSig_formulas, file = file.path(dat_dir, "Calls", "pepSig_formulas.rda"))
 	  rm(pepSig_formulas)
 	} else if (id %in% c("prot_acc", "gene")) {
-	  if (is_empty(dots)) {
+	  # if (!file.exists(file)) stop ("Run `pepSig` first.")
+	  
+	  if (rlang::is_empty(dots)) {
 	    prnSig_formulas <- dots <- concat_fml_dots()
 	  } else {
 	    prnSig_formulas <- dots
@@ -507,10 +511,37 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	  rm(prnSig_formulas)
 	}
 	
-	df_op <- purrr::map(dots, 
-	                    ~ model_onechannel(df, !!id, .x, label_scheme_sub, complete_cases, method, 
-	                                       var_cutoff, pval_cutoff, logFC_cutoff, !!!non_fml_dots)) %>%
-					do.call("cbind", .)
+	run_scripts <- FALSE
+	if (run_scripts) {
+  	df_op <- purrr::map(dots, 
+  	                    ~ model_onechannel(df, !!id, .x, label_scheme_sub, complete_cases, method, 
+  	                                       var_cutoff, pval_cutoff, logFC_cutoff, !!!non_fml_dots)) %>%
+  					do.call("cbind", .)	  
+	}
+	
+	quietly_log <- 
+	  purrr::map(dots, ~ purrr::quietly(model_onechannel)
+	             (df, !!id, .x, label_scheme_sub, 
+	               complete_cases, method, var_cutoff, 
+	               pval_cutoff, logFC_cutoff, !!!non_fml_dots)) 
+	
+	if (id %in% c("pep_seq", "pep_seq_mod")) {
+	  out_path <- file.path(dat_dir, "Peptide\\Model\\log\\pepSig_log.csv")
+	} else if (id %in% c("prot_acc", "gene")) {
+	  out_path <- file.path(dat_dir, "Protein\\Model\\log\\prnSig_log.csv")
+	}
+	
+	purrr::map(quietly_log, ~ {
+	  .x[[1]] <- NULL
+	  return(.x)
+	}) %>% 
+	  reduce(., `c`) %>% 
+	  purrr::walk(., write, out_path, append = TRUE)
+
+	df_op <- purrr::map(quietly_log, `[[`, 1) %>%
+	  do.call("cbind", .)
+	
+	return(df_op)
 }
 
 
@@ -529,11 +560,11 @@ pepSig <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
+  proteoSigtest(id = !!id, ...)
   
-  quietly_log <- purrr::quietly(proteoSigtest)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Model\\log\\pepSig_log.csv"), append = TRUE)
+  # quietly_log <- purrr::quietly(proteoSigtest)(id = !!id, ...)
+  # purrr::walk(quietly_log[-1], write, file.path(dat_dir, "Peptide\\Model\\log\\pepSig_log.csv"), append = TRUE)
 }
 
 
@@ -555,10 +586,11 @@ prnSig <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
+  proteoSigtest(id = !!id, ...)
 
-  quietly_log <- purrr::quietly(proteoSigtest)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Model\\log\\prnSig_log.csv"), append = TRUE)
+  # quietly_log <- purrr::quietly(proteoSigtest)(id = !!id, ...)
+  # purrr::walk(quietly_log[-1], write, file.path(dat_dir, "Protein\\Model\\log\\prnSig_log.csv"), append = TRUE)
+              
 }
 

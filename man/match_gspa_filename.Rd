@@ -7,7 +7,7 @@
 match_gspa_filename(anal_type = "GSPA", subdir = NULL)
 }
 \arguments{
-\item{anal_type}{}
+\item{anal_type}{Always \code{GSPA}; maybe different value for future uses.}
 }
 \description{
 Matches the name of GSPA result file

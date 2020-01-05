@@ -774,7 +774,7 @@ pepMDS <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\MDS\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   
   quietly_log <- purrr::quietly(proteoMDS)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
@@ -796,7 +796,7 @@ prnMDS <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\MDS\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
   quietly_log <- purrr::quietly(proteoMDS)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
@@ -818,7 +818,7 @@ pepPCA <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\PCA\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   
   quietly_log <- purrr::quietly(proteoPCA)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
@@ -840,7 +840,7 @@ prnPCA <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\PCA\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
   quietly_log <- purrr::quietly(proteoPCA)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
@@ -862,7 +862,7 @@ pepEucDist <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\EucDist\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   
   quietly_log <- purrr::quietly(proteoEucDist)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 
@@ -883,7 +883,7 @@ prnEucDist <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\EucDist\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
   quietly_log <- purrr::quietly(proteoEucDist)(id = !!id, ...)
   purrr::walk(quietly_log[-1], write, 

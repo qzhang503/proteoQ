@@ -18,8 +18,9 @@ prnGSPA(...)
 \item{id}{Character string indicating the type of data. The value will be
 determined automatically.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+\item{scale_log2r}{Not used for full volcano plots by \code{pepVol} or 
+\code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
+for \code{gspaMap}.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}

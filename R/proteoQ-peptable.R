@@ -5,7 +5,7 @@
 #' @param i Integer; the index of TMT experiment 
 #' @param x Data frame; log2FC data
 #' @param label_scheme Experiment summary
-#' @import dplyr purrr rlang
+#' @import dplyr purrr rlang forcats
 #' @importFrom magrittr %>%
 newColnames <- function(i, x, label_scheme) {
   label_scheme_sub <- label_scheme %>%
@@ -50,6 +50,9 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
   
   df <- df %>% filters_in_call(!!!filter_dots)
   
+  if ("gene" %in% names(df)) 
+    df <- df %>% dplyr::mutate(gene = forcats::fct_explicit_na(gene))
+
   df <- local({
     dup_peps <- df %>%
       dplyr::select(!!rlang::sym(id), prot_acc) %>%
@@ -110,7 +113,7 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
     dplyr::select(pep_n_psm, !!rlang::sym(group_pep_by)) %>% 
     dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
     dplyr::summarise(prot_n_psm = sum(pep_n_psm))
-  
+
   prot_n_pep <- df %>% 
     dplyr::select(!!rlang::sym(id), !!rlang::sym(group_pep_by)) %>% 
     dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
@@ -122,14 +125,14 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
     med_summarise_keys(id) %>% 
     dplyr::select(-pep_n_psm, -prot_n_psm, -prot_n_pep, -TMT_Set) %>% # remove old values from single `TMT_Set`
     dplyr::arrange(!!rlang::sym(id))  
-  
+
   df <- list(pep_n_psm, df_first, df_num) %>%
     purrr::reduce(left_join, by = id)
   
   df <- list(df, prot_n_psm, prot_n_pep) %>%
     purrr::reduce(left_join, by = group_pep_by)
   
-  if (("pep_seq_mod" %in% names(df)) & (match_normPSM_par("use_lowercase_aa") %>% as.logical())) {
+  if (("pep_seq_mod" %in% names(df)) & (match_call_arg(normPSM, use_lowercase_aa))) {
     df <- df %>% 
       dplyr::mutate(pep_mod_protnt = ifelse(grepl("^[A-z\\-]\\.~", pep_seq_mod), TRUE, FALSE)) %>% 
       dplyr::mutate(pep_mod_protntac = ifelse(grepl("^[A-z\\-]\\._", pep_seq_mod), TRUE, FALSE)) %>% 
@@ -387,8 +390,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
   dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Peptide\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  old_opt <- options(max.print = 99999)
-  options(max.print = 2000000)
+  old_opt <- options(max.print = 99999, warn = 0)
+  options(max.print = 2000000, warn = 1)
   on.exit(options(old_opt), add = TRUE)
   
   on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("mergePep"), add = TRUE)
@@ -397,8 +400,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  id <- match_normPSM_pepid()
-  group_pep_by <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_psm_by)
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
   filename <- file.path(dat_dir, "Peptide\\Peptide.txt")
   
   dots <- rlang::enexprs(...)
@@ -542,8 +545,8 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
   filename <- file.path(dat_dir, "Peptide\\Peptide.txt")
   if (!file.exists(filename)) stop(filename, " not found; run `mergePep(...)` first", call. = FALSE)
 
-  id <- match_normPSM_pepid()
-  group_pep_by <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_psm_by)
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
   method_align <- rlang::enexpr(method_align)
   if (method_align == rlang::expr(c("MC", "MGKernel"))) {
@@ -576,26 +579,21 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
   
   dots <- rlang::enexprs(...)
 
-  df <- load_prior(filename, id)
-
-  quietly_out <- purrr::quietly(normMulGau)(
-    df = df,
-    method_align = method_align,
-    n_comp = n_comp,
-    seed = seed,
-    range_log2r = range_log2r,
-    range_int = range_int,
-    filepath = file.path(dat_dir, "Peptide\\Histogram"),
-    col_select = col_select, 
-    !!!dots, 
-  )
-  
-  purrr::walk(quietly_out[-1], write, 
-              file.path(dat_dir, "Peptide\\log","pep_MulGau_log.csv"), append = TRUE)
-  
-  df <- quietly_out$result %>% 
+  df <- load_prior(filename, id) %>% 
+    normMulGau(
+      df = .,
+      method_align = method_align,
+      n_comp = n_comp,
+      seed = seed,
+      range_log2r = range_log2r,
+      range_int = range_int,
+      filepath = file.path(dat_dir, "Peptide\\Histogram"),
+      col_select = col_select, 
+      !!!dots, 
+    ) %>% 
     fmt_num_cols() %T>% 
-    write.table(file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
+    write.table(file.path(dat_dir, "Peptide", "Peptide.txt"), 
+                sep = "\t", col.names = TRUE, row.names = FALSE)
 
   if (plot_log2FC_cv & TMT_plex(label_scheme) > 0) {
     sd_violin(df, !!group_pep_by, 
@@ -685,7 +683,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
     stopifnot(method_pep_prn %in% c("mean", "top.3", "median", "weighted.mean"))
   }
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
   stopifnot(id %in% c("prot_acc", "gene"))
   
@@ -1002,11 +1000,13 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
   dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Peptide\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  old_opt <- options(max.print = 99999)
+  old_opt <- options(max.print = 99999, warn = 0)
   on.exit(options(old_opt), add = TRUE)
-  options(max.print = 2000000)
+  options(max.print = 2000000, warn = 1)
   
   on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("normPep"), add = TRUE)
+  
+  rlang::warn("`normPep` softly depreciated; use sequentially `PSM2Pep`, `mergePep` and `standPep`.")
 
   reload_expts()
   
@@ -1021,7 +1021,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
     id <- rlang::as_string(id)
     stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
   }
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   
   # depreciated; instead matched to normPSM()
   group_pep_by <- rlang::enexpr(group_pep_by)
@@ -1031,7 +1031,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
     group_pep_by <- rlang::as_string(group_pep_by)
     stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   }
-  group_pep_by <- match_normPSM_protid()
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
   col_select <- rlang::enexpr(col_select)
   col_select <- ifelse(is.null(col_select), rlang::expr(Sample_ID), rlang::sym(col_select))
@@ -1159,9 +1159,9 @@ normPep_Splex <- function (method_psm_pep = "median", cache = TRUE) {
   on.exit(options(old_opt), add = TRUE)
   options(max.print = 2000000)
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   method_psm_pep <- rlang::as_string(rlang::enexpr(method_psm_pep))
-  group_pep_by <- match_normPSM_protid()
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))

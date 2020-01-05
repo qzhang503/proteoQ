@@ -146,6 +146,19 @@ proteoGSEA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
                         gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
                         fml_nms = NULL, task = "anal", ...) {
   
+  on.exit(
+    if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
+      mget(names(formals()), current_env()) %>% 
+        c(dots) %>% 
+        save_call("pepGSEA")
+    } else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
+      mget(names(formals()), current_env()) %>% 
+        c(dots) %>% 
+        save_call("prnGSEA")
+    }
+    , add = TRUE
+  )
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   id <- rlang::enexpr(id)
@@ -200,7 +213,7 @@ prnGSEA <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\GSEA\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
   quietly_log <- purrr::quietly(proteoGSEA)(id = !!id, task = anal, ...)
   quietly_log$result <- NULL

@@ -247,7 +247,7 @@ rmPSMHeaders <- function () {
 		data_psm <- gsub("\"---\"", -1, data_psm, fixed = TRUE)
 		data_psm <- gsub("\"###\"", -1, data_psm, fixed = TRUE)
 		
-		data_psm[1] <- paste0(data_psm[1], paste(rep(",", TMT_plex * 4 -2), collapse = ''))
+		if (TMT_plex > 0) data_psm[1] <- paste0(data_psm[1], paste(rep(",", TMT_plex * 4 -2), collapse = ''))
 		
 		writeLines(data_psm, file.path(dat_dir, "PSM\\cache", paste0(output_prefix, "_hdr_rm.csv")))
 		rm(data_psm)
@@ -270,11 +270,6 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
   
   df_header <- readLines(dat_file)
 
-  # hd_fn <- list.files(path = file.path(dat_dir, "PSM\\cache"), pattern = "^F\\d+_header.txt$")
-  # if (length(hd_fn) == 0) stop("No header file(s) found.")
-  # if (length(hd_fn) > 1) warning("Multiple header files found; only the first will be used.")
-  # assign("df_header", readLines(file.path(dat_dir, "PSM\\cache", hd_fn[1])))
-  
   fixed_mods <- df_header[((grep("Fixed modifications", df_header))[1] + 3) : 
                             ((grep("Variable modifications", df_header))[1] - 2)] %>%
     gsub("\"", "", ., fixed = TRUE) %>%
@@ -1457,6 +1452,8 @@ calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_i
     return(df)
   })
   
+  df <- df %>% 
+    dplyr::mutate(!!group_pep_by := as.character(!!rlang::sym(group_pep_by)))
   
   df <- df %>% 
     calcSD_Splex(group_pep_by) %>% 
@@ -1514,16 +1511,16 @@ calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_i
 #'@import stringr dplyr purrr rlang  magrittr
 #'@export
 PSM2Pep <- function (method_psm_pep = c("median", "mean", "weighted.mean", "top.3"), ...) {
-  old_opt <- options(max.print = 99999)
+  old_opt <- options(max.print = 99999, warn = 0)
   on.exit(options(old_opt), add = TRUE)
-  options(max.print = 2000000)
+  options(max.print = 2000000, warn = 1)
   
   on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("PSM2Pep"), add = TRUE)
   
   dots <- rlang::enexprs(...)
   
-  id <- match_normPSM_pepid()
-  group_pep_by <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_psm_by)
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
 
   method_psm_pep <- rlang::enexpr(method_psm_pep)
   if (method_psm_pep == rlang::expr(c("median", "mean", "weighted.mean", "top.3"))) {

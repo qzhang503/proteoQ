@@ -96,7 +96,7 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>%
-plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filepath, filename, ...) {
+plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filepath, filename, scale_log2r, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
@@ -109,6 +109,12 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
   impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
   ins <- list.files(path = filepath, pattern = "_n\\d+\\.csv$")
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
+  if (scale_log2r) ins <- ins %>% .[grepl("_Trend_Z", .)] else ins <- ins %>% .[grepl("_Trend_N", .)]
+  
+  # also possible some files with id = prot_acc and some with id = gene
+  # as one might run normPSM(group_pep_by = prot_acc) -> anal_prnTrend 
+  # then rerun normPSM(group_pep_by = gene) -> anal_prnTrend
+  # save pars for anal_prnTrend, then compare id
 
 	if (is.null(n_clust)) {
 	  filelist <- ins
@@ -308,6 +314,19 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
                          n_clust = NULL, scale_log2r = TRUE, df = NULL, 
                          filepath = NULL, filename = NULL, ...) {
 
+  on.exit(
+    if (id %in% c("pep_seq", "pep_seq_mod")) {
+      mget(names(formals()), current_env()) %>% 
+        c(enexprs(...)) %>% 
+        save_call(paste0(task, "_pepTrend"))
+    } else if (id %in% c("prot_acc", "gene")) {
+      mget(names(formals()), current_env()) %>% 
+        c(enexprs(...)) %>% 
+        save_call(paste0(task, "_prnTrend"))
+    }
+    , add = TRUE
+  )
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
 	id <- rlang::enexpr(id)
@@ -358,7 +377,7 @@ anal_prnTrend <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
   quietly_log <- purrr::quietly(proteoTrend)(id = !!id, task = anal, ...)
   purrr::walk(quietly_log, write, 
@@ -381,7 +400,7 @@ plot_prnTrend <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
 
   quietly_log <- purrr::quietly(proteoTrend)(id = !!id, task = plot, ...)
   purrr::walk(quietly_log, write, 

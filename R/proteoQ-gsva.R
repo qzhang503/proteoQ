@@ -81,8 +81,22 @@ prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = 
                      gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4, 
                      logFC_cutoff = log2(1.1), ...) {
 
+  on.exit(
+    if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
+      mget(names(formals()), current_env()) %>% 
+        c(dots) %>% 
+        save_call("pepGSVA")
+    } else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
+      mget(names(formals()), current_env()) %>% 
+        c(dots) %>% 
+        save_call("prnGSVA")
+    }
+    , add = TRUE
+  )
+  
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)

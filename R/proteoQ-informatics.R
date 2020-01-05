@@ -74,70 +74,61 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	load(file = file.path(dat_dir, "label_scheme.rda"))
 	
 	if (is.null(label_scheme[[col_select]])) {
-		stop("Column \'", rlang::as_string(col_select), "\' does not exist.", call. = FALSE)
+		stop("Column \'", rlang::as_string(col_select), "\' not found.", call. = FALSE)
 	} else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
-		stop("No samples were selected under column \'", rlang::as_string(col_select), "\'.",
-		     call. = FALSE)
+		stop("No samples under column \'", rlang::as_string(col_select), "\'.", call. = FALSE)
 	}
 
 	if (is.null(label_scheme[[col_group]])) {
 		col_group <- rlang::expr(Select)
-		warning("Column \'", rlang::as_string(col_group), "\' does not exist.
-			Use column \'Select\' instead.", call. = FALSE)
+		warning("Column \'", rlang::as_string(col_group), "\' not found; use column \'Select\'.", call. = FALSE)
+			
 	} else if (sum(!is.na(label_scheme[[col_group]])) == 0) {
 		col_group <- rlang::expr(Select)
-		warning("No samples were specified under column \'", rlang::as_string(col_group), "\'.
-			Use column \'Select\' instead.", call. = FALSE)
+		warning("No samples under \'", rlang::as_string(col_group), "\'; use column \'Select\'.", call. = FALSE)
+			
 	}
 
 	if (is.null(label_scheme[[col_order]])) {
-		warning("Column \'", rlang::as_string(col_order), "\' does not exist.
-			Samples will be arranged by the alphebatic order.", call. = FALSE)
+		warning("Column \'", rlang::as_string(col_order), "\' not found; arranged by the alphebatics.", call. = FALSE)
 	} else if (sum(!is.na(label_scheme[[col_order]])) == 0) {
-	  warning("No samples were specified under column \'", rlang::as_string(col_order), "\'.",
-	          call. = FALSE)
+	  warning("No samples under column \'", rlang::as_string(col_order), "\'.", call. = FALSE)
 	}
 
 	if (is.null(label_scheme[[col_color]])) {
-		warning("Column \'", rlang::as_string(col_color), "\' does not exist.", call. = FALSE)
+		warning("Column \'", rlang::as_string(col_color), "\' not found.", call. = FALSE)
 	} else if (sum(!is.na(label_scheme[[col_color]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_color), "\'.",
-		        call. = FALSE)
+		# warning("No samples under column \'", rlang::as_string(col_color), "\'.", call. = FALSE)
 	}
 
 	if (is.null(label_scheme[[col_fill]])) {
-		warning("Column \'", rlang::as_string(col_fill), "\' does not exist.", call. = FALSE)
+		warning("Column \'", rlang::as_string(col_fill), "\' not found.", call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_fill]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_fill), "\'.",
-		        call. = FALSE)
+		# warning("No samples under column \'", rlang::as_string(col_fill), "\'.", call. = FALSE)
 	}
 
 	if (is.null(label_scheme[[col_shape]])) {
-		warning("Column \'", rlang::as_string(col_shape), "\' does not exist.")
+		warning("Column \'", rlang::as_string(col_shape), "\' not found.")
 	} else if(sum(!is.na(label_scheme[[col_shape]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_shape), "\'.",
-		        call. = FALSE)
+		# warning("No samples under column \'", rlang::as_string(col_shape), "\'.", call. = FALSE)
 	}
 
 	if (is.null(label_scheme[[col_size]])) {
-		warning("Column \'", rlang::as_string(col_size), "\' does not exist.")
+		warning("Column \'", rlang::as_string(col_size), "\' not found.")
 	} else if (sum(!is.na(label_scheme[[col_size]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_size), "\'.",
-		        call. = FALSE)
+		# warning("No samples under column \'", rlang::as_string(col_size), "\'.", call. = FALSE)
 	}
 
 	if(is.null(label_scheme[[col_alpha]])) {
-		warning("Column \'", rlang::as_string(col_alpha), "\' does not exist.")
+		warning("Column \'", rlang::as_string(col_alpha), "\' not found.")
 	} else if(sum(!is.na(label_scheme[[col_alpha]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_alpha), "\'.",
-		        call. = FALSE)
+		# warning("No samples under column \'", rlang::as_string(col_alpha), "\'.", call. = FALSE)
 	}
 
 	if (is.null(label_scheme[[col_benchmark]])) {
-		warning("Column \'", rlang::as_string(col_benchmark), "\' does not exist.")
+		warning("Column \'", rlang::as_string(col_benchmark), "\' not found.")
 	} else if (sum(!is.na(label_scheme[[col_benchmark]])) == 0) {
-		warning("No samples were specified under column \'", rlang::as_string(col_benchmark), "\'.",
-		        call. = FALSE)
+		# warning("No samples under column \'", rlang::as_string(col_benchmark), "\'.", call. = FALSE)
 	}
 
 	id <- rlang::as_string(rlang::enexpr(id))
@@ -145,10 +136,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  stop("\'id\' must be one of \'pep_seq\', \'pep_seq_mod\', \'prot_acc\' or \'gene\'")
 
 	if (id %in% c("prot_acc", "gene")) {
-	  cat(paste0("id = \"", id, "\"", " after parameter matching to normPrn()\n"))
+	  # cat(paste0("id = \"", id, "\"", " after parameter matching to normPrn()\n"))
 		data_type <- "Protein"
 	} else if (id %in% c("pep_seq", "pep_seq_mod")) {
-	  cat(paste0("id = \"", id, "\"", " after parameter matching to normPep()\n"))
+	  # cat(paste0("id = \"", id, "\"", " after parameter matching to normPep()\n"))
 		data_type <- "Peptide"
 	} else {
 		stop("Unrecognized 'id';
@@ -449,6 +440,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                          col_order = !!col_order, 
 		                          label_scheme_sub = label_scheme_sub, 
 		                          n_clust = n_clust, 
+		                          scale_log2r = scale_log2r,
 		                          filepath = filepath, 
 		                          filename = paste0(fn_prefix, ".", fn_suffix), 
 		                          !!!dots), 
@@ -479,12 +471,14 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		                              label_scheme_sub = label_scheme_sub, 
 		                              filepath = filepath, 
 		                              filename = paste0(fn_prefix, ".", fn_suffix), 
+		                              scale_log2r = scale_log2r, 
 		                              ...), 
 		         plotcoef = plotNMFCoef(id = !!id, 
 		                                r = r, 
 		                                label_scheme_sub = label_scheme_sub, 
 		                                filepath = filepath, 
 		                                filename = paste0(fn_prefix, ".", fn_suffix), 
+		                                scale_log2r = scale_log2r, 
 		                                ...), 
 		         plotmeta = plotNMFmeta(df = df, id = !!id, r = r, 
 		                                label_scheme_sub = label_scheme_sub, 
@@ -524,8 +518,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		            var_cutoff = var_cutoff,
 		            pval_cutoff = pval_cutoff, 
 		            logFC_cutoff = logFC_cutoff, 
-		            !!!dots) %>%
-		    tibble::rownames_to_column(id) %>%
+		            !!!dots)
+		  
+		  df_op <- df_op %>%
+		    tibble::rownames_to_column(id) %>% 
+		    dplyr::mutate(!!id := forcats::fct_explicit_na(!!rlang::sym(id))) %>% 
 		    dplyr::right_join(df, ., by = id) %T>% 
 		    write.table(file.path(filepath, paste0(data_type, fn_prefix2)), sep = "\t",
 		                col.names = TRUE, row.names = FALSE)

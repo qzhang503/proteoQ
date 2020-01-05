@@ -160,9 +160,9 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff) {
   prn_links_sub <- prn_links %>% 
     dplyr::filter(protein1 %in% string_map$protein_external_id) %>% 
     dplyr::left_join(string_map, by = c("protein1" = "protein_external_id")) %>% 
-    dplyr::rename(node1 = gene) %>% 
+    dplyr::rename(node1 = !!rlang::sym(id)) %>% 
     dplyr::left_join(string_map, by = c("protein2" = "protein_external_id")) %>% 
-    dplyr::rename(node2 = gene)    
+    dplyr::rename(node2 = !!rlang::sym(id))
   
   first_four <- c("node1", "node2", "protein1", "protein2")
   ppi <- dplyr::bind_cols(
@@ -254,7 +254,7 @@ getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, 
   df <- read.csv(src_path, check.names = FALSE, stringsAsFactors = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#")
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(id %in% names(df))
   stopifnot("species" %in% names(df))
   
@@ -290,10 +290,7 @@ getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, 
     dplyr::select(id, grep("log2Ratio|pVal", names(.)))
   
   # remove white space before NA in scientific notation
-  df <- df %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
+  df <- df %>% rm_pval_whitespace()
 
   # check db_path exists?
 

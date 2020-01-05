@@ -8,6 +8,9 @@
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
 #'@inheritParams  prnGSPA
+#'@param scale_log2r Not used for full volcano plots by \code{pepVol} or 
+#'\code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
+#'for \code{gspaMap}. 
 #'@param impute_na Logical. At the NULL default, the TRUE or FALSE will match
 #'  the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
 #'  protein data.
@@ -129,8 +132,7 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	show_sig <- rlang::as_string(rlang::enexpr(show_sig))
 	if (is.null(impute_na)) {
 	  impute_na <- match_sigTest_imputena(as_string(id))
-	  warning("`impute_na` not specified and matches to the latest `pepSig` as ", impute_na, 
-	          call. = FALSE)
+	  message("impute_na = ", impute_na)
 	}
 	
 	stopifnot(is_logical(scale_log2r))
@@ -140,9 +142,19 @@ proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_
 	stopifnot(is_double(pval_cutoff))
 	stopifnot(is_double(logFC_cutoff))
 	
-	gset_nms <- gset_nms %>% .[. %in% match_gset_nms(gset_nms)]
-	if (is.null(gset_nms)) stop ("Unknown gene sets.")
+	gset_nms <- local({
+	  file <- file.path(dat_dir, "Calls\\anal_prnGSPA.rda")
+	  
+	  if (file.exists(file)) {
+	    gset_nms <- gset_nms %>% 
+	      .[. %in% match_call_arg(anal_prnGSPA, gset_nms)]
+	    
+	    if (is.null(gset_nms)) stop ("Unknown gene sets.")
+	  }
 
+	  return(gset_nms)
+	})
+	
 	if (! id %in% c("prot_acc", "gene", "pep_seq", "pep_seq_mod", "term")) stop(err_msg_1, call. = FALSE)
 	if (! anal_type %in% c("Volcano", "GSPA", "mapGSPA")) stop(err_msg_2, call. = FALSE)
 
@@ -493,7 +505,8 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, volcano_
 	if (show_labels) {
 		p <- p + geom_text(data = dfw_sub_top20, 
 		                   mapping = aes(x = log2Ratio, y = -log10(pVal), label = Index, color = Index),
-		                   size = 3, alpha = .5, hjust = 0, nudge_x = 0.05, vjust = 0, nudge_y = 0.05)
+		                   size = 3, alpha = .5, hjust = 0, nudge_x = 0.05, vjust = 0, nudge_y = 0.05, 
+		                   na.rm = TRUE)
 		p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
 		p <- p + geom_table(data = dt, aes(table = !!rlang::sym(id)), x = -xmax*.85, y = ymax/2)
 	} else {
@@ -618,7 +631,8 @@ gsVolcano <- function(df = NULL, contrast_groups = NULL, gsea_res = NULL, gsea_k
   			dplyr::arrange(Contrast, pVal) %>%
   			dplyr::group_by(Contrast) %>%
   			dplyr::mutate(Index = row_number()) %>%
-  			data.frame(check.names = FALSE) %>%
+  			data.frame(check.names = FALSE) %>% 
+  		  dplyr::mutate(Contrast = as.character(Contrast)) %>% 
   			dplyr::left_join(., res_sub, by = c("Contrast" = "contrast")) %>%
   			dplyr::mutate(Contrast = factor(Contrast, levels = Levels)) %>%
   			dplyr::arrange(Contrast) %>%
@@ -736,11 +750,11 @@ pepVol <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Volcano\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
+  proteoVolcano(id = !!id, anal_type = "Volcano", ...)
   
-  quietly_log <- purrr::quietly(proteoVolcano)(id = !!id, anal_type = "Volcano", ...)
-  purrr::walk(quietly_log[-1], write, file.path(dat_dir, "Peptide\\Volcano\\log\\pepnVol_log.csv"), 
-              append = TRUE)
+  # quietly_log <- purrr::quietly(proteoVolcano)(id = !!id, anal_type = "Volcano", ...)
+  # purrr::walk(quietly_log[-1], write, file.path(dat_dir, "Peptide\\Volcano\\log\\pepnVol_log.csv"), append = TRUE)
 }
 
 
@@ -762,11 +776,12 @@ prnVol <- function (...) {
 
   dir.create(file.path(dat_dir, "Protein\\Volcano\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
+  proteoVolcano(id = !!id, anal_type = "Volcano", ...)
 
-  quietly_log <- purrr::quietly(proteoVolcano)(id = !!id, anal_type = "Volcano", ...)
-  purrr::walk(quietly_log[-1], write, file.path(dat_dir, "Protein\\Volcano\\log\\prnVol_log.csv"), 
-              append = TRUE)
+  # quietly_log <- purrr::quietly(proteoVolcano)(id = !!id, anal_type = "Volcano", ...)
+  # purrr::walk(quietly_log[-1], write, file.path(dat_dir, "Protein\\Volcano\\log\\prnVol_log.csv"), append = TRUE)
+              
 }
 
 
@@ -784,7 +799,7 @@ gspaMap <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\mapGSPA\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
 
   quietly_log <- purrr::quietly(proteoVolcano)(id = !!id, anal_type = "mapGSPA", ...)
   purrr::walk(quietly_log[-1], write, file.path(dat_dir, "Protein\\mapGSPA\\log\\mapGSPA_log.csv"), 
