@@ -102,7 +102,16 @@ prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = 
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	lm_method <- rlang::as_string(rlang::enexpr(lm_method))
-	if (is.null(impute_na)) impute_na <- match_sigTest_imputena(id)
+
+	if (is.null(impute_na)) {
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    impute_na <- match_call_arg(pepSig, impute_na)
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    impute_na <- match_call_arg(prnSig, impute_na)
+	  }
+	  
+	  message("impute_na = ", impute_na)
+	}
 	
 	stopifnot(is_logical(scale_log2r), is_logical(impute_na), is_logical(complete_cases))
 

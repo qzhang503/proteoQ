@@ -373,7 +373,7 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'@export
 anal_prnTrend <- function (...) {
   err_msg <- "Don't call the function with arguments `id`, `anal_type` or `task`.\n"
-  if(any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
+  if (any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
 

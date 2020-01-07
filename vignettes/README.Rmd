@@ -5,17 +5,11 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
-  word_document:
+  github_document:
     toc: yes
   pdf_document:
     toc: yes
     number_sections: true
-  github_document:
-    toc: yes
-  md_document:
-    toc: yes
-    toc_depth: 4
-    variant: gfm
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -24,6 +18,12 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: gfm
+  word_document:
+    toc: yes
 ---
 
 ---
@@ -59,17 +59,6 @@ references:
     year: 2018
     month: 7
 ---
-
-<style>
-p.comment {
-background-color: #e5f5f9;
-padding: 10px;
-border: 1px solid black;
-margin-left: 0px;
-border-radius: 5px;
-}
-
-</style>
 
 
 ```{r setup, include = FALSE}

@@ -457,6 +457,29 @@ match_normPSM_protid <- function (id = c("prot_acc")) {
 }
 
 
+#' Matches impute_na
+#' @param id.
+#'
+#' @import plyr dplyr purrr rlang
+#' @importFrom magrittr %>%
+match_sigTest_imputena <- function (id = c("prot_acc")) {
+  stopifnot(is_string(id))
+  stopifnot(id %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
+  
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
+    file <- file.path(dat_dir, "Calls\\pepSig.rda")
+    if (!file.exists(file)) stop("Run `pepSig` first.", call. = FALSE)
+  } else if (id %in% c("prot_acc", "gene")) {
+    file <- file.path(dat_dir, "Calls\\prnSig.rda")
+    if (!file.exists(file)) stop("Run `prnSig` frist.", call. = FALSE)
+  }
+  
+  load(file = file)
+  stopifnot("impute_na" %in% names(call_pars))
+  call_pars$impute_na
+}
+
+
 
 
 

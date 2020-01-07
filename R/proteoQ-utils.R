@@ -315,7 +315,6 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 	if (sum(idx) > 0) stop("No aesthetics defined under column `", names(x)[idx], "`")
 
 	x <- x %>%
-		# dplyr::select(which(not_all_NA(.))) %>%
 		dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]),
 		              !is.na(.[["Sample_ID"]])) %>%
 		data.frame(check.names = FALSE) %>%
@@ -348,20 +347,20 @@ setHMColor <- function (annotation_col) {
 	if(is.null(ncol)) return (NA)
 	if(ncol == 0) return (NA)
 
-	annotation_col <- annotation_col %>%
-		dplyr::mutate_at(vars(one_of("TMT_Set")), ~ factor(TMT_Set)) %>%
-		dplyr::mutate_if(is.character, as.factor)
+	suppressWarnings(
+	  annotation_col <- annotation_col %>%
+	    dplyr::mutate_at(vars(one_of("TMT_Set")), ~ factor(TMT_Set)) %>%
+	    dplyr::mutate_if(is.character, as.factor)  
+	)
 
 	palette <- lapply(names(annotation_col), function(x) {
 		n <- nlevels(annotation_col[[x]])
 
 		palette <- if(n <= 9 & n >= 3) {
-			# brewer.pal(n, name = "Set1")
 		  brewer.pal(n, name = "Set2")
 		} else if(n > 9) {
 			colorRampPalette(brewer.pal(n = 7, "Set1"))(n)
 		} else if(n == 2) {
-			# c("#E41A1C", "#377EB8")
 		  c("#66C2A5", "#FC8D62")
 		} else if(n == 1) {
 			# c("#E41A1C")
@@ -976,7 +975,7 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") {
   rda <- paste0(call_rda, ".rda")
   file <- file.path(dat_dir, "Calls", rda)
   if (!file.exists(file)) stop(rda, " not found.")
-
+  
   load(file = file)
   if (is.null(call_pars[[arg]])) 
     stop(arg, " not found in the latest call to ", call_rda, call. = FALSE)
@@ -1016,29 +1015,6 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL) {
   }
 
   return(filename)
-}
-
-
-#' Matches impute_na
-#' @param id.
-#'
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
-match_sigTest_imputena <- function (id = c("prot_acc")) {
-  stopifnot(is_string(id))
-  stopifnot(id %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
-  
-  if (id %in% c("pep_seq", "pep_seq_mod")) {
-    file <- file.path(dat_dir, "Calls\\pepSig.rda")
-    if (!file.exists(file)) stop("Run `pepSig` first.", call. = FALSE)
-  } else if (id %in% c("prot_acc", "gene")) {
-    file <- file.path(dat_dir, "Calls\\prnSig.rda")
-    if (!file.exists(file)) stop("Run `prnSig` frist.", call. = FALSE)
-  }
-  
-  load(file = file)
-  stopifnot("impute_na" %in% names(call_pars))
-  call_pars$impute_na
 }
 
 
@@ -1986,11 +1962,5 @@ my_union <- function (x, y) {
     .[! names(.) %in% names(y)] %>% 
     c(y)
 }
-
-
-
-
-
-
 
 

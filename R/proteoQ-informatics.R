@@ -20,6 +20,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
                        anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
                                      "NMF", "Trend")) {
   
+  ## `complete_cases` under each function
+  ## cases being complete are different for contrast fit under `Model` 
+
   err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
 
   old_opt <- options(max.print = 99999)
@@ -189,13 +192,14 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	    } else {
 	      if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
 	    }
-	  } else if (anal_type %in% c("GSPA", "GSEA")) { # always use data with pVals
+	  } else if (anal_type %in% c("GSPA", "GSEA", "String")) { # always use data with pVals
 	    if (impute_na) {
 	      if (file.exists(fn_imp_p)) src_path <- fn_imp_p else stop(paste(fn_imp_p, err_msg4), call. = FALSE)
 	    } else {
 	      if (file.exists(fn_p)) src_path <- fn_p else stop(paste(fn_p, err_msg5), call. = FALSE)
 	    }
-	  } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", "NMF", "GSVA")) { # optional impute_na and possible p_vals
+	  } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", "NMF", "GSVA")) { 
+	    # optional impute_na and possible p_vals
 	    if (impute_na) {
 	      if (file.exists(fn_imp_p)) src_path <- fn_imp_p else if (file.exists(fn_imp)) src_path <- fn_imp else 
 	        stop(paste(fn_imp, err_msg3), call. = FALSE)
@@ -562,7 +566,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		         stop("Invalid `task`.", Call. = TRUE)
 		  )
 		}
-
 	} else if(anal_type == "GSVA") {
 	  function(complete_cases = FALSE, lm_method = "limma", gset_nms = "go_sets", var_cutoff = .5,
 	           pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
@@ -623,7 +626,37 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	           stop("Invalid `task`.", Call. = TRUE)
 	    )
 	  }
-	  
+	} else if (anal_type == "String") {
+	  function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, adjP = FALSE, 
+	           complete_cases = FALSE, task = anal, ...) {
+	    
+	    dots <- rlang::enexprs(...)
+	    filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+	    dots <- dots %>% .[! . %in% filter_dots]
+	    
+	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+	    
+	    df <- df %>% filters_in_call(!!!filter_dots)
+
+	    fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
+
+	    switch(rlang::as_string(rlang::enexpr(task)), 
+	           anal = stringTest(df = df, 
+	                             id = !!id, 
+	                             col_group = !!col_group, 
+	                             col_order = !!col_order,
+	                             label_scheme_sub = label_scheme_sub, 
+	                             db_path = db_path,
+	                             score_cutoff = score_cutoff,
+	                             adjP = adjP, 
+	                             complete_cases = complete_cases, 
+	                             scale_log2r = scale_log2r, 
+	                             filepath = filepath, 
+	                             filename = paste0(fn_prefix, ".csv"), 
+	                             !!!dots), 
+	           stop("Invalid `task`.", Call. = TRUE)
+	    )
+	  }
 	} 
 	
 }

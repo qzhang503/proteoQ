@@ -375,6 +375,8 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'@importFrom magrittr %>%
 #'@export
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
+  on.exit(mget(names(formals()), rlang::current_env()) %>% save_call("load_expts"))
+  
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
 
@@ -404,8 +406,6 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
     
     rm(new_dat_dir, new_dat_dir2)
   }
-
-	mget(names(formals()), rlang::current_env()) %>% save_call("load_expts")
 
   prep_label_scheme(dat_dir, expt_smry)
   prep_fraction_scheme(dat_dir, frac_smry)
