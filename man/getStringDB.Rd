@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-string.R
 \name{getStringDB}
 \alias{getStringDB}
-\title{STRING outputs}
+\title{STRING outputs (depreciated)}
 \usage{
 getStringDB(db_path = "~\\\\proteoQ\\\\dbs\\\\string",
   score_cutoff = 0.7, adjP = FALSE, impute_na = FALSE, ...)
@@ -57,7 +57,8 @@ anal_prnString(
   filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
-# human only
+# cleaner outputs by specifying species
+# ('unknown' will be removed)
 anal_prnString(
   db_path = string_dir,
   score_cutoff = .9,
@@ -65,19 +66,14 @@ anal_prnString(
   filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
-# custom filename
-# outputs in 'my_human_ppi.tsv' and 'my_human_expr.tsv' 
 anal_prnString(
   db_path = string_dir,
   score_cutoff = .9,
-  complete_cases = TRUE, 
-  filter_by = exprs(species == "human", 
-                    prot_n_pep >= 2, 
-                    `W16_vs_W2.pVal (W16-W2)` <= 1e-6),
-  filename = my_human.txt,
+  filter_by_sp = exprs(species == "mouse"),
+  filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
-# outputs in: 
+# custom filename with outputs in: 
 # prot_npep2 W16_vs_W2.pVal (W16-W2)_human_expr.tsv
 # prot_npep2 W16_vs_W2.pVal (W16-W2)_human_ppi.tsv
 # prot_npep2 W16_vs_W2.pVal (W16-W2)_mouse_expr.tsv
@@ -86,7 +82,8 @@ anal_prnString(
   db_path = string_dir,
   score_cutoff = .9,
   complete_cases = TRUE, 
-  filter_by = exprs(prot_n_pep >= 2, 
+  filter_by = exprs(species \%in\% c("human", "mouse"), 
+                    prot_n_pep >= 2, 
                     `W16_vs_W2.pVal (W16-W2)` <= 1e-6),
   filename = "prot_npep2 W16_vs_W2.pVal (W16-W2).txt",
 )

@@ -10,10 +10,10 @@ proteoMDS(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
   col_size = NULL, col_alpha = NULL, color_brewer = NULL,
   fill_brewer = NULL, size_manual = NULL, shape_manual = NULL,
-  alpha_manual = NULL, scale_log2r = TRUE, impute_na = FALSE,
-  complete_cases = FALSE, adjEucDist = FALSE, classical = TRUE,
-  k = 3, show_ids = TRUE, annot_cols = NULL, df = NULL,
-  filepath = NULL, filename = NULL, ...)
+  alpha_manual = NULL, scale_log2r = TRUE, complete_cases = FALSE,
+  impute_na = FALSE, adjEucDist = FALSE, classical = TRUE, k = 3,
+  show_ids = TRUE, annot_cols = NULL, df = NULL, filepath = NULL,
+  filename = NULL, ...)
 
 pepMDS(...)
 
@@ -82,11 +82,11 @@ in \code{ggplot2} will be used.}
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
 
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used. The default is FALSE.}
-
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex Euclidean distance
 by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when

@@ -20,10 +20,8 @@ prnVol(...)
 gspaMap(...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. The value will be
-determined automatically. Peptide data will be used at \code{id = pep_seq}
-or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
-or \code{gene}.}
+\item{id}{Character string indicating the type of data. The value will be
+determined automatically.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
@@ -42,11 +40,9 @@ for \code{gspaMap}.}
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
+\item{filename}{A file name to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of id in the call.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
 the formula(e) will match those used in \code{\link{pepSig}} or

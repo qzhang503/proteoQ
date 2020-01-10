@@ -5,7 +5,7 @@
 \title{Trend analysis}
 \usage{
 trendTest(df, id, col_group, col_order, label_scheme_sub, n_clust,
-  complete_cases, scale_log2r, filepath, filename, ...)
+  filepath, filename, ...)
 }
 \description{
 Trend analysis

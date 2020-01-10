@@ -113,12 +113,16 @@
 #'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
 #'  
 #'@export
-proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL, 
-                        impute_na = NULL, complete_cases = FALSE, gset_nms = "go_sets", 
+proteoGSPA <- function (id = gene, df = NULL, filepath = NULL, filename = NULL, gset_nms = "go_sets", 
+                        scale_log2r = TRUE, complete_cases = FALSE, impute_na = NULL, 
                         var_cutoff = .5, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                         gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
                         fml_nms = NULL, task = "anal", ...) {
 
+  old_opt <- options(max.print = 99999, warn = 0)
+  on.exit(options(old_opt), add = TRUE)
+  options(max.print = 2000000, warn = 1)
+  
   on.exit(
     if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod") & task == "anal") {
       mget(names(formals()), current_env()) %>% 
@@ -132,56 +136,55 @@ proteoGSPA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
     , add = TRUE
   )
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-
   id <- rlang::enexpr(id)
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	task <- rlang::enexpr(task)
 	
+	id <- rlang::as_string(id)
 	if (is.null(impute_na)) {
 	  if (id %in% c("pep_seq", "pep_seq_mod")) {
 	    impute_na <- match_call_arg(pepSig, impute_na)
 	  } else if (id %in% c("prot_acc", "gene")) {
 	    impute_na <- match_call_arg(prnSig, impute_na)
 	  }
-	  
-	  message("impute_na = ", impute_na)
 	}
 
-	stopifnot(is_logical(scale_log2r), is_logical(impute_na), is_logical(complete_cases))
+	if (impute_na) {
+	  mscale_log2r <- match_call_arg(prnSig_impTRUE, scale_log2r)
+	} else {
+	  mscale_log2r <- match_call_arg(prnSig_impFALSE, scale_log2r)
+	}
+	
+	if (scale_log2r != mscale_log2r) {
+	  warning("scale_log2r = ", mscale_log2r, " after matching to `sigTest`.", call. = FALSE)
+	}
+	scale_log2r <- mscale_log2r
+	rm(mscale_log2r)
+
+	stopifnot(rlang::is_logical(scale_log2r), 
+	          rlang::is_logical(impute_na), 
+	          rlang::is_logical(complete_cases))
 
 	dots <- rlang::enexprs(...)
 	fmls <- dots %>% .[grepl("^\\s*~", .)]
 	dots <- dots[!names(dots) %in% names(fmls)]
 	dots <- concat_fml_dots(fmls = fmls, fml_nms = fml_nms, dots = dots, anal_type = "GSPA")
 	
-	run_scripts <- FALSE
-	if (run_scripts) {
-  	curr_call <- mget(names(formals()), rlang::current_env()) %>% 
-  	  .[names(.) != "..."] %>% 
-  	  c(dots) 
-  	
-  	if (task == "anal") {
-  	  curr_call %>% save_call("prnGSPA")
-  	} else if (task == "plothm") {
-  	  curr_call %>% save_call("prnGSPAHM")
-  	}	  
-	}
-
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
 
-	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r, 
-	          filepath = !!filepath, filename = !!filename, impute_na = impute_na, 
-	          anal_type = "GSPA")(complete_cases = complete_cases, gset_nms = gset_nms, 
+	info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
+	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	          anal_type = "GSPA")(gset_nms = gset_nms, 
 	                              var_cutoff = var_cutoff, pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
 	                              gspval_cutoff = gspval_cutoff, 
 	                              min_size = min_size, max_size = max_size, min_greedy_size = min_greedy_size, 
 	                              task = !!task, !!!dots)
 }
+
 
 #'GSPA
 #'
@@ -198,11 +201,7 @@ prnGSPA <- function (...) {
   dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  
-  quietly_log <- purrr::quietly(proteoGSPA)(id = !!id, task = anal, ...)
-  quietly_log$result <- NULL
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\GSPA\\log","prnGSPA_log.csv"), append = TRUE)
+  proteoGSPA(id = !!id, task = anal, ...)
 }
 
 
@@ -257,7 +256,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   
   stopifnot(sum(col_ind) > 0)
   
-  cat("Column keys available for data filtration are in `Protein\\Model\\Protein_pVals.txt`.\n")
+  cat("Column keys available for data filtration are in `Protein\\Model\\Protein[_impNA]_pVals.txt`.\n")
 
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
@@ -266,14 +265,14 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   # var_cutoff only for GSEA
   # min_greedy_size and gspval_cutoff only for GSPA
   if (anal_type == "GSPA") {
-    purrr::pmap(list(fmls, fml_nms, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size, min_greedy_size), 
+    purrr::pwalk(list(fmls, fml_nms, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size, min_greedy_size), 
                 fml_gspa, df = df, col_ind = col_ind, id = !!id, gsets = gsets, label_scheme_sub = label_scheme_sub, 
                 complete_cases = complete_cases, scale_log2r = scale_log2r, 
                 filepath = filepath, filename = filename, !!!dots)
   } else if (anal_type == "GSEA") {
     # need scale_log2r for var_cutoff
     # need formula for pval_cutoff and logFC_cutoff
-    purrr::pmap(list(fmls, fml_nms, var_cutoff, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size), 
+    purrr::pwalk(list(fmls, fml_nms, var_cutoff, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size), 
                 fml_gsea, df, col_ind, id = !!id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
                 filepath, filename, !!!dots)
     
@@ -327,7 +326,11 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min
   
   # penaltize with NA imputation to 0 to increases the number of entries in descriptive "mean" calculation
   df <- df %>% prep_gspa(id = "entrez", fml_nm = fml_nm, col_ind = col_ind, 
-                         pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff) %>% 
+                         pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff) 
+  
+  if (complete_cases) df <- df[complete.cases(df), ]
+  
+  df <- df %>% 
     dplyr::mutate(p_val = -log10(p_val)) %>% 
     dplyr::mutate(valence = ifelse(.$log2Ratio > 0, "pos", "neg")) %>% 
     dplyr::mutate(valence = factor(valence, levels = c("neg", "pos"))) %>% 
@@ -402,6 +405,8 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min
     dplyr::filter(id %in% unique(df$entrez)) %>% 
     dplyr::select(c("term", "id")) %>% 
     dplyr::filter(term %in% res_pass$term)
+  
+  out <- out %>% dplyr::mutate(term = as.character(term))
   
   out <- sig_sets %>% 
     dplyr::group_by(term) %>% 
@@ -486,7 +491,7 @@ map_essential <- function (sig_sets) {
 
   sig_greedy_sets <- sig_sets %>% dplyr::filter(term %in% ess_terms)
 
-  purrr::map(unique(sig_sets$term), ~ {
+  res <- purrr::map(unique(sig_sets$term), ~ {
     curr_sig_set <- sig_sets %>% 
       dplyr::filter(term %in% .x)
     
@@ -617,18 +622,26 @@ prnGSPAHM <- function (annot_cols = NULL, annot_colnames = NULL, annot_rows = NU
   
   dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  quietly_log <- purrr::quietly(proteoGSPA)(id = gene, task = plothm, 
-                                            annot_cols = !!annot_cols, 
-                                            annot_colnames = !!annot_colnames, 
-                                            annot_rows = !!annot_rows, 
-                                            ...)
-  purrr::walk(quietly_log, write, file.path(dat_dir, "Protein\\GSPA\\log","plot_hmGSPA_log.csv"), 
-              append = TRUE)  
+  proteoGSPA(id = gene, task = plothm, 
+             annot_cols = !!annot_cols, 
+             annot_colnames = !!annot_colnames, 
+             annot_rows = !!annot_rows, 
+             ...)
+  
+  run_scripts <- FALSE
+  if (run_scripts) {
+    quietly_log <- purrr::quietly(proteoGSPA)(id = gene, task = plothm, 
+                                              annot_cols = !!annot_cols, 
+                                              annot_colnames = !!annot_colnames, 
+                                              annot_rows = !!annot_rows, 
+                                              ...)
+    purrr::walk(quietly_log, write, file.path(dat_dir, "Protein\\GSPA\\log","plot_hmGSPA_log.csv"), append = TRUE)    
+  }
 }
 
 
 #'Plot distance heat map of GSPA
-gspaHM <- function(filepath, filename, ...) {
+gspaHM <- function(scale_log2r, impute_na, filepath, filename, ...) {
   dots <- rlang::enexprs(...)
   
   fmls <- dots %>% .[grepl("~", .)]
@@ -639,7 +652,7 @@ gspaHM <- function(filepath, filename, ...) {
   
   fml_nms <- names(fmls)
   if (length(fml_nms) > 0) {
-    purrr::walk(fml_nms, fml_gspahm, filepath, filename, !!!dots)
+    purrr::walk(fml_nms, fml_gspahm, filepath, filename, scale_log2r, impute_na, !!!dots)
   }
 }
 
@@ -648,7 +661,7 @@ gspaHM <- function(filepath, filename, ...) {
 #'
 #' @import purrr dplyr rlang pheatmap networkD3
 #' @importFrom magrittr %>%
-fml_gspahm <- function (fml_nm, filepath, filename, ...) {
+fml_gspahm <- function (fml_nm, filepath, filename, scale_log2r, impute_na, ...) {
   dots <- rlang::enexprs(...)
   
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
@@ -658,10 +671,13 @@ fml_gspahm <- function (fml_nm, filepath, filename, ...) {
   
   ins <- list.files(path = file.path(filepath, fml_nm), pattern = "^essmap_.*\\.csv$")
   
-  scale_log2r <- match_logi_gv("scale_log2r", TRUE)
-  if (scale_log2r) ins <- ins %>% .[grepl("^essmap_Protein_GSPA_Z", .)] else 
-    ins <- ins %>% .[grepl("^essmap_Protein_GSPA_N", .)]
-
+  if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
+  if (scale_log2r) {
+    ins <- ins %>% .[grepl("essmap_Protein_GSPA_Z", .)] 
+  } else {
+    ins <- ins %>% .[grepl("essmap_Protein_GSPA_N", .)]
+  }
+  
   stopifnot(length(ins) == 1)
 
   all_by_greedy <- tryCatch(read.csv(file.path(filepath, fml_nm, ins), check.names = FALSE, header = TRUE, 
@@ -748,6 +764,9 @@ fml_gspahm <- function (fml_nm, filepath, filename, ...) {
     if (scale_log2r) meta_ins <- meta_ins %>% .[grepl("^essmeta_Protein_GSPA_Z", .)] else 
       meta_ins <- meta_ins %>% .[grepl("^essmeta_Protein_GSPA_N", .)]
     
+    if (impute_na) meta_ins <- meta_ins %>% .[grepl("^essmeta_Protein_GSPA_[NZ]_impNA\\.csv", .)] else 
+      meta_ins <- meta_ins %>% .[grepl("^essmeta_Protein_GSPA_[NZ]\\.csv", .)]
+    
     stopifnot(length(meta_ins) == 1)
     
     ess_meta <- tryCatch(read.csv(file.path(filepath, fml_nm, meta_ins), check.names = FALSE, header = TRUE, 
@@ -820,13 +839,13 @@ fml_gspahm <- function (fml_nm, filepath, filename, ...) {
   }
   
   if ((!is.na(width)) & (width > max_width)) {
-    warning("The plot width is set to", max_width)
+    warning("The plot width is set to", max_width, call. = FALSE)
     width <- max_width
     height <- pmin(max_height, width * nrow / ncol)
   } 
   
   if ((!is.na(height)) & (height > max_height)) {
-    warning("The plot height is set to", max_height)
+    warning("The plot height is set to ", max_height, call. = FALSE)
     height <- max_height
     width <- pmin(max_width, height * ncol / nrow)
   }
@@ -879,6 +898,7 @@ fml_gspahm <- function (fml_nm, filepath, filename, ...) {
     
     all_by_greedy %>% 
       dplyr::mutate(source = source - min_target, target = target - min_target) %>% 
+      dplyr::mutate(term = as.character(term)) %>% 
       dplyr::left_join(cluster, by = "term") %>% 
       dplyr::mutate(term = factor(term, levels(ess_term)))
   })

@@ -47,8 +47,8 @@ automatically by the value of \code{id}.}
 \item{filepath}{Use system default.}
 
 \item{filename}{Use system default. Otherwise, the basename will be prepended
-to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv} for expression
-data.}
+to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}
+for expression data.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
@@ -56,14 +56,17 @@ data; also see \code{\link{normPSM}}.}
 \description{
 \code{proteoString} prepares the data of both
 \code{\href{https://string-db.org/}{STRING}} protein-protein interactions
-(ppi) and companion protein expressions, at users' specifications. Convenience
-features, such as data row filtration via \code{filter_} varargs, are
-available. The ppi file, \code{..._ppi.tsv}, and the expression file,
-\code{..._expr.tsv}, are also compatible with a third-party
-\code{\href{https://cytoscape.org/}{Cytoscape}}.
+(ppi) and companion protein expressions. Users should avoid calling the method
+directly, but instead use the following wrappers.
 
 \code{anal_prnString} is a wrapper of \code{\link{proteoString}} for the
 STRING analysis of protein data
+}
+\details{
+Convenience features, such as data row filtration via \code{filter_} varargs,
+are available. The ppi file, \code{..._ppi.tsv}, and the expression file,
+\code{..._expr.tsv}, are also compatible with a third-party
+\code{\href{https://cytoscape.org/}{Cytoscape}}.
 }
 \examples{
 # ===================================
@@ -89,7 +92,8 @@ anal_prnString(
   filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
-# human only
+# cleaner outputs by specifying species
+# ('unknown' will be removed)
 anal_prnString(
   db_path = string_dir,
   score_cutoff = .9,
@@ -97,19 +101,14 @@ anal_prnString(
   filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
-# custom filename
-# outputs in 'my_human_ppi.tsv' and 'my_human_expr.tsv' 
 anal_prnString(
   db_path = string_dir,
   score_cutoff = .9,
-  complete_cases = TRUE, 
-  filter_by = exprs(species == "human", 
-                    prot_n_pep >= 2, 
-                    `W16_vs_W2.pVal (W16-W2)` <= 1e-6),
-  filename = my_human.txt,
+  filter_by_sp = exprs(species == "mouse"),
+  filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
-# outputs in: 
+# custom filename with outputs in: 
 # prot_npep2 W16_vs_W2.pVal (W16-W2)_human_expr.tsv
 # prot_npep2 W16_vs_W2.pVal (W16-W2)_human_ppi.tsv
 # prot_npep2 W16_vs_W2.pVal (W16-W2)_mouse_expr.tsv
@@ -118,7 +117,8 @@ anal_prnString(
   db_path = string_dir,
   score_cutoff = .9,
   complete_cases = TRUE, 
-  filter_by = exprs(prot_n_pep >= 2, 
+  filter_by = exprs(species \%in\% c("human", "mouse"), 
+                    prot_n_pep >= 2, 
                     `W16_vs_W2.pVal (W16-W2)` <= 1e-6),
   filename = "prot_npep2 W16_vs_W2.pVal (W16-W2).txt",
 )

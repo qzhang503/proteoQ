@@ -788,11 +788,10 @@ dl_stringdbs(
   db_path = string_dir,
 )
 
-# protein-protein interaction network
-getStringDB(
+# human ppi
+anal_prnString(
   db_path = string_dir,
   score_cutoff = .9,
-  adjP = FALSE,
   filter_by_sp = exprs(species == "human"),
   filter_prots_by = exprs(prot_n_pep >= 2),
 )

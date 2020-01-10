@@ -6,7 +6,7 @@
 \usage{
 stringTest(df, id, col_group, col_order, label_scheme_sub,
   db_path = "~\\\\proteoQ\\\\dbs\\\\string", score_cutoff = 0.7,
-  complete_cases, scale_log2r, filepath, filename, ...)
+  scale_log2r, filepath, filename, ...)
 }
 \description{
 The input contains pVal fields

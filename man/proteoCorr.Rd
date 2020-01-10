@@ -10,8 +10,9 @@
 \usage{
 proteoCorr(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   data_select = c("logFC", "logInt"), col_select = NULL,
-  col_order = NULL, scale_log2r = TRUE, df = NULL, filepath = NULL,
-  filename = NULL, ...)
+  col_order = NULL, scale_log2r = TRUE, complete_cases = FALSE,
+  impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL,
+  ...)
 
 pepCorr_logFC(...)
 
@@ -44,6 +45,12 @@ ordered by their names.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}

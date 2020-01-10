@@ -8,7 +8,7 @@
 #'@param overwrite Logical; if TRUE, overwrite the databse(s). The default is
 #'  FALSE.
 #'@import rlang dplyr magrittr purrr fs downloader
-#'@seealso \code{\link{getStringDB}} for protein-protein interaction networks.
+#'@seealso \code{\link{anal_prnString}} for protein-protein interaction networks.
 #'@export
 dl_stringdbs <- function(species = "human", db_path = "~\\proteoQ\\dbs\\string", overwrite = FALSE) {
   species <- rlang::as_string(rlang::enexpr(species))
@@ -156,12 +156,12 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff,
   if (id == "gene") {
     string_map <- df %>%
       dplyr::select(id) %>% 
-      dplyr::left_join(prn_info) %>% 
+      dplyr::left_join(prn_info, by = id) %>% 
       dplyr::filter(!is.na(protein_external_id))
   } else {
     string_map <- df %>%
       dplyr::select(id) %>% 
-      dplyr::left_join(prn_alias_sub) %>% 
+      dplyr::left_join(prn_alias_sub, by = id) %>% 
       dplyr::filter(!is.na(protein_external_id))
   }
   string_map <- string_map %>% 
@@ -226,7 +226,7 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff,
 #' @importFrom magrittr %>%
 stringTest <- function(df, id, col_group, col_order, label_scheme_sub, 
                        db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, 
-                       complete_cases, scale_log2r, filepath, filename, ...) {
+                       scale_log2r, filepath, filename, ...) {
   
   stopifnot(rlang::is_double(score_cutoff))
   
@@ -263,6 +263,17 @@ stringTest <- function(df, id, col_group, col_order, label_scheme_sub,
   
   stopifnot(length(species) >= 1)
   
+  run_scripts <- FALSE
+  if (run_scripts) {
+    if (scale_log2r) {
+      df <- df %>% 
+        dplyr::select(-grep("N_log2_R", names(.)))
+    } else {
+      df <- df %>% 
+        dplyr::select(-grep("Z_log2_R", names(.)))
+    }    
+  }
+
   df <- df %>% rm_pval_whitespace()
 
   purrr::walk(species, annot_stringdb, df, db_path, id, score_cutoff, filepath, filename)
@@ -273,9 +284,11 @@ stringTest <- function(df, id, col_group, col_order, label_scheme_sub,
 #'
 #'\code{proteoString} prepares the data of both
 #'\code{\href{https://string-db.org/}{STRING}} protein-protein interactions
-#'(ppi) and companion protein expressions, at users' specifications. Convenience
-#'features, such as data row filtration via \code{filter_} varargs, are
-#'available. The ppi file, \code{..._ppi.tsv}, and the expression file,
+#'(ppi) and companion protein expressions. Users should avoid calling the method
+#'directly, but instead use the following wrappers.
+#'
+#'Convenience features, such as data row filtration via \code{filter_} varargs,
+#'are available. The ppi file, \code{..._ppi.tsv}, and the expression file,
 #'\code{..._expr.tsv}, are also compatible with a third-party
 #'\code{\href{https://cytoscape.org/}{Cytoscape}}.
 #'
@@ -295,8 +308,8 @@ stringTest <- function(df, id, col_group, col_order, label_scheme_sub,
 #'  protein-protein interaction. The default is 0.7.
 #'@param scale_log2r Not currently used.
 #'@param filename Use system default. Otherwise, the basename will be prepended
-#'  to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv} for expression
-#'  data.
+#'  to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}
+#'  for expression data.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}.
 #'@seealso \code{\link{dl_stringdbs}} for database downloads. \cr
@@ -335,10 +348,10 @@ proteoString <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
     stopifnot(id %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
   }
   
-  stopifnot(rlang::is_logical(scale_log2r))
-  stopifnot(rlang::is_logical(impute_na))
-  stopifnot(rlang::is_logical(complete_cases))
-  
+  stopifnot(rlang::is_logical(scale_log2r), 
+            rlang::is_logical(impute_na), 
+           rlang::is_logical(complete_cases) )
+
   task <- rlang::enexpr(task)
   col_select <- rlang::enexpr(col_select)
   col_group <- rlang::enexpr(col_group)
@@ -350,10 +363,10 @@ proteoString <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   reload_expts()
   
   info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, col_order = !!col_order,
-            scale_log2r = scale_log2r, impute_na = impute_na,
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
             df = !!df, filepath = !!filepath, filename = !!filename,
             anal_type = "String")(db_path = db_path, score_cutoff = score_cutoff, adjP = adjP, 
-                                  complete_cases = complete_cases, task = !!task, ...)
+                                  task = !!task, ...)
 }
 
 
@@ -382,7 +395,22 @@ anal_prnString <- function (...) {
 
 
 
-#'STRING outputs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#'STRING outputs (depreciated)
 #'
 #'\code{getStringDB} prepares locally the
 #'\code{\href{https://string-db.org/}{STRING}} results of protein-protein

@@ -5,22 +5,18 @@
 \alias{prnGSPA}
 \title{GSPA of protein data}
 \usage{
-proteoGSPA(id = gene, scale_log2r = TRUE, df = NULL,
-  filepath = NULL, filename = NULL, impute_na = NULL,
-  complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.05,
-  min_size = 10, max_size = Inf, min_greedy_size = 1,
-  fml_nms = NULL, task = "anal", ...)
+proteoGSPA(id = gene, df = NULL, filepath = NULL, filename = NULL,
+  gset_nms = "go_sets", scale_log2r = TRUE, complete_cases = FALSE,
+  impute_na = NULL, var_cutoff = 0.5, pval_cutoff = 0.05,
+  logFC_cutoff = log2(1.2), gspval_cutoff = 0.05, min_size = 10,
+  max_size = Inf, min_greedy_size = 1, fml_nms = NULL,
+  task = "anal", ...)
 
 prnGSPA(...)
 }
 \arguments{
 \item{id}{Character string indicating the type of data. The value will be
 determined automatically.}
-
-\item{scale_log2r}{Not used for full volcano plots by \code{pepVol} or 
-\code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
-for \code{gspaMap}.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
@@ -33,17 +29,21 @@ of \code{id} in the \code{call}.}
 determined automatically by the name of the calling function and the value
 of id in the call.}
 
-\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
-the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
-protein data.}
-
-\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used. The default is FALSE.}
-
 \item{gset_nms}{Character string or vector containing the name(s) of gene sets
 for enrichment analysis. The default is \code{"go_sets"}. The possible
 values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
 supported species are human, mouse and rat.}
+
+\item{scale_log2r}{Not used for full volcano plots by \code{pepVol} or 
+\code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
+for \code{gspaMap}.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
+the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+protein data.}
 
 \item{var_cutoff}{Not currently used.}
 

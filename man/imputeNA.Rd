@@ -6,7 +6,7 @@
 \alias{prnImp}
 \title{Imputation of NA values}
 \usage{
-imputeNA(id, ...)
+imputeNA(id, overwrite = FALSE, ...)
 
 pepImp(...)
 
@@ -17,6 +17,9 @@ prnImp(...)
 determined automatically. Peptide data will be used at \code{id = pep_seq}
 or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
 or \code{gene}.}
+
+\item{overwrite}{Logical. If true, overwrite the previous results. The default
+is FALSE.}
 
 \item{...}{Parameters for \code{\link[mice]{mice}}}
 }

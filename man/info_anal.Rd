@@ -9,9 +9,10 @@ info_anal(id = gene, col_select = NULL, col_group = NULL,
   col_shape = NULL, col_size = NULL, col_alpha = NULL,
   color_brewer = NULL, fill_brewer = NULL, size_manual = NULL,
   shape_manual = NULL, alpha_manual = NULL, col_benchmark = NULL,
-  scale_log2r = TRUE, impute_na = FALSE, df = NULL,
-  filepath = NULL, filename = NULL, anal_type = c("Corrplot",
-  "Heatmap", "Histogram", "MA", "MDS", "Model", "NMF", "Trend"))
+  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
+  df = NULL, filepath = NULL, filename = NULL,
+  anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
+  "NMF", "Trend"))
 }
 \arguments{
 \item{anal_type}{Character string; the type of analysis that are preset for

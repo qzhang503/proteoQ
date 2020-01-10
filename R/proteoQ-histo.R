@@ -253,15 +253,22 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'@return Histograms of \code{log2FC}
 #'@export
 proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                        col_select = NULL, scale_log2r = TRUE, 
+                        col_select = NULL, 
+                        scale_log2r = TRUE, complete_cases = FALSE, 
                         show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 
+  old_opt <- options(max.print = 99999, warn = 0)
+  on.exit(options(old_opt), add = TRUE)
+  options(max.print = 2000000, warn = 1)
+  
   id <- rlang::enexpr(id)
-	# if (length(id) != 1) id <- rlang::expr(gene)
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 	
-	stopifnot(is_logical(scale_log2r), is_logical(show_curves), is_logical(show_vline), is_logical(scale_y))
+	stopifnot(rlang::is_logical(scale_log2r), 
+	          rlang::is_logical(show_curves), 
+	          rlang::is_logical(show_vline), 
+	          rlang::is_logical(scale_y))
 
 	col_select <- rlang::enexpr(col_select)
 	df <- rlang::enexpr(df)
@@ -269,11 +276,18 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	filename <- rlang::enexpr(filename)
 
 	reload_expts()
+	
+	dots <- rlang::enexprs(...)
+	if (!is.null(dots$impute_na)) {
+	  dots$impute_na <- NULL
+	  rlang::warn("No NA imputation with `proteoHist`.")
+	}
 
-	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = FALSE,
+	info_anal(id = !!id, col_select = !!col_select, 
+	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
 	          df = !!df, filepath = !!filepath, filename = !!filename,
 	          anal_type = "Histogram")(show_curves = show_curves,
-	                                   show_vline = show_vline, scale_y = scale_y, ...)
+	                                   show_vline = show_vline, scale_y = scale_y, !!!dots)
 }
 
 
@@ -291,10 +305,7 @@ pepHist <- function (...) {
   dir.create(file.path(dat_dir, "Peptide\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_psm_by)
-  
-  quietly_log <- purrr::quietly(proteoHist)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Histogram\\log\\pepHist_log.csv"), append = TRUE)  
+  proteoHist(id = !!id, ...)
 }
 
 
@@ -313,8 +324,5 @@ prnHist <- function (...) {
   dir.create(file.path(dat_dir, "Protein\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  
-  quietly_log <- purrr::quietly(proteoHist)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Histogram\\log\\prnHist_log.csv"), append = TRUE)
+  proteoHist(id = !!id, ...)
 }

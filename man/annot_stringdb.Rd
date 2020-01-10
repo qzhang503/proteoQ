@@ -23,8 +23,8 @@ protein-protein interaction. The default is 0.7.}
 \item{filepath}{Use system default.}
 
 \item{filename}{Use system default. Otherwise, the basename will be prepended
-to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv} for expression
-data.}
+to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}
+for expression data.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}

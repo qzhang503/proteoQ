@@ -36,7 +36,7 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, sca
     stopifnot(all(nrun >= 1) & all(nrun %% 1 == 0))
   }
   
-  if (complete_cases) df <- df[complete.cases(df), ]
+  # if (complete_cases) df <- df[complete.cases(df), ]
   
   exprs_data <- data.matrix(2^df)
   
@@ -54,8 +54,7 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, sca
                               experimentData = experimentData)
 
   purrr::walk(fn_prefix, ~ {
-    r <- gsub(".*_r(\\d+)$", "\\1", .x) %>% as.numeric()
-    
+    r <- gsub("^.*_rank(\\d+).*", "\\1", .x) %>% as.numeric()
     res_nmf <- NMF::nmf(exampleSet, r, nrun = nrun)
     save(res_nmf, file = file.path(filepath, paste0(.x, ".rda")))
     write.csv(res_nmf@consensus, 
@@ -82,7 +81,7 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r,
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
-  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$") 
+  ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$") 
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
 
@@ -91,23 +90,23 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r,
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
     
-    ins_prefix <- gsub("\\.[^.]*$", "", ins)
-    
-    possible_prefix <- ins_prefix %>% 
-      gsub("(.*)_r\\d+$", "\\1", .) %>% 
-      unique() %>% 
-      paste0("_r", r)
-    
-    ok_prefix <- ins_prefix %>% 
-      .[. %in% possible_prefix]
-    rm(ins_prefix, possible_prefix)
-    
-    filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.rda$"))) %>% 
-      unlist()
+    filelist <- local({
+      possible <- ins %>% 
+        gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .) %>% 
+        as.numeric() %>% 
+        `names<-`(ins)
+      
+      r2 <- r %>% .[. %in% possible]
+      
+      filelist <- possible %>% 
+        .[. %in% r2] %>% 
+        names(.)
+    })
   } 
   
   if (purrr::is_empty(filelist)) 
-    stop("Missing or mismatched NMF results under ", filepath, call. = FALSE)
+    stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+         " at r = ", paste0(r, collapse = ","), call. = FALSE)
 
   purrr::walk(filelist, ~ {
     out_nm <- paste0(gsub("\\.rda$", "", .x), "_consensus.png")
@@ -216,7 +215,7 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
-  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
+  ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$")
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
 
@@ -225,26 +224,25 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
     
-    ins_prefix <- gsub("\\.[^.]*$", "", ins)
-    
-    possible_prefix <- ins_prefix %>% 
-      gsub("(.*)_r\\d+$", "\\1", .) %>% 
-      unique() %>% 
-      paste0("_r", r)
-    
-    ok_prefix <- ins_prefix %>% 
-      .[. %in% possible_prefix]
-    rm(ins_prefix, possible_prefix)
-    
-    filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.rda$"))) %>%
-      unlist()
+    filelist <- local({
+      possible <- ins %>% 
+        gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .) %>% 
+        as.numeric() %>% 
+        `names<-`(ins)
+      
+      r2 <- r %>% .[. %in% possible]
+      
+      filelist <- possible %>% 
+        .[. %in% r2] %>% 
+        names(.)
+    })
   } 
 
   if (purrr::is_empty(filelist)) 
-    stop("Missing or mismatched NMF results under ", filepath, call. = FALSE)
+    stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+         " at r = ", paste0(r, collapse = ","), call. = FALSE)
 
   purrr::walk(filelist, ~ {
-    # out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.", fn_suffix)
     out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.png")
     src_path <- file.path(filepath, .x)
     load(file = file.path(src_path))
@@ -331,35 +329,36 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
-  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
+  ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$")
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
+  if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
   
   if (is.null(r)) {
     filelist <- ins
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
     
-    ins_prefix <- gsub("\\.[^.]*$", "", ins)
-    
-    possible_prefix <- ins_prefix %>% 
-      gsub("(.*)_r\\d+$", "\\1", .) %>% 
-      unique() %>% 
-      paste0("_r", r)
-    
-    ok_prefix <- ins_prefix %>% 
-      .[. %in% possible_prefix]
-    rm(ins, ins_prefix, possible_prefix)
-    
-    filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.rda$"))) %>%
-      unlist()
+    filelist <- local({
+      possible <- ins %>% 
+        gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .) %>% 
+        as.numeric() %>% 
+        `names<-`(ins)
+      
+      r2 <- r %>% .[. %in% possible]
+      
+      filelist <- possible %>% 
+        .[. %in% r2] %>% 
+        names(.)
+    })
   } 
   
   if (purrr::is_empty(filelist)) 
-    stop("Missing or mismatched NMF results under ", filepath, call. = FALSE)
+    stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+         " at r = ", paste0(r, collapse = ","), call. = FALSE)
 
   purrr::walk(filelist, ~ {
     fn_prefix <- gsub("\\.rda$", "", .x)
-    r <- gsub(".*_r(\\d+)\\.rda$", "\\1", .x) %>% as.numeric()
+    r <- gsub(".*_rank(\\d+)\\.rda$", "\\1", .x) %>% as.numeric()
     dir.create(file.path(filepath, r), recursive = TRUE, showWarnings = FALSE)
 
     src_path <- file.path(filepath, .x)
@@ -553,8 +552,9 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'  
 #'@export
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                       col_select = NULL, col_group = NULL, scale_log2r = TRUE, impute_na = TRUE, 
-                       complete_cases = FALSE, df = NULL, filepath = NULL, filename = NULL, 
+                       col_select = NULL, col_group = NULL, 
+                       scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE, 
+                       df = NULL, filepath = NULL, filename = NULL, 
                        task = "anal", r = NULL, nrun = 200, ...) {
   
   on.exit(
@@ -591,12 +591,10 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	
 	reload_expts()
 
-	if (!impute_na) complete_cases <- TRUE
-
-	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, scale_log2r = scale_log2r, 
-	          impute_na = impute_na, df = !!df, filepath = !!filepath, filename = !!filename, 
-	          anal_type = "NMF")(r = r, nrun = nrun, complete_cases = complete_cases, 
-	                             task = !!task, ...)
+	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
+	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	          df = !!df, filepath = !!filepath, filename = !!filename, 
+	          anal_type = "NMF")(r = r, nrun = nrun, task = !!task, ...)
 }
 
 
@@ -615,10 +613,7 @@ anal_pepNMF <- function (...) {
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = anal, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\NMF\\log","anal_pepNMF_log.csv"), append = TRUE)  
+  proteoNMF(id = !!id, task = anal, ...)
 }
 
 
@@ -637,10 +632,7 @@ anal_prnNMF <- function (...) {
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = anal, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log\\anal_prnNMF_log.csv"), append = TRUE)  
+  proteoNMF(id = !!id, task = anal, ...)
 }
 
 
@@ -663,12 +655,9 @@ plot_pepNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcon, 
-                                           annot_cols = !!annot_cols, 
-                                           annot_colnames = !!annot_colnames, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\NMF\\log","plot_pepNMFCon_log.csv"), append = TRUE)
+  proteoNMF(id = !!id, task = plotcon, 
+            annot_cols = !!annot_cols, 
+            annot_colnames = !!annot_colnames, ...)
 }
 
 
@@ -691,12 +680,9 @@ plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcon, 
-                                           annot_cols = !!annot_cols, 
-                                           annot_colnames = !!annot_colnames, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log\\plot_prnNMFCon_log.csv"), append = TRUE)
+  proteoNMF(id = !!id, task = plotcon, 
+            annot_cols = !!annot_cols, 
+            annot_colnames = !!annot_colnames, ...)
 }
 
 
@@ -719,12 +705,9 @@ plot_pepNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcoef, 
-                                           annot_cols = !!annot_cols, 
-                                           annot_colnames = !!annot_colnames, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\NMF\\log","plot_pepNMFCoef_log.csv"), append = TRUE)
+  proteoNMF(id = !!id, task = plotcoef, 
+            annot_cols = !!annot_cols, 
+            annot_colnames = !!annot_colnames, ...)
 }
 
 
@@ -747,12 +730,9 @@ plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcoef, 
-                                           annot_cols = !!annot_cols, 
-                                           annot_colnames = !!annot_colnames, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log\\plot_prnNMFCoef_log.csv"), append = TRUE)
+  proteoNMF(id = !!id, task = plotcoef, 
+            annot_cols = !!annot_cols, 
+            annot_colnames = !!annot_colnames, ...)
 }
 
 
@@ -775,12 +755,9 @@ plot_metaNMF <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotmeta, 
-                                           annot_cols = !!annot_cols, 
-                                           annot_colnames = !!annot_colnames, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log\\plot_metaNMF_log.csv"), append = TRUE)  
+  proteoNMF(id = !!id, task = plotmeta, 
+            annot_cols = !!annot_cols, 
+            annot_colnames = !!annot_colnames, ...)
 }
 
 

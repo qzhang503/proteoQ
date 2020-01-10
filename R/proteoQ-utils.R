@@ -439,15 +439,17 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'Users should avoid call the method directly, but instead use the following
 #'wrappers.
 #'
+#'@param overwrite Logical. If true, overwrite the previous results. The default
+#'  is FALSE.
 #'@inheritParams proteoHist
 #'@param ... Parameters for \code{\link[mice]{mice}}
 #'@return \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
 #'  for protein data.
-#'  
+#'
 #'@import dplyr purrr rlang mice
 #'@importFrom magrittr %>%
 #'@export
-imputeNA <- function (id, ...) {
+imputeNA <- function (id, overwrite = FALSE, ...) {
 
 	my_mice <- function (data, ...) {
 		data <- rlang::enexpr(data)
@@ -484,7 +486,7 @@ imputeNA <- function (id, ...) {
 		filename <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
 	}
 
-	if (!file.exists(filename)) {
+	if ((!file.exists(filename)) || overwrite) {
 		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
 		                        comment.char = "#"), error = function(e) NA)
 
@@ -527,7 +529,7 @@ imputeNA <- function (id, ...) {
 
 		write.table(df, filename, sep = "\t", col.names = TRUE, row.names = FALSE)
 	} else {
-	  cat("NA imputation by", id, "has been previously performed!\n")
+	  warning("NA imputation has been previously performed!\n", call. = FALSE)
 	}
 }
 
@@ -990,13 +992,13 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") {
 #'
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
-match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL) {
+match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r, impute_na) {
   stopifnot(!is.null(subdir))
   
-  scale_log2r <- match_call_arg("anal_prnGSPA", "scale_log2r")
+  # scale_log2r <- match_call_arg("anal_prnGSPA", "scale_log2r")
   
   if (anal_type == "GSPA") {
-    file <- file.path(dat_dir, "Calls\\prnGSPA.rda")
+    file <- file.path(dat_dir, "Calls\\anal_prnGSPA.rda")
     if (!file.exists(file)) stop("Run `prnGSPA` first.", call. = FALSE)
     load(file = file)
   }
@@ -1009,6 +1011,9 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL) {
     
     if (scale_log2r) filename <- filename %>% .[grepl("^Protein_GSPA_Z", .)] else 
       filename <- filename %>% .[grepl("^Protein_GSPA_N", .)]
+    
+    if (impute_na) filename <- filename %>% .[grepl("^Protein_GSPA_[NZ]_impNA\\.csv", .)] else 
+      filename <- filename %>% .[grepl("^Protein_GSPA_[NZ]\\.csv", .)]
 
     if (length(filename) > 1) stop("More than one result file found under `", subdir, "`", call. = FALSE)
     if (rlang::is_empty(filename)) stop("No result file found under `", sub_dir, "`", call. = FALSE)
@@ -1042,13 +1047,17 @@ match_scale_log2r <- function(scale_log2r) {
 #' }
 #' foo()
 match_logi_gv <- function(var, val) {
+  oval <- val
   gvar <-tryCatch(gvar <- get(var, envir = .GlobalEnv), error = function(e) "e")
   
   if (gvar != "e") {
     stopifnot(rlang::is_logical(gvar))
+    if (gvar != oval) {
+      warning("Coerce ", var, " to ", gvar, " after matching to the global setting.", 
+              call. = FALSE)
+    }
     return(gvar)
   } else {
-    message("scale_log2r = ", val)
     return(val)
   }
 }
@@ -1375,12 +1384,14 @@ rm_sglval_cols <- function (x) {
 #' @import dplyr purrr
 #' @importFrom magrittr %>%
 cmbn_meta <- function(data, metadata) {
-  data %>% 
-    tibble::rownames_to_column("Sample_ID") %>%
-    dplyr::left_join(metadata) %>%
-    dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>%
-    dplyr::select(which(not_all_NA(.))) %>% 
-    rm_sglval_cols()
+  suppressWarnings(
+    data %>% 
+      tibble::rownames_to_column("Sample_ID") %>%
+      dplyr::left_join(metadata, by = "Sample_ID") %>%
+      dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>%
+      dplyr::select(which(not_all_NA(.))) %>% 
+      rm_sglval_cols()    
+  )
 }
 
 

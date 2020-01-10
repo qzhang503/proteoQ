@@ -7,7 +7,7 @@
 \title{Visualization of heat maps}
 \usage{
 proteoHM(id = gene, col_select = NULL, col_benchmark = NULL,
-  scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE,
+  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
   df = NULL, filepath = NULL, filename = NULL, annot_cols = NULL,
   annot_colnames = NULL, annot_rows = NULL, xmin = -1, xmax = 1,
   xmargin = 0.1, ...)
@@ -17,39 +17,13 @@ pepHM(...)
 prnHM(...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. The value will be
-determined automatically. Peptide data will be used at \code{id = pep_seq}
-or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
-or \code{gene}.}
-
-\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the \code{NULL} default, the column
-key will be \code{Select}.}
-
 \item{col_benchmark}{Not used.}
-
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
-
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used. The default is FALSE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
-
-\item{filepath}{A file path to output results. By default, it will be
-determined automatically by the name of the calling function and the value
-of \code{id} in the \code{call}.}
-
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
 
 \item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
 The values under the selected keys will be used to color-code sample IDs on

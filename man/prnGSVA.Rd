@@ -4,15 +4,12 @@
 \alias{prnGSVA}
 \title{GSVA of protein data}
 \usage{
-prnGSVA(scale_log2r = TRUE, df = NULL, filepath = NULL,
-  filename = NULL, impute_na = NULL, complete_cases = FALSE,
+prnGSVA(df = NULL, filepath = NULL, filename = NULL,
+  scale_log2r = TRUE, complete_cases = FALSE, impute_na = NULL,
   lm_method = "limma", gset_nms = "go_sets", var_cutoff = 0.5,
   pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), ...)
 }
 \arguments{
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
-
 \item{df}{The name of input data file. By default, it will be determined
 automatically by the value of \code{id}.}
 
@@ -20,12 +17,15 @@ automatically by the value of \code{id}.}
 
 \item{filename}{Use system default.}
 
-\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
-the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
-protein data.}
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
+the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+protein data.}
 
 \item{lm_method}{Character string indicating the linear modeling method for
 significance assessment of GSVA enrichment scores. The default is

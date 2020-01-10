@@ -76,10 +76,9 @@
 #'@import dplyr rlang ggplot2 GSVA
 #'@importFrom magrittr %>%
 #'@export
-prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL, 
-                     impute_na = NULL, complete_cases = FALSE, lm_method = "limma", 
-                     gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4, 
-                     logFC_cutoff = log2(1.1), ...) {
+prnGSVA <- function (df = NULL, filepath = NULL, filename = NULL, 
+                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = NULL, lm_method = "limma", 
+                     gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
 
   on.exit(
     if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
@@ -94,6 +93,7 @@ prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = 
     , add = TRUE
   )
   
+  dir.create(file.path(dat_dir, "Protein\\GSVA\\log"), recursive = TRUE, showWarnings = FALSE)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   id <- match_call_arg(normPSM, group_pep_by)
@@ -109,11 +109,11 @@ prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = 
 	  } else if (id %in% c("prot_acc", "gene")) {
 	    impute_na <- match_call_arg(prnSig, impute_na)
 	  }
-	  
-	  message("impute_na = ", impute_na)
 	}
 	
-	stopifnot(is_logical(scale_log2r), is_logical(impute_na), is_logical(complete_cases))
+	stopifnot(rlang::is_logical(scale_log2r), 
+	          rlang::is_logical(impute_na), 
+	          rlang::is_logical(complete_cases))
 
 	dots <- rlang::enexprs(...)
 	fmls <- dots %>% .[grepl("^\\s*~", .)]
@@ -138,11 +138,9 @@ prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = 
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r,
-					filepath = !!filepath, filename = !!filename,
-					impute_na = impute_na,
-					anal_type = "GSVA")(complete_cases, lm_method, gset_nms, var_cutoff, pval_cutoff,
-					                    logFC_cutoff, !!!dots)
+	info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
+	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	          anal_type = "GSVA")(lm_method, gset_nms, var_cutoff, pval_cutoff, logFC_cutoff, !!!dots)
 }
 
 
@@ -184,16 +182,42 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, filepath
     tibble::rownames_to_column("term") %T>%
     write.table(file.path(filepath, paste0(fn_prefix, "_ES.txt")), sep = "\t", col.names = TRUE, row.names = FALSE)    
 
-  res <- purrr::map(fmls,
-             ~ model_onechannel(res_es %>% tibble::column_to_rownames("term"), id = !!id,
-                                .x, label_scheme_sub, complete_cases, method = lm_method,
-                                var_cutoff, pval_cutoff, logFC_cutoff)) %>%
-    do.call("cbind", .) %>%
-    tibble::rownames_to_column("term") %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
+  quietly_log <- 
+    purrr::map(fmls, ~ purrr::quietly(model_onechannel)(
+      res_es %>% tibble::column_to_rownames("term"), id = !!id,
+      .x, label_scheme_sub, complete_cases, method = lm_method,
+      var_cutoff, pval_cutoff, logFC_cutoff
+    )) 
   
+  out_path <- file.path(dat_dir, "Protein\\GSVA\\log\\prnGSVA_log.csv")
+  
+  purrr::map(quietly_log, ~ {
+    .x[[1]] <- NULL
+    return(.x)
+  }) %>% 
+    reduce(., `c`) %>% 
+    purrr::walk(., write, out_path, append = TRUE)
+  
+  res <- purrr::map(quietly_log, `[[`, 1) %>%
+    do.call("cbind", .) %>% 
+    tibble::rownames_to_column("term") %>% 
+    rm_pval_whitespace()
+  
+  rm(quietly_log)
+  
+  run_scripts <- FALSE
+  if (run_scripts) {
+    res <- purrr::map(fmls,
+               ~ model_onechannel(res_es %>% tibble::column_to_rownames("term"), id = !!id,
+                                  .x, label_scheme_sub, complete_cases, method = lm_method,
+                                  var_cutoff, pval_cutoff, logFC_cutoff)) %>%
+      do.call("cbind", .) %>%
+      tibble::rownames_to_column("term") %>% 
+      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
+      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
+      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)    
+  }
+
   kept_rows <- res %>%
     tibble::column_to_rownames("term") %>%
     dplyr::select(grep("pVal", names(.))) %>%
@@ -215,11 +239,5 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, filepath
     write.table(file.path(filepath, paste0(gsub("\\..*$", "", gsub("\\..*$", "", filename)), "_pVals.txt")), 
                 sep = "\t", col.names = TRUE, row.names = FALSE)
 }
-
-
-
-
-
-
 
 

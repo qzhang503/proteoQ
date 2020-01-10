@@ -5,7 +5,7 @@
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>%
 trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
-                       complete_cases, scale_log2r, filepath, filename, ...) {
+                       filepath, filename, ...) {
 
 	mestimate <- function (eset) {
 		N <- dim(Biobase::exprs(eset))[[1]]
@@ -39,16 +39,16 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
 	}
 	
-	if (complete_cases) df <- df[complete.cases(df), ]
-	
-	df_mean <- t(df) %>%
-		data.frame(check.names = FALSE) %>%
-		tibble::rownames_to_column("Sample_ID") %>%
-		dplyr::left_join(label_scheme_sub, by = "Sample_ID") %>%
-		dplyr::filter(!is.na(!!col_group)) %>%
-		dplyr::mutate(Group := !!col_group) %>%
-		dplyr::group_by(Group) %>%
-		dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
+	suppressWarnings(
+	  df_mean <- t(df) %>%
+	    data.frame(check.names = FALSE) %>%
+	    tibble::rownames_to_column("Sample_ID") %>%
+	    dplyr::left_join(label_scheme_sub, by = "Sample_ID") %>%
+	    dplyr::filter(!is.na(!!col_group)) %>%
+	    dplyr::mutate(Group := !!col_group) %>%
+	    dplyr::group_by(Group) %>%
+	    dplyr::summarise_if(is.numeric, mean, na.rm = TRUE)
+	)
 
 	if (rlang::as_string(col_order) %in% names(df_mean)) {
 		df_mean <- df_mean %>%
@@ -65,7 +65,7 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 		tibble::column_to_rownames(id)
 
 	purrr::walk(fn_prefix, ~ {
-	  n_clust <- gsub(".*_n(\\d+)$", "\\1", .x) %>% as.numeric()
+	  n_clust <- gsub("^.*_nclust(\\d+).*", "\\1", .x) %>% as.numeric()
 	  filename <- paste0(.x, ".csv")
 
 	  df_fuzzy = new('ExpressionSet', exprs = as.matrix(df_mean))
@@ -107,13 +107,15 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
-  ins <- list.files(path = filepath, pattern = "_n\\d+\\.csv$")
+  
+  ins <- list.files(path = filepath, pattern = "Trend_[NZ]{1}.*nclust\\d+.*\\.csv$")
+
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) ins <- ins %>% .[grepl("_Trend_Z", .)] else ins <- ins %>% .[grepl("_Trend_N", .)]
   
   # also possible some files with id = prot_acc and some with id = gene
-  # as one might run normPSM(group_pep_by = prot_acc) -> anal_prnTrend 
-  # then rerun normPSM(group_pep_by = gene) -> anal_prnTrend
+  # as one might run normPSM(group_pep_by = prot_acc) -> ... -> anal_prnTrend 
+  # then rerun normPSM(group_pep_by = gene) -> ... -> anal_prnTrend
   # save pars for anal_prnTrend, then compare id
 
 	if (is.null(n_clust)) {
@@ -121,24 +123,23 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 	} else {
 	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
 	  
-	  ins_prefix <- gsub("\\.[^.]*$", "", ins)
-	  
-	  possible_prefix <- ins_prefix %>% 
-	    gsub("(.*)_n\\d+$", "\\1", .) %>% 
-	    unique() %>% 
-	    paste0("_n", n_clust)
-	  
-	  ok_prefix <- ins_prefix %>% 
-	    .[. %in% possible_prefix]
-	  rm(ins_prefix, possible_prefix)
-	  
-	  filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.csv$"))) %>% 
-	    unlist()
+	  filelist <- local({
+  	  possible <- ins %>% 
+  	    gsub(".*_nclust(\\d+)[^\\d]*\\.csv$", "\\1", .) %>% 
+  	    as.numeric() %>% 
+  	    `names<-`(ins)
+  	  
+  	  n_clust2 <- n_clust %>% .[. %in% possible]
+  	  
+  	  filelist <- possible %>% 
+  	    .[. %in% n_clust2] %>% 
+  	    names(.)	    
+	  })
 	}
 	
-  if(purrr::is_empty(filelist)) 
-    stop("Missing trend results under ", filepath, 
-         "\nCheck the setting in `scale_log2r` for a probable mismatch.", call. = FALSE)
+  if (purrr::is_empty(filelist)) 
+    stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+         " at n_clust = ", paste0(n_clust, collapse = ","), call. = FALSE)
 
   col_group <- rlang::enexpr(col_group)
   col_order <- rlang::enexpr(col_order)
@@ -224,7 +225,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
     
     p <- ggplot(data = df,
                 mapping = aes(x = variable, y = value, group = !!rlang::sym(id))) +
-      geom_line(colour = "white", alpha = .25) +
+      geom_line(colour = "white", alpha = .25) + 
+      # coord_cartesian(ylim = c(ymin, ymax)) + 
       scale_y_continuous(limits = c(ymin, ymax), breaks = c(ymin, 0, ymax)) +
       labs(title = "", x = "", y = x_label) +
       my_theme
@@ -352,13 +354,10 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	
 	reload_expts()
 
-	if(!impute_na) complete_cases <- TRUE
-
 	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, col_order = !!col_order,
-	          scale_log2r = scale_log2r, impute_na = impute_na,
+	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
 						df = !!df, filepath = !!filepath, filename = !!filename,
-						anal_type = "Trend")(n_clust = n_clust, complete_cases = complete_cases, 
-						                         task = !!task, ...)
+						anal_type = "Trend")(n_clust = n_clust, task = !!task, ...)
 }
 
 
@@ -378,10 +377,7 @@ anal_prnTrend <- function (...) {
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_pep_by)
-  
-  quietly_log <- purrr::quietly(proteoTrend)(id = !!id, task = anal, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Trend\\log\\anal_prnTrend_log.csv"), append = TRUE)
+  proteoTrend(id = !!id, task = anal, ...)
 }
 
 
@@ -401,9 +397,6 @@ plot_prnTrend <- function (...) {
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-
-  quietly_log <- purrr::quietly(proteoTrend)(id = !!id, task = plot, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Trend\\log\\plot_prnTrend_log.csv"), append = TRUE)
+  proteoTrend(id = !!id, task = plot, ...)
 }
 

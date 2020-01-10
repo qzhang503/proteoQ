@@ -13,7 +13,7 @@
 \usage{
 proteoNMF(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, col_group = NULL, scale_log2r = TRUE,
-  impute_na = TRUE, complete_cases = FALSE, df = NULL,
+  complete_cases = FALSE, impute_na = TRUE, df = NULL,
   filepath = NULL, filename = NULL, task = "anal", r = NULL,
   nrun = 200, ...)
 
@@ -32,33 +32,17 @@ plot_prnNMFCoef(annot_cols = NULL, annot_colnames = NULL, ...)
 plot_metaNMF(annot_cols = NULL, annot_colnames = NULL, ...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. The value will be
-determined automatically. Peptide data will be used at \code{id = pep_seq}
-or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
-or \code{gene}.}
-
-\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the \code{NULL} default, the column
-key will be \code{Select}.}
-
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be
 used for sample grouping in the indicated analysis. At the NULL default, the
 column key \code{Group} will be used. No data annotation by groups will be
 performed if the fields under the indicated group column is empty.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
-
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used. The default is TRUE.}
-
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is TRUE.}
 
 \item{filepath}{Use system default.}
 

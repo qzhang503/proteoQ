@@ -117,15 +117,6 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
     reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) 
   
-  run_scripts <- FALSE
-  if (run_scripts) {
-    # remove white space before NA in scientific notation
-    df <- df %>% 
-      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
-      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
-      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)    
-  }
-
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
@@ -223,6 +214,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   
   # subtrees
   cutree_rows <- eval(dots$cutree_rows, env = caller_env())
+  df <- df %>% dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
   
   if (!is.null(cutree_rows) & cluster_rows) {
     if (is.numeric(cutree_rows)) {
@@ -460,7 +452,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'@importFrom magrittr %>%
 #'@export
 proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
-                      scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
+                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                       df = NULL, filepath = NULL, filename = NULL,
                       annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                       xmin = -1, xmax = 1, xmargin = 0.1, ...) {
@@ -477,9 +469,9 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
   reload_expts()
   
   info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
-            scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath,
-            filename = !!filename, anal_type = "Heatmap")(complete_cases = complete_cases,
-                                                          xmin = xmin, xmax = xmax, xmargin = xmargin,
+            scale_log2r = scale_log2r, complete_cases = complete_cases,impute_na = impute_na, 
+            df = !!df, filepath = !!filepath,
+            filename = !!filename, anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin,
                                                           annot_cols = annot_cols, 
                                                           annot_colnames = annot_colnames, 
                                                           annot_rows = annot_rows, ...)
@@ -501,10 +493,7 @@ pepHM <- function (...) {
   dir.create(file.path(dat_dir, "Peptide\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  
-  quietly_log <- purrr::quietly(proteoHM)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Heatmap\\log\\pepHM_log.csv"), append = TRUE)  
+  proteoHM(id = !!id, ...)
 }
 
 
@@ -523,10 +512,7 @@ prnHM <- function (...) {
   dir.create(file.path(dat_dir, "Protein\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-
-  quietly_log <- purrr::quietly(proteoHM)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Heatmap\\log\\prnHM_log.csv"), append = TRUE)
+  proteoHM(id = !!id, ...)
 }
 
 

@@ -22,5 +22,5 @@ FALSE.}
 Downloads STRING databases
 }
 \seealso{
-\code{\link{getStringDB}} for protein-protein interaction networks.
+\code{\link{anal_prnString}} for protein-protein interaction networks.
 }

@@ -6,8 +6,8 @@
 \alias{prnSig}
 \title{Significance tests}
 \usage{
-proteoSigtest(df = NULL, id = gene, scale_log2r = TRUE,
-  filepath = NULL, filename = NULL, impute_na = TRUE,
+proteoSigtest(df = NULL, id = gene, filepath = NULL,
+  filename = NULL, scale_log2r = TRUE, impute_na = TRUE,
   complete_cases = FALSE, method = "limma", var_cutoff = 0.001,
   pval_cutoff = 1, logFC_cutoff = log2(1), ...)
 
@@ -24,15 +24,15 @@ determined automatically. Peptide data will be used at \code{id = pep_seq}
 or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
 or \code{gene}.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
-
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
 \item{filename}{A file name to output results. The default is
 \code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}

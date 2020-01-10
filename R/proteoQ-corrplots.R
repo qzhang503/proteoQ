@@ -307,8 +307,8 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
     theme(plot.title = element_text(face = "bold", colour = "black", size = 20,
                                     hjust = 0.5, vjust = 0.5))
 
-  ggsave(file.path(filepath, gg_imgname(filename)), plot = p1, width = width, height = height, dpi = dpi, units = "in")
-         
+  quietly_log <- purrr::quietly(ggsave)(file.path(filepath, gg_imgname(filename)), 
+                                        plot = p1, width = width, height = height, dpi = dpi, units = "in")
 }
 
 
@@ -323,6 +323,7 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'for details.
 #'
 #'@inheritParams proteoHist
+#'@inheritParams proteoMDS
 #'@param  col_order Character string to a column key in \code{expt_smry.xlsx}.
 #'  Numeric values under which will be used for the left-to-right arrangement of
 #'  samples in plots. At the NULL default, the column key \code{Order} will be
@@ -387,7 +388,8 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'@export
 proteoCorr <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                         data_select = c("logFC", "logInt"), 
-                        col_select = NULL, col_order = NULL, scale_log2r = TRUE, 
+                        col_select = NULL, col_order = NULL, 
+                        scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
@@ -403,13 +405,11 @@ proteoCorr <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	filename <- rlang::enexpr(filename)
 
 	reload_expts()
-
+  
 	info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
-	          scale_log2r = scale_log2r, impute_na = FALSE,
+	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
 						df = !!df, filepath = !!filepath, filename = !!filename,
 						anal_type = "Corrplot")(data_select, ...)
-						                        
-						                        
 }
 
 
@@ -429,10 +429,7 @@ pepCorr_logFC <- function (...) {
   dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_psm_by)
-  
-  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logFC", ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Corrplot\\log\\pepCorr_log.csv"), append = TRUE)
+  proteoCorr(id = !!id, data_select = "logFC", ...)
 }
 
 
@@ -450,13 +447,9 @@ pepCorr_logInt <- function (...) {
   if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  
+
   id <- match_call_arg(normPSM, group_psm_by)
-  
-  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logInt", ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Corrplot\\log\\pepCorr_log.csv"), append = TRUE)
+  proteoCorr(id = !!id, data_select = "logInt", ...)
 }
 
 
@@ -477,10 +470,7 @@ prnCorr_logFC <- function (...) {
   dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  
-  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logFC", ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Corrplot\\log\\prnCorr_log.csv"), append = TRUE)
+  proteoCorr(id = !!id, data_select = "logFC", ...)
 }
 
 
@@ -500,10 +490,7 @@ prnCorr_logInt <- function (...) {
   dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-
-  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logInt", ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Corrplot\\log\\prnCorr_log.csv"), append = TRUE)
+  proteoCorr(id = !!id, data_select = "logInt", ...)
 }
 
 

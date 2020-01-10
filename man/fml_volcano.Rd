@@ -5,7 +5,8 @@
 \title{Formula specific volcano plots}
 \usage{
 fml_volcano(fml_nm, pval_cutoff, logFC_cutoff, df, col_ind, id, filepath,
-  filename, adjP, show_labels, anal_type, show_sig, gset_nms, ...)
+  filename, adjP, show_labels, anal_type, show_sig, gset_nms, scale_log2r,
+  impute_na, ...)
 }
 \description{
 Formula specific volcano plots
