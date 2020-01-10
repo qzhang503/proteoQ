@@ -353,11 +353,18 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	filename <- rlang::enexpr(filename)
 	
 	reload_expts()
-
-	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, col_order = !!col_order,
-	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-						df = !!df, filepath = !!filepath, filename = !!filename,
-						anal_type = "Trend")(n_clust = n_clust, task = !!task, ...)
+	
+	switch(rlang::as_string(task), 
+	       anal = info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, col_order = !!col_order,
+	                        scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
+	                        df = !!df, filepath = !!filepath, filename = !!filename,
+	                        anal_type = "Trend")(n_clust = n_clust, ...), 
+	       plot = info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, col_order = !!col_order,
+	                        scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
+	                        df = !!df, filepath = !!filepath, filename = !!filename,
+	                        anal_type = "plotTrend")(n_clust = n_clust, ...), 
+	       stop("Invalid `task`.", Call. = FALSE)
+	)
 }
 
 

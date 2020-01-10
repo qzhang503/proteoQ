@@ -27,6 +27,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
   err_msg5 <- "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
   warn_msg1 <- "Coerce `complete_cases = TRUE` at `impute_na = FALSE`."
   
+  not_end_utils <- c("Trend", "NMF", "GSPA")
+  
   old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
 
@@ -152,7 +154,16 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	anal_type <- rlang::as_string(rlang::enexpr(anal_type))
 	
 	if (is.null(filepath)) {
-		filepath = file.path(dat_dir, data_type, anal_type)
+		if (grepl("Trend", anal_type)) {
+		  filepath = file.path(dat_dir, data_type, "Trend")
+		} else if (grepl("NMF", anal_type)) {
+		  filepath = file.path(dat_dir, data_type, "NMF")
+		} else if (grepl("GSPA", anal_type)) {
+		  filepath = file.path(dat_dir, data_type, "GSPA")
+		} else {
+		  filepath = file.path(dat_dir, data_type, anal_type)
+		}
+
 		dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
 	}
 
@@ -198,7 +209,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	      if (file.exists(fn_p)) src_path <- fn_p else stop(paste(fn_p, err_msg5), call. = FALSE)
 	    }
 	  } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", 
-	                              "Trend", "NMF", "GSVA", "Corrplot")) { # optional impute_na and possible p_vals
+	                              "Trend", "NMF", "GSVA", "Corrplot", 
+	                              "plotTrend", "conNMF", "coefNMF", "metaNMF", 
+	                              "hmGSPA")) { # optional impute_na and possible p_vals
 	    if (impute_na) {
 	      if (file.exists(fn_imp_p)) src_path <- fn_imp_p else if (file.exists(fn_imp)) src_path <- fn_imp else 
 	        stop(paste(fn_imp, err_msg3), call. = FALSE)
@@ -444,7 +457,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           ...)
 		}
 	} else if (anal_type == "Trend") {
-		function(n_clust = NULL, task = anal, ...) {
+		function(n_clust = NULL, ...) {
 		  if (!(impute_na || complete_cases)) {
 		    complete_cases <- TRUE
 		    rlang::warn(warn_msg1)
@@ -463,29 +476,49 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
 		    .$log2R
 		  
-		  switch(rlang::as_string(rlang::enexpr(task)), 
-		         anal = trendTest(df = df, id = !!id, 
-		                          col_group = !!col_group, 
-		                          col_order = !!col_order,
-		                          label_scheme_sub = label_scheme_sub, 
-		                          n_clust = n_clust,
-		                          filepath = filepath, 
-		                          filename = paste0(fn_prefix, ".csv"), 
-		                          !!!dots), 
-		         plot = plotTrend(id = !!id, 
-		                          col_group = !!col_group, 
-		                          col_order = !!col_order, 
-		                          label_scheme_sub = label_scheme_sub, 
-		                          n_clust = n_clust, 
-		                          scale_log2r = scale_log2r,
-		                          filepath = filepath, 
-		                          filename = paste0(fn_prefix, ".", fn_suffix), # contains impute_na info
-		                          !!!dots), 
-		         stop("Invalid `task`.", Call. = TRUE)
-		  )
+		  trendTest(df = df, id = !!id, 
+                col_group = !!col_group, 
+                col_order = !!col_order,
+                label_scheme_sub = label_scheme_sub, 
+                n_clust = n_clust,
+                filepath = filepath, 
+                filename = paste0(fn_prefix, ".csv"), 
+                !!!dots)
+
 		}
+	} else if (anal_type == "plotTrend") {
+	  function(n_clust = NULL, ...) {
+	    if (!(impute_na || complete_cases)) {
+	      complete_cases <- TRUE
+	      rlang::warn(warn_msg1)
+	    }
+	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+	    
+	    fn_prefix <- fn_prefix %>% paste0(., "_nclust", n_clust)
+	    
+	    dots <- rlang::enexprs(...)
+	    filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+	    dots <- dots %>% .[! . %in% filter_dots]
+	    
+	    df <- df %>% 
+	      filters_in_call(!!!filter_dots) %>% 
+	      prepDM(id = !!id, scale_log2r = scale_log2r, 
+	             sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
+	      .$log2R
+	    
+	    plotTrend(id = !!id, 
+	              col_group = !!col_group, 
+	              col_order = !!col_order, 
+	              label_scheme_sub = label_scheme_sub, 
+	              n_clust = n_clust, 
+	              scale_log2r = scale_log2r,
+	              filepath = filepath, 
+	              filename = paste0(fn_prefix, ".", fn_suffix), # contains impute_na info
+	              !!!dots)
+	    
+	  }
 	} else if (anal_type == "NMF") {
-		function(r = NULL, nrun = 200, task = anal, ...) {
+		function(r = NULL, nrun = 200, ...) {
 		  if (!(impute_na || complete_cases)) {
 		    complete_cases <- TRUE
 		    rlang::warn(warn_msg1)
@@ -494,43 +527,73 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 		  fn_prefix <- fn_prefix %>% paste0(., "_rank", r)
 		  
-		  switch(rlang::as_string(rlang::enexpr(task)), 
-		         anal = nmfTest(df = df, 
-		                        id = !!id, 
-		                        r = r, 
-		                        nrun = nrun, 
-		                        col_group = !!col_group, 
-		                        label_scheme_sub = label_scheme_sub,
-		                        anal_type = anal_type, 
-		                        scale_log2r = scale_log2r, 
-		                        filepath = filepath, 
-		                        filename = paste0(fn_prefix, ".csv"), 
-		                        complete_cases = complete_cases, 
-		                        ...), 
-		         plotcon = plotNMFCon(id = !!id, 
-		                              r = r, 
-		                              label_scheme_sub = label_scheme_sub, 
-		                              filepath = filepath, 
-		                              filename = paste0(fn_prefix, ".", fn_suffix), 
-		                              scale_log2r = scale_log2r, 
-		                              ...), 
-		         plotcoef = plotNMFCoef(id = !!id, 
-		                                r = r, 
-		                                label_scheme_sub = label_scheme_sub, 
-		                                filepath = filepath, 
-		                                filename = paste0(fn_prefix, ".", fn_suffix), 
-		                                scale_log2r = scale_log2r, 
-		                                ...), 
-		         plotmeta = plotNMFmeta(df = df, id = !!id, r = r, 
-		                                label_scheme_sub = label_scheme_sub, 
-		                                anal_type = anal_type, 
-		                                scale_log2r = scale_log2r, 
-		                                filepath = filepath, 
-		                                filename = paste0(fn_prefix, ".", fn_suffix), 
-		                                ...), 
-		         stop("Invalid `task`.", Call. = TRUE)
-		  )
+		  nmfTest(df = df, 
+		          id = !!id, 
+		          r = r, 
+		          nrun = nrun, 
+		          col_group = !!col_group, 
+		          label_scheme_sub = label_scheme_sub,
+		          anal_type = anal_type, 
+		          scale_log2r = scale_log2r, 
+		          filepath = filepath, 
+		          filename = paste0(fn_prefix, ".csv"), 
+		          complete_cases = complete_cases, 
+		          ...)
 		}
+	} else if (anal_type == "conNMF") {
+	  function(r = NULL, nrun = 200, ...) {
+	    if (!(impute_na || complete_cases)) {
+	      complete_cases <- TRUE
+	      rlang::warn(warn_msg1)
+	    }
+	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+	    
+	    fn_prefix <- fn_prefix %>% paste0(., "_rank", r)
+	    
+	    plotNMFCon(id = !!id, 
+	               r = r, 
+	               label_scheme_sub = label_scheme_sub, 
+	               filepath = filepath, 
+	               filename = paste0(fn_prefix, ".", fn_suffix), 
+	               scale_log2r = scale_log2r, 
+	               ...)
+	  }
+	} else if (anal_type == "coefNMF") {
+	  function(r = NULL, nrun = 200, ...) {
+	    if (!(impute_na || complete_cases)) {
+	      complete_cases <- TRUE
+	      rlang::warn(warn_msg1)
+	    }
+	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+	    
+	    fn_prefix <- fn_prefix %>% paste0(., "_rank", r)
+	    
+	    plotNMFCoef(id = !!id, 
+	                r = r, 
+	                label_scheme_sub = label_scheme_sub, 
+	                filepath = filepath, 
+	                filename = paste0(fn_prefix, ".", fn_suffix), 
+	                scale_log2r = scale_log2r, 
+	                ...)
+	  }
+	} else if (anal_type == "metaNMF") {
+	  function(r = NULL, nrun = 200, ...) {
+	    if (!(impute_na || complete_cases)) {
+	      complete_cases <- TRUE
+	      rlang::warn(warn_msg1)
+	    }
+	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+	    
+	    fn_prefix <- fn_prefix %>% paste0(., "_rank", r)
+	    
+	    plotNMFmeta(df = df, id = !!id, r = r, 
+	                label_scheme_sub = label_scheme_sub, 
+	                anal_type = anal_type, 
+	                scale_log2r = scale_log2r, 
+	                filepath = filepath, 
+	                filename = paste0(fn_prefix, ".", fn_suffix), 
+	                ...)
+	  }
 	} else if (anal_type == "Model") {
 		function(method = "limma", var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), ...) {
 		  method <- rlang::enexpr(method)
@@ -590,37 +653,43 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (anal_type == "GSPA") {
 		function(gset_nms = "go_sets", var_cutoff = .5,
 		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
-		         min_size = 10, max_size = Inf, min_greedy_size = 1, task = anal, ...) {
+		         min_size = 10, max_size = Inf, min_greedy_size = 1, ...) {
 
 		  # "id" only for tibbling rownames
 		  # `scale_log2r` only for file name `_GSPA_N.csv` or `_GSPA_Z.csv` 
 		  # `complete_cases` is for entrez IDs and pVals, so actually has no effect
-		  switch(rlang::as_string(rlang::enexpr(task)), 
-		         anal = gspaTest(df = df, 
-		                         id = !!id, 
-		                         label_scheme_sub = label_scheme_sub,
-		                         filepath = filepath, 
-		                         filename = paste0(fn_prefix, ".csv"),
-		                         complete_cases = complete_cases, 
-		                         gset_nms = gset_nms, 
-		                         var_cutoff = var_cutoff,
-		                         pval_cutoff = pval_cutoff, 
-		                         logFC_cutoff = logFC_cutoff, 
-		                         gspval_cutoff = gspval_cutoff,
-		                         min_size = min_size, 
-		                         max_size = max_size, 
-		                         min_greedy_size = min_greedy_size, 
-		                         scale_log2r = scale_log2r, 
-		                         anal_type = anal_type, 
-		                         ...), 
-		         plothm = gspaHM(scale_log2r = scale_log2r, 
-		                         impute_na = impute_na, 
-		                         filepath = filepath, 
-		                         filename = paste0(fn_prefix, ".", fn_suffix), 
-		                         ...), 
-		         stop("Invalid `task`.", Call. = TRUE)
-		  )
+		  gspaTest(df = df, 
+		           id = !!id, 
+		           label_scheme_sub = label_scheme_sub,
+		           filepath = filepath, 
+		           filename = paste0(fn_prefix, ".csv"),
+		           complete_cases = complete_cases, 
+		           gset_nms = gset_nms, 
+		           var_cutoff = var_cutoff,
+		           pval_cutoff = pval_cutoff, 
+		           logFC_cutoff = logFC_cutoff, 
+		           gspval_cutoff = gspval_cutoff,
+		           min_size = min_size, 
+		           max_size = max_size, 
+		           min_greedy_size = min_greedy_size, 
+		           scale_log2r = scale_log2r, 
+		           anal_type = anal_type, 
+		           ...)
 		}
+	} else if (anal_type == "hmGSPA") {
+	  function(gset_nms = "go_sets", var_cutoff = .5,
+	           pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
+	           min_size = 10, max_size = Inf, min_greedy_size = 1, ...) {
+	    
+	    # "id" only for tibbling rownames
+	    # `scale_log2r` only for file name `_GSPA_N.csv` or `_GSPA_Z.csv` 
+	    # `complete_cases` is for entrez IDs and pVals, so actually has no effect
+	    gspaHM(scale_log2r = scale_log2r, 
+	           impute_na = impute_na, 
+	           filepath = filepath, 
+	           filename = paste0(fn_prefix, ".", fn_suffix), 
+	           ...)
+	  }
 	} else if(anal_type == "GSVA") {
 	  function(lm_method = "limma", gset_nms = "go_sets", var_cutoff = .5,
 	           pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {

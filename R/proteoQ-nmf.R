@@ -590,11 +590,26 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	filename <- rlang::enexpr(filename)
 	
 	reload_expts()
-
-	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
-	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-	          df = !!df, filepath = !!filepath, filename = !!filename, 
-	          anal_type = "NMF")(r = r, nrun = nrun, task = !!task, ...)
+	
+	switch(rlang::as_string(task), 
+	       anal = info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
+	                        scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	                        df = !!df, filepath = !!filepath, filename = !!filename, 
+	                        anal_type = "NMF")(r = r, nrun = nrun, ...), 
+	       plotcon = info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
+	                        scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	                        df = !!df, filepath = !!filepath, filename = !!filename, 
+	                        anal_type = "conNMF")(r = r, nrun = nrun, ...), 
+	       plotcoef = info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
+	                           scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	                           df = !!df, filepath = !!filepath, filename = !!filename, 
+	                           anal_type = "coefNMF")(r = r, nrun = nrun, ...), 
+	       plotmeta = info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
+	                            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	                            df = !!df, filepath = !!filepath, filename = !!filename, 
+	                            anal_type = "metaNMF")(r = r, nrun = nrun, ...), 
+	       stop("Invalid `task`.", Call. = FALSE)
+	)
 }
 
 

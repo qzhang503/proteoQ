@@ -175,14 +175,27 @@ proteoGSPA <- function (id = gene, df = NULL, filepath = NULL, filename = NULL, 
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-
-	info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
-	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-	          anal_type = "GSPA")(gset_nms = gset_nms, 
-	                              var_cutoff = var_cutoff, pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
-	                              gspval_cutoff = gspval_cutoff, 
-	                              min_size = min_size, max_size = max_size, min_greedy_size = min_greedy_size, 
-	                              task = !!task, !!!dots)
+	switch(rlang::as_string(task), 
+	       anal = info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
+	                        scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	                        anal_type = "GSPA")(gset_nms = gset_nms, 
+	                                            var_cutoff = var_cutoff, pval_cutoff = pval_cutoff, 
+	                                            logFC_cutoff = logFC_cutoff, 
+	                                            gspval_cutoff = gspval_cutoff, 
+	                                            min_size = min_size, max_size = max_size, 
+	                                            min_greedy_size = min_greedy_size, 
+	                                            !!!dots), 
+	       plothm = info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
+	                          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	                          anal_type = "hmGSPA")(gset_nms = gset_nms, 
+	                                                var_cutoff = var_cutoff, pval_cutoff = pval_cutoff, 
+	                                                logFC_cutoff = logFC_cutoff, 
+	                                                gspval_cutoff = gspval_cutoff, 
+	                                                min_size = min_size, max_size = max_size, 
+	                                                min_greedy_size = min_greedy_size, 
+	                                                !!!dots), 
+	       stop("Invalid `task`.", Call. = FALSE)
+	)
 }
 
 
@@ -678,6 +691,10 @@ fml_gspahm <- function (fml_nm, filepath, filename, scale_log2r, impute_na, ...)
     ins <- ins %>% .[grepl("essmap_Protein_GSPA_N", .)]
   }
   
+  if (purrr::is_empty(ins)) {
+    stop("No GSPA input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+         call. = FALSE)
+  }
   stopifnot(length(ins) == 1)
 
   all_by_greedy <- tryCatch(read.csv(file.path(filepath, fml_nm, ins), check.names = FALSE, header = TRUE, 
