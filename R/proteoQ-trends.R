@@ -33,7 +33,10 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
 	
 	if (is.null(n_clust)) {
-	  n_clust <- c(5:6)
+	  n_clust <- local({
+	    nrow <- nrow(df)
+	    if (nrow >= 5000) n_clust <- c(5:6) else if (nrow >= 2000) n_clust <- c(3:5) else n_clust <- 3 
+	  })
 	  fn_prefix <- paste0(fn_prefix, n_clust)
 	} else {
 	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
@@ -96,24 +99,20 @@ trendTest <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>%
-plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filepath, filename, scale_log2r, ...) {
+plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, scale_log2r, impute_na, 
+                      filepath, filename, ...) {
+  
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
-  
-  # filename extension will be used but prefix ignored
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
-  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
-  
+
   ins <- list.files(path = filepath, pattern = "Trend_[NZ]{1}.*nclust\\d+.*\\.csv$")
 
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) ins <- ins %>% .[grepl("_Trend_Z", .)] else ins <- ins %>% .[grepl("_Trend_N", .)]
   
-  # also possible some files with id = prot_acc and some with id = gene
+  # also possible some input files with id = prot_acc and some with id = gene, 
   # as one might run normPSM(group_pep_by = prot_acc) -> ... -> anal_prnTrend 
   # then rerun normPSM(group_pep_by = gene) -> ... -> anal_prnTrend
   # save pars for anal_prnTrend, then compare id
@@ -137,6 +136,13 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 	  })
 	}
 	
+  custom_prefix <- purrr::map_chr(filelist, ~ {
+    gsub("(.*_{0,1})Protein_Trend.*", "\\1", .x)
+  })
+
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+
   if (purrr::is_empty(filelist)) 
     stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
          " at n_clust = ", paste0(n_clust, collapse = ","), call. = FALSE)
@@ -171,10 +177,13 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
     legend.text.align = 0,
     legend.box = NULL
   )
-  
 
-  purrr::walk(filelist, ~ {
-    out_nm <- paste0(gsub("\\.csv$", "", .x), ".", fn_suffix)
+  purrr::walk2(filelist, custom_prefix, ~ {
+    n <- gsub(".*_nclust(\\d+)[^\\d]*\\.csv$", "\\1", .x) %>% 
+      as.numeric()
+    
+    fn_suffix <- "png" # png for now
+    out_nm <- paste0(.y, fn_prefix, "_nclust", n, ".", fn_suffix)
     src_path <- file.path(filepath, .x)
     df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, 
                             comment.char = "#"), error = function(e) NA)
@@ -252,9 +261,11 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'@inheritParams proteoCorr
 #'@inheritParams info_anal
 #'@param n_clust Numeric vector; the number(s) of clusters that data will be
-#'  divided into. The default is c(5:6).
+#'  divided into. At the NULL default, it will be determined by the number of
+#'  data entries.
+#'@param impute_na Logical; if TRUE, data with the imputation of missing values
+#'  will be used. The default is FALSE.
 #'@param filepath Use system default.
-#'@param filename Use system default.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for use
 #'  in \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2}
@@ -268,53 +279,61 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, filep
 #'
 #'@example inst/extdata/examples/prnTrend_.R
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
-#'  
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+#'  GSEA. \cr
+#'
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr
+#'
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein
+#'  trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
+#'  analysis and visualization \cr
+#'
 #'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
-#'  
+#'
 #'@export
 proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                         task = "anal", 
                          col_select = NULL, col_group = NULL, col_order = NULL, 
-                         impute_na = FALSE, complete_cases = FALSE, 
-                         n_clust = NULL, scale_log2r = TRUE, df = NULL, 
-                         filepath = NULL, filename = NULL, ...) {
+                         scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
+                         df = NULL, filepath = NULL, filename = NULL, 
+                         task = "anal", n_clust = NULL, ...) {
 
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
@@ -332,16 +351,16 @@ proteoTrend <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
 	id <- rlang::enexpr(id)
-	if(id == rlang::expr(c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))) {
+	if (id == rlang::expr(c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))) {
 		id <- "gene"
 	} else {
 		id <- rlang::as_string(id)
 		stopifnot(id %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 	}
 	
-	stopifnot(rlang::is_logical(scale_log2r))
-	stopifnot(rlang::is_logical(impute_na))
-	stopifnot(rlang::is_logical(complete_cases))
+	stopifnot(rlang::is_logical(scale_log2r), 
+	          rlang::is_logical(impute_na), 
+	          rlang::is_logical(complete_cases))
 
 	task <- rlang::enexpr(task)
 	

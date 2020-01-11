@@ -5,7 +5,7 @@
 \title{NMF analysis}
 \usage{
 nmfTest(df, id, r, nrun, col_group, label_scheme_sub, anal_type,
-  scale_log2r, filepath, filename, complete_cases, ...)
+  scale_log2r, filepath, filename, ...)
 }
 \description{
 NMF analysis

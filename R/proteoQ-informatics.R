@@ -27,8 +27,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
   err_msg5 <- "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
   warn_msg1 <- "Coerce `complete_cases = TRUE` at `impute_na = FALSE`."
   
-  not_end_utils <- c("Trend", "NMF", "GSPA")
-  
   old_opt <- options(max.print = 99999)
 	on.exit(options(old_opt), add = TRUE)
 
@@ -141,14 +139,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  stop("\'id\' must be one of \'pep_seq\', \'pep_seq_mod\', \'prot_acc\' or \'gene\'")
 
 	if (id %in% c("prot_acc", "gene")) {
-	  # cat(paste0("id = \"", id, "\"", " after parameter matching to normPrn()\n"))
 		data_type <- "Protein"
 	} else if (id %in% c("pep_seq", "pep_seq_mod")) {
-	  # cat(paste0("id = \"", id, "\"", " after parameter matching to normPep()\n"))
 		data_type <- "Peptide"
 	} else {
-		stop("Unrecognized 'id';
-		     needs to be in c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")", call. = TRUE)
+		stop("Unrecognized 'id'; needs to be in c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")", 
+		     call. = TRUE)
 	}
 
 	anal_type <- rlang::as_string(rlang::enexpr(anal_type))
@@ -163,20 +159,27 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		} else {
 		  filepath = file.path(dat_dir, data_type, anal_type)
 		}
-
 		dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
+	} else {
+	  stop("Use default `filepath`.", call. = FALSE)
 	}
 
 	if (is.null(filename)) {
 		fn_prefix <- paste(data_type, anal_type, sep = "_")
 		fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
 		fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
-		fn_suffix <- "png"
+
+		fn_suffix <- ifelse(anal_type == "Model", "txt", "png")
 	} else {
-		# do not contain infos in scale_log2r and impute_na
-	  # prnGSPA, anal_prnTrend and anal_prnNMF need these info
 	  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-		fn_prefix <- gsub("\\.[^.]*$", "", filename)
+		fn_prefix <- gsub("\\.[^.]*$", "", filename)	  
+	  
+		# need a signature in file names for downstream steps
+	  if (anal_type %in% c("Trend", "NMF", "GSPA")) {
+	    fn_prefix <- paste(fn_prefix, data_type, anal_type, sep = "_")
+	    fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
+	    fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
+	  }
 	}
 
 	if (is.null(df)) {
@@ -221,15 +224,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	    }
 	  }
 	  
-	  message("scale_log2r = ", scale_log2r)
-	  message("impute_na = ", impute_na)
-	  message("complete_cases = ", complete_cases)
-	  
 	  df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
 	                          comment.char = "#"), error = function(e) NA)
-	  
-
 	} else {
+	  if (anal_type == "Model") stop("Use default file name.", call. = FALSE)
+	  
 	  if (id %in% c("pep_seq", "pep_seq_mod")) {
 	    src_path <- file.path(dat_dir, "Peptide\\Model", df)
 	    if (!file.exists(src_path)) src_path <- file.path(dat_dir, "Peptide", df)
@@ -251,7 +250,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	df <- df %>% rm_pval_whitespace()
 	
 	if (anal_type %in% c("Model", "GSPA", "GSVA", "GSEA")) {
-		label_scheme_sub <- label_scheme %>% # to be subset by the "key" in "formulae"
+		label_scheme_sub <- label_scheme %>% # to be subset by "formulae"
 			dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID), !Reference)
 	} else {
 		label_scheme_sub <- label_scheme %>%
@@ -267,22 +266,24 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	force(impute_na)
 	force(complete_cases)
 	
-	## rule for anal_ functions
+	message("scale_log2r = ", scale_log2r)
+	message("impute_na = ", impute_na)
+	message("complete_cases = ", complete_cases)
+	
+	## rules for anal_ functions
 	# `impute_na` determines the `src_path` for `df`
 	# `scale_log2r` determines `N_log2R` or `Z_log2R` columns in `df`
 	# `complete_cases` subsets data rows in `df` for samples in `label_scheme_sub`
 	
-	## special-case anal_ functions
-	# `GSPA`: 
-	#  use `pVals` instead of `N_log2R` or `Z_log2R`, therefore `scale_log2r` only for output file names
-	#  `complete_cases` for `entrez` and `pVals` so actually has no effect
-	#
-	# `Model` and `GSVA`:
-	# # `complete_cases` depends on lm contrasts
-	
-	## rule for plot_ functions
-	# `scale_log2r` decides '_N' or '_Z' in input filenames from a priori anal_ functions
-	# `impute_na` decides '[NZ]_impNA.csv' or '[NZ].csv' in input filenames
+	## special-cases
+	# `GSPA`: use `pVals` instead of `N_log2R` or `Z_log2R`; 
+	#    therefore `scale_log2r` only for output file names
+	#    `complete_cases` for `entrez` and `pVals` so actually has no effect
+	# `Model` and `GSVA`: `complete_cases` depends on lm formulae
+
+	## rules for plot_ functions
+	# `scale_log2r` for matching '_N' or '_Z' in input filenames from prior anal_ functions
+	# `impute_na` for matching '[_NZ]_impNA' or '[_NZ]' in input filenames
 
 	if (anal_type == "MDS") {
 		function(adjEucDist = FALSE, classical = TRUE, k = 3, show_ids = TRUE, annot_cols = NULL, ...) {
@@ -393,15 +394,14 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		         annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, ...) {
 		  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
 		  
-		  # filter_ and arrange_ varargs therein
 		  plotHM(df = df, 
 		         id = !!id, 
-		         scale_log2r = scale_log2r, 
 		         col_benchmark = !!col_benchmark,
 			       label_scheme_sub = label_scheme_sub,
 			       filepath = filepath, 
 			       filename = paste0(fn_prefix, ".", fn_suffix),
-			       complete_cases = complete_cases, 
+			       scale_log2r = scale_log2r, 
+			       complete_cases = complete_cases, # redundant
 			       annot_cols = annot_cols, 
 			       annot_colnames = annot_colnames, 
 			       annot_rows = annot_rows, 
@@ -488,34 +488,17 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "plotTrend") {
 	  function(n_clust = NULL, ...) {
-	    if (!(impute_na || complete_cases)) {
-	      complete_cases <- TRUE
-	      rlang::warn(warn_msg1)
-	    }
-	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-	    
-	    fn_prefix <- fn_prefix %>% paste0(., "_nclust", n_clust)
-	    
-	    dots <- rlang::enexprs(...)
-	    filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-	    dots <- dots %>% .[! . %in% filter_dots]
-	    
-	    df <- df %>% 
-	      filters_in_call(!!!filter_dots) %>% 
-	      prepDM(id = !!id, scale_log2r = scale_log2r, 
-	             sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
-	      .$log2R
-	    
+	    # reads `trendTest` results and cases always complete
 	    plotTrend(id = !!id, 
 	              col_group = !!col_group, 
 	              col_order = !!col_order, 
 	              label_scheme_sub = label_scheme_sub, 
 	              n_clust = n_clust, 
 	              scale_log2r = scale_log2r,
+	              impute_na = impute_na, # can be parsed from filename but better explicit
 	              filepath = filepath, 
-	              filename = paste0(fn_prefix, ".", fn_suffix), # contains impute_na info
-	              !!!dots)
-	    
+	              filename = paste0(fn_prefix, ".", fn_suffix), 
+	              ...)
 	  }
 	} else if (anal_type == "NMF") {
 		function(r = NULL, nrun = 200, ...) {
@@ -537,43 +520,30 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		          scale_log2r = scale_log2r, 
 		          filepath = filepath, 
 		          filename = paste0(fn_prefix, ".csv"), 
-		          complete_cases = complete_cases, 
 		          ...)
 		}
 	} else if (anal_type == "conNMF") {
 	  function(r = NULL, nrun = 200, ...) {
-	    if (!(impute_na || complete_cases)) {
-	      complete_cases <- TRUE
-	      rlang::warn(warn_msg1)
-	    }
-	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-	    
-	    fn_prefix <- fn_prefix %>% paste0(., "_rank", r)
-	    
+	    # reads `nmfTest` results and cases always complete
 	    plotNMFCon(id = !!id, 
 	               r = r, 
 	               label_scheme_sub = label_scheme_sub, 
+	               scale_log2r = scale_log2r, 
+	               impute_na = impute_na, # be explicit	               
 	               filepath = filepath, 
 	               filename = paste0(fn_prefix, ".", fn_suffix), 
-	               scale_log2r = scale_log2r, 
 	               ...)
 	  }
 	} else if (anal_type == "coefNMF") {
 	  function(r = NULL, nrun = 200, ...) {
-	    if (!(impute_na || complete_cases)) {
-	      complete_cases <- TRUE
-	      rlang::warn(warn_msg1)
-	    }
-	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-	    
-	    fn_prefix <- fn_prefix %>% paste0(., "_rank", r)
-	    
+	    # reads `nmfTest` results and cases always complete
 	    plotNMFCoef(id = !!id, 
 	                r = r, 
 	                label_scheme_sub = label_scheme_sub, 
+	                scale_log2r = scale_log2r, 
+	                impute_na = impute_na, # be explicit	                
 	                filepath = filepath, 
 	                filename = paste0(fn_prefix, ".", fn_suffix), 
-	                scale_log2r = scale_log2r, 
 	                ...)
 	  }
 	} else if (anal_type == "metaNMF") {
@@ -583,13 +553,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	      rlang::warn(warn_msg1)
 	    }
 	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-	    
-	    fn_prefix <- fn_prefix %>% paste0(., "_rank", r)
-	    
+      
 	    plotNMFmeta(df = df, id = !!id, r = r, 
 	                label_scheme_sub = label_scheme_sub, 
 	                anal_type = anal_type, 
 	                scale_log2r = scale_log2r, 
+	                impute_na = impute_na, # be explicit
 	                filepath = filepath, 
 	                filename = paste0(fn_prefix, ".", fn_suffix), 
 	                ...)
@@ -623,8 +592,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		            logFC_cutoff = logFC_cutoff, 
 		            !!!dots)
 		  
-		  # need to record the `scale_log2r` status 
-		  # otherwise need to indicate it in pVal column names
+		  # record the `scale_log2r` status; otherwise, need to indicate it in a way
+		  # for example, `_N` or `_Z` in file names
 		  dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)
 		  local({
 		    if (data_type == "Peptide") type <- "pep" else if (data_type == "Protein") type <- "prn"
@@ -655,15 +624,18 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
 		         min_size = 10, max_size = Inf, min_greedy_size = 1, ...) {
 
-		  # "id" only for tibbling rownames
-		  # `scale_log2r` only for file name `_GSPA_N.csv` or `_GSPA_Z.csv` 
+		  # currently Protein[_impNA]_pVals.txt does not contain `scale_log2_r` info in the file name;
+		  #   therefore, `scale_log2r` will be matched to those in `prnSig()` and indicated in 
+		  #   file names `_N.csv` or `_Z.csv` to inform user the `scale_log_r` status
 		  # `complete_cases` is for entrez IDs and pVals, so actually has no effect
+		  # "id" only for tibbling rownames
 		  gspaTest(df = df, 
 		           id = !!id, 
-		           label_scheme_sub = label_scheme_sub,
+		           label_scheme_sub = label_scheme_sub, 
+		           scale_log2r = scale_log2r, 
+		           complete_cases = complete_cases, 
 		           filepath = filepath, 
 		           filename = paste0(fn_prefix, ".csv"),
-		           complete_cases = complete_cases, 
 		           gset_nms = gset_nms, 
 		           var_cutoff = var_cutoff,
 		           pval_cutoff = pval_cutoff, 
@@ -672,7 +644,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           min_size = min_size, 
 		           max_size = max_size, 
 		           min_greedy_size = min_greedy_size, 
-		           scale_log2r = scale_log2r, 
 		           anal_type = anal_type, 
 		           ...)
 		}
@@ -681,9 +652,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	           pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
 	           min_size = 10, max_size = Inf, min_greedy_size = 1, ...) {
 	    
-	    # "id" only for tibbling rownames
-	    # `scale_log2r` only for file name `_GSPA_N.csv` or `_GSPA_Z.csv` 
-	    # `complete_cases` is for entrez IDs and pVals, so actually has no effect
+	    # `scale_log2r` to match file names from `gspaTest()`
+	    # `impute_na` to match file names from `gspaTest()`
+	    # `complete_cases` has no effects
 	    gspaHM(scale_log2r = scale_log2r, 
 	           impute_na = impute_na, 
 	           filepath = filepath, 
@@ -726,18 +697,18 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  function(gset_nms = "go_sets", var_cutoff = .5,
 	           pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
 	           min_size = 10, max_size = Inf, min_greedy_size = 1, task = anal, ...) {
-
-	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
 	    
-	    # DO NOT go through lm and `complete_cases` below also applied to 
-	    # all samples in label_scheme_sub
+	    # DO NOT go through lm; therefore, `complete_cases` can be applied to 
+	    #   all samples in label_scheme_sub
+	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+
 	    switch(rlang::as_string(rlang::enexpr(task)), 
 	           anal = gspaTest(df = df, 
 	                           id = !!id, 
 	                           label_scheme_sub = label_scheme_sub,
 	                           filepath = filepath, 
 	                           filename = paste0(fn_prefix, ".csv"),
-	                           complete_cases = complete_cases, 
+	                           complete_cases = complete_cases, # redundant
 	                           gset_nms = gset_nms, 
 	                           var_cutoff = var_cutoff,
 	                           pval_cutoff = pval_cutoff, 
@@ -762,7 +733,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	    
 	    df <- df %>% filters_in_call(!!!filter_dots)
 
-	    # `scale_log2r` not used
+	    # `scale_log2r` not used; both `_N` and `_Z` columns will be kept
 	    switch(rlang::as_string(rlang::enexpr(task)), 
 	           anal = stringTest(df = df, 
 	                             id = !!id, 

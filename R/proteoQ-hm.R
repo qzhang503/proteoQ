@@ -34,8 +34,9 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, an
 #' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %T>%
-plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepath, filename,
-                   complete_cases, annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, 
+plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
+                   scale_log2r, complete_cases, 
+                   annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, 
                    xmin = -1, xmax = 1, xmargin = .1, ...) {
                    
                    
@@ -168,7 +169,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   } else {
     df_hm <- df
   }
-  
+
   df_hm <- df_hm %>%
     `rownames<-`(.[[id]])	%>%
     dplyr::select(which(names(.) %in% sample_ids))
@@ -236,7 +237,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
             dplyr::filter(complete.cases(.[, names(.) %in% sample_ids])) %>%
             tibble::column_to_rownames(id)
         }
-        
+
         if (cluster_rows) {
           d_sub <- dist(df_sub, method = clustering_distance_rows)
           if (length(d_sub) == 0) {
@@ -320,7 +321,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
       dfc_hm <- dfc %>%
         dplyr::filter(rowSums(!is.na(.[, names(.) %in% sample_ids])) > 0)
     }
-    
+
     dfc_hm <- dfc_hm %>%
       `rownames<-`(.[[id]])	%>%
       dplyr::select(which(names(.) %in% sample_ids))

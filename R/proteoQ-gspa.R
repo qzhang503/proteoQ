@@ -227,11 +227,12 @@ prnGSPA <- function (...) {
 #' @importFrom outliers grubbs.test
 #' @importFrom broom.mixed tidy
 gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
-                     filepath = NULL, filename = NULL, complete_cases = FALSE,
+                     scale_log2r = TRUE, complete_cases = FALSE, 
+                     filepath = NULL, filename = NULL, 
                      gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 5E-2,
                      logFC_cutoff = log2(1.2), gspval_cutoff = 5E-2, 
                      min_size = 6, max_size = Inf, min_greedy_size = 1, 
-                     scale_log2r = TRUE, anal_type = "GSPA", ...) {
+                     anal_type = "GSPA", ...) {
 
   id <- rlang::as_string(rlang::enexpr(id))
   dots = rlang::enexprs(...)
@@ -283,8 +284,8 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                 complete_cases = complete_cases, scale_log2r = scale_log2r, 
                 filepath = filepath, filename = filename, !!!dots)
   } else if (anal_type == "GSEA") {
-    # need scale_log2r for var_cutoff
-    # need formula for pval_cutoff and logFC_cutoff
+    # scale_log2r for var_cutoff
+    # formula for pval_cutoff and logFC_cutoff
     purrr::pwalk(list(fmls, fml_nms, var_cutoff, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size), 
                 fml_gsea, df, col_ind, id = !!id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
                 filepath, filename, !!!dots)
@@ -428,7 +429,7 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min
 
   res_greedy <- sig_sets %>% 
     RcppGreedySetCover::greedySetCover(FALSE) %T>% 
-    write.csv(file.path(filepath, fml_nm, paste0("resgreedy_", fn_prefix, ".csv")), row.names = FALSE) %>% 
+    write.csv(file.path(filepath, fml_nm, paste0(fn_prefix, "_resgreedy.csv")), row.names = FALSE) %>% 
     dplyr::group_by(term) %>% 
     dplyr::summarise(ess_size = n()) %>% 
     dplyr::filter(ess_size >= min_greedy_size)
@@ -441,12 +442,12 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min
     dplyr::filter(is_essential) %>% 
     dplyr::filter(!duplicated(term)) %>% 
     dplyr::select(-contrast, -p_val, -q_val, -log2fc) %T>% 
-    write.csv(file.path(filepath, fml_nm, paste0("essmeta_", fn_prefix, ".csv")), row.names = FALSE) %>% 
+    write.csv(file.path(filepath, fml_nm, paste0(fn_prefix, "_essmeta.csv")), row.names = FALSE) %>% 
     dplyr::select(term, ess_size) %>% 
     dplyr::right_join(sig_sets, by = "term")
 
   map_essential(sig_sets) %>% 
-    write.csv(file.path(filepath, fml_nm, paste0("essmap_", fn_prefix, ".csv")), row.names = FALSE)
+    write.csv(file.path(filepath, fml_nm, paste0(fn_prefix, "_essmap.csv")), row.names = FALSE)
 }
 
 
@@ -640,16 +641,6 @@ prnGSPAHM <- function (annot_cols = NULL, annot_colnames = NULL, annot_rows = NU
              annot_colnames = !!annot_colnames, 
              annot_rows = !!annot_rows, 
              ...)
-  
-  run_scripts <- FALSE
-  if (run_scripts) {
-    quietly_log <- purrr::quietly(proteoGSPA)(id = gene, task = plothm, 
-                                              annot_cols = !!annot_cols, 
-                                              annot_colnames = !!annot_colnames, 
-                                              annot_rows = !!annot_rows, 
-                                              ...)
-    purrr::walk(quietly_log, write, file.path(dat_dir, "Protein\\GSPA\\log","plot_hmGSPA_log.csv"), append = TRUE)    
-  }
 }
 
 
@@ -682,13 +673,13 @@ fml_gspahm <- function (fml_nm, filepath, filename, scale_log2r, impute_na, ...)
   select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
   
-  ins <- list.files(path = file.path(filepath, fml_nm), pattern = "^essmap_.*\\.csv$")
+  ins <- list.files(path = file.path(filepath, fml_nm), pattern = "_essmap\\.csv$")
   
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) {
-    ins <- ins %>% .[grepl("essmap_Protein_GSPA_Z", .)] 
+    ins <- ins %>% .[grepl("Protein_GSPA_Z_essmap", .)] 
   } else {
-    ins <- ins %>% .[grepl("essmap_Protein_GSPA_N", .)]
+    ins <- ins %>% .[grepl("Protein_GSPA_N_essmap", .)]
   }
   
   if (purrr::is_empty(ins)) {
@@ -696,6 +687,14 @@ fml_gspahm <- function (fml_nm, filepath, filename, scale_log2r, impute_na, ...)
          call. = FALSE)
   }
   stopifnot(length(ins) == 1)
+  
+  custom_prefix <- purrr::map_chr(ins, ~ {
+    gsub("(.*_{0,1})Protein_GSPA.*", "\\1", .x)
+  })
+  
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  filename <- paste0(custom_prefix, fn_prefix, ".", fn_suffix)
 
   all_by_greedy <- tryCatch(read.csv(file.path(filepath, fml_nm, ins), check.names = FALSE, header = TRUE, 
                                      comment.char = "#"), error = function(e) NA) %>% 
@@ -776,13 +775,13 @@ fml_gspahm <- function (fml_nm, filepath, filename, scale_log2r, impute_na, ...)
   if (is.null(annot_rows)) {
     annotation_row <- NA
   } else {
-    meta_ins <- list.files(path = file.path(filepath, fml_nm), pattern = "^essmeta_.*\\.csv$")
+    meta_ins <- list.files(path = file.path(filepath, fml_nm), pattern = "_essmeta\\.csv$")
     
-    if (scale_log2r) meta_ins <- meta_ins %>% .[grepl("^essmeta_Protein_GSPA_Z", .)] else 
-      meta_ins <- meta_ins %>% .[grepl("^essmeta_Protein_GSPA_N", .)]
+    if (scale_log2r) meta_ins <- meta_ins %>% .[grepl("Protein_GSPA_Z.*essmeta", .)] else 
+      meta_ins <- meta_ins %>% .[grepl("Protein_GSPA_N.*essmeta", .)]
     
-    if (impute_na) meta_ins <- meta_ins %>% .[grepl("^essmeta_Protein_GSPA_[NZ]_impNA\\.csv", .)] else 
-      meta_ins <- meta_ins %>% .[grepl("^essmeta_Protein_GSPA_[NZ]\\.csv", .)]
+    if (impute_na) meta_ins <- meta_ins %>% .[grepl("Protein_GSPA_[NZ]_impNA.*essmeta\\.csv", .)] else 
+      meta_ins <- meta_ins %>% .[!grepl("Protein_GSPA_[NZ]_impNA.*essmeta\\.csv", .)]
     
     stopifnot(length(meta_ins) == 1)
     
@@ -989,7 +988,4 @@ gspa_colAnnot <- function (annot_cols = NULL, df, sample_ids, annot_colnames = N
   
   return(x)
 }
-
-
-
 

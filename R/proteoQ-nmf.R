@@ -3,8 +3,9 @@
 #' @import dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
 #' @importFrom NMF nmf
-nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, scale_log2r, 
-                    filepath, filename, complete_cases, ...) {
+nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, 
+                    scale_log2r, 
+                    filepath, filename, ...) {
                     
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
@@ -35,8 +36,6 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, sca
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
     stopifnot(all(nrun >= 1) & all(nrun %% 1 == 0))
   }
-  
-  # if (complete_cases) df <- df[complete.cases(df), ]
   
   exprs_data <- data.matrix(2^df)
   
@@ -69,18 +68,12 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, sca
 #'
 #' @import NMF dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r, ...) {
+plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
-  
-  # both filename extension and prefix ignored
-  # only png for now
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
-  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
+
   ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$") 
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
@@ -103,14 +96,25 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r,
         names(.)
     })
   } 
+
+  custom_prefix <- purrr::map_chr(filelist, ~ {
+    gsub("(.*_{0,1})Protein_NMF.*", "\\1", .x)
+  })
+  
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   if (purrr::is_empty(filelist)) 
     stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
          " at r = ", paste0(r, collapse = ","), call. = FALSE)
 
-  purrr::walk(filelist, ~ {
-    out_nm <- paste0(gsub("\\.rda$", "", .x), "_consensus.png")
+  purrr::walk2(filelist, custom_prefix, ~ {
+    r <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% 
+      as.numeric()
     
+    fn_suffix <- "png" # for now
+    out_nm <- paste0(.y, fn_prefix, "_r", r, ".", fn_suffix)
+
     load(file = file.path(file.path(filepath, .x)))
     
     D_matrix <- res_nmf@consensus
@@ -194,7 +198,6 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r,
                  annColor = list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
                  tracks = c("basis:"), main = '', sub = '')
     dev.off()
-    
   })
 }
 
@@ -203,18 +206,12 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r,
 #'
 #' @import NMF dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r, ...) {
+plotNMFCoef <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
-  # both filename extension and prefix will be ignored
-  # only png for now
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
-  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
   ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$")
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
@@ -236,14 +233,26 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r
         .[. %in% r2] %>% 
         names(.)
     })
-  } 
+  }
+  
+  custom_prefix <- purrr::map_chr(filelist, ~ {
+    gsub("(.*_{0,1})Protein_NMF.*", "\\1", .x)
+  })
 
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+    
   if (purrr::is_empty(filelist)) 
     stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
          " at r = ", paste0(r, collapse = ","), call. = FALSE)
 
-  purrr::walk(filelist, ~ {
-    out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.png")
+  purrr::walk2(filelist, custom_prefix, ~ {
+    r <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% 
+      as.numeric()
+    
+    fn_suffix <- "png" # for now
+    out_nm <- paste0(.y, fn_prefix, "_r", r, ".", fn_suffix)
+    
     src_path <- file.path(filepath, .x)
     load(file = file.path(src_path))
     
@@ -313,7 +322,7 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, scale_log2r
 #'
 #' @import NMF dplyr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, 
+plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, impute_na, 
                         filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
@@ -324,11 +333,6 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
                sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
     .$log2R  
 
-  # only png
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
-  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
   ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$")
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
@@ -356,10 +360,19 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
     stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
          " at r = ", paste0(r, collapse = ","), call. = FALSE)
 
-  purrr::walk(filelist, ~ {
-    fn_prefix <- gsub("\\.rda$", "", .x)
-    r <- gsub(".*_rank(\\d+)\\.rda$", "\\1", .x) %>% as.numeric()
+  custom_prefix <- purrr::map_chr(filelist, ~ {
+    gsub("(.*_{0,1})Protein_NMF.*", "\\1", .x)
+  })
+  
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)  
+  
+  purrr::walk2(filelist, custom_prefix, ~ {
+    r <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% as.numeric()
     dir.create(file.path(filepath, r), recursive = TRUE, showWarnings = FALSE)
+    
+    fn_suffix <- "png" # for now
+    out_nm <- paste0(.y, fn_prefix, "_r", r, ".", fn_suffix)
 
     src_path <- file.path(filepath, .x)
     load(file = file.path(src_path))
@@ -427,7 +440,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
       nrow <- nrow(df_sub)
       
       if (nrow > 0) {
-        fn_sub <- paste0(fn_prefix, "_metagene", i, ".", fn_suffix)
+        fn_sub <- paste0(fn_prefix, "_", i, ".", fn_suffix)
         width <- ncol(df_sub) * 2 + 2
         
         if (nrow > 300) {
@@ -465,7 +478,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
         df_op <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ] %>%
           tibble::rownames_to_column(id)
         
-        write.csv(df_op, file.path(filepath, r, paste0(fn_prefix, "_metagene", i, ".csv")),
+        write.csv(df_op, file.path(filepath, r, paste0(fn_prefix, "_", i, ".csv")),
                   row.names = FALSE)
       }
     }
@@ -500,7 +513,9 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'@param task Character string; a signature for task dispatching in a function
 #'  factory. The value will be determined automatically.
 #'@param filepath Use system default.
-#'@param filename Use system default.
+#'@param filename A representative file name to outputs. By default, it
+#'  will be determined automatically by the name of the current call. A .png
+#'  format will be used for graphic outputs.
 #'@param ... In \code{anal_} functions: additional arguments are for
 #'  \code{\link[NMF]{nmf}}; \cr in \code{plot_} functions: \code{width},
 #'  \code{height}; \cr in \code{plot_metaNMF} functions: additional arguments
@@ -510,46 +525,55 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'@importFrom magrittr %>%
 #'@example inst/extdata/examples/prnNMF_.R
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
-#'  
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+#'  GSEA. \cr
+#'
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr
+#'
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein
+#'  trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
+#'  analysis and visualization \cr
+#'
 #'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
-#'  
+#'
 #'@export
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                        col_select = NULL, col_group = NULL, 
