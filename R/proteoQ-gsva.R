@@ -71,7 +71,7 @@
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
 #'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
 #'  
-#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'  
 #'@import dplyr rlang ggplot2 GSVA
 #'@importFrom magrittr %>%
@@ -189,7 +189,7 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, filepath
       var_cutoff, pval_cutoff, logFC_cutoff
     )) 
   
-  out_path <- file.path(dat_dir, "Protein\\GSVA\\log\\prnGSVA_log.csv")
+  out_path <- file.path(dat_dir, "Protein\\GSVA\\log\\prnGSVA_log.txt")
   
   purrr::map(quietly_log, ~ {
     .x[[1]] <- NULL
@@ -205,19 +205,6 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, filepath
   
   rm(quietly_log)
   
-  run_scripts <- FALSE
-  if (run_scripts) {
-    res <- purrr::map(fmls,
-               ~ model_onechannel(res_es %>% tibble::column_to_rownames("term"), id = !!id,
-                                  .x, label_scheme_sub, complete_cases, method = lm_method,
-                                  var_cutoff, pval_cutoff, logFC_cutoff)) %>%
-      do.call("cbind", .) %>%
-      tibble::rownames_to_column("term") %>% 
-      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
-      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
-      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)    
-  }
-
   kept_rows <- res %>%
     tibble::column_to_rownames("term") %>%
     dplyr::select(grep("pVal", names(.))) %>%

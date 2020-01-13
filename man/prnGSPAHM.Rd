@@ -9,7 +9,7 @@ prnGSPAHM(annot_cols = NULL, annot_colnames = NULL,
 }
 \arguments{
 \item{annot_cols}{A character vector of column keys that can be found in
-\code{essmap_.*.csv}. The values under the selected keys will be used to
+\code{essmap_.*.txt}. The values under the selected keys will be used to
 color-code enrichment terms on the top of heat maps. The default is NULL
 without column annotation.}
 
@@ -17,7 +17,7 @@ without column annotation.}
 \code{annot_cols}. The default is NULL without name replacement.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
-\code{essmeta_.*.csv} . The values under the selected keys will be used to
+\code{essmeta_.*.txt} . The values under the selected keys will be used to
 color-code essential terms on the side of heat maps. The default is NULL
 without row annotation.}
 
@@ -38,7 +38,7 @@ The list of gene sets and the associative quality metrics of \code{size} and
 by arguments \code{pval_cutoff} and \code{logFC_cutoff}, as well as optional
 varargs of \code{filter_}.
 }
-\section{\code{Protein_GSPA_...csv}}{
+\section{\code{Protein_GSPA_...txt}}{
 
 
  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
@@ -51,7 +51,7 @@ varargs of \code{filter_}.
  \cr }
 }
 
-\section{\code{essmap_Protein_GSPA_...csv}}{
+\section{\code{essmap_Protein_GSPA_...txt}}{
 
 
  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
@@ -169,5 +169,5 @@ prnGSPAHM(
  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
  
- \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

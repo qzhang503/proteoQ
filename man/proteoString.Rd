@@ -18,9 +18,6 @@ anal_prnString(...)
 \item{id}{Character string to indicate the type of data. The value will be
 determined automatically.}
 
-\item{task}{Character string; a signature for task dispatching in a function
-factory. The value will be determined automatically.}
-
 \item{col_select}{Not currently used.}
 
 \item{col_group}{Not currently used.}
@@ -40,11 +37,6 @@ is \code{"~\\proteoQ\\dbs\\string"}.}
 protein-protein interaction. The default is 0.7.}
 
 \item{scale_log2r}{Not currently used.}
-
-\item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
-
-\item{filepath}{Use system default.}
 
 \item{filename}{Use system default. Otherwise, the basename will be prepended
 to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}

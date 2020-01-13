@@ -47,8 +47,7 @@ will be used. The default is TRUE.}
 \item{filepath}{Use system default.}
 
 \item{filename}{A representative file name to outputs. By default, it
-will be determined automatically by the name of the current call. A .png
-format will be used for graphic outputs.}
+will be determined automatically by the name of the current call.}
 
 \item{task}{Character string; a signature for task dispatching in a function
 factory. The value will be determined automatically.}
@@ -424,5 +423,5 @@ plot_metaNMF(
  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
  analysis and visualization \cr
 
- \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

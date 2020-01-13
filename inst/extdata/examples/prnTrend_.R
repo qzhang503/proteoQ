@@ -50,11 +50,11 @@ anal_prnTrend(
 )
 
 ## additional row filtration by pVals (impute_na = TRUE)
-# if not yet, run prerequisitive NA imputation
+# if not yet, run prerequisitive NA imputation and corresponding 
+# significance tests at `impute_na = TRUE`
 pepImp(m = 2, maxit = 2)
 prnImp(m = 5, maxit = 5)
 
-# if not yet, run prerequisitive significance tests at `impute_na = TRUE`
 pepSig(
   impute_na = TRUE, 
   W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
@@ -76,32 +76,28 @@ anal_prnTrend(
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )
 
+
 # ===================================
 # Visualization
 # ===================================
 ## no NA imputation 
-plot_prnTrend(
-  impute_na = FALSE, 
-  col_order = Order,
-)
+plot_prnTrend()
 
+# at a specific cluster ID
+# (`cluster` is a column key in `Protein_Trend_[...].txt`)
 plot_prnTrend(
   impute_na = FALSE, 
   col_order = Order,
-  n_clust = c(5:6), 
-)
-
-# subsets visualization
-plot_prnTrend(
-  impute_na = FALSE, 
-  col_order = Order,
-  filter_prots = exprs(prot_n_pep >= 4),
+  filter_by_clusters = exprs(cluster == 5),
+  width = 8, 
+  height = 10,
+  filename = cl5.png,
 )
 
 ## NA imputation
 plot_prnTrend(
   impute_na = TRUE,
   col_order = Order,
-  filter_prots = exprs(prot_n_pep >= 4),
+  filename = my.png,
 )
 

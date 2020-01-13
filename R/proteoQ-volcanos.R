@@ -90,7 +90,7 @@
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
 #'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
 #'  
-#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'  
 #'@export
 proteoVolcano <- function (id = "gene", anal_type = "Volcano", df = NULL, scale_log2r = TRUE,
@@ -424,7 +424,7 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 	                          list.files(path = file.path(dat_dir, "Protein\\GSPA", subdir), 
 	                                     pattern = paste0("^", fn_prefix, ".", fn_suffix, "$"), 
 	                                     full.names = TRUE),
-	                          readr::read_csv
+	                          readr::read_tsv
 	                        )) %>% 
 	      dplyr::filter(.$term %in% names(gsets))
 
@@ -579,7 +579,10 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, volcano_
 		png(file.path(filepath, paste0(fn_prefix, ".png")), width = Width, height = Height, units = "in", res = 300)
 			limma::vennDiagram(limma::vennCounts(Counts), circle.col = myPalette, cex = .5)
 		dev.off()
-		write.csv(Counts, file.path(filepath, paste0(fn_prefix, ".csv")), row.names = TRUE)
+		write.table(Counts, file.path(filepath, paste0(fn_prefix, ".txt")), sep = "\t", 
+		            col.names = TRUE, row.names = TRUE, quote = FALSE)	
+		
+		# write.csv(Counts, file.path(filepath, paste0(fn_prefix, ".csv")), row.names = TRUE)
 	}
 
 	summ_venn(dfw_greater, id, contrast_groups) %>% plot_venn(filepath, "greater")
@@ -746,7 +749,8 @@ gsVolcano <- function(df = NULL, contrast_groups = NULL, gsea_res = NULL, gsea_k
   		}
   		
   		ggsave(file.path(filepath, paste0(fn, ".png")), p, width = width, height = height, dpi = 300, units = "in")
-  		write.csv(dfw_sub, file = file.path(filepath, paste0(fn, ".csv")), row.names = FALSE)
+  		write.table(dfw_sub, file = file.path(filepath, paste0(fn, ".txt")), sep = "\t", 
+  		            col.names = TRUE, row.names = FALSE, quote = FALSE)	
   	})
 	}
 }
@@ -815,9 +819,6 @@ gspaMap <- function (...) {
   
   id <- match_call_arg(normPSM, group_pep_by)
   proteoVolcano(id = !!id, anal_type = "mapGSPA", ...)
-
-  # quietly_log <- purrr::quietly(proteoVolcano)(id = !!id, anal_type = "mapGSPA", ...)
-  # purrr::walk(quietly_log[-1], write, file.path(dat_dir, "Protein\\mapGSPA\\log\\mapGSPA_log.csv"), append = TRUE)
 }
 
 

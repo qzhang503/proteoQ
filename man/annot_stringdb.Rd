@@ -8,9 +8,6 @@ annot_stringdb(species, df, db_path, id, score_cutoff, filepath = NULL,
   filename = NULL, ...)
 }
 \arguments{
-\item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
-
 \item{db_path}{Character string; the local path for database(s). The default
 is \code{"~\\proteoQ\\dbs\\string"}.}
 
@@ -19,8 +16,6 @@ determined automatically.}
 
 \item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
 protein-protein interaction. The default is 0.7.}
-
-\item{filepath}{Use system default.}
 
 \item{filename}{Use system default. Otherwise, the basename will be prepended
 to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}

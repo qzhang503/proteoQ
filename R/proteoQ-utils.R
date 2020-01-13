@@ -1006,17 +1006,22 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r,
   filename <- call_pars$filename
   if (rlang::is_empty(filename)) {
     filename <- list.files(path = file.path(dat_dir, "Protein\\GSPA", subdir), 
-                           pattern = "^Protein_GSPA_.*\\.csv$", 
+                           pattern = "^Protein_GSPA_.*\\.txt$", 
                            full.names = FALSE)
+    
+    if (rlang::is_empty(filename)) stop("No result file found under `", sub_dir, "`", call. = FALSE)
     
     if (scale_log2r) filename <- filename %>% .[grepl("^Protein_GSPA_Z", .)] else 
       filename <- filename %>% .[grepl("^Protein_GSPA_N", .)]
     
-    if (impute_na) filename <- filename %>% .[grepl("^Protein_GSPA_[NZ]_impNA\\.csv", .)] else 
-      filename <- filename %>% .[grepl("^Protein_GSPA_[NZ]\\.csv", .)]
+    if (impute_na) filename <- filename %>% .[grepl("Protein_GSPA_[NZ]_impNA\\.txt", .)] else 
+      filename <- filename %>% .[grepl("Protein_GSPA_[NZ]\\.txt", .)]
 
     if (length(filename) > 1) stop("More than one result file found under `", subdir, "`", call. = FALSE)
-    if (rlang::is_empty(filename)) stop("No result file found under `", sub_dir, "`", call. = FALSE)
+    if (rlang::is_empty(filename)) 
+      stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, call. = FALSE)
+
+    # 
   }
 
   return(filename)

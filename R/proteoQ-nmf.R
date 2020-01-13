@@ -3,24 +3,13 @@
 #' @import dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
 #' @importFrom NMF nmf
-nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, 
-                    scale_log2r, 
-                    filepath, filename, ...) {
-                    
+analNMF <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, 
+                    scale_log2r, filepath, filename, ...) {
+
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
 
-  dots <- rlang::enexprs(...)
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  dots <- dots %>% .[! . %in% filter_dots]
-  
-  df <- df %>% filters_in_call(!!!filter_dots)
-
-  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
-               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
-    .$log2R  
-  
   col_group <- rlang::enexpr(col_group) # optional phenotypic information
 
 	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% unique()
@@ -52,14 +41,17 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type,
   exampleSet <- ExpressionSet(assayData = exprs_data, phenoData = phenoData,
                               experimentData = experimentData)
 
+  # write.table(file.path(filepath, filename), sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)	
+  
+
   purrr::walk(fn_prefix, ~ {
     r <- gsub("^.*_rank(\\d+).*", "\\1", .x) %>% as.numeric()
     res_nmf <- NMF::nmf(exampleSet, r, nrun = nrun)
     save(res_nmf, file = file.path(filepath, paste0(.x, ".rda")))
-    write.csv(res_nmf@consensus, 
-              file.path(filepath, paste0(.x, "_consensus.csv")), row.names = FALSE)
-    write.csv(coef(res_nmf) %>% as.matrix, 
-              file.path(filepath, paste0(.x, "_coef.csv")), row.names = FALSE)
+    write.table(res_nmf@consensus, file.path(filepath, paste0(.x, "_consensus.txt")), 
+                sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+    write.table(coef(res_nmf) %>% as.matrix, file.path(filepath, paste0(.x, "_coef.txt")), 
+                sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
   })
 }
 
@@ -68,7 +60,7 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type,
 #'
 #' @import NMF dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepath, filename, ...) {
+plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, complete_cases, impute_na, filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
@@ -118,7 +110,8 @@ plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepath
     load(file = file.path(file.path(filepath, .x)))
     
     D_matrix <- res_nmf@consensus
-      
+    if (compelte_cases) D_matrix <- D_matrix %>% .[complete.cases(.), ]
+
     n_color <- 500
     xmin <- 0
     xmax <- ceiling(max(D_matrix))
@@ -198,7 +191,7 @@ plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepath
                  annColor = list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
                  tracks = c("basis:"), main = '', sub = '')
     dev.off()
-  })
+  }, complete_cases = complete_cases)
 }
 
 
@@ -328,10 +321,6 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
-
-  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
-               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
-    .$log2R  
 
   ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$")
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
@@ -478,8 +467,8 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
         df_op <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ] %>%
           tibble::rownames_to_column(id)
         
-        write.csv(df_op, file.path(filepath, r, paste0(fn_prefix, "_", i, ".csv")),
-                  row.names = FALSE)
+        write.table(df_op, file.path(filepath, r, paste0(fn_prefix, "_", i, ".txt")), 
+                    sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
       }
     }
 
@@ -514,8 +503,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
 #'  factory. The value will be determined automatically.
 #'@param filepath Use system default.
 #'@param filename A representative file name to outputs. By default, it
-#'  will be determined automatically by the name of the current call. A .png
-#'  format will be used for graphic outputs.
+#'  will be determined automatically by the name of the current call. 
 #'@param ... In \code{anal_} functions: additional arguments are for
 #'  \code{\link[NMF]{nmf}}; \cr in \code{plot_} functions: \code{width},
 #'  \code{height}; \cr in \code{plot_metaNMF} functions: additional arguments
@@ -572,7 +560,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
 #'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
 #'  analysis and visualization \cr
 #'
-#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@export
 proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
@@ -623,15 +611,15 @@ proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	       plotcon = info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
 	                        scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
 	                        df = !!df, filepath = !!filepath, filename = !!filename, 
-	                        anal_type = "conNMF")(r = r, nrun = nrun, ...), 
+	                        anal_type = "NMF_con")(r = r, nrun = nrun, ...), 
 	       plotcoef = info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
 	                           scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
 	                           df = !!df, filepath = !!filepath, filename = !!filename, 
-	                           anal_type = "coefNMF")(r = r, nrun = nrun, ...), 
+	                           anal_type = "NMF_coef")(r = r, nrun = nrun, ...), 
 	       plotmeta = info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
 	                            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
 	                            df = !!df, filepath = !!filepath, filename = !!filename, 
-	                            anal_type = "metaNMF")(r = r, nrun = nrun, ...), 
+	                            anal_type = "NMF_meta")(r = r, nrun = nrun, ...), 
 	       stop("Invalid `task`.", Call. = FALSE)
 	)
 }
