@@ -10,11 +10,20 @@ scale_log2r <- TRUE
 # ===================================
 # Analysis
 # ===================================
-# base (proteins, with sample order supervision)
+## base (proteins, with sample order supervision)
 anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
+)
+
+## against selected samples
+anal_prnTrend(
+  impute_na = FALSE,
+  col_order = Order,
+  n_clust = c(5:6), 
+  col_select = BI,
+  filename = sel.txt,
 )
 
 ## row filtration (proteins)
@@ -81,9 +90,11 @@ anal_prnTrend(
 # Visualization
 # ===================================
 ## no NA imputation 
-plot_prnTrend()
+plot_prnTrend(
+  col_order = Order, 
+)
 
-# at a specific cluster ID
+# at specific cluster ID(s)
 # (`cluster` is a column key in `Protein_Trend_[...].txt`)
 plot_prnTrend(
   impute_na = FALSE, 
@@ -95,9 +106,17 @@ plot_prnTrend(
 )
 
 ## NA imputation
+# also save as pdf
 plot_prnTrend(
   impute_na = TRUE,
   col_order = Order,
-  filename = my.png,
+  filename = my.pdf,
+)
+
+## against selected samples
+plot_prnTrend(
+  col_order = Order, 
+  col_select = BI,
+  filename = bi.png,
 )
 

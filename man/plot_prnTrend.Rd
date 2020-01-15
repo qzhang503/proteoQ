@@ -4,18 +4,27 @@
 \alias{plot_prnTrend}
 \title{Visualization of trend results}
 \usage{
-plot_prnTrend(col_group = NULL, col_order = NULL, scale_log2r = TRUE,
-  impute_na = FALSE, complete_cases = FALSE, filename = NULL,
-  n_clust = NULL, ...)
+plot_prnTrend(col_select = NULL, col_order = NULL, n_clust = NULL,
+  scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE,
+  filename = NULL, theme = NULL, ...)
 }
 \arguments{
-\item{col_group}{Not used.}
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
 
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
 Numeric values under which will be used for the left-to-right arrangement of
 samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{n_clust}{Numeric vector; the cluster ID(s) corresponding to
+\code{\link{anal_prnTrend}} for visualization. At the NULL default, all
+available cluster IDs will be used.}
 
 \item{scale_log2r}{Logical; at the TRUE default, input files with
 \code{_Z[...].txt} in name will be used. Otherwise, files with
@@ -30,15 +39,13 @@ matched under given conditions.}
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
+\item{filename}{A representative file name to outputs. By default, it will be
+determined automatically by the name of the current call.}
 
-\item{n_clust}{Numeric vector; the cluster ID(s) corresponding to
-\code{\link{anal_prnTrend}} for visualization. At the NULL default, all
-available cluster IDs will be used.}
+\item{theme}{A
+\code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}},
+i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+will be applied.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data in \code{Protein_Trend_[...].txt}; also see \code{\link{normPSM}}. \cr
@@ -46,7 +53,8 @@ data in \code{Protein_Trend_[...].txt}; also see \code{\link{normPSM}}. \cr
 \code{ymin}, the minimum y at \code{log2} scale; \cr \code{ymax}, the
 maximum y at \code{log2} scale; \cr \code{ybreaks}, the breaks in y-axis at
 \code{log2} scale; \cr \code{nrow}, the number of rows; \cr \code{width},
-the width of plot; \cr \code{height}, the height of plot.}
+the width of plot; \cr \code{height}, the height of plot; \cr \code{color},
+the color of lines; \cr \code{alpha}, the transparency of lines.}
 }
 \description{
 \code{plot_prnTrend} plots the trends of protein expressions from
@@ -79,11 +87,20 @@ scale_log2r <- TRUE
 # ===================================
 # Analysis
 # ===================================
-# base (proteins, with sample order supervision)
+## base (proteins, with sample order supervision)
 anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
+)
+
+## against selected samples
+anal_prnTrend(
+  impute_na = FALSE,
+  col_order = Order,
+  n_clust = c(5:6), 
+  col_select = BI,
+  filename = sel.txt,
 )
 
 ## row filtration (proteins)
@@ -150,9 +167,11 @@ anal_prnTrend(
 # Visualization
 # ===================================
 ## no NA imputation 
-plot_prnTrend()
+plot_prnTrend(
+  col_order = Order, 
+)
 
-# at a specific cluster ID
+# at specific cluster ID(s)
 # (`cluster` is a column key in `Protein_Trend_[...].txt`)
 plot_prnTrend(
   impute_na = FALSE, 
@@ -164,10 +183,18 @@ plot_prnTrend(
 )
 
 ## NA imputation
+# also save as pdf
 plot_prnTrend(
   impute_na = TRUE,
   col_order = Order,
-  filename = my.png,
+  filename = my.pdf,
+)
+
+## against selected samples
+plot_prnTrend(
+  col_order = Order, 
+  col_select = BI,
+  filename = bi.png,
 )
 
 }

@@ -587,8 +587,11 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
 #'@param filepath Use system default.
 #'@param filename A representative file name to outputs. By default, it will be
 #'  determined automatically by the name of the current call.
-#'@param ... No passing of extra arguments to \code{NMF::nmf}.
-#'@return NMF classification of \code{log2FC}.
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
+#'  etc.; also see \code{\link{normPSM}}. \cr \cr No passing of extra arguments
+#'  to \code{NMF::nmf}.
+#'@return NMF classification of \code{log2FC} data.
 #'@import NMF dplyr rlang readr ggplot2
 #'@importFrom magrittr %>%
 #'@example inst/extdata/examples/prnNMF_.R
@@ -742,7 +745,7 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
 #'@param r Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
 #'  At the NULL default, all available ranks from the results of
 #'  \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be used.
-#'@param ... \code{width}, \code{height};
+#'@param ... Additional arguments for \code{\link[pheatmap]{pheatmap}}
 #'@inheritParams proteoHist
 #'@inheritParams plot_prnTrend
 #'@inheritParams  proteoEucDist
@@ -953,6 +956,7 @@ plot_prnNMFCoef <- function (col_select = NULL,
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{prnHM}}. \cr \code{arrange_}: Logical
 #'  expression(s) for the row ordering of data; also see \code{\link{prnHM}}.
+#'  \cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}.
 #'@import purrr
 #'@example inst/extdata/examples/prnNMF_.R
 #'

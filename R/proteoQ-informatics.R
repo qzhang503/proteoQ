@@ -487,7 +487,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
                 !!!dots)
 		}
 	} else if (anal_type == "Trend_line") {
-	  function(n_clust = NULL, ...) {
+	  function(n_clust = NULL, theme = NULL, ...) {
 	    plotTrend(id = !!id, 
 	              col_group = !!col_group, 
 	              col_order = !!col_order, 
@@ -498,6 +498,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	              impute_na = impute_na,
 	              filepath = filepath, 
 	              filename = paste0(fn_prefix, ".", fn_suffix), 
+	              theme = theme, 
 	              ...)
 	  }
 	} else if (anal_type == "NMF") {

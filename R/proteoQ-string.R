@@ -294,7 +294,6 @@ stringTest <- function(df, id, col_group, col_order, label_scheme_sub,
 #'
 #'@inheritParams dl_stringdbs
 #'@inheritParams info_anal
-#'@inheritParams proteoTrend
 #'@param id Character string to indicate the type of data. The value will be
 #'  determined automatically.
 #'@param col_select Not currently used.

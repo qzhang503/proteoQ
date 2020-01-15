@@ -56,10 +56,13 @@ is 50.}
 \item{seed}{Integer; a seed setting a starting point for reproducible
 analyses.}
 
-\item{...}{No passing of extra arguments to \code{NMF::nmf}.}
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
+etc.; also see \code{\link{normPSM}}. \cr \cr No passing of extra arguments
+to \code{NMF::nmf}.}
 }
 \value{
-NMF classification of \code{log2FC}.
+NMF classification of \code{log2FC} data.
 }
 \description{
 \code{anal_pepNMF} performs the NMF classification of peptide \code{log2FC}.
@@ -88,6 +91,8 @@ library(NMF)
 # Analysis
 # ===================================
 ## base (proteins)
+library(NMF)
+
 anal_prnNMF(
   impute_na = FALSE,
   col_group = Group,
@@ -186,21 +191,26 @@ anal_pepNMF(
 # ===================================
 ## no NA imputation 
 # proteins, all available ranks
+library(NMF)
+
 plot_prnNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  width = 12,
+  height = 12,
 )
 
 # analogous peptides
 plot_pepNMFCon(
   impute_na = FALSE,
+  col_select = BI,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
+  color = colorRampPalette(brewer.pal(n = 7, name = "Spectral"))(50), 
   width = 10,
   height = 10,
+  filename = bi.pdf,
 )
 
 ## NA imputation 
@@ -216,10 +226,12 @@ plot_prnNMFCon(
 # analogous peptides
 plot_pepNMFCon(
   impute_na = TRUE,
+  col_select = BI,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
   height = 10,
+  filename = bi_con.png,
 )
 
 
@@ -241,8 +253,9 @@ plot_pepNMFCoef(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  color = colorRampPalette(brewer.pal(n = 7, name = "Spectral"))(50), 
+  width = 12,
+  height = 12,
 )
 
 ## NA imputation 
@@ -263,6 +276,7 @@ plot_pepNMFCoef(
   width = 10,
   height = 10,
 )
+
 
 # ===================================
 # Metagene heat maps

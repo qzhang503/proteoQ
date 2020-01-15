@@ -5,7 +5,7 @@
 \title{Plots trends}
 \usage{
 plotTrend(id, col_group, col_order, label_scheme_sub, n_clust, scale_log2r,
-  complete_cases, impute_na, filepath, filename, ...)
+  complete_cases, impute_na, filepath, filename, theme, ...)
 }
 \description{
 Plots trends

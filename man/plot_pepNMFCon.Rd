@@ -60,7 +60,7 @@ annotation.}
 At the NULL default, all available ranks from the results of
 \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be used.}
 
-\item{...}{\code{width}, \code{height};}
+\item{...}{Additional arguments for \code{\link[pheatmap]{pheatmap}}}
 }
 \value{
 Concensus heat maps from NMF classification.
@@ -98,6 +98,8 @@ library(NMF)
 # Analysis
 # ===================================
 ## base (proteins)
+library(NMF)
+
 anal_prnNMF(
   impute_na = FALSE,
   col_group = Group,
@@ -196,21 +198,26 @@ anal_pepNMF(
 # ===================================
 ## no NA imputation 
 # proteins, all available ranks
+library(NMF)
+
 plot_prnNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  width = 12,
+  height = 12,
 )
 
 # analogous peptides
 plot_pepNMFCon(
   impute_na = FALSE,
+  col_select = BI,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
+  color = colorRampPalette(brewer.pal(n = 7, name = "Spectral"))(50), 
   width = 10,
   height = 10,
+  filename = bi.pdf,
 )
 
 ## NA imputation 
@@ -226,10 +233,12 @@ plot_prnNMFCon(
 # analogous peptides
 plot_pepNMFCon(
   impute_na = TRUE,
+  col_select = BI,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
   width = 10,
   height = 10,
+  filename = bi_con.png,
 )
 
 
@@ -251,8 +260,9 @@ plot_pepNMFCoef(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  color = colorRampPalette(brewer.pal(n = 7, name = "Spectral"))(50), 
+  width = 12,
+  height = 12,
 )
 
 ## NA imputation 
@@ -273,6 +283,7 @@ plot_pepNMFCoef(
   width = 10,
   height = 10,
 )
+
 
 # ===================================
 # Metagene heat maps

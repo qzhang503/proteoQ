@@ -5,8 +5,9 @@
 \title{Trend analysis of protein data}
 \usage{
 anal_prnTrend(col_select = NULL, col_group = NULL, col_order = NULL,
-  scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE,
-  df = NULL, filepath = NULL, filename = NULL, n_clust = NULL, ...)
+  n_clust = NULL, scale_log2r = TRUE, impute_na = FALSE,
+  complete_cases = FALSE, df = NULL, filepath = NULL,
+  filename = NULL, ...)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -16,13 +17,21 @@ specified under \code{Select}, the column key of \code{Sample_ID} will be
 used. The non-empty entries under the ascribing column will be used in
 indicated analysis.}
 
-\item{col_group}{Not used.}
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
 
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
 Numeric values under which will be used for the left-to-right arrangement of
 samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{n_clust}{Numeric vector; the number(s) of clusters that data will be
+divided into. At the NULL default, it will be determined by the number of
+data entries.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
@@ -44,10 +53,6 @@ will be determined automatically by the name of the current \code{call}. The
 image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
 will be determined by the extension of the file name. A \code{.png} format
 will be used at default or at an unrecognized file extension.}
-
-\item{n_clust}{Numeric vector; the number(s) of clusters that data will be
-divided into. At the NULL default, it will be determined by the number of
-data entries.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
@@ -76,11 +81,20 @@ scale_log2r <- TRUE
 # ===================================
 # Analysis
 # ===================================
-# base (proteins, with sample order supervision)
+## base (proteins, with sample order supervision)
 anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
+)
+
+## against selected samples
+anal_prnTrend(
+  impute_na = FALSE,
+  col_order = Order,
+  n_clust = c(5:6), 
+  col_select = BI,
+  filename = sel.txt,
 )
 
 ## row filtration (proteins)
@@ -147,9 +161,11 @@ anal_prnTrend(
 # Visualization
 # ===================================
 ## no NA imputation 
-plot_prnTrend()
+plot_prnTrend(
+  col_order = Order, 
+)
 
-# at a specific cluster ID
+# at specific cluster ID(s)
 # (`cluster` is a column key in `Protein_Trend_[...].txt`)
 plot_prnTrend(
   impute_na = FALSE, 
@@ -161,10 +177,18 @@ plot_prnTrend(
 )
 
 ## NA imputation
+# also save as pdf
 plot_prnTrend(
   impute_na = TRUE,
   col_order = Order,
-  filename = my.png,
+  filename = my.pdf,
+)
+
+## against selected samples
+plot_prnTrend(
+  col_order = Order, 
+  col_select = BI,
+  filename = bi.png,
 )
 
 }

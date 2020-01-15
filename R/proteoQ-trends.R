@@ -1,3 +1,33 @@
+proteoq_trend_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
+  axis.ticks.x  = element_blank(), 
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
+  axis.title.x = element_text(colour="black", size=24),
+  axis.title.y = element_text(colour="black", size=24),
+  plot.title = element_text(face="bold", colour="black",
+                            size=20, hjust=.5, vjust=.5),
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  panel.background = element_rect(fill = '#0868ac', colour = 'red'),
+  
+  strip.text.x = element_text(size = 24, colour = "black", angle = 0),
+  strip.text.y = element_text(size = 24, colour = "black", angle = 90),
+  
+  plot.margin = unit(c(5.5, 55, 5.5, 5.5), "points"), 
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.position = "none",
+  legend.title = element_text(colour="black", size=18),
+  legend.text = element_text(colour="black", size=18),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+
+
 #' Trend analysis
 #'
 #' @import Mfuzz dplyr purrr rlang Biobase
@@ -103,7 +133,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 #' @importFrom magrittr %>%
 plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, 
                       scale_log2r, complete_cases, impute_na, 
-                      filepath, filename, ...) {
+                      filepath, filename, theme, ...) {
   
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
@@ -156,34 +186,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 
   col_group <- rlang::enexpr(col_group)
   col_order <- rlang::enexpr(col_order)
-  
-  my_theme <- theme_bw() + theme(
-    axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
-    axis.ticks.x  = element_blank(), 
-    axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
-    axis.title.x = element_text(colour="black", size=24),
-    axis.title.y = element_text(colour="black", size=24),
-    plot.title = element_text(face="bold", colour="black",
-                              size=20, hjust=.5, vjust=.5),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor.y = element_blank(),
-    panel.background = element_rect(fill = '#0868ac', colour = 'red'),
-    
-    strip.text.x = element_text(size = 24, colour = "black", angle = 0),
-    strip.text.y = element_text(size = 24, colour = "black", angle = 90),
-    
-    plot.margin = unit(c(5.5, 55, 5.5, 5.5), "points"), 
-    
-    legend.key = element_rect(colour = NA, fill = 'transparent'),
-    legend.background = element_rect(colour = NA,  fill = "transparent"),
-    legend.position = "none",
-    legend.title = element_text(colour="black", size=18),
-    legend.text = element_text(colour="black", size=18),
-    legend.text.align = 0,
-    legend.box = NULL
-  )
+
+  if (is.null(theme)) theme <- proteoq_trend_theme
 
   purrr::walk2(filelist, custom_prefix, ~ {
     n <- gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", .x) %>% 
@@ -212,8 +216,9 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     
     filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
     dots <- dots %>% .[! . %in% filter_dots]
-    
+
     df <- df %>% 
+      dplyr::filter(group %in% Levels) %>% 
       filters_in_call(!!!filter_dots) %>% 
       dplyr::mutate(group = factor(group, levels = Levels))
 
@@ -227,18 +232,24 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     width <- dots$width
     height <- dots$height
     units <- dots$units
+    color <- dots$color
+    alpha <- dots$alpha
     
     if (is.null(ymin)) ymin <- -2
     if (is.null(ymax)) ymax <- 2
     if (is.null(ybreaks)) ybreaks <- 1
     if (is.null(ncol)) ncol <- 1
     if (is.null(nrow)) nrow <- 2
+    if (is.null(color)) color <- "#f0f0f0"
+    if (is.null(alpha)) alpha <- .25
     
     dots$ymin <- NULL
     dots$ymax <- NULL
     dots$ybreaks <- NULL
     dots$ncol <- NULL
     dots$nrow <- NULL
+    dots$color <- NULL
+    dots$alpha <- NULL
     
     x_label <- expression("Ratio ("*log[2]*")")
     
@@ -253,11 +264,11 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     
     p <- ggplot(data = df,
                 mapping = aes(x = group, y = log2FC, group = id)) +
-      geom_line(colour = "white", alpha = .25) + 
+      geom_line(colour = color, alpha = alpha) + 
       # coord_cartesian(ylim = c(ymin, ymax)) + 
       scale_y_continuous(limits = c(ymin, ymax), breaks = c(ymin, 0, ymax)) +
       labs(title = "", x = "", y = x_label) +
-      my_theme
+      theme
     p <- p + facet_wrap(~ cluster, nrow = nrow, labeller = label_value)
     
     gg_args <- c(filename = file.path(filepath, gg_imgname(out_nm)), 
@@ -276,9 +287,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
 #'
-#'@inheritParams proteoEucDist
 #'@inheritParams proteoCorr
-#'@inheritParams info_anal
+#'@inheritParams anal_prnNMF
 #'@param n_clust Numeric vector; the number(s) of clusters that data will be
 #'  divided into. At the NULL default, it will be determined by the number of
 #'  data entries.
@@ -343,9 +353,9 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@export
-anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
+anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL, n_clust = NULL, 
                            scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
-                           df = NULL, filepath = NULL, filename = NULL, n_clust = NULL, ...) {
+                           df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), current_env()) %>% 
@@ -404,11 +414,8 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'  \code{id} \cr log2FC \tab the mean \code{log2FC} of an \code{id} under a
 #'  \code{group} at a given \code{cluster} \cr }
 #'
-#'@inheritParams proteoNMF
+#'@inheritParams anal_prnNMF
 #'@inheritParams proteoCorr
-#'@inheritParams  proteoEucDist
-#'@inheritParams proteoHM
-#'@inheritParams anal_prnTrend
 #'@param scale_log2r Logical; at the TRUE default, input files with
 #'  \code{_Z[...].txt} in name will be used. Otherwise, files with
 #'  \code{_N[...].txt} in name will be taken. An error will be shown if no files
@@ -420,14 +427,18 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'@param n_clust Numeric vector; the cluster ID(s) corresponding to
 #'  \code{\link{anal_prnTrend}} for visualization. At the NULL default, all
 #'  available cluster IDs will be used.
-#'
+#'@param theme A
+#'  \code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}},
+#'  i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
+#'  will be applied.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data in \code{Protein_Trend_[...].txt}; also see \code{\link{normPSM}}. \cr
 #'  \cr Additional parameters for use in \code{plot_} functions: \cr
 #'  \code{ymin}, the minimum y at \code{log2} scale; \cr \code{ymax}, the
 #'  maximum y at \code{log2} scale; \cr \code{ybreaks}, the breaks in y-axis at
 #'  \code{log2} scale; \cr \code{nrow}, the number of rows; \cr \code{width},
-#'  the width of plot; \cr \code{height}, the height of plot.
+#'  the width of plot; \cr \code{height}, the height of plot; \cr \code{color},
+#'  the color of lines; \cr \code{alpha}, the transparency of lines.
 #'@import purrr
 #'
 #'@example inst/extdata/examples/prnTrend_.R
@@ -482,9 +493,9 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@export
-plot_prnTrend <- function (col_group = NULL, col_order = NULL, 
+plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL, 
                            scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
-                           filename = NULL, n_clust = NULL, ...) {
+                           filename = NULL, theme = NULL, ...) {
   
   err_msg <- "Duplicated arguments in `id` or `anal_type`.\n"
   if (any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
@@ -498,16 +509,15 @@ plot_prnTrend <- function (col_group = NULL, col_order = NULL,
             rlang::is_logical(impute_na), 
             rlang::is_logical(complete_cases))
   
-  col_group <- rlang::enexpr(col_group)
+  col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)
   filename <- rlang::enexpr(filename)
   
   reload_expts()
   
-  info_anal(id = !!id, col_select = NULL, col_group = !!col_group, col_order = !!col_order,
+  info_anal(id = !!id, col_select = !!col_select, col_group = NULL, col_order = !!col_order,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
             df = NULL, filepath = NULL, filename = !!filename,
-            anal_type = "Trend_line")(n_clust = n_clust, ...)
+            anal_type = "Trend_line")(n_clust = n_clust, theme = theme, ...)
 }
-
 
