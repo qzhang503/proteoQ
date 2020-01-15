@@ -18,12 +18,12 @@ profiles of each sample will be aligned in that the medians of the
 sample will be aligned in that the \code{log2FC} at the maximums of kernel
 desity are zero.}
 
-\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}. At
-the \code{NULL} default, the column key of \code{Sample_ID} in
-\code{expt_smry.xlsx} will be used, which results in the (re)normalization
-of the \code{log2FC} for all samples. Otherwise, samples corresponding to
-non-empty entries under the ascribing column key will be used in the
-renormalization with the alignment method given in \code{method_align}.}
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
 
 \item{range_log2r}{Numeric vector at length two. The argument specifies the
 range of the \code{log2FC} for use in the scaling normalization of standard
@@ -40,8 +40,8 @@ the 5th and the 95th quantiles.}
 \code{n_comp} overwrites the augument \code{k} in
 \code{\link[mixtools]{normalmixEM}}.}
 
-\item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
-MGKernel}.}
+\item{seed}{Integer; a seed setting a starting point for reproducible
+analyses.}
 
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
 \code{log2FC} will be plotted. The default is TRUE.}
@@ -94,9 +94,8 @@ from different LCMS series. One exception is \code{pep_expect} with Mascot
 workflow where geometric mean is used.
 
 Description of the column keys in the inputs and outputs: \cr
-\code{system.file("extdata",
-"mascot_peptide_keys.txt", package = "proteoQ")} \cr
-\code{system.file("extdata", "maxquant_peptide_keys.txt", package =
+\code{system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ")}
+\cr \code{system.file("extdata", "maxquant_peptide_keys.txt", package =
 "proteoQ")}
 }
 \examples{
@@ -405,24 +404,29 @@ standPep(
 
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data normalization \cr
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr
 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+ \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+ \code{\link{standPep}} for extended examples in peptide data normalization
+ \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+ summarization \cr \code{\link{standPrn}} for extended examples in protein
+ data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+ for extended examples in data purging \cr \code{\link{pepHist}} and
+ \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+ MS file names \cr
+
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+ \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+ \code{\link{start_with_str}}, \code{\link{end_with_str}},
+ \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+ data subsetting by character strings \cr
+
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+ \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+ \cr
 }

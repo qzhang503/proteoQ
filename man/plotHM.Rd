@@ -4,9 +4,10 @@
 \alias{plotHM}
 \title{Makes heat maps}
 \usage{
-plotHM(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepath,
-  filename, complete_cases, annot_cols = NULL, annot_colnames = NULL,
-  annot_rows = annot_rows, xmin = -1, xmax = 1, xmargin = 0.1, ...)
+plotHM(df, id, col_benchmark, label_scheme_sub, filepath, filename,
+  scale_log2r, complete_cases, annot_cols = NULL,
+  annot_colnames = NULL, annot_rows = annot_rows, xmin = -1,
+  xmax = 1, xmargin = 0.1, ...)
 }
 \description{
 Makes heat maps

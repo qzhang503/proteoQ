@@ -5,24 +5,24 @@
 \alias{prnGSEA}
 \title{GSEA of protein data}
 \usage{
-proteoGSEA(id = gene, scale_log2r = TRUE, df = NULL,
-  filepath = NULL, filename = NULL, impute_na = NULL,
-  complete_cases = FALSE, gset_nms = "go_sets", var_cutoff = 0.5,
-  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.05,
-  min_size = 10, max_size = Inf, min_greedy_size = 1,
-  fml_nms = NULL, task = "anal", ...)
+proteoGSEA(id = gene, df = NULL, filepath = NULL, filename = NULL,
+  gset_nms = "go_sets", scale_log2r = TRUE, impute_na = NULL,
+  complete_cases = FALSE, var_cutoff = 0.5, pval_cutoff = 0.05,
+  logFC_cutoff = log2(1.2), gspval_cutoff = 0.05, min_size = 10,
+  max_size = Inf, min_greedy_size = 1, fml_nms = NULL,
+  task = "anal", ...)
 
 prnGSEA(...)
 }
 \arguments{
-\item{id}{Character string indicating the type of data. The value will be
-determined automatically.}
-
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
+automatically after matching the data type with an \code{id} among 
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
@@ -32,14 +32,18 @@ of \code{id} in the \code{call}.}
 determined automatically by the name of the calling function and the value
 of id in the call.}
 
+\item{gset_nms}{Not currently used.}
+
+\item{scale_log2r}{Not used for full volcano plots by \code{pepVol} or 
+\code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
+for \code{gspaMap}.}
+
 \item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
 the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
 protein data.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
-
-\item{gset_nms}{Not currently used.}
 
 \item{var_cutoff}{Numeric value or vector; the cut-off in the variance of
 protein \code{log2FC} across samples. Entries with \code{variances} less
@@ -197,10 +201,10 @@ prnGSEA(
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
  
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
- \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

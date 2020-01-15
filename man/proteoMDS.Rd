@@ -10,10 +10,10 @@ proteoMDS(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
   col_size = NULL, col_alpha = NULL, color_brewer = NULL,
   fill_brewer = NULL, size_manual = NULL, shape_manual = NULL,
-  alpha_manual = NULL, scale_log2r = TRUE, impute_na = FALSE,
-  complete_cases = FALSE, adjEucDist = FALSE, classical = TRUE,
-  k = 3, show_ids = TRUE, annot_cols = NULL, df = NULL,
-  filepath = NULL, filename = NULL, ...)
+  alpha_manual = NULL, scale_log2r = TRUE, complete_cases = FALSE,
+  impute_na = FALSE, adjEucDist = FALSE, classical = TRUE, k = 3,
+  show_ids = TRUE, annot_cols = NULL, df = NULL, filepath = NULL,
+  filename = NULL, ...)
 
 pepMDS(...)
 
@@ -26,9 +26,11 @@ or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
 or \code{gene}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the \code{NULL} default, the column
-key will be \code{Select}.}
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
 
 \item{col_group}{Not used.}
 
@@ -82,11 +84,11 @@ in \code{ggplot2} will be used.}
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
 
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used. The default is FALSE.}
-
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex Euclidean distance
 by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
@@ -110,7 +112,8 @@ plots. The default is TRUE.}
 \item{annot_cols}{Not used.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
+automatically after matching the data type with an \code{id} among 
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value

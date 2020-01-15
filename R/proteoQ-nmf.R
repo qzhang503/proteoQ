@@ -3,23 +3,13 @@
 #' @import dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
 #' @importFrom NMF nmf
-nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, scale_log2r, 
-                    filepath, filename, complete_cases, ...) {
-                    
+analNMF <- function(df, id, r, nrun, seed, col_group, label_scheme_sub, 
+                    filepath, filename, ...) {
+
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
 
-  dots <- rlang::enexprs(...)
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  dots <- dots %>% .[! . %in% filter_dots]
-  
-  df <- df %>% filters_in_call(!!!filter_dots)
-
-  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
-               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
-    .$log2R  
-  
   col_group <- rlang::enexpr(col_group) # optional phenotypic information
 
 	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% unique()
@@ -35,8 +25,6 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, sca
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
     stopifnot(all(nrun >= 1) & all(nrun %% 1 == 0))
   }
-  
-  if (complete_cases) df <- df[complete.cases(df), ]
   
   exprs_data <- data.matrix(2^df)
   
@@ -54,74 +42,91 @@ nmfTest <- function(df, id, r, nrun, col_group, label_scheme_sub, anal_type, sca
                               experimentData = experimentData)
 
   purrr::walk(fn_prefix, ~ {
-    r <- gsub(".*_r(\\d+)$", "\\1", .x) %>% as.numeric()
-    
-    res_nmf <- NMF::nmf(exampleSet, r, nrun = nrun)
+    r <- gsub("^.*_rank(\\d+).*", "\\1", .x) %>% as.numeric()
+    if (!is.null(seed)) set.seed(seed) else set.seed(sample(.Random.seed, 1))
+    res_nmf <- NMF::nmf(exampleSet, r, nrun = nrun, seed = seed)
     save(res_nmf, file = file.path(filepath, paste0(.x, ".rda")))
-    write.csv(res_nmf@consensus, 
-              file.path(filepath, paste0(.x, "_consensus.csv")), row.names = FALSE)
-    write.csv(coef(res_nmf) %>% as.matrix, 
-              file.path(filepath, paste0(.x, "_coef.csv")), row.names = FALSE)
+    write.table(res_nmf@consensus, file.path(filepath, paste0(.x, "_consensus.txt")), 
+                sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+    write.table(coef(res_nmf) %>% as.matrix, file.path(filepath, paste0(.x, "_coef.txt")), 
+                sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
   })
 }
 
 
 #' Plots consensus results from NMF analysis
 #'
-#' @import NMF dplyr purrr rlang Biobase
+#' @import NMF dplyr purrr rlang cluster Biobase
 #' @importFrom magrittr %>%
-plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
+plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, complete_cases, impute_na, filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
-  
-  # both filename extension and prefix ignored
-  # only png for now
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
-  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
-  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$") 
+
+  ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$") 
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
+  if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
 
   if (is.null(r)) {
     filelist <- ins
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
     
-    ins_prefix <- gsub("\\.[^.]*$", "", ins)
-    
-    possible_prefix <- ins_prefix %>% 
-      gsub("(.*)_r\\d+$", "\\1", .) %>% 
-      unique() %>% 
-      paste0("_r", r)
-    
-    ok_prefix <- ins_prefix %>% 
-      .[. %in% possible_prefix]
-    rm(ins_prefix, possible_prefix)
-    
-    filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.rda$"))) %>% 
-      unlist()
+    filelist <- local({
+      possible <- ins %>% 
+        gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .) %>% 
+        as.numeric() %>% 
+        `names<-`(ins)
+      
+      r2 <- r %>% .[. %in% possible]
+      
+      filelist <- possible %>% 
+        .[. %in% r2] %>% 
+        names(.)
+    })
   } 
+
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
+    custom_prefix <- purrr::map_chr(filelist, ~ {
+      gsub("(.*_{0,1})Peptide_NMF.*", "\\1", .x)
+    })
+  } else if (id %in% c("prot_acc", "gene")) {
+    custom_prefix <- purrr::map_chr(filelist, ~ {
+      gsub("(.*_{0,1})Protein_NMF.*", "\\1", .x)
+    })
+  } else {
+    stop("Unknown id = ", id, call. = FALSE)
+  }
+
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   if (purrr::is_empty(filelist)) 
-    stop("Missing or mismatched NMF results under ", filepath, call. = FALSE)
+    stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+         " at r = ", paste0(r, collapse = ","), call. = FALSE)
 
-  purrr::walk(filelist, ~ {
-    out_nm <- paste0(gsub("\\.rda$", "", .x), "_consensus.png")
+  purrr::walk2(filelist, custom_prefix, ~ {
+    r <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% 
+      as.numeric()
     
+    out_nm <- paste0(.y, fn_prefix, "_rank", r, ".", fn_suffix)
+
     load(file = file.path(file.path(filepath, .x)))
     
     D_matrix <- res_nmf@consensus
-      
-    n_color <- 500
+    if (complete_cases) D_matrix <- D_matrix %>% .[complete.cases(.), ]
+    
+    D_matrix <- D_matrix[, colnames(D_matrix) %in% label_scheme_sub$Sample_ID, drop = FALSE]
+    D_matrix <- D_matrix[rownames(D_matrix) %in% label_scheme_sub$Sample_ID, , drop = FALSE]
+
+    n_color <- 50
     xmin <- 0
     xmax <- ceiling(max(D_matrix))
-    xmargin <- xmax/10
+    xmargin <- (xmax - xmin)/2
     color_breaks <- c(seq(xmin, xmargin, length = n_color/2)[1 : (n_color/2-1)],
                       seq(xmargin, xmax, length = n_color/2)[2 : (n_color/2)])
-    
+      
     if (is.null(dots$units)) {
       units <- "in"
     } else {
@@ -157,7 +162,7 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
     }
     
     if (is.null(dots$color)) {
-      mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
+      mypalette <- colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(n_color)
     } else {
       mypalette <- eval(dots$color, env = caller_env())
     }
@@ -189,70 +194,113 @@ plotNMFCon <- function(id, r, label_scheme_sub, filepath, filename, ...) {
       annotation_colors <- eval(dots$annotation_colors, env = caller_env())
     }
     
-    png(file.path(filepath, out_nm), width = width, height = height, units = units, res = res)
-    consensusmap(res_nmf, annCol = annotation_col, 
-                 annColor = list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
-                 tracks = c("basis:"), main = '', sub = '')
-    dev.off()
+    run_scripts <- FALSE
+    if (run_scripts) {
+      png(file.path(filepath, out_nm), width = width, height = height, units = units, res = res)
+      consensusmap(res_nmf, annCol = annotation_col, 
+                   annColor = list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
+                   tracks = c("basis:"), main = '', sub = '')
+      dev.off()
+    }
+
+    clus <- cluster::silhouette(res_nmf)
+    attr(clus, "Ordered") <- NULL
+    attr(clus, "call") <- NULL
+    attr(clus, "class") <- NULL
+    clus <- data.frame(clus, check.names = FALSE)
+    clus <- clus %>% .[rownames(.) %in% label_scheme_sub$Sample_ID, ]
     
-  })
+    annotation_col <- annotation_col %>% 
+      tibble::rownames_to_column() %>% 
+      dplyr::bind_cols(clus) %>% 
+      dplyr::select(-c("neighbor", "sil_width")) %>% 
+      dplyr::rename(silhouette = cluster) %>% 
+      dplyr::mutate(silhouette = factor(silhouette)) %>% 
+      tibble::column_to_rownames()
+    
+    p <- my_pheatmap(
+      mat = D_matrix,
+      filename = file.path(filepath, out_nm),
+      annotation_col = annotation_col,
+      annotation_row = NA, 
+      color = mypalette,
+      annotation_colors = annotation_colors,
+      breaks = color_breaks,
+      !!!dots
+    )
+
+  }, complete_cases = complete_cases)
 }
 
 
 #' Plots coef results from NMF analysis
 #'
-#' @import NMF dplyr purrr rlang Biobase
+#' @import NMF dplyr purrr rlang cluster Biobase
 #' @importFrom magrittr %>%
-plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, ...) {
+plotNMFCoef <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
-  # both filename extension and prefix will be ignored
-  # only png for now
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
-  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
-  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
+  ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$")
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
+  if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
 
   if (is.null(r)) {
     filelist <- ins
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
     
-    ins_prefix <- gsub("\\.[^.]*$", "", ins)
-    
-    possible_prefix <- ins_prefix %>% 
-      gsub("(.*)_r\\d+$", "\\1", .) %>% 
-      unique() %>% 
-      paste0("_r", r)
-    
-    ok_prefix <- ins_prefix %>% 
-      .[. %in% possible_prefix]
-    rm(ins_prefix, possible_prefix)
-    
-    filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.rda$"))) %>%
-      unlist()
-  } 
+    filelist <- local({
+      possible <- ins %>% 
+        gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .) %>% 
+        as.numeric() %>% 
+        `names<-`(ins)
+      
+      r2 <- r %>% .[. %in% possible]
+      
+      filelist <- possible %>% 
+        .[. %in% r2] %>% 
+        names(.)
+    })
+  }
+  
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
+    custom_prefix <- purrr::map_chr(filelist, ~ {
+      gsub("(.*_{0,1})Peptide_NMF.*", "\\1", .x)
+    })
+  } else if (id %in% c("prot_acc", "gene")) {
+    custom_prefix <- purrr::map_chr(filelist, ~ {
+      gsub("(.*_{0,1})Protein_NMF.*", "\\1", .x)
+    })
+  } else {
+    stop("Unknown id = ", id, call. = FALSE)
+  }
 
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
   if (purrr::is_empty(filelist)) 
-    stop("Missing or mismatched NMF results under ", filepath, call. = FALSE)
+    stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+         " at r = ", paste0(r, collapse = ","), call. = FALSE)
 
-  purrr::walk(filelist, ~ {
-    # out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.", fn_suffix)
-    out_nm <- paste0(gsub("\\.rda$", "", .x), "_coef.png")
+  purrr::walk2(filelist, custom_prefix, ~ {
+    r <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% 
+      as.numeric()
+    
+    out_nm <- paste0(.y, fn_prefix, "_rank", r, ".", fn_suffix)
+    
     src_path <- file.path(filepath, .x)
     load(file = file.path(src_path))
     
     D_matrix <- coef(res_nmf) %>% as.matrix
+    rownames(D_matrix) <- seq_along(1:nrow(D_matrix))
     
-    n_color <- 500
+    n_color <- 50
     xmin <- 0
-    xmax <- ceiling(max(D_matrix))
-    xmargin <- xmax/10
+    xmax <- max(D_matrix)
+    xmargin <- xmax/2
     color_breaks <- c(seq(xmin, xmargin, length = n_color/2)[1 : (n_color/2-1)],
                       seq(xmargin, xmax, length = n_color/2)[2 : (n_color/2)])
     
@@ -269,7 +317,8 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, ...) {
     }
     
     if (is.null(dots$color)) {
-      mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
+      # mypalette <- colorRampPalette(c("yellow", "orange", "red"))(n_color)
+      mypalette <- colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(n_color)
     } else {
       mypalette <- eval(dots$color, env = caller_env())
     }
@@ -300,11 +349,40 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, ...) {
       annotation_colors <- eval(dots$annotation_colors, env = caller_env())
     }
     
-    png(file.path(filepath, out_nm), width = width, height = height, units = "in", res = 300)
-    coefmap(res_nmf, annCol = annotation_col, 
-            annColor = list(Type = 'Spectral', basis = 'Set3', consensus = 'YlOrRd:50'),
-            tracks = c("basis:"))
-    dev.off()
+    run_scripts <- FALSE
+    if (run_scripts) {
+      png(file.path(filepath, out_nm), width = width, height = height, units = "in", res = 300)
+      coefmap(res_nmf, annCol = annotation_col, 
+              annColor = list(Type = 'Spectral', basis = 'Set3', consensus = 'YlOrRd:50'),
+              tracks = c("basis:"))
+      dev.off()      
+    }
+    
+    clus <- cluster::silhouette(res_nmf)
+    attr(clus, "Ordered") <- NULL
+    attr(clus, "call") <- NULL
+    attr(clus, "class") <- NULL
+    clus <- data.frame(clus, check.names = FALSE)
+    
+    annotation_col <- annotation_col %>% 
+      tibble::rownames_to_column() %>% 
+      dplyr::bind_cols(clus) %>% 
+      dplyr::select(-c("neighbor", "sil_width")) %>% 
+      dplyr::rename(silhouette = cluster) %>% 
+      dplyr::mutate(silhouette = factor(silhouette)) %>% 
+      tibble::column_to_rownames()
+    
+    p <- my_pheatmap(
+      mat = D_matrix,
+      filename = file.path(filepath, out_nm),
+      annotation_col = annotation_col,
+      annotation_row = NA, 
+      color = mypalette,
+      annotation_colors = annotation_colors,
+      breaks = color_breaks,
+      !!!dots
+    )
+
   })
 }
 
@@ -313,52 +391,61 @@ plotNMFCoef <- function(id, r, label_scheme_sub, filepath, filename, ...) {
 #'
 #' @import NMF dplyr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, 
+plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, impute_na, 
                         filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
 
-  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
-               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
-    .$log2R  
-
-  # only png
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-  
-  impute_na <- ifelse(all(grepl("_impNA", fn_prefix)), TRUE, FALSE)
-  ins <- list.files(path = filepath, pattern = "_r\\d+\\.rda$")
+  ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$")
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
+  if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
   
   if (is.null(r)) {
     filelist <- ins
   } else {
     stopifnot(all(r >= 2) & all(r %% 1 == 0))
     
-    ins_prefix <- gsub("\\.[^.]*$", "", ins)
-    
-    possible_prefix <- ins_prefix %>% 
-      gsub("(.*)_r\\d+$", "\\1", .) %>% 
-      unique() %>% 
-      paste0("_r", r)
-    
-    ok_prefix <- ins_prefix %>% 
-      .[. %in% possible_prefix]
-    rm(ins, ins_prefix, possible_prefix)
-    
-    filelist <- purrr::map(ok_prefix, ~ list.files(path = filepath, pattern = paste0(.x, "\\.rda$"))) %>%
-      unlist()
+    filelist <- local({
+      possible <- ins %>% 
+        gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .) %>% 
+        as.numeric() %>% 
+        `names<-`(ins)
+      
+      r2 <- r %>% .[. %in% possible]
+      
+      filelist <- possible %>% 
+        .[. %in% r2] %>% 
+        names(.)
+    })
   } 
   
   if (purrr::is_empty(filelist)) 
-    stop("Missing or mismatched NMF results under ", filepath, call. = FALSE)
+    stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+         " at r = ", paste0(r, collapse = ","), call. = FALSE)
 
-  purrr::walk(filelist, ~ {
-    fn_prefix <- gsub("\\.rda$", "", .x)
-    r <- gsub(".*_r(\\d+)\\.rda$", "\\1", .x) %>% as.numeric()
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
+    custom_prefix <- purrr::map_chr(filelist, ~ {
+      gsub("(.*_{0,1})Peptide_NMF.*", "\\1", .x)
+    })
+  } else if (id %in% c("prot_acc", "gene")) {
+    custom_prefix <- purrr::map_chr(filelist, ~ {
+      gsub("(.*_{0,1})Protein_NMF.*", "\\1", .x)
+    })
+  } else {
+    stop("Unknown id = ", id, call. = FALSE)
+  }
+  
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)  
+  
+  purrr::walk2(filelist, custom_prefix, ~ {
+    r <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% as.numeric()
     dir.create(file.path(filepath, r), recursive = TRUE, showWarnings = FALSE)
+    
+    fn_suffix <- "png" # for now
+    out_nm <- paste0(.y, fn_prefix, "_rank", r, ".", fn_suffix)
 
     src_path <- file.path(filepath, .x)
     load(file = file.path(src_path))
@@ -426,7 +513,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
       nrow <- nrow(df_sub)
       
       if (nrow > 0) {
-        fn_sub <- paste0(fn_prefix, "_metagene", i, ".", fn_suffix)
+        fn_sub <- paste0(fn_prefix, "_", i, ".", fn_suffix)
         width <- ncol(df_sub) * 2 + 2
         
         if (nrow > 300) {
@@ -464,8 +551,8 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
         df_op <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ] %>%
           tibble::rownames_to_column(id)
         
-        write.csv(df_op, file.path(filepath, r, paste0(fn_prefix, "_metagene", i, ".csv")),
-                  row.names = FALSE)
+        write.table(df_op, file.path(filepath, r, paste0(fn_prefix, "_", i, ".txt")), 
+                    sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
       }
     }
 
@@ -473,18 +560,19 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 }
 
 
-#'NMF analysis
+#'NMF Classification
 #'
-#'\code{proteoNMF} analyzes and visualizes the NMF clustering of peptide or
-#'protein \code{log2FC}. Users should avoid calling the method directly, but
-#'instead use the following wrappers.
+#'\code{anal_pepNMF} performs the NMF classification of peptide \code{log2FC}.
+#'The function is a wrapper of \code{\link[NMF]{nmf}}.
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}.
 #'
+#'@inheritParams anal_prnTrend
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
+#'@inheritParams standPep
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is TRUE.
 #'@param col_group Character string to a column key in \code{expt_smry.xlsx}.
@@ -495,275 +583,460 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r,
 #'@param r Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
 #'  The default is c(4:8)
 #'@param nrun Numeric; the number of runs in \code{\link[NMF]{nmf}}. The default
-#'  is 200.
-#'@param task Character string; a signature for task dispatching in a function
-#'  factory. The value will be determined automatically.
+#'  is 50.
 #'@param filepath Use system default.
-#'@param filename Use system default.
-#'@param ... In \code{anal_} functions: additional arguments are for
-#'  \code{\link[NMF]{nmf}}; \cr in \code{plot_} functions: \code{width},
-#'  \code{height}; \cr in \code{plot_metaNMF} functions: additional arguments
-#'  are for \code{pheatmap}.
-#'@return NMF classification and visualization of \code{log2FC}.
-#'@import NMF dplyr rlang ggplot2
+#'@param filename A representative file name to outputs. By default, it will be
+#'  determined automatically by the name of the current call.
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
+#'  etc.; also see \code{\link{normPSM}}. \cr \cr No passing of extra arguments
+#'  to \code{NMF::nmf}.
+#'@return NMF classification of \code{log2FC} data.
+#'@import NMF dplyr rlang readr ggplot2
 #'@importFrom magrittr %>%
 #'@example inst/extdata/examples/prnNMF_.R
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
-#'  
-#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
-#'  
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+#'  GSEA. \cr
+#'
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr
+#'
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
+#'  analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
+#'  analysis and visualization \cr
+#'
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'
 #'@export
-proteoNMF <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                       col_select = NULL, col_group = NULL, scale_log2r = TRUE, impute_na = TRUE, 
-                       complete_cases = FALSE, df = NULL, filepath = NULL, filename = NULL, 
-                       task = "anal", r = NULL, nrun = 200, ...) {
-
+anal_pepNMF <- function (col_select = NULL, col_group = NULL, 
+                         scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
+                         df = NULL, filepath = NULL, filename = NULL, 
+                         r = NULL, nrun = if (length(r) > 1) 50 else 1, seed = NULL, ...) {
+  err_msg <- "Use argument `r` instead of `rank`.\n"
+  if (any(names(rlang::enexprs(...)) %in% c("rank"))) stop(err_msg, call. = FALSE)
+  
+  on.exit(
+    mget(names(formals()), current_env()) %>% 
+      c(enexprs(...)) %>% 
+      save_call(paste0("anal", "_pepNMF"))
+    , add = TRUE
+  )
+  
+  dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-
-  id <- rlang::enexpr(id)
-	if (length(id) != 1) id <- rlang::expr(gene)
-	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
-	
-	stopifnot(rlang::is_logical(scale_log2r))
-	stopifnot(rlang::is_logical(impute_na))
-	stopifnot(rlang::is_logical(complete_cases))
-
-	task <- rlang::enexpr(task)	
-	col_select <- rlang::enexpr(col_select)
-	col_group <- rlang::enexpr(col_group)
-	df <- rlang::enexpr(df)
-	filepath <- rlang::enexpr(filepath)
-	filename <- rlang::enexpr(filename)
-	
-	reload_expts()
-
-	if (!impute_na) complete_cases <- TRUE
-
-	info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, scale_log2r = scale_log2r, 
-	          impute_na = impute_na, df = !!df, filepath = !!filepath, filename = !!filename, 
-	          anal_type = "NMF")(r = r, nrun = nrun, complete_cases = complete_cases, 
-	                             task = !!task, ...)
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))  
+  
+  stopifnot(rlang::is_logical(scale_log2r), 
+            rlang::is_logical(impute_na), 
+            rlang::is_logical(complete_cases))
+  
+  col_select <- rlang::enexpr(col_select)
+  col_group <- rlang::enexpr(col_group)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = !!df, filepath = !!filepath, filename = !!filename, 
+            anal_type = "NMF")(r = r, nrun = nrun, seed = seed, ...)
 }
 
 
-#'Peptide NMF Classification
+#'NMF Classification
 #'
-#'\code{anal_pepNMF} is a wrapper of \code{\link{proteoNMF}} for the NMF
-#'analysis of peptide data
+#'\code{anal_prnNMF} performs the NMF classification of protein \code{log2FC}.
+#'The function is a wrapper of \code{\link[NMF]{nmf}}.
 #'
-#'@rdname proteoNMF
-#'@import purrr
+#'@rdname anal_pepNMF
+#'@import NMF dplyr rlang readr ggplot2
+#'@importFrom magrittr %>%
+#'
 #'@export
-anal_pepNMF <- function (...) {
-  err_msg <- "Don't call the function with arguments `id` and/or `task`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
+anal_prnNMF <- function (col_select = NULL, col_group = NULL, 
+                         scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
+                         df = NULL, filepath = NULL, filename = NULL, 
+                         r = NULL, nrun = if (length(r) > 1) 50 else 1, seed = NULL, ...) {
+  err_msg <- "Use argument `r` instead of `rank`.\n"
+  if (any(names(rlang::enexprs(...)) %in% c("rank"))) stop(err_msg, call. = FALSE)
   
+  on.exit(
+    mget(names(formals()), current_env()) %>% 
+          c(enexprs(...)) %>% 
+          save_call(paste0("anal", "_prnNMF"))
+    , add = TRUE
+  )
+  
+  dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))  
+
+  stopifnot(rlang::is_logical(scale_log2r), 
+            rlang::is_logical(impute_na), 
+            rlang::is_logical(complete_cases))
+
+  col_select <- rlang::enexpr(col_select)
+  col_group <- rlang::enexpr(col_group)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = !!df, filepath = !!filepath, filename = !!filename, 
+            anal_type = "NMF")(r = r, nrun = nrun, seed = seed, ...)
+}
+
+
+#'NMF plots
+#'
+#'\code{plot_pepNMFCon} plots the consensus heat maps from the NMF
+#'classification of peptide \code{log2FC}.
+#'
+#'The option of \code{complete_cases} will be forced to \code{TRUE} at
+#'\code{impute_na = FALSE}.
+#'
+#'@param r Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
+#'  At the NULL default, all available ranks from the results of
+#'  \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be used.
+#'@param ... Additional arguments for \code{\link[pheatmap]{pheatmap}}
+#'@inheritParams proteoHist
+#'@inheritParams plot_prnTrend
+#'@inheritParams  proteoEucDist
+#'@return Concensus heat maps from NMF classification.
+#'@import NMF dplyr rlang readr ggplot2
+#'@importFrom magrittr %>%
+#'@example inst/extdata/examples/prnNMF_.R
+#'
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
+#'
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+#'  GSEA. \cr
+#'
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr
+#'
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
+#'  analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
+#'  analysis and visualization \cr
+#'
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'
+#'@export
+plot_pepNMFCon <- function (col_select = NULL, 
+                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
+                            filename = NULL, 
+                            annot_cols = NULL, annot_colnames = NULL, r = NULL, ...) {
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_pepid()
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))  
   
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = anal, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\NMF\\log","anal_pepNMF_log.csv"), append = TRUE)  
+  stopifnot(rlang::is_logical(scale_log2r), 
+            rlang::is_logical(impute_na), 
+            rlang::is_logical(complete_cases))
+  
+  col_select <- rlang::enexpr(col_select)
+  filename <- rlang::enexpr(filename)
+  annot_cols <- rlang::enexpr(annot_cols)
+  annot_colnames <- rlang::enexpr(annot_colnames)  
+  
+  reload_expts()
+
+  info_anal(id = !!id, col_select = !!col_select, col_group = NULL, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = NULL, filepath = NULL, filename = !!filename, 
+            anal_type = "NMF_con")(r = r, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 
-#'Protein NMF Classification
+#'NMF plots
 #'
-#'\code{anal_prnNMF} is a wrapper of \code{\link{proteoNMF}} for the NMF
-#'analysis of protein data
+#'\code{plot_prnNMFCon} plots the consensus heat maps from the NMF
+#'classification of protein \code{log2FC}.
 #'
-#'@rdname proteoNMF
-#'@import purrr
+#'@rdname plot_pepNMFCon
+#'@import NMF dplyr rlang readr ggplot2
+#'@importFrom magrittr %>%
 #'@export
-anal_prnNMF <- function (...) {
-  err_msg <- "Don't call the function with arguments `id` and/or `task`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id", "task"))) stop(err_msg)
-
+plot_prnNMFCon <- function (col_select = NULL, 
+                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
+                            filename = NULL, 
+                            annot_cols = NULL, annot_colnames = NULL, r = NULL, ...) {
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
-
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = anal, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log\\anal_prnNMF_log.csv"), append = TRUE)  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))  
+  
+  stopifnot(rlang::is_logical(scale_log2r), 
+            rlang::is_logical(impute_na), 
+            rlang::is_logical(complete_cases))
+  
+  col_select <- rlang::enexpr(col_select)
+  filename <- rlang::enexpr(filename)
+  annot_cols <- rlang::enexpr(annot_cols)
+  annot_colnames <- rlang::enexpr(annot_colnames)  
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_group = NULL, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = NULL, filepath = NULL, filename = !!filename, 
+            anal_type = "NMF_con")(r = r, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 
-#'NMF consensus
+#'NMF plots
 #'
-#'\code{plot_pepNMFCon} is a wrapper of \code{\link{proteoNMF}} for the
-#'visualization of the consensus heat map of peptide data
+#'\code{plot_pepNMFCoef} plots the coefficient heat maps from the NMF
+#'classification of peptide \code{log2FC}.
 #'
-#'@rdname proteoNMF
-#'@inheritParams  proteoEucDist
-#'@import purrr
+#'@rdname plot_pepNMFCon
+#'@import NMF dplyr rlang readr ggplot2
+#'@importFrom magrittr %>%
 #'@export
-plot_pepNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
-  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
-  
-  annot_cols <- rlang::enexpr(annot_cols)
-  annot_colnames <- rlang::enexpr(annot_colnames)
-  
+plot_pepNMFCoef <- function (col_select = NULL, 
+                             scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE, 
+                             filename = NULL, 
+                             annot_cols = NULL, annot_colnames = NULL, r = NULL, ...) {
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_pepid()
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))  
   
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcon, 
-                                           annot_cols = !!annot_cols, 
-                                           annot_colnames = !!annot_colnames, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\NMF\\log","plot_pepNMFCon_log.csv"), append = TRUE)
+  stopifnot(rlang::is_logical(scale_log2r), 
+            rlang::is_logical(impute_na), 
+            rlang::is_logical(complete_cases))
+  
+  col_select <- rlang::enexpr(col_select)
+  filename <- rlang::enexpr(filename)
+  annot_cols <- rlang::enexpr(annot_cols)
+  annot_colnames <- rlang::enexpr(annot_colnames)  
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_group = NULL, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = NULL, filepath = NULL, filename = !!filename, 
+            anal_type = "NMF_coef")(r = r, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 
-#'NMF consensus
+#'NMF plots
 #'
-#'\code{plot_prnNMFCon} is a wrapper of \code{\link{proteoNMF}} for the
-#'visualization of the consensus heat map of protein data
+#'\code{plot_prnNMFCoef} plots the coefficient heat maps from the NMF
+#'classification of protein \code{log2FC}.
 #'
-#'@rdname proteoNMF
-#'@inheritParams  proteoEucDist
-#'@import purrr
+#'@rdname plot_pepNMFCon
+#'@import NMF dplyr rlang readr ggplot2
+#'@importFrom magrittr %>%
 #'@export
-plot_prnNMFCon <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
-  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
-
-  annot_cols <- rlang::enexpr(annot_cols)
-  annot_colnames <- rlang::enexpr(annot_colnames)
-  
+plot_prnNMFCoef <- function (col_select = NULL, 
+                             scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
+                             filename = NULL, 
+                             annot_cols = NULL, annot_colnames = NULL, r = NULL, ...) {
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))  
   
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcon, 
-                                           annot_cols = !!annot_cols, 
-                                           annot_colnames = !!annot_colnames, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log\\plot_prnNMFCon_log.csv"), append = TRUE)
+  stopifnot(rlang::is_logical(scale_log2r), 
+            rlang::is_logical(impute_na), 
+            rlang::is_logical(complete_cases))
+  
+  col_select <- rlang::enexpr(col_select)
+  filename <- rlang::enexpr(filename)
+  annot_cols <- rlang::enexpr(annot_cols)
+  annot_colnames <- rlang::enexpr(annot_colnames)  
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_group = NULL, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = NULL, filepath = NULL, filename = !!filename, 
+            anal_type = "NMF_coef")(r = r, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 
-#'NMF coefficients
+#'Heat maps of metagenes from NMF
 #'
-#'\code{plot_pepNMFCoef} is a wrapper of \code{\link{proteoNMF}} for the
-#'visualization of the coefficient heat map of peptide data
+#'\code{plot_metaNMF} is a wrapper of \code{\link[pheatmap]{pheatmap}} for the
+#'visualization of the metagene heat maps from NMF
 #'
-#'@rdname proteoNMF
+#'@inheritParams anal_pepNMF
 #'@inheritParams  proteoEucDist
+#'@param r Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
+#'  At the NULL default, all available ranks from the results of
+#'  \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be used.
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
+#'  data; also see \code{\link{prnHM}}. \cr \code{arrange_}: Logical
+#'  expression(s) for the row ordering of data; also see \code{\link{prnHM}}.
+#'  \cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}.
 #'@import purrr
-#'@export
-plot_pepNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
-  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
-  
-  annot_cols <- rlang::enexpr(annot_cols)
-  annot_colnames <- rlang::enexpr(annot_colnames)
-  
-  dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  id <- match_normPSM_pepid()
-  
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcoef, 
-                                           annot_cols = !!annot_cols, 
-                                           annot_colnames = !!annot_colnames, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\NMF\\log","plot_pepNMFCoef_log.csv"), append = TRUE)
-}
-
-
-#'NMF coefficients
+#'@example inst/extdata/examples/prnNMF_.R
 #'
-#'\code{plot_prnNMFCoef} is a wrapper of \code{\link{proteoNMF}} for the
-#'visualization of the coefficient heat map of protein data
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
-#'@rdname proteoNMF
-#'@inheritParams  proteoEucDist
-#'@import purrr
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+#'  GSEA. \cr
+#'
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr
+#'
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
+#'  analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
+#'  analysis and visualization \cr
+#'
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'
 #'@export
-plot_prnNMFCoef <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
-  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
-
-  annot_cols <- rlang::enexpr(annot_cols)
-  annot_colnames <- rlang::enexpr(annot_colnames)
-  
+plot_metaNMF <- function (col_select = NULL, 
+                          scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
+                          df = NULL, filepath = NULL, filename = NULL, 
+                          r = NULL, annot_cols = NULL, annot_colnames = NULL, ...) {
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))  
   
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotcoef, 
-                                           annot_cols = !!annot_cols, 
-                                           annot_colnames = !!annot_colnames, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log\\plot_prnNMFCoef_log.csv"), append = TRUE)
-}
-
-
-#'NMF coefficients
-#'
-#'\code{plot_metaNMF} is a wrapper of \code{\link{proteoNMF}} for the
-#'visualization of the metagene heat maps of protein data
-#'
-#'@rdname proteoNMF
-#'@inheritParams  proteoEucDist
-#'@import purrr
-#'@export
-plot_metaNMF <- function (annot_cols = NULL, annot_colnames = NULL, ...) {
-  err_msg <- "Don't call the function with arguments `annot_cols` and/or `annot_colnames`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("annot_cols", "annot_colnames"))) stop(err_msg)
-
+  stopifnot(rlang::is_logical(scale_log2r), 
+            rlang::is_logical(impute_na), 
+            rlang::is_logical(complete_cases))
+  
+  col_select <- rlang::enexpr(col_select)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
   annot_cols <- rlang::enexpr(annot_cols)
-  annot_colnames <- rlang::enexpr(annot_colnames)
+  annot_colnames <- rlang::enexpr(annot_colnames)  
   
-  dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+  reload_expts()
   
-  id <- match_normPSM_protid()
-  
-  quietly_log <- purrr::quietly(proteoNMF)(id = !!id, task = plotmeta, 
-                                           annot_cols = !!annot_cols, 
-                                           annot_colnames = !!annot_colnames, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\NMF\\log\\plot_metaNMF_log.csv"), append = TRUE)  
+  info_anal(id = !!id, col_select = !!col_select, col_group = NULL, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = !!df, filepath = !!filepath, filename = !!filename, 
+            anal_type = "NMF_meta")(r = r, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
-
 

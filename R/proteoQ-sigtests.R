@@ -90,19 +90,21 @@
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
 #'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
 #'  
-#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = NULL, filename = NULL,
-											impute_na = TRUE, complete_cases = FALSE, method = "limma",
+proteoSigtest <- function (df = NULL, id = gene, filepath = NULL, filename = NULL,
+											scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, method = "limma",
 											var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), ...) {
 
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), current_env()) %>% c(dots) %>% save_call("pepSig")
     } else if (id %in% c("prot_acc", "gene")) {
+      load(file.path(dat_dir, "Calls\\prnSig_formulas.rda"))
+      dots <- my_union(dots, prnSig_formulas)
       mget(names(formals()), current_env()) %>% c(dots) %>% save_call("prnSig")
     }
     , add = TRUE
@@ -120,16 +122,18 @@ proteoSigtest <- function (df = NULL, id = gene, scale_log2r = TRUE, filepath = 
 	
 	reload_expts()
 
-	# force impute_na to TRUE for "lm" and "lmer"
-	if (!impute_na & method != "limma") impute_na <- TRUE
+	if (!impute_na & method != "limma") {
+	  impute_na <- TRUE
+	  warning("Coerce `impute_na = ", impute_na, "` at method = ", method, call. = FALSE)
+	}
 
 	# Sample selection criteria:
 	#   !is_reference under "Reference" ->
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r,
-					filepath = !!filepath, filename = !!filename, impute_na = impute_na,
-					anal_type = "Model")(complete_cases = complete_cases, method = !!method, 
-					                     var_cutoff, pval_cutoff, logFC_cutoff, ...)
+	info_anal(df = !!df, id = !!id, 
+	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	          filepath = !!filepath, filename = !!filename, 
+	          anal_type = "Model")(method = !!method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
 }
 
 
@@ -242,10 +246,10 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 	    gsub(".plus.", "+", ., fixed = TRUE) %>% 
 	    gsub(".minus.", "-", ., fixed = TRUE)
 	  
-	  cat("\ncontrs: ", contrs %>% as.character, "\n")
-	  cat("new_contrs: ", new_contrs %>% as.character, "\n")
-	  cat("elements: ", elements %>% as.character, "\n")
-	  cat("new_elements: ", new_elements %>% as.character, "\n\n")		
+	  message("\ncontrs: ", contrs %>% as.character, "\n")
+	  message("new_contrs: ", new_contrs %>% as.character, "\n")
+	  message("elements: ", elements %>% as.character, "\n")
+	  message("new_elements: ", new_elements %>% as.character, "\n\n")		
 	}
 
 	label_scheme_sub_sub <- label_scheme_sub %>%
@@ -282,7 +286,7 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 		.[grepl("\\|", .)] %>%
 		gsub("1\\s*\\|\\s*(.*)", "\\1", .)
 
-	cat("random_vars: ", random_vars %>% as.character, "\n\n")
+	message("random_vars: ", random_vars %>% as.character, "\n\n")
 	
 	return(list(design = design, contr_mat = contr_mat, key_col = key_col, random_vars = random_vars,
 							label_scheme_sub_sub = label_scheme_sub_sub))
@@ -370,18 +374,15 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	random_vars <- fml_ops$random_vars
 	label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
 
-	# keep the name list as some rows may drop in procedures such as filtration
+	# keep the name list as rows may drop in filtration
 	df_nms <- df %>%
 		tibble::rownames_to_column(id) %>%
 		dplyr::select(id)
 
 	if (complete_cases) df <- df[complete.cases(df), ]
-
-	# remove small-variance entries such as normalizers
-	df <- df %>% filterData(var_cutoff = var_cutoff)
-
-	# ensure the same order in Sample_ID
+	
 	df <- df %>% 
+	  filterData(var_cutoff = var_cutoff) %>% 
 	  dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
 
 	if (length(random_vars) > 0) {
@@ -495,10 +496,10 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	
 	if (id %in% c("pep_seq", "pep_seq_mod")) {
 	  pepSig_formulas <- dots
-	  save(pepSig_formulas, file = file.path(dat_dir, "Calls", "pepSig_formulas.rda"))
+	  save(pepSig_formulas, file = file.path(dat_dir, "Calls\\pepSig_formulas.rda"))
 	  rm(pepSig_formulas)
 	} else if (id %in% c("prot_acc", "gene")) {
-	  if (is_empty(dots)) {
+	  if (rlang::is_empty(dots)) {
 	    prnSig_formulas <- dots <- concat_fml_dots()
 	  } else {
 	    prnSig_formulas <- dots
@@ -507,10 +508,29 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	  rm(prnSig_formulas)
 	}
 	
-	df_op <- purrr::map(dots, 
-	                    ~ model_onechannel(df, !!id, .x, label_scheme_sub, complete_cases, method, 
-	                                       var_cutoff, pval_cutoff, logFC_cutoff, !!!non_fml_dots)) %>%
-					do.call("cbind", .)
+	quietly_log <- 
+	  purrr::map(dots, ~ purrr::quietly(model_onechannel)
+	             (df, !!id, .x, label_scheme_sub, 
+	               complete_cases, method, var_cutoff, 
+	               pval_cutoff, logFC_cutoff, !!!non_fml_dots)) 
+	
+	if (id %in% c("pep_seq", "pep_seq_mod")) {
+	  out_path <- file.path(dat_dir, "Peptide\\Model\\log\\pepSig_log.csv")
+	} else if (id %in% c("prot_acc", "gene")) {
+	  out_path <- file.path(dat_dir, "Protein\\Model\\log\\prnSig_log.csv")
+	}
+	
+	purrr::map(quietly_log, ~ {
+	  .x[[1]] <- NULL
+	  return(.x)
+	}) %>% 
+	  reduce(., `c`) %>% 
+	  purrr::walk(., write, out_path, append = TRUE)
+
+	df_op <- purrr::map(quietly_log, `[[`, 1) %>%
+	  do.call("cbind", .)
+	
+	return(df_op)
 }
 
 
@@ -529,11 +549,8 @@ pepSig <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_pepid()
-  
-  quietly_log <- purrr::quietly(proteoSigtest)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Model\\log\\pepSig_log.csv"), append = TRUE)
+  id <- match_call_arg(normPSM, group_psm_by)
+  proteoSigtest(id = !!id, ...)
 }
 
 
@@ -555,10 +572,7 @@ prnSig <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
-
-  quietly_log <- purrr::quietly(proteoSigtest)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Model\\log\\prnSig_log.csv"), append = TRUE)
+  id <- match_call_arg(normPSM, group_pep_by)
+  proteoSigtest(id = !!id, ...)
 }
 

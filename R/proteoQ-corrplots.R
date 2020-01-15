@@ -19,10 +19,10 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
   dots <- dots %>% 
     .[! names(.) %in% c("xmin", "xmax", "xbreaks", "width", "height")]
   
-  lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  dots <- dots %>% .[! . %in% lang_dots]
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  dots <- dots %>% .[! . %in% filter_dots]
   
-  df <- df %>% filters_in_call(!!!lang_dots)
+  df <- df %>% filters_in_call(!!!filter_dots)
 
 	col_select <- rlang::enexpr(col_select)
 	col_order <- rlang::enexpr(col_order)
@@ -307,8 +307,8 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
     theme(plot.title = element_text(face = "bold", colour = "black", size = 20,
                                     hjust = 0.5, vjust = 0.5))
 
-  ggsave(file.path(filepath, gg_imgname(filename)), plot = p1, width = width, height = height, dpi = dpi, units = "in")
-         
+  quietly_log <- purrr::quietly(ggsave)(file.path(filepath, gg_imgname(filename)), 
+                                        plot = p1, width = width, height = height, dpi = dpi, units = "in")
 }
 
 
@@ -323,11 +323,12 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'for details.
 #'
 #'@inheritParams proteoHist
+#'@inheritParams proteoMDS
 #'@param  col_order Character string to a column key in \code{expt_smry.xlsx}.
 #'  Numeric values under which will be used for the left-to-right arrangement of
-#'  samples in plots. At the NULL default, the column key \code{Order} will be
-#'  used. If values under column \code{Order} are left blank, samples will be
-#'  ordered by their names.
+#'  samples in graphic outputs or top-to-bottom arrangement in text outputs. At
+#'  the NULL default, the column key \code{Order} will be used. If values under
+#'  column \code{Order} are left blank, samples will be ordered by their names.
 #'@param data_select The subset of data to be selected. At default, \code{logFC}
 #'  will be used; at \code{logInt}, intensity with \code{log10} transformation
 #'  will be used.
@@ -339,46 +340,53 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'  \code{xbreaks}, the breaks on \eqn{x} axis; the same breaks will be applied
 #'  to \eqn{y} axis.
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+#'  GSEA. \cr
+#'
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr
+#'
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
 #'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
-#'  
-#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
-#'  
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+#'
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'
 #'@example inst/extdata/examples/prnCorr_.R
 #'
 #'@return Correlation plots.
@@ -387,7 +395,8 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'@export
 proteoCorr <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
                         data_select = c("logFC", "logInt"), 
-                        col_select = NULL, col_order = NULL, scale_log2r = TRUE, 
+                        col_select = NULL, col_order = NULL, 
+                        scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
@@ -403,13 +412,11 @@ proteoCorr <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	filename <- rlang::enexpr(filename)
 
 	reload_expts()
-
+  
 	info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
-	          scale_log2r = scale_log2r, impute_na = FALSE,
+	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
 						df = !!df, filepath = !!filepath, filename = !!filename,
 						anal_type = "Corrplot")(data_select, ...)
-						                        
-						                        
 }
 
 
@@ -428,11 +435,8 @@ pepCorr_logFC <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_normPSM_pepid()
-  
-  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logFC", ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Corrplot\\log\\pepCorr_log.csv"), append = TRUE)
+  id <- match_call_arg(normPSM, group_psm_by)
+  proteoCorr(id = !!id, data_select = "logFC", ...)
 }
 
 
@@ -450,13 +454,9 @@ pepCorr_logInt <- function (...) {
   if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
   dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  
-  id <- match_normPSM_pepid()
-  
-  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logInt", ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Corrplot\\log\\pepCorr_log.csv"), append = TRUE)
+
+  id <- match_call_arg(normPSM, group_psm_by)
+  proteoCorr(id = !!id, data_select = "logInt", ...)
 }
 
 
@@ -476,11 +476,8 @@ prnCorr_logFC <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
-  
-  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logFC", ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Corrplot\\log\\prnCorr_log.csv"), append = TRUE)
+  id <- match_call_arg(normPSM, group_pep_by)
+  proteoCorr(id = !!id, data_select = "logFC", ...)
 }
 
 
@@ -499,11 +496,8 @@ prnCorr_logInt <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
-
-  quietly_log <- purrr::quietly(proteoCorr)(id = !!id, data_select = "logInt", ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Corrplot\\log\\prnCorr_log.csv"), append = TRUE)
+  id <- match_call_arg(normPSM, group_pep_by)
+  proteoCorr(id = !!id, data_select = "logInt", ...)
 }
 
 

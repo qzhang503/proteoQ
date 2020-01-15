@@ -4,7 +4,7 @@
 \alias{gspaHM}
 \title{Plot distance heat map of GSPA}
 \usage{
-gspaHM(filepath, filename, ...)
+gspaHM(scale_log2r, impute_na, filepath, filename, ...)
 }
 \description{
 Plot distance heat map of GSPA

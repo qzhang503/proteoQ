@@ -32,20 +32,20 @@ automatically. Examplary values include \code{anal_type = c("PCA",
 "NMF", "Purge", "Trend", ...)}.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
+automatically after matching the data type with an \code{id} among 
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+\item{scale_log2r}{Not used for full volcano plots by \code{pepVol} or 
+\code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
+for \code{gspaMap}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
+\item{filename}{A file name to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of id in the call.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
 the formula(e) will match those used in \code{\link{pepSig}} or
@@ -206,10 +206,10 @@ gspaMap(
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
  
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
- \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

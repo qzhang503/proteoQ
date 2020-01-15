@@ -9,7 +9,7 @@
 proteoEucDist(id = gene, col_select = NULL, col_group = NULL,
   col_color = NULL, col_fill = NULL, col_shape = NULL,
   col_size = NULL, col_alpha = NULL, scale_log2r = TRUE,
-  impute_na = FALSE, complete_cases = FALSE, adjEucDist = FALSE,
+  complete_cases = FALSE, impute_na = FALSE, adjEucDist = FALSE,
   annot_cols = NULL, annot_colnames = NULL, df = NULL,
   filepath = NULL, filename = NULL, ...)
 
@@ -18,16 +18,6 @@ pepEucDist(...)
 prnEucDist(...)
 }
 \arguments{
-\item{id}{Character string to indicate the type of data. The value will be
-determined automatically. Peptide data will be used at \code{id = pep_seq}
-or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
-or \code{gene}.}
-
-\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the \code{NULL} default, the column
-key will be \code{Select}.}
-
 \item{col_group}{Not used.}
 
 \item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -51,14 +41,11 @@ Values under which will be used for the \code{alpha} (transparency)
 aesthetics in plots. At the NULL default, the column key \code{Alpha} will
 be used.}
 
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
-
-\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used. The default is FALSE.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex Euclidean distance
 by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
@@ -76,19 +63,6 @@ annotation.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}. The default is NULL without name replacement.}
-
-\item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
-
-\item{filepath}{A file path to output results. By default, it will be
-determined automatically by the name of the calling function and the value
-of \code{id} in the \code{call}.}
-
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
 
 \item{...}{Parameters for \code{\link[pheatmap]{pheatmap}}}
 }

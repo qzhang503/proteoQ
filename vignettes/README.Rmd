@@ -60,17 +60,6 @@ references:
     month: 7
 ---
 
-<style>
-p.comment {
-background-color: #e5f5f9;
-padding: 10px;
-border: 1px solid black;
-margin-left: 0px;
-border-radius: 5px;
-}
-
-</style>
-
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -86,7 +75,7 @@ knitr::opts_chunk$set(
 
 
 ## Introduction to proteoQ
-Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further ingegrates the operations aganist data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
+Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the operations against data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
 
 The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
 
@@ -1043,33 +1032,80 @@ knitr::include_graphics(c(img_gspahm_connect, img_gspahm_redund))
 
 
 ### 2.7 Trend Analysis
-The following performs the trend analysis against protein expressions. More information can be found from [`cmeans`](https://www.rdocumentation.org/packages/e1071/versions/1.7-2/topics/cmeans),  [`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf) and `?anal_prnTrend`. Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.  
+In this section, we perform the trend analysis against protein expressions. More information can be found from [`cmeans`](https://www.rdocumentation.org/packages/e1071/versions/1.7-2/topics/cmeans),  [`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf) and `?anal_prnTrend`. Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.  
 
 ```{r Protein trends, eval = FALSE}
-# soft clustering of protein expression data
 anal_prnTrend(
-  col_order = Order,
-  n_clust = c(5:8), 
+  n_clust = c(5:6), 
   filter_by_npep = exprs(prot_n_pep >= 2),
-)
-
-# visualization
-plot_prnTrend(
-  col_order = Order,
-  n_clust = 6, 
-  filter_by_npep = exprs(prot_n_pep >= 4),
 )
 ```
 
-The argument `col_order` provides a means to supervise the order of samples in result tables or during the trend visualization. In the above example, the `anal_prnTrend` and `plot_prnTrend` will both look into the field under the `expt_smry.xlsx::Order` column for sample arrangement. At `n_clust = 6`, the correspondence between protein IDs and their cluster assignments is summarised in file `Protein_Trend_Z_n6.csv`. The letter `Z` in the file name denotes the option of `scale_log2r = TRUE`.  
+The above codes will generate result files, `Protein_Trend_Z_nclust5.txt` and `Protein_Trend_Z_nclust6.txt`, under the `...\Protein\Trend` directory. The letter `Z` in the file names remind us that the results were derived from normalized protein data with the option of `scale_log2r = TRUE`. We next visualize the results:  
 
-```{r Protein_trends plots, echo=FALSE, fig.align='left', fig.cap="**Figure 8.** Trend analysis of protein log2FC.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r Protein trends_plot, eval = FALSE}
+plot_prnTrend(
+  col_order = Order,
+)
+```
+
+The argument `col_order` provides a means to supervise the order of samples during the trend visualization. In the above example, the `plot_prnTrend` will look into the field under the `expt_smry.xlsx::Order` column for sample arrangement (see also Section 2.2 Correlation plots).  
+
+```{r Protein_trends all_plots, echo=FALSE, fig.align='left', fig.cap="**Figure 8A.** Trends of protein log2FC (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_prn_trends <- "images\\protein\\trend\\prn_trend_n6.png"
 knitr::include_graphics(c(img_prn_trends))
 ```
 
+We can subset the input data by `filter_` varargs. In the example shown below, we choose to visualize only the pattern of trends in cluster 4. Note that `cluster` is a column key in `Protein_Trend_[...].txt`:  
+
+```{r Protein trends_plot_filter, eval = FALSE}
+plot_prnTrend(
+  col_order = Order,
+  filter_by = exprs(cluster == 4),
+  width = 12, 
+  height = 12,
+  filename = cl4.png,
+)
+```
+
+```{r Protein_trend_by_cluster, echo=FALSE, fig.align='left', fig.cap="**Figure 8B.** Trends of protein log2FC at cluster 4 (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_prn_trends_cl4 <- "images\\protein\\trend\\cl4_nclust6.png"
+knitr::include_graphics(c(img_prn_trends_cl4))
+```
+
+We can also select certain sample groups for visualization, for instance, the samples under the column of `expt_smry.xlsx::BI`:  
+
+```{r Protein trends_plot_select, eval = FALSE}
+plot_prnTrend(
+  col_order = Order, 
+  col_select = BI,
+  filename = bi.png,
+)
+```
+
+```{r Protein_trend_col_select, echo=FALSE, fig.align='left', fig.cap="**Figure 8C.** Trends of protein log2FC for BI subset (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='60%'}
+img_prn_trends_bi <- "images\\protein\\trend\\bi_nclust6.png"
+knitr::include_graphics(c(img_prn_trends_bi))
+```
+
+Note the difference between  
+
+```{r Protein trends_order_1, eval = FALSE}
+anal_prnTrend(col_select = BI, ...)
+plot_prnTrend(col_select = NULL, ...)
+```
+
+and  
+
+```{r Protein trends_order_2, eval = FALSE}
+anal_prnTrend(col_select = NULL, ...)
+plot_prnTrend(col_select = BI, ...)
+```
+
+Apparently, they will both plot the trends of protein log2FC for the `BI` subset. In spite, the former is based on the clustering results from the `BI` subset whereas the later is based on the findings from all samples.  The same theme will hold for various informatic analysis in `proteoQ`, including the NMF analysis that we will next discuss.  
+
 ### 2.8 NMF Analysis
-The following performs the NMF analysis against protein data. More details can be found from [`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf) and `anal_prnNMF`.  
+In this section, we will performs the NMF analysis against protein data. More details can be found from [`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf) and the `?anal_prnNMF` wrapper.  
 
 ```{r Protein NMF, eval = FALSE}
 # load library
@@ -1080,61 +1116,131 @@ anal_prnNMF(
   impute_na = FALSE,
   col_group = Group, # optional a priori knowledge of sample groups
   r = c(5:6),
-  nrun = 200, 
+  nrun = 20, 
+  seed = 123,
   filter_by_npep = exprs(prot_n_pep >= 2),
 )
+```
 
-# consensus heat map
+Analogous analysis for peptide data are available via `anal_pepNMF(...)`.  
+
+Following the primary NMF analysis, secondary utilities of `plot_pepNMFCon` and `plot_prnNMFCon` prepare the consensus heat maps of peptide and protein data, respectively. Similarly, `plot_pepNMFCoef` and `plot_prnNMFCoef` prepare coefficient heat maps. Utility `plot_metaNMF` makes the heat maps of protein `log2FC.` These utilities can pass arguments to `pheatmap` as shown in **Section** 2.3. In the examples shown below, we plot the heat maps for protein data against all available ranks, which are 5 and 6, specified in the earlier `anal_prnNMF` step.
+
+```{r Protein NMF_heatmaps, eval = FALSE}
 plot_prnNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10, 
+  width = 14,
+  height = 14, 
 )
 
-# coefficient heat map
 plot_prnNMFCoef(
   impute_na = FALSE,
-  r = 6, 
   annot_cols = c("Color", "Alpha", "Shape"), 
   annot_colnames = c("Lab", "Batch", "WHIM"), 
-  width = 10, 
-  height = 10, 
+  width = 14, 
+  height = 6, 
 )
 
-# metagene heat map(s)
 plot_metaNMF(
   impute_na = FALSE,
-  r = 6, 
   annot_cols = c("Color", "Alpha", "Shape"), 
   annot_colnames = c("Lab", "Batch", "WHIM"), 
-  
-  fontsize = 8, 
+  cell_width = 6,
+  fontsize = 6, 
   fontsize_col = 5,
 )
 ```
 
-```{r Protein NMF heat maps, echo=FALSE, fig.align='left', fig.cap="**Figure 9A-9B.** NMF analysis of protein log2FC. Left: concensus; right: coefficients.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_nmf_con <- "images\\protein\\nmf\\prn_nmf_r6_consensus.png"
-img_nmf_coef <- "images\\protein\\nmf\\prn_nmf_r6_coef.png"
-knitr::include_graphics(c(img_nmf_con, img_nmf_coef))
-```
+Argument `impute_na` reminds us which piece(s) of NMF results from the corresponding `anal_[...]NMF` will be used for plotting. The same is true for `scale_log2r`, which defaults at TRUE. An error message will be noted if no corresponding analysis results were found.  
 
-### 2.9 STRING Analysis
-The following performs the [`STRING`](http://www.string-db.org) analysis of protein-protein interactions. More details can be found from `?getStringDB`.  
+Visualization aganist data subset is also feasible. In the next example, we will prepare heat maps for samples under column `BI` in `expt_smry.xlsx`. We further limit ourselves to results from `anal_prnNMF` at r = 5. In metagene plots, we choose additionally to row order data by genes via the `arrange_` vararg:  
 
-```{r Protein StringDB, eval = FALSE}
-getStringDB(
-  db_path = "~\\proteoQ\\dbs\\string",
-  score_cutoff = .9,
-  adjP = FALSE,
-  filter_by_sp = exprs(species %in% c("human", "mouse")), 
-  filter_by_npep = exprs(n_pep >= 2), 
+```{r Protein NMF_select, eval = FALSE}
+plot_prnNMFCon(
+  impute_na = FALSE,
+  col_select = BI,
+  r = 5, 
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  fontsize = 8, 
+  fontsize_col = 6,
+  fontsize_row = 6, 
+  width = 6.5,
+  height = 6, 
+  filename = bi_r5_con.png, 
+)
+
+plot_prnNMFCoef(
+  impute_na = FALSE,
+  col_select = BI,
+  r = 5, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  fontsize = 8, 
+  fontsize_col = 6,
+  fontsize_row = 6, 
+  width = 12,
+  height = 3, 
+  filename = bi_r5_coef.png, 
+)
+
+plot_metaNMF(
+  impute_na = FALSE,
+  col_select = BI,
+  r = 5, 
+  annot_cols = c("Color", "Alpha", "Shape"), 
+  annot_colnames = c("Lab", "Batch", "WHIM"), 
+  # fontsize = 5, 
+  # fontsize_col = 5,
+  # cellwidth = 6,
+  # cellheight = 6,
+  cluster_rows = FALSE,
+  arrange_by = exprs("gene"),   
+  filename = bi_r5_rowordered.png,
 )
 ```
 
-The results of protein-protein interaction is summarised in `Protein_STRING_ppi.tsv` and the expression data in `Protein_STRING_expr.tsv`. The files are formatted for direct applications with [`Cytoscape`](https://cytoscape.org). When calling `getStringDB`, the corresponding databases will be downloaded automatically if not yet present locally. One can also choose to download separately the databases for a given `species`:  
+The silhouette information was obtained via the `cluster` package in R and shown as a track on the top of consensus and coefficient heat maps.  
+
+```{r Protein NMF heat maps, echo=FALSE, fig.align='left', fig.cap="**Figure 9A-9B.** Heat map visualization of protein NMF results. Left: concensus; right: coefficients; metagenes not shown.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_nmf_con <- "images\\protein\\nmf\\bi_r5_con_rank5.png"
+img_nmf_coef <- "images\\protein\\nmf\\bi_r5_coef_rank5.png"
+knitr::include_graphics(c(img_nmf_con, img_nmf_coef))
+```
+
+While utility `plot_prnTrend` in trend visualization (**Section** 2.7) can take a customized theme for uses in [`ggplot2`](http://https://ggplot2.tidyverse.org/) therein, the `plot_` functions in NMF are wrappers of [`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf) and thus can process a user-supplied color palette.  
+
+```{r Protein NMF_color_palette, eval = FALSE}
+plot_prnNMFCon(
+  color = colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(50), 
+  ...
+)
+
+plot_prnNMFCoef(
+  color = ..., 
+)
+
+plot_metaNMF(
+  color = ...,
+)
+```
+
+
+### 2.9 STRING Analysis
+The following performs the [`STRING`](http://www.string-db.org) analysis of protein-protein interactions. More details can be found from `?anal_prnString`.  
+
+```{r Protein StringDB, eval = FALSE}
+anal_prnString(
+  db_path = "~\\proteoQ\\dbs\\string",
+  score_cutoff = .9,
+  filter_by_sp = exprs(species %in% c("human", "mouse")), 
+  filter_prots_by = exprs(prot_n_pep >= 2),
+)
+```
+
+The results of protein-protein interaction is summarised in `Protein_String_[...]_ppi.tsv` and the expression data in `Protein_String_[...]_expr.tsv`. The files are formatted for direct applications with [`Cytoscape`](https://cytoscape.org). When calling `anal_prnString`, the corresponding databases will be downloaded automatically if not yet present locally. One can also choose to download separately the databases for a given `species`:  
 
 ```{r Protein String_download, eval = FALSE}
 dl_stringdbs(

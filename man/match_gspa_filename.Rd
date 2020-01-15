@@ -4,10 +4,11 @@
 \alias{match_gspa_filename}
 \title{Matches the name of GSPA result file}
 \usage{
-match_gspa_filename(anal_type = "GSPA", subdir = NULL)
+match_gspa_filename(anal_type = "GSPA", subdir = NULL, scale_log2r,
+  impute_na)
 }
 \arguments{
-\item{anal_type}{}
+\item{anal_type}{Always \code{GSPA}; maybe different value for future uses.}
 }
 \description{
 Matches the name of GSPA result file

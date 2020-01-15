@@ -4,28 +4,29 @@
 \alias{prnGSVA}
 \title{GSVA of protein data}
 \usage{
-prnGSVA(scale_log2r = TRUE, df = NULL, filepath = NULL,
-  filename = NULL, impute_na = NULL, complete_cases = FALSE,
+prnGSVA(df = NULL, filepath = NULL, filename = NULL,
+  scale_log2r = TRUE, complete_cases = FALSE, impute_na = NULL,
   lm_method = "limma", gset_nms = "go_sets", var_cutoff = 0.5,
   pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), ...)
 }
 \arguments{
-\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
-of standard deviation across all samples. The default is TRUE.}
-
 \item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
+automatically after matching the data type with an \code{id} among 
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{Use system default.}
 
 \item{filename}{Use system default.}
 
-\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
-the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
-protein data.}
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
+the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+protein data.}
 
 \item{lm_method}{Character string indicating the linear modeling method for
 significance assessment of GSVA enrichment scores. The default is
@@ -180,10 +181,10 @@ prnGSVA(
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
  
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
- \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

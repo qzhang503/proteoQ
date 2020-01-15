@@ -235,8 +235,8 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
   
-  group_psm_by <- match_normPSM_pepid()
-  group_pep_by <- match_normPSM_protid()
+  group_psm_by <- match_call_arg(normPSM, group_psm_by)
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
   stopifnot(group_psm_by %in% c("pep_seq", "pep_seq_mod"))
   stopifnot(group_pep_by %in% c("prot_acc", "gene"))
@@ -380,8 +380,8 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
   
-  group_psm_by <- match_normPSM_pepid()
-  group_pep_by <- match_normPSM_protid()
+  group_psm_by <- match_call_arg(normPSM, group_psm_by)
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
 
   stopifnot(group_psm_by %in% c("pep_seq", "pep_seq_mod"))
   stopifnot(group_pep_by %in% c("prot_acc", "gene"))

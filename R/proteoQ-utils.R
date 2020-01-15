@@ -315,7 +315,6 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 	if (sum(idx) > 0) stop("No aesthetics defined under column `", names(x)[idx], "`")
 
 	x <- x %>%
-		# dplyr::select(which(not_all_NA(.))) %>%
 		dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]),
 		              !is.na(.[["Sample_ID"]])) %>%
 		data.frame(check.names = FALSE) %>%
@@ -348,20 +347,20 @@ setHMColor <- function (annotation_col) {
 	if(is.null(ncol)) return (NA)
 	if(ncol == 0) return (NA)
 
-	annotation_col <- annotation_col %>%
-		dplyr::mutate_at(vars(one_of("TMT_Set")), ~ factor(TMT_Set)) %>%
-		dplyr::mutate_if(is.character, as.factor)
+	suppressWarnings(
+	  annotation_col <- annotation_col %>%
+	    dplyr::mutate_at(vars(one_of("TMT_Set")), ~ factor(TMT_Set)) %>%
+	    dplyr::mutate_if(is.character, as.factor)  
+	)
 
 	palette <- lapply(names(annotation_col), function(x) {
 		n <- nlevels(annotation_col[[x]])
 
 		palette <- if(n <= 9 & n >= 3) {
-			# brewer.pal(n, name = "Set1")
 		  brewer.pal(n, name = "Set2")
 		} else if(n > 9) {
 			colorRampPalette(brewer.pal(n = 7, "Set1"))(n)
 		} else if(n == 2) {
-			# c("#E41A1C", "#377EB8")
 		  c("#66C2A5", "#FC8D62")
 		} else if(n == 1) {
 			# c("#E41A1C")
@@ -440,15 +439,17 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'Users should avoid call the method directly, but instead use the following
 #'wrappers.
 #'
+#'@param overwrite Logical. If true, overwrite the previous results. The default
+#'  is FALSE.
 #'@inheritParams proteoHist
 #'@param ... Parameters for \code{\link[mice]{mice}}
 #'@return \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
 #'  for protein data.
-#'  
+#'
 #'@import dplyr purrr rlang mice
 #'@importFrom magrittr %>%
 #'@export
-imputeNA <- function (id, ...) {
+imputeNA <- function (id, overwrite = FALSE, ...) {
 
 	my_mice <- function (data, ...) {
 		data <- rlang::enexpr(data)
@@ -485,7 +486,7 @@ imputeNA <- function (id, ...) {
 		filename <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
 	}
 
-	if (!file.exists(filename)) {
+	if ((!file.exists(filename)) || overwrite) {
 		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
 		                        comment.char = "#"), error = function(e) NA)
 
@@ -528,7 +529,7 @@ imputeNA <- function (id, ...) {
 
 		write.table(df, filename, sep = "\t", col.names = TRUE, row.names = FALSE)
 	} else {
-	  cat("NA imputation by", id, "has been previously performed!\n")
+	  warning("NA imputation has been previously performed!\n", call. = FALSE)
 	}
 }
 
@@ -553,7 +554,7 @@ pepImp <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   imputeNA(id = !!id, ...)
 }
 
@@ -578,7 +579,7 @@ prnImp <- function (...) {
   err_msg <- "Don't call the function with argument `id`.\n"
   if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   imputeNA(id = !!id, ...)
 }
 
@@ -921,252 +922,149 @@ annotKin <- function (df, acc_type) {
 #' Saves the arguments in a function call
 #'
 #' @param call_pars Language.
-#' @param fn The name of function being called.
+#' @param fn The name of function being saved.
 #'
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 save_call <- function(call_pars, fn) {
 	dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)
-	# save(fn, file = file.path(dat_dir, "Calls", paste0(fn, "_call.rda")))
-	
 	call_pars[names(call_pars) == "..."] <- NULL
 	save(call_pars, file = file.path(dat_dir, "Calls", paste0(fn, ".rda")))
-
-	purrr::map(call_pars , as.character) %>%
-	  do.call(purrr::quietly(rbind), .) %>% 
-	  `[[`(1) %>% 
-	  # do.call(rbind, .) %>%
-		data.frame() %>%
-		`colnames<-`(paste("value", 1:ncol(.), sep = ".")) %>%
-		tibble::rownames_to_column("var") %>%
-		write.table(file.path(dat_dir, "Calls", paste0(fn, ".txt")), sep = '\t',
-		            col.names = TRUE, row.names = FALSE)
 }
 
 
-#' Matches the current pep_id to the pep_id in normPSM
-#' @param id.
+#' Matches formulas to those in calls to pepSig or prnSig
 #'
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
-match_normPSM_pepid <- function (id = c("pep_seq")) {
-  stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
-
-  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPSM.txt"), check.names = FALSE,
-                                 header = TRUE, sep = "\t", comment.char = "#"),
-                        error = function(e) NA)
+match_fmls <- function(formulas) {
+  fml_file <-  file.path(dat_dir, "Calls\\pepSig_formulas.rda")
   
-  if (!is.null(dim(call_pars))) {
-    id <- call_pars %>%
-      dplyr::filter(var == "group_psm_by") %>%
-      dplyr::select("value.1") %>%
-      unlist() %>%
-      as.character()
+  if (file.exists(fml_file)) {
+    load(file = fml_file)
+  } else {
+    stop("Run `pepSig()` first.")
   }
   
-  return(id)
+  fml_chr <- formulas %>%
+    as.character() %>%
+    gsub("\\s+", "", .)
+  
+  pepSig_chr <- pepSig_formulas %>%
+    purrr::map(~ .[is_call(.)]) %>%
+    as.character() %>%
+    gsub("\\s+", "", .)
+  
+  ok <- purrr::map_lgl(fml_chr, ~ . %in% pepSig_chr)
+  
+  if (!all(ok))
+    stop("Formula match failed: ", formulas[[which(!ok)]],
+         " not found in the latest call to 'pepSig(...)'.")
 }
 
 
-#' Matches the current prot_id to the prot_id in normPSM
-#' @param id.
+#' Matches the arg to anal_prnGSPA
 #'
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
-match_normPSM_protid <- function (id = c("prot_acc")) {
-  stopifnot(id %in% c("prot_acc", "gene"))
-  
-  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPSM.txt"), check.names = FALSE,
-                                 header = TRUE, sep = "\t", comment.char = "#"),
-                        error = function(e) NA)
-  
-  if (!is.null(dim(call_pars))) {
-    id <- call_pars %>%
-      dplyr::filter(var == "group_pep_by") %>%
-      dplyr::select("value.1") %>%
-      unlist() %>%
-      as.character()
-  }
-  
-  return(id)
-}
-
-
-#' Find the setting of current par in normPSM
-#' @param par
-#'
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
-match_normPSM_par <- function (par = "use_lowercase_aa") {
-  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPSM.txt"), check.names = FALSE,
-                                 header = TRUE, sep = "\t", comment.char = "#"),
-                        error = function(e) NA)
-  
-  if (!is.null(dim(call_pars))) {
-    res <- call_pars %>%
-      dplyr::filter(var == par) %>%
-      dplyr::select("value.1") %>%
-      unlist() %>%
-      as.character()
-  }
-  
-  return(res)
-}
-
-
-#' Matches the file name containing the summary of TMT experiment
-#'
-#' The default file name is \code{expt_smry.xlsx}. The \code{match_expt} matches
-#' the file name provided by users.
-#'
-#' @param fn_pars.
-#'
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
-match_expt <- function (fn_pars = "load_expts.txt") {
-	call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", fn_pars), check.names = FALSE,
-	                               header = TRUE, sep = "\t", comment.char = "#"),
-	                      error = function(e) NA)
-
-	if(!is.null(dim(call_pars))) {
-		expt_smry <- call_pars %>%
-			dplyr::filter(var == "expt_smry") %>%
-			dplyr::select("value.1") %>%
-			unlist() %>%
-			as.character()
-	} else {
-		expt_smry <- "expt_smry.xlsx"
-	}
-
-	return(expt_smry)
-}
-
-
-#' Matches the file name containing the information of analyte fractionation
-#'
-#' The default file name is \code{frac_smry.xlsx}. The \code{match_frac} matches
-#' the file name provided by users.
-#'
-#' @param fn_pars.
-#'
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
-match_frac <- function (fn_pars = "load_expts.txt") {
-	call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", fn_pars), check.names = FALSE,
-	                               header = TRUE, sep = "\t", comment.char = "#"),
-	                      error = function(e) NA)
-
-	if(!is.null(dim(call_pars))) {
-		frac_smry <- call_pars %>%
-			dplyr::filter(var == "frac_smry") %>%
-			dplyr::select("value.1") %>%
-			unlist() %>%
-			as.character()
-	} else {
-		frac_smry <- "frac_smry.xlsx"
-	}
-
-	return(frac_smry)
-}
-
-
-#' Matches the name of fasta files to those in normPSM
-#'
-#' @param fasta.
+#' @param arg Argument to be matched.
+#' @param call_rda the name of a rda
 #'
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
-match_fasta <- function () {
-  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "normPSM.txt"), check.names = FALSE,
-                                 header = TRUE, sep = "\t", comment.char = "#"),
-                        error = function(e) NA)
+match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") {
+  call_rda <- rlang::as_string(rlang::enexpr(call_rda))
+  arg <- rlang::as_string(rlang::enexpr(arg))
   
-  if (!is.null(dim(call_pars))) {
-    fasta <- call_pars %>%
-      dplyr::filter(var == "fasta") %>%
-      dplyr::select(-var) %>%
-      unlist() %>%
-      as.character()
-    
-    if (is_empty(fasta)) 
-      stop("No fasta file names(s) found from the call to `normPSM`.", call. = FALSE)
-  } else {
-    stop("No saved parameters found from the call to `normPSM`.", call. = FALSE)
-  }
+  rda <- paste0(call_rda, ".rda")
+  file <- file.path(dat_dir, "Calls", rda)
+  if (!file.exists(file)) stop(rda, " not found.")
   
-  return(fasta)
+  load(file = file)
+  if (is.null(call_pars[[arg]])) 
+    stop(arg, " not found in the latest call to ", call_rda, call. = FALSE)
+  
+  call_pars[[arg]]
 }
 
 
 #' Matches the name of GSPA result file
 #'
-#' @param anal_type
+#' @param anal_type Always \code{GSPA}; maybe different value for future uses.
 #'
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
-match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL) {
+match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r, impute_na) {
   stopifnot(!is.null(subdir))
   
+  # scale_log2r <- match_call_arg("anal_prnGSPA", "scale_log2r")
+  
   if (anal_type == "GSPA") {
-    call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", "prnGSPA.txt"), check.names = FALSE, 
-                                   header = TRUE, sep = "\t", comment.char = "#"), 
-                          error = function(e) NA)    
-  }
-
-  if (!is.null(dim(call_pars))) {
-    filename <- call_pars %>%
-      dplyr::filter(var == "filename") %>% 
-      dplyr::select(-var) %>%
-      unlist() %>%
-      as.character() %>% 
-      unique()
-
-    if (is_empty(filename)) {
-      filename <- list.files(path = file.path(dat_dir, "Protein\\GSPA", subdir), 
-                             pattern = "^Protein_GSPA_.*\\.csv$", 
-                             full.names = FALSE)
-      
-      if (length(filename) > 1) stop("More than one result file found under `", subdir, "`", call. = FALSE)
-      
-      if (is_empty(filename)) stop("No result file found under `", sub_dir, "`", call. = FALSE)
-    }
-  } else {
-    stop("No saved parameters found from the call to `prnGSPA`.", call. = FALSE)
+    file <- file.path(dat_dir, "Calls\\anal_prnGSPA.rda")
+    if (!file.exists(file)) stop("Run `prnGSPA` first.", call. = FALSE)
+    load(file = file)
   }
   
+  filename <- call_pars$filename
+  if (rlang::is_empty(filename)) {
+    filename <- list.files(path = file.path(dat_dir, "Protein\\GSPA", subdir), 
+                           pattern = "^Protein_GSPA_.*\\.txt$", 
+                           full.names = FALSE)
+    
+    if (rlang::is_empty(filename)) stop("No result file found under `", sub_dir, "`", call. = FALSE)
+    
+    if (scale_log2r) filename <- filename %>% .[grepl("^Protein_GSPA_Z", .)] else 
+      filename <- filename %>% .[grepl("^Protein_GSPA_N", .)]
+    
+    if (impute_na) filename <- filename %>% .[grepl("Protein_GSPA_[NZ]_impNA\\.txt", .)] else 
+      filename <- filename %>% .[grepl("Protein_GSPA_[NZ]\\.txt", .)]
+
+    if (length(filename) > 1) stop("More than one result file found under `", subdir, "`", call. = FALSE)
+    if (rlang::is_empty(filename)) 
+      stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, call. = FALSE)
+
+    # 
+  }
+
   return(filename)
 }
 
 
-#' Matches impute_na
-#' @param id.
+#' Match scale_log2r
 #'
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
-match_sigTest_imputena <- function (id = c("prot_acc")) {
-  stopifnot(is_string(id))
-  stopifnot(id %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
+#' \code{match_scale_log2r} matches the value of \code{scale_log2r} to the value
+#' in caller environment.
+match_scale_log2r <- function(scale_log2r) {
+  stopifnot(rlang::is_logical(scale_log2r))
   
-  if (id %in% c("pep_seq", "pep_seq_mod")) {
-    call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls\\pepSig.txt"), check.names = FALSE,
-                                   header = TRUE, sep = "\t", comment.char = "#"),
-                          error = function(e) NA)
-  } else if (id %in% c("prot_acc", "gene")) {
-    call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls\\prnSig.txt"), check.names = FALSE,
-                                   header = TRUE, sep = "\t", comment.char = "#"),
-                          error = function(e) NA)
+  global_var <-tryCatch(global_var <-get("scale_log2r", envir = .GlobalEnv),
+                        error = function(e) "e")
+  if (global_var != "e" & is.logical(global_var)) scale_log2r <- global_var
+  
+  return(scale_log2r)
+}
+
+
+#' Match to a global logical variable
+#'
+#' @examples
+#' scale_log2r <- TRUE
+#' foo <- function(scale_log2r = FALSE) {
+#'   match_logi_gv("scale_log2r", scale_log2r)
+#' }
+#' foo()
+match_logi_gv <- function(var, val) {
+  oval <- val
+  gvar <-tryCatch(gvar <- get(var, envir = .GlobalEnv), error = function(e) "e")
+  
+  if (gvar != "e") {
+    stopifnot(rlang::is_logical(gvar))
+    if (gvar != oval) {
+      warning("Coerce ", var, " to ", gvar, " after matching to the global setting.", 
+              call. = FALSE)
+    }
+    return(gvar)
+  } else {
+    return(val)
   }
-  
-  if (!is.null(dim(call_pars))) {
-    impute_na <- call_pars %>%
-      dplyr::filter(var == "impute_na") %>%
-      dplyr::select("value.1") %>%
-      unlist() %>%
-      as.character() %>% 
-      as.logical()
-  }
-  
-  return(impute_na)
 }
 
 
@@ -1458,36 +1356,6 @@ calc_cover <- function(df, id, fasta = NULL) {
 }
 
 
-#' Matches formulas to those in calls to pepSig or prnSig
-#'
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
-match_fmls <- function(formulas) {
-  fml_file <-  file.path(dat_dir, "Calls\\pepSig_formulas.rda")
-
-  if (file.exists(fml_file)) {
-    load(file = fml_file)
-  } else {
-    stop("Run `pepSig()` first.")
-  }
-  
-	fml_chr <- formulas %>%
-		as.character() %>%
-		gsub("\\s+", "", .)
-
-	pepSig_chr <- pepSig_formulas %>%
-		purrr::map(~ .[is_call(.)]) %>%
-		as.character() %>%
-		gsub("\\s+", "", .)
-
-	ok <- purrr::map_lgl(fml_chr, ~ . %in% pepSig_chr)
-
-	if (!all(ok))
-		stop("Formula match failed: ", formulas[[which(!ok)]],
-		     " not found in the latest call to 'pepSig(...)'.")
-}
-
-
 #' Converts log2FC to linear fold changes
 #'
 #' @import dplyr purrr
@@ -1521,12 +1389,14 @@ rm_sglval_cols <- function (x) {
 #' @import dplyr purrr
 #' @importFrom magrittr %>%
 cmbn_meta <- function(data, metadata) {
-  data %>% 
-    tibble::rownames_to_column("Sample_ID") %>%
-    dplyr::left_join(metadata) %>%
-    dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>%
-    dplyr::select(which(not_all_NA(.))) %>% 
-    rm_sglval_cols()
+  suppressWarnings(
+    data %>% 
+      tibble::rownames_to_column("Sample_ID") %>%
+      dplyr::left_join(metadata, by = "Sample_ID") %>%
+      dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>%
+      dplyr::select(which(not_all_NA(.))) %>% 
+      rm_sglval_cols()    
+  )
 }
 
 
@@ -1555,60 +1425,7 @@ rm_pval_whitespace <- function(df) {
   df <- df %>% 
     dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
     dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
-}
-
-
-#' Match the database of gene sets
-#' 
-#' @import dplyr purrr
-#' @importFrom magrittr %>%
-match_gsets <- function(gset_nm = "go_sets", species) {
-  allowed <- c("go_sets", "kegg_sets", "c2_msig")
-    
-  stopifnot(all(gset_nm %in% allowed))
-
-  load_dbs(species)
-  
-  gsets <- purrr::map(as.list(gset_nm), ~ {
-    get(.x)
-  })
-
-  stopifnot(length(gsets) > 0)
-  
-  is_null <- purrr::map_lgl(gsets, ~ is.null(.x))
-  gset_nm <- gset_nm[!is_null]
-
-  purrr::walk2(is_null, names(is_null), 
-               ~ if(.x) warning("Gene set: `", .y, "` not found", call. = FALSE))
-  
-  gsets[is_null] <- NULL
-  gsets <- gsets %>% purrr::reduce(`c`)
-}
-
-
-#' Matches the current gene set names to those used in prnGSPA()
-#'
-#' @param id. 
-#'
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
-match_gset_nms <- function (id = c("go_sets", "kegg_sets", "c2_msig")) {
-  fn_pars <- "prnGSPA.txt"
-
-  call_pars <- tryCatch(read.csv(file.path(dat_dir, "Calls", fn_pars), check.names = FALSE,
-                                 header = TRUE, sep = "\t", comment.char = "#"),
-                        error = function(e) NA)
-  
-  if (!is.null(dim(call_pars))) {
-    id <- call_pars %>%
-      dplyr::filter(var == "gset_nms") %>% 
-      dplyr::select(-1) %>% 
-      unlist() %>%
-      as.character()
-  }
-  
-  return(id)
+    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ suppressWarnings(as.numeric(.x)))
 }
 
 
@@ -1708,10 +1525,20 @@ calcSD_Splex <- function (df, id, type = "log2_R") {
       dplyr::select(!!rlang::sym(id), grep("^Z_log2_R[0-9]{3}", names(.)))
   }
   
+  run_scripts <- FALSE
+  if (run_scripts) {
+    df %>% 
+      dplyr::arrange(!!rlang::sym(id)) %>% 
+      dplyr::group_by(!!rlang::sym(id)) %>%
+      dplyr::summarise_at(vars(starts_with(type)), ~ sd(.x, na.rm = TRUE))     
+  }
+
   df %>% 
+    dplyr::mutate(!!id := as.character(!!rlang::sym(id))) %>% 
     dplyr::arrange(!!rlang::sym(id)) %>% 
     dplyr::group_by(!!rlang::sym(id)) %>%
-    dplyr::summarise_at(vars(starts_with(type)), ~ sd(.x, na.rm = TRUE)) 
+    dplyr::summarise_at(vars(starts_with(type)), ~ sd(.x, na.rm = TRUE)) # %>% 
+    # dplyr::mutate(!!id := as.factor(!!rlang::sym(id)))
 }
 
 
@@ -1886,7 +1713,7 @@ count_phosphopeps <- function() {
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
     dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   
   df_phos <- df %>% dplyr::filter(grepl("[sty]", .[[id]]))
   
@@ -1901,6 +1728,33 @@ count_phosphopeps <- function() {
 }
 
 
+#' peptide miscleavage counts
+count_pepmiss <- function() {
+  dir.create(file.path(dat_dir, "PSM\\cache"), recursive = TRUE, showWarnings = FALSE)
+  
+  rmPSMHeaders()
+  
+  filelist = list.files(path = file.path(dat_dir, "PSM\\cache"),
+                        pattern = "^F[0-9]{6}\\_hdr_rm.csv$")
+  
+  if (length(filelist) == 0) stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
+  
+  df <- purrr::map(filelist, ~ {
+    data <- read.delim(file.path(dat_dir, "PSM\\cache", .x), sep = ',', check.names = FALSE, 
+                       header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , skip = 0)
+    
+    data$dat_file <- gsub("_hdr_rm\\.csv", "", .x)
+    data <- data %>% 
+      dplyr::filter(!duplicated(pep_seq))
+    
+    tot <- nrow(data)
+    mis <- data %>% dplyr::filter(pep_miss > 0) %>% nrow()
+    
+    tibble::tibble(total = tot, miscleavage = mis, percent = miscleavage/tot)
+  }) %>% do.call(rbind, .)
+  
+  write.csv(df, file.path(dat_dir, "PSM\\cache\\miscleavage_nums.csv"), row.names = FALSE)
+}
 
 
 #' Row filtration helpers
@@ -2117,6 +1971,12 @@ my_complete_cases <- function (df, scale_log2r, label_scheme_sub) {
 }
 
 
-
+#' my union of named list 
+#' names will be kept after the unification
+my_union <- function (x, y) {
+  x %>% 
+    .[! names(.) %in% names(y)] %>% 
+    c(y)
+}
 
 

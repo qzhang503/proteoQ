@@ -181,10 +181,6 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'  determined automatically. Peptide data will be used at \code{id = pep_seq}
 #'  or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
 #'  or \code{gene}.
-#'@param  col_select Character string to a column key in \code{expt_smry.xlsx}.
-#'  Samples corresponding to non-empty entries under the column key will be
-#'  included in the indicated analysis. At the \code{NULL} default, the column
-#'  key will be \code{Select}.
 #'@param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
 #'  of standard deviation across all samples. The default is TRUE.
 #'@param show_curves Logical; if TRUE, shows the fitted curves. At the TRUE
@@ -198,7 +194,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'@param scale_y Logical; if TRUE, scale data on the \code{y-axis}. The default
 #'  is TRUE.
 #'@param df The name of input data file. By default, it will be determined
-#'  automatically by the value of \code{id}.
+#'  automatically after matching the data type with an \code{id} among 
+#'  \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.
 #'@param filepath A file path to output results. By default, it will be
 #'  determined automatically by the name of the calling function and the value
 #'  of \code{id} in the \code{call}.
@@ -224,6 +221,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'  columns; the default is 1. \cr \code{width}, the width of plot; \cr
 #'  \code{height}, the height of plot. \cr \code{scales}, should the scales be
 #'  fixed across panels; the default is "fixed" and the alternative is "free".
+#'@inheritParams standPep
 #'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
@@ -253,15 +251,22 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'@return Histograms of \code{log2FC}
 #'@export
 proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                        col_select = NULL, scale_log2r = TRUE, 
+                        col_select = NULL, 
+                        scale_log2r = TRUE, complete_cases = FALSE, 
                         show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                         df = NULL, filepath = NULL, filename = NULL, ...) {
 
+  old_opt <- options(max.print = 99999, warn = 0)
+  on.exit(options(old_opt), add = TRUE)
+  options(max.print = 2000000, warn = 1)
+  
   id <- rlang::enexpr(id)
-	# if (length(id) != 1) id <- rlang::expr(gene)
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 	
-	stopifnot(is_logical(scale_log2r), is_logical(show_curves), is_logical(show_vline), is_logical(scale_y))
+	stopifnot(rlang::is_logical(scale_log2r), 
+	          rlang::is_logical(show_curves), 
+	          rlang::is_logical(show_vline), 
+	          rlang::is_logical(scale_y))
 
 	col_select <- rlang::enexpr(col_select)
 	df <- rlang::enexpr(df)
@@ -269,11 +274,18 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	filename <- rlang::enexpr(filename)
 
 	reload_expts()
+	
+	dots <- rlang::enexprs(...)
+	if (!is.null(dots$impute_na)) {
+	  dots$impute_na <- NULL
+	  rlang::warn("No NA imputation with `proteoHist`.")
+	}
 
-	info_anal(id = !!id, col_select = !!col_select, scale_log2r = scale_log2r, impute_na = FALSE,
+	info_anal(id = !!id, col_select = !!col_select, 
+	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
 	          df = !!df, filepath = !!filepath, filename = !!filename,
 	          anal_type = "Histogram")(show_curves = show_curves,
-	                                   show_vline = show_vline, scale_y = scale_y, ...)
+	                                   show_vline = show_vline, scale_y = scale_y, !!!dots)
 }
 
 
@@ -290,11 +302,8 @@ pepHist <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_normPSM_pepid()
-  
-  quietly_log <- purrr::quietly(proteoHist)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Histogram\\log\\pepHist_log.csv"), append = TRUE)  
+  id <- match_call_arg(normPSM, group_psm_by)
+  proteoHist(id = !!id, ...)
 }
 
 
@@ -312,9 +321,6 @@ prnHist <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
-  
-  quietly_log <- purrr::quietly(proteoHist)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Histogram\\log\\prnHist_log.csv"), append = TRUE)
+  id <- match_call_arg(normPSM, group_pep_by)
+  proteoHist(id = !!id, ...)
 }

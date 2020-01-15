@@ -9,7 +9,7 @@ save_call(call_pars, fn)
 \arguments{
 \item{call_pars}{Language.}
 
-\item{fn}{The name of function being called.}
+\item{fn}{The name of function being saved.}
 }
 \description{
 Saves the arguments in a function call

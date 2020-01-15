@@ -34,8 +34,9 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, an
 #' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %T>%
-plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepath, filename,
-                   complete_cases, annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, 
+plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
+                   scale_log2r, complete_cases, 
+                   annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, 
                    xmin = -1, xmax = 1, xmargin = .1, ...) {
                    
                    
@@ -117,15 +118,6 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
     reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) 
   
-  run_scripts <- FALSE
-  if (run_scripts) {
-    # remove white space before NA in scientific notation
-    df <- df %>% 
-      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
-      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
-      dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)    
-  }
-
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
@@ -177,7 +169,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   } else {
     df_hm <- df
   }
-  
+
   df_hm <- df_hm %>%
     `rownames<-`(.[[id]])	%>%
     dplyr::select(which(names(.) %in% sample_ids))
@@ -223,6 +215,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
   
   # subtrees
   cutree_rows <- eval(dots$cutree_rows, env = caller_env())
+  df <- df %>% dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
   
   if (!is.null(cutree_rows) & cluster_rows) {
     if (is.numeric(cutree_rows)) {
@@ -244,7 +237,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
             dplyr::filter(complete.cases(.[, names(.) %in% sample_ids])) %>%
             tibble::column_to_rownames(id)
         }
-        
+
         if (cluster_rows) {
           d_sub <- dist(df_sub, method = clustering_distance_rows)
           if (length(d_sub) == 0) {
@@ -328,7 +321,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
       dfc_hm <- dfc %>%
         dplyr::filter(rowSums(!is.na(.[, names(.) %in% sample_ids])) > 0)
     }
-    
+
     dfc_hm <- dfc_hm %>%
       `rownames<-`(.[[id]])	%>%
       dplyr::select(which(names(.) %in% sample_ids))
@@ -413,45 +406,54 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'  use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
 #'  use keys indicated in \code{annot_rows}
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
-#'  
-#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+#'  GSEA. \cr
+#'
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr
+#'
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein
+#'  trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
+#'  analysis and visualization \cr
+#'
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@example inst/extdata/examples/prnHM_.R
 #'
@@ -460,7 +462,7 @@ plotHM <- function(df, id, scale_log2r, col_benchmark, label_scheme_sub, filepat
 #'@importFrom magrittr %>%
 #'@export
 proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
-                      scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
+                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                       df = NULL, filepath = NULL, filename = NULL,
                       annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                       xmin = -1, xmax = 1, xmargin = 0.1, ...) {
@@ -477,9 +479,9 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
   reload_expts()
   
   info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
-            scale_log2r = scale_log2r, impute_na = impute_na, df = !!df, filepath = !!filepath,
-            filename = !!filename, anal_type = "Heatmap")(complete_cases = complete_cases,
-                                                          xmin = xmin, xmax = xmax, xmargin = xmargin,
+            scale_log2r = scale_log2r, complete_cases = complete_cases,impute_na = impute_na, 
+            df = !!df, filepath = !!filepath,
+            filename = !!filename, anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin,
                                                           annot_cols = annot_cols, 
                                                           annot_colnames = annot_colnames, 
                                                           annot_rows = annot_rows, ...)
@@ -500,11 +502,8 @@ pepHM <- function (...) {
   
   dir.create(file.path(dat_dir, "Peptide\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_pepid()
-  
-  quietly_log <- purrr::quietly(proteoHM)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Peptide\\Heatmap\\log\\pepHM_log.csv"), append = TRUE)  
+  id <- match_call_arg(normPSM, group_psm_by)
+  proteoHM(id = !!id, ...)
 }
 
 
@@ -522,11 +521,8 @@ prnHM <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  id <- match_normPSM_protid()
-
-  quietly_log <- purrr::quietly(proteoHM)(id = !!id, ...)
-  purrr::walk(quietly_log, write, 
-              file.path(dat_dir, "Protein\\Heatmap\\log\\prnHM_log.csv"), append = TRUE)
+  id <- match_call_arg(normPSM, group_pep_by)
+  proteoHM(id = !!id, ...)
 }
 
 

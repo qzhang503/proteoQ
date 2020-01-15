@@ -375,6 +375,8 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'@importFrom magrittr %>%
 #'@export
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
+  on.exit(mget(names(formals()), rlang::current_env()) %>% save_call("load_expts"))
+  
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
 
@@ -405,8 +407,6 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
     rm(new_dat_dir, new_dat_dir2)
   }
 
-	mget(names(formals()), rlang::current_env()) %>% save_call("load_expts")
-
   prep_label_scheme(dat_dir, expt_smry)
   prep_fraction_scheme(dat_dir, frac_smry)
 }
@@ -418,12 +418,11 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
 #' @importFrom magrittr %>%
 #' @importFrom fs file_info
 reload_expts <- function() {
-  expt_smry <- match_expt()
-  frac_smry <- match_frac()
+  expt_smry <- match_call_arg(load_expts, expt_smry)
+  frac_smry <- match_call_arg(load_expts, frac_smry)
   
   fi_xlsx <- fs::file_info(file.path(dat_dir, expt_smry))$change_time
-  
-  if (is.na(fi_xlsx)) stop("Time stamp of `expt_smry.xlsx` not available.")
+  if (is.na(fi_xlsx)) stop("Time stamp of ", expt_smry, " not available.")
   
   fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme.rda"))$change_time
   if (fi_xlsx > fi_rda) {
@@ -536,39 +535,31 @@ check_label_scheme <- function (label_scheme_full) {
 }
 
 
-#' Match scale_log2r
-#'
-#' \code{match_scale_log2r} matches the value of \code{scale_log2r} to the value
-#' in caller environment.
-match_scale_log2r <- function(scale_log2r) {
-  stopifnot(rlang::is_logical(scale_log2r))
-
-  global_var <-tryCatch(global_var <-get("scale_log2r", envir = .GlobalEnv),
-                        error = function(e) "e")
-  if(global_var != "e" & is.logical(global_var)) scale_log2r <- global_var
-
-  return(scale_log2r)
-}
-
-
-#' Match to a global logical variable
-#'
-#' @examples
-#' scale_log2r <- TRUE
-#' foo <- function(scale_log2r = FALSE) {
-#'   match_logi_gv("scale_log2r", scale_log2r)
-#' }
-#' foo()
-match_logi_gv <- function(var, val) {
-  gvar <-tryCatch(gvar <-get(var, envir = .GlobalEnv), error = function(e) "e")
+#' Match the database of gene sets
+#' 
+#' @import dplyr purrr
+#' @importFrom magrittr %>%
+match_gsets <- function(gset_nm = "go_sets", species) {
+  allowed <- c("go_sets", "kegg_sets", "c2_msig")
   
-  if(gvar != "e") {
-    stopifnot(rlang::is_logical(gvar))
-    return(gvar)
-  } else {
-    warning("Set globally `scale_log2_r = TRUE`.", immediate. = TRUE)
-    return(val)
-  }
+  stopifnot(all(gset_nm %in% allowed))
+  
+  load_dbs(species)
+  
+  gsets <- purrr::map(as.list(gset_nm), ~ {
+    get(.x)
+  })
+  
+  stopifnot(length(gsets) > 0)
+  
+  is_null <- purrr::map_lgl(gsets, ~ is.null(.x))
+  gset_nm <- gset_nm[!is_null]
+  
+  purrr::walk2(is_null, names(is_null), 
+               ~ if(.x) warning("Gene set: `", .y, "` not found", call. = FALSE))
+  
+  gsets[is_null] <- NULL
+  gsets <- gsets %>% purrr::reduce(`c`)
 }
 
 

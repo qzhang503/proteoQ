@@ -8,7 +8,7 @@ plotVolcano(df = NULL, id = "gene", filepath = NULL,
   filename = NULL, adjP = FALSE, show_labels = TRUE,
   anal_type = "Volcano", pval_cutoff = 0.05,
   logFC_cutoff = log2(1.2), show_sig = "none",
-  gset_nms = c("go_sets", "kegg_sets"), ...)
+  gset_nms = c("go_sets", "kegg_sets"), scale_log2r, impute_na, ...)
 }
 \description{
 Plot volcanos

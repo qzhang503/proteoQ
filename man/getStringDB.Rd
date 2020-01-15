@@ -2,13 +2,14 @@
 % Please edit documentation in R/proteoQ-string.R
 \name{getStringDB}
 \alias{getStringDB}
-\title{STRING outputs}
+\title{STRING outputs (depreciated)}
 \usage{
 getStringDB(db_path = "~\\\\proteoQ\\\\dbs\\\\string",
-  score_cutoff = 0.7, adjP = FALSE, ...)
+  score_cutoff = 0.7, adjP = FALSE, impute_na = FALSE, ...)
 }
 \arguments{
-\item{db_path}{Character string; the local path for database(s). The default is \code{"~\\proteoQ\\dbs\\string"}.}
+\item{db_path}{Character string; the local path for database(s). The default
+is \code{"~\\proteoQ\\dbs\\string"}.}
 
 \item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
 protein-protein interaction. The default is 0.7.}
@@ -16,6 +17,10 @@ protein-protein interaction. The default is 0.7.}
 \item{adjP}{Logical. At the FALSE default, unadjusted pVals from
 \code{\link{prnSig}} will be used in PPI reports; otherwise, the
 Benjamini-Hochberg pVals will be used in the reports.}
+
+\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
+the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
+protein data.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}
@@ -38,21 +43,50 @@ interaction and protein expressions. The interaction file,
 string_dir <- "~\\\\proteoQ\\\\dbs\\\\string"
 dir.create(string_dir, recursive = TRUE, showWarnings = FALSE)
 
-# download
+## download
 dl_stringdbs(
   species = human,
   db_path = string_dir,
 )
 
-# protein-protein interaction network
-getStringDB(
+## ppi and expression
+# human and mouse and probably 'unknown' species
+anal_prnString(
   db_path = string_dir,
   score_cutoff = .9,
-  adjP = FALSE,
+  filter_prots_by = exprs(prot_n_pep >= 2),
+)
+
+# cleaner outputs by specifying species
+# ('unknown' will be removed)
+anal_prnString(
+  db_path = string_dir,
+  score_cutoff = .9,
   filter_by_sp = exprs(species == "human"),
   filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
+anal_prnString(
+  db_path = string_dir,
+  score_cutoff = .9,
+  filter_by_sp = exprs(species == "mouse"),
+  filter_prots_by = exprs(prot_n_pep >= 2),
+)
+
+# custom filename with outputs in: 
+# prot_npep2 W16_vs_W2.pVal (W16-W2)_human_expr.tsv
+# prot_npep2 W16_vs_W2.pVal (W16-W2)_human_ppi.tsv
+# prot_npep2 W16_vs_W2.pVal (W16-W2)_mouse_expr.tsv
+# prot_npep2 W16_vs_W2.pVal (W16-W2)_mouse_ppi.tsv
+anal_prnString(
+  db_path = string_dir,
+  score_cutoff = .9,
+  complete_cases = TRUE, 
+  filter_by = exprs(species \%in\% c("human", "mouse"), 
+                    prot_n_pep >= 2, 
+                    `W16_vs_W2.pVal (W16-W2)` <= 1e-6),
+  filename = "prot_npep2 W16_vs_W2.pVal (W16-W2).txt",
+)
 }
 \seealso{
 \code{\link{dl_stringdbs}} for database downloads. \cr 

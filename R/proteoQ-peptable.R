@@ -5,7 +5,7 @@
 #' @param i Integer; the index of TMT experiment 
 #' @param x Data frame; log2FC data
 #' @param label_scheme Experiment summary
-#' @import dplyr purrr rlang
+#' @import dplyr purrr rlang forcats
 #' @importFrom magrittr %>%
 newColnames <- function(i, x, label_scheme) {
   label_scheme_sub <- label_scheme %>%
@@ -50,6 +50,9 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
   
   df <- df %>% filters_in_call(!!!filter_dots)
   
+  if ("gene" %in% names(df)) 
+    df <- df %>% dplyr::mutate(gene = forcats::fct_explicit_na(gene))
+
   df <- local({
     dup_peps <- df %>%
       dplyr::select(!!rlang::sym(id), prot_acc) %>%
@@ -110,7 +113,7 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
     dplyr::select(pep_n_psm, !!rlang::sym(group_pep_by)) %>% 
     dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
     dplyr::summarise(prot_n_psm = sum(pep_n_psm))
-  
+
   prot_n_pep <- df %>% 
     dplyr::select(!!rlang::sym(id), !!rlang::sym(group_pep_by)) %>% 
     dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
@@ -122,14 +125,14 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
     med_summarise_keys(id) %>% 
     dplyr::select(-pep_n_psm, -prot_n_psm, -prot_n_pep, -TMT_Set) %>% # remove old values from single `TMT_Set`
     dplyr::arrange(!!rlang::sym(id))  
-  
+
   df <- list(pep_n_psm, df_first, df_num) %>%
     purrr::reduce(left_join, by = id)
   
   df <- list(df, prot_n_psm, prot_n_pep) %>%
     purrr::reduce(left_join, by = group_pep_by)
   
-  if (("pep_seq_mod" %in% names(df)) & (match_normPSM_par("use_lowercase_aa") %>% as.logical())) {
+  if (("pep_seq_mod" %in% names(df)) & (match_call_arg(normPSM, use_lowercase_aa))) {
     df <- df %>% 
       dplyr::mutate(pep_mod_protnt = ifelse(grepl("^[A-z\\-]\\.~", pep_seq_mod), TRUE, FALSE)) %>% 
       dplyr::mutate(pep_mod_protntac = ifelse(grepl("^[A-z\\-]\\._", pep_seq_mod), TRUE, FALSE)) %>% 
@@ -387,8 +390,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
   dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Peptide\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  old_opt <- options(max.print = 99999)
-  options(max.print = 2000000)
+  old_opt <- options(max.print = 99999, warn = 0)
+  options(max.print = 2000000, warn = 1)
   on.exit(options(old_opt), add = TRUE)
   
   on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("mergePep"), add = TRUE)
@@ -397,8 +400,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  id <- match_normPSM_pepid()
-  group_pep_by <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_psm_by)
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
   filename <- file.path(dat_dir, "Peptide\\Peptide.txt")
   
   dots <- rlang::enexprs(...)
@@ -442,9 +445,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'workflow where geometric mean is used.
 #'
 #'Description of the column keys in the inputs and outputs: \cr
-#'\code{system.file("extdata",
-#'"mascot_peptide_keys.txt", package = "proteoQ")} \cr
-#'\code{system.file("extdata", "maxquant_peptide_keys.txt", package =
+#'\code{system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ")}
+#'\cr \code{system.file("extdata", "maxquant_peptide_keys.txt", package =
 #'"proteoQ")}
 #'
 #'@param method_align Character string indicating the method in aligning
@@ -455,12 +457,12 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'  \code{log2FC} are zero. At \code{MGKernel}, the ratio profiles of each
 #'  sample will be aligned in that the \code{log2FC} at the maximums of kernel
 #'  desity are zero.
-#'@param col_select Character string to a column key in \code{expt_smry.xlsx}. At
-#'  the \code{NULL} default, the column key of \code{Sample_ID} in
-#'  \code{expt_smry.xlsx} will be used, which results in the (re)normalization
-#'  of the \code{log2FC} for all samples. Otherwise, samples corresponding to
-#'  non-empty entries under the ascribing column key will be used in the
-#'  renormalization with the alignment method given in \code{method_align}.
+#'@param col_select Character string to a column key in \code{expt_smry.xlsx}.
+#'  At the \code{NULL} default, the column key of \code{Select} in
+#'  \code{expt_smry.xlsx} will be used. In the case of no samples being
+#'  specified under \code{Select}, the column key of \code{Sample_ID} will be
+#'  used. The non-empty entries under the ascribing column will be used in
+#'  indicated analysis.
 #'@param range_log2r Numeric vector at length two. The argument specifies the
 #'  range of the \code{log2FC} for use in the scaling normalization of standard
 #'  deviation across samples. The default is between the 10th and the 90th
@@ -473,8 +475,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'  \code{method_align = MGKernel}. A typical value is 2 or 3. The variable
 #'  \code{n_comp} overwrites the augument \code{k} in
 #'  \code{\link[mixtools]{normalmixEM}}.
-#'@param seed Integer; a seed for reproducible fitting at \code{method_align =
-#'  MGKernel}.
+#'@param seed Integer; a seed setting a starting point for reproducible
+#'  analyses.
 #'@param ... \code{slice_}: variable argument statements for the identification
 #'  of row subsets. The partial data will be taken for parameterizing the
 #'  alignment of \code{log2FC} across samples. The full data set will be updated
@@ -496,27 +498,32 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'  declaring algorithm convergence.
 #'@inheritParams normPSM
 #'@inheritParams mixtools::normalmixEM
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
 #'@return The primary output is in \code{...\\Peptide\\Peptide.txt}.
 #'
 #'@example inst/extdata/examples/normPep_.R
@@ -542,8 +549,8 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
   filename <- file.path(dat_dir, "Peptide\\Peptide.txt")
   if (!file.exists(filename)) stop(filename, " not found; run `mergePep(...)` first", call. = FALSE)
 
-  id <- match_normPSM_pepid()
-  group_pep_by <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_psm_by)
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
   method_align <- rlang::enexpr(method_align)
   if (method_align == rlang::expr(c("MC", "MGKernel"))) {
@@ -576,26 +583,21 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
   
   dots <- rlang::enexprs(...)
 
-  df <- load_prior(filename, id)
-
-  quietly_out <- purrr::quietly(normMulGau)(
-    df = df,
-    method_align = method_align,
-    n_comp = n_comp,
-    seed = seed,
-    range_log2r = range_log2r,
-    range_int = range_int,
-    filepath = file.path(dat_dir, "Peptide\\Histogram"),
-    col_select = col_select, 
-    !!!dots, 
-  )
-  
-  purrr::walk(quietly_out[-1], write, 
-              file.path(dat_dir, "Peptide\\log","pep_MulGau_log.csv"), append = TRUE)
-  
-  df <- quietly_out$result %>% 
+  df <- load_prior(filename, id) %>% 
+    normMulGau(
+      df = .,
+      method_align = method_align,
+      n_comp = n_comp,
+      seed = seed,
+      range_log2r = range_log2r,
+      range_int = range_int,
+      filepath = file.path(dat_dir, "Peptide\\Histogram"),
+      col_select = col_select, 
+      !!!dots, 
+    ) %>% 
     fmt_num_cols() %T>% 
-    write.table(file.path(dat_dir, "Peptide", "Peptide.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
+    write.table(file.path(dat_dir, "Peptide", "Peptide.txt"), 
+                sep = "\t", col.names = TRUE, row.names = FALSE)
 
   if (plot_log2FC_cv & TMT_plex(label_scheme) > 0) {
     sd_violin(df, !!group_pep_by, 
@@ -685,7 +687,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
     stopifnot(method_pep_prn %in% c("mean", "top.3", "median", "weighted.mean"))
   }
   
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
   stopifnot(id %in% c("prot_acc", "gene"))
   
@@ -1002,11 +1004,13 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
   dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Peptide\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  old_opt <- options(max.print = 99999)
+  old_opt <- options(max.print = 99999, warn = 0)
   on.exit(options(old_opt), add = TRUE)
-  options(max.print = 2000000)
+  options(max.print = 2000000, warn = 1)
   
   on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("normPep"), add = TRUE)
+  
+  rlang::warn("`normPep` softly depreciated; use sequentially `PSM2Pep`, `mergePep` and `standPep`.")
 
   reload_expts()
   
@@ -1021,7 +1025,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
     id <- rlang::as_string(id)
     stopifnot(id %in% c("pep_seq", "pep_seq_mod"))
   }
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   
   # depreciated; instead matched to normPSM()
   group_pep_by <- rlang::enexpr(group_pep_by)
@@ -1031,7 +1035,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
     group_pep_by <- rlang::as_string(group_pep_by)
     stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   }
-  group_pep_by <- match_normPSM_protid()
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
   col_select <- rlang::enexpr(col_select)
   col_select <- ifelse(is.null(col_select), rlang::expr(Sample_ID), rlang::sym(col_select))
@@ -1159,9 +1163,9 @@ normPep_Splex <- function (method_psm_pep = "median", cache = TRUE) {
   on.exit(options(old_opt), add = TRUE)
   options(max.print = 2000000)
   
-  id <- match_normPSM_pepid()
+  id <- match_call_arg(normPSM, group_psm_by)
   method_psm_pep <- rlang::as_string(rlang::enexpr(method_psm_pep))
-  group_pep_by <- match_normPSM_protid()
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))

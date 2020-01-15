@@ -10,8 +10,9 @@
 \usage{
 proteoCorr(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   data_select = c("logFC", "logInt"), col_select = NULL,
-  col_order = NULL, scale_log2r = TRUE, df = NULL, filepath = NULL,
-  filename = NULL, ...)
+  col_order = NULL, scale_log2r = TRUE, complete_cases = FALSE,
+  impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL,
+  ...)
 
 pepCorr_logFC(...)
 
@@ -32,21 +33,30 @@ will be used; at \code{logInt}, intensity with \code{log10} transformation
 will be used.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the \code{NULL} default, the column
-key will be \code{Select}.}
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
 
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
 Numeric values under which will be used for the left-to-right arrangement of
-samples in plots. At the NULL default, the column key \code{Order} will be
-used. If values under column \code{Order} are left blank, samples will be
-ordered by their names.}
+samples in graphic outputs or top-to-bottom arrangement in text outputs. At
+the NULL default, the column key \code{Order} will be used. If values under
+column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
 
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
+
 \item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
+automatically after matching the data type with an \code{id} among 
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
@@ -153,43 +163,50 @@ prnCorr_logInt(
 
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data normalization \cr
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr
 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
- 
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
- \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
- \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
- \code{\link{prnGSVA}} for gene set variance analysis \cr 
- \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
- 
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
- \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
- \code{\link{prnCorr_logInt}}  for correlation plots \cr 
- 
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+ \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+ \code{\link{standPep}} for extended examples in peptide data normalization
+ \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+ summarization \cr \code{\link{standPrn}} for extended examples in protein
+ data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+ for extended examples in data purging \cr \code{\link{pepHist}} and
+ \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+ MS file names \cr
+
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+ \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+ \code{\link{start_with_str}}, \code{\link{end_with_str}},
+ \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+ data subsetting by character strings \cr
+
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+ \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+ \cr
+
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+ significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+ plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+ visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+ variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+ GSEA. \cr
+
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+ \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+ correlation plots \cr
+
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
- 
- \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

@@ -132,19 +132,32 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
 #'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
 #'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
-#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'  
 #'@export
-proteoGSEA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL, 
-                        impute_na = NULL, complete_cases = FALSE, gset_nms = "go_sets", 
+proteoGSEA <- function (id = gene, df = NULL, filepath = NULL, filename = NULL, gset_nms = "go_sets", 
+                        scale_log2r = TRUE, impute_na = NULL, complete_cases = FALSE, 
                         var_cutoff = .5, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                         gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
                         fml_nms = NULL, task = "anal", ...) {
+  
+  on.exit(
+    if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
+      mget(names(formals()), current_env()) %>% 
+        c(dots) %>% 
+        save_call("pepGSEA")
+    } else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
+      mget(names(formals()), current_env()) %>% 
+        c(dots) %>% 
+        save_call("prnGSEA")
+    }
+    , add = TRUE
+  )
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -153,8 +166,15 @@ proteoGSEA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   task <- rlang::enexpr(task)
-  if (is.null(impute_na)) impute_na <- match_sigTest_imputena(as_string(id))
-
+  
+  if (is.null(impute_na)) {
+    if (id %in% c("pep_seq", "pep_seq_mod")) {
+      impute_na <- match_call_arg(pepSig, impute_na)
+    } else if (id %in% c("prot_acc", "gene")) {
+      impute_na <- match_call_arg(prnSig, impute_na)
+    }
+  }
+  
   stopifnot(is_logical(scale_log2r), is_logical(impute_na), is_logical(complete_cases))
   
   dots <- rlang::enexprs(...)
@@ -175,9 +195,10 @@ proteoGSEA <- function (id = gene, scale_log2r = TRUE, df = NULL, filepath = NUL
   # Sample selection criteria:
   #   !is_reference under "Reference"
   #   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-  info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r, 
-            filepath = !!filepath, filename = !!filename, impute_na = impute_na, 
-            anal_type = "GSEA")(complete_cases = complete_cases, gset_nms = gset_nms, 
+  info_anal(df = !!df, id = !!id, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            filepath = !!filepath, filename = !!filename, 
+            anal_type = "GSEA")(gset_nms = gset_nms, 
                                 var_cutoff = var_cutoff, pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
                                 gspval_cutoff = gspval_cutoff, 
                                 min_size = min_size, max_size = max_size, min_greedy_size = min_greedy_size, 
@@ -200,11 +221,8 @@ prnGSEA <- function (...) {
   
   dir.create(file.path(dat_dir, "Protein\\GSEA\\log"), recursive = TRUE, showWarnings = FALSE)
 
-  id <- match_normPSM_protid()
-  
-  quietly_log <- purrr::quietly(proteoGSEA)(id = !!id, task = anal, ...)
-  quietly_log$result <- NULL
-  purrr::walk(quietly_log, write, file.path(dat_dir, "Protein\\GSEA\\log","prnGSEA_log.csv"), append = TRUE)
+  id <- match_call_arg(normPSM, group_pep_by)
+  proteoGSEA(id = !!id, task = anal, ...)
 }
 
 
@@ -240,16 +258,8 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     
     df <- df %>% dplyr::filter(!!sym(id) %in% ids)
     
-    if (complete_cases) {
-      rows <- df %>% 
-        .[, grep(NorZ_ratios, names(.)), drop = FALSE] %>% 
-        `names<-`(gsub(paste0(NorZ_ratios, "[0-9]{3}[NC]*\\s+\\((.*)\\)$"), "\\1", names(.))) %>% 
-        dplyr::select(as.character(label_scheme_sub$Sample_ID)) %>% 
-        complete.cases()
-      
-      df <- df[rows, ]      
-    }
-    
+    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+
     return(df)
   })
   
@@ -265,10 +275,13 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
            anal_type = "GSEA") %>% 
     .$log2R
   
-  make_gct(df = df_log2r, filepath = filepath, fn_prefix = "protein_GSEA")
-  make_cls(df = df_log2r, nms = label_scheme_sub$Group, filepath = filepath, fn_prefix = "protein_GSEA")
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
-  fml_ops <- prepFml(fml, label_scheme_sub, ...)
+  make_gct(df = df_log2r, filepath = filepath, fn_prefix = fn_prefix)
+  make_cls(df = df_log2r, nms = label_scheme_sub$Group, filepath = filepath, fn_prefix = fn_prefix)
+  
+  fml_ops <- suppressMessages(prepFml(fml, label_scheme_sub, ...))
   contr_mat <- fml_ops$contr_mat
   design <- fml_ops$design
   key_col <- fml_ops$key_col
@@ -330,12 +343,12 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     
     df_i <- cbind(pos[[i]], neg[[i]])
     out_nm <- paste0("fml-", fml_nm, "_contr-", i)
-    make_gct(df_i, filepath_i, out_nm)
+    make_gct(df_i, filepath_i, paste0(out_nm, "_", fn_prefix))
 
     nms_pos_i <- rep(nms$pos[i], ncol(pos[[i]])) %>% as.character()
     nms_neg_i <- rep(nms$neg[i], ncol(neg[[i]])) %>% as.character()
     nms_both <- c(nms_pos_i, nms_neg_i)
-    make_cls(df = df_i, nms = nms_both, filepath = filepath_i, fn_prefix = out_nm)
+    make_cls(df = df_i, nms = nms_both, filepath = filepath_i, fn_prefix = paste0(out_nm, "_", fn_prefix))
     
     run_scripts <- FALSE
     if (run_scripts) {

@@ -66,31 +66,54 @@
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
 #'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
 #'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
-#'  \code{\link{dl_stringdbs}} and \code{\link{getStringDB}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'  
 #'@import dplyr rlang ggplot2 GSVA
 #'@importFrom magrittr %>%
 #'@export
-prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = NULL, 
-                     impute_na = NULL, complete_cases = FALSE, lm_method = "limma", 
-                     gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4, 
-                     logFC_cutoff = log2(1.1), ...) {
+prnGSVA <- function (df = NULL, filepath = NULL, filename = NULL, 
+                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = NULL, lm_method = "limma", 
+                     gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
 
+  on.exit(
+    if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
+      mget(names(formals()), current_env()) %>% 
+        c(dots) %>% 
+        save_call("pepGSVA")
+    } else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
+      mget(names(formals()), current_env()) %>% 
+        c(dots) %>% 
+        save_call("prnGSVA")
+    }
+    , add = TRUE
+  )
+  
+  dir.create(file.path(dat_dir, "Protein\\GSVA\\log"), recursive = TRUE, showWarnings = FALSE)
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  id <- match_normPSM_protid()
+  id <- match_call_arg(normPSM, group_pep_by)
   
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	lm_method <- rlang::as_string(rlang::enexpr(lm_method))
-	if (is.null(impute_na)) impute_na <- match_sigTest_imputena(id)
+
+	if (is.null(impute_na)) {
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    impute_na <- match_call_arg(pepSig, impute_na)
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    impute_na <- match_call_arg(prnSig, impute_na)
+	  }
+	}
 	
-	stopifnot(is_logical(scale_log2r), is_logical(impute_na), is_logical(complete_cases))
+	stopifnot(rlang::is_logical(scale_log2r), 
+	          rlang::is_logical(impute_na), 
+	          rlang::is_logical(complete_cases))
 
 	dots <- rlang::enexprs(...)
 	fmls <- dots %>% .[grepl("^\\s*~", .)]
@@ -115,11 +138,9 @@ prnGSVA <- function (scale_log2r = TRUE, df = NULL, filepath = NULL, filename = 
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-	info_anal(df = !!df, id = !!id, scale_log2r = scale_log2r,
-					filepath = !!filepath, filename = !!filename,
-					impute_na = impute_na,
-					anal_type = "GSVA")(complete_cases, lm_method, gset_nms, var_cutoff, pval_cutoff,
-					                    logFC_cutoff, !!!dots)
+	info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
+	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+	          anal_type = "GSVA")(lm_method, gset_nms, var_cutoff, pval_cutoff, logFC_cutoff, !!!dots)
 }
 
 
@@ -161,15 +182,28 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, filepath
     tibble::rownames_to_column("term") %T>%
     write.table(file.path(filepath, paste0(fn_prefix, "_ES.txt")), sep = "\t", col.names = TRUE, row.names = FALSE)    
 
-  res <- purrr::map(fmls,
-             ~ model_onechannel(res_es %>% tibble::column_to_rownames("term"), id = !!id,
-                                .x, label_scheme_sub, complete_cases, method = lm_method,
-                                var_cutoff, pval_cutoff, logFC_cutoff)) %>%
-    do.call("cbind", .) %>%
+  quietly_log <- 
+    purrr::map(fmls, ~ purrr::quietly(model_onechannel)(
+      res_es %>% tibble::column_to_rownames("term"), id = !!id,
+      .x, label_scheme_sub, complete_cases, method = lm_method,
+      var_cutoff, pval_cutoff, logFC_cutoff
+    )) 
+  
+  out_path <- file.path(dat_dir, "Protein\\GSVA\\log\\prnGSVA_log.txt")
+  
+  purrr::map(quietly_log, ~ {
+    .x[[1]] <- NULL
+    return(.x)
+  }) %>% 
+    reduce(., `c`) %>% 
+    purrr::walk(., write, out_path, append = TRUE)
+  
+  res <- purrr::map(quietly_log, `[[`, 1) %>%
+    do.call("cbind", .) %>% 
     tibble::rownames_to_column("term") %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), ~ gsub("\\s*", "", .x) ) %>% 
-    dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.numeric)
+    rm_pval_whitespace()
+  
+  rm(quietly_log)
   
   kept_rows <- res %>%
     tibble::column_to_rownames("term") %>%
@@ -192,11 +226,5 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, filepath
     write.table(file.path(filepath, paste0(gsub("\\..*$", "", gsub("\\..*$", "", filename)), "_pVals.txt")), 
                 sep = "\t", col.names = TRUE, row.names = FALSE)
 }
-
-
-
-
-
-
 
 
