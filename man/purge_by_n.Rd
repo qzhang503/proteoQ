@@ -8,7 +8,8 @@ purge_by_n(df, id, min_n)
 }
 \arguments{
 \item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
+automatically after matching the data type with an \code{id} among 
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{id}{Character string to indicate the type of data. The value will be
 determined automatically. Peptide data will be used at \code{id = pep_seq}

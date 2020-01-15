@@ -380,12 +380,10 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
 #'  correlation plots \cr
 #'
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein
-#'  trend analysis and visualization \cr \code{\link{anal_pepNMF}},
-#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
-#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
-#'  analysis and visualization \cr
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'

@@ -33,15 +33,15 @@ the 5th and the 95th quantiles.}
 \code{n_comp} overwrites the augument \code{k} in
 \code{\link[mixtools]{normalmixEM}}.}
 
-\item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
-MGKernel}.}
+\item{seed}{Integer; a seed setting a starting point for reproducible
+analyses.}
 
-\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}. At
-the \code{NULL} default, the column key of \code{Sample_ID} in
-\code{expt_smry.xlsx} will be used, which results in the (re)normalization
-of the \code{log2FC} for all samples. Otherwise, samples corresponding to
-non-empty entries under the ascribing column key will be used in the
-renormalization with the alignment method given in \code{method_align}.}
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
 
 \item{...}{\code{slice_}: Variable argument statements for the identification
 of row subsets. The partial data will be taken for parameterizing the

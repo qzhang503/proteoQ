@@ -5,11 +5,6 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
-  github_document:
-    toc: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -18,6 +13,11 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  github_document:
+    toc: yes
   md_document:
     toc: yes
     toc_depth: 4
@@ -1069,17 +1069,19 @@ anal_prnNMF(
   impute_na = FALSE,
   col_group = Group, # optional a priori knowledge of sample groups
   r = c(5:6),
-  nrun = 200, 
+  nrun = 20, 
   filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # consensus heat map
 plot_prnNMFCon(
   impute_na = FALSE,
+  r = 6, 
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10, 
+  width = 12,
+  height = 12, 
+  filename = r6.png,
 )
 
 # coefficient heat map
@@ -1090,12 +1092,13 @@ plot_prnNMFCoef(
   annot_colnames = c("Lab", "Batch", "WHIM"), 
   width = 10, 
   height = 10, 
+  filename = r6.png, 
 )
 
 # metagene heat map(s)
 plot_metaNMF(
   impute_na = FALSE,
-  r = 6, 
+  r = 6, # at specific rank for demonstration
   annot_cols = c("Color", "Alpha", "Shape"), 
   annot_colnames = c("Lab", "Batch", "WHIM"), 
   

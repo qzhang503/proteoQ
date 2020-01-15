@@ -9,11 +9,7 @@ plot_prnTrend(col_group = NULL, col_order = NULL, scale_log2r = TRUE,
   n_clust = NULL, ...)
 }
 \arguments{
-\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_group} will be
-used for sample grouping in the indicated analysis. At the NULL default, the
-column key \code{Group} will be used. No data annotation by groups will be
-performed if the fields under the indicated group column is empty.}
+\item{col_group}{Not used.}
 
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
 Numeric values under which will be used for the left-to-right arrangement of
@@ -21,12 +17,12 @@ samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
-\item{scale_log2r}{Logical; at the TRUE default, files with \code{_Z[...].txt}
-in name will be used. Otherwise, files with \code{_N[...].txt} in name will
-be taken. An error will be shown if no files are matched under given
-conditions.}
+\item{scale_log2r}{Logical; at the TRUE default, input files with
+\code{_Z[...].txt} in name will be used. Otherwise, files with
+\code{_N[...].txt} in name will be taken. An error will be shown if no files
+are matched under given conditions.}
 
-\item{impute_na}{Logical; at the TRUE default, files with
+\item{impute_na}{Logical; at the TRUE default, input files with
 \code{_impNA[...].txt} in name will be loaded. Otherwise, files without
 \code{_impNA} in name will be taken. An error will be shown if no files are
 matched under given conditions.}
@@ -34,8 +30,11 @@ matched under given conditions.}
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 
-\item{filename}{A representative file name to outputs. By default, it
-will be determined automatically by the name of the current call.}
+\item{filename}{A representative file name to output image(s). By default, it
+will be determined automatically by the name of the current \code{call}. The
+image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
+will be determined by the extension of the file name. A \code{.png} format
+will be used at default or at an unrecognized file extension.}
 
 \item{n_clust}{Numeric vector; the cluster ID(s) corresponding to
 \code{\link{anal_prnTrend}} for visualization. At the NULL default, all
@@ -151,10 +150,7 @@ anal_prnTrend(
 # Visualization
 # ===================================
 ## no NA imputation 
-plot_prnTrend(
-  impute_na = FALSE, 
-  col_order = Order,
-)
+plot_prnTrend()
 
 # at a specific cluster ID
 # (`cluster` is a column key in `Protein_Trend_[...].txt`)

@@ -134,10 +134,19 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 	  })
 	}
 	
-  custom_prefix <- purrr::map_chr(filelist, ~ {
-    gsub("(.*_{0,1})Protein_Trend.*", "\\1", .x)
-  })
-
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
+    custom_prefix <- purrr::map_chr(filelist, ~ {
+      gsub("(.*_{0,1})Peptide_Trend.*", "\\1", .x)
+    })
+  } else if (id %in% c("prot_acc", "gene")) {
+    custom_prefix <- purrr::map_chr(filelist, ~ {
+      gsub("(.*_{0,1})Protein_Trend.*", "\\1", .x)
+    })
+  } else {
+    stop("Unknown id = ", id, call. = FALSE)
+  }
+  
+  
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
@@ -251,9 +260,6 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
       my_theme
     p <- p + facet_wrap(~ cluster, nrow = nrow, labeller = label_value)
     
-    # ggsave(filename = file.path(filepath, out_nm),
-    #        plot = p, width = width, height = height, units = units)
-    
     gg_args <- c(filename = file.path(filepath, gg_imgname(out_nm)), 
                  width = width, height = height, units = units, dots) %>% 
       do.call(ggsave, .)
@@ -270,7 +276,6 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
 #'
-#'@inheritParams proteoNMF
 #'@inheritParams proteoEucDist
 #'@inheritParams proteoCorr
 #'@inheritParams info_anal
@@ -404,11 +409,11 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'@inheritParams  proteoEucDist
 #'@inheritParams proteoHM
 #'@inheritParams anal_prnTrend
-#'@param scale_log2r Logical; at the TRUE default, files with \code{_Z[...].txt}
-#'  in name will be used. Otherwise, files with \code{_N[...].txt} in name will
-#'  be taken. An error will be shown if no files are matched under given
-#'  conditions.
-#'@param impute_na Logical; at the TRUE default, files with
+#'@param scale_log2r Logical; at the TRUE default, input files with
+#'  \code{_Z[...].txt} in name will be used. Otherwise, files with
+#'  \code{_N[...].txt} in name will be taken. An error will be shown if no files
+#'  are matched under given conditions.
+#'@param impute_na Logical; at the TRUE default, input files with
 #'  \code{_impNA[...].txt} in name will be loaded. Otherwise, files without
 #'  \code{_impNA} in name will be taken. An error will be shown if no files are
 #'  matched under given conditions.
@@ -499,7 +504,7 @@ plot_prnTrend <- function (col_group = NULL, col_order = NULL,
   
   reload_expts()
   
-  info_anal(id = !!id, col_select = Select, col_group = !!col_group, col_order = !!col_order,
+  info_anal(id = !!id, col_select = NULL, col_group = !!col_group, col_order = !!col_order,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
             df = NULL, filepath = NULL, filename = !!filename,
             anal_type = "Trend_line")(n_clust = n_clust, ...)

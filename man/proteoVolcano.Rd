@@ -20,8 +20,10 @@ prnVol(...)
 gspaMap(...)
 }
 \arguments{
-\item{id}{Character string indicating the type of data. The value will be
-determined automatically.}
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
@@ -30,7 +32,8 @@ automatically. Examplary values include \code{anal_type = c("PCA",
 "NMF", "Purge", "Trend", ...)}.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
+automatically after matching the data type with an \code{id} among 
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{scale_log2r}{Not used for full volcano plots by \code{pepVol} or 
 \code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
@@ -203,10 +206,10 @@ gspaMap(
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
  
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

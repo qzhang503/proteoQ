@@ -19,8 +19,6 @@
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM
 #'@inheritParams  info_anal
-#'@param id Character string indicating the type of data. The value will be
-#'  determined automatically.
 #'@param filename A file name to output results. By default, it will be
 #'  determined automatically by the name of the calling function and the value
 #'  of id in the call.
@@ -105,10 +103,10 @@
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
 #'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
 #'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'  
@@ -692,6 +690,7 @@ fml_gspahm <- function (fml_nm, filepath, filename, scale_log2r, impute_na, ...)
   }
   stopifnot(length(ins) == 1)
   
+  # no Peptide_GSPA
   custom_prefix <- purrr::map_chr(ins, ~ {
     gsub("(.*_{0,1})Protein_GSPA.*", "\\1", .x)
   })

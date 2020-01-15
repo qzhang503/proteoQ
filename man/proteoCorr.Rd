@@ -33,9 +33,11 @@ will be used; at \code{logInt}, intensity with \code{log10} transformation
 will be used.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the \code{NULL} default, the column
-key will be \code{Select}.}
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
 
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
 Numeric values under which will be used for the left-to-right arrangement of
@@ -53,7 +55,8 @@ missing values will be used. The default is FALSE.}
 will be used. The default is FALSE.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
+automatically after matching the data type with an \code{id} among 
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
@@ -200,12 +203,10 @@ prnCorr_logInt(
  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
  correlation plots \cr
 
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein
- trend analysis and visualization \cr \code{\link{anal_pepNMF}},
- \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
- \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
- analysis and visualization \cr
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 
  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

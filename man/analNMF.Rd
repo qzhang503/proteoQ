@@ -4,8 +4,8 @@
 \alias{analNMF}
 \title{NMF analysis}
 \usage{
-analNMF(df, id, r, nrun, col_group, label_scheme_sub, anal_type,
-  scale_log2r, filepath, filename, ...)
+analNMF(df, id, r, nrun, seed, col_group, label_scheme_sub, filepath,
+  filename, ...)
 }
 \description{
 NMF analysis

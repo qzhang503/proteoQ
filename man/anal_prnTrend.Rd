@@ -10,15 +10,13 @@ anal_prnTrend(col_select = NULL, col_group = NULL, col_order = NULL,
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under the column key will be
-included in the indicated analysis. At the \code{NULL} default, the column
-key will be \code{Select}.}
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
 
-\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_group} will be
-used for sample grouping in the indicated analysis. At the NULL default, the
-column key \code{Group} will be used. No data annotation by groups will be
-performed if the fields under the indicated group column is empty.}
+\item{col_group}{Not used.}
 
 \item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
 Numeric values under which will be used for the left-to-right arrangement of
@@ -36,12 +34,16 @@ will be used. The default is FALSE.}
 missing values will be used. The default is FALSE.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically by the value of \code{id}.}
+automatically after matching the data type with an \code{id} among 
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{Use system default.}
 
-\item{filename}{A representative file name to outputs. By default, it
-will be determined automatically by the name of the current call.}
+\item{filename}{A representative file name to output image(s). By default, it
+will be determined automatically by the name of the current \code{call}. The
+image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
+will be determined by the extension of the file name. A \code{.png} format
+will be used at default or at an unrecognized file extension.}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be
 divided into. At the NULL default, it will be determined by the number of
@@ -145,10 +147,7 @@ anal_prnTrend(
 # Visualization
 # ===================================
 ## no NA imputation 
-plot_prnTrend(
-  impute_na = FALSE, 
-  col_order = Order,
-)
+plot_prnTrend()
 
 # at a specific cluster ID
 # (`cluster` is a column key in `Protein_Trend_[...].txt`)

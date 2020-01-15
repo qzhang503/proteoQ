@@ -501,7 +501,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	              ...)
 	  }
 	} else if (anal_type == "NMF") {
-		function(r = NULL, nrun = 200, ...) {
+		function(r = NULL, nrun = 50, seed = NULL, ...) {
 		  if (!(impute_na || complete_cases)) {
 		    complete_cases <- TRUE
 		    rlang::warn(warn_msg1)
@@ -522,16 +522,15 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		          id = !!id, 
 		          r = r, 
 		          nrun = nrun, 
+		          seed = seed, 
 		          col_group = !!col_group, 
 		          label_scheme_sub = label_scheme_sub,
-		          anal_type = anal_type, 
-		          scale_log2r = scale_log2r, 
 		          filepath = filepath, 
-		          filename = paste0(fn_prefix %>% paste0(., "_rank", r), ".csv"), 
+		          filename = paste0(fn_prefix %>% paste0(., "_rank", r), ".txt"), 
 		          !!!dots)
 		}
 	} else if (anal_type == "NMF_con") {
-	  function(r = NULL, nrun = 200, ...) {
+	  function(r = NULL, ...) {
 	    plotNMFCon(id = !!id, 
 	               r = r, 
 	               label_scheme_sub = label_scheme_sub, 
@@ -543,7 +542,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	               ...)
 	  }
 	} else if (anal_type == "NMF_coef") {
-	  function(r = NULL, nrun = 200, ...) {
+	  function(r = NULL, ...) {
 	    plotNMFCoef(id = !!id, 
 	                r = r, 
 	                label_scheme_sub = label_scheme_sub, 
@@ -554,7 +553,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	                ...)
 	  }
 	} else if (anal_type == "NMF_meta") {
-	  function(r = NULL, nrun = 200, ...) {
+	  function(r = NULL, ...) {
 	    if (!(impute_na || complete_cases)) {
 	      complete_cases <- TRUE
 	      rlang::warn(warn_msg1)
