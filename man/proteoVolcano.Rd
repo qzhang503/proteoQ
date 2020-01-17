@@ -32,7 +32,7 @@ automatically. Examplary values include \code{anal_type = c("PCA",
 "NMF", "Purge", "Trend", ...)}.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among 
+automatically after matching the data type with an \code{id} among
 \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{scale_log2r}{Not used for full volcano plots by \code{pepVol} or 

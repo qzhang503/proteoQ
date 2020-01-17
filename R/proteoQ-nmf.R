@@ -3,12 +3,29 @@
 #' @import dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
 #' @importFrom NMF nmf
-analNMF <- function(df, id, r, nrun, seed, col_group, label_scheme_sub, 
-                    filepath, filename, ...) {
+analNMF <- function(df, id, rank, nrun, seed, col_group, label_scheme_sub, 
+                    scale_log2r, complete_cases, impute_na, 
+                    filepath, filename, anal_type, ...) {
 
   stopifnot(nrow(label_scheme_sub) > 0)
+  
+  complete_cases <- to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
+  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
+  
+  dots <- rlang::enexprs(...)
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+  
+  df <- df %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    arrangers_in_call(!!!arrange_dots) %>% 
+    prepDM(id = !!id, scale_log2r = scale_log2r, 
+           sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
+    .$log2R
 
   col_group <- rlang::enexpr(col_group) # optional phenotypic information
 
@@ -17,12 +34,12 @@ analNMF <- function(df, id, r, nrun, seed, col_group, label_scheme_sub,
 
 	stopifnot(length(fn_suffix) == 1)
 	
-  if (is.null(r)) {
-    r <- c(4:8)
+  if (is.null(rank)) {
+    rank <- c(4:8)
     nrun <- 5
-    fn_prefix <- paste0(fn_prefix, r)
+    fn_prefix <- paste0(fn_prefix, rank)
   } else {
-    stopifnot(all(r >= 2) & all(r %% 1 == 0))
+    stopifnot(all(rank >= 2) & all(rank %% 1 == 0))
     stopifnot(all(nrun >= 1) & all(nrun %% 1 == 0))
   }
   
@@ -42,9 +59,10 @@ analNMF <- function(df, id, r, nrun, seed, col_group, label_scheme_sub,
                               experimentData = experimentData)
 
   purrr::walk(fn_prefix, ~ {
-    r <- gsub("^.*_rank(\\d+).*", "\\1", .x) %>% as.numeric()
+    rank <- gsub("^.*_rank(\\d+).*", "\\1", .x) %>% as.numeric()
     if (!is.null(seed)) set.seed(seed) else set.seed(sample(.Random.seed, 1))
-    res_nmf <- NMF::nmf(exampleSet, r, nrun = nrun, seed = seed)
+    args <- c(list(x = exampleSet, rank = rank, nrun = nrun, seed = seed), dots)
+    res_nmf <- do.call(NMF::nmf, args) 
     save(res_nmf, file = file.path(filepath, paste0(.x, ".rda")))
     write.table(res_nmf@consensus, file.path(filepath, paste0(.x, "_consensus.txt")), 
                 sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
@@ -58,20 +76,25 @@ analNMF <- function(df, id, r, nrun, seed, col_group, label_scheme_sub,
 #'
 #' @import NMF dplyr purrr rlang cluster Biobase
 #' @importFrom magrittr %>%
-plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, complete_cases, impute_na, filepath, filename, ...) {
+plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, impute_na, 
+                       filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
+  
   dots <- rlang::enexprs(...)
-
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+  
   ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$") 
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
 
-  if (is.null(r)) {
+  if (is.null(rank)) {
     filelist <- ins
   } else {
-    stopifnot(all(r >= 2) & all(r %% 1 == 0))
+    stopifnot(all(rank >= 2) & all(rank %% 1 == 0))
     
     filelist <- local({
       possible <- ins %>% 
@@ -79,7 +102,7 @@ plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, complete_cases, imp
         as.numeric() %>% 
         `names<-`(ins)
       
-      r2 <- r %>% .[. %in% possible]
+      r2 <- rank %>% .[. %in% possible]
       
       filelist <- possible %>% 
         .[. %in% r2] %>% 
@@ -104,21 +127,26 @@ plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, complete_cases, imp
   
   if (purrr::is_empty(filelist)) 
     stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
-         " at r = ", paste0(r, collapse = ","), call. = FALSE)
+         " at rank = ", paste0(rank, collapse = ", "), call. = FALSE)
 
   purrr::walk2(filelist, custom_prefix, ~ {
-    r <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% 
+    rank <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% 
       as.numeric()
     
-    out_nm <- paste0(.y, fn_prefix, "_rank", r, ".", fn_suffix)
+    out_nm <- paste0(.y, fn_prefix, "_rank", rank, ".", fn_suffix)
 
     load(file = file.path(file.path(filepath, .x)))
     
     D_matrix <- res_nmf@consensus
     if (complete_cases) D_matrix <- D_matrix %>% .[complete.cases(.), ]
     
-    D_matrix <- D_matrix[, colnames(D_matrix) %in% label_scheme_sub$Sample_ID, drop = FALSE]
-    D_matrix <- D_matrix[rownames(D_matrix) %in% label_scheme_sub$Sample_ID, , drop = FALSE]
+    D_matrix <- data.frame(D_matrix, check.names = FALSE) %>% 
+      filters_in_call(!!!filter_dots) %>% 
+      arrangers_in_call(!!!arrange_dots) %>% 
+      dplyr::select(which(names(.) %in% sample_ids)) %>% 
+      tibble::rownames_to_column() %>% 
+      dplyr::filter(rowname %in% sample_ids) %>% 
+      tibble::column_to_rownames() 
 
     n_color <- 50
     xmin <- 0
@@ -194,15 +222,6 @@ plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, complete_cases, imp
       annotation_colors <- eval(dots$annotation_colors, env = caller_env())
     }
     
-    run_scripts <- FALSE
-    if (run_scripts) {
-      png(file.path(filepath, out_nm), width = width, height = height, units = units, res = res)
-      consensusmap(res_nmf, annCol = annotation_col, 
-                   annColor = list(Type = 'Spectral', basis = 'Set3',consensus = 'YlOrRd:50'),
-                   tracks = c("basis:"), main = '', sub = '')
-      dev.off()
-    }
-
     clus <- cluster::silhouette(res_nmf)
     attr(clus, "Ordered") <- NULL
     attr(clus, "call") <- NULL
@@ -237,20 +256,25 @@ plotNMFCon <- function(id, r, label_scheme_sub, scale_log2r, complete_cases, imp
 #'
 #' @import NMF dplyr purrr rlang cluster Biobase
 #' @importFrom magrittr %>%
-plotNMFCoef <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepath, filename, ...) {
+plotNMFCoef <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, impute_na, 
+                        filepath, filename, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
+  
   dots <- rlang::enexprs(...)
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
   
   ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$")
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
 
-  if (is.null(r)) {
+  if (is.null(rank)) {
     filelist <- ins
   } else {
-    stopifnot(all(r >= 2) & all(r %% 1 == 0))
+    stopifnot(all(rank >= 2) & all(rank %% 1 == 0))
     
     filelist <- local({
       possible <- ins %>% 
@@ -258,7 +282,7 @@ plotNMFCoef <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepat
         as.numeric() %>% 
         `names<-`(ins)
       
-      r2 <- r %>% .[. %in% possible]
+      r2 <- rank %>% .[. %in% possible]
       
       filelist <- possible %>% 
         .[. %in% r2] %>% 
@@ -283,20 +307,26 @@ plotNMFCoef <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepat
   
   if (purrr::is_empty(filelist)) 
     stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
-         " at r = ", paste0(r, collapse = ","), call. = FALSE)
+         " at rank = ", paste0(rank, collapse = ", "), call. = FALSE)
 
   purrr::walk2(filelist, custom_prefix, ~ {
-    r <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% 
+    rank <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% 
       as.numeric()
     
-    out_nm <- paste0(.y, fn_prefix, "_rank", r, ".", fn_suffix)
+    out_nm <- paste0(.y, fn_prefix, "_rank", rank, ".", fn_suffix)
     
     src_path <- file.path(filepath, .x)
     load(file = file.path(src_path))
     
-    D_matrix <- coef(res_nmf) %>% as.matrix
+    D_matrix <- coef(res_nmf) 
+    if (complete_cases) D_matrix <- D_matrix %>% .[complete.cases(.), ]
     rownames(D_matrix) <- seq_along(1:nrow(D_matrix))
     
+    D_matrix <- data.frame(D_matrix, check.names = FALSE) %>% 
+      filters_in_call(!!!filter_dots) %>% 
+      arrangers_in_call(!!!arrange_dots) %>% 
+      dplyr::select(which(names(.) %in% sample_ids))
+
     n_color <- 50
     xmin <- 0
     xmax <- max(D_matrix)
@@ -317,7 +347,6 @@ plotNMFCoef <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepat
     }
     
     if (is.null(dots$color)) {
-      # mypalette <- colorRampPalette(c("yellow", "orange", "red"))(n_color)
       mypalette <- colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(n_color)
     } else {
       mypalette <- eval(dots$color, env = caller_env())
@@ -347,15 +376,6 @@ plotNMFCoef <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepat
       annotation_colors <- NA
     } else {
       annotation_colors <- eval(dots$annotation_colors, env = caller_env())
-    }
-    
-    run_scripts <- FALSE
-    if (run_scripts) {
-      png(file.path(filepath, out_nm), width = width, height = height, units = "in", res = 300)
-      coefmap(res_nmf, annCol = annotation_col, 
-              annColor = list(Type = 'Spectral', basis = 'Set3', consensus = 'YlOrRd:50'),
-              tracks = c("basis:"))
-      dev.off()      
     }
     
     clus <- cluster::silhouette(res_nmf)
@@ -391,21 +411,35 @@ plotNMFCoef <- function(id, r, label_scheme_sub, scale_log2r, impute_na, filepat
 #'
 #' @import NMF dplyr rlang Biobase
 #' @importFrom magrittr %>%
-plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, impute_na, 
-                        filepath, filename, ...) {
+plotNMFmeta <- function(df, id, rank, label_scheme_sub, scale_log2r, complete_cases, impute_na, 
+                        filepath, filename, anal_type, ...) {
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
+  
+  complete_cases <- to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
+  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)    
+  
   dots <- rlang::enexprs(...)
-
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]  
+  
+  df <- df %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    arrangers_in_call(!!!arrange_dots) %>% 
+    prepDM(id = !!id, scale_log2r = scale_log2r, 
+           sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
+    .$log2R
+  
   ins <- list.files(path = filepath, pattern = "_rank\\d+\\.rda$")
   if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
   if (scale_log2r) ins <- ins %>% .[grepl("_NMF_Z", .)] else ins <- ins %>% .[grepl("_NMF_N", .)]
   
-  if (is.null(r)) {
+  if (is.null(rank)) {
     filelist <- ins
   } else {
-    stopifnot(all(r >= 2) & all(r %% 1 == 0))
+    stopifnot(all(rank >= 2) & all(rank %% 1 == 0))
     
     filelist <- local({
       possible <- ins %>% 
@@ -413,7 +447,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
         as.numeric() %>% 
         `names<-`(ins)
       
-      r2 <- r %>% .[. %in% possible]
+      r2 <- rank %>% .[. %in% possible]
       
       filelist <- possible %>% 
         .[. %in% r2] %>% 
@@ -423,7 +457,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
   
   if (purrr::is_empty(filelist)) 
     stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
-         " at r = ", paste0(r, collapse = ","), call. = FALSE)
+         " at rank = ", paste0(rank, collapse = ", "), call. = FALSE)
 
   if (id %in% c("pep_seq", "pep_seq_mod")) {
     custom_prefix <- purrr::map_chr(filelist, ~ {
@@ -441,11 +475,10 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
   fn_prefix <- gsub("\\.[^.]*$", "", filename)  
   
   purrr::walk2(filelist, custom_prefix, ~ {
-    r <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% as.numeric()
-    dir.create(file.path(filepath, r), recursive = TRUE, showWarnings = FALSE)
+    rank <- gsub(".*_rank(\\d+)[^\\d]*\\.rda$", "\\1", .x) %>% as.numeric()
+    dir.create(file.path(filepath, rank), recursive = TRUE, showWarnings = FALSE)
     
-    fn_suffix <- "png" # for now
-    out_nm <- paste0(.y, fn_prefix, "_rank", r, ".", fn_suffix)
+    out_nm <- paste0(.y, fn_prefix, "_rank", rank, ".", fn_suffix)
 
     src_path <- file.path(filepath, .x)
     load(file = file.path(src_path))
@@ -507,7 +540,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
       annotation_colors <- eval(dots$annotation_colors, env = caller_env())
     }
         
-    for (i in seq_len(r)) {
+    for (i in seq_len(rank)) {
       df_sub <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ]
       
       nrow <- nrow(df_sub)
@@ -535,11 +568,9 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
                              "mat", "filename", "annotation_col", "annotation_row", 
                              "color", "annotation_colors", "breaks")]
         
-        # probably no need to handle `cluster_rows` and `cluster_cols` for metagenes
-        
         p <- my_pheatmap(
           mat = df_sub,
-          filename = file.path(filepath, r, fn_sub),
+          filename = file.path(filepath, rank, fn_sub),
           annotation_col = annotation_col,
           annotation_row = NA, 
           color = mypalette,
@@ -551,7 +582,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
         df_op <- df[rownames(df) %in% rownames(V_hat[s[[i]], ]), ] %>%
           tibble::rownames_to_column(id)
         
-        write.table(df_op, file.path(filepath, r, paste0(fn_prefix, "_", i, ".txt")), 
+        write.table(df_op, file.path(filepath, rank, paste0(fn_prefix, "_", i, ".txt")), 
                     sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
       }
     }
@@ -580,17 +611,18 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
 #'  used for sample grouping in the indicated analysis. At the NULL default, the
 #'  column key \code{Group} will be used. No data annotation by groups will be
 #'  performed if the fields under the indicated group column is empty.
-#'@param r Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
-#'  The default is c(4:8)
+#'@param rank Numeric vector; the factorization rank(s) in
+#'  \code{\link[NMF]{nmf}}. The default is c(4:8)
 #'@param nrun Numeric; the number of runs in \code{\link[NMF]{nmf}}. The default
 #'  is 50.
 #'@param filepath Use system default.
 #'@param filename A representative file name to outputs. By default, it will be
 #'  determined automatically by the name of the current call.
-#'@param ... \code{filter_}: Variable argument statements for the row filtration
-#'  of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
-#'  etc.; also see \code{\link{normPSM}}. \cr \cr No passing of extra arguments
-#'  to \code{NMF::nmf}.
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
+#'  data against the column keys in \code{Peptide.txt}, \code{Protein.txt} etc.;
+#'  also see \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical
+#'  expression(s) for the row ordering of data; also see \code{\link{prnHM}}.
+#'  \cr \cr Additional arguments for \code{\link[NMF]{nmf}}.
 #'@return NMF classification of \code{log2FC} data.
 #'@import NMF dplyr rlang readr ggplot2
 #'@importFrom magrittr %>%
@@ -649,10 +681,7 @@ plotNMFmeta <- function(df, id, r, label_scheme_sub, anal_type, scale_log2r, imp
 anal_pepNMF <- function (col_select = NULL, col_group = NULL, 
                          scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
                          df = NULL, filepath = NULL, filename = NULL, 
-                         r = NULL, nrun = if (length(r) > 1) 50 else 1, seed = NULL, ...) {
-  err_msg <- "Use argument `r` instead of `rank`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("rank"))) stop(err_msg, call. = FALSE)
-  
+                         rank = NULL, nrun = if (length(rank) > 1) 50 else 1, seed = NULL, ...) {
   on.exit(
     mget(names(formals()), current_env()) %>% 
       c(enexprs(...)) %>% 
@@ -660,15 +689,14 @@ anal_pepNMF <- function (col_select = NULL, col_group = NULL,
     , add = TRUE
   )
   
+  check_dots(c("id", "anal_type"), ...)
+  
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  id <- match_call_arg(normPSM, group_psm_by)
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))  
-  
-  stopifnot(rlang::is_logical(scale_log2r), 
-            rlang::is_logical(impute_na), 
-            rlang::is_logical(complete_cases))
   
   col_select <- rlang::enexpr(col_select)
   col_group <- rlang::enexpr(col_group)
@@ -681,7 +709,7 @@ anal_pepNMF <- function (col_select = NULL, col_group = NULL,
   info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, filepath = !!filepath, filename = !!filename, 
-            anal_type = "NMF")(r = r, nrun = nrun, seed = seed, ...)
+            anal_type = "NMF")(rank = rank, nrun = nrun, seed = seed, ...)
 }
 
 
@@ -698,10 +726,7 @@ anal_pepNMF <- function (col_select = NULL, col_group = NULL,
 anal_prnNMF <- function (col_select = NULL, col_group = NULL, 
                          scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
                          df = NULL, filepath = NULL, filename = NULL, 
-                         r = NULL, nrun = if (length(r) > 1) 50 else 1, seed = NULL, ...) {
-  err_msg <- "Use argument `r` instead of `rank`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("rank"))) stop(err_msg, call. = FALSE)
-  
+                         rank = NULL, nrun = if (length(rank) > 1) 50 else 1, seed = NULL, ...) {
   on.exit(
     mget(names(formals()), current_env()) %>% 
           c(enexprs(...)) %>% 
@@ -709,15 +734,14 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
     , add = TRUE
   )
   
+  check_dots(c("id", "anal_type"), ...)
+  
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))  
-
-  stopifnot(rlang::is_logical(scale_log2r), 
-            rlang::is_logical(impute_na), 
-            rlang::is_logical(complete_cases))
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
   col_select <- rlang::enexpr(col_select)
   col_group <- rlang::enexpr(col_group)
@@ -727,10 +751,13 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
   
   reload_expts()
   
+  dots <- rlang::enexprs(...)
+  if (!is.null(dots$method)) dots$method <- rlang::as_string(dots$method)
+  
   info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, filepath = !!filepath, filename = !!filename, 
-            anal_type = "NMF")(r = r, nrun = nrun, seed = seed, ...)
+            anal_type = "NMF")(rank = rank, nrun = nrun, seed = seed, !!!dots)
 }
 
 
@@ -742,10 +769,16 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}.
 #'
-#'@param r Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
-#'  At the NULL default, all available ranks from the results of
-#'  \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be used.
-#'@param ... Additional arguments for \code{\link[pheatmap]{pheatmap}}
+#'@param rank Numeric vector; the factorization rank(s) in
+#'  \code{\link[NMF]{nmf}}. At the NULL default, all available ranks from the
+#'  results of \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be
+#'  used.
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
+#'  data against the column keys in \code{_NMF[...]_consensus.txt} for consensus
+#'  plots or \code{_NMF[...]_coef.txt} for coefficient plots; also see
+#'  \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical expression(s) for
+#'  the row ordering of data; also see \code{\link{prnHM}}. \cr \cr Additional
+#'  arguments for \code{\link[pheatmap]{pheatmap}}
 #'@inheritParams proteoHist
 #'@inheritParams plot_prnTrend
 #'@inheritParams  proteoEucDist
@@ -807,16 +840,15 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
 plot_pepNMFCon <- function (col_select = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
                             filename = NULL, 
-                            annot_cols = NULL, annot_colnames = NULL, r = NULL, ...) {
+                            annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...) {
+  check_dots(c("id", "anal_type", "col_group", "df", "filepath"), ...)
+
   dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))  
   
-  stopifnot(rlang::is_logical(scale_log2r), 
-            rlang::is_logical(impute_na), 
-            rlang::is_logical(complete_cases))
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   col_select <- rlang::enexpr(col_select)
   filename <- rlang::enexpr(filename)
@@ -828,7 +860,7 @@ plot_pepNMFCon <- function (col_select = NULL,
   info_anal(id = !!id, col_select = !!col_select, col_group = NULL, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = NULL, filepath = NULL, filename = !!filename, 
-            anal_type = "NMF_con")(r = r, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+            anal_type = "NMF_con")(rank = rank, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 
@@ -844,16 +876,15 @@ plot_pepNMFCon <- function (col_select = NULL,
 plot_prnNMFCon <- function (col_select = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
                             filename = NULL, 
-                            annot_cols = NULL, annot_colnames = NULL, r = NULL, ...) {
+                            annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...) {
+  check_dots(c("id", "anal_type", "col_group", "df", "filepath"), ...)
+  
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))  
   
-  stopifnot(rlang::is_logical(scale_log2r), 
-            rlang::is_logical(impute_na), 
-            rlang::is_logical(complete_cases))
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   col_select <- rlang::enexpr(col_select)
   filename <- rlang::enexpr(filename)
@@ -865,7 +896,7 @@ plot_prnNMFCon <- function (col_select = NULL,
   info_anal(id = !!id, col_select = !!col_select, col_group = NULL, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = NULL, filepath = NULL, filename = !!filename, 
-            anal_type = "NMF_con")(r = r, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+            anal_type = "NMF_con")(rank = rank, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 
@@ -881,17 +912,16 @@ plot_prnNMFCon <- function (col_select = NULL,
 plot_pepNMFCoef <- function (col_select = NULL, 
                              scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE, 
                              filename = NULL, 
-                             annot_cols = NULL, annot_colnames = NULL, r = NULL, ...) {
-  dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+                             annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...) {
+  check_dots(c("id", "anal_type", "col_group", "df", "filepath"), ...)
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  dir.create(file.path(dat_dir, "Peptide\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
+
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))  
   
-  stopifnot(rlang::is_logical(scale_log2r), 
-            rlang::is_logical(impute_na), 
-            rlang::is_logical(complete_cases))
-  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+
   col_select <- rlang::enexpr(col_select)
   filename <- rlang::enexpr(filename)
   annot_cols <- rlang::enexpr(annot_cols)
@@ -902,7 +932,7 @@ plot_pepNMFCoef <- function (col_select = NULL,
   info_anal(id = !!id, col_select = !!col_select, col_group = NULL, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = NULL, filepath = NULL, filename = !!filename, 
-            anal_type = "NMF_coef")(r = r, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+            anal_type = "NMF_coef")(rank = rank, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 
@@ -918,16 +948,15 @@ plot_pepNMFCoef <- function (col_select = NULL,
 plot_prnNMFCoef <- function (col_select = NULL, 
                              scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
                              filename = NULL, 
-                             annot_cols = NULL, annot_colnames = NULL, r = NULL, ...) {
+                             annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...) {
+  check_dots(c("id", "anal_type", "col_group", "df", "filepath"), ...)
+  
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))  
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
   
-  stopifnot(rlang::is_logical(scale_log2r), 
-            rlang::is_logical(impute_na), 
-            rlang::is_logical(complete_cases))
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   col_select <- rlang::enexpr(col_select)
   filename <- rlang::enexpr(filename)
@@ -939,7 +968,7 @@ plot_prnNMFCoef <- function (col_select = NULL,
   info_anal(id = !!id, col_select = !!col_select, col_group = NULL, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = NULL, filepath = NULL, filename = !!filename, 
-            anal_type = "NMF_coef")(r = r, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+            anal_type = "NMF_coef")(rank = rank, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 
 
@@ -950,11 +979,13 @@ plot_prnNMFCoef <- function (col_select = NULL,
 #'
 #'@inheritParams anal_pepNMF
 #'@inheritParams  proteoEucDist
-#'@param r Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
-#'  At the NULL default, all available ranks from the results of
-#'  \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be used.
+#'@param rank Numeric vector; the factorization rank(s) in
+#'  \code{\link[NMF]{nmf}}. At the NULL default, all available ranks from the
+#'  results of \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be
+#'  used.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{prnHM}}. \cr \code{arrange_}: Logical
+#'  data against the column keys in \code{Peptide.txt}, \code{Protein.txt} etc.;
+#'  also see \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical
 #'  expression(s) for the row ordering of data; also see \code{\link{prnHM}}.
 #'  \cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}.
 #'@import purrr
@@ -1013,16 +1044,15 @@ plot_prnNMFCoef <- function (col_select = NULL,
 plot_metaNMF <- function (col_select = NULL, 
                           scale_log2r = TRUE, complete_cases = FALSE, impute_na = TRUE,  
                           df = NULL, filepath = NULL, filename = NULL, 
-                          r = NULL, annot_cols = NULL, annot_colnames = NULL, ...) {
+                          rank = NULL, annot_cols = NULL, annot_colnames = NULL, ...) {
+  check_dots(c("id", "anal_type", "col_group"), ...)
+  
   dir.create(file.path(dat_dir, "Protein\\NMF\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))  
   
-  stopifnot(rlang::is_logical(scale_log2r), 
-            rlang::is_logical(impute_na), 
-            rlang::is_logical(complete_cases))
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   col_select <- rlang::enexpr(col_select)
   df <- rlang::enexpr(df)
@@ -1037,6 +1067,6 @@ plot_metaNMF <- function (col_select = NULL,
   info_anal(id = !!id, col_select = !!col_select, col_group = NULL, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, filepath = !!filepath, filename = !!filename, 
-            anal_type = "NMF_meta")(r = r, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
+            anal_type = "NMF_meta")(rank = rank, annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, ...)
 }
 

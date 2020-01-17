@@ -8,7 +8,7 @@ purge_by_cv(df, id, max_cv, keep_ohw = TRUE)
 }
 \arguments{
 \item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among 
+automatically after matching the data type with an \code{id} among
 \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{id}{Character string to indicate the type of data. The value will be

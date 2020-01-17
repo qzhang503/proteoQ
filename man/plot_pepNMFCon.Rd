@@ -9,19 +9,19 @@
 \usage{
 plot_pepNMFCon(col_select = NULL, scale_log2r = TRUE,
   complete_cases = FALSE, impute_na = TRUE, filename = NULL,
-  annot_cols = NULL, annot_colnames = NULL, r = NULL, ...)
+  annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...)
 
 plot_prnNMFCon(col_select = NULL, scale_log2r = TRUE,
   complete_cases = FALSE, impute_na = TRUE, filename = NULL,
-  annot_cols = NULL, annot_colnames = NULL, r = NULL, ...)
+  annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...)
 
 plot_pepNMFCoef(col_select = NULL, scale_log2r = TRUE,
   complete_cases = FALSE, impute_na = TRUE, filename = NULL,
-  annot_cols = NULL, annot_colnames = NULL, r = NULL, ...)
+  annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...)
 
 plot_prnNMFCoef(col_select = NULL, scale_log2r = TRUE,
   complete_cases = FALSE, impute_na = TRUE, filename = NULL,
-  annot_cols = NULL, annot_colnames = NULL, r = NULL, ...)
+  annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -42,11 +42,11 @@ missing values will be used. The default is FALSE.}
 \code{_impNA} in name will be taken. An error will be shown if no files are
 matched under given conditions.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
 
 \item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
 The values under the selected keys will be used to color-code sample IDs on
@@ -56,11 +56,17 @@ annotation.}
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}. The default is NULL without name replacement.}
 
-\item{r}{Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
-At the NULL default, all available ranks from the results of
-\code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be used.}
+\item{rank}{Numeric vector; the factorization rank(s) in
+\code{\link[NMF]{nmf}}. At the NULL default, all available ranks from the
+results of \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be
+used.}
 
-\item{...}{Additional arguments for \code{\link[pheatmap]{pheatmap}}}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data against the column keys in \code{_NMF[...]_consensus.txt} for consensus
+plots or \code{_NMF[...]_coef.txt} for coefficient plots; also see
+\code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical expression(s) for
+the row ordering of data; also see \code{\link{prnHM}}. \cr \cr Additional
+arguments for \code{\link[pheatmap]{pheatmap}}}
 }
 \value{
 Concensus heat maps from NMF classification.
@@ -105,6 +111,16 @@ anal_prnNMF(
   col_group = Group,
   r = c(3:4),
   nrun = 20, 
+)
+
+# passing a different `method`
+anal_prnNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  method = "lee",
+  r = c(3:4),
+  nrun = 20, 
+  filename = lee.txt,
 )
 
 ## row filtration and selected samples (proteins)

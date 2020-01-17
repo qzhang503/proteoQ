@@ -20,6 +20,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
                        anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
                                      "NMF", "Trend")) {
 
+  stopifnot(rlang::is_logical(scale_log2r), 
+            rlang::is_logical(complete_cases),
+            rlang::is_logical(impute_na))
+  
   err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
   err_msg2 <- "not found. \n Run functions PSM, peptide and protein normalization first."
   err_msg3 <- "not found. \nImpute NA values with `pepImp()` or `prnImp()` or set `impute_na = FALSE`."
@@ -171,10 +175,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 		fn_suffix <- ifelse(anal_type == "Model", "txt", "png")
 	} else {
+	  if (length(filename) > 1) stop("Do not provide multiple file names.", call. = FALSE)
+	  fn_prefix <- gsub("\\.[^.]*$", "", filename)
 	  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-		fn_prefix <- gsub("\\.[^.]*$", "", filename)
-		
-		if (fn_prefix == fn_suffix) stop("Unknown file extension.", call. = FALSE)
+		if (fn_prefix == fn_suffix) stop("No '.' in the file name.", call. = FALSE)
 	  
 	  if (anal_type %in% c("Trend", "NMF", "GSPA")) {
 	    fn_prefix <- paste(fn_prefix, data_type, anal_type, sep = "_")
@@ -461,30 +465,19 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  }
 	} else if (anal_type == "Trend") {
 		function(n_clust = NULL, ...) {
-		  if (!(impute_na || complete_cases)) {
-		    complete_cases <- TRUE
-		    rlang::warn(warn_msg1)
-		  }
-		  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-
-		  dots <- rlang::enexprs(...)
-		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-		  dots <- dots %>% .[! . %in% filter_dots]
-
-		  df <- df %>% 
-		    filters_in_call(!!!filter_dots) %>% 
-		    prepDM(id = !!id, scale_log2r = scale_log2r, 
-		           sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
-		    .$log2R
-		  
-		  analTrend(df = df, id = !!id, 
+		  analTrend(df = df, 
+		            id = !!id, 
                 col_group = !!col_group, 
                 col_order = !!col_order,
                 label_scheme_sub = label_scheme_sub, 
                 n_clust = n_clust,
+		            scale_log2r = scale_log2r,
+		            complete_cases = complete_cases, 
+		            impute_na = impute_na,
                 filepath = filepath, 
-                filename = paste0(fn_prefix %>% paste0(., "_nclust", n_clust), ".csv"), 
-                !!!dots)
+                filename = paste0(fn_prefix %>% paste0(., "_nclust", n_clust), ".txt"), 
+		            anal_type = anal_type,
+                ...)
 		}
 	} else if (anal_type == "Trend_line") {
 	  function(n_clust = NULL, theme = NULL, ...) {
@@ -502,86 +495,59 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	              ...)
 	  }
 	} else if (anal_type == "NMF") {
-		function(r = NULL, nrun = 50, seed = NULL, ...) {
-		  if (!(impute_na || complete_cases)) {
-		    complete_cases <- TRUE
-		    rlang::warn(warn_msg1)
-		  }
-		  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-
-		  dots <- rlang::enexprs(...)
-		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-		  dots <- dots %>% .[! . %in% filter_dots]
-		  
-		  df <- df %>% filters_in_call(!!!filter_dots)
-		  
-		  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
-		               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
-		    .$log2R  
-		  
+		function(rank = NULL, nrun = 50, seed = NULL, ...) {
 		  analNMF(df = df, 
 		          id = !!id, 
-		          r = r, 
+		          rank = rank, 
 		          nrun = nrun, 
 		          seed = seed, 
 		          col_group = !!col_group, 
 		          label_scheme_sub = label_scheme_sub,
+		          scale_log2r = scale_log2r,
+		          complete_cases = complete_cases, 
+		          impute_na = impute_na,
 		          filepath = filepath, 
-		          filename = paste0(fn_prefix %>% paste0(., "_rank", r), ".txt"), 
-		          !!!dots)
+		          filename = paste0(fn_prefix %>% paste0(., "_rank", rank), ".txt"), 
+		          anal_type = anal_type,
+		          ...)
 		}
 	} else if (anal_type == "NMF_con") {
-	  function(r = NULL, ...) {
+	  function(rank = NULL, ...) {
 	    plotNMFCon(id = !!id, 
-	               r = r, 
+	               rank = rank, 
 	               label_scheme_sub = label_scheme_sub, 
 	               scale_log2r = scale_log2r, 
 	               complete_cases = complete_cases, 
-	               impute_na = impute_na,               
+	               impute_na = impute_na,
 	               filepath = filepath, 
 	               filename = paste0(fn_prefix, ".", fn_suffix), 
 	               ...)
 	  }
 	} else if (anal_type == "NMF_coef") {
-	  function(r = NULL, ...) {
+	  function(rank = NULL, ...) {
 	    plotNMFCoef(id = !!id, 
-	                r = r, 
+	                rank = rank, 
 	                label_scheme_sub = label_scheme_sub, 
-	                scale_log2r = scale_log2r, 
+	                scale_log2r = scale_log2r,
+	                complete_cases = complete_cases,
 	                impute_na = impute_na,                
 	                filepath = filepath, 
 	                filename = paste0(fn_prefix, ".", fn_suffix), 
 	                ...)
 	  }
 	} else if (anal_type == "NMF_meta") {
-	  function(r = NULL, ...) {
-	    if (!(impute_na || complete_cases)) {
-	      complete_cases <- TRUE
-	      rlang::warn(warn_msg1)
-	    }
-	    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-	    
-	    dots <- rlang::enexprs(...)
-	    filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-	    dots <- dots %>% .[! . %in% filter_dots]
-	    
-	    df <- df %>% filters_in_call(!!!filter_dots)
-	    
-	    df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
-	                 sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
-	      .$log2R  
-	    
-	    # can also apply `arrange_` varargs
+	  function(rank = NULL, ...) {
 	    plotNMFmeta(df = df, 
 	                id = !!id, 
-	                r = r, 
+	                rank = rank, 
 	                label_scheme_sub = label_scheme_sub, 
-	                anal_type = anal_type, 
-	                scale_log2r = scale_log2r, 
+	                scale_log2r = scale_log2r,
+	                complete_cases = complete_cases, 
 	                impute_na = impute_na, 
 	                filepath = filepath, 
 	                filename = paste0(fn_prefix, ".", fn_suffix), 
-	                !!!dots)
+	                anal_type = anal_type,
+	                ...)
 	  }
 	} else if (anal_type == "GSPA") {
 		function(gset_nms = "go_sets", var_cutoff = .5,

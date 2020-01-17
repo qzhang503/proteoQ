@@ -6,7 +6,7 @@
 \usage{
 plot_metaNMF(col_select = NULL, scale_log2r = TRUE,
   complete_cases = FALSE, impute_na = TRUE, df = NULL,
-  filepath = NULL, filename = NULL, r = NULL, annot_cols = NULL,
+  filepath = NULL, filename = NULL, rank = NULL, annot_cols = NULL,
   annot_colnames = NULL, ...)
 }
 \arguments{
@@ -27,7 +27,7 @@ missing values will be used. The default is FALSE.}
 will be used. The default is TRUE.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among 
+automatically after matching the data type with an \code{id} among
 \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{Use system default.}
@@ -35,9 +35,10 @@ automatically after matching the data type with an \code{id} among
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
 
-\item{r}{Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
-At the NULL default, all available ranks from the results of
-\code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be used.}
+\item{rank}{Numeric vector; the factorization rank(s) in
+\code{\link[NMF]{nmf}}. At the NULL default, all available ranks from the
+results of \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be
+used.}
 
 \item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
 The values under the selected keys will be used to color-code sample IDs on
@@ -48,7 +49,8 @@ annotation.}
 \code{annot_cols}. The default is NULL without name replacement.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{prnHM}}. \cr \code{arrange_}: Logical
+data against the column keys in \code{Peptide.txt}, \code{Protein.txt} etc.;
+also see \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical
 expression(s) for the row ordering of data; also see \code{\link{prnHM}}.
 \cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}.}
 }
@@ -79,6 +81,16 @@ anal_prnNMF(
   col_group = Group,
   r = c(3:4),
   nrun = 20, 
+)
+
+# passing a different `method`
+anal_prnNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  method = "lee",
+  r = c(3:4),
+  nrun = 20, 
+  filename = lee.txt,
 )
 
 ## row filtration and selected samples (proteins)

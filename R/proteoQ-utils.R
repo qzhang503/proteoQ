@@ -1980,3 +1980,45 @@ my_union <- function (x, y) {
 }
 
 
+#' find the base names of files
+find_fn_bases <- function (filenames) {
+  gsub("\\.[^.]*$", "", filenames) # %>% .[1] 
+}
+
+
+#' find the extensions of files
+find_fn_exts <- function (filename, type = "text") {
+  purrr::map_chr(filename, ~ {
+    if (!grepl("\\.", .x)) {
+      fn_ext <- switch(
+        text = "txt",
+        graphics = "png",
+        stop("Invalid extension in file name(s).", Call. = FALSE)
+      )
+    } else {
+      fn_ext <- gsub("^.*\\.([^.]*)$", "\\1", .x) # %>% .[1]
+    }
+  })
+}
+
+#' check duplicate argments in 'dots'
+check_dots <- function (blacklist = NULL, ...) {
+  dots <- rlang::enexprs(...)
+  dups <- purrr::map_lgl(names(dots), ~ .x %in% blacklist)
+  nms <- names(dots[dups])
+  
+  if (!rlang::is_empty(nms)) {
+    stop("Do not use argument(s): ", reduce(nms, paste, sep = ", "), call. = FALSE)
+  }
+}
+
+
+#' force 'complete_cases = TRUE' at 'impute_na = FALSE'
+to_complete_cases <- function (complete_cases = FALSE, impute_na = FALSE) {
+  warn_msg1 <- "Coerce `complete_cases = TRUE` at `impute_na = FALSE`."
+  if (!(impute_na || complete_cases)) {
+    complete_cases <- TRUE
+    rlang::warn(warn_msg1)
+  }
+  return(complete_cases)
+}

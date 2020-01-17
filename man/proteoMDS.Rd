@@ -112,18 +112,18 @@ plots. The default is TRUE.}
 \item{annot_cols}{Not used.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among 
+automatically after matching the data type with an \code{id} among
 \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for

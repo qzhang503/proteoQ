@@ -21,7 +21,7 @@ or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
 or \code{gene}.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among 
+automatically after matching the data type with an \code{id} among
 \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{A file path to output results. By default, it will be

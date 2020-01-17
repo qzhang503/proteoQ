@@ -45,25 +45,25 @@ The default is TRUE.}
 is TRUE.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among 
+automatically after matching the data type with an \code{id} among
 \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
-of data against the column keys in \code{Peptide.txt}, \code{Protein.txt} etc.
-Each statement contains to a list of logical expression(s). The \code{lhs}
-needs to start with \code{filter_}. The logical condition(s) at the
-\code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. \cr
-\cr For example, \code{pep_len} is a column key present in \code{Mascot}
+of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
+etc. Each statement contains to a list of logical expression(s). The
+\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+\cr \cr For example, \code{pep_len} is a column key present in \code{Mascot}
 peptide tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
 exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
 See also \code{\link{normPSM}}. \cr \cr Additional parameters for plotting
@@ -184,24 +184,29 @@ prnHist(
 ## End(Not run)
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data normalization \cr
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr
 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+ \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+ \code{\link{standPep}} for extended examples in peptide data normalization
+ \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+ summarization \cr \code{\link{standPrn}} for extended examples in protein
+ data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+ for extended examples in data purging \cr \code{\link{pepHist}} and
+ \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+ MS file names \cr
+
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+ \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+ \code{\link{start_with_str}}, \code{\link{end_with_str}},
+ \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+ data subsetting by character strings \cr
+
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+ \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+ \cr
 }

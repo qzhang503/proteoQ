@@ -33,11 +33,11 @@ specified under \code{Select}, the column key of \code{Sample_ID} will be
 used. The non-empty entries under the ascribing column will be used in
 indicated analysis.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
 
 \item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
 \eqn{y} at a log2 scale. \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a

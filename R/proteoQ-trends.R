@@ -35,33 +35,33 @@ proteoq_trend_theme <- theme_bw() + theme(
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>%
 analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
-                       filepath, filename, ...) {
+                       scale_log2r, complete_cases, impute_na, 
+                       filepath, filename, anal_type, ...) {
 
-	mestimate <- function (eset) {
-		N <- dim(Biobase::exprs(eset))[[1]]
-		D <- dim(Biobase::exprs(eset))[[2]]
-		m.sj <- 1 + (1418/N + 22.05) * D^(-2) + (12.33/N + 0.243) *
-			D^(-0.0406 * log(N) - 0.1134)
-		return(m.sj)
-	}
-
-	mfuzz <- function (eset, centers, m, ...) {
-		cl <- e1071::cmeans(Biobase::exprs(eset), centers = centers,
-		                    method = "cmeans", m = m, ...)
-	}
-
-	
 	stopifnot(nrow(label_scheme_sub) > 0)
 
+	complete_cases <- to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
+	if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+	
 	id <- rlang::as_string(rlang::enexpr(id))
 	dots <- rlang::enexprs(...)
+	filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+	arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+	dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+	
+	df <- df %>% 
+	  filters_in_call(!!!filter_dots) %>% 
+	  arrangers_in_call(!!!arrange_dots) %>% 
+	  prepDM(id = !!id, scale_log2r = scale_log2r, 
+	         sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
+	  .$log2R
 
 	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)
 	
 	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
-	
+
 	if (is.null(n_clust)) {
 	  n_clust <- local({
 	    nrow <- nrow(df)
@@ -97,15 +97,22 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 		dplyr::filter(complete.cases(.[, !grepl(id, names(.))])) %>%
 		tibble::column_to_rownames(id)
 
+	if (is.null(dots$m)) {
+	  dots$m <- local({
+	    N <- nrow(df_mean)
+	    D <- ncol(df_mean)
+	    m <- 1 + (1418/N + 22.05) * D^(-2) + (12.33/N + 0.243) *
+	      D^(-0.0406 * log(N) - 0.1134)
+	  })
+	}
+	
 	purrr::walk(fn_prefix, ~ {
 	  n_clust <- gsub("^.*_nclust(\\d+).*", "\\1", .x) %>% as.numeric()
 	  filename <- paste0(.x, ".txt")
 
-	  df_fuzzy = new('ExpressionSet', exprs = as.matrix(df_mean))
-	  m1 <- mestimate(df_fuzzy)
-	  cl <- mfuzz(df_fuzzy, c = n_clust, m = m1)
-	  O <- Mfuzz::overlap(cl)
-	  
+	  args <- c(list(x = as.matrix(df_mean), centers = n_clust), dots)
+	  cl <- do.call(cmeans, args) 
+
 	  res_cl <- data.frame(cluster = cl$cluster) %>%
 	    tibble::rownames_to_column() %>%
 	    dplyr::rename(!!id := rowname)
@@ -176,7 +183,6 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     stop("Unknown id = ", id, call. = FALSE)
   }
   
-  
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
@@ -193,7 +199,6 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     n <- gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", .x) %>% 
       as.numeric()
     
-    fn_suffix <- "png" # png for now
     out_nm <- paste0(.y, fn_prefix, "_nclust", n, ".", fn_suffix)
     src_path <- file.path(filepath, .x)
 
@@ -215,11 +220,13 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
       unlist()
     
     filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-    dots <- dots %>% .[! . %in% filter_dots]
-
+    arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+    dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+    
     df <- df %>% 
       dplyr::filter(group %in% Levels) %>% 
       filters_in_call(!!!filter_dots) %>% 
+      arrangers_in_call(!!!arrange_dots) %>% 
       dplyr::mutate(group = factor(group, levels = Levels))
 
     if (complete_cases) df <- df %>% .[complete.cases(.), ]
@@ -291,13 +298,19 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'@inheritParams anal_prnNMF
 #'@param n_clust Numeric vector; the number(s) of clusters that data will be
 #'  divided into. At the NULL default, it will be determined by the number of
-#'  data entries.
+#'  data entries. The \code{n_clust} overwrites the augument \code{centers} in
+#'  \code{\link[e1071]{cmeans}}.
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is FALSE.
 #'@param filepath Use system default.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}.
-#'@return Trend classification of \code{log2FC}.
+#'  data; \cr \code{arrange_}: Logical expression(s) for the row order of data;
+#'  also see \code{\link{normPSM}}, \code{\link{prnHM}}. \cr \cr Additional
+#'  arguments for \code{\link[e1071]{cmeans}} by noting that: \cr \code{centers}
+#'  is replaced with \code{n_clust} \cr \code{m} is according to Schwaemmle and
+#'  Jensen if not provided; \cr \code{x} is disabled with input data being
+#'  determined automatically
+#'@return Fuzzy c-mean classification of \code{log2FC}.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'
@@ -353,8 +366,10 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@export
+#'@references \code{Schwaemmle and Jensen, Bioinformatics,Vol. 26 (22),
+#'  2841-2848, 2010. \cr J. C. Bezdek (1981). Pattern recognition with fuzzy objective function algorithms. New York: Plenum. \cr }
 anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL, n_clust = NULL, 
-                           scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
+                           scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                            df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
@@ -369,19 +384,20 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
     , add = TRUE
   )  
   
-  err_msg <- "Don't call the function with arguments `id` or `anal_type`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
+  check_dots(c("id", "anal_type"), ...)
   
+  err_msg1 <- "Do not use argument `x`; input data will be determined automatically.\n"
+  err_msg2 <- "Do not use argument `centers`; instead use `n_clust`.\n"
+  if (any(names(rlang::enexprs(...)) %in% c("x"))) stop(err_msg1, call. = FALSE)
+  if (any(names(rlang::enexprs(...)) %in% c("centers"))) stop(err_msg2, call. = FALSE)
+
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  
-  stopifnot(rlang::is_logical(scale_log2r), 
-            rlang::is_logical(impute_na), 
-            rlang::is_logical(complete_cases))
-  
+
   col_select <- rlang::enexpr(col_select)
   col_group <- rlang::enexpr(col_group)
   col_order <- rlang::enexpr(col_order)
@@ -428,17 +444,19 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'  \code{\link{anal_prnTrend}} for visualization. At the NULL default, all
 #'  available cluster IDs will be used.
 #'@param theme A
-#'  \code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}},
-#'  i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
-#'  will be applied.
+#'  \code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+#'  theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+#'  theme will be applied.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data in \code{Protein_Trend_[...].txt}; also see \code{\link{normPSM}}. \cr
-#'  \cr Additional parameters for use in \code{plot_} functions: \cr
-#'  \code{ymin}, the minimum y at \code{log2} scale; \cr \code{ymax}, the
-#'  maximum y at \code{log2} scale; \cr \code{ybreaks}, the breaks in y-axis at
-#'  \code{log2} scale; \cr \code{nrow}, the number of rows; \cr \code{width},
-#'  the width of plot; \cr \code{height}, the height of plot; \cr \code{color},
-#'  the color of lines; \cr \code{alpha}, the transparency of lines.
+#'  data in \code{Protein_Trend_[...].txt}; see also \code{\link{normPSM}} \cr
+#'  \cr \code{arrange_}: Logical expression(s) for the row ordering of data;
+#'  also see \code{\link{prnHM}}. \cr \cr Additional parameters for use in
+#'  \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2} scale;
+#'  \cr \code{ymax}, the maximum y at \code{log2} scale; \cr \code{ybreaks}, the
+#'  breaks in y-axis at \code{log2} scale; \cr \code{nrow}, the number of rows;
+#'  \cr \code{width}, the width of plot; \cr \code{height}, the height of plot;
+#'  \cr \code{color}, the color of lines; \cr \code{alpha}, the transparency of
+#'  lines.
 #'@import purrr
 #'
 #'@example inst/extdata/examples/prnTrend_.R
@@ -494,20 +512,16 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'
 #'@export
 plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL, 
-                           scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
+                           scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                            filename = NULL, theme = NULL, ...) {
-  
-  err_msg <- "Duplicated arguments in `id` or `anal_type`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id", "anal_type"))) stop(err_msg)
+  check_dots(c("id", "anal_type", "col_group", "df", "filepath"), ...)
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
+
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  id <- match_call_arg(normPSM, group_pep_by)
-  
-  stopifnot(rlang::is_logical(scale_log2r), 
-            rlang::is_logical(impute_na), 
-            rlang::is_logical(complete_cases))
   
   col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)

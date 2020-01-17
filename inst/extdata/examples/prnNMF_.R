@@ -22,6 +22,16 @@ anal_prnNMF(
   nrun = 20, 
 )
 
+# passing a different `method`
+anal_prnNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  method = "lee",
+  r = c(3:4),
+  nrun = 20, 
+  filename = lee.txt,
+)
+
 ## row filtration and selected samples (proteins)
 anal_prnNMF(
   impute_na = FALSE,
