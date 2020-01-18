@@ -39,13 +39,10 @@ automatically after matching the data type with an \code{id} among
 \code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
 for \code{gspaMap}.}
 
-\item{filepath}{A file path to output results. By default, it will be
-determined automatically by the name of the calling function and the value
-of \code{id} in the \code{call}.}
+\item{filepath}{Use system default.}
 
-\item{filename}{A file name to output results. By default, it will be
-determined automatically by the name of the calling function and the value
-of id in the call.}
+\item{filename}{A representative file name to outputs. By default, it will be
+determined automatically by the name of the current call.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
 the formula(e) will match those used in \code{\link{pepSig}} or

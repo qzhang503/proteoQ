@@ -1,19 +1,13 @@
 #'GSVA of protein data
 #'
-#'\code{prnGSVA} performs the GSVA aganist protein \code{log2FC}
+#'\code{prnGSVA} performs the GSVA aganist protein \code{log2FC}. It is a
+#'wrapper of \code{\link[GSVA]{gsva}}.
 #'
 #'The formula(s) of contrast(s) used in \code{\link{pepSig}} will be taken by
 #'default.
 #'
 #'
-#'@inheritParams proteoSigtest
-#'@inheritParams  proteoEucDist
-#'@inheritParams  proteoHM
-#'@inheritParams  info_anal
-#'@inheritParams proteoGSPA
-#'@param impute_na Logical. At the NULL default, the TRUE or FALSE will match
-#'  the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
-#'  protein data.
+#'@inheritParams prnGSPA
 #'@param lm_method Character string indicating the linear modeling method for
 #'  significance assessment of GSVA enrichment scores. The default is
 #'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
@@ -28,57 +22,71 @@
 #'@param logFC_cutoff Numeric; the cut-off in enrichment log2FC. Terms with
 #'  absolute log2FC smaller than the threshold will be removed from multiple
 #'  test corrections. The default is at log2(1.1).
-#'@param filepath Use system default.
-#'@param filename Use system default.
-#'@param ... Arguments for \code{\link{GSVA::gsva}}
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
+#'  data in \code{Protein\\Protein_[impNA].txt} or
+#'  \code{Protein\\Model\\Protein_[impNA]pVals.txt}; see also
+#'  \code{\link{normPSM}} \cr \cr \code{arrange_}: Logical expression(s) for the
+#'  row ordering of data; also see \code{\link{prnHM}}. \cr \cr Additional
+#'  arguments for \code{\link{GSVA::gsva}}
 #'
 #'@example inst/extdata/examples/prnGSVA_.R
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+#'  GSEA. \cr
+#'
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr
+#'
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
+#'  analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
+#'  analysis and visualization \cr
+#'
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
-#'  
+#'
 #'@import dplyr rlang ggplot2 GSVA
 #'@importFrom magrittr %>%
 #'@export
-prnGSVA <- function (df = NULL, filepath = NULL, filename = NULL, 
-                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = NULL, lm_method = "limma", 
-                     gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
+prnGSVA <- function (gset_nms = "go_sets", 
+                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                     df = NULL, filepath = NULL, filename = NULL, 
+                     var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
+                     lm_method = "limma", ...) {
 
   on.exit(
     if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
@@ -93,33 +101,29 @@ prnGSVA <- function (df = NULL, filepath = NULL, filename = NULL,
     , add = TRUE
   )
   
+  check_dots(c("id", "anal_type"), ...)
+  
+  err_msg1 <- "Argument `expr`, `gset.idx.list` and `annotation` will be determined automatically.\n"
+  if (any(names(rlang::enexprs(...)) %in% c("expr", "gset.idx.list", "annotation"))) 
+    stop(err_msg1, call. = FALSE)
+
   dir.create(file.path(dat_dir, "Protein\\GSVA\\log"), recursive = TRUE, showWarnings = FALSE)
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	lm_method <- rlang::as_string(rlang::enexpr(lm_method))
 
-	if (is.null(impute_na)) {
-	  if (id %in% c("pep_seq", "pep_seq_mod")) {
-	    impute_na <- match_call_arg(pepSig, impute_na)
-	  } else if (id %in% c("prot_acc", "gene")) {
-	    impute_na <- match_call_arg(prnSig, impute_na)
-	  }
-	}
-	
-	stopifnot(rlang::is_logical(scale_log2r), 
-	          rlang::is_logical(impute_na), 
-	          rlang::is_logical(complete_cases))
-
 	dots <- rlang::enexprs(...)
 	fmls <- dots %>% .[grepl("^\\s*~", .)]
 	dots <- dots[!names(dots) %in% names(fmls)]
 
-	if (purrr::is_empty(fmls)) {
+	if (rlang::is_empty(fmls)) {
 	  fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.rda")
 	  if (file.exists(fml_file)) {
 	    load(file = fml_file)
@@ -132,9 +136,6 @@ prnGSVA <- function (df = NULL, filepath = NULL, filename = NULL,
 	  dots <- c(dots, fmls)
 	}
 	
-	# load(file = file.path(dat_dir, "Calls\\prnSig_formulas.rda"))
-	# dots <- c(rlang::enexprs(...), prnSig_formulas)
-		
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
@@ -152,12 +153,18 @@ prnGSVA <- function (df = NULL, filepath = NULL, filename = NULL,
 #' @importFrom magrittr %>% %$%
 #' @importFrom outliers grubbs.test
 #' @importFrom broom.mixed tidy
-gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, filepath = NULL, filename = NULL, 
-                     complete_cases = FALSE, lm_method = "limma", gsets = NULL, 
-                     var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
-
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
+                     filepath = NULL, filename = NULL, 
+                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
+                     gset_nms = "go_sets", lm_method = "limma", gsets = NULL, 
+                     var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
+                     anal_type = "GSVA", ...) {
+  
+  stopifnot(nrow(label_scheme_sub) > 0)
+  
+  species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
+  gsets <- load_dbs(gset_nms, species)
+  stopifnot(length(gsets) > 0)
   
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
@@ -170,10 +177,21 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, filepath
   select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
   
-  if (purrr::is_empty(fmls)) stop("Formula(s) of contrasts not available.", call. = FALSE)
+  if (purrr::is_empty(fmls)) stop("Formula(s) of contrasts not available.", call. = FALSE)  
   
-  stopifnot(length(gsets) > 0)
-  
+  # `complete_cases` depends on lm contrasts
+  df <- df %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    arrangers_in_call(!!!arrange_dots) %>% 
+    prepDM(id = id, 
+           scale_log2r = scale_log2r, 
+           sub_grp = label_scheme_sub$Sample_ID, 
+           anal_type = anal_type) %>% 
+    .$log2R 
+
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+
   res_es <- df %>% 
     filterData(var_cutoff = var_cutoff) %>% 
     as.matrix() %>% 

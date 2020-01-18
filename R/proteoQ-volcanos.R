@@ -39,7 +39,6 @@
 #'  with \code{\link{gspaMap}}. By default, the names will match those used in
 #'  \code{\link{prnGSPA}}.
 #'@inheritParams proteoSigtest
-#'@inheritParams proteoGSPA
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
 #'  plotting: \cr \code{xco}, the cut-off lines of fold changes at position

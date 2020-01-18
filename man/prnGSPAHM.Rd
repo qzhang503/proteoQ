@@ -4,12 +4,30 @@
 \alias{prnGSPAHM}
 \title{Heat map visualization of GSPA results}
 \usage{
-prnGSPAHM(annot_cols = NULL, annot_colnames = NULL,
-  annot_rows = NULL, ...)
+prnGSPAHM(scale_log2r = TRUE, complete_cases = FALSE,
+  impute_na = FALSE, fml_nms = NULL, annot_cols = NULL,
+  annot_colnames = NULL, annot_rows = NULL, filename = NULL, ...)
 }
 \arguments{
+\item{scale_log2r}{Logical; at the TRUE default, input files with
+\code{_Z[...].txt} in name will be used. Otherwise, files with
+\code{_N[...].txt} in name will be taken. An error will be shown if no files
+are matched under given conditions.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; at TRUE, input files with \code{_impNA[...].txt} in
+name will be loaded. Otherwise, files without \code{_impNA} in name will be
+taken. An error will be shown if no files are matched under given
+conditions. The default is FALSE.}
+
+\item{fml_nms}{Character string or vector; the formula name(s). By default,
+the formula(e) will match those used in \code{\link{pepSig}} or
+\code{\link{prnSig}}.}
+
 \item{annot_cols}{A character vector of column keys that can be found in
-\code{essmap_.*.txt}. The values under the selected keys will be used to
+\code{_essmap.txt}. The values under the selected keys will be used to
 color-code enrichment terms on the top of heat maps. The default is NULL
 without column annotation.}
 
@@ -17,20 +35,25 @@ without column annotation.}
 \code{annot_cols}. The default is NULL without name replacement.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
-\code{essmeta_.*.txt} . The values under the selected keys will be used to
+\code{_essmeta.txt} . The values under the selected keys will be used to
 color-code essential terms on the side of heat maps. The default is NULL
 without row annotation.}
 
+\item{filename}{A representative file name to outputs. By default, it will be
+determined automatically by the name of the current call.}
+
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr \cr Additional arguments for
+data in \code{_essmap.txt}; see also \code{\link{normPSM}} \cr \cr
+\code{arrange_}: Logical expression(s) for the row ordering of data; also
+see \code{\link{prnHM}}. \cr \cr Additional arguments for
 \code{\link[pheatmap]{pheatmap}}, i.e., \code{fontsize }... \cr \cr Note
 arguments disabled from \code{pheatmap}: \cr \code{annotation_col}; instead
 use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
 use keys indicated in \code{annot_rows}}
 }
 \description{
-\code{prnGSPAHM} visualizes distance heat maps between essential and all gene
-sets.
+\code{prnGSPAHM} visualizes distance heat maps and networks between essential
+and all gene sets.
 }
 \details{
 The list of gene sets and the associative quality metrics of \code{size} and
@@ -38,7 +61,7 @@ The list of gene sets and the associative quality metrics of \code{size} and
 by arguments \code{pval_cutoff} and \code{logFC_cutoff}, as well as optional
 varargs of \code{filter_}.
 }
-\section{\code{Protein_GSPA_...txt}}{
+\section{\code{Protein_GSPA_[...].txt}}{
 
 
  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
@@ -51,7 +74,7 @@ varargs of \code{filter_}.
  \cr }
 }
 
-\section{\code{essmap_Protein_GSPA_...txt}}{
+\section{\code{Protein_GSPA_[...]essmap.txt}}{
 
 
  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
@@ -125,49 +148,58 @@ prnGSPAHM(
   annot_colnames = c("Eset index", "Size"),
   filter_by = exprs(distance <= .95),
   color = colorRampPalette(c("blue", "white", "red"))(100),
-  filename = "custom_colors.png",
+  filename = custom_colors.png,
 )
 
 
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data normalization \cr
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr
 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
- 
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
- \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
- \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
- \code{\link{prnGSVA}} for gene set variance analysis \cr 
- \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
- 
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
- \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
- \code{\link{prnCorr_logInt}}  for correlation plots \cr 
- 
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
- \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
- 
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+ \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+ \code{\link{standPep}} for extended examples in peptide data normalization
+ \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+ summarization \cr \code{\link{standPrn}} for extended examples in protein
+ data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+ for extended examples in data purging \cr \code{\link{pepHist}} and
+ \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+ MS file names \cr
+
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+ \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+ \code{\link{start_with_str}}, \code{\link{end_with_str}},
+ \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+ data subsetting by character strings \cr
+
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+ \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+ \cr
+
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+ significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+ plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+ visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+ variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+ GSEA. \cr
+
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+ \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+ correlation plots \cr
+
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein
+ trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+ \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+ \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
+ analysis and visualization \cr
+
  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

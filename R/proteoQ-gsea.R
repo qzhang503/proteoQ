@@ -75,7 +75,6 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'The corresponding \code{.gct} and \code{.cls} files can be used with the
 #'online or the github version of R-GSEA.
 #'
-#'@inheritParams proteoGSPA
 #'@inheritParams proteoSigtest
 #'@inheritParams  proteoEucDist
 #'@inheritParams  proteoHM

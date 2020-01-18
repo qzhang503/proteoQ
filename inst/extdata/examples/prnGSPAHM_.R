@@ -58,7 +58,7 @@ prnGSPAHM(
   annot_colnames = c("Eset index", "Size"),
   filter_by = exprs(distance <= .95),
   color = colorRampPalette(c("blue", "white", "red"))(100),
-  filename = "custom_colors.png",
+  filename = custom_colors.png,
 )
 
 

@@ -28,15 +28,13 @@ automatically after matching the data type with an \code{id} among
 determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
-\item{filename}{A file name to output results. By default, it will be
-determined automatically by the name of the calling function and the value
-of id in the call.}
+\item{filename}{A file name to output results. The default is
+\code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.}
 
 \item{gset_nms}{Not currently used.}
 
-\item{scale_log2r}{Not used for full volcano plots by \code{pepVol} or 
-\code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
-for \code{gspaMap}.}
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
 
 \item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
 the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
@@ -50,19 +48,14 @@ protein \code{log2FC} across samples. Entries with \code{variances} less
 than the threshold will be removed for enrichment analysis. The default is
 0.5.}
 
-\item{pval_cutoff}{Numeric value or vector; the cut-off in protein
-significance \code{pVal}. Entries with \code{pVals} less significant than
-the threshold will be ignored during enrichment analysis. The default is
-0.05 for all formulae matched to or specified in argument \code{fml_nms}.
-Formula-specific threshold is allowed by supplying a vector of cut-off
-values.}
+\item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
+with \code{pVals} smaller than the threshold will be removed from multiple
+test corrections. The default is at \code{1} to include all entries.}
 
-\item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
-\code{log2FC}. The default magnitude is \code{log2(1.2)} for all formulae
-matched to or specified in argument \code{fml_nms}. Entries with absolute
-\code{log2FC} smaller than the threshold will be ignored during enrichment
-analysis. Formula-specific threshold is allowed by supplying a vector of
-absolute values in \code{log2FC}.}
+\item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with
+absolute \code{log2FC} smaller than the threshold will be removed from
+multiple test corrections. The default is at \code{log2(1)} to include all
+entries.}
 
 \item{gspval_cutoff}{Not currently used.}
 
@@ -71,10 +64,6 @@ absolute values in \code{log2FC}.}
 \item{max_size}{Not currently used.}
 
 \item{min_greedy_size}{Not currently used.}
-
-\item{fml_nms}{Character string or vector; the formula name(s). By default,
-the formula(e) will match those used in \code{\link{pepSig}} or
-\code{\link{prnSig}}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}

@@ -25,10 +25,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
             rlang::is_logical(impute_na))
   
   err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
-  err_msg2 <- "not found. \n Run functions PSM, peptide and protein normalization first."
-  err_msg3 <- "not found. \nImpute NA values with `pepImp()` or `prnImp()` or set `impute_na = FALSE`."
-  err_msg4 <- "not found at impute_na = TRUE. \nRun `prnSig(impute_na = TRUE)` first."
-  err_msg5 <- "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
   warn_msg1 <- "Coerce `complete_cases = TRUE` at `impute_na = FALSE`."
   
   old_opt <- options(max.print = 99999)
@@ -279,6 +275,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		  dots <- rlang::enexprs(...)
 		  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 		  dots <- dots %>% .[! . %in% filter_dots]
+		  
+		  # remove `warn_msg1` after moving the following codes to `plotPCA`
 		  
 		  if (!(impute_na || complete_cases)) {
 		    complete_cases <- TRUE
@@ -556,7 +554,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 		  # currently Protein[_impNA]_pVals.txt does not contain `scale_log2_r` info in the file name;
 		  #   therefore, `scale_log2r` will be matched to those in `prnSig()` and indicated in 
-		  #   file names `_N[_impNA].csv` or `_Z[_impNA].csv` to inform user the `scale_log_r` status
+		  #   file names `_N[_impNA].txt` or `_Z[_impNA].txt` to inform user the `scale_log_r` status
 		  # `complete_cases` is for entrez IDs and pVals, so typically has no effect
 		  # "id" only for tibbling rownames
 		  gspaTest(df = df, 
@@ -564,6 +562,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           label_scheme_sub = label_scheme_sub, 
 		           scale_log2r = scale_log2r, 
 		           complete_cases = complete_cases, 
+		           impute_na = impute_na, 
 		           filepath = filepath, 
 		           filename = paste0(fn_prefix, ".txt"),
 		           gset_nms = gset_nms, 
@@ -578,14 +577,13 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           ...)
 		}
 	} else if (anal_type == "GSPA_hm") {
-	  function(gset_nms = "go_sets", var_cutoff = .5,
-	           pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
-	           min_size = 10, max_size = Inf, min_greedy_size = 1, ...) {
+	  function(...) {
 	    
 	    # `scale_log2r` to match file names from `gspaTest()`
 	    # `impute_na` to match file names from `gspaTest()`
 	    # `complete_cases` has no effects
 	    gspaHM(scale_log2r = scale_log2r, 
+	           complete_cases = complete_cases, 
 	           impute_na = impute_na, 
 	           filepath = filepath, 
 	           filename = paste0(fn_prefix, ".", fn_suffix), 
@@ -594,34 +592,22 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if(anal_type == "GSVA") {
 	  function(lm_method = "limma", gset_nms = "go_sets", var_cutoff = .5,
 	           pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
-	    
-	    dots <- rlang::enexprs(...)
-	    filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-	    dots <- dots %>% .[! . %in% filter_dots]
-	    
-	    species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
-	    gsets <- load_dbs(gset_nms, species)
-	    
-	    stopifnot(length(gsets) > 0)
-
-	    # `complete_cases` depends on lm contrasts
-	    df_log2r <- df %>% 
-	      filters_in_call(!!!filter_dots) %>% 
-	      prepDM(id = id, 
-	             scale_log2r = scale_log2r, 
-	             sub_grp = label_scheme_sub$Sample_ID, 
-	             anal_type = anal_type) %>% 
-	      .$log2R %>% 
-	      gsvaTest(id = !!id, 
-	               label_scheme_sub = label_scheme_sub, 
-	               filepath = filepath, 
-	               filename = paste0(fn_prefix, ".txt"), 
-	               complete_cases = complete_cases, 
-	               lm_method = lm_method, 
-	               gsets = gsets, 
-	               var_cutoff = var_cutoff, 
-	               pval_cutoff = pval_cutoff, 
-	               logFC_cutoff = logFC_cutoff, !!!dots)
+      gsvaTest(df = df, 
+               id = !!id, 
+               label_scheme_sub = label_scheme_sub, 
+               filepath = filepath, 
+               filename = paste0(fn_prefix, ".txt"), 
+               scale_log2r = scale_log2r, 
+               complete_cases = complete_cases, 
+               impute_na = impute_na, 
+               gset_nms = gset_nms,
+               lm_method = lm_method, 
+               gsets = gsets, 
+               var_cutoff = var_cutoff, 
+               pval_cutoff = pval_cutoff, 
+               logFC_cutoff = logFC_cutoff, 
+               anal_type = anal_type, 
+               ...)
 	  }
 	} else if (anal_type == "GSEA") {
 	  function(gset_nms = "go_sets", var_cutoff = .5,
@@ -689,6 +675,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 #' Helper for finding input `df`
 #'
 find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na = FALSE, ...) {
+  err_msg2 <- "not found. \n Run functions PSM, peptide and protein normalization first."
+  err_msg3 <- "not found. \nImpute NA values with `pepImp()` or `prnImp()` or set `impute_na = FALSE`."
+  err_msg4 <- "not found at impute_na = TRUE. \nRun `prnSig(impute_na = TRUE)` first."
+  err_msg5 <- "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
+
   anal_type <- rlang::as_string(rlang::enexpr(anal_type))
   id <- rlang::as_string(rlang::enexpr(id))
 
