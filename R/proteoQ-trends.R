@@ -432,6 +432,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'
 #'@inheritParams anal_prnNMF
 #'@inheritParams proteoCorr
+#'@inheritParams prnHist
 #'@param scale_log2r Logical; at the TRUE default, input files with
 #'  \code{_Z[...].txt} in name will be used. Otherwise, files with
 #'  \code{_N[...].txt} in name will be taken. An error will be shown if no files
@@ -443,10 +444,6 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'@param n_clust Numeric vector; the cluster ID(s) corresponding to
 #'  \code{\link{anal_prnTrend}} for visualization. At the NULL default, all
 #'  available cluster IDs will be used.
-#'@param theme A
-#'  \code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
-#'  theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
-#'  theme will be applied.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data in \code{Protein_Trend_[...].txt}; see also \code{\link{normPSM}} \cr
 #'  \cr \code{arrange_}: Logical expression(s) for the row ordering of data;

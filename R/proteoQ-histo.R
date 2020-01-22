@@ -3,8 +3,25 @@
 #' @import dplyr purrr rlang mixtools ggplot2 RColorBrewer
 #' @importFrom magrittr %>%
 #' @importFrom tidyr gather
-plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, 
-                       show_curves, show_vline, scale_y, filepath = NULL, filename, ...) {
+plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, complete_cases, 
+                       show_curves, show_vline, scale_y, filepath = NULL, filename, 
+                       theme, ...) {
+
+  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  
+  if (scale_log2r) {
+    fn_par <- file.path(filepath, "MGKernel_params_Z.txt")
+  } else {
+    fn_par <- file.path(filepath, "MGKernel_params_N.txt")
+  }
+  
+  if (file.exists(fn_par)) {
+    params <- read.csv(fn_par, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")
+    params <- within(params, {mean = mean - x})
+  } else {
+    params <- NULL
+    show_curves <- FALSE
+  }
 
   stopifnot(nrow(label_scheme_sub) > 0)
   stopifnot(rlang::is_logical(scale_log2r))
@@ -39,11 +56,21 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
     .[! names(.) %in% c("xmin", "xmax", "xbreaks", "binwidth", "ncol", "alpha", 
                         "width", "height", "scales")]
 
-	lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-	dots <- dots %>% .[! . %in% lang_dots]
+	filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+	arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+	dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+	
+	if (id %in% c("pep_seq", "pep_seq_mod")) {
+	  cat("Column keys available for data filtration are in `Peptide\\Peptide.txt`.\n")
+	} else if (id %in% c("prot_acc", "gene")) {
+	  cat("Column keys available for data filtration are in `Protein\\Protein.txt`.\n")
+	}
 
 	if (scale_y) {
-	  df <- df %>% filters_in_call(!!!lang_dots)
+	  df <- df %>% 
+	    filters_in_call(!!!filter_dots) %>% 
+	    arrangers_in_call(!!!arrange_dots)
+	  
 	  stopifnot(nrow(df) > 0)
 	}
 	
@@ -98,7 +125,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 	}
 
 
-	my_theme <- theme_bw() + theme(
+	proteoq_histo_theme <- theme_bw() + theme(
 		axis.text.x  = element_text(angle=0, vjust=0.5, size=18),
 		axis.ticks.x  = element_blank(), # x-axis ticks
 		axis.text.y  = element_text(angle=0, vjust=0.5, size=18),
@@ -124,8 +151,12 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 
 	seq <- c(-Inf, seq(4, 7, .5), Inf)
 
-	if (!scale_y) df <- df %>% filters_in_call(!!!lang_dots)
-	
+	if (!scale_y) {
+	  df <- df %>% 
+	  filters_in_call(!!!filter_dots) %>% 
+	  arrangers_in_call(!!!arrange_dots)
+	}
+
 	stopifnot(nrow(df) > 0)
 	
 	df_melt <- df %>%
@@ -143,6 +174,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 		dplyr::filter(!is.na(value), !is.na(Int_index)) %>%
 		dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID)
 
+	if (is.null(theme)) theme <- proteoq_histo_theme
+	
 	p <- ggplot() +
 		geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = Int_index),
 		               color = "white", alpha = alpha, binwidth = binwidth, size = .1) +
@@ -151,7 +184,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 		scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = xbreaks),
 		                   labels = as.character(seq(xmin, xmax, by = xbreaks))) +
 		facet_wrap(~ Sample_ID, ncol = ncol, scales = scales) + 
-	  my_theme
+	  theme
 
 	if (show_curves) p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable),
 	                                   size = .2) +
@@ -183,6 +216,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'  or \code{gene}.
 #'@param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
 #'  of standard deviation across all samples. The default is TRUE.
+#'@param complete_cases Logical; if TRUE, only cases that are complete with no
+#'  missing values will be used. The default is FALSE.
 #'@param show_curves Logical; if TRUE, shows the fitted curves. At the TRUE
 #'  default, the curve parameters are based on the latest call to
 #'  \code{\link{standPep}} or \code{\link{standPrn}} with \code{method_align =
@@ -204,23 +239,28 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r,
 #'  is \code{.txt}. For image files, they are typically saved via
 #'  \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 #'  image type will be determined by the extension of the file name.
+#'@param theme A
+#'  \code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+#'  theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+#'  theme will be applied.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
-#'  of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
-#'  etc. Each statement contains to a list of logical expression(s). The
-#'  \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
-#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-#'  \cr \cr For example, \code{pep_len} is a column key present in \code{Mascot}
-#'  peptide tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
-#'  exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-#'  See also \code{\link{normPSM}}. \cr \cr Additional parameters for plotting
-#'  with \code{ggplot2}: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale;
-#'  the default is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the
-#'  default is +2. \cr \code{xbreaks}, the breaks in \eqn{x}-axis at a log2
-#'  scale; the default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC};
-#'  the default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of
-#'  columns; the default is 1. \cr \code{width}, the width of plot; \cr
-#'  \code{height}, the height of plot. \cr \code{scales}, should the scales be
-#'  fixed across panels; the default is "fixed" and the alternative is "free".
+#'  of data against the column keys in \code{Peptide.txt} for peptides or
+#'  \code{Protein.txt} for proteins. Each statement contains to a list of
+#'  logical expression(s). The \code{lhs} needs to start with \code{filter_}.
+#'  The logical condition(s) at the \code{rhs} needs to be enclosed in
+#'  \code{exprs} with round parenthesis. \cr \cr For example, \code{pep_len} is
+#'  a column key present in \code{Mascot} peptide tables of \code{Peptide.txt}.
+#'  The statement \code{filter_peps_at = exprs(pep_len <= 50)} will remove
+#'  peptide entries with \code{pep_len > 50}. See also \code{\link{normPSM}}.
+#'  \cr \cr Additional parameters for plotting with \code{ggplot2}: \cr
+#'  \code{xmin}, the minimum \eqn{x} at a log2 scale; the default is -2. \cr
+#'  \code{xmax}, the maximum \eqn{x} at a log2 scale; the default is +2. \cr
+#'  \code{xbreaks}, the breaks in \eqn{x}-axis at a log2 scale; the default is
+#'  1. \cr \code{binwidth}, the binwidth of \code{log2FC}; the default is
+#'  \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of columns; the default
+#'  is 1. \cr \code{width}, the width of plot; \cr \code{height}, the height of
+#'  plot. \cr \code{scales}, should the scales be fixed across panels; the
+#'  default is "fixed" and the alternative is "free".
 #'@inheritParams standPep
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr
@@ -259,7 +299,7 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
                         col_select = NULL, 
                         scale_log2r = TRUE, complete_cases = FALSE, 
                         show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
-                        df = NULL, filepath = NULL, filename = NULL, ...) {
+                        df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
 
   old_opt <- options(max.print = 99999, warn = 0)
   on.exit(options(old_opt), add = TRUE)
@@ -268,8 +308,7 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   id <- rlang::enexpr(id)
 	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
 	
-	stopifnot(rlang::is_logical(scale_log2r), 
-	          rlang::is_logical(show_curves), 
+	stopifnot(rlang::is_logical(show_curves), 
 	          rlang::is_logical(show_vline), 
 	          rlang::is_logical(scale_y))
 
@@ -283,14 +322,15 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 	dots <- rlang::enexprs(...)
 	if (!is.null(dots$impute_na)) {
 	  dots$impute_na <- NULL
-	  rlang::warn("No NA imputation with `proteoHist`.")
+	  rlang::warn("No NA imputation with histograms.")
 	}
 
 	info_anal(id = !!id, col_select = !!col_select, 
 	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
 	          df = !!df, filepath = !!filepath, filename = !!filename,
 	          anal_type = "Histogram")(show_curves = show_curves,
-	                                   show_vline = show_vline, scale_y = scale_y, !!!dots)
+	                                   show_vline = show_vline, scale_y = scale_y, 
+	                                   theme = theme, !!!dots)
 }
 
 
@@ -302,11 +342,7 @@ proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'@import purrr
 #'@export
 pepHist <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Peptide\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
-
+  check_dots(c("id", "anal_type"), ...)
   id <- match_call_arg(normPSM, group_psm_by)
   proteoHist(id = !!id, ...)
 }
@@ -321,11 +357,7 @@ pepHist <- function (...) {
 #'@import purrr
 #'@export
 prnHist <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Protein\\Histogram\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+  check_dots(c("id", "anal_type"), ...)
   id <- match_call_arg(normPSM, group_pep_by)
   proteoHist(id = !!id, ...)
 }

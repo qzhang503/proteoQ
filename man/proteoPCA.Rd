@@ -7,13 +7,12 @@
 \title{Visualization of PCA plots}
 \usage{
 proteoPCA(id = gene, type = "obs", col_select = NULL,
-  col_group = NULL, col_color = NULL, col_fill = NULL,
-  col_shape = NULL, col_size = NULL, col_alpha = NULL,
-  color_brewer = NULL, fill_brewer = NULL, size_manual = NULL,
-  shape_manual = NULL, alpha_manual = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, show_ids = TRUE,
-  annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL,
-  ...)
+  col_color = NULL, col_fill = NULL, col_shape = NULL,
+  col_size = NULL, col_alpha = NULL, color_brewer = NULL,
+  fill_brewer = NULL, size_manual = NULL, shape_manual = NULL,
+  alpha_manual = NULL, scale_log2r = TRUE, complete_cases = FALSE,
+  impute_na = FALSE, show_ids = TRUE, df = NULL, filepath = NULL,
+  filename = NULL, theme = NULL, ...)
 
 pepPCA(...)
 
@@ -35,8 +34,6 @@ At the \code{NULL} default, the column key of \code{Select} in
 specified under \code{Select}, the column key of \code{Sample_ID} will be
 used. The non-empty entries under the ascribing column will be used in
 indicated analysis.}
-
-\item{col_group}{Not used.}
 
 \item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
 Values under which will be used for the \code{color} aesthetics in plots. At
@@ -96,8 +93,6 @@ will be used. The default is FALSE.}
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots. The default is TRUE.}
 
-\item{annot_cols}{Not used.}
-
 \item{df}{The name of input data file. By default, it will be determined
 automatically after matching the data type with an \code{id} among
 \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
@@ -112,10 +107,16 @@ is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
+\item{theme}{A
+\code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+theme will be applied.}
+
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
-\code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
-height of plot \cr \code{...}}
+data; also see \code{\link{normPSM}}. \cr \code{arrange_}: Logical
+expression(s) for the row order of data; also see \code{\link{prnHM}}. \cr
+\cr Additional parameters for \code{ggsave}: \cr \code{width}, the width of
+plot; \cr \code{height}, the height of plot \cr \code{...}}
 }
 \value{
 PCA plots.
@@ -249,7 +250,7 @@ prnPCA(
 )
 
 # analogous peptides
-prnPCA(
+pepPCA(
   impute_na = TRUE,
   col_color = Color,
   col_shape = Shape,
@@ -257,6 +258,38 @@ prnPCA(
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
   filename = filpvals_impna.png,
+)
+
+## custom theme
+my_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
+  axis.title.x = element_text(colour="black", size=20),
+  axis.title.y = element_text(colour="black", size=20),
+  plot.title = element_text(face="bold", colour="black", size=20, hjust=0.5, vjust=0.5),
+  
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.title = element_blank(),
+  legend.text = element_text(colour="black", size=14),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+pepPCA(
+  impute_na = TRUE,
+  col_color = Color,
+  col_shape = Shape,
+  show_ids = FALSE,
+  filter_peps_by = exprs(prot_n_pep >= 5),
+  filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+  theme = my_theme, 
+  filename = my_theme.png,
 )
 
 ## Not run: 

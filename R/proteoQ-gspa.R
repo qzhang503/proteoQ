@@ -122,10 +122,6 @@ prnGSPA <- function (gset_nms = "go_sets",
                      gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
                      fml_nms = NULL, ...) {
   
-  old_opt <- options(max.print = 99999, warn = 0)
-  options(max.print = 2000000, warn = 1)
-  on.exit(options(old_opt), add = TRUE)
-
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), current_env()) %>% 
@@ -146,7 +142,7 @@ prnGSPA <- function (gset_nms = "go_sets",
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -183,11 +179,17 @@ prnGSPA <- function (gset_nms = "go_sets",
 gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                      filepath = NULL, filename = NULL, 
-                     gset_nms = "go_sets", var_cutoff = .5, pval_cutoff = 5E-2,
+                     gset_nms = "go_sets", var_cutoff = 0.5, pval_cutoff = 5E-2,
                      logFC_cutoff = log2(1.2), gspval_cutoff = 5E-2, 
                      min_size = 6, max_size = Inf, min_greedy_size = 1, 
                      anal_type = "GSPA", ...) {
 
+  # currently Protein[_impNA]_pVals.txt does not contain `scale_log2_r` info in the file name;
+  #   therefore, `scale_log2r` will be matched to those in `prnSig()` and indicated in 
+  #   file names as `_N[_impNA].txt` or `_Z[_impNA].txt` to inform user the `scale_log_r` status
+  # `complete_cases` is for entrez IDs, pVals, log2FC
+  # "id" for tibbling rownames
+  
   stopifnot(nrow(label_scheme_sub) > 0)
   
   id <- rlang::as_string(rlang::enexpr(id))
@@ -206,6 +208,8 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
   
+  if (nrow(df) == 0) stop("No data available after row filtration.", call. = FALSE)
+  
   if (purrr::is_empty(fmls)) stop("Formula(s) of contrasts not available.", call. = FALSE)
 
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
@@ -222,7 +226,9 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   fmls <- fmls %>% .[names(.) %in% fml_nms]
   fml_nms <- fml_nms %>% .[map_dbl(., ~ which(.x == names(fmls)))]
 
-  if (is_empty(fml_nms)) stop("No formula matached; compare the formula name(s) with those in `prnSig(..)`")
+  if (rlang::is_empty(fml_nms)) {
+    stop("No formula matached; compare the formula name(s) with those in `prnSig(..)`")
+  }
 
   col_ind <- purrr::map(fml_nms, ~ grepl(.x, names(df))) %>%
     dplyr::bind_cols() %>%
@@ -231,8 +237,6 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   
   stopifnot(sum(col_ind) > 0)
 
-  # var_cutoff only for GSEA
-  # min_greedy_size and gspval_cutoff only for GSPA
   switch (anal_type,
           GSPA = purrr::pwalk(list(fmls, 
                                    fml_nms, 
@@ -253,11 +257,25 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                               filepath = filepath, 
                               filename = filename, 
                               !!!dots), 
-          # scale_log2r for var_cutoff
-          # formula for pval_cutoff and logFC_cutoff
-          GSEA = purrr::pwalk(list(fmls, fml_nms, var_cutoff, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size), 
-                              fml_gsea, df, col_ind, id = !!id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
-                              filepath, filename, !!!dots), 
+          GSEA = purrr::pwalk(list(fmls, 
+                                   fml_nms, 
+                                   var_cutoff, 
+                                   pval_cutoff, 
+                                   logFC_cutoff, 
+                                   gspval_cutoff, 
+                                   min_size, 
+                                   max_size), 
+                              fml_gsea, 
+                              df = df, 
+                              col_ind = col_ind, 
+                              id = !!id, 
+                              gsets = gsets, 
+                              label_scheme_sub = label_scheme_sub, 
+                              complete_cases = complete_cases, 
+                              scale_log2r = scale_log2r, 
+                              filepath = filepath, 
+                              filename = filename, 
+                              !!!dots), 
     stop("Unhandled task.")
   )
 }
@@ -624,10 +642,7 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = F
                        annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                        filename = NULL, 
                        ...) {
-  old_opt <- options(max.print = 99999, warn = 0)
-  options(max.print = 2000000, warn = 1)
-  on.exit(options(old_opt), add = TRUE)
-  
+
   check_dots(c("id", "anal_type", "df", "filepath"), ...)
   dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
   

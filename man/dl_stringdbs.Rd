@@ -12,9 +12,6 @@ dl_stringdbs(species = "human",
 include \code{human, mouse, rat, fly, bovine, dog}. The default is
 \code{human}.}
 
-\item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\string"}.}
-
 \item{overwrite}{Logical; if TRUE, overwrite the databse(s). The default is
 FALSE.}
 }

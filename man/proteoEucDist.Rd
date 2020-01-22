@@ -6,9 +6,7 @@
 \alias{prnEucDist}
 \title{Visualization of the Euclidean distance matrix}
 \usage{
-proteoEucDist(id = gene, col_select = NULL, col_group = NULL,
-  col_color = NULL, col_fill = NULL, col_shape = NULL,
-  col_size = NULL, col_alpha = NULL, scale_log2r = TRUE,
+proteoEucDist(id = gene, col_select = NULL, scale_log2r = TRUE,
   complete_cases = FALSE, impute_na = FALSE, adjEucDist = FALSE,
   annot_cols = NULL, annot_colnames = NULL, df = NULL,
   filepath = NULL, filename = NULL, ...)
@@ -18,28 +16,20 @@ pepEucDist(...)
 prnEucDist(...)
 }
 \arguments{
-\item{col_group}{Not used.}
+\item{id}{Character string to indicate the type of data. The value will be
+determined automatically. Peptide data will be used at \code{id = pep_seq}
+or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
+or \code{gene}.}
 
-\item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
-Values under which will be used for the \code{color} aesthetics in plots. At
-the NULL default, the column key \code{Color} will be used.}
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
 
-\item{col_fill}{Character string to a column key in \code{expt_smry.xlsx}.
-Values under which will be used for the \code{fill} aesthetics in plots. At
-the NULL default, the column key \code{Fill} will be used.}
-
-\item{col_shape}{Character string to a column key in \code{expt_smry.xlsx}.
-Values under which will be used for the \code{shape} aesthetics in plots. At
-the NULL default, the column key \code{Shape} will be used.}
-
-\item{col_size}{Character string to a column key in \code{expt_smry.xlsx}.
-Values under which will be used for the \code{size} aesthetics in plots. At
-the NULL default, the column key \code{Size} will be used.}
-
-\item{col_alpha}{Character string to a column key in \code{expt_smry.xlsx}.
-Values under which will be used for the \code{alpha} (transparency)
-aesthetics in plots. At the NULL default, the column key \code{Alpha} will
-be used.}
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
@@ -64,7 +54,30 @@ annotation.}
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}. The default is NULL without name replacement.}
 
-\item{...}{Parameters for \code{\link[pheatmap]{pheatmap}}}
+\item{df}{The name of input data file. By default, it will be determined
+automatically after matching the data type with an \code{id} among
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
+etc. see also \code{\link{normPSM}} \cr \cr \code{arrange_}: Logical
+expression(s) for the row ordering of data; see also \code{\link{prnHM}}.
+\cr \cr Additional parameters for plotting: \cr \code{width}, the width of
+plot \cr \code{height}, the height of plot \cr \cr Additional arguments for
+\code{\link[pheatmap]{pheatmap}} \cr Note
+arguments disabled from \code{pheatmap}: \cr \code{annotation_col}; instead
+use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
+use keys indicated in \code{annot_rows}}
 }
 \value{
 Heat map visualization of distance matrices.
@@ -197,6 +210,18 @@ pepEucDist(
   height = 12,
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
   filename = filpvals_impna.png, 
+)
+
+## custom color
+pepEucDist(
+  impute_na = TRUE,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  width = 14,
+  height = 12,
+  filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+  color = colorRampPalette(c("blue", "white", "red"))(500),
+  filename = my_palette.png, 
 )
 
 ## Not run: 

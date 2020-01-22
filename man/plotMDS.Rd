@@ -4,11 +4,14 @@
 \alias{plotMDS}
 \title{Plots MDS}
 \usage{
-plotMDS(df, col_color = NULL, col_fill = NULL, col_shape = NULL,
-  col_size = NULL, col_alpha = NULL, color_brewer = NULL,
-  fill_brewer = NULL, size_manual = NULL, shape_manual = NULL,
-  alpha_manual = NULL, label_scheme_sub = NULL, filepath = NULL,
-  filename = NULL, show_ids = FALSE, ...)
+plotMDS(df = NULL, id = NULL, label_scheme_sub = NULL,
+  adjEucDist = FALSE, classical = TRUE, method = "euclidean",
+  p = 2, k = 3, show_ids = FALSE, col_color = NULL,
+  col_fill = NULL, col_shape = NULL, col_size = NULL,
+  col_alpha = NULL, color_brewer = NULL, fill_brewer = NULL,
+  size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
+  scale_log2r = TRUE, complete_cases = FALSE, filepath = NULL,
+  filename = NULL, theme = NULL, anal_type = "MDS", ...)
 }
 \description{
 Plots MDS

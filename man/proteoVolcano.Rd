@@ -39,10 +39,15 @@ automatically after matching the data type with an \code{id} among
 \code{prnVol}; matched to the value in the latest call to \code{\link{prnGSPA}} 
 for \code{gspaMap}.}
 
-\item{filepath}{Use system default.}
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
 
-\item{filename}{A representative file name to outputs. By default, it will be
-determined automatically by the name of the current call.}
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
 the formula(e) will match those used in \code{\link{pepSig}} or

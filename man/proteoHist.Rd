@@ -9,7 +9,7 @@
 proteoHist(id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
   col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE,
   show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, df = NULL,
-  filepath = NULL, filename = NULL, ...)
+  filepath = NULL, filename = NULL, theme = NULL, ...)
 
 pepHist(...)
 
@@ -30,6 +30,9 @@ indicated analysis.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
 
 \item{show_curves}{Logical; if TRUE, shows the fitted curves. At the TRUE
 default, the curve parameters are based on the latest call to
@@ -58,23 +61,29 @@ is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
+\item{theme}{A
+\code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+theme will be applied.}
+
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
-of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
-etc. Each statement contains to a list of logical expression(s). The
-\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
-the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-\cr \cr For example, \code{pep_len} is a column key present in \code{Mascot}
-peptide tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
-exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-See also \code{\link{normPSM}}. \cr \cr Additional parameters for plotting
-with \code{ggplot2}: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale;
-the default is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the
-default is +2. \cr \code{xbreaks}, the breaks in \eqn{x}-axis at a log2
-scale; the default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC};
-the default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of
-columns; the default is 1. \cr \code{width}, the width of plot; \cr
-\code{height}, the height of plot. \cr \code{scales}, should the scales be
-fixed across panels; the default is "fixed" and the alternative is "free".}
+of data against the column keys in \code{Peptide.txt} for peptides or
+\code{Protein.txt} for proteins. Each statement contains to a list of
+logical expression(s). The \code{lhs} needs to start with \code{filter_}.
+The logical condition(s) at the \code{rhs} needs to be enclosed in
+\code{exprs} with round parenthesis. \cr \cr For example, \code{pep_len} is
+a column key present in \code{Mascot} peptide tables of \code{Peptide.txt}.
+The statement \code{filter_peps_at = exprs(pep_len <= 50)} will remove
+peptide entries with \code{pep_len > 50}. See also \code{\link{normPSM}}.
+\cr \cr Additional parameters for plotting with \code{ggplot2}: \cr
+\code{xmin}, the minimum \eqn{x} at a log2 scale; the default is -2. \cr
+\code{xmax}, the maximum \eqn{x} at a log2 scale; the default is +2. \cr
+\code{xbreaks}, the breaks in \eqn{x}-axis at a log2 scale; the default is
+1. \cr \code{binwidth}, the binwidth of \code{log2FC}; the default is
+\eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of columns; the default
+is 1. \cr \code{width}, the width of plot; \cr \code{height}, the height of
+plot. \cr \code{scales}, should the scales be fixed across panels; the
+default is "fixed" and the alternative is "free".}
 }
 \value{
 Histograms of \code{log2FC}
@@ -164,6 +173,36 @@ pepHist(
   filter_peps_by_npsm = exprs(pep_n_psm >= 10),
   filter_peps_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
   filename = lag.png,
+)
+
+## custom theme
+my_histo_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=0, vjust=0.5, size=18),
+  axis.ticks.x  = element_blank(), # x-axis ticks
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=18),
+  axis.title.x = element_text(colour="black", size=24),
+  axis.title.y = element_text(colour="black", size=24),
+  plot.title = element_text(colour="black", size=24, hjust=.5, vjust=.5),
+  
+  strip.text.x = element_text(size = 18, colour = "black", angle = 0),
+  strip.text.y = element_text(size = 18, colour = "black", angle = 90),
+  
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.title = element_blank(),
+  legend.text = element_text(colour="black", size=18),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+pepHist(
+  theme = my_histo_theme,
+  filename = my_theme.png,
 )
 
 ## Not run: 

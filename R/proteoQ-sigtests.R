@@ -116,9 +116,10 @@ proteoSigtest <- function (df = NULL, id = gene, filepath = NULL, filename = NUL
 
 	id <- rlang::enexpr(id)
 	df <- rlang::enexpr(df)
-	method <- rlang::enexpr(method)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
+	
+	method <- rlang::as_string(rlang::enexpr(method))
 	
 	reload_expts()
 
@@ -133,7 +134,7 @@ proteoSigtest <- function (df = NULL, id = gene, filepath = NULL, filename = NUL
 	info_anal(df = !!df, id = !!id, 
 	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
 	          filepath = !!filepath, filename = !!filename, 
-	          anal_type = "Model")(method = !!method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
+	          anal_type = "Model")(method = method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
 }
 
 
@@ -483,13 +484,19 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 #' @import limma stringr purrr tidyr dplyr rlang
 #' @importFrom magrittr %>% %$%
 #' @importFrom broom.mixed tidy
-sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases,
-										method, var_cutoff, pval_cutoff, logFC_cutoff, ...) {
+sigTest <- function(df, id, label_scheme_sub, 
+                    scale_log2r, complete_cases, impute_na, 
+                    filepath, filename, 
+										method, var_cutoff, pval_cutoff, logFC_cutoff, 
+										data_type, anal_type, ...) {
 
 	id <- rlang::as_string(rlang::enexpr(id))
 	method <- rlang::as_string(rlang::enexpr(method))
 
 	dots <- rlang::enexprs(...)
+	filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+	arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+	dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
 	
 	non_fml_dots <- dots[!map_lgl(dots, is_formula)]
 	dots <- dots[map_lgl(dots, is_formula)]
@@ -506,18 +513,31 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 	  }
 	  save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.rda"))
 	  rm(prnSig_formulas)
-	}
+	}	
+
+	fn_prefix2 <- ifelse(impute_na, "_impNA_pVals.txt", "_pVals.txt")
 	
-	quietly_log <- 
+	quietly_log <- local({
+  	dfw <- df %>% 
+  	  filters_in_call(!!!filter_dots) %>% 
+  	  arrangers_in_call(!!!arrange_dots) %>% 
+  	  prepDM(id = !!id, 
+  	         scale_log2r = scale_log2r, 
+  	         sub_grp = label_scheme_sub$Sample_ID, 
+  	         anal_type = anal_type) %>% 
+  	  .$log2R
+  	
+  	# `complete_cases` depends on lm contrasts
 	  purrr::map(dots, ~ purrr::quietly(model_onechannel)
-	             (df, !!id, .x, label_scheme_sub, 
+	             (dfw, !!id, .x, label_scheme_sub, 
 	               complete_cases, method, var_cutoff, 
 	               pval_cutoff, logFC_cutoff, !!!non_fml_dots)) 
-	
+	})
+
 	if (id %in% c("pep_seq", "pep_seq_mod")) {
-	  out_path <- file.path(dat_dir, "Peptide\\Model\\log\\pepSig_log.csv")
+	  out_path <- file.path(dat_dir, "Peptide\\Model\\log\\pepSig_log.txt")
 	} else if (id %in% c("prot_acc", "gene")) {
-	  out_path <- file.path(dat_dir, "Protein\\Model\\log\\prnSig_log.csv")
+	  out_path <- file.path(dat_dir, "Protein\\Model\\log\\prnSig_log.txt")
 	}
 	
 	purrr::map(quietly_log, ~ {
@@ -529,8 +549,36 @@ sigTest <- function(df, id, label_scheme_sub, filepath, filename, complete_cases
 
 	df_op <- purrr::map(quietly_log, `[[`, 1) %>%
 	  do.call("cbind", .)
+
+	local({
+  	# record the `scale_log2r` status; otherwise, need to indicate it in a way
+  	# for example, `_N` or `_Z` in file names
+  	dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)	  
+	  
+	  if (data_type == "Peptide") type <- "pep" else if (data_type == "Protein") type <- "prn"
+	  file <- paste0(type, "Sig_imp", ifelse(impute_na, "TRUE", "FALSE"), ".rda")
+	  
+	  call_pars <- c(scale_log2r = scale_log2r, 
+	                 complete_cases = complete_cases, 
+	                 impute_na = impute_na) %>% 
+	    as.list()
+	  
+	  save(call_pars, file = file.path(dat_dir, "Calls", file))
+	})
 	
-	return(df_op)
+	df_op <- df_op %>%
+	  tibble::rownames_to_column(id) %>% 
+	  dplyr::mutate(!!id := forcats::fct_explicit_na(!!rlang::sym(id))) %>% 
+	  dplyr::right_join(df, ., by = id) %T>% 
+	  write.table(file.path(filepath, paste0(data_type, fn_prefix2)), sep = "\t",
+	              col.names = TRUE, row.names = FALSE)
+	
+	wb <- createWorkbook("proteoQ")
+	addWorksheet(wb, sheetName = "Results")
+	openxlsx::writeData(wb, sheet = "Results", df_op)
+	saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), overwrite = TRUE) 
+
+	invisible(df_op)
 }
 
 

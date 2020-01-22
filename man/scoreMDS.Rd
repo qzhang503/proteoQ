@@ -5,7 +5,8 @@
 \title{Scores MDS}
 \usage{
 scoreMDS(df, id, label_scheme_sub, anal_type, scale_log2r,
-  adjEucDist = FALSE, classical, k = 3, ...)
+  adjEucDist = FALSE, classical, method = "euclidean", p = 2,
+  k = 3, ...)
 }
 \description{
 Scores MDS

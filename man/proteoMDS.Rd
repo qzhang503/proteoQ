@@ -6,14 +6,14 @@
 \alias{prnMDS}
 \title{Visualization of MDS plots}
 \usage{
-proteoMDS(id = gene, col_select = NULL, col_group = NULL,
-  col_color = NULL, col_fill = NULL, col_shape = NULL,
-  col_size = NULL, col_alpha = NULL, color_brewer = NULL,
-  fill_brewer = NULL, size_manual = NULL, shape_manual = NULL,
-  alpha_manual = NULL, scale_log2r = TRUE, complete_cases = FALSE,
-  impute_na = FALSE, adjEucDist = FALSE, classical = TRUE, k = 3,
-  show_ids = TRUE, annot_cols = NULL, df = NULL, filepath = NULL,
-  filename = NULL, ...)
+proteoMDS(id = gene, col_select = NULL, col_color = NULL,
+  col_fill = NULL, col_shape = NULL, col_size = NULL,
+  col_alpha = NULL, color_brewer = NULL, fill_brewer = NULL,
+  size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
+  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
+  adjEucDist = FALSE, classical = TRUE, method = "euclidean",
+  p = 2, k = 3, show_ids = TRUE, df = NULL, filepath = NULL,
+  filename = NULL, theme = NULL, ...)
 
 pepMDS(...)
 
@@ -31,8 +31,6 @@ At the \code{NULL} default, the column key of \code{Select} in
 specified under \code{Select}, the column key of \code{Sample_ID} will be
 used. The non-empty entries under the ascribing column will be used in
 indicated analysis.}
-
-\item{col_group}{Not used.}
 
 \item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
 Values under which will be used for the \code{color} aesthetics in plots. At
@@ -99,17 +97,21 @@ Typically, \code{adjEucDist = FALSE} if \code{reference samples} were split
 near the end of a sample handling process, for instance, at the stages
 immediately before or after TMT labeling.}
 
-\item{classical}{Logical; performs metric MDS at TRUE and non-metric MDS at
-FALSE (see also \code{\link[stats]{cmdscale}} and
+\item{classical}{Logical. Metric MDS will be performed at TRUE and non-metric
+MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
 \code{\link[MASS]{isoMDS}}). The default is TRUE.}
+
+\item{method}{Character string; the distance measure in
+\code{\link[stats]{dist}}. The default method is "euclidean".}
+
+\item{p}{Numeric; The power of the Minkowski distance in
+\code{\link[stats]{dist}}. The default is 2.}
 
 \item{k}{Numeric; The desired dimension for the solution passed to
 \code{\link[stats]{cmdscale}}. The default is 3.}
 
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots. The default is TRUE.}
-
-\item{annot_cols}{Not used.}
 
 \item{df}{The name of input data file. By default, it will be determined
 automatically after matching the data type with an \code{id} among
@@ -125,10 +127,19 @@ is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
+\item{theme}{A
+\code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+theme will be applied.}
+
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
-\code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
-height of plot \cr \code{...}}
+peptide or protein data; also see \code{\link{normPSM}}. \cr
+\code{arrange_}: Logical expression(s) for the row order of data; also see
+\code{\link{prnHM}}. \cr \cr Additional parameters for \code{ggsave}: \cr
+\code{width}, the width of plot; \cr \code{height}, the height of plot \cr
+\code{...}}
+
+\item{col_group}{Not used.}
 }
 \value{
 MDS plots.
@@ -268,6 +279,38 @@ pepMDS(
   filter_peps_by = exprs(prot_n_pep >= 5),
   filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
   filename = filpvals_impna.png,
+)
+
+## custom theme
+my_mds_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=0, vjust=0.5, size=16),
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=16),
+  axis.title.x = element_text(colour="black", size=18),
+  axis.title.y = element_text(colour="black", size=18),
+  plot.title = element_text(face="bold", colour="black", size=20, hjust=0.5, vjust=0.5),
+  
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.title = element_blank(),
+  legend.text = element_text(colour="black", size=14),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+pepMDS(
+  impute_na = TRUE,
+  col_color = Color,
+  col_shape = Shape,
+  show_ids = FALSE,
+  filter_peps_by = exprs(prot_n_pep >= 5),
+  filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+  theme = my_mds_theme,
+  filename = my_theme.png,
 )
 
 ## Not run: 

@@ -2,13 +2,45 @@
 #'
 #' @import dplyr ggplot2 rlang
 #' @importFrom magrittr %>%
-plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL, 
+                     adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2, 
+                     k = 3, show_ids = FALSE, 
+                     col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
                      color_brewer = NULL, fill_brewer = NULL, 
                      size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
-                     label_scheme_sub = NULL, filepath = NULL, filename = NULL, 
-                     show_ids = FALSE, ...) {
+                     scale_log2r = TRUE, complete_cases = FALSE,
+                     filepath = NULL, filename = NULL, theme = NULL, anal_type = "MDS", 
+                     ...) {
 
+  stopifnot(nrow(label_scheme_sub) > 0)
+  
+  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  
+  id <- rlang::enexpr(id)
   dots <- rlang::enexprs(...)
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+
+  df <- df %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    arrangers_in_call(!!!arrange_dots) %>% 
+    scoreMDS(
+      id = !!id, 
+      label_scheme_sub = label_scheme_sub, 
+      anal_type = anal_type, 
+      scale_log2r = scale_log2r, 
+      adjEucDist = adjEucDist, 
+      classical = classical, 
+      method = method, 
+      p = p, 
+      k = k, ) %>% 
+    cmbn_meta(label_scheme_sub) %T>% 
+    write.table(file.path(filepath, paste0(fn_prefix, "_res.txt")), sep = "\t", 
+                col.names = TRUE, row.names = FALSE, quote = FALSE)	
 
 	col_fill <- rlang::enexpr(col_fill)
 	col_color <- rlang::enexpr(col_color)
@@ -46,7 +78,7 @@ plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 	shape_manual <- eval_bare(shape_manual, env = caller_env())
 	alpha_manual <- eval_bare(alpha_manual, env = caller_env())
 	
-	my_theme <- theme_bw() + theme(
+	proteoq_mds_theme <- theme_bw() + theme(
 		 axis.text.x  = element_text(angle=0, vjust=0.5, size=16),
 		 axis.text.y  = element_text(angle=0, vjust=0.5, size=16),
 		 axis.title.x = element_text(colour="black", size=18),
@@ -65,6 +97,8 @@ plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 		 legend.text.align = 0,
 		 legend.box = NULL
 	)
+	
+	if (is.null(theme)) theme <- proteoq_mds_theme
 
 	mapping <- ggplot2::aes(x = Coordinate.1, y = Coordinate.2,
 	                        colour = !!col_color, fill = !!col_fill, shape = !!col_shape,
@@ -104,7 +138,7 @@ plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 	p <- p +
 		labs(title = "", x = expression("Coordinate 1"), y = expression("Coordinate 2")) +
 		coord_fixed() +
-	my_theme
+	  theme
 
 	if (show_ids) {
 	  p <- p +
@@ -122,8 +156,32 @@ plotMDS <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 #'
 #' @import dplyr ggplot2 rlang pheatmap
 #' @importFrom magrittr %>%
-plotEucDist <- function (D, annot_cols, annot_colnames, filepath, filename, ...) {
-	dots <- rlang::enexprs(...)
+plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDist = FALSE, 
+                         scale_log2r = TRUE, complete_cases = FALSE, 
+                         annot_cols, annot_colnames, 
+                         filepath = NULL, filename = NULL, anal_type = "EucDist", 
+                         ...) {
+  stopifnot(nrow(label_scheme_sub) > 0)
+  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+
+  id <- rlang::enexpr(id)
+  dots <- rlang::enexprs(...)
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+
+  D <- df %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    arrangers_in_call(!!!arrange_dots) %>% 
+    scoreEucDist(
+      id = !!id, 
+      label_scheme_sub = label_scheme_sub, 
+      anal_type = anal_type, 
+      scale_log2r = scale_log2r, 
+      adjEucDist = adjEucDist, ) 
+
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
 	stopifnot(is.matrix(D))
 
@@ -167,7 +225,7 @@ plotEucDist <- function (D, annot_cols, annot_colnames, filepath, filename, ...)
 	dots[nm_idx] <- NULL
 
 	load(file = file.path(dat_dir, "label_scheme.rda"))
-	n_TMT_sets <- n_TMT_sets(label_scheme)
+	n_TMT_sets <- n_TMT_sets(label_scheme_sub)
 	max_width <- 77
 
 	if (is.null(dots$width)) dots$width <- pmin(10*n_TMT_sets*1.2, max_width)
@@ -196,20 +254,50 @@ plotEucDist <- function (D, annot_cols, annot_colnames, filepath, filename, ...)
 #'
 #' @import dplyr ggplot2 rlang
 #' @importFrom magrittr %>%
-plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs", show_ids = TRUE, 
+                     col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
                      color_brewer = NULL, fill_brewer = NULL, 
                      size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
-                     label_scheme_sub = label_scheme_sub, prop_var, 
-                     filepath, filename, show_ids, ...) {
+                     # prop_var, 
+                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                     filepath = NULL, filename = NULL, theme = NULL, 
+                     anal_type = "PCA", ...) {
 
-	dots <- rlang::enexprs(...)
+  stopifnot(nrow(label_scheme_sub) > 0)
+  
+  complete_cases <- to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
+  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  
+  id <- rlang::enexpr(id)
+  dots <- rlang::enexprs(...)
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+
+  res <- df %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    arrangers_in_call(!!!arrange_dots) %>% 
+    scorePCA(
+      id = !!id, 
+      label_scheme_sub = label_scheme_sub, 
+      anal_type = anal_type, 
+      scale_log2r = scale_log2r, 
+      type = type, )
+      
+  df <- res$PCA
+  df <- df %>% cmbn_meta(label_scheme_sub)
+  prop_var <- res$prop_var
+  rm(res)
+  
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
 	col_color <- rlang::enexpr(col_color)
 	col_fill <- rlang::enexpr(col_fill)
 	col_shape <- rlang::enexpr(col_shape)
 	col_size <- rlang::enexpr(col_size)
 	col_alpha <- rlang::enexpr(col_alpha)
-	
+
 	map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
 	
 	if (col_color != rlang::expr(Color) | !rlang::as_string(sym(col_color)) %in% names(df)) 
@@ -240,7 +328,7 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 	shape_manual <- eval_bare(shape_manual, env = caller_env())
 	alpha_manual <- eval_bare(alpha_manual, env = caller_env())
 	
-	my_theme <- theme_bw() + theme(
+	proteoq_pca_theme <- theme_bw() + theme(
 		 axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
 		 axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
 		 axis.title.x = element_text(colour="black", size=20),
@@ -259,6 +347,7 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 		 legend.text.align = 0,
 		 legend.box = NULL
 	)
+	if (is.null(theme)) theme <- proteoq_pca_theme
 
 	mapping <- ggplot2::aes(x = Coordinate.1, y = Coordinate.2,
 	                        colour = !!col_color, fill = !!col_fill, shape = !!col_shape,
@@ -299,18 +388,18 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 	p <- p +
 		labs(title = "", x = paste0("PC1 (", prop_var[1], ")"), y = paste0("PC2 (", prop_var[2], ")")) +
 		coord_fixed() +
-	my_theme
+	theme
 
-	if (show_ids)
+	if (show_ids) {
 	  p <- p +
 	    geom_text(data = df,
 	              mapping = aes(x = Coordinate.1, y = Coordinate.2, label = df$Sample_ID),
 	              color = "gray", size = 3)
+	}
 
 	filename <- gg_imgname(filename)
 	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), dots)
 	do.call(ggsave, gg_args)
-	# ggsave(file.path(filepath, filename), p, ...)
 }
 
 
@@ -320,7 +409,7 @@ plotPCA <- function (df, col_color = NULL, col_fill = NULL, col_shape = NULL, co
 #' @importFrom MASS isoMDS
 #' @importFrom magrittr %>%
 scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r, 
-                      adjEucDist = FALSE, classical, k = 3, ...) {
+                      adjEucDist = FALSE, classical, method = "euclidean", p = 2, k = 3, ...) {
 
 	dots <- rlang::enexprs(...)
 	id <- rlang::as_string(rlang::enexpr(id))
@@ -331,11 +420,11 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	             sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
 	  .$log2R
 
-	D <- dist(t(df), method = "euclidean", diag = TRUE, upper = TRUE)
+	D <- dist(t(df), method = method, p = p, diag = TRUE, upper = TRUE)
 	if (anyNA(D)) stop("Distance cannot be calculated for one more sample pairs.")
 	D <- as.matrix(D)
 
-	if (adjEucDist) {
+	if (adjEucDist && method == "euclidean") {
 	  D <- local({
   	  annotation_col <- colAnnot(annot_cols = c("TMT_Set"), sample_ids = attr(D, "Labels"))
   
@@ -392,7 +481,7 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ..
     
     rownames(pr_out$x) <- label_scheme_sub$Sample_ID
     
-    prop_var <- summary(pr_out)$importance[2, ] %>% scales::percent()
+    prop_var <- summary(pr_out)$importance[2, ] %>% round(., digits = 3) %>% scales::percent()
     
     df_pca <- pr_out$x %>%
       data.frame(check.names = FALSE) %>%
@@ -404,7 +493,7 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ..
       data.frame(check.names = FALSE) %>%
       `names<-`(gsub("^PC", "Coordinate\\.", names(.)))
     
-    prop_var <- summary(pr_out)$importance[2, ] %>% scales::percent()    
+    prop_var <- summary(pr_out)$importance[2, ] %>% round(., digits = 3) %>% scales::percent()    
   } else {
     stop("Unkown `type` for PCA.", call. = FALSE)
   }
@@ -513,18 +602,23 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'  Typically, \code{adjEucDist = FALSE} if \code{reference samples} were split
 #'  near the end of a sample handling process, for instance, at the stages
 #'  immediately before or after TMT labeling.
-#'@param classical Logical; performs metric MDS at TRUE and non-metric MDS at
-#'  FALSE (see also \code{\link[stats]{cmdscale}} and
+#'@param classical Logical. Metric MDS will be performed at TRUE and non-metric
+#'  MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
 #'  \code{\link[MASS]{isoMDS}}). The default is TRUE.
+#'@param method Character string; the distance measure in
+#'  \code{\link[stats]{dist}}. The default method is "euclidean".
+#'@param p Numeric; The power of the Minkowski distance in
+#'  \code{\link[stats]{dist}}. The default is 2.
 #'@param k Numeric; The desired dimension for the solution passed to
 #'  \code{\link[stats]{cmdscale}}. The default is 3.
 #'@param show_ids Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 #'  plots. The default is TRUE.
-#'@param annot_cols Not used.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
-#'  \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
-#'  height of plot \cr \code{...}
+#'  peptide or protein data; also see \code{\link{normPSM}}. \cr
+#'  \code{arrange_}: Logical expression(s) for the row order of data; also see
+#'  \code{\link{prnHM}}. \cr \cr Additional parameters for \code{ggsave}: \cr
+#'  \code{width}, the width of plot; \cr \code{height}, the height of plot \cr
+#'  \code{...}
 #'
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
@@ -553,33 +647,20 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'@importFrom magrittr %>%
 #'@export
 proteoMDS <- function (id = gene,
-											col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
+											col_select = NULL, col_color = NULL, col_fill = NULL,
 											col_shape = NULL, col_size = NULL, col_alpha = NULL,
 											color_brewer = NULL, fill_brewer = NULL, 
 											size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
 											scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-											adjEucDist = FALSE, classical = TRUE, k = 3, 
-											show_ids = TRUE, annot_cols = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
+											adjEucDist = FALSE, classical = TRUE, 
+											method = "euclidean", p = 2, k = 3, 
+											show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL, 
+											theme = NULL, ...) {
 
-  old_opt <- options(
-    scipen = 0, 
-    warn = 0, 
-    max.print = 99999
-  )
-  
-  options(
-    scipen = 999,
-    warn = 1,
-    max.print = 2000000
-  )
-  
-  on.exit(options(old_opt), add = TRUE)
-  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
 	id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
-	col_group <- rlang::enexpr(col_group)
 	col_color <- rlang::enexpr(col_color)
 	col_fill <- rlang::enexpr(col_fill)
 	col_shape <- rlang::enexpr(col_shape)
@@ -592,6 +673,8 @@ proteoMDS <- function (id = gene,
 	shape_manual <- rlang::enexpr(shape_manual)
 	alpha_manual <- rlang::enexpr(alpha_manual)
 	
+	method <- rlang::as_string(rlang::enexpr(method))
+	
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
@@ -599,14 +682,15 @@ proteoMDS <- function (id = gene,
 	reload_expts()
 
 	info_anal(id = !!id,
-		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
+		col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
 		color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
 		size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
 		scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
 		df = !!df, filepath = !!filepath, filename = !!filename,
-		anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, k = k, show_ids = show_ids,
-		                   annot_cols = annot_cols, ...)
+		anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method, 
+		                   p = p, k = k, show_ids = show_ids,
+		                   theme = theme, ...)
 }
 
 
@@ -618,12 +702,18 @@ proteoMDS <- function (id = gene,
 #'
 #'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
 #'
-#'@inheritParams proteoMDS
+#'@inheritParams  proteoHist
 #'@inheritParams proteoHM
+#'@inheritParams proteoMDS
 #'@param complete_cases Logical; always TRUE for PCA. 
 #'@param type Character string indicating the type of PCA. At the \code{type =
 #'  obs} default, the components are by observations; at \code{type = feats},
 #'  the components are by features.
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
+#'  data; also see \code{\link{normPSM}}. \cr \code{arrange_}: Logical
+#'  expression(s) for the row order of data; also see \code{\link{prnHM}}. \cr
+#'  \cr Additional parameters for \code{ggsave}: \cr \code{width}, the width of
+#'  plot; \cr \code{height}, the height of plot \cr \code{...}
 #'
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
@@ -651,19 +741,19 @@ proteoMDS <- function (id = gene,
 #'@importFrom magrittr %>%
 #'@export
 proteoPCA <- function (id = gene, type = "obs", 
-                       col_select = NULL, col_group = NULL, col_color = NULL, 
+                       col_select = NULL, col_color = NULL, 
                        col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
                        color_brewer = NULL, fill_brewer = NULL, 
                        size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                        scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                       show_ids = TRUE, annot_cols = NULL, 
-                       df = NULL, filepath = NULL, filename = NULL, ...) {
+                       show_ids = TRUE, 
+                       df = NULL, filepath = NULL, filename = NULL, 
+                       theme = NULL, ...) {
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
   id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
-	col_group <- rlang::enexpr(col_group)
 	col_color <- rlang::enexpr(col_color)
 	col_fill <- rlang::enexpr(col_fill)
 	col_shape <- rlang::enexpr(col_shape)
@@ -679,18 +769,19 @@ proteoPCA <- function (id = gene, type = "obs",
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
-	type <- rlang::enexpr(type)	
+	
+	type <- rlang::as_string(rlang::enexpr(type))
 	
 	reload_expts()
 
 	info_anal(id = !!id,
-		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
+		col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
 		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha, 
 		color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
 		size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
 		scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
 		df = !!df, filepath = !!filepath, filename = !!filename,
-		anal_type = "PCA")(type = !!type, show_ids = show_ids, annot_cols = annot_cols, ...)
+		anal_type = "PCA")(type = type, show_ids = show_ids, theme = theme, ...)
 }
 
 
@@ -703,7 +794,8 @@ proteoPCA <- function (id = gene, type = "obs",
 #'An Euclidean distance matrix of \code{log2FC} is returned by
 #'\code{\link[stats]{dist}} for heat map visualization.
 #'
-#'@inheritParams proteoMDS
+#'@inheritParams prnHist
+#'@inheritParams prnMDS
 #'@inheritParams proteoHM
 #'@param annot_cols A character vector of column keys in \code{expt_smry.xlsx}.
 #'  The values under the selected keys will be used to color-code sample IDs on
@@ -711,7 +803,16 @@ proteoPCA <- function (id = gene, type = "obs",
 #'  annotation.
 #'@param annot_colnames A character vector of replacement name(s) to
 #'  \code{annot_cols}. The default is NULL without name replacement.
-#'@param ... Parameters for \code{\link[pheatmap]{pheatmap}}
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
+#'  etc. see also \code{\link{normPSM}} \cr \cr \code{arrange_}: Logical
+#'  expression(s) for the row ordering of data; see also \code{\link{prnHM}}.
+#'  \cr \cr Additional parameters for plotting: \cr \code{width}, the width of
+#'  plot \cr \code{height}, the height of plot \cr \cr Additional arguments for
+#'  \code{\link[pheatmap]{pheatmap}} \cr Note
+#'  arguments disabled from \code{pheatmap}: \cr \code{annotation_col}; instead
+#'  use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
+#'  use keys indicated in \code{annot_rows}
 #'
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
@@ -739,8 +840,7 @@ proteoPCA <- function (id = gene, type = "obs",
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoEucDist <- function (id = gene, col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL, 
-                           col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+proteoEucDist <- function (id = gene, col_select = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                            adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, 
                            df = NULL, filepath = NULL, filename = NULL, ...) {
@@ -749,12 +849,6 @@ proteoEucDist <- function (id = gene, col_select = NULL, col_group = NULL, col_c
 
   id <- rlang::enexpr(id)
 	col_select <- rlang::enexpr(col_select)
-	col_group <- rlang::enexpr(col_group)
-	col_color <- rlang::enexpr(col_color)
-	col_fill <- rlang::enexpr(col_fill)
-	col_shape <- rlang::enexpr(col_shape)
-	col_size <- rlang::enexpr(col_size)
-	col_alpha <- rlang::enexpr(col_alpha)
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
@@ -762,8 +856,8 @@ proteoEucDist <- function (id = gene, col_select = NULL, col_group = NULL, col_c
 	reload_expts()
 	
 	info_anal(id = !!id,
-		col_select = !!col_select, col_group = !!col_group, col_color = !!col_color, col_fill = !!col_fill,
-		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
+		col_select = !!col_select, col_group = NULL, col_color = NULL, col_fill = NULL, 
+		col_shape = NULL, col_size = NULL, col_alpha = NULL, 
 		scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
 		df = !!df, filepath = !!filepath, filename = !!filename,
 		anal_type = "EucDist")(adjEucDist = adjEucDist, 
@@ -780,11 +874,7 @@ proteoEucDist <- function (id = gene, col_select = NULL, col_group = NULL, col_c
 #'@import purrr
 #'@export
 pepMDS <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Peptide\\MDS\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+  check_dots(c("id", "col_group", "anal_type"), ...)
   id <- match_call_arg(normPSM, group_psm_by)
   proteoMDS(id = !!id, ...)
 }
@@ -799,11 +889,7 @@ pepMDS <- function (...) {
 #'@import purrr
 #'@export
 prnMDS <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Protein\\MDS\\log"), recursive = TRUE, showWarnings = FALSE)
-
+  check_dots(c("id", "col_group", "anal_type"), ...)
   id <- match_call_arg(normPSM, group_pep_by)
   proteoMDS(id = !!id, ...)
 }
@@ -818,11 +904,7 @@ prnMDS <- function (...) {
 #'@import purrr
 #'@export
 pepPCA <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Peptide\\PCA\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+  check_dots(c("id", "col_group", "anal_type"), ...)
   id <- match_call_arg(normPSM, group_psm_by)
   proteoPCA(id = !!id, ...)
 }
@@ -837,11 +919,7 @@ pepPCA <- function (...) {
 #'@import purrr
 #'@export
 prnPCA <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Protein\\PCA\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+  check_dots(c("id", "col_group", "anal_type"), ...)
   id <- match_call_arg(normPSM, group_pep_by)
   proteoPCA(id = !!id, ...)
 }
@@ -856,11 +934,8 @@ prnPCA <- function (...) {
 #'@import purrr
 #'@export
 pepEucDist <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Peptide\\EucDist\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+  check_dots(c("id", "col_group", "col_color", "col_fill", 
+               "col_shape", "col_size", "col_alpha", "anal_type"), ...)
   id <- match_call_arg(normPSM, group_psm_by)
   proteoEucDist(id = !!id, ...)
 }
@@ -874,11 +949,8 @@ pepEucDist <- function (...) {
 #'@import purrr
 #'@export
 prnEucDist <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Protein\\EucDist\\log"), recursive = TRUE, showWarnings = FALSE)
-
+  check_dots(c("id", "col_group", "col_color", "col_fill", 
+               "col_shape", "col_size", "col_alpha", "anal_type"), ...)
   id <- match_call_arg(normPSM, group_pep_by)
   proteoEucDist(id = !!id, ...)
 }

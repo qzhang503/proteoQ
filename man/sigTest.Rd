@@ -4,8 +4,9 @@
 \alias{sigTest}
 \title{Perform significance tests}
 \usage{
-sigTest(df, id, label_scheme_sub, filepath, filename, complete_cases,
-  method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
+sigTest(df, id, label_scheme_sub, scale_log2r, complete_cases, impute_na,
+  filepath, filename, method, var_cutoff, pval_cutoff, logFC_cutoff,
+  data_type, anal_type, ...)
 }
 \description{
 Perform significance tests

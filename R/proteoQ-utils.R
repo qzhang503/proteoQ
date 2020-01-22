@@ -1068,6 +1068,28 @@ match_logi_gv <- function(var, val) {
 }
 
 
+#' Match scale_log2r 
+#'
+#' \code{match_prnSig_scale_log2r} matches the value of \code{scale_log2r} to the value
+#' in the most recent prnSig at a given impute_na status
+match_prnSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE) {
+  stopifnot(rlang::is_logical(scale_log2r), rlang::is_logical(impute_na))
+  
+  if (impute_na) {
+    mscale_log2r <- match_call_arg(prnSig_impTRUE, scale_log2r)
+  } else {
+    mscale_log2r <- match_call_arg(prnSig_impFALSE, scale_log2r)
+  }
+  
+  if (scale_log2r != mscale_log2r) {
+    warning("scale_log2r = ", mscale_log2r, " after matching to prnSig(impute_na = ", impute_na, ", ...)", 
+            call. = FALSE)
+  }
+  
+  scale_log2r <- mscale_log2r
+}
+
+
 #' Replaces NA genes
 #'
 #' @import plyr dplyr purrr rlang
@@ -1915,7 +1937,7 @@ gn_rollup <- function (df, cols) {
     dplyr::select(gene, cols) %>% 
     dplyr::filter(!is.na(gene)) %>% 
     dplyr::group_by(gene) %>% 
-    dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
+    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
 
   dfb <- df %>% 
     dplyr::select(-cols) %>% 

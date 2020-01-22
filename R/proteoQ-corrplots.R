@@ -4,9 +4,11 @@
 #' @importFrom magrittr %>%
 plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, col_order = NULL,
                       label_scheme_sub = label_scheme_sub, 
-                      scale_log2r = scale_log2r, 
+                      scale_log2r = scale_log2r, complete_cases = complete_cases, 
                       filepath = filepath, filename = filename, ...) {
 
+  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
@@ -20,9 +22,12 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
     .[! names(.) %in% c("xmin", "xmax", "xbreaks", "width", "height")]
   
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  dots <- dots %>% .[! . %in% filter_dots]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
   
-  df <- df %>% filters_in_call(!!!filter_dots)
+  df <- df %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    arrangers_in_call(!!!arrange_dots)
 
 	col_select <- rlang::enexpr(col_select)
 	col_order <- rlang::enexpr(col_order)
@@ -329,9 +334,9 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'  samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 #'  the NULL default, the column key \code{Order} will be used. If values under
 #'  column \code{Order} are left blank, samples will be ordered by their names.
-#'@param data_select The subset of data to be selected. At default, \code{logFC}
-#'  will be used; at \code{logInt}, intensity with \code{log10} transformation
-#'  will be used.
+#'@param data_select The subset of data to be selected. The value will be
+#'  determined automatically. At default, \code{logFC} will be used; at
+#'  \code{logInt}, intensity with \code{log10} transformation will be used.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
 #'  plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
@@ -380,10 +385,12 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
 #'  correlation plots \cr
 #'
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
+#'  analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
+#'  analysis and visualization \cr
 #'
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
@@ -430,11 +437,7 @@ proteoCorr <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"),
 #'@import purrr
 #'@export
 pepCorr_logFC <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
-
+  check_dots(c("id", "anal_type", "data_select"), ...)
   id <- match_call_arg(normPSM, group_psm_by)
   proteoCorr(id = !!id, data_select = "logFC", ...)
 }
@@ -450,11 +453,7 @@ pepCorr_logFC <- function (...) {
 #'@import purrr
 #'@export
 pepCorr_logInt <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Peptide\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
-
+  check_dots(c("id", "anal_type", "data_select"), ...)
   id <- match_call_arg(normPSM, group_psm_by)
   proteoCorr(id = !!id, data_select = "logInt", ...)
 }
@@ -471,11 +470,7 @@ pepCorr_logInt <- function (...) {
 #'@import purrr
 #'@export
 prnCorr_logFC <- function (...) {
-  err_msg <- "Don't call the function with arguments `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+  check_dots(c("id", "anal_type", "data_select"), ...)
   id <- match_call_arg(normPSM, group_pep_by)
   proteoCorr(id = !!id, data_select = "logFC", ...)
 }
@@ -491,11 +486,7 @@ prnCorr_logFC <- function (...) {
 #'@import purrr
 #'@export
 prnCorr_logInt <- function (...) {
-  err_msg <- "Don't call the function with arguments `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Protein\\Corrplot\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+  check_dots(c("id", "anal_type", "data_select"), ...)
   id <- match_call_arg(normPSM, group_pep_by)
   proteoCorr(id = !!id, data_select = "logInt", ...)
 }

@@ -8,9 +8,6 @@ getStringDB(db_path = "~\\\\proteoQ\\\\dbs\\\\string",
   score_cutoff = 0.7, adjP = FALSE, impute_na = FALSE, ...)
 }
 \arguments{
-\item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\string"}.}
-
 \item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
 protein-protein interaction. The default is 0.7.}
 
