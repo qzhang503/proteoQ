@@ -450,7 +450,6 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'@importFrom magrittr %>%
 #'@export
 imputeNA <- function (id, overwrite = FALSE, ...) {
-
 	my_mice <- function (data, ...) {
 		data <- rlang::enexpr(data)
 		dots <- rlang::enexprs(...)
@@ -536,7 +535,8 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 
 #'Impute NA values for peptide data
 #'
-#'\code{pepImp} is a wrapper of \code{\link{imputeNA}} for peptide data
+#'\code{pepImp} is a wrapper of \code{\link{imputeNA}} for peptide data with
+#'auto-determination of \code{id}.
 #'
 #'@rdname imputeNA
 #'
@@ -551,9 +551,7 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 #'
 #'@export
 pepImp <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
+  check_dots(c("id"), ...)
   id <- match_call_arg(normPSM, group_psm_by)
   imputeNA(id = !!id, ...)
 }
@@ -561,7 +559,8 @@ pepImp <- function (...) {
 
 #'Impute NA values for protein data
 #'
-#'\code{prnImp} is a wrapper of \code{\link{imputeNA}} for protein data
+#'\code{prnImp} is a wrapper of \code{\link{imputeNA}} for protein data with
+#'auto-determination of \code{id}.
 #'
 #'@rdname imputeNA
 #'
@@ -576,9 +575,7 @@ pepImp <- function (...) {
 #'
 #'@export
 prnImp <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
+  check_dots(c("id"), ...)
   id <- match_call_arg(normPSM, group_pep_by)
   imputeNA(id = !!id, ...)
 }
@@ -1588,9 +1585,10 @@ calcSD_Splex <- function (df, id, type = "log2_R") {
 
 
 #' Violin plots of CV per TMT_Set and LCMS_injection
-sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = FALSE, is_psm = FALSE, 
-                      col_select = NULL, col_order = NULL, ...) {
-  
+sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, height = NULL, 
+                      type = "log2_R", adjSD = FALSE, 
+                      is_psm = FALSE, col_select = NULL, col_order = NULL, theme = NULL, ...) {
+
   err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
   
   col_select <- rlang::enexpr(col_select)
@@ -1698,7 +1696,8 @@ sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = 
       p <- p + scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, ybreaks))
     }
 
-    p <- p + theme_psm_violin
+    if (is.null(theme)) theme <- theme_psm_violin
+    p <- p + theme
 
     if (flip_coord) {
       p <- p + coord_flip()
@@ -1709,7 +1708,9 @@ sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = 
     }
     
     dots <- dots %>% .[! names(.) %in% c("width", "height", "in", "limitsize")]
-    try(ggsave(filepath, p, width = width, height = height, units = "in", limitsize = FALSE))
+    my_call <- rlang::expr(ggsave(filename = !!filepath, plot = !!p, width = !!width, height = !!height, 
+                                  units = "in", limitsize = FALSE, !!!dots))
+    try(eval(my_call, caller_env()))
   }
 }
 

@@ -515,10 +515,10 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'  for models without random effects and the \code{\link[lmerTest]{lmer}} will
 #'  be used for models with random effects.
 #'@param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
-#'  Entries with variances smaller than the threshold will be removed from
+#'  Entries with variances smaller than the threshold will be excluded from
 #'  linear modeling. The default is 1E-3.
 #'@param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
-#'  with \code{pVals} smaller than the threshold will be removed from multiple
+#'  with \code{pVals} smaller than the threshold will be excluded from multiple
 #'  test corrections. The default is at \code{1} to include all entries.
 #'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
 #'  absolute \code{log2FC} smaller than the threshold will be removed from

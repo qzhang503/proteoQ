@@ -65,6 +65,34 @@ plotVolcano <- function(df = NULL, id = "gene",
   
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
   if (!(rlang::is_empty(species) || is.null(gset_nms))) load_dbs(gset_nms = gset_nms, species = species)
+  
+  proteoq_volcano_theme <- theme_bw() +
+    theme(
+      axis.text.x = element_text(angle = 0, vjust = 0.5, size = 24),
+      axis.ticks.x = element_blank(),
+      axis.text.y = element_text(angle = 0, vjust = 0.5, size = 24),
+      axis.title.x = element_text(colour = "black", size = 24),
+      axis.title.y = element_text(colour="black", size = 24),
+      plot.title = element_text(face = "bold", colour = "black", size = 14, hjust = .5, vjust = .5),
+      
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      
+      strip.text.x = element_text(size = 16, colour = "black", angle = 0),
+      strip.text.y = element_text(size = 16, colour = "black", angle = 90),
+      
+      legend.key = element_rect(colour = NA, fill = 'transparent'),
+      legend.background = element_rect(colour = NA,  fill = "transparent"),
+      legend.position = "none",
+      legend.title = element_text(colour="black", size = 18),
+      legend.text = element_text(colour="black", size = 18),
+      legend.text.align = 0,
+      legend.box = NULL
+    )
+  
+  if (is.null(theme)) theme <- proteoq_volcano_theme
 
   if (length(fml_nms) > 0) purrr::pwalk(list(fml_nms, pval_cutoff, logFC_cutoff), fml_volcano, 
                                         df = df, 
@@ -134,34 +162,6 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 
   id <- rlang::as_string(rlang::enexpr(id))
 
-	proteoq_volcano_theme <- theme_bw() +
-	  theme(
-		axis.text.x = element_text(angle = 0, vjust = 0.5, size = 24),
-		axis.ticks.x = element_blank(),
-		axis.text.y = element_text(angle = 0, vjust = 0.5, size = 24),
-		axis.title.x = element_text(colour = "black", size = 24),
-		axis.title.y = element_text(colour="black", size = 24),
-		plot.title = element_text(face = "bold", colour = "black", size = 14, hjust = .5, vjust = .5),
-
-		panel.grid.major.x = element_blank(),
-		panel.grid.minor.x = element_blank(),
-		panel.grid.major.y = element_blank(),
-		panel.grid.minor.y = element_blank(),
-
-		strip.text.x = element_text(size = 16, colour = "black", angle = 0),
-		strip.text.y = element_text(size = 16, colour = "black", angle = 90),
-
-		legend.key = element_rect(colour = NA, fill = 'transparent'),
-		legend.background = element_rect(colour = NA,  fill = "transparent"),
-		legend.position = "none",
-		legend.title = element_text(colour="black", size = 18),
-		legend.text = element_text(colour="black", size = 18),
-		legend.text.align = 0,
-		legend.box = NULL
-	 )
-
-	if (is.null(theme)) theme <- proteoq_volcano_theme
-	
 	contrast_groups <- names(df[grep("^log2Ratio\\s+\\(", names(df))]) %>%
 	  gsub("^log2Ratio\\s+\\(|\\)$", "", .)
 
@@ -172,12 +172,12 @@ plotVolcano_sub <- function(df = NULL, id = "gene", filepath = NULL, filename = 
 
 		  # "id" only being used for drawing Venn
 			fullVolcano(df = df, id = !!id, contrast_groups = contrast_groups,
-				theme = NULL, filepath = filepath, filename = filename,
+				theme = theme, filepath = filepath, filename = filename,
 				adjP = adjP, show_labels = show_labels, ...)
 		}
 	} else if (anal_type == "mapGSPA")
 	  function(pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), show_sig = "none", subdir = NULL, 
-	           theme = NULL, ...) {
+	           theme = theme, ...) {
 	    stopifnot(!is.null(subdir))
 	    
 	    filename <- match_gspa_filename("GSPA", subdir, scale_log2r, impute_na)

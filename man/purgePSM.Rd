@@ -5,7 +5,7 @@
 \title{Purge PSM data}
 \usage{
 purgePSM(dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
-  adjSD = FALSE, keep_ohw = TRUE, ...)
+  adjSD = FALSE, keep_ohw = TRUE, theme = NULL, ...)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to
@@ -19,11 +19,16 @@ data trimming by CV percentile.}
 will be replaced with NA. The default is NULL with no data trimming by max
 CV.}
 
-\item{adjSD}{Logical; if TRUE, adjust the standard deviation in relative to
-the width of ratio profiles.}
+\item{adjSD}{Not currently used. If TRUE, adjust the standard
+deviation in relative to the width of ratio profiles.}
 
 \item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
 default is TRUE.}
+
+\item{theme}{A
+\code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+theme will be applied.}
 
 \item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
 \eqn{y} at a log2 scale. \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a
@@ -66,26 +71,33 @@ purgePSM(pt_cv = .95)
 purgePSM(pt_cv = .95)
 purgePSM(pt_cv = .95)
 
+## custom theme
+purgePSM(dpi = 300, theme = theme_dark())
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data normalization \cr
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr
 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+ \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+ \code{\link{standPep}} for extended examples in peptide data normalization
+ \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+ summarization \cr \code{\link{standPrn}} for extended examples in protein
+ data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+ for extended examples in data purging \cr \code{\link{pepHist}} and
+ \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+ MS file names \cr
+
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+ \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+ \code{\link{start_with_str}}, \code{\link{end_with_str}},
+ \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+ data subsetting by character strings \cr
+
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+ \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+ \cr
 }

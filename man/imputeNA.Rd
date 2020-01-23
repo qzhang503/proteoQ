@@ -27,9 +27,11 @@ is FALSE.}
 Users should avoid call the method directly, but instead use the following
 wrappers.
 
-\code{pepImp} is a wrapper of \code{\link{imputeNA}} for peptide data
+\code{pepImp} is a wrapper of \code{\link{imputeNA}} for peptide data with
+auto-determination of \code{id}.
 
-\code{prnImp} is a wrapper of \code{\link{imputeNA}} for protein data
+\code{prnImp} is a wrapper of \code{\link{imputeNA}} for protein data with
+auto-determination of \code{id}.
 }
 \examples{
 # ===================================

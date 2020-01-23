@@ -148,6 +148,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, com
 		legend.text.align = 0,
 		legend.box = NULL
 	)
+	
+	if (is.null(theme)) theme <- proteoq_histo_theme
 
 	seq <- c(-Inf, seq(4, 7, .5), Inf)
 
@@ -172,10 +174,9 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, com
 		dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
 		dplyr::arrange(Sample_ID) %>%
 		dplyr::filter(!is.na(value), !is.na(Int_index)) %>%
-		dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID)
+		dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID) %>% 
+	  dplyr::mutate(value = setHMlims(value, xmin, xmax))
 
-	if (is.null(theme)) theme <- proteoq_histo_theme
-	
 	p <- ggplot() +
 		geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = Int_index),
 		               color = "white", alpha = alpha, binwidth = binwidth, size = .1) +

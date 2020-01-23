@@ -619,7 +619,6 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'
 #'@inheritParams  prnHist
 #'@inheritParams prnHM
-#'@param  col_group Not used.
 #'@param  col_color Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{color} aesthetics in plots. At
 #'  the NULL default, the column key \code{Color} will be used.

@@ -351,7 +351,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
 }
 
 
-#'Visualizes peptide heat maps
+#'Visualization of heat maps
 #'
 #'\code{pepHM} visualizes the heat maps of peptide \code{log2FC}.
 #'

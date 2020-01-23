@@ -400,9 +400,6 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'  samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 #'  the NULL default, the column key \code{Order} will be used. If values under
 #'  column \code{Order} are left blank, samples will be ordered by their names.
-#'@param data_select The subset of data to be selected. The value will be
-#'  determined automatically. At default, \code{logFC} will be used; at
-#'  \code{logInt}, intensity with \code{log10} transformation will be used.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
 #'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
 #'  plotting: \cr \code{width}, the width of plot \cr \code{height}, the height

@@ -67,10 +67,6 @@ of plot \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity \cr
 \code{xmax}, the maximum \eqn{x} of logFC data or intensity data \cr
 \code{xbreaks}, the breaks on \eqn{x} axis; the same breaks will be applied
 to \eqn{y} axis.}
-
-\item{data_select}{The subset of data to be selected. The value will be
-determined automatically. At default, \code{logFC} will be used; at
-\code{logInt}, intensity with \code{log10} transformation will be used.}
 }
 \value{
 Correlation plots.

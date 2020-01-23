@@ -37,7 +37,7 @@ if (choose_one) {
 
 # metadata (all platforms)
 copy_global_exptsmry(dat_dir)
-cptac_global_fracsmry(dat_dir)
+copy_global_fracsmry(dat_dir)
 
 
 # ==============================================
@@ -92,8 +92,8 @@ pepHist(
 	scale_log2r = TRUE,
 	show_curves = TRUE, 
 	show_vline = TRUE,
-	xmin = -1, 
-	xmax = 1,
+	xmin = -2, 
+	xmax = 2,
 	ncol = 10, 
 )
 
@@ -102,8 +102,8 @@ pepHist(
 	scale_log2r = FALSE,
 	show_curves = TRUE, 
 	show_vline = TRUE,
-	xmin = -1, 
-	xmax = 1,
+	xmin = -2, 
+	xmax = 2,
 	ncol = 10, 
 )
 
@@ -298,8 +298,8 @@ plot_prnNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-	width = 10,
-	height = 10,
+	width = 12,
+	height = 12,
 )
 
 # coefficients heat maps, protein
@@ -307,8 +307,8 @@ plot_prnNMFCoef(
   impute_na = FALSE,
 	annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  width = 12,
+  height = 12,
 )
 
 # metagene heat maps, protein

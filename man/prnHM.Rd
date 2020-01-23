@@ -3,7 +3,7 @@
 \name{pepHM}
 \alias{pepHM}
 \alias{prnHM}
-\title{Visualizes peptide heat maps}
+\title{Visualization of heat maps}
 \usage{
 pepHM(col_select = NULL, col_benchmark = NULL, scale_log2r = TRUE,
   complete_cases = FALSE, impute_na = FALSE, df = NULL,

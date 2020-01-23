@@ -137,8 +137,6 @@ peptide or protein data; also see \code{\link{normPSM}}. \cr
 \code{\link{prnHM}}. \cr \cr Additional parameters for \code{ggsave}: \cr
 \code{width}, the width of plot; \cr \code{height}, the height of plot \cr
 \code{...}}
-
-\item{col_group}{Not used.}
 }
 \value{
 MDS plots.

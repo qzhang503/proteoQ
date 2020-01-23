@@ -101,6 +101,12 @@ pepHist(
   filename = my_theme.png,
 )
 
+pepHist(
+  col_select = BI_1,
+  theme = theme_dark(),
+  filename = bi1_dark.png,
+)
+
 ## Not run: 
 # sample selection
 pepHist(
