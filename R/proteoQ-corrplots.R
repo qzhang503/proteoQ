@@ -317,18 +317,84 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 }
 
 
-#'Correlation Plots
+#'Correlation plots
 #'
-#'\code{proteoCorr} plots Pearson correlation for both \code{logFC} and
-#'\code{intensity} data. Users should avoid call the method directly, but
-#'instead use the following wrappers.
+#'\code{pepCorr_logFC} plots Pearson correlation for peptide \code{logFC}. 
+#'data.
+#'
+#'@rdname prnCorr_logFC
+#'
+#'@import purrr
+#'@export
+pepCorr_logFC <- function (col_select = NULL, col_order = NULL, 
+                           scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                           df = NULL, filepath = NULL, filename = NULL, ...) {
+  check_dots(c("id", "anal_type", "data_select"), ...)
+  
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  col_select <- rlang::enexpr(col_select)
+  col_order <- rlang::enexpr(col_order)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "Corrplot")(data_select = "logFC", ...)
+}
+
+
+#'Correlation plots
+#'
+#'\code{pepCorr_logInt} plots Pearson correlation of the \code{log10} intensity
+#'of reporter ions for peptide data.
+#'
+#'@rdname prnCorr_logFC
+#'
+#'@import purrr
+#'@export
+pepCorr_logInt <- function (col_select = NULL, col_order = NULL, 
+                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                            df = NULL, filepath = NULL, filename = NULL, ...) {
+  check_dots(c("id", "anal_type", "data_select"), ...)
+  
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  col_select <- rlang::enexpr(col_select)
+  col_order <- rlang::enexpr(col_order)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "Corrplot")(data_select = "logInt", ...)
+}
+
+
+#'Correlation plots
+#'
+#'\code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}. 
 #'
 #'The function matches the current \code{id} to the grouping argument in the
 #'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
 #'for details.
 #'
-#'@inheritParams proteoHist
-#'@inheritParams proteoMDS
+#'@inheritParams prnHist
+#'@inheritParams prnMDS
 #'@param  col_order Character string to a column key in \code{expt_smry.xlsx}.
 #'  Numeric values under which will be used for the left-to-right arrangement of
 #'  samples in graphic outputs or top-to-bottom arrangement in text outputs. At
@@ -400,95 +466,63 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoCorr <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                        data_select = c("logFC", "logInt"), 
-                        col_select = NULL, col_order = NULL, 
-                        scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                        df = NULL, filepath = NULL, filename = NULL, ...) {
-
+prnCorr_logFC <- function (col_select = NULL, col_order = NULL, 
+                           scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                           df = NULL, filepath = NULL, filename = NULL, ...) {
+  check_dots(c("id", "anal_type", "data_select"), ...)
+  
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
-  id <- rlang::enexpr(id)
-	if (length(id) != 1) id <- rlang::expr(gene)
-	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
-
-	col_select <- rlang::enexpr(col_select)
-	col_order <- rlang::enexpr(col_order)
-	df <- rlang::enexpr(df)
-	filepath <- rlang::enexpr(filepath)
-	filename <- rlang::enexpr(filename)
-
-	reload_expts()
+  col_select <- rlang::enexpr(col_select)
+  col_order <- rlang::enexpr(col_order)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
   
-	info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
-	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-						df = !!df, filepath = !!filepath, filename = !!filename,
-						anal_type = "Corrplot")(data_select, ...)
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "Corrplot")(data_select = "logFC", ...)
 }
 
 
-#'Correlation plots of the \code{log2FC} of peptide data
+#'Correlation Plots
 #'
-#'\code{pepCorr_logFC} is a wrapper of \code{\link{proteoCorr}} for peptide logFC
-#'data.
+#'\code{prnCorr_logInt} plots Pearson correlation of the \code{log10} intensity
+#'of reporter ions for protein data.
 #'
-#'@rdname proteoCorr
 #'
-#'@import purrr
-#'@export
-pepCorr_logFC <- function (...) {
-  check_dots(c("id", "anal_type", "data_select"), ...)
-  id <- match_call_arg(normPSM, group_psm_by)
-  proteoCorr(id = !!id, data_select = "logFC", ...)
-}
-
-
-#'Correlation plots of the \code{log10} intensity of peptide data
-#'
-#'\code{pepCorr_logInt} is a wrapper of \code{\link{proteoCorr}} for peptide
-#'intensity data.
-#'
-#'@rdname proteoCorr
+#'@rdname prnCorr_logFC
 #'
 #'@import purrr
 #'@export
-pepCorr_logInt <- function (...) {
+prnCorr_logInt <- function (col_select = NULL, col_order = NULL, 
+                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                            df = NULL, filepath = NULL, filename = NULL, ...) {
   check_dots(c("id", "anal_type", "data_select"), ...)
-  id <- match_call_arg(normPSM, group_psm_by)
-  proteoCorr(id = !!id, data_select = "logInt", ...)
-}
-
-
-
-#'Correlation plots of the \code{log2FC} of protein data
-#'
-#'\code{prnCorr_logFC} is a wrapper of \code{\link{proteoCorr}} for protein
-#'logFC data.
-#'
-#'@rdname proteoCorr
-#'
-#'@import purrr
-#'@export
-prnCorr_logFC <- function (...) {
-  check_dots(c("id", "anal_type", "data_select"), ...)
+  
   id <- match_call_arg(normPSM, group_pep_by)
-  proteoCorr(id = !!id, data_select = "logFC", ...)
-}
-
-
-#'Correlation plots of the \code{log10} intensity of protein data
-#'
-#'\code{prnCorr_logInt} is a wrapper of \code{\link{proteoCorr}} for protein
-#'intensity data.
-#'
-#'@rdname proteoCorr
-#'
-#'@import purrr
-#'@export
-prnCorr_logInt <- function (...) {
-  check_dots(c("id", "anal_type", "data_select"), ...)
-  id <- match_call_arg(normPSM, group_pep_by)
-  proteoCorr(id = !!id, data_select = "logInt", ...)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  col_select <- rlang::enexpr(col_select)
+  col_order <- rlang::enexpr(col_order)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "Corrplot")(data_select = "logInt", ...)
 }
 
 

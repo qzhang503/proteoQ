@@ -542,11 +542,74 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 }
 
 
-#'Visualization of MDS plots
+#'MDS plots
 #'
-#'\code{proteoMDS} visualizes the results from multidimensional scaling (MDS).
-#'Users should avoid calling the method directly, but instead use the following
-#'wrappers.
+#'\code{pepMDS} visualizes the multidimensional scaling (MDS) of peptide \code{log2FC}.
+#'
+#'@rdname prnMDS
+#'
+#'@import purrr
+#'@export
+pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
+                    col_shape = NULL, col_size = NULL, col_alpha = NULL,
+                    color_brewer = NULL, fill_brewer = NULL, 
+                    size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
+                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                    adjEucDist = FALSE, classical = TRUE, 
+                    method = "euclidean", p = 2, k = 3, 
+                    show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL, 
+                    theme = NULL, ...) {
+  check_dots(c("id", "col_group", "anal_type"), ...)
+  
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  stopifnot(rlang::is_logical(adjEucDist), 
+            rlang::is_logical(classical), 
+            rlang::is_logical(show_ids), 
+            rlang::is_double(p), 
+            rlang::is_double(k))
+  
+  col_select <- rlang::enexpr(col_select)
+  col_color <- rlang::enexpr(col_color)
+  col_fill <- rlang::enexpr(col_fill)
+  col_shape <- rlang::enexpr(col_shape)
+  col_size <- rlang::enexpr(col_size)
+  col_alpha <- rlang::enexpr(col_alpha)
+  
+  color_brewer <- rlang::enexpr(color_brewer)
+  fill_brewer <- rlang::enexpr(fill_brewer)
+  size_manual <- rlang::enexpr(size_manual)
+  shape_manual <- rlang::enexpr(shape_manual)
+  alpha_manual <- rlang::enexpr(alpha_manual)
+  
+  method <- rlang::as_string(rlang::enexpr(method))
+  
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id,
+            col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
+            col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
+            color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
+            size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method, 
+                               p = p, k = k, show_ids = show_ids,
+                               theme = theme, ...)
+  
+}
+
+
+#'MDS plots
+#'
+#'\code{prnMDS} visualizes the multidimensional scaling (MDS) of protein \code{log2FC}.
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
 #'\code{\link[stats]{dist}}, followed by a metric
@@ -554,8 +617,8 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'MDS. The default is metric MDS with the input dissimilarities being euclidean
 #'distances.
 #'
-#'@inheritParams  proteoHist
-#'@inheritParams proteoHM
+#'@inheritParams  prnHist
+#'@inheritParams prnHM
 #'@param  col_group Not used.
 #'@param  col_color Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{color} aesthetics in plots. At
@@ -646,66 +709,131 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoMDS <- function (id = gene,
-											col_select = NULL, col_color = NULL, col_fill = NULL,
-											col_shape = NULL, col_size = NULL, col_alpha = NULL,
-											color_brewer = NULL, fill_brewer = NULL, 
-											size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
-											scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-											adjEucDist = FALSE, classical = TRUE, 
-											method = "euclidean", p = 2, k = 3, 
-											show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL, 
-											theme = NULL, ...) {
-
+prnMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
+                    col_shape = NULL, col_size = NULL, col_alpha = NULL,
+                    color_brewer = NULL, fill_brewer = NULL, 
+                    size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
+                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                    adjEucDist = FALSE, classical = TRUE, 
+                    method = "euclidean", p = 2, k = 3, 
+                    show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL, 
+                    theme = NULL, ...) {
+  check_dots(c("id", "col_group", "anal_type"), ...)
+  
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  stopifnot(rlang::is_logical(adjEucDist), 
+            rlang::is_logical(classical), 
+            rlang::is_logical(show_ids), 
+            rlang::is_double(p), 
+            rlang::is_double(k))
 
-	id <- rlang::enexpr(id)
-	col_select <- rlang::enexpr(col_select)
-	col_color <- rlang::enexpr(col_color)
-	col_fill <- rlang::enexpr(col_fill)
-	col_shape <- rlang::enexpr(col_shape)
-	col_size <- rlang::enexpr(col_size)
-	col_alpha <- rlang::enexpr(col_alpha)
-	
-	color_brewer <- rlang::enexpr(color_brewer)
-	fill_brewer <- rlang::enexpr(fill_brewer)
-	size_manual <- rlang::enexpr(size_manual)
-	shape_manual <- rlang::enexpr(shape_manual)
-	alpha_manual <- rlang::enexpr(alpha_manual)
-	
-	method <- rlang::as_string(rlang::enexpr(method))
-	
-	df <- rlang::enexpr(df)
-	filepath <- rlang::enexpr(filepath)
-	filename <- rlang::enexpr(filename)
-	
-	reload_expts()
-
-	info_anal(id = !!id,
-		col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
-		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
-		color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
-		size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
-		scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-		df = !!df, filepath = !!filepath, filename = !!filename,
-		anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method, 
-		                   p = p, k = k, show_ids = show_ids,
-		                   theme = theme, ...)
+  col_select <- rlang::enexpr(col_select)
+  col_color <- rlang::enexpr(col_color)
+  col_fill <- rlang::enexpr(col_fill)
+  col_shape <- rlang::enexpr(col_shape)
+  col_size <- rlang::enexpr(col_size)
+  col_alpha <- rlang::enexpr(col_alpha)
+  
+  color_brewer <- rlang::enexpr(color_brewer)
+  fill_brewer <- rlang::enexpr(fill_brewer)
+  size_manual <- rlang::enexpr(size_manual)
+  shape_manual <- rlang::enexpr(shape_manual)
+  alpha_manual <- rlang::enexpr(alpha_manual)
+  
+  method <- rlang::as_string(rlang::enexpr(method))
+  
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id,
+            col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
+            col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
+            color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
+            size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method, 
+                               p = p, k = k, show_ids = show_ids,
+                               theme = theme, ...)
 }
 
 
-#'Visualization of PCA plots
+#'PCA plots
 #'
-#'\code{proteoPCA} visualizes the results from principal component analysis
-#'(PCA). Users should avoid calling the method directly, but instead use the
-#'following wrappers.
+#'\code{prnPCA} visualizes the principal component analysis (PCA) for peptide
+#'data.
+#'
+#'@rdname prnPCA
+#'
+#'@import purrr
+#'@export
+pepPCA <- function (col_select = NULL, col_color = NULL, 
+                    col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+                    color_brewer = NULL, fill_brewer = NULL, 
+                    size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
+                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                    show_ids = TRUE, type = "obs", 
+                    df = NULL, filepath = NULL, filename = NULL, 
+                    theme = NULL, ...) {
+  check_dots(c("id", "col_group", "anal_type"), ...)
+  
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  type <- rlang::as_string(rlang::enexpr(type))
+  
+  stopifnot(rlang::is_logical(show_ids))
+  
+  col_select <- rlang::enexpr(col_select)
+  col_color <- rlang::enexpr(col_color)
+  col_fill <- rlang::enexpr(col_fill)
+  col_shape <- rlang::enexpr(col_shape)
+  col_size <- rlang::enexpr(col_size)
+  col_alpha <- rlang::enexpr(col_alpha)
+  
+  color_brewer <- rlang::enexpr(color_brewer)
+  fill_brewer <- rlang::enexpr(fill_brewer)
+  size_manual <- rlang::enexpr(size_manual)
+  shape_manual <- rlang::enexpr(shape_manual)
+  alpha_manual <- rlang::enexpr(alpha_manual)
+  
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id,
+            col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
+            col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha, 
+            color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
+            size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "PCA")(type = type, show_ids = show_ids, theme = theme, ...)
+}
+
+
+#'PCA plots
+#'
+#'\code{prnPCA} visualizes the principal component analysis (PCA) for protein
+#'data.
 #'
 #'\code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
 #'
-#'@inheritParams  proteoHist
-#'@inheritParams proteoHM
-#'@inheritParams proteoMDS
-#'@param complete_cases Logical; always TRUE for PCA. 
+#'@inheritParams prnHist
+#'@inheritParams prnHM
+#'@inheritParams prnMDS
+#'@param complete_cases Logical; always TRUE for PCA.
 #'@param type Character string indicating the type of PCA. At the \code{type =
 #'  obs} default, the components are by observations; at \code{type = feats},
 #'  the components are by features.
@@ -740,63 +868,106 @@ proteoMDS <- function (id = gene,
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoPCA <- function (id = gene, type = "obs", 
-                       col_select = NULL, col_color = NULL, 
-                       col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
-                       color_brewer = NULL, fill_brewer = NULL, 
-                       size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
-                       scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                       show_ids = TRUE, 
-                       df = NULL, filepath = NULL, filename = NULL, 
-                       theme = NULL, ...) {
-
+prnPCA <- function (col_select = NULL, col_color = NULL, 
+                    col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+                    color_brewer = NULL, fill_brewer = NULL, 
+                    size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
+                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                    show_ids = TRUE, type = "obs", 
+                    df = NULL, filepath = NULL, filename = NULL, 
+                    theme = NULL, ...) {
+  check_dots(c("id", "col_group", "anal_type"), ...)
+  
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  type <- rlang::as_string(rlang::enexpr(type))
+  
+  stopifnot(rlang::is_logical(show_ids))
 
-  id <- rlang::enexpr(id)
-	col_select <- rlang::enexpr(col_select)
-	col_color <- rlang::enexpr(col_color)
-	col_fill <- rlang::enexpr(col_fill)
-	col_shape <- rlang::enexpr(col_shape)
-	col_size <- rlang::enexpr(col_size)
-	col_alpha <- rlang::enexpr(col_alpha)
-	
-	color_brewer <- rlang::enexpr(color_brewer)
-	fill_brewer <- rlang::enexpr(fill_brewer)
-	size_manual <- rlang::enexpr(size_manual)
-	shape_manual <- rlang::enexpr(shape_manual)
-	alpha_manual <- rlang::enexpr(alpha_manual)
-	
-	df <- rlang::enexpr(df)
-	filepath <- rlang::enexpr(filepath)
-	filename <- rlang::enexpr(filename)
-	
-	type <- rlang::as_string(rlang::enexpr(type))
-	
-	reload_expts()
+  col_select <- rlang::enexpr(col_select)
+  col_color <- rlang::enexpr(col_color)
+  col_fill <- rlang::enexpr(col_fill)
+  col_shape <- rlang::enexpr(col_shape)
+  col_size <- rlang::enexpr(col_size)
+  col_alpha <- rlang::enexpr(col_alpha)
+  
+  color_brewer <- rlang::enexpr(color_brewer)
+  fill_brewer <- rlang::enexpr(fill_brewer)
+  size_manual <- rlang::enexpr(size_manual)
+  shape_manual <- rlang::enexpr(shape_manual)
+  alpha_manual <- rlang::enexpr(alpha_manual)
+  
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
 
-	info_anal(id = !!id,
-		col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
-		col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha, 
-		color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
-		size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
-		scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-		df = !!df, filepath = !!filepath, filename = !!filename,
-		anal_type = "PCA")(type = type, show_ids = show_ids, theme = theme, ...)
+  reload_expts()
+  
+  info_anal(id = !!id,
+            col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
+            col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha, 
+            color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
+            size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "PCA")(type = type, show_ids = show_ids, theme = theme, ...)
 }
 
 
-#'Visualization of the Euclidean distance matrix
+#'Distance plots
 #'
-#'\code{proteoEucDist} visualizes the heat map of Euclidean distances. Users
-#'should avoid calling the method directly, but instead use the following
-#'wrappers.
+#'\code{pepEucDist} visualizes the heat map of Euclidean distances for peptide
+#'data.
+#'
+#'@rdname prnEucDist
+#'
+#'@import purrr
+#'@export
+pepEucDist <- function (col_select = NULL, 
+                        scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                        adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, 
+                        df = NULL, filepath = NULL, filename = NULL, ...) {
+  check_dots(c("id", "col_group", "col_color", "col_fill", 
+               "col_shape", "col_size", "col_alpha", "anal_type"), ...)
+  
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  stopifnot(rlang::is_logical(adjEucDist))
+  
+  col_select <- rlang::enexpr(col_select)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id,
+            col_select = !!col_select, col_group = NULL, col_color = NULL, col_fill = NULL, 
+            col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "EucDist")(adjEucDist = adjEucDist, 
+                                   annot_cols = annot_cols, annot_colnames = annot_colnames, ...)
+}
+
+
+#'Distance plots
+#'
+#'\code{prnEucDist} visualizes the heat map of Euclidean distances for protein
+#'data.
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
 #'\code{\link[stats]{dist}} for heat map visualization.
 #'
 #'@inheritParams prnHist
 #'@inheritParams prnMDS
-#'@inheritParams proteoHM
+#'@inheritParams prnHM
 #'@param annot_cols A character vector of column keys in \code{expt_smry.xlsx}.
 #'  The values under the selected keys will be used to color-code sample IDs on
 #'  the top of the indicated plot. The default is NULL without column
@@ -809,10 +980,10 @@ proteoPCA <- function (id = gene, type = "obs",
 #'  expression(s) for the row ordering of data; see also \code{\link{prnHM}}.
 #'  \cr \cr Additional parameters for plotting: \cr \code{width}, the width of
 #'  plot \cr \code{height}, the height of plot \cr \cr Additional arguments for
-#'  \code{\link[pheatmap]{pheatmap}} \cr Note
-#'  arguments disabled from \code{pheatmap}: \cr \code{annotation_col}; instead
-#'  use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
-#'  use keys indicated in \code{annot_rows}
+#'  \code{\link[pheatmap]{pheatmap}} \cr Note arguments disabled from
+#'  \code{pheatmap}: \cr \code{annotation_col}; instead use keys indicated in
+#'  \code{annot_cols} \cr \code{annotation_row}; instead use keys indicated in
+#'  \code{annot_rows}
 #'
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
@@ -840,117 +1011,32 @@ proteoPCA <- function (id = gene, type = "obs",
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoEucDist <- function (id = gene, col_select = NULL, 
-                           scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                           adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, 
-                           df = NULL, filepath = NULL, filename = NULL, ...) {
-
+prnEucDist <- function (col_select = NULL, 
+                        scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                        adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, 
+                        df = NULL, filepath = NULL, filename = NULL, ...) {
+  check_dots(c("id", "col_group", "col_color", "col_fill", 
+               "col_shape", "col_size", "col_alpha", "anal_type"), ...)
+  
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-
-  id <- rlang::enexpr(id)
-	col_select <- rlang::enexpr(col_select)
-	df <- rlang::enexpr(df)
-	filepath <- rlang::enexpr(filepath)
-	filename <- rlang::enexpr(filename)
-	
-	reload_expts()
-	
-	info_anal(id = !!id,
-		col_select = !!col_select, col_group = NULL, col_color = NULL, col_fill = NULL, 
-		col_shape = NULL, col_size = NULL, col_alpha = NULL, 
-		scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-		df = !!df, filepath = !!filepath, filename = !!filename,
-		anal_type = "EucDist")(adjEucDist = adjEucDist, 
-		                       annot_cols = annot_cols, annot_colnames = annot_colnames, ...)
-}
-
-
-#'MDS plots
-#'
-#'\code{pepMDS} is a wrapper of \code{\link{proteoMDS}} for peptide data
-#'
-#'@rdname proteoMDS
-#'
-#'@import purrr
-#'@export
-pepMDS <- function (...) {
-  check_dots(c("id", "col_group", "anal_type"), ...)
-  id <- match_call_arg(normPSM, group_psm_by)
-  proteoMDS(id = !!id, ...)
-}
-
-
-#'MDS plots
-#'
-#'\code{prnMDS} is a wrapper of \code{\link{proteoMDS}} for protein data
-#'
-#'@rdname proteoMDS
-#'  
-#'@import purrr
-#'@export
-prnMDS <- function (...) {
-  check_dots(c("id", "col_group", "anal_type"), ...)
-  id <- match_call_arg(normPSM, group_pep_by)
-  proteoMDS(id = !!id, ...)
-}
-
-
-#'PCA plots
-#'
-#'\code{pepPCA} is a wrapper of \code{\link{proteoPCA}} for peptide data.
-#'
-#'@rdname proteoPCA
-#'
-#'@import purrr
-#'@export
-pepPCA <- function (...) {
-  check_dots(c("id", "col_group", "anal_type"), ...)
-  id <- match_call_arg(normPSM, group_psm_by)
-  proteoPCA(id = !!id, ...)
-}
-
-
-#'PCA plots
-#'
-#'\code{prnPCA} is a wrapper of \code{\link{proteoPCA}} for protein data
-#'
-#'@rdname proteoPCA
-#'
-#'@import purrr
-#'@export
-prnPCA <- function (...) {
-  check_dots(c("id", "col_group", "anal_type"), ...)
-  id <- match_call_arg(normPSM, group_pep_by)
-  proteoPCA(id = !!id, ...)
-}
-
-
-#'Distance plots
-#'
-#'\code{pepEucDist} is a wrapper of \code{\link{proteoEucDist}} for peptide data
-#'
-#'@rdname proteoEucDist
-#'
-#'@import purrr
-#'@export
-pepEucDist <- function (...) {
-  check_dots(c("id", "col_group", "col_color", "col_fill", 
-               "col_shape", "col_size", "col_alpha", "anal_type"), ...)
-  id <- match_call_arg(normPSM, group_psm_by)
-  proteoEucDist(id = !!id, ...)
-}
-
-
-#'Distance plots
-#'
-#'\code{prnEucDist} is a wrapper of \code{\link{proteoEucDist}} for protein data
-#'
-#'@rdname proteoEucDist
-#'@import purrr
-#'@export
-prnEucDist <- function (...) {
-  check_dots(c("id", "col_group", "col_color", "col_fill", 
-               "col_shape", "col_size", "col_alpha", "anal_type"), ...)
-  id <- match_call_arg(normPSM, group_pep_by)
-  proteoEucDist(id = !!id, ...)
+  
+  stopifnot(rlang::is_logical(adjEucDist))
+  
+  col_select <- rlang::enexpr(col_select)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id,
+            col_select = !!col_select, col_group = NULL, col_color = NULL, col_fill = NULL, 
+            col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "EucDist")(adjEucDist = adjEucDist, 
+                                   annot_cols = annot_cols, annot_colnames = annot_colnames, ...)
 }

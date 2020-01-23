@@ -1,143 +1,3 @@
-#'Significance tests
-#'
-#'\code{proteoSigtest} performs significance tests aganist peptide or protein
-#'\code{log2FC}. Users should avoid calling the method directly, but instead use
-#'the following wrappers.
-#'
-#'In general, special characters of \code{+} or \code{-} should be avoided from
-#'contrast terms. Occasionally, such as in biological studies, it may be
-#'convenient to use \code{A+B} to denote a condition of combined treatment of
-#'\code{A} and \code{B} . In the case, one can put the term(s) containing
-#'\code{+} or \code{-} into a pair of pointy brackets. The syntax in the
-#'following hypothetical example will compare the effects of \code{A}, \code{B},
-#'\code{A+B} and the average of \code{A} and \code{B} to control \code{C}:
-#'
-#'\code{prnSig(fml = ~ Term["A - C", "B - C", "<A + B> - C", "(A + B)/2 - C"])}
-#'
-#'Note that \code{<A + B>} stands for one sample and \code{(A + B)} has two
-#'samples in it.
-#'
-#'@inheritParams  proteoHist
-#'@inheritParams  proteoHM
-#'@param filename A file name to output results. The default is
-#'  \code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.
-#'@param method Character string; the method of linear modeling. The default is
-#'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
-#'  for models without random effects and the \code{\link[lmerTest]{lmer}} will
-#'  be used for models with random effects.
-#'@param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
-#'  Entries with variances smaller than the threshold will be removed from
-#'  linear modeling. The default is 1E-3.
-#'@param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
-#'  with \code{pVals} smaller than the threshold will be removed from multiple
-#'  test corrections. The default is at \code{1} to include all entries.
-#'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
-#'  absolute \code{log2FC} smaller than the threshold will be removed from
-#'  multiple test corrections. The default is at \code{log2(1)} to include all
-#'  entries.
-#'@param ... User-defined formulae for linear modeling. The syntax starts with a
-#'  tilde, followed by the name of an available column key in
-#'  \code{expt_smry.xlsx} and square brackets. The contrast groups are then
-#'  quoted with one to multiple contrast groups separated by commas. The default
-#'  column key is \code{Term} in `expt_smry.xlsx`: \cr \code{~ Term["A - C", "B
-#'  - C"]}. \cr Additive random effects are indicated by \code{+ (1|col_key_1) +
-#'  (1|col_key_2)}... Currently only a syntax of single contrast are supported
-#'  for uses with random effects: \cr \code{~ Term["A - C"] + (1|col_key_1) +
-#'  (1|col_key_2)} \cr \cr \code{filter_}: Logical expression(s) for the row
-#'  filtration of data; also see \code{\link{normPSM}}.
-#'@return The primary output is
-#'  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
-#'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. At
-#'  \code{impute_na = TRUE}, the corresponding outputs are
-#'  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
-#'
-#'@example inst/extdata/examples/prnSig_.R
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
-#'
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
-#'  
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
-#'
-#'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
-#'@export
-proteoSigtest <- function (df = NULL, id = gene, filepath = NULL, filename = NULL,
-											scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, method = "limma",
-											var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), ...) {
-
-  on.exit(
-    if (id %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), current_env()) %>% c(dots) %>% save_call("pepSig")
-    } else if (id %in% c("prot_acc", "gene")) {
-      load(file.path(dat_dir, "Calls\\prnSig_formulas.rda"))
-      dots <- my_union(dots, prnSig_formulas)
-      mget(names(formals()), current_env()) %>% c(dots) %>% save_call("prnSig")
-    }
-    , add = TRUE
-  )
-  
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  
-  dots <- rlang::enexprs(...)
-
-	id <- rlang::enexpr(id)
-	df <- rlang::enexpr(df)
-	filepath <- rlang::enexpr(filepath)
-	filename <- rlang::enexpr(filename)
-	
-	method <- rlang::as_string(rlang::enexpr(method))
-	
-	reload_expts()
-
-	if (!impute_na & method != "limma") {
-	  impute_na <- TRUE
-	  warning("Coerce `impute_na = ", impute_na, "` at method = ", method, call. = FALSE)
-	}
-
-	# Sample selection criteria:
-	#   !is_reference under "Reference" ->
-	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-	info_anal(df = !!df, id = !!id, 
-	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-	          filepath = !!filepath, filename = !!filename, 
-	          anal_type = "Model")(method = method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
-}
-
-
 #' Row Variance
 #'
 #' @importFrom magrittr %>%
@@ -584,43 +444,183 @@ sigTest <- function(df, id, label_scheme_sub,
 
 #'Significance tests of peptide \code{log2FC}
 #'
-#'\code{pepSig} is a wrapper of \code{\link{proteoSigtest}} for the
-#'significance tests of peptide data
+#'\code{pepSig} performs significance tests peptide \code{log2FC}. 
 #'
-#'@rdname proteoSigtest
+#'@rdname prnSig
 #'
 #'@import purrr
 #'@export
-pepSig <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, 
+                    method = "limma",
+                    var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
+                    df = NULL, filepath = NULL, filename = NULL, ...) {
+  on.exit({
+    mget(names(formals()), current_env()) %>% c(rlang::enexprs(...)) %>% save_call("pepSig")
+  }, add = TRUE)
   
-  dir.create(file.path(dat_dir, "Peptide\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
+  check_dots(c("id", "anal_type"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  proteoSigtest(id = !!id, ...)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  method <- rlang::as_string(rlang::enexpr(method))
+  
+  stopifnot(rlang::is_double(var_cutoff), 
+            rlang::is_double(pval_cutoff), 
+            rlang::is_double(logFC_cutoff))
+  
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  if (!impute_na & method != "limma") {
+    impute_na <- TRUE
+    warning("Coerce `impute_na = ", impute_na, "` at method = ", method, call. = FALSE)
+  }
+  
+  info_anal(df = !!df, id = !!id, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            filepath = !!filepath, filename = !!filename, 
+            anal_type = "Model")(method = method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
 }
 
 
-#'Significance tests of protein \code{log2FC}
+#'Significance tests
 #'
+#'\code{prnSig} performs significance tests protein \code{log2FC}. 
 #'
-#'\code{prnSig} is a wrapper of \code{\link{proteoSigtest}} for the significance
-#'tests of protein data
+#'In general, special characters of \code{+} or \code{-} should be avoided from
+#'contrast terms. Occasionally, such as in biological studies, it may be
+#'convenient to use \code{A+B} to denote a condition of combined treatment of
+#'\code{A} and \code{B} . In the case, one can put the term(s) containing
+#'\code{+} or \code{-} into a pair of pointy brackets. The syntax in the
+#'following hypothetical example will compare the effects of \code{A}, \code{B},
+#'\code{A+B} and the average of \code{A} and \code{B} to control \code{C}:
 #'
+#'\code{prnSig(fml = ~ Term["A - C", "B - C", "<A + B> - C", "(A + B)/2 - C"])}
 #'
-#'@rdname proteoSigtest
+#'Note that \code{<A + B>} stands for one sample and \code{(A + B)} has two
+#'samples in it.
 #'
-#'@import purrr
-#'@import purrr
+#'@inheritParams  prnHist
+#'@inheritParams  prnHM
+#'@param filename A file name to output results. The default is
+#'  \code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.
+#'@param method Character string; the method of linear modeling. The default is
+#'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
+#'  for models without random effects and the \code{\link[lmerTest]{lmer}} will
+#'  be used for models with random effects.
+#'@param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
+#'  Entries with variances smaller than the threshold will be removed from
+#'  linear modeling. The default is 1E-3.
+#'@param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
+#'  with \code{pVals} smaller than the threshold will be removed from multiple
+#'  test corrections. The default is at \code{1} to include all entries.
+#'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
+#'  absolute \code{log2FC} smaller than the threshold will be removed from
+#'  multiple test corrections. The default is at \code{log2(1)} to include all
+#'  entries.
+#'@param ... User-defined formulae for linear modeling. The syntax starts with a
+#'  tilde, followed by the name of an available column key in
+#'  \code{expt_smry.xlsx} and square brackets. The contrast groups are then
+#'  quoted with one to multiple contrast groups separated by commas. The default
+#'  column key is \code{Term} in `expt_smry.xlsx`: \cr \code{~ Term["A - C", "B
+#'  - C"]}. \cr Additive random effects are indicated by \code{+ (1|col_key_1) +
+#'  (1|col_key_2)}... Currently only a syntax of single contrast are supported
+#'  for uses with random effects: \cr \code{~ Term["A - C"] + (1|col_key_1) +
+#'  (1|col_key_2)} \cr \cr \code{filter_}: Logical expression(s) for the row
+#'  filtration of data; also see \code{\link{normPSM}}.
+#'@return The primary output is
+#'  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
+#'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. At
+#'  \code{impute_na = TRUE}, the corresponding outputs are
+#'  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
+#'
+#'@example inst/extdata/examples/prnSig_.R
+#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
+#'  
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'
+#'@import dplyr rlang ggplot2
+#'@importFrom magrittr %>%
 #'@export
-prnSig <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
+prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, 
+                    method = "limma",
+                    var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
+                    df = NULL, filepath = NULL, filename = NULL, ...) {
+  on.exit({
+    load(file.path(dat_dir, "Calls\\prnSig_formulas.rda"))
+    dots <- my_union(rlang::enexprs(...), prnSig_formulas)
+    mget(names(formals()), current_env()) %>% c(dots) %>% save_call("prnSig")
+  }, add = TRUE)
   
-  dir.create(file.path(dat_dir, "Protein\\Model\\log"), recursive = TRUE, showWarnings = FALSE)
-  
+  check_dots(c("id", "anal_type"), ...)
+
   id <- match_call_arg(normPSM, group_pep_by)
-  proteoSigtest(id = !!id, ...)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  method <- rlang::as_string(rlang::enexpr(method))
+    
+  stopifnot(rlang::is_double(var_cutoff), 
+            rlang::is_double(pval_cutoff), 
+            rlang::is_double(logFC_cutoff))
+
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+
+  reload_expts()
+  
+  if (!impute_na & method != "limma") {
+    impute_na <- TRUE
+    warning("Coerce `impute_na = ", impute_na, "` at method = ", method, call. = FALSE)
+  }
+  
+  info_anal(df = !!df, id = !!id, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            filepath = !!filepath, filename = !!filename, 
+            anal_type = "Model")(method = method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
 }
 

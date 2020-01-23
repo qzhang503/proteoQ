@@ -11,11 +11,6 @@ purge_by_qt(df, id, pt_cv = NULL, keep_ohw = TRUE)
 automatically after matching the data type with an \code{id} among
 \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
-\item{id}{Character string to indicate the type of data. The value will be
-determined automatically. Peptide data will be used at \code{id = pep_seq}
-or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
-or \code{gene}.}
-
 \item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
 percentile threshold will be replaced with NA. The default is NULL with no
 data trimming by CV percentile.}

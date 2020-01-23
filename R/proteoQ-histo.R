@@ -200,20 +200,54 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, com
 }
 
 
+#'Histogram visualization
+#'
+#'\code{pepHist} plots the histograms of peptide \code{log2FC}.
+#'
+#'@rdname prnHist
+#'@import purrr
+#'@export
+pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
+                     show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
+                     df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
+  check_dots(c("id", "anal_type"), ...)
+  
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
+  
+  stopifnot(rlang::is_logical(show_curves), 
+            rlang::is_logical(show_vline), 
+            rlang::is_logical(scale_y))
+  
+  col_select <- rlang::enexpr(col_select)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  dots <- rlang::enexprs(...)
+  if (!is.null(dots$impute_na)) {
+    dots$impute_na <- NULL
+    rlang::warn("No NA imputation with histograms.")
+  }
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "Histogram")(show_curves = show_curves,
+                                     show_vline = show_vline, scale_y = scale_y, 
+                                     theme = theme, !!!dots)
+}
+
 
 #'Histogram visualization
 #'
-#'\code{proteoHist} plots the histograms of protein or peptide \code{log2FC}.
-#'Users should avoid calling the method directly, but instead use the following
-#'wrappers.
+#'\code{prnHist} plots the histograms of protein \code{log2FC}.
 #'
 #'In the histograms, the \code{log2FC} under each TMT channel are color-coded by
 #'their contributing reporter-ion intensity.
 #'
-#'@param id Character string to indicate the type of data. The value will be
-#'  determined automatically. Peptide data will be used at \code{id = pep_seq}
-#'  or \code{pep_seq_mod}, and protein data will be used at \code{id = prot_acc}
-#'  or \code{gene}.
 #'@param scale_log2r Logical; if TRUE, adjusts \code{log2FC} to the same scale
 #'  of standard deviation across all samples. The default is TRUE.
 #'@param complete_cases Logical; if TRUE, only cases that are complete with no
@@ -295,69 +329,36 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, com
 #'
 #'@return Histograms of \code{log2FC}
 #'@export
-proteoHist <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                        col_select = NULL, 
-                        scale_log2r = TRUE, complete_cases = FALSE, 
-                        show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
-                        df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
-
-  old_opt <- options(max.print = 99999, warn = 0)
-  on.exit(options(old_opt), add = TRUE)
-  options(max.print = 2000000, warn = 1)
+prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
+                     show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
+                     df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
+  check_dots(c("id", "anal_type"), ...)
   
-  id <- rlang::enexpr(id)
-	stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
-	
-	stopifnot(rlang::is_logical(show_curves), 
-	          rlang::is_logical(show_vline), 
-	          rlang::is_logical(scale_y))
-
-	col_select <- rlang::enexpr(col_select)
-	df <- rlang::enexpr(df)
-	filepath <- rlang::enexpr(filepath)
-	filename <- rlang::enexpr(filename)
-
-	reload_expts()
-	
-	dots <- rlang::enexprs(...)
-	if (!is.null(dots$impute_na)) {
-	  dots$impute_na <- NULL
-	  rlang::warn("No NA imputation with histograms.")
-	}
-
-	info_anal(id = !!id, col_select = !!col_select, 
-	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
-	          df = !!df, filepath = !!filepath, filename = !!filename,
-	          anal_type = "Histogram")(show_curves = show_curves,
-	                                   show_vline = show_vline, scale_y = scale_y, 
-	                                   theme = theme, !!!dots)
-}
-
-
-#'Visualizes the histograms of peptide \code{log2FC}
-#'
-#'\code{pepHist} is a wrapper of \code{\link{proteoHist}} for peptide data
-#'
-#'@rdname proteoHist
-#'@import purrr
-#'@export
-pepHist <- function (...) {
-  check_dots(c("id", "anal_type"), ...)
-  id <- match_call_arg(normPSM, group_psm_by)
-  proteoHist(id = !!id, ...)
-}
-
-
-#'Visualizes the histograms of protein \code{log2FC}
-#'
-#'\code{prnHist} is a wrapper of \code{\link{proteoHist}} for protein data
-#'
-#'@rdname proteoHist
-#'
-#'@import purrr
-#'@export
-prnHist <- function (...) {
-  check_dots(c("id", "anal_type"), ...)
   id <- match_call_arg(normPSM, group_pep_by)
-  proteoHist(id = !!id, ...)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+
+  stopifnot(rlang::is_logical(show_curves), 
+            rlang::is_logical(show_vline), 
+            rlang::is_logical(scale_y))
+  
+  col_select <- rlang::enexpr(col_select)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+
+  dots <- rlang::enexprs(...)
+  if (!is.null(dots$impute_na)) {
+    dots$impute_na <- NULL
+    rlang::warn("No NA imputation with histograms.")
+  }
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
+            df = !!df, filepath = !!filepath, filename = !!filename,
+            anal_type = "Histogram")(show_curves = show_curves,
+                                     show_vline = show_vline, scale_y = scale_y, 
+                                     theme = theme, !!!dots)
 }
+

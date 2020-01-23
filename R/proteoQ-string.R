@@ -401,7 +401,7 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
 #' \code{\link{prnSig}} for significance tests \cr 
 #'@example inst/extdata/examples/getStringDB_.R
 #'
-#'@inheritParams proteoVolcano
+#'@inheritParams prnVol
 #'@import rlang dplyr purrr fs 
 #'@export
 getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, adjP = FALSE, 

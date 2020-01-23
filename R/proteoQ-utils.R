@@ -2,7 +2,7 @@
 #'
 #'\code{prepDM} prepares a minimal adequate data frame for subsequent analysis.
 #'
-#'@inheritParams  proteoEucDist
+#'@inheritParams  prnEucDist
 #'@inheritParams  info_anal
 #'@param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
 #'  analysis.
@@ -441,7 +441,7 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'
 #'@param overwrite Logical. If true, overwrite the previous results. The default
 #'  is FALSE.
-#'@inheritParams proteoHist
+#'@inheritParams prnHist
 #'@param ... Parameters for \code{\link[mice]{mice}}
 #'@return \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
 #'  for protein data.
@@ -1083,6 +1083,28 @@ match_prnSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE) {
   
   if (scale_log2r != mscale_log2r) {
     warning("scale_log2r = ", mscale_log2r, " after matching to prnSig(impute_na = ", impute_na, ", ...)", 
+            call. = FALSE)
+  }
+  
+  scale_log2r <- mscale_log2r
+}
+
+
+#' Match scale_log2r 
+#'
+#' \code{match_pepSig_scale_log2r} matches the value of \code{scale_log2r} to the value
+#' in the most recent pepSig at a given impute_na status
+match_pepSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE) {
+  stopifnot(rlang::is_logical(scale_log2r), rlang::is_logical(impute_na))
+  
+  if (impute_na) {
+    mscale_log2r <- match_call_arg(pepSig_impTRUE, scale_log2r)
+  } else {
+    mscale_log2r <- match_call_arg(pepSig_impFALSE, scale_log2r)
+  }
+  
+  if (scale_log2r != mscale_log2r) {
+    warning("scale_log2r = ", mscale_log2r, " after matching to pepSig(impute_na = ", impute_na, ", ...)", 
             call. = FALSE)
   }
   

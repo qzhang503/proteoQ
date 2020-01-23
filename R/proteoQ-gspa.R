@@ -184,9 +184,11 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                      min_size = 6, max_size = Inf, min_greedy_size = 1, 
                      anal_type = "GSPA", ...) {
 
-  # currently Protein[_impNA]_pVals.txt does not contain `scale_log2_r` info in the file name;
+  # `GSPA`: use `pVals` instead of `N_log2R` or `Z_log2R`; 
+  # currently Protein[_impNA]_pVals.txt does not contain `scale_log2_r` info in the file name
+  #   and cannot tell `pVals` are from `N_log2R` or `Z_log2R`;  
   #   therefore, `scale_log2r` will be matched to those in `prnSig()` and indicated in 
-  #   file names as `_N[_impNA].txt` or `_Z[_impNA].txt` to inform user the `scale_log_r` status
+  #   the names of out files as `_N[_impNA].txt` or `_Z[_impNA].txt` to inform user the `scale_log_r` status
   # `complete_cases` is for entrez IDs, pVals, log2FC
   # "id" for tibbling rownames
   
@@ -557,7 +559,7 @@ map_essential <- function (sig_sets) {
 #'  of \code{ess_term} \cr }
 #'
 #'@inheritParams plot_prnTrend
-#'@inheritParams  proteoEucDist
+#'@inheritParams  prnEucDist
 #'@param impute_na Logical; at TRUE, input files with \code{_impNA[...].txt} in
 #'  name will be loaded. Otherwise, files without \code{_impNA} in name will be
 #'  taken. An error will be shown if no files are matched under given

@@ -1,33 +1,3 @@
-proteoq_trend_theme <- theme_bw() + theme(
-  axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
-  axis.ticks.x  = element_blank(), 
-  axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
-  axis.title.x = element_text(colour="black", size=24),
-  axis.title.y = element_text(colour="black", size=24),
-  plot.title = element_text(face="bold", colour="black",
-                            size=20, hjust=.5, vjust=.5),
-  panel.grid.major.x = element_blank(),
-  panel.grid.minor.x = element_blank(),
-  panel.grid.major.y = element_blank(),
-  panel.grid.minor.y = element_blank(),
-  panel.background = element_rect(fill = '#0868ac', colour = 'red'),
-  
-  strip.text.x = element_text(size = 24, colour = "black", angle = 0),
-  strip.text.y = element_text(size = 24, colour = "black", angle = 90),
-  
-  plot.margin = unit(c(5.5, 55, 5.5, 5.5), "points"), 
-  
-  legend.key = element_rect(colour = NA, fill = 'transparent'),
-  legend.background = element_rect(colour = NA,  fill = "transparent"),
-  legend.position = "none",
-  legend.title = element_text(colour="black", size=18),
-  legend.text = element_text(colour="black", size=18),
-  legend.text.align = 0,
-  legend.box = NULL
-)
-
-
-
 #' Trend analysis
 #'
 #' @import Mfuzz dplyr purrr rlang Biobase
@@ -193,6 +163,34 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   col_group <- rlang::enexpr(col_group)
   col_order <- rlang::enexpr(col_order)
 
+  proteoq_trend_theme <- theme_bw() + theme(
+    axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
+    axis.ticks.x  = element_blank(), 
+    axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
+    axis.title.x = element_text(colour="black", size=24),
+    axis.title.y = element_text(colour="black", size=24),
+    plot.title = element_text(face="bold", colour="black",
+                              size=20, hjust=.5, vjust=.5),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.background = element_rect(fill = '#0868ac', colour = 'red'),
+    
+    strip.text.x = element_text(size = 24, colour = "black", angle = 0),
+    strip.text.y = element_text(size = 24, colour = "black", angle = 90),
+    
+    plot.margin = unit(c(5.5, 55, 5.5, 5.5), "points"), 
+    
+    legend.key = element_rect(colour = NA, fill = 'transparent'),
+    legend.background = element_rect(colour = NA,  fill = "transparent"),
+    legend.position = "none",
+    legend.title = element_text(colour="black", size=18),
+    legend.text = element_text(colour="black", size=18),
+    legend.text.align = 0,
+    legend.box = NULL
+  )
+  
   if (is.null(theme)) theme <- proteoq_trend_theme
 
   purrr::walk2(filelist, custom_prefix, ~ {
@@ -294,7 +292,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
 #'
-#'@inheritParams proteoCorr
+#'@inheritParams prnCorr_logFC
 #'@inheritParams anal_prnNMF
 #'@param n_clust Numeric vector; the number(s) of clusters that data will be
 #'  divided into. At the NULL default, it will be determined by the number of
@@ -431,7 +429,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'  \code{group} at a given \code{cluster} \cr }
 #'
 #'@inheritParams anal_prnNMF
-#'@inheritParams proteoCorr
+#'@inheritParams prnCorr_logFC
 #'@inheritParams prnHist
 #'@param scale_log2r Logical; at the TRUE default, input files with
 #'  \code{_Z[...].txt} in name will be used. Otherwise, files with

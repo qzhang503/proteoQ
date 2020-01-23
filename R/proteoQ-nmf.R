@@ -600,8 +600,8 @@ plotNMFmeta <- function(df, id, rank, label_scheme_sub, scale_log2r, complete_ca
 #'\code{impute_na = FALSE}.
 #'
 #'@inheritParams anal_prnTrend
-#'@inheritParams  proteoEucDist
-#'@inheritParams  proteoHM
+#'@inheritParams  prnEucDist
+#'@inheritParams  prnHM
 #'@inheritParams  info_anal
 #'@inheritParams standPep
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
@@ -779,9 +779,9 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
 #'  \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical expression(s) for
 #'  the row ordering of data; also see \code{\link{prnHM}}. \cr \cr Additional
 #'  arguments for \code{\link[pheatmap]{pheatmap}}
-#'@inheritParams proteoHist
+#'@inheritParams prnHist
 #'@inheritParams plot_prnTrend
-#'@inheritParams  proteoEucDist
+#'@inheritParams  prnEucDist
 #'@return Concensus heat maps from NMF classification.
 #'@import NMF dplyr rlang readr ggplot2
 #'@importFrom magrittr %>%
@@ -978,7 +978,7 @@ plot_prnNMFCoef <- function (col_select = NULL,
 #'visualization of the metagene heat maps from NMF
 #'
 #'@inheritParams anal_pepNMF
-#'@inheritParams  proteoEucDist
+#'@inheritParams  prnEucDist
 #'@param rank Numeric vector; the factorization rank(s) in
 #'  \code{\link[NMF]{nmf}}. At the NULL default, all available ranks from the
 #'  results of \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be

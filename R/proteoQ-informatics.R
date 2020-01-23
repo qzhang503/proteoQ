@@ -197,7 +197,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	}
 
 	use_pri_data <- c("MDS", "PCA", "EucDist", "Heatmap", "Histogram", "Corrplot", 
-	                  "Model", "Trend", "NMF", "NMF_meta", "GSPA", "GSVA", "GSEA", "String")
+	                  "Model", "Volcano", "Trend", "NMF", "NMF_meta", "GSPA", "mapGSPA", 
+	                  "GSVA", "GSEA", "String")
 	use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", "GSPA_hm")
 
 	if (anal_type %in% use_pri_data) {
@@ -231,20 +232,17 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	message("impute_na = ", impute_na)
 	message("complete_cases = ", complete_cases)
 	
-	## rules for anal_ functions
+	## primary functions: 
 	# `impute_na` determines the `src_path` for `df`
 	# `scale_log2r` determines `N_log2R` or `Z_log2R` columns in `df`
 	# `complete_cases` subsets data rows in `df` for samples in `label_scheme_sub`
+	#   (`Model` and `GSVA`: `complete_cases` further subjects to lm formulae)
 	
-	## special-cases
-	# `GSPA`: use `pVals` instead of `N_log2R` or `Z_log2R`; 
-	#    therefore `scale_log2r` only for output file names
-	#    `complete_cases` for `entrez` and `pVals` so actually has no effect
-	# `Model` and `GSVA`: `complete_cases` depends on lm formulae
-
-	## rules for plot_ functions
-	# `scale_log2r` for matching '_N' or '_Z' in input filenames from prior anal_ functions
+	## Secondary analysis
+	# `scale_log2r` for matching '_N' or '_Z' in input filenames from the corresponding primary function
+	#   (special case of `GSPA`: match to the value in `prnSig`)
 	# `impute_na` for matching '[_NZ]_impNA' or '[_NZ]' in input filenames
+	# `complete_cases` subsets data rows in primary outputs
 
 	if (anal_type == "MDS") {
 		function(adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2, 
@@ -385,6 +383,48 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	            data_type = data_type, 
 	            anal_type = anal_type,
 	            ...)
+	  }
+	} else if (anal_type == "Volcano") {
+	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, theme = NULL, ...) {
+	    plotVolcano(df = df, 
+	                id = !!id, 
+	                adjP = adjP, 
+	                show_labels = show_labels, 
+	                anal_type = anal_type,
+	                pval_cutoff = 1, 
+	                logFC_cutoff = 0, 
+	                show_sig = "none", 
+	                fml_nms = fml_nms,
+	                gset_nms = NULL, 
+	                scale_log2r = scale_log2r, 
+	                complete_cases = complete_cases, 
+	                impute_na = impute_na, 
+	                filepath = filepath, 
+	                filename = paste0(fn_prefix, ".", fn_suffix), 
+	                theme = theme, 
+	                ...)
+	  }
+	} else if (anal_type == "mapGSPA") {
+	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, pval_cutoff = 0.05, 
+	           logFC_cutoff = log2(1.2), show_sig = "none", gset_nms = "go_sets", 
+	           theme = NULL, ...) {
+	    plotVolcano(df = df, 
+	                id = !!id, 
+	                adjP = adjP, 
+	                show_labels = show_labels, 
+	                anal_type = anal_type, 
+	                pval_cutoff = pval_cutoff, 
+	                logFC_cutoff = logFC_cutoff, 
+	                show_sig = show_sig, 
+	                fml_nms = fml_nms, 
+	                gset_nms = gset_nms, 
+	                scale_log2r = scale_log2r, 
+	                complete_cases = complete_cases, 
+	                impute_na = impute_na, 
+	                filepath = filepath, 
+	                filename = paste0(fn_prefix, ".", fn_suffix), 
+	                theme = theme, 
+	                ...)
 	  }
 	} else if (anal_type == "Trend") {
 		function(n_clust = NULL, ...) {
@@ -603,7 +643,7 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
       } else {
         if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
       }
-    } else if (anal_type %in% c("GSPA", "GSEA", "String")) { # always use data with pVals
+    } else if (anal_type %in% c("Volcano", "GSPA", "mapGSPA", "GSEA", "String")) { # always use data with pVals
       if (impute_na) {
         if (file.exists(fn_imp_p)) src_path <- fn_imp_p else stop(paste(fn_imp_p, err_msg4), call. = FALSE)
       } else {

@@ -41,7 +41,7 @@ sd_lgl_cleanup <- function (df) {
 #' \code{purge_by_cv} replaces the data entries at \code{group CV > max_cv} to
 #' NA.
 #'
-#' @inheritParams proteoHist
+#' @inheritParams prnHist
 #' @param max_cv Numeric; the cut-off in maximum CV. Values above the threshold
 #'   will be replaced with NA. The default is NULL with no data trimming by max
 #'   CV.
@@ -90,7 +90,7 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
 #'
 #' \code{purge_by_qt} replaces the data entries at \code{CV > quantile} with NA.
 #'
-#' @inheritParams proteoHist
+#' @inheritParams prnHist
 #' @param pt_cv Numeric between 0 and 1; the percentile of CV. Values above the
 #'   percentile threshold will be replaced with NA. The default is NULL with no
 #'   data trimming by CV percentile.
@@ -149,7 +149,7 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
 #' \code{purge_by_n} replaces the data entries at \code{group n_obs < min_n} to
 #' NA. 
 #'
-#' @inheritParams proteoHist
+#' @inheritParams prnHist
 #' @param min_n Positive integer. When calling from \code{purgePSM}, peptide
 #'   entries in PSM tables with the number of identifying PSMs smaller than
 #'   \code{min_n} will be replaced with NA. When calling from \code{purgePep},
@@ -321,7 +321,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'the visualization of \code{log2FC} distributions.
 #'
 #'@inheritParams purgePSM
-#'@inheritParams proteoHist
+#'@inheritParams prnHist
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv
 #'@inheritParams purge_by_n
