@@ -411,8 +411,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
     write.table(filename, sep = "\t", col.names = TRUE, row.names = FALSE)
 
   if (plot_log2FC_cv & TMT_plex(label_scheme) > 0) {
-    sd_violin(df, !!group_pep_by, 
-              file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
+    sd_violin(df = df, id = !!group_pep_by, 
+              filepath = file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
               width = 8 * n_TMT_sets(label_scheme), height = 8, 
               type = "log2_R", adjSD = FALSE, is_psm = FALSE)
   }
@@ -600,8 +600,8 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
                 sep = "\t", col.names = TRUE, row.names = FALSE)
 
   if (plot_log2FC_cv & TMT_plex(label_scheme) > 0) {
-    sd_violin(df, !!group_pep_by, 
-              file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
+    sd_violin(df = df, id = !!group_pep_by, 
+              filepath = file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
               width = 8 * n_TMT_sets(label_scheme), height = 8, 
               type = "log2_R", adjSD = FALSE, is_psm = FALSE)
   }
@@ -1127,8 +1127,8 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
               col.names = TRUE, row.names = FALSE)
   
   if (plot_log2FC_cv & TMT_plex(label_scheme) > 0) {
-    sd_violin(df, !!group_pep_by, 
-              file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
+    sd_violin(df = df, id = !!group_pep_by, 
+              filepath = file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
               width = 8 * n_TMT_sets(label_scheme), height = 8, type = "log2_R", adjSD = FALSE, is_psm = FALSE)
   }
   

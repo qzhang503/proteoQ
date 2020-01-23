@@ -7,6 +7,13 @@
 prepDM(df, id, scale_log2r, sub_grp, type = "ratio", anal_type)
 }
 \arguments{
+\item{df}{The name of input data file. By default, it will be determined
+automatically after matching the data type with an \code{id} among
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
 \item{sub_grp}{Numeric.  A list of sample IDs that will be used in subsequent
 analysis.}
 

@@ -5,7 +5,7 @@
 \title{Visualization of trend results}
 \usage{
 plot_prnTrend(col_select = NULL, col_order = NULL, n_clust = NULL,
-  scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE,
+  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
   filename = NULL, theme = NULL, ...)
 }
 \arguments{
@@ -31,30 +31,32 @@ available cluster IDs will be used.}
 \code{_N[...].txt} in name will be taken. An error will be shown if no files
 are matched under given conditions.}
 
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
 \item{impute_na}{Logical; at the TRUE default, input files with
 \code{_impNA[...].txt} in name will be loaded. Otherwise, files without
 \code{_impNA} in name will be taken. An error will be shown if no files are
 matched under given conditions.}
 
-\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
-missing values will be used. The default is FALSE.}
-
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
 
 \item{theme}{A
-\code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}},
-i.e., theme_bw(), or a custom theme. At the NULL default, a system theme
-will be applied.}
+\code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+theme will be applied.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data in \code{Protein_Trend_[...].txt}; also see \code{\link{normPSM}}. \cr
-\cr Additional parameters for use in \code{plot_} functions: \cr
-\code{ymin}, the minimum y at \code{log2} scale; \cr \code{ymax}, the
-maximum y at \code{log2} scale; \cr \code{ybreaks}, the breaks in y-axis at
-\code{log2} scale; \cr \code{nrow}, the number of rows; \cr \code{width},
-the width of plot; \cr \code{height}, the height of plot; \cr \code{color},
-the color of lines; \cr \code{alpha}, the transparency of lines.}
+data in \code{Protein_Trend_[...].txt}; see also \code{\link{normPSM}} \cr
+\cr \code{arrange_}: Logical expression(s) for the row ordering of data;
+also see \code{\link{prnHM}}. \cr \cr Additional parameters for use in
+\code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2} scale;
+\cr \code{ymax}, the maximum y at \code{log2} scale; \cr \code{ybreaks}, the
+breaks in y-axis at \code{log2} scale; \cr \code{nrow}, the number of rows;
+\cr \code{width}, the width of plot; \cr \code{height}, the height of plot;
+\cr \code{color}, the color of lines; \cr \code{alpha}, the transparency of
+lines.}
 }
 \description{
 \code{plot_prnTrend} plots the trends of protein expressions from
@@ -84,6 +86,7 @@ The function reads \code{Protein_Trend_[...].txt} files under the
 ## global option
 scale_log2r <- TRUE
 
+
 # ===================================
 # Analysis
 # ===================================
@@ -109,6 +112,16 @@ anal_prnTrend(
   col_order = Order,
   n_clust = c(5:6), 
   filter_prots = exprs(prot_n_pep >= 3),
+)
+
+## manual m (proteins)
+anal_prnTrend(
+  impute_na = FALSE,
+  col_order = Order,
+  n_clust = c(5:6), 
+  filter_prots = exprs(prot_n_pep >= 3),
+  m = 1.5,
+  filename = my_m.txt,
 )
 
 ## additional row filtration by pVals (proteins, impute_na = FALSE)
@@ -197,6 +210,41 @@ plot_prnTrend(
   filename = bi.png,
 )
 
+## custom theme
+my_trend_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
+  axis.ticks.x  = element_blank(), 
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
+  axis.title.x = element_text(colour="black", size=24),
+  axis.title.y = element_text(colour="black", size=24),
+  plot.title = element_text(face="bold", colour="black",
+                            size=20, hjust=.5, vjust=.5),
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  panel.background = element_rect(fill = '#0868ac', colour = 'red'),
+  
+  strip.text.x = element_text(size = 24, colour = "black", angle = 0),
+  strip.text.y = element_text(size = 24, colour = "black", angle = 90),
+  
+  plot.margin = unit(c(5.5, 55, 5.5, 5.5), "points"), 
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.position = "none",
+  legend.title = element_text(colour="black", size=18),
+  legend.text = element_text(colour="black", size=18),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+plot_prnTrend(
+  col_order = Order, 
+  col_select = BI,
+  theme = my_trend_theme,
+  filename = my_theme.png,
+)
 }
 \seealso{
 \code{\link{load_expts}} for a reduced working example in data

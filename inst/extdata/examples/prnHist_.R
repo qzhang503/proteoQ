@@ -71,6 +71,42 @@ pepHist(
   filename = lag.png,
 )
 
+## custom theme
+my_histo_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=0, vjust=0.5, size=18),
+  axis.ticks.x  = element_blank(), # x-axis ticks
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=18),
+  axis.title.x = element_text(colour="black", size=24),
+  axis.title.y = element_text(colour="black", size=24),
+  plot.title = element_text(colour="black", size=24, hjust=.5, vjust=.5),
+  
+  strip.text.x = element_text(size = 18, colour = "black", angle = 0),
+  strip.text.y = element_text(size = 18, colour = "black", angle = 90),
+  
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.title = element_blank(),
+  legend.text = element_text(colour="black", size=18),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+pepHist(
+  theme = my_histo_theme,
+  filename = my_theme.png,
+)
+
+pepHist(
+  col_select = BI_1,
+  theme = theme_dark(),
+  filename = bi1_dark.png,
+)
+
 ## Not run: 
 # sample selection
 pepHist(

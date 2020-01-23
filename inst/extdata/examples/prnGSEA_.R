@@ -36,6 +36,7 @@ prnGSEA(
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
   filter_by_sp = exprs(species == "human"), 
+  filename = hu_prefil.txt,
 )
 
 # cases that are complete with no missing values
@@ -45,6 +46,7 @@ prnGSEA(
   logFC_cutoff = log2(1.2),
   complete_cases = TRUE, 
   filter_by_sp = exprs(species == "human"), 
+  filename = cc.txt,
 )
 
 # customized thresholds for the corresponding formulae in `pepSig` or `prnSig()`
@@ -54,5 +56,6 @@ prnGSEA(
   pval_cutoff = c(5E-2, 5E-2, 1E-5),
   logFC_cutoff = c(log2(1.1), log2(1.1), log2(1.2)),
   filter_by_sp = exprs(species == "human"), 
+  filename = custom_fil.txt,
 )
 

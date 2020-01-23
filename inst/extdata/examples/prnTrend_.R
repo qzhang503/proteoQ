@@ -7,6 +7,7 @@
 ## global option
 scale_log2r <- TRUE
 
+
 # ===================================
 # Analysis
 # ===================================
@@ -32,6 +33,16 @@ anal_prnTrend(
   col_order = Order,
   n_clust = c(5:6), 
   filter_prots = exprs(prot_n_pep >= 3),
+)
+
+## manual m (proteins)
+anal_prnTrend(
+  impute_na = FALSE,
+  col_order = Order,
+  n_clust = c(5:6), 
+  filter_prots = exprs(prot_n_pep >= 3),
+  m = 1.5,
+  filename = my_m.txt,
 )
 
 ## additional row filtration by pVals (proteins, impute_na = FALSE)
@@ -120,3 +131,38 @@ plot_prnTrend(
   filename = bi.png,
 )
 
+## custom theme
+my_trend_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
+  axis.ticks.x  = element_blank(), 
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
+  axis.title.x = element_text(colour="black", size=24),
+  axis.title.y = element_text(colour="black", size=24),
+  plot.title = element_text(face="bold", colour="black",
+                            size=20, hjust=.5, vjust=.5),
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  panel.background = element_rect(fill = '#0868ac', colour = 'red'),
+  
+  strip.text.x = element_text(size = 24, colour = "black", angle = 0),
+  strip.text.y = element_text(size = 24, colour = "black", angle = 90),
+  
+  plot.margin = unit(c(5.5, 55, 5.5, 5.5), "points"), 
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.position = "none",
+  legend.title = element_text(colour="black", size=18),
+  legend.text = element_text(colour="black", size=18),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+plot_prnTrend(
+  col_order = Order, 
+  col_select = BI,
+  theme = my_trend_theme,
+  filename = my_theme.png,
+)

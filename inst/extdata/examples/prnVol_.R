@@ -27,6 +27,34 @@ prnVol(
   filename = "kin_npep2.png"
 )
 
+# custom theme
+my_theme <- theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 0, vjust = 0.5, size = 24),
+    axis.ticks.x = element_blank(),
+    axis.text.y = element_text(angle = 0, vjust = 0.5, size = 24),
+    axis.title.x = element_text(colour = "black", size = 24),
+    axis.title.y = element_text(colour="black", size = 24),
+    plot.title = element_text(face = "bold", colour = "black", size = 14, hjust = .5, vjust = .5),
+    
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    
+    strip.text.x = element_text(size = 16, colour = "black", angle = 0),
+    strip.text.y = element_text(size = 16, colour = "black", angle = 90),
+    
+    legend.key = element_rect(colour = NA, fill = 'transparent'),
+    legend.background = element_rect(colour = NA,  fill = "transparent"),
+    legend.position = "none",
+    legend.title = element_text(colour="black", size = 18),
+    legend.text = element_text(colour="black", size = 18),
+    legend.text.align = 0,
+    legend.box = NULL
+  )
+
+prnVol(theme = my_theme, filename = my_theme.png)
 
 ## protein subgroups by gene sets
 # prerequisite analysis of GSPA

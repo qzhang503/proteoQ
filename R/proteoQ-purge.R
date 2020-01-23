@@ -41,7 +41,7 @@ sd_lgl_cleanup <- function (df) {
 #' \code{purge_by_cv} replaces the data entries at \code{group CV > max_cv} to
 #' NA.
 #'
-#' @inheritParams proteoHist
+#' @inheritParams prnHist
 #' @param max_cv Numeric; the cut-off in maximum CV. Values above the threshold
 #'   will be replaced with NA. The default is NULL with no data trimming by max
 #'   CV.
@@ -90,7 +90,7 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
 #'
 #' \code{purge_by_qt} replaces the data entries at \code{CV > quantile} with NA.
 #'
-#' @inheritParams proteoHist
+#' @inheritParams prnHist
 #' @param pt_cv Numeric between 0 and 1; the percentile of CV. Values above the
 #'   percentile threshold will be replaced with NA. The default is NULL with no
 #'   data trimming by CV percentile.
@@ -149,7 +149,7 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
 #' \code{purge_by_n} replaces the data entries at \code{group n_obs < min_n} to
 #' NA. 
 #'
-#' @inheritParams proteoHist
+#' @inheritParams prnHist
 #' @param min_n Positive integer. When calling from \code{purgePSM}, peptide
 #'   entries in PSM tables with the number of identifying PSMs smaller than
 #'   \code{min_n} will be replaced with NA. When calling from \code{purgePep},
@@ -186,8 +186,9 @@ purge_by_n <- function (df, id, min_n) {
 #'@inheritParams purge_by_cv
 #'@inheritParams purge_by_n
 #'@inheritParams purge_by_qt
-#'@param adjSD Logical; if TRUE, adjust the standard deviation in relative to
-#'  the width of ratio profiles.
+#'@inheritParams plot_prnTrend
+#'@param adjSD Not currently used. If TRUE, adjust the standard
+#'  deviation in relative to the width of ratio profiles.
 #'@param keep_ohw Logical; if TRUE, keep one-hit-wonders with unknown CV. The
 #'  default is TRUE.
 #'@param ... Additional parameters for plotting: \cr \code{ymax}, the maximum
@@ -199,33 +200,47 @@ purge_by_n <- function (df, id, min_n) {
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
 #'@example inst/extdata/examples/purgePSM_.R
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
 #'@export
-purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, keep_ohw = TRUE, ...) {
+purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, 
+                      keep_ohw = TRUE, theme= NULL, ...) {
+  on.exit(
+    mget(names(formals()), rlang::current_env()) %>% c(enexprs(...)) %>% save_call("purPSM")
+    , add = TRUE
+  )
   
+  check_dots(c("id", "anal_type", "filename", "filepath"), ...)
+
   dots <- rlang::enexprs(...)
-  lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  dots <- dots %>% .[! . %in% lang_dots]
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  dots <- dots %>% .[! . %in% filter_dots]
+  
+  if (!rlang::is_empty(filter_dots)) warning("No data filtration by `filter_` varargs.", call. = FALSE)
   
   if (is.null(dat_dir)) {
     dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
@@ -234,6 +249,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
+  dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
@@ -255,7 +271,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     
     df <- read.csv(file.path(dat_dir, "PSM", fn), check.names = FALSE, 
                    header = TRUE, sep = "\t", comment.char = "#") %>% 
-      # filters_in_call(!!!lang_dots) %>% 
+      # filters_in_call(!!!filter_dots) %>% 
       purge_by_qt(group_psm_by, pt_cv, keep_ohw) %>% 
       purge_by_cv(group_psm_by, max_cv, keep_ohw) %>% 
       dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
@@ -293,17 +309,26 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
         write.table(file.path(dat_dir, "PSM", fn), sep = "\t", col.names = TRUE, row.names = FALSE)      
     }
     
+    adjSD <- FALSE
     if (adjSD) {
       dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\purged_adj"), recursive = TRUE, showWarnings = FALSE)
       filepath <- file.path(dat_dir, "PSM\\log2FC_cv\\purged_adj", gsub("_PSM_N.txt", "_sd.png", fn))
     } else {
       filepath <- file.path(dat_dir, "PSM\\log2FC_cv\\purged", gsub("_PSM_N.txt", "_sd.png", fn))
-    }    
+    }
+    
+    width <- eval(dots$width, env = caller_env())
+    height <- eval(dots$height, env = caller_env())
+    
+    if (is.null(width)) width <- 8 
+    if (is.null(height)) height <- 8
+    dots <- dots %>% .[! names(.) %in% c("width", "height")]
 
-    sd_violin(df, !!group_psm_by, filepath, type = "log2_R", adjSD = adjSD, is_psm = TRUE, ...)
+    quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_psm_by, filepath = filepath, 
+                                           width = width, height = height, type = "log2_R", adjSD = adjSD, 
+                                           is_psm = TRUE, col_select = NULL, col_order = NULL, 
+                                           theme = theme, !!!dots)
   }
-  
-  mget(names(formals()), rlang::current_env()) %>% save_call("purPSM")
 }
 
 
@@ -321,11 +346,12 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'the visualization of \code{log2FC} distributions.
 #'
 #'@inheritParams purgePSM
-#'@inheritParams proteoHist
+#'@inheritParams prnHist
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv
 #'@inheritParams purge_by_n
 #'@inheritParams purge_by_qt
+#'@inheritParams plot_prnTrend
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %T>%
@@ -353,11 +379,19 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'  
 #'@export
 purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, keep_ohw = TRUE, 
-                      col_select = NULL, col_order = NULL, filename = NULL, ...) {
+                      col_select = NULL, col_order = NULL, filename = NULL, theme= NULL, ...) {
+  on.exit(
+    mget(names(formals()), rlang::current_env()) %>% c(enexprs(...)) %>% save_call("purPep")
+    , add = TRUE
+  )
+  
+  check_dots(c("id", "anal_type", "filename", "filepath"), ...)
   
   dots <- rlang::enexprs(...)
-  lang_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  dots <- dots %>% .[! . %in% lang_dots]
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  dots <- dots %>% .[! . %in% filter_dots]
+  
+  if (!rlang::is_empty(filter_dots)) warning("No data filtration by `filter_` varargs.", call. = FALSE)
 
   col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)
@@ -379,6 +413,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
+  dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
@@ -395,7 +430,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   
   fn <- file.path(dat_dir, "Peptide", "Peptide.txt")
   df <- read.csv(fn, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
-    # filters_in_call(!!!lang_dots) %>% 
+    # filters_in_call(!!!filter_dots) %>% 
     purge_by_qt(group_pep_by, pt_cv, keep_ohw) %>% 
     purge_by_cv(group_pep_by, max_cv, keep_ohw) %>% 
     dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) 
@@ -441,6 +476,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   if (is.null(height)) height <- 8
   dots <- dots %>% .[! names(.) %in% c("width", "height")]
   
+  adjSD <- FALSE
   if (adjSD) {
     dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\purged_adj"), recursive = TRUE, showWarnings = FALSE)
     filepath <- file.path(dat_dir, "Peptide\\log2FC_cv\\purged_adj", filename)
@@ -448,11 +484,11 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     filepath <- file.path(dat_dir, "Peptide\\log2FC_cv\\purged", filename)
   }
   
-  sd_violin(df, !!group_pep_by, filepath, width = width, height = height, 
-            type = "log2_R", adjSD = adjSD, is_psm = FALSE, 
-            col_select = !!col_select, col_order = !!col_order, !!!dots)
-
-  mget(names(formals()), rlang::current_env()) %>% save_call("purPSM")
+  quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_pep_by, filepath = filepath, 
+                                         width = width, height = height, type = "log2_R", 
+                                         adjSD = adjSD, is_psm = FALSE, 
+                                         col_select = !!col_select, col_order = !!col_order, 
+                                         theme = theme, !!!dots)
 }
 
 

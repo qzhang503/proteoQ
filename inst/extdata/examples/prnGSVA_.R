@@ -26,6 +26,7 @@ prnGSVA(
   mx.diff = TRUE,
   gset_nms = c("go_sets", "kegg_sets"),
   filter_prots = exprs(prot_n_pep >= 3), 
+  filename = fil.txt,
 )
 
 ## additional row filtration by pVals (impute_na = FALSE)

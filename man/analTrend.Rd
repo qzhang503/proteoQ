@@ -5,7 +5,8 @@
 \title{Trend analysis}
 \usage{
 analTrend(df, id, col_group, col_order, label_scheme_sub, n_clust,
-  filepath, filename, ...)
+  scale_log2r, complete_cases, impute_na, filepath, filename, anal_type,
+  ...)
 }
 \description{
 Trend analysis

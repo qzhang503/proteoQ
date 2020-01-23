@@ -5,9 +5,9 @@
 \title{Trend analysis of protein data}
 \usage{
 anal_prnTrend(col_select = NULL, col_group = NULL, col_order = NULL,
-  n_clust = NULL, scale_log2r = TRUE, impute_na = FALSE,
-  complete_cases = FALSE, df = NULL, filepath = NULL,
-  filename = NULL, ...)
+  n_clust = NULL, scale_log2r = TRUE, complete_cases = FALSE,
+  impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL,
+  ...)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -31,34 +31,40 @@ column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be
 divided into. At the NULL default, it will be determined by the number of
-data entries.}
+data entries. The \code{n_clust} overwrites the augument \code{centers} in
+\code{\link[e1071]{cmeans}}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
 
-\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
-will be used. The default is FALSE.}
-
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
+
 \item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among 
+automatically after matching the data type with an \code{id} among
 \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{Use system default.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}.}
+data; \cr \code{arrange_}: Logical expression(s) for the row order of data;
+also see \code{\link{normPSM}}, \code{\link{prnHM}}. \cr \cr Additional
+arguments for \code{\link[e1071]{cmeans}} by noting that: \cr \code{centers}
+is replaced with \code{n_clust} \cr \code{m} is according to Schwaemmle and
+Jensen if not provided; \cr \code{x} is disabled with input data being
+determined automatically}
 }
 \value{
-Trend classification of \code{log2FC}.
+Fuzzy c-mean classification of \code{log2FC}.
 }
 \description{
 \code{anal_prnTrend} applies the soft clustering algorithm in
@@ -77,6 +83,7 @@ The option of \code{complete_cases} will be forced to \code{TRUE} at
 
 ## global option
 scale_log2r <- TRUE
+
 
 # ===================================
 # Analysis
@@ -103,6 +110,16 @@ anal_prnTrend(
   col_order = Order,
   n_clust = c(5:6), 
   filter_prots = exprs(prot_n_pep >= 3),
+)
+
+## manual m (proteins)
+anal_prnTrend(
+  impute_na = FALSE,
+  col_order = Order,
+  n_clust = c(5:6), 
+  filter_prots = exprs(prot_n_pep >= 3),
+  m = 1.5,
+  filename = my_m.txt,
 )
 
 ## additional row filtration by pVals (proteins, impute_na = FALSE)
@@ -191,6 +208,45 @@ plot_prnTrend(
   filename = bi.png,
 )
 
+## custom theme
+my_trend_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
+  axis.ticks.x  = element_blank(), 
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=24),
+  axis.title.x = element_text(colour="black", size=24),
+  axis.title.y = element_text(colour="black", size=24),
+  plot.title = element_text(face="bold", colour="black",
+                            size=20, hjust=.5, vjust=.5),
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  panel.background = element_rect(fill = '#0868ac', colour = 'red'),
+  
+  strip.text.x = element_text(size = 24, colour = "black", angle = 0),
+  strip.text.y = element_text(size = 24, colour = "black", angle = 90),
+  
+  plot.margin = unit(c(5.5, 55, 5.5, 5.5), "points"), 
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.position = "none",
+  legend.title = element_text(colour="black", size=18),
+  legend.text = element_text(colour="black", size=18),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+plot_prnTrend(
+  col_order = Order, 
+  col_select = BI,
+  theme = my_trend_theme,
+  filename = my_theme.png,
+)
+}
+\references{
+\code{Schwaemmle and Jensen, Bioinformatics,Vol. 26 (22),
+ 2841-2848, 2010. \cr J. C. Bezdek (1981). Pattern recognition with fuzzy objective function algorithms. New York: Plenum. \cr }
 }
 \seealso{
 \code{\link{load_expts}} for a reduced working example in data

@@ -118,6 +118,38 @@ pepMDS(
   filename = filpvals_impna.png,
 )
 
+## custom theme
+my_mds_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=0, vjust=0.5, size=16),
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=16),
+  axis.title.x = element_text(colour="black", size=18),
+  axis.title.y = element_text(colour="black", size=18),
+  plot.title = element_text(face="bold", colour="black", size=20, hjust=0.5, vjust=0.5),
+  
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.title = element_blank(),
+  legend.text = element_text(colour="black", size=14),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+pepMDS(
+  impute_na = TRUE,
+  col_color = Color,
+  col_shape = Shape,
+  show_ids = FALSE,
+  filter_peps_by = exprs(prot_n_pep >= 5),
+  filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+  theme = my_mds_theme,
+  filename = my_theme.png,
+)
+
 ## Not run: 
 prnMDS(
   col_color = "column_key_not_existed",

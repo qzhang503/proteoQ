@@ -353,9 +353,50 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
 
 #'Visualization of heat maps
 #'
-#'\code{proteoHM} visualizes the heat maps of protein or peptide \code{log2FC}.
-#'Users should avoid calling the method directly, but instead use the following
-#'wrappers.
+#'\code{pepHM} visualizes the heat maps of peptide \code{log2FC}.
+#'
+#'@rdname prnHM
+#'
+#'@import purrr
+#'@export
+pepHM <- function (col_select = NULL, col_benchmark = NULL,
+                   scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                   df = NULL, filepath = NULL, filename = NULL,
+                   annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
+                   xmin = -1, xmax = 1, xmargin = 0.1, ...) {
+  check_dots(c("id", "anal_type"), ...)
+  
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
+  stopifnot(rlang::is_double(xmin), 
+            rlang::is_double(xmax), 
+            rlang::is_double(xmargin))
+  
+  col_select <- rlang::enexpr(col_select)
+  col_benchmark <- rlang::enexpr(col_benchmark)
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  reload_expts()
+  
+  info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
+            scale_log2r = scale_log2r, complete_cases = complete_cases,impute_na = impute_na, 
+            df = !!df, filepath = !!filepath,
+            filename = !!filename, anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin,
+                                                          annot_cols = annot_cols, 
+                                                          annot_colnames = annot_colnames, 
+                                                          annot_rows = annot_rows, ...)
+}
+
+
+
+#'Visualization of heat maps
+#'
+#'\code{prnHM} visualizes the heat maps of protein \code{log2FC}.
 #'
 #'Data rows without non-missing pairs will result in NA distances in inter-row
 #'dissimilarities (\code{\link[stats]{dist}}). At \code{complet_cases = TRUE},
@@ -372,7 +413,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
 #'(\code{\link[pheatmap]{pheatmap}}) may be considered for large data sets.
 #'
 #'
-#'@inheritParams  proteoEucDist
+#'@inheritParams  prnEucDist
 #'@param  col_benchmark Not used.
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is FALSE.
@@ -461,15 +502,22 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
 #'@import NMF dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
-                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                      df = NULL, filepath = NULL, filename = NULL,
-                      annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
-                      xmin = -1, xmax = 1, xmargin = 0.1, ...) {
-
+prnHM <- function (col_select = NULL, col_benchmark = NULL,
+                   scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                   df = NULL, filepath = NULL, filename = NULL,
+                   annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
+                   xmin = -1, xmax = 1, xmargin = 0.1, ...) {
+  check_dots(c("id", "anal_type"), ...)
+  
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  id <- rlang::enexpr(id)
+  stopifnot(rlang::is_double(xmin), 
+            rlang::is_double(xmax), 
+            rlang::is_double(xmargin))
+  
   col_select <- rlang::enexpr(col_select)
   col_benchmark <- rlang::enexpr(col_benchmark)
   df <- rlang::enexpr(df)
@@ -485,44 +533,6 @@ proteoHM <- function (id = gene, col_select = NULL, col_benchmark = NULL,
                                                           annot_cols = annot_cols, 
                                                           annot_colnames = annot_colnames, 
                                                           annot_rows = annot_rows, ...)
-}
-
-
-#'Visualizes peptide heat maps
-#'
-#'\code{pepHM} is a wrapper function of \code{\link{proteoHM}} for peptide data
-#'
-#'@rdname proteoHM
-#'
-#'@import purrr
-#'@export
-pepHM <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Peptide\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  id <- match_call_arg(normPSM, group_psm_by)
-  proteoHM(id = !!id, ...)
-}
-
-
-#'Visualizes protein heat maps
-#'
-#'\code{prnHM} is a wrapper function of \code{\link{proteoHM}} for protein data
-#'
-#'@rdname proteoHM
-#'
-#'@import purrr
-#'@export
-prnHM <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Protein\\Heatmap\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  id <- match_call_arg(normPSM, group_pep_by)
-  proteoHM(id = !!id, ...)
 }
 
 

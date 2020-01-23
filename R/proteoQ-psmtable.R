@@ -736,7 +736,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
 		  df_int <- df_split[[i]] %>% 
 		    .[, grepl("^I[0-9]{3}", names(.))]
 		  
-		  rptr_violin(df_int, file.path(dat_dir, "PSM\\rprt_int\\raw", gsub("\\.csv", "\\.png", out_fn)), 8, 8)
+		  rptr_violin(df = df_int, filepath = file.path(dat_dir, "PSM\\rprt_int\\raw", gsub("\\.csv", "\\.png", out_fn)), 
+		              width = 8, height = 8)
 		}
 	}
 }
@@ -1137,14 +1138,17 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       
       if (plot_rptr_int & TMT_plex > 0) {
         df_int <- df %>% .[, grepl("^N_I[0-9]{3}", names(.))]
-        rptr_violin(df_int, file.path(dat_dir, "PSM\\rprt_int\\mc", 
-                                      paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 8, 8)
+        rptr_violin(df = df_int, 
+                    filepath = file.path(dat_dir, "PSM\\rprt_int\\mc",
+                                         paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 
+                    width = 8, height = 8)
       }
 
       if (plot_log2FC_cv & TMT_plex > 0) {
-        sd_violin(df, !!group_psm_by, 
-                 file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
-                 width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
+        sd_violin(df = df, id = !!group_psm_by, 
+                  filepath = file.path(dat_dir, "PSM\\log2FC_cv\\raw", 
+                                       paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                  width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
       }
       
     }
@@ -1945,7 +1949,8 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
       df_int <- df_split[[i]] %>% 
         .[, grepl("^I[0-9]{3}", names(.))]
       
-      rptr_violin(df_int, file.path(dat_dir, "PSM\\rprt_int\\raw", gsub("\\.csv", "\\.png", out_fn)), 8, 8)
+      rptr_violin(df = df_int, filepath = file.path(dat_dir, "PSM\\rprt_int\\raw", gsub("\\.csv", "\\.png", out_fn)), 
+                  width = 8, height = 8)
     }
   }
 }
@@ -2065,14 +2070,17 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
       
       if (plot_rptr_int & TMT_plex > 0) {
         df_int <- df %>% .[, grepl("^N_I[0-9]{3}", names(.))]
-        rptr_violin(df_int, file.path(dat_dir, "PSM\\rprt_int\\mc", 
-                                      paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 8, 8)
+        rptr_violin(df = df_int, 
+                    filepath = file.path(dat_dir, "PSM\\rprt_int\\mc", 
+                                         paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 
+                    width = 8, height = 8)
       }
       
       if (plot_log2FC_cv & TMT_plex > 0) {
-        sd_violin(df, !!group_psm_by, 
-                 file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
-                 width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
+        sd_violin(df = df, id = !!group_psm_by, 
+                  filepath = file.path(dat_dir, "PSM\\log2FC_cv\\raw", 
+                                       paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                  width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
       }
     }
     
@@ -2268,7 +2276,8 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
       df_int <- df_split[[i]] %>% 
         .[, grepl("^I[0-9]{3}", names(.))]
       
-      rptr_violin(df_int, file.path(dat_dir, "PSM\\rprt_int\\raw", gsub("\\.csv", "\\.png", out_fn)), 8, 8)
+      rptr_violin(df = df_int, filepath = file.path(dat_dir, "PSM\\rprt_int\\raw", gsub("\\.csv", "\\.png", out_fn)), 
+                  width = 8, height = 8)
     }
   }
 }
@@ -2479,14 +2488,17 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
         df_int <- df %>% 
           .[, grepl("^N_I[0-9]{3}", names(.))]
         
-        rptr_violin(df_int, file.path(dat_dir, "PSM\\rprt_int\\mc", 
-                                      paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 8, 8)
+        rptr_violin(df = df_int, 
+                    filepath = file.path(dat_dir, "PSM\\rprt_int\\mc", 
+                                         paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 
+                    width = 8, height = 8)
       }
       
       if (plot_log2FC_cv & TMT_plex > 0) {
-        sd_violin(df, !!group_psm_by, 
-                 file.path(dat_dir, "PSM\\log2FC_cv\\raw", paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
-                 width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
+        sd_violin(df = df, id = !!group_psm_by, 
+                  filepath = file.path(dat_dir, "PSM\\log2FC_cv\\raw", 
+                                       paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                  width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
       }
       
     }

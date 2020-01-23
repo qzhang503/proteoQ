@@ -7,9 +7,6 @@
 annot_stringdb_old(species, df, db_path, id, score_cutoff)
 }
 \arguments{
-\item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\string"}.}
-
 \item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
 protein-protein interaction. The default is 0.7.}
 }

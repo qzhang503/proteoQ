@@ -5,8 +5,14 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
-  word_document:
+  html_document:
+    fig_caption: yes
+    highlight: haddock
+    keep_md: yes
+    theme: united
     toc: yes
+    toc_depth: 4
+    toc_float: yes
   pdf_document:
     toc: yes
     number_sections: true
@@ -16,14 +22,8 @@ output:
     toc: yes
     toc_depth: 4
     variant: gfm
-  html_document:
-    fig_caption: yes
-    highlight: haddock
-    keep_md: yes
-    theme: united
+  word_document:
     toc: yes
-    toc_depth: 4
-    toc_float: yes
 ---
 
 ---
@@ -1105,7 +1105,7 @@ plot_prnTrend(col_select = BI, ...)
 Apparently, they will both plot the trends of protein log2FC for the `BI` subset. In spite, the former is based on the clustering results from the `BI` subset whereas the later is based on the findings from all samples.  The same theme will hold for various informatic analysis in `proteoQ`, including the NMF analysis that we will next discuss.  
 
 ### 2.8 NMF Analysis
-In this section, we will performs the NMF analysis against protein data. More details can be found from [`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf) and the `?anal_prnNMF` wrapper.  
+In this section, we will performs the analysis of non-negative matrix factorization (NMF) against protein data. More details can be found from [`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf) and the `?anal_prnNMF` wrapper. Since additional arguments can be passed on to NMF, we will test below protein classifications with both the default and the 'lee' method:  
 
 ```{r Protein NMF, eval = FALSE}
 # load library
@@ -1120,11 +1120,22 @@ anal_prnNMF(
   seed = 123,
   filter_by_npep = exprs(prot_n_pep >= 2),
 )
+
+anal_prnNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  method = "lee",
+  r = c(5:6),
+  nrun = 20, 
+  seed = 123,
+  filter_by_npep = exprs(prot_n_pep >= 2),
+  filename = lee.txt,
+)
 ```
 
 Analogous analysis for peptide data are available via `anal_pepNMF(...)`.  
 
-Following the primary NMF analysis, secondary utilities of `plot_pepNMFCon` and `plot_prnNMFCon` prepare the consensus heat maps of peptide and protein data, respectively. Similarly, `plot_pepNMFCoef` and `plot_prnNMFCoef` prepare coefficient heat maps. Utility `plot_metaNMF` makes the heat maps of protein `log2FC.` These utilities can pass arguments to `pheatmap` as shown in **Section** 2.3. In the examples shown below, we plot the heat maps for protein data against all available ranks, which are 5 and 6, specified in the earlier `anal_prnNMF` step.
+Following the primary NMF analysis, secondary utilities of `plot_pepNMFCon` and `plot_prnNMFCon` prepare the consensus heat maps of peptide and protein data, respectively. Similarly, `plot_pepNMFCoef` and `plot_prnNMFCoef` prepare coefficient heat maps. Utility `plot_metaNMF` makes the heat maps of protein `log2FC.` These utilities can pass arguments to `pheatmap` as shown in **Section** 2.3. In the examples shown below, we plot the heat maps for protein data against all available ranks, which are 5 and 6, specified earlierly in the `anal_prnNMF` step.
 
 ```{r Protein NMF_heatmaps, eval = FALSE}
 plot_prnNMFCon(
@@ -1202,9 +1213,9 @@ plot_metaNMF(
 )
 ```
 
-The silhouette information was obtained via the `cluster` package in R and shown as a track on the top of consensus and coefficient heat maps.  
+The silhouette information was obtained via the R package `cluster` and shown as a track on the top of consensus and coefficient heat maps.  
 
-```{r Protein NMF heat maps, echo=FALSE, fig.align='left', fig.cap="**Figure 9A-9B.** Heat map visualization of protein NMF results. Left: concensus; right: coefficients; metagenes not shown.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Protein NMF heat maps, echo=FALSE, fig.align='left', fig.cap="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = \"lee\" not shown). Left: concensus; right: coefficients; metagenes not shown.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_nmf_con <- "images\\protein\\nmf\\bi_r5_con_rank5.png"
 img_nmf_coef <- "images\\protein\\nmf\\bi_r5_coef_rank5.png"
 knitr::include_graphics(c(img_nmf_con, img_nmf_coef))

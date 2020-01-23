@@ -6,7 +6,7 @@
 \usage{
 purgePep(dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   adjSD = FALSE, keep_ohw = TRUE, col_select = NULL,
-  col_order = NULL, filename = NULL, ...)
+  col_order = NULL, filename = NULL, theme = NULL, ...)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to
@@ -20,8 +20,8 @@ data trimming by CV percentile.}
 will be replaced with NA. The default is NULL with no data trimming by max
 CV.}
 
-\item{adjSD}{Logical; if TRUE, adjust the standard deviation in relative to
-the width of ratio profiles.}
+\item{adjSD}{Not currently used. If TRUE, adjust the standard
+deviation in relative to the width of ratio profiles.}
 
 \item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
 default is TRUE.}
@@ -33,11 +33,22 @@ specified under \code{Select}, the column key of \code{Sample_ID} will be
 used. The non-empty entries under the ascribing column will be used in
 indicated analysis.}
 
-\item{filename}{A representative file name to output image(s). By default, it
-will be determined automatically by the name of the current \code{call}. The
-image(s) are saved via \code{\link[ggplot2]{ggsave}} where the image type
-will be determined by the extension of the file name. A \code{.png} format
-will be used at default or at an unrecognized file extension.}
+\item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
+Numeric values under which will be used for the left-to-right arrangement of
+samples in graphic outputs or top-to-bottom arrangement in text outputs. At
+the NULL default, the column key \code{Order} will be used. If values under
+column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
+
+\item{theme}{A
+\code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+theme will be applied.}
 
 \item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
 \eqn{y} at a log2 scale. \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a
@@ -90,6 +101,9 @@ purgePep(pt_cv = .95)
 # actually 90\% CV 
 purgePep(pt_cv = .95)
 purgePep(pt_cv = .95)
+
+## custom theme
+purgePep(dpi = 300, theme = theme_get(), filename = my_theme.png)
 }
 \seealso{
 \code{\link{load_expts}} for a reduced working example in data normalization \cr

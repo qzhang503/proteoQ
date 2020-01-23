@@ -7,13 +7,13 @@
 \usage{
 anal_pepNMF(col_select = NULL, col_group = NULL, scale_log2r = TRUE,
   complete_cases = FALSE, impute_na = TRUE, df = NULL,
-  filepath = NULL, filename = NULL, r = NULL, nrun = if (length(r)
-  > 1) 50 else 1, seed = NULL, ...)
+  filepath = NULL, filename = NULL, rank = NULL, nrun = if
+  (length(rank) > 1) 50 else 1, seed = NULL, ...)
 
 anal_prnNMF(col_select = NULL, col_group = NULL, scale_log2r = TRUE,
   complete_cases = FALSE, impute_na = TRUE, df = NULL,
-  filepath = NULL, filename = NULL, r = NULL, nrun = if (length(r)
-  > 1) 50 else 1, seed = NULL, ...)
+  filepath = NULL, filename = NULL, rank = NULL, nrun = if
+  (length(rank) > 1) 50 else 1, seed = NULL, ...)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -39,7 +39,7 @@ missing values will be used. The default is FALSE.}
 will be used. The default is TRUE.}
 
 \item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among 
+automatically after matching the data type with an \code{id} among
 \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
 
 \item{filepath}{Use system default.}
@@ -47,8 +47,8 @@ automatically after matching the data type with an \code{id} among
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
 
-\item{r}{Numeric vector; the factorization rank(s) in \code{\link[NMF]{nmf}}.
-The default is c(4:8)}
+\item{rank}{Numeric vector; the factorization rank(s) in
+\code{\link[NMF]{nmf}}. The default is c(4:8)}
 
 \item{nrun}{Numeric; the number of runs in \code{\link[NMF]{nmf}}. The default
 is 50.}
@@ -56,10 +56,11 @@ is 50.}
 \item{seed}{Integer; a seed setting a starting point for reproducible
 analyses.}
 
-\item{...}{\code{filter_}: Variable argument statements for the row filtration
-of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
-etc.; also see \code{\link{normPSM}}. \cr \cr No passing of extra arguments
-to \code{NMF::nmf}.}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
+data against the column keys in \code{Peptide.txt}, \code{Protein.txt} etc.;
+also see \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical
+expression(s) for the row ordering of data; also see \code{\link{prnHM}}.
+\cr \cr Additional arguments for \code{\link[NMF]{nmf}}.}
 }
 \value{
 NMF classification of \code{log2FC} data.
@@ -98,6 +99,16 @@ anal_prnNMF(
   col_group = Group,
   r = c(3:4),
   nrun = 20, 
+)
+
+# passing a different `method`
+anal_prnNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  method = "lee",
+  r = c(3:4),
+  nrun = 20, 
+  filename = lee.txt,
 )
 
 ## row filtration and selected samples (proteins)

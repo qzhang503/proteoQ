@@ -114,6 +114,18 @@ pepEucDist(
   filename = filpvals_impna.png, 
 )
 
+## custom color
+pepEucDist(
+  impute_na = TRUE,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  width = 14,
+  height = 12,
+  filter_by = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
+  color = colorRampPalette(c("blue", "white", "red"))(500),
+  filename = my_palette.png, 
+)
+
 ## Not run: 
 prnEucDist(
   col_color = "column_key_not_existed",

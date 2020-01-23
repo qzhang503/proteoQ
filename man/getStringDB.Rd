@@ -8,9 +8,6 @@ getStringDB(db_path = "~\\\\proteoQ\\\\dbs\\\\string",
   score_cutoff = 0.7, adjP = FALSE, impute_na = FALSE, ...)
 }
 \arguments{
-\item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\string"}.}
-
 \item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
 protein-protein interaction. The default is 0.7.}
 
@@ -18,9 +15,8 @@ protein-protein interaction. The default is 0.7.}
 \code{\link{prnSig}} will be used in PPI reports; otherwise, the
 Benjamini-Hochberg pVals will be used in the reports.}
 
-\item{impute_na}{Logical. At the NULL default, the TRUE or FALSE will match
-the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
-protein data.}
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data; also see \code{\link{normPSM}}.}

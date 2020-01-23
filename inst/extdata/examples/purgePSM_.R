@@ -22,3 +22,5 @@ purgePSM(pt_cv = .95)
 purgePSM(pt_cv = .95)
 purgePSM(pt_cv = .95)
 
+## custom theme
+purgePSM(dpi = 300, theme = theme_dark())

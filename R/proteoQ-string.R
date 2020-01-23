@@ -3,8 +3,6 @@
 #'@param species Character string; the species. The currently supported species
 #'  include \code{human, mouse, rat, fly, bovine, dog}. The default is
 #'  \code{human}.
-#'@param db_path Character string; the local path for database(s). The default
-#'  is \code{"~\\proteoQ\\dbs\\string"}.
 #'@param overwrite Logical; if TRUE, overwrite the databse(s). The default is
 #'  FALSE.
 #'@import rlang dplyr magrittr purrr fs downloader
@@ -117,7 +115,7 @@ dl_stringdbs <- function(species = "human", db_path = "~\\proteoQ\\dbs\\string",
 
 #'Annotates protein STRING ids by species
 #'
-#'@inheritParams proteoString
+#'@inheritParams anal_prnString
 #'@import rlang dplyr purrr magrittr
 annot_stringdb <- function(species, df, db_path, id, score_cutoff, 
                            filepath = NULL, filename = NULL, ...) {
@@ -224,11 +222,27 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff,
 #'
 #' @import dplyr purrr rlang fs
 #' @importFrom magrittr %>%
-stringTest <- function(df, id, col_group, col_order, label_scheme_sub, 
+stringTest <- function(df = NULL, id = gene, col_group = Group, col_order = Order, 
+                       label_scheme_sub = NULL, 
                        db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, 
-                       scale_log2r, filepath, filename, ...) {
+                       scale_log2r = TRUE, complete_cases = FALSE, 
+                       filepath = NULL, filename = NULL, ...) {
   
+  # `scale_log2r` not used; both `_N` and `_Z` columns will be kept
+  
+  stopifnot(nrow(label_scheme_sub) > 0)
   stopifnot(rlang::is_double(score_cutoff))
+  
+  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  
+  dots <- rlang::enexprs(...)
+  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+
+  df <- df %>% 
+    filters_in_call(!!!filter_dots) %>% 
+    arrangers_in_call(!!!arrange_dots)
   
   if (score_cutoff <= 1) score_cutoff <- score_cutoff * 1000
   
@@ -280,114 +294,71 @@ stringTest <- function(df, id, col_group, col_order, label_scheme_sub,
 }
 
 
-#'STRING outputs
+#'STRING outputs of protein-protein interactions
 #'
-#'\code{proteoString} prepares the data of both
+#'\code{anal_prnString} prepares the data of both
 #'\code{\href{https://string-db.org/}{STRING}} protein-protein interactions
-#'(ppi) and companion protein expressions. Users should avoid calling the method
-#'directly, but instead use the following wrappers.
+#'(ppi) and companion protein expressions.
 #'
 #'Convenience features, such as data row filtration via \code{filter_} varargs,
 #'are available. The ppi file, \code{..._ppi.tsv}, and the expression file,
 #'\code{..._expr.tsv}, are also compatible with a third-party
 #'\code{\href{https://cytoscape.org/}{Cytoscape}}.
 #'
-#'@inheritParams dl_stringdbs
-#'@inheritParams info_anal
-#'@param id Character string to indicate the type of data. The value will be
-#'  determined automatically.
-#'@param col_select Not currently used.
-#'@param col_group Not currently used.
-#'@param col_order Not currently used.
-#'@param impute_na Logical; if TRUE, data with the imputation of missing values
-#'  will be used. The default is FALSE.
-#'@param complete_cases Logical; if TRUE, only cases that are complete with no
-#'  missing values will be used. The default is FALSE.
+#'@inheritParams anal_prnTrend
+#'@param db_path Character string; the local path for database(s). The default
+#'  is \code{"~\\proteoQ\\dbs\\string"}.
 #'@param score_cutoff Numeric; the threshold in the \code{combined_score} of
 #'  protein-protein interaction. The default is 0.7.
-#'@param scale_log2r Not currently used.
+#'@param scale_log2r Not currently used. Values before and after scaling will be
+#'  both reported.
 #'@param filename Use system default. Otherwise, the basename will be prepended
 #'  to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}
 #'  for expression data.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}.
+#'  data against the column keys in \code{Protein[_impNA]_pVals.txt}; also see
+#'  \code{\link{normPSM}}. \cr \code{arrange_}: Logical expression(s) for the
+#'  row ordering of data; also see \code{\link{prnHM}}.
 #'@seealso \code{\link{dl_stringdbs}} for database downloads. \cr
 #'  \code{\link{prnSig}} for significance tests \cr
 #'@example inst/extdata/examples/getStringDB_.R
 #'
 #'@import dplyr purrr rlang fs
 #'@export
-proteoString <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene"), 
-                          task = "anal", col_select = NULL, col_group = NULL, col_order = NULL, 
-                          impute_na = FALSE, complete_cases = FALSE, 
-                          db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, 
-                          scale_log2r = TRUE, df = NULL, 
-                          filepath = NULL, filename = NULL, ...) {
-  
+anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                            db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, 
+                            df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), current_env()) %>% 
         c(enexprs(...)) %>% 
-        save_call(paste0(task, "_pepString"))
+        save_call(paste0("anal", "_pepString"))
     } else if (id %in% c("prot_acc", "gene")) {
       mget(names(formals()), current_env()) %>% 
         c(enexprs(...)) %>% 
-        save_call(paste0(task, "_prnString"))
+        save_call(paste0("anal", "_prnString"))
     }
     , add = TRUE
   )
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-
-  id <- rlang::enexpr(id)
-  if (id == rlang::expr(c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))) {
-    id <- "gene"
-  } else {
-    id <- rlang::as_string(id)
-    stopifnot(id %in% c("pep_seq", "pep_seq_mod", "prot_acc", "gene"))
-  }
+  check_dots(c("id", "anal_type"), ...)
   
-  stopifnot(rlang::is_logical(scale_log2r), 
-            rlang::is_logical(impute_na), 
-           rlang::is_logical(complete_cases) )
-
-  task <- rlang::enexpr(task)
-  col_select <- rlang::enexpr(col_select)
-  col_group <- rlang::enexpr(col_group)
-  col_order <- rlang::enexpr(col_order)
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
+  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
   reload_expts()
   
-  info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, col_order = !!col_order,
+  info_anal(id = !!id, col_select = NULL, col_group = NULL, col_order = NULL,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
             df = !!df, filepath = !!filepath, filename = !!filename,
             anal_type = "String")(db_path = db_path, score_cutoff = score_cutoff, adjP = adjP, 
-                                  task = !!task, ...)
-}
-
-
-#'STRING outputs of protein-protein interactions
-#'
-#'\code{anal_prnString} is a wrapper of \code{\link{proteoString}} for the
-#'STRING analysis of protein data
-#'
-#'@rdname proteoString
-#'
-#'@import purrr
-#'@export
-anal_prnString <- function (...) {
-  err_msg <- "Don't call the function with arguments `id`, `anal_type` or `task`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id", "anal_type", "task"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Protein\\String\\log"), recursive = TRUE, showWarnings = FALSE)
-  
-  id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(id %in% c("prot_acc", "gene"))
-  
-  proteoString(id = !!id, task = anal, ...)
+                                  ...)
 }
 
 
@@ -430,7 +401,7 @@ anal_prnString <- function (...) {
 #' \code{\link{prnSig}} for significance tests \cr 
 #'@example inst/extdata/examples/getStringDB_.R
 #'
-#'@inheritParams proteoVolcano
+#'@inheritParams prnVol
 #'@import rlang dplyr purrr fs 
 #'@export
 getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, adjP = FALSE, 

@@ -2,7 +2,7 @@
 #'
 #'\code{prepDM} prepares a minimal adequate data frame for subsequent analysis.
 #'
-#'@inheritParams  proteoEucDist
+#'@inheritParams  prnEucDist
 #'@inheritParams  info_anal
 #'@param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
 #'  analysis.
@@ -441,7 +441,7 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'
 #'@param overwrite Logical. If true, overwrite the previous results. The default
 #'  is FALSE.
-#'@inheritParams proteoHist
+#'@inheritParams prnHist
 #'@param ... Parameters for \code{\link[mice]{mice}}
 #'@return \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
 #'  for protein data.
@@ -450,7 +450,6 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'@importFrom magrittr %>%
 #'@export
 imputeNA <- function (id, overwrite = FALSE, ...) {
-
 	my_mice <- function (data, ...) {
 		data <- rlang::enexpr(data)
 		dots <- rlang::enexprs(...)
@@ -536,7 +535,8 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 
 #'Impute NA values for peptide data
 #'
-#'\code{pepImp} is a wrapper of \code{\link{imputeNA}} for peptide data
+#'\code{pepImp} is a wrapper of \code{\link{imputeNA}} for peptide data with
+#'auto-determination of \code{id}.
 #'
 #'@rdname imputeNA
 #'
@@ -551,9 +551,7 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 #'
 #'@export
 pepImp <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
+  check_dots(c("id"), ...)
   id <- match_call_arg(normPSM, group_psm_by)
   imputeNA(id = !!id, ...)
 }
@@ -561,7 +559,8 @@ pepImp <- function (...) {
 
 #'Impute NA values for protein data
 #'
-#'\code{prnImp} is a wrapper of \code{\link{imputeNA}} for protein data
+#'\code{prnImp} is a wrapper of \code{\link{imputeNA}} for protein data with
+#'auto-determination of \code{id}.
 #'
 #'@rdname imputeNA
 #'
@@ -576,9 +575,7 @@ pepImp <- function (...) {
 #'
 #'@export
 prnImp <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
+  check_dots(c("id"), ...)
   id <- match_call_arg(normPSM, group_pep_by)
   imputeNA(id = !!id, ...)
 }
@@ -1068,6 +1065,50 @@ match_logi_gv <- function(var, val) {
 }
 
 
+#' Match scale_log2r 
+#'
+#' \code{match_prnSig_scale_log2r} matches the value of \code{scale_log2r} to the value
+#' in the most recent prnSig at a given impute_na status
+match_prnSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE) {
+  stopifnot(rlang::is_logical(scale_log2r), rlang::is_logical(impute_na))
+  
+  if (impute_na) {
+    mscale_log2r <- match_call_arg(prnSig_impTRUE, scale_log2r)
+  } else {
+    mscale_log2r <- match_call_arg(prnSig_impFALSE, scale_log2r)
+  }
+  
+  if (scale_log2r != mscale_log2r) {
+    warning("scale_log2r = ", mscale_log2r, " after matching to prnSig(impute_na = ", impute_na, ", ...)", 
+            call. = FALSE)
+  }
+  
+  scale_log2r <- mscale_log2r
+}
+
+
+#' Match scale_log2r 
+#'
+#' \code{match_pepSig_scale_log2r} matches the value of \code{scale_log2r} to the value
+#' in the most recent pepSig at a given impute_na status
+match_pepSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE) {
+  stopifnot(rlang::is_logical(scale_log2r), rlang::is_logical(impute_na))
+  
+  if (impute_na) {
+    mscale_log2r <- match_call_arg(pepSig_impTRUE, scale_log2r)
+  } else {
+    mscale_log2r <- match_call_arg(pepSig_impFALSE, scale_log2r)
+  }
+  
+  if (scale_log2r != mscale_log2r) {
+    warning("scale_log2r = ", mscale_log2r, " after matching to pepSig(impute_na = ", impute_na, ", ...)", 
+            call. = FALSE)
+  }
+  
+  scale_log2r <- mscale_log2r
+}
+
+
 #' Replaces NA genes
 #'
 #' @import plyr dplyr purrr rlang
@@ -1544,9 +1585,10 @@ calcSD_Splex <- function (df, id, type = "log2_R") {
 
 
 #' Violin plots of CV per TMT_Set and LCMS_injection
-sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = FALSE, is_psm = FALSE, 
-                      col_select = NULL, col_order = NULL, ...) {
-  
+sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, height = NULL, 
+                      type = "log2_R", adjSD = FALSE, 
+                      is_psm = FALSE, col_select = NULL, col_order = NULL, theme = NULL, ...) {
+
   err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
   
   col_select <- rlang::enexpr(col_select)
@@ -1654,7 +1696,8 @@ sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = 
       p <- p + scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, ybreaks))
     }
 
-    p <- p + theme_psm_violin
+    if (is.null(theme)) theme <- theme_psm_violin
+    p <- p + theme
 
     if (flip_coord) {
       p <- p + coord_flip()
@@ -1665,7 +1708,9 @@ sd_violin <- function(df, id, filepath, width, height, type = "log2_R", adjSD = 
     }
     
     dots <- dots %>% .[! names(.) %in% c("width", "height", "in", "limitsize")]
-    try(ggsave(filepath, p, width = width, height = height, units = "in", limitsize = FALSE))
+    my_call <- rlang::expr(ggsave(filename = !!filepath, plot = !!p, width = !!width, height = !!height, 
+                                  units = "in", limitsize = FALSE, !!!dots))
+    try(eval(my_call, caller_env()))
   }
 }
 
@@ -1915,7 +1960,7 @@ gn_rollup <- function (df, cols) {
     dplyr::select(gene, cols) %>% 
     dplyr::filter(!is.na(gene)) %>% 
     dplyr::group_by(gene) %>% 
-    dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
+    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
 
   dfb <- df %>% 
     dplyr::select(-cols) %>% 
@@ -1980,3 +2025,45 @@ my_union <- function (x, y) {
 }
 
 
+#' find the base names of files
+find_fn_bases <- function (filenames) {
+  gsub("\\.[^.]*$", "", filenames) # %>% .[1] 
+}
+
+
+#' find the extensions of files
+find_fn_exts <- function (filename, type = "text") {
+  purrr::map_chr(filename, ~ {
+    if (!grepl("\\.", .x)) {
+      fn_ext <- switch(
+        text = "txt",
+        graphics = "png",
+        stop("Invalid extension in file name(s).", Call. = FALSE)
+      )
+    } else {
+      fn_ext <- gsub("^.*\\.([^.]*)$", "\\1", .x) # %>% .[1]
+    }
+  })
+}
+
+#' check duplicate argments in 'dots'
+check_dots <- function (blacklist = NULL, ...) {
+  dots <- rlang::enexprs(...)
+  dups <- purrr::map_lgl(names(dots), ~ .x %in% blacklist)
+  nms <- names(dots[dups])
+  
+  if (!rlang::is_empty(nms)) {
+    stop("Do not use argument(s): ", reduce(nms, paste, sep = ", "), call. = FALSE)
+  }
+}
+
+
+#' force 'complete_cases = TRUE' at 'impute_na = FALSE'
+to_complete_cases <- function (complete_cases = FALSE, impute_na = FALSE) {
+  warn_msg1 <- "Coerce `complete_cases = TRUE` at `impute_na = FALSE`."
+  if (!(impute_na || complete_cases)) {
+    complete_cases <- TRUE
+    rlang::warn(warn_msg1)
+  }
+  return(complete_cases)
+}

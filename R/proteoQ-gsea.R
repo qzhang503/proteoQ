@@ -50,12 +50,11 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 }
 
 
-#'GSEA of protein data
+#'Protein GSEA
 #'
-#'\code{proteoGSEA} prepares data for the analysis of
+#'\code{prnGSEA} prepares data for the analysis of
 #'\code{\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA}} aganist
-#'protein \code{log2FC} data. Users should avoid calling the method directly,
-#'but instead use the following wrappers.
+#'protein \code{log2FC} data. 
 #'
 #'The arguments \code{var_cutoff}, \code{pval_cutoff} and \code{logFC_cutoff}
 #'are used to filter out low influence genes. Additional subsetting of data via
@@ -75,25 +74,16 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'The corresponding \code{.gct} and \code{.cls} files can be used with the
 #'online or the github version of R-GSEA.
 #'
-#'@inheritParams proteoGSPA
-#'@inheritParams proteoSigtest
-#'@inheritParams  proteoEucDist
-#'@inheritParams  proteoHM
-#'@inheritParams  info_anal
-#'@param impute_na Logical. At the NULL default, the TRUE or FALSE will match
-#'  the choice in \code{\link{pepSig}} for peptide and \code{\link{prnSig}} for
-#'  protein data.
-#'@param gset_nms Not currently used.
+#'@inheritParams prnGSPA
+#'@param gset_nms Not currently used (to be chosen by users during online GSEA).
 #'@param var_cutoff Numeric value or vector; the cut-off in the variance of
 #'  protein \code{log2FC} across samples. Entries with \code{variances} less
 #'  than the threshold will be removed for enrichment analysis. The default is
 #'  0.5.
-#'@param min_size Not currently used.
-#'@param max_size Not currently used.
-#'@param min_greedy_size Not currently used.
-#'@param gspval_cutoff Not currently used.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}.
+#'  data in \code{\\Model\\Protein_[...]pVals.txt}; also see
+#'  \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical expression(s) for
+#'  the row order of data; also see \code{\link{prnHM}}.
 #'@import dplyr rlang ggplot2 networkD3
 #'@importFrom magrittr %>%
 #'
@@ -140,12 +130,12 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'  
 #'@export
-proteoGSEA <- function (id = gene, df = NULL, filepath = NULL, filename = NULL, gset_nms = "go_sets", 
-                        scale_log2r = TRUE, impute_na = NULL, complete_cases = FALSE, 
-                        var_cutoff = .5, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                        gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
-                        fml_nms = NULL, task = "anal", ...) {
-  
+prnGSEA <- function (gset_nms = "go_sets", 
+                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                     df = NULL, filepath = NULL, filename = NULL, 
+                     var_cutoff = .5, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
+                     fml_nms = NULL, ...) {
+
   on.exit(
     if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), current_env()) %>% 
@@ -159,38 +149,25 @@ proteoGSEA <- function (id = gene, df = NULL, filepath = NULL, filename = NULL, 
     , add = TRUE
   )
   
+  check_dots(c("id"), ...)
+  
+  dir.create(file.path(dat_dir, "Protein\\GSEA\\log"), recursive = TRUE, showWarnings = FALSE)
+
+  id <- match_call_arg(normPSM, group_pep_by)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
-  id <- rlang::enexpr(id)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  task <- rlang::enexpr(task)
-  
-  if (is.null(impute_na)) {
-    if (id %in% c("pep_seq", "pep_seq_mod")) {
-      impute_na <- match_call_arg(pepSig, impute_na)
-    } else if (id %in% c("prot_acc", "gene")) {
-      impute_na <- match_call_arg(prnSig, impute_na)
-    }
-  }
-  
-  stopifnot(is_logical(scale_log2r), is_logical(impute_na), is_logical(complete_cases))
   
   dots <- rlang::enexprs(...)
   fmls <- dots %>% .[grepl("^\\s*~", .)]
   dots <- dots[!names(dots) %in% names(fmls)]
   dots <- concat_fml_dots(fmls = fmls, fml_nms = fml_nms, dots = dots, anal_type = "GSEA")
-
-  curr_call <- mget(names(formals()), rlang::current_env()) %>% 
-    .[names(.) != "..."] %>% 
-    c(dots) 
   
-  if (task == "anal") {
-    curr_call %>% save_call("prnGSEA")
-  } else if (task == "plothm") {
-    curr_call %>% save_call("prnGSEAHM")
-  }
+  reload_expts()
   
   # Sample selection criteria:
   #   !is_reference under "Reference"
@@ -199,30 +176,10 @@ proteoGSEA <- function (id = gene, df = NULL, filepath = NULL, filename = NULL, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             filepath = !!filepath, filename = !!filename, 
             anal_type = "GSEA")(gset_nms = gset_nms, 
-                                var_cutoff = var_cutoff, pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
-                                gspval_cutoff = gspval_cutoff, 
-                                min_size = min_size, max_size = max_size, min_greedy_size = min_greedy_size, 
-                                task = !!task, !!!dots)
-}
-
-
-#'Protein GSEA
-#'
-#'\code{prnGSEA} is a wrapper of \code{\link{proteoGSEA}} for gene set
-#'enrichment analysis.
-#'
-#'@rdname proteoGSEA
-#'
-#'@import purrr
-#'@export
-prnGSEA <- function (...) {
-  err_msg <- "Don't call the function with argument `id`.\n"
-  if (any(names(rlang::enexprs(...)) %in% c("id"))) stop(err_msg)
-  
-  dir.create(file.path(dat_dir, "Protein\\GSEA\\log"), recursive = TRUE, showWarnings = FALSE)
-
-  id <- match_call_arg(normPSM, group_pep_by)
-  proteoGSEA(id = !!id, task = anal, ...)
+                                var_cutoff = var_cutoff, 
+                                pval_cutoff = pval_cutoff, 
+                                logFC_cutoff = logFC_cutoff, 
+                                !!!dots)
 }
 
 
@@ -258,6 +215,7 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     
     df <- df %>% dplyr::filter(!!sym(id) %in% ids)
     
+    # No `lm` so `complete_cases` applied to all samples in label_scheme_sub
     if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
 
     return(df)
@@ -343,12 +301,12 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     
     df_i <- cbind(pos[[i]], neg[[i]])
     out_nm <- paste0("fml-", fml_nm, "_contr-", i)
-    make_gct(df_i, filepath_i, paste0(out_nm, "_", fn_prefix))
+    make_gct(df_i, filepath_i, paste0(fn_prefix, "_", out_nm))
 
     nms_pos_i <- rep(nms$pos[i], ncol(pos[[i]])) %>% as.character()
     nms_neg_i <- rep(nms$neg[i], ncol(neg[[i]])) %>% as.character()
     nms_both <- c(nms_pos_i, nms_neg_i)
-    make_cls(df = df_i, nms = nms_both, filepath = filepath_i, fn_prefix = paste0(out_nm, "_", fn_prefix))
+    make_cls(df = df_i, nms = nms_both, filepath = filepath_i, fn_prefix = paste0(fn_prefix, "_", out_nm))
     
     run_scripts <- FALSE
     if (run_scripts) {

@@ -8,21 +8,26 @@ annot_stringdb(species, df, db_path, id, score_cutoff, filepath = NULL,
   filename = NULL, ...)
 }
 \arguments{
+\item{df}{The name of input data file. By default, it will be determined
+automatically after matching the data type with an \code{id} among
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+
 \item{db_path}{Character string; the local path for database(s). The default
 is \code{"~\\proteoQ\\dbs\\string"}.}
 
-\item{id}{Character string to indicate the type of data. The value will be
-determined automatically.}
-
 \item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
 protein-protein interaction. The default is 0.7.}
+
+\item{filepath}{Use system default.}
 
 \item{filename}{Use system default. Otherwise, the basename will be prepended
 to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}
 for expression data.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}.}
+data against the column keys in \code{Protein[_impNA]_pVals.txt}; also see
+\code{\link{normPSM}}. \cr \code{arrange_}: Logical expression(s) for the
+row ordering of data; also see \code{\link{prnHM}}.}
 }
 \description{
 Annotates protein STRING ids by species

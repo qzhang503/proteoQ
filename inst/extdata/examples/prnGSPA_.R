@@ -38,6 +38,7 @@ prnGSPA(
   gspval_cutoff = 5E-2,
   gset_nms = c("go_sets", "kegg_sets"),
   filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  filename = unifil.txt,
 )
 
 ## customized thresholds
@@ -51,6 +52,7 @@ prnGSPA(
   max_size = c(Inf, Inf, 120), 
   gset_nms = c("go_sets", "kegg_sets"), 
   filter_by_npep = exprs(prot_n_pep >= 3), 
+  filename = diffil.txt,
 )
 
 ## NA imputation
@@ -109,6 +111,6 @@ prnGSPAHM(
   annot_colnames = c("Eset index", "Size"),
   filter_by = exprs(distance <= .95),
   color = colorRampPalette(c("blue", "white", "red"))(100),
-  filename = "custom_colors.png",
+  filename = custom_colors.png,
 )
 
