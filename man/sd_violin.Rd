@@ -2,7 +2,8 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{sd_violin}
 \alias{sd_violin}
-\title{Violin plots of CV per TMT_Set and LCMS_injection}
+\title{Violin plots of CV per TMT_Set and LCMS_injection
+#'@import dplyr rlang ggplot2}
 \usage{
 sd_violin(df = NULL, id = NULL, filepath = NULL, width = NULL,
   height = NULL, type = "log2_R", adjSD = FALSE, is_psm = FALSE,
@@ -10,4 +11,5 @@ sd_violin(df = NULL, id = NULL, filepath = NULL, width = NULL,
 }
 \description{
 Violin plots of CV per TMT_Set and LCMS_injection
+#'@import dplyr rlang ggplot2
 }

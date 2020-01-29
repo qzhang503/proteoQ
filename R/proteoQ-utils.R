@@ -844,7 +844,6 @@ parse_uniprot_fasta <- function (df, fasta) {
     stop("FASTA file not provided.")
   }
   
-  # write.table(acc_lookup, file.path(dat_dir, "acc_lookup.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
   save(acc_lookup, file = file.path(dat_dir, "acc_lookup.rda"))
   
   return(acc_lookup)
@@ -989,11 +988,9 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") {
 #'
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>%
-match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r, impute_na) {
+match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r = TRUE, impute_na = FALSE) {
   stopifnot(!is.null(subdir))
-  
-  # scale_log2r <- match_call_arg("anal_prnGSPA", "scale_log2r")
-  
+
   if (anal_type == "GSPA") {
     file <- file.path(dat_dir, "Calls\\anal_prnGSPA.rda")
     if (!file.exists(file)) stop("Run `prnGSPA` first.", call. = FALSE)
@@ -1006,7 +1003,7 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r,
                            pattern = "^Protein_GSPA_.*\\.txt$", 
                            full.names = FALSE)
     
-    if (rlang::is_empty(filename)) stop("No result file found under `", sub_dir, "`", call. = FALSE)
+    if (rlang::is_empty(filename)) stop("No result file found under `", subdir, "`", call. = FALSE)
     
     if (scale_log2r) filename <- filename %>% .[grepl("^Protein_GSPA_Z", .)] else 
       filename <- filename %>% .[grepl("^Protein_GSPA_N", .)]
@@ -1017,8 +1014,6 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r,
     if (length(filename) > 1) stop("More than one result file found under `", subdir, "`", call. = FALSE)
     if (rlang::is_empty(filename)) 
       stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, call. = FALSE)
-
-    # 
   }
 
   return(filename)
@@ -1252,7 +1247,8 @@ annotPeppos <- function (df, fasta){
       pep_pos_all <- purrr::map2(as.list(df_pep_prn$prot_acc), as.list(df_pep_prn$pep_seq_bare), 
                                  find_pep_pos, fasta) %>% 
         do.call(rbind, .) %>% 
-        `colnames<-`(c("pep_seq_bare", "pep_res_before", "pep_start", "pep_end", "pep_res_after", "prot_acc", "is_tryptic")) %>% 
+        `colnames<-`(c("pep_seq_bare", "pep_res_before", "pep_start", "pep_end", "pep_res_after", 
+                       "prot_acc", "is_tryptic")) %>% 
         data.frame(check.names = FALSE) %>% 
         tidyr::unite(pep_prn, pep_seq_bare, prot_acc, sep = "|", remove = TRUE)
     } else {
@@ -1585,6 +1581,7 @@ calcSD_Splex <- function (df, id, type = "log2_R") {
 
 
 #' Violin plots of CV per TMT_Set and LCMS_injection
+#' #'@import dplyr rlang ggplot2
 sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, height = NULL, 
                       type = "log2_R", adjSD = FALSE, 
                       is_psm = FALSE, col_select = NULL, col_order = NULL, theme = NULL, ...) {
@@ -1708,7 +1705,8 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
     }
     
     dots <- dots %>% .[! names(.) %in% c("width", "height", "in", "limitsize")]
-    my_call <- rlang::expr(ggsave(filename = !!filepath, plot = !!p, width = !!width, height = !!height, 
+    my_call <- rlang::expr(ggplot2::ggsave(filename = !!filepath, plot = !!p, 
+                                           width = !!width, height = !!height, 
                                   units = "in", limitsize = FALSE, !!!dots))
     try(eval(my_call, caller_env()))
   }
@@ -1741,7 +1739,7 @@ rptr_violin <- function(df, filepath, width, height) {
     geom_text(data = mean_int, aes(x = Channel, label = Intensity, y = Intensity + 0.2), size = 5, colour = "red", alpha = .5) + 
     theme_psm_violin
   
-  try(ggsave(filepath, p, width = width, height = height, units = "in"))
+  try(ggplot2::ggsave(filepath, p, width = width, height = height, units = "in"))
 }
 
 
@@ -1933,10 +1931,9 @@ concat_fml_dots <- function(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type 
       
       if (!is.null(fml_nms)) {
         stopifnot(all(fml_nms %in% names(pepSig_formulas)))
-        stopifnot(all(names(pepSig_formulas) %in% fml_nms))
-        
-        pepSig_formulas <- pepSig_formulas %>% 
-          .[map_dbl(names(.), ~ which(.x == fml_nms))]
+        # stopifnot(all(names(pepSig_formulas) %in% fml_nms))
+        # pepSig_formulas <- pepSig_formulas %>% .[map_dbl(names(.), ~ which(.x == fml_nms))]
+        pepSig_formulas <- pepSig_formulas %>% .[names(.) %in% fml_nms]
       }
       
       dots <- c(dots, pepSig_formulas)

@@ -4,17 +4,21 @@
 \alias{prnGSPA}
 \title{GSPA of protein data}
 \usage{
-prnGSPA(gset_nms = "go_sets", scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, df = NULL,
-  filepath = NULL, filename = NULL, pval_cutoff = 0.05,
-  logFC_cutoff = log2(1.2), gspval_cutoff = 0.05, min_size = 10,
-  max_size = Inf, min_greedy_size = 1, fml_nms = NULL, ...)
+prnGSPA(gset_nms = "go_sets", method = c("mean", "limma"),
+  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
+  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.05,
+  min_size = 10, max_size = Inf, min_delta = 4,
+  min_greedy_size = 1, fml_nms = NULL, df = NULL, filepath = NULL,
+  filename = NULL, ...)
 }
 \arguments{
 \item{gset_nms}{Character string or vector containing the name(s) of gene sets
 for enrichment analysis. The default is \code{"go_sets"}. The possible
 values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
 supported species are human, mouse and rat.}
+
+\item{method}{Character string; the method to assess the p-values of GSPA. The
+default is \code{mean}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
@@ -24,15 +28,6 @@ missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
-
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
-
-\item{filepath}{Use system default.}
-
-\item{filename}{A representative file name to outputs. By default, it will be
-determined automatically by the name of the current call.}
 
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
@@ -53,11 +48,11 @@ significance \code{pVal}. Only enrichment terms with \code{pVals} more
 significant than the threshold will be reported.}
 
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
-consideration in gene set tests. The number is the sum of up or
-down-expressed proteins after data filtration by \code{pval_cutoff},
-\code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
-is 10 for all formulae matched to or specified in argument \code{fml_nms}.
-Formula-specific threshold is allowed by supplying a vector of sizes.}
+consideration in gene set tests. The number is after data filtration by
+\code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
+\code{filter_}. The default is 10 for all formulae matched to or specified
+in argument \code{fml_nms}. Formula-specific threshold is allowed by
+supplying a vector of sizes.}
 
 \item{max_size}{Numeric value or vector; maximum number of protein entries for
 consideration in gene set tests. The number is the sum of up or
@@ -66,6 +61,15 @@ down-expressed proteins after data filtration by \code{pval_cutoff},
 in infinite for all formulae matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of sizes.}
+
+\item{min_delta}{Numeric value or vector; the minimum count difference between
+the up- and the down-regulated group of proteins for consideration in gene
+set tests. For example at \code{min_delta = 4}, a gene set will 6
+upregulated proteins and 2 downregulated proteins, or vice versa, will be
+assessed. The number is after data filtration by \code{pval_cutoff},
+\code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
+is 4 for all formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of sizes.}
 
 \item{min_greedy_size}{Numeric value or vector; minimum number of unique
 protein entries for a gene set to be considered essential. The default in
@@ -77,6 +81,15 @@ of sizes.}
 the formula(e) will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
+\item{df}{The name of input data file. By default, it will be determined
+automatically after matching the data type with an \code{id} among
+\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+
+\item{filepath}{Use system default.}
+
+\item{filename}{A representative file name to outputs. By default, it will be
+determined automatically by the name of the current call.}
+
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration of
 data in \code{\\Model\\Protein_[...]pVals.txt}; also see
 \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical expression(s) for
@@ -87,15 +100,22 @@ the row order of data; also see \code{\link{prnHM}}.}
 (GSPA) aganist protein \code{log2FC} data.
 }
 \details{
-The significance \code{pVals} of proteins are first obtained from
-\code{\link{prnSig}}, which involves linear modelings using
-\code{\link[limma]{eBayes}} or \code{\link[lmerTest]{lmer}}. The geometric
-mean of \code{pVals} are then each calculated for the groups of up or down
-regulated proteins. The quotient of the two \code{pVals} is used to prepsent
-the significance of gene set enrichment. The arguments \code{pval_cutoff} and
-\code{logFC_cutoff} are used to filter out low influence genes. Additional
-subsetting of data via the \code{vararg} approach of \code{filter_} is
-feasible.
+The significance \code{pVals} of individual proteins are first obtained from
+\code{\link{prnSig}}, followed by log10 transformation and separation into up-
+or down-regulated groups for each gene set. At the default of \code{method =
+mean}, the geometric mean of \code{pVals}, \eqn{P}, are each calculated for
+the groups of up or down regulated proteins, with a penalty-like term
+
+\deqn{-log10(P)=(\sum_{i=1}^{n}-log10(p)+m)/(n+m)}{-log10(P)=(-log10(p_1*p_2*...*p_n)+m)/(n+m)}
+
+where \eqn{n} and \eqn{m} are the numbers of entries with \eqn{p} values
+\eqn{\le} or \eqn{>} a significance cut-off, respectively. The quotient of the
+two \code{pVals} is then used to prepsent the significance of gene set
+enrichment. The arguments \code{pval_cutoff} and \code{logFC_cutoff} are used
+to discriminate low influence genes. Additional subsetting of data via the
+\code{vararg} approach of \code{filter_} is feasible. At \code{method =
+limma}, moderated t-tests are performed between the up and the down groups via
+\code{\link[limma]{eBayes}}.
 }
 \examples{
 # ===================================
@@ -122,12 +142,24 @@ pepSig(
 
 prnSig(impute_na = FALSE)
 
+# GSPA
 prnGSPA(
   impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
-  gset_nms = c("go_sets", "kegg_sets"),
+  pval_cutoff = 5E-2, # protein pVal threshold
+  logFC_cutoff = log2(1.2), # protein log2FC threshold
+  gspval_cutoff = 5E-2, # gene-set threshold
+  gset_nms = c("go_sets", "kegg_sets"), 
+)
+
+# GSPA under volcano plots
+gspaMap(
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  pval_cutoff = 5E-2, # gene set threshold
+  logFC_cutoff = log2(1.2), # gene set log2FC threshold
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
 )
 
 ## row filtration

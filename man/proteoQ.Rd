@@ -11,8 +11,8 @@ The proteoQ package provides three categories of functions in data
 preprocessing, quality assurance assessments and informatic analysis.
 }
 \section{proteoQ functions in data preprocessing}{
- normPSM, purgePSM, normPep,
-  purgePep, normPrn
+ normPSM -> (purgePSM) ->
+  PSM2Pep -> mergePep -> standPep -> (purgePep) -> standPrn
 }
 
 \section{proteoQ functions in data QA}{
@@ -25,6 +25,7 @@ preprocessing, quality assurance assessments and informatic analysis.
   prnPCA, pepEucDist, prnEucDist, pepHM, prnHM, anal_pepNMF, anal_prnNMF,
   plot_pepNMFCon, plot_prnNMFCon, plot_pepNMFCoef, plot_prnNMFCoef,
   plot_metaNMF, anal_prnTrend, plot_prnTrend, pepSig, prnSig, pepVol, prnVol,
-  prnGSPA, gspaMap, getStringDB, pepImp, prnImp, prnGSVA
+  prnGSPA, prnGSPAHM, gspaMap, anal_prnString, pepImp, prnImp, prnGSVA,
+  prnGSEA
 }
 

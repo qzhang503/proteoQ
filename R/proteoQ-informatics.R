@@ -515,7 +515,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (anal_type == "GSPA") {
 		function(gset_nms = "go_sets", var_cutoff = .5,
 		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
-		         min_size = 10, max_size = Inf, min_greedy_size = 1, ...) {
+		         min_size = 10, max_size = Inf, min_delta = 4, min_greedy_size = 1, method = "mean", 
+		         ...) {
 		  gspaTest(df = df, 
 		           id = !!id, 
 		           label_scheme_sub = label_scheme_sub, 
@@ -531,7 +532,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           gspval_cutoff = gspval_cutoff,
 		           min_size = min_size, 
 		           max_size = max_size, 
+		           min_delta = min_delta,
 		           min_greedy_size = min_greedy_size, 
+		           method = method, 
 		           anal_type = anal_type, 
 		           ...)
 		}
@@ -581,7 +584,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	            gspval_cutoff = 1E-2, 
 	            min_size = 10, 
 	            max_size = Inf, 
+	            min_delta = 1, # dummy
 	            min_greedy_size = 1, # dummy
+	            method = method, # dummy
 	            anal_type = anal_type, 
 	            ...)
 	  }
