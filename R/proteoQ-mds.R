@@ -933,7 +933,7 @@ pepEucDist <- function (col_select = NULL,
                "col_shape", "col_size", "col_alpha", "anal_type"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   

@@ -13,11 +13,11 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  github_document:
+    toc: yes
   pdf_document:
     toc: yes
     number_sections: true
-  github_document:
-    toc: yes
   md_document:
     toc: yes
     toc_depth: 4
@@ -79,7 +79,7 @@ Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tan
 
 The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
 
-Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README.  
+(Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README. Mathematical symbols may display more properly under html.)  
 
 ## Installation
 To install this package, start R (version "3.6.2") as **administrator** and enter:  
@@ -935,16 +935,24 @@ prnSig(
 In addition to the fixed effects shown above, significance tests with additive random effects are also supported. More examples can be found via `?prnSig` and [Lab 3.3](### 3.3 Random effects) in the document.  
 
 ### 2.5 Gene sets under volcano plots
-There are a handful of `R` tools for gene set enrichement analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can visualize the enrichment of gene sets under the context of volcano plots at given contrasts. Provided the richness of `R` utilities in linear modelings, the `preoteoQ` takes a naive approach thereafter to visualize the *asymmetricity* of protein probability *p*-values under volcano plots. In the analysis of Gene Set Probability Asymmetricity (`GSPA`), the significance `pVals` of proteins obtained from linear modeling are taken, followed by the calculation of the geometric mean of `pVals` for the groups of up- or down-regulated proteins within a gene set, as well as the corresponding mean `log2FC`. The quotient of the two `pVals` is then taken to represent the significance of enrichment, and the delta of the two `log2FC` for use as the fold change of enrichment. At the input levels, the arguments `pval_cutoff` and `logFC_cutoff` allow us to filter out low impact genes prior to the analysis. On the output levels, argument `gspval_cutoff` sets a threshold in gene set significance for reporting. More details can be found from the help document via `?prnGSPA`. Note that currently there is no peptide counterpart for the enrichment analysis.  
+There are a handful of `R` tools for gene set enrichement analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can visualize the enrichment of gene sets under the context of volcano plots at given contrasts. Provided the richness of `R` utilities in linear modelings, the `preoteoQ` takes a naive approach thereafter to visualize the *asymmetricity* of protein probability $p$ values under volcano plots.  
+
+In the analysis of Gene Set Probability Asymmetricity (`GSPA`), protein significance $p$ values from linear modeling are first taken and separated into the groups of up or down regulated proteins within a gene set. The default is to calcuate the geometric means, $P$, for each of the two groups with a penalty-like term:  
+
+$$-log10(P)=(\sum_{i=1}^{n}-log10(p_{i})+m)/(n+m)$$  
+
+where $n$ and $m$ are the numbers of entries with $p$ values $\le$ or $>$ a significance cut-off, respectively, under a gene set. The quotient of the two $P$ values, one for up and one for down, is then taken to represent the significance of enrichment for a given gene set. Alternatively, the significance can be assessed via moderated t-test between the two groups. With either method, the corresponding mean `log2FC` are each calculated for the ups and the downs where the difference is used as the fold change of enrichment.  
+
+At the input levels, the arguments `pval_cutoff` and `logFC_cutoff` allow us to filter out low impact genes prior to the analysis. On the output levels, argument `gspval_cutoff` sets a threshold in gene set significance for reporting. More details can be found from the help document via `?prnGSPA`. Note that currently there is no peptide counterpart for the enrichment analysis.  
 
 We began with the analysis of `GSPA` against enrichment terms defined in GO and KEGG data sets:  
 
 ```{r prnGSPA, eval = FALSE}
 prnGSPA(
   impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
+  pval_cutoff = 5E-2, # protein pVal threshold
+  logFC_cutoff = log2(1.2), # protein log2FC threshold
+  gspval_cutoff = 5E-2, # gene-set threshold
   gset_nms = c("go_sets", "kegg_sets"),
 )
 ```
@@ -967,14 +975,15 @@ gspaMap(
 
 This will produce the volcano plots of proteins under gene sets that have passed our selection criteria. Here, we show one of the examples:  
 
-```{r gspaMap_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_volcplot_gspa <- "images\\protein\\volcplot\\gspa_batch.png"
-knitr::include_graphics(c(img_volcplot_gspa))
+```{r gspaMap_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+img_volcplot_gspa_geomean <- "images\\protein\\volcplot\\gspa_batch_geomean.png"
+img_volcplot_gspa_limma <- "images\\protein\\volcplot\\gspa_batch_limma.png"
+knitr::include_graphics(c(img_volcplot_gspa_geomean, img_volcplot_gspa_limma))
 ```
 
 The names of gene sets will by default match those provided in `prnGSPA`. Despite in the above example, we chose to plot the results against gene sets in `GO`, not `KEGG`. More details can be accessed from the help document via `?gspaMap`.  
 
-In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `essmap_.*.csv` files under the `Protein\GSPA` folder.  
+In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `_essmap.txt` files under the `Protein\GSPA` folder.  
 
 The utility in `proteoQ` for conventional GSEA analysis is `prnGSEA()`. Gene set variance analysis (GSVA) is available through `prnGSVA`. Details can be found via `?prnGSEA` and `?prnGSVA`, respectively, from an `R` console.  
 
@@ -995,7 +1004,7 @@ prnGSPAHM(
 )
 ```
 
-The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs between two gene sets. The smaller the distance, the greater the overlap is between two gene sets. For convenience, a `distance` column is also made available in the `essmap_.*.csv` file.  
+The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs between two gene sets. The smaller the distance, the greater the overlap is between two gene sets. For convenience, a `distance` column is also made available in the `_essmap.txt` file.  
 
 ```{r prnGSPAHM_all, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_gspahm_all <- "images\\protein\\gspa\\all_sets.png"
@@ -1654,6 +1663,9 @@ pepSig(
 prnSig(
   impute_na = TRUE, # otherwise coerce to complete cases at multiple random effects
   method = lm,
+  W2_vs_W16_fix = ~ Term_3["W16-W2"], # one fixed effect
+  W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
+  W2_vs_W16_mix_2 = ~ Term_3["W16-W2"] + (1|TMT_Set) + (1|Color), # one fixed and two random effects
 )
 
 # correlation plots

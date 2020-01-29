@@ -1,7 +1,7 @@
 Package proteoQ
 ================
 true
-2020-01-15
+2020-01-29
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -58,9 +58,10 @@ normalization. The package further offers a suite of tools and
 functionalities in statistics, informatics and data visualization by
 creating ‘wrappers’ around published R routines.
 
-Click
+(Click
 <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong>
-to render a html version of the README.
+to render a html version of the README. Mathematical symbols may display
+more properly under html.)
 
 ## Installation
 
@@ -1388,14 +1389,26 @@ as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we
 can visualize the enrichment of gene sets under the context of volcano
 plots at given contrasts. Provided the richness of `R` utilities in
 linear modelings, the `preoteoQ` takes a naive approach thereafter to
-visualize the *asymmetricity* of protein probability *p*-values under
-volcano plots. In the analysis of Gene Set Probability Asymmetricity
-(`GSPA`), the significance `pVals` of proteins obtained from linear
-modeling are taken, followed by the calculation of the geometric mean of
-`pVals` for the groups of up- or down-regulated proteins within a gene
-set, as well as the corresponding mean `log2FC`. The quotient of the two
-`pVals` is then taken to represent the significance of enrichment, and
-the delta of the two `log2FC` for use as the fold change of enrichment.
+visualize the *asymmetricity* of protein probability \(p\) values under
+volcano plots.
+
+In the analysis of Gene Set Probability Asymmetricity (`GSPA`), protein
+significance \(p\) values from linear modeling are first taken and
+separated into the groups of up or down regulated proteins within a gene
+set. The default is to calcuate the geometric means, \(P\), for each of
+the two groups with a penalty-like term:
+
+\[-log10(P)=(\sum_{i=1}^{n}-log10(p_{i})+m)/(n+m)\]
+
+where \(n\) and \(m\) are the numbers of entries with \(p\) values
+\(\le\) or \(>\) a significance cut-off, respectively, under a gene set.
+The quotient of the two \(P\) values, one for up and one for down, is
+then taken to represent the significance of enrichment for a given gene
+set. Alternatively, the significance can be assessed via moderated
+t-test between the two groups. With either method, the corresponding
+mean `log2FC` are each calculated for the ups and the downs where the
+difference is used as the fold change of enrichment.
+
 At the input levels, the arguments `pval_cutoff` and `logFC_cutoff`
 allow us to filter out low impact genes prior to the analysis. On the
 output levels, argument `gspval_cutoff` sets a threshold in gene set
@@ -1409,9 +1422,9 @@ GO and KEGG data sets:
 ``` r
 prnGSPA(
   impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
+  pval_cutoff = 5E-2, # protein pVal threshold
+  logFC_cutoff = log2(1.2), # protein log2FC threshold
+  gspval_cutoff = 5E-2, # gene-set threshold
   gset_nms = c("go_sets", "kegg_sets"),
 )
 ```
@@ -1441,7 +1454,7 @@ gspaMap(
 This will produce the volcano plots of proteins under gene sets that
 have passed our selection criteria. Here, we show one of the examples:
 
-<img src="images\protein\volcplot\gspa_batch.png" title="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set" alt="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set" width="80%" style="display: block; margin: auto;" />
+<img src="images\protein\volcplot\gspa_batch_geomean.png" title="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." alt="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" style="display: block; margin: auto;" /><img src="images\protein\volcplot\gspa_batch_limma.png" title="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." alt="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" style="display: block; margin: auto;" />
 
 The names of gene sets will by default match those provided in
 `prnGSPA`. Despite in the above example, we chose to plot the results
@@ -1452,7 +1465,7 @@ In addition to finding gene sets with significance, `prnGSPA` reports
 the essential gene sets using a greedy set cover algorithm by
 [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf).
 The correspondance between essential and all of the gene sets are stored
-in `essmap_.*.csv` files under the `Protein\GSPA` folder.
+in `_essmap.txt` files under the `Protein\GSPA` folder.
 
 The utility in `proteoQ` for conventional GSEA analysis is `prnGSEA()`.
 Gene set variance analysis (GSVA) is available through `prnGSVA`.
@@ -1499,7 +1512,7 @@ prnGSPAHM(
 The distance in heat is \(D = 1-f\) where \(f\) is the fraction of
 overlap in IDs between two gene sets. The smaller the distance, the
 greater the overlap is between two gene sets. For convenience, a
-`distance` column is also made available in the `essmap_.*.csv` file.
+`distance` column is also made available in the `_essmap.txt` file.
 
 <img src="images\protein\gspa\all_sets.png" title="**Figure 7B.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" alt="**Figure 7B.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" width="80%" style="display: block; margin: auto;" />
 
@@ -1625,10 +1638,12 @@ samples. The same theme will hold for various informatic analysis in
 
 ### 2.8 NMF Analysis
 
-In this section, we will performs the NMF analysis against protein data.
-More details can be found from
+In this section, we will performs the analysis of non-negative matrix
+factorization (NMF) against protein data. More details can be found from
 [`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf)
-and the `?anal_prnNMF` wrapper.
+and the `?anal_prnNMF` wrapper. Since additional arguments can be passed
+on to NMF, we will test below protein classifications with both the
+default and the ‘lee’ method:
 
 ``` r
 # load library
@@ -1643,6 +1658,17 @@ anal_prnNMF(
   seed = 123,
   filter_by_npep = exprs(prot_n_pep >= 2),
 )
+
+anal_prnNMF(
+  impute_na = FALSE,
+  col_group = Group,
+  method = "lee",
+  r = c(5:6),
+  nrun = 20, 
+  seed = 123,
+  filter_by_npep = exprs(prot_n_pep >= 2),
+  filename = lee.txt,
+)
 ```
 
 Analogous analysis for peptide data are available via
@@ -1655,7 +1681,7 @@ peptide and protein data, respectively. Similarly, `plot_pepNMFCoef` and
 makes the heat maps of protein `log2FC.` These utilities can pass
 arguments to `pheatmap` as shown in **Section** 2.3. In the examples
 shown below, we plot the heat maps for protein data against all
-available ranks, which are 5 and 6, specified in the earlier
+available ranks, which are 5 and 6, specified earlierly in the
 `anal_prnNMF` step.
 
 ``` r
@@ -1741,10 +1767,10 @@ plot_metaNMF(
 )
 ```
 
-The silhouette information was obtained via the `cluster` package in R
-and shown as a track on the top of consensus and coefficient heat maps.
+The silhouette information was obtained via the R package `cluster` and
+shown as a track on the top of consensus and coefficient heat maps.
 
-<img src="images\protein\nmf\bi_r5_con_rank5.png" title="**Figure 9A-9B.** Heat map visualization of protein NMF results. Left: concensus; right: coefficients; metagenes not shown." alt="**Figure 9A-9B.** Heat map visualization of protein NMF results. Left: concensus; right: coefficients; metagenes not shown." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images\protein\nmf\bi_r5_coef_rank5.png" title="**Figure 9A-9B.** Heat map visualization of protein NMF results. Left: concensus; right: coefficients; metagenes not shown." alt="**Figure 9A-9B.** Heat map visualization of protein NMF results. Left: concensus; right: coefficients; metagenes not shown." width="45%" style="display: block; margin: auto auto auto 0;" />
+<img src="images\protein\nmf\bi_r5_con_rank5.png" title="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." alt="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" style="display: block; margin: auto auto auto 0;" /><img src="images\protein\nmf\bi_r5_coef_rank5.png" title="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." alt="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" style="display: block; margin: auto auto auto 0;" />
 
 While utility `plot_prnTrend` in trend visualization (**Section** 2.7)
 can take a customized theme for uses in
@@ -2285,6 +2311,9 @@ pepSig(
 prnSig(
   impute_na = TRUE, # otherwise coerce to complete cases at multiple random effects
   method = lm,
+  W2_vs_W16_fix = ~ Term_3["W16-W2"], # one fixed effect
+  W2_vs_W16_mix = ~ Term_3["W16-W2"] + (1|TMT_Set), # one fixed and one random effect
+  W2_vs_W16_mix_2 = ~ Term_3["W16-W2"] + (1|TMT_Set) + (1|Color), # one fixed and two random effects
 )
 
 # correlation plots

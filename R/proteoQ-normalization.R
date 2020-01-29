@@ -51,15 +51,6 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
       dplyr::filter(!duplicated(x)) %>% 
       dplyr::select(-Max)
     
-    run_scripts <- FALSE
-    if (run_scripts) {
-      cf_x <- fit %>%
-        dplyr::group_by(Sample_ID) %>%
-        dplyr::filter(Sum == max(Sum, na.rm = TRUE)) %>%
-        dplyr::mutate(x = mean(x, na.rm = TRUE)) %>% # tie-breaking
-        dplyr::filter(!duplicated(x))      
-    }
-
     cf_empty <- fit %>%
       dplyr::filter(! Sample_ID %in% cf_x$Sample_ID)
     
@@ -522,9 +513,6 @@ fitKernelDensity <- function (df, n_comp = 3, seed = NULL, ...) {
 			quietly_out <- purrr::quietly(rlang::eval_tidy)(mixEM_call, caller_env())
 			x_k2 <- quietly_out$result
 			df_par <- data.frame(Component = 1:n_comp, lambda = x_k2$lambda, mean = x_k2$mu, sd = x_k2$sigma)
-			
-			# purrr::walk(quietly_out[-1], write, 
-			#   file.path(dat_dir, "Protein\\log","prn_MulGau_log.csv"), append = TRUE)
 		}
 
 		return(df_par)

@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.2.0.0
+Version: 1.2.1.0
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -54,7 +54,6 @@ Imports:
     EnvStats,
     GGally,
 		GSVA,
-		Mfuzz,
     NMF,
     RColorBrewer,
     RCurl,

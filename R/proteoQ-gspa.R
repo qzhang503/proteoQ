@@ -3,15 +3,22 @@
 #'\code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
 #'(GSPA) aganist protein \code{log2FC} data.
 #'
-#'The significance \code{pVals} of proteins are first obtained from
-#'\code{\link{prnSig}}, which involves linear modelings using
-#'\code{\link[limma]{eBayes}} or \code{\link[lmerTest]{lmer}}. The geometric
-#'mean of \code{pVals} are then each calculated for the groups of up or down
-#'regulated proteins. The quotient of the two \code{pVals} is used to prepsent
-#'the significance of gene set enrichment. The arguments \code{pval_cutoff} and
-#'\code{logFC_cutoff} are used to filter out low influence genes. Additional
-#'subsetting of data via the \code{vararg} approach of \code{filter_} is
-#'feasible.
+#'The significance \code{pVals} of individual proteins are first obtained from
+#'\code{\link{prnSig}}, followed by log10 transformation and separation into up-
+#'or down-regulated groups for each gene set. At the default of \code{method =
+#'mean}, the geometric mean of \code{pVals}, \eqn{P}, are each calculated for
+#'the groups of up or down regulated proteins, with a penalty-like term
+#'
+#'\deqn{-log10(P)=(\sum_{i=1}^{n}-log10(p)+m)/(n+m)}{-log10(P)=(-log10(p_1*p_2*...*p_n)+m)/(n+m)}
+#'
+#'where \eqn{n} and \eqn{m} are the numbers of entries with \eqn{p} values
+#'\eqn{\le} or \eqn{>} a significance cut-off, respectively. The quotient of the
+#'two \code{pVals} is then used to prepsent the significance of gene set
+#'enrichment. The arguments \code{pval_cutoff} and \code{logFC_cutoff} are used
+#'to discriminate low influence genes. Additional subsetting of data via the
+#'\code{vararg} approach of \code{filter_} is feasible. At \code{method =
+#'limma}, moderated t-tests are performed between the up and the down groups via
+#'\code{\link[limma]{eBayes}}.
 #'
 #'@inheritParams anal_pepNMF
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
@@ -20,6 +27,8 @@
 #'  for enrichment analysis. The default is \code{"go_sets"}. The possible
 #'  values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
 #'  supported species are human, mouse and rat.
+#'@param method Character string; the method to assess the p-values of GSPA. The
+#'  default is \code{mean}.
 #'@param pval_cutoff Numeric value or vector; the cut-off in protein
 #'  significance \code{pVal}. Entries with \code{pVals} less significant than
 #'  the threshold will be ignored during enrichment analysis. The default is
@@ -33,11 +42,11 @@
 #'  analysis. Formula-specific threshold is allowed by supplying a vector of
 #'  absolute values in \code{log2FC}.
 #'@param min_size Numeric value or vector; minimum number of protein entries for
-#'  consideration in gene set tests. The number is the sum of up or
-#'  down-expressed proteins after data filtration by \code{pval_cutoff},
-#'  \code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
-#'  is 10 for all formulae matched to or specified in argument \code{fml_nms}.
-#'  Formula-specific threshold is allowed by supplying a vector of sizes.
+#'  consideration in gene set tests. The number is after data filtration by
+#'  \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
+#'  \code{filter_}. The default is 10 for all formulae matched to or specified
+#'  in argument \code{fml_nms}. Formula-specific threshold is allowed by
+#'  supplying a vector of sizes.
 #'@param max_size Numeric value or vector; maximum number of protein entries for
 #'  consideration in gene set tests. The number is the sum of up or
 #'  down-expressed proteins after data filtration by \code{pval_cutoff},
@@ -45,6 +54,14 @@
 #'  in infinite for all formulae matched to or specified in argument
 #'  \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 #'  of sizes.
+#'@param min_delta Numeric value or vector; the minimum count difference between
+#'  the up- and the down-regulated group of proteins for consideration in gene
+#'  set tests. For example at \code{min_delta = 4}, a gene set will 6
+#'  upregulated proteins and 2 downregulated proteins, or vice versa, will be
+#'  assessed. The number is after data filtration by \code{pval_cutoff},
+#'  \code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
+#'  is 4 for all formulae matched to or specified in argument \code{fml_nms}.
+#'  Formula-specific threshold is allowed by supplying a vector of sizes.
 #'@param min_greedy_size Numeric value or vector; minimum number of unique
 #'  protein entries for a gene set to be considered essential. The default in
 #'  \code{1} for all formulae matched to or specified in argument
@@ -115,12 +132,12 @@
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@export
-prnGSPA <- function (gset_nms = "go_sets", 
+prnGSPA <- function (gset_nms = "go_sets", method = c("mean","limma"), 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                     df = NULL, filepath = NULL, filename = NULL, 
                      pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                     gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
-                     fml_nms = NULL, ...) {
+                     gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, 
+                     min_delta = 4, min_greedy_size = 1, 
+                     fml_nms = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
   
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
@@ -147,7 +164,15 @@ prnGSPA <- function (gset_nms = "go_sets",
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-
+  
+  method <- rlang::enexpr(method)
+  if (method == rlang::expr(c("mean","limma"))) {
+    method <- "mean"
+  } else {
+    method <- rlang::as_string(method)
+    stopifnot(method %in% c("limma", "mean"))
+  }
+  
   dots <- rlang::enexprs(...)
   fmls <- dots %>% .[grepl("^\\s*~", .)]
   dots <- dots[!names(dots) %in% names(fmls)]
@@ -162,8 +187,11 @@ prnGSPA <- function (gset_nms = "go_sets",
                                 pval_cutoff = pval_cutoff, 
                                 logFC_cutoff = logFC_cutoff, 
                                 gspval_cutoff = gspval_cutoff, 
-                                min_size = min_size, max_size = max_size, 
+                                min_size = min_size, 
+                                max_size = max_size, 
+                                min_delta = min_delta, 
                                 min_greedy_size = min_greedy_size, 
+                                method = method, 
                                 !!!dots)
 }
 
@@ -181,8 +209,8 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                      filepath = NULL, filename = NULL, 
                      gset_nms = "go_sets", var_cutoff = 0.5, pval_cutoff = 5E-2,
                      logFC_cutoff = log2(1.2), gspval_cutoff = 5E-2, 
-                     min_size = 6, max_size = Inf, min_greedy_size = 1, 
-                     anal_type = "GSPA", ...) {
+                     min_size = 6, max_size = Inf, min_delta = 4, min_greedy_size = 1, 
+                     method = "mean", anal_type = "GSPA", ...) {
 
   # `GSPA`: use `pVals` instead of `N_log2R` or `Z_log2R`; 
   # currently Protein[_impNA]_pVals.txt does not contain `scale_log2_r` info in the file name
@@ -247,6 +275,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                                    gspval_cutoff, 
                                    min_size, 
                                    max_size, 
+                                   min_delta, 
                                    min_greedy_size), 
                               fml_gspa, 
                               df = df, 
@@ -258,6 +287,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                               scale_log2r = scale_log2r, 
                               filepath = filepath, 
                               filename = filename, 
+                              method = method, 
                               !!!dots), 
           GSEA = purrr::pwalk(list(fmls, 
                                    fml_nms, 
@@ -287,45 +317,15 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 #'
 #' @import purrr dplyr rlang
 #' @importFrom magrittr %>% %T>%
-fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size, max_size, min_greedy_size, 
+fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, 
+                      min_size, max_size, min_delta, min_greedy_size, 
                       df, col_ind, id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
-                      filepath, filename, ...) {
-
-  gapa_summary <- function(gsets, df, min_size = 1) {
-    df_sub <- df %>% 
-      dplyr::filter(.[["entrez"]] %in% gsets) 
-    
-    if (nrow(df_sub) >= min_size) {
-      delta_p <- df_sub %>% 
-        dplyr::group_by(contrast, valence) %>% 
-        dplyr::summarise(p_val = mean(p_val, na.rm = TRUE)) %>% 
-        tidyr::spread(key = contrast, value = p_val) %>% 
-        dplyr::select(-valence) %>% 
-        `colnames<-`(paste0("pVal (", colnames(.), ")"))
-      
-      delta_p <- delta_p[2, ] - delta_p[1, ]
-      
-      delta_fc <- df_sub %>% 
-        dplyr::group_by(contrast, valence) %>% 
-        dplyr::summarise(log2Ratio = mean(log2Ratio, na.rm = TRUE)) %>% 
-        tidyr::spread(key = contrast, value = log2Ratio) %>% 
-        dplyr::select(-valence) %>% 
-        `colnames<-`(paste0("log2Ratio (", colnames(.), ")")) %>% 
-        abs(.) # may leave as an option later for dual significance
-      
-      delta_fc <- delta_fc[2, ] - delta_fc[1, ]
-      
-      return(dplyr::bind_cols(delta_p, delta_fc))
-    } else {
-      return(NULL)
-    }
-  }  
+                      filepath, filename, method, ...) {
 
   dir.create(file.path(filepath, fml_nm), recursive = TRUE, showWarnings = FALSE)
   id <- rlang::as_string(rlang::enexpr(id))
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
-  # penaltize with NA imputation to 0 to increases the number of entries in descriptive "mean" calculation
   df <- df %>% prep_gspa(id = "entrez", fml_nm = fml_nm, col_ind = col_ind, 
                          pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff) 
   
@@ -338,9 +338,10 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min
     dplyr::mutate(p_val = -log10(p_val)) %>% 
     dplyr::mutate(valence = ifelse(.$log2Ratio > 0, "pos", "neg")) %>% 
     dplyr::mutate(valence = factor(valence, levels = c("neg", "pos"))) %>% 
-    tidyr::complete(entrez, contrast, valence) %>% 
-    dplyr::mutate(p_val = ifelse(is.na(p_val), 0, p_val)) # %>% 
-    # dplyr::mutate(log2Ratio = ifelse(is.na(log2Ratio), 0, log2Ratio))
+    tidyr::complete(entrez, contrast, valence)
+  
+  # no re-`arrange` df, df_sub for limma after this point
+  df <- df %>% dplyr::arrange(entrez, contrast, valence)
 
   gsets <- gsets %>% 
     .[!grepl("molecular_function$", names(.))] %>% 
@@ -352,7 +353,26 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min
   res_pass <- local({
     contrast_groups <- unique(df$contrast) %>% as.character()
     
-    res <- purrr::map(gsets, gapa_summary, df, min_size * length(contrast_groups) * 2) 
+    contrast_table <- tibble(contrast = rep(contrast_groups, 2), 
+                             valence = rep(c("neg", "pos"), length(contrast_groups)), 
+                             p_val = rep(-log10(0.05), 2 * length(contrast_groups))) %>% 
+      dplyr::mutate(contrast = factor(contrast, levels = levels(df$contrast)), 
+                    valence = factor(valence, levels(df$valence)))
+    
+    res <- switch(method, 
+                  limma = purrr::map(gsets, 
+                                     gspa_summary_limma, 
+                                     df = df, 
+                                     min_size = min_size, 
+                                     min_delta = min_delta), 
+                  mean = purrr::map(gsets, 
+                                    gspa_summary_mean, 
+                                    df = df, 
+                                    min_size = min_size, 
+                                    min_delta = min_delta, 
+                                    gspval_cutoff = gspval_cutoff), 
+                  rlang::abort("Unknown `method`."))
+
     idx <- purrr::map_dbl(res, is.null)
     
     res <- res[!idx] %>% 
@@ -362,15 +382,15 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min
       dplyr::mutate_at(.vars = grep("^pVal\\s+\\(", names(.)), ~ abs(.x)) %>% 
       dplyr::group_by(term) %>% 
       dplyr::arrange(term) %>% 
-      data.frame(check.names = FALSE) %>% 
-      dplyr::mutate_at(vars(grep("^pVal\\s+\\(", names(.))), ~ 1/10^.x)
+      data.frame(check.names = FALSE) 
     
     pass <- purrr::map(res[paste0("pVal (", contrast_groups, ")")], ~ .x <= gspval_cutoff) %>%
       dplyr::bind_cols() %>%
       rowSums() %>%
       `>`(0)
     
-    res_pass <- res[pass, ]
+    res_pass <- res[pass, ] %>% 
+      dplyr::mutate_at(vars(grep("^pVal", names(.))), ~ replace(.x, .x < 1E-50, 1E-50))
   })
   
   out <- local({
@@ -445,13 +465,145 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min
 }
 
 
+#' check the size of a gene set
+ok_min_size <- function (df, min_delta, gspval_cutoff) {
+  data <- df %>% 
+    dplyr::group_by(contrast, valence) %>% 
+    dplyr::filter(!is.na(log2Ratio), !is.na(p_val)) %>% 
+    dplyr::mutate(n = n()) %>% 
+    tidyr::unite(con_val, contrast, valence, sep = ".", remove = FALSE) 
+  
+  delta_p <- data %>% 
+    dplyr::summarise(p_val = mean(p_val, na.rm = TRUE)) %>% 
+    dplyr::mutate(p_val = ifelse(is.nan(p_val), 0, p_val)) %>% 
+    tidyr::spread(key = contrast, value = p_val) %>% 
+    dplyr::ungroup(valence) %>% 
+    dplyr::select(-valence)
+  delta_p[is.na(delta_p)] <- 0
+  if (nrow(delta_p) == 2) delta_p <- delta_p[2, ] - delta_p[1, ]
+
+  delta_n <- data %>% 
+    dplyr::summarise(n = mean(n, na.rm = TRUE)) %>% # empty levels will be kept
+    tidyr::spread(key = contrast, value = n) %>% 
+    dplyr::ungroup(valence) %>% 
+    dplyr::select(-valence)
+  delta_n[is.na(delta_n)] <- 0
+  if (nrow(delta_n) == 2) delta_n <- delta_n[2, ] - delta_n[1, ]
+
+  sign(delta_p) == sign(delta_n) & abs(delta_p) >= -log10(gspval_cutoff) & abs(delta_n) >= min_delta 
+}
+
+
+#' gspa pVal calculations using geomean
+gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4, gspval_cutoff = 0.05) {
+  df <- df %>% dplyr::filter(.[["entrez"]] %in% gset)
+  
+  if (length(unique(df$entrez)) < min_size) return(NULL)
+  
+  df <- df %>% dplyr::group_by(contrast, valence)
+
+  ok_delta_n <- ok_min_size(df = df, min_delta = min_delta, gspval_cutoff = gspval_cutoff)
+
+  # penalty term
+  dfw <- df %>% dplyr::mutate(p_val = ifelse(is.na(p_val), 1, p_val))
+
+  delta_p <- dfw %>% 
+    dplyr::summarise(p_val = mean(p_val, na.rm = TRUE)) %>% 
+    dplyr::mutate(p_val = replace(p_val, is.nan(p_val), 1)) %>% 
+    tidyr::spread(key = contrast, value = p_val) %>% 
+    dplyr::select(-valence) %>% 
+    `colnames<-`(paste0("pVal (", colnames(.), ")")) 
+  if (nrow(delta_p) == 2) delta_p <- delta_p[2, ] - delta_p[1, ]
+  delta_p <- abs(delta_p)
+  delta_p <- 1/10^delta_p
+  delta_p[] <- purrr::map2(as.list(delta_p), as.list(ok_delta_n), ~ {if (.y) .x else 1}) 
+
+  delta_fc <- dfw %>% 
+    dplyr::summarise(log2Ratio = mean(log2Ratio, na.rm = TRUE)) %>% 
+    dplyr::mutate(log2Ratio = replace(log2Ratio, is.nan(log2Ratio), 0)) %>% 
+    tidyr::spread(key = contrast, value = log2Ratio) %>% 
+    dplyr::select(-valence) %>% 
+    `colnames<-`(paste0("log2Ratio (", colnames(.), ")")) %>% 
+    abs(.) 
+  if (nrow(delta_fc) == 2) delta_fc <- delta_fc[2, ] - delta_fc[1, ]
+  
+  return(dplyr::bind_cols(delta_p, delta_fc))
+}  
+
+
+
+#' gspa pVal calculations using limma
+gspa_summary_limma <- function(gset, df, min_size = 10, min_delta = 4) {
+  df_sub <- df %>% dplyr::filter(.[["entrez"]] %in% gset) 
+  if (length(unique(df_sub$entrez)) < min_size) return(NULL)
+  
+  lm_gspa(df_sub, min_delta)
+}  
+
+
+#' significance tests of pVals between the up and the down groups
+lm_gspa <- function(df, min_delta) {
+  delta_fc <- df %>% 
+    dplyr::group_by(contrast, valence) %>% 
+    dplyr::summarise(log2Ratio = mean(log2Ratio, na.rm = TRUE)) %>% 
+    dplyr::mutate(log2Ratio = replace(log2Ratio, is.nan(log2Ratio), 0)) %>% 
+    tidyr::spread(key = contrast, value = log2Ratio) %>% 
+    dplyr::select(-valence) 
+  
+  nms <- colnames(delta_fc)
+  delta_fc <- delta_fc%>% 
+    `colnames<-`(paste0("log2Ratio (", colnames(.), ")")) %>% 
+    abs(.) 
+  if (nrow(delta_fc) == 2) delta_fc <- delta_fc[2, ] - delta_fc[1, ]
+  
+  ok_delta_n <- ok_min_size(df = df, min_delta = min_delta, gspval_cutoff = 1)
+
+  data <- df %>% 
+    dplyr::group_by(contrast, valence) %>% 
+    dplyr::select(-log2Ratio) %>% 
+    tidyr::unite(sample, entrez, contrast, valence, sep = ".", remove = TRUE) %>% 
+    tidyr::spread(key = sample, value = p_val) 
+  
+  label_scheme_gspa <- tibble(Sample_ID = names(data), Group = Sample_ID) %>% 
+    dplyr::mutate(Group = gsub("^\\d+\\.", "", Group)) %>% 
+    dplyr::mutate(Group = factor(Group))
+  
+  design <- model.matrix(~0+label_scheme_gspa$Group) %>% 
+    `colnames<-`(levels(label_scheme_gspa$Group)) %>% 
+    data.frame(check.names = TRUE)
+
+  neg_cols <- colnames(design)[seq_along(design) %% 2 %>% as.logical()]
+  pos_cols <- colnames(design)[!(seq_along(design) %% 2)]
+  
+  contrs <- paste(pos_cols, neg_cols, sep = "-")
+  
+  contr_mat <- makeContrasts(contrasts = contrs, levels = data.frame(design)) %>% 
+    `colnames<-`(contrs) %>% 
+    `rownames<-`(colnames(design))
+  
+  fit <- data %>%
+    lmFit(design = design) %>%
+    contrasts.fit(contr_mat) %>%
+    eBayes()
+  
+  delta_p <- fit$p.value %>%
+    replace(., is.na(.), 1) %>% 
+    data.frame(check.names = FALSE) %>%
+    `colnames<-`(paste0("pVal (", nms, ")"))
+
+  delta_p[] <- purrr::map2(as.list(delta_p), as.list(ok_delta_n), ~ {if (.y) .x else 1}) 
+
+  return(dplyr::bind_cols(delta_p, delta_fc))
+}
+
+
 #' A helper function for GSPA
 #'
 #' @import purrr dplyr rlang
 #' @importFrom magrittr %>%
 #' @importFrom readr read_tsv
 prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2)) {
-  id <- as_string(enexpr(id))
+  id <- rlang::as_string(rlang::enexpr(id))
   
   df <- df %>%
     dplyr::select(grep(fml_nm, names(.), fixed = TRUE)) %>%
@@ -651,7 +803,7 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = F
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
   
-  scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
   
   filename <- rlang::enexpr(filename)
   annot_cols <- rlang::enexpr(annot_cols)

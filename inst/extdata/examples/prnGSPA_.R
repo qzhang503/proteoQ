@@ -22,12 +22,24 @@ pepSig(
 
 prnSig(impute_na = FALSE)
 
+# GSPA
 prnGSPA(
   impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
-  gset_nms = c("go_sets", "kegg_sets"),
+  pval_cutoff = 5E-2, # protein pVal threshold
+  logFC_cutoff = log2(1.2), # protein log2FC threshold
+  gspval_cutoff = 5E-2, # gene-set threshold
+  gset_nms = c("go_sets", "kegg_sets"), 
+)
+
+# GSPA under volcano plots
+gspaMap(
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  pval_cutoff = 5E-2, # gene set threshold
+  logFC_cutoff = log2(1.2), # gene set log2FC threshold
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
 )
 
 ## row filtration
