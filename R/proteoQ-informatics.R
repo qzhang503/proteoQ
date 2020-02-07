@@ -16,7 +16,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
                        color_brewer = NULL, fill_brewer = NULL, 
                        size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, col_benchmark = NULL, 
                        scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                       df = NULL, filepath = NULL, filename = NULL,
+                       df = NULL, df2 = NULL, filepath = NULL, filename = NULL,
                        anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
                                      "NMF", "Trend")) {
   
@@ -86,6 +86,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	alpha_manual <- rlang::enexpr(alpha_manual)
 
 	df <- rlang::enexpr(df)
+	df2 <- rlang::enexpr(df2)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	
@@ -199,17 +200,21 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	use_pri_data <- c("MDS", "PCA", "EucDist", "Heatmap", "Histogram", "Corrplot", 
 	                  "Model", "Volcano", "Trend", "NMF", "NMF_meta", "GSPA", "mapGSPA", 
 	                  "GSVA", "GSEA", "String")
-	use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", "GSPA_hm")
+	use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", "NMF_meta", "GSPA_hm", "mapGSPA")
 
 	if (anal_type %in% use_pri_data) {
 	  df <- find_pri_df(anal_type = !!anal_type, id = !!id, impute_na = impute_na)
-	} else if (anal_type %in% use_sec_data) {
-	  df <- find_sec_df(df = !!df, anal_type = !!anal_type, id = !!id)
+	  if (!is.null(dim(df))) df <- df %>% rm_pval_whitespace()
 	} else {
-	  stop("Unknown `anal_type`", call. = FALSE)
+	  df <- NULL
 	}
-
-	if (!is.null(dim(df))) df <- df %>% rm_pval_whitespace()
+	
+	if (anal_type %in% use_sec_data) {
+	  df2 <- rlang::eval_bare(df2, env = current_env())
+	  vararg_secmsg(id = !!id, anal_type = !!anal_type)
+	} else {
+	  df2 <- NULL
+	}
 
 	if (anal_type %in% c("Model", "GSPA", "GSVA", "GSEA")) {
 		label_scheme_sub <- label_scheme %>% # to be subset by "formulae"
@@ -387,12 +392,14 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (anal_type == "Volcano") {
 	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, theme = NULL, ...) {
 	    plotVolcano(df = df, 
+	                df2 = NULL, 
 	                id = !!id, 
 	                adjP = adjP, 
 	                show_labels = show_labels, 
 	                anal_type = anal_type,
-	                pval_cutoff = 1, 
-	                logFC_cutoff = 0, 
+	                gspval_cutoff = 1, 
+	                gslogFC_cutoff = 0, 
+	                topn = 0, 
 	                show_sig = "none", 
 	                fml_nms = fml_nms,
 	                gset_nms = NULL, 
@@ -405,16 +412,18 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	                ...)
 	  }
 	} else if (anal_type == "mapGSPA") {
-	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, pval_cutoff = 0.05, 
-	           logFC_cutoff = log2(1.2), show_sig = "none", gset_nms = "go_sets", 
+	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, gspval_cutoff = 0.05, 
+	           gslogFC_cutoff = log2(1.2), topn = 100, show_sig = "none", gset_nms = "go_sets", 
 	           theme = NULL, ...) {
 	    plotVolcano(df = df, 
+	                df2 = df2,
 	                id = !!id, 
 	                adjP = adjP, 
 	                show_labels = show_labels, 
 	                anal_type = anal_type, 
-	                pval_cutoff = pval_cutoff, 
-	                logFC_cutoff = logFC_cutoff, 
+	                gspval_cutoff = gspval_cutoff, 
+	                gslogFC_cutoff = gslogFC_cutoff, 
+	                topn = topn, 
 	                show_sig = show_sig, 
 	                fml_nms = fml_nms, 
 	                gset_nms = gset_nms, 
@@ -444,7 +453,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "Trend_line") {
 	  function(n_clust = NULL, theme = NULL, ...) {
-	    plotTrend(id = !!id, 
+	    plotTrend(df2 = df2,
+	              id = !!id, 
 	              col_group = !!col_group, 
 	              col_order = !!col_order, 
 	              label_scheme_sub = label_scheme_sub, 
@@ -476,7 +486,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "NMF_con") {
 	  function(rank = NULL, ...) {
-	    plotNMFCon(id = !!id, 
+	    plotNMFCon(df2 = df2, 
+	               id = !!id, 
 	               rank = rank, 
 	               label_scheme_sub = label_scheme_sub, 
 	               scale_log2r = scale_log2r, 
@@ -488,12 +499,13 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  }
 	} else if (anal_type == "NMF_coef") {
 	  function(rank = NULL, ...) {
-	    plotNMFCoef(id = !!id, 
+	    plotNMFCoef(df2 = df2, 
+	                id = !!id, 
 	                rank = rank, 
 	                label_scheme_sub = label_scheme_sub, 
 	                scale_log2r = scale_log2r,
 	                complete_cases = complete_cases,
-	                impute_na = impute_na,                
+	                impute_na = impute_na, 
 	                filepath = filepath, 
 	                filename = paste0(fn_prefix, ".", fn_suffix), 
 	                ...)
@@ -501,12 +513,13 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (anal_type == "NMF_meta") {
 	  function(rank = NULL, ...) {
 	    plotNMFmeta(df = df, 
+	                df2 = df2,
 	                id = !!id, 
 	                rank = rank, 
 	                label_scheme_sub = label_scheme_sub, 
 	                scale_log2r = scale_log2r,
 	                complete_cases = complete_cases, 
-	                impute_na = impute_na, 
+	                impute_na = impute_na,
 	                filepath = filepath, 
 	                filename = paste0(fn_prefix, ".", fn_suffix), 
 	                anal_type = anal_type,
@@ -514,8 +527,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  }
 	} else if (anal_type == "GSPA") {
 		function(gset_nms = "go_sets", var_cutoff = .5,
-		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), gspval_cutoff = 1E-2, 
-		         min_size = 10, max_size = Inf, min_delta = 4, min_greedy_size = 1, method = "mean", 
+		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), 
+		         gspval_cutoff = 1E-2, gslogFC_cutoff = log2(1), 
+		         min_size = 10, max_size = Inf, min_delta = 4, min_greedy_size = 1, 
+		         method = "mean", 
 		         ...) {
 		  gspaTest(df = df, 
 		           id = !!id, 
@@ -529,7 +544,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           var_cutoff = var_cutoff,
 		           pval_cutoff = pval_cutoff, 
 		           logFC_cutoff = logFC_cutoff, 
-		           gspval_cutoff = gspval_cutoff,
+		           gspval_cutoff = gspval_cutoff, 
+		           gslogFC_cutoff = gslogFC_cutoff, 
 		           min_size = min_size, 
 		           max_size = max_size, 
 		           min_delta = min_delta,
@@ -540,7 +556,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "GSPA_hm") {
 	  function(...) {
-	    gspaHM(scale_log2r = scale_log2r, 
+	    gspaHM(df2 = df2,
+	           scale_log2r = scale_log2r, 
 	           complete_cases = complete_cases, 
 	           impute_na = impute_na, 
 	           filepath = filepath, 
@@ -573,7 +590,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	            id = !!id, 
 	            label_scheme_sub = label_scheme_sub,
 	            scale_log2r = scale_log2r, 
-	            complete_cases = complete_cases, # redundant
+	            complete_cases = complete_cases, 
 	            impute_na = impute_na,
 	            filepath = filepath, 
 	            filename = paste0(fn_prefix, ".txt"),
@@ -581,12 +598,13 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	            var_cutoff = var_cutoff,
 	            pval_cutoff = pval_cutoff, 
 	            logFC_cutoff = logFC_cutoff, 
-	            gspval_cutoff = 1E-2, 
+	            gspval_cutoff = 1E-2, # dummy start
+	            gslogFC_cutoff = log2(1), 
 	            min_size = 10, 
 	            max_size = Inf, 
-	            min_delta = 1, # dummy
-	            min_greedy_size = 1, # dummy
-	            method = method, # dummy
+	            min_delta = 1, 
+	            min_greedy_size = 1, 
+	            method = method, # dummy end
 	            anal_type = anal_type, 
 	            ...)
 	  }
@@ -612,7 +630,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 
 
-#' Helper for finding input `df`
+#' helper for finding input `df`
 #'
 find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na = FALSE, ...) {
   err_msg2 <- "not found. \n Run functions PSM, peptide and protein normalization first."
@@ -642,17 +660,35 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
     
     if (anal_type %in% c("Histogram", "MA")) { # never impute_na and no pVals
       if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
+      
+      if (id %in% c("pep_seq", "pep_seq_mod")) {
+        message("Primary column keys in `Peptide/Peptide.txt` for `filter_` varargs.")
+      } else if (id %in% c("prot_acc", "gene")) {
+        message("Primary column keys in `Protein/Protein.txt` for `filter_` varargs.")
+      } 
     } else if (anal_type %in% c("Model")) { # optional impute_na but no pVals
       if (impute_na) {
         if (file.exists(fn_imp)) src_path <- fn_imp else stop(paste(fn_imp, err_msg3), call. = FALSE)
       } else {
         if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
       }
+      
+      if (id %in% c("pep_seq", "pep_seq_mod")) {
+        message("Primary column keys in `Peptide/Peptide[_impNA].txt` for `filter_` varargs.")
+      } else if (id %in% c("prot_acc", "gene")) {
+        message("Primary column keys in `Protein/Protein[_impNA].txt` for `filter_` varargs.")
+      }
     } else if (anal_type %in% c("Volcano", "GSPA", "mapGSPA", "GSEA", "String")) { # always use data with pVals
       if (impute_na) {
         if (file.exists(fn_imp_p)) src_path <- fn_imp_p else stop(paste(fn_imp_p, err_msg4), call. = FALSE)
       } else {
         if (file.exists(fn_p)) src_path <- fn_p else stop(paste(fn_p, err_msg5), call. = FALSE)
+      }
+      
+      if (id %in% c("pep_seq", "pep_seq_mod")) {
+        message("Primary column keys in `Model/Peptide[_impNA]_pVals.txt` for `filter_` varargs.")
+      } else if (id %in% c("prot_acc", "gene")) {
+        message("Primary column keys in `Model/Protein[_impNA]_pVals.txt` for `filter_` varargs.")
       }
     } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", "NMF", "NMF_meta", 
                                 "GSVA", "Corrplot")) { # optional impute_na and possible p_vals
@@ -662,6 +698,12 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
       } else {
         if (file.exists(fn_p)) src_path <- fn_p else if (file.exists(fn_raw)) src_path <- fn_raw else 
           stop(paste(fn_raw, err_msg2), call. = FALSE)
+      }
+      
+      if (id %in% c("pep_seq", "pep_seq_mod")) {
+        message("Primary column keys in `Model/Peptide[_impNA_pVals].txt` for `filter_` varargs.")
+      } else if (id %in% c("prot_acc", "gene")) {
+        message("Primary column keys in `Model/Protein[_impNA_pVals].txt` for `filter_` varargs.")
       }
     } 
   } else {
@@ -683,14 +725,14 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
 
   if (is.null(dim(df))) stop(src_path, " not found.", call. = FALSE)
   
-  message(paste("File loaded:", gsub("\\\\", "/", src_path)))
+  message(paste("Primary file loaded:", gsub("\\\\", "/", src_path)))
   
   return(df)
 }
 
 
-#' Helper for finding input `df`
-#'
+#' helper for finding input `df`
+#' not currently used
 find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) {
   df <- rlang::enexpr(df)
   anal_type <- rlang::enexpr(anal_type)
@@ -722,3 +764,36 @@ find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) {
   
   return(df)
 }
+
+
+#' helper for finding input `df`
+vararg_secmsg <- function (id = NULL, anal_type = NULL, ...) {
+  id <- rlang::as_string(rlang::enexpr(id))
+  anal_type <- rlang::as_string(rlang::enexpr(anal_type))
+
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
+    if (anal_type == "Trend_line") {
+      message("Secondary column keys in `Trend/[...]Peptide_Trend_{NZ}[_impNA][...].txt` for `filter2_` varargs.")
+    } else if (anal_type == "NMF_con") {
+      message("Secondary column keys in `NMF/[...]Peptide_NMF[...]_consensus.txt` for `filter2_` varargs.")
+    } else if (anal_type == "NMF_coef") {
+      message("Secondary column keys in `NMF/[...]Peptide_NMF[...]_coef.txt` for `filter2_` varargs.")
+    } 
+  } else if (id %in% c("prot_acc", "gene")) {
+    if (anal_type == "mapGSPA") {
+      message("Secondary column keys in `GSPA/[...]Protein_GSPA_{NZ}[_impNA].txt` for `filter2_` varargs.")
+    } else if (anal_type == "GSPA_hm") {
+      message("Secondary column keys in `GSPA/[...]Protein_GSPA_{NZ}_essmap.txt` for `filter2_` varargs.")
+      message("Column keys in `GSPA/[...]Protein_GSPA_{NZ}_essmeta.txt` for heat map annotation.")
+    } else if (anal_type == "Trend_line") {
+      message("Secondary column keys in `Trend/[...]Protein_Trend_{NZ}[_impNA...].txt` for `filter2_` varargs.")
+    } else if (anal_type == "NMF_con") {
+      message("Secondary column keys in `NMF/[...]Protein_NMF[...]_consensus.txt` for `filter2_` varargs.")
+    } else if (anal_type == "NMF_coef") {
+      message("Secondary column keys in `NMF/[...]Protein_NMF[...]_coef.txt` for `filter2_` varargs.")
+    } 
+  } else {
+    stop("Unknown `id`", call. = FALSE)
+  }
+}
+

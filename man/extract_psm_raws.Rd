@@ -4,8 +4,10 @@
 \alias{extract_psm_raws}
 \title{Extract RAW file names from Mascot PSM outputs}
 \usage{
-extract_psm_raws(type = c("mascot", "maxquant", "spectrum_mill"),
-  dat_dir = NULL)
+extract_psm_raws(
+  type = c("mascot", "maxquant", "spectrum_mill"),
+  dat_dir = NULL
+)
 }
 \arguments{
 \item{type}{Character string indicating the type of PSM.}

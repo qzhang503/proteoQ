@@ -4,10 +4,19 @@
 \alias{anal_prnTrend}
 \title{Trend analysis of protein data}
 \usage{
-anal_prnTrend(col_select = NULL, col_group = NULL, col_order = NULL,
-  n_clust = NULL, scale_log2r = TRUE, complete_cases = FALSE,
-  impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL,
-  ...)
+anal_prnTrend(
+  col_select = NULL,
+  col_group = NULL,
+  col_order = NULL,
+  n_clust = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -43,9 +52,15 @@ missing values will be used. The default is FALSE.}
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{Use system default.}
 
@@ -55,13 +70,16 @@ is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; \cr \code{arrange_}: Logical expression(s) for the row order of data;
-also see \code{\link{normPSM}}, \code{\link{prnHM}}. \cr \cr Additional
-arguments for \code{\link[e1071]{cmeans}} by noting that: \cr \code{centers}
-is replaced with \code{n_clust} \cr \code{m} is according to Schwaemmle and
-Jensen if not provided; \cr \code{x} is disabled with input data being
-determined automatically}
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+\code{arrange_}: Variable argument statements for the row ordering aganist
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements. \cr \cr Additional arguments for
+\code{\link[e1071]{cmeans}} by noting that: \cr \code{centers} is replaced
+with \code{n_clust} \cr \code{m} is according to Schwaemmle and Jensen if
+not provided; \cr \code{x} is disabled with input data being determined
+automatically}
 }
 \value{
 Fuzzy c-mean classification of \code{log2FC}.
@@ -97,10 +115,10 @@ anal_prnTrend(
 
 ## against selected samples
 anal_prnTrend(
+  col_select = BI,
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
-  col_select = BI,
   filename = sel.txt,
 )
 
@@ -109,10 +127,10 @@ anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
-  filter_prots = exprs(prot_n_pep >= 3),
+  filter_prots_by = exprs(prot_n_pep >= 3),
 )
 
-## manual m (proteins)
+## manual m degree of fuzziness (proteins)
 anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
@@ -177,7 +195,7 @@ anal_prnTrend(
 # ===================================
 # Visualization
 # ===================================
-## no NA imputation 
+## base (proteins, no NA imputation) 
 plot_prnTrend(
   col_order = Order, 
 )
@@ -187,10 +205,29 @@ plot_prnTrend(
 plot_prnTrend(
   impute_na = FALSE, 
   col_order = Order,
-  filter_by_clusters = exprs(cluster == 5),
+  filter2_by_clusters = exprs(cluster == 5),
   width = 8, 
   height = 10,
   filename = cl5.png,
+)
+
+# manual selection of secondary input data file(s)
+# may be used for optimizing individual plots
+plot_prnTrend(
+  df2 = c("Protein_Trend_Z_nclust5.txt"),
+  col_order = Order, 
+  filename = n5.png,
+)
+
+# manual secondary input(s) at specific rank(s)
+plot_prnTrend(
+  df2 = c("Protein_Trend_Z_nclust5.txt"),
+  impute_na = FALSE, 
+  col_order = Order,
+  filter2_by_clusters = exprs(cluster == 5),
+  width = 8, 
+  height = 10,
+  filename = n5_cl5.png,
 )
 
 ## NA imputation
@@ -246,7 +283,8 @@ plot_prnTrend(
 }
 \references{
 \code{Schwaemmle and Jensen, Bioinformatics,Vol. 26 (22),
- 2841-2848, 2010. \cr J. C. Bezdek (1981). Pattern recognition with fuzzy objective function algorithms. New York: Plenum. \cr }
+ 2841-2848, 2010. \cr J. C. Bezdek (1981). Pattern recognition with fuzzy
+ objective function algorithms. New York: Plenum. \cr }
 }
 \seealso{
 \code{\link{load_expts}} for a reduced working example in data

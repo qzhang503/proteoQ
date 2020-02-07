@@ -340,6 +340,7 @@ load_dbs <- function (gset_nms = "go_sets", species = "human") {
 #'  \strong{Descrption}\cr TMT_Set \tab v.s.  \cr LCMS_Injection   \tab v.s. \cr
 #'  Fraction \tab Fraction indeces under a \code{TMT_Set} \cr RAW_File \tab v.s.
 #'  }
+#'  
 #'@seealso 
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
@@ -396,8 +397,8 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
       dat_dir <- new_dat_dir
       assign("dat_dir", dat_dir, envir = .GlobalEnv)
       cat("dat_dir <- \"", dat_dir, "\"", sep = "")
-    } else if (fs::dir_exists(new_dat_di2r)) {
-      dat_dir <- new_dat_di2r
+    } else if (fs::dir_exists(new_dat_dir2)) {
+      dat_dir <- new_dat_dir2
       assign("dat_dir", dat_dir, envir = .GlobalEnv)
       cat("dat_dir <- \"", dat_dir, "\"", sep = "")
     } else {
@@ -578,20 +579,13 @@ check_raws <- function(df) {
   ls_raws <- label_scheme_full$RAW_File %>% unique()
   fs_raws <- fraction_scheme$RAW_File %>% unique()
   if (!(all(is.na(ls_raws)) | all(ls_raws %in% fs_raws))) {
-    pars <- read.csv(file.path(dat_dir, "Calls", "load_expts.txt"), 
-                     check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")
-
-    fn_frac <- pars %>% 
-      dplyr::filter(var == "frac_smry") %>% 
-      dplyr::select("value.1") %>% 
-      unlist() %>% 
-      as.character()
-    
+    load(file.path(dat_dir, "Calls", "load_expts.rda"))
+    fn_frac <- call_pars$frac_smry
     unlink(file.path(dat_dir, fn_frac))
     prep_fraction_scheme(dat_dir, fn_frac)
     load(file = file.path(dat_dir, "fraction_scheme.rda"))
   }
-
+  
   tmtinj_raw <- fraction_scheme %>%
     tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>%
     dplyr::select(-Fraction) %>%

@@ -4,8 +4,15 @@
 \alias{scoreEucDist}
 \title{Scores Euclidean distance}
 \usage{
-scoreEucDist(df, id, label_scheme_sub, anal_type, scale_log2r,
-  adjEucDist = FALSE, ...)
+scoreEucDist(
+  df,
+  id,
+  label_scheme_sub,
+  anal_type,
+  scale_log2r,
+  adjEucDist = FALSE,
+  ...
+)
 }
 \description{
 Scores Euclidean distance

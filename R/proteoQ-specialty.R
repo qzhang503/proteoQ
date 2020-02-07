@@ -287,4 +287,215 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
 }
 
 
+#' Makes heat maps
+#'
+#' @import stringr dplyr magrittr readr readxl rlang ggplot2 RColorBrewer pheatmap
+#' @param df_meta A file name of meta data.
+#' @examples
+#' proteo_hm(
+#'   df = Protein_delta.txt, 
+#'   id = gene, 
+#'   df_meta = hm_meta.xlsx, 
+#'   filepath = file.path(dat_dir, "Protein\\Heatmap"), 
+#'   filename = "kin_delta.png",
+#'   complete_cases = FALSE, 
+#'   annot_cols = NULL, 
+#'   annot_colnames = NULL, 
+#'   annot_rows = c("kin_class"), 
+#'   cluster_rows = FALSE, 
+#'   xmin = -1, 
+#'   xmax = 1, 
+#'   xmargin = .1, 
+#'   width = 5, 
+#'   height = 12,
+#'   arrange2_by = exprs(kin_class, gene), 
+#' )
+#' @export
+proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, 
+                      filepath = NULL, filename = NULL, complete_cases = FALSE, 
+                      annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
+                      xmin = -1, xmax = 1, xmargin = .1, ...) {
+  
+  dir.create(file.path(filepath), recursive = TRUE, showWarnings = FALSE)
+  
+  id <- rlang::enexpr(id)
+  df <- rlang::enexpr(df)
+  df_meta <- rlang::enexpr(df_meta)
+
+  if (is.null(df)) stop("Data file `df` cannot be NULL.", call. = FALSE)
+  if (is.null(df_meta)) stop("Metadata file `df_meta` cannot be NULL.", call. = FALSE)
+  if (is.null(id)) stop("Column key `id` cannot be NULL.", call. = FALSE)
+  if (is.null(filepath)) stop("`filepath` cannot be NULL.", call. = FALSE)
+  if (is.null(filename)) stop("`filename` cannot be NULL.", call. = FALSE)
+
+  id <- rlang::as_string(id)
+  df <- rlang::as_string(df)
+  df_meta <- rlang::as_string(df_meta)
+  
+  message("Use the default sheet name `Sheet1` for metadata Excel.")
+  
+  df_path <- file.path(filepath, df)
+  if (file.exists(df_path)) {
+    df <- readr::read_tsv(df_path)
+  } else {
+    stop("File not found: ", df_path, call. = FALSE)
+  }
+  
+  df_meta_path <- file.path(filepath, df_meta)
+  if (file.exists(df_meta_path)) {
+    df_meta <- readxl::read_excel(df_meta_path) %>% dplyr::filter(rowSums(!is.na(.)) > 0)
+  } else {
+    stop("File not found: ", df_meta_path, call. = FALSE)
+  }
+
+  dots <- rlang::enexprs(...)
+  filter2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter2_", names(.))]
+  arrange2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange2_", names(.))]
+  select2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select2_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter2_dots, arrange2_dots, select2_dots)]
+  
+  # needed defaults before calling `pheatmap`
+  if (is.null(dots$cluster_rows)) {
+    cluster_rows <- TRUE
+  } else {
+    cluster_rows <- dots$cluster_rows
+  }
+  
+  if (is.null(dots$cluster_cols)) {
+    cluster_cols <- TRUE
+  } else {
+    cluster_cols <- dots$cluster_cols
+  }
+  
+  if (is.null(dots$clustering_distance_rows)) {
+    clustering_distance_rows <- "euclidean"
+  } else {
+    clustering_distance_rows <- dots$clustering_distance_rows
+  }
+  
+  if (is.null(dots$clustering_distance_cols)) {
+    clustering_distance_cols <- "euclidean"
+  } else {
+    clustering_distance_cols <- dots$clustering_distance_cols
+  }
+  
+  n_color <- 500
+  if (is.null(dots$breaks)) {
+    color_breaks <- c(seq(from = xmin, -xmargin, length = n_color/2)[1:(n_color/2-1)],
+                      seq(-xmargin, xmargin, length = 3),
+                      seq(xmargin, xmax, length = n_color/2)[2:(n_color/2)])
+  } else if (is.na(dots$breaks)) {
+    color_breaks <- NA
+  } else {
+    color_breaks <- eval(dots$breaks, env = caller_env())
+  }
+  
+  if (is.null(dots$color)) {
+    mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
+  } else if (is.na(dots$color)) {
+    mypalette <- colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
+  } else {
+    mypalette <- eval(dots$color, env = caller_env())
+  }
+  
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
+  x_label <- expression("Ratio ("*log[2]*")")
+  
+  sample_ids <- df_meta$Sample_ID
+  
+  df <- df %>%
+    dplyr::mutate_at(vars(which(names(.) %in% sample_ids)), as.numeric) %>%
+    dplyr::mutate_at(vars(which(names(.) %in% sample_ids)), ~ setHMlims(.x, xmin, xmax)) %>%
+    dplyr::filter(!duplicated(!!rlang::sym(id)),
+                  !is.na(!!rlang::sym(id)),
+                  rowSums(!is.na(.[, which(names(.) %in% sample_ids)])) > 0) 
+  
+  df <- df %>% 
+    filters_in_call(!!!filter2_dots) %>% 
+    arrangers_in_call(!!!arrange2_dots)
+  
+  if (nrow(df) == 0) stop("No rows available after data filtratin.", call. = FALSE)
+  
+  df <- df %>%
+    dplyr::filter(!is.na(.[[id]])) %>% 
+    `rownames<-`(.[[id]])
+  
+  # generate `annotation_col` from keys in `annot_col`, et al.
+  if (is.null(annot_cols)) {
+    annotation_col <- NA
+  } else {
+    annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
+  }
+  
+  if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+    colnames(annotation_col) <- annot_colnames
+  }
+  
+  if (is.null(annot_rows)) {
+    annotation_row <- NA
+  } else {
+    annotation_row <- df %>% dplyr::select(annot_rows) %>% data.frame(check.names = FALSE)
+  }
+  
+  # column annotations
+  if (is.null(dots$annotation_colors)) {
+    annotation_colors <- setHMColor(annotation_col)
+  } else if (is.na(dots$annotation_colors)) {
+    annotation_colors <- NA
+  } else {
+    annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+  }
+  
+  if (complete_cases) {
+    df_hm <- df %>%
+      dplyr::filter(complete.cases(.[, names(.) %in% sample_ids]))
+  } else {
+    df_hm <- df
+  }
+  
+  df_hm <- df_hm %>%
+    `rownames<-`(.[[id]])	%>%
+    dplyr::select(which(names(.) %in% sample_ids))
+  
+  if (cluster_rows) {
+    d <- dist(df_hm, method = clustering_distance_rows)
+    d[is.na(d)] <- .5 * max(d, na.rm = TRUE)
+    h <- hclust(d)
+    dots$cluster_rows <- h
+    rm(d, h)
+  } else {
+    dots$cluster_rows <- FALSE
+  }
+  
+  if (cluster_cols) {
+    d_cols <- dist(t(df_hm), method = clustering_distance_cols)
+    d_cols[is.na(d_cols)] <- .5 * max(d_cols, na.rm = TRUE)
+    h_cols <- hclust(d_cols)
+    dots$cluster_cols <- h_cols
+    # rm(d_cols, h_cols) # h_cols also for subtrees
+  } else {
+    dots$cluster_cols <- FALSE
+  }
+  
+  filename <- gg_imgname(filename)
+  
+  # form `annotation_col` and `annotation_row` from `annot_col` and `annot_row` 
+  dots <- dots %>% 
+    .[! names(.) %in% c("mat", "filename", "annotation_col", "annotation_row", 
+                        "clustering_distance_rows", "clustering_distance_cols", 
+                        "color", "annotation_colors", "breaks")]
+  
+  p <- my_pheatmap(
+    mat = df_hm,
+    filename = file.path(filepath, filename),
+    annotation_col = annotation_col,
+    annotation_row = annotation_row, 
+    color = mypalette,
+    annotation_colors = annotation_colors,
+    breaks = color_breaks,
+    !!!dots
+  )
+}
 

@@ -80,10 +80,12 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'  protein \code{log2FC} across samples. Entries with \code{variances} less
 #'  than the threshold will be removed for enrichment analysis. The default is
 #'  0.5.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data in \code{\\Model\\Protein_[...]pVals.txt}; also see
-#'  \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical expression(s) for
-#'  the row order of data; also see \code{\link{prnHM}}.
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  against data in a primary file linked to \code{df}. See also
+#'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+#'  \code{arrange_}: Variable argument statements for the row ordering aganist
+#'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+#'  the format of \code{arrange_} statements. 
 #'@import dplyr rlang ggplot2 networkD3
 #'@importFrom magrittr %>%
 #'
@@ -149,7 +151,7 @@ prnGSEA <- function (gset_nms = "go_sets",
     , add = TRUE
   )
   
-  check_dots(c("id"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
   
   dir.create(file.path(dat_dir, "Protein\\GSEA\\log"), recursive = TRUE, showWarnings = FALSE)
 
@@ -172,7 +174,7 @@ prnGSEA <- function (gset_nms = "go_sets",
   # Sample selection criteria:
   #   !is_reference under "Reference"
   #   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-  info_anal(df = !!df, id = !!id, 
+  info_anal(df = !!df, df2 = NULL, id = !!id, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             filepath = !!filepath, filename = !!filename, 
             anal_type = "GSEA")(gset_nms = gset_nms, 
@@ -185,7 +187,7 @@ prnGSEA <- function (gset_nms = "go_sets",
 
 #'Protein GSEA by formula(e) in `pepSig` or `prnSig`
 fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff, 
-                      logFC_cutoff, gspval_cutoff, min_size, max_size, 
+                      logFC_cutoff, gspval_cutoff, gslogFC_cutoff, min_size, max_size, 
                       df, col_ind, id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
                       filepath, filename, ...) {
   

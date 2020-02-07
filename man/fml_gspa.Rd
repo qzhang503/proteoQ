@@ -4,10 +4,29 @@
 \alias{fml_gspa}
 \title{A helper function for GSPA}
 \usage{
-fml_gspa(fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, min_size,
-  max_size, min_delta, min_greedy_size, df, col_ind, id, gsets,
-  label_scheme_sub, complete_cases, scale_log2r, filepath, filename,
-  method, ...)
+fml_gspa(
+  fml,
+  fml_nm,
+  pval_cutoff,
+  logFC_cutoff,
+  gspval_cutoff,
+  gslogFC_cutoff,
+  min_size,
+  max_size,
+  min_delta,
+  min_greedy_size,
+  df,
+  col_ind,
+  id,
+  gsets,
+  label_scheme_sub,
+  complete_cases,
+  scale_log2r,
+  filepath,
+  filename,
+  method,
+  ...
+)
 }
 \description{
 A helper function for GSPA

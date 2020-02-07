@@ -20,10 +20,10 @@ anal_prnTrend(
 
 ## against selected samples
 anal_prnTrend(
+  col_select = BI,
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
-  col_select = BI,
   filename = sel.txt,
 )
 
@@ -32,10 +32,10 @@ anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
-  filter_prots = exprs(prot_n_pep >= 3),
+  filter_prots_by = exprs(prot_n_pep >= 3),
 )
 
-## manual m (proteins)
+## manual m degree of fuzziness (proteins)
 anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
@@ -100,7 +100,7 @@ anal_prnTrend(
 # ===================================
 # Visualization
 # ===================================
-## no NA imputation 
+## base (proteins, no NA imputation) 
 plot_prnTrend(
   col_order = Order, 
 )
@@ -110,10 +110,29 @@ plot_prnTrend(
 plot_prnTrend(
   impute_na = FALSE, 
   col_order = Order,
-  filter_by_clusters = exprs(cluster == 5),
+  filter2_by_clusters = exprs(cluster == 5),
   width = 8, 
   height = 10,
   filename = cl5.png,
+)
+
+# manual selection of secondary input data file(s)
+# may be used for optimizing individual plots
+plot_prnTrend(
+  df2 = c("Protein_Trend_Z_nclust5.txt"),
+  col_order = Order, 
+  filename = n5.png,
+)
+
+# manual secondary input(s) at specific rank(s)
+plot_prnTrend(
+  df2 = c("Protein_Trend_Z_nclust5.txt"),
+  impute_na = FALSE, 
+  col_order = Order,
+  filter2_by_clusters = exprs(cluster == 5),
+  width = 8, 
+  height = 10,
+  filename = n5_cl5.png,
 )
 
 ## NA imputation

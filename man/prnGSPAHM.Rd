@@ -4,22 +4,31 @@
 \alias{prnGSPAHM}
 \title{Heat map visualization of GSPA results}
 \usage{
-prnGSPAHM(scale_log2r = TRUE, complete_cases = FALSE,
-  impute_na = FALSE, fml_nms = NULL, annot_cols = NULL,
-  annot_colnames = NULL, annot_rows = NULL, filename = NULL, ...)
+prnGSPAHM(
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  fml_nms = NULL,
+  annot_cols = NULL,
+  annot_colnames = NULL,
+  annot_rows = NULL,
+  df2 = NULL,
+  filename = NULL,
+  ...
+)
 }
 \arguments{
 \item{scale_log2r}{Logical; at the TRUE default, input files with
 \code{_Z[...].txt} in name will be used. Otherwise, files with
-\code{_N[...].txt} in name will be taken. An error will be shown if no files
-are matched under given conditions.}
+\code{_N[...].txt} in name will be taken. An error will be thrown if no
+files are matched under given conditions.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; at TRUE, input files with \code{_impNA[...].txt} in
 name will be loaded. Otherwise, files without \code{_impNA} in name will be
-taken. An error will be shown if no files are matched under given
+taken. An error will be thrown if no files are matched under given
 conditions. The default is FALSE.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
@@ -39,13 +48,33 @@ without column annotation.}
 color-code essential terms on the side of heat maps. The default is NULL
 without row annotation.}
 
+\item{df2}{Character vector or string; the name(s) of secondary data file(s).
+An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+\code{df} generates secondary files such as
+\code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+section or \code{\link{prnHist}} for the description of a primary \code{df}.}
+
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data in \code{_essmap.txt}; see also \code{\link{normPSM}} \cr \cr
-\code{arrange_}: Logical expression(s) for the row ordering of data; also
-see \code{\link{prnHM}}. \cr \cr Additional arguments for
+\item{...}{\code{filter2_}: Variable argument statements for the row
+filtration against data in secondary file(s) of \code{_essmap.txt}. Each
+statement contains to a list of logical expression(s). The \code{lhs} needs
+to start with \code{filter2_}. The logical condition(s) at the \code{rhs}
+needs to be enclosed in \code{exprs} with round parenthesis. For example,
+\code{distance} is a column key in \code{Protein_GSPA_Z_essmap.txt}. The
+statement \code{filter2_ = exprs(distance <= .95),} will remove entries with
+\code{distance > 0.95}. See also \code{\link{normPSM}} for the format of
+\code{filter_} statements against primary data. \cr \cr \code{arrange2_}:
+Variable argument statements for the row ordering against data in secondary
+file(s) of \code{_essmap.txt}. The \code{lhs} needs to start with
+\code{arrange2_}. The expression(s) at the \code{rhs} needs to be
+enclosed in \code{exprs} with round parenthesis. For example,
+\code{distance} and \code{size} are column keys in
+\code{Protein_GSPA_Z_essmap.txt}. The statement \code{arrange2_ =
+exprs(distance, size),} will order entries by \code{distance}, then by
+\code{size}. See also \code{\link{prnHM}} for the format of \code{arrange_}
+statements against primary data. \cr \cr Additional arguments for
 \code{\link[pheatmap]{pheatmap}}, i.e., \code{fontsize }... \cr \cr Note
 arguments disabled from \code{pheatmap}: \cr \code{annotation_col}; instead
 use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
@@ -64,7 +93,7 @@ varargs of \code{filter_}.
 \section{\code{Protein_GSPA_[...].txt}}{
 
 
- \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
+ \tabular{ll}{ \strong{Key}   \tab \strong{Description}\cr term \tab a gene
  set term \cr is_essential \tab a logicial indicator of gene set essentiality
  \cr size \tab the number of IDs under a \code{term} \cr ess_size \tab the
  number of IDs that can be found under a corresponding essential set \cr
@@ -126,7 +155,7 @@ prnGSPA(
 # ===================================
 # a `term` is a subset of an `ess_term` if the distance is zero
 prnGSPAHM(
-  filter_by = exprs(distance <= .6),
+  filter2_by = exprs(distance <= .6),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   annot_rows = "ess_size",
@@ -135,8 +164,8 @@ prnGSPAHM(
 
 # human terms only
 prnGSPAHM(
-  filter_num = exprs(distance <= .95),
-  filter_sp = exprs(start_with_str("hs", term)),
+  filter2_by_dist = exprs(distance <= .95),
+  filter2_by_sp = exprs(start_with_str("hs", term)),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   filename = show_more_connectivity.png,
@@ -146,7 +175,7 @@ prnGSPAHM(
 prnGSPAHM(
   annot_cols = c("ess_idx", "ess_size"),
   annot_colnames = c("Eset index", "Size"),
-  filter_by = exprs(distance <= .95),
+  filter2_by = exprs(distance <= .95),
   color = colorRampPalette(c("blue", "white", "red"))(100),
   filename = custom_colors.png,
 )

@@ -5,15 +5,33 @@
 \alias{prnHist}
 \title{Histogram visualization}
 \usage{
-pepHist(col_select = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, show_curves = TRUE, show_vline = TRUE,
-  scale_y = TRUE, df = NULL, filepath = NULL, filename = NULL,
-  theme = NULL, ...)
+pepHist(
+  col_select = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  show_curves = TRUE,
+  show_vline = TRUE,
+  scale_y = TRUE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  theme = NULL,
+  ...
+)
 
-prnHist(col_select = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, show_curves = TRUE, show_vline = TRUE,
-  scale_y = TRUE, df = NULL, filepath = NULL, filename = NULL,
-  theme = NULL, ...)
+prnHist(
+  col_select = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  show_curves = TRUE,
+  show_vline = TRUE,
+  scale_y = TRUE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  theme = NULL,
+  ...
+)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -42,9 +60,15 @@ The default is TRUE.}
 \item{scale_y}{Logical; if TRUE, scale data on the \code{y-axis}. The default
 is TRUE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value

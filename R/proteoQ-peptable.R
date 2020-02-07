@@ -346,7 +346,8 @@ fmt_num_cols <- function (df) {
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  of data against the column keys in individual peptide tables of
 #'  \code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt}, etc.
-#'  Each statement contains to a list of logical expression(s). The \code{lhs}
+#'  \cr \cr The variable argument statements should be in the following format:
+#'  each statement contains to a list of logical expression(s). The \code{lhs}
 #'  needs to start with \code{filter_}. The logical condition(s) at the
 #'  \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis. For
 #'  example, \code{pep_len} is a column key present in \code{Mascot} peptide
@@ -355,26 +356,31 @@ fmt_num_cols <- function (df) {
 #'  \code{filter_peps_at = exprs(pep_len <= 50)} will remove peptide entries
 #'  with \code{pep_len > 50}. See also \code{\link{normPSM}}.
 #'@inheritParams normPSM
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
 #'@return The primary output is in \code{...\\Peptide\\Peptide.txt}.
 #'
 #'@example inst/extdata/examples/mergePep_.R
@@ -407,6 +413,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 
+  message("Primary column keys in `Peptide/TMTset1_LCMSinj1_Peptide_N.txt` etc. for `filter_` varargs.")
+  
   df <- normPep_Mplex(!!id, group_pep_by, !!!filter_dots) %T>% 
     write.table(filename, sep = "\t", col.names = TRUE, row.names = FALSE)
 
@@ -582,6 +590,8 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
   stopifnot(range_int[1] < range_int[2] & range_int[1] >= 0 & range_int[2] <= 100)
   
   dots <- rlang::enexprs(...)
+  
+  message("Primary column keys in `Peptide/Peptide.txt` for `slice_` varargs.")
 
   df <- load_prior(filename, id) %>% 
     normMulGau(
@@ -699,6 +709,8 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
   }
   
   stopifnot(id == "prot_acc") 
+  
+  message("Primary column keys in `Peptide/Peptide.txt` for `filter_` varargs.")
   
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
@@ -1079,7 +1091,7 @@ normPep <- function (id = c("pep_seq", "pep_seq_mod"),
   ok_filters <- identical_dots(call_nm = "normPep", curr_dots = filter_dots, pattern = "^filter_") 
   nonfilter_dots <- dots %>% .[! . %in% filter_dots]
   
-  if (!(is_empty(filter_dots) | is_empty(slice_dots))) stop("Use either `filter_` or `slice` but not both.")
+  if (!(is_empty(filter_dots) | is_empty(slice_dots))) stop("Use either `filter_` or `slice_` but not both.")
   
   filename <- file.path(dat_dir, "Peptide\\Peptide.txt")
   

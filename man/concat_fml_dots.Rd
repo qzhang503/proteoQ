@@ -4,8 +4,7 @@
 \alias{concat_fml_dots}
 \title{Concatenate formula(e) to varargs of dots}
 \usage{
-concat_fml_dots(fmls = NULL, fml_nms = NULL, dots = NULL,
-  anal_type = "zzz")
+concat_fml_dots(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type = "zzz")
 }
 \description{
 Concatenate formula(e) to varargs of dots

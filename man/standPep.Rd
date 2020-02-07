@@ -4,9 +4,16 @@
 \alias{standPep}
 \title{Standardize peptide results}
 \usage{
-standPep(method_align = c("MC", "MGKernel"), col_select = NULL,
-  range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL,
-  seed = NULL, plot_log2FC_cv = FALSE, ...)
+standPep(
+  method_align = c("MC", "MGKernel"),
+  col_select = NULL,
+  range_log2r = c(10, 90),
+  range_int = c(5, 95),
+  n_comp = NULL,
+  seed = NULL,
+  plot_log2FC_cv = FALSE,
+  ...
+)
 }
 \arguments{
 \item{method_align}{Character string indicating the method in aligning
@@ -310,7 +317,7 @@ pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
 pepHist(scale_log2r = TRUE, col_select = BI_1, filter_ = exprs(gene == "GAPDH"), filename = mcGAPDH.png)
 
 # heat map for `BI_1` samples
-# (outputs under `Peptide\\Heatmap` folder; for help, ?pepHM)
+# (outputs under `Peptide\Heatmap` folder; for help, ?pepHM)
 pepHM(
   col_select = BI_1, 
   xmin = -2,

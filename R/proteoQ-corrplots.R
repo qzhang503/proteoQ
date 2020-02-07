@@ -329,7 +329,7 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 pepCorr_logFC <- function (col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                            df = NULL, filepath = NULL, filename = NULL, ...) {
-  check_dots(c("id", "anal_type", "data_select"), ...)
+  check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
@@ -346,7 +346,7 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
   
   info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "Corrplot")(data_select = "logFC", ...)
 }
 
@@ -363,7 +363,7 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
 pepCorr_logInt <- function (col_select = NULL, col_order = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                             df = NULL, filepath = NULL, filename = NULL, ...) {
-  check_dots(c("id", "anal_type", "data_select"), ...)
+  check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
@@ -380,7 +380,7 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
   
   info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "Corrplot")(data_select = "logInt", ...)
 }
 
@@ -400,14 +400,16 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'  samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 #'  the NULL default, the column key \code{Order} will be used. If values under
 #'  column \code{Order} are left blank, samples will be ordered by their names.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. \cr Additional parameters for
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  against data in a primary file linked to \code{df}. See also
+#'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+#'  Additional parameters for
 #'  plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
 #'  of plot \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity \cr
 #'  \code{xmax}, the maximum \eqn{x} of logFC data or intensity data \cr
 #'  \code{xbreaks}, the breaks on \eqn{x} axis; the same breaks will be applied
 #'  to \eqn{y} axis.
-#'
+#'  
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr
 #'
@@ -466,7 +468,7 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 prnCorr_logFC <- function (col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                            df = NULL, filepath = NULL, filename = NULL, ...) {
-  check_dots(c("id", "anal_type", "data_select"), ...)
+  check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -483,7 +485,7 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
   
   info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "Corrplot")(data_select = "logFC", ...)
 }
 
@@ -501,7 +503,7 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
 prnCorr_logInt <- function (col_select = NULL, col_order = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                             df = NULL, filepath = NULL, filename = NULL, ...) {
-  check_dots(c("id", "anal_type", "data_select"), ...)
+  check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -518,7 +520,7 @@ prnCorr_logInt <- function (col_select = NULL, col_order = NULL,
   
   info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "Corrplot")(data_select = "logInt", ...)
 }
 

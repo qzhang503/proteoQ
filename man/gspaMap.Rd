@@ -4,11 +4,25 @@
 \alias{gspaMap}
 \title{Volcano plots of protein \code{log2FC} under gene sets}
 \usage{
-gspaMap(scale_log2r = TRUE, complete_cases = FALSE,
-  impute_na = FALSE, df = NULL, filepath = NULL, filename = NULL,
-  fml_nms = NULL, adjP = FALSE, show_labels = TRUE,
-  show_sig = "none", pval_cutoff = 0.05, logFC_cutoff = log2(1.2),
-  gset_nms = c("go_sets", "kegg_sets"), theme = NULL, ...)
+gspaMap(
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df = NULL,
+  df2 = NULL,
+  filepath = NULL,
+  filename = NULL,
+  fml_nms = NULL,
+  adjP = FALSE,
+  show_labels = TRUE,
+  show_sig = "none",
+  gspval_cutoff = 0.05,
+  gslogFC_cutoff = log2(1.2),
+  topn = 100,
+  gset_nms = c("go_sets", "kegg_sets"),
+  theme = NULL,
+  ...
+)
 }
 \arguments{
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
@@ -20,9 +34,21 @@ missing values will be used. The default is FALSE.}
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{df2}{Character vector or string; the name(s) of secondary data file(s).
+An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+\code{df} generates secondary files such as
+\code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+section or \code{\link{prnHist}} for the description of a primary \code{df}.}
 
 \item{filepath}{Use system default.}
 
@@ -43,20 +69,24 @@ be shown with \code{\link{gspaMap}}. The default is \code{"none"}.
 Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 \code{qVal} will be shown, respectively, in the facet grid of the plots.}
 
-\item{pval_cutoff}{Numeric value or vector for uses with
+\item{gspval_cutoff}{Numeric value or vector for uses with
 \code{\link{gspaMap}}. \code{Gene sets} with enrichment \code{pVals} less
 significant than the threshold will be excluded from volcano plot
 visualization. The default signficance is 0.05 for all formulae matched to
 or specified in argument \code{fml_nms}. Formula-specific threshold is
 allowed by supplying a vector of cut-off values.}
 
-\item{logFC_cutoff}{Numeric value or vector for uses with
+\item{gslogFC_cutoff}{Numeric value or vector for uses with
 \code{\link{gspaMap}}. \code{Gene sets} with absolute enrichment
 \code{log2FC} less than the threshold will be excluded from volcano plot
 visualization. The default magnitude is \code{log2(1.2) } for all formulae
 matched to or specified in argument \code{fml_nms}. Formula-specific
 threshold is allowed by supplying a vector of absolute values in
 \code{log2FC}.}
+
+\item{topn}{Numeric value or vector; top entries in gene sets ordered by
+increaseing \code{pVal} for visualization. The default is to use the top 100
+available entries.}
 
 \item{gset_nms}{Character vector containing the name(s) of gene sets for uses
 with \code{\link{gspaMap}}. By default, the names will match those used in
@@ -67,13 +97,19 @@ with \code{\link{gspaMap}}. By default, the names will match those used in
 theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
-plotting: \cr \code{xco}, the cut-off lines of fold changes at position
-\code{x}; the default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the
-cut-off line of \code{pVal} at position \code{y}; the default is \eqn{0.05}.
-\cr \code{width}, the width of plot; \cr \code{height}, the height of plot.
-\cr \code{nrow}, the number of rows in a plot.}
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements and the
+association between \code{filter_} and \code{df}. \cr \cr \code{filter2_}:
+Variable argument statements for the row filtration aganist data in
+secondary file(s) linked to \code{df2}. See also \code{\link{prnGSPAHM}} for
+the formate of \code{filter2_}, \code{normPSM} for the associateion between
+\code{filter_} and \code{df}. \cr \cr Additional parameters for plotting:
+\cr \code{xco}, the cut-off lines of fold changes at position \code{x}; the
+default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the cut-off line of
+\code{pVal} at position \code{y}; the default is \eqn{0.05}. \cr
+\code{width}, the width of plot; \cr \code{height}, the height of plot. \cr
+\code{nrow}, the number of rows in a plot.}
 }
 \description{
 \code{gspaMap} visualizes the volcano plots of protein subgroups under the
@@ -150,8 +186,8 @@ prnGSPA(
 
 # filtered by proteins with two or more identifying peptides for visualization
 gspaMap(
-  pval_cutoff = 5E-3,
-  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-3,
+  gslogFC_cutoff = log2(1.2),
   gset_nms = c("go_sets"),
   show_sig = pVal,
   show_labels = TRUE,
@@ -164,14 +200,21 @@ gspaMap(
 # (may be suitable with the examplary differences in `W16_vs_W2` being much greater than `W2_bat`...)
 gspaMap(
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
-  pval_cutoff = c(5E-2, 5E-2, 1E-10),
-  logFC_cutoff = log2(1.2),
+  gspval_cutoff = c(5E-2, 5E-2, 1E-10),
+  gslogFC_cutoff = log2(1.2),
   
   show_sig = pVal,
   show_labels = TRUE,
   yco = 0.05,
   filter_prots = exprs(prot_n_pep >= 2),
 )
+
+## gspaMap(...) maps secondary results of `[...]Protein_GSPA_{NZ}[_impNA].txt` 
+#  from prnGSPA(...) onto a primary `df` of `Protein[_impNA]_pVal.txt` 
+#  
+#  see also ?prnGSPA for additional examples involving both `df` and `df2`, 
+#  as well as `filter_` and `filter2_`
+
 
 }
 \seealso{

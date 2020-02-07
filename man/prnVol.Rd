@@ -5,13 +5,33 @@
 \alias{prnVol}
 \title{Volcano plots}
 \usage{
-pepVol(scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-  adjP = FALSE, show_labels = TRUE, df = NULL, filepath = NULL,
-  filename = NULL, fml_nms = NULL, theme = NULL, ...)
+pepVol(
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  adjP = FALSE,
+  show_labels = TRUE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  fml_nms = NULL,
+  theme = NULL,
+  ...
+)
 
-prnVol(scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-  adjP = FALSE, show_labels = TRUE, df = NULL, filepath = NULL,
-  filename = NULL, fml_nms = NULL, theme = NULL, ...)
+prnVol(
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  adjP = FALSE,
+  show_labels = TRUE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  fml_nms = NULL,
+  theme = NULL,
+  ...
+)
 }
 \arguments{
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
@@ -29,9 +49,15 @@ The default is FALSE.}
 \item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.
 The default is TRUE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{Use system default.}
 
@@ -47,13 +73,15 @@ the formula(e) will match those used in \code{\link{pepSig}} or
 theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
-plotting: \cr \code{xco}, the cut-off lines of fold changes at position
-\code{x}; the default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the
-cut-off line of \code{pVal} at position \code{y}; the default is \eqn{0.05}.
-\cr \code{width}, the width of plot; \cr \code{height}, the height of plot.
-\cr \code{nrow}, the number of rows in a plot.}
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+Additional parameters for plotting: \cr \code{xco}, the cut-off lines of
+fold changes at position \code{x}; the default is at \eqn{-1.2} and
+\eqn{+1.2}. \cr \code{yco}, the cut-off line of \code{pVal} at position
+\code{y}; the default is \eqn{0.05}. \cr \code{width}, the width of plot;
+\cr \code{height}, the height of plot. \cr \code{nrow}, the number of rows
+in a plot.}
 }
 \description{
 \code{pepVol} visualizes the volcano plots of peptide data.
@@ -131,8 +159,8 @@ prnGSPA(
 
 # filtered by proteins with two or more identifying peptides for visualization
 gspaMap(
-  pval_cutoff = 5E-3,
-  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-3,
+  gslogFC_cutoff = log2(1.2),
   gset_nms = c("go_sets"),
   show_sig = pVal,
   show_labels = TRUE,
@@ -145,8 +173,8 @@ gspaMap(
 # (may be suitable with the examplary differences in `W16_vs_W2` being much greater than `W2_bat`...)
 gspaMap(
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
-  pval_cutoff = c(5E-2, 5E-2, 1E-10),
-  logFC_cutoff = log2(1.2),
+  gspval_cutoff = c(5E-2, 5E-2, 1E-10),
+  gslogFC_cutoff = log2(1.2),
   
   show_sig = pVal,
   show_labels = TRUE,
@@ -154,45 +182,61 @@ gspaMap(
   filter_prots = exprs(prot_n_pep >= 2),
 )
 
+## gspaMap(...) maps secondary results of `[...]Protein_GSPA_{NZ}[_impNA].txt` 
+#  from prnGSPA(...) onto a primary `df` of `Protein[_impNA]_pVal.txt` 
+#  
+#  see also ?prnGSPA for additional examples involving both `df` and `df2`, 
+#  as well as `filter_` and `filter2_`
+
+
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data normalization \cr
+\code{\link{load_expts}} for a reduced working example in data
+ normalization \cr
 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
- 
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
- \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
- \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
- \code{\link{prnGSVA}} for gene set variance analysis \cr 
- \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
- 
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
- \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
- \code{\link{prnCorr_logInt}}  for correlation plots \cr 
- 
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
- \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
- 
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+ \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+ \code{\link{standPep}} for extended examples in peptide data normalization
+ \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+ summarization \cr \code{\link{standPrn}} for extended examples in protein
+ data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+ for extended examples in data purging \cr \code{\link{pepHist}} and
+ \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+ MS file names \cr
+
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+ \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+ \code{\link{start_with_str}}, \code{\link{end_with_str}},
+ \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+ data subsetting by character strings \cr
+
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+ \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+ \cr
+
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+ significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+ plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+ visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+ variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+ GSEA. \cr
+
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+ \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+ \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+ correlation plots \cr
+
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
+ analysis and visualization \cr \code{\link{anal_pepNMF}},
+ \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+ \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
+ analysis and visualization \cr
+
  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

@@ -4,9 +4,28 @@
 \alias{byfml_volcano}
 \title{Formula specific volcano plots}
 \usage{
-byfml_volcano(fml_nm, pval_cutoff, logFC_cutoff, df, col_ind, id, filepath,
-  filename, adjP, show_labels, anal_type, show_sig, gset_nms, scale_log2r,
-  complete_cases, impute_na, theme = NULL, ...)
+byfml_volcano(
+  fml_nm,
+  gspval_cutoff,
+  gslogFC_cutoff,
+  topn,
+  df,
+  df2,
+  col_ind,
+  id,
+  filepath,
+  filename,
+  adjP,
+  show_labels,
+  anal_type,
+  show_sig,
+  gset_nms,
+  scale_log2r,
+  complete_cases,
+  impute_na,
+  theme = NULL,
+  ...
+)
 }
 \description{
 Formula specific volcano plots

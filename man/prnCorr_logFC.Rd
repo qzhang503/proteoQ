@@ -7,21 +7,53 @@
 \alias{prnCorr_logInt}
 \title{Correlation plots}
 \usage{
-pepCorr_logFC(col_select = NULL, col_order = NULL,
-  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-  df = NULL, filepath = NULL, filename = NULL, ...)
+pepCorr_logFC(
+  col_select = NULL,
+  col_order = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 
-pepCorr_logInt(col_select = NULL, col_order = NULL,
-  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-  df = NULL, filepath = NULL, filename = NULL, ...)
+pepCorr_logInt(
+  col_select = NULL,
+  col_order = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 
-prnCorr_logFC(col_select = NULL, col_order = NULL,
-  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-  df = NULL, filepath = NULL, filename = NULL, ...)
+prnCorr_logFC(
+  col_select = NULL,
+  col_order = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 
-prnCorr_logInt(col_select = NULL, col_order = NULL,
-  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-  df = NULL, filepath = NULL, filename = NULL, ...)
+prnCorr_logInt(
+  col_select = NULL,
+  col_order = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -46,9 +78,15 @@ missing values will be used. The default is FALSE.}
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
@@ -60,8 +98,10 @@ is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr Additional parameters for
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+Additional parameters for
 plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
 of plot \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity \cr
 \code{xmax}, the maximum \eqn{x} of logFC data or intensity data \cr

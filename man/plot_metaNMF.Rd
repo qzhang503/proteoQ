@@ -4,10 +4,20 @@
 \alias{plot_metaNMF}
 \title{Heat maps of metagenes from NMF}
 \usage{
-plot_metaNMF(col_select = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = TRUE, df = NULL,
-  filepath = NULL, filename = NULL, rank = NULL, annot_cols = NULL,
-  annot_colnames = NULL, ...)
+plot_metaNMF(
+  col_select = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = TRUE,
+  df = NULL,
+  df2 = NULL,
+  filepath = NULL,
+  filename = NULL,
+  rank = NULL,
+  annot_cols = NULL,
+  annot_colnames = NULL,
+  ...
+)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -26,9 +36,21 @@ missing values will be used. The default is FALSE.}
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is TRUE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{df2}{Character vector or string; the name(s) of secondary data file(s).
+An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+\code{df} generates secondary files such as
+\code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+section or \code{\link{prnHist}} for the description of a primary \code{df}.}
 
 \item{filepath}{Use system default.}
 
@@ -48,11 +70,14 @@ annotation.}
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}. The default is NULL without name replacement.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data against the column keys in \code{Peptide.txt}, \code{Protein.txt} etc.;
-also see \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical
-expression(s) for the row ordering of data; also see \code{\link{prnHM}}.
-\cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}.}
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{prnHM}}. No \code{filter2_} available for corresponding
+secondary file(s). \cr \cr \code{arrange_}: Variable argument statements for
+the row ordering aganist data in a primary file linked to \code{df}. See
+also \code{\link{prnHM}} for the format of \code{arrange_} statements. No
+\code{arrange2_} available for corresponding secondary file(s). \cr \cr
+Additional arguments for \code{\link[pheatmap]{pheatmap}}.}
 }
 \description{
 \code{plot_metaNMF} is a wrapper of \code{\link[pheatmap]{pheatmap}} for the
@@ -190,8 +215,8 @@ plot_prnNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 12,
-  height = 12,
+  width = 14,
+  height = 14,
 )
 
 # analogous peptides
@@ -206,14 +231,25 @@ plot_pepNMFCon(
   filename = bi.pdf,
 )
 
+# manual selection of input data file(s)
+# may be used for optimizing individual plots
+plot_prnNMFCon(
+  df2 = c("Protein_NMF_Z_rank3_consensus.txt", "Protein_NMF_Z_rank4_consensus.txt"),
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 14,
+  height = 14,
+)
+
 ## NA imputation 
 # proteins, all available ranks
 plot_prnNMFCon(
   impute_na = TRUE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  width = 14,
+  height = 14,
 )
 
 # analogous peptides
@@ -237,8 +273,19 @@ plot_prnNMFCoef(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  width = 12,
+  height = 12,
+)
+
+# manual selection of input data file(s)
+# may be used for optimizing individual plots
+plot_prnNMFCoef(
+  df2 = c("Protein_NMF_Z_rank3_coef.txt"),  
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 12,
+  height = 12,
 )
 
 # analogous peptides
@@ -300,6 +347,22 @@ plot_metaNMF(
 
 # proteins, selected sample(s) and row ordering
 plot_metaNMF(
+  impute_na = FALSE,
+  col_select = BI_1,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  fontsize = 8,
+  fontsize_col = 5,
+  cellwidth = 6, 
+  cluster_rows = FALSE,
+  arrange_prots_by = exprs(gene),
+  filename = bi1_row_by_genes.png,
+)
+
+# manual selection of input .rda file(s)
+# may be used for optimizing individual plots
+plot_metaNMF(
+  df2 = c("Protein_NMF_Z_rank3.rda"),  
   impute_na = FALSE,
   col_select = BI_1,
   annot_cols = c("Color", "Alpha", "Shape"),

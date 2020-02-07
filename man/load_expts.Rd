@@ -4,8 +4,11 @@
 \alias{load_expts}
 \title{Load TMT experiments}
 \usage{
-load_expts(dat_dir = NULL, expt_smry = "expt_smry.xlsx",
-  frac_smry = "frac_smry.xlsx")
+load_expts(
+  dat_dir = NULL,
+  expt_smry = "expt_smry.xlsx",
+  frac_smry = "frac_smry.xlsx"
+)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to

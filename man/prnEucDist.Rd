@@ -5,15 +5,33 @@
 \alias{prnEucDist}
 \title{Distance plots}
 \usage{
-pepEucDist(col_select = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, adjEucDist = FALSE,
-  annot_cols = NULL, annot_colnames = NULL, df = NULL,
-  filepath = NULL, filename = NULL, ...)
+pepEucDist(
+  col_select = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  adjEucDist = FALSE,
+  annot_cols = NULL,
+  annot_colnames = NULL,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 
-prnEucDist(col_select = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, adjEucDist = FALSE,
-  annot_cols = NULL, annot_colnames = NULL, df = NULL,
-  filepath = NULL, filename = NULL, ...)
+prnEucDist(
+  col_select = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  adjEucDist = FALSE,
+  annot_cols = NULL,
+  annot_colnames = NULL,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -49,9 +67,15 @@ annotation.}
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}. The default is NULL without name replacement.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
@@ -64,15 +88,16 @@ is \code{.txt}. For image files, they are typically saved via
 image type will be determined by the extension of the file name.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
-of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
-etc. see also \code{\link{normPSM}} \cr \cr \code{arrange_}: Logical
-expression(s) for the row ordering of data; see also \code{\link{prnHM}}.
-\cr \cr Additional parameters for plotting: \cr \code{width}, the width of
-plot \cr \code{height}, the height of plot \cr \cr Additional arguments for
-\code{\link[pheatmap]{pheatmap}} \cr Note arguments disabled from
-\code{pheatmap}: \cr \code{annotation_col}; instead use keys indicated in
-\code{annot_cols} \cr \code{annotation_row}; instead use keys indicated in
-\code{annot_rows}}
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+\code{arrange_}: Variable argument statements for the row ordering aganist
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements. \cr \cr Additional parameters for
+plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
+of plot \cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}
+\cr Note arguments disabled from \code{pheatmap}: \cr \code{annotation_col};
+instead use keys indicated in \code{annot_cols} \cr \code{annotation_row};
+instead use keys indicated in \code{annot_rows}}
 }
 \value{
 Heat map visualization of distance matrices.

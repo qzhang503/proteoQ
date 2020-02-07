@@ -68,8 +68,8 @@ prnGSPA(
 
 # filtered by proteins with two or more identifying peptides for visualization
 gspaMap(
-  pval_cutoff = 5E-3,
-  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-3,
+  gslogFC_cutoff = log2(1.2),
   gset_nms = c("go_sets"),
   show_sig = pVal,
   show_labels = TRUE,
@@ -82,12 +82,19 @@ gspaMap(
 # (may be suitable with the examplary differences in `W16_vs_W2` being much greater than `W2_bat`...)
 gspaMap(
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
-  pval_cutoff = c(5E-2, 5E-2, 1E-10),
-  logFC_cutoff = log2(1.2),
+  gspval_cutoff = c(5E-2, 5E-2, 1E-10),
+  gslogFC_cutoff = log2(1.2),
   
   show_sig = pVal,
   show_labels = TRUE,
   yco = 0.05,
   filter_prots = exprs(prot_n_pep >= 2),
 )
+
+## gspaMap(...) maps secondary results of `[...]Protein_GSPA_{NZ}[_impNA].txt` 
+#  from prnGSPA(...) onto a primary `df` of `Protein[_impNA]_pVal.txt` 
+#  
+#  see also ?prnGSPA for additional examples involving both `df` and `df2`, 
+#  as well as `filter_` and `filter2_`
+
 

@@ -4,10 +4,20 @@
 \alias{plotEucDist}
 \title{Plots EucDist}
 \usage{
-plotEucDist(df = NULL, id = NULL, label_scheme_sub = NULL,
-  adjEucDist = FALSE, scale_log2r = TRUE, complete_cases = FALSE,
-  annot_cols, annot_colnames, filepath = NULL, filename = NULL,
-  anal_type = "EucDist", ...)
+plotEucDist(
+  df = NULL,
+  id = NULL,
+  label_scheme_sub = NULL,
+  adjEucDist = FALSE,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  annot_cols,
+  annot_colnames,
+  filepath = NULL,
+  filename = NULL,
+  anal_type = "EucDist",
+  ...
+)
 }
 \description{
 Plots EucDist

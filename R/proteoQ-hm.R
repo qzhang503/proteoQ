@@ -364,7 +364,7 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
                    df = NULL, filepath = NULL, filename = NULL,
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                    xmin = -1, xmax = 1, xmargin = 0.1, ...) {
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
@@ -385,11 +385,11 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
   
   info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
             scale_log2r = scale_log2r, complete_cases = complete_cases,impute_na = impute_na, 
-            df = !!df, filepath = !!filepath,
-            filename = !!filename, anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin,
-                                                          annot_cols = annot_cols, 
-                                                          annot_colnames = annot_colnames, 
-                                                          annot_rows = annot_rows, ...)
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename, 
+            anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin, 
+                                   annot_cols = annot_cols, 
+                                   annot_colnames = annot_colnames, 
+                                   annot_rows = annot_rows, ...)
 }
 
 
@@ -427,25 +427,25 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'@param xmax  Numeric; the maximum  x at a log2 scale. The default is 1.
 #'@param xmargin  Numeric; the margin in heat scales. The default is 0.1.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
-#'  of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
-#'  etc. Each statement contains to a list of logical expression(s). The
-#'  \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
-#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-#'  For example, \code{pep_len} is a column key present in \code{Mascot} peptide
-#'  tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
-#'  exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-#'  See also \code{\link{pepHist}}, \code{\link{normPSM}}. \cr \cr
-#'  \code{arrange_}: Logical expression(s) for the row ordering of data. The
-#'  \code{lhs} needs to start with \code{arrange_}. The logical condition(s) at
-#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-#'  For example, \code{arrange_peps_by = exprs(gene, prot_n_pep)} will arrange
-#'  entries by \code{gene}, then by \code{prot_n_pep}. \cr \cr Additional
-#'  parameters for plotting: \cr \code{width}, the width of plot \cr
-#'  \code{height}, the height of plot \cr \cr Additional arguments for
-#'  \code{\link[pheatmap]{pheatmap}}, i.e., \code{cluster_rows}... \cr \cr Note
-#'  arguments disabled for \code{pheatmap}: \cr \code{annotation_col}; instead
-#'  use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
-#'  use keys indicated in \code{annot_rows}
+#'  against data in a primary file linked to \code{df}. Each statement contains
+#'  to a list of logical expression(s). The \code{lhs} needs to start with
+#'  \code{filter_}. The logical condition(s) at the \code{rhs} needs to be
+#'  enclosed in \code{exprs} with round parenthesis. For example, \code{pep_len}
+#'  is a column key present in \code{Mascot} peptide tables of
+#'  \code{Peptide.txt}. The statement \code{filter_peps_at = exprs(pep_len <=
+#'  50)} will remove peptide entries with \code{pep_len > 50}. See also
+#'  \code{\link{pepHist}}, \code{\link{normPSM}}. \cr \cr \code{arrange_}:
+#'  Variable argument statements for the row ordering aganist data in a primary
+#'  file linked to \code{df}. The \code{lhs} needs to start with
+#'  \code{arrange_}. The expression(s) at the \code{rhs} needs to be enclosed in
+#'  \code{exprs} with round parenthesis. For example, \code{arrange_peps_by =
+#'  exprs(gene, prot_n_pep)} will arrange entries by \code{gene}, then by
+#'  \code{prot_n_pep}. \cr \cr Additional parameters for plotting: \cr
+#'  \code{width}, the width of plot \cr \code{height}, the height of plot \cr
+#'  \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}, i.e.,
+#'  \code{cluster_rows}... \cr \cr Note arguments disabled for \code{pheatmap}:
+#'  \cr \code{annotation_col}; instead use keys indicated in \code{annot_cols}
+#'  \cr \code{annotation_row}; instead use keys indicated in \code{annot_rows}
 #'
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr
@@ -507,7 +507,7 @@ prnHM <- function (col_select = NULL, col_benchmark = NULL,
                    df = NULL, filepath = NULL, filename = NULL,
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                    xmin = -1, xmax = 1, xmargin = 0.1, ...) {
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -528,11 +528,11 @@ prnHM <- function (col_select = NULL, col_benchmark = NULL,
   
   info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
             scale_log2r = scale_log2r, complete_cases = complete_cases,impute_na = impute_na, 
-            df = !!df, filepath = !!filepath,
-            filename = !!filename, anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin,
-                                                          annot_cols = annot_cols, 
-                                                          annot_colnames = annot_colnames, 
-                                                          annot_rows = annot_rows, ...)
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename, 
+            anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin, 
+                                   annot_cols = annot_cols, 
+                                   annot_colnames = annot_colnames, 
+                                   annot_rows = annot_rows, ...)
 }
 
 

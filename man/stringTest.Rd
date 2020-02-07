@@ -4,11 +4,20 @@
 \alias{stringTest}
 \title{String analysis}
 \usage{
-stringTest(df = NULL, id = gene, col_group = Group,
-  col_order = Order, label_scheme_sub = NULL,
-  db_path = "~\\\\proteoQ\\\\dbs\\\\string", score_cutoff = 0.7,
-  scale_log2r = TRUE, complete_cases = FALSE, filepath = NULL,
-  filename = NULL, ...)
+stringTest(
+  df = NULL,
+  id = gene,
+  col_group = Group,
+  col_order = Order,
+  label_scheme_sub = NULL,
+  db_path = "~\\\\proteoQ\\\\dbs\\\\string",
+  score_cutoff = 0.7,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 }
 \description{
 The input contains pVal fields

@@ -4,9 +4,18 @@
 \alias{fullVolcano}
 \title{Volcano plots for all proteins or peptides in a data set}
 \usage{
-fullVolcano(df = NULL, id = "gene", contrast_groups = NULL,
-  theme = NULL, fml_nm = NULL, filepath = NULL, filename = NULL,
-  adjP = FALSE, show_labels = TRUE, ...)
+fullVolcano(
+  df = NULL,
+  id = "gene",
+  contrast_groups = NULL,
+  theme = NULL,
+  fml_nm = NULL,
+  filepath = NULL,
+  filename = NULL,
+  adjP = FALSE,
+  show_labels = TRUE,
+  ...
+)
 }
 \description{
 Volcano plots for all proteins or peptides in a data set

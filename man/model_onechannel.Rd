@@ -5,8 +5,18 @@
 \title{Factorial model formula for interaction terms. All factors under one channel
 in `label_scheme_sub`}
 \usage{
-model_onechannel(df, id, formula, label_scheme_sub, complete_cases, method,
-  var_cutoff, pval_cutoff, logFC_cutoff, ...)
+model_onechannel(
+  df,
+  id,
+  formula,
+  label_scheme_sub,
+  complete_cases,
+  method,
+  var_cutoff,
+  pval_cutoff,
+  logFC_cutoff,
+  ...
+)
 }
 \description{
 Factorial model formula for interaction terms. All factors under one channel

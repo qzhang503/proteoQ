@@ -22,13 +22,13 @@
 #'@param logFC_cutoff Numeric; the cut-off in enrichment log2FC. Terms with
 #'  absolute log2FC smaller than the threshold will be removed from multiple
 #'  test corrections. The default is at log2(1.1).
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data in \code{Protein\\Protein_[impNA].txt} or
-#'  \code{Protein\\Model\\Protein_[impNA]pVals.txt}; see also
-#'  \code{\link{normPSM}} \cr \cr \code{arrange_}: Logical expression(s) for the
-#'  row ordering of data; also see \code{\link{prnHM}}. \cr \cr Additional
-#'  arguments for \code{\link{GSVA::gsva}}
-#'
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration
+#'  against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+#'  See also \code{\link{normPSM}} for the format of \code{filter_} statements.
+#'  \cr \cr \code{arrange_}: Variable argument statements for the row ordering
+#'  aganist data in a primary file linked to \code{df}. See also
+#'  \code{\link{prnHM}} for the format of \code{arrange_} statements. \cr \cr
+#'  Additional arguments for \code{\link{GSVA::gsva}}
 #'@example inst/extdata/examples/prnGSVA_.R
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr
@@ -101,7 +101,7 @@ prnGSVA <- function (gset_nms = "go_sets",
     , add = TRUE
   )
   
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
   
   err_msg1 <- "Argument `expr`, `gset.idx.list` and `annotation` will be determined automatically.\n"
   if (any(names(rlang::enexprs(...)) %in% c("expr", "gset.idx.list", "annotation"))) 
@@ -139,7 +139,7 @@ prnGSVA <- function (gset_nms = "go_sets",
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-	info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
+	info_anal(df = !!df, df2 = NULL, id = !!id, filepath = !!filepath, filename = !!filename, 
 	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
 	          anal_type = "GSVA")(lm_method, gset_nms, var_cutoff, pval_cutoff, logFC_cutoff, !!!dots)
 }

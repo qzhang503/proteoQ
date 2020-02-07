@@ -4,9 +4,18 @@
 \alias{purgePep}
 \title{Purge peptide data}
 \usage{
-purgePep(dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
-  adjSD = FALSE, keep_ohw = TRUE, col_select = NULL,
-  col_order = NULL, filename = NULL, theme = NULL, ...)
+purgePep(
+  dat_dir = NULL,
+  pt_cv = NULL,
+  max_cv = NULL,
+  adjSD = FALSE,
+  keep_ohw = TRUE,
+  col_select = NULL,
+  col_order = NULL,
+  filename = NULL,
+  theme = NULL,
+  ...
+)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to

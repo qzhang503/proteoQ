@@ -5,23 +5,61 @@
 \alias{prnMDS}
 \title{MDS plots}
 \usage{
-pepMDS(col_select = NULL, col_color = NULL, col_fill = NULL,
-  col_shape = NULL, col_size = NULL, col_alpha = NULL,
-  color_brewer = NULL, fill_brewer = NULL, size_manual = NULL,
-  shape_manual = NULL, alpha_manual = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, adjEucDist = FALSE,
-  classical = TRUE, method = "euclidean", p = 2, k = 3,
-  show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL,
-  theme = NULL, ...)
+pepMDS(
+  col_select = NULL,
+  col_color = NULL,
+  col_fill = NULL,
+  col_shape = NULL,
+  col_size = NULL,
+  col_alpha = NULL,
+  color_brewer = NULL,
+  fill_brewer = NULL,
+  size_manual = NULL,
+  shape_manual = NULL,
+  alpha_manual = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  adjEucDist = FALSE,
+  classical = TRUE,
+  method = "euclidean",
+  p = 2,
+  k = 3,
+  show_ids = TRUE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  theme = NULL,
+  ...
+)
 
-prnMDS(col_select = NULL, col_color = NULL, col_fill = NULL,
-  col_shape = NULL, col_size = NULL, col_alpha = NULL,
-  color_brewer = NULL, fill_brewer = NULL, size_manual = NULL,
-  shape_manual = NULL, alpha_manual = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, adjEucDist = FALSE,
-  classical = TRUE, method = "euclidean", p = 2, k = 3,
-  show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL,
-  theme = NULL, ...)
+prnMDS(
+  col_select = NULL,
+  col_color = NULL,
+  col_fill = NULL,
+  col_shape = NULL,
+  col_size = NULL,
+  col_alpha = NULL,
+  color_brewer = NULL,
+  fill_brewer = NULL,
+  size_manual = NULL,
+  shape_manual = NULL,
+  alpha_manual = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  adjEucDist = FALSE,
+  classical = TRUE,
+  method = "euclidean",
+  p = 2,
+  k = 3,
+  show_ids = TRUE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  theme = NULL,
+  ...
+)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -112,9 +150,15 @@ MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots. The default is TRUE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
@@ -131,12 +175,14 @@ image type will be determined by the extension of the file name.}
 theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-peptide or protein data; also see \code{\link{normPSM}}. \cr
-\code{arrange_}: Logical expression(s) for the row order of data; also see
-\code{\link{prnHM}}. \cr \cr Additional parameters for \code{ggsave}: \cr
-\code{width}, the width of plot; \cr \code{height}, the height of plot \cr
-\code{...}}
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+\code{arrange_}: Variable argument statements for the row ordering aganist
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements. \cr \cr Additional parameters for
+\code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
+height of plot \cr \code{...}}
 }
 \value{
 MDS plots.
@@ -144,7 +190,8 @@ MDS plots.
 \description{
 \code{pepMDS} visualizes the multidimensional scaling (MDS) of peptide \code{log2FC}.
 
-\code{prnMDS} visualizes the multidimensional scaling (MDS) of protein \code{log2FC}.
+\code{prnMDS} visualizes the multidimensional scaling (MDS) of protein
+\code{log2FC}.
 }
 \details{
 An Euclidean distance matrix of \code{log2FC} is returned by

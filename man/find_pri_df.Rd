@@ -2,11 +2,16 @@
 % Please edit documentation in R/proteoQ-informatics.R
 \name{find_pri_df}
 \alias{find_pri_df}
-\title{Helper for finding input `df`}
+\title{helper for finding input `df`}
 \usage{
-find_pri_df(anal_type = "Model", df = NULL, id = "gene",
-  impute_na = FALSE, ...)
+find_pri_df(
+  anal_type = "Model",
+  df = NULL,
+  id = "gene",
+  impute_na = FALSE,
+  ...
+)
 }
 \description{
-Helper for finding input `df`
+helper for finding input `df`
 }

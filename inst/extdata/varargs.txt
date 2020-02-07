@@ -1,0 +1,34 @@
+Utility	Primary	Secondary
+normPSM	"filter_: Mascot, F[...].csv; MaxQuant, msms[...].txt; SM, PSMexport[...].ssv"	NA
+PSM2Pep	NA	NA
+mergePep	filter_: TMTset1_LCMSinj1_Peptide_N.txt	NA
+standPep	slice_: Peptide.txt	NA
+Pep2Prn	filter_: Peptide.txt	NA
+standPrn	slice_: Protein.txt	NA
+pepHist	filter_: Peptide.txt	NA
+prnHist	filter_: Protein.txt	NA
+pepSig	filter_: Peptide[_impNA].txt	NA
+prnSig	filter_: Protein[_impNA].txt	NA
+pepMDS	filter_: Peptide[_impNA][_pVal].txt	NA
+prnMDS	filter_: Protein[_impNA][_pVal].txt	NA
+pepPCA	filter_: Peptide[_impNA][_pVal].txt	NA
+prnPCA	filter_: Protein[_impNA][_pVal].txt	NA
+pepEucDist	filter_: Peptide[_impNA][_pVal].txt	NA
+prnEucDist	filter_: Protein[_impNA][_pVal].txt	NA
+pepCorr_logFC	filter_: Peptide[_impNA][_pVal].txt	NA
+prnCorr_logFC	filter_: Protein[_impNA][_pVal].txt	NA
+pepHM	"filter_, arrange_: Peptide[_impNA][_pVal].txt"	NA
+prnHM	"filter_, arrange_: Protein[_impNA][_pVal].txt"	NA
+anal_prnTrend	filter_: Protein[_impNA][_pVal].txt	NA
+plot_prnTrend	NA	filter2_: [...]Protein_Trend_{NZ}[_impNA][...].txt
+anal_pepNMF	filter_: Peptide[_impNA][_pVal].txt	NA
+anal_prnNMF	filter_: Protein[_impNA][_pVal].txt	NA
+plot_pepNMFCon	NA	filter2_: [...]Peptide_NMF[...]_consensus.txt
+plot_prnNMFCon	NA	filter2_: [...]Protein_NMF[...]_consensus.txt
+plot_pepNMFCoef	NA	filter2_: [...]Peptide_NMF[...]_coef.txt
+plot_prnNMFCoef	NA	filter2_: [...]Protein_NMF[...]_coef.txt
+plot_metaNMF	"filter_, arrange_: Protein[_impNA][_pVal].txt"	NA
+prnGSPA	filter_: Protein[_impNA]_pVals.txt	NA
+prnGSPAHM	NA	filter2_: [...]Protein_GSPA_{NZ}[_impNA]_essmap.txt
+gspaMap	filter_: Protein[_impNA]_pVal.txt	filter2_: [...]Protein_GSPA_{NZ}[_impNA].txt
+anal_prnString	filter_: Protein[_impNA][_pVals].txt	NA

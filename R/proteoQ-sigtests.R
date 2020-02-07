@@ -332,10 +332,10 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 		}
 	}
 
-	df_op <- res_lm %>% 
-	  tibble::rownames_to_column(id) %>%
-		dplyr::right_join(df_nms, by = id) %>%
-		tibble::column_to_rownames(var = id)
+  df_op <- res_lm %>% 
+    tibble::rownames_to_column(id) %>%
+    dplyr::right_join(df_nms, by = id) %>%
+    tibble::column_to_rownames(var = id)	
 }
 
 
@@ -426,13 +426,15 @@ sigTest <- function(df, id, label_scheme_sub,
 	  save(call_pars, file = file.path(dat_dir, "Calls", file))
 	})
 	
-	df_op <- df_op %>%
-	  tibble::rownames_to_column(id) %>% 
-	  dplyr::mutate(!!id := forcats::fct_explicit_na(!!rlang::sym(id))) %>% 
-	  dplyr::right_join(df, ., by = id) %T>% 
-	  write.table(file.path(filepath, paste0(data_type, fn_prefix2)), sep = "\t",
-	              col.names = TRUE, row.names = FALSE)
-	
+	suppressWarnings(
+  	df_op <- df_op %>%
+  	  tibble::rownames_to_column(id) %>% 
+  	  dplyr::mutate(!!id := forcats::fct_explicit_na(!!rlang::sym(id))) %>% 
+  	  dplyr::right_join(df, ., by = id) %T>% 
+  	  write.table(file.path(filepath, paste0(data_type, fn_prefix2)), sep = "\t",
+  	              col.names = TRUE, row.names = FALSE)	  
+	)
+
 	wb <- createWorkbook("proteoQ")
 	addWorksheet(wb, sheetName = "Results")
 	openxlsx::writeData(wb, sheet = "Results", df_op)
@@ -458,7 +460,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
     mget(names(formals()), current_env()) %>% c(rlang::enexprs(...)) %>% save_call("pepSig")
   }, add = TRUE)
   
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
@@ -474,7 +476,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  
+
   reload_expts()
   
   if (!impute_na & method != "limma") {
@@ -482,7 +484,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
     warning("Coerce `impute_na = ", impute_na, "` at method = ", method, call. = FALSE)
   }
   
-  info_anal(df = !!df, id = !!id, 
+  info_anal(df = !!df, df2 = NULL, id = !!id, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             filepath = !!filepath, filename = !!filename, 
             anal_type = "Model")(method = method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
@@ -491,7 +493,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 
 #'Significance tests
 #'
-#'\code{prnSig} performs significance tests protein \code{log2FC}. 
+#'\code{prnSig} performs significance tests protein \code{log2FC}.
 #'
 #'In general, special characters of \code{+} or \code{-} should be avoided from
 #'contrast terms. Occasionally, such as in biological studies, it may be
@@ -533,7 +535,9 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'  (1|col_key_2)}... Currently only a syntax of single contrast are supported
 #'  for uses with random effects: \cr \code{~ Term["A - C"] + (1|col_key_1) +
 #'  (1|col_key_2)} \cr \cr \code{filter_}: Logical expression(s) for the row
-#'  filtration of data; also see \code{\link{normPSM}}.
+#'  filtration against data in a primary file of \code{Peptide[_impNA].txt} or
+#'  \code{Protein[_impNA].txt}. See also \code{\link{normPSM}} for the format of
+#'  \code{filter_} statements.
 #'@return The primary output is
 #'  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
 #'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. At
@@ -541,44 +545,53 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 #'
 #'@example inst/extdata/examples/prnSig_.R
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for protein NMF analysis and visualization \cr 
-#'  
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+#'  GSEA. \cr
+#'
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr
+#'
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein
+#'  trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
+#'  analysis and visualization \cr
+#'
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@import dplyr rlang ggplot2
@@ -594,7 +607,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
     mget(names(formals()), current_env()) %>% c(dots) %>% save_call("prnSig")
   }, add = TRUE)
   
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
 
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -618,7 +631,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
     warning("Coerce `impute_na = ", impute_na, "` at method = ", method, call. = FALSE)
   }
   
-  info_anal(df = !!df, id = !!id, 
+  info_anal(df = !!df, df2 = NULL, id = !!id, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             filepath = !!filepath, filename = !!filename, 
             anal_type = "Model")(method = method, var_cutoff, pval_cutoff, logFC_cutoff, ...)

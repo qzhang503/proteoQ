@@ -5,17 +5,41 @@
 \alias{prnHM}
 \title{Visualization of heat maps}
 \usage{
-pepHM(col_select = NULL, col_benchmark = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, df = NULL,
-  filepath = NULL, filename = NULL, annot_cols = NULL,
-  annot_colnames = NULL, annot_rows = NULL, xmin = -1, xmax = 1,
-  xmargin = 0.1, ...)
+pepHM(
+  col_select = NULL,
+  col_benchmark = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  annot_cols = NULL,
+  annot_colnames = NULL,
+  annot_rows = NULL,
+  xmin = -1,
+  xmax = 1,
+  xmargin = 0.1,
+  ...
+)
 
-prnHM(col_select = NULL, col_benchmark = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, df = NULL,
-  filepath = NULL, filename = NULL, annot_cols = NULL,
-  annot_colnames = NULL, annot_rows = NULL, xmin = -1, xmax = 1,
-  xmargin = 0.1, ...)
+prnHM(
+  col_select = NULL,
+  col_benchmark = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  annot_cols = NULL,
+  annot_colnames = NULL,
+  annot_rows = NULL,
+  xmin = -1,
+  xmax = 1,
+  xmargin = 0.1,
+  ...
+)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -36,9 +60,15 @@ missing values will be used. The default is FALSE.}
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value
@@ -70,25 +100,25 @@ the side of the indicated plot. The default is NULL without row annotation.}
 \item{xmargin}{Numeric; the margin in heat scales. The default is 0.1.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
-of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
-etc. Each statement contains to a list of logical expression(s). The
-\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
-the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-For example, \code{pep_len} is a column key present in \code{Mascot} peptide
-tables of \code{Peptide.txt}. The statement \code{filter_peps_at =
-exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-See also \code{\link{pepHist}}, \code{\link{normPSM}}. \cr \cr
-\code{arrange_}: Logical expression(s) for the row ordering of data. The
-\code{lhs} needs to start with \code{arrange_}. The logical condition(s) at
-the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-For example, \code{arrange_peps_by = exprs(gene, prot_n_pep)} will arrange
-entries by \code{gene}, then by \code{prot_n_pep}. \cr \cr Additional
-parameters for plotting: \cr \code{width}, the width of plot \cr
-\code{height}, the height of plot \cr \cr Additional arguments for
-\code{\link[pheatmap]{pheatmap}}, i.e., \code{cluster_rows}... \cr \cr Note
-arguments disabled for \code{pheatmap}: \cr \code{annotation_col}; instead
-use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
-use keys indicated in \code{annot_rows}}
+against data in a primary file linked to \code{df}. Each statement contains
+to a list of logical expression(s). The \code{lhs} needs to start with
+\code{filter_}. The logical condition(s) at the \code{rhs} needs to be
+enclosed in \code{exprs} with round parenthesis. For example, \code{pep_len}
+is a column key present in \code{Mascot} peptide tables of
+\code{Peptide.txt}. The statement \code{filter_peps_at = exprs(pep_len <=
+50)} will remove peptide entries with \code{pep_len > 50}. See also
+\code{\link{pepHist}}, \code{\link{normPSM}}. \cr \cr \code{arrange_}:
+Variable argument statements for the row ordering aganist data in a primary
+file linked to \code{df}. The \code{lhs} needs to start with
+\code{arrange_}. The expression(s) at the \code{rhs} needs to be enclosed in
+\code{exprs} with round parenthesis. For example, \code{arrange_peps_by =
+exprs(gene, prot_n_pep)} will arrange entries by \code{gene}, then by
+\code{prot_n_pep}. \cr \cr Additional parameters for plotting: \cr
+\code{width}, the width of plot \cr \code{height}, the height of plot \cr
+\cr Additional arguments for \code{\link[pheatmap]{pheatmap}}, i.e.,
+\code{cluster_rows}... \cr \cr Note arguments disabled for \code{pheatmap}:
+\cr \code{annotation_col}; instead use keys indicated in \code{annot_cols}
+\cr \code{annotation_row}; instead use keys indicated in \code{annot_rows}}
 }
 \value{
 Heat maps and optional sub trees.

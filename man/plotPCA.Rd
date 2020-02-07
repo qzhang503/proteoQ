@@ -4,13 +4,31 @@
 \alias{plotPCA}
 \title{Plots PCA}
 \usage{
-plotPCA(df = NULL, id = NULL, label_scheme_sub = NULL,
-  type = "obs", show_ids = TRUE, col_color = NULL, col_fill = NULL,
-  col_shape = NULL, col_size = NULL, col_alpha = NULL,
-  color_brewer = NULL, fill_brewer = NULL, size_manual = NULL,
-  shape_manual = NULL, alpha_manual = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, filepath = NULL,
-  filename = NULL, theme = NULL, anal_type = "PCA", ...)
+plotPCA(
+  df = NULL,
+  id = NULL,
+  label_scheme_sub = NULL,
+  type = "obs",
+  show_ids = TRUE,
+  col_color = NULL,
+  col_fill = NULL,
+  col_shape = NULL,
+  col_size = NULL,
+  col_alpha = NULL,
+  color_brewer = NULL,
+  fill_brewer = NULL,
+  size_manual = NULL,
+  shape_manual = NULL,
+  alpha_manual = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  filepath = NULL,
+  filename = NULL,
+  theme = NULL,
+  anal_type = "PCA",
+  ...
+)
 }
 \description{
 Plots PCA

@@ -2050,10 +2050,28 @@ check_dots <- function (blacklist = NULL, ...) {
   nms <- names(dots[dups])
   
   if (!rlang::is_empty(nms)) {
-    stop("Do not use argument(s): ", reduce(nms, paste, sep = ", "), call. = FALSE)
+    stop("Do not use argument(s): ", purrr::reduce(nms, paste, sep = ", "), call. = FALSE)
   }
 }
 
+#' check depreciated argments
+check_depreciated_args <- function (blacklist = NULL, ...) {
+  dots <- rlang::enexprs(...)
+  old_args <- purrr::map_chr(blacklist, `[[`, 1)
+  new_args <- purrr::map_chr(blacklist, `[[`, 2)
+  
+  depreciated <- purrr::map_lgl(names(dots), ~ .x %in% old_args)
+  nms <- names(dots[depreciated])
+  
+  ind <- which(old_args %in% nms)
+  old_args <- old_args %>% .[ind]
+  new_args <- new_args %>% .[ind]
+  
+  if (!rlang::is_empty(nms)) {
+    message("Depreciated argument(s): ", purrr::reduce(old_args, paste, sep = ", "))
+    stop("Use replacement argument(s): ", purrr::reduce(new_args, paste, sep = ", "), call. = FALSE)
+  }
+}
 
 #' force 'complete_cases = TRUE' at 'impute_na = FALSE'
 to_complete_cases <- function (complete_cases = FALSE, impute_na = FALSE) {

@@ -1,11 +1,11 @@
 #'GSPA of protein data
 #'
 #'\code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
-#'(GSPA) aganist protein \code{log2FC} data.
+#'(GSPA) against protein \code{log2FC} data.
 #'
 #'The significance \code{pVals} of individual proteins are first obtained from
 #'\code{\link{prnSig}}, followed by log10 transformation and separation into up-
-#'or down-regulated groups for each gene set. At the default of \code{method =
+#'or down-expressed groups for each gene set. At the default of \code{method =
 #'mean}, the geometric mean of \code{pVals}, \eqn{P}, are each calculated for
 #'the groups of up or down regulated proteins, with a penalty-like term
 #'
@@ -13,7 +13,7 @@
 #'
 #'where \eqn{n} and \eqn{m} are the numbers of entries with \eqn{p} values
 #'\eqn{\le} or \eqn{>} a significance cut-off, respectively. The quotient of the
-#'two \code{pVals} is then used to prepsent the significance of gene set
+#'two \eqn{P} values is then used to prepsent the significance of gene set
 #'enrichment. The arguments \code{pval_cutoff} and \code{logFC_cutoff} are used
 #'to discriminate low influence genes. Additional subsetting of data via the
 #'\code{vararg} approach of \code{filter_} is feasible. At \code{method =
@@ -28,19 +28,32 @@
 #'  values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
 #'  supported species are human, mouse and rat.
 #'@param method Character string; the method to assess the p-values of GSPA. The
-#'  default is \code{mean}.
+#'  default is \code{mean}. See also section \code{Details} for the
+#'  calculations.
 #'@param pval_cutoff Numeric value or vector; the cut-off in protein
 #'  significance \code{pVal}. Entries with \code{pVals} less significant than
-#'  the threshold will be ignored during enrichment analysis. The default is
-#'  0.05 for all formulae matched to or specified in argument \code{fml_nms}.
+#'  the threshold will be excluded from enrichment analysis. The default is 0.05
+#'  for all formulae matched to or specified in argument \code{fml_nms}.
+#'  Formula-specific threshold is allowed by supplying a vector of cut-off
+#'  values. See also \code{\link{prnSig}}.
+#'@param logFC_cutoff Numeric value or vector; the cut-off in protein
+#'  \code{log2FC}. Entries with absolute \code{log2FC} smaller than the
+#'  threshold will be excluded from enrichment analysis. The default magnitude
+#'  is \code{log2(1.2)} for all formulae matched to or specified in argument
+#'  \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+#'  of absolute values in \code{log2FC}.
+#'@param gspval_cutoff Numeric value or vector; the cut-off in gene-set
+#'  significance \code{pVal}. Only enrichment terms with \code{pVals} more
+#'  significant than the threshold will be reported. The default is 0.05 for all
+#'  formulae matched to or specified in argument \code{fml_nms}.
 #'  Formula-specific threshold is allowed by supplying a vector of cut-off
 #'  values.
-#'@param logFC_cutoff Numeric value or vector; the cut-off in protein
-#'  \code{log2FC}. The default magnitude is \code{log2(1.2)} for all formulae
-#'  matched to or specified in argument \code{fml_nms}. Entries with absolute
-#'  \code{log2FC} smaller than the threshold will be ignored during enrichment
-#'  analysis. Formula-specific threshold is allowed by supplying a vector of
-#'  absolute values in \code{log2FC}.
+#'@param gslogFC_cutoff Numeric value or vector; the cut-off in gene-set
+#'  enrichment fold change. Only enrichment terms with absolute fold change
+#'  greater than the threshold will be reported. The default magnitude is
+#'  \code{log2(1.2)} for all formulae matched to or specified in argument
+#'  \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+#'  of absolute values in \code{log2FC}.
 #'@param min_size Numeric value or vector; minimum number of protein entries for
 #'  consideration in gene set tests. The number is after data filtration by
 #'  \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
@@ -67,16 +80,15 @@
 #'  \code{1} for all formulae matched to or specified in argument
 #'  \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 #'  of sizes.
-#'@param gspval_cutoff Numeric value or vector; the cut-off in gene-set
-#'  significance \code{pVal}. Only enrichment terms with \code{pVals} more
-#'  significant than the threshold will be reported.
 #'@param fml_nms Character string or vector; the formula name(s). By default,
 #'  the formula(e) will match those used in \code{\link{pepSig}} or
 #'  \code{\link{prnSig}}.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data in \code{\\Model\\Protein_[...]pVals.txt}; also see
-#'  \code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical expression(s) for
-#'  the row order of data; also see \code{\link{prnHM}}.
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration
+#'  against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+#'  See also \code{\link{normPSM}} for the format of \code{filter_} statements.
+#'  \cr \cr \code{arrange_}: Variable argument statements for the row ordering
+#'  against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+#'  See also \code{\link{prnHM}} for the format of \code{arrange_} statements.
 #'@import dplyr rlang ggplot2 networkD3
 #'@importFrom magrittr %>%
 #'
@@ -135,7 +147,8 @@
 prnGSPA <- function (gset_nms = "go_sets", method = c("mean","limma"), 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                     gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, 
+                     gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
+                     min_size = 10, max_size = Inf, 
                      min_delta = 4, min_greedy_size = 1, 
                      fml_nms = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
   
@@ -187,6 +200,7 @@ prnGSPA <- function (gset_nms = "go_sets", method = c("mean","limma"),
                                 pval_cutoff = pval_cutoff, 
                                 logFC_cutoff = logFC_cutoff, 
                                 gspval_cutoff = gspval_cutoff, 
+                                gslogFC_cutoff = gslogFC_cutoff,
                                 min_size = min_size, 
                                 max_size = max_size, 
                                 min_delta = min_delta, 
@@ -207,8 +221,9 @@ prnGSPA <- function (gset_nms = "go_sets", method = c("mean","limma"),
 gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                      filepath = NULL, filename = NULL, 
-                     gset_nms = "go_sets", var_cutoff = 0.5, pval_cutoff = 5E-2,
-                     logFC_cutoff = log2(1.2), gspval_cutoff = 5E-2, 
+                     gset_nms = "go_sets", var_cutoff = 0.5, 
+                     pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
+                     gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1), 
                      min_size = 6, max_size = Inf, min_delta = 4, min_greedy_size = 1, 
                      method = "mean", anal_type = "GSPA", ...) {
 
@@ -232,7 +247,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
 
-  cat("Column keys available for data filtration are in `Protein\\Model\\Protein[_impNA]_pVals.txt`.\n")
+  # cat("Column keys available for data filtration are in `Protein\\Model\\Protein[_impNA]_pVals.txt`.\n")
   
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
@@ -273,10 +288,12 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                                    pval_cutoff, 
                                    logFC_cutoff, 
                                    gspval_cutoff, 
+                                   gslogFC_cutoff, 
                                    min_size, 
                                    max_size, 
                                    min_delta, 
-                                   min_greedy_size), 
+                                   min_greedy_size
+                              ), 
                               fml_gspa, 
                               df = df, 
                               col_ind = col_ind, 
@@ -295,8 +312,10 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                                    pval_cutoff, 
                                    logFC_cutoff, 
                                    gspval_cutoff, 
+                                   gslogFC_cutoff, 
                                    min_size, 
-                                   max_size), 
+                                   max_size
+                              ), 
                               fml_gsea, 
                               df = df, 
                               col_ind = col_ind, 
@@ -317,7 +336,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 #'
 #' @import purrr dplyr rlang
 #' @importFrom magrittr %>% %T>%
-fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, 
+fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gslogFC_cutoff, 
                       min_size, max_size, min_delta, min_greedy_size, 
                       df, col_ind, id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
                       filepath, filename, method, ...) {
@@ -370,7 +389,8 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff,
                                     df = df, 
                                     min_size = min_size, 
                                     min_delta = min_delta, 
-                                    gspval_cutoff = gspval_cutoff), 
+                                    gspval_cutoff = gspval_cutoff, 
+                                    gslogFC_cutoff = gslogFC_cutoff), 
                   rlang::abort("Unknown `method`."))
 
     idx <- purrr::map_dbl(res, is.null)
@@ -392,6 +412,8 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff,
     res_pass <- res[pass, ] %>% 
       dplyr::mutate_at(vars(grep("^pVal", names(.))), ~ replace(.x, .x < 1E-50, 1E-50))
   })
+  
+  if (nrow(res_pass) == 0) return(NULL)
   
   out <- local({
     adjp <- res_pass %>% 
@@ -466,7 +488,7 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff,
 
 
 #' check the size of a gene set
-ok_min_size <- function (df, min_delta, gspval_cutoff) {
+ok_min_size <- function (df, min_delta, gspval_cutoff, gslogFC_cutoff) {
   data <- df %>% 
     dplyr::group_by(contrast, valence) %>% 
     dplyr::filter(!is.na(log2Ratio), !is.na(p_val)) %>% 
@@ -482,6 +504,15 @@ ok_min_size <- function (df, min_delta, gspval_cutoff) {
   delta_p[is.na(delta_p)] <- 0
   if (nrow(delta_p) == 2) delta_p <- delta_p[2, ] - delta_p[1, ]
 
+  delta_fc <- data %>% 
+    dplyr::summarise(log2Ratio = mean(log2Ratio, na.rm = TRUE)) %>% 
+    dplyr::mutate(log2Ratio = ifelse(is.nan(log2Ratio), 0, log2Ratio)) %>% 
+    tidyr::spread(key = contrast, value = log2Ratio) %>% 
+    dplyr::ungroup(valence) %>% 
+    dplyr::select(-valence)
+  delta_fc[is.na(delta_fc)] <- 0
+  if (nrow(delta_fc) == 2) delta_fc <- delta_fc[2, ] + delta_fc[1, ]
+  
   delta_n <- data %>% 
     dplyr::summarise(n = mean(n, na.rm = TRUE)) %>% # empty levels will be kept
     tidyr::spread(key = contrast, value = n) %>% 
@@ -490,19 +521,24 @@ ok_min_size <- function (df, min_delta, gspval_cutoff) {
   delta_n[is.na(delta_n)] <- 0
   if (nrow(delta_n) == 2) delta_n <- delta_n[2, ] - delta_n[1, ]
 
-  sign(delta_p) == sign(delta_n) & abs(delta_p) >= -log10(gspval_cutoff) & abs(delta_n) >= min_delta 
+  sign(delta_p) == sign(delta_n) & 
+    abs(delta_p) >= -log10(gspval_cutoff) & 
+    abs(delta_n) >= min_delta & 
+    abs(delta_fc) >= gslogFC_cutoff
+    
 }
 
 
 #' gspa pVal calculations using geomean
-gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4, gspval_cutoff = 0.05) {
+gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4, 
+                              gspval_cutoff = 0.05, gslogFC_cutoff = log2(1)) {
   df <- df %>% dplyr::filter(.[["entrez"]] %in% gset)
   
   if (length(unique(df$entrez)) < min_size) return(NULL)
   
   df <- df %>% dplyr::group_by(contrast, valence)
 
-  ok_delta_n <- ok_min_size(df = df, min_delta = min_delta, gspval_cutoff = gspval_cutoff)
+  ok_delta_n <- ok_min_size(df = df, min_delta = min_delta, gspval_cutoff = gspval_cutoff, gslogFC_cutoff = gslogFC_cutoff)
 
   # penalty term
   dfw <- df %>% dplyr::mutate(p_val = ifelse(is.na(p_val), 1, p_val))
@@ -690,7 +726,7 @@ map_essential <- function (sig_sets) {
 #'
 #'@section \code{Protein_GSPA_[...].txt}:
 #'
-#'  \tabular{ll}{ \strong{Key}   \tab \strong{Descrption}\cr term \tab a gene
+#'  \tabular{ll}{ \strong{Key}   \tab \strong{Description}\cr term \tab a gene
 #'  set term \cr is_essential \tab a logicial indicator of gene set essentiality
 #'  \cr size \tab the number of IDs under a \code{term} \cr ess_size \tab the
 #'  number of IDs that can be found under a corresponding essential set \cr
@@ -714,7 +750,7 @@ map_essential <- function (sig_sets) {
 #'@inheritParams  prnEucDist
 #'@param impute_na Logical; at TRUE, input files with \code{_impNA[...].txt} in
 #'  name will be loaded. Otherwise, files without \code{_impNA} in name will be
-#'  taken. An error will be shown if no files are matched under given
+#'  taken. An error will be thrown if no files are matched under given
 #'  conditions. The default is FALSE.
 #'@param fml_nms Character string or vector; the formula name(s). By default,
 #'  the formula(e) will match those used in \code{\link{pepSig}} or
@@ -727,10 +763,24 @@ map_essential <- function (sig_sets) {
 #'  \code{_essmeta.txt} . The values under the selected keys will be used to
 #'  color-code essential terms on the side of heat maps. The default is NULL
 #'  without row annotation.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data in \code{_essmap.txt}; see also \code{\link{normPSM}} \cr \cr
-#'  \code{arrange_}: Logical expression(s) for the row ordering of data; also
-#'  see \code{\link{prnHM}}. \cr \cr Additional arguments for
+#'@param ... \code{filter2_}: Variable argument statements for the row
+#'  filtration against data in secondary file(s) of \code{_essmap.txt}. Each
+#'  statement contains to a list of logical expression(s). The \code{lhs} needs
+#'  to start with \code{filter2_}. The logical condition(s) at the \code{rhs}
+#'  needs to be enclosed in \code{exprs} with round parenthesis. For example,
+#'  \code{distance} is a column key in \code{Protein_GSPA_Z_essmap.txt}. The
+#'  statement \code{filter2_ = exprs(distance <= .95),} will remove entries with
+#'  \code{distance > 0.95}. See also \code{\link{normPSM}} for the format of
+#'  \code{filter_} statements against primary data. \cr \cr \code{arrange2_}:
+#'  Variable argument statements for the row ordering against data in secondary
+#'  file(s) of \code{_essmap.txt}. The \code{lhs} needs to start with
+#'  \code{arrange2_}. The expression(s) at the \code{rhs} needs to be
+#'  enclosed in \code{exprs} with round parenthesis. For example,
+#'  \code{distance} and \code{size} are column keys in
+#'  \code{Protein_GSPA_Z_essmap.txt}. The statement \code{arrange2_ =
+#'  exprs(distance, size),} will order entries by \code{distance}, then by
+#'  \code{size}. See also \code{\link{prnHM}} for the format of \code{arrange_}
+#'  statements against primary data. \cr \cr Additional arguments for
 #'  \code{\link[pheatmap]{pheatmap}}, i.e., \code{fontsize }... \cr \cr Note
 #'  arguments disabled from \code{pheatmap}: \cr \code{annotation_col}; instead
 #'  use keys indicated in \code{annot_cols} \cr \code{annotation_row}; instead
@@ -789,14 +839,9 @@ map_essential <- function (sig_sets) {
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@export
-prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                       # var_cutoff = .5, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                       # gspval_cutoff = 5E-2, min_size = 10, max_size = Inf, min_greedy_size = 1, 
-                       fml_nms = NULL, 
+prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, fml_nms = NULL, 
                        annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
-                       filename = NULL, 
-                       ...) {
-
+                       df2 = NULL, filename = NULL, ...) {
   check_dots(c("id", "anal_type", "df", "filepath"), ...)
   dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
   
@@ -805,6 +850,7 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = F
   
   scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
   
+  df2 <- rlang::enexpr(df2)
   filename <- rlang::enexpr(filename)
   annot_cols <- rlang::enexpr(annot_cols)
   annot_colnames <- rlang::enexpr(annot_colnames)
@@ -819,14 +865,14 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = F
 
   info_anal(id = !!id, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            df = NULL, filepath = NULL, filename = !!filename, 
+            df = NULL, df2 = !!df2, filepath = NULL, filename = !!filename, 
             anal_type = "GSPA_hm")(annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, 
                                    annot_rows = !!annot_rows, !!!dots)
 }
 
 
 #'Plot distance heat map of GSPA
-gspaHM <- function(scale_log2r, complete_cases, impute_na, filepath, filename, ...) {
+gspaHM <- function(scale_log2r, complete_cases, impute_na, df2, filepath, filename, ...) {
   dots <- rlang::enexprs(...)
   fmls <- dots %>% .[grepl("~", .)]
   dots <- dots %>% .[! names(.) %in% names(fmls)]
@@ -836,7 +882,7 @@ gspaHM <- function(scale_log2r, complete_cases, impute_na, filepath, filename, .
   
   fml_nms <- names(fmls)
   if (length(fml_nms) > 0) {
-    purrr::walk(fml_nms, byfml_gspahm, filepath, filename, scale_log2r, impute_na, !!!dots)
+    purrr::walk(fml_nms, byfml_gspahm, df2, filepath, filename, scale_log2r, impute_na, !!!dots)
   }
 }
 
@@ -845,24 +891,44 @@ gspaHM <- function(scale_log2r, complete_cases, impute_na, filepath, filename, .
 #'
 #' @import purrr dplyr rlang pheatmap networkD3
 #' @importFrom magrittr %>%
-byfml_gspahm <- function (fml_nm, filepath, filename, scale_log2r, impute_na, ...) {
-  ins <- list.files(path = file.path(filepath, fml_nm), pattern = "_essmap\\.txt$") %>% 
-    {if (impute_na) .[grepl("_impNA", .)] else .[!grepl("_impNA", .)]} %>% 
-    {if (scale_log2r) .[grepl("_GSPA_Z", .)] else .[grepl("_GSPA_N", .)]}
-
-  if (rlang::is_empty(ins)) {
-    stop("No GSPA inputs correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
-         call. = FALSE)
+byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r, impute_na, ...) {
+  ins <- list.files(path = file.path(filepath, fml_nm), pattern = "_essmap\\.txt$")
+  
+  if (purrr::is_empty(ins)) {
+    message("No GSPA results at ", fml_nm)
+    return(NULL)
   }
   
-  meta_ins <- list.files(path = file.path(filepath, fml_nm), pattern = "_essmeta\\.txt$") %>% 
-    {if (scale_log2r) .[grepl("_GSPA_Z", .)] else .[grepl("_GSPA_N", .)]} %>% 
-    {if (impute_na) .[grepl("_impNA", .)] else .[!grepl("_impNA", .)]}
-
-  if (rlang::is_empty(meta_ins)) {
-    stop("No meta data correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
-         call. = FALSE)
+  if (is.null(df2)) {
+    ins <- ins %>% 
+      {if (impute_na) .[grepl("_impNA", .)] else .[!grepl("_impNA", .)]} %>% 
+      {if (scale_log2r) .[grepl("_GSPA_Z", .)] else .[grepl("_GSPA_N", .)]}
+  
+    if (rlang::is_empty(ins)) {
+      stop("No GSPA inputs correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+           call. = FALSE)
+    }
+  } else {
+    local({
+      non_exists <- df2 %>% .[! . %in% ins]
+      if (!purrr::is_empty(non_exists)) {
+        stop("Missing _essmap file(s): ", purrr::reduce(non_exists, paste, sep = ", "), call. = FALSE)
+      }
+    })
+    
+    if (purrr::is_empty(df2)) stop("Input file(s) not found.", call. = FALSE)
+    ins <- ins %>% .[. %in% df2]    
   }
+
+  meta_ins <- list.files(path = file.path(filepath, fml_nm), pattern = "_essmeta\\.txt$") 
+  meta_ins <- local({
+    required <- ins %>% gsub("_essmap\\.txt$", "_essmeta.txt", .)
+    # non_exists <- meta_ins %>% .[! . %in% required]
+    # if (!purrr::is_empty(non_exists)) {
+    #   stop("Missing _essmeta file(s): ", purrr::reduce(non_exists, paste, sep = ", "), call. = FALSE)
+    # }
+    meta_ins <- meta_ins %>% .[. %in% required]
+  })
   
   purrr::walk2(ins, meta_ins, byfile_gspahm, fml_nm, filepath, filename, scale_log2r, impute_na, ...)
 }
@@ -878,12 +944,17 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) # %>% .[1]
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   filename <- paste0(custom_prefix, fn_prefix, ".", fn_suffix)
-  
+
   dots <- rlang::enexprs(...)
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
-  select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
-  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
+  if (!purrr::is_empty(dots)) {
+    if (any(grepl("^filter_", names(dots)))) {
+      stop("Primary `filter_` depreciated; use secondary `filter2_`.")
+    }      
+  }
+  filter2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter2_", names(.))]
+  arrange2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange2_", names(.))]
+  select2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select2_", names(.))]
+  dots <- dots %>% .[! . %in% c(filter2_dots, arrange2_dots, select2_dots)]
   
   all_by_greedy <- tryCatch(readr::read_tsv(file.path(filepath, fml_nm, ess_in), 
                                             col_types = cols(ess_term = col_factor(), 
@@ -894,8 +965,10 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
                                                              idx = col_double(),
                                                              ess_idx = col_double())), 
                             error = function(e) NA) %>% 
-    filters_in_call(!!!filter_dots) %>% 
-    arrangers_in_call(!!!arrange_dots)
+    filters_in_call(!!!filter2_dots) %>% 
+    arrangers_in_call(!!!arrange2_dots)
+  
+  rm(filter2_dots, arrange2_dots, select2_dots)
   
   if (nrow(all_by_greedy) == 0) stop("No GSPA terms available after data filtration.")
   
@@ -1045,7 +1118,7 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
   }
   
   if ((!is.na(width)) & (width > max_width)) {
-    warning("The plot width is set to", max_width, call. = FALSE)
+    warning("The plot width is set to ", max_width, call. = FALSE)
     width <- max_width
     height <- pmin(max_height, width * nrow / ncol)
   } 

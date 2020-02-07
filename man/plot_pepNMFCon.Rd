@@ -7,21 +7,57 @@
 \alias{plot_prnNMFCoef}
 \title{NMF plots}
 \usage{
-plot_pepNMFCon(col_select = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = TRUE, filename = NULL,
-  annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...)
+plot_pepNMFCon(
+  col_select = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = TRUE,
+  df2 = NULL,
+  filename = NULL,
+  annot_cols = NULL,
+  annot_colnames = NULL,
+  rank = NULL,
+  ...
+)
 
-plot_prnNMFCon(col_select = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = TRUE, filename = NULL,
-  annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...)
+plot_prnNMFCon(
+  col_select = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = TRUE,
+  df2 = NULL,
+  filename = NULL,
+  annot_cols = NULL,
+  annot_colnames = NULL,
+  rank = NULL,
+  ...
+)
 
-plot_pepNMFCoef(col_select = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = TRUE, filename = NULL,
-  annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...)
+plot_pepNMFCoef(
+  col_select = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = TRUE,
+  df2 = NULL,
+  filename = NULL,
+  annot_cols = NULL,
+  annot_colnames = NULL,
+  rank = NULL,
+  ...
+)
 
-plot_prnNMFCoef(col_select = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = TRUE, filename = NULL,
-  annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...)
+plot_prnNMFCoef(
+  col_select = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = TRUE,
+  df2 = NULL,
+  filename = NULL,
+  annot_cols = NULL,
+  annot_colnames = NULL,
+  rank = NULL,
+  ...
+)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -39,8 +75,14 @@ missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; at the TRUE default, input files with
 \code{_impNA[...].txt} in name will be loaded. Otherwise, files without
-\code{_impNA} in name will be taken. An error will be shown if no files are
+\code{_impNA} in name will be taken. An error will be thrown if no files are
 matched under given conditions.}
+
+\item{df2}{Character vector or string; the name(s) of secondary data file(s).
+An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+\code{df} generates secondary files such as
+\code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+section or \code{\link{prnHist}} for the description of a primary \code{df}.}
 
 \item{filename}{A representative file name to outputs. By default, the name(s)
 will be determined automatically. For text files, a typical file extension
@@ -61,12 +103,16 @@ annotation.}
 results of \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be
 used.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data against the column keys in \code{_NMF[...]_consensus.txt} for consensus
-plots or \code{_NMF[...]_coef.txt} for coefficient plots; also see
-\code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical expression(s) for
-the row ordering of data; also see \code{\link{prnHM}}. \cr \cr Additional
-arguments for \code{\link[pheatmap]{pheatmap}}}
+\item{...}{\code{filter2_}: Variable argument statements for the row
+filtration aganist data in secondary file(s) of
+\code{_NMF[...]_consensus.txt} for consensus plots or
+\code{_NMF[...]_coef.txt} for coefficient plots. See also
+\code{\link{prnGSPAHM}} for the format of \code{filter2_} statements. \cr
+\cr \code{arrange2_}: Variable argument statements for the row ordering
+aganist data in secondary file(s) of \code{_NMF[...]_consensus.txt} for
+consensus plots or \code{_NMF[...]_coef.txt} for coefficient plots. See also
+\code{\link{prnGSPAHM}} for the format of \code{arrange2_} statements. \cr
+\cr Additional arguments for \code{\link[pheatmap]{pheatmap}}}
 }
 \value{
 Concensus heat maps from NMF classification.
@@ -220,8 +266,8 @@ plot_prnNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 12,
-  height = 12,
+  width = 14,
+  height = 14,
 )
 
 # analogous peptides
@@ -236,14 +282,25 @@ plot_pepNMFCon(
   filename = bi.pdf,
 )
 
+# manual selection of input data file(s)
+# may be used for optimizing individual plots
+plot_prnNMFCon(
+  df2 = c("Protein_NMF_Z_rank3_consensus.txt", "Protein_NMF_Z_rank4_consensus.txt"),
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 14,
+  height = 14,
+)
+
 ## NA imputation 
 # proteins, all available ranks
 plot_prnNMFCon(
   impute_na = TRUE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  width = 14,
+  height = 14,
 )
 
 # analogous peptides
@@ -267,8 +324,19 @@ plot_prnNMFCoef(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  width = 12,
+  height = 12,
+)
+
+# manual selection of input data file(s)
+# may be used for optimizing individual plots
+plot_prnNMFCoef(
+  df2 = c("Protein_NMF_Z_rank3_coef.txt"),  
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 12,
+  height = 12,
 )
 
 # analogous peptides
@@ -330,6 +398,22 @@ plot_metaNMF(
 
 # proteins, selected sample(s) and row ordering
 plot_metaNMF(
+  impute_na = FALSE,
+  col_select = BI_1,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  fontsize = 8,
+  fontsize_col = 5,
+  cellwidth = 6, 
+  cluster_rows = FALSE,
+  arrange_prots_by = exprs(gene),
+  filename = bi1_row_by_genes.png,
+)
+
+# manual selection of input .rda file(s)
+# may be used for optimizing individual plots
+plot_metaNMF(
+  df2 = c("Protein_NMF_Z_rank3.rda"),  
   impute_na = FALSE,
   col_select = BI_1,
   annot_cols = c("Color", "Alpha", "Shape"),

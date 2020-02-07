@@ -129,8 +129,8 @@ plot_prnNMFCon(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 12,
-  height = 12,
+  width = 14,
+  height = 14,
 )
 
 # analogous peptides
@@ -145,14 +145,25 @@ plot_pepNMFCon(
   filename = bi.pdf,
 )
 
+# manual selection of input data file(s)
+# may be used for optimizing individual plots
+plot_prnNMFCon(
+  df2 = c("Protein_NMF_Z_rank3_consensus.txt", "Protein_NMF_Z_rank4_consensus.txt"),
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 14,
+  height = 14,
+)
+
 ## NA imputation 
 # proteins, all available ranks
 plot_prnNMFCon(
   impute_na = TRUE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  width = 14,
+  height = 14,
 )
 
 # analogous peptides
@@ -176,8 +187,19 @@ plot_prnNMFCoef(
   impute_na = FALSE,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  width = 10,
-  height = 10,
+  width = 12,
+  height = 12,
+)
+
+# manual selection of input data file(s)
+# may be used for optimizing individual plots
+plot_prnNMFCoef(
+  df2 = c("Protein_NMF_Z_rank3_coef.txt"),  
+  impute_na = FALSE,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  width = 12,
+  height = 12,
 )
 
 # analogous peptides
@@ -239,6 +261,22 @@ plot_metaNMF(
 
 # proteins, selected sample(s) and row ordering
 plot_metaNMF(
+  impute_na = FALSE,
+  col_select = BI_1,
+  annot_cols = c("Color", "Alpha", "Shape"),
+  annot_colnames = c("Lab", "Batch", "WHIM"),
+  fontsize = 8,
+  fontsize_col = 5,
+  cellwidth = 6, 
+  cluster_rows = FALSE,
+  arrange_prots_by = exprs(gene),
+  filename = bi1_row_by_genes.png,
+)
+
+# manual selection of input .rda file(s)
+# may be used for optimizing individual plots
+plot_metaNMF(
+  df2 = c("Protein_NMF_Z_rank3.rda"),  
   impute_na = FALSE,
   col_select = BI_1,
   annot_cols = c("Color", "Alpha", "Shape"),

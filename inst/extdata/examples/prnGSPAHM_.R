@@ -36,7 +36,7 @@ prnGSPA(
 # ===================================
 # a `term` is a subset of an `ess_term` if the distance is zero
 prnGSPAHM(
-  filter_by = exprs(distance <= .6),
+  filter2_by = exprs(distance <= .6),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   annot_rows = "ess_size",
@@ -45,8 +45,8 @@ prnGSPAHM(
 
 # human terms only
 prnGSPAHM(
-  filter_num = exprs(distance <= .95),
-  filter_sp = exprs(start_with_str("hs", term)),
+  filter2_by_dist = exprs(distance <= .95),
+  filter2_by_sp = exprs(start_with_str("hs", term)),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   filename = show_more_connectivity.png,
@@ -56,7 +56,7 @@ prnGSPAHM(
 prnGSPAHM(
   annot_cols = c("ess_idx", "ess_size"),
   annot_colnames = c("Eset index", "Size"),
-  filter_by = exprs(distance <= .95),
+  filter2_by = exprs(distance <= .95),
   color = colorRampPalette(c("blue", "white", "red"))(100),
   filename = custom_colors.png,
 )

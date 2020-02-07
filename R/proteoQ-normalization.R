@@ -78,8 +78,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
     SD <- df %>%
       dplyr::select(grep("^N_log2_R|^N_I", names(.))) %>%
       dblTrim(., range_log2r, range_int) %>%
-      `names<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.)))
-    
+      `names<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.)))
+
     cf_SD <- SD/mean(SD %>% .[names(.) %in% label_scheme_sd$Sample_ID], na.rm = TRUE)
     cf_SD <- cbind.data.frame(fct = cf_SD, SD) %>%
       tibble::rownames_to_column("Sample_ID") %>%
@@ -90,7 +90,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   
   # sample IDS for used in the current fitting
   find_fit_nms <- function(nm_a, nm_b) {
-    ind <- purrr::map(nm_b, ~ grepl(.x, nm_a)) %>% 
+    ind <- purrr::map(nm_b, ~ grepl(.x, nm_a, fixed = TRUE)) %>% 
       purrr::reduce(`|`)
     nm_a <- nm_a[ind]
   }
@@ -217,7 +217,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  params_sub <- df %>% 
 	    filters_in_call(!!!slice_dots) %>% 
 	    dplyr::select(nm_log2r_n) %>% 
-	    `names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
+	    # `names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
+	    `names<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
 	    fitKernelDensity(n_comp = n_comp, seed = seed, !!!nonslice_dots) %>% 
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
 	    dplyr::arrange(Sample_ID, Component)
@@ -269,7 +270,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		  params_z <- df %>% 
 		    filters_in_call(!!!slice_dots) %>% 
 		    dplyr::select(nm_log2r_z) %>% 
-		    `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
+		    # `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
+		    `names<-`(gsub("^Z_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
 		    fitKernelDensity(n_comp = n_comp, seed = seed, !!!nonslice_dots) %>% 
 		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
 		    dplyr::arrange(Sample_ID, Component) %>% 
@@ -278,7 +280,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		  params_z_sub <- df %>% 
 		    filters_in_call(!!!slice_dots) %>% 
 		    dplyr::select(nm_log2r_z) %>% 
-		    `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
+		    `names<-`(gsub("^Z_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
 		    fitKernelDensity(n_comp = n_comp, seed, !!!nonslice_dots) %>% 
 		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
 		    dplyr::arrange(Sample_ID, Component)
@@ -309,7 +311,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  # initialization: NA for Empty smpls; 0 for the rest
 	  x_vals <- df %>%
 	    dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
-	    `colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
+	    # `colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
+	    `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
 	    dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
 	    unlist() %>%
 	    data.frame(x = .) %>%
@@ -322,7 +325,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	    x_vals_fit <- df %>%
 	      filters_in_call(!!!slice_dots) %>% 
 	      dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
-	      `colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
+	      # `colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
+	      `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
 	      dplyr::select(which(names(.) %in% label_scheme_fit$Sample_ID)) %>% 
 	      dplyr::summarise_all(funs(median(., na.rm = TRUE))) 
 	    
@@ -345,7 +349,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  })
 	  
 	  df <- update_df(df, label_scheme, x_vals, sd_coefs)
-	} else { # method_align <- c("YWHAE", "CBR4")
+	} else { 
 		# depreciated
 	  if(!all(method_align %in% df[["gene"]])) {
 			stop(paste(setdiff(method_align, df[["gene"]]),
@@ -355,7 +359,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		cf_x <- df %>%
 			dplyr::filter(.[["gene"]] %in% method_align) %>%
 			dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
-			`colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
+			`colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
 			dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
 			unlist() %>%
 			data.frame(x = .) %>%
@@ -542,11 +546,4 @@ fitKernelDensity <- function (df, n_comp = 3, seed = NULL, ...) {
 		dplyr::mutate(Component = rep(1:n_comp, nrow(.)/n_comp)) %>%
 		dplyr::mutate(Height = .$lambda * dnorm(.$mean, mean = .$mean, sd = .$sd))
 }
-
-
-
-
-
-
-
 

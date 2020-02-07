@@ -4,8 +4,11 @@
 \alias{Pep2Prn}
 \title{Interim protein data}
 \usage{
-Pep2Prn(method_pep_prn = c("median", "mean", "weighted.mean", "top.3"),
-  use_unique_pep = TRUE, ...)
+Pep2Prn(
+  method_pep_prn = c("median", "mean", "weighted.mean", "top.3"),
+  use_unique_pep = TRUE,
+  ...
+)
 }
 \arguments{
 \item{method_pep_prn}{Character string; the method to summarise the

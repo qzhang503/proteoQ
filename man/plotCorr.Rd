@@ -4,10 +4,20 @@
 \alias{plotCorr}
 \title{Correlation plots}
 \usage{
-plotCorr(df = NULL, id, anal_type, data_select, col_select = NULL,
-  col_order = NULL, label_scheme_sub = label_scheme_sub,
-  scale_log2r = scale_log2r, complete_cases = complete_cases,
-  filepath = filepath, filename = filename, ...)
+plotCorr(
+  df = NULL,
+  id,
+  anal_type,
+  data_select,
+  col_select = NULL,
+  col_order = NULL,
+  label_scheme_sub = label_scheme_sub,
+  scale_log2r = scale_log2r,
+  complete_cases = complete_cases,
+  filepath = filepath,
+  filename = filename,
+  ...
+)
 }
 \description{
 Correlation plots
