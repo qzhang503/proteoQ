@@ -4,9 +4,16 @@
 \alias{standPrn}
 \title{Standardize protein results}
 \usage{
-standPrn(method_align = c("MC", "MGKernel"), range_log2r = c(10, 90),
-  range_int = c(5, 95), n_comp = NULL, seed = NULL,
-  col_select = NULL, cache = TRUE, ...)
+standPrn(
+  method_align = c("MC", "MGKernel"),
+  range_log2r = c(10, 90),
+  range_int = c(5, 95),
+  n_comp = NULL,
+  seed = NULL,
+  col_select = NULL,
+  cache = TRUE,
+  ...
+)
 }
 \arguments{
 \item{method_align}{Character string indicating the method in aligning
@@ -299,7 +306,7 @@ prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
 prnHist(scale_log2r = TRUE, col_select = BI_1, filter_ = exprs(gene == "GAPDH"), filename = mcGAPDH.png)
 
 # heat map
-# (outputs under `Protein\\Heatmap` folder; for help, ?pepHM)
+# (outputs under `Protein\Heatmap` folder; for help, ?pepHM)
 prnHM(
   col_select = BI_1, 
   xmin = -2,

@@ -4,7 +4,7 @@
 \alias{byfml_gspahm}
 \title{A helper function for gspaHM by formula names}
 \usage{
-byfml_gspahm(fml_nm, filepath, filename, scale_log2r, impute_na, ...)
+byfml_gspahm(fml_nm, df2, filepath, filename, scale_log2r, impute_na, ...)
 }
 \description{
 A helper function for gspaHM by formula names

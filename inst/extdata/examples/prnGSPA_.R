@@ -22,35 +22,97 @@ pepSig(
 
 prnSig(impute_na = FALSE)
 
-# GSPA
+# GSPA analysis
 prnGSPA(
   impute_na = FALSE,
   pval_cutoff = 5E-2, # protein pVal threshold
   logFC_cutoff = log2(1.2), # protein log2FC threshold
-  gspval_cutoff = 5E-2, # gene-set threshold
+  gspval_cutoff = 5E-2, # gene-set pVal threshold
+  gslogFC_cutoff = log2(1.2), # gene-set log2FC threshold
   gset_nms = c("go_sets", "kegg_sets"), 
 )
 
-# GSPA under volcano plots
+# GSPA visualization under volcano plots
 gspaMap(
   impute_na = FALSE,
   show_labels = FALSE, 
-  pval_cutoff = 5E-2, # gene set threshold
-  logFC_cutoff = log2(1.2), # gene set log2FC threshold
+  gspval_cutoff = 5E-2, 
+  gslogFC_cutoff = log2(1.2), 
   show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
+  xco = 1.2, # position of x-axis cut-off lines
+  yco = 0.05, # position of a y-axis cut-off line 
 )
 
 ## row filtration
 prnGSPA(
   impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
   gset_nms = c("go_sets", "kegg_sets"),
   filter_prots_by_npep = exprs(prot_n_pep >= 3),
   filename = unifil.txt,
+)
+
+# by default, volcano-plot visualization for all GSPA result files, 
+#   which are "Protein_GSPA_Z.txt" and "unifil_Protein_GSPA_Z.txt" 
+#   up to this point
+gspaMap(
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
+# or manually supply specific secondary file(s) with `df2`; 
+# may consider the same primary `fliter_` varargs as those
+#   in the corresponding `prnGSPA(...)`
+gspaMap(
+  df2 = "unifil_Protein_GSPA_Z.txt", 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
+# possible to visualize all proteins without primary `filter_` varargs, 
+#   but it is users' responsibility to note that 
+#   "unifil_Protein_GSPA_Z.txt" is from 
+#   prnGSA(filter_prots_by_npep = exprs(prot_n_pep >= 3), ...)
+gspaMap(
+  df2 = "unifil_Protein_GSPA_Z.txt", 
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
+# may apply both primary `filter_` varargs against `df` 
+#   and secondary `fliter2_` varargs aganist `df2`
+gspaMap(
+  df2 = "unifil_Protein_GSPA_Z.txt", 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  filter2_ess_size = exprs(ess_size >= 1),   
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
+# can also visualize results for specific formula(e) and/or 
+#   specific `df2`
+gspaMap(
+  fml_nms = "W16_vs_W2",
+  df2 = "unifil_Protein_GSPA_Z.txt", 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  filter2_ess_size = exprs(ess_size >= 1),   
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
 )
 
 ## customized thresholds
@@ -58,13 +120,22 @@ prnGSPA(
 prnGSPA(
   impute_na = FALSE, 
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
-  pval_cutoff = c(5E-2, 5E-2, 1E-10), 
-  logFC_cutoff = c(log2(1.05), log2(1.1), log2(1.2)), 
-  gspval_cutoff = c(5E-2, 5E-2, 1E-5), 
+  pval_cutoff = c(5E-2, 5E-2, 1E-6), 
+  logFC_cutoff = c(log2(1.1), log2(1.1), log2(1.2)), 
+  gspval_cutoff = c(5E-2, 5E-2, 1E-4), 
   max_size = c(Inf, Inf, 120), 
-  gset_nms = c("go_sets", "kegg_sets"), 
+  gset_nms = c("go_sets"), 
   filter_by_npep = exprs(prot_n_pep >= 3), 
   filename = diffil.txt,
+)
+
+gspaMap(
+  df2 = "diffil_Protein_GSPA_Z.txt", 
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
 )
 
 ## NA imputation
@@ -88,9 +159,6 @@ prnSig(impute_na = TRUE)
 
 prnGSPA(
   impute_na = TRUE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
   gset_nms = c("go_sets", "kegg_sets"),
   filter_prots_by_npep = exprs(prot_n_pep >= 3),
 )
@@ -101,7 +169,7 @@ prnGSPA(
 # ===================================
 # a `term` is a subset of an `ess_term` if the distance is zero
 prnGSPAHM(
-  filter_by = exprs(distance <= .6),
+  filter2_by = exprs(distance <= .6),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   annot_rows = "ess_size",
@@ -110,8 +178,8 @@ prnGSPAHM(
 
 # human terms only
 prnGSPAHM(
-  filter_num = exprs(distance <= .95),
-  filter_sp = exprs(start_with_str("hs", term)),
+  filter2_num = exprs(distance <= .95),
+  filter2_sp = exprs(start_with_str("hs", term)),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   filename = show_more_connectivity.png,
@@ -121,8 +189,17 @@ prnGSPAHM(
 prnGSPAHM(
   annot_cols = c("ess_idx", "ess_size"),
   annot_colnames = c("Eset index", "Size"),
-  filter_by = exprs(distance <= .95),
+  filter2_by = exprs(distance <= .95),
   color = colorRampPalette(c("blue", "white", "red"))(100),
   filename = custom_colors.png,
 )
 
+# can also visualize results for specific `df2` and formula(e)
+prnGSPAHM(
+  df2 = "diffil_Protein_GSPA_Z_essmap.txt", 
+  fml_nms = "W16_vs_W2", 
+  annot_cols = c("ess_idx", "ess_size"),
+  annot_colnames = c("Eset index", "Size"),
+  filter2_by = exprs(distance <= .95),
+  filename = w16_vs_w2.png,
+)

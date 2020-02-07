@@ -334,8 +334,8 @@ prnGSPA(
 gspaMap(
   impute_na = FALSE,
 	show_labels = TRUE, 
-	pval_cutoff = 5E-2, # gene set threshold
-	logFC_cutoff = log2(1.2), # gene set log2FC threshold
+	gspval_cutoff = 5E-2, # gene set threshold
+	gslogFC_cutoff = log2(1.2), # gene set log2FC threshold
 	show_sig = pVal, 
 	yco = 0.05, 
 )
@@ -343,7 +343,7 @@ gspaMap(
 ### GSPA distance heat map and network 
 # human subset
 prnGSPAHM(
-	filter_sp = exprs(start_with_str("hs", term)), 
+	filter2_sp = exprs(start_with_str("hs", term)), 
 	annot_cols = "ess_idx",
 	annot_colnames = "Eset index",
 	annot_rows = "ess_size", 
@@ -351,8 +351,8 @@ prnGSPAHM(
 )
 
 prnGSPAHM(
-	filter_by = exprs(distance <= .33),
-	filter_sp = exprs(start_with_str("hs", term)), 
+	filter2_by = exprs(distance <= .33),
+	filter2_sp = exprs(start_with_str("hs", term)), 
 	annot_cols = "ess_idx",
 	annot_colnames = "Eset index",
 	annot_rows = "ess_size", 

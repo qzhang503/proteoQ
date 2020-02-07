@@ -4,9 +4,15 @@
 \alias{annotPSM}
 \title{Annotates PSM results}
 \usage{
-annotPSM(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
-  fasta = NULL, expt_smry = "expt_smry.xlsx", plot_rptr_int = TRUE,
-  plot_log2FC_cv = TRUE, ...)
+annotPSM(
+  group_psm_by = "pep_seq",
+  group_pep_by = "prot_acc",
+  fasta = NULL,
+  expt_smry = "expt_smry.xlsx",
+  plot_rptr_int = TRUE,
+  plot_log2FC_cv = TRUE,
+  ...
+)
 }
 \arguments{
 \item{group_psm_by}{A character string specifying the method in PSM grouping.

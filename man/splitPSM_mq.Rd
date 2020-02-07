@@ -4,10 +4,19 @@
 \alias{splitPSM_mq}
 \title{Splits PSM tables}
 \usage{
-splitPSM_mq(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
-  fasta = NULL, pep_unique_by = "group", corrected_int = TRUE,
-  rptr_intco = 1000, rm_craps = FALSE, rm_reverses = TRUE,
-  annot_kinases = FALSE, plot_rptr_int = TRUE, ...)
+splitPSM_mq(
+  group_psm_by = "pep_seq",
+  group_pep_by = "prot_acc",
+  fasta = NULL,
+  pep_unique_by = "group",
+  corrected_int = TRUE,
+  rptr_intco = 1000,
+  rm_craps = FALSE,
+  rm_reverses = TRUE,
+  annot_kinases = FALSE,
+  plot_rptr_int = TRUE,
+  ...
+)
 }
 \arguments{
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with

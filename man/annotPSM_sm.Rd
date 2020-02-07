@@ -5,10 +5,17 @@
 \title{Annotates \code{Spectrum Mill} PSMs following \code{splitPSM_sm} and
 \code{cleanupPSM}}
 \usage{
-annotPSM_sm(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
-  fasta = NULL, expt_smry = "expt_smry.xlsx", rm_krts = FALSE,
-  plot_rptr_int = TRUE, plot_log2FC_cv = TRUE,
-  use_lowercase_aa = TRUE, ...)
+annotPSM_sm(
+  group_psm_by = "pep_seq",
+  group_pep_by = "prot_acc",
+  fasta = NULL,
+  expt_smry = "expt_smry.xlsx",
+  rm_krts = FALSE,
+  plot_rptr_int = TRUE,
+  plot_log2FC_cv = TRUE,
+  use_lowercase_aa = TRUE,
+  ...
+)
 }
 \arguments{
 \item{group_psm_by}{A character string specifying the method in PSM grouping.

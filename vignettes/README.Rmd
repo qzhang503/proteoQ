@@ -5,6 +5,8 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
+  github_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -13,8 +15,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  github_document:
-    toc: yes
   pdf_document:
     toc: yes
     number_sections: true
@@ -77,7 +77,7 @@ knitr::opts_chunk$set(
 ## Introduction to proteoQ
 Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the operations against data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
 
-The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
+The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
 
 (Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README. Mathematical symbols may display more properly under html.)  
 
@@ -258,7 +258,7 @@ I am new to `R`. It looks like that canonical `R` does not support the straight 
 
 The approach of data filtration taken by `normPSM` might at first looks strange; however, it allows me to perform data filtration in a integrated way. As mentioned in the beginning, a central theme of `proteoQ` is to reduce or avoid direct data manipulations but utilizes metadata to control both data columns and rows. With the self-containedness in data filtration (and data ordering later), I can readily recall and reproduce what I had done when revisiting the system after an extended peroid. Otherwise, I would likely need *ad hoc* operations by mouse clicks or writing ephemeral R scripts, and soon forget what I have done.  
 
-Moreover, the build-in approach can serve as buliding blocks for more complex data processing. As shown in the help documents via `?standPep` and `?standPrn`, we can readily perform mixed-bed normalization by sample groups, against either full or partial data.  
+Moreover, the build-in approach can serve as building blocks for more complex data processing. As shown in the help documents via `?standPep` and `?standPrn`, we can readily perform mixed-bed normalization by sample groups, against either full or partial data.  
 
 #### 1.2.5 Vararg choices
 With `normPSM`, we can pretty much `filter_` data under any PSM columns we like. In the above Mascot example, I have chosen to filter PSM entires by their `pep_expect`, `pep_score` etc. There is a reason for this.  
@@ -267,7 +267,18 @@ Let's first consider a different column `pep_len`. The values underneath are uni
 
 For this reason, I named the varargs `filter_psms_at` and `filter_psms_more` in the above `normPSM` examples. This allows me to readily recall that I was filtering data based on criteria that are specific to PSMs.  
 
-#### 1.2.6 purgePSM
+#### 1.2.6 Varargs and data files
+Vararg statements of `filter_` and `arrange_` are available in proteoQ for flexible filtration and ordering of data rows. To take advantage of the feature, we need to be aware of the column keys in input files. As indicated by their names, `filter_` and `filter2_` perform row filtration against column keys from a primary data file, `df`, and secondary data file(s), `df2`, respectively. The same correspondance is applicable for `arrange_` and `arrange2_` varargs.  
+
+Users will typically employ either primary or secondary vararg statements, but not both. In the more extreme case of `gspaMap(...)`, it links `prnGSPA(...)` findings in `df2` to the significance p-values and abundance fold changes in `df` for volcano plot visualizaitons by gene sets. The table below summarizes the `df` and the `df2` for varargs in `proteoQ`.  
+
+```{r varargs_dfs, echo=FALSE, results="asis"}
+file <- system.file("extdata", "varargs.txt", package = "proteoQ")
+keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
+knitr::kable(keys) 
+```
+
+#### 1.2.7 purgePSM
 To finish our discussion of PSM processing, let us consider having one more bash in data cleanup. The corresponding utility is `purgePSM`. It performs data purging by the CV of peptides, measured from contributing PSMs within the same sample. Namely, quantitations that have yielded peptide CV greater than a user-supplied cut-off will be replaced with NA.  
 
 The `purgePSM` utility reads files `\PSM\TMTset1_LCMSinj1_PSM_N.txt`, `TMTset1_LCMSinj2_PSM_N.txt` etc. from a preceding step of `normPSM`. To revert programmatically the changes made by `purgePSM`, we would need to start over with `normPSM`. Alternatively, we may make a temporary copy of these files for a probable undo.  
@@ -937,13 +948,13 @@ In addition to the fixed effects shown above, significance tests with additive r
 ### 2.5 Gene sets under volcano plots
 There are a handful of `R` tools for gene set enrichement analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can visualize the enrichment of gene sets under the context of volcano plots at given contrasts. Provided the richness of `R` utilities in linear modelings, the `preoteoQ` takes a naive approach thereafter to visualize the *asymmetricity* of protein probability $p$ values under volcano plots.  
 
-In the analysis of Gene Set Probability Asymmetricity (`GSPA`), protein significance $p$ values from linear modeling are first taken and separated into the groups of up or down regulated proteins within a gene set. The default is to calcuate the geometric means, $P$, for each of the two groups with a penalty-like term:  
+In the analysis of Gene Set Probability Asymmetricity (`GSPA`), protein significance $p$ values from linear modeling are first taken and separated into the groups of up or down regulated proteins within a gene set. The default is to calculate the geometric means, $P$, for each of the two groups with a penalty-like term:  
 
 $$-log10(P)=(\sum_{i=1}^{n}-log10(p_{i})+m)/(n+m)$$  
 
 where $n$ and $m$ are the numbers of entries with $p$ values $\le$ or $>$ a significance cut-off, respectively, under a gene set. The quotient of the two $P$ values, one for up and one for down, is then taken to represent the significance of enrichment for a given gene set. Alternatively, the significance can be assessed via moderated t-test between the two groups. With either method, the corresponding mean `log2FC` are each calculated for the ups and the downs where the difference is used as the fold change of enrichment.  
 
-At the input levels, the arguments `pval_cutoff` and `logFC_cutoff` allow us to filter out low impact genes prior to the analysis. On the output levels, argument `gspval_cutoff` sets a threshold in gene set significance for reporting. More details can be found from the help document via `?prnGSPA`. Note that currently there is no peptide counterpart for the enrichment analysis.  
+At the input levels, the arguments `pval_cutoff` and `logFC_cutoff` allow us to set aside low impact genes, for instance, (re)distributing them between the $n$-entry significance group and the $m$-entry insignficance group. On the output levels, argument `gspval_cutoff` sets a threshold in gene set significance for reporting. More details can be found from the help document via `?prnGSPA`. Note that currently there is no peptide counterpart for the enrichment analysis.  
 
 We began with the analysis of `GSPA` against enrichment terms defined in GO and KEGG data sets:  
 
@@ -990,7 +1001,7 @@ The utility in `proteoQ` for conventional GSEA analysis is `prnGSEA()`. Gene set
 ### 2.6 Gene set networks
 In the above section, we have plotted the enrichment of gene sets by individual GO or KEGG terms. Depending on how much the sample groups contrast to each other, we could have produced more plots where many of them might never get viewed. Besides, gene sets can be redundant with overlaps to one another to varying degrees. A means to communicate the gene set results at high levels is to present them as hierarchical trees or grouped networks.  
 
-In this section, we will visualize the connectivity of significant gene sets by both distance heat maps and networks. For simplicity, the heat maps or networks will be constructed only between gene sets and essential gene sets. As mentioned in section `Gene sets under volcano plots`, the essential gene sets were approximated with greedy set cover. This will reduce the dimensionality of data from $n * n$ to $n * m$ ($m \le n$).  
+In this section, we will visualize the connectivity of significant gene sets by both distance heat maps and networks. For simplicity, the heat maps or networks will be constructed only between gene sets and essential gene sets. As mentioned in section `Gene sets under volcano plots`, the essential gene sets were approximated with greedy set cover. This will reduce the dimensionality of data from $n \times n$ to $n \times m$ ($m \le n$).  
 
 We next gauge the redundancy of a gene set in relative to an essential set by counting the numbers of intersecting gene IDs. This is documented as the `fraction` of overlap between gene sets when calling `prnGSPA`. The values are available in output files such as `Protein\GSPA\essmap_.*.csv`. For network visualization, the gene sets are further classified by their distance using hierarchial clustering.  
 
@@ -1015,8 +1026,8 @@ As expected, we saw zero overlap between human and mouse gene sets. Within each 
 
 ```{r prnPSPAHM_filtered, eval = FALSE}
 prnGSPAHM(
-  filter_by = exprs(distance <= .33),
-  filter_sp = exprs(start_with_str("hs", term)), 
+  filter2_by = exprs(distance <= .33),
+  filter2_sp = exprs(start_with_str("hs", term)), 
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   annot_rows = "ess_size", 
@@ -1070,7 +1081,7 @@ We can subset the input data by `filter_` varargs. In the example shown below, w
 ```{r Protein trends_plot_filter, eval = FALSE}
 plot_prnTrend(
   col_order = Order,
-  filter_by = exprs(cluster == 4),
+  filter2_by = exprs(cluster == 4),
   width = 12, 
   height = 12,
   filename = cl4.png,
@@ -1669,7 +1680,7 @@ prnSig(
 )
 
 # correlation plots
-read.csv(file.path(temp_raneff_dir, "Protein\\Model\\Protein_pVals.txt"), 
+read.csv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt"), 
          check.names = FALSE, header = TRUE, sep = "\t") %>%
   dplyr::select(grep("pVal\\s+", names(.))) %>% 
   `colnames<-`(c("none", "one", "two")) %>% 

@@ -4,8 +4,14 @@
 \alias{gspa_summary_mean}
 \title{gspa pVal calculations using geomean}
 \usage{
-gspa_summary_mean(gset, df, min_size = 10, min_delta = 4,
-  gspval_cutoff = 0.05)
+gspa_summary_mean(
+  gset,
+  df,
+  min_size = 10,
+  min_delta = 4,
+  gspval_cutoff = 0.05,
+  gslogFC_cutoff = log2(1)
+)
 }
 \description{
 gspa pVal calculations using geomean

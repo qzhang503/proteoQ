@@ -4,8 +4,18 @@
 \alias{plotNMFCon}
 \title{Plots consensus results from NMF analysis}
 \usage{
-plotNMFCon(id, rank, label_scheme_sub, scale_log2r, complete_cases,
-  impute_na, filepath, filename, ...)
+plotNMFCon(
+  id,
+  rank,
+  label_scheme_sub,
+  scale_log2r,
+  complete_cases,
+  impute_na,
+  df2,
+  filepath,
+  filename,
+  ...
+)
 }
 \description{
 Plots consensus results from NMF analysis

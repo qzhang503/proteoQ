@@ -4,8 +4,16 @@
 \alias{byfile_gspahm}
 \title{A helper function for gspaHM by input file names}
 \usage{
-byfile_gspahm(ess_in, meta_in, fml_nm, filepath, filename, scale_log2r,
-  impute_na, ...)
+byfile_gspahm(
+  ess_in,
+  meta_in,
+  fml_nm,
+  filepath,
+  filename,
+  scale_log2r,
+  impute_na,
+  ...
+)
 }
 \description{
 A helper function for gspaHM by input file names

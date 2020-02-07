@@ -4,14 +4,26 @@
 \alias{labEffPSM}
 \title{TMT labeling efficiency}
 \usage{
-labEffPSM(group_psm_by = c("pep_seq", "pep_seq_mod"),
-  group_pep_by = c("prot_acc", "gene"), dat_dir = NULL,
-  expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx",
-  fasta = NULL, pep_unique_by = "group", corrected_int = TRUE,
-  rm_reverses = TRUE, rptr_intco = 1000, rm_craps = FALSE,
-  rm_krts = FALSE, rm_outliers = FALSE, annot_kinases = FALSE,
-  plot_rptr_int = TRUE, plot_log2FC_cv = TRUE,
-  use_lowercase_aa = TRUE, ...)
+labEffPSM(
+  group_psm_by = c("pep_seq", "pep_seq_mod"),
+  group_pep_by = c("prot_acc", "gene"),
+  dat_dir = NULL,
+  expt_smry = "expt_smry.xlsx",
+  frac_smry = "frac_smry.xlsx",
+  fasta = NULL,
+  pep_unique_by = "group",
+  corrected_int = TRUE,
+  rm_reverses = TRUE,
+  rptr_intco = 1000,
+  rm_craps = FALSE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE,
+  annot_kinases = FALSE,
+  plot_rptr_int = TRUE,
+  plot_log2FC_cv = TRUE,
+  use_lowercase_aa = TRUE,
+  ...
+)
 }
 \arguments{
 \item{group_psm_by}{A character string specifying the method in PSM grouping.

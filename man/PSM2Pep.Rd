@@ -4,8 +4,7 @@
 \alias{PSM2Pep}
 \title{Interim peptide tables}
 \usage{
-PSM2Pep(method_psm_pep = c("median", "mean", "weighted.mean", "top.3"),
-  ...)
+PSM2Pep(method_psm_pep = c("median", "mean", "weighted.mean", "top.3"), ...)
 }
 \arguments{
 \item{method_psm_pep}{Character string; the method to summarise the

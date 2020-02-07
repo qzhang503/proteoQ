@@ -4,12 +4,26 @@
 \alias{prnGSPA}
 \title{GSPA of protein data}
 \usage{
-prnGSPA(gset_nms = "go_sets", method = c("mean", "limma"),
-  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), gspval_cutoff = 0.05,
-  min_size = 10, max_size = Inf, min_delta = 4,
-  min_greedy_size = 1, fml_nms = NULL, df = NULL, filepath = NULL,
-  filename = NULL, ...)
+prnGSPA(
+  gset_nms = "go_sets",
+  method = c("mean", "limma"),
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  pval_cutoff = 0.05,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 0.05,
+  gslogFC_cutoff = log2(1.2),
+  min_size = 10,
+  max_size = Inf,
+  min_delta = 4,
+  min_greedy_size = 1,
+  fml_nms = NULL,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 }
 \arguments{
 \item{gset_nms}{Character string or vector containing the name(s) of gene sets
@@ -18,7 +32,8 @@ values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
 supported species are human, mouse and rat.}
 
 \item{method}{Character string; the method to assess the p-values of GSPA. The
-default is \code{mean}.}
+default is \code{mean}. See also section \code{Details} for the
+calculations.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
@@ -31,21 +46,31 @@ will be used. The default is FALSE.}
 
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
-the threshold will be ignored during enrichment analysis. The default is
-0.05 for all formulae matched to or specified in argument \code{fml_nms}.
+the threshold will be excluded from enrichment analysis. The default is 0.05
+for all formulae matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
-values.}
+values. See also \code{\link{prnSig}}.}
 
 \item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
-\code{log2FC}. The default magnitude is \code{log2(1.2)} for all formulae
-matched to or specified in argument \code{fml_nms}. Entries with absolute
-\code{log2FC} smaller than the threshold will be ignored during enrichment
-analysis. Formula-specific threshold is allowed by supplying a vector of
-absolute values in \code{log2FC}.}
+\code{log2FC}. Entries with absolute \code{log2FC} smaller than the
+threshold will be excluded from enrichment analysis. The default magnitude
+is \code{log2(1.2)} for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of absolute values in \code{log2FC}.}
 
 \item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
 significance \code{pVal}. Only enrichment terms with \code{pVals} more
-significant than the threshold will be reported.}
+significant than the threshold will be reported. The default is 0.05 for all
+formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of cut-off
+values.}
+
+\item{gslogFC_cutoff}{Numeric value or vector; the cut-off in gene-set
+enrichment fold change. Only enrichment terms with absolute fold change
+greater than the threshold will be reported. The default magnitude is
+\code{log2(1.2)} for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of absolute values in \code{log2FC}.}
 
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
 consideration in gene set tests. The number is after data filtration by
@@ -81,28 +106,36 @@ of sizes.}
 the formula(e) will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{Use system default.}
 
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data in \code{\\Model\\Protein_[...]pVals.txt}; also see
-\code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical expression(s) for
-the row order of data; also see \code{\link{prnHM}}.}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration
+against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+See also \code{\link{normPSM}} for the format of \code{filter_} statements.
+\cr \cr \code{arrange_}: Variable argument statements for the row ordering
+against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+See also \code{\link{prnHM}} for the format of \code{arrange_} statements.}
 }
 \description{
 \code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
-(GSPA) aganist protein \code{log2FC} data.
+(GSPA) against protein \code{log2FC} data.
 }
 \details{
 The significance \code{pVals} of individual proteins are first obtained from
 \code{\link{prnSig}}, followed by log10 transformation and separation into up-
-or down-regulated groups for each gene set. At the default of \code{method =
+or down-expressed groups for each gene set. At the default of \code{method =
 mean}, the geometric mean of \code{pVals}, \eqn{P}, are each calculated for
 the groups of up or down regulated proteins, with a penalty-like term
 
@@ -110,7 +143,7 @@ the groups of up or down regulated proteins, with a penalty-like term
 
 where \eqn{n} and \eqn{m} are the numbers of entries with \eqn{p} values
 \eqn{\le} or \eqn{>} a significance cut-off, respectively. The quotient of the
-two \code{pVals} is then used to prepsent the significance of gene set
+two \eqn{P} values is then used to prepsent the significance of gene set
 enrichment. The arguments \code{pval_cutoff} and \code{logFC_cutoff} are used
 to discriminate low influence genes. Additional subsetting of data via the
 \code{vararg} approach of \code{filter_} is feasible. At \code{method =
@@ -142,35 +175,97 @@ pepSig(
 
 prnSig(impute_na = FALSE)
 
-# GSPA
+# GSPA analysis
 prnGSPA(
   impute_na = FALSE,
   pval_cutoff = 5E-2, # protein pVal threshold
   logFC_cutoff = log2(1.2), # protein log2FC threshold
-  gspval_cutoff = 5E-2, # gene-set threshold
+  gspval_cutoff = 5E-2, # gene-set pVal threshold
+  gslogFC_cutoff = log2(1.2), # gene-set log2FC threshold
   gset_nms = c("go_sets", "kegg_sets"), 
 )
 
-# GSPA under volcano plots
+# GSPA visualization under volcano plots
 gspaMap(
   impute_na = FALSE,
   show_labels = FALSE, 
-  pval_cutoff = 5E-2, # gene set threshold
-  logFC_cutoff = log2(1.2), # gene set log2FC threshold
+  gspval_cutoff = 5E-2, 
+  gslogFC_cutoff = log2(1.2), 
   show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
+  xco = 1.2, # position of x-axis cut-off lines
+  yco = 0.05, # position of a y-axis cut-off line 
 )
 
 ## row filtration
 prnGSPA(
   impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
   gset_nms = c("go_sets", "kegg_sets"),
   filter_prots_by_npep = exprs(prot_n_pep >= 3),
   filename = unifil.txt,
+)
+
+# by default, volcano-plot visualization for all GSPA result files, 
+#   which are "Protein_GSPA_Z.txt" and "unifil_Protein_GSPA_Z.txt" 
+#   up to this point
+gspaMap(
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
+# or manually supply specific secondary file(s) with `df2`; 
+# may consider the same primary `fliter_` varargs as those
+#   in the corresponding `prnGSPA(...)`
+gspaMap(
+  df2 = "unifil_Protein_GSPA_Z.txt", 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
+# possible to visualize all proteins without primary `filter_` varargs, 
+#   but it is users' responsibility to note that 
+#   "unifil_Protein_GSPA_Z.txt" is from 
+#   prnGSA(filter_prots_by_npep = exprs(prot_n_pep >= 3), ...)
+gspaMap(
+  df2 = "unifil_Protein_GSPA_Z.txt", 
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
+# may apply both primary `filter_` varargs against `df` 
+#   and secondary `fliter2_` varargs aganist `df2`
+gspaMap(
+  df2 = "unifil_Protein_GSPA_Z.txt", 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  filter2_ess_size = exprs(ess_size >= 1),   
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
+# can also visualize results for specific formula(e) and/or 
+#   specific `df2`
+gspaMap(
+  fml_nms = "W16_vs_W2",
+  df2 = "unifil_Protein_GSPA_Z.txt", 
+  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  filter2_ess_size = exprs(ess_size >= 1),   
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
 )
 
 ## customized thresholds
@@ -178,13 +273,22 @@ prnGSPA(
 prnGSPA(
   impute_na = FALSE, 
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
-  pval_cutoff = c(5E-2, 5E-2, 1E-10), 
-  logFC_cutoff = c(log2(1.05), log2(1.1), log2(1.2)), 
-  gspval_cutoff = c(5E-2, 5E-2, 1E-5), 
+  pval_cutoff = c(5E-2, 5E-2, 1E-6), 
+  logFC_cutoff = c(log2(1.1), log2(1.1), log2(1.2)), 
+  gspval_cutoff = c(5E-2, 5E-2, 1E-4), 
   max_size = c(Inf, Inf, 120), 
-  gset_nms = c("go_sets", "kegg_sets"), 
+  gset_nms = c("go_sets"), 
   filter_by_npep = exprs(prot_n_pep >= 3), 
   filename = diffil.txt,
+)
+
+gspaMap(
+  df2 = "diffil_Protein_GSPA_Z.txt", 
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
 )
 
 ## NA imputation
@@ -208,9 +312,6 @@ prnSig(impute_na = TRUE)
 
 prnGSPA(
   impute_na = TRUE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
   gset_nms = c("go_sets", "kegg_sets"),
   filter_prots_by_npep = exprs(prot_n_pep >= 3),
 )
@@ -221,7 +322,7 @@ prnGSPA(
 # ===================================
 # a `term` is a subset of an `ess_term` if the distance is zero
 prnGSPAHM(
-  filter_by = exprs(distance <= .6),
+  filter2_by = exprs(distance <= .6),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   annot_rows = "ess_size",
@@ -230,8 +331,8 @@ prnGSPAHM(
 
 # human terms only
 prnGSPAHM(
-  filter_num = exprs(distance <= .95),
-  filter_sp = exprs(start_with_str("hs", term)),
+  filter2_num = exprs(distance <= .95),
+  filter2_sp = exprs(start_with_str("hs", term)),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   filename = show_more_connectivity.png,
@@ -241,11 +342,20 @@ prnGSPAHM(
 prnGSPAHM(
   annot_cols = c("ess_idx", "ess_size"),
   annot_colnames = c("Eset index", "Size"),
-  filter_by = exprs(distance <= .95),
+  filter2_by = exprs(distance <= .95),
   color = colorRampPalette(c("blue", "white", "red"))(100),
   filename = custom_colors.png,
 )
 
+# can also visualize results for specific `df2` and formula(e)
+prnGSPAHM(
+  df2 = "diffil_Protein_GSPA_Z_essmap.txt", 
+  fml_nms = "W16_vs_W2", 
+  annot_cols = c("ess_idx", "ess_size"),
+  annot_colnames = c("Eset index", "Size"),
+  filter2_by = exprs(distance <= .95),
+  filename = w16_vs_w2.png,
+)
 }
 \seealso{
 \code{\link{load_expts}} for a reduced working example in data

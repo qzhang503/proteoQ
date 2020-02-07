@@ -4,10 +4,17 @@
 \alias{anal_prnString}
 \title{STRING outputs of protein-protein interactions}
 \usage{
-anal_prnString(scale_log2r = TRUE, complete_cases = FALSE,
-  impute_na = FALSE, db_path = "~\\\\proteoQ\\\\dbs\\\\string",
-  score_cutoff = 0.7, df = NULL, filepath = NULL, filename = NULL,
-  ...)
+anal_prnString(
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  db_path = "~\\\\proteoQ\\\\dbs\\\\string",
+  score_cutoff = 0.7,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 }
 \arguments{
 \item{scale_log2r}{Not currently used. Values before and after scaling will be
@@ -25,9 +32,15 @@ is \code{"~\\proteoQ\\dbs\\string"}.}
 \item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
 protein-protein interaction. The default is 0.7.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{Use system default.}
 
@@ -35,10 +48,12 @@ automatically after matching the data type with an \code{id} among
 to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}
 for expression data.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data against the column keys in \code{Protein[_impNA]_pVals.txt}; also see
-\code{\link{normPSM}}. \cr \code{arrange_}: Logical expression(s) for the
-row ordering of data; also see \code{\link{prnHM}}.}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration
+against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+See also \code{\link{normPSM}} for the format of \code{filter_} statements.
+\cr \cr \code{arrange_}: Variable argument statements for the row ordering
+aganist data in a primary file linked to \code{df}. See also
+\code{\link{prnHM}} for the format of \code{arrange_} statements.}
 }
 \description{
 \code{anal_prnString} prepares the data of both

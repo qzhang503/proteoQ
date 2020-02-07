@@ -4,9 +4,18 @@
 \alias{plot_prnTrend}
 \title{Visualization of trend results}
 \usage{
-plot_prnTrend(col_select = NULL, col_order = NULL, n_clust = NULL,
-  scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-  filename = NULL, theme = NULL, ...)
+plot_prnTrend(
+  col_select = NULL,
+  col_order = NULL,
+  n_clust = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df2 = NULL,
+  filename = NULL,
+  theme = NULL,
+  ...
+)
 }
 \arguments{
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
@@ -28,16 +37,22 @@ available cluster IDs will be used.}
 
 \item{scale_log2r}{Logical; at the TRUE default, input files with
 \code{_Z[...].txt} in name will be used. Otherwise, files with
-\code{_N[...].txt} in name will be taken. An error will be shown if no files
-are matched under given conditions.}
+\code{_N[...].txt} in name will be taken. An error will be thrown if no
+files are matched under given conditions.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; at the TRUE default, input files with
 \code{_impNA[...].txt} in name will be loaded. Otherwise, files without
-\code{_impNA} in name will be taken. An error will be shown if no files are
+\code{_impNA} in name will be taken. An error will be thrown if no files are
 matched under given conditions.}
+
+\item{df2}{Character vector or string; the name(s) of secondary data file(s).
+An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+\code{df} generates secondary files such as
+\code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+section or \code{\link{prnHist}} for the description of a primary \code{df}.}
 
 \item{filename}{A representative file name to outputs. By default, it will be
 determined automatically by the name of the current call.}
@@ -47,16 +62,19 @@ determined automatically by the name of the current call.}
 theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data in \code{Protein_Trend_[...].txt}; see also \code{\link{normPSM}} \cr
-\cr \code{arrange_}: Logical expression(s) for the row ordering of data;
-also see \code{\link{prnHM}}. \cr \cr Additional parameters for use in
-\code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2} scale;
-\cr \code{ymax}, the maximum y at \code{log2} scale; \cr \code{ybreaks}, the
-breaks in y-axis at \code{log2} scale; \cr \code{nrow}, the number of rows;
-\cr \code{width}, the width of plot; \cr \code{height}, the height of plot;
-\cr \code{color}, the color of lines; \cr \code{alpha}, the transparency of
-lines.}
+\item{...}{\code{filter2_}: Variable argument statements for the row
+filtration aganist data in secondary file(s) of
+\code{[...]Protein_Trend_[...].txt}. See also \code{\link{prnGSPAHM}} for
+the format of \code{filter2_} statements. \cr \cr \code{arrange2_}: Variable
+argument statements for the row ordering aganist data in secondary file(s)
+of \code{[...]Protein_Trend_[...].txt}. See also \code{\link{prnGSPAHM}} for
+the format of \code{arrange2_} statements. \cr \cr Additional parameters for
+use in \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2}
+scale; \cr \code{ymax}, the maximum y at \code{log2} scale; \cr
+\code{ybreaks}, the breaks in y-axis at \code{log2} scale; \cr \code{nrow},
+the number of rows; \cr \code{width}, the width of plot; \cr \code{height},
+the height of plot; \cr \code{color}, the color of lines; \cr \code{alpha},
+the transparency of lines.}
 }
 \description{
 \code{plot_prnTrend} plots the trends of protein expressions from
@@ -99,10 +117,10 @@ anal_prnTrend(
 
 ## against selected samples
 anal_prnTrend(
+  col_select = BI,
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
-  col_select = BI,
   filename = sel.txt,
 )
 
@@ -111,10 +129,10 @@ anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
-  filter_prots = exprs(prot_n_pep >= 3),
+  filter_prots_by = exprs(prot_n_pep >= 3),
 )
 
-## manual m (proteins)
+## manual m degree of fuzziness (proteins)
 anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
@@ -179,7 +197,7 @@ anal_prnTrend(
 # ===================================
 # Visualization
 # ===================================
-## no NA imputation 
+## base (proteins, no NA imputation) 
 plot_prnTrend(
   col_order = Order, 
 )
@@ -189,10 +207,29 @@ plot_prnTrend(
 plot_prnTrend(
   impute_na = FALSE, 
   col_order = Order,
-  filter_by_clusters = exprs(cluster == 5),
+  filter2_by_clusters = exprs(cluster == 5),
   width = 8, 
   height = 10,
   filename = cl5.png,
+)
+
+# manual selection of secondary input data file(s)
+# may be used for optimizing individual plots
+plot_prnTrend(
+  df2 = c("Protein_Trend_Z_nclust5.txt"),
+  col_order = Order, 
+  filename = n5.png,
+)
+
+# manual secondary input(s) at specific rank(s)
+plot_prnTrend(
+  df2 = c("Protein_Trend_Z_nclust5.txt"),
+  impute_na = FALSE, 
+  col_order = Order,
+  filter2_by_clusters = exprs(cluster == 5),
+  width = 8, 
+  height = 10,
+  filename = n5_cl5.png,
 )
 
 ## NA imputation

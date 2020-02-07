@@ -4,10 +4,22 @@
 \alias{byfile_plotVolcano}
 \title{Plot volcanos}
 \usage{
-byfile_plotVolcano(df = NULL, id = "gene", fml_nm = NULL,
-  filepath = NULL, filename = NULL, adjP = FALSE,
-  show_labels = TRUE, anal_type = "Volcano", gset_nms = "go_sets",
-  scale_log2r, impute_na, theme = NULL, ...)
+byfile_plotVolcano(
+  df = NULL,
+  df2 = NULL,
+  id = "gene",
+  fml_nm = NULL,
+  filepath = NULL,
+  filename = NULL,
+  adjP = FALSE,
+  show_labels = TRUE,
+  anal_type = "Volcano",
+  gset_nms = "go_sets",
+  scale_log2r,
+  impute_na,
+  theme = NULL,
+  ...
+)
 }
 \description{
 Plot volcanos

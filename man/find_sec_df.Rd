@@ -2,10 +2,12 @@
 % Please edit documentation in R/proteoQ-informatics.R
 \name{find_sec_df}
 \alias{find_sec_df}
-\title{Helper for finding input `df`}
+\title{helper for finding input `df`
+not currently used}
 \usage{
 find_sec_df(df = NULL, anal_type = NULL, id = NULL, ...)
 }
 \description{
-Helper for finding input `df`
+helper for finding input `df`
+not currently used
 }

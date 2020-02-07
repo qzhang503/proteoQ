@@ -4,8 +4,7 @@
 \alias{dblTrim}
 \title{Data normalization}
 \usage{
-dblTrim(df, range_log2r, range_int, type_r = "N_log2_R",
-  type_int = "N_I")
+dblTrim(df, range_log2r, range_int, type_r = "N_log2_R", type_int = "N_I")
 }
 \arguments{
 \item{range_log2r}{Numeric vector at length two; the range of the

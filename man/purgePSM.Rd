@@ -4,8 +4,15 @@
 \alias{purgePSM}
 \title{Purge PSM data}
 \usage{
-purgePSM(dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
-  adjSD = FALSE, keep_ohw = TRUE, theme = NULL, ...)
+purgePSM(
+  dat_dir = NULL,
+  pt_cv = NULL,
+  max_cv = NULL,
+  adjSD = FALSE,
+  keep_ohw = TRUE,
+  theme = NULL,
+  ...
+)
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to

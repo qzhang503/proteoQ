@@ -5,8 +5,15 @@
 \title{Calculate peptide data for individual TMT experiments
 Argument injn_idx not used}
 \usage{
-calcPepide(df, label_scheme, id, method_psm_pep, group_pep_by, set_idx,
-  injn_idx)
+calcPepide(
+  df,
+  label_scheme,
+  id,
+  method_psm_pep,
+  group_pep_by,
+  set_idx,
+  injn_idx
+)
 }
 \description{
 Calculate peptide data for individual TMT experiments

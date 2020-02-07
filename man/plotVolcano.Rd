@@ -4,12 +4,27 @@
 \alias{plotVolcano}
 \title{Plot volcanos}
 \usage{
-plotVolcano(df = NULL, id = "gene", adjP = FALSE,
-  show_labels = TRUE, anal_type = "Volcano", pval_cutoff = 0.05,
-  logFC_cutoff = log2(1.2), show_sig = "none", fml_nms = NULL,
-  gset_nms = "go_sets", scale_log2r = TRUE, complete_cases = FALSE,
-  impute_na = FALSE, filepath = NULL, filename = NULL,
-  theme = NULL, ...)
+plotVolcano(
+  df = NULL,
+  df2 = NULL,
+  id = "gene",
+  adjP = FALSE,
+  show_labels = TRUE,
+  anal_type = "Volcano",
+  gspval_cutoff = 0.05,
+  gslogFC_cutoff = log2(1.2),
+  topn = 100,
+  show_sig = "none",
+  fml_nms = NULL,
+  gset_nms = "go_sets",
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  filepath = NULL,
+  filename = NULL,
+  theme = NULL,
+  ...
+)
 }
 \description{
 Plot volcanos

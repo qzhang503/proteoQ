@@ -4,14 +4,26 @@
 \alias{normPSM}
 \title{Standardization of PSM results}
 \usage{
-normPSM(group_psm_by = c("pep_seq", "pep_seq_mod"),
-  group_pep_by = c("prot_acc", "gene"), dat_dir = NULL,
-  expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx",
-  fasta = NULL, pep_unique_by = "group", corrected_int = TRUE,
-  rm_reverses = TRUE, rptr_intco = 1000, rm_craps = FALSE,
-  rm_krts = FALSE, rm_outliers = FALSE, annot_kinases = FALSE,
-  plot_rptr_int = TRUE, plot_log2FC_cv = TRUE,
-  use_lowercase_aa = TRUE, ...)
+normPSM(
+  group_psm_by = c("pep_seq", "pep_seq_mod"),
+  group_pep_by = c("prot_acc", "gene"),
+  dat_dir = NULL,
+  expt_smry = "expt_smry.xlsx",
+  frac_smry = "frac_smry.xlsx",
+  fasta = NULL,
+  pep_unique_by = "group",
+  corrected_int = TRUE,
+  rm_reverses = TRUE,
+  rptr_intco = 1000,
+  rm_craps = FALSE,
+  rm_krts = FALSE,
+  rm_outliers = FALSE,
+  annot_kinases = FALSE,
+  plot_rptr_int = TRUE,
+  plot_log2FC_cv = TRUE,
+  use_lowercase_aa = TRUE,
+  ...
+)
 }
 \arguments{
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
@@ -161,6 +173,66 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
  \code{PSMexport} files for processing, the file names need to be compiled in
  that they all start with \code{'PSMexport'} and end with a \code{'.ssv'}
  extension.
+}
+
+\section{\code{Variable arguments and data files}}{
+ Variable argument (vararg)
+ statements of \code{filter_} and \code{arrange_} are available in
+ \code{proteoQ} for flexible filtration and ordering of data rows, via
+ functions at users' interface. To take advantage of the feature, users need
+ to be aware of the column keys in input files. As indicated by their names,
+ \code{filter_} and \code{filter2_} perform row filtration against column
+ keys from a primary data file, \code{df}, and secondary data file(s),
+ \code{df2}, respectively. The same correspondance is applicable for
+ \code{arrange_} and \code{arrange2_} varargs. \cr \cr Users will typically
+ employ either primary or secondary vararg statements, but not both. In the
+ more extreme case of \code{gspaMap(...)}, it links \code{\link{prnGSPA}}
+ findings in \code{df2} to the significance \code{pVals} and abundance fold
+ changes in \code{df} for volcano plot visualizaitons by gene sets. The table
+ below summarizes the \code{df} and the \code{df2} for varargs in
+ \code{proteoQ}.
+
+ \tabular{lll}{ 
+ \strong{Utility} \tab \strong{Primary} \tab \strong{Secondary} \cr
+ normPSM \tab filter_: Mascot, \code{F[...].csv}; MaxQuant, \code{msms[...].txt}; 
+ SM, \code{PSMexport[...].ssv} \tab NA \cr 
+ PSM2Pep \tab NA \tab NA \cr 
+ mergePep \tab filter_: \code{TMTset1_LCMSinj1_Peptide_N.txt} \tab NA \cr 
+ standPep \tab slice_: \code{Peptide.txt} \tab NA \cr 
+ Pep2Prn \tab filter_: \code{Peptide.txt} \tab NA \cr 
+ standPrn \tab slice_: \code{Protein.txt} \tab NA \cr 
+ pepHist \tab filter_: \code{Peptide.tx}t \tab NA \cr 
+ prnHist \tab filter_: \code{Protein.txt} \tab NA \cr 
+ pepSig \tab filter_: \code{Peptide[_impNA].txt} \tab NA \cr 
+ prnSig \tab filter_: \code{Protein[_impNA].txt} \tab NA \cr 
+ pepMDS \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+ prnMDS \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+ pepPCA \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+ prnPCA \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+ pepEucDist \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+ prnEucDist \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+ pepCorr_logFC \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+ prnCorr_logFC \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+ pepHM \tab filter_, arrange_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+ prnHM \tab filter_, arrange_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+ 
+ anal_prnTrend \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+ plot_prnTrend \tab NA \tab filter2_: \code{[...]Protein_Trend_{NZ}[_impNA][...].txt} \cr 
+ 
+ anal_pepNMF \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+ anal_prnNMF \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+ plot_pepNMFCon \tab NA \tab filter2_: \code{[...]Peptide_NMF[...]_consensus.txt} \cr 
+ plot_prnNMFCon \tab NA \tab filter2_: \code{[...]Protein_NMF[...]_consensus.txt} \cr 
+ plot_pepNMFCoef \tab NA \tab filter2_: \code{[...]Peptide_NMF[...]_coef.txt} \cr 
+ plot_prnNMFCoef \tab NA \tab filter2_: \code{[...]Protein_NMF[...]_coef.txt} \cr 
+ plot_metaNMF \tab filter_, arrange_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+ 
+ prnGSPA \tab filter_: \code{Protein[_impNA]_pVals.txt} \tab NA \cr 
+ prnGSPAHM \tab NA \tab filter2_: \code{[...]Protein_GSPA_{NZ}[_impNA]_essmap.txt} \cr 
+ gspaMap \tab filter_: \code{Protein[_impNA]_pVal.txt} \tab filter2_: \code{[...]Protein_GSPA_{NZ}[_impNA].txt} \cr 
+ 
+ anal_prnString \tab filter_: \code{Protein[_impNA][_pVals].tx}t \tab NA \cr 
+ }
 }
 
 \examples{

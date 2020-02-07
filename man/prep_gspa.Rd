@@ -4,8 +4,14 @@
 \alias{prep_gspa}
 \title{A helper function for GSPA}
 \usage{
-prep_gspa(df, id, fml_nm, col_ind, pval_cutoff = 0.05,
-  logFC_cutoff = log2(1.2))
+prep_gspa(
+  df,
+  id,
+  fml_nm,
+  col_ind,
+  pval_cutoff = 0.05,
+  logFC_cutoff = log2(1.2)
+)
 }
 \description{
 A helper function for GSPA

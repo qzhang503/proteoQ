@@ -5,9 +5,20 @@
 \title{Violin plots of CV per TMT_Set and LCMS_injection
 #'@import dplyr rlang ggplot2}
 \usage{
-sd_violin(df = NULL, id = NULL, filepath = NULL, width = NULL,
-  height = NULL, type = "log2_R", adjSD = FALSE, is_psm = FALSE,
-  col_select = NULL, col_order = NULL, theme = NULL, ...)
+sd_violin(
+  df = NULL,
+  id = NULL,
+  filepath = NULL,
+  width = NULL,
+  height = NULL,
+  type = "log2_R",
+  adjSD = FALSE,
+  is_psm = FALSE,
+  col_select = NULL,
+  col_order = NULL,
+  theme = NULL,
+  ...
+)
 }
 \description{
 Violin plots of CV per TMT_Set and LCMS_injection

@@ -60,12 +60,6 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, com
 	arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
 	dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
 	
-	if (id %in% c("pep_seq", "pep_seq_mod")) {
-	  cat("Column keys available for data filtration are in `Peptide\\Peptide.txt`.\n")
-	} else if (id %in% c("prot_acc", "gene")) {
-	  cat("Column keys available for data filtration are in `Protein\\Protein.txt`.\n")
-	}
-
 	if (scale_y) {
 	  df <- df %>% 
 	    filters_in_call(!!!filter_dots) %>% 
@@ -87,7 +81,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, com
 		# offset by the percentage of non-NA values
 		perc_nna <- df %>%
 			dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}"), names(.))) %>%
-			`names<-`(gsub(".*_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>%
+			# `names<-`(gsub(".*_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>%
+		  `names<-`(gsub(".*_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
 			lapply(function(x) sum(!is.na(x)) / length(x) * nrow * binwidth)
 
 		perc_nna <- perc_nna[names(perc_nna) %in% label_scheme_sub$Sample_ID]
@@ -169,7 +164,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, com
 		dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}", names(.))], na.rm = TRUE))) %>%
 		dplyr::mutate_at(.vars = "Int_index", cut, seq, labels = seq[1:(length(seq)-1)]) %>%
 		dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
-		`names<-`(gsub(".*log2_R[0-9]{3}.*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
+		# `names<-`(gsub(".*log2_R[0-9]{3}.*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
+	  `names<-`(gsub("^[NZ]{1}_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
 		tidyr::gather(key = Sample_ID, value = value, -Int_index) %>%
 		dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
 		dplyr::arrange(Sample_ID) %>%
@@ -211,7 +207,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, com
 pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                      df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
@@ -230,12 +226,12 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
     dots$impute_na <- NULL
     rlang::warn("No NA imputation with histograms.")
   }
-  
+
   reload_expts()
   
   info_anal(id = !!id, col_select = !!col_select, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "Histogram")(show_curves = show_curves,
                                      show_vline = show_vline, scale_y = scale_y, 
                                      theme = theme, !!!dots)
@@ -263,9 +259,15 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  The default is TRUE.
 #'@param scale_y Logical; if TRUE, scale data on the \code{y-axis}. The default
 #'  is TRUE.
-#'@param df The name of input data file. By default, it will be determined
-#'  automatically after matching the data type with an \code{id} among
-#'  \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.
+#'@param df The name of a primary data file. By default, it will be determined
+#'  automatically after matching the types of data and analysis with an
+#'  \code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+#'  primary file contains normalized peptide or protein data and is among
+#'  \code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+#'  "Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+#'  require the fields of significance p-values, the \code{df} will be one of
+#'  \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+#'  "protein_impNA_pVal.txt")}.
 #'@param filepath A file path to output results. By default, it will be
 #'  determined automatically by the name of the calling function and the value
 #'  of \code{id} in the \code{call}.
@@ -333,7 +335,7 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                      df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -352,12 +354,12 @@ prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
     dots$impute_na <- NULL
     rlang::warn("No NA imputation with histograms.")
   }
-  
+
   reload_expts()
   
   info_anal(id = !!id, col_select = !!col_select, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "Histogram")(show_curves = show_curves,
                                      show_vline = show_vline, scale_y = scale_y, 
                                      theme = theme, !!!dots)

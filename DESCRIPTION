@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.2.1.0
+Version: 1.2.1.1
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -62,7 +62,7 @@ Imports:
     backports,
     RcppGreedySetCover,
     networkD3
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 Remotes:
   qzhang503/proteoQDA, 
   qiangzhang503/proteoQDB

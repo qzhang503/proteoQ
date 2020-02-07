@@ -315,10 +315,12 @@ stringTest <- function(df = NULL, id = gene, col_group = Group, col_order = Orde
 #'@param filename Use system default. Otherwise, the basename will be prepended
 #'  to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}
 #'  for expression data.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data against the column keys in \code{Protein[_impNA]_pVals.txt}; also see
-#'  \code{\link{normPSM}}. \cr \code{arrange_}: Logical expression(s) for the
-#'  row ordering of data; also see \code{\link{prnHM}}.
+#'@param ... \code{filter_}: Logical expression(s) for the row filtration
+#'  against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+#'  See also \code{\link{normPSM}} for the format of \code{filter_} statements.
+#'  \cr \cr \code{arrange_}: Variable argument statements for the row ordering
+#'  aganist data in a primary file linked to \code{df}. See also
+#'  \code{\link{prnHM}} for the format of \code{arrange_} statements.
 #'@seealso \code{\link{dl_stringdbs}} for database downloads. \cr
 #'  \code{\link{prnSig}} for significance tests \cr
 #'@example inst/extdata/examples/getStringDB_.R
@@ -341,7 +343,7 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
     , add = TRUE
   )
   
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -356,7 +358,7 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
   
   info_anal(id = !!id, col_select = NULL, col_group = NULL, col_order = NULL,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "String")(db_path = db_path, score_cutoff = score_cutoff, adjP = adjP, 
                                   ...)
 }

@@ -559,7 +559,7 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
                     method = "euclidean", p = 2, k = 3, 
                     show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
-  check_dots(c("id", "col_group", "anal_type"), ...)
+  check_dots(c("id", "col_group", "df2", "anal_type"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
@@ -599,7 +599,7 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
             color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
             size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method, 
                                p = p, k = k, show_ids = show_ids,
                                theme = theme, ...)
@@ -609,7 +609,8 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 
 #'MDS plots
 #'
-#'\code{prnMDS} visualizes the multidimensional scaling (MDS) of protein \code{log2FC}.
+#'\code{prnMDS} visualizes the multidimensional scaling (MDS) of protein
+#'\code{log2FC}.
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
 #'\code{\link[stats]{dist}}, followed by a metric
@@ -675,13 +676,14 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'  \code{\link[stats]{cmdscale}}. The default is 3.
 #'@param show_ids Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 #'  plots. The default is TRUE.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  peptide or protein data; also see \code{\link{normPSM}}. \cr
-#'  \code{arrange_}: Logical expression(s) for the row order of data; also see
-#'  \code{\link{prnHM}}. \cr \cr Additional parameters for \code{ggsave}: \cr
-#'  \code{width}, the width of plot; \cr \code{height}, the height of plot \cr
-#'  \code{...}
-#'
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  against data in a primary file linked to \code{df}. See also
+#'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+#'  \code{arrange_}: Variable argument statements for the row ordering aganist
+#'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+#'  the format of \code{arrange_} statements. \cr \cr Additional parameters for
+#'  \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
+#'  height of plot \cr \code{...}
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
 #'  normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
@@ -717,7 +719,7 @@ prnMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
                     method = "euclidean", p = 2, k = 3, 
                     show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
-  check_dots(c("id", "col_group", "anal_type"), ...)
+  check_dots(c("id", "col_group", "df2", "anal_type"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -757,7 +759,7 @@ prnMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
             color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
             size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method, 
                                p = p, k = k, show_ids = show_ids,
                                theme = theme, ...)
@@ -781,7 +783,7 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
                     show_ids = TRUE, type = "obs", 
                     df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
-  check_dots(c("id", "col_group", "anal_type"), ...)
+  check_dots(c("id", "col_group", "df2", "anal_type"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
@@ -817,7 +819,7 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
             color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
             size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "PCA")(type = type, show_ids = show_ids, theme = theme, ...)
 }
 
@@ -836,11 +838,14 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
 #'@param type Character string indicating the type of PCA. At the \code{type =
 #'  obs} default, the components are by observations; at \code{type = feats},
 #'  the components are by features.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. \cr \code{arrange_}: Logical
-#'  expression(s) for the row order of data; also see \code{\link{prnHM}}. \cr
-#'  \cr Additional parameters for \code{ggsave}: \cr \code{width}, the width of
-#'  plot; \cr \code{height}, the height of plot \cr \code{...}
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  against data in a primary file linked to \code{df}. See also
+#'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+#'  \code{arrange_}: Variable argument statements for the row ordering aganist
+#'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+#'  the format of \code{arrange_} statements. \cr \cr Additional parameters for
+#'  \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
+#'  height of plot \cr \code{...}
 #'
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
@@ -875,7 +880,7 @@ prnPCA <- function (col_select = NULL, col_color = NULL,
                     show_ids = TRUE, type = "obs", 
                     df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
-  check_dots(c("id", "col_group", "anal_type"), ...)
+  check_dots(c("id", "col_group", "df2", "anal_type"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -911,7 +916,7 @@ prnPCA <- function (col_select = NULL, col_color = NULL,
             color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
             size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "PCA")(type = type, show_ids = show_ids, theme = theme, ...)
 }
 
@@ -930,7 +935,7 @@ pepEucDist <- function (col_select = NULL,
                         adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, 
                         df = NULL, filepath = NULL, filename = NULL, ...) {
   check_dots(c("id", "col_group", "col_color", "col_fill", 
-               "col_shape", "col_size", "col_alpha", "anal_type"), ...)
+               "col_shape", "col_size", "col_alpha", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
@@ -950,7 +955,7 @@ pepEucDist <- function (col_select = NULL,
             col_select = !!col_select, col_group = NULL, col_color = NULL, col_fill = NULL, 
             col_shape = NULL, col_size = NULL, col_alpha = NULL, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "EucDist")(adjEucDist = adjEucDist, 
                                    annot_cols = annot_cols, annot_colnames = annot_colnames, ...)
 }
@@ -974,15 +979,16 @@ pepEucDist <- function (col_select = NULL,
 #'@param annot_colnames A character vector of replacement name(s) to
 #'  \code{annot_cols}. The default is NULL without name replacement.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
-#'  of data against the column keys in \code{Peptide.txt}, \code{Protein.txt}
-#'  etc. see also \code{\link{normPSM}} \cr \cr \code{arrange_}: Logical
-#'  expression(s) for the row ordering of data; see also \code{\link{prnHM}}.
-#'  \cr \cr Additional parameters for plotting: \cr \code{width}, the width of
-#'  plot \cr \code{height}, the height of plot \cr \cr Additional arguments for
-#'  \code{\link[pheatmap]{pheatmap}} \cr Note arguments disabled from
-#'  \code{pheatmap}: \cr \code{annotation_col}; instead use keys indicated in
-#'  \code{annot_cols} \cr \code{annotation_row}; instead use keys indicated in
-#'  \code{annot_rows}
+#'  against data in a primary file linked to \code{df}. See also
+#'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+#'  \code{arrange_}: Variable argument statements for the row ordering aganist
+#'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+#'  the format of \code{arrange_} statements. \cr \cr Additional parameters for
+#'  plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
+#'  of plot \cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}
+#'  \cr Note arguments disabled from \code{pheatmap}: \cr \code{annotation_col};
+#'  instead use keys indicated in \code{annot_cols} \cr \code{annotation_row};
+#'  instead use keys indicated in \code{annot_rows}
 #'
 #'@seealso \code{\link{load_expts}} for a reduced working example in data
 #'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
@@ -1015,7 +1021,7 @@ prnEucDist <- function (col_select = NULL,
                         adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, 
                         df = NULL, filepath = NULL, filename = NULL, ...) {
   check_dots(c("id", "col_group", "col_color", "col_fill", 
-               "col_shape", "col_size", "col_alpha", "anal_type"), ...)
+               "col_shape", "col_size", "col_alpha", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -1035,7 +1041,7 @@ prnEucDist <- function (col_select = NULL,
             col_select = !!col_select, col_group = NULL, col_color = NULL, col_fill = NULL, 
             col_shape = NULL, col_size = NULL, col_alpha = NULL, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "EucDist")(adjEucDist = adjEucDist, 
                                    annot_cols = annot_cols, annot_colnames = annot_colnames, ...)
 }

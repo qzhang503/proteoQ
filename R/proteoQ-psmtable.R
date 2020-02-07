@@ -586,6 +586,9 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
+  
+  # message("Primary column keys in `PSM/cache/[...]_hdr_rm.csv` for `filter_` varargs.")
+  message("Primary column keys in `F[...].csv` or `PSM/cache/[...]_hdr_rm.csv`  for `filter_` varargs.")
 
   # note pep_seq: from such as MENGQSTAAK to K.MENGQSTAAK.L
   df <- df %>% 
@@ -1241,6 +1244,65 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'  \code{\link{standPrn}} for extended examples in protein data normalization.
 #'  \cr \code{\link{prnHist}} for extended examples in protein data histogram
 #'  visualization.
+#'
+#'@section \code{Variable arguments and data files}: Variable argument (vararg)
+#'  statements of \code{filter_} and \code{arrange_} are available in
+#'  \code{proteoQ} for flexible filtration and ordering of data rows, via
+#'  functions at users' interface. To take advantage of the feature, users need
+#'  to be aware of the column keys in input files. As indicated by their names,
+#'  \code{filter_} and \code{filter2_} perform row filtration against column
+#'  keys from a primary data file, \code{df}, and secondary data file(s),
+#'  \code{df2}, respectively. The same correspondance is applicable for
+#'  \code{arrange_} and \code{arrange2_} varargs. \cr \cr Users will typically
+#'  employ either primary or secondary vararg statements, but not both. In the
+#'  more extreme case of \code{gspaMap(...)}, it links \code{\link{prnGSPA}}
+#'  findings in \code{df2} to the significance \code{pVals} and abundance fold
+#'  changes in \code{df} for volcano plot visualizaitons by gene sets. The table
+#'  below summarizes the \code{df} and the \code{df2} for varargs in
+#'  \code{proteoQ}.
+#'
+#'  \tabular{lll}{ 
+#'  \strong{Utility} \tab \strong{Primary} \tab \strong{Secondary} \cr
+#'  normPSM \tab filter_: Mascot, \code{F[...].csv}; MaxQuant, \code{msms[...].txt}; 
+#'  SM, \code{PSMexport[...].ssv} \tab NA \cr 
+#'  PSM2Pep \tab NA \tab NA \cr 
+#'  mergePep \tab filter_: \code{TMTset1_LCMSinj1_Peptide_N.txt} \tab NA \cr 
+#'  standPep \tab slice_: \code{Peptide.txt} \tab NA \cr 
+#'  Pep2Prn \tab filter_: \code{Peptide.txt} \tab NA \cr 
+#'  standPrn \tab slice_: \code{Protein.txt} \tab NA \cr 
+#'  pepHist \tab filter_: \code{Peptide.tx}t \tab NA \cr 
+#'  prnHist \tab filter_: \code{Protein.txt} \tab NA \cr 
+#'  pepSig \tab filter_: \code{Peptide[_impNA].txt} \tab NA \cr 
+#'  prnSig \tab filter_: \code{Protein[_impNA].txt} \tab NA \cr 
+#'  pepMDS \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+#'  prnMDS \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+#'  pepPCA \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+#'  prnPCA \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+#'  pepEucDist \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+#'  prnEucDist \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+#'  pepCorr_logFC \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+#'  prnCorr_logFC \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+#'  pepHM \tab filter_, arrange_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+#'  prnHM \tab filter_, arrange_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+#'  
+#'  anal_prnTrend \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+#'  plot_prnTrend \tab NA \tab filter2_: \code{[...]Protein_Trend_{NZ}[_impNA][...].txt} \cr 
+#'  
+#'  anal_pepNMF \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
+#'  anal_prnNMF \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+#'  plot_pepNMFCon \tab NA \tab filter2_: \code{[...]Peptide_NMF[...]_consensus.txt} \cr 
+#'  plot_prnNMFCon \tab NA \tab filter2_: \code{[...]Protein_NMF[...]_consensus.txt} \cr 
+#'  plot_pepNMFCoef \tab NA \tab filter2_: \code{[...]Peptide_NMF[...]_coef.txt} \cr 
+#'  plot_prnNMFCoef \tab NA \tab filter2_: \code{[...]Protein_NMF[...]_coef.txt} \cr 
+#'  plot_metaNMF \tab filter_, arrange_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+#'  
+#'  prnGSPA \tab filter_: \code{Protein[_impNA]_pVals.txt} \tab NA \cr 
+#'  prnGSPAHM \tab NA \tab filter2_: \code{[...]Protein_GSPA_{NZ}[_impNA]_essmap.txt} \cr 
+#'  gspaMap \tab filter_: \code{Protein[_impNA]_pVal.txt} \tab filter2_: \code{[...]Protein_GSPA_{NZ}[_impNA].txt} \cr 
+#'  
+#'  anal_prnString \tab filter_: \code{Protein[_impNA][_pVals].tx}t \tab NA \cr 
+#'  }
+#'
 #'@return Outputs are under the directory of \code{PSM} sub to \code{dat_dir}.
 #'  Primary results are in \code{TMTset1_LCMSinj1_PSM_N.txt,
 #'  TMTset2_LCMSinj1_PSM_N.txt, ...} The indeces of TMT experiment and LC/MS
@@ -1779,6 +1841,8 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
   
+  message("Primary column keys in `msms.txt` for `filter_` varargs.")
+  
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     dplyr::rename(ID = id)
@@ -2128,6 +2192,8 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
+  
+  message("Primary column keys in `PSMexport[...].ssv` for `filter_` varargs.")
   
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 

@@ -4,7 +4,7 @@
 \alias{ok_min_size}
 \title{check the size of a gene set}
 \usage{
-ok_min_size(df, min_delta, gspval_cutoff)
+ok_min_size(df, min_delta, gspval_cutoff, gslogFC_cutoff)
 }
 \description{
 check the size of a gene set

@@ -11,7 +11,7 @@ Extract a list of \code{RAW} file names that can be passed to \code{frac_smry.xl
 }
 \examples{
 \dontrun{
-# Supposed that RAW MS files are stored under "~\\my_raw"
+# Supposed that RAW MS files are stored under "~\my_raw"
 extract_raws("~\\\\my_raw")
 }
 

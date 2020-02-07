@@ -4,12 +4,24 @@
 \alias{gsvaTest}
 \title{Perform GSVA tests}
 \usage{
-gsvaTest(df = NULL, id = "entrez", label_scheme_sub = NULL,
-  filepath = NULL, filename = NULL, scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, gset_nms = "go_sets",
-  lm_method = "limma", gsets = NULL, var_cutoff = 0.5,
-  pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), anal_type = "GSVA",
-  ...)
+gsvaTest(
+  df = NULL,
+  id = "entrez",
+  label_scheme_sub = NULL,
+  filepath = NULL,
+  filename = NULL,
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  gset_nms = "go_sets",
+  lm_method = "limma",
+  gsets = NULL,
+  var_cutoff = 0.5,
+  pval_cutoff = 1e-04,
+  logFC_cutoff = log2(1.1),
+  anal_type = "GSVA",
+  ...
+)
 }
 \description{
 logFC_cutoff subsets data for adjusted pvals

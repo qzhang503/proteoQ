@@ -4,11 +4,19 @@
 \alias{normPrn}
 \title{Reports Protein Results}
 \usage{
-normPrn(id = c("prot_acc", "gene"), method_pep_prn = c("median",
-  "mean", "weighted.mean", "top.3"), use_unique_pep = TRUE,
-  method_align = c("MC", "MGKernel"), range_log2r = c(10, 90),
-  range_int = c(5, 95), n_comp = NULL, seed = NULL,
-  col_select = NULL, cache = TRUE, ...)
+normPrn(
+  id = c("prot_acc", "gene"),
+  method_pep_prn = c("median", "mean", "weighted.mean", "top.3"),
+  use_unique_pep = TRUE,
+  method_align = c("MC", "MGKernel"),
+  range_log2r = c(10, 90),
+  range_int = c(5, 95),
+  n_comp = NULL,
+  seed = NULL,
+  col_select = NULL,
+  cache = TRUE,
+  ...
+)
 }
 \arguments{
 \item{id}{Depreciated: character string; the variable to summarise peptides

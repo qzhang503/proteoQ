@@ -4,10 +4,20 @@
 \alias{prnGSEA}
 \title{Protein GSEA}
 \usage{
-prnGSEA(gset_nms = "go_sets", scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, df = NULL,
-  filepath = NULL, filename = NULL, var_cutoff = 0.5,
-  pval_cutoff = 0.05, logFC_cutoff = log2(1.2), fml_nms = NULL, ...)
+prnGSEA(
+  gset_nms = "go_sets",
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  var_cutoff = 0.5,
+  pval_cutoff = 0.05,
+  logFC_cutoff = log2(1.2),
+  fml_nms = NULL,
+  ...
+)
 }
 \arguments{
 \item{gset_nms}{Not currently used (to be chosen by users during online GSEA).}
@@ -21,9 +31,15 @@ missing values will be used. The default is FALSE.}
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{Use system default.}
 
@@ -37,26 +53,28 @@ than the threshold will be removed for enrichment analysis. The default is
 
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
-the threshold will be ignored during enrichment analysis. The default is
-0.05 for all formulae matched to or specified in argument \code{fml_nms}.
+the threshold will be excluded from enrichment analysis. The default is 0.05
+for all formulae matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
-values.}
+values. See also \code{\link{prnSig}}.}
 
 \item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
-\code{log2FC}. The default magnitude is \code{log2(1.2)} for all formulae
-matched to or specified in argument \code{fml_nms}. Entries with absolute
-\code{log2FC} smaller than the threshold will be ignored during enrichment
-analysis. Formula-specific threshold is allowed by supplying a vector of
-absolute values in \code{log2FC}.}
+\code{log2FC}. Entries with absolute \code{log2FC} smaller than the
+threshold will be excluded from enrichment analysis. The default magnitude
+is \code{log2(1.2)} for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of absolute values in \code{log2FC}.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
 the formula(e) will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data in \code{\\Model\\Protein_[...]pVals.txt}; also see
-\code{\link{normPSM}}. \cr \cr \code{arrange_}: Logical expression(s) for
-the row order of data; also see \code{\link{prnHM}}.}
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+\code{arrange_}: Variable argument statements for the row ordering aganist
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements.}
 }
 \description{
 \code{prnGSEA} prepares data for the analysis of

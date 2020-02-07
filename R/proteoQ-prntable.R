@@ -132,6 +132,8 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   df <- read.csv(filename, sep = "\t", check.names = FALSE, header = TRUE, comment.char = "#") %>% 
     dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 
+  message("Primary column keys in `Protein/Protein.txt` for `slice_` varargs.")
+  
   df <- normMulGau(
     df = df, 
     method_align = method_align, 

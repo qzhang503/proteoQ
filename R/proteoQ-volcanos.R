@@ -2,12 +2,13 @@
 #'
 #' @import limma stringr purrr dplyr rlang grid gridExtra gtable
 #' @importFrom magrittr %>%
-plotVolcano <- function(df = NULL, id = "gene", 
+plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", 
                         adjP = FALSE, show_labels = TRUE, anal_type = "Volcano", 
-                        pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), show_sig = "none", 
-                        fml_nms = NULL, gset_nms = "go_sets", 
+                        gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn = 100, 
+                        show_sig = "none", fml_nms = NULL, gset_nms = "go_sets", 
                         scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                         filepath = NULL, filename = NULL, theme = NULL, ...) {
+
   id <- rlang::as_string(rlang::enexpr(id))
   
   df <- df %>%
@@ -25,8 +26,6 @@ plotVolcano <- function(df = NULL, id = "gene",
   arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
   select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
-  
-  cat("Column keys available for data filtration are in `Model\\...[_impNA]_pVals.txt`.\n")
   
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
@@ -95,9 +94,10 @@ plotVolcano <- function(df = NULL, id = "gene",
   
   if (is.null(theme)) theme <- proteoq_volcano_theme
 
-  if (length(fml_nms) > 0) purrr::pwalk(list(fml_nms, pval_cutoff, logFC_cutoff), 
+  if (length(fml_nms) > 0) purrr::pwalk(list(fml_nms, gspval_cutoff, gslogFC_cutoff, topn), 
                                         byfml_volcano, 
                                         df = df, 
+                                        df2 = df2, 
                                         col_ind = col_ind, 
                                         id = !!id, 
                                         filepath = filepath, 
@@ -119,10 +119,11 @@ plotVolcano <- function(df = NULL, id = "gene",
 #'
 #' @import purrr dplyr rlang
 #' @importFrom magrittr %>%
-byfml_volcano <- function (fml_nm, pval_cutoff, logFC_cutoff, df, col_ind, id, 
-                         filepath, filename, adjP, show_labels, anal_type, 
-												 show_sig, gset_nms, scale_log2r, complete_cases, impute_na, 
-												 theme = NULL, ...) {
+byfml_volcano <- function (fml_nm, gspval_cutoff, gslogFC_cutoff, topn, df, df2, 
+                           col_ind, id, 
+                           filepath, filename, adjP, show_labels, anal_type, 
+                           show_sig, gset_nms, scale_log2r, complete_cases, impute_na, 
+                           theme = NULL, ...) {
 
   pval_complete_cases <- function (df) {
     rows <- df %>% 
@@ -143,13 +144,14 @@ byfml_volcano <- function (fml_nm, pval_cutoff, logFC_cutoff, df, col_ind, id,
   
   if (complete_cases) df <- df %>% pval_complete_cases()
 
-  byfile_plotVolcano(df = df, id = !!id, fml_nm = fml_nm, filepath = filepath, filename = filename, 
-                  adjP = adjP, show_labels = show_labels, anal_type = anal_type, gset_nms = gset_nms, 
-                  scale_log2r = scale_log2r, 
-                  impute_na = impute_na)(pval_cutoff = pval_cutoff, 
-                                         logFC_cutoff = logFC_cutoff, 
-                                         show_sig = show_sig, 
-                                         theme = theme, ...)
+  byfile_plotVolcano(df = df, df2 = df2, id = !!id, fml_nm = fml_nm, filepath = filepath, filename = filename, 
+                     adjP = adjP, show_labels = show_labels, anal_type = anal_type, gset_nms = gset_nms, 
+                     scale_log2r = scale_log2r, 
+                     impute_na = impute_na)(gspval_cutoff = gspval_cutoff, 
+                                            gslogFC_cutoff = gslogFC_cutoff, 
+                                            topn = topn, 
+                                            show_sig = show_sig, 
+                                            theme = theme, ...)
 }
 
 
@@ -157,7 +159,7 @@ byfml_volcano <- function (fml_nm, pval_cutoff, logFC_cutoff, df, col_ind, id,
 #'
 #' @import limma stringr purrr dplyr rlang grid gridExtra gtable
 #' @importFrom magrittr %>%
-byfile_plotVolcano <- function(df = NULL, id = "gene", fml_nm = NULL, filepath = NULL, filename = NULL, 
+byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL, filepath = NULL, filename = NULL, 
                                adjP = FALSE, show_labels = TRUE, anal_type = "Volcano", gset_nms = "go_sets", 
                                scale_log2r, impute_na, theme = NULL, ...) {
 
@@ -167,34 +169,58 @@ byfile_plotVolcano <- function(df = NULL, id = "gene", fml_nm = NULL, filepath =
 	  gsub("^log2Ratio\\s+\\(|\\)$", "", .)
 
 	if (anal_type %in% c("Volcano")) {
-		function(pval_cutoff = 1, logFC_cutoff = 0, show_sig = "none", theme = theme, ...) {
-			rm(pval_cutoff, logFC_cutoff, show_sig)
+		function(gspval_cutoff = 1, gslogFC_cutoff = 0, topn = 100, show_sig = "none", theme = theme, ...) {
+			rm(gspval_cutoff, gslogFC_cutoff, show_sig)
 
 			fullVolcano(df = df, id = !!id, contrast_groups = contrast_groups,
 				theme = theme, fml_nm = fml_nm, filepath = filepath, filename = filename,
 				adjP = adjP, show_labels = show_labels, ...)
 		}
 	} else if (anal_type == "mapGSPA")
-	  function(pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), show_sig = "none", theme = theme, ...) {
+	  function(gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn = 100, show_sig = "none", theme = theme, ...) {
 	    stopifnot(!is.null(fml_nm))
 	    
-	    in_names <- list.files(path = file.path(filepath, fml_nm), pattern = "_GSPA_[NZ]{1}.*\\.txt$") %>% 
-	      .[!grepl("_essmap|_essmeta|_resgreedy", .)] %>% 
-	      {if (impute_na) .[grepl("_impNA", .)] else .[!grepl("_impNA", .)]} %>% 
-	      {if (scale_log2r) .[grepl("_GSPA_Z", .)] else .[grepl("_GSPA_N", .)]}
+	    filepath_fml <- file.path(filepath, fml_nm)
 	    
-	    if (rlang::is_empty(in_names)) {
-	      stop("No GSPA inputs correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
-	           " at fml_nms = ", fml_nm, call. = FALSE)
-	    }
+	    in_names <- list.files(path = filepath_fml, pattern = "_GSPA_[NZ]{1}.*\\.txt$")
+	    if (purrr::is_empty(in_names)) stop("No inputs under ", filepath_fml, call. = FALSE)
+	    
+	    if (is.null(df2)) {
+  	    in_names <- in_names %>% 
+  	      .[!grepl("_essmap|_essmeta|_resgreedy", .)] %>% 
+  	      {if (impute_na) .[grepl("_impNA", .)] else .[!grepl("_impNA", .)]} %>% 
+  	      {if (scale_log2r) .[grepl("_GSPA_Z", .)] else .[grepl("_GSPA_N", .)]}
 
-	    purrr::walk(in_names, gsVolcano, df = df, contrast_groups = contrast_groups, 
+  	    if (rlang::is_empty(in_names)) {
+  	      stop("No inputs correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+  	           " at fml_nms = ", fml_nm, call. = FALSE)
+  	    }
+  	    
+  	    df2 <- in_names
+	    } else {
+	      local({
+	        if (grepl("_essmap|_essmeta|_resgreedy", df2)) {
+	          stop("Do not use `_essmap`, `_essmeta` or `_resgreedy` for `df2`", call. = FALSE)
+	        }
+	        
+	        non_exists <- df2 %>% .[! . %in% in_names]
+	        if (!purrr::is_empty(non_exists)) {
+	          stop("Missing file(s): ", purrr::reduce(non_exists, paste, sep = ", "), call. = FALSE)
+	        }
+	      })
+	      
+	      if (purrr::is_empty(df2)) stop("File(s) not found under ", filepath_fml, call. = FALSE)
+	    }
+	    
+	    # plot data ---------------------------
+	    purrr::walk(df2, gsVolcano, df = df, contrast_groups = contrast_groups, 
 	                gsea_key = "term", 
-	                gsets = gsets, theme = theme, 
+	                gsets = gsets, 
+	                theme = theme, 
 	                fml_nm = fml_nm, 
 	                filepath = filepath, filename = filename, 
 	                adjP = adjP, show_labels = show_labels, show_sig = show_sig, 
-	                pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, ...)
+	                gspval_cutoff = gspval_cutoff, gslogFC_cutoff = gslogFC_cutoff, topn = topn, ...)
 	  }
 }
 
@@ -358,13 +384,14 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 #'
 #' @import dplyr rlang ggplot2
 #' @importFrom magrittr %>%
-gsVolcano <- function(in_name = NULL, df = NULL, contrast_groups = NULL, 
+gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL, 
                       gsea_key = "term", gsets = NULL, 
                       theme = NULL, 
                       fml_nm = NULL, 
-                      filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE,
-                      show_sig = "none", pval_cutoff = 1E-6, logFC_cutoff = log2(1.2), ...) {
-  custom_prefix <- gsub("(.*_{0,1})Protein_GSPA.*", "\\1", in_name)
+                      filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE, show_sig = "none", 
+                      gspval_cutoff = 1E-6, gslogFC_cutoff = log2(1.2), topn = 100, ...) {
+  
+  custom_prefix <- gsub("(.*_{0,1})Protein_GSPA.*", "\\1", df2)
   dir.create(path = file.path(filepath, fml_nm, custom_prefix), recursive = TRUE, showWarnings = FALSE)
 
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) 
@@ -378,7 +405,7 @@ gsVolcano <- function(in_name = NULL, df = NULL, contrast_groups = NULL,
 	x_label <- expression("Ratio ("*log[2]*")")
 	y_label <- ifelse(adjP, expression("pVal ("*-log[10]*")"), expression("adjP ("*-log[10]*")"))
 	
-	gsea_res <- tryCatch(readr::read_tsv(file.path(filepath, fml_nm, in_name), 
+	gsea_res <- tryCatch(readr::read_tsv(file.path(filepath, fml_nm, df2), 
 	                                          col_types = cols(term = col_character(),
 	                                                           is_essential = col_logical(),
 	                                                           size = col_double(),
@@ -389,13 +416,25 @@ gsVolcano <- function(in_name = NULL, df = NULL, contrast_groups = NULL,
 	                                                           log2fc = col_double())), 
 	                          error = function(e) NA)
 	
+	message("Secondary file loaded: ", gsub("\\\\", "/", file.path(filepath, fml_nm, df2)))
+
+	filter2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter2_", names(.))]
+	arrange2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange2_", names(.))]
+	select2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select2_", names(.))]
+	dots <- dots %>% .[! . %in% c(filter2_dots, arrange2_dots, select2_dots)]
+	
+	gsea_res <- gsea_res %>% 
+	  filters_in_call(!!!filter2_dots) %>% 
+	  arrangers_in_call(!!!arrange2_dots)
+	rm(filter2_dots, arrange2_dots, select2_dots)
+
 	if (nrow(gsea_res) == 0) stop("No GSPA terms available after data filtration.")
 
-	N <- pmin(dplyr::n_distinct(gsea_res[[gsea_key]]), 100)
+	topn <- pmin(dplyr::n_distinct(gsea_res[[gsea_key]]), topn)
 	terms <- gsea_res %>%
 	  dplyr::arrange(p_val) %>% 
-	  dplyr::slice(1:(N*length(contrast_groups))) %>% 
-	  dplyr::filter(p_val <= pval_cutoff, abs(log2fc) >= logFC_cutoff) %>%
+	  dplyr::slice(1:(topn*length(contrast_groups))) %>% 
+	  dplyr::filter(p_val <= gspval_cutoff, abs(log2fc) >= gslogFC_cutoff) %>%
 	  dplyr::select(gsea_key) %>%
 	  unique() %>%
 	  unlist()
@@ -533,6 +572,7 @@ gsVolcano <- function(in_name = NULL, df = NULL, contrast_groups = NULL,
   		
   		ggsave(file.path(filepath, fml_nm, custom_prefix, paste0(fn, ".", fn_suffix)), 
   		       p, width = width, height = height, dpi = 300, units = "in")
+
   		write.table(dfw_sub, file = file.path(filepath, fml_nm, custom_prefix, paste0(fn, ".txt")), 
   		            sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)	
   		            
@@ -555,7 +595,7 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
                     df = NULL, filepath = NULL, filename = NULL, 
                     fml_nms = NULL, theme = NULL, ...) {
   
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"))
@@ -568,10 +608,10 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
   
   stopifnot(rlang::is_logical(adjP), 
             rlang::is_logical(show_labels))
-  
+
   reload_expts()
-  
-  info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
+
+  info_anal(df = !!df, df2 = NULL, id = !!id, filepath = !!filepath, filename = !!filename, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             anal_type = "Volcano")(fml_nms = fml_nms, 
                                    adjP = adjP, 
@@ -591,65 +631,76 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  The default is FALSE.
 #'@param show_labels Logical; if TRUE, shows the labels of top twenty entries.
 #'  The default is TRUE.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
-#'  plotting: \cr \code{xco}, the cut-off lines of fold changes at position
-#'  \code{x}; the default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the
-#'  cut-off line of \code{pVal} at position \code{y}; the default is \eqn{0.05}.
-#'  \cr \code{width}, the width of plot; \cr \code{height}, the height of plot.
-#'  \cr \code{nrow}, the number of rows in a plot.
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  against data in a primary file linked to \code{df}. See also
+#'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+#'  Additional parameters for plotting: \cr \code{xco}, the cut-off lines of
+#'  fold changes at position \code{x}; the default is at \eqn{-1.2} and
+#'  \eqn{+1.2}. \cr \code{yco}, the cut-off line of \code{pVal} at position
+#'  \code{y}; the default is \eqn{0.05}. \cr \code{width}, the width of plot;
+#'  \cr \code{height}, the height of plot. \cr \code{nrow}, the number of rows
+#'  in a plot.
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'
 #'@example inst/extdata/examples/prnVol_.R
-#'@seealso \code{\link{load_expts}} for a reduced working example in data normalization \cr
+#'@seealso \code{\link{load_expts}} for a reduced working example in data
+#'  normalization \cr
 #'
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
+#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
+#'  \code{\link{standPep}} for extended examples in peptide data normalization
+#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
+#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
+#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
+#'  for extended examples in data purging \cr \code{\link{pepHist}} and
+#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
+#'  MS file names \cr
+#'
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
+#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
+#'  \cr
+#'
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
+#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
+#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
+#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
+#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
+#'  GSEA. \cr
+#'
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
+#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr
+#'
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
+#'  analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
+#'  analysis and visualization \cr
+#'
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
-#'  
+#'
 #'@export
 prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                     adjP = FALSE, show_labels = TRUE, 
                     df = NULL, filepath = NULL, filename = NULL, 
                     fml_nms = NULL, theme = NULL, ...) {
   
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -662,10 +713,10 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
   
   stopifnot(rlang::is_logical(adjP), 
             rlang::is_logical(show_labels))
-  
+
   reload_expts()
-  
-  info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
+
+  info_anal(df = !!df, df2 = NULL, id = !!id, filepath = !!filepath, filename = !!filename, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             anal_type = "Volcano")(fml_nms = fml_nms, 
                                    adjP = adjP, 
@@ -678,39 +729,49 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'Volcano plots of protein \code{log2FC} under gene sets
 #'
 #'\code{gspaMap} visualizes the volcano plots of protein subgroups under the
-#'same gene sets. 
+#'same gene sets.
 #'
 #'@inheritParams prnGSPA
 #'@inheritParams prnVol
 #'@inheritParams prnHist
+#'@inheritParams plot_prnTrend
 #'@param filename Use system default for each gene set.
 #'@param show_sig Character string indicating the type of significance values to
 #'  be shown with \code{\link{gspaMap}}. The default is \code{"none"}.
 #'  Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 #'  \code{qVal} will be shown, respectively, in the facet grid of the plots.
-#'@param pval_cutoff Numeric value or vector for uses with
+#'@param gspval_cutoff Numeric value or vector for uses with
 #'  \code{\link{gspaMap}}. \code{Gene sets} with enrichment \code{pVals} less
 #'  significant than the threshold will be excluded from volcano plot
 #'  visualization. The default signficance is 0.05 for all formulae matched to
 #'  or specified in argument \code{fml_nms}. Formula-specific threshold is
 #'  allowed by supplying a vector of cut-off values.
-#'@param logFC_cutoff Numeric value or vector for uses with
+#'@param gslogFC_cutoff Numeric value or vector for uses with
 #'  \code{\link{gspaMap}}. \code{Gene sets} with absolute enrichment
 #'  \code{log2FC} less than the threshold will be excluded from volcano plot
 #'  visualization. The default magnitude is \code{log2(1.2) } for all formulae
 #'  matched to or specified in argument \code{fml_nms}. Formula-specific
 #'  threshold is allowed by supplying a vector of absolute values in
 #'  \code{log2FC}.
+#'@param topn Numeric value or vector; top entries in gene sets ordered by
+#'  increaseing \code{pVal} for visualization. The default is to use the top 100
+#'  available entries.
 #'@param gset_nms Character vector containing the name(s) of gene sets for uses
 #'  with \code{\link{gspaMap}}. By default, the names will match those used in
 #'  \code{\link{prnGSPA}}.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}. \cr \cr Additional parameters for
-#'  plotting: \cr \code{xco}, the cut-off lines of fold changes at position
-#'  \code{x}; the default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the
-#'  cut-off line of \code{pVal} at position \code{y}; the default is \eqn{0.05}.
-#'  \cr \code{width}, the width of plot; \cr \code{height}, the height of plot.
-#'  \cr \code{nrow}, the number of rows in a plot.
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  against data in a primary file linked to \code{df}. See also
+#'  \code{\link{normPSM}} for the format of \code{filter_} statements and the
+#'  association between \code{filter_} and \code{df}. \cr \cr \code{filter2_}:
+#'  Variable argument statements for the row filtration aganist data in
+#'  secondary file(s) linked to \code{df2}. See also \code{\link{prnGSPAHM}} for
+#'  the formate of \code{filter2_}, \code{normPSM} for the associateion between
+#'  \code{filter_} and \code{df}. \cr \cr Additional parameters for plotting:
+#'  \cr \code{xco}, the cut-off lines of fold changes at position \code{x}; the
+#'  default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the cut-off line of
+#'  \code{pVal} at position \code{y}; the default is \eqn{0.05}. \cr
+#'  \code{width}, the width of plot; \cr \code{height}, the height of plot. \cr
+#'  \code{nrow}, the number of rows in a plot.
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -767,11 +828,12 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'
 #'@export
 gspaMap <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                        df = NULL, filepath = NULL, filename = NULL, fml_nms = NULL, 
-                        adjP = FALSE, show_labels = TRUE, show_sig = "none", 
-                        pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                        gset_nms = c("go_sets", "kegg_sets"), theme = NULL, ...) {
+                     df = NULL, df2 = NULL, filepath = NULL, filename = NULL, fml_nms = NULL, 
+                     adjP = FALSE, show_labels = TRUE, show_sig = "none", 
+                     gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn = 100, 
+                     gset_nms = c("go_sets", "kegg_sets"), theme = NULL, ...) {
   check_dots(c("id", "anal_type"), ...)
+  check_depreciated_args(list(c("pval_cutoff", "gspval_cutoff"), c("logFC_cutoff", "gslogFC_cutoff")), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
@@ -779,15 +841,16 @@ gspaMap <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FAL
   scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
   
   df <- rlang::enexpr(df)
+  df2 <- rlang::enexpr(df2)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)	
   show_sig <- rlang::as_string(rlang::enexpr(show_sig))
   
   stopifnot(rlang::is_logical(adjP), 
             rlang::is_logical(show_labels), 
-            rlang::is_double(pval_cutoff), 
-            rlang::is_double(logFC_cutoff))
-  
+            rlang::is_double(gspval_cutoff), 
+            rlang::is_double(gslogFC_cutoff))
+
   gset_nms <- local({
     file <- file.path(dat_dir, "Calls\\anal_prnGSPA.rda")
     
@@ -800,16 +863,17 @@ gspaMap <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FAL
     
     return(gset_nms)
   })
-  
+
   reload_expts()
-  
-  info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
+
+  info_anal(df = !!df, df2 = !!df2, id = !!id, filepath = !!filepath, filename = !!filename, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             anal_type = "mapGSPA")(fml_nms = fml_nms, 
                                    adjP = adjP, 
                                    show_labels = show_labels, 
-                                   pval_cutoff = pval_cutoff, 
-                                   logFC_cutoff = logFC_cutoff, 
+                                   gspval_cutoff = gspval_cutoff, 
+                                   gslogFC_cutoff = gslogFC_cutoff, 
+                                   topn = topn, 
                                    show_sig = show_sig,
                                    gset_nms = gset_nms, 
                                    theme = theme, 

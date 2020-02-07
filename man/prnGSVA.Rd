@@ -4,11 +4,20 @@
 \alias{prnGSVA}
 \title{GSVA of protein data}
 \usage{
-prnGSVA(gset_nms = "go_sets", scale_log2r = TRUE,
-  complete_cases = FALSE, impute_na = FALSE, df = NULL,
-  filepath = NULL, filename = NULL, var_cutoff = 0.5,
-  pval_cutoff = 1e-04, logFC_cutoff = log2(1.1), lm_method = "limma",
-  ...)
+prnGSVA(
+  gset_nms = "go_sets",
+  scale_log2r = TRUE,
+  complete_cases = FALSE,
+  impute_na = FALSE,
+  df = NULL,
+  filepath = NULL,
+  filename = NULL,
+  var_cutoff = 0.5,
+  pval_cutoff = 1e-04,
+  logFC_cutoff = log2(1.1),
+  lm_method = "limma",
+  ...
+)
 }
 \arguments{
 \item{gset_nms}{Character string or vector containing the name(s) of gene sets
@@ -25,9 +34,15 @@ missing values will be used. The default is FALSE.}
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
 
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{filepath}{Use system default.}
 
@@ -52,12 +67,13 @@ significance assessment of GSVA enrichment scores. The default is
 for models without random effects and the \code{\link[lmerTest]{lmer}} will
 be used for models with random effects.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data in \code{Protein\\Protein_[impNA].txt} or
-\code{Protein\\Model\\Protein_[impNA]pVals.txt}; see also
-\code{\link{normPSM}} \cr \cr \code{arrange_}: Logical expression(s) for the
-row ordering of data; also see \code{\link{prnHM}}. \cr \cr Additional
-arguments for \code{\link{GSVA::gsva}}}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration
+against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+See also \code{\link{normPSM}} for the format of \code{filter_} statements.
+\cr \cr \code{arrange_}: Variable argument statements for the row ordering
+aganist data in a primary file linked to \code{df}. See also
+\code{\link{prnHM}} for the format of \code{arrange_} statements. \cr \cr
+Additional arguments for \code{\link{GSVA::gsva}}}
 }
 \description{
 \code{prnGSVA} performs the GSVA aganist protein \code{log2FC}. It is a

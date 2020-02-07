@@ -4,8 +4,11 @@
 \alias{dl_stringdbs}
 \title{Downloads STRING databases}
 \usage{
-dl_stringdbs(species = "human",
-  db_path = "~\\\\proteoQ\\\\dbs\\\\string", overwrite = FALSE)
+dl_stringdbs(
+  species = "human",
+  db_path = "~\\\\proteoQ\\\\dbs\\\\string",
+  overwrite = FALSE
+)
 }
 \arguments{
 \item{species}{Character string; the species. The currently supported species

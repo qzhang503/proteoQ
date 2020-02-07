@@ -1,6 +1,6 @@
 #' Trend analysis
 #'
-#' @import Mfuzz dplyr purrr rlang Biobase
+#' @import dplyr purrr rlang Biobase
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>%
@@ -110,43 +110,63 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 #' @importFrom magrittr %>%
 plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, 
                       scale_log2r, complete_cases, impute_na, 
-                      filepath, filename, theme, ...) {
+                      df2 = NULL, filepath, filename, theme, ...) {
   
   stopifnot(nrow(label_scheme_sub) > 0)
   sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
 
+  # find input df2 ---------------------------
   ins <- list.files(path = filepath, pattern = "Trend_[NZ]{1}.*nclust\\d+.*\\.txt$")
-
-  if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
-  if (scale_log2r) ins <- ins %>% .[grepl("_Trend_Z", .)] else ins <- ins %>% .[grepl("_Trend_N", .)]
+  if (purrr::is_empty(ins)) stop("No inputs under ", filepath, call. = FALSE)
   
-	if (is.null(n_clust)) {
-	  filelist <- ins
-	} else {
-	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
-	  
-	  filelist <- local({
-  	  possible <- ins %>% 
-  	    gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", .) %>% 
-  	    as.numeric() %>% 
-  	    `names<-`(ins)
+  if (is.null(df2)) {
+    if (impute_na) ins <- ins %>% .[grepl("_impNA", .)] else ins <- ins %>% .[!grepl("_impNA", .)]
+    if (scale_log2r) ins <- ins %>% .[grepl("_Trend_Z", .)] else ins <- ins %>% .[grepl("_Trend_N", .)]
+    
+    if (purrr::is_empty(ins)) 
+      stop("No inputs correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, call. = FALSE)
+    
+  	if (is.null(n_clust)) {
+  	  df2 <- ins
+  	} else {
+  	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
   	  
-  	  n_clust2 <- n_clust %>% .[. %in% possible]
+  	  df2 <- local({
+    	  possibles <- ins %>% 
+    	    gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", .) %>% 
+    	    as.numeric() %>% 
+    	    `names<-`(ins)
+    	  
+    	  n_clust2 <- n_clust %>% .[. %in% possibles]
+    	  
+    	  df2 <- possibles %>% 
+    	    .[. %in% n_clust2] %>% 
+    	    names(.)	    
+  	  })
   	  
-  	  filelist <- possible %>% 
-  	    .[. %in% n_clust2] %>% 
-  	    names(.)	    
-	  })
-	}
-	
+  	  if (purrr::is_empty(df2)) 
+  	    stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+  	         " at n_clust = ", paste0(n_clust, collapse = ","), call. = FALSE)
+  	}    
+  } else {
+    local({
+      non_exists <- df2 %>% .[! . %in% ins]
+      if (!purrr::is_empty(non_exists)) {
+        stop("Missing trend file(s): ", purrr::reduce(non_exists, paste, sep = ", "), call. = FALSE)
+      }
+    })
+    if (purrr::is_empty(df2)) stop("File(s) not found under ", filepath, call. = FALSE)
+  }
+
+  # prepare output filename ---------------------------	
   if (id %in% c("pep_seq", "pep_seq_mod")) {
-    custom_prefix <- purrr::map_chr(filelist, ~ {
+    custom_prefix <- purrr::map_chr(df2, ~ {
       gsub("(.*_{0,1})Peptide_Trend.*", "\\1", .x)
     })
   } else if (id %in% c("prot_acc", "gene")) {
-    custom_prefix <- purrr::map_chr(filelist, ~ {
+    custom_prefix <- purrr::map_chr(df2, ~ {
       gsub("(.*_{0,1})Protein_Trend.*", "\\1", .x)
     })
   } else {
@@ -156,10 +176,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
-  if (purrr::is_empty(filelist)) 
-    stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
-         " at n_clust = ", paste0(n_clust, collapse = ","), call. = FALSE)
-
+  # plot data ---------------------------
   col_group <- rlang::enexpr(col_group)
   col_order <- rlang::enexpr(col_order)
 
@@ -193,7 +210,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   
   if (is.null(theme)) theme <- proteoq_trend_theme
 
-  purrr::walk2(filelist, custom_prefix, ~ {
+  purrr::walk2(df2, custom_prefix, ~ {
     n <- gsub(".*_nclust(\\d+)[^\\d]*\\.txt$", "\\1", .x) %>% 
       as.numeric()
     
@@ -217,15 +234,22 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
       unique() %>% 
       unlist()
     
-    filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-    arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
-    dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+    if (!purrr::is_empty(dots)) {
+      if (any(grepl("^filter_", names(dots)))) {
+        stop("Primary `filter_` depreciated; use secondary `filter2_`.")
+      }      
+    }
+
+    filter2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter2_", names(.))]
+    arrange2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange2_", names(.))]
+    dots <- dots %>% .[! . %in% c(filter2_dots, arrange2_dots)]
     
     df <- df %>% 
       dplyr::filter(group %in% Levels) %>% 
-      filters_in_call(!!!filter_dots) %>% 
-      arrangers_in_call(!!!arrange_dots) %>% 
+      filters_in_call(!!!filter2_dots) %>% 
+      arrangers_in_call(!!!arrange2_dots) %>% 
       dplyr::mutate(group = factor(group, levels = Levels))
+    rm(filter2_dots, arrange2_dots)
 
     if (complete_cases) df <- df %>% .[complete.cases(.), ]
     
@@ -301,13 +325,16 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is FALSE.
 #'@param filepath Use system default.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; \cr \code{arrange_}: Logical expression(s) for the row order of data;
-#'  also see \code{\link{normPSM}}, \code{\link{prnHM}}. \cr \cr Additional
-#'  arguments for \code{\link[e1071]{cmeans}} by noting that: \cr \code{centers}
-#'  is replaced with \code{n_clust} \cr \code{m} is according to Schwaemmle and
-#'  Jensen if not provided; \cr \code{x} is disabled with input data being
-#'  determined automatically
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#'  against data in a primary file linked to \code{df}. See also
+#'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+#'  \code{arrange_}: Variable argument statements for the row ordering aganist
+#'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+#'  the format of \code{arrange_} statements. \cr \cr Additional arguments for
+#'  \code{\link[e1071]{cmeans}} by noting that: \cr \code{centers} is replaced
+#'  with \code{n_clust} \cr \code{m} is according to Schwaemmle and Jensen if
+#'  not provided; \cr \code{x} is disabled with input data being determined
+#'  automatically
 #'@return Fuzzy c-mean classification of \code{log2FC}.
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
@@ -365,7 +392,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'
 #'@export
 #'@references \code{Schwaemmle and Jensen, Bioinformatics,Vol. 26 (22),
-#'  2841-2848, 2010. \cr J. C. Bezdek (1981). Pattern recognition with fuzzy objective function algorithms. New York: Plenum. \cr }
+#'  2841-2848, 2010. \cr J. C. Bezdek (1981). Pattern recognition with fuzzy
+#'  objective function algorithms. New York: Plenum. \cr }
 anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL, n_clust = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                            df = NULL, filepath = NULL, filename = NULL, ...) {
@@ -382,7 +410,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
     , add = TRUE
   )  
   
-  check_dots(c("id", "anal_type"), ...)
+  check_dots(c("id", "df2", "anal_type"), ...)
   
   err_msg1 <- "Do not use argument `x`; input data will be determined automatically.\n"
   err_msg2 <- "Do not use argument `centers`; instead use `n_clust`.\n"
@@ -407,7 +435,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
   
   info_anal(id = !!id, col_select = !!col_select, col_group = !!col_group, col_order = !!col_order,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, filepath = !!filepath, filename = !!filename,
+            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "Trend")(n_clust = n_clust, ...)
 }
 
@@ -431,27 +459,35 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'@inheritParams anal_prnNMF
 #'@inheritParams prnCorr_logFC
 #'@inheritParams prnHist
+#'@param df2 Character vector or string; the name(s) of secondary data file(s).
+#'  An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+#'  \code{df} generates secondary files such as
+#'  \code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+#'  section or \code{\link{prnHist}} for the description of a primary \code{df}.
 #'@param scale_log2r Logical; at the TRUE default, input files with
 #'  \code{_Z[...].txt} in name will be used. Otherwise, files with
-#'  \code{_N[...].txt} in name will be taken. An error will be shown if no files
-#'  are matched under given conditions.
+#'  \code{_N[...].txt} in name will be taken. An error will be thrown if no
+#'  files are matched under given conditions.
 #'@param impute_na Logical; at the TRUE default, input files with
 #'  \code{_impNA[...].txt} in name will be loaded. Otherwise, files without
-#'  \code{_impNA} in name will be taken. An error will be shown if no files are
+#'  \code{_impNA} in name will be taken. An error will be thrown if no files are
 #'  matched under given conditions.
 #'@param n_clust Numeric vector; the cluster ID(s) corresponding to
 #'  \code{\link{anal_prnTrend}} for visualization. At the NULL default, all
 #'  available cluster IDs will be used.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data in \code{Protein_Trend_[...].txt}; see also \code{\link{normPSM}} \cr
-#'  \cr \code{arrange_}: Logical expression(s) for the row ordering of data;
-#'  also see \code{\link{prnHM}}. \cr \cr Additional parameters for use in
-#'  \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2} scale;
-#'  \cr \code{ymax}, the maximum y at \code{log2} scale; \cr \code{ybreaks}, the
-#'  breaks in y-axis at \code{log2} scale; \cr \code{nrow}, the number of rows;
-#'  \cr \code{width}, the width of plot; \cr \code{height}, the height of plot;
-#'  \cr \code{color}, the color of lines; \cr \code{alpha}, the transparency of
-#'  lines.
+#'@param ...  \code{filter2_}: Variable argument statements for the row
+#'  filtration aganist data in secondary file(s) of
+#'  \code{[...]Protein_Trend_[...].txt}. See also \code{\link{prnGSPAHM}} for
+#'  the format of \code{filter2_} statements. \cr \cr \code{arrange2_}: Variable
+#'  argument statements for the row ordering aganist data in secondary file(s)
+#'  of \code{[...]Protein_Trend_[...].txt}. See also \code{\link{prnGSPAHM}} for
+#'  the format of \code{arrange2_} statements. \cr \cr Additional parameters for
+#'  use in \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2}
+#'  scale; \cr \code{ymax}, the maximum y at \code{log2} scale; \cr
+#'  \code{ybreaks}, the breaks in y-axis at \code{log2} scale; \cr \code{nrow},
+#'  the number of rows; \cr \code{width}, the width of plot; \cr \code{height},
+#'  the height of plot; \cr \code{color}, the color of lines; \cr \code{alpha},
+#'  the transparency of lines.
 #'@import purrr
 #'
 #'@example inst/extdata/examples/prnTrend_.R
@@ -508,8 +544,8 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'@export
 plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                           filename = NULL, theme = NULL, ...) {
-  check_dots(c("id", "anal_type", "col_group", "df", "filepath"), ...)
+                           df2 = NULL, filename = NULL, theme = NULL, ...) {
+  check_dots(c("id", "anal_type", "df", "col_group", "filepath"), ...)
   
   dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
 
@@ -521,12 +557,13 @@ plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL,
   col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)
   filename <- rlang::enexpr(filename)
+  df2 <- rlang::enexpr(df2)
   
   reload_expts()
   
   info_anal(id = !!id, col_select = !!col_select, col_group = NULL, col_order = !!col_order,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = NULL, filepath = NULL, filename = !!filename,
+            df = NULL, df2 = !!df2, filepath = NULL, filename = !!filename,
             anal_type = "Trend_line")(n_clust = n_clust, theme = theme, ...)
 }
 

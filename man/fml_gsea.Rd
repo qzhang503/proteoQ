@@ -4,9 +4,27 @@
 \alias{fml_gsea}
 \title{Protein GSEA by formula(e) in `pepSig` or `prnSig`}
 \usage{
-fml_gsea(fml, fml_nm, var_cutoff, pval_cutoff, logFC_cutoff, gspval_cutoff,
-  min_size, max_size, df, col_ind, id, gsets, label_scheme_sub,
-  complete_cases, scale_log2r, filepath, filename, ...)
+fml_gsea(
+  fml,
+  fml_nm,
+  var_cutoff,
+  pval_cutoff,
+  logFC_cutoff,
+  gspval_cutoff,
+  gslogFC_cutoff,
+  min_size,
+  max_size,
+  df,
+  col_ind,
+  id,
+  gsets,
+  label_scheme_sub,
+  complete_cases,
+  scale_log2r,
+  filepath,
+  filename,
+  ...
+)
 }
 \description{
 Protein GSEA by formula(e) in `pepSig` or `prnSig`

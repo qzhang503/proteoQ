@@ -4,8 +4,17 @@
 \alias{normMulGau}
 \title{Data normalization}
 \usage{
-normMulGau(df, method_align, n_comp, seed = NULL, range_log2r, range_int,
-  filepath, col_select = NULL, ...)
+normMulGau(
+  df,
+  method_align,
+  n_comp,
+  seed = NULL,
+  range_log2r,
+  range_int,
+  filepath,
+  col_select = NULL,
+  ...
+)
 }
 \arguments{
 \item{df}{An input data frame}

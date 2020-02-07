@@ -4,11 +4,24 @@
 \alias{gsVolcano}
 \title{Volcano plots of protein \code{log2FC} under given gene sets}
 \usage{
-gsVolcano(in_name = NULL, df = NULL, contrast_groups = NULL,
-  gsea_key = "term", gsets = NULL, theme = NULL, fml_nm = NULL,
-  filepath = NULL, filename = NULL, adjP = FALSE,
-  show_labels = TRUE, show_sig = "none", pval_cutoff = 1e-06,
-  logFC_cutoff = log2(1.2), ...)
+gsVolcano(
+  df2 = NULL,
+  df = NULL,
+  contrast_groups = NULL,
+  gsea_key = "term",
+  gsets = NULL,
+  theme = NULL,
+  fml_nm = NULL,
+  filepath = NULL,
+  filename = NULL,
+  adjP = FALSE,
+  show_labels = TRUE,
+  show_sig = "none",
+  gspval_cutoff = 1e-06,
+  gslogFC_cutoff = log2(1.2),
+  topn = 100,
+  ...
+)
 }
 \description{
 Volcano plots of protein \code{log2FC} under given gene sets

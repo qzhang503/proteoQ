@@ -4,13 +4,27 @@
 \alias{annot_stringdb}
 \title{Annotates protein STRING ids by species}
 \usage{
-annot_stringdb(species, df, db_path, id, score_cutoff, filepath = NULL,
-  filename = NULL, ...)
+annot_stringdb(
+  species,
+  df,
+  db_path,
+  id,
+  score_cutoff,
+  filepath = NULL,
+  filename = NULL,
+  ...
+)
 }
 \arguments{
-\item{df}{The name of input data file. By default, it will be determined
-automatically after matching the data type with an \code{id} among
-\code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}.}
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
 
 \item{db_path}{Character string; the local path for database(s). The default
 is \code{"~\\proteoQ\\dbs\\string"}.}
@@ -24,10 +38,12 @@ protein-protein interaction. The default is 0.7.}
 to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}
 for expression data.}
 
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data against the column keys in \code{Protein[_impNA]_pVals.txt}; also see
-\code{\link{normPSM}}. \cr \code{arrange_}: Logical expression(s) for the
-row ordering of data; also see \code{\link{prnHM}}.}
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration
+against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+See also \code{\link{normPSM}} for the format of \code{filter_} statements.
+\cr \cr \code{arrange_}: Variable argument statements for the row ordering
+aganist data in a primary file linked to \code{df}. See also
+\code{\link{prnHM}} for the format of \code{arrange_} statements.}
 }
 \description{
 Annotates protein STRING ids by species

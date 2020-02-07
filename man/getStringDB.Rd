@@ -4,8 +4,13 @@
 \alias{getStringDB}
 \title{STRING outputs (depreciated)}
 \usage{
-getStringDB(db_path = "~\\\\proteoQ\\\\dbs\\\\string",
-  score_cutoff = 0.7, adjP = FALSE, impute_na = FALSE, ...)
+getStringDB(
+  db_path = "~\\\\proteoQ\\\\dbs\\\\string",
+  score_cutoff = 0.7,
+  adjP = FALSE,
+  impute_na = FALSE,
+  ...
+)
 }
 \arguments{
 \item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
