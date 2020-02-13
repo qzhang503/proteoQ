@@ -5,7 +5,7 @@
 \title{GSVA of protein data}
 \usage{
 prnGSVA(
-  gset_nms = "go_sets",
+  gset_nms = c("go_sets", "kegg_sets"),
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -20,10 +20,13 @@ prnGSVA(
 )
 }
 \arguments{
-\item{gset_nms}{Character string or vector containing the name(s) of gene sets
-for enrichment analysis. The default is \code{"go_sets"}. The possible
-values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
-supported species are human, mouse and rat.}
+\item{gset_nms}{Character string or vector containing the shorthanded name(s)
+or full file path(s) to gene sets for enrichment analysis. For species among
+\code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
+"kegg_sets")} will utilize both the gene ontology and the KEGG pathways
+available in proteoQ. Custom data bases of gene ontology and/or additional
+species are also supported; see also \code{\link{prepGO}} for the prepration
+of custom GO.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
@@ -170,6 +173,22 @@ prnGSVA(
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )
+
+## custom data bases
+# see also ?proteoQ::prepGO
+prepGO(human)
+prepGO(mouse)
+
+prnGSVA(
+  impute_na = FALSE,
+  min.sz = 10,
+  verbose = FALSE,
+  parallel.sz = 0,
+  mx.diff = TRUE,
+  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
+               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
+)
+
 }
 \seealso{
 \code{\link{load_expts}} for a reduced working example in data

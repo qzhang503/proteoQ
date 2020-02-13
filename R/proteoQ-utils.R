@@ -588,10 +588,10 @@ sp_lookup <- function(species) {
          mouse = "mm",
          rat = "rn",
          fly = "dm", 
-         bovine = "bt",
+         cow = "bt",
          dog = "cf", 
          crap = "crap", 
-         stop("Unknown `species`.", Call. = FALSE)
+         unknown = "unknown"
   )    
 }
 
@@ -603,13 +603,37 @@ taxid_lookup <- function(species) {
           mouse = 10090,
           rat = 10116, 
           fly = 7227, 
-          bovine = 9913,
+          cow = 9913,
           dog = 9612, 
           crap = 000000, 
-          stop("Unknown `species`.", Call. = FALSE)
+          unknown = 999999
   )
 }
 
+taxid_lookup_rev <- function(species) {
+  switch (species,
+          "9606" = "human", 
+          "10090" = "mouse",
+          "10116" = "rat", 
+          "7227" = "fly", 
+          "9913" = "cow",
+          "9612" = "dog", 
+          "000000" = "crap", 
+          "999999" = "unknown"
+  )
+}
+
+sp_lookup_Ul <- function(species) {
+  switch(species, 
+         human = "Hs",
+         mouse = "Mm",
+         rat = "Rn",
+         fly = "Dm", 
+         cow = "Bt",
+         dog = "Cf", 
+         unknown = "Unknown"
+  )    
+}
 
 add_entrez <- function (acc_lookup) {
   # 1. find all speices and acc_types
@@ -618,7 +642,7 @@ add_entrez <- function (acc_lookup) {
     mouse = "mm",
     rat = "rn",
     fly = "dm", 
-    bovine = "bt",
+    cow = "bt",
     dog = "cf", 
     crap = "crap"
   )
@@ -680,7 +704,6 @@ parse_acc <- function(df) {
   } else if (grepl("[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}", prn_acc)) {
     acc_type <- "uniprot_acc"
   } else {
-    # stop("Unknown protein accession", call. = FALSE)
     acc_type <- "unknown"
   }
   
@@ -705,7 +728,7 @@ parse_uniprot_fasta <- function (df, fasta) {
     "Mus musculus" = "mouse",
     "Rattus norvegicus" = "rat",
     "Drosophila melanogaster" = "fly",
-    "Bos taurus" = "bovine",
+    "Bos taurus" = "cow",
     "Canis lupus familiaris" = "dog",
     "Canis lupus" = "dog",
     "crap" = "crap"
@@ -1017,6 +1040,46 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r 
   }
 
   return(filename)
+}
+
+
+#' Matches gset_nms to prnGSPA
+#' not currently used
+#'
+match_gset_nms <- function (gset_nms = NULL) {
+  file <- file.path(dat_dir, "Calls\\anal_prnGSPA.rda")
+  
+  if (is.null(gset_nms)) {
+    if (file.exists(file)) {
+      gset_nms <- match_call_arg(anal_prnGSPA, gset_nms)
+    } else {
+      stop("`gset_nms` is NULL and ", file, " not found.", call. = FALSE)
+    }
+  } else {
+    if (file.exists(file)) {
+      gset_nms <- gset_nms %>% 
+        .[. %in% match_call_arg(anal_prnGSPA, gset_nms)]
+    } else {
+      warning("File `", file, "`` not available for `gset_nms` matches.", 
+              "\nUse the `gset_nms` value as it.", call. = FALSE)
+    }
+  }
+  
+  if (is.null(gset_nms)) {
+    stop ("The `gset_nms` is NULL after matching parameters to the latest `prnGSPA(...)`.", 
+          "\n\tConsider providing explicitly the `gset_nms`: ", 
+          "\n\t\t`gset_nms = \"go_sets\"` or ", 
+          "\n\t\t`gset_nms = \"~\\\\proteoQ\\\\dbs\\\\go_hs.rds\"` ...",
+          call. = FALSE)
+  }
+  
+  if (purrr::is_empty(gset_nms)) {
+    stop ("The `gset_nms` is EMPTY after parameter matching.", 
+          "\n\tCheck the values of `gset_nms` in the latest call to `prnGSPA(...)`.", 
+          call. = FALSE)
+  }
+  
+  return(gset_nms)
 }
 
 

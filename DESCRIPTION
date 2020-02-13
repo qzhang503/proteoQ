@@ -61,7 +61,10 @@ Imports:
     downloader,
     backports,
     RcppGreedySetCover,
-    networkD3
+    networkD3,
+		org.Hs.eg.db,
+		org.Mm.eg.db, 
+		org.Rn.eg.db
 RoxygenNote: 7.0.2
 Remotes:
   qzhang503/proteoQDA, 

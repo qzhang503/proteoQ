@@ -192,46 +192,46 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
  below summarizes the \code{df} and the \code{df2} for varargs in
  \code{proteoQ}.
 
- \tabular{lll}{ 
- \strong{Utility} \tab \strong{Primary} \tab \strong{Secondary} \cr
- normPSM \tab filter_: Mascot, \code{F[...].csv}; MaxQuant, \code{msms[...].txt}; 
- SM, \code{PSMexport[...].ssv} \tab NA \cr 
- PSM2Pep \tab NA \tab NA \cr 
- mergePep \tab filter_: \code{TMTset1_LCMSinj1_Peptide_N.txt} \tab NA \cr 
- standPep \tab slice_: \code{Peptide.txt} \tab NA \cr 
- Pep2Prn \tab filter_: \code{Peptide.txt} \tab NA \cr 
- standPrn \tab slice_: \code{Protein.txt} \tab NA \cr 
- pepHist \tab filter_: \code{Peptide.tx}t \tab NA \cr 
- prnHist \tab filter_: \code{Protein.txt} \tab NA \cr 
- pepSig \tab filter_: \code{Peptide[_impNA].txt} \tab NA \cr 
- prnSig \tab filter_: \code{Protein[_impNA].txt} \tab NA \cr 
- pepMDS \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
- prnMDS \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
- pepPCA \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
- prnPCA \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
- pepEucDist \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
- prnEucDist \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
- pepCorr_logFC \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
- prnCorr_logFC \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
- pepHM \tab filter_, arrange_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
- prnHM \tab filter_, arrange_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+ \tabular{lllll}{ 
+ \strong{Utility} \tab \strong{Vararg_} \tab \strong{df} \tab \strong{Vararg2_} \tab \strong{df2} \cr
+ normPSM \tab filter_ \tab Mascot, \code{F[...].csv}; MaxQuant, \code{msms[...].txt}; 
+ SM, \code{PSMexport[...].ssv} \tab NA \tab NA \cr 
+ PSM2Pep \tab NA \tab NA \tab NA \tab NA \cr 
+ mergePep \tab filter_ \tab \code{TMTset1_LCMSinj1_Peptide_N.txt} \tab NA \tab NA \cr 
+ standPep \tab slice_ \tab \code{Peptide.txt} \tab NA \tab NA \cr 
+ Pep2Prn \tab filter_ \tab \code{Peptide.txt} \tab NA \tab NA \cr 
+ standPrn \tab slice_\tab \code{Protein.txt} \tab NA \tab NA \cr 
+ pepHist \tab filter_\tab \code{Peptide.tx}t \tab NA \tab NA \cr 
+ prnHist \tab filter_\tab \code{Protein.txt} \tab NA \tab NA \cr 
+ pepSig \tab filter_\tab \code{Peptide[_impNA].txt} \tab NA \tab NA \cr 
+ prnSig \tab filter_\tab \code{Protein[_impNA].txt} \tab NA \tab NA \cr 
+ pepMDS \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ prnMDS \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ pepPCA \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ prnPCA \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ pepEucDist \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ prnEucDist \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ pepCorr_logFC \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ prnCorr_logFC \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ pepHM \tab filter_, arrange_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ prnHM \tab filter_, arrange_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
  
- anal_prnTrend \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
- plot_prnTrend \tab NA \tab filter2_: \code{[...]Protein_Trend_{NZ}[_impNA][...].txt} \cr 
+ anal_prnTrend \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ plot_prnTrend \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_Trend_{NZ}[_impNA][...].txt} \cr 
  
- anal_pepNMF \tab filter_: \code{Peptide[_impNA][_pVal].txt} \tab NA \cr 
- anal_prnNMF \tab filter_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
- plot_pepNMFCon \tab NA \tab filter2_: \code{[...]Peptide_NMF[...]_consensus.txt} \cr 
- plot_prnNMFCon \tab NA \tab filter2_: \code{[...]Protein_NMF[...]_consensus.txt} \cr 
- plot_pepNMFCoef \tab NA \tab filter2_: \code{[...]Peptide_NMF[...]_coef.txt} \cr 
- plot_prnNMFCoef \tab NA \tab filter2_: \code{[...]Protein_NMF[...]_coef.txt} \cr 
- plot_metaNMF \tab filter_, arrange_: \code{Protein[_impNA][_pVal].txt} \tab NA \cr 
+ anal_pepNMF \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ anal_prnNMF \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ plot_pepNMFCon \tab NA \tab NA \tab filter2_\tab \code{[...]Peptide_NMF[...]_consensus.txt} \cr 
+ plot_prnNMFCon \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_NMF[...]_consensus.txt} \cr 
+ plot_pepNMFCoef \tab NA \tab NA \tab filter2_\tab \code{[...]Peptide_NMF[...]_coef.txt} \cr 
+ plot_prnNMFCoef \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_NMF[...]_coef.txt} \cr 
+ plot_metaNMF \tab filter_, arrange_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
  
- prnGSPA \tab filter_: \code{Protein[_impNA]_pVals.txt} \tab NA \cr 
- prnGSPAHM \tab NA \tab filter2_: \code{[...]Protein_GSPA_{NZ}[_impNA]_essmap.txt} \cr 
- gspaMap \tab filter_: \code{Protein[_impNA]_pVal.txt} \tab filter2_: \code{[...]Protein_GSPA_{NZ}[_impNA].txt} \cr 
+ prnGSPA \tab filter_\tab \code{Protein[_impNA]_pVals.txt} \tab NA \tab NA \cr 
+ prnGSPAHM \tab NA \tab NA \tab filter2_\tab \code{[...]Protein_GSPA_{NZ}[_impNA]_essmap.txt} \cr 
+ gspaMap \tab filter_\tab \code{Protein[_impNA]_pVal.txt} \tab filter2_\tab \code{[...]Protein_GSPA_{NZ}[_impNA].txt} \cr 
  
- anal_prnString \tab filter_: \code{Protein[_impNA][_pVals].tx}t \tab NA \cr 
+ anal_prnString \tab filter_\tab \code{Protein[_impNA][_pVals].tx}t \tab NA \tab NA \cr 
  }
 }
 

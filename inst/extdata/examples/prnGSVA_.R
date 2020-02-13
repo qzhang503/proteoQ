@@ -84,3 +84,19 @@ prnGSVA(
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
 )
+
+## custom data bases
+# see also ?proteoQ::prepGO
+prepGO(human)
+prepGO(mouse)
+
+prnGSVA(
+  impute_na = FALSE,
+  min.sz = 10,
+  verbose = FALSE,
+  parallel.sz = 0,
+  mx.diff = TRUE,
+  gset_nms = c("~\\proteoQ\\dbs\\go\\go_hs.rds",
+               "~\\proteoQ\\dbs\\go\\go_mm.rds"),
+)
+

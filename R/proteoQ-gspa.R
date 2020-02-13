@@ -23,10 +23,13 @@
 #'@inheritParams anal_pepNMF
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is FALSE.
-#'@param gset_nms Character string or vector containing the name(s) of gene sets
-#'  for enrichment analysis. The default is \code{"go_sets"}. The possible
-#'  values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
-#'  supported species are human, mouse and rat.
+#'@param gset_nms Character string or vector containing the shorthanded name(s)
+#'  or full file path(s) to gene sets for enrichment analysis. For species among
+#'  \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
+#'  "kegg_sets")} will utilize both the gene ontology and the KEGG pathways
+#'  available in proteoQ. Custom data bases of gene ontology and/or additional
+#'  species are also supported; see also \code{\link{prepGO}} for the prepration
+#'  of custom GO.
 #'@param method Character string; the method to assess the p-values of GSPA. The
 #'  default is \code{mean}. See also section \code{Details} for the
 #'  calculations.
@@ -144,7 +147,7 @@
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@export
-prnGSPA <- function (gset_nms = "go_sets", method = c("mean","limma"), 
+prnGSPA <- function (gset_nms = c("go_sets", "kegg_sets"), method = c("mean","limma"), 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                      gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
@@ -247,8 +250,6 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
 
-  # cat("Column keys available for data filtration are in `Protein\\Model\\Protein[_impNA]_pVals.txt`.\n")
-  
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
@@ -258,7 +259,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   if (purrr::is_empty(fmls)) stop("Formula(s) of contrasts not available.", call. = FALSE)
 
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
-  gsets <- load_dbs(gset_nms, species)
+  gsets <- load_dbs(gset_nms = gset_nms, species = species)
   
   stopifnot(length(gsets) > 0)
 
@@ -1254,4 +1255,5 @@ gspa_colAnnot <- function (annot_cols = NULL, df, sample_ids, annot_colnames = N
   
   return(x)
 }
+
 

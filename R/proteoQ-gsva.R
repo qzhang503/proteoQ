@@ -82,7 +82,7 @@
 #'@import dplyr rlang ggplot2 GSVA
 #'@importFrom magrittr %>%
 #'@export
-prnGSVA <- function (gset_nms = "go_sets", 
+prnGSVA <- function (gset_nms = c("go_sets", "kegg_sets"), 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      df = NULL, filepath = NULL, filename = NULL, 
                      var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
@@ -136,6 +136,8 @@ prnGSVA <- function (gset_nms = "go_sets",
 	  dots <- c(dots, fmls)
 	}
 	
+	reload_expts()
+	
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
@@ -156,14 +158,14 @@ prnGSVA <- function (gset_nms = "go_sets",
 gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
                      filepath = NULL, filename = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-                     gset_nms = "go_sets", lm_method = "limma", gsets = NULL, 
+                     gset_nms = "go_sets", lm_method = "limma", 
                      var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
                      anal_type = "GSVA", ...) {
   
   stopifnot(nrow(label_scheme_sub) > 0)
   
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
-  gsets <- load_dbs(gset_nms, species)
+  gsets <- load_dbs(gset_nms = gset_nms, species = species)
   stopifnot(length(gsets) > 0)
   
   id <- rlang::as_string(rlang::enexpr(id))
