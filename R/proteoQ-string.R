@@ -1,12 +1,13 @@
 #'Downloads STRING databases
 #'
 #'@param species Character string; the species. The currently supported species
-#'  include \code{human, mouse, rat, fly, bovine, dog}. The default is
+#'  include \code{human, mouse, rat, fly, cow, dog}. The default is
 #'  \code{human}.
-#'@param overwrite Logical; if TRUE, overwrite the databse(s). The default is
-#'  FALSE.
+#'@param overwrite Logical; if TRUE, overwrite the downloaded databse(s). The
+#'  default is FALSE.
 #'@import rlang dplyr magrittr purrr fs downloader
-#'@seealso \code{\link{anal_prnString}} for protein-protein interaction networks.
+#'@seealso \code{\link{anal_prnString}} for protein-protein interaction
+#'  networks.
 #'@export
 dl_stringdbs <- function(species = "human", db_path = "~\\proteoQ\\dbs\\string", overwrite = FALSE) {
   species <- rlang::as_string(rlang::enexpr(species))
@@ -47,7 +48,7 @@ dl_stringdbs <- function(species = "human", db_path = "~\\proteoQ\\dbs\\string",
                    "7227.protein.aliases.v11.0.txt.gz" = "https://stringdb-static.org/download/protein.aliases.v11.0/7227.protein.aliases.v11.0.txt.gz", 
                    "7227.protein.info.v11.0.txt.gz" = "https://stringdb-static.org/download/protein.info.v11.0/7227.protein.info.v11.0.txt.gz"
                  ), 
-                 bovine = c(
+                 cow = c(
                    "9913.protein.links.full.v11.0.txt.gz" = "https://stringdb-static.org/download/protein.links.full.v11.0/9913.protein.links.full.v11.0.txt.gz", 
                    "9913.protein.aliases.v11.0.txt.gz" = "https://stringdb-static.org/download/protein.aliases.v11.0/9913.protein.aliases.v11.0.txt.gz",
                    "9913.protein.info.v11.0.txt.gz" = "https://stringdb-static.org/download/protein.info.v11.0/9913.protein.info.v11.0.txt.gz"

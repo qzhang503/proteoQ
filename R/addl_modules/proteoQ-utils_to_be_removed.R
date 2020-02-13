@@ -27,6 +27,34 @@ match_identifier <- function (id = c("pep_seq", "pep_seq_mod", "prot_acc", "gene
 }
 
 
+#' Match the database of gene sets (not used?)
+#' 
+#' @import dplyr purrr
+#' @importFrom magrittr %>%
+match_gsets <- function(gset_nm = "go_sets", species = "human") {
+  allowed <- c("go_sets", "kegg_sets", "c2_msig")
+  
+  stopifnot(all(gset_nm %in% allowed))
+  
+  load_dbs(gset_nm, species)
+  
+  gsets <- purrr::map(as.list(gset_nm), ~ {
+    get(.x)
+  })
+  
+  stopifnot(length(gsets) > 0)
+  
+  is_null <- purrr::map_lgl(gsets, ~ is.null(.x))
+  gset_nm <- gset_nm[!is_null]
+  
+  purrr::walk2(is_null, names(is_null), 
+               ~ if(.x) warning("Gene set: `", .y, "` not found", call. = FALSE))
+  
+  gsets[is_null] <- NULL
+  gsets <- gsets %>% purrr::reduce(`c`)
+}
+
+
 #' Add Z_log2_R, sd_N_log2_R and sd_Z_log2_R
 calc_more_psm_sd <- function (df, group_psm_by, range_log2r, range_int, set_idx, injn_idx) {
   # SD columns for "N_log2_R"

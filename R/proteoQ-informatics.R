@@ -577,7 +577,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
                impute_na = impute_na, 
                gset_nms = gset_nms,
                lm_method = lm_method, 
-               gsets = gsets, 
                var_cutoff = var_cutoff, 
                pval_cutoff = pval_cutoff, 
                logFC_cutoff = logFC_cutoff, 

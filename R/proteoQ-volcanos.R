@@ -458,8 +458,11 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   		dplyr::filter(!is.na(pVal))
 
   	lapply(terms, function(gt) {
-  		gsets_sub <- gsets %>% .[names(.) == gt]
-  		stopifnot(length(gsets_sub) > 0)
+  	  # some results may be based on gene sets from an older version, 
+  	  # which are no longer available in the current version
+  	  
+  	  gsets_sub <- gsets %>% .[names(.) == gt]
+  		if (length(gsets_sub) == 0) return(NULL)
 
   		fn <- gsub(":", "~", gsub("/", "or", names(gsets_sub)[[1]]), fixed = TRUE)
 
@@ -467,7 +470,8 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   		  data.frame(check.names = FALSE)
 
   		dfw_sub <- dfw[as.character(dfw$entrez) %in% gsets_sub[[1]], ]
-  		stopifnot(nrow(dfw_sub) > 0)
+
+  		if (nrow(dfw_sub) == 0) return(NULL) 
 
   		xmax <- ceiling(pmax(abs(min(dfw_sub$log2Ratio)), max(dfw_sub$log2Ratio)))
   		ymax <- ceiling(max(-log10(dfw_sub$pVal))) * 1.1
@@ -756,9 +760,19 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'@param topn Numeric value or vector; top entries in gene sets ordered by
 #'  increaseing \code{pVal} for visualization. The default is to use the top 100
 #'  available entries.
-#'@param gset_nms Character vector containing the name(s) of gene sets for uses
-#'  with \code{\link{gspaMap}}. By default, the names will match those used in
-#'  \code{\link{prnGSPA}}.
+#'@param gset_nms Character string or vector containing the shorthanded name(s)
+#'  of \code{"go_sets"}, \code{"kegg_sets"} or full file path(s) to gene sets.
+#'  For species among \code{"human", "mouse", "rat"}, the default of
+#'  \code{c("go_sets", "kegg_sets")} will utilize both the gene ontology and the
+#'  KEGG pathways available in proteoQ. Custom data bases of gene ontology
+#'  and/or additional species are also supported; see also \code{\link{prepGO}}
+#'  for the prepration of custom GO. Note that it is users' responsibility to
+#'  ensure that the custom gene sets contains terms that can be found from the
+#'  one or multiple preceding analyses of \code{\link{prnGSPA}}; see also
+#'  \code{\link{prnGSPA}} for examples of custom data bases. For simplicity, it
+#'  is generally applicable to include all the data bases that have been applied
+#'  to \code{\link{prnGSPA}} and in that way no terms will be missed for
+#'  visualization.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{normPSM}} for the format of \code{filter_} statements and the
@@ -850,20 +864,7 @@ gspaMap <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FAL
             rlang::is_logical(show_labels), 
             rlang::is_double(gspval_cutoff), 
             rlang::is_double(gslogFC_cutoff))
-
-  gset_nms <- local({
-    file <- file.path(dat_dir, "Calls\\anal_prnGSPA.rda")
-    
-    if (file.exists(file)) {
-      gset_nms <- gset_nms %>% 
-        .[. %in% match_call_arg(anal_prnGSPA, gset_nms)]
-      
-      if (is.null(gset_nms)) stop ("Unknown gene sets.")
-    }
-    
-    return(gset_nms)
-  })
-
+  
   reload_expts()
 
   info_anal(df = !!df, df2 = !!df2, id = !!id, filepath = !!filepath, filename = !!filename, 

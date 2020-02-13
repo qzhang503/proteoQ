@@ -12,15 +12,16 @@ dl_stringdbs(
 }
 \arguments{
 \item{species}{Character string; the species. The currently supported species
-include \code{human, mouse, rat, fly, bovine, dog}. The default is
+include \code{human, mouse, rat, fly, cow, dog}. The default is
 \code{human}.}
 
-\item{overwrite}{Logical; if TRUE, overwrite the databse(s). The default is
-FALSE.}
+\item{overwrite}{Logical; if TRUE, overwrite the downloaded databse(s). The
+default is FALSE.}
 }
 \description{
 Downloads STRING databases
 }
 \seealso{
-\code{\link{anal_prnString}} for protein-protein interaction networks.
+\code{\link{anal_prnString}} for protein-protein interaction
+ networks.
 }

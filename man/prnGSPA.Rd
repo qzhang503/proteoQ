@@ -5,7 +5,7 @@
 \title{GSPA of protein data}
 \usage{
 prnGSPA(
-  gset_nms = "go_sets",
+  gset_nms = c("go_sets", "kegg_sets"),
   method = c("mean", "limma"),
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -26,10 +26,13 @@ prnGSPA(
 )
 }
 \arguments{
-\item{gset_nms}{Character string or vector containing the name(s) of gene sets
-for enrichment analysis. The default is \code{"go_sets"}. The possible
-values are in \code{c("go_sets", "kegg_sets")}. Note that the currently
-supported species are human, mouse and rat.}
+\item{gset_nms}{Character string or vector containing the shorthanded name(s)
+or full file path(s) to gene sets for enrichment analysis. For species among
+\code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
+"kegg_sets")} will utilize both the gene ontology and the KEGG pathways
+available in proteoQ. Custom data bases of gene ontology and/or additional
+species are also supported; see also \code{\link{prepGO}} for the prepration
+of custom GO.}
 
 \item{method}{Character string; the method to assess the p-values of GSPA. The
 default is \code{mean}. See also section \code{Details} for the
@@ -228,7 +231,8 @@ gspaMap(
   yco = 0.05, 
 )
 
-# possible to visualize all proteins without primary `filter_` varargs, 
+# possible to visualize all proteins without matching primary 
+#   `filter_` varargs (not recommended), 
 #   but it is users' responsibility to note that 
 #   "unifil_Protein_GSPA_Z.txt" is from 
 #   prnGSA(filter_prots_by_npep = exprs(prot_n_pep >= 3), ...)
@@ -286,6 +290,58 @@ gspaMap(
   df2 = "diffil_Protein_GSPA_Z.txt", 
   impute_na = FALSE,
   show_labels = FALSE, 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
+## custom data bases
+# start over
+unlink(file.path(dat_dir, "Protein\\\\GSPA"), recursive = TRUE, force = TRUE)
+
+# prepare databases (see also ?prepGO)
+prepGO(
+  species = human,
+  db_path = "~\\\\proteoQ\\\\dbs\\\\go",
+  gaf_url = "http://current.geneontology.org/annotations/goa_human.gaf.gz",
+  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
+  filename = go_hs.rds,
+)
+
+prepGO(
+  species = mouse,
+  db_path = "~\\\\proteoQ\\\\dbs\\\\go",
+  gaf_url = "http://current.geneontology.org/annotations/mgi.gaf.gz",
+  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
+  filename = go_mm.rds,
+)
+
+head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\go", "go_hs.rds")))
+head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\go", "go_mm.rds")))
+
+# a mix of default KEGG and custom GO
+prnGSPA(
+  impute_na = FALSE,
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("kegg_sets", 
+               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
+               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
+)
+
+# be explipit on `gset_nms`; otherwise, the default of 
+# c("go_sets", "kegg_sets") will be applied and, 
+# in this case, the system "go_sets" may be different to
+# the custom GO
+gspaMap(
+  gset_nms = c("kegg_sets", 
+               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
+               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  gspval_cutoff = 5E-2, 
+  gslogFC_cutoff = log2(1.2), 
   show_sig = pVal, 
   xco = 1.2, 
   yco = 0.05, 

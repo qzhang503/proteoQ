@@ -1,7 +1,7 @@
 Package proteoQ
 ================
 true
-2020-02-07
+2020-02-13
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -345,7 +345,7 @@ normPSM(
 ```
 
 The creation and assignment of varargs need to follow a format of
-`filter_blahblah = exprs(cdn1, cdn2, ..., cond_last)`. Note that the
+`filter_blahblah = exprs(cdn1, cdn2, ..., cdn_last)`. Note that the
 names of varargs on the lhs start with the character string of `filter_`
 to indicate the task of data filtration. On the rhs, `pep_expect`,
 `pep_score` and `pep_rank` are column keys that can be found from the
@@ -441,41 +441,41 @@ abundance fold changes in `df` for volcano plot visualizaitons by gene
 sets. The table below summarizes the `df` and the `df2` for varargs in
 `proteoQ`.
 
-| Utility          | Primary                                                                       | Secondary                                                  |
-| :--------------- | :---------------------------------------------------------------------------- | :--------------------------------------------------------- |
-| normPSM          | filter\_: Mascot, F\[…\].csv; MaxQuant, msms\[…\].txt; SM, PSMexport\[…\].ssv | NA                                                         |
-| PSM2Pep          | NA                                                                            | NA                                                         |
-| mergePep         | filter\_: TMTset1\_LCMSinj1\_Peptide\_N.txt                                   | NA                                                         |
-| standPep         | slice\_: Peptide.txt                                                          | NA                                                         |
-| Pep2Prn          | filter\_: Peptide.txt                                                         | NA                                                         |
-| standPrn         | slice\_: Protein.txt                                                          | NA                                                         |
-| pepHist          | filter\_: Peptide.txt                                                         | NA                                                         |
-| prnHist          | filter\_: Protein.txt                                                         | NA                                                         |
-| pepSig           | filter\_: Peptide\[\_impNA\].txt                                              | NA                                                         |
-| prnSig           | filter\_: Protein\[\_impNA\].txt                                              | NA                                                         |
-| pepMDS           | filter\_: Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| prnMDS           | filter\_: Protein\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| pepPCA           | filter\_: Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| prnPCA           | filter\_: Protein\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| pepEucDist       | filter\_: Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| prnEucDist       | filter\_: Protein\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| pepCorr\_logFC   | filter\_: Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| prnCorr\_logFC   | filter\_: Protein\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| pepHM            | filter\_, arrange\_: Peptide\[\_impNA\]\[\_pVal\].txt                         | NA                                                         |
-| prnHM            | filter\_, arrange\_: Protein\[\_impNA\]\[\_pVal\].txt                         | NA                                                         |
-| anal\_prnTrend   | filter\_: Protein\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| plot\_prnTrend   | NA                                                                            | filter2\_: \[…\]Protein\_Trend\_{NZ}\[\_impNA\]\[…\].txt   |
-| anal\_pepNMF     | filter\_: Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| anal\_prnNMF     | filter\_: Protein\[\_impNA\]\[\_pVal\].txt                                    | NA                                                         |
-| plot\_pepNMFCon  | NA                                                                            | filter2\_: \[…\]Peptide\_NMF\[…\]\_consensus.txt           |
-| plot\_prnNMFCon  | NA                                                                            | filter2\_: \[…\]Protein\_NMF\[…\]\_consensus.txt           |
-| plot\_pepNMFCoef | NA                                                                            | filter2\_: \[…\]Peptide\_NMF\[…\]\_coef.txt                |
-| plot\_prnNMFCoef | NA                                                                            | filter2\_: \[…\]Protein\_NMF\[…\]\_coef.txt                |
-| plot\_metaNMF    | filter\_, arrange\_: Protein\[\_impNA\]\[\_pVal\].txt                         | NA                                                         |
-| prnGSPA          | filter\_: Protein\[\_impNA\]\_pVals.txt                                       | NA                                                         |
-| prnGSPAHM        | NA                                                                            | filter2\_: \[…\]Protein\_GSPA\_{NZ}\[\_impNA\]\_essmap.txt |
-| gspaMap          | filter\_: Protein\[\_impNA\]\_pVal.txt                                        | filter2\_: \[…\]Protein\_GSPA\_{NZ}\[\_impNA\].txt         |
-| anal\_prnString  | filter\_: Protein\[\_impNA\]\[\_pVals\].txt                                   | NA                                                         |
+| Utility          | Vararg\_            | df                                                                  | Vararg2\_ | df2                                             |
+| :--------------- | :------------------ | :------------------------------------------------------------------ | :-------- | :---------------------------------------------- |
+| normPSM          | filter\_            | Mascot, F\[…\].csv; MaxQuant, msms\[…\].txt; SM, PSMexport\[…\].ssv | NA        | NA                                              |
+| PSM2Pep          | NA                  | NA                                                                  | NA        | NA                                              |
+| mergePep         | filter\_            | TMTset1\_LCMSinj1\_Peptide\_N.txt                                   | NA        | NA                                              |
+| standPep         | slice\_             | Peptide.txt                                                         | NA        | NA                                              |
+| Pep2Prn          | filter\_            | Peptide.txt                                                         | NA        | NA                                              |
+| standPrn         | slice\_             | Protein.txt                                                         | NA        | NA                                              |
+| pepHist          | filter\_            | Peptide.txt                                                         | NA        | NA                                              |
+| prnHist          | filter\_            | Protein.txt                                                         | NA        | NA                                              |
+| pepSig           | filter\_            | Peptide\[\_impNA\].txt                                              | NA        | NA                                              |
+| prnSig           | filter\_            | Protein\[\_impNA\].txt                                              | NA        | NA                                              |
+| pepMDS           | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnMDS           | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| pepPCA           | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnPCA           | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| pepEucDist       | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnEucDist       | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| pepCorr\_logFC   | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnCorr\_logFC   | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| pepHM            | filter\_, arrange\_ | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnHM            | filter\_, arrange\_ | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| anal\_prnTrend   | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| plot\_prnTrend   | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_Trend\_{NZ}\[\_impNA\]\[…\].txt   |
+| anal\_pepNMF     | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| anal\_prnNMF     | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| plot\_pepNMFCon  | NA                  | NA                                                                  | filter2\_ | \[…\]Peptide\_NMF\[…\]\_consensus.txt           |
+| plot\_prnNMFCon  | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_NMF\[…\]\_consensus.txt           |
+| plot\_pepNMFCoef | NA                  | NA                                                                  | filter2\_ | \[…\]Peptide\_NMF\[…\]\_coef.txt                |
+| plot\_prnNMFCoef | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_NMF\[…\]\_coef.txt                |
+| plot\_metaNMF    | filter\_, arrange\_ | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnGSPA          | filter\_            | Protein\[\_impNA\]\_pVals.txt                                       | NA        | NA                                              |
+| prnGSPAHM        | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_GSPA\_{NZ}\[\_impNA\]\_essmap.txt |
+| gspaMap          | filter\_            | Protein\[\_impNA\]\_pVal.txt                                        | filter2\_ | \[…\]Protein\_GSPA\_{NZ}\[\_impNA\].txt         |
+| anal\_prnString  | filter\_            | Protein\[\_impNA\]\[\_pVals\].txt                                   | NA        | NA                                              |
 
 #### 1.2.7 purgePSM
 
@@ -840,7 +840,7 @@ pepHist(
   scale_log2r = TRUE, 
   col_select = BI_1,
   ncol = 5,
-  filter_by_sphu = exprs(species == "mouse"),
+  filter_by_spmm = exprs(species == "mouse"),
   filename = mm.png, 
 )
 ```
@@ -910,7 +910,7 @@ indicated analysis.
 Similarly, we employed the `filter_` varargs in `pepHist` to subset
 peptides with human or mouse origins (section 1.3.4.3). This is often
 not an issue in informatic analysis and visualization, as we do not
-typically store the altered inputs on external devices at the end.
+typically overwrite the altered inputs on external devices at the end.
 Sometimes we may however need to carry out similar tasks based on
 partial inputs and update the complete set of data for future uses. One
 of the circumstances is model parameterization by a data subset and to
@@ -946,7 +946,7 @@ every time we invoke `standPep`.
 Just like `col_select` and `filter_` in `pepHist`, the combination in
 *fixed* argument `col_select` and *variable* argument `slice_` can lead
 to features in versatile data processing. Several working examples are
-detailed and can be accessed via `?standPep` and `?standPep`.\[8\]
+detailed and can be accessed via `?standPep` and `?standPrn`.\[8\]
 
 ##### 1.3.7 Housekeepers
 
@@ -1178,7 +1178,7 @@ In this section I illustrate the following applications of `proteoQ`:
 Unless otherwise mentioned, the `in-function filtration` of data by
 varargs of `filter_` is available throughout this section of informatic
 analysis. Row ordering of data, indicated by `arrange_`, is available
-for heat map applications using `pepHM` and `prnHM`.
+for heat map applications using `pepHM`, `prnHM` and `plot_metaNMF`.
 
 ### 2.1 MDS and PCA plots
 
@@ -1509,12 +1509,12 @@ pepVol()
 prnVol()
 ```
 
-Note that we have informed the `prnSig` utility to look for contrasts
-under columns `Term`, `Term_2` etc., followed by the cotrast pairs in
-square brackets. Pairs of contrasts are separated by commas. The option
-of `impute_na` was set to FALSE as we might not known yet to impute NA
-values or not. For more examples, such as at `impute_na = TRUE`, try
-`?prnSig`.
+Note that we have informed the `pepSig` and `prnSig` utility to look for
+contrasts under columns `Term`, `Term_2` etc., followed by the cotrast
+pairs in square brackets. Pairs of contrasts are separated by commas.
+The option of `impute_na` was set to FALSE as we might not known yet to
+impute NA values or not. For more examples, such as at `impute_na =
+TRUE`, try `?prnSig`.
 
 The `pepVol` and `prnVol` utility will by default match the formulae of
 contrasts with those in `pepSig`. The following plots show the batch
@@ -1558,11 +1558,11 @@ document.
 
 There are a handful of `R` tools for gene set enrichement analysis, such
 as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we
-can visualize the enrichment of gene sets under the context of volcano
-plots at given contrasts. Provided the richness of `R` utilities in
-linear modelings, the `preoteoQ` takes a naive approach thereafter to
-visualize the *asymmetricity* of protein probability \(p\) values under
-volcano plots.
+can analyze and visualize the enrichment of gene sets under the context
+of volcano plots at given contrasts. Provided the richness of `R`
+utilities in linear modelings, the `preoteoQ` takes a naive approach
+thereafter to assess the *asymmetricity* of protein probability \(p\)
+values under volcano plots.
 
 In the analysis of Gene Set Probability Asymmetricity (`GSPA`), protein
 significance \(p\) values from linear modeling are first taken and
@@ -1640,10 +1640,79 @@ gene set. Top, method = mean; bottom, method = limma.
 
 </div>
 
-The names of gene sets will by default match those provided in
-`prnGSPA`. Despite in the above example, we chose to plot the results
-against gene sets in `GO`, not `KEGG`. More details can be accessed from
-the help document via `?gspaMap`.
+The gene sets of GO and KEGG are availble for species `human`, `mouse`
+and `rat` in `proteoQ`. For custom gene sets and/or addtional species,
+the utility `prepGO` will download and prepare GO data according to
+custom-supplied URLs. In the follow examples, we prepare `go_hs.rds` and
+`go_mm.rds` for `human` and `mouse` GO, respectively, under the file
+folder `~\\proteoQ\\dbs\\go`:
+
+``` r
+prepGO(
+  species = human,
+  db_path = "~\\proteoQ\\dbs\\go",
+  gaf_url = "http://current.geneontology.org/annotations/goa_human.gaf.gz",
+  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
+  filename = go_hs.rds,
+)
+
+prepGO(
+  species = mouse,
+  db_path = "~\\proteoQ\\dbs\\go",
+  gaf_url = "http://current.geneontology.org/annotations/mgi.gaf.gz",
+  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
+  filename = go_mm.rds,
+)
+
+# head(readRDS(file.path("~\\proteoQ\\dbs\\go", "go_hs.rds")))
+# head(readRDS(file.path("~\\proteoQ\\dbs\\go", "go_mm.rds")))
+```
+
+Note that the data bases will be stored as `.rds` files, which can be
+used with `prnGSPA` and `gspaMap` for analysis and visualization:
+
+``` r
+# start over
+unlink(file.path(dat_dir, "Protein\\GSPA"), recursive = TRUE, force = TRUE)
+
+prnGSPA(
+  impute_na = FALSE,
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("kegg_sets", 
+               "~\\proteoQ\\dbs\\go\\go_hs.rds",
+               "~\\proteoQ\\dbs\\go\\go_mm.rds"),
+)
+
+gspaMap(
+  gset_nms = c("kegg_sets", 
+               "~\\proteoQ\\dbs\\go\\go_hs.rds",
+               "~\\proteoQ\\dbs\\go\\go_mm.rds"),
+  impute_na = FALSE,
+  show_labels = FALSE, 
+  gspval_cutoff = 5E-2, 
+  gslogFC_cutoff = log2(1.2), 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+```
+
+Currently, proteoQ does not keep track of the values of `gset_nms` in
+the various calls to `prnGSPA`. When mapping the findings from `prnGSPA`
+to `gspaMap`, we need to be responsible for the completeness of the
+gene-set *space*. If we were to leave out the setting of `gset_nms`, the
+default of `gset_nms = c("go_sets", "kegg_sets")` will be applied. We
+might thus encounter some discrepencies in the volcano plots of GO terms
+due to probable differences between the default and the custom data
+bases.
+
+For simplicity, it is generally applicable to include all the data bases
+that have been applied to `prnGSPA` in a custom workflow and, in that
+way, no terms will be missed for visualization. This is also suitable in
+that `gspaMap` merely perform volcano plot visualization by gene sets
+and no multiple-test correlations are involved.
 
 In addition to finding gene sets with significance, `prnGSPA` reports
 the essential gene sets using a greedy set cover algorithm by

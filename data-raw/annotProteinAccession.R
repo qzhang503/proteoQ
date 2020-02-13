@@ -265,7 +265,9 @@ if (!grepl(paste0("^", abbr_sp), temp[1])) {
   save(list = filename, file = file.path("C:\\Results\\R\\proteoQ\\data", paste0(filename, ".RData")))
 }
 
-
+# new_name <- paste0("go_sets_", abbr_species_lwr)
+# assign(new_name, gsets)
+# save(list = new_name, file = file.path(db_path, paste0(new_name, ".rda")))
 
 
 

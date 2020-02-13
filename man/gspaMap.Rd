@@ -88,9 +88,19 @@ threshold is allowed by supplying a vector of absolute values in
 increaseing \code{pVal} for visualization. The default is to use the top 100
 available entries.}
 
-\item{gset_nms}{Character vector containing the name(s) of gene sets for uses
-with \code{\link{gspaMap}}. By default, the names will match those used in
-\code{\link{prnGSPA}}.}
+\item{gset_nms}{Character string or vector containing the shorthanded name(s)
+of \code{"go_sets"}, \code{"kegg_sets"} or full file path(s) to gene sets.
+For species among \code{"human", "mouse", "rat"}, the default of
+\code{c("go_sets", "kegg_sets")} will utilize both the gene ontology and the
+KEGG pathways available in proteoQ. Custom data bases of gene ontology
+and/or additional species are also supported; see also \code{\link{prepGO}}
+for the prepration of custom GO. Note that it is users' responsibility to
+ensure that the custom gene sets contains terms that can be found from the
+one or multiple preceding analyses of \code{\link{prnGSPA}}; see also
+\code{\link{prnGSPA}} for examples of custom data bases. For simplicity, it
+is generally applicable to include all the data bases that have been applied
+to \code{\link{prnGSPA}} and in that way no terms will be missed for
+visualization.}
 
 \item{theme}{A
 \code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}

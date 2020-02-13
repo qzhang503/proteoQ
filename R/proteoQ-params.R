@@ -240,28 +240,54 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 #'@import dplyr rlang
 #'@importFrom magrittr %>%
 #'@export
-load_dbs <- function (gset_nms = "go_sets", species = "human") {
-  allowed <- c("go_sets", "kegg_sets", "c2_msig")
-  stopifnot(all(gset_nms %in% allowed))
+load_dbs <- function (gset_nms = NULL, species = NULL) {
+  if (is.null(gset_nms)) stop("`gset_nms` cannot be NULL.", call. = FALSE)
+  if (is.null(species)) stop("`species` cannot be NULL.", call. = FALSE)
   
-	if (is.null(species)) stop("Unrecognized species.")
+  defaults <- c("go_sets", "kegg_sets", "c2_msig")
+  sys_defs <- gset_nms %>% .[. %in% defaults]
+  not_sys_defs <- gset_nms %>% .[! . %in% defaults]
 
-  abbr_sp <- purrr::map_chr(species, sp_lookup)
-  filelist <- map(abbr_sp, ~ paste0(gset_nms, "_", .x)) %>% unlist()
+  if (!purrr::is_empty(sys_defs)) {
+    abbr_sp <- purrr::map_chr(species, sp_lookup)
+    filelist <- map(abbr_sp, ~ paste0(sys_defs, "_", .x)) %>% unlist()
+    
+    data(package = "proteoQ", list = filelist)
+    gsets <- purrr::map(filelist, ~ try(get(.x))) %>% do.call(`c`, .)
+    
+    try(rm(list = filelist, envir = .GlobalEnv))
+    
+    if (length(gsets) > 0) names(gsets) <- gsub("/", "-", names(gsets))      
+  } else {
+    gsets <- NULL
+  }
   
-  # added abbr_sp to make GO terms species specific 
-  # $`hs_GO:0000018 regulation of DNA recombination`
-  data(package = "proteoQ", list = filelist)
-  gsets <- purrr::map(filelist, ~ try(get(.x))) %>% do.call(`c`, .)
+  if (!purrr::is_empty(not_sys_defs)) {
+    if (!all(grepl("\\.rds$", not_sys_defs))) {
+      stop("Custom gene set files indicated by `gset_nms` must end with the `.rds` extension.", call. = FALSE)
+    }
+
+    not_oks <- not_sys_defs %>% .[!file.exists(not_sys_defs)]
+    if (!purrr::is_empty(not_oks)) {
+      stop("File not found: \n", reduce(not_oks, paste, sep = ", \n"), call. = FALSE)
+    }
+    
+    gsets2 <- purrr::map(not_sys_defs, readRDS) %>% do.call(`c`, .)
+    
+    if (length(gsets2) > 0)  {
+      names(gsets2) <- gsub("/", "-", names(gsets2))
+    } else {
+      stop("Empty data file in: \n", reduce(not_sys_defs, paste, sep = ", \n"), call. = FALSE)
+    }
+  } else {
+    gsets2 <- NULL
+  }
   
+  gsets <- c(gsets, gsets2) %>% .[!duplicated(.)]
   stopifnot(length(gsets) > 0)
-  try(rm(list = filelist, envir = .GlobalEnv))
-  
-  if (length(gsets) > 0) names(gsets) <- gsub("/", "-", names(gsets))
   
   assign("gsets", gsets, envir = .GlobalEnv)
 } 
-
 
 
 #'Load TMT experiments
@@ -533,34 +559,6 @@ check_label_scheme <- function (label_scheme_full) {
 		   (TMT_plex * nlevels(as.factor(label_scheme$TMT_Set))))
 			stop("Not enough observations in unique 'Sample_ID'")
 	}
-}
-
-
-#' Match the database of gene sets
-#' 
-#' @import dplyr purrr
-#' @importFrom magrittr %>%
-match_gsets <- function(gset_nm = "go_sets", species) {
-  allowed <- c("go_sets", "kegg_sets", "c2_msig")
-  
-  stopifnot(all(gset_nm %in% allowed))
-  
-  load_dbs(species)
-  
-  gsets <- purrr::map(as.list(gset_nm), ~ {
-    get(.x)
-  })
-  
-  stopifnot(length(gsets) > 0)
-  
-  is_null <- purrr::map_lgl(gsets, ~ is.null(.x))
-  gset_nm <- gset_nm[!is_null]
-  
-  purrr::walk2(is_null, names(is_null), 
-               ~ if(.x) warning("Gene set: `", .y, "` not found", call. = FALSE))
-  
-  gsets[is_null] <- NULL
-  gsets <- gsets %>% purrr::reduce(`c`)
 }
 
 
