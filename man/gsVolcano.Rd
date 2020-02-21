@@ -19,7 +19,7 @@ gsVolcano(
   show_sig = "none",
   gspval_cutoff = 1e-06,
   gslogFC_cutoff = log2(1.2),
-  topn = 100,
+  topn = Inf,
   ...
 )
 }

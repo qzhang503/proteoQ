@@ -20,6 +20,10 @@ pepHM(
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
+  hc_method_rows = "complete",
+  hc_method_cols = "complete",
+  p_dist_rows = 2,
+  p_dist_cols = 2,
   ...
 )
 
@@ -38,6 +42,10 @@ prnHM(
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
+  hc_method_rows = "complete",
+  hc_method_cols = "complete",
+  p_dist_rows = 2,
+  p_dist_cols = 2,
   ...
 )
 }
@@ -89,7 +97,7 @@ annotation.}
 \code{annot_cols}. The default is NULL without name replacement.}
 
 \item{annot_rows}{A character vector of column keys that can be found from
-input files of \code{Peptide.txt}, \code{Protein.txt} et al. The values
+input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values
 under the selected keys will be used to color-code peptides or proteins on
 the side of the indicated plot. The default is NULL without row annotation.}
 
@@ -98,6 +106,18 @@ the side of the indicated plot. The default is NULL without row annotation.}
 \item{xmax}{Numeric; the maximum  x at a log2 scale. The default is 1.}
 
 \item{xmargin}{Numeric; the margin in heat scales. The default is 0.1.}
+
+\item{hc_method_rows}{A character string; the same agglomeration method for 
+\code{\link[stats]{hclust}} of data rows. The default is \code{complete}.}
+
+\item{hc_method_cols}{A character string; similar to \code{hc_method_rows} 
+but for column data.}
+
+\item{p_dist_rows}{Numeric; the power of the Minkowski distance in the measures 
+of row \code{\link[stats]{dist}} at \code{clustering_distance_rows = "minkowski"}. 
+The default is 2.}
+
+\item{p_dist_cols}{Numeric; similar to \code{p_dist_rows} but for column data.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. Each statement contains
@@ -115,18 +135,27 @@ file linked to \code{df}. The \code{lhs} needs to start with
 exprs(gene, prot_n_pep)} will arrange entries by \code{gene}, then by
 \code{prot_n_pep}. \cr \cr Additional parameters for plotting: \cr
 \code{width}, the width of plot \cr \code{height}, the height of plot \cr
-\cr Additional arguments for \code{\link[pheatmap]{pheatmap}}, i.e.,
-\code{cluster_rows}... \cr \cr Note arguments disabled for \code{pheatmap}:
-\cr \code{annotation_col}; instead use keys indicated in \code{annot_cols}
-\cr \code{annotation_row}; instead use keys indicated in \code{annot_rows}}
+\cr Additional arguments for \code{\link[pheatmap]{pheatmap}}: \cr 
+\code{cluster_rows, clustering_method, clustering_distance_rows}... \cr 
+\cr Notes about \code{pheatmap}:
+\cr \code{annotation_col} disabled; instead use keys indicated in \code{annot_cols}
+\cr \code{annotation_row} disabled; instead use keys indicated in \code{annot_rows}
+\cr \code{clustering_method} breaks into \code{hc_method_rows} for row data 
+and \code{hc_method_cols} for column data
+\cr \code{clustering_distance_rows = "minkowski"} allowed at the powder of \code{p_dist_rows} 
+and/or \code{p_dist_cols}}
 }
 \value{
 Heat maps and optional sub trees.
 }
 \description{
-\code{pepHM} visualizes the heat maps of peptide \code{log2FC}.
+\code{pepHM} applies \code{\link[stats]{dist}} and \code{\link[stats]{hclust}} 
+for the visualization of the heat maps of peptide \code{log2FC} via 
+\code{\link[pheatmap]{pheatmap}}.
 
-\code{prnHM} visualizes the heat maps of protein \code{log2FC}.
+\code{prnHM} applies \code{\link[stats]{dist}} and \code{\link[stats]{hclust}} 
+for the visualization of the heat maps of protein \code{log2FC} via 
+\code{\link[pheatmap]{pheatmap}}.
 }
 \details{
 Data rows without non-missing pairs will result in NA distances in inter-row
@@ -135,7 +164,7 @@ the data subset that are complete without missing values will be used. At
 \code{impute_na = TRUE}, all data rows will be used with NA imputation (see
 \code{\link{prnImp}}). At the default of \code{complet_cases = FALSE} and
 \code{impute_na = FALSE}, NA distances will be arbitrarily replaced with the
-mean value of the row-disance matrix for hierarchical row clustering.
+mean value of the row-distance matrix for hierarchical row clustering.
 
 Similar to data rows, NA distances in data columns will be replaced with the
 mean value of the column-distance matrix.
@@ -211,6 +240,32 @@ prnHM(
   filename = "cutree_overruled.png",
 )
 
+# `minkowski` distance and `ward.D2` clustering
+prnHM(
+  xmin = -1,
+  xmax = 1,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  cutree_rows = 10,
+  show_rownames = FALSE,
+  show_colnames = TRUE,
+  fontsize_row = 3,
+  cellwidth = 14,
+  width = 18,
+  height = 12,
+  filter_sp = exprs(species == "human", prot_n_pep >= 2),
+  hc_method_rows = "ward.D2", 
+  hc_method_cols = "ward.D2", 
+  clustering_distance_rows = "minkowski", 
+  clustering_distance_cols = "minkowski", 
+  p_dist_rows = 2,
+  p_dist_cols = 2,
+  clustering_distance_cols = "manhattan", 
+  filename = "rowminko2_colman_clustward.D2.png",
+)
+
 ## additional row filtration by pVals (proteins, impute_na = FALSE)
 # if not yet, run prerequisitive significance tests at `impute_na = FALSE`
 pepSig(
@@ -276,7 +331,6 @@ prnHM(
   show_colnames = TRUE,
   fontsize_row = 3,
   cellwidth = 14,
-  cellheight = 4,
   width = 18,
   height = 12,
   filter_prots_by_sp_npep = exprs(species == "human", prot_n_pep >= 3),
@@ -395,52 +449,51 @@ pepHM(
 
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data
- normalization \cr
+\emph{Metadata} \cr 
+ \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
 
+ \emph{Data normalization} \cr 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
- \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
- \code{\link{standPep}} for extended examples in peptide data normalization
- \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
- summarization \cr \code{\link{standPrn}} for extended examples in protein
- data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
- for extended examples in data purging \cr \code{\link{pepHist}} and
- \code{\link{prnHist}} for extended examples in histogram visualization. \cr
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
- MS file names \cr
-
- \code{\link{contain_str}}, \code{\link{contain_chars_in}},
- \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
- \code{\link{start_with_str}}, \code{\link{end_with_str}},
- \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
- data subsetting by character strings \cr
-
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
- \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
- \cr
-
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein
- significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
- plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
- visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
- variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
- GSEA. \cr
-
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
- \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
- \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
- correlation plots \cr
-
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein
- trend analysis and visualization \cr \code{\link{anal_pepNMF}},
- \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
- \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
- analysis and visualization \cr
-
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \emph{Variable arguments of `filter_...`} \cr 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \emph{Missing values} \cr 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ 
+ \emph{Informatics} \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+ \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+ 
+ \emph{Custom databases} \cr 
+ \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
+ ontology}} \cr 
+ \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
+ signatures} \cr 
  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

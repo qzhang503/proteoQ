@@ -5,8 +5,6 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
-  github_document:
-    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -15,6 +13,8 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  github_document:
+    toc: yes
   pdf_document:
     toc: yes
     number_sections: true
@@ -77,7 +77,7 @@ knitr::opts_chunk$set(
 ## Introduction to proteoQ
 Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the operations against data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
 
-The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.  
+The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags. https://github.com/qzhang503/proteoQ.]   
 
 (Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README. Mathematical symbols may display more properly under html.)  
 
@@ -771,7 +771,7 @@ pepMDS(
 
 Accordingly, the `prnMDS` performs `MDS` for protein data. For `PCA` analysis, the corresponding functions are `pepPCA` and `prnPCA` for peptide and protein data, respectively.  
 
-While `MDS` approximates Euclidean distances at a low dimensional space. Sometimes it may be useful to have an accurate view of the distance matrix. Functions `pepEucDist` and `prnEucDist` plot the heat maps of Euclidean distance matrix for peptides and proteins, respectively. They are wrappers of [`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf). Supposed that we are interested in visualizing the distance matrix for the `JHU` subset:  
+While `MDS` approximates Euclidean and other distance measures at a low-dimensional space. Sometimes it may be useful to have an accurate view of the distance matrix. Functions `pepEucDist` and `prnEucDist` plot the heat maps of Euclidean distance matrix for peptides and proteins, respectively. Supposed that we are interested in visualizing the distance matrix for the `JHU` subset:  
 
 ```{r Peptide JHU EucDist, eval = FALSE}
 # `JHU` subset
@@ -806,11 +806,18 @@ pepEucDist(
 )
 ```
 
-Parameter `annot_cols` defines the tracks to be displayed on the top of distrance-matrix plots. In this example, we have choosen `expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the WHIM subtypes and the batch numbers, respectively. Parameter `annot_colnames` allows us to rename the tracks from `Shape` and `Alpha` to `WHIM` and `Batch`, respectively, for better intuition. We can alternatively add columns `WHIM` and `Batch` if we choose not to recycle and rename columns `Shape` and `Alpha`.  
+The graphic controls of heat maps are achieved through [`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf) with modifications. Parameter `annot_cols` defines the tracks to be displayed on the top of distrance-matrix plots. In this example, we have choosen `expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the WHIM subtypes and the batch numbers, respectively. Parameter `annot_colnames` allows us to rename the tracks from `Shape` and `Alpha` to `WHIM` and `Batch`, respectively, for better intuition. We can alternatively add columns `WHIM` and `Batch` if we choose not to recycle and rename columns `Shape` and `Alpha`.  
 
 ```{r Peptide_EucDist, echo=FALSE, fig.align='center', fig.cap="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_pepEucDist <- "images\\peptide\\mds\\eucdist_jhu.png"
 knitr::include_graphics(c(img_pepEucDist))
+```
+
+The utility is currently applied to Euclidean's distances with an argument `adjEucDist` for a probable compensation of distances between TMT experiments. As mentioned earlier, the quantitative `log2FC` are measured in relative to the reference materials under each multiplex TMT experiments. When concatenating data across TMT experiments, the measurement errors may accumulate differently. Likely the uncertainty in the reference signals will be greater if we were to prepare the references at an earlier stage of sample handling as opposed to a later stage. I tried to go through the most fundamental calculations step-by-step to help myself understand the differences:  
+
+```{r Interplex_EucDist, echo=FALSE, fig.align='center', fig.cap="**Figure 3E.** Accumulation of Euclidean distance in the interplex comparison of `log2FC`", fig.show='hold', message=FALSE, warning=FALSE, out.width='100%'}
+img_interplex_EucDist <- "images\\protein\\eucdist\\interplex_errors.png"
+knitr::include_graphics(c(img_interplex_EucDist))
 ```
 
 ### 2.2 Correlation plots
@@ -948,15 +955,15 @@ In addition to the fixed effects shown above, significance tests with additive r
 ### 2.5 Gene sets under volcano plots
 There are a handful of `R` tools for gene set enrichement analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can analyze and visualize the enrichment of gene sets under the context of volcano plots at given contrasts. Provided the richness of `R` utilities in linear modelings, the `preoteoQ` takes a naive approach thereafter to assess the *asymmetricity* of protein probability $p$ values under volcano plots.  
 
-In the analysis of Gene Set Probability Asymmetricity (`GSPA`), protein significance $p$ values from linear modeling are first taken and separated into the groups of up or down regulated proteins within a gene set. The default is to calculate the geometric means, $P$, for each of the two groups with a penalty-like term:  
+In the analysis of Gene Set Probability Asymmetricity (`GSPA`), protein significance $p$ values from linear modeling are first taken and separated into the groups of up or down expressed proteins within a gene set. The default is to calculate the geometric means, $P$, for each of the two groups with a penalty-like term:  
 
 $$-log10(P)=(\sum_{i=1}^{n}-log10(p_{i})+m)/(n+m)$$  
 
-where $n$ and $m$ are the numbers of entries with $p$ values $\le$ or $>$ a significance cut-off, respectively, under a gene set. The quotient of the two $P$ values, one for up and one for down, is then taken to represent the significance of enrichment for a given gene set. Alternatively, the significance can be assessed via moderated t-test between the two groups. With either method, the corresponding mean `log2FC` are each calculated for the ups and the downs where the difference is used as the fold change of enrichment.  
+where $n$ and $m$ are the numbers of entries with $p$ values $\le$ or less than a significance cut-off, respectively, under a gene set. The quotient of the two $P$ values, one for up and one for down, is then taken to represent the significance of enrichment for a given gene set. Alternatively, the significance can be assessed via moderated t-test between the two groups. With either method, the corresponding mean `log2FC` are each calculated for the ups and the downs where the difference is used as the fold change of enrichment.  
 
 At the input levels, the arguments `pval_cutoff` and `logFC_cutoff` allow us to set aside low impact genes, for instance, (re)distributing them between the $n$-entry significance group and the $m$-entry insignficance group. On the output levels, argument `gspval_cutoff` sets a threshold in gene set significance for reporting. More details can be found from the help document via `?prnGSPA`. Note that currently there is no peptide counterpart for the enrichment analysis.  
 
-We began with the analysis of `GSPA` against enrichment terms defined in GO and KEGG data sets:  
+We began with the analysis of `GSPA` against enrichment terms defined in  [`gene ontology (GO)`](http://current.geneontology.org/products/pages/downloads.html) and [`molecular signatures (MSig)`](https://www.gsea-msigdb.org/gsea/index.jsp) data sets:  
 
 ```{r prnGSPA, eval = FALSE}
 prnGSPA(
@@ -964,19 +971,21 @@ prnGSPA(
   pval_cutoff = 5E-2, # protein pVal threshold
   logFC_cutoff = log2(1.2), # protein log2FC threshold
   gspval_cutoff = 5E-2, # gene-set threshold
-  gset_nms = c("go_sets", "kegg_sets"),
+  gslogFC_cutoff = log2(1.2), # gene-set log2FC threshold
+  gset_nms = c("go_sets", "c2_msig"), 
 )
 ```
 
-The formulae of contrasts will by default match to the those used in `pepSig`. The species will be determined automatically from input data and the corresponding databases will be loaded. In the above example of pdx, databases of `GO` and `KEGG` will be loaded for both human and mouse. If we choose to focus on human proteins, we can add a vararg statement such as `filter_sp = exprs(species == "human")`.  
+The formulae of contrasts will by default match to the those used in `pepSig`. The species will be determined automatically from input data and the corresponding databases will be loaded. In the above example of pdx, databases of `GO` and `MSig` will be loaded for both human and mouse. If we choose to focus on human proteins, we can add a vararg statement such as `filter_sp = exprs(species == "human")`.  
 
 We next visualize the distribution of protein `log2FC` and `pVal` within gene sets:  
 
 ```{r gspaMap, eval = FALSE}
 gspaMap(
   show_labels = TRUE,
-  pval_cutoff = 5E-3, # significance threshold for mapping
-  logFC_cutoff = log2(1.2), # FC threshold for mapping
+  gspval_cutoff = 5E-3, 
+  gslogFC_cutoff = log2(1.2), 
+  # topn = 100, 
   gset_nms = c("go_sets"),
   show_sig = pVal,
   xco = 1.2, # position of two vertical lines for FC
@@ -992,7 +1001,7 @@ img_volcplot_gspa_limma <- "images\\protein\\volcplot\\gspa_batch_limma.png"
 knitr::include_graphics(c(img_volcplot_gspa_geomean, img_volcplot_gspa_limma))
 ```
 
-The gene sets of GO and KEGG are availble for species `human`, `mouse` and `rat` in `proteoQ`. For custom gene sets and/or addtional species, the utility `prepGO` will download and prepare GO data according to custom-supplied URLs. In the follow examples, we prepare `go_hs.rds` and `go_mm.rds` for `human` and `mouse` GO, respectively, under the file folder `~\\proteoQ\\dbs\\go`:  
+The gene sets of `GO` and `MSig` are availble for species human, mouse and rat in `proteoQ`. For custom gene sets and/or addtional species, the utility `prepGO` will download and prepare `GO` data according to custom-supplied URLs. In the follow examples, we prepare the `GO` data of `go_hs.rds` and `go_mm.rds` for `human` and `mouse`, respectively, under the file folder `~\\proteoQ\\dbs\\go`:  
 
 ```{r prepGO, eval = FALSE}
 prepGO(
@@ -1015,7 +1024,29 @@ prepGO(
 # head(readRDS(file.path("~\\proteoQ\\dbs\\go", "go_mm.rds")))
 ```
 
-Note that the data bases will be stored as `.rds` files, which can be used with `prnGSPA` and `gspaMap` for analysis and visualization:  
+Similarly, we prepare custom `MSig` data bases for `human` and `mouse`:  
+
+```{r prepMSig, eval = FALSE}
+prepMSig(
+  # msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
+  # db_path = "~\\proteoQ\\dbs\\msig",
+  species = human,
+  filename = msig_hs.rds,
+)
+
+prepMSig(
+  # msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
+  # ortho_mart = mmusculus_gene_ensembl, 
+  # db_path = "~\\proteoQ\\dbs\\msig",  
+  species = mouse,
+  filename = msig_mm.rds,
+)
+
+# head(readRDS(file.path("~\\proteoQ\\dbs\\msig", "msig_hs.rds")))
+# head(readRDS(file.path("~\\proteoQ\\dbs\\msig", "msig_mm.rds")))
+```
+
+We need to provide the list name of `ortho_mart` for species other than human, mouse and rat. The value will be used for ortholog lookups via [`biomaRt`](https://bioconductor.org/packages/release/bioc/html/biomaRt.html). More details are available in the help document via `?prepMSig`. Note that the data bases will be stored as `.rds` files, which can be used with `prnGSPA` and `gspaMap` for analysis and visualization:  
 
 ```{r prnGSPA_custom_go, eval = FALSE}
 # start over
@@ -1026,15 +1057,18 @@ prnGSPA(
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
   gspval_cutoff = 5E-2,
-  gset_nms = c("kegg_sets", 
-               "~\\proteoQ\\dbs\\go\\go_hs.rds",
-               "~\\proteoQ\\dbs\\go\\go_mm.rds"),
+  gslogFC_cutoff = log2(1.2), 
+  gset_nms = c("~\\proteoQ\\dbs\\go\\go_hs.rds",
+               "~\\proteoQ\\dbs\\go\\go_mm.rds", 
+               "~\\proteoQ\\dbs\\msig\\msig_hs.rds", 
+               "~\\proteoQ\\dbs\\msig\\msig_mm.rds"),
 )
 
 gspaMap(
-  gset_nms = c("kegg_sets", 
-               "~\\proteoQ\\dbs\\go\\go_hs.rds",
-               "~\\proteoQ\\dbs\\go\\go_mm.rds"),
+  gset_nms = c("~\\proteoQ\\dbs\\go\\go_hs.rds",
+               "~\\proteoQ\\dbs\\go\\go_mm.rds", 
+               "~\\proteoQ\\dbs\\msig\\msig_hs.rds", 
+               "~\\proteoQ\\dbs\\msig\\msig_mm.rds"),
   impute_na = FALSE,
   show_labels = FALSE, 
   gspval_cutoff = 5E-2, 
@@ -1045,9 +1079,18 @@ gspaMap(
 )
 ```
 
-Currently, proteoQ does not keep track of the values of `gset_nms` in the various calls to `prnGSPA`. When mapping the findings from `prnGSPA` to `gspaMap`, we need to be responsible for the completeness of the gene-set *space*. If we were to leave out the setting of `gset_nms`, the default of `gset_nms = c("go_sets", "kegg_sets")` will be applied. We might thus encounter some discrepencies in the volcano plots of GO terms due to probable differences between the default and the custom data bases.  
+As expected, in the examples of `MSig`, some breast cancer signatures in basal and luminal subtypes were captured.  
 
-For simplicity, it is generally applicable to include all the data bases that have been applied to `prnGSPA` in a custom workflow and, in that way, no terms will be missed for visualization. This is also suitable in that `gspaMap` merely perform volcano plot visualization by gene sets and no multiple-test correlations are involved.  
+```{r gspaMap_example_msig, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures.", fig.show='hold', message=FALSE, warning=FALSE, out.width='30%'}
+img_volcplot_gspa_basdn <- "images\\protein\\volcplot\\hs_SMID_BREAST_CANCER_BASAL_DN.png"
+img_volcplot_gspa_lumdn <- "images\\protein\\volcplot\\hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png"
+img_volcplot_gspa_lumup <- "images\\protein\\volcplot\\hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png"
+knitr::include_graphics(c(img_volcplot_gspa_basdn, img_volcplot_gspa_lumdn, img_volcplot_gspa_lumup))
+```
+
+Currently, proteoQ does not keep track of the values of `gset_nms` in the various calls to `prnGSPA`. When mapping the findings from `prnGSPA` to `gspaMap`, we need to be responsible for the completeness of the gene-set *space*. If we were to leave out the setting of `gset_nms`, the default of `gset_nms = c("go_sets", "c2_msig")` will be applied when executing `gspaMap`. We might thus encounter some discrepencies in the volcano plots of GO terms due to probable differences between the default and the custom data bases.  
+
+For simplicity, it is generally applicable to include all the data bases that have been applied to `prnGSPA` in a custom workflow and, in that way, no terms will be missed out for visualization. This is also suitable in that `gspaMap` merely perform volcano plot visualization by gene sets and no multiple-test correlations are involved.  
 
 In addition to finding gene sets with significance, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `_essmap.txt` files under the `Protein\GSPA` folder.  
 
@@ -1072,7 +1115,7 @@ prnGSPAHM(
 
 The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs between two gene sets. The smaller the distance, the greater the overlap is between two gene sets. For convenience, a `distance` column is also made available in the `_essmap.txt` file.  
 
-```{r prnGSPAHM_all, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r prnGSPAHM_all, echo=FALSE, fig.align='center', fig.cap="**Figure 7C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_gspahm_all <- "images\\protein\\gspa\\all_sets.png"
 knitr::include_graphics(c(img_gspahm_all))
 ```
@@ -1092,14 +1135,14 @@ prnGSPAHM(
 
 Note that there is a second `vararg` expression, `exprs(start_with_str("hs", term))`. In this expression, we have used a pseudoname approach to subset terms starting with character string `hs` under the column `term` in `GSPA` result files, which corresponds to human gene sets for both GO and KEGG.^[This will work as GO terms of human start with `hs_` and KEGG terms with `hsa`.] More examples of the pseudoname approach can be found from [Lab 3.2](### 3.2 Data subsets) in this document. More examples of the utility can be found via `?prnGSPAHM`.  
 
-```{r prnGSPAHM_hs_d20, echo=FALSE, fig.align='center', fig.cap="**Figure 7C.** Heat map visualization of human gene sets at a distance cut-off 0.2", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r prnGSPAHM_hs_d20, echo=FALSE, fig.align='center', fig.cap="**Figure 7D.** Heat map visualization of human gene sets at a distance cut-off 0.2", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_gspahm_hs_d20 <- "images\\protein\\gspa\\show_human_redundancy.png"
 knitr::include_graphics(c(img_gspahm_hs_d20))
 ```
 
 Aside from heat maps, `prnGSPAHM` produces the networks of gene sets via [`networkD3`](http://christophergandrud.github.io/networkD3/), for interactive exploration of gene set redundancy.  
 
-```{r prnGSPAHM_networks, echo=FALSE, fig.align='center', fig.cap="**Figure 7D.** Snapshots of the networks of biological terms. Left, distance <= 0.8; right, distance <= 0.2.", fig.show='hold', message=FALSE, warning=FALSE, out.width='40%'}
+```{r prnGSPAHM_networks, echo=FALSE, fig.align='center', fig.cap="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance <= 0.8; right, distance <= 0.2.", fig.show='hold', message=FALSE, warning=FALSE, out.width='40%'}
 img_gspahm_connect <- "images\\protein\\gspa\\gspa_connet.png"
 img_gspahm_redund <- "images\\protein\\gspa\\gspa_redund.png"
 knitr::include_graphics(c(img_gspahm_connect, img_gspahm_redund))

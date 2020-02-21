@@ -65,6 +65,32 @@ prnHM(
   filename = "cutree_overruled.png",
 )
 
+# `minkowski` distance and `ward.D2` clustering
+prnHM(
+  xmin = -1,
+  xmax = 1,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  cutree_rows = 10,
+  show_rownames = FALSE,
+  show_colnames = TRUE,
+  fontsize_row = 3,
+  cellwidth = 14,
+  width = 18,
+  height = 12,
+  filter_sp = exprs(species == "human", prot_n_pep >= 2),
+  hc_method_rows = "ward.D2", 
+  hc_method_cols = "ward.D2", 
+  clustering_distance_rows = "minkowski", 
+  clustering_distance_cols = "minkowski", 
+  p_dist_rows = 2,
+  p_dist_cols = 2,
+  clustering_distance_cols = "manhattan", 
+  filename = "rowminko2_colman_clustward.D2.png",
+)
+
 ## additional row filtration by pVals (proteins, impute_na = FALSE)
 # if not yet, run prerequisitive significance tests at `impute_na = FALSE`
 pepSig(
@@ -130,7 +156,6 @@ prnHM(
   show_colnames = TRUE,
   fontsize_row = 3,
   cellwidth = 14,
-  cellheight = 4,
   width = 18,
   height = 12,
   filter_prots_by_sp_npep = exprs(species == "human", prot_n_pep >= 3),

@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.2.1.1
+Version: 1.2.1.2
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -20,7 +20,8 @@ Suggests:
 		digest
 VignetteBuilder: knitr
 Imports: 
-    forcats,
+    biomaRt,
+		forcats,
     dplyr,
     ggplot2,
     purrr,

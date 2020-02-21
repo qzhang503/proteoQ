@@ -311,7 +311,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
 #'   arrange2_by = exprs(kin_class, gene), 
 #' )
 #' @export
-proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, 
+proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL, 
                       filepath = NULL, filename = NULL, complete_cases = FALSE, 
                       annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                       xmin = -1, xmax = 1, xmargin = .1, ...) {
@@ -344,8 +344,12 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL,
   df_meta_path <- file.path(filepath, df_meta)
   if (file.exists(df_meta_path)) {
     df_meta <- readxl::read_excel(df_meta_path) %>% dplyr::filter(rowSums(!is.na(.)) > 0)
+    sample_ids <- df_meta$Sample_ID
   } else {
-    stop("File not found: ", df_meta_path, call. = FALSE)
+    if (is.null(sample_ids)) {
+      stop("Provide sample IDs under either column `Sample_ID` in the Excel indicated by `df_meta` 
+           or in the vector of `sample_ids`.", call. = FALSE)
+    }
   }
 
   dots <- rlang::enexprs(...)
@@ -402,9 +406,7 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL,
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   x_label <- expression("Ratio ("*log[2]*")")
-  
-  sample_ids <- df_meta$Sample_ID
-  
+
   df <- df %>%
     dplyr::mutate_at(vars(which(names(.) %in% sample_ids)), as.numeric) %>%
     dplyr::mutate_at(vars(which(names(.) %in% sample_ids)), ~ setHMlims(.x, xmin, xmax)) %>%

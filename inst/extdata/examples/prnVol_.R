@@ -63,7 +63,7 @@ prnGSPA(
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
   gspval_cutoff = 5E-2,
-  gset_nms = c("go_sets", "kegg_sets"),
+  gset_nms = c("go_sets"),
 )
 
 # filtered by proteins with two or more identifying peptides for visualization
@@ -71,6 +71,7 @@ gspaMap(
   gspval_cutoff = 5E-3,
   gslogFC_cutoff = log2(1.2),
   gset_nms = c("go_sets"),
+  topn = 100, 
   show_sig = pVal,
   show_labels = TRUE,
   yco = 0.01,
@@ -84,7 +85,7 @@ gspaMap(
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
   gspval_cutoff = c(5E-2, 5E-2, 1E-10),
   gslogFC_cutoff = log2(1.2),
-  
+  topn = 100, 
   show_sig = pVal,
   show_labels = TRUE,
   yco = 0.05,

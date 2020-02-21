@@ -5,7 +5,7 @@
 \title{GSPA of protein data}
 \usage{
 prnGSPA(
-  gset_nms = c("go_sets", "kegg_sets"),
+  gset_nms = c("go_sets", "c2_msig"),
   method = c("mean", "limma"),
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -26,13 +26,14 @@ prnGSPA(
 )
 }
 \arguments{
-\item{gset_nms}{Character string or vector containing the shorthanded name(s)
-or full file path(s) to gene sets for enrichment analysis. For species among
-\code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
-"kegg_sets")} will utilize both the gene ontology and the KEGG pathways
-available in proteoQ. Custom data bases of gene ontology and/or additional
-species are also supported; see also \code{\link{prepGO}} for the prepration
-of custom GO.}
+\item{gset_nms}{Character string or vector containing the shorthanded name(s),
+full file path(s) or both to gene sets for enrichment analysis. For species
+among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
+"c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
+molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
+curated \code{MSig}, and/or additional species are also supported. See also
+\code{\link{prepGO}} for the prepration of custom \code{GO} and
+\code{\link{prepMSig}} for the prepration of custom \code{MSig}.}
 
 \item{method}{Character string; the method to assess the p-values of GSPA. The
 default is \code{mean}. See also section \code{Details} for the
@@ -52,7 +53,7 @@ significance \code{pVal}. Entries with \code{pVals} less significant than
 the threshold will be excluded from enrichment analysis. The default is 0.05
 for all formulae matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
-values. See also \code{\link{prnSig}}.}
+values.}
 
 \item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
 \code{log2FC}. Entries with absolute \code{log2FC} smaller than the
@@ -83,15 +84,14 @@ in argument \code{fml_nms}. Formula-specific threshold is allowed by
 supplying a vector of sizes.}
 
 \item{max_size}{Numeric value or vector; maximum number of protein entries for
-consideration in gene set tests. The number is the sum of up or
-down-expressed proteins after data filtration by \code{pval_cutoff},
-\code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
-in infinite for all formulae matched to or specified in argument
-\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
-of sizes.}
+consideration in gene set tests. The number is after data filtration by
+\code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
+\code{filter_}. The default in infinite for all formulae matched to or
+specified in argument \code{fml_nms}. Formula-specific threshold is allowed
+by supplying a vector of sizes.}
 
 \item{min_delta}{Numeric value or vector; the minimum count difference between
-the up- and the down-regulated group of proteins for consideration in gene
+the up- and the down-expressed group of proteins for consideration in gene
 set tests. For example at \code{min_delta = 4}, a gene set will 6
 upregulated proteins and 2 downregulated proteins, or vice versa, will be
 assessed. The number is after data filtration by \code{pval_cutoff},
@@ -185,7 +185,7 @@ prnGSPA(
   logFC_cutoff = log2(1.2), # protein log2FC threshold
   gspval_cutoff = 5E-2, # gene-set pVal threshold
   gslogFC_cutoff = log2(1.2), # gene-set log2FC threshold
-  gset_nms = c("go_sets", "kegg_sets"), 
+  gset_nms = c("go_sets", "c2_msig"), 
 )
 
 # GSPA visualization under volcano plots
@@ -194,6 +194,7 @@ gspaMap(
   show_labels = FALSE, 
   gspval_cutoff = 5E-2, 
   gslogFC_cutoff = log2(1.2), 
+  topn = 100, 
   show_sig = pVal, 
   xco = 1.2, # position of x-axis cut-off lines
   yco = 0.05, # position of a y-axis cut-off line 
@@ -202,7 +203,7 @@ gspaMap(
 ## row filtration
 prnGSPA(
   impute_na = FALSE,
-  gset_nms = c("go_sets", "kegg_sets"),
+  gset_nms = c("go_sets"),
   filter_prots_by_npep = exprs(prot_n_pep >= 3),
   filename = unifil.txt,
 )
@@ -212,6 +213,7 @@ prnGSPA(
 #   up to this point
 gspaMap(
   impute_na = FALSE,
+  topn = 100, 
   show_labels = FALSE, 
   show_sig = pVal, 
   xco = 1.2, 
@@ -225,6 +227,7 @@ gspaMap(
   df2 = "unifil_Protein_GSPA_Z.txt", 
   filter_prots_by_npep = exprs(prot_n_pep >= 3),
   impute_na = FALSE,
+  topn = 100, 
   show_labels = FALSE, 
   show_sig = pVal, 
   xco = 1.2, 
@@ -233,12 +236,13 @@ gspaMap(
 
 # possible to visualize all proteins without matching primary 
 #   `filter_` varargs (not recommended), 
-#   but it is users' responsibility to note that 
+#   it is users' responsibility to note that 
 #   "unifil_Protein_GSPA_Z.txt" is from 
 #   prnGSA(filter_prots_by_npep = exprs(prot_n_pep >= 3), ...)
 gspaMap(
   df2 = "unifil_Protein_GSPA_Z.txt", 
   impute_na = FALSE,
+  topn = 100, 
   show_labels = FALSE, 
   show_sig = pVal, 
   xco = 1.2, 
@@ -252,6 +256,7 @@ gspaMap(
   filter_prots_by_npep = exprs(prot_n_pep >= 3),
   filter2_ess_size = exprs(ess_size >= 1),   
   impute_na = FALSE,
+  topn = 100, 
   show_labels = FALSE, 
   show_sig = pVal, 
   xco = 1.2, 
@@ -266,6 +271,7 @@ gspaMap(
   filter_prots_by_npep = exprs(prot_n_pep >= 3),
   filter2_ess_size = exprs(ess_size >= 1),   
   impute_na = FALSE,
+  topn = 100, 
   show_labels = FALSE, 
   show_sig = pVal, 
   xco = 1.2, 
@@ -289,59 +295,8 @@ prnGSPA(
 gspaMap(
   df2 = "diffil_Protein_GSPA_Z.txt", 
   impute_na = FALSE,
+  topn = 100, 
   show_labels = FALSE, 
-  show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
-)
-
-## custom data bases
-# start over
-unlink(file.path(dat_dir, "Protein\\\\GSPA"), recursive = TRUE, force = TRUE)
-
-# prepare databases (see also ?prepGO)
-prepGO(
-  species = human,
-  db_path = "~\\\\proteoQ\\\\dbs\\\\go",
-  gaf_url = "http://current.geneontology.org/annotations/goa_human.gaf.gz",
-  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
-  filename = go_hs.rds,
-)
-
-prepGO(
-  species = mouse,
-  db_path = "~\\\\proteoQ\\\\dbs\\\\go",
-  gaf_url = "http://current.geneontology.org/annotations/mgi.gaf.gz",
-  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
-  filename = go_mm.rds,
-)
-
-head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\go", "go_hs.rds")))
-head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\go", "go_mm.rds")))
-
-# a mix of default KEGG and custom GO
-prnGSPA(
-  impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
-  gset_nms = c("kegg_sets", 
-               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
-               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
-)
-
-# be explipit on `gset_nms`; otherwise, the default of 
-# c("go_sets", "kegg_sets") will be applied and, 
-# in this case, the system "go_sets" may be different to
-# the custom GO
-gspaMap(
-  gset_nms = c("kegg_sets", 
-               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
-               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
-  impute_na = FALSE,
-  show_labels = FALSE, 
-  gspval_cutoff = 5E-2, 
-  gslogFC_cutoff = log2(1.2), 
   show_sig = pVal, 
   xco = 1.2, 
   yco = 0.05, 
@@ -368,7 +323,7 @@ prnSig(impute_na = TRUE)
 
 prnGSPA(
   impute_na = TRUE,
-  gset_nms = c("go_sets", "kegg_sets"),
+  gset_nms = c("go_sets"),
   filter_prots_by_npep = exprs(prot_n_pep >= 3),
 )
 
@@ -378,7 +333,7 @@ prnGSPA(
 # ===================================
 # a `term` is a subset of an `ess_term` if the distance is zero
 prnGSPAHM(
-  filter2_by = exprs(distance <= .6),
+  filter2_by = exprs(distance <= .7),
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   annot_rows = "ess_size",
@@ -412,54 +367,146 @@ prnGSPAHM(
   filter2_by = exprs(distance <= .95),
   filename = w16_vs_w2.png,
 )
+
+
+# ===================================
+# custom GO databases
+# ===================================
+# start over
+unlink(file.path(dat_dir, "Protein\\\\GSPA"), recursive = TRUE, force = TRUE)
+
+# prepare GO databases (see also ?prepGO)
+prepGO(
+  species = human,
+  db_path = "~\\\\proteoQ\\\\dbs\\\\go",
+  gaf_url = "http://current.geneontology.org/annotations/goa_human.gaf.gz",
+  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
+  filename = go_hs.rds,
+)
+
+prepGO(
+  species = mouse,
+  db_path = "~\\\\proteoQ\\\\dbs\\\\go",
+  gaf_url = "http://current.geneontology.org/annotations/mgi.gaf.gz",
+  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
+  filename = go_mm.rds,
+)
+
+head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\go", "go_hs.rds")))
+head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\go", "go_mm.rds")))
+
+# analysis
+prnGSPA(
+  impute_na = FALSE,
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
+               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
+)
+
+# It is possible that the system "go_sets" may be partially different to the
+# custom GO. Be explipit on `gset_nms`; otherwise, the default of `gset_nms =
+# c("go_sets", "c2_msig")` will be applied.
+gspaMap(
+  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
+               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
+  impute_na = FALSE,
+  topn = 100, 
+  show_labels = FALSE, 
+  gspval_cutoff = 5E-2, 
+  gslogFC_cutoff = log2(1.2), 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
+# ===================================
+# custom MSig databases
+# ===================================
+# start over
+unlink(file.path(dat_dir, "Protein\\\\GSPA"), recursive = TRUE, force = TRUE)
+
+# prepare MSig databases (see also ?prepMSig)
+prepMSig(species = human)
+prepMSig(species = mouse)
+
+head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\msig", "msig_hs.rds")))
+head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\msig", "msig_mm.rds")))
+
+# analysis
+prnGSPA(
+  impute_na = FALSE,
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_hs.rds",
+               "~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_mm.rds"),
+)
+
+# It is possible that the system "c2_msig" may be partially different to the
+# custom databases. Be explipit on `gset_nms`; otherwise, the default of
+# `gset_nms = c("go_sets", "c2_msig")` will be applied.
+gspaMap(
+  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_hs.rds",
+               "~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_mm.rds"),
+  impute_na = FALSE,
+  topn = 100, 
+  show_labels = FALSE, 
+  gspval_cutoff = 5E-2, 
+  gslogFC_cutoff = log2(1.2), 
+  show_sig = pVal, 
+  xco = 1.2, 
+  yco = 0.05, 
+)
+
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data
- normalization \cr
+\emph{Metadata} \cr 
+ \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
 
+ \emph{Data normalization} \cr 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
- \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
- \code{\link{standPep}} for extended examples in peptide data normalization
- \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
- summarization \cr \code{\link{standPrn}} for extended examples in protein
- data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
- for extended examples in data purging \cr \code{\link{pepHist}} and
- \code{\link{prnHist}} for extended examples in histogram visualization. \cr
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
- MS file names \cr
-
- \code{\link{contain_str}}, \code{\link{contain_chars_in}},
- \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
- \code{\link{start_with_str}}, \code{\link{end_with_str}},
- \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
- data subsetting by character strings \cr
-
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
- \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
- \cr
-
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein
- significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
- plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
- visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
- variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
- GSEA. \cr
-
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
- \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
- \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
- correlation plots \cr
-
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
- analysis and visualization \cr \code{\link{anal_pepNMF}},
- \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
- \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
- analysis and visualization \cr
-
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \emph{Variable arguments of `filter_...`} \cr 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \emph{Missing values} \cr 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ 
+ \emph{Informatics} \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+ \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+ 
+ \emph{Custom databases} \cr 
+ \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
+ ontology}} \cr 
+ \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
+ signatures} \cr 
  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

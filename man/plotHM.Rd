@@ -19,6 +19,10 @@ plotHM(
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
+  p_dist_rows = 2,
+  p_dist_cols = 2,
+  hc_method_rows = "complete",
+  hc_method_cols = "complete",
   ...
 )
 }

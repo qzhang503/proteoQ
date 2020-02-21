@@ -20,16 +20,21 @@ prepGO(
 \emph{conveninent} preparation of GO. The species available for the
 convenience feature is in one of \code{c("human", "mouse", "rat")} with
 \code{"human"} being the default. The argument is not required for other
-species. Instead, users will provide values under arguments
+species; instead, users will provide values under arguments
 \code{abbr_species}, \code{gaf_url} and \code{obo_url}.}
 
 \item{abbr_species}{Two-letter character string; the abbreviated name of
-species for uses with
+species used with
 \code{\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}}.
- If the species is in one of \code{c("human", "mouse", "rat")}, the value of
-\code{abbr_species} will be determined automatically. Otherwise, for
+ The value of \code{abbr_species} will be determined automatically if the
+species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
 example, users need to provide \code{abbr_species = Ce} for fetching the
-\code{org.Ce.eg.db} package in the name space of proteoQ.}
+\code{org.Ce.eg.db} package in the name space of proteoQ. The argument is
+further applied to differentiate the same biological terms of
+\code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ ontology}},
+\code{\href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+Signatures}} etc. under different species.}
 
 \item{gaf_url}{A URL to
 \href{http://current.geneontology.org/products/pages/downloads.html}{GO
@@ -61,14 +66,14 @@ for uses with \code{\link{prnGSPA}}.}
 default is FALSE.}
 }
 \description{
-\code{prepGO} prepares data bases of
+\code{prepGO} downloads and prepares data bases of
 \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
-ontology}} (GO).
+ontology}} (GO) for enrichment analysis by gene sets.
 }
 \examples{
 library(proteoQ)
 
-# `human` and `mouse` with a default OBO; 
+# `human` and `mouse` with a default OBO;
 # outputs under `db_path`
 prepGO(human)
 prepGO(mouse)

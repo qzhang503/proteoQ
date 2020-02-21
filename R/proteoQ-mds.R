@@ -657,14 +657,17 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'  \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_alpha_manual}
 #'   , i.e., \code{alpha_manual = c(.5, .9)}. At the NULL default, the setting
 #'  in \code{ggplot2} will be used.
-#'@param adjEucDist Logical; if TRUE, adjusts the inter-plex Euclidean distance
-#'  by \eqn{1/sqrt(2)}. The option \code{adjEucDist = TRUE} may be suitable when
-#'  \code{reference samples} from each TMT plex undergo approximately the same
-#'  sample handling process as the samples of interest. For instance,
-#'  \code{reference samples} were split at the levels of protein lysates.
-#'  Typically, \code{adjEucDist = FALSE} if \code{reference samples} were split
-#'  near the end of a sample handling process, for instance, at the stages
-#'  immediately before or after TMT labeling.
+#'@param adjEucDist Logical; if TRUE, adjusts the inter-plex \code{Euclidean}
+#'  distance by \eqn{1/sqrt(2)} at \code{method = "euclidean"}. The option
+#'  \code{adjEucDist = TRUE} may be suitable when \code{reference samples} from
+#'  each TMT plex undergo approximately the same sample handling process as the
+#'  samples of interest. For instance, \code{reference samples} were split at
+#'  the levels of protein lysates. Typically, \code{adjEucDist = FALSE} if
+#'  \code{reference samples} were split near the end of a sample handling
+#'  process, for instance, at the stages immediately before or after TMT
+#'  labeling. Also see online
+#'  \href{https://github.com/qzhang503/proteoQ}{README, section MDS} for a brief
+#'  reasoning.
 #'@param classical Logical. Metric MDS will be performed at TRUE and non-metric
 #'  MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
 #'  \code{\link[MASS]{isoMDS}}). The default is TRUE.
@@ -684,26 +687,55 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'  the format of \code{arrange_} statements. \cr \cr Additional parameters for
 #'  \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
 #'  height of plot \cr \code{...}
-#'@seealso \code{\link{load_expts}} for a reduced working example in data
-#'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
-#'  normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
-#'  peptide summarization \cr \code{\link{mergePep}} for extended examples in
-#'  peptide data merging \cr \code{\link{standPep}} for extended examples in
-#'  peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
-#'  in peptide to protein summarization \cr \code{\link{standPrn}} for extended
-#'  examples in protein data normalization. \cr \code{\link{pepHist}} and
-#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
-#'  data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
-#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
-#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
-#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
-#'  data subsetting by character strings \cr \code{\link{pepImp}} and
-#'  \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
-#'  and \code{\link{prnSig}} for significance tests \cr \code{\link{pepHM}} and
-#'  \code{\link{prnHM}} for heat map visualization \cr \code{\link{pepMDS}} and
-#'  \code{\link{prnMDS}} for MDS visualization \cr \code{\link{pepPCA}} and
-#'  \code{\link{prnPcA}} for PCA visualization \cr
+#'@seealso 
+#'  \emph{Metadata} \cr 
+#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'
+#'  \emph{Data normalization} \cr 
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \emph{Variable arguments of `filter_...`} \cr 
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \emph{Missing values} \cr 
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  
+#'  \emph{Informatics} \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+#'  
+#'  \emph{Custom databases} \cr 
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
+#'  ontology}} \cr 
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
+#'  signatures} \cr 
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  
 #'@example inst/extdata/examples/prnMDS_.R
 #'
 #'@return MDS plots.
@@ -847,25 +879,55 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
 #'  \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
 #'  height of plot \cr \code{...}
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data
-#'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
-#'  normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
-#'  peptide summarization \cr \code{\link{mergePep}} for extended examples in
-#'  peptide data merging \cr \code{\link{standPep}} for extended examples in
-#'  peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
-#'  in peptide to protein summarization \cr \code{\link{standPrn}} for extended
-#'  examples in protein data normalization. \cr \code{\link{pepHist}} and
-#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
-#'  data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
-#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
-#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
-#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
-#'  data subsetting by character strings \cr \code{\link{pepImp}} and
-#'  \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
-#'  and \code{\link{prnSig}} for significance tests \cr \code{\link{pepHM}} and
-#'  \code{\link{prnHM}} for heat map visualization \cr \code{\link{pepMDS}} and
-#'  \code{\link{prnMDS}} for MDS visualization \cr
+#'@seealso 
+#'  \emph{Metadata} \cr 
+#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'
+#'  \emph{Data normalization} \cr 
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \emph{Variable arguments of `filter_...`} \cr 
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \emph{Missing values} \cr 
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  
+#'  \emph{Informatics} \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+#'  
+#'  \emph{Custom databases} \cr 
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
+#'  ontology}} \cr 
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
+#'  signatures} \cr 
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  
 #'@example inst/extdata/examples/prnPCA_.R
 #'
 #'@return PCA plots.
@@ -967,7 +1029,7 @@ pepEucDist <- function (col_select = NULL,
 #'data.
 #'
 #'An Euclidean distance matrix of \code{log2FC} is returned by
-#'\code{\link[stats]{dist}} for heat map visualization.
+#'\code{\link[stats]{dist}} for heat map visualization. 
 #'
 #'@inheritParams prnHist
 #'@inheritParams prnMDS
@@ -985,31 +1047,62 @@ pepEucDist <- function (col_select = NULL,
 #'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 #'  the format of \code{arrange_} statements. \cr \cr Additional parameters for
 #'  plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
-#'  of plot \cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}
-#'  \cr Note arguments disabled from \code{pheatmap}: \cr \code{annotation_col};
-#'  instead use keys indicated in \code{annot_cols} \cr \code{annotation_row};
-#'  instead use keys indicated in \code{annot_rows}
+#'  of plot \cr 
+#'  \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}: \cr 
+#'  \code{cluster_rows, clustering_method, clustering_distance_rows}... \cr 
+#'  \cr Notes about \code{pheatmap}:
+#'  \cr \code{annotation_col} disabled; instead use keys indicated in \code{annot_cols}
+#'  \cr \code{annotation_row} disabled; instead use keys indicated in \code{annot_rows}
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data
-#'  normalization \cr \code{\link{normPSM}} for extended examples in PSM data
-#'  normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM to
-#'  peptide summarization \cr \code{\link{mergePep}} for extended examples in
-#'  peptide data merging \cr \code{\link{standPep}} for extended examples in
-#'  peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples
-#'  in peptide to protein summarization \cr \code{\link{standPrn}} for extended
-#'  examples in protein data normalization. \cr \code{\link{pepHist}} and
-#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in
-#'  data purging \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
-#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
-#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
-#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
-#'  data subsetting by character strings \cr \code{\link{pepImp}} and
-#'  \code{\link{prnImp}} for missing value imputation \cr \code{\link{pepSig}}
-#'  and \code{\link{prnSig}} for significance tests \cr \code{\link{pepHM}} and
-#'  \code{\link{prnHM}} for heat map visualization \cr \code{\link{pepMDS}} and
-#'  \code{\link{prnMDS}} for MDS visualization \cr \code{\link{pepPCA}} and
-#'  \code{\link{prnPcA}} for PCA visualization \cr
+#'@seealso 
+#'  \emph{Metadata} \cr 
+#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'
+#'  \emph{Data normalization} \cr 
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \emph{Variable arguments of `filter_...`} \cr 
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \emph{Missing values} \cr 
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  
+#'  \emph{Informatics} \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+#'  
+#'  \emph{Custom databases} \cr 
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
+#'  ontology}} \cr 
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
+#'  signatures} \cr 
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  
 #'@example inst/extdata/examples/prnEucDist_.R
 #'@return Heat map visualization of distance matrices.
 #'

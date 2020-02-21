@@ -37,10 +37,14 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, an
 plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
                    scale_log2r, complete_cases, 
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, 
-                   xmin = -1, xmax = 1, xmargin = .1, ...) {
-                   
-                   
-  dir.create(file.path(filepath, "Subtrees"), recursive = TRUE, showWarnings = FALSE)
+                   xmin = -1, xmax = 1, xmargin = .1, 
+                   p_dist_rows = 2, p_dist_cols = 2, 
+                   hc_method_rows = "complete", hc_method_cols = "complete", ...) {
+
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
+  dir.create(file.path(filepath, "Subtrees", fn_prefix), recursive = TRUE, showWarnings = FALSE)
   
   id <- rlang::as_string(rlang::enexpr(id))
   col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
@@ -76,6 +80,13 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     clustering_distance_cols <- dots$clustering_distance_cols
   }
   
+  if (!is.null(dots$clustering_method)) {
+    dots$clustering_method <- NULL
+    warning("Argument `clustering_method` disabled; 
+            use `hc_method_rows` and `hc_method_cols` instead.", 
+            call. = FALSE)    
+  }
+
   n_color <- 500
   if (is.null(dots$breaks)) {
     color_breaks <- c(seq(from = xmin, -xmargin, length = n_color/2)[1:(n_color/2-1)],
@@ -95,9 +106,6 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     mypalette <- eval(dots$color, env = caller_env())
   }
   
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
-
   x_label <- expression("Ratio ("*log[2]*")")
   NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
   NorZ_ratios_to_ctrl <- paste("toCtrl", NorZ_ratios, sep = "_")
@@ -122,7 +130,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
   
-  if (nrow(df) == 0) stop("No rows available after data filtratin.", call. = FALSE)
+  if (nrow(df) == 0) stop("Zero data rows available after data filtration.", call. = FALSE)
 
   dfR <- df %>%
     dplyr::select(grep(NorZ_ratios, names(.))) %>%
@@ -137,7 +145,16 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     dplyr::filter(!is.na(.[[id]])) %>% 
     `rownames<-`(.[[id]])
   
-  # generate `annotation_col` from keys in `annot_col`, et al.
+  if (!is.null(dots$annotation_row)) {
+    dots$annotation_row <- NULL
+    warning("Argument `annotation_row` disabled; use `annot_rows` instead.", call. = FALSE)
+  }
+  
+  if (!is.null(dots$annotation_col)) {
+    dots$annotation_col <- NULL
+    warning("Argument `annotation_col` disabled; use `annot_cols` instead.", call. = FALSE)
+  }
+
   if (is.null(annot_cols)) {
     annotation_col <- NA
   } else {
@@ -154,7 +171,6 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     annotation_row <- df %>% dplyr::select(annot_rows)
   }
   
-  # column annotations
   if (is.null(dots$annotation_colors)) {
     annotation_colors <- setHMColor(annotation_col)
   } else if (is.na(dots$annotation_colors)) {
@@ -175,9 +191,9 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     dplyr::select(which(names(.) %in% sample_ids))
   
   if (cluster_rows) {
-    d <- dist(df_hm, method = clustering_distance_rows)
+    d <- dist(df_hm, method = clustering_distance_rows, p = p_dist_rows)
     d[is.na(d)] <- .5 * max(d, na.rm = TRUE)
-    h <- hclust(d)
+    h <- hclust(d, hc_method_rows)
     dots$cluster_rows <- h
     rm(d, h)
   } else {
@@ -185,9 +201,9 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   }
   
   if (cluster_cols) {
-    d_cols <- dist(t(df_hm), method = clustering_distance_cols)
+    d_cols <- dist(t(df_hm), method = clustering_distance_cols, p = p_dist_cols)
     d_cols[is.na(d_cols)] <- .5 * max(d_cols, na.rm = TRUE)
-    h_cols <- hclust(d_cols)
+    h_cols <- hclust(d_cols, hc_method_cols)
     dots$cluster_cols <- h_cols
     # rm(d_cols, h_cols) # h_cols also for subtrees
   } else {
@@ -196,10 +212,11 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   
   filename <- gg_imgname(filename)
   
-  # form `annotation_col` and `annotation_row` from `annot_col` and `annot_row` 
+  # forms `annotation_col` and `annotation_row` from `annot_col` and `annot_row` 
   dots <- dots %>% 
     .[! names(.) %in% c("mat", "filename", "annotation_col", "annotation_row", 
                         "clustering_distance_rows", "clustering_distance_cols", 
+                        "clustering_method", 
                         "color", "annotation_colors", "breaks")]
   
   p <- my_pheatmap(
@@ -222,8 +239,8 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
       Cluster <- data.frame(Cluster = cutree(p$tree_row, k = cutree_rows)) %>%
         dplyr::mutate(!!id := rownames(.)) %>%
         dplyr::left_join(df, by = id) %T>% 
-        write.csv(file.path(filepath, "Subtrees", paste0(fn_prefix, " n-", cutree_rows, "_subtrees.csv")), 
-                  row.names = FALSE)
+        write.csv(file.path(filepath, "Subtrees", fn_prefix, 
+                            paste0(fn_prefix, " n-", cutree_rows, "_subtrees.csv")), row.names = FALSE)
 
       Cluster <- Cluster %>%
         tibble::column_to_rownames(var = id)
@@ -239,7 +256,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
         }
 
         if (cluster_rows) {
-          d_sub <- dist(df_sub, method = clustering_distance_rows)
+          d_sub <- dist(df_sub, method = clustering_distance_rows, p = p_dist_rows)
           if (length(d_sub) == 0) {
             h_sub <- FALSE
             nrow <- nrow(df_sub)
@@ -250,13 +267,13 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
             if (nrow <= 2) {
               h_sub <- FALSE
             } else {
-              h_sub <- hclust(d_sub)
+              h_sub <- hclust(d_sub, hc_method_rows)
             }    
           }
         }
         
         if (cluster_cols) {
-          d_sub_col <- dist(t(df_sub), method = clustering_distance_cols)
+          d_sub_col <- dist(t(df_sub), method = clustering_distance_cols, p = p_dist_cols)
           if (length(d_sub_col) == 0) next
           
           d_sub_col[is.na(d_sub_col)] <- .5 * max(d_sub_col, na.rm = TRUE)
@@ -265,7 +282,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
           if (nrow_trans <= 2) {
             v_sub <- FALSE
           } else {
-            v_sub <- hclust(d_sub_col)
+            v_sub <- hclust(d_sub_col, hc_method_cols)
           }
         }
         
@@ -299,7 +316,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
             fontsize_row = fontsize_row,
             height = height, 
             annotation_colors = annotation_colors,
-            filename = file.path(filepath, "Subtrees",
+            filename = file.path(filepath, "Subtrees", fn_prefix, 
                                  paste0("Subtree_", cutree_rows, "-", cluster_id, ".", fn_suffix))
           )
         )
@@ -308,52 +325,14 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
       }
     }
   }
-  
-  # to the benchmark group
-  # not currently used
-  if (sum(!is.na(label_scheme_sub[[col_benchmark]])) > 0) {
-    dfc <- ratio_toCtrl(df, !!rlang::sym(id), label_scheme_sub, nm_ctrl = !!col_benchmark)
-    
-    if (complete_cases) {
-      dfc_hm <- dfc %>%
-        dplyr::filter(complete.cases(.[, names(.) %in% sample_ids]))
-    } else {
-      dfc_hm <- dfc %>%
-        dplyr::filter(rowSums(!is.na(.[, names(.) %in% sample_ids])) > 0)
-    }
-
-    dfc_hm <- dfc_hm %>%
-      `rownames<-`(.[[id]])	%>%
-      dplyr::select(which(names(.) %in% sample_ids))
-    
-    if (cluster_rows) {
-      d <- dist(dfc_hm, method = clustering_distance_rows)
-      d[is.na(d)] <- .5  * max(d, na.rm = TRUE)
-      h <- hclust(d)
-      dots$cluster_rows <- h
-      
-      rm(d, h)
-    } else {
-      dots$cluster_rows <- FALSE
-    }
-    
-    p <- my_pheatmap(
-      mat = dfc_hm,
-      filename = file.path(filepath, paste0(fn_prefix, "_toCtrl.", fn_suffix)),
-      annotation_col = annotation_col,
-      annotation_row = annotation_row, 
-      color = mypalette,
-      annotation_colors = annotation_colors,
-      breaks = color_breaks,
-      !!!dots
-    )
-  }
 }
 
 
 #'Visualization of heat maps
 #'
-#'\code{pepHM} visualizes the heat maps of peptide \code{log2FC}.
+#'\code{pepHM} applies \code{\link[stats]{dist}} and \code{\link[stats]{hclust}} 
+#' for the visualization of the heat maps of peptide \code{log2FC} via 
+#' \code{\link[pheatmap]{pheatmap}}.
 #'
 #'@rdname prnHM
 #'
@@ -363,7 +342,10 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                    df = NULL, filepath = NULL, filename = NULL,
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
-                   xmin = -1, xmax = 1, xmargin = 0.1, ...) {
+                   xmin = -1, xmax = 1, xmargin = 0.1, 
+                   hc_method_rows = "complete", hc_method_cols = "complete", 
+                   p_dist_rows = 2, p_dist_cols = 2, ...) {
+  
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
@@ -380,7 +362,9 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  
+  hc_method_rows <- rlang::as_string(rlang::enexpr(hc_method_rows))
+  hc_method_cols <- rlang::as_string(rlang::enexpr(hc_method_cols))
+
   reload_expts()
   
   info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
@@ -389,14 +373,20 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
             anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin, 
                                    annot_cols = annot_cols, 
                                    annot_colnames = annot_colnames, 
-                                   annot_rows = annot_rows, ...)
+                                   annot_rows = annot_rows, 
+                                   p_dist_rows = p_dist_rows, 
+                                   p_dist_cols = p_dist_cols, 
+                                   hc_method_rows = hc_method_rows, 
+                                   hc_method_cols = hc_method_cols, ...)
 }
 
 
 
 #'Visualization of heat maps
 #'
-#'\code{prnHM} visualizes the heat maps of protein \code{log2FC}.
+#'\code{prnHM} applies \code{\link[stats]{dist}} and \code{\link[stats]{hclust}} 
+#' for the visualization of the heat maps of protein \code{log2FC} via 
+#' \code{\link[pheatmap]{pheatmap}}.
 #'
 #'Data rows without non-missing pairs will result in NA distances in inter-row
 #'dissimilarities (\code{\link[stats]{dist}}). At \code{complet_cases = TRUE},
@@ -404,7 +394,7 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'\code{impute_na = TRUE}, all data rows will be used with NA imputation (see
 #'\code{\link{prnImp}}). At the default of \code{complet_cases = FALSE} and
 #'\code{impute_na = FALSE}, NA distances will be arbitrarily replaced with the
-#'mean value of the row-disance matrix for hierarchical row clustering.
+#'mean value of the row-distance matrix for hierarchical row clustering.
 #'
 #'Similar to data rows, NA distances in data columns will be replaced with the
 #'mean value of the column-distance matrix.
@@ -414,18 +404,26 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'
 #'
 #'@inheritParams  prnEucDist
+#'@param hc_method_rows A character string; the same agglomeration method for 
+#'\code{\link[stats]{hclust}} of data rows. The default is \code{complete}. 
+#'@param hc_method_cols A character string; similar to \code{hc_method_rows} 
+#'but for column data.
 #'@param  col_benchmark Not used.
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is FALSE.
 #'@param complete_cases Logical; if TRUE, only cases that are complete with no
 #'  missing values will be used. The default is FALSE.
 #'@param annot_rows A character vector of column keys that can be found from
-#'  input files of \code{Peptide.txt}, \code{Protein.txt} et al. The values
+#'  input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values
 #'  under the selected keys will be used to color-code peptides or proteins on
 #'  the side of the indicated plot. The default is NULL without row annotation.
 #'@param xmin  Numeric; the minimum x at a log2 scale. The default is -1.
 #'@param xmax  Numeric; the maximum  x at a log2 scale. The default is 1.
 #'@param xmargin  Numeric; the margin in heat scales. The default is 0.1.
+#'@param p_dist_rows Numeric; the power of the Minkowski distance in the measures 
+#'  of row \code{\link[stats]{dist}} at \code{clustering_distance_rows = "minkowski"}. 
+#'  The default is 2.
+#'@param p_dist_cols Numeric; similar to \code{p_dist_rows} but for column data.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  against data in a primary file linked to \code{df}. Each statement contains
 #'  to a list of logical expression(s). The \code{lhs} needs to start with
@@ -442,58 +440,63 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'  exprs(gene, prot_n_pep)} will arrange entries by \code{gene}, then by
 #'  \code{prot_n_pep}. \cr \cr Additional parameters for plotting: \cr
 #'  \code{width}, the width of plot \cr \code{height}, the height of plot \cr
-#'  \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}, i.e.,
-#'  \code{cluster_rows}... \cr \cr Note arguments disabled for \code{pheatmap}:
-#'  \cr \code{annotation_col}; instead use keys indicated in \code{annot_cols}
-#'  \cr \code{annotation_row}; instead use keys indicated in \code{annot_rows}
+#'  \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}: \cr 
+#'  \code{cluster_rows, clustering_method, clustering_distance_rows}... \cr 
+#'  \cr Notes about \code{pheatmap}:
+#'  \cr \code{annotation_col} disabled; instead use keys indicated in \code{annot_cols}
+#'  \cr \code{annotation_row} disabled; instead use keys indicated in \code{annot_rows}
+#'  \cr \code{clustering_method} breaks into \code{hc_method_rows} for row data 
+#'  and \code{hc_method_cols} for column data
+#'  \cr \code{clustering_distance_rows = "minkowski"} allowed at the powder of \code{p_dist_rows} 
+#'  and/or \code{p_dist_cols}
 #'
-#'@seealso \code{\link{load_expts}} for a reduced working example in data
-#'  normalization \cr
+#'@seealso 
+#'  \emph{Metadata} \cr 
+#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
 #'
+#'  \emph{Data normalization} \cr 
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
-#'  \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
-#'  \code{\link{standPep}} for extended examples in peptide data normalization
-#'  \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
-#'  summarization \cr \code{\link{standPrn}} for extended examples in protein
-#'  data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
-#'  for extended examples in data purging \cr \code{\link{pepHist}} and
-#'  \code{\link{prnHist}} for extended examples in histogram visualization. \cr
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
-#'  MS file names \cr
-#'
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}},
-#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
-#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
-#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
-#'  data subsetting by character strings \cr
-#'
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
-#'  \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
-#'  \cr
-#'
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein
-#'  significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
-#'  plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
-#'  visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
-#'  variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
-#'  GSEA. \cr
-#'
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
-#'  \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
-#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
-#'  correlation plots \cr
-#'
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for protein
-#'  trend analysis and visualization \cr \code{\link{anal_pepNMF}},
-#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
-#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for protein NMF
-#'  analysis and visualization \cr
-#'
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'  \emph{Variable arguments of `filter_...`} \cr 
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'  \emph{Missing values} \cr 
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  
+#'  \emph{Informatics} \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+#'  
+#'  \emph{Custom databases} \cr 
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
+#'  ontology}} \cr 
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
+#'  signatures} \cr 
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 #'
 #'@example inst/extdata/examples/prnHM_.R
@@ -504,9 +507,12 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'@export
 prnHM <- function (col_select = NULL, col_benchmark = NULL,
                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                   df = NULL, filepath = NULL, filename = NULL,
+                   df = NULL, filepath = NULL, filename = NULL, 
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
-                   xmin = -1, xmax = 1, xmargin = 0.1, ...) {
+                   xmin = -1, xmax = 1, xmargin = 0.1, 
+                   hc_method_rows = "complete", hc_method_cols = "complete", 
+                   p_dist_rows = 2, p_dist_cols = 2, ...) {
+
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
@@ -523,16 +529,24 @@ prnHM <- function (col_select = NULL, col_benchmark = NULL,
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  
+  hc_method_rows <- rlang::as_string(rlang::enexpr(hc_method_rows))
+  hc_method_cols <- rlang::as_string(rlang::enexpr(hc_method_cols))
+
   reload_expts()
   
   info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
             scale_log2r = scale_log2r, complete_cases = complete_cases,impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename, 
-            anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin, 
+            anal_type = "Heatmap")(xmin = xmin, 
+                                   xmax = xmax, 
+                                   xmargin = xmargin, 
                                    annot_cols = annot_cols, 
                                    annot_colnames = annot_colnames, 
-                                   annot_rows = annot_rows, ...)
+                                   annot_rows = annot_rows, 
+                                   p_dist_rows = p_dist_rows, 
+                                   p_dist_cols = p_dist_cols, 
+                                   hc_method_rows = hc_method_rows, 
+                                   hc_method_cols = hc_method_cols, ...)
 }
 
 

@@ -8,6 +8,7 @@ proteo_hm(
   df = NULL,
   id = NULL,
   df_meta = NULL,
+  sample_ids = NULL,
   filepath = NULL,
   filename = NULL,
   complete_cases = FALSE,

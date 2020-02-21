@@ -8,7 +8,7 @@ load_dbs(gset_nms = NULL, species = NULL)
 }
 \description{
 A function loads a set of precompiled tables in protein accessions, \code{GO}
-data, \code{KEGG} pathways and
+data and
 \code{\href{http://software.broadinstitute.org/gsea/msigdb}{molecular
 signatures}}.
 }
