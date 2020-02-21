@@ -1503,17 +1503,17 @@ cmbn_meta <- function(data, metadata) {
 #' Check file names for ggsave()
 #'
 gg_imgname <- function(filename) {
-  fn_prx <- gsub("\\..*$", "", filename)
-  fn_suffix <- gsub(".*\\.(.*)$", "\\1", filename)
-  
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+
   exts <- c("png", "eps", "ps", "tex", "pdf", "jpeg", "tiff", "png", "bmp", "svg") 
   
   if(! fn_suffix %in% exts) {
-    warning(paste0("Unrecognized file extenstion: '", fn_suffix, "'. Image will be saved as a 'png'.\n"))
+    warning(paste0("Unrecognized file extenstion: '", fn_suffix, "'. Image will be saved as a '.png'.\n"))
     fn_suffix <- "png"
   }
   
-  paste0(fn_prx, ".", fn_suffix)
+  paste0(fn_prefix, ".", fn_suffix)
 }
 
 

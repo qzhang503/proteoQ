@@ -1,7 +1,7 @@
 Package proteoQ
 ================
 true
-2020-02-13
+2020-02-21
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -56,7 +56,7 @@ mass analyzers. Peptide and protein results are then produced with
 users’ selection of parameters in data filtration, alignment and
 normalization. The package further offers a suite of tools and
 functionalities in statistics, informatics and data visualization by
-creating ‘wrappers’ around published R routines.
+creating ‘wrappers’ around published R routines.\[1\]
 
 (Click
 <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong>
@@ -176,7 +176,7 @@ different protein IDs when
 from peptides using algorithms such as greedy set cover. To escape from
 the ambiguity in protein inference, I typically enable the option of
 `Merge MS/MS files into single search` in [Mascot
-Daemon](http://www.matrixscience.com/daemon.html).\[1\] If the option is
+Daemon](http://www.matrixscience.com/daemon.html).\[2\] If the option is
 disabled, peptide sequences that have been assigned to multiple protein
 IDs will be removed for now when constructing peptide reports.
 
@@ -198,7 +198,7 @@ experimental summary is `expt_smry.xlsx`. If samples were fractionated
 off-line prior to `LC/MS`, a second `Excel` template will also be filled
 out to link multiple `RAW` MS file names that are associated to the same
 sample IDs. The default file name for the fractionation summary is
-`frac_smry.xlsx`.\[2\] Unless otherwise mentioned, we will assume these
+`frac_smry.xlsx`.\[3\] Unless otherwise mentioned, we will assume these
 default file names throughout the document.
 
 Columns in the `expt_smry.xlsx` are approximately divided into the
@@ -281,7 +281,7 @@ normPSM(
 ```
 
 Note that at present the `log2FC` of PSMs are always aligned by median
-centering across samples.\[3\] At `group_psm_by = pep_seq`, PSM entries
+centering across samples.\[4\] At `group_psm_by = pep_seq`, PSM entries
 with the same primary peptide sequence but different variable
 modifications will be grouped for analysis using descriptive statistics.
 In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively
@@ -526,7 +526,7 @@ percentile.
 </div>
 
 Quantitative differences greater than 0.5 at a log2 scale is relatively
-large in TMT experiments,\[4\] which can be in part ascribed to a
+large in TMT experiments,\[5\] which can be in part ascribed to a
 phenomenum called peptide co-isolation and co-fragmentation in reporter
 ion-based MS experiments. We might, for instance, perform an additional
 cleanup by removing column-wisely data points with CV greater than 0.5
@@ -674,7 +674,7 @@ peptide `log2FC` and reporter-ion intensity, respectively, for use in
 defining the CV and scaling the `log2FC` across samples. The `log2FC` of
 peptide data will be aligned by `median centering` across samples by
 default. If `method_align = MGKernel` is chosen, `log2FC` will be
-aligned under the assumption of multiple Gaussian kernels.\[5\] The
+aligned under the assumption of multiple Gaussian kernels.\[6\] The
 companion parameter `n_comp` defines the number of Gaussian kernels and
 `seed` set a seed for reproducible fittings. Additional parameters, such
 as, `maxit` and `epsilon`, are defined in and for use with
@@ -692,7 +692,7 @@ need some helps from the `pepHist` utility in the immediately following.
 The `pepHist` utility plots the histograms of peptide `log2FC`. It
 further bins the data by their contributing reporter-ion intensity. In
 the examples shown below, we compare the `log2FC` profiles of peptides
-with and without scaling normalization:\[6\]
+with and without scaling normalization:\[7\]
 
 ``` r
 # without scaling
@@ -771,7 +771,7 @@ adjustment may cause artifacts when the standard deviaiton across
 samples are genuinely different. I typically test `scale_log2r` at both
 `TRUE` and `FALSE`, then make a choice in data scaling together with my
 a priori knowledge of the characteristics of both samples and
-references.\[7\] We will use the same data set to illustrate the impacts
+references.\[8\] We will use the same data set to illustrate the impacts
 of reference selections in scaling normalization in [Lab
 3.1](###%203.1%20Reference%20choices).
 
@@ -946,7 +946,7 @@ every time we invoke `standPep`.
 Just like `col_select` and `filter_` in `pepHist`, the combination in
 *fixed* argument `col_select` and *variable* argument `slice_` can lead
 to features in versatile data processing. Several working examples are
-detailed and can be accessed via `?standPep` and `?standPrn`.\[8\]
+detailed and can be accessed via `?standPep` and `?standPrn`.\[9\]
 
 ##### 1.3.7 Housekeepers
 
@@ -978,7 +978,7 @@ rows available for the samples linked to `col_select`, after slicing out
 GAPDH\! The number of data points is too scare for fitting the selected
 samples against a 3-component Gaussian. A more detailed working example
 can also be found via `?standPep` where you would probably agree that
-GAPDH is actually not a good normalizer for the data set.\[9\]
+GAPDH is actually not a good normalizer for the data set.\[10\]
 
 #### 1.3.8 purgePep
 
@@ -1264,14 +1264,12 @@ Accordingly, the `prnMDS` performs `MDS` for protein data. For `PCA`
 analysis, the corresponding functions are `pepPCA` and `prnPCA` for
 peptide and protein data, respectively.
 
-While `MDS` approximates Euclidean distances at a low dimensional space.
-Sometimes it may be useful to have an accurate view of the distance
-matrix. Functions `pepEucDist` and `prnEucDist` plot the heat maps of
-Euclidean distance matrix for peptides and proteins, respectively. They
-are wrappers of
-[`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf).
-Supposed that we are interested in visualizing the distance matrix for
-the `JHU` subset:
+While `MDS` approximates Euclidean and other distance measures at a
+low-dimensional space. Sometimes it may be useful to have an accurate
+view of the distance matrix. Functions `pepEucDist` and `prnEucDist`
+plot the heat maps of Euclidean distance matrix for peptides and
+proteins, respectively. Supposed that we are interested in visualizing
+the distance matrix for the `JHU` subset:
 
 ``` r
 # `JHU` subset
@@ -1306,10 +1304,12 @@ pepEucDist(
 )
 ```
 
-Parameter `annot_cols` defines the tracks to be displayed on the top of
-distrance-matrix plots. In this example, we have choosen
-`expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the
-WHIM subtypes and the batch numbers, respectively. Parameter
+The graphic controls of heat maps are achieved through
+[`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf)
+with modifications. Parameter `annot_cols` defines the tracks to be
+displayed on the top of distrance-matrix plots. In this example, we have
+choosen `expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which
+encodes the WHIM subtypes and the batch numbers, respectively. Parameter
 `annot_colnames` allows us to rename the tracks from `Shape` and `Alpha`
 to `WHIM` and `Batch`, respectively, for better intuition. We can
 alternatively add columns `WHIM` and `Batch` if we choose not to recycle
@@ -1322,6 +1322,30 @@ and rename columns `Shape` and `Alpha`.
 <p class="caption">
 
 **Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`
+
+</p>
+
+</div>
+
+The utility is currently applied to Euclidean’s distances with an
+argument `adjEucDist` for a probable compensation of distances between
+TMT experiments. As mentioned earlier, the quantitative `log2FC` are
+measured in relative to the reference materials under each multiplex TMT
+experiments. When concatenating data across TMT experiments, the
+measurement errors may accumulate differently. Likely the uncertainty in
+the reference signals will be greater if we were to prepare the
+references at an earlier stage of sample handling as opposed to a later
+stage. I tried to go through the most fundamental calculations
+step-by-step to help myself understand the differences:
+
+<div class="figure" style="text-align: center">
+
+<img src="images\protein\eucdist\interplex_errors.png" alt="**Figure 3E.** Accumulation of Euclidean distance in the interplex comparison of `log2FC`" width="100%" />
+
+<p class="caption">
+
+**Figure 3E.** Accumulation of Euclidean distance in the interplex
+comparison of `log2FC`
 
 </p>
 
@@ -1566,17 +1590,17 @@ values under volcano plots.
 
 In the analysis of Gene Set Probability Asymmetricity (`GSPA`), protein
 significance \(p\) values from linear modeling are first taken and
-separated into the groups of up or down regulated proteins within a gene
+separated into the groups of up or down expressed proteins within a gene
 set. The default is to calculate the geometric means, \(P\), for each of
 the two groups with a penalty-like term:
 
 \[-log10(P)=(\sum_{i=1}^{n}-log10(p_{i})+m)/(n+m)\]
 
 where \(n\) and \(m\) are the numbers of entries with \(p\) values
-\(\le\) or \(>\) a significance cut-off, respectively, under a gene set.
-The quotient of the two \(P\) values, one for up and one for down, is
-then taken to represent the significance of enrichment for a given gene
-set. Alternatively, the significance can be assessed via moderated
+\(\le\) or less than a significance cut-off, respectively, under a gene
+set. The quotient of the two \(P\) values, one for up and one for down,
+is then taken to represent the significance of enrichment for a given
+gene set. Alternatively, the significance can be assessed via moderated
 t-test between the two groups. With either method, the corresponding
 mean `log2FC` are each calculated for the ups and the downs where the
 difference is used as the fold change of enrichment.
@@ -1590,7 +1614,10 @@ found from the help document via `?prnGSPA`. Note that currently there
 is no peptide counterpart for the enrichment analysis.
 
 We began with the analysis of `GSPA` against enrichment terms defined in
-GO and KEGG data sets:
+[`gene ontology
+(GO)`](http://current.geneontology.org/products/pages/downloads.html)
+and [`molecular signatures
+(MSig)`](https://www.gsea-msigdb.org/gsea/index.jsp) data sets:
 
 ``` r
 prnGSPA(
@@ -1598,14 +1625,15 @@ prnGSPA(
   pval_cutoff = 5E-2, # protein pVal threshold
   logFC_cutoff = log2(1.2), # protein log2FC threshold
   gspval_cutoff = 5E-2, # gene-set threshold
-  gset_nms = c("go_sets", "kegg_sets"),
+  gslogFC_cutoff = log2(1.2), # gene-set log2FC threshold
+  gset_nms = c("go_sets", "c2_msig"), 
 )
 ```
 
 The formulae of contrasts will by default match to the those used in
 `pepSig`. The species will be determined automatically from input data
 and the corresponding databases will be loaded. In the above example of
-pdx, databases of `GO` and `KEGG` will be loaded for both human and
+pdx, databases of `GO` and `MSig` will be loaded for both human and
 mouse. If we choose to focus on human proteins, we can add a vararg
 statement such as `filter_sp = exprs(species == "human")`.
 
@@ -1615,8 +1643,9 @@ gene sets:
 ``` r
 gspaMap(
   show_labels = TRUE,
-  pval_cutoff = 5E-3, # significance threshold for mapping
-  logFC_cutoff = log2(1.2), # FC threshold for mapping
+  gspval_cutoff = 5E-3, 
+  gslogFC_cutoff = log2(1.2), 
+  # topn = 100, 
   gset_nms = c("go_sets"),
   show_sig = pVal,
   xco = 1.2, # position of two vertical lines for FC
@@ -1640,12 +1669,12 @@ gene set. Top, method = mean; bottom, method = limma.
 
 </div>
 
-The gene sets of GO and KEGG are availble for species `human`, `mouse`
-and `rat` in `proteoQ`. For custom gene sets and/or addtional species,
-the utility `prepGO` will download and prepare GO data according to
-custom-supplied URLs. In the follow examples, we prepare `go_hs.rds` and
-`go_mm.rds` for `human` and `mouse` GO, respectively, under the file
-folder `~\\proteoQ\\dbs\\go`:
+The gene sets of `GO` and `MSig` are availble for species human, mouse
+and rat in `proteoQ`. For custom gene sets and/or addtional species, the
+utility `prepGO` will download and prepare `GO` data according to
+custom-supplied URLs. In the follow examples, we prepare the `GO` data
+of `go_hs.rds` and `go_mm.rds` for `human` and `mouse`, respectively,
+under the file folder `~\\proteoQ\\dbs\\go`:
 
 ``` r
 prepGO(
@@ -1668,8 +1697,34 @@ prepGO(
 # head(readRDS(file.path("~\\proteoQ\\dbs\\go", "go_mm.rds")))
 ```
 
-Note that the data bases will be stored as `.rds` files, which can be
-used with `prnGSPA` and `gspaMap` for analysis and visualization:
+Similarly, we prepare custom `MSig` data bases for `human` and `mouse`:
+
+``` r
+prepMSig(
+  # msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
+  # db_path = "~\\proteoQ\\dbs\\msig",
+  species = human,
+  filename = msig_hs.rds,
+)
+
+prepMSig(
+  # msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
+  # ortho_mart = mmusculus_gene_ensembl, 
+  # db_path = "~\\proteoQ\\dbs\\msig",  
+  species = mouse,
+  filename = msig_mm.rds,
+)
+
+# head(readRDS(file.path("~\\proteoQ\\dbs\\msig", "msig_hs.rds")))
+# head(readRDS(file.path("~\\proteoQ\\dbs\\msig", "msig_mm.rds")))
+```
+
+We need to provide the list name of `ortho_mart` for species other than
+human, mouse and rat. The value will be used for ortholog lookups via
+[`biomaRt`](https://bioconductor.org/packages/release/bioc/html/biomaRt.html).
+More details are available in the help document via `?prepMSig`. Note
+that the data bases will be stored as `.rds` files, which can be used
+with `prnGSPA` and `gspaMap` for analysis and visualization:
 
 ``` r
 # start over
@@ -1680,15 +1735,18 @@ prnGSPA(
   pval_cutoff = 5E-2,
   logFC_cutoff = log2(1.2),
   gspval_cutoff = 5E-2,
-  gset_nms = c("kegg_sets", 
-               "~\\proteoQ\\dbs\\go\\go_hs.rds",
-               "~\\proteoQ\\dbs\\go\\go_mm.rds"),
+  gslogFC_cutoff = log2(1.2), 
+  gset_nms = c("~\\proteoQ\\dbs\\go\\go_hs.rds",
+               "~\\proteoQ\\dbs\\go\\go_mm.rds", 
+               "~\\proteoQ\\dbs\\msig\\msig_hs.rds", 
+               "~\\proteoQ\\dbs\\msig\\msig_mm.rds"),
 )
 
 gspaMap(
-  gset_nms = c("kegg_sets", 
-               "~\\proteoQ\\dbs\\go\\go_hs.rds",
-               "~\\proteoQ\\dbs\\go\\go_mm.rds"),
+  gset_nms = c("~\\proteoQ\\dbs\\go\\go_hs.rds",
+               "~\\proteoQ\\dbs\\go\\go_mm.rds", 
+               "~\\proteoQ\\dbs\\msig\\msig_hs.rds", 
+               "~\\proteoQ\\dbs\\msig\\msig_mm.rds"),
   impute_na = FALSE,
   show_labels = FALSE, 
   gspval_cutoff = 5E-2, 
@@ -1699,20 +1757,36 @@ gspaMap(
 )
 ```
 
+As expected, in the examples of `MSig`, some breast cancer signatures in
+basal and luminal subtypes were captured.
+
+<div class="figure" style="text-align: center">
+
+<img src="images\protein\volcplot\hs_SMID_BREAST_CANCER_BASAL_DN.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images\protein\volcplot\hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images\protein\volcplot\hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" />
+
+<p class="caption">
+
+**Figure 7B.** Examples of volcano plots of protein log2FC under
+molecular signatures.
+
+</p>
+
+</div>
+
 Currently, proteoQ does not keep track of the values of `gset_nms` in
 the various calls to `prnGSPA`. When mapping the findings from `prnGSPA`
 to `gspaMap`, we need to be responsible for the completeness of the
 gene-set *space*. If we were to leave out the setting of `gset_nms`, the
-default of `gset_nms = c("go_sets", "kegg_sets")` will be applied. We
-might thus encounter some discrepencies in the volcano plots of GO terms
-due to probable differences between the default and the custom data
-bases.
+default of `gset_nms = c("go_sets", "c2_msig")` will be applied when
+executing `gspaMap`. We might thus encounter some discrepencies in the
+volcano plots of GO terms due to probable differences between the
+default and the custom data bases.
 
 For simplicity, it is generally applicable to include all the data bases
 that have been applied to `prnGSPA` in a custom workflow and, in that
-way, no terms will be missed for visualization. This is also suitable in
-that `gspaMap` merely perform volcano plot visualization by gene sets
-and no multiple-test correlations are involved.
+way, no terms will be missed out for visualization. This is also
+suitable in that `gspaMap` merely perform volcano plot visualization by
+gene sets and no multiple-test correlations are involved.
 
 In addition to finding gene sets with significance, `prnGSPA` reports
 the essential gene sets using a greedy set cover algorithm by
@@ -1769,11 +1843,11 @@ greater the overlap is between two gene sets. For convenience, a
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\gspa\all_sets.png" alt="**Figure 7B.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" width="80%" />
+<img src="images\protein\gspa\all_sets.png" alt="**Figure 7C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" width="80%" />
 
 <p class="caption">
 
-**Figure 7B.** Heat map visualization of the distance between all and
+**Figure 7C.** Heat map visualization of the distance between all and
 essential gene sets. The contrasts are defined in ‘prnSig(W2\_loc = )’
 in section 2.4 Significance tests and volcano plot visualization
 
@@ -1803,18 +1877,18 @@ Note that there is a second `vararg` expression,
 `exprs(start_with_str("hs", term))`. In this expression, we have used a
 pseudoname approach to subset terms starting with character string `hs`
 under the column `term` in `GSPA` result files, which corresponds to
-human gene sets for both GO and KEGG.\[10\] More examples of the
+human gene sets for both GO and KEGG.\[11\] More examples of the
 pseudoname approach can be found from [Lab
 3.2](###%203.2%20Data%20subsets) in this document. More examples of the
 utility can be found via `?prnGSPAHM`.
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\gspa\show_human_redundancy.png" alt="**Figure 7C.** Heat map visualization of human gene sets at a distance cut-off 0.2" width="80%" />
+<img src="images\protein\gspa\show_human_redundancy.png" alt="**Figure 7D.** Heat map visualization of human gene sets at a distance cut-off 0.2" width="80%" />
 
 <p class="caption">
 
-**Figure 7C.** Heat map visualization of human gene sets at a distance
+**Figure 7D.** Heat map visualization of human gene sets at a distance
 cut-off 0.2
 
 </p>
@@ -1827,11 +1901,11 @@ interactive exploration of gene set redundancy.
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\gspa\gspa_connet.png" alt="**Figure 7D.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" /><img src="images\protein\gspa\gspa_redund.png" alt="**Figure 7D.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" />
+<img src="images\protein\gspa\gspa_connet.png" alt="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" /><img src="images\protein\gspa\gspa_redund.png" alt="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" />
 
 <p class="caption">
 
-**Figure 7D.** Snapshots of the networks of biological terms. Left,
+**Figure 7E.** Snapshots of the networks of biological terms. Left,
 distance \<= 0.8; right, distance \<= 0.2.
 
 </p>
@@ -2450,7 +2524,7 @@ Note that we have applied the new grammer of `contain_chars_in("sty",
 pep_seq_mod)` to extract character strings containing lower-case letters
 ‘s’, ‘t’ or ‘y’ under the `pep_seq_mod` column in `Peptide.txt`. This
 corresponds to the subsettting of peptides with phosphorylation(s) in
-serine, thereonine or tyrosine.\[11\]
+serine, thereonine or tyrosine.\[12\]
 
 <div class="figure" style="text-align: left">
 
@@ -3026,7 +3100,11 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
 
 </div>
 
-1.  There are cases that the same peptide sequence being assigned to
+1.  To cite this work: (2019) R package proteoQ for Quantitative
+    Proteomics Using Tandem Mass Tags.
+    <https://github.com/qzhang503/proteoQ>.
+
+2.  There are cases that the same peptide sequence being assigned to
     different proteins remain unambiguous. For example, peptide
     `MENGQSTAAK` can be found from either the middle region of protein
     `NP_510965` or the N-terminal of protein `NP_001129505`. In case of
@@ -3036,7 +3114,7 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
     the nomenclature in `proteoQ` will annotate the former as
     `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.
 
-2.  To extract the names of RAW MS files under a `raw_dir` folder:
+3.  To extract the names of RAW MS files under a `raw_dir` folder:
     `extract_raws(raw_dir)`. Very occasionally, there may be RAW files
     without PSM contributions. In this case, the file names will be
     shown as missing by the program and need to be removed from
@@ -3044,35 +3122,35 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
     `extract_psm_raws(dat_dir)` was developed to extract the list of RAW
     files that are actually present in PSM files.
 
-3.  A slightly more thoughtful way to align PSM data might involve back
+4.  A slightly more thoughtful way to align PSM data might involve back
     propagations. For example after protein normalization, we apply the
     same offsets to back calculate pepitde and then PSM `log2FC`.
 
-4.  On top of technical variabilities, the ranges of CV may be further
+5.  On top of technical variabilities, the ranges of CV may be further
     subject to the choice of reference materials. Examples are available
     in Lab 3.1.
 
-5.  Density kernel estimates can occasionally capture spikes in the
+6.  Density kernel estimates can occasionally capture spikes in the
     profiles of log2FC during data alignment. Users will need to inspect
     the alignment of ratio histograms and may optimize the data
     normalization in full with different combinations of tuning
     parameters or in part against a subset of samples, before proceeding
     to the next steps.
 
-6.  `standPep()` will report log2FC results both before and after the
+7.  `standPep()` will report log2FC results both before and after the
     scaling of standard deviations.
 
-7.  The default is `scale_log2r = TRUE` throughout the package. When
+8.  The default is `scale_log2r = TRUE` throughout the package. When
     calling functions involved parameter `scale_log2r`, users can
     specify explicitly `scale_log2r = FALSE` if needed, or more
     preferably define its value under the global environment.
 
-8.  A lab section is under construction.
+9.  A lab section is under construction.
 
-9.  A lab is under construction.
+10. A lab is under construction.
 
-10. This will work as GO terms of human start with `hs_` and KEGG terms
+11. This will work as GO terms of human start with `hs_` and KEGG terms
     with `hsa`.
 
-11. Details on the notation of peptide modifications can be found via
+12. Details on the notation of peptide modifications can be found via
     `?normPSM`.

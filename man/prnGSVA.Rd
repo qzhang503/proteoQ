@@ -5,7 +5,7 @@
 \title{GSVA of protein data}
 \usage{
 prnGSVA(
-  gset_nms = c("go_sets", "kegg_sets"),
+  gset_nms = c("go_sets", "c2_msig"),
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -20,13 +20,14 @@ prnGSVA(
 )
 }
 \arguments{
-\item{gset_nms}{Character string or vector containing the shorthanded name(s)
-or full file path(s) to gene sets for enrichment analysis. For species among
-\code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
-"kegg_sets")} will utilize both the gene ontology and the KEGG pathways
-available in proteoQ. Custom data bases of gene ontology and/or additional
-species are also supported; see also \code{\link{prepGO}} for the prepration
-of custom GO.}
+\item{gset_nms}{Character string or vector containing the shorthanded name(s),
+full file path(s) or both to gene sets for enrichment analysis. For species
+among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
+"c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
+molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
+curated \code{MSig}, and/or additional species are also supported. See also
+\code{\link{prepGO}} for the prepration of custom \code{GO} and
+\code{\link{prepMSig}} for the prepration of custom \code{MSig}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
@@ -191,52 +192,51 @@ prnGSVA(
 
 }
 \seealso{
-\code{\link{load_expts}} for a reduced working example in data
- normalization \cr
+\emph{Metadata} \cr 
+ \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
 
+ \emph{Data normalization} \cr 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization
- \cr \code{\link{mergePep}} for extended examples in peptide data merging \cr
- \code{\link{standPep}} for extended examples in peptide data normalization
- \cr \code{\link{Pep2Prn}} for extended examples in peptide to protein
- summarization \cr \code{\link{standPrn}} for extended examples in protein
- data normalization. \cr \code{\link{purgePSM}} and \code{\link{purgePep}}
- for extended examples in data purging \cr \code{\link{pepHist}} and
- \code{\link{prnHist}} for extended examples in histogram visualization. \cr
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting
- MS file names \cr
-
- \code{\link{contain_str}}, \code{\link{contain_chars_in}},
- \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
- \code{\link{start_with_str}}, \code{\link{end_with_str}},
- \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
- data subsetting by character strings \cr
-
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation
- \cr \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization
- \cr
-
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein
- significance pVals \cr \code{\link{gspaMap}} for mapping GSPA to volcano
- plot visualization \cr \code{\link{prnGSPAHM}} for heat map and network
- visualization of GSPA results \cr \code{\link{prnGSVA}} for gene set
- variance analysis \cr \code{\link{prnGSEA}} for data preparation for online
- GSEA. \cr
-
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
- \code{\link{pepPCA}} and \code{\link{prnPcA}} for PCA visualization \cr
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
- \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
- correlation plots \cr
-
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
- analysis and visualization \cr \code{\link{anal_pepNMF}},
- \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
- \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
- analysis and visualization \cr
-
+ \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+ \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+ \code{\link{standPep}} for extended examples in peptide data normalization \cr
+ \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+ \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+ \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+ 
+ \emph{Variable arguments of `filter_...`} \cr 
+ \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+ 
+ \emph{Missing values} \cr 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+ 
+ \emph{Informatics} \cr 
+ \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+ \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+ \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+ \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+ \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+ \code{\link{prnGSVA}} for gene set variance analysis \cr 
+ \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+ \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+ \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+ \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+ \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+ \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+ 
+ \emph{Custom databases} \cr 
+ \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
+ ontology}} \cr 
+ \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
+ signatures} \cr 
  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
 }

@@ -323,7 +323,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		}
 	} else if (anal_type == "Heatmap") {
 		function(xmin = -1, xmax = 1, xmargin = 0.1,
-		         annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, ...) {
+		         annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
+		         p_dist_rows = 2, p_dist_cols = 2, 
+		         hc_method_rows = "complete", hc_method_cols = "complete", ...) {
 		  plotHM(df = df, 
 		         id = !!id, 
 		         col_benchmark = !!col_benchmark,
@@ -338,6 +340,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			       xmin = xmin, 
 			       xmax = xmax, 
 			       xmargin = xmargin,
+			       p_dist_rows = p_dist_rows, 
+			       p_dist_cols = p_dist_cols, 
+			       hc_method_rows = hc_method_rows, 
+			       hc_method_cols = hc_method_cols, 
 			       ...)
 		}
 	} else if (anal_type == "Histogram") {

@@ -13,7 +13,7 @@ plotVolcano(
   anal_type = "Volcano",
   gspval_cutoff = 0.05,
   gslogFC_cutoff = log2(1.2),
-  topn = 100,
+  topn = Inf,
   show_sig = "none",
   fml_nms = NULL,
   gset_nms = "go_sets",
