@@ -6,17 +6,6 @@
 \usage{
 dblTrim(df, range_log2r, range_int, type_r = "N_log2_R", type_int = "N_I")
 }
-\arguments{
-\item{range_log2r}{Numeric vector at length two; the range of the
-\code{log2FC} of peptide/protein entries for use in the scaling
-normalization of standard deviation across samples. The default is between
-the 10th and the 90th quantiles.}
-
-\item{range_int}{Numeric vector at length two; the range of the
-\code{intensity} of reporter ions for use in the scaling normalization of
-standard deviation across samples. The default is between the 5th and the
-95th quantiles.}
-}
 \value{
 A data frame.
 }

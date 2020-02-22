@@ -28,7 +28,7 @@
 #'  \cr \cr \code{arrange_}: Variable argument statements for the row ordering
 #'  aganist data in a primary file linked to \code{df}. See also
 #'  \code{\link{prnHM}} for the format of \code{arrange_} statements. \cr \cr
-#'  Additional arguments for \code{\link{GSVA::gsva}}
+#'  Additional arguments for \code{\link[GSVA]{gsva}}
 #'@example inst/extdata/examples/prnGSVA_.R
 #'@seealso 
 #'  \emph{Metadata} \cr 

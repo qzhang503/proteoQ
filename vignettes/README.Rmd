@@ -5,6 +5,8 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
+  github_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -13,17 +15,15 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  github_document:
+  word_document:
     toc: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
   md_document:
     toc: yes
     toc_depth: 4
     variant: gfm
-  word_document:
+  pdf_document:
     toc: yes
+    number_sections: true
 ---
 
 ---

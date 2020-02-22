@@ -1893,7 +1893,6 @@ contain_str <- function (match, vars, ignore.case = FALSE) {
 #' \code{contain_chars_in}: contain some of the characters in a literal string;
 #' "PEPTIDES" contain_chars_in "XP".
 #' @rdname contain_str
-#' @inheritParams purgePSM
 #' @export
 contain_chars_in <- function (match, vars, ignore.case = FALSE) {
   stopifnot(is_string(match), nchar(match) > 0)
@@ -1917,7 +1916,6 @@ not_contain_str <- function (match, vars, ignore.case = FALSE) {
 #' \code{not_contain_chars_in}: not contain any of the characters in a literal
 #' string; "PEPTIDES" not_contain_chars_in  "CAB".
 #' @rdname contain_str
-#' @inheritParams purgePSM
 #' @export
 not_contain_chars_in <- function (match, vars, ignore.case = FALSE) {
   stopifnot(is_string(match), nchar(match) > 0)
@@ -1929,7 +1927,6 @@ not_contain_chars_in <- function (match, vars, ignore.case = FALSE) {
 #' \code{start_with_str}: start with a literal string. "PEPTIDES" start_with_str
 #' "PEP".
 #' @rdname contain_str
-#' @inheritParams purgePSM
 #' @export
 start_with_str <- function (match, vars, ignore.case = FALSE) {
   stopifnot(is_string(match), nchar(match) > 0)
@@ -1941,7 +1938,6 @@ start_with_str <- function (match, vars, ignore.case = FALSE) {
 #' \code{end_with_str}: end with a literal string. "PEPTIDES" end_with_str
 #' "TIDES".
 #' @rdname contain_str
-#' @inheritParams purgePSM
 #' @export
 end_with_str <- function (match, vars, ignore.case = FALSE) {
   stopifnot(is_string(match), nchar(match) > 0)
@@ -1953,7 +1949,6 @@ end_with_str <- function (match, vars, ignore.case = FALSE) {
 #' \code{start_with_chars_in}: start with one of the characters in a literal
 #' string. "PEPTIDES" start_with_chars_in "XP".
 #' @rdname contain_str
-#' @inheritParams purgePSM
 #' @export
 start_with_chars_in <- function (match, vars, ignore.case = FALSE) {
   stopifnot(is_string(match), nchar(match) > 0)
@@ -1965,7 +1960,6 @@ start_with_chars_in <- function (match, vars, ignore.case = FALSE) {
 #' \code{ends_with_chars_in}: end with one of the characters in a literal
 #' string. "PEPTIDES" ends_with_chars_in "XS".
 #' @rdname contain_str
-#' @inheritParams purgePSM
 #' @export
 ends_with_chars_in <- function (match, vars, ignore.case = FALSE) {
   stopifnot(is_string(match), nchar(match) > 0)
