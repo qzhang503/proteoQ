@@ -16,7 +16,7 @@ proteoMA(
 )
 }
 \arguments{
-\item{id}{The name of a unique identifier (see \code{\link[proteoQ]{proteoMDS}}).}
+\item{id}{The name of a unique identifier (see \code{\link[proteoQ]{prnMDS}}).}
 
 \item{scale_log2r}{Logical; if TRUE, rescales \code{log2-ratios} to the same
 scale of standard deviation for all samples.}

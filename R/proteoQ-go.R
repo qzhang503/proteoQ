@@ -281,7 +281,7 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #'ontology}} (GO) for enrichment analysis by gene sets.
 #'
 #'@import rlang dplyr magrittr purrr fs readr downloader org.Hs.eg.db
-#'  org.Mm.eg.db org.Rn.eg.db org.Dm.eg.db org.Bt.eg.db org.Cf.eg.db
+#'  org.Mm.eg.db org.Rn.eg.db 
 #'@inheritParams dl_stringdbs
 #'@param species Character string; the name of a species for the
 #'  \emph{conveninent} preparation of GO. The species available for the

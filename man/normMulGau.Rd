@@ -18,48 +18,6 @@ normMulGau(
 }
 \arguments{
 \item{df}{An input data frame}
-
-\item{method_align}{Character string or a list of gene symbols; the method to
-align the \code{log2FC} of peptide/protein entries across samples.
-\code{MC}: median-centering; \code{MGKernel}: the kernal density defined by
-multiple Gaussian functions (\code{\link[mixtools]{normalmixEM}}). At
-\code{method_align = "MC"}, the ratio profiles of each sample will be
-aligned in that the medians of the \code{log2FC} are zero. At
-\code{method_align = "MGKernel"}, the \code{log2FC} will be aligned in that
-the maximums of kernel density are zero. It is also possible to align the
-\code{log2FC} to the median of a list of user-supplied genes:
-\code{method_align = c("ACTB", "GAPDH", ...)}.}
-
-\item{n_comp}{Integer; the number of Gaussian components to be used with
-\code{method_align = "MGKernel"}. A typical value is 2 or 3. The variable
-\code{n_comp} overwrites the augument \code{k} in
-\code{\link[mixtools]{normalmixEM}}.}
-
-\item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
-MGKernel}.}
-
-\item{range_log2r}{Numeric vector at length two; the range of the
-\code{log2FC} of peptide/protein entries for use in the scaling
-normalization of standard deviation across samples. The default is between
-the 10th and the 90th quantiles.}
-
-\item{range_int}{Numeric vector at length two; the range of the
-\code{intensity} of reporter ions for use in the scaling normalization of
-standard deviation across samples. The default is between the 5th and the
-95th quantiles.}
-
-\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
-Samples corresponding to non-empty entries under \code{col_select} will be
-used in the refit of \code{log2FC} using multiple Gaussian kernels. The
-density estimates from an earlier analyis will be kept for the remaining
-samples. At the \code{NULL} default, the column key of \code{Sample_ID} will
-be used, which results in the refit of the \code{log2FC} for all samples.}
-
-\item{...}{\code{filter_}: Logical expression(s) for the row filtration of
-data; also see \code{\link{normPSM}}. \cr Additional parameters for
-\code{\link[mixtools]{normalmixEM}}:\cr \code{maxit}, the maximum number of
-iterations allowed; \cr \code{epsilon}, tolerance limit for declaring
-algorithm convergence.}
 }
 \value{
 A data frame.
