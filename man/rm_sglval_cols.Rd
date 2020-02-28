@@ -6,6 +6,9 @@
 \usage{
 rm_sglval_cols(x)
 }
+\arguments{
+\item{x}{A data frame of \code{log2FC}.}
+}
 \description{
 Remove single-value columns
 }

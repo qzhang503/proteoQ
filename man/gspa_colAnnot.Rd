@@ -6,6 +6,27 @@
 \usage{
 gspa_colAnnot(annot_cols = NULL, df, sample_ids, annot_colnames = NULL)
 }
+\arguments{
+\item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
+The values under the selected keys will be used to color-code sample IDs on
+the top of the indicated plot. The default is NULL without column
+annotation.}
+
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{sample_ids}{A character vecotr containing the sample IDs for an ascribing analysis.}
+
+\item{annot_colnames}{A character vector of replacement name(s) to
+\code{annot_cols}. The default is NULL without name replacement.}
+}
 \description{
 Sets up the column annotation in heat maps
 }

@@ -140,11 +140,23 @@
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = c("mean","limma"), 
@@ -217,6 +229,14 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = c("mean","limm
 #'
 #' logFC_cutoff setset of data before the calculation of adjusted pvals
 #'
+#' @inheritParams prnHist
+#' @inheritParams prnHM
+#' @inheritParams prnGSPA
+#' @inheritParams prnGSVA
+#' @inheritParams info_anal
+#' @param id Currently only "entrez".
+#' @param label_scheme_sub A data frame. Subset entries from \code{label_scheme}
+#'   for selected samples.
 #' @import limma stringr purrr tidyr dplyr rlang
 #' @importFrom magrittr %>% %$% %T>%
 #' @importFrom outliers grubbs.test
@@ -334,7 +354,14 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 
 
 #' A helper function for GSPA
-#'
+#' 
+#' @param fml A character string; the formula used in \link{prnSig}.
+#' @param fml_nm A character string; the name of \code{fml}.
+#' @param col_ind Numeric vector; the indeces of columns for the ascribed \code{fml_nm}.
+#' @inheritParams prnHist
+#' @inheritParams prnGSPA
+#' @inheritParams gspaTest
+#' @inheritParams gsVolcano
 #' @import purrr dplyr rlang
 #' @importFrom magrittr %>% %T>%
 fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gslogFC_cutoff, 
@@ -488,6 +515,9 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
 
 
 #' check the size of a gene set
+#' 
+#' @inheritParams prnHist
+#' @inheritParams prnGSPA
 ok_min_size <- function (df, min_delta, gspval_cutoff, gslogFC_cutoff) {
   data <- df %>% 
     dplyr::group_by(contrast, valence) %>% 
@@ -530,6 +560,10 @@ ok_min_size <- function (df, min_delta, gspval_cutoff, gslogFC_cutoff) {
 
 
 #' gspa pVal calculations using geomean
+#' 
+#' @param gset Character string; a gene set indicated by \code{gset_nms}.
+#' @inheritParams prnHist
+#' @inheritParams prnGSPA
 gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4, 
                               gspval_cutoff = 0.05, gslogFC_cutoff = log2(1)) {
   df <- df %>% dplyr::filter(.[["entrez"]] %in% gset)
@@ -567,8 +601,11 @@ gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4,
 }  
 
 
-
 #' gspa pVal calculations using limma
+#' 
+#' @inheritParams prnHist
+#' @inheritParams prnGSPA
+#' @inheritParams gspa_summary_mean
 gspa_summary_limma <- function(gset, df, min_size = 10, min_delta = 4) {
   df_sub <- df %>% dplyr::filter(.[["entrez"]] %in% gset) 
   if (length(unique(df_sub$entrez)) < min_size) return(NULL)
@@ -578,6 +615,9 @@ gspa_summary_limma <- function(gset, df, min_size = 10, min_delta = 4) {
 
 
 #' significance tests of pVals between the up and the down groups
+#' 
+#' @inheritParams prnHist
+#' @inheritParams prnGSPA
 lm_gspa <- function(df, min_delta) {
   delta_fc <- df %>% 
     dplyr::group_by(contrast, valence) %>% 
@@ -635,6 +675,10 @@ lm_gspa <- function(df, min_delta) {
 
 #' A helper function for GSPA
 #'
+#' @inheritParams prnHist
+#' @inheritParams prnGSPA
+#' @inheritParams fml_gspa
+#' 
 #' @import purrr dplyr rlang
 #' @importFrom magrittr %>%
 #' @importFrom readr read_tsv
@@ -676,6 +720,8 @@ prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff 
 
 #' A helper function for mapping btw gene sets and essential gene sets
 #'
+#' @param sig_sets A data frame containing the gene sets that are significant
+#'   under given criteria.
 #' @import purrr dplyr rlang RcppGreedySetCover
 #' @importFrom magrittr %>%
 map_essential <- function (sig_sets) {
@@ -832,11 +878,23 @@ map_essential <- function (sig_sets) {
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, fml_nms = NULL, 
@@ -871,7 +929,11 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = F
 }
 
 
-#'Plot distance heat map of GSPA
+#' Plot distance heat map of GSPA
+#' 
+#' @inheritParams prnHist
+#' @inheritParams prnHM
+#' @inheritParams gspaMap
 gspaHM <- function(scale_log2r, complete_cases, impute_na, df2, filepath, filename, ...) {
   dots <- rlang::enexprs(...)
   fmls <- dots %>% .[grepl("~", .)]
@@ -888,7 +950,11 @@ gspaHM <- function(scale_log2r, complete_cases, impute_na, df2, filepath, filena
 
 
 #' A helper function for gspaHM by formula names
-#'
+#' 
+#' @inheritParams prnHist
+#' @inheritParams prnHM
+#' @inheritParams gspaMap
+#' @inheritParams fml_gspa
 #' @import purrr dplyr rlang pheatmap networkD3
 #' @importFrom magrittr %>%
 byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r, impute_na, ...) {
@@ -935,7 +1001,12 @@ byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r, impute_n
 
 
 #' A helper function for gspaHM by input file names
-#'
+#' 
+#' @param ess_in A list of file names for input data
+#' @param meta_in A list of file names for input metadata
+#' @inheritParams prnHist
+#' @inheritParams prnHM
+#' @inheritParams fml_gspa
 #' @import purrr dplyr rlang pheatmap networkD3
 #' @importFrom magrittr %>%
 byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_log2r, impute_na, ...) {
@@ -1223,7 +1294,9 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
 
 
 #' Sets up the column annotation in heat maps
-#'
+#' 
+#' @param sample_ids A character vecotr containing the sample IDs for an ascribing analysis. 
+#' @inheritParams prnEucDist
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
 gspa_colAnnot <- function (annot_cols = NULL, df, sample_ids, annot_colnames = NULL) {

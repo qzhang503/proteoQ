@@ -17,11 +17,16 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
 
 \item{sub_grp}{Numeric.  A list of sample IDs that will be used in subsequent
 analysis.}
+
+\item{type}{The type of data, for example ratio or intensity.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
@@ -36,8 +41,5 @@ A data frame tailored for subsequent analysis.
 \code{prepDM} prepares a minimal adequate data frame for subsequent analysis.
 }
 \examples{
-tempData <- prepDM(df, entrez, scale_log2r, sub_grp = label_scheme_sub$Sample_ID)
-
-\dontrun{
-}
+\donttest{tempData <- prepDM(df, entrez, scale_log2r, label_scheme_sub$Sample_ID)}
 }

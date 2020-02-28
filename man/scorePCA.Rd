@@ -6,6 +6,45 @@
 \usage{
 scorePCA(df, id, label_scheme_sub, anal_type, scale_log2r, type, ...)
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{anal_type}{Character string; the type of analysis that are preset for
+method dispatch in function factories. The value will be determined
+automatically. Examplary values include \code{anal_type = c("PCA",
+"Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
+"NMF", "Purge", "Trend", ...)}.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{type}{Character string indicating the type of PCA. At the \code{type =
+obs} default, the components are by observations; at \code{type = feats},
+the components are by features.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+\code{arrange_}: Variable argument statements for the row ordering aganist
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements. \cr \cr Additional parameters for
+\code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
+height of plot \cr \code{...}}
+}
 \description{
 Scores PCA
 }

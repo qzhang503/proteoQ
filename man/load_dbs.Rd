@@ -6,14 +6,26 @@
 \usage{
 load_dbs(gset_nms = NULL, species = NULL)
 }
+\arguments{
+\item{gset_nms}{Character string or vector containing the shorthanded name(s),
+full file path(s) or both to gene sets for enrichment analysis. For species
+among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
+"c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
+molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
+curated \code{MSig}, and/or additional species are also supported. See also
+\code{\link{prepGO}} for the prepration of custom \code{GO} and
+\code{\link{prepMSig}} for the prepration of custom \code{MSig}.}
+
+\item{species}{Character string; the name of a species.}
+}
 \description{
-A function loads a set of precompiled tables in protein accessions, \code{GO}
-data and
-\code{\href{http://software.broadinstitute.org/gsea/msigdb}{molecular
-signatures}}.
+A function loads a set of precompiled gene sets of 
+\href{http://current.geneontology.org/products/pages/downloads.html}{GO}
+and
+\href{http://software.broadinstitute.org/gsea/msigdb}{molecular signatures}.
 }
 \examples{
-load_dbs("human")
+\donttest{load_dbs("go_sets", "human")}
 
 }
 \seealso{

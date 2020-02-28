@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Peptide normalization
 # ===================================
@@ -300,4 +301,5 @@ standPep(
   slice_hskp = exprs(gene %in% c("GAPDH")),
 )
 ## End(Not run)
+}
 

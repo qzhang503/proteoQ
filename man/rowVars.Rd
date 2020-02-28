@@ -6,6 +6,11 @@
 \usage{
 rowVars(x, na.rm = TRUE)
 }
+\arguments{
+\item{x}{A data frame.}
+
+\item{na.rm}{The same as in \code{mean}.}
+}
 \description{
 Row Variance
 }

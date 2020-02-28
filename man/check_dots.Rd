@@ -6,6 +6,11 @@
 \usage{
 check_dots(blacklist = NULL, ...)
 }
+\arguments{
+\item{blacklist}{A character vector of variable names.}
+
+\item{...}{A list of arguments for checking.}
+}
 \description{
 check duplicate argments in 'dots'
 }

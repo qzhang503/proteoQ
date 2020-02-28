@@ -1,5 +1,9 @@
 #' Correlation plots
-#'
+#' 
+#' @param data_select The type of data to be selected, for example, logFC or logInt.
+#' @inheritParams prnCorr_logFC
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import stringr dplyr ggplot2 GGally rlang
 #' @importFrom magrittr %>%
 plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, col_order = NULL,
@@ -77,7 +81,17 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
 
 
 #' Make correlation plots
-#'
+#' 
+#' @param xlab x-axis label.
+#' @param ylab y-axis label.
+#' @param xmin minimal x.
+#' @param xmax maximal x.
+#' @param xbreaks breaks on x-axis.
+#' @param width plot width
+#' @param height plot height
+#' @param ... additional arguments for ggsave.
+#' @inheritParams info_anal
+#' 
 #' @import stringr dplyr ggplot2 GGally purrr rlang
 #' @importFrom magrittr %>%
 plot_corr_sub <- function (df, xlab, ylab, filename, filepath, 
@@ -395,7 +409,7 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'
 #'@inheritParams prnHist
 #'@inheritParams prnMDS
-#'@param  col_order Character string to a column key in \code{expt_smry.xlsx}.
+#'@param col_order Character string to a column key in \code{expt_smry.xlsx}.
 #'  Numeric values under which will be used for the left-to-right arrangement of
 #'  samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 #'  the NULL default, the column key \code{Order} will be used. If values under
@@ -453,11 +467,23 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@example inst/extdata/examples/prnCorr_.R
 #'

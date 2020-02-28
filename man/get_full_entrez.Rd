@@ -6,6 +6,16 @@
 \usage{
 get_full_entrez(species, from = "egUNIPROT")
 }
+\arguments{
+\item{species}{Character string; the name of a species for the
+\emph{conveninent} preparation of GO. The species available for the
+convenience feature is in one of \code{c("human", "mouse", "rat")} with
+\code{"human"} being the default. The argument is not required for other
+species; instead, users will provide values under arguments
+\code{abbr_species}, \code{gaf_url} and \code{obo_url}.}
+
+\item{from}{the type of \code{keys}}
+}
 \description{
 Helper to get a complete list of `ENTREZID` from `egUNIPROT`
 }

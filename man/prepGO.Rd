@@ -25,16 +25,15 @@ species; instead, users will provide values under arguments
 
 \item{abbr_species}{Two-letter character string; the abbreviated name of
 species used with
-\code{\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}}.
+\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
  The value of \code{abbr_species} will be determined automatically if the
 species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
 example, users need to provide \code{abbr_species = Ce} for fetching the
-\code{org.Ce.eg.db} package in the name space of proteoQ. The argument is
-further applied to differentiate the same biological terms of
-\code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
- ontology}},
-\code{\href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
-Signatures}} etc. under different species.}
+\code{org.Ce.eg.db} package in the name space of proteoQ. For
+\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+Signatures}, the argument is further applied to differentiate the same
+biological terms under different species.}
 
 \item{gaf_url}{A URL to
 \href{http://current.geneontology.org/products/pages/downloads.html}{GO
@@ -67,10 +66,11 @@ default is FALSE.}
 }
 \description{
 \code{prepGO} downloads and prepares data bases of
-\code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
-ontology}} (GO) for enrichment analysis by gene sets.
+\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ontology} (GO) for enrichment analysis by gene sets.
 }
 \examples{
+\donttest{
 library(proteoQ)
 
 # `human` and `mouse` with a default OBO;
@@ -98,6 +98,7 @@ prepGO(
   gaf_url = "http://current.geneontology.org/annotations/wb.gaf.gz",
   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
 )
+}
 
 \dontrun{
 gsets <- readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\go", "mm_slim.rds"))

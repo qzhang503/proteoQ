@@ -144,7 +144,7 @@ is \code{.txt}. For image files, they are typically saved via
 image type will be determined by the extension of the file name.}
 
 \item{theme}{A
-\code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
 theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
 
@@ -171,6 +171,7 @@ data.
 \code{log2FC} are used in PCA (\code{\link[stats]{prcomp}}).
 }
 \examples{
+\donttest{
 # ===================================
 # PCA
 # ===================================
@@ -335,7 +336,7 @@ prnPCA(
   col_shape = "another_missing_column_key"
 )
 ## End(Not run)
-
+}
 
 }
 \seealso{
@@ -381,9 +382,21 @@ prnPCA(
  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
  \emph{Custom databases} \cr 
+ \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
  ontology}} \cr 
  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
  signatures} \cr 
- \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+ 
+ \emph{Column keys in PSM, peptide and protein outputs} \cr 
+ # Mascot \cr
+ system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ 
+ # MaxQuant \cr
+ system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

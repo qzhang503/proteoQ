@@ -18,6 +18,66 @@ scoreMDS(
   ...
 )
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{anal_type}{Character string; the type of analysis that are preset for
+method dispatch in function factories. The value will be determined
+automatically. Examplary values include \code{anal_type = c("PCA",
+"Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
+"NMF", "Purge", "Trend", ...)}.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex \code{Euclidean}
+distance by \eqn{1/sqrt(2)} at \code{method = "euclidean"}. The option
+\code{adjEucDist = TRUE} may be suitable when \code{reference samples} from
+each TMT plex undergo approximately the same sample handling process as the
+samples of interest. For instance, \code{reference samples} were split at
+the levels of protein lysates. Typically, \code{adjEucDist = FALSE} if
+\code{reference samples} were split near the end of a sample handling
+process, for instance, at the stages immediately before or after TMT
+labeling. Also see online
+\href{https://github.com/qzhang503/proteoQ}{README, section MDS} for a brief
+reasoning.}
+
+\item{classical}{Logical. Metric MDS will be performed at TRUE and non-metric
+MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
+\code{\link[MASS]{isoMDS}}). The default is TRUE.}
+
+\item{method}{Character string; the distance measure in
+\code{\link[stats]{dist}}. The default method is "euclidean".}
+
+\item{p}{Numeric; The power of the Minkowski distance in
+\code{\link[stats]{dist}}. The default is 2.}
+
+\item{k}{Numeric; The desired dimension for the solution passed to
+\code{\link[stats]{cmdscale}}. The default is 3.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+\code{arrange_}: Variable argument statements for the row ordering aganist
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements. \cr \cr Additional parameters for
+\code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
+height of plot \cr \code{...}}
+}
 \description{
 Scores MDS
 }

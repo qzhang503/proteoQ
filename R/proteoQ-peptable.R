@@ -25,11 +25,15 @@ newColnames <- function(i, x, label_scheme) {
 
 
 #' combined peptide reports across multiple TMT experiments
+#' 
 #' median summarisation of data from the same TMT experiment at different LCMS injections
-#' summed `pep_n_psm`, `prot_n_psm` and `prot_n_pep` after data merging
+#' summed \code{pep_n_psm}, \code{prot_n_psm}, and \code{prot_n_pep} after data merging
 #' no Z_log2_R yet available
-#'   use col_select = expr(Sample_ID) not `col_select` to get all Z_log2_R
-#'   why: users may specify `col_select` only partial to Sample_ID entries
+#'   use \code{col_select = expr(Sample_ID)} not \code{col_select} to get all Z_log2_R
+#'   why: users may specify \code{col_select} only partial to Sample_ID entries
+#'
+#' @inheritParams info_anal
+#' @inheritParams normPSM
 normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
   id <- rlang::as_string(rlang::enexpr(id))
@@ -192,6 +196,7 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
 
 #' Summary of peptide keys by mean or geomean
 #' 
+#' @inheritParams info_anal
 #' @import dplyr purrr rlang  magrittr
 med_summarise_keys <- function(df, id) {
   mascot_median_keys <- c("pep_score", "pep_rank", "pep_isbold", "pep_exp_mr", "pep_delta", 
@@ -275,6 +280,7 @@ med_summarise_keys <- function(df, id) {
 
 
 #' load prior Peptide.txt
+#' @inheritParams info_anal
 load_prior <- function(filename, id) {
   stopifnot(file.exists(filename))
   
@@ -292,6 +298,7 @@ load_prior <- function(filename, id) {
 
 
 #' format numeric columns
+#' @inheritParams info_anal
 fmt_num_cols <- function (df) {
   df[, grepl("^Z_log2_R[0-9]{3}", names(df))] <-  
     df[, grepl("^Z_log2_R[0-9]{3}", names(df))] %>%
@@ -399,11 +406,23 @@ fmt_num_cols <- function (df) {
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@return The primary output is in \code{...\\Peptide\\Peptide.txt}.
 #'
@@ -573,11 +592,23 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@return The primary output is in \code{...\\Peptide\\Peptide.txt}.
 #'
@@ -739,11 +770,23 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@return The primary output in "\code{...\\Protein\\Protein.txt}".
 #'
@@ -815,7 +858,11 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
 }
 
 
-#'Helper of Pep2Prn
+#' Helper of Pep2Prn
+#' 
+#' @param gn_rollup Logical; if TRUE, rolls up protein accessions to gene names.
+#' @inheritParams info_anal
+#' @inheritParams Pep2Prn
 pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
   id <- rlang::as_string(rlang::enexpr(id))

@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Correlation
 # ===================================
@@ -56,4 +57,5 @@ prnCorr_logInt(
   filename = prncorr_int_npep5.png,
 )
 ## End(Not run)
+}
 

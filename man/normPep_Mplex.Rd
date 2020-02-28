@@ -2,20 +2,32 @@
 % Please edit documentation in R/proteoQ-peptable.R
 \name{normPep_Mplex}
 \alias{normPep_Mplex}
-\title{combined peptide reports across multiple TMT experiments
-median summarisation of data from the same TMT experiment at different LCMS injections
-summed `pep_n_psm`, `prot_n_psm` and `prot_n_pep` after data merging
-no Z_log2_R yet available
-  use col_select = expr(Sample_ID) not `col_select` to get all Z_log2_R
-  why: users may specify `col_select` only partial to Sample_ID entries}
+\title{combined peptide reports across multiple TMT experiments}
 \usage{
 normPep_Mplex(id = "pep_seq_mod", group_pep_by = "prot_acc", ...)
 }
+\arguments{
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{group_pep_by}{A character string specifying the method in peptide
+grouping. At the \code{prot_acc} default, descriptive statistics will be
+calculated based on the same \code{prot_acc} groups. At the \code{gene}
+alternative, proteins with the same gene name but different accession
+numbers will be treated as one group.}
+
+\item{...}{\code{filter_}: Variable argument statements for the filtration of
+data rows. Each statement contains to a list of logical expression(s). The
+\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+For example, \code{pep_expect} is a column key present in \code{Mascot} PSM
+exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove PSM
+entries with \code{pep_expect > 0.1}.}
+}
 \description{
-combined peptide reports across multiple TMT experiments
 median summarisation of data from the same TMT experiment at different LCMS injections
-summed `pep_n_psm`, `prot_n_psm` and `prot_n_pep` after data merging
+summed \code{pep_n_psm}, \code{prot_n_psm}, and \code{prot_n_pep} after data merging
 no Z_log2_R yet available
-  use col_select = expr(Sample_ID) not `col_select` to get all Z_log2_R
-  why: users may specify `col_select` only partial to Sample_ID entries
+  use \code{col_select = expr(Sample_ID)} not \code{col_select} to get all Z_log2_R
+  why: users may specify \code{col_select} only partial to Sample_ID entries
 }

@@ -15,6 +15,23 @@ my_pheatmap(
   ...
 )
 }
+\arguments{
+\item{mat}{The same as in \link[pheatmap]{pheatmap}.}
+
+\item{filename}{The output filename.}
+
+\item{annotation_col}{The same as in \link[pheatmap]{pheatmap}.}
+
+\item{annotation_row}{The same as in \link[pheatmap]{pheatmap}.}
+
+\item{color}{The same as in \link[pheatmap]{pheatmap}.}
+
+\item{annotation_colors}{The same as in \link[pheatmap]{pheatmap}.}
+
+\item{breaks}{The same as in \link[pheatmap]{pheatmap}.}
+
+\item{...}{Additional arguments for \link[pheatmap]{pheatmap}.}
+}
 \description{
 A wrapper of pheatmap
 }

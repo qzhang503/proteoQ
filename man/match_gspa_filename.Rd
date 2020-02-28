@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{match_gspa_filename}
 \alias{match_gspa_filename}
-\title{Matches the name of GSPA result file}
+\title{Matches the name of GSPA result file (not currently used)}
 \usage{
 match_gspa_filename(
   anal_type = "GSPA",
@@ -13,7 +13,15 @@ match_gspa_filename(
 }
 \arguments{
 \item{anal_type}{Always \code{GSPA}; maybe different value for future uses.}
+
+\item{subdir}{Character string of sub directory}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
 }
 \description{
-Matches the name of GSPA result file
+Matches the name of GSPA result file (not currently used)
 }

@@ -41,6 +41,8 @@ intensities will be plotted. The default is TRUE.}
 
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
 \code{log2FC} will be plotted. The default is TRUE.}
+
+\item{...}{Not currently used.}
 }
 \description{
 \code{annotPSM} adds fields of annotation to Mascot PSM tables after

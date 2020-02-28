@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Peptides to proteins
 # ===================================
@@ -8,5 +9,5 @@
 Pep2Prn()
 
 # include shared peptides
-Pep2Prn(use_unique_pep = FALSE)
-
+Pep2Prn(use_unique_pep = FALSE)  
+}

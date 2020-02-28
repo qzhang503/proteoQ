@@ -6,6 +6,10 @@
 \usage{
 n_TMT_sets(label_scheme_full)
 }
+\arguments{
+\item{label_scheme_full}{The label_scheme with the probable inclusion of
+different LCMS_inj under the same TMT_Set.}
+}
 \description{
-\code{n_TMT_sets} returns the number of multiplex TMT experiments.
+Finds the number of multiplex TMT experiments
 }

@@ -15,6 +15,9 @@ dl_stringdbs(
 include \code{human, mouse, rat, fly, cow, dog}. The default is
 \code{human}.}
 
+\item{db_path}{Character string; the local path for database(s). The default
+is \code{"~\\proteoQ\\dbs\\string"}.}
+
 \item{overwrite}{Logical; if TRUE, overwrite the downloaded databse(s). The
 default is FALSE.}
 }

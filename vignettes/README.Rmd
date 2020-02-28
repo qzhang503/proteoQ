@@ -5,8 +5,6 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
-  github_document:
-    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -15,6 +13,8 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  github_document:
+    toc: yes
   word_document:
     toc: yes
   md_document:
@@ -820,6 +820,8 @@ img_interplex_EucDist <- "images\\protein\\eucdist\\interplex_errors.png"
 knitr::include_graphics(c(img_interplex_EucDist))
 ```
 
+The adjustment might be more suitable for studies where both the samples and references are largely similar in proteome compositions. The setting of `adjEucDist = TRUE` would discount the distances between references when using visualization techniques such a MDS or distance heat maps. In the cases that sample differences are exceedingly greater than handling errors, the setting of `adjEucDist = FALSE` would probably be more appropriate.  
+
 ### 2.2 Correlation plots
 In this section, we visualize the batch effects and biological differences through correlation plots. The `proteoQ` tool currently limits itself to a maximum of 44 samples for a correlation plot. In the document, we will perform correlation analysis against the `PNNL` data subset. By default, samples will be arranged by the alphabetical order for entries under the column `expt_smry.xlsx::Select`. We have learned from the earlier `MDS` analysis that the batch effects are smaller than the differences between `W2` and `W16`. We may wish to put the `TMT1` and `TMT2` groups adjacient to each other for visualization of more nuance batch effects, followed by the comparison of WHIM subtypes. We can achieve this by supervising sample IDs at a customized order. In the `expt_smry.xlsx`, We have prepared an `Order` column where samples within the `JHU` subset were arranged in the descending order of `W2.TMT1`, `W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look for the `Order` column for sample arrangement:  
 
@@ -1522,7 +1524,8 @@ img_peppurge_af_1 <- "images\\peptide\\purge\\bi1_ptcv.png"
 knitr::include_graphics(c(img_peppurge_bf_1, img_peppurge_af_1))
 ```
 
-### 3.2 Data subsets
+### 3.2 Data subsets and additions
+#### 3.2.1 Subsets
 In this lab, we will first apply pseudoname approaches to subset data. The availble pesudonames include  
 
 
@@ -1689,6 +1692,41 @@ standPrn(
   epsilon = 1e-05, 
 )
 ```
+
+#### 3.2.2 Column additions
+In this section, we will first add a column, `na_counts`, to protein table `Protein_pVals.txt`. The column summarizes the number of `NA` in `log2FC` for each protein. The newly added column will then be applied to data row filtration during heat map visualization.  
+
+```{r custom_columns, eval = FALSE}
+df <- readr::read_tsv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt")) 
+
+na_counts <- df %>% 
+  dplyr::select(grep("Z_log2_R", names(.))) %>% 
+  is.na() %>% 
+  rowSums()
+
+df %>% 
+  dplyr::mutate(na_counts = na_counts) %>% 
+  readr::write_csv(file.path(dat_dir, "Protein\\Protein_pVals.txt"))
+
+prnHM(
+  xmin = -1,
+  xmax = 1,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  cutree_rows = 10,
+  show_rownames = FALSE,
+  show_colnames = TRUE,
+  fontsize_row = 3,
+  cellwidth = 14,
+  width = 18,
+  height = 12,
+  filter_prots_by_sp_npep = exprs(na_counts <= 30),
+  filename = "na30.png",
+)
+```
+
 
 ### 3.3 Random effects
 Models that incorporate both fixed- and random-effects terms in a linear predictor expression are often termed mixed effects models.  

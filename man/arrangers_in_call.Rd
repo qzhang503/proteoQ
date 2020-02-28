@@ -7,7 +7,11 @@
 arrangers_in_call(.df, ..., .na.last = TRUE)
 }
 \arguments{
-\item{df;}{data frame.}
+\item{.df}{a data frame.}
+
+\item{...}{Arguments for \link[dplyr]{arrange}}
+
+\item{.na.last}{The same as \link[base]{order}}
 }
 \description{
 Arrange rows

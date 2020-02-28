@@ -19,6 +19,79 @@ plotEucDist(
   ...
 )
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex \code{Euclidean}
+distance by \eqn{1/sqrt(2)} at \code{method = "euclidean"}. The option
+\code{adjEucDist = TRUE} may be suitable when \code{reference samples} from
+each TMT plex undergo approximately the same sample handling process as the
+samples of interest. For instance, \code{reference samples} were split at
+the levels of protein lysates. Typically, \code{adjEucDist = FALSE} if
+\code{reference samples} were split near the end of a sample handling
+process, for instance, at the stages immediately before or after TMT
+labeling. Also see online
+\href{https://github.com/qzhang503/proteoQ}{README, section MDS} for a brief
+reasoning.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
+The values under the selected keys will be used to color-code sample IDs on
+the top of the indicated plot. The default is NULL without column
+annotation.}
+
+\item{annot_colnames}{A character vector of replacement name(s) to
+\code{annot_cols}. The default is NULL without name replacement.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
+
+\item{anal_type}{Character string; the type of analysis that are preset for
+method dispatch in function factories. The value will be determined
+automatically. Examplary values include \code{anal_type = c("PCA",
+"Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
+"NMF", "Purge", "Trend", ...)}.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+\code{arrange_}: Variable argument statements for the row ordering aganist
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements. \cr \cr Additional parameters for
+plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
+of plot \cr 
+\cr Additional arguments for \code{\link[pheatmap]{pheatmap}}: \cr 
+\code{cluster_rows, clustering_method, clustering_distance_rows}... \cr 
+\cr Notes about \code{pheatmap}:
+\cr \code{annotation_col} disabled; instead use keys indicated in \code{annot_cols}
+\cr \code{annotation_row} disabled; instead use keys indicated in \code{annot_rows}}
+}
 \description{
 Plots EucDist
 }

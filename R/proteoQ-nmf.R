@@ -1,5 +1,8 @@
 #' NMF analysis
 #'
+#' @inheritParams anal_prnNMF
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import dplyr purrr rlang Biobase
 #' @importFrom magrittr %>%
 #' @importFrom NMF nmf
@@ -89,6 +92,10 @@ analNMF <- function(df, id, rank, nrun, seed, col_group, label_scheme_sub,
 
 #' Plots consensus results from NMF analysis
 #'
+#' @inheritParams anal_prnNMF
+#' @inheritParams plot_prnNMFCoef
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import NMF dplyr purrr rlang cluster Biobase
 #' @importFrom magrittr %>%
 plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, impute_na, 
@@ -299,6 +306,10 @@ plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, 
 
 #' Plots coef results from NMF analysis
 #'
+#' @inheritParams anal_prnNMF
+#' @inheritParams plot_prnNMFCoef
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import NMF dplyr purrr rlang cluster Biobase
 #' @importFrom magrittr %>%
 plotNMFCoef <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, impute_na, 
@@ -483,6 +494,10 @@ plotNMFCoef <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
 
 #' Plots coef results from NMF analysis
 #'
+#' @inheritParams anal_prnNMF
+#' @inheritParams plot_prnNMFCoef
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import NMF dplyr rlang Biobase
 #' @importFrom magrittr %>%
 plotNMFmeta <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, impute_na, 
@@ -767,11 +782,23 @@ plotNMFmeta <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 anal_pepNMF <- function (col_select = NULL, col_group = NULL, 
@@ -930,11 +957,23 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 plot_pepNMFCon <- function (col_select = NULL, 
@@ -1143,11 +1182,23 @@ plot_prnNMFCoef <- function (col_select = NULL,
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 plot_metaNMF <- function (col_select = NULL, 

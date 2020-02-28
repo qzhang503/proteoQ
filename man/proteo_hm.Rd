@@ -22,12 +22,86 @@ proteo_hm(
 )
 }
 \arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
 \item{df_meta}{A file name of meta data.}
+
+\item{sample_ids}{A character vecotr containing the sample IDs for an ascribing analysis.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{annot_cols}{A character vector of column keys in \code{expt_smry.xlsx}.
+The values under the selected keys will be used to color-code sample IDs on
+the top of the indicated plot. The default is NULL without column
+annotation.}
+
+\item{annot_colnames}{A character vector of replacement name(s) to
+\code{annot_cols}. The default is NULL without name replacement.}
+
+\item{annot_rows}{A character vector of column keys that can be found from
+input files of \code{Peptide.txt}, \code{Protein.txt} etc. The values
+under the selected keys will be used to color-code peptides or proteins on
+the side of the indicated plot. The default is NULL without row annotation.}
+
+\item{xmin}{Numeric; the minimum x at a log2 scale. The default is -1.}
+
+\item{xmax}{Numeric; the maximum  x at a log2 scale. The default is 1.}
+
+\item{xmargin}{Numeric; the margin in heat scales. The default is 0.1.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. Each statement contains
+to a list of logical expression(s). The \code{lhs} needs to start with
+\code{filter_}. The logical condition(s) at the \code{rhs} needs to be
+enclosed in \code{exprs} with round parenthesis. For example, \code{pep_len}
+is a column key present in \code{Mascot} peptide tables of
+\code{Peptide.txt}. The statement \code{filter_peps_at = exprs(pep_len <=
+50)} will remove peptide entries with \code{pep_len > 50}. See also
+\code{\link{pepHist}}, \code{\link{normPSM}}. \cr \cr \code{arrange_}:
+Variable argument statements for the row ordering aganist data in a primary
+file linked to \code{df}. The \code{lhs} needs to start with
+\code{arrange_}. The expression(s) at the \code{rhs} needs to be enclosed in
+\code{exprs} with round parenthesis. For example, \code{arrange_peps_by =
+exprs(gene, prot_n_pep)} will arrange entries by \code{gene}, then by
+\code{prot_n_pep}. \cr \cr Additional parameters for plotting: \cr
+\code{width}, the width of plot \cr \code{height}, the height of plot \cr
+\cr Additional arguments for \code{\link[pheatmap]{pheatmap}}: \cr 
+\code{cluster_rows, clustering_method, clustering_distance_rows}... \cr 
+\cr Notes about \code{pheatmap}:
+\cr \code{annotation_col} disabled; instead use keys indicated in \code{annot_cols}
+\cr \code{annotation_row} disabled; instead use keys indicated in \code{annot_rows}
+\cr \code{clustering_method} breaks into \code{hc_method_rows} for row data 
+and \code{hc_method_cols} for column data
+\cr \code{clustering_distance_rows = "minkowski"} allowed at the powder of \code{p_dist_rows} 
+and/or \code{p_dist_cols}}
 }
 \description{
 Makes heat maps
 }
 \examples{
+\donttest{
 proteo_hm(
   df = Protein_delta.txt, 
   id = gene, 
@@ -46,4 +120,6 @@ proteo_hm(
   height = 12,
   arrange2_by = exprs(kin_class, gene), 
 )
+}
+
 }

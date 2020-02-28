@@ -6,6 +6,9 @@
 \usage{
 setHMColor(annotation_col)
 }
+\arguments{
+\item{annotation_col}{The same as in \link[pheatmap]{pheatmap}.}
+}
 \description{
 Customizes the colors in column annotation
 }

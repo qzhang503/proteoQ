@@ -6,6 +6,10 @@
 \usage{
 check_label_scheme(label_scheme_full)
 }
+\arguments{
+\item{label_scheme_full}{The data frame returned by \code{\link{load_expts}},
+including multiple LCMS series.}
+}
 \description{
 \code{check_label_scheme} will stop the analysis if the number of unique
 samples are less than expected.

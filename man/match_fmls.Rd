@@ -6,6 +6,9 @@
 \usage{
 match_fmls(formulas)
 }
+\arguments{
+\item{formulas}{Language; the formulas in linear modeling.}
+}
 \description{
 Matches formulas to those in calls to pepSig or prnSig
 }

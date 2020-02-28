@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Heat map
 # ===================================
@@ -271,4 +272,5 @@ pepHM(
   arrange_peps_by = exprs(gene),  
   filename = "ncl_bi1.png",
 )
+}
 

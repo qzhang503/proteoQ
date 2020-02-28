@@ -119,6 +119,7 @@ An Euclidean distance matrix of \code{log2FC} is returned by
 \code{\link[stats]{dist}} for heat map visualization.
 }
 \examples{
+\donttest{
 # ===================================
 # Euclidean distance
 # ===================================
@@ -254,7 +255,7 @@ prnEucDist(
   annot_cols = c("bad_column_key", "yet_another_bad_column_key")
 )
 ## End(Not run)
-
+}
 }
 \seealso{
 \emph{Metadata} \cr 
@@ -299,9 +300,21 @@ prnEucDist(
  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
  \emph{Custom databases} \cr 
+ \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
  ontology}} \cr 
  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
  signatures} \cr 
- \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+ 
+ \emph{Column keys in PSM, peptide and protein outputs} \cr 
+ # Mascot \cr
+ system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ 
+ # MaxQuant \cr
+ system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

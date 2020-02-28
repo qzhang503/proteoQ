@@ -17,9 +17,15 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
 will be replaced with NA. The default is NULL with no data trimming by max
 CV.}
+
+\item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
+default is TRUE.}
 }
 \description{
 \code{purge_by_cv} replaces the data entries at \code{group CV > max_cv} to

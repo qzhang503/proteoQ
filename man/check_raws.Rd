@@ -6,6 +6,9 @@
 \usage{
 check_raws(df)
 }
+\arguments{
+\item{df}{A data frame containing the PSM table from database searches.}
+}
 \description{
 \code{check_raws} finds mismatched RAW files between expt_smry.xlsx and
 PSM outputs.

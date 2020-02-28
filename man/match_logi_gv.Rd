@@ -6,13 +6,21 @@
 \usage{
 match_logi_gv(var, val)
 }
+\arguments{
+\item{var}{Character string representation of a variable.}
+
+\item{val}{The value of \code{var} before matching.}
+}
 \description{
 Match to a global logical variable
 }
 \examples{
-scale_log2r <- TRUE
+\donttest{
 foo <- function(scale_log2r = FALSE) {
   match_logi_gv("scale_log2r", scale_log2r)
 }
+
+scale_log2r <- TRUE
 foo()
+}
 }

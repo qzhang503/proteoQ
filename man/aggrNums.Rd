@@ -15,6 +15,5 @@ descriptive statistics of \code{c("mean", "median", "weighted.mean",
 "top.3")}
 }
 \examples{
-df_num <- aggrNums(median)(df, prot_acc, na.rm = TRUE)
-
+\donttest{df_num <- aggrNums(median)(df, prot_acc, na.rm = TRUE)}
 }

@@ -2,13 +2,21 @@
 #'
 #' \code{info_anal} produces functions for selected informatic analysis.
 #'
+#' @param id Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+#'   \code{prot_acc} and \code{gene}.
 #' @param anal_type Character string; the type of analysis that are preset for
 #'   method dispatch in function factories. The value will be determined
 #'   automatically. Examplary values include \code{anal_type = c("PCA",
 #'   "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 #'   "NMF", "Purge", "Trend", ...)}.
-#' @return a function to the given \code{anal_type}.
-#'
+#' @inheritParams prnHist
+#' @inheritParams prnHM
+#' @inheritParams prnMDS
+#' @inheritParams anal_pepNMF
+#' @inheritParams gspaMap
+#' @inheritParams prnCorr_logFC
+#' 
+#' @return A function to the given \code{anal_type}.
 #' @import dplyr rlang ggplot2 pheatmap openxlsx
 #' @importFrom magrittr %>%
 info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order = NULL,
@@ -351,7 +359,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			plotHisto(df = df, 
 			          id = !!id, 
 			          label_scheme_sub = label_scheme_sub, 
-			          params = params,
 			          scale_log2r = scale_log2r, 
 			          complete_cases = complete_cases, 
 			          show_curves = show_curves, 
@@ -636,7 +643,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 
 #' helper for finding input `df`
-#'
+#' 
+#' @param ... Not currently used.
+#' @inheritParams info_anal
 find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na = FALSE, ...) {
   err_msg2 <- "not found. \n Run functions PSM, peptide and protein normalization first."
   err_msg3 <- "not found. \nImpute NA values with `pepImp()` or `prnImp()` or set `impute_na = FALSE`."
@@ -730,14 +739,18 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
 
   if (is.null(dim(df))) stop(src_path, " not found.", call. = FALSE)
   
+  df <- df %>% reorderCols2()
+
   message(paste("Primary file loaded:", gsub("\\\\", "/", src_path)))
   
   return(df)
 }
 
 
-#' helper for finding input `df`
-#' not currently used
+#' helper for finding input `df` (not currently used)
+#' 
+#' @param ... Not currently used.
+#' @inheritParams info_anal
 find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) {
   df <- rlang::enexpr(df)
   anal_type <- rlang::enexpr(anal_type)
@@ -772,6 +785,9 @@ find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) {
 
 
 #' helper for finding input `df`
+#' 
+#' @param ... Not currently used.
+#' @inheritParams info_anal
 vararg_secmsg <- function (id = NULL, anal_type = NULL, ...) {
   id <- rlang::as_string(rlang::enexpr(id))
   anal_type <- rlang::as_string(rlang::enexpr(anal_type))

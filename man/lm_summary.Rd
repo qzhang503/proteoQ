@@ -6,6 +6,20 @@
 \usage{
 lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff)
 }
+\arguments{
+\item{pvals}{A data frame of pVal}
+
+\item{log2rs}{A data frame of log2FC}
+
+\item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
+with \code{pVals} smaller than the threshold will be excluded from multiple
+test corrections. The default is at \code{1} to include all entries.}
+
+\item{logFC_cutoff}{Numeric; the cut-off in \code{log2FC}. Entries with
+absolute \code{log2FC} smaller than the threshold will be removed from
+multiple test corrections. The default is at \code{log2(1)} to include all
+entries.}
+}
 \description{
 Model summary
 }

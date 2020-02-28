@@ -1,5 +1,7 @@
 #' Processes the metadata of TMT experiments
 #'
+#' @inheritParams load_expts
+#' @inheritParams prnHist
 #' @import dplyr tidyr purrr openxlsx
 #' @importFrom magrittr %>%
 #' @importFrom readxl read_excel
@@ -167,6 +169,8 @@ prep_label_scheme <- function(dat_dir, filename) {
 
 #' Loads the information of analyte prefractionation
 #'
+#' @inheritParams load_expts
+#' @inheritParams prnHist
 #' @import dplyr purrr tidyr openxlsx
 #' @importFrom magrittr %>%
 #' @importFrom readxl read_excel
@@ -227,16 +231,17 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 
 #'Loads species-specific Databases
 #'
-#'A function loads a set of precompiled tables in protein accessions, \code{GO}
-#'data and
-#'\code{\href{http://software.broadinstitute.org/gsea/msigdb}{molecular
-#'signatures}}.
-#'
+#'A function loads a set of precompiled gene sets of 
+#'\href{http://current.geneontology.org/products/pages/downloads.html}{GO}
+#'and
+#'\href{http://software.broadinstitute.org/gsea/msigdb}{molecular signatures}.
 #'@seealso \code{\link{load_expts}} for supported species.
 #'
 #' @examples
-#' load_dbs("human")
+#' \donttest{load_dbs("go_sets", "human")}
 #'
+#'@param species Character string; the name of a species. 
+#'@inheritParams prnGSPA
 #'@import dplyr rlang
 #'@importFrom magrittr %>%
 #'@export
@@ -367,8 +372,8 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  Fraction \tab Fraction indeces under a \code{TMT_Set} \cr RAW_File \tab v.s.
 #'  }
 #'  
+#'@family normalization functions
 #'@seealso 
-#'
 #'  \emph{Data normalization} \cr 
 #'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
 #'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
@@ -380,15 +385,21 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
 #'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
 #'  
+#'@family data row filtration
+#'@seealso 
 #'  \emph{Variable arguments of `filter_...`} \cr 
 #'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
 #'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
 #'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
 #'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
 #'  
+#'@family missing value imputation
+#'@seealso 
 #'  \emph{Missing values} \cr 
 #'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
 #'  
+#'@family basic informatics
+#'@seealso 
 #'  \emph{Informatics} \cr 
 #'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
 #'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
@@ -407,12 +418,26 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
+#'@family custom database preparation
+#'@seealso 
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr 
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@param dat_dir A character string to the working directory. The default is to
 #'  match the value under the global environment.
@@ -422,7 +447,6 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  peptide fractionation summary. The default is \code{frac_smry.xlsx}.
 #'
 #'@example inst/extdata/examples/load_expts_.R
-#'
 #'
 #'@import dplyr rlang fs
 #'@importFrom magrittr %>%
@@ -522,21 +546,26 @@ channelInfo <- function (label_scheme, set_idx) {
 
 #' Finds the number of multiplex TMT experiments
 #'
-#' \code{n_TMT_sets} returns the number of multiplex TMT experiments.
+#' @param label_scheme_full The label_scheme with the probable inclusion of
+#'   different LCMS_inj under the same TMT_Set.
 n_TMT_sets <- function (label_scheme_full) {
 	length(unique(label_scheme_full$TMT_Set))
 }
 
+
 #' Finds the multiplxity of TMT labels
 #'
 #' \code{TMT_plex} returns the multiplxity of TMT labels.
+#' @inheritParams check_label_scheme
 TMT_plex <- function (label_scheme_full) {
 	nlevels(as.factor(label_scheme_full$TMT_Channel))
 }
 
+
 #' Finds the factor levels of TMT labels
 #'
 #' \code{TMT_levels} returns the factor levels of TMT labels.
+#' @param TMT_plex Numeric; the multiplexity of TMT, i.e., 10, 11 etc.
 TMT_levels <- function (TMT_plex) {
 	if(TMT_plex == 10) {
 		TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", "TMT-129N",
@@ -553,9 +582,12 @@ TMT_levels <- function (TMT_plex) {
 	}
 }
 
+
 #' Simplifies label schemes from \code{label_scheme_full}
 #'
 #' Removes duplicated sample entries under different LC/MS injections.
+#' @inheritParams load_expts
+#' @inheritParams check_label_scheme
 simple_label_scheme <- function (dat_dir, label_scheme_full) {
 	TMT_plex <- TMT_plex(label_scheme_full)
 	TMT_levels <- TMT_levels(TMT_plex)
@@ -572,10 +604,13 @@ simple_label_scheme <- function (dat_dir, label_scheme_full) {
 	save(label_scheme, file = file.path(dat_dir, "label_scheme.rda"))
 }
 
+
 #' Checks the uniqueness of sample IDs in \code{label_scheme_full}
 #'
 #' \code{check_label_scheme} will stop the analysis if the number of unique
 #' samples are less than expected.
+#' @param label_scheme_full The data frame returned by \code{\link{load_expts}},
+#'   including multiple LCMS series.
 check_label_scheme <- function (label_scheme_full) {
 	load(file = file.path(dat_dir, "label_scheme.rda"))
 
@@ -592,6 +627,7 @@ check_label_scheme <- function (label_scheme_full) {
 #'
 #' \code{check_raws} finds mismatched RAW files between expt_smry.xlsx and
 #' PSM outputs.
+#' @param df A data frame containing the PSM table from database searches.
 check_raws <- function(df) {
   stopifnot ("RAW_File" %in% names(df))
   

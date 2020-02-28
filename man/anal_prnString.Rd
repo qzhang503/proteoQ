@@ -57,16 +57,17 @@ aganist data in a primary file linked to \code{df}. See also
 }
 \description{
 \code{anal_prnString} prepares the data of both
-\code{\href{https://string-db.org/}{STRING}} protein-protein interactions
+\href{https://string-db.org/}{STRING} protein-protein interactions
 (ppi) and companion protein expressions.
 }
 \details{
 Convenience features, such as data row filtration via \code{filter_} varargs,
 are available. The ppi file, \code{..._ppi.tsv}, and the expression file,
 \code{..._expr.tsv}, are also compatible with a third-party
-\code{\href{https://cytoscape.org/}{Cytoscape}}.
+\href{https://cytoscape.org/}{Cytoscape}.
 }
 \examples{
+\donttest{
 # ===================================
 # String DB
 # ===================================
@@ -120,6 +121,7 @@ anal_prnString(
                     `W16_vs_W2.pVal (W16-W2)` <= 1e-6),
   filename = "prot_npep2 W16_vs_W2.pVal (W16-W2).txt",
 )
+}
 }
 \seealso{
 \code{\link{dl_stringdbs}} for database downloads. \cr

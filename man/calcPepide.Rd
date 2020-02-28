@@ -2,8 +2,7 @@
 % Please edit documentation in R/proteoQ-psmtable.R
 \name{calcPepide}
 \alias{calcPepide}
-\title{Calculate peptide data for individual TMT experiments
-Argument injn_idx not used}
+\title{Calculate peptide data for individual TMT experiments}
 \usage{
 calcPepide(
   df,
@@ -15,7 +14,31 @@ calcPepide(
   injn_idx
 )
 }
+\arguments{
+\item{df}{A data frame containing the PSM table from database searches.}
+
+\item{label_scheme}{The data frame returned by \code{\link{load_expts}}.}
+
+\item{id}{The same as \code{group_psm_by} in \code{\link{normPSM}}.}
+
+\item{method_psm_pep}{Character string; the method to summarise the
+\code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
+The descriptive statistics includes \code{c("mean", "median", "top.3",
+"weighted.mean")} with \code{median} being the default. The
+\code{log10-intensity} of reporter ions at the \code{PSMs} levels will be
+the weight when summarising \code{log2FC} with \code{"top.3"} or
+\code{"weighted.mean"}.}
+
+\item{group_pep_by}{A character string specifying the method in peptide
+grouping. At the \code{prot_acc} default, descriptive statistics will be
+calculated based on the same \code{prot_acc} groups. At the \code{gene}
+alternative, proteins with the same gene name but different accession
+numbers will be treated as one group.}
+
+\item{set_idx}{Numeric.  The index of a multiplex TMT experiment.}
+
+\item{injn_idx}{Numeric; an index of \code{LCMS_Inj} in metadata \code{label_scheme.xlsx}.}
+}
 \description{
-Calculate peptide data for individual TMT experiments
-Argument injn_idx not used
+Argument \code{injn_idx} not currently used.
 }

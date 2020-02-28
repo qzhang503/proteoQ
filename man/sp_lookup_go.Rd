@@ -6,6 +6,14 @@
 \usage{
 sp_lookup_go(species)
 }
+\arguments{
+\item{species}{Character string; the name of a species for the
+\emph{conveninent} preparation of \code{MSig} data bases. The species
+available for the convenience feature is in one of \code{c("human", "mouse",
+"rat")} with \code{"human"} being the default. The argument is not required
+for other species; instead, users will provide values under arguments
+\code{ortho_mart} for the lookup of orthologs to human.}
+}
 \description{
 Helper to look up GO species
 }

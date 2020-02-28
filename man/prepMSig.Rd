@@ -31,16 +31,15 @@ for other species; instead, users will provide values under arguments
 
 \item{abbr_species}{Two-letter character string; the abbreviated name of
 species used with
-\code{\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}}.
+\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
  The value of \code{abbr_species} will be determined automatically if the
 species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
 example, users need to provide \code{abbr_species = Ce} for fetching the
-\code{org.Ce.eg.db} package in the name space of proteoQ. The argument is
-further applied to differentiate the same biological terms of
-\code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
- ontology}},
-\code{\href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
-Signatures}} etc. under different species.}
+\code{org.Ce.eg.db} package in the name space of proteoQ. For
+\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+Signatures}, the argument is further applied to differentiate the same
+biological terms under different species.}
 
 \item{ortho_mart}{Character string; a dataset name from
 \code{\link[biomaRt]{useMart}} and/or \code{\link[biomaRt]{listDatasets}}
@@ -61,10 +60,11 @@ default is FALSE.}
 }
 \description{
 \code{prepMSig} downloads and prepares data bases of
-\code{\href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular Signatures}}
+\href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular Signatures}
 (MSig) for enrichment analysis by gene sets.
 }
 \examples{
+\donttest{
 library(proteoQ)
 
 ## the default `MSig` is `c2.all`
@@ -116,5 +116,6 @@ prepMSig(
   ortho_mart = cfamiliaris_gene_ensembl,
   filename = c2_cgp_cf.rds,
 )
+}
 
 }

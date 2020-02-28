@@ -33,6 +33,134 @@ plotMDS(
   ...
 )
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex \code{Euclidean}
+distance by \eqn{1/sqrt(2)} at \code{method = "euclidean"}. The option
+\code{adjEucDist = TRUE} may be suitable when \code{reference samples} from
+each TMT plex undergo approximately the same sample handling process as the
+samples of interest. For instance, \code{reference samples} were split at
+the levels of protein lysates. Typically, \code{adjEucDist = FALSE} if
+\code{reference samples} were split near the end of a sample handling
+process, for instance, at the stages immediately before or after TMT
+labeling. Also see online
+\href{https://github.com/qzhang503/proteoQ}{README, section MDS} for a brief
+reasoning.}
+
+\item{classical}{Logical. Metric MDS will be performed at TRUE and non-metric
+MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
+\code{\link[MASS]{isoMDS}}). The default is TRUE.}
+
+\item{method}{Character string; the distance measure in
+\code{\link[stats]{dist}}. The default method is "euclidean".}
+
+\item{p}{Numeric; The power of the Minkowski distance in
+\code{\link[stats]{dist}}. The default is 2.}
+
+\item{k}{Numeric; The desired dimension for the solution passed to
+\code{\link[stats]{cmdscale}}. The default is 3.}
+
+\item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
+plots. The default is TRUE.}
+
+\item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{color} aesthetics in plots. At
+the NULL default, the column key \code{Color} will be used.}
+
+\item{col_fill}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{fill} aesthetics in plots. At
+the NULL default, the column key \code{Fill} will be used.}
+
+\item{col_shape}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{shape} aesthetics in plots. At
+the NULL default, the column key \code{Shape} will be used.}
+
+\item{col_size}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{size} aesthetics in plots. At
+the NULL default, the column key \code{Size} will be used.}
+
+\item{col_alpha}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{alpha} (transparency)
+aesthetics in plots. At the NULL default, the column key \code{Alpha} will
+be used.}
+
+\item{color_brewer}{Character string to the name of a color brewer for use in
+\href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_color_brewer},
+ i.e., \code{color_brewer = Set1}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
+
+\item{fill_brewer}{Character string to the name of a color brewer for use in
+\href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_fill_brewer},
+ i.e., \code{fill_brewer = Spectral}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
+
+\item{size_manual}{Numeric vector to the scale of sizes for use in
+\href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_size_manual},
+ i.e., \code{size_manual = c(8, 12)}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
+
+\item{shape_manual}{Numeric vector to the scale of shape IDs for use in
+\href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_shape_manual},
+ i.e., \code{shape_manual = c(5, 15)}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
+
+\item{alpha_manual}{Numeric vector to the scale of transparency of objects for
+use in
+\href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_alpha_manual}
+ , i.e., \code{alpha_manual = c(.5, .9)}. At the NULL default, the setting
+in \code{ggplot2} will be used.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
+
+\item{theme}{A
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
+theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+theme will be applied.}
+
+\item{anal_type}{Character string; the type of analysis that are preset for
+method dispatch in function factories. The value will be determined
+automatically. Examplary values include \code{anal_type = c("PCA",
+"Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
+"NMF", "Purge", "Trend", ...)}.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+\code{arrange_}: Variable argument statements for the row ordering aganist
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements. \cr \cr Additional parameters for
+\code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
+height of plot \cr \code{...}}
+}
 \description{
 Plots MDS
 }

@@ -6,6 +6,10 @@
 \usage{
 map_essential(sig_sets)
 }
+\arguments{
+\item{sig_sets}{A data frame containing the gene sets that are significant
+under given criteria.}
+}
 \description{
 A helper function for mapping btw gene sets and essential gene sets
 }

@@ -22,6 +22,78 @@ gsvaTest(
   ...
 )
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{filepath}{Use system default.}
+
+\item{filename}{A representative file name to outputs. By default, it will be
+determined automatically by the name of the current call.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
+
+\item{gset_nms}{Character string or vector containing the shorthanded name(s),
+full file path(s) or both to gene sets for enrichment analysis. For species
+among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
+"c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
+molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
+curated \code{MSig}, and/or additional species are also supported. See also
+\code{\link{prepGO}} for the prepration of custom \code{GO} and
+\code{\link{prepMSig}} for the prepration of custom \code{MSig}.}
+
+\item{lm_method}{Character string indicating the linear modeling method for
+significance assessment of GSVA enrichment scores. The default is
+\code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
+for models without random effects and the \code{\link[lmerTest]{lmer}} will
+be used for models with random effects.}
+
+\item{var_cutoff}{Numeric; the cut-off in the variances of protein log2FC.
+Entries with variances smaller than the threshold will be removed from GSVA.
+The default is 0.5.}
+
+\item{pval_cutoff}{Numeric; the cut-off in enrichment pVals. Terms with
+enrichment pVals smaller than the threshold will be removed from multiple
+test corrections. The default is 1e-04.}
+
+\item{logFC_cutoff}{Numeric; the cut-off in enrichment log2FC. Terms with
+absolute log2FC smaller than the threshold will be removed from multiple
+test corrections. The default is at log2(1.1).}
+
+\item{anal_type}{Character string; the type of analysis that are preset for
+method dispatch in function factories. The value will be determined
+automatically. Examplary values include \code{anal_type = c("PCA",
+"Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
+"NMF", "Purge", "Trend", ...)}.}
+
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration
+against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+See also \code{\link{normPSM}} for the format of \code{filter_} statements.
+\cr \cr \code{arrange_}: Variable argument statements for the row ordering
+aganist data in a primary file linked to \code{df}. See also
+\code{\link{prnHM}} for the format of \code{arrange_} statements. \cr \cr
+Additional arguments for \code{\link[GSVA]{gsva}}}
+}
 \description{
 logFC_cutoff subsets data for adjusted pvals
 }

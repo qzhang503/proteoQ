@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Heat maps of GSPA
 # ===================================
@@ -60,5 +61,4 @@ prnGSPAHM(
   color = colorRampPalette(c("blue", "white", "red"))(100),
   filename = custom_colors.png,
 )
-
-
+}

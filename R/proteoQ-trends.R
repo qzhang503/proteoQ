@@ -1,5 +1,8 @@
 #' Trend analysis
-#'
+#' 
+#' @inheritParams anal_prnTrend
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import dplyr purrr rlang Biobase
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
@@ -104,6 +107,9 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 
 #' Plots trends
 #'
+#' @inheritParams plot_prnTrend
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import dplyr rlang purrr ggplot2 RColorBrewer
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
@@ -307,7 +313,6 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 }
 
 
-
 #'Trend analysis of protein data
 #'
 #'\code{anal_prnTrend} applies the soft clustering algorithm in
@@ -384,16 +389,25 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
-#'@references \code{Schwaemmle and Jensen, Bioinformatics,Vol. 26 (22),
-#'  2841-2848, 2010. \cr J. C. Bezdek (1981). Pattern recognition with fuzzy
-#'  objective function algorithms. New York: Plenum. \cr }
 anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL, n_clust = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                            df = NULL, filepath = NULL, filename = NULL, ...) {
@@ -535,11 +549,23 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL, 

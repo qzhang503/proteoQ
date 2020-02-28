@@ -6,6 +6,9 @@
 \usage{
 Dixon_outliers(x)
 }
+\arguments{
+\item{x}{A matrix or data.frame.}
+}
 \description{
 Outlier removals with Dixon's method
 }

@@ -58,6 +58,7 @@ indicated under the \code{prot_n_pep} column after the peptide
 removals/cleanups using \code{purgePSM}.
 }
 \examples{
+\donttest{
 # ===================================
 # Merge peptide data
 # ===================================
@@ -82,7 +83,7 @@ mergePep(
 mergePep(
   filter_peps_by_sp = exprs(species == "human", pep_miss <= 3),
 )
-
+}
 }
 \seealso{
 \emph{Metadata} \cr 
@@ -127,9 +128,21 @@ mergePep(
  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
  \emph{Custom databases} \cr 
+ \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
  ontology}} \cr 
  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
  signatures} \cr 
- \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+ 
+ \emph{Column keys in PSM, peptide and protein outputs} \cr 
+ # Mascot \cr
+ system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ 
+ # MaxQuant \cr
+ system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

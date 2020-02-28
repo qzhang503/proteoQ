@@ -6,6 +6,11 @@
 \usage{
 not_all_nan(x, ...)
 }
+\arguments{
+\item{x}{A data frame of \code{log2FC} and \code{intensity}.}
+
+\item{...}{The same in \code{sum}.}
+}
 \description{
 Finds all-NaN column(s)
 }

@@ -20,10 +20,12 @@ match the value under the global environment.}
 the current working directory.
 }
 \examples{
+\donttest{
 extract_psm_raws(mascot)
 
 extract_psm_raws(maxquant)
 
 extract_psm_raws(spectrum_mill)
+}
 
 }

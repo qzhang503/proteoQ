@@ -1,5 +1,8 @@
 #' Plot volcanos
-#'
+#' 
+#' @inheritParams info_anal
+#' @inheritParams prnVol
+#' @inheritParams gspaMap
 #' @import limma stringr purrr dplyr rlang grid gridExtra gtable
 #' @importFrom magrittr %>%
 plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", 
@@ -116,7 +119,11 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
 
 
 #' Formula specific volcano plots
-#'
+#' 
+#' @inheritParams info_anal
+#' @inheritParams prnVol
+#' @inheritParams gspaMap
+#' @inheritParams fml_gspa
 #' @import purrr dplyr rlang
 #' @importFrom magrittr %>%
 byfml_volcano <- function (fml_nm, gspval_cutoff, gslogFC_cutoff, topn, df, df2, 
@@ -156,7 +163,11 @@ byfml_volcano <- function (fml_nm, gspval_cutoff, gslogFC_cutoff, topn, df, df2,
 
 
 #' Plot volcanos
-#'
+#' 
+#' @inheritParams info_anal
+#' @inheritParams prnVol
+#' @inheritParams gspaMap
+#' @inheritParams fml_gspa
 #' @import limma stringr purrr dplyr rlang grid gridExtra gtable
 #' @importFrom magrittr %>%
 byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL, filepath = NULL, filename = NULL, 
@@ -226,7 +237,12 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
 
 
 #' Volcano plots for all proteins or peptides in a data set
-#'
+#' 
+#' @param contrast_groups The contrast groups defined under a formule at \code{fml_nm}.
+#' @inheritParams info_anal
+#' @inheritParams prnVol
+#' @inheritParams gspaMap
+#' @inheritParams fml_gspa
 #' @import dplyr purrr rlang ggplot2
 #' @importFrom magrittr %>%
 #' @importFrom limma vennDiagram
@@ -382,6 +398,13 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 
 #' Volcano plots of protein \code{log2FC} under given gene sets
 #'
+#' @param gsea_key Character string; the column key indicating the terms of gene sets.
+#' @param gsets The gene sets.
+#' @inheritParams info_anal
+#' @inheritParams prnVol
+#' @inheritParams gspaMap
+#' @inheritParams fml_gspa
+#' @inheritParams fullVolcano
 #' @import dplyr rlang ggplot2
 #' @importFrom magrittr %>%
 gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL, 
@@ -695,11 +718,23 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
@@ -742,6 +777,7 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'@inheritParams prnVol
 #'@inheritParams prnHist
 #'@inheritParams plot_prnTrend
+#'@inheritParams anal_prnTrend
 #'@param filename Use system default for each gene set.
 #'@param show_sig Character string indicating the type of significance values to
 #'  be shown with \code{\link{gspaMap}}. The default is \code{"none"}.
@@ -841,11 +877,23 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 gspaMap <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
@@ -951,7 +999,16 @@ facet_id <- local({
 	}
 })
 
-
+#' Print table in ggplot2 images
+#' 
+#' @param mapping The same as ggplot2.
+#' @param data same as ggplot2.
+#' @param stat The same as ggplot2.
+#' @param position same as ggplot2.
+#' @param na.rm The same as ggplot2.
+#' @param show.legend same as ggplot2.
+#' @param inherit.aes The same as ggplot2.
+#' @param ... same as ggplot2.
 geom_table <- function(mapping = NULL, data = NULL, stat = "identity",
                        position = "identity", na.rm = FALSE, show.legend = NA,
                        inherit.aes = TRUE, ...) {
@@ -961,9 +1018,10 @@ geom_table <- function(mapping = NULL, data = NULL, stat = "identity",
 }
 
 
+#' Convert a data frame column to a csv vector
+#' 
+#' @param x A data frame column.
 to_csv_ <- function(x) {
 	paste(capture.output(write.csv(x, stdout(), row.names = F)), collapse = "\n")
 }
-
-
 

@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Peptide cleanup by CV
 # ===================================
@@ -32,3 +33,5 @@ purgePep(pt_cv = .95)
 
 ## custom theme
 purgePep(dpi = 300, theme = theme_get(), filename = my_theme.png)
+}
+

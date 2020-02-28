@@ -6,6 +6,15 @@
 \usage{
 sumdnorm(x, xmin = -4, xmax = 4, by = xmax/200)
 }
+\arguments{
+\item{x}{A numeric vector.}
+
+\item{xmin}{the miminal x values.}
+
+\item{xmax}{the maximal x values.}
+
+\item{by}{the step length.}
+}
 \value{
 A data frame.
 }

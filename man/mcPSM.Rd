@@ -6,6 +6,11 @@
 \usage{
 mcPSM(df, set_idx)
 }
+\arguments{
+\item{df}{A data frame containing the PSM table from database searches.}
+
+\item{set_idx}{Numeric.  The index of a multiplex TMT experiment.}
+}
 \description{
 \code{mcPSM} adds fields of \code{log2_R, N_log2_R and N_I} to PSM tables.
 }

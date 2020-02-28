@@ -21,6 +21,66 @@ analNMF(
   ...
 )
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{rank}{Numeric vector; the factorization rank(s) in
+\code{\link[NMF]{nmf}}. The default is c(4:8)}
+
+\item{nrun}{Numeric; the number of runs in \code{\link[NMF]{nmf}}. The default
+is 50.}
+
+\item{seed}{Integer; a seed setting a starting point for reproducible
+analyses.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is TRUE.}
+
+\item{filepath}{Use system default.}
+
+\item{filename}{A representative file name to outputs. By default, it will be
+determined automatically by the name of the current call.}
+
+\item{anal_type}{Character string; the type of analysis that are preset for
+method dispatch in function factories. The value will be determined
+automatically. Examplary values include \code{anal_type = c("PCA",
+"Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
+"NMF", "Purge", "Trend", ...)}.}
+
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+\code{arrange_}: Variable argument statements for the row ordering aganist
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements. \cr \cr Additional arguments for
+\code{\link[NMF]{nmf}}.}
+}
 \description{
 NMF analysis
 }

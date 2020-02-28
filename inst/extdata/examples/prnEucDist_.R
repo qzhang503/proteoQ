@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Euclidean distance
 # ===================================
@@ -133,4 +134,4 @@ prnEucDist(
   annot_cols = c("bad_column_key", "yet_another_bad_column_key")
 )
 ## End(Not run)
-
+}

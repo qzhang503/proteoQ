@@ -19,6 +19,70 @@ plotCorr(
   ...
 )
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{anal_type}{Character string; the type of analysis that are preset for
+method dispatch in function factories. The value will be determined
+automatically. Examplary values include \code{anal_type = c("PCA",
+"Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
+"NMF", "Purge", "Trend", ...)}.}
+
+\item{data_select}{The type of data to be selected, for example, logFC or logInt.}
+
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
+
+\item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
+Numeric values under which will be used for the left-to-right arrangement of
+samples in graphic outputs or top-to-bottom arrangement in text outputs. At
+the NULL default, the column key \code{Order} will be used. If values under
+column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+Additional parameters for
+plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
+of plot \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity \cr
+\code{xmax}, the maximum \eqn{x} of logFC data or intensity data \cr
+\code{xbreaks}, the breaks on \eqn{x} axis; the same breaks will be applied
+to \eqn{y} axis.}
+}
 \description{
 Correlation plots
 }

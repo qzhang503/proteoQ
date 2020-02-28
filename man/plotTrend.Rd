@@ -20,6 +20,74 @@ plotTrend(
   ...
 )
 }
+\arguments{
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
+
+\item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
+Numeric values under which will be used for the left-to-right arrangement of
+samples in graphic outputs or top-to-bottom arrangement in text outputs. At
+the NULL default, the column key \code{Order} will be used. If values under
+column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{n_clust}{Numeric vector; the cluster ID(s) corresponding to
+\code{\link{anal_prnTrend}} for visualization. At the NULL default, all
+available cluster IDs will be used.}
+
+\item{scale_log2r}{Logical; at the TRUE default, input files with
+\code{_Z[...].txt} in name will be used. Otherwise, files with
+\code{_N[...].txt} in name will be taken. An error will be thrown if no
+files are matched under given conditions.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; at the TRUE default, input files with
+\code{_impNA[...].txt} in name will be loaded. Otherwise, files without
+\code{_impNA} in name will be taken. An error will be thrown if no files are
+matched under given conditions.}
+
+\item{df2}{Character vector or string; the name(s) of secondary data file(s).
+An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+\code{df} generates secondary files such as
+\code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+section or \code{\link{prnHist}} for the description of a primary \code{df}.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to outputs. By default, it will be
+determined automatically by the name of the current call.}
+
+\item{theme}{A
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
+theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+theme will be applied.}
+
+\item{...}{\code{filter2_}: Variable argument statements for the row
+filtration aganist data in secondary file(s) of
+\code{[...]Protein_Trend_[...].txt}. See also \code{\link{prnGSPAHM}} for
+the format of \code{filter2_} statements. \cr \cr \code{arrange2_}: Variable
+argument statements for the row ordering aganist data in secondary file(s)
+of \code{[...]Protein_Trend_[...].txt}. See also \code{\link{prnGSPAHM}} for
+the format of \code{arrange2_} statements. \cr \cr Additional parameters for
+use in \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2}
+scale; \cr \code{ymax}, the maximum y at \code{log2} scale; \cr
+\code{ybreaks}, the breaks in y-axis at \code{log2} scale; \cr \code{nrow},
+the number of rows; \cr \code{width}, the width of plot; \cr \code{height},
+the height of plot; \cr \code{color}, the color of lines; \cr \code{alpha},
+the transparency of lines.}
+}
 \description{
 Plots trends
 }

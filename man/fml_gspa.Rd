@@ -28,6 +28,126 @@ fml_gspa(
   ...
 )
 }
+\arguments{
+\item{fml}{A character string; the formula used in \link{prnSig}.}
+
+\item{fml_nm}{A character string; the name of \code{fml}.}
+
+\item{pval_cutoff}{Numeric value or vector; the cut-off in protein
+significance \code{pVal}. Entries with \code{pVals} less significant than
+the threshold will be excluded from enrichment analysis. The default is 0.05
+for all formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of cut-off
+values.}
+
+\item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
+\code{log2FC}. Entries with absolute \code{log2FC} smaller than the
+threshold will be excluded from enrichment analysis. The default magnitude
+is \code{log2(1.2)} for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of absolute values in \code{log2FC}.}
+
+\item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
+significance \code{pVal}. Only enrichment terms with \code{pVals} more
+significant than the threshold will be reported. The default is 0.05 for all
+formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of cut-off
+values.}
+
+\item{gslogFC_cutoff}{Numeric value or vector; the cut-off in gene-set
+enrichment fold change. Only enrichment terms with absolute fold change
+greater than the threshold will be reported. The default magnitude is
+\code{log2(1.2)} for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of absolute values in \code{log2FC}.}
+
+\item{min_size}{Numeric value or vector; minimum number of protein entries for
+consideration in gene set tests. The number is after data filtration by
+\code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
+\code{filter_}. The default is 10 for all formulae matched to or specified
+in argument \code{fml_nms}. Formula-specific threshold is allowed by
+supplying a vector of sizes.}
+
+\item{max_size}{Numeric value or vector; maximum number of protein entries for
+consideration in gene set tests. The number is after data filtration by
+\code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
+\code{filter_}. The default in infinite for all formulae matched to or
+specified in argument \code{fml_nms}. Formula-specific threshold is allowed
+by supplying a vector of sizes.}
+
+\item{min_delta}{Numeric value or vector; the minimum count difference between
+the up- and the down-expressed group of proteins for consideration in gene
+set tests. For example at \code{min_delta = 4}, a gene set will 6
+upregulated proteins and 2 downregulated proteins, or vice versa, will be
+assessed. The number is after data filtration by \code{pval_cutoff},
+\code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
+is 4 for all formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of sizes.}
+
+\item{min_greedy_size}{Numeric value or vector; minimum number of unique
+protein entries for a gene set to be considered essential. The default in
+\code{1} for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of sizes.}
+
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{col_ind}{Numeric vector; the indeces of columns for the ascribed \code{fml_nm}.}
+
+\item{id}{Currently only "entrez".}
+
+\item{gsets}{The gene sets.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
+
+\item{method}{Character string; the method to assess the p-values of GSPA. The
+default is \code{mean}. See also section \code{Details} for the
+calculations.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+of data against the column keys in \code{Peptide.txt} for peptides or
+\code{Protein.txt} for proteins. Each statement contains to a list of
+logical expression(s). The \code{lhs} needs to start with \code{filter_}.
+The logical condition(s) at the \code{rhs} needs to be enclosed in
+\code{exprs} with round parenthesis. \cr \cr For example, \code{pep_len} is
+a column key present in \code{Mascot} peptide tables of \code{Peptide.txt}.
+The statement \code{filter_peps_at = exprs(pep_len <= 50)} will remove
+peptide entries with \code{pep_len > 50}. See also \code{\link{normPSM}}.
+\cr \cr Additional parameters for plotting with \code{ggplot2}: \cr
+\code{xmin}, the minimum \eqn{x} at a log2 scale; the default is -2. \cr
+\code{xmax}, the maximum \eqn{x} at a log2 scale; the default is +2. \cr
+\code{xbreaks}, the breaks in \eqn{x}-axis at a log2 scale; the default is
+1. \cr \code{binwidth}, the binwidth of \code{log2FC}; the default is
+\eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of columns; the default
+is 1. \cr \code{width}, the width of plot; \cr \code{height}, the height of
+plot. \cr \code{scales}, should the scales be fixed across panels; the
+default is "fixed" and the alternative is "free".}
+}
 \description{
 A helper function for GSPA
 }

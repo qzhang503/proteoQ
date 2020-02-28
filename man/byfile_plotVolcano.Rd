@@ -21,6 +21,88 @@ byfile_plotVolcano(
   ...
 )
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{df2}{Character vector or string; the name(s) of secondary data file(s).
+An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+\code{df} generates secondary files such as
+\code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+section or \code{\link{prnHist}} for the description of a primary \code{df}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{fml_nm}{A character string; the name of \code{fml}.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
+
+\item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals in volcano plots.
+The default is FALSE.}
+
+\item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.
+The default is TRUE.}
+
+\item{anal_type}{Character string; the type of analysis that are preset for
+method dispatch in function factories. The value will be determined
+automatically. Examplary values include \code{anal_type = c("PCA",
+"Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
+"NMF", "Purge", "Trend", ...)}.}
+
+\item{gset_nms}{Character string or vector containing the shorthanded name(s),
+ full file path(s) or both to gene sets for enrichment analysis. For species
+ among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
+ "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
+ molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
+ curated \code{MSig}, and/or additional species are also supported. See also
+ \code{\link{prepGO}} for the prepration of custom \code{GO} and
+ \code{\link{prepMSig}} for the prepration of custom \code{MSig}.
+
+ Note that it is users' responsibility to ensure that the custom gene sets
+ contain terms that can be found from the one or multiple preceding analyses
+ of \code{\link{prnGSPA}}. For simplicity, it is generally applicable to
+ include \emph{all} of the data bases that have been applied to
+ \code{\link{prnGSPA}} and in that way no terms will be missed for
+ visualization. See also \code{\link{prnGSPA}} for examples of custom data
+ bases.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
+
+\item{theme}{A
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
+theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+theme will be applied.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+Additional parameters for plotting: \cr \code{xco}, the cut-off lines of
+fold changes at position \code{x}; the default is at \eqn{-1.2} and
+\eqn{+1.2}. \cr \code{yco}, the cut-off line of \code{pVal} at position
+\code{y}; the default is \eqn{0.05}. \cr \code{width}, the width of plot;
+\cr \code{height}, the height of plot. \cr \code{nrow}, the number of rows
+in a plot.}
+}
 \description{
 Plot volcanos
 }

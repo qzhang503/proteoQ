@@ -6,6 +6,13 @@
 \usage{
 add_maxquant_pepseqmod(df, use_lowercase_aa)
 }
+\arguments{
+\item{df}{A data frame containing the PSM table from database searches.}
+
+\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
+residues will be abbreviated with lower-case and/or \code{^_~}. See the
+table below for details. The default is TRUE.}
+}
 \description{
 Add the `pep_seq_mod` field to MaxQuant PSMs
 }

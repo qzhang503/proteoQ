@@ -17,6 +17,44 @@ plotNMFCoef(
   ...
 )
 }
+\arguments{
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{rank}{Numeric vector; the factorization rank(s) in
+\code{\link[NMF]{nmf}}. The default is c(4:8)}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is TRUE.}
+
+\item{df2}{Character vector or string; the name(s) of secondary data file(s).
+An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+\code{df} generates secondary files such as
+\code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+section or \code{\link{prnHist}} for the description of a primary \code{df}.}
+
+\item{filepath}{Use system default.}
+
+\item{filename}{A representative file name to outputs. By default, it will be
+determined automatically by the name of the current call.}
+
+\item{...}{\code{filter_}: Logical expression(s) for the row filtration
+against data in a primary file linked to \code{df}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
+\code{arrange_}: Variable argument statements for the row ordering aganist
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements. \cr \cr Additional arguments for
+\code{\link[NMF]{nmf}}.}
+}
 \description{
 Plots coef results from NMF analysis
 }

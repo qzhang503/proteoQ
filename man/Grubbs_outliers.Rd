@@ -6,6 +6,11 @@
 \usage{
 Grubbs_outliers(x, type = 10)
 }
+\arguments{
+\item{x}{A matrix or data.frame.}
+
+\item{type}{Type for grubbs.test.}
+}
 \description{
 Outlier removals with Grubbs's method
 }

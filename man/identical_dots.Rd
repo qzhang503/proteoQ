@@ -6,6 +6,13 @@
 \usage{
 identical_dots(call_nm, curr_dots, pattern)
 }
+\arguments{
+\item{call_nm}{The name of a function call.}
+
+\item{curr_dots}{The values of the current dots.}
+
+\item{pattern}{The pattern for comparison.}
+}
 \description{
 Compare dot-dot-dot between prior and current
 }

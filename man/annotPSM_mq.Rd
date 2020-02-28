@@ -38,11 +38,20 @@ correct file path(s) and name(s).}
 \item{expt_smry}{A character string to the \code{.xlsx} file containing the
 metadata of TMT experiments. The default is \code{expt_smry.xlsx}.}
 
+\item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
+is FALSE.}
+
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
 intensities will be plotted. The default is TRUE.}
 
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
 \code{log2FC} will be plotted. The default is TRUE.}
+
+\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
+residues will be abbreviated with lower-case and/or \code{^_~}. See the
+table below for details. The default is TRUE.}
+
+\item{...}{Not currently used.}
 }
 \description{
 \code{annotPSM_mq} adds fields of annotation to MaxQuant PSM tables.

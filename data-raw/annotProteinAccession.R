@@ -673,6 +673,18 @@ for (species in c("", "Mm", "Rn", "Dm")) {
 saveRDS(SwissProt_annot, file.path("C:\\Results\\R\\proteoQ\\data", paste("SwissProt", "annot.rds", sep = "_")))
 
 
+# save all .R into one file
+foo_combine_codes <- function () {
+  filepath <- file.path("C:\\Results\\R\\proteoQ\\R")
+  filenames <- dir(filepath, pattern = ".R$")
+  
+  dir.create(file.path(filepath, "temp"))
+  
+  map(file.path(filepath, filenames), readLines) %>% 
+    reduce(`c`, init = NULL) %>% 
+    writeLines(file.path(filepath, "temp\\all.R"))  
+}
+
 
 
 

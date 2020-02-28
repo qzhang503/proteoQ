@@ -6,6 +6,16 @@
 \usage{
 find_pep_pos(prot_acc, pep_seq, fasta)
 }
+\arguments{
+\item{prot_acc}{Protein accession}
+
+\item{pep_seq}{Peptide sequence}
+
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search. There is no default and users need to provide the
+correct file path(s) and name(s).}
+}
 \description{
 \code{find_pep_pos} finds the start and the end positions of peptides in
 ascribed proteins description based on the \code{fasta}.

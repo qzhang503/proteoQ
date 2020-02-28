@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # GSVA
 # ===================================
@@ -99,4 +100,4 @@ prnGSVA(
   gset_nms = c("~\\proteoQ\\dbs\\go\\go_hs.rds",
                "~\\proteoQ\\dbs\\go\\go_mm.rds"),
 )
-
+}

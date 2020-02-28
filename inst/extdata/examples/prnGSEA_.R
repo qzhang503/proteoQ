@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # GSEA
 # ===================================
@@ -58,4 +59,4 @@ prnGSEA(
   filter_by_sp = exprs(species == "human"), 
   filename = custom_fil.txt,
 )
-
+}

@@ -2,10 +2,13 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{find_fn_bases}
 \alias{find_fn_bases}
-\title{find the base names of files}
+\title{find the base names of files (not currently used)}
 \usage{
 find_fn_bases(filenames)
 }
+\arguments{
+\item{filenames}{A character vector of filenames}
+}
 \description{
-find the base names of files
+find the base names of files (not currently used)
 }

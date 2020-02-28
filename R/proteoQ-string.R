@@ -5,6 +5,7 @@
 #'  \code{human}.
 #'@param overwrite Logical; if TRUE, overwrite the downloaded databse(s). The
 #'  default is FALSE.
+#'@inheritParams anal_prnString
 #'@import rlang dplyr magrittr purrr fs downloader
 #'@seealso \code{\link{anal_prnString}} for protein-protein interaction
 #'  networks.
@@ -116,6 +117,8 @@ dl_stringdbs <- function(species = "human", db_path = "~\\proteoQ\\dbs\\string",
 
 #'Annotates protein STRING ids by species
 #'
+#'@inheritParams info_anal
+#'@inheritParams dl_stringdbs
 #'@inheritParams anal_prnString
 #'@import rlang dplyr purrr magrittr
 annot_stringdb <- function(species, df, db_path, id, score_cutoff, 
@@ -220,7 +223,11 @@ annot_stringdb <- function(species, df, db_path, id, score_cutoff,
 #' String analysis
 #'
 #' The input contains pVal fields
-#'
+#' 
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
+#' @inheritParams prnCorr_logFC
+#' @inheritParams anal_prnString
 #' @import dplyr purrr rlang fs
 #' @importFrom magrittr %>%
 stringTest <- function(df = NULL, id = gene, col_group = Group, col_order = Order, 
@@ -298,13 +305,13 @@ stringTest <- function(df = NULL, id = gene, col_group = Group, col_order = Orde
 #'STRING outputs of protein-protein interactions
 #'
 #'\code{anal_prnString} prepares the data of both
-#'\code{\href{https://string-db.org/}{STRING}} protein-protein interactions
+#'\href{https://string-db.org/}{STRING} protein-protein interactions
 #'(ppi) and companion protein expressions.
 #'
 #'Convenience features, such as data row filtration via \code{filter_} varargs,
 #'are available. The ppi file, \code{..._ppi.tsv}, and the expression file,
 #'\code{..._expr.tsv}, are also compatible with a third-party
-#'\code{\href{https://cytoscape.org/}{Cytoscape}}.
+#'\href{https://cytoscape.org/}{Cytoscape}.
 #'
 #'@inheritParams anal_prnTrend
 #'@param db_path Character string; the local path for database(s). The default
@@ -366,213 +373,4 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#'STRING outputs (depreciated)
-#'
-#'\code{getStringDB} prepares locally the
-#'\code{\href{https://string-db.org/}{STRING}} results of protein-protein
-#'interaction and protein expressions. The interaction file,
-#'\code{Protein_STRING_ppi.tsv}, and the expression file,
-#'\code{Protein_STRING_expr.tsv}, are compatible with
-#'\code{\href{https://cytoscape.org/}{Cytoscape}}.
-#'
-#'@inheritParams dl_stringdbs
-#'@param score_cutoff Numeric; the threshold in the \code{combined_score} of
-#'  protein-protein interaction. The default is 0.7. 
-#'@param adjP Logical. At the FALSE default, unadjusted pVals from
-#'  \code{\link{prnSig}} will be used in PPI reports; otherwise, the
-#'  Benjamini-Hochberg pVals will be used in the reports.
-#'@param ... \code{filter_}: Logical expression(s) for the row filtration of
-#'  data; also see \code{\link{normPSM}}.
-#'@seealso \code{\link{dl_stringdbs}} for database downloads. \cr 
-#' \code{\link{prnSig}} for significance tests \cr 
-#'@example inst/extdata/examples/getStringDB_.R
-#'
-#'@inheritParams prnVol
-#'@import rlang dplyr purrr fs 
-#'@export
-getStringDB <- function(db_path = "~\\proteoQ\\dbs\\string", score_cutoff = .7, adjP = FALSE, 
-                        impute_na = FALSE, ...) {
-  
-  rlang::warn("`getStringDB` softly depreciated; use `anal_prnString`.")
-  
-  err_msg2 <- "not found. \n Run functions `normPSM()`, `normPep()` and `normPrn()` first."
-  err_msg3 <- "not found. \nImpute NA values with `pepImp()` or `prnImp()` or set `impute_na = FALSE`."
-  err_msg4 <- "not found at impute_na = TRUE. \nRun `prnSig(impute_na = TRUE)` first."
-  err_msg5 <- "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
-  
-  stopifnot(rlang::is_logical(adjP))
-  stopifnot(rlang::is_double(score_cutoff))
-  
-  if (score_cutoff <= 1) score_cutoff <- score_cutoff * 1000
-  
-  dir.create(file.path(dat_dir, "Protein\\String\\cache"), recursive = TRUE, showWarnings = FALSE)
-  
-  if (!fs::dir_exists(db_path)) {
-    new_db_path <- fs::path_expand_r(db_path)
-    new_db_path2 <- fs::path_expand(db_path)
-    
-    if (fs::dir_exists(new_db_path)) {
-      db_path <- new_db_path
-    } else if (fs::dir_exists(new_db_path2)) {
-      db_path <- new_db_path2
-    } else {
-      stop(db_path, " not existed.", call. = FALSE)
-    }
-    
-    rm(new_db_path, new_db_path2)
-  }
-  
-  fn_p <- file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt")
-  fn_imp_p <- file.path(dat_dir, "Protein\\Model\\Protein_impNA_pVals.txt")
-  fn_raw <- file.path(dat_dir, "Protein\\Protein.txt")
-  fn_imp <- file.path(dat_dir, "Protein\\Protein_impNA.txt")
-  
-  if (impute_na) {
-    if (file.exists(fn_imp_p)) src_path <- fn_imp_p else if (file.exists(fn_imp)) src_path <- fn_imp else 
-      stop(paste(fn_imp, err_msg3), call. = FALSE)
-  } else {
-    if (file.exists(fn_p)) src_path <- fn_p else if (file.exists(fn_raw)) src_path <- fn_raw else 
-      stop(paste(fn_raw, err_msg2), call. = FALSE)
-  }
-  
-  df <- read.csv(src_path, check.names = FALSE, stringsAsFactors = FALSE, 
-                 header = TRUE, sep = "\t", comment.char = "#")
-  
-  id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(id %in% names(df))
-  stopifnot("species" %in% names(df))
-  
-  species <- unique(df$species) %>% 
-    .[!is.na(.)] %>% 
-    as.character()
-  
-  stopifnot(length(species) >= 1)
-  
-  dots <- rlang::enexprs(...)
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
-  select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
-  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
-  
-  df <- df %>% 
-    dplyr::filter(!is.na(id), nchar(id) > 0) %>% 
-    filters_in_call(!!!filter_dots)
-  
-  if(!adjP) {
-    df <- df %>%
-      dplyr::select(-contains("adjP"))
-  } else {
-    df <- df %>%
-      dplyr::select(-contains("pVal")) %>%
-      `names<-`(gsub("adjP", "pVal", names(.)))
-  }
-  
-  df <- df %>% 
-    dplyr::select(id, grep("log2Ratio|pVal", names(.))) %>% 
-    rm_pval_whitespace()
-  
-  purrr::walk(species, annot_stringdb_old, df, db_path, id, score_cutoff)
-}
-
-
-#'Annotates protein STRING ids by species
-#'
-#'@inheritParams getStringDB
-#'@import dplyr purrr
-annot_stringdb_old <- function(species, df, db_path, id, score_cutoff) {
-  abbr_species <- sp_lookup(species) 
-  taxid <- taxid_lookup(species)
-  dl_stringdbs(!!species)
-  
-  db_path2 <- file.path(db_path, abbr_species)
-  filelist_info <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.info", ".*.txt$"))
-  filelist_link <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.links", ".*.txt$"))
-  filelist_alias <- list.files(path = db_path2, pattern = paste0(taxid, ".protein.aliases", ".*.txt$"))
-  
-  prn_info <- read.csv(file.path(db_path2, filelist_info), sep = "\t", check.names = FALSE, 
-                       header = TRUE, comment.char = "#") %>% 
-    dplyr::select(protein_external_id, preferred_name) %>% 
-    dplyr::rename(!!id := preferred_name) %>% 
-    dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
-  
-  prn_links <- read.csv(file.path(db_path2, filelist_link), sep = "\t", 
-                        check.names = FALSE, header = TRUE, comment.char = "#") %>% 
-    dplyr::mutate(protein1 = as.character(protein1), protein2 = as.character(protein2))
-  
-  prn_alias <- read.csv(file.path(db_path2, filelist_alias), sep = "\t", 
-                        check.names = FALSE, header = TRUE, comment.char = "#")
-  
-  prn_alias_sub <- prn_alias %>% 
-    dplyr::filter(.$alias %in% df[[id]]) %>% 
-    dplyr::filter(!duplicated(alias)) %>% 
-    dplyr::select(-source) %>% 
-    dplyr::rename(!!id := alias) %>% 
-    dplyr::rename(protein_external_id = string_protein_id) %>% 
-    dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
-  
-  if (id == "gene") {
-    string_map <- df %>%
-      dplyr::select(id) %>% 
-      dplyr::left_join(prn_info) %>% 
-      dplyr::filter(!is.na(protein_external_id))
-  } else {
-    string_map <- df %>%
-      dplyr::select(id) %>% 
-      dplyr::left_join(prn_alias_sub) %>% 
-      dplyr::filter(!is.na(protein_external_id))
-  }
-  string_map <- string_map %>% 
-    dplyr::mutate(protein_external_id = as.character(protein_external_id))
-  
-  prn_links_sub <- prn_links %>% 
-    dplyr::filter(protein1 %in% string_map$protein_external_id) %>% 
-    dplyr::left_join(string_map, by = c("protein1" = "protein_external_id")) %>% 
-    dplyr::rename(node1 = !!rlang::sym(id)) %>% 
-    dplyr::left_join(string_map, by = c("protein2" = "protein_external_id")) %>% 
-    dplyr::rename(node2 = !!rlang::sym(id))
-  
-  first_four <- c("node1", "node2", "protein1", "protein2")
-  ppi <- dplyr::bind_cols(
-    prn_links_sub[, first_four], 
-    prn_links_sub[, !names(prn_links_sub) %in% first_four]
-  ) %>% 
-    dplyr::filter(!is.na(node1), !is.na(node2)) %>% 
-    `names_pos<-`(1:4, c("#node1", "node2", "node1_external_id", "node2_external_id")) %>% 
-    dplyr::filter(combined_score > score_cutoff)
-  
-  write.table(ppi, file.path(dat_dir, "Protein\\String", paste0("Protein_STRING_ppi_", species, "_.tsv")), 
-              quote = FALSE, sep = "\t", row.names = FALSE)
-  
-  # expression data file
-  gns <- c(ppi[["#node1"]], ppi[["node2"]]) %>% unique()
-  
-  df <- dplyr::bind_cols(
-    df %>% dplyr::select(id), 
-    df %>% dplyr::select(grep("pVal|log2Ratio", names(.)))
-  ) %>% 
-    dplyr::filter(!!rlang::sym(id) %in% gns)
-  
-  df[is.na(df)] <- "" # Cytoscape compatibility
-  
-  write.table(df, file.path(dat_dir, "Protein\\String", paste0("Protein_STRING_expr_", species, "_.tsv")), 
-              quote = FALSE, sep = "\t", row.names = FALSE)
-  
-}
 

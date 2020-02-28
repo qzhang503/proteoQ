@@ -6,6 +6,13 @@
 \usage{
 match_prnSig_scale_log2r(scale_log2r = TRUE, impute_na = FALSE)
 }
+\arguments{
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
+}
 \description{
 \code{match_prnSig_scale_log2r} matches the value of \code{scale_log2r} to the value
 in the most recent prnSig at a given impute_na status

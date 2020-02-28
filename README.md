@@ -1,7 +1,7 @@
 Package proteoQ
 ================
 true
-2020-02-21
+2020-02-28
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -25,7 +25,7 @@ true
       - [2.9 Missing value imputation](#missing-value-imputation)
   - [3 Labs](#labs)
       - [3.1 Reference choices](#reference-choices)
-      - [3.2 Data subsets](#data-subsets)
+      - [3.2 Data subsets and additions](#data-subsets-and-additions)
       - [3.3 Random effects](#random-effects)
   - [4 Column keys](#column-keys)
       - [4.1 Mascot](#mascot)
@@ -1351,6 +1351,14 @@ comparison of `log2FC`
 
 </div>
 
+The adjustment might be more suitable for studies where both the samples
+and references are largely similar in proteome compositions. The setting
+of `adjEucDist = TRUE` would discount the distances between references
+when using visualization techniques such a MDS or distance heat maps. In
+the cases that sample differences are exceedingly greater than handling
+errors, the setting of `adjEucDist = FALSE` would probably be more
+appropriate.
+
 ### 2.2 Correlation plots
 
 In this section, we visualize the batch effects and biological
@@ -2428,7 +2436,9 @@ reference. Left: before trimming; right: after trimming.
 
 </div>
 
-### 3.2 Data subsets
+### 3.2 Data subsets and additions
+
+#### 3.2.1 Subsets
 
 In this lab, we will first apply pseudoname approaches to subset data.
 The availble pesudonames include
@@ -2647,6 +2657,44 @@ standPrn(
   seed = 749662, 
   maxit = 200, 
   epsilon = 1e-05, 
+)
+```
+
+#### 3.2.2 Column additions
+
+In this section, we will first add a column, `na_counts`, to protein
+table `Protein_pVals.txt`. The column summarizes the number of `NA` in
+`log2FC` for each protein. The newly added column will then be applied
+to data row filtration during heat map visualization.
+
+``` r
+df <- readr::read_tsv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt")) 
+
+na_counts <- df %>% 
+  dplyr::select(grep("Z_log2_R", names(.))) %>% 
+  is.na() %>% 
+  rowSums()
+
+df %>% 
+  dplyr::mutate(na_counts = na_counts) %>% 
+  readr::write_csv(file.path(dat_dir, "Protein\\Protein_pVals.txt"))
+
+prnHM(
+  xmin = -1,
+  xmax = 1,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  cutree_rows = 10,
+  show_rownames = FALSE,
+  show_colnames = TRUE,
+  fontsize_row = 3,
+  cellwidth = 14,
+  width = 18,
+  height = 12,
+  filter_prots_by_sp_npep = exprs(na_counts <= 30),
+  filename = "na30.png",
 )
 ```
 

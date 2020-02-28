@@ -1,9 +1,12 @@
 #' Plots histograms
-#'
+#' 
+#' @inheritParams prnHist
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import dplyr purrr rlang mixtools ggplot2 RColorBrewer
 #' @importFrom magrittr %>%
 #' @importFrom tidyr gather
-plotHisto <- function (df = NULL, id, label_scheme_sub, params, scale_log2r, complete_cases, 
+plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_cases, 
                        show_curves, show_vline, scale_y, filepath = NULL, filename, 
                        theme, ...) {
 
@@ -277,7 +280,7 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 #'  image type will be determined by the extension of the file name.
 #'@param theme A
-#'  \code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+#'  \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
 #'  theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 #'  theme will be applied.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
@@ -342,11 +345,23 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%

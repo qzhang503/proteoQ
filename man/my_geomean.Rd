@@ -6,6 +6,11 @@
 \usage{
 my_geomean(x, ...)
 }
+\arguments{
+\item{x}{A data frame.}
+
+\item{...}{The same in \code{mean}.}
+}
 \description{
 geometric mean
 }

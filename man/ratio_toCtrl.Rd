@@ -6,9 +6,28 @@
 \usage{
 ratio_toCtrl(df, id, label_scheme_sub, nm_ctrl)
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
+for selected samples.}
+
+\item{nm_ctrl}{The names of samples that belong to the control group.}
+}
 \description{
 Calculate the log2-ratio to the control group of samples
 }
 \examples{
-ratio_toCtrl(df, "gene", label_scheme_sub, Heatmap_Group)
+\donttest{ratio_toCtrl(df, "gene", label_scheme_sub, Heatmap_Group)}
 }

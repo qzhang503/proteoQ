@@ -10,12 +10,13 @@ TMT_top_n(x, id, ...)
 \item{x}{A data frame of \code{log2FC} and \code{intensity}.}
 
 \item{id}{The variable to summarise \code{log2FC}.}
+
+\item{...}{Additional arguments for \code{mean}.}
 }
 \description{
 \code{TMT_wt_mean} calculates the weighted mean of \code{log2FC} and
 \code{intensity}.
 }
 \examples{
-df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)
-
+\donttest{df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)}
 }
