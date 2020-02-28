@@ -6,6 +6,31 @@
 \usage{
 dblTrim(df, range_log2r, range_int, type_r = "N_log2_R", type_int = "N_I")
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{range_log2r}{Numeric vector at length two. The argument specifies the
+range of the \code{log2FC} for use in the scaling normalization of standard
+deviation across samples. The default is between the 10th and the 90th
+quantiles.}
+
+\item{range_int}{Numeric vector at length two. The argument specifies the
+range of the \code{intensity} of reporter ions for use in the scaling
+normalization of standard deviation across samples. The default is between
+the 5th and the 95th quantiles.}
+
+\item{type_r}{Character string for recognizing the columns of \code{log2FC}.}
+
+\item{type_int}{Character string for recognizing the columns of \code{intensity}.}
+}
 \value{
 A data frame.
 }

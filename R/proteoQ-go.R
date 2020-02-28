@@ -1,4 +1,6 @@
 #' Helper to create `db_path`
+#' 
+#' @inheritParams prepGO
 create_db_path <- function (db_path) {
   if (!fs::dir_exists(db_path)) {
     new_db_path <- fs::path_expand_r(db_path)
@@ -17,6 +19,9 @@ create_db_path <- function (db_path) {
 
 
 #' Helper to save `obo` without header
+#' 
+#' @param fn_obo filename according to \code{obo_url}
+#' @inheritParams prepGO
 proc_obo <- function(db_path, fn_obo, type = c("biological_process", "cellular_component", "molecular_function")) {
   filepath <- file.path(db_path, "cache", fn_obo)
   if (!file.exists(filepath)) stop("File not found ", filepath, ".", call. = FALSE)
@@ -37,6 +42,9 @@ proc_obo <- function(db_path, fn_obo, type = c("biological_process", "cellular_c
 
 
 #' Helper to save `gaf` without header
+#' 
+#' @param fn_gaf filename according to \code{gaf_url}
+#' @inheritParams prepGO
 proc_gaf <- function(db_path, fn_gaf) {
   filepath <- file.path(db_path, "cache", fn_gaf)
   if (!file.exists(filepath)) stop("File not found ", filepath, ".", call. = FALSE)
@@ -82,6 +90,11 @@ proc_gaf <- function(db_path, fn_gaf) {
 
 
 #' Helper to map `SYMBOL` to `ENTREZID` 
+#' 
+#' @param keys Identifier such as gene names.
+#' @param from the type of \code{keys}
+#' @param to the type of target IDs
+#' @inheritParams prepGO
 #' @import dplyr purrr AnnotationDbi
 annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL", to = "ENTREZID") {
   if (all(is.null(keys))) stop("Argument `keys` cannot be NULL", call. = FALSE)
@@ -111,6 +124,9 @@ annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL", to 
 
 
 #' Helper to get a complete list of `ENTREZID` from `egUNIPROT`
+#' 
+#' @inheritParams prepGO
+#' @inheritParams annot_from_to
 get_full_entrez <- function(species, from = "egUNIPROT") {
   abbr_species <- sp_lookup_Ul(species)
   
@@ -126,8 +142,9 @@ get_full_entrez <- function(species, from = "egUNIPROT") {
 
 
 #' Helper to find human orthologs
-#' #' @examples
-#' res <- find_human_orthologs(mouse)
+#' 
+#' @inheritParams prepMSig
+#' @examples \donttest{res <- find_human_orthologs(mouse)}
 find_human_orthologs <- function(species, ortho_mart) {
   if (species == "human") stop("Ortholog `species` needs to be different to `human`.", call. = FALSE)
   
@@ -163,6 +180,8 @@ find_human_orthologs <- function(species, ortho_mart) {
 
 
 #' Helper to look up GO species 
+#' 
+#' @inheritParams prepMSig
 sp_lookup_go <- function(species) {
   switch(species, 
          human = "human",
@@ -176,46 +195,70 @@ sp_lookup_go <- function(species) {
 
 
 #' Helper to find the two-letter character string of abbreviated species
+#' 
+#' @import stringr
+#' @inheritParams prepMSig
 find_abbr_species <- function(species = "human", abbr_species = NULL) {
   species <- rlang::as_string(rlang::enexpr(species))
   abbr_species <- rlang::enexpr(abbr_species)
   
-  if (is.null(abbr_species)) {
-    abbr_species <- sp_lookup_Ul(species)
-    abbr_species_lwr <- sp_lookup(species) 
+  if (is.null(abbr_species) || species %in% c("human", "mouse", "rat")) {
+    abbr_species <- switch(species, 
+           human = "Hs",
+           mouse = "Mm",
+           rat = "Rn",
+           stop("`species` not in one of `human`, `mouse` or `rat`.", 
+                "\nThus users need to provide a two-letter abbreviation of `abbr_species`, ", 
+                "\ni.e., `abbr_species = Ce` for later uses with `org.Ce.eg.db` annotation.", 
+                call. = FALSE)
+    )
   } else {
     abbr_species <- rlang::as_string(abbr_species)
-    abbr_species_lwr <- tolower(abbr_species)
+    
+    if (stringr::str_length(abbr_species) != 2) {
+      stop("The number of characters needs to be `2` for `abbr_species`.", call. = FALSE)
+    }
+    
+    if (abbr_species != stringr::str_to_title(abbr_species)) {
+      stop("`abbr_species` needs to be in Title case, i.e., `Xx`.", call. = FALSE)
+    }    
   }
-  
-  if (abbr_species_lwr == "unknown") {
-    stop("Provide the two-letter abbreviation of `abbr_species = Xx`; 
-         i.e., `abbr_species = Ce` for uses with `org.Ce.eg.db` annotation.", 
-         call. = FALSE)
-  }
-  
+
   return(abbr_species)
 }
 
 
 #' Helper to set the output file name for a data base
-set_db_outname <- function(filename = NULL, species = "human", siganature) {
+#' 
+#' @param signature A character string, i.e. "go" for uses in an output filename.
+#' @inheritParams prepMSig
+set_db_outname <- function(filename = NULL, species = "human", signature) {
   filename <- rlang::enexpr(filename)
   
   if (is.null(filename)) {
-    filename <- paste0(siganature, "_", tolower(sp_lookup_Ul(species)), ".rds")
+    abbr_species_lwr <- switch(species, 
+                               human = "hs", 
+                               mouse = "mm", 
+                               rat = "rn", 
+                               stop("`species` not in one of `human`, `mouse` or `rat`.", 
+                                    "\nThus users need to provide a `filename`.", 
+                                    call. = FALSE))
+    
+    filename <- paste0(signature, "_", abbr_species_lwr, ".rds")
   } else {
     filename <- rlang::as_string(filename)
     fn_prefix <- gsub("\\.[^.]*$", "", filename)
     fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-    if (fn_prefix == fn_suffix) stop("No '.' in the file name.", call. = FALSE)
+    if (fn_prefix == fn_suffix) stop("No '.' to separate a basename and an extension.", call. = FALSE)
     if (fn_suffix != "rds") stop("File extension must be `.rds`.", call. = FALSE)
     filename <- paste0(fn_prefix, ".rds")
   }
 }
 
 
-#' Helper to download `gmt` 
+#' Helper to download `gmt`
+#' 
+#' @inheritParams prepMSig
 dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt", 
                     db_path = "~\\proteoQ\\dbs\\msig", overwrite = FALSE) {
   db_path <- create_db_path(db_path)
@@ -235,6 +278,9 @@ dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msig
 
 
 #' Helper to save `gmt` 
+#' 
+#' @param fn_gmt filename of downloaded gmt results.
+#' @inheritParams prepMSig
 proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filename) {
   filepath <- file.path(db_path, "cache", fn_gmt)
   if (!file.exists(filepath)) stop("File not found ", filepath, ".", call. = FALSE)
@@ -273,12 +319,11 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 }
 
 
-
 #'Download and prepare gene ontology
 #'
 #'\code{prepGO} downloads and prepares data bases of
-#'\code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
-#'ontology}} (GO) for enrichment analysis by gene sets.
+#'\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'ontology} (GO) for enrichment analysis by gene sets.
 #'
 #'@import rlang dplyr magrittr purrr fs readr downloader org.Hs.eg.db
 #'  org.Mm.eg.db org.Rn.eg.db 
@@ -291,16 +336,15 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #'  \code{abbr_species}, \code{gaf_url} and \code{obo_url}.
 #'@param abbr_species Two-letter character string; the abbreviated name of
 #'  species used with
-#'  \code{\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}}.
+#'  \href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
 #'   The value of \code{abbr_species} will be determined automatically if the
 #'  species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
 #'  example, users need to provide \code{abbr_species = Ce} for fetching the
-#'  \code{org.Ce.eg.db} package in the name space of proteoQ. The argument is
-#'  further applied to differentiate the same biological terms of
-#'  \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
-#'   ontology}},
-#'  \code{\href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
-#'  Signatures}} etc. under different species.
+#'  \code{org.Ce.eg.db} package in the name space of proteoQ. For
+#'  \href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'  ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+#'  Signatures}, the argument is further applied to differentiate the same
+#'  biological terms under different species.
 #'@param db_path Character string; the local path for database(s). The default
 #'  is \code{"~\\proteoQ\\dbs\\go"}.
 #'@param gaf_url A URL to
@@ -323,6 +367,7 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #'  c("biological_process", "cellular_component")}, terms of
 #'  \code{molecular_function} will be excluded.
 #' @examples
+#' \donttest{
 #' library(proteoQ)
 #'
 #' # `human` and `mouse` with a default OBO;
@@ -350,7 +395,8 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #'   gaf_url = "http://current.geneontology.org/annotations/wb.gaf.gz",
 #'   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
 #' )
-#'
+#' }
+#' 
 #' \dontrun{
 #' gsets <- readRDS(file.path("~\\proteoQ\\dbs\\go", "mm_slim.rds"))
 #' }
@@ -442,7 +488,7 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'Preparation of Molecular Signatures
 #'
 #'\code{prepMSig} downloads and prepares data bases of
-#'\code{\href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular Signatures}}
+#'\href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular Signatures}
 #'(MSig) for enrichment analysis by gene sets.
 #'
 #'@import rlang dplyr magrittr purrr fs readr downloader biomaRt org.Hs.eg.db
@@ -471,6 +517,7 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'  \code{species}; i.e., \code{msig_hs.rds} for \code{human} data. The file is
 #'  saved as a \code{.rds} object for uses with \code{\link{prnGSPA}}.
 #' @examples
+#' \donttest{
 #' library(proteoQ)
 #'
 #' ## the default `MSig` is `c2.all`
@@ -522,6 +569,7 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'   ortho_mart = cfamiliaris_gene_ensembl,
 #'   filename = c2_cgp_cf.rds,
 #' )
+#' }
 #'
 #'@export
 prepMSig <- function(msig_url = NULL, 
@@ -569,57 +617,235 @@ prepMSig <- function(msig_url = NULL,
 }
 
 
+#' Map UniProt or Refseq accessions to Entrez IDs
+#'
+#' @inheritParams prepMSig
+#' @inheritParams annot_from_to
+#' @import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db
+#'   org.Rn.eg.db
+map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPROT", 
+                          filename = NULL, db_path = "~\\proteoQ\\dbs\\entrez", overwrite = FALSE) {
+  db_path <- create_db_path(db_path)
+  species <- rlang::as_string(rlang::enexpr(species))
+  abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
+  filename <- set_db_outname(!!rlang::enexpr(filename), species, paste(tolower(from), "entrez", sep = "_" ))
+  
+  if ((!file.exists(file.path(db_path, filename))) || overwrite)  {
+    pkg_nm <- paste("org", abbr_species, "eg.db", sep = ".")
+    if (!requireNamespace(pkg_nm, quietly = TRUE)) {
+      stop("Run `BiocManager::install(\"", pkg_nm, "\")` first, 
+           then `library(", pkg_nm, ")`", call. = FALSE)
+    }
+    
+    new_from <- paste0("eg", from)
+    x <- tryCatch(
+      get(paste("org", abbr_species, new_from, sep = ".")),
+      error = function(e) 1
+    )
+    
+    if (!is.object(x)) {
+      if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", call. = FALSE)
+    }
+    
+    mapped_genes <- mappedkeys(x) 
+    
+    accessions <- as.list(x[mapped_genes]) %>% 
+      plyr::ldply(., rbind) %>% 
+      `names_pos<-`(., 1, c("entrez")) %>% 
+      `names_pos<-`(., 2:ncol(.), paste(new_from, 1:(length(.)-1), sep = ".")) %>% 
+      dplyr::mutate_at(.vars = grep("^eg", names(.)), ~ as.character(.x)) %>% 
+      tidyr::gather("variable", "value", -entrez) %>% 
+      dplyr::filter(!is.na(entrez), !is.na(value)) %>% 
+      dplyr::select(-c("variable")) %>% 
+      dplyr::mutate(species = species)
+    
+    if (from == "UNIPROT") {
+      accessions <- accessions %>% dplyr::rename(uniprot_acc = value)
+    } else if (from == "REFSEQ") {
+      accessions <- accessions %>% dplyr::rename(refseq_acc = value)
+    } else {
+      stop("Variable `from` needs to be either `UNIPROT` or `REFSEQ`.", call. = FALSE)
+    }
+    
+    saveRDS(accessions, file.path(db_path, filename))
+
+    invisible(accessions)
+  } else {
+    invisible(NULL)
+  }
+}
+
+
+#'Map UniProt accesions to Entrez IDs
+#'
+#'\code{prepEntrez} prepares lookup tables between UniProt accessions and Entrez
+#'IDs for uses with \link{normPSM} and downstream gene-set analysis such as
+#'\link{prnGSPA}. The utility is optional for \code{human}, \code{mouse} and
+#'\code{rat} data. It is \strong{required} for other species with \link{prnGSPA}
+#'in users' workflows. It can also be used to update and overrule the lookups
+#'for \code{human}, \code{mouse} and \code{rat} that are defaulted by
+#'\code{proteoQ}.
+#'
+#'@param species Character string; the name of a species. 
+#'@param db_path Character string; the local path for database(s). The default
+#'  is \code{"~\\proteoQ\\dbs\\entrez"}.
+#'@inheritParams prepMSig
+#'@import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
+#'@example inst/extdata/examples/prepEntrez_.R
+
+#' @export
+prepEntrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
+                       db_path = "~\\proteoQ\\dbs\\entrez", overwrite = FALSE) {
+  map_to_entrez(!!rlang::enexpr(species), 
+                !!rlang::enexpr(abbr_species), 
+                "UNIPROT", 
+                !!rlang::enexpr(filename), 
+                db_path, 
+                overwrite)
+}
+
+
 
 
 #' Map uniprot or refseq to entrez (not currently used)
 #'
+#' @param os_name An organism name by UniProt.
+#' @inheritParams prepEntrez
+#' @inheritParams annot_from_to
 #' @import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db
 #'   org.Rn.eg.db
-#' @examples
-#' \dontrun{
-#' # available species: c("human", "mouse", "rat")
-#' res <- map_to_entrez(species = "human", from = "egUNIPROT")
-#' dir.create(file.path("~\\proteoQ\\dbs\\entrez\\to_unirpot"), recursive = TRUE, showWarnings = FALSE)
-#' write.table(res, file.path("~\\proteoQ\\dbs\\entrez\\to_unirpot", paste0("uniprot_entrez_", species, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE)
-#'
-#' res <- map_entrez(species, from = "egREFSEQ")
-#' dir.create(file.path("~\\proteoQ\\dbs\\entrez\\to_refseq"), recursive = TRUE, showWarnings = FALSE)
-#' write.table(res, file.path("~\\proteoQ\\dbs\\entrez\\to_refseq", paste0("refseq_entrez_", species, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE)
-#' }
-map_to_entrez <- function(species, from) {
-  taxid <- taxid_lookup(species)
-  abbr_species <- sp_lookup_Ul(species) 
-  lwr_species <- tolower(abbr_species)
+map_to_entrez_os_name <- function(species = "human", abbr_species = NULL, 
+                                 os_name = "Homo sapiens", 
+                                 from = "UNIPROT", 
+                                 filename = NULL, db_path = "~\\proteoQ\\dbs\\entrez", overwrite = FALSE) {
+  # the value of species will be used under column `species` in Protein.txt etc
+  # add column species in the rds output
   
-  pkg_nm <- paste("org", abbr_species, "eg.db", sep = ".")
-
-  if (!requireNamespace(pkg_nm, quietly = TRUE)) {
-    stop("Run `BiocManager::install(\"", pkg_nm, "\")` first.", call. = FALSE)
+  db_path <- create_db_path(db_path)
+  species <- rlang::as_string(rlang::enexpr(species))
+  os_name <- rlang::as_string(rlang::enexpr(os_name))
+  
+  create_os_lookup(species, os_name, overwrite)
+  
+  abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
+  filename <- set_db_outname(!!rlang::enexpr(filename), species, paste(tolower(from), "entrez", sep = "_" ))
+  
+  if ((!file.exists(file.path(db_path, filename))) || overwrite)  {
+    pkg_nm <- paste("org", abbr_species, "eg.db", sep = ".")
+    if (!requireNamespace(pkg_nm, quietly = TRUE)) {
+      stop("Run `BiocManager::install(\"", pkg_nm, "\")` first, 
+           then `library(", pkg_nm, ")`", call. = FALSE)
+    }
+    
+    new_from <- paste0("eg", from)
+    x <- tryCatch(
+      get(paste("org", abbr_species, new_from, sep = ".")),
+      error = function(e) 1
+    )
+    
+    if (!is.object(x)) {
+      if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", call. = FALSE)
+    }
+    
+    mapped_genes <- mappedkeys(x) 
+    
+    accessions <- as.list(x[mapped_genes]) %>% 
+      plyr::ldply(., rbind) %>% 
+      `names_pos<-`(., 1, c("entrez")) %>% 
+      `names_pos<-`(., 2:ncol(.), paste(new_from, 1:(length(.)-1), sep = ".")) %>% 
+      dplyr::mutate_at(.vars = grep("^eg", names(.)), ~ as.character(.x)) %>% 
+      tidyr::gather("variable", "value", -entrez) %>% 
+      dplyr::filter(!is.na(entrez), !is.na(value)) %>% 
+      dplyr::select(-c("variable")) # %>% 
+    # dplyr::mutate(species = species)
+    
+    if (from == "UNIPROT") {
+      accessions <- accessions %>% dplyr::rename(uniprot_acc = value)
+    } else if (from == "REFSEQ") {
+      accessions <- accessions %>% dplyr::rename(refseq_acc = value)
+    } else {
+      stop("Variable `from` needs to be either `UNIPROT` or `REFSEQ`.", call. = FALSE)
+    }
+    
+    saveRDS(accessions, file.path(db_path, filename))
+    
+    invisible(accessions)
+  } else {
+    invisible(NULL)
   }
-
-  x <- get(paste("org", abbr_species, from, sep = "."))
-  mapped_genes <- mappedkeys(x) 
-  
-  accessions <- as.list(x[mapped_genes]) %>% 
-    plyr::ldply(., rbind) %>% 
-    `names_pos<-`(., 1, c("entrez")) %>% 
-    `names_pos<-`(., 2:ncol(.), paste(from, 1:(length(.)-1), sep = ".")) %>% 
-    mutate_at(.vars = grep("^eg", names(.)), ~ as.character(.x)) %>% 
-    reshape2::melt(id = "entrez") %>% 
-    dplyr::filter(!is.na(entrez), !is.na(value)) %>% 
-    dplyr::select(-c("variable"))
-
-  if (from == "egUNIPROT") {
-    accessions <- accessions %>% dplyr::rename(uniprot_acc = value)
-  } else if (from == "egREFSEQ") {
-    accessions <- accessions %>% dplyr::rename(refseq_acc = value)
-  }
-
-  write.table(accessions, file.path(db_dir, "temp", paste0(lwr_species, ".txt")), 
-              sep = "\t", col.names = TRUE, row.names = FALSE)
-  
-  invisible(accessions)
 }
 
+
+
+#' create a lookup table and remove duplicated entries
+#' 
+#' @inheritParams map_to_entrez_os_name
+create_os_lookup <- function(species, os_name, overwrite = FALSE) {
+  my_lookup <- c(
+    "Homo sapiens" = "human",
+    "Mus musculus" = "mouse",
+    "Rattus norvegicus" = "rat"
+  )
+
+  # check if conflict between species and os_name
+  convert_default_os <- function (species, os_name) {
+    if (species %in% my_lookup) {
+      lookup_nm <- my_lookup %>% .[. %in% species] %>% names()
+      if (!purrr::is_empty(lookup_nm) && lookup_nm != os_name) {
+        os_name <- lookup_nm
+      }
+    }
+    
+    return(os_name)
+  }
+  
+  os_name <- convert_default_os(species, os_name)
+  curr_lookup <- uniprot_entrez_lookup <- setNames(species, os_name)
+
+  if (os_name == "Homo sapiens" && species != "human") 
+    stop("`os_name = Homo sapiens` is reversed for `species = human`.", call. = FALSE)
+  
+  if (os_name == "Mus musculus" && species != "mouse") 
+    stop("`os_name = Mus musculus` is reversed for `species = mouse`.", call. = FALSE)
+  
+  if (os_name == "Rattus norvegicus" && species != "rat") 
+    stop("`os_name = Rattus norvegicus` is reversed for `species = rat`.", call. = FALSE)  
+  
+  # check if the same os_name but diferent species
+  file <- file.path(dat_dir, "uniprot_entrez_lookup.rda")
+  
+  if (file.exists(file)) {
+    load(file)
+    
+    if (overwrite) {
+      uniprot_entrez_lookup <- uniprot_entrez_lookup %>% 
+        .[! names(.) == os_name] %>% 
+        .[! . == species]
+    } else {
+      old_sp <- uniprot_entrez_lookup %>% .[names(.) == os_name]
+      curr_sp <- curr_lookup
+
+      if (!purrr::is_empty(old_sp) && (curr_sp != old_sp)) {
+        stop("`", names(curr_lookup), "` was previously linked to `species = ", old_sp, "`.", 
+             "\nTo overwrite the value of `os_name`, set `overwrite = TRUE`.", 
+             call. = FALSE)
+      }
+      
+      old_nm <- uniprot_entrez_lookup %>% .[. == species] %>% names()
+      curr_nm <- os_name
+
+      if (!purrr::is_empty(old_nm) && (curr_nm != old_nm)  && !overwrite) {
+        stop("`", species, "` was previously linked to `os_name = ", old_nm, "`.", 
+             "\nTo overwrite, set `overwrite = TRUE`.", 
+             call. = FALSE)
+      }
+    }
+
+    uniprot_entrez_lookup <- c(curr_lookup, uniprot_entrez_lookup) %>% 
+      .[!duplicated(.)]
+  }
+  
+  save(uniprot_entrez_lookup, file = file)
+}
 
 

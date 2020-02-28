@@ -1,4 +1,6 @@
 #' Update data groups of `log2_R` etc. by logical matrix `lgl_log2_sd`
+#' 
+#' @inheritParams info_anal
 sd_lgl_cleanup <- function (df) {
   df[, grepl("^log2_R[0-9]{3}", names(df))] <-
     purrr::map2(as.list(df[, grepl("^log2_R[0-9]{3}", names(df))]),
@@ -42,6 +44,8 @@ sd_lgl_cleanup <- function (df) {
 #' NA.
 #'
 #' @inheritParams prnHist
+#' @inheritParams info_anal
+#' @inheritParams purgePSM
 #' @param max_cv Numeric; the cut-off in maximum CV. Values above the threshold
 #'   will be replaced with NA. The default is NULL with no data trimming by max
 #'   CV.
@@ -91,6 +95,8 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
 #' \code{purge_by_qt} replaces the data entries at \code{CV > quantile} with NA.
 #'
 #' @inheritParams prnHist
+#' @inheritParams info_anal
+#' @inheritParams purgePSM
 #' @param pt_cv Numeric between 0 and 1; the percentile of CV. Values above the
 #'   percentile threshold will be replaced with NA. The default is NULL with no
 #'   data trimming by CV percentile.
@@ -150,6 +156,7 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
 #' NA. 
 #'
 #' @inheritParams prnHist
+#' @inheritParams info_anal
 #' @param min_n Positive integer. When calling from \code{purgePSM}, peptide
 #'   entries in PSM tables with the number of identifying PSMs smaller than
 #'   \code{min_n} will be replaced with NA. When calling from \code{purgePep},
@@ -243,11 +250,23 @@ purge_by_n <- function (df, id, min_n) {
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, 
@@ -422,11 +441,23 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@export
 purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, keep_ohw = TRUE, 

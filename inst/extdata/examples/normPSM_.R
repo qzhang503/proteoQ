@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # PSM normalization
 # ===================================
@@ -41,6 +42,34 @@ normPSM(
   filter_psms = exprs(score >= 10),
 )
 
+###############################################
+## Custom entrez lookups
+#  (1) can overwrite the `proteoQ` default for 
+#      species in "human", "mouse" and "rat"
+#  (2) and are required for `other` species
+###############################################
+# see also `?prepEntrez` for more examples
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("org.Hs.eg.db")
+BiocManager::install("org.Mm.eg.db")
+
+library(org.Hs.eg.db)
+library(org.Mm.eg.db)
+
+library(proteoQ)
+prepEntrez(human)
+prepEntrez(mouse)
+
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  group_pep_by = gene, 
+  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
+            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
+  entrez = c("~\\proteoQ\\dbs\\entrez\\uniprot_entrez_hs.rds", 
+             "~\\proteoQ\\dbs\\entrez\\uniprot_entrez_mm.rds"),
+)
 
 ## Not run: 
 # wrong fasta 
@@ -60,4 +89,4 @@ normPSM(
   filter_psms_at = exprs(column_key_not_in_psm_tables <= .1),
 )
 ## End(Not run)
-
+}

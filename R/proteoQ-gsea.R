@@ -1,4 +1,7 @@
-#'Make GSEA gct
+#' Make GSEA gct
+#' 
+#' @param fn_prefix The base name of a file.
+#' @inheritParams info_anal
 make_gct <- function(df, filepath, fn_prefix) {
   dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
   
@@ -27,6 +30,10 @@ make_gct <- function(df, filepath, fn_prefix) {
 
 
 #'Make GSEA cls 
+#' 
+#' @param nms The names of sample groups.
+#' @inheritParams info_anal
+#' @inheritParams make_gct
 make_cls <- function(df, nms, filepath, fn_prefix) {
   dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
   
@@ -53,7 +60,7 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'Protein GSEA
 #'
 #'\code{prnGSEA} prepares data for the analysis of
-#'\code{\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA}} aganist
+#'\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA} aganist
 #'protein \code{log2FC} data. 
 #'
 #'The arguments \code{var_cutoff}, \code{pval_cutoff} and \code{logFC_cutoff}
@@ -63,7 +70,7 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'The outputs include \code{Protein_GSEA.gct} and \code{protein_GSEA.cls} for
 #'samples indicated in file \code{Protein_pVals.txt} or
 #'\code{Protein_impNA_pVals.txt}. These outputs can be used with online
-#'\code{\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA}}.
+#'\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA}.
 #'
 #'The current GSEA may not support the comparisons between two grouped
 #'conditions, i.e.,  (grpA + grpB) versus (grpC + grpD). The \code{prnGSEA}
@@ -134,11 +141,23 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@export
 prnGSEA <- function (gset_nms = "go_sets", 
@@ -195,6 +214,11 @@ prnGSEA <- function (gset_nms = "go_sets",
 
 
 #'Protein GSEA by formula(e) in `pepSig` or `prnSig`
+#'
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
+#' @inheritParams fml_gspa
+#' @inheritParams gsVolcano
 fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff, 
                       logFC_cutoff, gspval_cutoff, gslogFC_cutoff, min_size, max_size, 
                       df, col_ind, id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
@@ -318,26 +342,7 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     nms_neg_i <- rep(nms$neg[i], ncol(neg[[i]])) %>% as.character()
     nms_both <- c(nms_pos_i, nms_neg_i)
     make_cls(df = df_i, nms = nms_both, filepath = filepath_i, fn_prefix = paste0(fn_prefix, "_", out_nm))
-    
-    run_scripts <- FALSE
-    if (run_scripts) {
-      dir_out <- file.path(filepath_i, out_nm, "res")
-      dir.create(dir_out, recursive = TRUE, showWarnings = FALSE)
-      
-      res <- try (
-        GSEA::GSEA(
-          input.ds = file.path(filepath_i, paste0(out_nm, ".gct")),
-          input.cls = file.path(filepath_i, paste0(out_nm, ".cls")),
-          input.chip = "NOCHIP", 
-          gs.db = file.path("~\\proteoQ\\dbs\\gsea\\msig\\c2_cgp_hs.gmt"),
-          collapse.dataset = FALSE,
-          collapse.mode = "NOCOLLAPSE",
-          output.directory = dir_out,
-        ), silent = TRUE)
-    }
-    
   }    
-
 }
 
 

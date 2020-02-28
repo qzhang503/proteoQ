@@ -1,6 +1,4 @@
 
-.onLoad <- function(libname, pkgname) {
-  data(
-		package = pkgname, envir = parent.env(environment())
-	)
+.onAttach <- function(libname, pkgname) {
+  packageStartupMessage("Welcome to proteoQ")
 }

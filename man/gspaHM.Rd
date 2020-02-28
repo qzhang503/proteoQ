@@ -6,6 +6,51 @@
 \usage{
 gspaHM(scale_log2r, complete_cases, impute_na, df2, filepath, filename, ...)
 }
+\arguments{
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
+
+\item{df2}{Character vector or string; the name(s) of secondary data file(s).
+An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+\code{df} generates secondary files such as
+\code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+section or \code{\link{prnHist}} for the description of a primary \code{df}.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
+
+\item{...}{\code{filter_}: Variable argument statements for the row filtration
+of data against the column keys in \code{Peptide.txt} for peptides or
+\code{Protein.txt} for proteins. Each statement contains to a list of
+logical expression(s). The \code{lhs} needs to start with \code{filter_}.
+The logical condition(s) at the \code{rhs} needs to be enclosed in
+\code{exprs} with round parenthesis. \cr \cr For example, \code{pep_len} is
+a column key present in \code{Mascot} peptide tables of \code{Peptide.txt}.
+The statement \code{filter_peps_at = exprs(pep_len <= 50)} will remove
+peptide entries with \code{pep_len > 50}. See also \code{\link{normPSM}}.
+\cr \cr Additional parameters for plotting with \code{ggplot2}: \cr
+\code{xmin}, the minimum \eqn{x} at a log2 scale; the default is -2. \cr
+\code{xmax}, the maximum \eqn{x} at a log2 scale; the default is +2. \cr
+\code{xbreaks}, the breaks in \eqn{x}-axis at a log2 scale; the default is
+1. \cr \code{binwidth}, the binwidth of \code{log2FC}; the default is
+\eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of columns; the default
+is 1. \cr \code{width}, the width of plot; \cr \code{height}, the height of
+plot. \cr \code{scales}, should the scales be fixed across panels; the
+default is "fixed" and the alternative is "free".}
+}
 \description{
 Plot distance heat map of GSPA
 }

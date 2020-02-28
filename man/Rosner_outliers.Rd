@@ -6,6 +6,9 @@
 \usage{
 Rosner_outliers(x)
 }
+\arguments{
+\item{x}{A matrix or data.frame.}
+}
 \description{
 Outlier removals with Rosner's method
 }

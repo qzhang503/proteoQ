@@ -2,6 +2,7 @@
 #'
 #' Extract a list of \code{RAW} file names that can be passed to \code{frac_smry.xlsx}
 #'
+#' @param raw_dir A character string to the directory of MS data. 
 #' @examples
 #' \dontrun{
 #' # Supposed that RAW MS files are stored under "~\my_raw"
@@ -13,10 +14,13 @@
 #' @importFrom magrittr %T>%
 #' @importFrom tools md5sum
 #' @export
-extract_raws <- function(raw_dir) {
+extract_raws <- function(raw_dir = NULL) {
   dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
   if (dat_dir == 1) 
     stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+  
+  if (is.null(raw_dir)) 
+    stop("`raw_dir` cannot be `NULL`.", call. = FALSE)
 
   fns <- names(tools::md5sum(dir(raw_dir, pattern = "\\.raw$", full.names = FALSE)))
   data.frame(Index = seq_along(fns), RAW_File = fns) %T>% 
@@ -34,11 +38,13 @@ extract_raws <- function(raw_dir) {
 #' @param type Character string indicating the type of PSM.
 #' @inheritParams load_expts
 #' @examples
+#' \donttest{
 #' extract_psm_raws(mascot)
 #' 
 #' extract_psm_raws(maxquant)
 #' 
 #' extract_psm_raws(spectrum_mill)
+#' }
 #'
 #' @import dplyr tidyr rlang
 #' @importFrom stringr str_split
@@ -191,7 +197,7 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
 #' Removes PSM headers
 #'
 #' \code{rmPSMHeaders} removes the header of PSM from
-#' \code{\href{https://http://www.matrixscience.com/}{Mascot}} outputs. It also
+#' \href{https://http://www.matrixscience.com/}{Mascot} outputs. It also
 #' removes the spacer columns in the fields of ratio and intensity values.
 #'
 #' @return Intermediate PSM table(s).
@@ -258,7 +264,9 @@ rmPSMHeaders <- function () {
 
 
 #' Add the `pep_seq_mod` field to Mascot PSMs
-#'
+#' 
+#' @inheritParams locate_outliers
+#' @inheritParams splitPSM
 #' @import dplyr
 #' @importFrom purrr walk
 #' @importFrom magrittr %>%
@@ -509,8 +517,14 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
 #'   prepended directory path. The \code{fasta} database(s) need to match those
 #'   used in MS/MS ion search. There is no default and users need to provide the
 #'   correct file path(s) and name(s).
+#' @param entrez Character string(s) to the name(s) of entrez file(s) with
+#'   prepended directory path. At the \code{NULL} default, a convenience lookup
+#'   is available for species among \code{c("human", "mouse", "rat")}. For other
+#'   species, users need to provide the file path(s) and name(s) for the lookup
+#'   table(s). See also \code{\link{prepEntrez}} for preparing custom entrez
+#'   files.
 #' @param rm_craps Logical; if TRUE,
-#'   \code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins will be removed.
+#'   \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
 #'   The default is FALSE.
 #' @param rm_krts Logical; if TRUE, keratin entries will be removed. The default
 #'   is FALSE.
@@ -523,13 +537,15 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
 #' @param use_lowercase_aa Logical; if TRUE, modifications in amino acid
 #'   residues will be abbreviated with lower-case and/or \code{^_~}. See the
 #'   table below for details. The default is TRUE. 
+#' @inheritParams annotPSM
 #' @import dplyr tidyr seqinr stringr
 #' @importFrom magrittr %>%
-splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, 
+splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, entrez = NULL, 
                      rm_craps = FALSE, rm_krts = FALSE, rptr_intco = 1000, 
                      annot_kinases = FALSE, plot_rptr_int = TRUE, use_lowercase_aa = TRUE, ...) {
 
-	old_opt <- options(max.print = 99999)
+	old_opt <- options(max.print = 99999, warn = 0)
+	options(max.print = 2000000, warn = 1)
 	on.exit(options(old_opt), add = TRUE)
 	on.exit(message("Split PSM by sample IDs and LCMS injections --- Completed."), add = TRUE)
 
@@ -542,7 +558,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   filelist = list.files(path = file.path(dat_dir, "PSM\\cache"),
                         pattern = "^F[0-9]{6}\\_hdr_rm.csv$")
 
-	if (length(filelist) == 0) stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
+	if (length(filelist) == 0) stop(paste("No intermediate PSM files under", file.path(dat_dir, "PSM//cache")))
 
   df <- purrr::map(filelist, ~ {
     data <- read.delim(file.path(dat_dir, "PSM\\cache", .x), sep = ',', check.names = FALSE, 
@@ -580,17 +596,16 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
 		rm(r_start, int_end, col_ratio, col_int)
 	}
   
-  # convenience craps removals where their uniprot afasta names ended with "|"
+  # convenience crap removals where their uniprot fasta names ended with "|"
   if (rm_craps) df <- df %>% dplyr::filter(!grepl("\\|.*\\|$", prot_acc))
 
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
   
-  # message("Primary column keys in `PSM/cache/[...]_hdr_rm.csv` for `filter_` varargs.")
   message("Primary column keys in `F[...].csv` or `PSM/cache/[...]_hdr_rm.csv`  for `filter_` varargs.")
 
-  # note pep_seq: from such as MENGQSTAAK to K.MENGQSTAAK.L
+  # note that `pep_seq` changed from such as MENGQSTAAK to K.MENGQSTAAK.L
   df <- df %>% 
     dplyr::mutate(pep_len = str_length(pep_seq)) %>% 
     split(., .$dat_file, drop = TRUE) %>% 
@@ -601,7 +616,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   df <- df %>% 
     dplyr::mutate(prot_acc_orig = prot_acc) %>% 
     dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
-    annotPrn(fasta) %>% 
+    annotPrn(fasta, entrez) %>% 
     dplyr::mutate(prot_acc = prot_acc_orig) %>% 
     dplyr::select(-prot_acc_orig)
   
@@ -748,11 +763,10 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
 
 #' Locates the positions of outliersf
 #' 
-#' @param df A data frame containing the PSM table from Mascot.
+#' @param df A data frame containing the PSM table from database searches.
 #' @param range_colRatios The range of columns.
 #' @return A data frame.
-#' @examples
-#' locate_outliers(df, 2:3)
+#' @examples \donttest{locate_outliers(df, 2:3)}
 locate_outliers <- function (df, range_colRatios) {
 	for(col_index in range_colRatios) {
 		counts <- colSums(!is.na(df[col_index]))
@@ -765,6 +779,7 @@ locate_outliers <- function (df, range_colRatios) {
 
 
 #' Outlier removals with Rosner's method
+#' @param x A matrix or data.frame.
 Rosner_outliers <- function(x) {
 
 	if (length(unique(x)) < 5) return(x)
@@ -781,6 +796,7 @@ Rosner_outliers <- function(x) {
 
 
 #' Outlier removals with Dixon's method
+#' @inheritParams Rosner_outliers
 Dixon_outliers <- function(x) {
 	# x = c(0.0000000, 0.0000000, 1.0271542, 0.0000000, 0.2080097)
 	# x = c(0.0000000, 0.0000000, NA, 0.0000000, 0.2080097)
@@ -811,6 +827,8 @@ Dixon_outliers <- function(x) {
 
 
 #' Outlier removals with Grubbs's method
+#' @param type Type for grubbs.test.
+#' @inheritParams Rosner_outliers
 Grubbs_outliers <- function(x, type = 10) {
 	newx <- x[!is.na(x)]
 	len_newx <- length(newx)
@@ -973,6 +991,8 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 #'
 #'\code{mcPSM} adds fields of \code{log2_R, N_log2_R and N_I} to PSM tables.
 #'
+#'@param df A data frame containing the PSM table from database searches.
+#'@inheritParams channelInfo
 #'@import dplyr tidyr purrr
 #'@importFrom magrittr %>%
 mcPSM <- function(df, set_idx) {
@@ -1038,6 +1058,7 @@ mcPSM <- function(df, set_idx) {
 #'  numbers will be treated as one group.
 #'@param plot_log2FC_cv Logical; if TRUE, the distributions of the CV of peptide
 #'  \code{log2FC} will be plotted. The default is TRUE.
+#'@param ... Not currently used.
 #'@inheritParams load_expts
 #'@inheritParams splitPSM
 #'@import dplyr tidyr purrr ggplot2 RColorBrewer
@@ -1163,8 +1184,8 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'Standardization of PSM results
 #'
 #'\code{normPSM} standarizes
-#'\code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}}
-#'results from \code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}}
+#'\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}
+#'results from \href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}
 #'experiments.
 #'
 #'In each primary output file, "\code{...PSM_N.txt}", values under columns
@@ -1195,26 +1216,24 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
 #'
 #'@section \code{Mascot}: End users will export \code{PSM} data from
-#'  \code{\href{https://http://www.matrixscience.com/}{Mascot}} at a \code{.csv}
+#'  \href{https://http://www.matrixscience.com/}{Mascot} at a \code{.csv}
 #'  format and store them under the file folder indicated by \code{dat_dir}. The
 #'  header information should be included during the \code{.csv} export. The
 #'  file name(s) should be defaulted by
-#'  \code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with
+#'  \href{https://http://www.matrixscience.com/}{Mascot}: starting with
 #'  the letter \code{'F'}, followed by digits without space and ended with a
 #'  \code{'.csv'} extension \code{(e.g., F004453.csv)}.
 #'
-#'  See \code{\link{normPrn}} for the description of column keys in the output.
-#'
 #'@section \code{MaxQuant}: End users will copy over \code{msms.txt} file(s)
-#'  from \code{\href{https://www.maxquant.org/}{MaxQuant}} to the \code{dat_dir}
+#'  from \href{https://www.maxquant.org/}{MaxQuant} to the \code{dat_dir}
 #'  directory. In the case of multiple \code{msms.txt} files for processing, the
 #'  file names need to be compiled in that they all start with \code{'msms'} and
 #'  end with a \code{'.txt'} extension.
 #'
 #'@section \code{Spectrum Mill}: End users will copy over \code{PSMexport.1.ssv}
 #'  file(s) from
-#'  \code{\href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum
-#'   Mill}} to the \code{dat_dir} directory. In the case of multiple
+#'  \href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum Mill} 
+#'  to the \code{dat_dir} directory. In the case of multiple
 #'  \code{PSMexport} files for processing, the file names need to be compiled in
 #'  that they all start with \code{'PSMexport'} and end with a \code{'.ssv'}
 #'  extension.
@@ -1274,11 +1293,23 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@section \code{Variable arguments and data files}: Variable argument (vararg)
 #'  statements of \code{filter_} and \code{arrange_} are available in
@@ -1349,7 +1380,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'@export
 normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c("prot_acc", "gene"), 
                     dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx", 
-                    fasta = NULL, pep_unique_by = "group", corrected_int = TRUE, rm_reverses = TRUE, 
+                    fasta = NULL, entrez = NULL, pep_unique_by = "group", corrected_int = TRUE, rm_reverses = TRUE, 
                     rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE, rm_outliers = FALSE, 
                     annot_kinases = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
                     use_lowercase_aa = TRUE, ...) {
@@ -1414,18 +1445,18 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
   
   if (type == "mascot") {
     rmPSMHeaders()
-    splitPSM(group_psm_by, group_pep_by, fasta, rm_craps, rm_krts, rptr_intco, 
+    splitPSM(group_psm_by, group_pep_by, fasta, entrez, rm_craps, rm_krts, rptr_intco, 
              annot_kinases, plot_rptr_int, use_lowercase_aa, ...)
     cleanupPSM(rm_outliers)
     annotPSM(group_psm_by, group_pep_by, fasta, expt_smry, plot_rptr_int, plot_log2FC_cv, ...)
   } else if (type == "mq") {
-    splitPSM_mq(group_psm_by, group_pep_by, fasta, pep_unique_by, corrected_int, 
+    splitPSM_mq(group_psm_by, group_pep_by, fasta, entrez, pep_unique_by, corrected_int, 
                 rptr_intco, rm_craps, rm_reverses, annot_kinases, plot_rptr_int, ...)
     cleanupPSM(rm_outliers)
 		annotPSM_mq(group_psm_by, group_pep_by, fasta, expt_smry, rm_krts, 
 		            plot_rptr_int, plot_log2FC_cv, use_lowercase_aa, ...)
   } else if (type == "sm") {
-    splitPSM_sm(group_psm_by, group_pep_by, fasta, rm_craps, rm_krts, rptr_intco, 
+    splitPSM_sm(group_psm_by, group_pep_by, fasta, entrez, rm_craps, rm_krts, rptr_intco, 
                 annot_kinases, plot_rptr_int, ...)
     cleanupPSM(rm_outliers)
     annotPSM_sm(group_psm_by, group_pep_by, fasta, expt_smry, rm_krts, plot_rptr_int, 
@@ -1436,7 +1467,16 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
 
 
 #' Calculate peptide data for individual TMT experiments
-#' Argument injn_idx not used
+#' 
+#' Argument \code{injn_idx} not currently used.
+#' 
+#' @param id The same as \code{group_psm_by} in \code{\link{normPSM}}.
+#' @param injn_idx Numeric; an index of \code{LCMS_Inj} in metadata \code{label_scheme.xlsx}.
+#' @inheritParams mcPSM
+#' @inheritParams PSM2Pep
+#' @inheritParams annotPSM
+#' @inheritParams channelInfo
+#' @inheritParams locate_outliers
 calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_idx, injn_idx) {
   stopifnot("prot_acc" %in% names(df))
   
@@ -1570,7 +1610,7 @@ calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_i
 #'Interim peptide tables
 #'
 #'\code{PSM2Pep} summarises
-#'\code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs}} to
+#'\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs} to
 #'peptides by individual TMT experiments and LC/MS series.
 #'
 #'In general, fields other than \code{log2FC} and \code{intensity} are
@@ -1628,11 +1668,22 @@ calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_i
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
+#'  \code{\link{prepGO}} for \href{http://current.geneontology.org/products/pages/downloads.html}{gene ontology} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@return Tables under \code{PSM} folder for each TMT experiment and LC/MS
 #'  series: \code{TMTset1_LCMSinj1_PSM_N.txt}, \code{TMTset1_LCMSinj2_PSM_N.txt}...
@@ -1698,6 +1749,8 @@ PSM2Pep <- function (method_psm_pep = c("median", "mean", "weighted.mean", "top.
 
 #' Add the `pep_seq_mod` field to MaxQuant PSMs
 #'
+#' @inheritParams splitPSM
+#' @inheritParams locate_outliers
 #' @import dplyr
 #' @importFrom purrr walk
 #' @importFrom magrittr %>%
@@ -1871,7 +1924,7 @@ add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
 #'@import dplyr tidyr
 #'@importFrom stringr str_split
 #'@importFrom magrittr %>%
-splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, 
+splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, entrez = NULL, 
                         pep_unique_by = "group", corrected_int = TRUE, rptr_intco = 1000, 
                         rm_craps = FALSE, rm_reverses = TRUE, annot_kinases = FALSE, 
                         plot_rptr_int = TRUE, ...) {
@@ -1999,7 +2052,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
   acc_type <- parse_acc(df)
   stopifnot(length(acc_type) == 1)
   
-  df <- df %>% annotPrn(fasta)
+  df <- df %>% annotPrn(fasta, entrez)
   if (annot_kinases) df <- df %>% annotKin(acc_type)
   if (!all(c("pep_start", "pep_end", "gene") %in% names(df))) df <- df %>% annotPeppos(fasta)
   
@@ -2088,12 +2141,14 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 #'
 #' \code{annotPSM_mq} adds fields of annotation to MaxQuant PSM tables.
 #'
-#'@inheritParams load_expts
-#'@inheritParams annotPSM
+#' @inheritParams load_expts
+#' @inheritParams annotPSM
+#' @inheritParams normPSM
 #' @import dplyr tidyr purrr ggplot2 RColorBrewer
 #' @importFrom stringr str_split
 #' @importFrom tidyr gather
 #' @importFrom magrittr %>%
+#' @param ... Not currently used.
 annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, expt_smry = "expt_smry.xlsx", 
                         rm_krts = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, use_lowercase_aa = TRUE, ...) {
 	
@@ -2224,10 +2279,11 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 #'
 #' @inheritParams splitPSM
 #' @inheritParams splitPSM_mq
+#' @inheritParams normPSM
 #' @import dplyr tidyr readr
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
-splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, 
+splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, entrez = NULL, 
                         rm_craps = FALSE, rm_krts = FALSE, rptr_intco = 1000, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, ...) {
   
@@ -2262,7 +2318,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     dplyr::rename(prot_acc = accession_number) %>% 
-    annotPrn(fasta)  
+    annotPrn(fasta, entrez)  
   
   if (TMT_plex == 11) {
     col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
@@ -2419,11 +2475,13 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 #' \code{annotPSM_sm} adds fields of annotation to PSM tables.
 #'
 #' @inheritParams load_expts
+#' @inheritParams splitPSM
 #' @inheritParams annotPSM
 #' @import dplyr tidyr purrr ggplot2 RColorBrewer
 #' @importFrom stringr str_split
 #' @importFrom tidyr gather
 #' @importFrom magrittr %>%
+#' @param ... Not currently used.
 annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, expt_smry = "expt_smry.xlsx", 
                         rm_krts = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, use_lowercase_aa = TRUE, ...) {
   

@@ -6,6 +6,13 @@
 \usage{
 my_padj(df_pval, pval_cutoff)
 }
+\arguments{
+\item{df_pval}{A data frame containing pVals}
+
+\item{pval_cutoff}{Numeric; the cut-off in significance \code{pVal}. Entries
+with \code{pVals} smaller than the threshold will be excluded from multiple
+test corrections. The default is at \code{1} to include all entries.}
+}
 \description{
 Adjusted pVal
 }

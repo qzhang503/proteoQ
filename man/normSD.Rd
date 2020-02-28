@@ -6,6 +6,13 @@
 \usage{
 normSD(x, center = 0, SD = 1)
 }
+\arguments{
+\item{x}{A numeric vector.}
+
+\item{center}{The position of \code{x} to be centered at.}
+
+\item{SD}{The standard deviation that data will be scaled to.}
+}
 \description{
 \code{normSD} normalizes the SD of \code{log2FC}.
 }

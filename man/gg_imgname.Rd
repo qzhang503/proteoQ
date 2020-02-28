@@ -6,6 +6,9 @@
 \usage{
 gg_imgname(filename)
 }
+\arguments{
+\item{filename}{Character string; An output file name.}
+}
 \description{
 Check file names for ggsave()
 }

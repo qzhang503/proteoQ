@@ -2,12 +2,15 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{my_union}
 \alias{my_union}
-\title{my union of named list 
-names will be kept after the unification}
+\title{my union of named list}
 \usage{
 my_union(x, y)
 }
+\arguments{
+\item{x}{A list of values.}
+
+\item{y}{Another list of values.}
+}
 \description{
-my union of named list 
 names will be kept after the unification
 }

@@ -11,6 +11,6 @@ Intermediate PSM table(s).
 }
 \description{
 \code{rmPSMHeaders} removes the header of PSM from
-\code{\href{https://http://www.matrixscience.com/}{Mascot}} outputs. It also
+\href{https://http://www.matrixscience.com/}{Mascot} outputs. It also
 removes the spacer columns in the fields of ratio and intensity values.
 }

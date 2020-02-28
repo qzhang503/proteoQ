@@ -9,6 +9,8 @@
 \alias{end_with_str}
 \alias{start_with_chars_in}
 \alias{ends_with_chars_in}
+\alias{rows_are_all}
+\alias{rows_are_not_all}
 \title{Row filtration helpers}
 \usage{
 contain_str(match, vars, ignore.case = FALSE)
@@ -26,6 +28,10 @@ end_with_str(match, vars, ignore.case = FALSE)
 start_with_chars_in(match, vars, ignore.case = FALSE)
 
 ends_with_chars_in(match, vars, ignore.case = FALSE)
+
+rows_are_all(match, vars, ignore.case = FALSE)
+
+rows_are_not_all(match, vars, ignore.case = FALSE)
 }
 \arguments{
 \item{match}{A character string containing the pattern for matching.}
@@ -58,9 +64,13 @@ string. "PEPTIDES" start_with_chars_in "XP".
 
 \code{ends_with_chars_in}: end with one of the characters in a literal
 string. "PEPTIDES" ends_with_chars_in "XS".
+
+\code{rows_are_all}: rows are all
+
+\code{rows_are_all}: rows are all
 }
 \examples{
-\dontrun{
+\donttest{
 pepHist(
   col_select = BI,
   scale_log2r = TRUE,
@@ -69,6 +79,5 @@ pepHist(
   ncol = 4,
   filename = "BI_pSTY_scaley_no.png",
 )
-
 }
 }

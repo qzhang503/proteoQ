@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Volcano plots
 # ===================================
@@ -97,5 +98,4 @@ gspaMap(
 #  
 #  see also ?prnGSPA for additional examples involving both `df` and `df2`, 
 #  as well as `filter_` and `filter2_`
-
-
+}

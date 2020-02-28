@@ -13,6 +13,37 @@ prep_gspa(
   logFC_cutoff = log2(1.2)
 )
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Currently only "entrez".}
+
+\item{fml_nm}{A character string; the name of \code{fml}.}
+
+\item{col_ind}{Numeric vector; the indeces of columns for the ascribed \code{fml_nm}.}
+
+\item{pval_cutoff}{Numeric value or vector; the cut-off in protein
+significance \code{pVal}. Entries with \code{pVals} less significant than
+the threshold will be excluded from enrichment analysis. The default is 0.05
+for all formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of cut-off
+values.}
+
+\item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
+\code{log2FC}. Entries with absolute \code{log2FC} smaller than the
+threshold will be excluded from enrichment analysis. The default magnitude
+is \code{log2(1.2)} for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of absolute values in \code{log2FC}.}
+}
 \description{
 A helper function for GSPA
 }

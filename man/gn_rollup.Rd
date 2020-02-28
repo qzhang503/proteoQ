@@ -6,6 +6,11 @@
 \usage{
 gn_rollup(df, cols)
 }
+\arguments{
+\item{df}{A data frame}
+
+\item{cols}{Column indeces}
+}
 \description{
 Roll up genes
 }

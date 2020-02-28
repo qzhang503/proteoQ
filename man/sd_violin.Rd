@@ -2,8 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{sd_violin}
 \alias{sd_violin}
-\title{Violin plots of CV per TMT_Set and LCMS_injection
-#'@import dplyr rlang ggplot2}
+\title{Violin plots of CV per TMT_Set and LCMS_injection}
 \usage{
 sd_violin(
   df = NULL,
@@ -20,7 +19,59 @@ sd_violin(
   ...
 )
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{width}{The width of a plot.}
+
+\item{height}{The height of a plot.}
+
+\item{type}{Character string; the type of data.}
+
+\item{adjSD}{Not currently used. If TRUE, adjust the standard
+deviation in relative to the width of ratio profiles.}
+
+\item{is_psm}{Logical; indictor if the data belong to a PSM table .}
+
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
+
+\item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
+Numeric values under which will be used for the left-to-right arrangement of
+samples in graphic outputs or top-to-bottom arrangement in text outputs. At
+the NULL default, the column key \code{Order} will be used. If values under
+column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{theme}{A
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
+theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
+theme will be applied.}
+
+\item{...}{Additional parameters for plotting: \cr \code{ymax}, the maximum
+\eqn{y} at a log2 scale. \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a
+log2 scale. \cr \code{width}, the width of plot. \cr \code{height}, the
+height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
+\code{y} axis.}
+}
 \description{
 Violin plots of CV per TMT_Set and LCMS_injection
-#'@import dplyr rlang ggplot2
 }

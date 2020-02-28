@@ -78,7 +78,7 @@ the format of \code{arrange_} statements.}
 }
 \description{
 \code{prnGSEA} prepares data for the analysis of
-\code{\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA}} aganist
+\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA} aganist
 protein \code{log2FC} data.
 }
 \details{
@@ -89,7 +89,7 @@ the \code{vararg} approach of \code{filter_} is feasible.
 The outputs include \code{Protein_GSEA.gct} and \code{protein_GSEA.cls} for
 samples indicated in file \code{Protein_pVals.txt} or
 \code{Protein_impNA_pVals.txt}. These outputs can be used with online
-\code{\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA}}.
+\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA}.
 
 The current GSEA may not support the comparisons between two grouped
 conditions, i.e.,  (grpA + grpB) versus (grpC + grpD). The \code{prnGSEA}
@@ -101,6 +101,7 @@ The corresponding \code{.gct} and \code{.cls} files can be used with the
 online or the github version of R-GSEA.
 }
 \examples{
+\donttest{
 # ===================================
 # GSEA
 # ===================================
@@ -161,7 +162,7 @@ prnGSEA(
   filter_by_sp = exprs(species == "human"), 
   filename = custom_fil.txt,
 )
-
+}
 }
 \seealso{
 \emph{Metadata} \cr 
@@ -206,9 +207,21 @@ prnGSEA(
  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
  \emph{Custom databases} \cr 
+ \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
  ontology}} \cr 
  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
  signatures} \cr 
- \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+ 
+ \emph{Column keys in PSM, peptide and protein outputs} \cr 
+ # Mascot \cr
+ system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ 
+ # MaxQuant \cr
+ system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

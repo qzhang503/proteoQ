@@ -1,5 +1,8 @@
 #' Plots MDS
-#'
+#' 
+#' @inheritParams prnMDS
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import dplyr ggplot2 rlang
 #' @importFrom magrittr %>%
 plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL, 
@@ -154,6 +157,9 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 
 #' Plots EucDist
 #'
+#' @inheritParams prnEucDist
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import dplyr ggplot2 rlang pheatmap
 #' @importFrom magrittr %>%
 plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDist = FALSE, 
@@ -252,6 +258,9 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 
 #' Plots PCA
 #'
+#' @inheritParams prnPCA
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import dplyr ggplot2 rlang
 #' @importFrom magrittr %>%
 plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs", show_ids = TRUE, 
@@ -405,6 +414,9 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 
 #' Scores MDS
 #'
+#' @inheritParams prnMDS
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import dplyr rlang
 #' @importFrom MASS isoMDS
 #' @importFrom magrittr %>%
@@ -455,6 +467,9 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 
 #' Scores PCA
 #'
+#' @inheritParams prnPCA
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import dplyr rlang
 #' @importFrom MASS isoMDS
 #' @importFrom magrittr %>%
@@ -504,6 +519,9 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ..
 
 #' Scores Euclidean distance
 #'
+#' @inheritParams prnEucDist
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import dplyr rlang
 #' @importFrom MASS isoMDS
 #' @importFrom magrittr %>%
@@ -730,11 +748,23 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@example inst/extdata/examples/prnMDS_.R
 #'
@@ -922,11 +952,23 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@example inst/extdata/examples/prnPCA_.R
 #'
@@ -1097,11 +1139,23 @@ pepEucDist <- function (col_select = NULL,
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@example inst/extdata/examples/prnEucDist_.R
 #'@return Heat map visualization of distance matrices.

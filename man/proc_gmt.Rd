@@ -6,6 +6,42 @@
 \usage{
 proc_gmt(species, abbr_species, ortho_mart, fn_gmt, db_path, filename)
 }
+\arguments{
+\item{species}{Character string; the name of a species for the
+\emph{conveninent} preparation of \code{MSig} data bases. The species
+available for the convenience feature is in one of \code{c("human", "mouse",
+"rat")} with \code{"human"} being the default. The argument is not required
+for other species; instead, users will provide values under arguments
+\code{ortho_mart} for the lookup of orthologs to human.}
+
+\item{abbr_species}{Two-letter character string; the abbreviated name of
+species used with
+\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
+ The value of \code{abbr_species} will be determined automatically if the
+species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
+example, users need to provide \code{abbr_species = Ce} for fetching the
+\code{org.Ce.eg.db} package in the name space of proteoQ. For
+\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+Signatures}, the argument is further applied to differentiate the same
+biological terms under different species.}
+
+\item{ortho_mart}{Character string; a dataset name from
+\code{\link[biomaRt]{useMart}} and/or \code{\link[biomaRt]{listDatasets}}
+for the lookup of orthologs to \code{human} genes. For species in
+\code{c("human", "mouse", "rat")}, the value will be determined
+automatically unless otherwise specified.}
+
+\item{fn_gmt}{filename of downloaded gmt results.}
+
+\item{db_path}{Character string; the local path for database(s). The default
+is \code{"~\\proteoQ\\dbs\\msig"}.}
+
+\item{filename}{Character string; An output file name. At the \code{NULL}
+default, the name will be determined automatically at a given
+\code{species}; i.e., \code{msig_hs.rds} for \code{human} data. The file is
+saved as a \code{.rds} object for uses with \code{\link{prnGSPA}}.}
+}
 \description{
 Helper to save `gmt`
 }

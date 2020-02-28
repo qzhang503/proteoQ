@@ -11,6 +11,25 @@ annot_from_to(
   to = "ENTREZID"
 )
 }
+\arguments{
+\item{abbr_species}{Two-letter character string; the abbreviated name of
+species used with
+\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
+ The value of \code{abbr_species} will be determined automatically if the
+species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
+example, users need to provide \code{abbr_species = Ce} for fetching the
+\code{org.Ce.eg.db} package in the name space of proteoQ. For
+\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+Signatures}, the argument is further applied to differentiate the same
+biological terms under different species.}
+
+\item{keys}{Identifier such as gene names.}
+
+\item{from}{the type of \code{keys}}
+
+\item{to}{the type of target IDs}
+}
 \description{
 Helper to map `SYMBOL` to `ENTREZID`
 }

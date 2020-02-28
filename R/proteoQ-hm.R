@@ -1,5 +1,14 @@
 #' A wrapper of pheatmap
 #'
+#' @param mat The same as in \link[pheatmap]{pheatmap}.
+#' @param annotation_col The same as in \link[pheatmap]{pheatmap}.
+#' @param annotation_row The same as in \link[pheatmap]{pheatmap}.
+#' @param color The same as in \link[pheatmap]{pheatmap}.
+#' @param annotation_colors The same as in \link[pheatmap]{pheatmap}.
+#' @param breaks The same as in \link[pheatmap]{pheatmap}.
+#' @param filename The output filename.
+#' @param ... Additional arguments for \link[pheatmap]{pheatmap}.
+#' 
 #' @import dplyr rlang pheatmap
 #' @importFrom magrittr %>%
 my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, annotation_colors, breaks, ...) {
@@ -30,7 +39,10 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, an
 
 
 #' Makes heat maps
-#'
+#' 
+#' @inheritParams prnHM
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
 #' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>%
 #' @importFrom magrittr %T>%
@@ -493,11 +505,23 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@example inst/extdata/examples/prnHM_.R
 #'

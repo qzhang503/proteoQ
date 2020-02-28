@@ -6,6 +6,11 @@
 \usage{
 cmbn_meta(data, metadata)
 }
+\arguments{
+\item{data}{A data frame}
+
+\item{metadata}{Another data frame}
+}
 \description{
 Combine data with metadata
 }

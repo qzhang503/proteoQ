@@ -10,6 +10,18 @@ proc_obo(
   type = c("biological_process", "cellular_component", "molecular_function")
 )
 }
+\arguments{
+\item{db_path}{Character string; the local path for database(s). The default
+is \code{"~\\proteoQ\\dbs\\go"}.}
+
+\item{fn_obo}{filename according to \code{obo_url}}
+
+\item{type}{Character vector. The name space in gene ontology to be included.
+The default is to include all in \code{c("biological_process",
+"cellular_component", "molecular_function")}. In the example of \code{type =
+c("biological_process", "cellular_component")}, terms of
+\code{molecular_function} will be excluded.}
+}
 \description{
 Helper to save `obo` without header
 }

@@ -1,14 +1,20 @@
 #' TMT labeling efficiency
+#' 
 #' @import dplyr rlang ggplot2
 #' @inheritParams load_expts
 #' @inheritParams splitPSM
 #' @inheritParams cleanupPSM
 #' @inheritParams annotPSM
 #' @inheritParams normPSM
+#' @examples 
+#' res <- labEffPSM(
+#'   fasta = c("~\\proteoQ\\dbs\\fasta\\uniprot\\uniprot_mm_2014_07.fasta"),
+#' )
 #' @export
 labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c("prot_acc", "gene"), 
                       dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx", 
-                      fasta = NULL, pep_unique_by = "group", corrected_int = TRUE, rm_reverses = TRUE, 
+                      fasta = NULL, entrez = NULL, 
+                      pep_unique_by = "group", corrected_int = TRUE, rm_reverses = TRUE, 
                       rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE, rm_outliers = FALSE, 
                       annot_kinases = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
                       use_lowercase_aa = TRUE, ...) {
@@ -152,13 +158,12 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
     dplyr::mutate(pep_len = str_length(pep_seq)) %>% 
     split(., .$dat_file, drop = TRUE) %>% 
     purrr::map(add_mascot_pepseqmod, use_lowercase_aa) %>% 
-    bind_rows() # %>% 
-  # dplyr::select(-dat_file)
+    bind_rows()
   
   df <- df %>% 
     dplyr::mutate(prot_acc_orig = prot_acc) %>% 
     dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
-    annotPrn(fasta) %>% 
+    annotPrn(fasta, entrez) %>% 
     dplyr::mutate(prot_acc = prot_acc_orig) %>% 
     dplyr::select(-prot_acc_orig)
   
@@ -288,10 +293,14 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
 
 
 #' Makes heat maps
-#'
-#' @import stringr dplyr magrittr readr readxl rlang ggplot2 RColorBrewer pheatmap
+#' 
 #' @param df_meta A file name of meta data.
+#' @inheritParams prnHM
+#' @inheritParams info_anal
+#' @inheritParams gspa_colAnnot
+#' 
 #' @examples
+#' \donttest{
 #' proteo_hm(
 #'   df = Protein_delta.txt, 
 #'   id = gene, 
@@ -310,6 +319,9 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
 #'   height = 12,
 #'   arrange2_by = exprs(kin_class, gene), 
 #' )
+#' }
+#' 
+#' @import stringr dplyr magrittr readr readxl rlang ggplot2 RColorBrewer pheatmap
 #' @export
 proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL, 
                       filepath = NULL, filename = NULL, complete_cases = FALSE, 

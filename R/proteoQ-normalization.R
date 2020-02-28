@@ -4,8 +4,9 @@
 #'Gaussian kernels.
 #'
 #'@param df An input data frame
+#'@inheritParams prnHist
 #'@inheritParams mixtools::normalmixEM
-#'@inheritParams normPep
+#'@inheritParams standPep
 #'@return A data frame.
 #'
 #'@import dplyr purrr rlang mixtools
@@ -391,10 +392,13 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 #'
 #' \code{dblTrim} doubly trims the \code{log2FC} and reporter-ion intensity by
 #' the given ranges.
-#'
-#' @inheritParams normPep
+#' 
+#' @param type_r Character string for recognizing the columns of \code{log2FC}.
+#' @param type_int Character string for recognizing the columns of \code{intensity}.
+#' @inheritParams info_anal
+#' @inheritParams standPep
+#' 
 #' @return A data frame.
-#'
 #' @import dplyr purrr rlang mixtools
 #' @importFrom magrittr %>%
 dblTrim <- function(df, range_log2r, range_int, type_r = "N_log2_R", type_int = "N_I") {
@@ -437,7 +441,11 @@ dblTrim <- function(df, range_log2r, range_int, type_r = "N_log2_R", type_int = 
 #' Data normalization
 #'
 #' \code{sumdnorm} calculates summed density from \code{normMulGau}.
-#'
+#' 
+#' @param x A numeric vector.
+#' @param xmin the miminal x values.
+#' @param xmax the maximal x values.
+#' @param by the step length.
 #' @return A data frame.
 #' @import dplyr purrr rlang mixtools
 #' @importFrom magrittr %>%
@@ -464,7 +472,10 @@ sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 #' Data normalization
 #'
 #' \code{normSD} normalizes the SD of \code{log2FC}.
-#'
+#' 
+#' @param x A numeric vector.
+#' @param center The position of \code{x} to be centered at.
+#' @param SD The standard deviation that data will be scaled to.
 #' @import dplyr purrr rlang mixtools
 #' @importFrom magrittr %>%
 #' @export
@@ -485,7 +496,9 @@ normSD <- function (x, center = 0, SD = 1) {
 #' Data normalization
 #'
 #' \code{fitKernelDensity} calculates the fitted density of \code{log2FC}.
-#'
+#' 
+#' @param df An input data frame.
+#' @inheritParams standPep
 #' @return A data frame.
 #'
 #' @import dplyr purrr rlang mixtools

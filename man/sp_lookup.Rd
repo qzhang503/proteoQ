@@ -6,6 +6,9 @@
 \usage{
 sp_lookup(species)
 }
+\arguments{
+\item{species}{Character string; the name of a species.}
+}
 \description{
 Species lookup
 }

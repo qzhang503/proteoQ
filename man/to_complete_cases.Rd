@@ -6,6 +6,13 @@
 \usage{
 to_complete_cases(complete_cases = FALSE, impute_na = FALSE)
 }
+\arguments{
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
+}
 \description{
 force 'complete_cases = TRUE' at 'impute_na = FALSE'
 }

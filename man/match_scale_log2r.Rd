@@ -6,6 +6,10 @@
 \usage{
 match_scale_log2r(scale_log2r)
 }
+\arguments{
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+}
 \description{
 \code{match_scale_log2r} matches the value of \code{scale_log2r} to the value
 in caller environment.

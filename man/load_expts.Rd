@@ -100,6 +100,7 @@ experiments
 }
 
 \examples{
+\donttest{
 # ===================================
 # Fasta and PSM files
 # ===================================
@@ -219,6 +220,7 @@ pepSig(
 prnSig(impute_na = TRUE)
 
 }
+}
 \seealso{
 \emph{Data normalization} \cr 
  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
@@ -229,18 +231,18 @@ prnSig(impute_na = TRUE)
  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \emph{Variable arguments of `filter_...`} \cr 
+ \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr
+
+\emph{Variable arguments of `filter_...`} \cr 
  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \emph{Missing values} \cr 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- 
- \emph{Informatics} \cr 
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+
+\emph{Missing values} \cr 
+ \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr
+
+\emph{Informatics} \cr 
  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
@@ -256,12 +258,29 @@ prnSig(impute_na = TRUE)
  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
- 
- \emph{Custom databases} \cr 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+
+\emph{Custom databases} \cr 
+ \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr 
  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
  ontology}} \cr 
  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
  signatures} \cr 
- \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+ 
+ \emph{Column keys in PSM, peptide and protein outputs} \cr 
+ # Mascot \cr
+ system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ 
+ # MaxQuant \cr
+ system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }
+\concept{basic informatics}
+\concept{custom database preparation}
+\concept{data row filtration}
+\concept{missing value imputation}
+\concept{normalization functions}

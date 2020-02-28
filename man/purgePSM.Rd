@@ -33,7 +33,7 @@ deviation in relative to the width of ratio profiles.}
 default is TRUE.}
 
 \item{theme}{A
-\code{\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}}
+\href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
 theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
 
@@ -54,6 +54,7 @@ TMT experiment per series of LC/MS. Note that greater CV may be encountered
 for samples that are more different to reference material(s).
 }
 \examples{
+\donttest{
 # ===================================
 # PSM cleanup by CV
 # ===================================
@@ -79,7 +80,8 @@ purgePSM(pt_cv = .95)
 purgePSM(pt_cv = .95)
 
 ## custom theme
-purgePSM(dpi = 300, theme = theme_dark())
+purgePSM(dpi = 300, theme = theme_dark())  
+}
 }
 \seealso{
 \emph{Metadata} \cr 
@@ -124,9 +126,21 @@ purgePSM(dpi = 300, theme = theme_dark())
  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
  \emph{Custom databases} \cr 
+ \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
  ontology}} \cr 
  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
  signatures} \cr 
- \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+ 
+ \emph{Column keys in PSM, peptide and protein outputs} \cr 
+ # Mascot \cr
+ system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ 
+ # MaxQuant \cr
+ system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

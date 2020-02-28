@@ -11,6 +11,7 @@ labEffPSM(
   expt_smry = "expt_smry.xlsx",
   frac_smry = "frac_smry.xlsx",
   fasta = NULL,
+  entrez = NULL,
   pep_unique_by = "group",
   corrected_int = TRUE,
   rm_reverses = TRUE,
@@ -53,6 +54,13 @@ prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search. There is no default and users need to provide the
 correct file path(s) and name(s).}
 
+\item{entrez}{Character string(s) to the name(s) of entrez file(s) with
+prepended directory path. At the \code{NULL} default, a convenience lookup
+is available for species among \code{c("human", "mouse", "rat")}. For other
+species, users need to provide the file path(s) and name(s) for the lookup
+table(s). See also \code{\link{prepEntrez}} for preparing custom entrez
+files.}
+
 \item{pep_unique_by}{A character string for annotating the uniqueness of
 peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
 uniqueness of peptides is by protein groups. At a more strigent criterion of
@@ -72,7 +80,7 @@ the TRUE default, \code{Reverse} entries will be removed.}
 default is 1,000.}
 
 \item{rm_craps}{Logical; if TRUE,
-\code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins will be removed.
+\href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
 The default is FALSE.}
 
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
@@ -96,14 +104,13 @@ intensities will be plotted. The default is TRUE.}
 residues will be abbreviated with lower-case and/or \code{^_~}. See the
 table below for details. The default is TRUE.}
 
-\item{...}{\code{filter_}: Variable argument statements for the filtration of
-data rows. Each statement contains to a list of logical expression(s). The
-\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
-the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-For example, \code{pep_expect} is a column key present in \code{Mascot} PSM
-exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove PSM
-entries with \code{pep_expect > 0.1}.}
+\item{...}{Not currently used.}
 }
 \description{
 TMT labeling efficiency
+}
+\examples{
+res <- labEffPSM(
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\uniprot\\\\uniprot_mm_2014_07.fasta"),
+)
 }

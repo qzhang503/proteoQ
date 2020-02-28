@@ -6,6 +6,37 @@
 \usage{
 pep_to_prn(id, method_pep_prn, use_unique_pep, gn_rollup, ...)
 }
+\arguments{
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{method_pep_prn}{Character string; the method to summarise the
+\code{log2FC} and the \code{intensity} of peptides by protein entries. The
+descriptive statistics includes \code{c("mean", "median", "top.3",
+"weighted.mean")} with \code{median} being the default. The representative
+\code{log10-intensity} of reporter ions at the peptide levels (from
+\code{\link{standPep}}) will be the weigth when summarising \code{log2FC}
+with \code{top.3} or \code{weighted.mean}.}
+
+\item{use_unique_pep}{Logical. If TRUE, only entries that are \code{TRUE} or
+equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
+will be used, for summarising the \code{log2FC} and the \code{intensity} of
+peptides into protein values. The default is to use unique peptides only.
+For \code{MaxQuant} data, the levels of uniqueness are according to the
+\code{pep_unique_by} in \code{\link{normPSM}}. The argument currently do
+nothing to \code{Spectrum Mill} data where both unique and shared peptides
+will be kept.}
+
+\item{gn_rollup}{Logical; if TRUE, rolls up protein accessions to gene names.}
+
+\item{...}{\code{filter_}: Variable argument statements for the filtration of
+data rows. Each statement contains a list of logical expression(s). The
+\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+For example, \code{pep_len} is a column key present in \code{Peptide.txt}
+with \code{Mascot} workflows. The statement of \code{filter_peps_at =
+exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.}
+}
 \description{
 Helper of Pep2Prn
 }

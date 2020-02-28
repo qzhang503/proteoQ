@@ -13,6 +13,49 @@ gspa_summary_mean(
   gslogFC_cutoff = log2(1)
 )
 }
+\arguments{
+\item{gset}{Character string; a gene set indicated by \code{gset_nms}.}
+
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{min_size}{Numeric value or vector; minimum number of protein entries for
+consideration in gene set tests. The number is after data filtration by
+\code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
+\code{filter_}. The default is 10 for all formulae matched to or specified
+in argument \code{fml_nms}. Formula-specific threshold is allowed by
+supplying a vector of sizes.}
+
+\item{min_delta}{Numeric value or vector; the minimum count difference between
+the up- and the down-expressed group of proteins for consideration in gene
+set tests. For example at \code{min_delta = 4}, a gene set will 6
+upregulated proteins and 2 downregulated proteins, or vice versa, will be
+assessed. The number is after data filtration by \code{pval_cutoff},
+\code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
+is 4 for all formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of sizes.}
+
+\item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
+significance \code{pVal}. Only enrichment terms with \code{pVals} more
+significant than the threshold will be reported. The default is 0.05 for all
+formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of cut-off
+values.}
+
+\item{gslogFC_cutoff}{Numeric value or vector; the cut-off in gene-set
+enrichment fold change. Only enrichment terms with absolute fold change
+greater than the threshold will be reported. The default magnitude is
+\code{log2(1.2)} for all formulae matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of absolute values in \code{log2FC}.}
+}
 \description{
 gspa pVal calculations using geomean
 }

@@ -6,6 +6,9 @@
 \usage{
 taxid_lookup(species)
 }
+\arguments{
+\item{species}{Character string; the name of a species.}
+}
 \description{
 Toxonomy lookup
 }

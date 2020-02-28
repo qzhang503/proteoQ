@@ -32,6 +32,112 @@ info_anal(
 )
 }
 \arguments{
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
+\item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
+At the \code{NULL} default, the column key of \code{Select} in
+\code{expt_smry.xlsx} will be used. In the case of no samples being
+specified under \code{Select}, the column key of \code{Sample_ID} will be
+used. The non-empty entries under the ascribing column will be used in
+indicated analysis.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
+
+\item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
+Numeric values under which will be used for the left-to-right arrangement of
+samples in graphic outputs or top-to-bottom arrangement in text outputs. At
+the NULL default, the column key \code{Order} will be used. If values under
+column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{color} aesthetics in plots. At
+the NULL default, the column key \code{Color} will be used.}
+
+\item{col_fill}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{fill} aesthetics in plots. At
+the NULL default, the column key \code{Fill} will be used.}
+
+\item{col_shape}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{shape} aesthetics in plots. At
+the NULL default, the column key \code{Shape} will be used.}
+
+\item{col_size}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{size} aesthetics in plots. At
+the NULL default, the column key \code{Size} will be used.}
+
+\item{col_alpha}{Character string to a column key in \code{expt_smry.xlsx}.
+Values under which will be used for the \code{alpha} (transparency)
+aesthetics in plots. At the NULL default, the column key \code{Alpha} will
+be used.}
+
+\item{color_brewer}{Character string to the name of a color brewer for use in
+\href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_color_brewer},
+ i.e., \code{color_brewer = Set1}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
+
+\item{fill_brewer}{Character string to the name of a color brewer for use in
+\href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_fill_brewer},
+ i.e., \code{fill_brewer = Spectral}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
+
+\item{size_manual}{Numeric vector to the scale of sizes for use in
+\href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_size_manual},
+ i.e., \code{size_manual = c(8, 12)}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
+
+\item{shape_manual}{Numeric vector to the scale of shape IDs for use in
+\href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_shape_manual},
+ i.e., \code{shape_manual = c(5, 15)}. At the NULL default, the setting in
+\code{ggplot2} will be used.}
+
+\item{alpha_manual}{Numeric vector to the scale of transparency of objects for
+use in
+\href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_alpha_manual}
+ , i.e., \code{alpha_manual = c(.5, .9)}. At the NULL default, the setting
+in \code{ggplot2} will be used.}
+
+\item{col_benchmark}{Not used.}
+
+\item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
+of standard deviation across all samples. The default is TRUE.}
+
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
+
+\item{impute_na}{Logical; if TRUE, data with the imputation of missing values
+will be used. The default is FALSE.}
+
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{df2}{Character vector or string; the name(s) of secondary data file(s).
+An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
+\code{df} generates secondary files such as
+\code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
+section or \code{\link{prnHist}} for the description of a primary \code{df}.}
+
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
+
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
+
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
 automatically. Examplary values include \code{anal_type = c("PCA",
@@ -39,7 +145,7 @@ automatically. Examplary values include \code{anal_type = c("PCA",
 "NMF", "Purge", "Trend", ...)}.}
 }
 \value{
-a function to the given \code{anal_type}.
+A function to the given \code{anal_type}.
 }
 \description{
 \code{info_anal} produces functions for selected informatic analysis.

@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # String DB
 # ===================================
@@ -51,3 +52,4 @@ anal_prnString(
                     `W16_vs_W2.pVal (W16-W2)` <= 1e-6),
   filename = "prot_npep2 W16_vs_W2.pVal (W16-W2).txt",
 )
+}

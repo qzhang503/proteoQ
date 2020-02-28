@@ -16,6 +16,10 @@ annot_stringdb(
 )
 }
 \arguments{
+\item{species}{Character string; the species. The currently supported species
+include \code{human, mouse, rat, fly, cow, dog}. The default is
+\code{human}.}
+
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an
 \code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
@@ -29,14 +33,21 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{db_path}{Character string; the local path for database(s). The default
 is \code{"~\\proteoQ\\dbs\\string"}.}
 
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
 \item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
 protein-protein interaction. The default is 0.7.}
 
-\item{filepath}{Use system default.}
+\item{filepath}{A file path to output results. By default, it will be
+determined automatically by the name of the calling function and the value
+of \code{id} in the \code{call}.}
 
-\item{filename}{Use system default. Otherwise, the basename will be prepended
-to \code{_[species]_ppi.tsv} for network data and \code{_[species]_expr.tsv}
-for expression data.}
+\item{filename}{A representative file name to outputs. By default, the name(s)
+will be determined automatically. For text files, a typical file extension
+is \code{.txt}. For image files, they are typically saved via
+\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
+image type will be determined by the extension of the file name.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration
 against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.

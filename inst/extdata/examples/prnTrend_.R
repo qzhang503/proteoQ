@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Trend analysis
 # ===================================
@@ -185,3 +186,4 @@ plot_prnTrend(
   theme = my_trend_theme,
   filename = my_theme.png,
 )
+}

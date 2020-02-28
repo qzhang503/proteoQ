@@ -25,6 +25,6 @@ preprocessing, quality assurance assessments and informatic analysis.
   plot_pepNMFCon, plot_prnNMFCon, plot_pepNMFCoef, plot_prnNMFCoef,
   plot_metaNMF, anal_prnTrend, plot_prnTrend, pepSig, prnSig, pepVol, prnVol,
   prnGSPA, prnGSPAHM, gspaMap, anal_prnString, pepImp, prnImp, prnGSVA,
-  prnGSEA
+  prnGSEA, prepGO, prepMSig
 }
 

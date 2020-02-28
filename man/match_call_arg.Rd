@@ -7,7 +7,7 @@
 match_call_arg(call_rda = "foo", arg = "scale_log2r")
 }
 \arguments{
-\item{call_rda}{the name of a rda}
+\item{call_rda}{the name of a rda.}
 
 \item{arg}{Argument to be matched.}
 }

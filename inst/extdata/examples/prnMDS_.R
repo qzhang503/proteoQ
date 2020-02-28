@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # MDS
 # ===================================
@@ -155,4 +156,5 @@ prnMDS(
   col_color = "column_key_not_existed",
   col_shape = "another_missing_column_key"
 )
-## End(Not run)
+## End(Not run)  
+}

@@ -13,6 +13,9 @@ pepImp(...)
 prnImp(...)
 }
 \arguments{
+\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\code{prot_acc} and \code{gene}.}
+
 \item{overwrite}{Logical. If true, overwrite the previous results. The default
 is FALSE.}
 
@@ -34,6 +37,7 @@ auto-determination of \code{id}.
 auto-determination of \code{id}.
 }
 \examples{
+\donttest{
 # ===================================
 # Peptide NA imputation
 # ===================================
@@ -41,7 +45,9 @@ pepImp(
   m = 3,
   maxit = 3,
 )
+}
 
+\donttest{
 # ===================================
 # Protein NA imputation
 # ===================================
@@ -49,5 +55,6 @@ prnImp(
   m = 5,
   maxit = 5,
 )
+}
 
 }

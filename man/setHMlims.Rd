@@ -17,7 +17,3 @@ setHMlims(x, xmin, xmax)
 \code{setHMlims} imputes values beyond the limits to the corresponding
 limits.
 }
-\examples{
-setHMlims(df, -1, 1)
-
-}

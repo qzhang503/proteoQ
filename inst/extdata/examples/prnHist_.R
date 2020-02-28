@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Histogram
 # ===================================
@@ -122,4 +123,5 @@ prnHist(
   lhs_not_start_with_filter_ = exprs(n_psm >= 5),
 )
 
-## End(Not run)
+## End(Not run)  
+}

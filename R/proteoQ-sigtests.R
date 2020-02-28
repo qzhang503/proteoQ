@@ -1,5 +1,7 @@
 #' Row Variance
-#'
+#' 
+#' @param x A data frame.
+#' @param na.rm The same as in \code{mean}.
 #' @importFrom magrittr %>%
 rowVars <- function (x, na.rm = TRUE) {
 		sqr <- function(x) x * x
@@ -10,7 +12,10 @@ rowVars <- function (x, na.rm = TRUE) {
 
 
 #' Filter rows by variance quantiles
-#'
+#' 
+#' @inheritParams info_anal
+#' @inheritParams gn_rollup
+#' @inheritParams prnSig
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
 filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
@@ -34,7 +39,9 @@ filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
 }
 
 #' Prepare formulas
-#'
+#' 
+#' @inheritParams gspaTest
+#' @inheritParams model_onechannel
 #' @importFrom magrittr %>%
 prepFml <- function(formula, label_scheme_sub, ...) {
 
@@ -155,7 +162,9 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 
 
 #' Adjusted pVal
-#'
+#' 
+#' @param df_pval A data frame containing pVals
+#' @inheritParams prnSig 
 #' @importFrom magrittr %>%
 my_padj <- function(df_pval, pval_cutoff) {
 	df_pval %>%
@@ -174,7 +183,10 @@ my_padj <- function(df_pval, pval_cutoff) {
 
 
 #' Model summary
-#'
+#' 
+#' @param pvals A data frame of pVal
+#' @param log2rs A data frame of log2FC
+#' @inheritParams prnSig
 #' @importFrom magrittr %>% %$%
 lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 	nms <- rownames(pvals)
@@ -209,7 +221,11 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 
 #' Factorial model formula for interaction terms. All factors under one channel
 #' in `label_scheme_sub`
-#'
+#' 
+#' @param formula Language; the formula in linear modeling.
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
+#' @inheritParams prnSig
 #' @importFrom MASS ginv
 model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases, method, var_cutoff, 
                               pval_cutoff, logFC_cutoff, ...) {
@@ -340,7 +356,11 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 
 
 #' Perform significance tests
-#'
+#' 
+#' @param data_type The type of data being either \code{Peptide} or \code{Protein}.
+#' @inheritParams info_anal
+#' @inheritParams gspaTest
+#' @inheritParams prnSig
 #' @import limma stringr purrr tidyr dplyr rlang
 #' @importFrom magrittr %>% %$%
 #' @importFrom broom.mixed tidy
@@ -588,11 +608,23 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
+#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%

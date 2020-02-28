@@ -11,6 +11,7 @@ normPSM(
   expt_smry = "expt_smry.xlsx",
   frac_smry = "frac_smry.xlsx",
   fasta = NULL,
+  entrez = NULL,
   pep_unique_by = "group",
   corrected_int = TRUE,
   rm_reverses = TRUE,
@@ -53,6 +54,13 @@ prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search. There is no default and users need to provide the
 correct file path(s) and name(s).}
 
+\item{entrez}{Character string(s) to the name(s) of entrez file(s) with
+prepended directory path. At the \code{NULL} default, a convenience lookup
+is available for species among \code{c("human", "mouse", "rat")}. For other
+species, users need to provide the file path(s) and name(s) for the lookup
+table(s). See also \code{\link{prepEntrez}} for preparing custom entrez
+files.}
+
 \item{pep_unique_by}{A character string for annotating the uniqueness of
 peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
 uniqueness of peptides is by protein groups. At a more strigent criterion of
@@ -72,7 +80,7 @@ the TRUE default, \code{Reverse} entries will be removed.}
 default is 1,000.}
 
 \item{rm_craps}{Logical; if TRUE,
-\code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins will be removed.
+\href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
 The default is FALSE.}
 
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
@@ -112,8 +120,8 @@ Outputs are under the directory of \code{PSM} sub to \code{dat_dir}.
 }
 \description{
 \code{normPSM} standarizes
-\code{\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}}
-results from \code{\href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}}
+\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}
+results from \href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}
 experiments.
 }
 \details{
@@ -146,20 +154,18 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
 }
 \section{\code{Mascot}}{
  End users will export \code{PSM} data from
- \code{\href{https://http://www.matrixscience.com/}{Mascot}} at a \code{.csv}
+ \href{https://http://www.matrixscience.com/}{Mascot} at a \code{.csv}
  format and store them under the file folder indicated by \code{dat_dir}. The
  header information should be included during the \code{.csv} export. The
  file name(s) should be defaulted by
- \code{\href{https://http://www.matrixscience.com/}{Mascot}}: starting with
+ \href{https://http://www.matrixscience.com/}{Mascot}: starting with
  the letter \code{'F'}, followed by digits without space and ended with a
  \code{'.csv'} extension \code{(e.g., F004453.csv)}.
-
- See \code{\link{normPrn}} for the description of column keys in the output.
 }
 
 \section{\code{MaxQuant}}{
  End users will copy over \code{msms.txt} file(s)
- from \code{\href{https://www.maxquant.org/}{MaxQuant}} to the \code{dat_dir}
+ from \href{https://www.maxquant.org/}{MaxQuant} to the \code{dat_dir}
  directory. In the case of multiple \code{msms.txt} files for processing, the
  file names need to be compiled in that they all start with \code{'msms'} and
  end with a \code{'.txt'} extension.
@@ -168,8 +174,8 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
 \section{\code{Spectrum Mill}}{
  End users will copy over \code{PSMexport.1.ssv}
  file(s) from
- \code{\href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum
-  Mill}} to the \code{dat_dir} directory. In the case of multiple
+ \href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum Mill} 
+ to the \code{dat_dir} directory. In the case of multiple
  \code{PSMexport} files for processing, the file names need to be compiled in
  that they all start with \code{'PSMexport'} and end with a \code{'.ssv'}
  extension.
@@ -236,6 +242,7 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
 }
 
 \examples{
+\donttest{
 # ===================================
 # PSM normalization
 # ===================================
@@ -279,6 +286,34 @@ normPSM(
   filter_psms = exprs(score >= 10),
 )
 
+###############################################
+## Custom entrez lookups
+#  (1) can overwrite the `proteoQ` default for 
+#      species in "human", "mouse" and "rat"
+#  (2) and are required for `other` species
+###############################################
+# see also `?prepEntrez` for more examples
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("org.Hs.eg.db")
+BiocManager::install("org.Mm.eg.db")
+
+library(org.Hs.eg.db)
+library(org.Mm.eg.db)
+
+library(proteoQ)
+prepEntrez(human)
+prepEntrez(mouse)
+
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  group_pep_by = gene, 
+  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  entrez = c("~\\\\proteoQ\\\\dbs\\\\entrez\\\\uniprot_entrez_hs.rds", 
+             "~\\\\proteoQ\\\\dbs\\\\entrez\\\\uniprot_entrez_mm.rds"),
+)
 
 ## Not run: 
 # wrong fasta 
@@ -298,7 +333,7 @@ normPSM(
   filter_psms_at = exprs(column_key_not_in_psm_tables <= .1),
 )
 ## End(Not run)
-
+}
 }
 \seealso{
 \emph{Metadata} \cr 
@@ -343,9 +378,21 @@ normPSM(
  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
  \emph{Custom databases} \cr 
+ \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
  ontology}} \cr 
  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
  signatures} \cr 
- \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB
+ \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+ 
+ \emph{Column keys in PSM, peptide and protein outputs} \cr 
+ # Mascot \cr
+ system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ 
+ # MaxQuant \cr
+ system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

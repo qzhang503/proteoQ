@@ -7,7 +7,7 @@
 locate_outliers(df, range_colRatios)
 }
 \arguments{
-\item{df}{A data frame containing the PSM table from Mascot.}
+\item{df}{A data frame containing the PSM table from database searches.}
 
 \item{range_colRatios}{The range of columns.}
 }
@@ -18,5 +18,5 @@ A data frame.
 Locates the positions of outliersf
 }
 \examples{
-locate_outliers(df, 2:3)
+\donttest{locate_outliers(df, 2:3)}
 }

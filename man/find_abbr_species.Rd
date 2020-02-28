@@ -6,6 +6,26 @@
 \usage{
 find_abbr_species(species = "human", abbr_species = NULL)
 }
+\arguments{
+\item{species}{Character string; the name of a species for the
+\emph{conveninent} preparation of \code{MSig} data bases. The species
+available for the convenience feature is in one of \code{c("human", "mouse",
+"rat")} with \code{"human"} being the default. The argument is not required
+for other species; instead, users will provide values under arguments
+\code{ortho_mart} for the lookup of orthologs to human.}
+
+\item{abbr_species}{Two-letter character string; the abbreviated name of
+species used with
+\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
+ The value of \code{abbr_species} will be determined automatically if the
+species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
+example, users need to provide \code{abbr_species = Ce} for fetching the
+\code{org.Ce.eg.db} package in the name space of proteoQ. For
+\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+Signatures}, the argument is further applied to differentiate the same
+biological terms under different species.}
+}
 \description{
 Helper to find the two-letter character string of abbreviated species
 }

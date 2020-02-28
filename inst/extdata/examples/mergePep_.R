@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # Merge peptide data
 # ===================================
@@ -22,4 +23,4 @@ mergePep(
 mergePep(
   filter_peps_by_sp = exprs(species == "human", pep_miss <= 3),
 )
-
+}

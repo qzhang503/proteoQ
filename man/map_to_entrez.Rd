@@ -2,22 +2,50 @@
 % Please edit documentation in R/proteoQ-go.R
 \name{map_to_entrez}
 \alias{map_to_entrez}
-\title{Map uniprot or refseq to entrez (not currently used)}
+\title{Map UniProt or Refseq accessions to Entrez IDs}
 \usage{
-map_to_entrez(species, from)
+map_to_entrez(
+  species = "human",
+  abbr_species = NULL,
+  from = "UNIPROT",
+  filename = NULL,
+  db_path = "~\\\\proteoQ\\\\dbs\\\\entrez",
+  overwrite = FALSE
+)
+}
+\arguments{
+\item{species}{Character string; the name of a species for the
+\emph{conveninent} preparation of \code{MSig} data bases. The species
+available for the convenience feature is in one of \code{c("human", "mouse",
+"rat")} with \code{"human"} being the default. The argument is not required
+for other species; instead, users will provide values under arguments
+\code{ortho_mart} for the lookup of orthologs to human.}
+
+\item{abbr_species}{Two-letter character string; the abbreviated name of
+species used with
+\href{https://bioconductor.org/packages/release/data/annotation/html/org.Hs.eg.db.html}{org.Xx.eg.db}.
+ The value of \code{abbr_species} will be determined automatically if the
+species is in one of \code{c("human", "mouse", "rat")}. Otherwise, for
+example, users need to provide \code{abbr_species = Ce} for fetching the
+\code{org.Ce.eg.db} package in the name space of proteoQ. For
+\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
+Signatures}, the argument is further applied to differentiate the same
+biological terms under different species.}
+
+\item{from}{the type of \code{keys}}
+
+\item{filename}{Character string; An output file name. At the \code{NULL}
+default, the name will be determined automatically at a given
+\code{species}; i.e., \code{msig_hs.rds} for \code{human} data. The file is
+saved as a \code{.rds} object for uses with \code{\link{prnGSPA}}.}
+
+\item{db_path}{Character string; the local path for database(s). The default
+is \code{"~\\proteoQ\\dbs\\msig"}.}
+
+\item{overwrite}{Logical; if TRUE, overwrite the downloaded databse(s). The
+default is FALSE.}
 }
 \description{
-Map uniprot or refseq to entrez (not currently used)
-}
-\examples{
-\dontrun{
-# available species: c("human", "mouse", "rat")
-res <- map_to_entrez(species = "human", from = "egUNIPROT")
-dir.create(file.path("~\\\\proteoQ\\\\dbs\\\\entrez\\\\to_unirpot"), recursive = TRUE, showWarnings = FALSE)
-write.table(res, file.path("~\\\\proteoQ\\\\dbs\\\\entrez\\\\to_unirpot", paste0("uniprot_entrez_", species, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE)
-
-res <- map_entrez(species, from = "egREFSEQ")
-dir.create(file.path("~\\\\proteoQ\\\\dbs\\\\entrez\\\\to_refseq"), recursive = TRUE, showWarnings = FALSE)
-write.table(res, file.path("~\\\\proteoQ\\\\dbs\\\\entrez\\\\to_refseq", paste0("refseq_entrez_", species, ".txt")), sep = "\t", col.names = TRUE, row.names = FALSE)
-}
+Map UniProt or Refseq accessions to Entrez IDs
 }

@@ -7,7 +7,9 @@
 filters_in_call(df, ...)
 }
 \arguments{
-\item{df;}{data frame.}
+\item{df}{a data frame.}
+
+\item{...}{Arguments for \link[dplyr]{filter}}
 }
 \description{
 Filter rows

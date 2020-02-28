@@ -14,15 +14,14 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Suggests: 
-    knitr,
-    rmarkdown,
-    testthat, 
-		digest
+    testthat
 VignetteBuilder: knitr
 Imports: 
     backports,
     biomaRt,
+		broom,
 		cluster,
+		digest,
 		downloader,
 		dplyr,
 		forcats,
@@ -30,6 +29,8 @@ Imports:
     purrr,
     readxl,
     readr,
+    rmarkdown,
+		scales,
     stringr,
     tibble,
     tidyr,
@@ -49,6 +50,7 @@ Imports:
     mice,
     mixtools,
 		networkD3,
+    knitr,
 		org.Hs.eg.db,
 		org.Mm.eg.db, 
 		org.Rn.eg.db,
@@ -57,6 +59,7 @@ Imports:
     openxlsx,
     pheatmap,
     plyr,
+		proteoQDA,
 		reshape2,
     rlang,
     seqinr,

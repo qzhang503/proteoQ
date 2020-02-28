@@ -6,6 +6,37 @@
 \usage{
 fitKernelDensity(df, n_comp = 3, seed = NULL, ...)
 }
+\arguments{
+\item{df}{An input data frame.}
+
+\item{n_comp}{Integer; the number of Gaussian components to be used with
+\code{method_align = MGKernel}. A typical value is 2 or 3. The variable
+\code{n_comp} overwrites the augument \code{k} in
+\code{\link[mixtools]{normalmixEM}}.}
+
+\item{seed}{Integer; a seed setting a starting point for reproducible
+analyses.}
+
+\item{...}{\code{slice_}: variable argument statements for the identification
+of row subsets. The partial data will be taken for parameterizing the
+alignment of \code{log2FC} across samples. The full data set will be updated
+subsequently with the newly derived paramters. Note that there is no data
+entry removals from the complete data set with the \code{slice_} procedure.
+\cr \cr The variable argument statements should be in the following format:
+each of the statement contains a list of logical expression(s). The
+\code{lhs} needs to start with \code{slice_}. The logical condition(s) at
+the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+For example, \code{pep_len} is a column key present in \code{Peptide.txt}
+with \code{Mascot} workflows. The \code{slice_peps_at = exprs(pep_len >= 10,
+pep_len <= 50)} will extract peptide entries with the number of amino acid
+residues betwen 10 and 50 for \code{log2FC} alignment. Shorter or longer
+peptide sequences will remain in \code{Peptide.txt} but not used in the
+parameterization. See also \code{\link{normPSM}} for the variable arguments
+of \code{filter_}. \cr \cr Additional parameters from
+\code{\link[mixtools]{normalmixEM}}, i.e., \cr \code{maxit}, the maximum
+number of iterations allowed; \cr \code{epsilon}, tolerance limit for
+declaring algorithm convergence.}
+}
 \value{
 A data frame.
 }

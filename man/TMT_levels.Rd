@@ -6,6 +6,9 @@
 \usage{
 TMT_levels(TMT_plex)
 }
+\arguments{
+\item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
+}
 \description{
 \code{TMT_levels} returns the factor levels of TMT labels.
 }

@@ -8,6 +8,7 @@ splitPSM_sm(
   group_psm_by = "pep_seq",
   group_pep_by = "prot_acc",
   fasta = NULL,
+  entrez = NULL,
   rm_craps = FALSE,
   rm_krts = FALSE,
   rptr_intco = 1000,
@@ -17,13 +18,33 @@ splitPSM_sm(
 )
 }
 \arguments{
+\item{group_psm_by}{A character string specifying the method in PSM grouping.
+At the \code{pep_seq} default, descriptive statistics will be calculated
+based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
+alternative, peptides with different variable modifications will be treated
+as different species and descriptive statistics will be calculated based on
+the same \code{pep_seq_mod} groups.}
+
+\item{group_pep_by}{A character string specifying the method in peptide
+grouping. At the \code{prot_acc} default, descriptive statistics will be
+calculated based on the same \code{prot_acc} groups. At the \code{gene}
+alternative, proteins with the same gene name but different accession
+numbers will be treated as one group.}
+
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search. There is no default and users need to provide the
 correct file path(s) and name(s).}
 
+\item{entrez}{Character string(s) to the name(s) of entrez file(s) with
+prepended directory path. At the \code{NULL} default, a convenience lookup
+is available for species among \code{c("human", "mouse", "rat")}. For other
+species, users need to provide the file path(s) and name(s) for the lookup
+table(s). See also \code{\link{prepEntrez}} for preparing custom entrez
+files.}
+
 \item{rm_craps}{Logical; if TRUE,
-\code{\href{https://www.thegpm.org/crap/}{cRAP}} proteins will be removed.
+\href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
 The default is FALSE.}
 
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
@@ -37,6 +58,8 @@ will be annotated with their kinase attributes. The default is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
 intensities will be plotted. The default is TRUE.}
+
+\item{...}{Not currently used.}
 }
 \description{
 \code{splitPSM_sm} splits the PSM outputs from \code{Spectrum Mill}. It

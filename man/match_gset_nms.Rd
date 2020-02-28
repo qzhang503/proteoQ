@@ -2,12 +2,20 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{match_gset_nms}
 \alias{match_gset_nms}
-\title{Matches gset_nms to prnGSPA
-not currently used}
+\title{Matches gset_nms to prnGSPA (not currently used)}
 \usage{
 match_gset_nms(gset_nms = NULL)
 }
+\arguments{
+\item{gset_nms}{Character string or vector containing the shorthanded name(s),
+full file path(s) or both to gene sets for enrichment analysis. For species
+among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
+"c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
+molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
+curated \code{MSig}, and/or additional species are also supported. See also
+\code{\link{prepGO}} for the prepration of custom \code{GO} and
+\code{\link{prepMSig}} for the prepration of custom \code{MSig}.}
+}
 \description{
-Matches gset_nms to prnGSPA
-not currently used
+Matches gset_nms to prnGSPA (not currently used)
 }

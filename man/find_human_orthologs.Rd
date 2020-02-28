@@ -2,14 +2,27 @@
 % Please edit documentation in R/proteoQ-go.R
 \name{find_human_orthologs}
 \alias{find_human_orthologs}
-\title{Helper to find human orthologs
-#' @examples
-res <- find_human_orthologs(mouse)}
+\title{Helper to find human orthologs}
 \usage{
 find_human_orthologs(species, ortho_mart)
 }
+\arguments{
+\item{species}{Character string; the name of a species for the
+\emph{conveninent} preparation of \code{MSig} data bases. The species
+available for the convenience feature is in one of \code{c("human", "mouse",
+"rat")} with \code{"human"} being the default. The argument is not required
+for other species; instead, users will provide values under arguments
+\code{ortho_mart} for the lookup of orthologs to human.}
+
+\item{ortho_mart}{Character string; a dataset name from
+\code{\link[biomaRt]{useMart}} and/or \code{\link[biomaRt]{listDatasets}}
+for the lookup of orthologs to \code{human} genes. For species in
+\code{c("human", "mouse", "rat")}, the value will be determined
+automatically unless otherwise specified.}
+}
 \description{
 Helper to find human orthologs
-#' @examples
-res <- find_human_orthologs(mouse)
+}
+\examples{
+\donttest{res <- find_human_orthologs(mouse)}
 }

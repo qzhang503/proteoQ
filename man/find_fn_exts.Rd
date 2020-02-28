@@ -6,6 +6,11 @@
 \usage{
 find_fn_exts(filename, type = "text")
 }
+\arguments{
+\item{filename}{A character string of filename}
+
+\item{type}{the type of filename extension}
+}
 \description{
 find the extensions of files
 }

@@ -6,6 +6,26 @@
 \usage{
 lm_gspa(df, min_delta)
 }
+\arguments{
+\item{df}{The name of a primary data file. By default, it will be determined
+automatically after matching the types of data and analysis with an
+\code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
+primary file contains normalized peptide or protein data and is among
+\code{c("Peptide.txt", "Peptide_pVal.txt", "Peptide_impNA_pVal.txt",
+"Protein.txt", "Protein_pVal.txt", "protein_impNA_pVal.txt")}. For analyses
+require the fields of significance p-values, the \code{df} will be one of
+\code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
+"protein_impNA_pVal.txt")}.}
+
+\item{min_delta}{Numeric value or vector; the minimum count difference between
+the up- and the down-expressed group of proteins for consideration in gene
+set tests. For example at \code{min_delta = 4}, a gene set will 6
+upregulated proteins and 2 downregulated proteins, or vice versa, will be
+assessed. The number is after data filtration by \code{pval_cutoff},
+\code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
+is 4 for all formulae matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of sizes.}
+}
 \description{
 significance tests of pVals between the up and the down groups
 }

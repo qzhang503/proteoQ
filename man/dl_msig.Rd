@@ -11,6 +11,19 @@ dl_msig(
   overwrite = FALSE
 )
 }
+\arguments{
+\item{msig_url}{A URL to
+\href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{MSig
+}. At the \code{NULL} default, a \code{c2.all.v[...].entrez.gmt} data will
+be used for all species. A valid web address is required for a custom data
+base, and for simplicity, only files with entrez IDs will be handled.}
+
+\item{db_path}{Character string; the local path for database(s). The default
+is \code{"~\\proteoQ\\dbs\\msig"}.}
+
+\item{overwrite}{Logical; if TRUE, overwrite the downloaded databse(s). The
+default is FALSE.}
+}
 \description{
 Helper to download `gmt`
 }

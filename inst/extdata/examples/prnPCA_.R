@@ -1,3 +1,4 @@
+\donttest{
 # ===================================
 # PCA
 # ===================================
@@ -162,5 +163,5 @@ prnPCA(
   col_shape = "another_missing_column_key"
 )
 ## End(Not run)
-
+}
 
