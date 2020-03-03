@@ -619,15 +619,18 @@ prepMSig <- function(msig_url = NULL,
 
 #' Map UniProt or Refseq accessions to Entrez IDs
 #'
+#' @param from Character string; the type of accession keys in c("UNIPROT", "REFSEQ").
 #' @inheritParams prepMSig
 #' @inheritParams annot_from_to
 #' @import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db
 #'   org.Rn.eg.db
+#' @export
 map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPROT", 
                           filename = NULL, db_path = "~\\proteoQ\\dbs\\entrez", overwrite = FALSE) {
   db_path <- create_db_path(db_path)
   species <- rlang::as_string(rlang::enexpr(species))
   abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
+  from <- rlang::as_string(rlang::enexpr(from))
   filename <- set_db_outname(!!rlang::enexpr(filename), species, paste(tolower(from), "entrez", sep = "_" ))
   
   if ((!file.exists(file.path(db_path, filename))) || overwrite)  {
@@ -647,9 +650,9 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
       if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", call. = FALSE)
     }
     
-    mapped_genes <- mappedkeys(x) 
+    entrez_ids <- mappedkeys(x) 
     
-    accessions <- as.list(x[mapped_genes]) %>% 
+    accessions <- as.list(x[entrez_ids]) %>% 
       plyr::ldply(., rbind) %>% 
       `names_pos<-`(., 1, c("entrez")) %>% 
       `names_pos<-`(., 2:ncol(.), paste(new_from, 1:(length(.)-1), sep = ".")) %>% 
@@ -663,6 +666,13 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
       accessions <- accessions %>% dplyr::rename(uniprot_acc = value)
     } else if (from == "REFSEQ") {
       accessions <- accessions %>% dplyr::rename(refseq_acc = value)
+      
+      accessions <- annot_from_to(abbr_species, unique(accessions$refseq_acc), 
+                                  "REFSEQ", "SYMBOL") %>% 
+        dplyr::rename(refseq_acc = REFSEQ, gene = SYMBOL) %>% 
+        dplyr::filter(!is.na(refseq_acc), !is.na(gene))  %>% 
+        # dplyr::filter(!duplicated(gene)) %>% 
+        dplyr::left_join(accessions, by = "refseq_acc")
     } else {
       stop("Variable `from` needs to be either `UNIPROT` or `REFSEQ`.", call. = FALSE)
     }
@@ -678,9 +688,9 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
 
 #'Map UniProt accesions to Entrez IDs
 #'
-#'\code{prepEntrez} prepares lookup tables between UniProt accessions and Entrez
-#'IDs for uses with \link{normPSM} and downstream gene-set analysis such as
-#'\link{prnGSPA}. The utility is optional for \code{human}, \code{mouse} and
+#'\code{Uni2Entrez} prepares lookup tables between UniProt accessions and
+#'Entrez IDs for uses with \link{normPSM} and downstream gene-set analysis such
+#'as \link{prnGSPA}. The utility is optional for \code{human}, \code{mouse} and
 #'\code{rat} data. It is \strong{required} for other species with \link{prnGSPA}
 #'in users' workflows. It can also be used to update and overrule the lookups
 #'for \code{human}, \code{mouse} and \code{rat} that are defaulted by
@@ -692,9 +702,8 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
 #'@inheritParams prepMSig
 #'@import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
 #'@example inst/extdata/examples/prepEntrez_.R
-
-#' @export
-prepEntrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
+#'@export
+Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
                        db_path = "~\\proteoQ\\dbs\\entrez", overwrite = FALSE) {
   map_to_entrez(!!rlang::enexpr(species), 
                 !!rlang::enexpr(abbr_species), 
@@ -707,10 +716,37 @@ prepEntrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 
 
 
+#'Map RefSeq accesions to Entrez IDs and gene names
+#'
+#'\code{Ref2Entrez} prepares lookup tables between RefSeq accessions and
+#'Entrez IDs and gene names for uses with \link{normPSM} and downstream gene-set
+#'analysis such as \link{prnGSPA}. The utility is optional for \code{human} and
+#'\code{mouse} data. It is \strong{required} for other species with
+#'\link{prnGSPA} in users' workflows. It can also be used to update and overrule
+#'the lookups for \code{human} and \code{mouse} that are defaulted by
+#'\code{proteoQ}.
+#'
+#'@rdname Uni2Entrez
+#'@import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
+#'@example inst/extdata/examples/prepEntrez_.R
+#'@export
+Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
+                       db_path = "~\\proteoQ\\dbs\\entrez", overwrite = FALSE) {
+  map_to_entrez(!!rlang::enexpr(species), 
+                !!rlang::enexpr(abbr_species), 
+                "REFSEQ", 
+                !!rlang::enexpr(filename), 
+                db_path, 
+                overwrite)
+}
+
+
+
+
 #' Map uniprot or refseq to entrez (not currently used)
 #'
 #' @param os_name An organism name by UniProt.
-#' @inheritParams prepEntrez
+#' @inheritParams Uni2Entrez
 #' @inheritParams annot_from_to
 #' @import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db
 #'   org.Rn.eg.db
@@ -747,9 +783,9 @@ map_to_entrez_os_name <- function(species = "human", abbr_species = NULL,
       if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", call. = FALSE)
     }
     
-    mapped_genes <- mappedkeys(x) 
+    entrez_ids <- mappedkeys(x) 
     
-    accessions <- as.list(x[mapped_genes]) %>% 
+    accessions <- as.list(x[entrez_ids]) %>% 
       plyr::ldply(., rbind) %>% 
       `names_pos<-`(., 1, c("entrez")) %>% 
       `names_pos<-`(., 2:ncol(.), paste(new_from, 1:(length(.)-1), sep = ".")) %>% 

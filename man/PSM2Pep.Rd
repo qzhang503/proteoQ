@@ -86,14 +86,16 @@ PSM2Pep(method_psm_pep = mean)
  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
- 
- \emph{Custom databases} \cr 
- \code{\link{prepGO}} for \href{http://current.geneontology.org/products/pages/downloads.html}{gene ontology} \cr 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+
+\emph{Custom databases} \cr 
+ \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+ \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
+ \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
+ ontology}} \cr 
  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
  signatures} \cr 
  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
- \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
  # Mascot \cr
@@ -106,3 +108,4 @@ PSM2Pep(method_psm_pep = mean)
  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }
+\concept{custom database preparation}
