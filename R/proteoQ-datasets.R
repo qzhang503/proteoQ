@@ -179,9 +179,8 @@
 #'   \item{entrez}{Entrez ID}
 #'   \item{refseq_acc}{RefSeq accession number}
 #'   \item{gene}{gene names}
-#'   \item{organism}{the organism attribute according to UniProt}
 #' }
-"refseq_hs_crossref"
+"refseq_entrez_hs"
 
 
 #' Lookups among RefSeq accessions, Entrez IDs and gene names for mouse
@@ -191,10 +190,23 @@
 #' \code{gene} names.
 #'
 #' @format A data frame with 24906 rows and 4 variables: \describe{
-#'   \item{entrez}{Entrez ID} \item{refseq_acc}{RefSeq accession number}
-#'   \item{gene}{gene names} \item{organism}{the organism attribute according to
-#'   UniProt} }
-"refseq_mm_crossref"
+#'   \item{entrez}{Entrez ID} 
+#'   \item{refseq_acc}{RefSeq accession number}
+#'   \item{gene}{gene names} }
+"refseq_entrez_mm"
+
+
+#' Lookups among RefSeq accessions, Entrez IDs and gene names for rat
+#' proteins.
+#'
+#' A dataset containing mouse \code{refseq} accessions, \code{entrez} IDs and
+#' \code{gene} names.
+#'
+#' @format A data frame with 158959 rows and 3 variables: \describe{
+#'   \item{entrez}{Entrez ID} 
+#'   \item{refseq_acc}{RefSeq accession number}
+#'   \item{gene}{gene names} }
+"refseq_entrez_rn"
 
 
 #' Lookups between UniProt accessions and Entrez IDs for human proteins.

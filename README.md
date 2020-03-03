@@ -1,7 +1,7 @@
 Package proteoQ
 ================
 true
-2020-02-28
+2020-03-03
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -65,7 +65,7 @@ more properly under html.)
 
 ## Installation
 
-To install this package, start R (version “3.6.2”) as **administrator**
+To install this package, start R (version “3.6.3”) as **administrator**
 and enter:
 
 ``` r
@@ -2438,6 +2438,9 @@ reference. Left: before trimming; right: after trimming.
 
 ### 3.2 Data subsets and additions
 
+The row filtrations and column additions of data are both available in
+proteoQ.
+
 #### 3.2.1 Subsets
 
 In this lab, we will first apply pseudoname approaches to subset data.
@@ -2662,24 +2665,39 @@ standPrn(
 
 #### 3.2.2 Column additions
 
-In this section, we will first add a column, `na_counts`, to protein
-table `Protein_pVals.txt`. The column summarizes the number of `NA` in
-`log2FC` for each protein. The newly added column will then be applied
-to data row filtration during heat map visualization.
+Customer supplied coumns can be further taken by proteoQ for various
+data processinges and informatic analyses. In this section, we will
+first add a column, `n_not_na`, to protein table `Protein.txt`. The
+column summarizes the number of `log2FC`s that are *NOT* missing for
+each protein. The newly added column will then be applied to data-row
+filtration during heat map visualization.
 
 ``` r
-df <- readr::read_tsv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt")) 
+# add a column to "Protein.txt"
+df <- readr::read_tsv(file.path(dat_dir, "Protein\\Protein.txt")) 
 
-na_counts <- df %>% 
+library(magrittr)
+n_not_na <- df %>% 
   dplyr::select(grep("Z_log2_R", names(.))) %>% 
+  dplyr::select(-grep("\\(Ref|\\(Empty", names(.))) %>% 
   is.na() %>% 
+  `!`() %>% 
   rowSums()
 
 df %>% 
-  dplyr::mutate(na_counts = na_counts) %>% 
-  readr::write_csv(file.path(dat_dir, "Protein\\Protein_pVals.txt"))
+  dplyr::mutate(n_not_na = n_not_na) %>% 
+  readr::write_tsv(file.path(dat_dir, "Protein\\Protein.txt"))
+```
 
+Note that there is a restriction in column additions in that the custom
+column(s) need to be anchored before the *intensity* and *ratio* fields
+for uses in downstream analyses. This is achieved behind the scene when
+the modified file is loaded, for example, in protein heat map
+visualization:
+
+``` r
 prnHM(
+  df = "Protein\\Protein.txt", 
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
@@ -2693,7 +2711,61 @@ prnHM(
   cellwidth = 14,
   width = 18,
   height = 12,
-  filter_prots_by_sp_npep = exprs(na_counts <= 30),
+  filter_prots_by_sp_npep = exprs(n_not_na <= 10),
+  filename = "mostly_na_vals.png",
+)
+```
+
+Importantly, we need to supply the file name to argument `df`. This is
+because a higher precedence will be given to `Model\\Protein_pVals.txt`
+over `Protein.txt`. Without specifying the value of `df`, proteoQ will
+look for the `n_not_na` column that are indeed absent from
+`Protein_pVals.txt`.
+
+<div class="figure" style="text-align: center">
+
+<img src="images\protein\heatmap\mostly_na_vals.png" alt="**Figure S2E.** Scarce heat map." width="60%" />
+
+<p class="caption">
+
+**Figure S2E.** Scarce heat map.
+
+</p>
+
+</div>
+
+Alternatively, we may add the custom column to `Protein_pVals.txt`:
+
+``` r
+df <- readr::read_tsv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt")) 
+
+n_not_na <- df %>% 
+  dplyr::select(grep("Z_log2_R", names(.))) %>% 
+  dplyr::select(-grep("\\(Ref|\\(Empty", names(.))) %>% 
+  is.na() %>% 
+  `!`() %>% 
+  rowSums()
+
+df %>% 
+  dplyr::mutate(na_counts = na_counts) %>% 
+  readr::write_tsv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt"))
+
+prnHM(
+  df = "Protein\\Model\\Protein_pVals.txt", 
+  xmin = -1,
+  xmax = 1,
+  xmargin = 0.1,
+  annot_cols = c("Group", "Color", "Alpha", "Shape"),
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"),
+  cluster_rows = TRUE,
+  cutree_rows = 10,
+  show_rownames = FALSE,
+  show_colnames = TRUE,
+  fontsize_row = 3,
+  cellwidth = 14,
+  width = 18,
+  height = 12,
+  filter_prots_by_sp_npep = exprs(n_not_na <= 10),
   filename = "na30.png",
 )
 ```

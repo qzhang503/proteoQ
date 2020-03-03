@@ -7,9 +7,11 @@
 #' @inheritParams annotPSM
 #' @inheritParams normPSM
 #' @examples 
+#' \donttest{
 #' res <- labEffPSM(
 #'   fasta = c("~\\proteoQ\\dbs\\fasta\\uniprot\\uniprot_mm_2014_07.fasta"),
 #' )
+#' }
 #' @export
 labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c("prot_acc", "gene"), 
                       dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx", 

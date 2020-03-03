@@ -58,8 +58,8 @@ correct file path(s) and name(s).}
 prepended directory path. At the \code{NULL} default, a convenience lookup
 is available for species among \code{c("human", "mouse", "rat")}. For other
 species, users need to provide the file path(s) and name(s) for the lookup
-table(s). See also \code{\link{prepEntrez}} for preparing custom entrez
-files.}
+table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
+for preparing custom entrez files.}
 
 \item{pep_unique_by}{A character string for annotating the uniqueness of
 peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
@@ -378,7 +378,8 @@ normPSM(
  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
  
  \emph{Custom databases} \cr 
- \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
+ \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+ \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
  ontology}} \cr 
  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 

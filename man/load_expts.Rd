@@ -258,10 +258,11 @@ prnSig(impute_na = TRUE)
  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
-
-\emph{Custom databases} \cr 
- \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+ 
+ \emph{Custom databases} \cr 
+ \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+ \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
  ontology}} \cr 
  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
@@ -280,7 +281,6 @@ prnSig(impute_na = TRUE)
  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }
 \concept{basic informatics}
-\concept{custom database preparation}
 \concept{data row filtration}
 \concept{missing value imputation}
 \concept{normalization functions}

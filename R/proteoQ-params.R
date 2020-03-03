@@ -28,7 +28,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 	if (is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv),
 	                                         error = function(e) 1)
 
-	if (dat_dir == 1) stop("Set up the working directory first.")
+	if (dat_dir == 1) stop("Set up the working directory first.", call. = FALSE)
 
 	if (!file.exists(file.path(dat_dir, filename)))
 	  stop(filename, " not found under '", dat_dir, "'.")
@@ -418,10 +418,9 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
-#'@family custom database preparation
-#'@seealso 
 #'  \emph{Custom databases} \cr 
-#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 

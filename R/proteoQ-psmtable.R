@@ -521,8 +521,8 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
 #'   prepended directory path. At the \code{NULL} default, a convenience lookup
 #'   is available for species among \code{c("human", "mouse", "rat")}. For other
 #'   species, users need to provide the file path(s) and name(s) for the lookup
-#'   table(s). See also \code{\link{prepEntrez}} for preparing custom entrez
-#'   files.
+#'   table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
+#'   for preparing custom entrez files.
 #' @param rm_craps Logical; if TRUE,
 #'   \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
 #'   The default is FALSE.
@@ -1293,7 +1293,8 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
-#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
+#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
@@ -1667,12 +1668,16 @@ calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_i
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
+#'@family custom database preparation
+#'@seealso 
 #'  \emph{Custom databases} \cr 
-#'  \code{\link{prepGO}} for \href{http://current.geneontology.org/products/pages/downloads.html}{gene ontology} \cr 
+#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
+#'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
 #'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
 #'  # Mascot \cr

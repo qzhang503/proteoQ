@@ -674,14 +674,14 @@ saveRDS(SwissProt_annot, file.path("C:\\Results\\R\\proteoQ\\data", paste("Swiss
 
 
 # save all .R into one file
-foo_combine_codes <- function () {
-  filepath <- file.path("C:\\Results\\R\\proteoQ\\R")
+foo_combine_codes <- function (filepath = file.path("C:\\Results\\R\\proteoQ\\R")) {
+  # filepath <- file.path("C:\\Results\\R\\proteoQ\\R")
   filenames <- dir(filepath, pattern = ".R$")
   
   dir.create(file.path(filepath, "temp"))
   
-  map(file.path(filepath, filenames), readLines) %>% 
-    reduce(`c`, init = NULL) %>% 
+  purrr::map(file.path(filepath, filenames), readLines) %>% 
+    purrr::reduce(`c`, init = NULL) %>% 
     writeLines(file.path(filepath, "temp\\all.R"))  
 }
 

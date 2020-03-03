@@ -13,8 +13,8 @@ add_custom_entrez(acc_lookup, entrez, acc_type)
 prepended directory path. At the \code{NULL} default, a convenience lookup
 is available for species among \code{c("human", "mouse", "rat")}. For other
 species, users need to provide the file path(s) and name(s) for the lookup
-table(s). See also \code{\link{prepEntrez}} for preparing custom entrez
-files.}
+table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
+for preparing custom entrez files.}
 
 \item{acc_type}{Character string; the type of protein accessions in one of
 c("refseq_acc", "uniprot_acc", "uniprot_id")}

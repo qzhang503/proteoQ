@@ -389,7 +389,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
-#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
+#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
@@ -549,7 +550,8 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
 #'  
 #'  \emph{Custom databases} \cr 
-#'  \code{\link{prepEntrez}} for lookups between UniProt accessions and Entrez IDs \cr
+#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
 #'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
