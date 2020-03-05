@@ -326,6 +326,7 @@ pepMDS(
 )
 
 ## custom theme
+library(ggplot2)
 my_mds_theme <- theme_bw() + theme(
   axis.text.x  = element_text(angle=0, vjust=0.5, size=16),
   axis.text.y  = element_text(angle=0, vjust=0.5, size=16),

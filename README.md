@@ -1,7 +1,7 @@
 Package proteoQ
 ================
 true
-2020-03-03
+2020-03-04
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -2686,6 +2686,7 @@ n_not_na <- df %>%
 
 df %>% 
   dplyr::mutate(n_not_na = n_not_na) %>% 
+  # proteoQ::reorderCols2() %>% 
   readr::write_tsv(file.path(dat_dir, "Protein\\Protein.txt"))
 ```
 

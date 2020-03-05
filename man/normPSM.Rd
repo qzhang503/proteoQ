@@ -292,7 +292,7 @@ normPSM(
 #      species in "human", "mouse" and "rat"
 #  (2) and are required for `other` species
 ###############################################
-# see also `?prepEntrez` for more examples
+# see also `?Uni2Entrez` or `?Ref2Entrez` for more examples
 if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 
@@ -303,17 +303,18 @@ library(org.Hs.eg.db)
 library(org.Mm.eg.db)
 
 library(proteoQ)
-prepEntrez(human)
-prepEntrez(mouse)
+Ref2Entrez(species = human)
+Ref2Entrez(species = mouse)
 
 normPSM(
   group_psm_by = pep_seq_mod, 
   group_pep_by = gene, 
   fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
             "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-  entrez = c("~\\\\proteoQ\\\\dbs\\\\entrez\\\\uniprot_entrez_hs.rds", 
-             "~\\\\proteoQ\\\\dbs\\\\entrez\\\\uniprot_entrez_mm.rds"),
+  entrez = c("~\\\\proteoQ\\\\dbs\\\\entrez\\\\refseq_entrez_hs.rds", 
+             "~\\\\proteoQ\\\\dbs\\\\entrez\\\\refseq_entrez_mm.rds"),
 )
+
 
 ## Not run: 
 # wrong fasta 

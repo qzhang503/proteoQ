@@ -80,7 +80,7 @@ purgePSM(pt_cv = .95)
 purgePSM(pt_cv = .95)
 
 ## custom theme
-purgePSM(dpi = 300, theme = theme_dark())  
+purgePSM(dpi = 300, theme = ggplot2::theme_dark())  
 }
 }
 \seealso{

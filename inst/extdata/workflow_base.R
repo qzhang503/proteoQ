@@ -327,7 +327,7 @@ prnGSPA(
 	pval_cutoff = 5E-2, # protein pVal threshold
 	logFC_cutoff = log2(1.2), # protein log2FC threshold
 	gspval_cutoff = 5E-2, # gene-set threshold
-	gset_nms = c("go_sets", "kegg_sets"),
+	gset_nms = c("go_sets"),
 )
 
 # volcano plot visualization, protein

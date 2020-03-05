@@ -128,9 +128,11 @@ prep_label_scheme <- function(dat_dir, filename) {
 		check_tmt %>%
 			dplyr::select(TMT_Set, LCMS_Injection, TMT_Channel) %>%
 			print()
-
-		stop(paste(check_tmt$TMT_Channel, "are missing at set", check_tmt$TMT_Set, "injection",
-		           check_tmt$LCMS_Injection, "\n"))
+	  
+	  stop("`", check_tmt$TMT_Channel, "` not found under set ", check_tmt$TMT_Set, 
+	          " injection ", check_tmt$LCMS_Injection, ".", 
+	          "\n(Use `TMT-131`, instead of `TMT-131N`, for 10-plex experiment(s).)", 
+	          call. = FALSE)
 	}
 
 	# check the uniqueness of RAW_File per TMT_Set and LCMS_Injection
@@ -566,18 +568,24 @@ TMT_plex <- function (label_scheme_full) {
 #' \code{TMT_levels} returns the factor levels of TMT labels.
 #' @param TMT_plex Numeric; the multiplexity of TMT, i.e., 10, 11 etc.
 TMT_levels <- function (TMT_plex) {
-	if(TMT_plex == 10) {
-		TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", "TMT-129N",
-		                "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131")
-	} else if(TMT_plex == 11) {
-		TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", "TMT-129N",
-		                "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131N", "TMT-131C")
-	} else if(TMT_plex == 6) {
-		TMT_levels <- c("TMT-126", "TMT-127", "TMT-128", "TMT-129", "TMT-130", "TMT-131")
-	} else if(TMT_plex == 1) {
-		TMT_levels <- c("TMT-126")
-	} else if(TMT_plex == 0) {
-		TMT_levels <- NULL
+	if (TMT_plex == 16) {
+	  TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
+	                  "TMT-131N", "TMT-131C", "TMT-132N", "TMT-132C", 
+	                  "TMT-133N", "TMT-133C", "TMT-134N")
+	} else if (TMT_plex == 11) {
+	  TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
+	                  "TMT-131N", "TMT-131C")
+	} else if (TMT_plex == 10) {
+	  TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131")
+	} else if (TMT_plex == 6) {
+	  TMT_levels <- c("TMT-126", "TMT-127", "TMT-128", "TMT-129", "TMT-130", "TMT-131")
+	} else if (TMT_plex == 1) {
+	  TMT_levels <- c("TMT-126")
+	} else if (TMT_plex == 0) {
+	  TMT_levels <- NULL
 	}
 }
 

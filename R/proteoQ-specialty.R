@@ -93,7 +93,14 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
     int_end <- ncol(df) - 1
     if (int_end > r_start) df <- df[, -c(seq(r_start, int_end, 2))]
     
-    if (TMT_plex == 11) {
+    if (TMT_plex == 16) {
+      col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
+                     "R130N", "R130C", "R131N", "R131C", 
+                     "R132N", "R132C", "R133N", "R133C", "R134N")
+      col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
+                   "I130N", "I130C", "I131N", "I131C", 
+                   "I132N", "I132C", "I133N", "I133C", "I134N")
+    } else if (TMT_plex == 11) {
       col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
                      "R130N", "R130C", "R131N", "R131C")
       col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
@@ -110,7 +117,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
       col_ratio <- NULL
       col_int <- NULL
     }
-    
+
     if (TMT_plex > 0) {
       colnames(df)[r_start:(r_start+TMT_plex-2)] <- col_ratio
       colnames(df)[(r_start+TMT_plex-1):(r_start+TMT_plex+TMT_plex-2)] <- col_int
