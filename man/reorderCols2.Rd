@@ -4,7 +4,7 @@
 \alias{reorderCols2}
 \title{Re-order columns in a data frame}
 \usage{
-reorderCols2(df, pattern = NULL)
+reorderCols2(df = NULL, pattern = NULL)
 }
 \arguments{
 \item{df}{A data frame.}

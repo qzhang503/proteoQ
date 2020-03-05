@@ -73,6 +73,7 @@ pepHist(
 )
 
 ## custom theme
+library(ggplot2)
 my_histo_theme <- theme_bw() + theme(
   axis.text.x  = element_text(angle=0, vjust=0.5, size=18),
   axis.ticks.x  = element_blank(), # x-axis ticks

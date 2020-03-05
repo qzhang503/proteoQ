@@ -32,6 +32,6 @@ purgePep(pt_cv = .95)
 purgePep(pt_cv = .95)
 
 ## custom theme
-purgePep(dpi = 300, theme = theme_get(), filename = my_theme.png)
+purgePep(dpi = 300, theme = ggplot2::theme_get(), filename = my_theme.png)
 }
 

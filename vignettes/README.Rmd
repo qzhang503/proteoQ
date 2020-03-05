@@ -5,6 +5,8 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
+  github_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -13,8 +15,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  github_document:
-    toc: yes
   word_document:
     toc: yes
   md_document:
@@ -1712,6 +1712,7 @@ n_not_na <- df %>%
 
 df %>% 
   dplyr::mutate(n_not_na = n_not_na) %>% 
+  # proteoQ::reorderCols2() %>% 
   readr::write_tsv(file.path(dat_dir, "Protein\\Protein.txt"))
 ```
 

@@ -26,7 +26,7 @@ extract_raws <- function(raw_dir = NULL) {
   data.frame(Index = seq_along(fns), RAW_File = fns) %T>% 
     write.table(file.path(dat_dir, "raw_list.txt"), sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 		
-	message("RAW MS file names in ", file.path(dat_dir, "raw_list.txt"))
+	message("RAW MS file names stored in ", file.path(dat_dir, "raw_list.txt"))
 }
 
 
@@ -90,7 +90,14 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
     int_end <- ncol(df)
     if(int_end > r_start) df <- df[, -c(seq(r_start, int_end, 2))]
     
-    if (TMT_plex == 11) {
+    if (TMT_plex == 16) {
+      col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
+                     "R130N", "R130C", "R131N", "R131C", 
+                     "R132N", "R132C", "R133N", "R133C", "R134N")
+      col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
+                   "I130N", "I130C", "I131N", "I131C", 
+                   "I132N", "I132C", "I133N", "I133C", "I134N")
+    } else if (TMT_plex == 11) {
       col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
                      "R130N", "R130C", "R131N", "R131C")
       col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
@@ -116,7 +123,7 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
     if (!purrr::is_empty(raws)) {
       data.frame(RAW_File = raws) %>% 
         write.table(file.path(dat_dir, "mascot_psm_raws.txt"), sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
-      message("MS file names in ", file.path(dat_dir, "mascot_psm_raws.txt"))
+      message("MS file names stored in ", file.path(dat_dir, "mascot_psm_raws.txt"))
     }
     
     unlink(file.path(dat_dir, "PSM\\temp"), recursive = TRUE, force = TRUE)
@@ -133,7 +140,7 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
     if (!purrr::is_empty(raws)) {
       data.frame(RAW_File = raws) %>% 
         write.table(file.path(dat_dir, "sm_psm_raws.txt"), sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
-      message("MS file names in ", file.path(dat_dir, "sm_psm_raws.txt"))
+      message("MS file names stored in ", file.path(dat_dir, "sm_psm_raws.txt"))
     }
   }
   
@@ -148,7 +155,7 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
     if (!purrr::is_empty(raws)) {
       data.frame(RAW_File = raws) %>% 
         write.table(file.path(dat_dir, "mq_psm_raws.txt"), sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
-      message("MS file names in ", file.path(dat_dir, "mq_psm_raws.txt"))
+      message("MS file names stored in ", file.path(dat_dir, "mq_psm_raws.txt"))
     }
   }
   
@@ -206,9 +213,9 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
 #' @importFrom purrr walk
 #' @importFrom magrittr %>%
 rmPSMHeaders <- function () {
-	old_opt <- options(max.print = 99999)
+	old_opt <- options(max.print = 99999, warn = 0)
+	options(max.print = 5000000, warn = 1)
 	on.exit(options(old_opt), add = TRUE)
-	options(max.print = 5000000)
 
 	on.exit(message("Remove PSM headers --- Completed."), add = TRUE)
 
@@ -249,9 +256,35 @@ rmPSMHeaders <- function () {
 		  psm_end_row <- length(data_all)
 		}
 	
+		local({
+		  first_line <- data_all[pep_seq_rows[1]+1]
+		  if (grepl("\"134\"", first_line, fixed = TRUE)) {
+		    mascot_tmtplex <- 16
+		  } else if (grepl("\"131C\"", first_line, fixed = TRUE)) {
+		    mascot_tmtplex <- 11
+		  } else if (grepl("\"131\"", first_line, fixed = TRUE) && 
+		             grepl("\"130C\"", first_line, fixed = TRUE)) {
+		    mascot_tmtplex <- 10
+		  } else if (grepl("\"131\"", first_line, fixed = TRUE)) {
+		    mascot_tmtplex <- 6
+		  } else {
+		    mascot_tmtplex <- 0
+		  }
+		  
+		  if (mascot_tmtplex != TMT_plex) {
+		    warning("Mascot PSMs suggest a TMT ", mascot_tmtplex, "-plex, ", 
+		            "which is different to the ", TMT_plex, "-plex in `expt_smry.xlsx`.", 
+		            call. = FALSE)
+		  }
+		})
+		
 		data_psm <- data_all[pep_seq_rows[1] : psm_end_row]
 		data_psm <- gsub("\"---\"", -1, data_psm, fixed = TRUE)
 		data_psm <- gsub("\"###\"", -1, data_psm, fixed = TRUE)
+		
+		# --- for simulated data
+		data_psm <- gsub("---", -1, data_psm, fixed = TRUE)
+		data_psm <- gsub("###", -1, data_psm, fixed = TRUE)
 		
 		if (TMT_plex > 0) data_psm[1] <- paste0(data_psm[1], paste(rep(",", TMT_plex * 4 -2), collapse = ''))
 		
@@ -571,8 +604,15 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   r_start <- which(names(df) == "pep_scan_title") + 1
   int_end <- ncol(df) - 1
 	if (int_end > r_start) df <- df[, -c(seq(r_start, int_end, 2))]
-
-  if (TMT_plex == 11) {
+  
+  if (TMT_plex == 16) {
+    col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
+                   "R130N", "R130C", "R131N", "R131C", 
+                   "R132N", "R132C", "R133N", "R133C", "R134N")
+    col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
+                 "I130N", "I130C", "I131N", "I131C", 
+                 "I132N", "I132C", "I133N", "I133C", "I134N")
+  } else if (TMT_plex == 11) {
 		col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
 		               "R130N", "R130C", "R131N", "R131C")
 		col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
@@ -903,12 +943,13 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 		}
 
 		# remove all "-1" ratio rows
-		N <- sum(grepl("^R[0-9]{3}", names(df)))
-
-		df <- df %>%
-			dplyr::mutate(n = rowSums(.[, grep("^R[0-9]{3}", names(.))] == -1)) %>%
-			dplyr::filter(n != N) %>%
-			dplyr::select(-n)
+		df <- local({
+		  N <- sum(grepl("^R[0-9]{3}", names(df)))
+  		df <- df %>%
+  		  dplyr::mutate(n = rowSums(.[, grep("^R[0-9]{3}", names(.))] == -1, na.rm = TRUE)) %>%
+  			dplyr::filter(n != N) %>%
+  			dplyr::select(-n)
+		})
 
 		channelInfo <- channelInfo(label_scheme, set_idx =
 		                  as.integer(gsub("TMTset(\\d+)_.*", "\\1", filelist[i])))
@@ -1035,7 +1076,7 @@ mcPSM <- function(df, set_idx) {
     cbind(dfw, .)
   
   dfw <- dfw %>%
-    reorderCols(endColIndex = grep("[RI][0-9]{3}", names(dfw)), col_to_rn = "pep_seq_mod") %>%
+    reorderCols(endColIndex = grep("[RI][0-9]{3}", names(.)), col_to_rn = "pep_seq_mod") %>%
     na_zeroIntensity()
 }
 
@@ -1997,7 +2038,11 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
     `names_pos<-`(grepl("Reporter\\s{1}intensity\\s{1}.*[0-9]+$", names(.)), 
                   gsub("TMT-", "I", as.character(TMT_levels)))
   
-  if (TMT_plex == 11) {
+  if (TMT_plex == 16) {
+    col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
+                 "I130N", "I130C", "I131N", "I131C", 
+                 "I132N", "I132C", "I133N", "I133C", "I134N")
+  } else if (TMT_plex == 11) {
     col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
                  "I130N", "I130C", "I131N", "I131C")
   } else if (TMT_plex == 10) {
@@ -2007,7 +2052,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
     col_int <- c("I126", "I127", "I128", "I129", "I130", "I131")
   } else {
     col_int <- NULL
-  }  
+  }
   
   df <- local({
     phos_idx <- grep("Phospho (STY) Probabilities", names(df), fixed = TRUE)
@@ -2325,7 +2370,11 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
     dplyr::rename(prot_acc = accession_number) %>% 
     annotPrn(fasta, entrez)  
   
-  if (TMT_plex == 11) {
+  if (TMT_plex == 16) {
+    col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
+                 "I130N", "I130C", "I131N", "I131C", 
+                 "I132N", "I132C", "I133N", "I133C", "I134N")
+  } else if (TMT_plex == 11) {
     col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
                  "I130N", "I130C", "I131N", "I131C")
   } else if (TMT_plex == 10) {
@@ -2335,7 +2384,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
     col_int <- c("I126", "I127", "I128", "I129", "I130", "I131")
   } else {
     col_int <- NULL
-  }  
+  }
   
   if (TMT_plex > 0) {
     df <- df %>% 

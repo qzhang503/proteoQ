@@ -128,6 +128,8 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
 
   sample_ids <- label_scheme_sub$Sample_ID
   
+  pattern <- "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
+  
   df <- df %>%
     dplyr::mutate_at(vars(grep("^pVal|^adjP", names(.))), as.numeric) %>%
     dplyr::mutate(Mean_log10Int = log10(rowMeans(.[, grepl("^I[0-9]{3}", names(.))],
@@ -136,7 +138,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     dplyr::filter(!duplicated(!!rlang::sym(id)),
                   !is.na(!!rlang::sym(id)),
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
-    reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id) 
+    reorderCols(endColIndex = grep(pattern, names(.)), col_to_rn = id) 
   
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
@@ -148,7 +150,6 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     dplyr::select(grep(NorZ_ratios, names(.))) %>%
     `colnames<-`(label_scheme$Sample_ID) %>%
     dplyr::select(which(names(.) %in% sample_ids)) %>%
-    # dplyr::select(which(not_all_zero(.))) %>%
     dplyr::select(as.character(sample_ids)) # ensure the same order
 
   df <- df %>%
@@ -205,7 +206,17 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   if (cluster_rows) {
     d <- dist(df_hm, method = clustering_distance_rows, p = p_dist_rows)
     d[is.na(d)] <- .5 * max(d, na.rm = TRUE)
-    h <- hclust(d, hc_method_rows)
+
+    tryCatch(
+      h <- hclust(d, hc_method_rows), 
+      error = function(e) 1
+    )
+    
+    if (class(h) != "hclust" && h == 1) {
+      warning("Row clustering cannot be performed.", call. = FALSE)
+      h <- FALSE
+    }
+
     dots$cluster_rows <- h
     rm(d, h)
   } else {
@@ -215,7 +226,17 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   if (cluster_cols) {
     d_cols <- dist(t(df_hm), method = clustering_distance_cols, p = p_dist_cols)
     d_cols[is.na(d_cols)] <- .5 * max(d_cols, na.rm = TRUE)
-    h_cols <- hclust(d_cols, hc_method_cols)
+
+    tryCatch(
+      h_cols <- hclust(d_cols, hc_method_cols), 
+      error = function(e) 1
+    )
+    
+    if (class(h_cols) != "hclust" && h_cols == 1) {
+      warning("Column clustering cannot be performed.", call. = FALSE)
+      h_cols <- FALSE
+    }
+    
     dots$cluster_cols <- h_cols
     # rm(d_cols, h_cols) # h_cols also for subtrees
   } else {
@@ -259,7 +280,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
       
       for (cluster_id in unique(Cluster$Cluster)) {
         df_sub <- Cluster[Cluster$Cluster == cluster_id, names(Cluster) %in% sample_ids]
-
+        
         if (complete_cases) {
           df_sub <- df_sub %>%
             tibble::rownames_to_column(id) %>%
@@ -268,33 +289,58 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
         }
 
         if (cluster_rows) {
+          nrow <- nrow(df_sub)
           d_sub <- dist(df_sub, method = clustering_distance_rows, p = p_dist_rows)
-          if (length(d_sub) == 0) {
+          max_d_row <- suppressWarnings(max(d_sub, na.rm = TRUE))
+          
+          if (length(d_sub) == 0 || is.infinite(max_d_row)) {
             h_sub <- FALSE
-            nrow <- nrow(df_sub)
           } else {
-            d_sub[is.na(d_sub)] <- .5 * max(d_sub, na.rm = TRUE)
+            d_sub[is.na(d_sub)] <- .5 * max_d_row
             
-            nrow <- nrow(df_sub)
             if (nrow <= 2) {
               h_sub <- FALSE
             } else {
-              h_sub <- hclust(d_sub, hc_method_rows)
+              h_sub <- tryCatch(
+                hclust(d_sub, hc_method_rows),
+                error = function(e) 1
+              )
+              
+              if (class(h_sub) != "hclust" && h_sub == 1) {
+                warning("No row clustering for subtree: ", cluster_id, call. = FALSE)
+                h_sub <- FALSE
+              }
             }    
           }
         }
         
         if (cluster_cols) {
-          d_sub_col <- dist(t(df_sub), method = clustering_distance_cols, p = p_dist_cols)
+          t_df_sub <- t(df_sub)
+          
+          nrow_trans <- nrow(t_df_sub)
+          d_sub_col <- dist(t_df_sub, method = clustering_distance_cols, p = p_dist_cols)
+          max_d_col <- suppressWarnings(max(d_sub_col, na.rm = TRUE))
+          
           if (length(d_sub_col) == 0) next
           
-          d_sub_col[is.na(d_sub_col)] <- .5 * max(d_sub_col, na.rm = TRUE)
-          nrow_trans <- nrow(t(df_sub))
-          
-          if (nrow_trans <= 2) {
+          if (is.infinite(max_d_col)) {
             v_sub <- FALSE
           } else {
-            v_sub <- hclust(d_sub_col, hc_method_cols)
+            d_sub_col[is.na(d_sub_col)] <- .5 * max_d_col
+  
+            if (nrow_trans <= 2) {
+              v_sub <- FALSE
+            } else {
+              v_sub <- tryCatch(
+                hclust(d_sub_col, hc_method_cols),
+                error = function(e) 1
+              )
+              
+              if (class(v_sub) != "hclust" && v_sub == 1) {
+                warning("No column clustering for subtree: ", cluster_id, call. = FALSE)
+                v_sub <- FALSE
+              }
+            }            
           }
         }
         
@@ -316,7 +362,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
             main = paste("Cluster", cluster_id),
             cluster_rows = h_sub,
             # cluster_cols = v_sub, 
-            cluster_cols = h_cols, 
+            cluster_cols = h_cols, # use whole-tree hierarchy
             show_rownames = show_rownames,
             show_colnames = TRUE,
             annotation_col = annotation_col,

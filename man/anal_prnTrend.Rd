@@ -247,6 +247,7 @@ plot_prnTrend(
 )
 
 ## custom theme
+library(ggplot2)
 my_trend_theme <- theme_bw() + theme(
   axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
   axis.ticks.x  = element_blank(), 

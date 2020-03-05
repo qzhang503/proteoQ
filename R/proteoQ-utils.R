@@ -24,13 +24,14 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
   
   NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
   
-  # data filtration dominated by log2R, not Intensity
+  pattern <- "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
+
   df <- df %>%
     dplyr::filter(!duplicated(!!rlang::sym(id)),
                   !is.na(!!rlang::sym(id)),
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>%
-    reorderCols(endColIndex = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)), col_to_rn = id)
-  
+    reorderCols(endColIndex = grep(pattern, names(.)), col_to_rn = id)
+
   Levels <- sub_grp %>%
     as.character(.) %>%
     .[!grepl("^Empty\\.[0-9]+", .)]
@@ -110,6 +111,7 @@ reorder_files <- function(filelist, n_TMT_sets) {
 #' @importFrom magrittr %>%
 reorderCols <- function (df, endColIndex, col_to_rn) {
 	if (length(endColIndex) == 0) endColIndex <- grep("I[0-9]{3}|log2_R[0-9]{3}", names(df))
+	
 	df <- cbind(df[, -endColIndex], df[, endColIndex])
 
 	if(sum(duplicated(df[[col_to_rn]])) > 0) {
@@ -138,7 +140,10 @@ reorderCols <- function (df, endColIndex, col_to_rn) {
 #' @import dplyr rlang
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
-reorderCols2 <- function (df, pattern = NULL) {
+#' @export
+reorderCols2 <- function (df = NULL, pattern = NULL) {
+  if (is.null(df)) stop("`df` cannot be `NULL`.", call. = FALSE)
+  
   if (is.null(pattern)) 
     pattern <- "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
   
@@ -689,7 +694,7 @@ add_entrez <- function (acc_lookup) {
 
   stopifnot(length(acc_type) == 1)
   
-  if (! species %in% c("human", "mouse", "rat")) {
+  if (! all(species %in% c("human", "mouse", "rat"))) {
     warning("No default `entrez` lookups available for species other than `human`, `mouse` and `rat`.", 
          "\nTo annotate, provide the file path and name(s) via argument `entrez`.", 
          "\nSee also `?Uni2Entrez` and `?Ref2Entrez` for preparing custom `entrez` lookups.", 
@@ -697,7 +702,7 @@ add_entrez <- function (acc_lookup) {
   }
 
   # multiple uniprot_acc(s) can share the same entrez id
-  if (species %in% c("human", "mouse", "rat")) {
+  if (all(species %in% c("human", "mouse", "rat"))) {
     filelist <- paste0(abbr_acc, "entrez_", abbr_sp)
     data(package = "proteoQ", list = filelist)
     entrez <- purrr::map(filelist, ~ get(.x)) %>% 
@@ -1054,8 +1059,9 @@ annotKin <- function (df, acc_type) {
   lookup <- kinase_lookup %>% 
     dplyr::select(acc_type, kin_attr, kin_class, kin_order) %>%
     dplyr::filter(!duplicated(.)) %>% 
-    dplyr::filter(!is.na(.[[acc_type]])) 
-  
+    dplyr::filter(!is.na(.[[acc_type]])) %>% 
+    dplyr::mutate(!!acc_type := as.character(!!rlang::sym(acc_type)))
+
   df <- df %>% 
     dplyr::left_join(lookup, by = c("prot_acc" = acc_type))
 
