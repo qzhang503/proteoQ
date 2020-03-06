@@ -7,7 +7,7 @@
 normPep_Mplex(id = "pep_seq_mod", group_pep_by = "prot_acc", ...)
 }
 \arguments{
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{group_pep_by}{A character string specifying the method in peptide
@@ -25,7 +25,7 @@ exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove PSM
 entries with \code{pep_expect > 0.1}.}
 }
 \description{
-median summarisation of data from the same TMT experiment at different LCMS injections
+median summarization of data from the same TMT experiment at different LCMS injections
 summed \code{pep_n_psm}, \code{prot_n_psm}, and \code{prot_n_pep} after data merging
 no Z_log2_R yet available
   use \code{col_select = expr(Sample_ID)} not \code{col_select} to get all Z_log2_R

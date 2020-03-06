@@ -30,7 +30,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{filepath}{A file path to output results. By default, it will be
@@ -46,7 +46,7 @@ of \code{id} in the \code{call}.}
 \item{adjSD}{Not currently used. If TRUE, adjust the standard
 deviation in relative to the width of ratio profiles.}
 
-\item{is_psm}{Logical; indictor if the data belong to a PSM table .}
+\item{is_psm}{Logical; indicator if the data belong to a PSM table .}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in

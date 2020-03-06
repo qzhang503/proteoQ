@@ -38,23 +38,23 @@ experiments
  \tabular{ll}{ \strong{Essential column}   \tab \strong{Descrption}\cr
  Sample_ID \tab Unique sample IDs \cr TMT_Channel \tab TMT channel names:
  \code{126}, \code{127N}, \code{127C} et al. \cr TMT_Set \tab TMT experiment
- indeces 1, 2, 3, ... \cr LCMS_Injection   \tab LC/MS injection indeces 1, 2,
+ indexes 1, 2, 3, ... \cr LCMS_Injection   \tab LC/MS injection indexes 1, 2,
  3, ... under a \code{TMT_Set} \cr RAW_File \tab MS data file names
  originated by \code{Xcalibur} with or without the \code{.raw} extension \cr
  Reference \tab Labels indicating reference samples in TMT experiments \cr }
 
  \code{Sample_ID}: values should be unique for entries at a unique
  combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for
- unused entries. Samples with the same indeces of \code{TMT_Channel} and
- \code{TMT_Set} but different indeces of \code{LCMS_Injection} should have
+ unused entries. Samples with the same indexes of \code{TMT_Channel} and
+ \code{TMT_Set} but different indexes of \code{LCMS_Injection} should have
  the same value in \code{Sample_ID}. No white space or special characters are
  allowed.
 
- \code{RAW_File}: for analysis with off-line fractionations of peptides
+ \code{RAW_File}: for analysis with off-line fractionation of peptides
  before LC/MS, the \code{RAW_File} column should be left blank. Instead, the
  correspondence between the fraction numbers and \code{RAW_File} names should
  be specified in a separate file, for example, \code{frac_smry.xlsx}. For
- analysis without off-line fractionations, it is recommended as well to leave
+ analysis without off-line fractionation, it is recommended as well to leave
  the field under the \code{RAW_File} column blank and instead enter the MS
  file names in \code{frac_smry.xlsx}.
 
@@ -72,7 +72,7 @@ experiments
  \code{extract_psm_raws()} extracts the list of MS file names that are
  actually present in PSM data. For help, try \code{?extract_psm_raws}.
 
- \code{Reference}: reference entrie(s) are indicated with non-void string(s).
+ \code{Reference}: reference entry(entries) are indicated with non-void string(s).
 
  \tabular{ll}{ \strong{Optional default column}   \tab \strong{Descrption}\cr
  Select \tab Samples to be selected for indicated analysis \cr Group \tab
@@ -86,7 +86,7 @@ experiments
  \cr \cr}
 
  \tabular{ll}{ \strong{Exemplary optional open column}   \tab
- \strong{Descrption}\cr Term \tab Categorial terms for statistical modeling.
+ \strong{Descrption}\cr Term \tab Categorical terms for statistical modeling.
  \cr Duplicate \tab Indicators of duplicated samples for corrections in
  statistical significance \cr Peptide_Yield \tab Yields of peptides in sample
  handling \cr}
@@ -95,7 +95,7 @@ experiments
 \section{\code{frac_smry.xlsx}}{
  \tabular{ll}{ \strong{Column}   \tab
  \strong{Descrption}\cr TMT_Set \tab v.s.  \cr LCMS_Injection   \tab v.s. \cr
- Fraction \tab Fraction indeces under a \code{TMT_Set} \cr RAW_File \tab v.s.
+ Fraction \tab Fraction indexes under a \code{TMT_Set} \cr RAW_File \tab v.s.
  }
 }
 

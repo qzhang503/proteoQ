@@ -11,7 +11,7 @@ create_os_lookup(species, os_name, overwrite = FALSE)
 
 \item{os_name}{An organism name by UniProt.}
 
-\item{overwrite}{Logical; if TRUE, overwrite the downloaded databse(s). The
+\item{overwrite}{Logical; if TRUE, overwrite the downloaded database(s). The
 default is FALSE.}
 }
 \description{

@@ -55,7 +55,7 @@ default, the name will be determined automatically at a given
 \code{species}; i.e., \code{msig_hs.rds} for \code{human} data. The file is
 saved as a \code{.rds} object for uses with \code{\link{prnGSPA}}.}
 
-\item{overwrite}{Logical; if TRUE, overwrite the downloaded databse(s). The
+\item{overwrite}{Logical; if TRUE, overwrite the downloaded database(s). The
 default is FALSE.}
 }
 \description{

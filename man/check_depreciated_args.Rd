@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{check_depreciated_args}
 \alias{check_depreciated_args}
-\title{check depreciated argments}
+\title{check depreciated arguments}
 \usage{
 check_depreciated_args(blacklist = NULL, ...)
 }
@@ -12,5 +12,5 @@ check_depreciated_args(blacklist = NULL, ...)
 \item{...}{A list of arguments for checking.}
 }
 \description{
-check depreciated argments
+check depreciated arguments
 }

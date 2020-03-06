@@ -32,8 +32,8 @@ among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
 "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
 molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
 curated \code{MSig}, and/or additional species are also supported. See also
-\code{\link{prepGO}} for the prepration of custom \code{GO} and
-\code{\link{prepMSig}} for the prepration of custom \code{MSig}.}
+\code{\link{prepGO}} for the preparation of custom \code{GO} and
+\code{\link{prepMSig}} for the preparation of custom \code{MSig}.}
 
 \item{method}{Character string; the method to assess the p-values of GSPA. The
 default is \code{mean}. See also section \code{Details} for the
@@ -51,62 +51,62 @@ will be used. The default is FALSE.}
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
 the threshold will be excluded from enrichment analysis. The default is 0.05
-for all formulae matched to or specified in argument \code{fml_nms}.
+for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 
 \item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
 \code{log2FC}. Entries with absolute \code{log2FC} smaller than the
 threshold will be excluded from enrichment analysis. The default magnitude
-is \code{log2(1.2)} for all formulae matched to or specified in argument
+is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
 \item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
 significance \code{pVal}. Only enrichment terms with \code{pVals} more
 significant than the threshold will be reported. The default is 0.05 for all
-formulae matched to or specified in argument \code{fml_nms}.
+formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 
 \item{gslogFC_cutoff}{Numeric value or vector; the cut-off in gene-set
 enrichment fold change. Only enrichment terms with absolute fold change
 greater than the threshold will be reported. The default magnitude is
-\code{log2(1.2)} for all formulae matched to or specified in argument
+\code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
 consideration in gene set tests. The number is after data filtration by
 \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
-\code{filter_}. The default is 10 for all formulae matched to or specified
+\code{filter_}. The default is 10 for all formulas matched to or specified
 in argument \code{fml_nms}. Formula-specific threshold is allowed by
 supplying a vector of sizes.}
 
 \item{max_size}{Numeric value or vector; maximum number of protein entries for
 consideration in gene set tests. The number is after data filtration by
 \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
-\code{filter_}. The default in infinite for all formulae matched to or
+\code{filter_}. The default in infinite for all formulas matched to or
 specified in argument \code{fml_nms}. Formula-specific threshold is allowed
 by supplying a vector of sizes.}
 
 \item{min_delta}{Numeric value or vector; the minimum count difference between
 the up- and the down-expressed group of proteins for consideration in gene
 set tests. For example at \code{min_delta = 4}, a gene set will 6
-upregulated proteins and 2 downregulated proteins, or vice versa, will be
+upregulated proteins and 2 down-expressed proteins, or vice versa, will be
 assessed. The number is after data filtration by \code{pval_cutoff},
 \code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
-is 4 for all formulae matched to or specified in argument \code{fml_nms}.
+is 4 for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of sizes.}
 
 \item{min_greedy_size}{Numeric value or vector; minimum number of unique
 protein entries for a gene set to be considered essential. The default in
-\code{1} for all formulae matched to or specified in argument
+\code{1} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of sizes.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
-the formula(e) will match those used in \code{\link{pepSig}} or
+the formula(s) will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -146,7 +146,7 @@ the groups of up or down regulated proteins, with a penalty-like term
 
 where \eqn{n} and \eqn{m} are the numbers of entries with \eqn{p} values
 \eqn{\le} or \eqn{>} a significance cut-off, respectively. The quotient of the
-two \eqn{P} values is then used to prepsent the significance of gene set
+two \eqn{P} values is then used to represent the significance of gene set
 enrichment. The arguments \code{pval_cutoff} and \code{logFC_cutoff} are used
 to discriminate low influence genes. Additional subsetting of data via the
 \code{vararg} approach of \code{filter_} is feasible. At \code{method =

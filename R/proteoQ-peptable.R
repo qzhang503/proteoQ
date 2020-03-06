@@ -26,7 +26,7 @@ newColnames <- function(i, x, label_scheme) {
 
 #' combined peptide reports across multiple TMT experiments
 #' 
-#' median summarisation of data from the same TMT experiment at different LCMS injections
+#' median summarization of data from the same TMT experiment at different LCMS injections
 #' summed \code{pep_n_psm}, \code{prot_n_psm}, and \code{prot_n_pep} after data merging
 #' no Z_log2_R yet available
 #'   use \code{col_select = expr(Sample_ID)} not \code{col_select} to get all Z_log2_R
@@ -492,7 +492,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
 #'proteins from ascribing peptides.
 #'
-#'In general, median statistics is applied when summarising numeric peptide data
+#'In general, median statistics is applied when summarizing numeric peptide data
 #'from different LCMS series. One exception is \code{pep_expect} with Mascot
 #'workflow where geometric mean is used.
 #'
@@ -503,12 +503,12 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'
 #'@param method_align Character string indicating the method in aligning
 #'  \code{log2FC} across samples. \code{MC}: median-centering; \code{MGKernel}:
-#'  the kernal density defined by multiple Gaussian functions
+#'  the kernel density defined by multiple Gaussian functions
 #'  (\code{\link[mixtools]{normalmixEM}}). At the \code{MC} default, the ratio
 #'  profiles of each sample will be aligned in that the medians of the
 #'  \code{log2FC} are zero. At \code{MGKernel}, the ratio profiles of each
 #'  sample will be aligned in that the \code{log2FC} at the maximums of kernel
-#'  desity are zero.
+#'  density are zero.
 #'@param col_select Character string to a column key in \code{expt_smry.xlsx}.
 #'  At the \code{NULL} default, the column key of \code{Select} in
 #'  \code{expt_smry.xlsx} will be used. In the case of no samples being
@@ -525,7 +525,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 #'  the 5th and the 95th quantiles.
 #'@param n_comp Integer; the number of Gaussian components to be used with
 #'  \code{method_align = MGKernel}. A typical value is 2 or 3. The variable
-#'  \code{n_comp} overwrites the augument \code{k} in
+#'  \code{n_comp} overwrites the argument \code{k} in
 #'  \code{\link[mixtools]{normalmixEM}}.
 #'@param seed Integer; a seed setting a starting point for reproducible
 #'  analyses.
@@ -701,22 +701,22 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
 
 #'Interim protein data
 #'
-#'\code{Pep2Prn} summarises \code{Peptide.txt} to an interim protein report in
+#'\code{Pep2Prn} summarizes \code{Peptide.txt} to an interim protein report in
 #'\code{Protein.txt}.
 #'
 #'Fields other than \code{log2FC} and \code{intensity} are summarized with
 #'median statistics.
 #'
-#'@param method_pep_prn Character string; the method to summarise the
+#'@param method_pep_prn Character string; the method to summarize the
 #'  \code{log2FC} and the \code{intensity} of peptides by protein entries. The
 #'  descriptive statistics includes \code{c("mean", "median", "top.3",
 #'  "weighted.mean")} with \code{median} being the default. The representative
 #'  \code{log10-intensity} of reporter ions at the peptide levels (from
-#'  \code{\link{standPep}}) will be the weigth when summarising \code{log2FC}
+#'  \code{\link{standPep}}) will be the weight when summarizing \code{log2FC}
 #'  with \code{top.3} or \code{weighted.mean}.
 #'@param use_unique_pep Logical. If TRUE, only entries that are \code{TRUE} or
 #'  equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
-#'  will be used, for summarising the \code{log2FC} and the \code{intensity} of
+#'  will be used, for summarizing the \code{log2FC} and the \code{intensity} of
 #'  peptides into protein values. The default is to use unique peptides only.
 #'  For \code{MaxQuant} data, the levels of uniqueness are according to the
 #'  \code{pep_unique_by} in \code{\link{normPSM}}. The argument currently do

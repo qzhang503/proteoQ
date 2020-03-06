@@ -24,6 +24,6 @@ correct file path(s) and name(s).}
 }
 \description{
 \code{annotPeppos} annotates the start and the end positions of peptides in
-ascribed proteins description based on the \code{fasta}. It also annotes the
+ascribed proteins description based on the \code{fasta}. It also annotates the
 preceding and the following AA residues.
 }

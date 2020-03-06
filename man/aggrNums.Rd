@@ -2,15 +2,15 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{aggrNums}
 \alias{aggrNums}
-\title{Summarises numeric values}
+\title{Summarizes numeric values}
 \usage{
 aggrNums(f)
 }
 \arguments{
-\item{f}{A function for data summarisation.}
+\item{f}{A function for data summarization.}
 }
 \description{
-\code{aggrNums} summarises \code{log2FC} and \code{intensity} by the
+\code{aggrNums} summarizes \code{log2FC} and \code{intensity} by the
 descriptive statistics of \code{c("mean", "median", "weighted.mean",
 "top.3")}
 }

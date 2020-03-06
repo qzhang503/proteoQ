@@ -381,11 +381,11 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'selection criteria. It further plots the distributions of \code{log2FC}.
 #'
 #'The CV of proteins under each sample are first calculated from contributing
-#'peptides. In the event of multiple sereis of LC/MS injections, the CV of the
-#'same protein from different LC/MS will be summarised by median statistics.
+#'peptides. In the event of multiple series of LC/MS injections, the CV of the
+#'same protein from different LC/MS will be summarized by median statistics.
 #'
 #'The data nullification will be applied column-wisely for all available
-#'samples. Argument \code{col_select} is merely used to subsettng samples for
+#'samples. Argument \code{col_select} is merely used to subsetting samples for
 #'the visualization of \code{log2FC} distributions.
 #'
 #'@inheritParams purgePSM

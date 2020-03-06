@@ -7,12 +7,12 @@
 PSM2Pep(method_psm_pep = c("median", "mean", "weighted.mean", "top.3"), ...)
 }
 \arguments{
-\item{method_psm_pep}{Character string; the method to summarise the
+\item{method_psm_pep}{Character string; the method to summarize the
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
 The descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")} with \code{median} being the default. The
 \code{log10-intensity} of reporter ions at the \code{PSMs} levels will be
-the weight when summarising \code{log2FC} with \code{"top.3"} or
+the weight when summarizing \code{log2FC} with \code{"top.3"} or
 \code{"weighted.mean"}.}
 
 \item{...}{Not currently used.}
@@ -22,7 +22,7 @@ Tables under \code{PSM} folder for each TMT experiment and LC/MS
  series: \code{TMTset1_LCMSinj1_PSM_N.txt}, \code{TMTset1_LCMSinj2_PSM_N.txt}...
 }
 \description{
-\code{PSM2Pep} summarises
+\code{PSM2Pep} summarizes
 \href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs} to
 peptides by individual TMT experiments and LC/MS series.
 }

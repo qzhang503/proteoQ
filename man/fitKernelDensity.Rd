@@ -11,7 +11,7 @@ fitKernelDensity(df, n_comp = 3, seed = NULL, ...)
 
 \item{n_comp}{Integer; the number of Gaussian components to be used with
 \code{method_align = MGKernel}. A typical value is 2 or 3. The variable
-\code{n_comp} overwrites the augument \code{k} in
+\code{n_comp} overwrites the argument \code{k} in
 \code{\link[mixtools]{normalmixEM}}.}
 
 \item{seed}{Integer; a seed setting a starting point for reproducible

@@ -3,7 +3,7 @@
 \docType{package}
 \name{proteoQ}
 \alias{proteoQ}
-\title{proteoQ: A package for processing mass spectrometry data using tandam mass
+\title{proteoQ: A package for processing mass spectrometry data using tandem mass
 tags (\url{https://en.wikipedia.org/wiki/Tandem_mass_tag}).}
 \description{
 The proteoQ package provides three categories of functions in data
@@ -25,6 +25,11 @@ preprocessing, quality assurance assessments and informatic analysis.
   plot_pepNMFCon, plot_prnNMFCon, plot_pepNMFCoef, plot_prnNMFCoef,
   plot_metaNMF, anal_prnTrend, plot_prnTrend, pepSig, prnSig, pepVol, prnVol,
   prnGSPA, prnGSPAHM, gspaMap, anal_prnString, pepImp, prnImp, prnGSVA,
-  prnGSEA, prepGO, prepMSig
+  prnGSEA
+}
+
+\section{proteoQ functions in custom database preparation}{
+ prepGO, prepMSig, 
+Uni2Entrez, Ref2Entrez
 }
 

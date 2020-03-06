@@ -801,7 +801,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
 }
 
 
-#' Locates the positions of outliersf
+#' Locates the positions of outliers
 #' 
 #' @param df A data frame containing the PSM table from database searches.
 #' @param range_colRatios The range of columns.
@@ -1224,7 +1224,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 
 #'Standardization of PSM results
 #'
-#'\code{normPSM} standarizes
+#'\code{normPSM} standardizes
 #'\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}
 #'results from \href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}
 #'experiments.
@@ -1360,12 +1360,12 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'  to be aware of the column keys in input files. As indicated by their names,
 #'  \code{filter_} and \code{filter2_} perform row filtration against column
 #'  keys from a primary data file, \code{df}, and secondary data file(s),
-#'  \code{df2}, respectively. The same correspondance is applicable for
+#'  \code{df2}, respectively. The same correspondence is applicable for
 #'  \code{arrange_} and \code{arrange2_} varargs. \cr \cr Users will typically
 #'  employ either primary or secondary vararg statements, but not both. In the
 #'  more extreme case of \code{gspaMap(...)}, it links \code{\link{prnGSPA}}
 #'  findings in \code{df2} to the significance \code{pVals} and abundance fold
-#'  changes in \code{df} for volcano plot visualizaitons by gene sets. The table
+#'  changes in \code{df} for volcano plot visualizations by gene sets. The table
 #'  below summarizes the \code{df} and the \code{df2} for varargs in
 #'  \code{proteoQ}.
 #'
@@ -1413,7 +1413,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'
 #'@return Outputs are under the directory of \code{PSM} sub to \code{dat_dir}.
 #'  Primary results are in \code{TMTset1_LCMSinj1_PSM_N.txt,
-#'  TMTset2_LCMSinj1_PSM_N.txt, ...} The indeces of TMT experiment and LC/MS
+#'  TMTset2_LCMSinj1_PSM_N.txt, ...} The indexes of TMT experiment and LC/MS
 #'  injection are indicated in the file names.
 #'@example inst/extdata/examples/normPSM_.R
 #'@import rlang dplyr purrr ggplot2 RColorBrewer
@@ -1651,7 +1651,7 @@ calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_i
 
 #'Interim peptide tables
 #'
-#'\code{PSM2Pep} summarises
+#'\code{PSM2Pep} summarizes
 #'\href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs} to
 #'peptides by individual TMT experiments and LC/MS series.
 #'
@@ -1659,12 +1659,12 @@ calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_i
 #'summarized with median statistics. One exception is with \code{pep_expect} in
 #'Mascot or \code{PEP} in MaxQuant where geometric mean is applied.
 #'
-#'@param method_psm_pep Character string; the method to summarise the
+#'@param method_psm_pep Character string; the method to summarize the
 #'  \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
 #'  The descriptive statistics includes \code{c("mean", "median", "top.3",
 #'  "weighted.mean")} with \code{median} being the default. The
 #'  \code{log10-intensity} of reporter ions at the \code{PSMs} levels will be
-#'  the weight when summarising \code{log2FC} with \code{"top.3"} or
+#'  the weight when summarizing \code{log2FC} with \code{"top.3"} or
 #'  \code{"weighted.mean"}.
 #'@param ... Not currently used.
 #'@seealso 
@@ -1956,7 +1956,7 @@ add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
 #'
 #'@param pep_unique_by A character string for annotating the uniqueness of
 #'  peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
-#'  uniqueness of peptides is by protein groups. At a more strigent criterion of
+#'  uniqueness of peptides is by protein groups. At a more stringent criterion of
 #'  \code{protein}, the uniqueness of peptides is by protein entries. A new
 #'  column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
 #'  be added to the PSM reports.

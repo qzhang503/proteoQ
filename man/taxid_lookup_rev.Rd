@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{taxid_lookup_rev}
 \alias{taxid_lookup_rev}
-\title{Reversed toxonomy lookup}
+\title{Reversed taxonomy lookup}
 \usage{
 taxid_lookup_rev(species)
 }
@@ -10,5 +10,5 @@ taxid_lookup_rev(species)
 \item{species}{Character string; the name of a species.}
 }
 \description{
-Reversed toxonomy lookup
+Reversed taxonomy lookup
 }

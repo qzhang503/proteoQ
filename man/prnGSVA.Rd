@@ -26,8 +26,8 @@ among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
 "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
 molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
 curated \code{MSig}, and/or additional species are also supported. See also
-\code{\link{prepGO}} for the prepration of custom \code{GO} and
-\code{\link{prepMSig}} for the prepration of custom \code{MSig}.}
+\code{\link{prepGO}} for the preparation of custom \code{GO} and
+\code{\link{prepMSig}} for the preparation of custom \code{MSig}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
@@ -75,12 +75,12 @@ be used for models with random effects.}
 against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
 See also \code{\link{normPSM}} for the format of \code{filter_} statements.
 \cr \cr \code{arrange_}: Variable argument statements for the row ordering
-aganist data in a primary file linked to \code{df}. See also
+against data in a primary file linked to \code{df}. See also
 \code{\link{prnHM}} for the format of \code{arrange_} statements. \cr \cr
 Additional arguments for \code{\link[GSVA]{gsva}}}
 }
 \description{
-\code{prnGSVA} performs the GSVA aganist protein \code{log2FC}. It is a
+\code{prnGSVA} performs the GSVA against protein \code{log2FC}. It is a
 wrapper of \code{\link[GSVA]{gsva}}.
 }
 \details{

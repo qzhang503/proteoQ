@@ -128,7 +128,7 @@ is a column key present in \code{Mascot} peptide tables of
 \code{Peptide.txt}. The statement \code{filter_peps_at = exprs(pep_len <=
 50)} will remove peptide entries with \code{pep_len > 50}. See also
 \code{\link{pepHist}}, \code{\link{normPSM}}. \cr \cr \code{arrange_}:
-Variable argument statements for the row ordering aganist data in a primary
+Variable argument statements for the row ordering against data in a primary
 file linked to \code{df}. The \code{lhs} needs to start with
 \code{arrange_}. The expression(s) at the \code{rhs} needs to be enclosed in
 \code{exprs} with round parenthesis. For example, \code{arrange_peps_by =

@@ -1,6 +1,6 @@
 #'GSVA of protein data
 #'
-#'\code{prnGSVA} performs the GSVA aganist protein \code{log2FC}. It is a
+#'\code{prnGSVA} performs the GSVA against protein \code{log2FC}. It is a
 #'wrapper of \code{\link[GSVA]{gsva}}.
 #'
 #'The formula(s) of contrast(s) used in \code{\link{pepSig}} will be taken by
@@ -26,7 +26,7 @@
 #'  against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
 #'  See also \code{\link{normPSM}} for the format of \code{filter_} statements.
 #'  \cr \cr \code{arrange_}: Variable argument statements for the row ordering
-#'  aganist data in a primary file linked to \code{df}. See also
+#'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{prnHM}} for the format of \code{arrange_} statements. \cr \cr
 #'  Additional arguments for \code{\link[GSVA]{gsva}}
 #'@example inst/extdata/examples/prnGSVA_.R

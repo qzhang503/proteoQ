@@ -33,20 +33,20 @@ byfml_volcano(
 \item{gspval_cutoff}{Numeric value or vector for uses with
 \code{\link{gspaMap}}. \code{Gene sets} with enrichment \code{pVals} less
 significant than the threshold will be excluded from volcano plot
-visualization. The default signficance is 0.05 for all formulae matched to
+visualization. The default significance is 0.05 for all formulas matched to
 or specified in argument \code{fml_nms}. Formula-specific threshold is
 allowed by supplying a vector of cut-off values.}
 
 \item{gslogFC_cutoff}{Numeric value or vector for uses with
 \code{\link{gspaMap}}. \code{Gene sets} with absolute enrichment
 \code{log2FC} less than the threshold will be excluded from volcano plot
-visualization. The default magnitude is \code{log2(1.2) } for all formulae
+visualization. The default magnitude is \code{log2(1.2) } for all formulas
 matched to or specified in argument \code{fml_nms}. Formula-specific
 threshold is allowed by supplying a vector of absolute values in
 \code{log2FC}.}
 
 \item{topn}{Numeric value or vector; top entries in gene sets ordered by
-increaseing \code{pVal} for visualization. The default is to use all
+increasing \code{pVal} for visualization. The default is to use all
 available entries.}
 
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -65,9 +65,9 @@ An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
 \code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
 section or \code{\link{prnHist}} for the description of a primary \code{df}.}
 
-\item{col_ind}{Numeric vector; the indeces of columns for the ascribed \code{fml_nm}.}
+\item{col_ind}{Numeric vector; the indexes of columns for the ascribed \code{fml_nm}.}
 
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{filepath}{A file path to output results. By default, it will be
@@ -88,7 +88,7 @@ The default is TRUE.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
-automatically. Examplary values include \code{anal_type = c("PCA",
+automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", ...)}.}
 
@@ -103,8 +103,8 @@ Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
  "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
  molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
  curated \code{MSig}, and/or additional species are also supported. See also
- \code{\link{prepGO}} for the prepration of custom \code{GO} and
- \code{\link{prepMSig}} for the prepration of custom \code{MSig}.
+ \code{\link{prepGO}} for the preparation of custom \code{GO} and
+ \code{\link{prepMSig}} for the preparation of custom \code{MSig}.
 
  Note that it is users' responsibility to ensure that the custom gene sets
  contain terms that can be found from the one or multiple preceding analyses

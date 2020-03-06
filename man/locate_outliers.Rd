@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-psmtable.R
 \name{locate_outliers}
 \alias{locate_outliers}
-\title{Locates the positions of outliersf}
+\title{Locates the positions of outliers}
 \usage{
 locate_outliers(df, range_colRatios)
 }
@@ -15,7 +15,7 @@ locate_outliers(df, range_colRatios)
 A data frame.
 }
 \description{
-Locates the positions of outliersf
+Locates the positions of outliers
 }
 \examples{
 \donttest{locate_outliers(df, 2:3)}

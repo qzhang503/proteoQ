@@ -2,11 +2,11 @@
 #'
 #' \code{info_anal} produces functions for selected informatic analysis.
 #'
-#' @param id Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+#' @param id Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 #'   \code{prot_acc} and \code{gene}.
 #' @param anal_type Character string; the type of analysis that are preset for
 #'   method dispatch in function factories. The value will be determined
-#'   automatically. Examplary values include \code{anal_type = c("PCA",
+#'   automatically. Exemplary values include \code{anal_type = c("PCA",
 #'   "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 #'   "NMF", "Purge", "Trend", ...)}.
 #' @inheritParams prnHist
@@ -225,7 +225,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	}
 
 	if (anal_type %in% c("Model", "GSPA", "GSVA", "GSEA")) {
-		label_scheme_sub <- label_scheme %>% # to be subset by "formulae"
+		label_scheme_sub <- label_scheme %>% # to be subset by "formulas"
 			dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID), !Reference)
 	} else {
 		label_scheme_sub <- label_scheme %>%

@@ -730,7 +730,7 @@ plotNMFmeta <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration
 #'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-#'  \code{arrange_}: Variable argument statements for the row ordering aganist
+#'  \code{arrange_}: Variable argument statements for the row ordering against
 #'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 #'  the format of \code{arrange_} statements. \cr \cr Additional arguments for
 #'  \code{\link[NMF]{nmf}}.
@@ -898,19 +898,19 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
 #'  results of \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be
 #'  used.
 #'@param ...  \code{filter2_}: Variable argument statements for the row
-#'  filtration aganist data in secondary file(s) of
+#'  filtration against data in secondary file(s) of
 #'  \code{_NMF[...]_consensus.txt} for consensus plots or
 #'  \code{_NMF[...]_coef.txt} for coefficient plots. See also
 #'  \code{\link{prnGSPAHM}} for the format of \code{filter2_} statements. \cr
 #'  \cr \code{arrange2_}: Variable argument statements for the row ordering
-#'  aganist data in secondary file(s) of \code{_NMF[...]_consensus.txt} for
+#'  against data in secondary file(s) of \code{_NMF[...]_consensus.txt} for
 #'  consensus plots or \code{_NMF[...]_coef.txt} for coefficient plots. See also
 #'  \code{\link{prnGSPAHM}} for the format of \code{arrange2_} statements. \cr
 #'  \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}
 #'@inheritParams prnHist
 #'@inheritParams plot_prnTrend
 #'@inheritParams  prnEucDist
-#'@return Concensus heat maps from NMF classification.
+#'@return Consensus heat maps from NMF classification.
 #'@import NMF dplyr rlang readr ggplot2
 #'@importFrom magrittr %>%
 #'@example inst/extdata/examples/prnNMF_.R
@@ -1133,7 +1133,7 @@ plot_prnNMFCoef <- function (col_select = NULL,
 #'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{prnHM}}. No \code{filter2_} available for corresponding
 #'  secondary file(s). \cr \cr \code{arrange_}: Variable argument statements for
-#'  the row ordering aganist data in a primary file linked to \code{df}. See
+#'  the row ordering against data in a primary file linked to \code{df}. See
 #'  also \code{\link{prnHM}} for the format of \code{arrange_} statements. No
 #'  \code{arrange2_} available for corresponding secondary file(s). \cr \cr
 #'  Additional arguments for \code{\link[pheatmap]{pheatmap}}.

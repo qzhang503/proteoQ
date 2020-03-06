@@ -54,31 +54,31 @@ than the threshold will be removed for enrichment analysis. The default is
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
 the threshold will be excluded from enrichment analysis. The default is 0.05
-for all formulae matched to or specified in argument \code{fml_nms}.
+for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 
 \item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
 \code{log2FC}. Entries with absolute \code{log2FC} smaller than the
 threshold will be excluded from enrichment analysis. The default magnitude
-is \code{log2(1.2)} for all formulae matched to or specified in argument
+is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
-the formula(e) will match those used in \code{\link{pepSig}} or
+the formula(s) will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-\code{arrange_}: Variable argument statements for the row ordering aganist
+\code{arrange_}: Variable argument statements for the row ordering against
 data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 the format of \code{arrange_} statements.}
 }
 \description{
 \code{prnGSEA} prepares data for the analysis of
-\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA} aganist
+\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA} against
 protein \code{log2FC} data.
 }
 \details{
@@ -94,7 +94,7 @@ samples indicated in file \code{Protein_pVals.txt} or
 The current GSEA may not support the comparisons between two grouped
 conditions, i.e.,  (grpA + grpB) versus (grpC + grpD). The \code{prnGSEA}
 utility further breaks the input data into pairs of groups according to the
-formulae and contrasts defined in \code{pepSig} or \code{prnSig}. The
+formulas and contrasts defined in \code{pepSig} or \code{prnSig}. The
 phenotype labels are then reformed in reflection of the original group names,
 weights and directions, i.e., \code{0.5xgrpA&0.5xgrpB	-0.5xgrpC&-0.5xgrpD}.
 The corresponding \code{.gct} and \code{.cls} files can be used with the

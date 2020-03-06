@@ -1,4 +1,4 @@
-#' proteoQ: A package for processing mass spectrometry data using tandam mass
+#' proteoQ: A package for processing mass spectrometry data using tandem mass
 #' tags (\url{https://en.wikipedia.org/wiki/Tandem_mass_tag}).
 #'
 #' The proteoQ package provides three categories of functions in data
@@ -13,7 +13,9 @@
 #'   plot_pepNMFCon, plot_prnNMFCon, plot_pepNMFCoef, plot_prnNMFCoef,
 #'   plot_metaNMF, anal_prnTrend, plot_prnTrend, pepSig, prnSig, pepVol, prnVol,
 #'   prnGSPA, prnGSPAHM, gspaMap, anal_prnString, pepImp, prnImp, prnGSVA,
-#'   prnGSEA, prepGO, prepMSig
+#'   prnGSEA
+#' @section proteoQ functions in custom database preparation: prepGO, prepMSig, 
+#' Uni2Entrez, Ref2Entrez
 #'
 #' @docType package
 #' @name proteoQ

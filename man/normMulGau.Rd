@@ -21,16 +21,16 @@ normMulGau(
 
 \item{method_align}{Character string indicating the method in aligning
 \code{log2FC} across samples. \code{MC}: median-centering; \code{MGKernel}:
-the kernal density defined by multiple Gaussian functions
+the kernel density defined by multiple Gaussian functions
 (\code{\link[mixtools]{normalmixEM}}). At the \code{MC} default, the ratio
 profiles of each sample will be aligned in that the medians of the
 \code{log2FC} are zero. At \code{MGKernel}, the ratio profiles of each
 sample will be aligned in that the \code{log2FC} at the maximums of kernel
-desity are zero.}
+density are zero.}
 
 \item{n_comp}{Integer; the number of Gaussian components to be used with
 \code{method_align = MGKernel}. A typical value is 2 or 3. The variable
-\code{n_comp} overwrites the augument \code{k} in
+\code{n_comp} overwrites the argument \code{k} in
 \code{\link[mixtools]{normalmixEM}}.}
 
 \item{seed}{Integer; a seed setting a starting point for reproducible

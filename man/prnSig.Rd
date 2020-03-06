@@ -78,7 +78,7 @@ of \code{id} in the \code{call}.}
 \item{filename}{A file name to output results. The default is
 \code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.}
 
-\item{...}{User-defined formulae for linear modeling. The syntax starts with a
+\item{...}{User-defined formulas for linear modeling. The syntax starts with a
 tilde, followed by the name of an available column key in
 \code{expt_smry.xlsx} and square brackets. The contrast groups are then
 quoted with one to multiple contrast groups separated by commas. The default

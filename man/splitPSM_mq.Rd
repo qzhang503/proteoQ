@@ -47,7 +47,7 @@ for preparing custom entrez files.}
 
 \item{pep_unique_by}{A character string for annotating the uniqueness of
 peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
-uniqueness of peptides is by protein groups. At a more strigent criterion of
+uniqueness of peptides is by protein groups. At a more stringent criterion of
 \code{protein}, the uniqueness of peptides is by protein entries. A new
 column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
 be added to the PSM reports.}

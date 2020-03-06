@@ -21,12 +21,12 @@ calcPepide(
 
 \item{id}{The same as \code{group_psm_by} in \code{\link{normPSM}}.}
 
-\item{method_psm_pep}{Character string; the method to summarise the
+\item{method_psm_pep}{Character string; the method to summarize the
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
 The descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")} with \code{median} being the default. The
 \code{log10-intensity} of reporter ions at the \code{PSMs} levels will be
-the weight when summarising \code{log2FC} with \code{"top.3"} or
+the weight when summarizing \code{log2FC} with \code{"top.3"} or
 \code{"weighted.mean"}.}
 
 \item{group_pep_by}{A character string specifying the method in peptide

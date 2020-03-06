@@ -238,7 +238,7 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
 
 #' Volcano plots for all proteins or peptides in a data set
 #' 
-#' @param contrast_groups The contrast groups defined under a formule at \code{fml_nm}.
+#' @param contrast_groups The contrast groups defined under a formula at \code{fml_nm}.
 #' @inheritParams info_anal
 #' @inheritParams prnVol
 #' @inheritParams gspaMap
@@ -787,18 +787,18 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'@param gspval_cutoff Numeric value or vector for uses with
 #'  \code{\link{gspaMap}}. \code{Gene sets} with enrichment \code{pVals} less
 #'  significant than the threshold will be excluded from volcano plot
-#'  visualization. The default signficance is 0.05 for all formulae matched to
+#'  visualization. The default significance is 0.05 for all formulas matched to
 #'  or specified in argument \code{fml_nms}. Formula-specific threshold is
 #'  allowed by supplying a vector of cut-off values.
 #'@param gslogFC_cutoff Numeric value or vector for uses with
 #'  \code{\link{gspaMap}}. \code{Gene sets} with absolute enrichment
 #'  \code{log2FC} less than the threshold will be excluded from volcano plot
-#'  visualization. The default magnitude is \code{log2(1.2) } for all formulae
+#'  visualization. The default magnitude is \code{log2(1.2) } for all formulas
 #'  matched to or specified in argument \code{fml_nms}. Formula-specific
 #'  threshold is allowed by supplying a vector of absolute values in
 #'  \code{log2FC}.
 #'@param topn Numeric value or vector; top entries in gene sets ordered by
-#'  increaseing \code{pVal} for visualization. The default is to use all
+#'  increasing \code{pVal} for visualization. The default is to use all
 #'  available entries.
 #'@param gset_nms Character string or vector containing the shorthanded name(s),
 #'  full file path(s) or both to gene sets for enrichment analysis. For species
@@ -806,8 +806,8 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
 #'  molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
 #'  curated \code{MSig}, and/or additional species are also supported. See also
-#'  \code{\link{prepGO}} for the prepration of custom \code{GO} and
-#'  \code{\link{prepMSig}} for the prepration of custom \code{MSig}.
+#'  \code{\link{prepGO}} for the preparation of custom \code{GO} and
+#'  \code{\link{prepMSig}} for the preparation of custom \code{MSig}.
 #'
 #'  Note that it is users' responsibility to ensure that the custom gene sets
 #'  contain terms that can be found from the one or multiple preceding analyses
@@ -820,9 +820,9 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{normPSM}} for the format of \code{filter_} statements and the
 #'  association between \code{filter_} and \code{df}. \cr \cr \code{filter2_}:
-#'  Variable argument statements for the row filtration aganist data in
+#'  Variable argument statements for the row filtration against data in
 #'  secondary file(s) linked to \code{df2}. See also \code{\link{prnGSPAHM}} for
-#'  the formate of \code{filter2_}, \code{normPSM} for the associateion between
+#'  the format of \code{filter2_}, \code{normPSM} for the association between
 #'  \code{filter_} and \code{df}. \cr \cr Additional parameters for plotting:
 #'  \cr \code{xco}, the cut-off lines of fold changes at position \code{x}; the
 #'  default is at \eqn{-1.2} and \eqn{+1.2}. \cr \code{yco}, the cut-off line of

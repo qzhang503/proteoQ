@@ -11,17 +11,17 @@ Pep2Prn(
 )
 }
 \arguments{
-\item{method_pep_prn}{Character string; the method to summarise the
+\item{method_pep_prn}{Character string; the method to summarize the
 \code{log2FC} and the \code{intensity} of peptides by protein entries. The
 descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")} with \code{median} being the default. The representative
 \code{log10-intensity} of reporter ions at the peptide levels (from
-\code{\link{standPep}}) will be the weigth when summarising \code{log2FC}
+\code{\link{standPep}}) will be the weight when summarizing \code{log2FC}
 with \code{top.3} or \code{weighted.mean}.}
 
 \item{use_unique_pep}{Logical. If TRUE, only entries that are \code{TRUE} or
 equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
-will be used, for summarising the \code{log2FC} and the \code{intensity} of
+will be used, for summarizing the \code{log2FC} and the \code{intensity} of
 peptides into protein values. The default is to use unique peptides only.
 For \code{MaxQuant} data, the levels of uniqueness are according to the
 \code{pep_unique_by} in \code{\link{normPSM}}. The argument currently do
@@ -40,7 +40,7 @@ exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.}
 The primary output in "\code{...\\Protein\\Protein.txt}".
 }
 \description{
-\code{Pep2Prn} summarises \code{Peptide.txt} to an interim protein report in
+\code{Pep2Prn} summarizes \code{Peptide.txt} to an interim protein report in
 \code{Protein.txt}.
 }
 \details{

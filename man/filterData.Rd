@@ -17,7 +17,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
-\item{cols}{Column indeces}
+\item{cols}{Column indexes}
 
 \item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.
 Entries with variances smaller than the threshold will be excluded from

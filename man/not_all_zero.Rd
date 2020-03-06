@@ -10,5 +10,5 @@ not_all_zero(x)
 \item{x}{A data frame of \code{log2FC} and \code{intensity}.}
 }
 \description{
-\code{not_all_zero} identifies the column indeces with all NA values.
+\code{not_all_zero} identifies the column indexes with all NA values.
 }

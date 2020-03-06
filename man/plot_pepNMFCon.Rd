@@ -104,18 +104,18 @@ results of \code{\link{anal_pepNMF}} or \code{\link{anal_pepNMF}} will be
 used.}
 
 \item{...}{\code{filter2_}: Variable argument statements for the row
-filtration aganist data in secondary file(s) of
+filtration against data in secondary file(s) of
 \code{_NMF[...]_consensus.txt} for consensus plots or
 \code{_NMF[...]_coef.txt} for coefficient plots. See also
 \code{\link{prnGSPAHM}} for the format of \code{filter2_} statements. \cr
 \cr \code{arrange2_}: Variable argument statements for the row ordering
-aganist data in secondary file(s) of \code{_NMF[...]_consensus.txt} for
+against data in secondary file(s) of \code{_NMF[...]_consensus.txt} for
 consensus plots or \code{_NMF[...]_coef.txt} for coefficient plots. See also
 \code{\link{prnGSPAHM}} for the format of \code{arrange2_} statements. \cr
 \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}}
 }
 \value{
-Concensus heat maps from NMF classification.
+Consensus heat maps from NMF classification.
 }
 \description{
 \code{plot_pepNMFCon} plots the consensus heat maps from the NMF
