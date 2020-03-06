@@ -33,7 +33,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
@@ -59,8 +59,8 @@ among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
 "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
 molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
 curated \code{MSig}, and/or additional species are also supported. See also
-\code{\link{prepGO}} for the prepration of custom \code{GO} and
-\code{\link{prepMSig}} for the prepration of custom \code{MSig}.}
+\code{\link{prepGO}} for the preparation of custom \code{GO} and
+\code{\link{prepMSig}} for the preparation of custom \code{MSig}.}
 
 \item{lm_method}{Character string indicating the linear modeling method for
 significance assessment of GSVA enrichment scores. The default is
@@ -82,7 +82,7 @@ test corrections. The default is at log2(1.1).}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
-automatically. Examplary values include \code{anal_type = c("PCA",
+automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", ...)}.}
 
@@ -90,7 +90,7 @@ automatically. Examplary values include \code{anal_type = c("PCA",
 against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
 See also \code{\link{normPSM}} for the format of \code{filter_} statements.
 \cr \cr \code{arrange_}: Variable argument statements for the row ordering
-aganist data in a primary file linked to \code{df}. See also
+against data in a primary file linked to \code{df}. See also
 \code{\link{prnHM}} for the format of \code{arrange_} statements. \cr \cr
 Additional arguments for \code{\link[GSVA]{gsva}}}
 }

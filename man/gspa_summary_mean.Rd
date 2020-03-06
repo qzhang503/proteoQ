@@ -29,30 +29,30 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
 consideration in gene set tests. The number is after data filtration by
 \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
-\code{filter_}. The default is 10 for all formulae matched to or specified
+\code{filter_}. The default is 10 for all formulas matched to or specified
 in argument \code{fml_nms}. Formula-specific threshold is allowed by
 supplying a vector of sizes.}
 
 \item{min_delta}{Numeric value or vector; the minimum count difference between
 the up- and the down-expressed group of proteins for consideration in gene
 set tests. For example at \code{min_delta = 4}, a gene set will 6
-upregulated proteins and 2 downregulated proteins, or vice versa, will be
+upregulated proteins and 2 down-expressed proteins, or vice versa, will be
 assessed. The number is after data filtration by \code{pval_cutoff},
 \code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
-is 4 for all formulae matched to or specified in argument \code{fml_nms}.
+is 4 for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of sizes.}
 
 \item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
 significance \code{pVal}. Only enrichment terms with \code{pVals} more
 significant than the threshold will be reported. The default is 0.05 for all
-formulae matched to or specified in argument \code{fml_nms}.
+formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 
 \item{gslogFC_cutoff}{Numeric value or vector; the cut-off in gene-set
 enrichment fold change. Only enrichment terms with absolute fold change
 greater than the threshold will be reported. The default magnitude is
-\code{log2(1.2)} for all formulae matched to or specified in argument
+\code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 }

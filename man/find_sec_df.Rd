@@ -19,11 +19,11 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
-automatically. Examplary values include \code{anal_type = c("PCA",
+automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", ...)}.}
 
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{...}{Not currently used.}

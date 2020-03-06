@@ -2,23 +2,23 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{concat_fml_dots}
 \alias{concat_fml_dots}
-\title{Concatenate formula(e) to varargs of dots}
+\title{Concatenate formula(s) to varargs of dots}
 \usage{
 concat_fml_dots(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type = "zzz")
 }
 \arguments{
-\item{fmls}{A character vector of formula(e)}
+\item{fmls}{A character vector of formula(s)}
 
 \item{fml_nms}{A character vector containing the names of \code{fmls}.}
 
-\item{dots}{A character vector of formua(e) in \code{dots}}
+\item{dots}{A character vector of formula(s) in \code{dots}}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
-automatically. Examplary values include \code{anal_type = c("PCA",
+automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", ...)}.}
 }
 \description{
-Concatenate formula(e) to varargs of dots
+Concatenate formula(s) to varargs of dots
 }

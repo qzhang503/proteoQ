@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-params.R
 \name{TMT_plex}
 \alias{TMT_plex}
-\title{Finds the multiplxity of TMT labels}
+\title{Finds the multiplexity of TMT labels}
 \usage{
 TMT_plex(label_scheme_full)
 }
@@ -11,5 +11,5 @@ TMT_plex(label_scheme_full)
 including multiple LCMS series.}
 }
 \description{
-\code{TMT_plex} returns the multiplxity of TMT labels.
+\code{TMT_plex} returns the multiplexity of TMT labels.
 }

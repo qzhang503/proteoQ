@@ -13,7 +13,7 @@ pepImp(...)
 prnImp(...)
 }
 \arguments{
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{overwrite}{Logical. If true, overwrite the previous results. The default

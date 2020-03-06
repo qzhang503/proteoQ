@@ -64,10 +64,10 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
 
 #' Prefix form of colnames(x)[c(2, 5, ...)] for use in pipes
 #'
-#' \code{names_pos<-} rename the columns at the indeces of \code{pos}.
+#' \code{names_pos<-} rename the columns at the indexes of \code{pos}.
 #'
 #' @param x A data frame.
-#' @param pos Numeric.  The index of coloumns for name change.
+#' @param pos Numeric.  The index of columns for name change.
 #' @param value Characters.  The new column names.
 #' @return The data frame with new names.
 #'
@@ -102,7 +102,7 @@ reorder_files <- function(filelist, n_TMT_sets) {
 #' \code{reorderCols} re-orders columns in a data frame.
 #'
 #' @param df A data frame.
-#' @param endColIndex the indeces of columns to be moved to the end of
+#' @param endColIndex the indexes of columns to be moved to the end of
 #'   \code{df}.
 #' @param col_to_rn the column identifier where the values under that column
 #'   will be used as row names.
@@ -175,13 +175,13 @@ na_zeroIntensity <- function (df) {
 	return(df)
 }
 
-#' Summarises numeric values
+#' Summarizes numeric values
 #'
-#' \code{aggrNums} summarises \code{log2FC} and \code{intensity} by the
+#' \code{aggrNums} summarizes \code{log2FC} and \code{intensity} by the
 #' descriptive statistics of \code{c("mean", "median", "weighted.mean",
 #' "top.3")}
 #'
-#' @param f A function for data summarisation.
+#' @param f A function for data summarization.
 #' @examples \donttest{df_num <- aggrNums(median)(df, prot_acc, na.rm = TRUE)}
 #' @import dplyr rlang
 #' @importFrom magrittr %>%
@@ -204,7 +204,7 @@ aggrNums <- function(f) {
 #' \code{intensity}.
 #'
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
-#' @param id The variable to summarise \code{log2FC}.
+#' @param id The variable to summarize \code{log2FC}.
 #' @param ... Additional arguments for \code{weighted.mean}.
 #' @import dplyr rlang
 #' @importFrom stringr str_length
@@ -260,7 +260,7 @@ TMT_wt_mean <- function (x, id, ...) {
 #' \code{intensity}.
 #'
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
-#' @param id The variable to summarise \code{log2FC}.
+#' @param id The variable to summarize \code{log2FC}.
 #' @param ... Additional arguments for \code{mean}.
 #' @examples \donttest{df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)}
 #' @import dplyr rlang
@@ -285,7 +285,7 @@ TMT_top_n <- function (x, id, ...) {
 
 #' Finds all-zero column(s)
 #'
-#' \code{not_all_zero} identifies the column indeces with all NA values.
+#' \code{not_all_zero} identifies the column indexes with all NA values.
 #'
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
 not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
@@ -293,7 +293,7 @@ not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
 
 #' Finds all-NA column(s)
 #'
-#' \code{not_all_NA} identifies the column indeces with all NA values.
+#' \code{not_all_NA} identifies the column indexes with all NA values.
 #'
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
 #' @import dplyr rlang
@@ -629,7 +629,7 @@ sp_lookup <- function(species) {
 }
 
 
-#' Toxonomy lookup
+#' Taxonomy lookup
 #' @inheritParams load_dbs
 taxid_lookup <- function(species) {
   switch (species,
@@ -641,7 +641,7 @@ taxid_lookup <- function(species) {
 }
 
 
-#' Reversed toxonomy lookup
+#' Reversed taxonomy lookup
 #' @inheritParams load_dbs
 taxid_lookup_rev <- function(species) {
   switch (species,
@@ -1025,7 +1025,7 @@ annotPrn <- function (df, fasta, entrez) {
 	# A1AT1_MOUSE Serpina1a uniprot_id P07758      mouse    20703
 	# A1AT4_MOUSE Serpina1d uniprot_id Q00897      mouse    20703
 		
-	# (2) samee uniprot_acc can have different entrez ids
+	# (2) same uniprot_acc can have different entrez ids
 	# From	To
 	# P02088	100503605
 	# P02088	101488143
@@ -1416,7 +1416,7 @@ find_pep_pos <- function (prot_acc, pep_seq, fasta) {
 #' Annotation of peptide positions and adjacent amino acid residues
 #'
 #' \code{annotPeppos} annotates the start and the end positions of peptides in
-#' ascribed proteins description based on the \code{fasta}. It also annotes the
+#' ascribed proteins description based on the \code{fasta}. It also annotates the
 #' preceding and the following AA residues.
 #' 
 #' @inheritParams info_anal
@@ -1820,7 +1820,7 @@ calcSD_Splex <- function (df, id, type = "log2_R") {
 #' 
 #' @param width The width of a plot.
 #' @param height The height of a plot.
-#' @param is_psm Logical; indictor if the data belong to a PSM table .
+#' @param is_psm Logical; indicator if the data belong to a PSM table .
 #' 
 #' @inheritParams info_anal
 #' @inheritParams purgePSM
@@ -2022,7 +2022,7 @@ count_phosphopeps <- function() {
 }
 
 
-#' peptide miscleavage counts
+#' peptide mis-cleavage counts
 count_pepmiss <- function() {
   dir.create(file.path(dat_dir, "PSM\\cache"), recursive = TRUE, showWarnings = FALSE)
   
@@ -2181,10 +2181,10 @@ rows_are_not_all <- function (match, vars, ignore.case = FALSE) {
 }
 
 
-#' Concatenate formula(e) to varargs of dots
+#' Concatenate formula(s) to varargs of dots
 #' 
-#' @param fmls A character vector of formula(e)
-#' @param dots A character vector of formua(e) in \code{dots}
+#' @param fmls A character vector of formula(s)
+#' @param dots A character vector of formula(s) in \code{dots}
 #' @param fml_nms A character vector containing the names of \code{fmls}.
 #' @inheritParams info_anal
 concat_fml_dots <- function(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type = "zzz") {
@@ -2218,7 +2218,7 @@ concat_fml_dots <- function(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type 
 #' Roll up genes
 #' 
 #' @param df A data frame
-#' @param cols Column indeces
+#' @param cols Column indexes
 gn_rollup <- function (df, cols) {
   if (! "gene" %in% names(df)) return(df)
   
@@ -2344,7 +2344,7 @@ check_dots <- function (blacklist = NULL, ...) {
 }
 
 
-#' check depreciated argments
+#' check depreciated arguments
 #' 
 #' @param ... A list of arguments for checking.
 #' @inheritParams check_dots

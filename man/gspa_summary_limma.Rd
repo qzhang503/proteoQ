@@ -22,17 +22,17 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
 consideration in gene set tests. The number is after data filtration by
 \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
-\code{filter_}. The default is 10 for all formulae matched to or specified
+\code{filter_}. The default is 10 for all formulas matched to or specified
 in argument \code{fml_nms}. Formula-specific threshold is allowed by
 supplying a vector of sizes.}
 
 \item{min_delta}{Numeric value or vector; the minimum count difference between
 the up- and the down-expressed group of proteins for consideration in gene
 set tests. For example at \code{min_delta = 4}, a gene set will 6
-upregulated proteins and 2 downregulated proteins, or vice versa, will be
+upregulated proteins and 2 down-expressed proteins, or vice versa, will be
 assessed. The number is after data filtration by \code{pval_cutoff},
 \code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
-is 4 for all formulae matched to or specified in argument \code{fml_nms}.
+is 4 for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of sizes.}
 }
 \description{

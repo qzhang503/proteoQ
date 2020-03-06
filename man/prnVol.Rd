@@ -65,7 +65,7 @@ require the fields of significance p-values, the \code{df} will be one of
 determined automatically by the name of the current call.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
-the formula(e) will match those used in \code{\link{pepSig}} or
+the formula(s) will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
 \item{theme}{A

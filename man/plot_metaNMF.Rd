@@ -74,7 +74,7 @@ annotation.}
 against data in a primary file linked to \code{df}. See also
 \code{\link{prnHM}}. No \code{filter2_} available for corresponding
 secondary file(s). \cr \cr \code{arrange_}: Variable argument statements for
-the row ordering aganist data in a primary file linked to \code{df}. See
+the row ordering against data in a primary file linked to \code{df}. See
 also \code{\link{prnHM}} for the format of \code{arrange_} statements. No
 \code{arrange2_} available for corresponding secondary file(s). \cr \cr
 Additional arguments for \code{\link[pheatmap]{pheatmap}}.}

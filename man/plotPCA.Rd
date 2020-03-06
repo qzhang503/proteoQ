@@ -41,7 +41,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
@@ -126,14 +126,14 @@ theme will be applied.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
-automatically. Examplary values include \code{anal_type = c("PCA",
+automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", ...)}.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-\code{arrange_}: Variable argument statements for the row ordering aganist
+\code{arrange_}: Variable argument statements for the row ordering against
 data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 the format of \code{arrange_} statements. \cr \cr Additional parameters for
 \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the

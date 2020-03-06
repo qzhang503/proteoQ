@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-gsea.R
 \name{fml_gsea}
 \alias{fml_gsea}
-\title{Protein GSEA by formula(e) in `pepSig` or `prnSig`}
+\title{Protein GSEA by formula(s) in `pepSig` or `prnSig`}
 \usage{
 fml_gsea(
   fml,
@@ -38,42 +38,42 @@ The default is 0.5.}
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
 the threshold will be excluded from enrichment analysis. The default is 0.05
-for all formulae matched to or specified in argument \code{fml_nms}.
+for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 
 \item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
 \code{log2FC}. Entries with absolute \code{log2FC} smaller than the
 threshold will be excluded from enrichment analysis. The default magnitude
-is \code{log2(1.2)} for all formulae matched to or specified in argument
+is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
 \item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
 significance \code{pVal}. Only enrichment terms with \code{pVals} more
 significant than the threshold will be reported. The default is 0.05 for all
-formulae matched to or specified in argument \code{fml_nms}.
+formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 
 \item{gslogFC_cutoff}{Numeric value or vector; the cut-off in gene-set
 enrichment fold change. Only enrichment terms with absolute fold change
 greater than the threshold will be reported. The default magnitude is
-\code{log2(1.2)} for all formulae matched to or specified in argument
+\code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
 \item{min_size}{Numeric value or vector; minimum number of protein entries for
 consideration in gene set tests. The number is after data filtration by
 \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
-\code{filter_}. The default is 10 for all formulae matched to or specified
+\code{filter_}. The default is 10 for all formulas matched to or specified
 in argument \code{fml_nms}. Formula-specific threshold is allowed by
 supplying a vector of sizes.}
 
 \item{max_size}{Numeric value or vector; maximum number of protein entries for
 consideration in gene set tests. The number is after data filtration by
 \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
-\code{filter_}. The default in infinite for all formulae matched to or
+\code{filter_}. The default in infinite for all formulas matched to or
 specified in argument \code{fml_nms}. Formula-specific threshold is allowed
 by supplying a vector of sizes.}
 
@@ -87,9 +87,9 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
-\item{col_ind}{Numeric vector; the indeces of columns for the ascribed \code{fml_nm}.}
+\item{col_ind}{Numeric vector; the indexes of columns for the ascribed \code{fml_nm}.}
 
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{gsets}{The gene sets.}
@@ -133,5 +133,5 @@ plot. \cr \code{scales}, should the scales be fixed across panels; the
 default is "fixed" and the alternative is "free".}
 }
 \description{
-Protein GSEA by formula(e) in `pepSig` or `prnSig`
+Protein GSEA by formula(s) in `pepSig` or `prnSig`
 }

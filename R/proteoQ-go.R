@@ -686,7 +686,7 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
 }
 
 
-#'Map UniProt accesions to Entrez IDs
+#'Map UniProt accessions to Entrez IDs
 #'
 #'\code{Uni2Entrez} prepares lookup tables between UniProt accessions and
 #'Entrez IDs for uses with \link{normPSM} and downstream gene-set analysis such
@@ -716,7 +716,7 @@ Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 
 
 
-#'Map RefSeq accesions to Entrez IDs and gene names
+#'Map RefSeq accessions to Entrez IDs and gene names
 #'
 #'\code{Ref2Entrez} prepares lookup tables between RefSeq accessions and
 #'Entrez IDs and gene names for uses with \link{normPSM} and downstream gene-set

@@ -18,12 +18,12 @@ standPrn(
 \arguments{
 \item{method_align}{Character string indicating the method in aligning
 \code{log2FC} across samples. \code{MC}: median-centering; \code{MGKernel}:
-the kernal density defined by multiple Gaussian functions
+the kernel density defined by multiple Gaussian functions
 (\code{\link[mixtools]{normalmixEM}}). At the \code{MC} default, the ratio
 profiles of each sample will be aligned in that the medians of the
 \code{log2FC} are zero. At \code{MGKernel}, the ratio profiles of each
 sample will be aligned in that the \code{log2FC} at the maximums of kernel
-desity are zero.}
+density are zero.}
 
 \item{range_log2r}{Numeric vector at length two. The argument specifies the
 range of the \code{log2FC} for use in the scaling normalization of standard
@@ -37,7 +37,7 @@ the 5th and the 95th quantiles.}
 
 \item{n_comp}{Integer; the number of Gaussian components to be used with
 \code{method_align = MGKernel}. A typical value is 2 or 3. The variable
-\code{n_comp} overwrites the augument \code{k} in
+\code{n_comp} overwrites the argument \code{k} in
 \code{\link[mixtools]{normalmixEM}}.}
 
 \item{seed}{Integer; a seed setting a starting point for reproducible
@@ -55,7 +55,7 @@ indicated analysis.}
 \item{...}{\code{slice_}: Variable argument statements for the identification
 of row subsets. The partial data will be taken for parameterizing the
 alignment of \code{log2FC} across samples. The full data set will be updated
-subsequently with the newly derived paramters. Note that there is no data
+subsequently with the newly derived parameters. Note that there is no data
 entry removals from the complete data set with the \code{slice_} procedure.
 \cr \cr The variable argument statements should be in the following format:
 each of the statement contains a list of logical expression(s). The

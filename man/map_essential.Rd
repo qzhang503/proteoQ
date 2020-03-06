@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-gspa.R
 \name{map_essential}
 \alias{map_essential}
-\title{A helper function for mapping btw gene sets and essential gene sets}
+\title{A helper function for mapping between gene sets and essential gene sets}
 \usage{
 map_essential(sig_sets)
 }
@@ -11,5 +11,5 @@ map_essential(sig_sets)
 under given criteria.}
 }
 \description{
-A helper function for mapping btw gene sets and essential gene sets
+A helper function for mapping between gene sets and essential gene sets
 }

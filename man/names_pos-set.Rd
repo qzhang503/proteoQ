@@ -9,7 +9,7 @@ names_pos(x, pos) <- value
 \arguments{
 \item{x}{A data frame.}
 
-\item{pos}{Numeric.  The index of coloumns for name change.}
+\item{pos}{Numeric.  The index of columns for name change.}
 
 \item{value}{Characters.  The new column names.}
 }
@@ -17,5 +17,5 @@ names_pos(x, pos) <- value
 The data frame with new names.
 }
 \description{
-\code{names_pos<-} rename the columns at the indeces of \code{pos}.
+\code{names_pos<-} rename the columns at the indexes of \code{pos}.
 }

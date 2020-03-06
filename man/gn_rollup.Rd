@@ -9,7 +9,7 @@ gn_rollup(df, cols)
 \arguments{
 \item{df}{A data frame}
 
-\item{cols}{Column indeces}
+\item{cols}{Column indexes}
 }
 \description{
 Roll up genes

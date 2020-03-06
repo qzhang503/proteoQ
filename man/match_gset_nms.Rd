@@ -13,8 +13,8 @@ among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
 "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
 molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
 curated \code{MSig}, and/or additional species are also supported. See also
-\code{\link{prepGO}} for the prepration of custom \code{GO} and
-\code{\link{prepMSig}} for the prepration of custom \code{MSig}.}
+\code{\link{prepGO}} for the preparation of custom \code{GO} and
+\code{\link{prepMSig}} for the preparation of custom \code{MSig}.}
 }
 \description{
 Matches gset_nms to prnGSPA (not currently used)

@@ -93,7 +93,7 @@ image type will be determined by the extension of the file name.}
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-\code{arrange_}: Variable argument statements for the row ordering aganist
+\code{arrange_}: Variable argument statements for the row ordering against
 data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 the format of \code{arrange_} statements. \cr \cr Additional parameters for
 plotting: \cr \code{width}, the width of plot \cr \code{height}, the height

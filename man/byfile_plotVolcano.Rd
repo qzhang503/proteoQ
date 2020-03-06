@@ -38,7 +38,7 @@ An informatic task, i.e. \code{anal_prnTrend(...)} against a primary
 \code{Protein_Trend_Z_nclust6.txt} etc. See also the \code{Auguments}
 section or \code{\link{prnHist}} for the description of a primary \code{df}.}
 
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{fml_nm}{A character string; the name of \code{fml}.}
@@ -61,7 +61,7 @@ The default is TRUE.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
-automatically. Examplary values include \code{anal_type = c("PCA",
+automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", ...)}.}
 
@@ -71,8 +71,8 @@ automatically. Examplary values include \code{anal_type = c("PCA",
  "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
  molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
  curated \code{MSig}, and/or additional species are also supported. See also
- \code{\link{prepGO}} for the prepration of custom \code{GO} and
- \code{\link{prepMSig}} for the prepration of custom \code{MSig}.
+ \code{\link{prepGO}} for the preparation of custom \code{GO} and
+ \code{\link{prepMSig}} for the preparation of custom \code{MSig}.
 
  Note that it is users' responsibility to ensure that the custom gene sets
  contain terms that can be found from the one or multiple preceding analyses

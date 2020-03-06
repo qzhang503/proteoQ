@@ -18,7 +18,7 @@ plotNMFCoef(
 )
 }
 \arguments{
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{rank}{Numeric vector; the factorization rank(s) in
@@ -50,7 +50,7 @@ determined automatically by the name of the current call.}
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration
 against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-\code{arrange_}: Variable argument statements for the row ordering aganist
+\code{arrange_}: Variable argument statements for the row ordering against
 data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 the format of \code{arrange_} statements. \cr \cr Additional arguments for
 \code{\link[NMF]{nmf}}.}

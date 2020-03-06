@@ -63,10 +63,10 @@ theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
 
 \item{...}{\code{filter2_}: Variable argument statements for the row
-filtration aganist data in secondary file(s) of
+filtration against data in secondary file(s) of
 \code{[...]Protein_Trend_[...].txt}. See also \code{\link{prnGSPAHM}} for
 the format of \code{filter2_} statements. \cr \cr \code{arrange2_}: Variable
-argument statements for the row ordering aganist data in secondary file(s)
+argument statements for the row ordering against data in secondary file(s)
 of \code{[...]Protein_Trend_[...].txt}. See also \code{\link{prnGSPAHM}} for
 the format of \code{arrange2_} statements. \cr \cr Additional parameters for
 use in \code{plot_} functions: \cr \code{ymin}, the minimum y at \code{log2}

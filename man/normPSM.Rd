@@ -63,7 +63,7 @@ for preparing custom entrez files.}
 
 \item{pep_unique_by}{A character string for annotating the uniqueness of
 peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
-uniqueness of peptides is by protein groups. At a more strigent criterion of
+uniqueness of peptides is by protein groups. At a more stringent criterion of
 \code{protein}, the uniqueness of peptides is by protein entries. A new
 column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
 be added to the PSM reports.}
@@ -115,11 +115,11 @@ entries with \code{pep_expect > 0.1}.}
 \value{
 Outputs are under the directory of \code{PSM} sub to \code{dat_dir}.
  Primary results are in \code{TMTset1_LCMSinj1_PSM_N.txt,
- TMTset2_LCMSinj1_PSM_N.txt, ...} The indeces of TMT experiment and LC/MS
+ TMTset2_LCMSinj1_PSM_N.txt, ...} The indexes of TMT experiment and LC/MS
  injection are indicated in the file names.
 }
 \description{
-\code{normPSM} standarizes
+\code{normPSM} standardizes
 \href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}
 results from \href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}
 experiments.
@@ -189,12 +189,12 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
  to be aware of the column keys in input files. As indicated by their names,
  \code{filter_} and \code{filter2_} perform row filtration against column
  keys from a primary data file, \code{df}, and secondary data file(s),
- \code{df2}, respectively. The same correspondance is applicable for
+ \code{df2}, respectively. The same correspondence is applicable for
  \code{arrange_} and \code{arrange2_} varargs. \cr \cr Users will typically
  employ either primary or secondary vararg statements, but not both. In the
  more extreme case of \code{gspaMap(...)}, it links \code{\link{prnGSPA}}
  findings in \code{df2} to the significance \code{pVals} and abundance fold
- changes in \code{df} for volcano plot visualizaitons by gene sets. The table
+ changes in \code{df} for volcano plot visualizations by gene sets. The table
  below summarizes the \code{df} and the \code{df2} for varargs in
  \code{proteoQ}.
 

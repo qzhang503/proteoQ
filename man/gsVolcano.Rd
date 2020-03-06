@@ -40,7 +40,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
-\item{contrast_groups}{The contrast groups defined under a formule at \code{fml_nm}.}
+\item{contrast_groups}{The contrast groups defined under a formula at \code{fml_nm}.}
 
 \item{gsea_key}{Character string; the column key indicating the terms of gene sets.}
 
@@ -77,20 +77,20 @@ Additional choices are from \code{c("pVal", "qVal")} where \code{pVal} or
 \item{gspval_cutoff}{Numeric value or vector for uses with
 \code{\link{gspaMap}}. \code{Gene sets} with enrichment \code{pVals} less
 significant than the threshold will be excluded from volcano plot
-visualization. The default signficance is 0.05 for all formulae matched to
+visualization. The default significance is 0.05 for all formulas matched to
 or specified in argument \code{fml_nms}. Formula-specific threshold is
 allowed by supplying a vector of cut-off values.}
 
 \item{gslogFC_cutoff}{Numeric value or vector for uses with
 \code{\link{gspaMap}}. \code{Gene sets} with absolute enrichment
 \code{log2FC} less than the threshold will be excluded from volcano plot
-visualization. The default magnitude is \code{log2(1.2) } for all formulae
+visualization. The default magnitude is \code{log2(1.2) } for all formulas
 matched to or specified in argument \code{fml_nms}. Formula-specific
 threshold is allowed by supplying a vector of absolute values in
 \code{log2FC}.}
 
 \item{topn}{Numeric value or vector; top entries in gene sets ordered by
-increaseing \code{pVal} for visualization. The default is to use all
+increasing \code{pVal} for visualization. The default is to use all
 available entries.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration

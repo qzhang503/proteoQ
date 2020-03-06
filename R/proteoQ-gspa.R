@@ -13,7 +13,7 @@
 #'
 #'where \eqn{n} and \eqn{m} are the numbers of entries with \eqn{p} values
 #'\eqn{\le} or \eqn{>} a significance cut-off, respectively. The quotient of the
-#'two \eqn{P} values is then used to prepsent the significance of gene set
+#'two \eqn{P} values is then used to represent the significance of gene set
 #'enrichment. The arguments \code{pval_cutoff} and \code{logFC_cutoff} are used
 #'to discriminate low influence genes. Additional subsetting of data via the
 #'\code{vararg} approach of \code{filter_} is feasible. At \code{method =
@@ -29,62 +29,62 @@
 #'  "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
 #'  molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
 #'  curated \code{MSig}, and/or additional species are also supported. See also
-#'  \code{\link{prepGO}} for the prepration of custom \code{GO} and
-#'  \code{\link{prepMSig}} for the prepration of custom \code{MSig}.
+#'  \code{\link{prepGO}} for the preparation of custom \code{GO} and
+#'  \code{\link{prepMSig}} for the preparation of custom \code{MSig}.
 #'@param method Character string; the method to assess the p-values of GSPA. The
 #'  default is \code{mean}. See also section \code{Details} for the
 #'  calculations.
 #'@param pval_cutoff Numeric value or vector; the cut-off in protein
 #'  significance \code{pVal}. Entries with \code{pVals} less significant than
 #'  the threshold will be excluded from enrichment analysis. The default is 0.05
-#'  for all formulae matched to or specified in argument \code{fml_nms}.
+#'  for all formulas matched to or specified in argument \code{fml_nms}.
 #'  Formula-specific threshold is allowed by supplying a vector of cut-off
 #'  values.
 #'@param logFC_cutoff Numeric value or vector; the cut-off in protein
 #'  \code{log2FC}. Entries with absolute \code{log2FC} smaller than the
 #'  threshold will be excluded from enrichment analysis. The default magnitude
-#'  is \code{log2(1.2)} for all formulae matched to or specified in argument
+#'  is \code{log2(1.2)} for all formulas matched to or specified in argument
 #'  \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 #'  of absolute values in \code{log2FC}.
 #'@param gspval_cutoff Numeric value or vector; the cut-off in gene-set
 #'  significance \code{pVal}. Only enrichment terms with \code{pVals} more
 #'  significant than the threshold will be reported. The default is 0.05 for all
-#'  formulae matched to or specified in argument \code{fml_nms}.
+#'  formulas matched to or specified in argument \code{fml_nms}.
 #'  Formula-specific threshold is allowed by supplying a vector of cut-off
 #'  values.
 #'@param gslogFC_cutoff Numeric value or vector; the cut-off in gene-set
 #'  enrichment fold change. Only enrichment terms with absolute fold change
 #'  greater than the threshold will be reported. The default magnitude is
-#'  \code{log2(1.2)} for all formulae matched to or specified in argument
+#'  \code{log2(1.2)} for all formulas matched to or specified in argument
 #'  \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 #'  of absolute values in \code{log2FC}.
 #'@param min_size Numeric value or vector; minimum number of protein entries for
 #'  consideration in gene set tests. The number is after data filtration by
 #'  \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
-#'  \code{filter_}. The default is 10 for all formulae matched to or specified
+#'  \code{filter_}. The default is 10 for all formulas matched to or specified
 #'  in argument \code{fml_nms}. Formula-specific threshold is allowed by
 #'  supplying a vector of sizes.
 #'@param max_size Numeric value or vector; maximum number of protein entries for
 #'  consideration in gene set tests. The number is after data filtration by
 #'  \code{pval_cutoff}, \code{logFC_cutoff} or varargs expressions under
-#'  \code{filter_}. The default in infinite for all formulae matched to or
+#'  \code{filter_}. The default in infinite for all formulas matched to or
 #'  specified in argument \code{fml_nms}. Formula-specific threshold is allowed
 #'  by supplying a vector of sizes.
 #'@param min_delta Numeric value or vector; the minimum count difference between
 #'  the up- and the down-expressed group of proteins for consideration in gene
 #'  set tests. For example at \code{min_delta = 4}, a gene set will 6
-#'  upregulated proteins and 2 downregulated proteins, or vice versa, will be
+#'  upregulated proteins and 2 down-expressed proteins, or vice versa, will be
 #'  assessed. The number is after data filtration by \code{pval_cutoff},
 #'  \code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
-#'  is 4 for all formulae matched to or specified in argument \code{fml_nms}.
+#'  is 4 for all formulas matched to or specified in argument \code{fml_nms}.
 #'  Formula-specific threshold is allowed by supplying a vector of sizes.
 #'@param min_greedy_size Numeric value or vector; minimum number of unique
 #'  protein entries for a gene set to be considered essential. The default in
-#'  \code{1} for all formulae matched to or specified in argument
+#'  \code{1} for all formulas matched to or specified in argument
 #'  \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 #'  of sizes.
 #'@param fml_nms Character string or vector; the formula name(s). By default,
-#'  the formula(e) will match those used in \code{\link{pepSig}} or
+#'  the formula(s) will match those used in \code{\link{pepSig}} or
 #'  \code{\link{prnSig}}.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration
 #'  against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
@@ -228,7 +228,8 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = c("mean","limm
 
 #' Perform GSPA tests
 #'
-#' logFC_cutoff setset of data before the calculation of adjusted pvals
+#' logFC_cutoff Numeric A threshold for the subset of data before the calculation
+#' of adjusted pvals
 #'
 #' @inheritParams prnHist
 #' @inheritParams prnHM
@@ -358,7 +359,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 #' 
 #' @param fml A character string; the formula used in \link{prnSig}.
 #' @param fml_nm A character string; the name of \code{fml}.
-#' @param col_ind Numeric vector; the indeces of columns for the ascribed \code{fml_nm}.
+#' @param col_ind Numeric vector; the indexes of columns for the ascribed \code{fml_nm}.
 #' @inheritParams prnHist
 #' @inheritParams prnGSPA
 #' @inheritParams gspaTest
@@ -719,7 +720,7 @@ prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff 
 }
 
 
-#' A helper function for mapping btw gene sets and essential gene sets
+#' A helper function for mapping between gene sets and essential gene sets
 #'
 #' @param sig_sets A data frame containing the gene sets that are significant
 #'   under given criteria.
@@ -774,7 +775,7 @@ map_essential <- function (sig_sets) {
 #'@section \code{Protein_GSPA_[...].txt}:
 #'
 #'  \tabular{ll}{ \strong{Key}   \tab \strong{Description}\cr term \tab a gene
-#'  set term \cr is_essential \tab a logicial indicator of gene set essentiality
+#'  set term \cr is_essential \tab a logical indicator of gene set essentiality
 #'  \cr size \tab the number of IDs under a \code{term} \cr ess_size \tab the
 #'  number of IDs that can be found under a corresponding essential set \cr
 #'  contrast \tab a contrast of sample groups \cr p_val \tab significance p
@@ -800,7 +801,7 @@ map_essential <- function (sig_sets) {
 #'  taken. An error will be thrown if no files are matched under given
 #'  conditions. The default is FALSE.
 #'@param fml_nms Character string or vector; the formula name(s). By default,
-#'  the formula(e) will match those used in \code{\link{pepSig}} or
+#'  the formula(s) will match those used in \code{\link{pepSig}} or
 #'  \code{\link{prnSig}}.
 #'@param annot_cols A character vector of column keys that can be found in
 #'  \code{_essmap.txt}. The values under the selected keys will be used to

@@ -20,7 +20,7 @@
 #'@param ... \code{slice_}: Variable argument statements for the identification
 #'  of row subsets. The partial data will be taken for parameterizing the
 #'  alignment of \code{log2FC} across samples. The full data set will be updated
-#'  subsequently with the newly derived paramters. Note that there is no data
+#'  subsequently with the newly derived parameters. Note that there is no data
 #'  entry removals from the complete data set with the \code{slice_} procedure.
 #'  \cr \cr The variable argument statements should be in the following format:
 #'  each of the statement contains a list of logical expression(s). The

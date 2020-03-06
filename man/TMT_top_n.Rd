@@ -9,7 +9,7 @@ TMT_top_n(x, id, ...)
 \arguments{
 \item{x}{A data frame of \code{log2FC} and \code{intensity}.}
 
-\item{id}{The variable to summarise \code{log2FC}.}
+\item{id}{The variable to summarize \code{log2FC}.}
 
 \item{...}{Additional arguments for \code{mean}.}
 }

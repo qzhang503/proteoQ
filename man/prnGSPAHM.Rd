@@ -32,7 +32,7 @@ taken. An error will be thrown if no files are matched under given
 conditions. The default is FALSE.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
-the formula(e) will match those used in \code{\link{pepSig}} or
+the formula(s) will match those used in \code{\link{pepSig}} or
 \code{\link{prnSig}}.}
 
 \item{annot_cols}{A character vector of column keys that can be found in
@@ -94,7 +94,7 @@ varargs of \code{filter_}.
 
 
  \tabular{ll}{ \strong{Key}   \tab \strong{Description}\cr term \tab a gene
- set term \cr is_essential \tab a logicial indicator of gene set essentiality
+ set term \cr is_essential \tab a logical indicator of gene set essentiality
  \cr size \tab the number of IDs under a \code{term} \cr ess_size \tab the
  number of IDs that can be found under a corresponding essential set \cr
  contrast \tab a contrast of sample groups \cr p_val \tab significance p

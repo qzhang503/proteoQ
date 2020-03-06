@@ -9,7 +9,7 @@ reorderCols(df, endColIndex, col_to_rn)
 \arguments{
 \item{df}{A data frame.}
 
-\item{endColIndex}{the indeces of columns to be moved to the end of
+\item{endColIndex}{the indexes of columns to be moved to the end of
 \code{df}.}
 
 \item{col_to_rn}{the column identifier where the values under that column

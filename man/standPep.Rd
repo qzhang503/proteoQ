@@ -18,12 +18,12 @@ standPep(
 \arguments{
 \item{method_align}{Character string indicating the method in aligning
 \code{log2FC} across samples. \code{MC}: median-centering; \code{MGKernel}:
-the kernal density defined by multiple Gaussian functions
+the kernel density defined by multiple Gaussian functions
 (\code{\link[mixtools]{normalmixEM}}). At the \code{MC} default, the ratio
 profiles of each sample will be aligned in that the medians of the
 \code{log2FC} are zero. At \code{MGKernel}, the ratio profiles of each
 sample will be aligned in that the \code{log2FC} at the maximums of kernel
-desity are zero.}
+density are zero.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in
@@ -44,7 +44,7 @@ the 5th and the 95th quantiles.}
 
 \item{n_comp}{Integer; the number of Gaussian components to be used with
 \code{method_align = MGKernel}. A typical value is 2 or 3. The variable
-\code{n_comp} overwrites the augument \code{k} in
+\code{n_comp} overwrites the argument \code{k} in
 \code{\link[mixtools]{normalmixEM}}.}
 
 \item{seed}{Integer; a seed setting a starting point for reproducible
@@ -96,7 +96,7 @@ with additional scaling normalization. Values under columns \code{I...} are
 \code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
 proteins from ascribing peptides.
 
-In general, median statistics is applied when summarising numeric peptide data
+In general, median statistics is applied when summarizing numeric peptide data
 from different LCMS series. One exception is \code{pep_expect} with Mascot
 workflow where geometric mean is used.
 

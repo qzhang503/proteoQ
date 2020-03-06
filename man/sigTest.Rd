@@ -33,7 +33,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
@@ -69,14 +69,14 @@ The default is 0.5.}
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
 the threshold will be excluded from enrichment analysis. The default is 0.05
-for all formulae matched to or specified in argument \code{fml_nms}.
+for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 
 \item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
 \code{log2FC}. Entries with absolute \code{log2FC} smaller than the
 threshold will be excluded from enrichment analysis. The default magnitude
-is \code{log2(1.2)} for all formulae matched to or specified in argument
+is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 
@@ -84,7 +84,7 @@ of absolute values in \code{log2FC}.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
-automatically. Examplary values include \code{anal_type = c("PCA",
+automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", ...)}.}
 

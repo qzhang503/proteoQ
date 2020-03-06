@@ -33,7 +33,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{db_path}{Character string; the local path for database(s). The default
 is \code{"~\\proteoQ\\dbs\\string"}.}
 
-\item{id}{Characer string; one of \code{pep_seq}, \code{pep_seq_mod},
+\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
 
 \item{score_cutoff}{Numeric; the threshold in the \code{combined_score} of
@@ -53,7 +53,7 @@ image type will be determined by the extension of the file name.}
 against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
 See also \code{\link{normPSM}} for the format of \code{filter_} statements.
 \cr \cr \code{arrange_}: Variable argument statements for the row ordering
-aganist data in a primary file linked to \code{df}. See also
+against data in a primary file linked to \code{df}. See also
 \code{\link{prnHM}} for the format of \code{arrange_} statements.}
 }
 \description{

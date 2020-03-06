@@ -2,7 +2,7 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{taxid_lookup}
 \alias{taxid_lookup}
-\title{Toxonomy lookup}
+\title{Taxonomy lookup}
 \usage{
 taxid_lookup(species)
 }
@@ -10,5 +10,5 @@ taxid_lookup(species)
 \item{species}{Character string; the name of a species.}
 }
 \description{
-Toxonomy lookup
+Taxonomy lookup
 }

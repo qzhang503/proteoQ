@@ -28,19 +28,19 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{fml_nm}{A character string; the name of \code{fml}.}
 
-\item{col_ind}{Numeric vector; the indeces of columns for the ascribed \code{fml_nm}.}
+\item{col_ind}{Numeric vector; the indexes of columns for the ascribed \code{fml_nm}.}
 
 \item{pval_cutoff}{Numeric value or vector; the cut-off in protein
 significance \code{pVal}. Entries with \code{pVals} less significant than
 the threshold will be excluded from enrichment analysis. The default is 0.05
-for all formulae matched to or specified in argument \code{fml_nms}.
+for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of cut-off
 values.}
 
 \item{logFC_cutoff}{Numeric value or vector; the cut-off in protein
 \code{log2FC}. Entries with absolute \code{log2FC} smaller than the
 threshold will be excluded from enrichment analysis. The default magnitude
-is \code{log2(1.2)} for all formulae matched to or specified in argument
+is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
 }

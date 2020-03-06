@@ -60,7 +60,7 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'Protein GSEA
 #'
 #'\code{prnGSEA} prepares data for the analysis of
-#'\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA} aganist
+#'\href{http://software.broadinstitute.org/gsea/index.jsp}{GSEA} against
 #'protein \code{log2FC} data. 
 #'
 #'The arguments \code{var_cutoff}, \code{pval_cutoff} and \code{logFC_cutoff}
@@ -75,7 +75,7 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'The current GSEA may not support the comparisons between two grouped
 #'conditions, i.e.,  (grpA + grpB) versus (grpC + grpD). The \code{prnGSEA}
 #'utility further breaks the input data into pairs of groups according to the
-#'formulae and contrasts defined in \code{pepSig} or \code{prnSig}. The
+#'formulas and contrasts defined in \code{pepSig} or \code{prnSig}. The
 #'phenotype labels are then reformed in reflection of the original group names,
 #'weights and directions, i.e., \code{0.5xgrpA&0.5xgrpB	-0.5xgrpC&-0.5xgrpD}.
 #'The corresponding \code{.gct} and \code{.cls} files can be used with the
@@ -90,7 +90,7 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-#'  \code{arrange_}: Variable argument statements for the row ordering aganist
+#'  \code{arrange_}: Variable argument statements for the row ordering against
 #'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 #'  the format of \code{arrange_} statements. 
 #'@import dplyr rlang ggplot2 networkD3
@@ -214,7 +214,7 @@ prnGSEA <- function (gset_nms = "go_sets",
 }
 
 
-#'Protein GSEA by formula(e) in `pepSig` or `prnSig`
+#'Protein GSEA by formula(s) in `pepSig` or `prnSig`
 #'
 #' @inheritParams info_anal
 #' @inheritParams gspaTest

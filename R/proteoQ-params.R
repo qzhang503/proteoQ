@@ -55,7 +55,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 	  dplyr::filter(is.na(TMT_Set)|is.na(LCMS_Injection))
 	
 	if (nrow(check_tmt126) > 0) {
-	  stop("`TMT_Set` and/or `LCMS_Injection` indeces corresponding to `TMT-126` in `expt_smry.xlsx` cannot be empty.", 
+	  stop("`TMT_Set` and/or `LCMS_Injection` indexes corresponding to `TMT-126` in `expt_smry.xlsx` cannot be empty.", 
 	       call. = FALSE)
 	}
 	rm(check_tmt126)
@@ -315,23 +315,23 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  \tabular{ll}{ \strong{Essential column}   \tab \strong{Descrption}\cr
 #'  Sample_ID \tab Unique sample IDs \cr TMT_Channel \tab TMT channel names:
 #'  \code{126}, \code{127N}, \code{127C} et al. \cr TMT_Set \tab TMT experiment
-#'  indeces 1, 2, 3, ... \cr LCMS_Injection   \tab LC/MS injection indeces 1, 2,
+#'  indexes 1, 2, 3, ... \cr LCMS_Injection   \tab LC/MS injection indexes 1, 2,
 #'  3, ... under a \code{TMT_Set} \cr RAW_File \tab MS data file names
 #'  originated by \code{Xcalibur} with or without the \code{.raw} extension \cr
 #'  Reference \tab Labels indicating reference samples in TMT experiments \cr }
 #'
 #'  \code{Sample_ID}: values should be unique for entries at a unique
 #'  combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for
-#'  unused entries. Samples with the same indeces of \code{TMT_Channel} and
-#'  \code{TMT_Set} but different indeces of \code{LCMS_Injection} should have
+#'  unused entries. Samples with the same indexes of \code{TMT_Channel} and
+#'  \code{TMT_Set} but different indexes of \code{LCMS_Injection} should have
 #'  the same value in \code{Sample_ID}. No white space or special characters are
 #'  allowed.
 #'
-#'  \code{RAW_File}: for analysis with off-line fractionations of peptides
+#'  \code{RAW_File}: for analysis with off-line fractionation of peptides
 #'  before LC/MS, the \code{RAW_File} column should be left blank. Instead, the
 #'  correspondence between the fraction numbers and \code{RAW_File} names should
 #'  be specified in a separate file, for example, \code{frac_smry.xlsx}. For
-#'  analysis without off-line fractionations, it is recommended as well to leave
+#'  analysis without off-line fractionation, it is recommended as well to leave
 #'  the field under the \code{RAW_File} column blank and instead enter the MS
 #'  file names in \code{frac_smry.xlsx}.
 #'
@@ -349,7 +349,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  \code{extract_psm_raws()} extracts the list of MS file names that are
 #'  actually present in PSM data. For help, try \code{?extract_psm_raws}.
 #'
-#'  \code{Reference}: reference entrie(s) are indicated with non-void string(s).
+#'  \code{Reference}: reference entry(entries) are indicated with non-void string(s).
 #'
 #'  \tabular{ll}{ \strong{Optional default column}   \tab \strong{Descrption}\cr
 #'  Select \tab Samples to be selected for indicated analysis \cr Group \tab
@@ -363,7 +363,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  \cr \cr}
 #'
 #'  \tabular{ll}{ \strong{Exemplary optional open column}   \tab
-#'  \strong{Descrption}\cr Term \tab Categorial terms for statistical modeling.
+#'  \strong{Descrption}\cr Term \tab Categorical terms for statistical modeling.
 #'  \cr Duplicate \tab Indicators of duplicated samples for corrections in
 #'  statistical significance \cr Peptide_Yield \tab Yields of peptides in sample
 #'  handling \cr}
@@ -371,7 +371,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'
 #'@section \code{frac_smry.xlsx}: \tabular{ll}{ \strong{Column}   \tab
 #'  \strong{Descrption}\cr TMT_Set \tab v.s.  \cr LCMS_Injection   \tab v.s. \cr
-#'  Fraction \tab Fraction indeces under a \code{TMT_Set} \cr RAW_File \tab v.s.
+#'  Fraction \tab Fraction indexes under a \code{TMT_Set} \cr RAW_File \tab v.s.
 #'  }
 #'  
 #'@family normalization functions
@@ -511,12 +511,12 @@ reload_expts <- function() {
 
 #' Extracts the channel information in TMT experiments
 #'
-#' A function returns the indeces of TMT channels that are associated to
+#' A function returns the indexes of TMT channels that are associated to
 #' reference(s), sample(s) and probable unused void(s).
 #'
 #' @param label_scheme The data frame returned by \code{\link{load_expts}}.
 #' @param set_idx Numeric.  The index of a multiplex TMT experiment.
-#' @return Three lists of indeces: \code{refChannels}, reference channels(s);
+#' @return Three lists of indexes: \code{refChannels}, reference channels(s);
 #'   \code{emptyChannels}, empty channel(s) that were not used for sample
 #'   labeling; \code{labeledChannels}, non-empty channels including both
 #'   reference(s) and sample(s).
@@ -554,9 +554,9 @@ n_TMT_sets <- function (label_scheme_full) {
 }
 
 
-#' Finds the multiplxity of TMT labels
+#' Finds the multiplexity of TMT labels
 #'
-#' \code{TMT_plex} returns the multiplxity of TMT labels.
+#' \code{TMT_plex} returns the multiplexity of TMT labels.
 #' @inheritParams check_label_scheme
 TMT_plex <- function (label_scheme_full) {
 	nlevels(as.factor(label_scheme_full$TMT_Channel))
@@ -666,13 +666,13 @@ check_raws <- function(df) {
   wrong_label_scheme_raws <- label_scheme_raws[! label_scheme_raws %in% ms_raws]
   
   if(!purrr::is_empty(missing_ms_raws) | !purrr::is_empty(wrong_label_scheme_raws)) {
-    cat("RAW MS file name(s) missing from the `experimental summary` and/or `fraction summary` files:\n")
+    cat("Required RAW MS file name(s) not found from the `expt_smry.xlsx` and/or `frac_smry.xlsx`:\n")
     cat(paste0(missing_ms_raws, "\n"))
     
-    cat("RAW MS files in `experimental summary` and/or `fraction summary` files not found in PSM data:\n")
+    cat("RAW MS files in `expt_smry.xlsx` and/or `frac_smry.xlsx` but not present in PSM data:\n")
     cat(paste0("\t", wrong_label_scheme_raws, "\n"))
     
-    stop(paste("Check file names under the RAW_File column in the experimental summary file."),
+    stop("Check file names under the `RAW_File` column in `expt_smry.xlsx` and/or `frac_smry.xlsx`.", 
          call. = FALSE)
   }
 

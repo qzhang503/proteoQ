@@ -43,7 +43,7 @@ saved as a \code{.rds} object for uses with \code{\link{prnGSPA}}.}
 \item{db_path}{Character string; the local path for database(s). The default
 is \code{"~\\proteoQ\\dbs\\msig"}.}
 
-\item{overwrite}{Logical; if TRUE, overwrite the downloaded databse(s). The
+\item{overwrite}{Logical; if TRUE, overwrite the downloaded database(s). The
 default is FALSE.}
 }
 \description{

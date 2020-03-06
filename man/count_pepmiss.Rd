@@ -2,10 +2,10 @@
 % Please edit documentation in R/proteoQ-utils.R
 \name{count_pepmiss}
 \alias{count_pepmiss}
-\title{peptide miscleavage counts}
+\title{peptide mis-cleavage counts}
 \usage{
 count_pepmiss()
 }
 \description{
-peptide miscleavage counts
+peptide mis-cleavage counts
 }
