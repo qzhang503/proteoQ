@@ -5,8 +5,6 @@ author:
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
-  github_document:
-    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -15,15 +13,17 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
   word_document:
     toc: yes
   md_document:
     toc: yes
     toc_depth: 4
     variant: gfm
-  pdf_document:
+  github_document:
     toc: yes
-    number_sections: true
 ---
 
 ---
@@ -88,6 +88,7 @@ To install this package, start R (version "3.6.3") as **administrator** and ente
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
+# devtools::install_github("qzhang503/proteoQ@v1.2.2.1")
 ```
 
 ## 1 Data normalization 
