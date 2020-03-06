@@ -207,8 +207,8 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     d <- dist(df_hm, method = clustering_distance_rows, p = p_dist_rows)
     d[is.na(d)] <- .5 * max(d, na.rm = TRUE)
 
-    tryCatch(
-      h <- hclust(d, hc_method_rows), 
+    h <- tryCatch(
+      hclust(d, hc_method_rows), 
       error = function(e) 1
     )
     
@@ -227,8 +227,8 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     d_cols <- dist(t(df_hm), method = clustering_distance_cols, p = p_dist_cols)
     d_cols[is.na(d_cols)] <- .5 * max(d_cols, na.rm = TRUE)
 
-    tryCatch(
-      h_cols <- hclust(d_cols, hc_method_cols), 
+    h_cols <- tryCatch(
+      hclust(d_cols, hc_method_cols), 
       error = function(e) 1
     )
     
@@ -268,7 +268,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   df <- df %>% dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
   
   if (!is.null(cutree_rows) & cluster_rows) {
-    if (is.numeric(cutree_rows)) {
+    if (is.numeric(cutree_rows) && nrow(df) >= cutree_rows) {
       Cluster <- data.frame(Cluster = cutree(p$tree_row, k = cutree_rows)) %>%
         dplyr::mutate(!!id := rownames(.)) %>%
         dplyr::left_join(df, by = id) %T>% 
