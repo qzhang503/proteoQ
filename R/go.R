@@ -15,6 +15,8 @@ create_db_path <- function (db_path) {
       db_path <- new_db_path
     }
   }
+  
+  invisible(db_path)
 }
 
 
@@ -58,7 +60,7 @@ proc_gaf <- function(db_path, fn_gaf) {
   
   out_nm <- gsub("\\.gz$", "_hdr_rm.txt", fn_gaf)
   writeLines(df, file.path(db_path, out_nm))
-  close(con)
+  try(close(con))
   
   df <- readr::read_tsv(file.path(db_path, out_nm), col_names = FALSE, 
                         col_types = cols(
@@ -172,9 +174,6 @@ find_human_orthologs <- function(species, ortho_mart) {
   ) %>% 
     `colnames<-`(c("human", species)) 
   
-  assign(out_nm, res)
-  save(list = out_nm, file = file.path(dat_dir, paste0(out_nm, ".rda")))
-
   invisible(res)
 }
 
@@ -186,11 +185,7 @@ sp_lookup_go <- function(species) {
   switch(species, 
          human = "human",
          mgi = "mouse",
-         rgd = "rat",
-         fb = "fly", 
-         cow = "cow",
-         dog = "dog", 
-         crap = "crap")
+         rgd = "rat")
 }
 
 
@@ -261,7 +256,6 @@ set_db_outname <- function(filename = NULL, species = "human", signature) {
 #' @inheritParams prepMSig
 dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt", 
                     db_path = "~\\proteoQ\\dbs\\msig", overwrite = FALSE) {
-  db_path <- create_db_path(db_path)
   
   if (!grepl("\\.entrez\\.gmt$", msig_url)) {
     stop("Use a link to a `.entrez.gmt` file; not `.symbols.gmt`.", call. = FALSE)
@@ -316,6 +310,8 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
     `names<-`(paste(tolower(abbr_species), names(.), sep = "_"))
   
   saveRDS(gsets, file.path(db_path, filename))
+  
+  invisible(file.path(db_path, filename))
 }
 
 
@@ -327,7 +323,8 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #'
 #'@import rlang dplyr magrittr purrr fs readr downloader org.Hs.eg.db
 #'  org.Mm.eg.db org.Rn.eg.db 
-#'@inheritParams dl_stringdbs
+#'@param overwrite Logical; if TRUE, overwrite the downloaded database(s). The
+#'  default is FALSE.
 #'@param species Character string; the name of a species for the
 #'  \emph{conveninent} preparation of GO. The species available for the
 #'  convenience feature is in one of \code{c("human", "mouse", "rat")} with
@@ -374,6 +371,9 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #' # outputs under `db_path`
 #' prepGO(human)
 #' prepGO(mouse)
+#' 
+#' # head(readRDS(file.path("~\\proteoQ\\dbs\\go\\go_hs.rds")))
+#' # head(readRDS(file.path("~\\proteoQ\\dbs\\go\\go_mm.rds")))
 #'
 #' # `mouse` with a slim OBO
 #' prepGO(
@@ -398,7 +398,11 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #' }
 #' 
 #' \dontrun{
-#' gsets <- readRDS(file.path("~\\proteoQ\\dbs\\go", "mm_slim.rds"))
+#' # enrichment analysis with custom `GO`
+#' prnGSPA(
+#'   gset_nms = c("~\\proteoQ\\dbs\\go\\go_hs.rds",
+#'                "~\\proteoQ\\dbs\\go\\go_mm.rds"),
+#' )
 #' }
 #'@export
 prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_url = NULL, 
@@ -406,9 +410,9 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
                    type = c("biological_process", "cellular_component", "molecular_function"), 
                    filename = NULL, overwrite = FALSE) {
   
-  old_opt <- options(warn = 0)
+  old_opts <- options()
   options(warn = 1)
-  on.exit(options(old_opt), add = TRUE)
+  on.exit(options(old_opts), add = TRUE)
   
   species <- rlang::as_string(rlang::enexpr(species))
 
@@ -482,6 +486,8 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
     `names<-`(paste(tolower(abbr_species), names(.), sep = "_"))
   
   saveRDS(gsets, file.path(db_path, filename))
+  
+  invisible(file.path(db_path, filename))
 }
 
 
@@ -492,7 +498,6 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'(MSig) for enrichment analysis by gene sets.
 #'
 #'@import rlang dplyr magrittr purrr fs readr downloader biomaRt org.Hs.eg.db
-#'@inheritParams dl_stringdbs
 #'@inheritParams prepGO
 #'@param species Character string; the name of a species for the
 #'  \emph{conveninent} preparation of \code{MSig} data bases. The species
@@ -506,7 +511,8 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'  \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{MSig
 #'  }. At the \code{NULL} default, a \code{c2.all.v[...].entrez.gmt} data will
 #'  be used for all species. A valid web address is required for a custom data
-#'  base, and for simplicity, only files with entrez IDs will be handled.
+#'  base. For simplicity, only files with entrez IDs will be handled; 
+#'  files of \code{c2.all.v[...].symbols.gmt} will not be parsed. 
 #'@param ortho_mart Character string; a dataset name from
 #'  \code{\link[biomaRt]{useMart}} and/or \code{\link[biomaRt]{listDatasets}}
 #'  for the lookup of orthologs to \code{human} genes. For species in
@@ -542,8 +548,6 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'   filename = msig_cf.rds,
 #' )
 #'
-#' msig_cf <- readRDS(file.path("~\\proteoQ\\dbs\\msig\\msig_cf.rds"))
-#'
 #' # also `dog`
 #' prepMSig(
 #'   species = my_dog,
@@ -552,8 +556,8 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'   filename = msig_cf2.rds,
 #' )
 #'
+#' msig_cf <- readRDS(file.path("~\\proteoQ\\dbs\\msig\\msig_cf.rds"))
 #' msig_cf2 <- readRDS(file.path("~\\proteoQ\\dbs\\msig\\msig_cf2.rds"))
-#'
 #'identical(msig_cf, msig_cf2)
 #'
 #' ## use an `MSig`other than the default of `c2.all`
@@ -570,27 +574,35 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'   filename = c2_cgp_cf.rds,
 #' )
 #' }
+#' 
+#' \dontrun{
+#' # enrichment analysis with custom `MSig`
+#' prnGSPA(
+#'   gset_nms = c("~\\proteoQ\\dbs\\msig\\msig_hs.rds",
+#'                "~\\proteoQ\\dbs\\msig\\msig_mm.rds"),
+#' )
+#' }
 #'
 #'@export
-prepMSig <- function(msig_url = NULL, 
-                     species = "human", 
-                     abbr_species = NULL, 
+prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL, 
                      ortho_mart = switch(species, 
                                          mouse = "mmusculus_gene_ensembl", 
                                          rat = "rnorvegicus_gene_ensembl", 
-                                         human = "zzz",
+                                         human = "to_itself",
                                          "unknown"), 
                      db_path = "~\\proteoQ\\dbs\\msig", filename = NULL, overwrite = FALSE) {
 
-  old_opt <- options(warn = 0)
+  old_opts <- options()
   options(warn = 1)
-  on.exit(options(old_opt), add = TRUE)
+  on.exit(options(old_opts), add = TRUE)
   
   if (is.null(msig_url)) {
     msig_url <- "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt"
   } else {
     msig_url <- rlang::as_string(rlang::enexpr(msig_url))
   }
+  
+  db_path <- create_db_path(db_path)
   
   fn_gmt <- dl_msig(msig_url, db_path, overwrite)
   
@@ -605,15 +617,19 @@ prepMSig <- function(msig_url = NULL,
       ortho_mart <- ok
     }
   })
+  
+  if (species == "human" && ortho_mart != "to_itself") species <- "unknown"
 
-  if (ortho_mart == "unknown") stop("Specify the value of `ortho_mart` for species `", species, "`.", 
-                                    call. = FALSE)
-  
-  if (species == "human" && ortho_mart != "zzz") species <- "unknown"
-  
+  if (ortho_mart == "unknown") 
+    stop(
+      "Specify the value of `ortho_mart` for species other than \"human\", \"mouse\", and \"rat\".", 
+      call. = FALSE
+    )
+
   abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
   filename <- set_db_outname(!!rlang::enexpr(filename), species, "msig")
-  proc_gmt(species, abbr_species, ortho_mart, fn_gmt, db_path, filename)
+  out_path <- proc_gmt(species, abbr_species, ortho_mart, fn_gmt, db_path, filename)
+  invisible(out_path)
 }
 
 
@@ -627,6 +643,10 @@ prepMSig <- function(msig_url = NULL,
 #' @export
 map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPROT", 
                           filename = NULL, db_path = "~\\proteoQ\\dbs\\entrez", overwrite = FALSE) {
+  old_opts <- options()
+  options(warn = 1)
+  on.exit(options(old_opts), add = TRUE)
+  
   db_path <- create_db_path(db_path)
   species <- rlang::as_string(rlang::enexpr(species))
   abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
@@ -751,9 +771,9 @@ Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 #' @import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db
 #'   org.Rn.eg.db
 map_to_entrez_os_name <- function(species = "human", abbr_species = NULL, 
-                                 os_name = "Homo sapiens", 
-                                 from = "UNIPROT", 
-                                 filename = NULL, db_path = "~\\proteoQ\\dbs\\entrez", overwrite = FALSE) {
+                                  os_name = "Homo sapiens", 
+                                  from = "UNIPROT", 
+                                  filename = NULL, db_path = "~\\proteoQ\\dbs\\entrez", overwrite = FALSE) {
   # the value of species will be used under column `species` in Protein.txt etc
   # add column species in the rds output
   

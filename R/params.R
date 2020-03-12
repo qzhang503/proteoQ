@@ -1,0 +1,681 @@
+#' Processes the metadata of TMT experiments
+#'
+#' @inheritParams load_expts
+#' @inheritParams prnHist
+#' @import dplyr tidyr purrr openxlsx
+#' @importFrom magrittr %>%
+#' @importFrom readxl read_excel
+prep_label_scheme <- function(dat_dir, filename) {
+
+	my_channels <- function (x) {
+		x <- as.character(x)
+		pos <- !grepl("^TMT", x)
+		x[pos] <- paste0("TMT-", x[pos])
+
+		return(x)
+	}
+
+	replace_na_smpls <- function(x, prefix) {
+	  i <- is.na(x)
+	  replace(as.character(x), i, paste(prefix, seq_len(sum(i)), sep = "."))
+	}
+	
+	not_trival <- function (x) {
+	  ok <- (!is.na(x)) & (x != FALSE) & (x != 0)
+	}
+	
+	
+	if (is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv),
+	                                         error = function(e) 1)
+
+	if (dat_dir == 1) stop("Set up the working directory first.", call. = FALSE)
+
+	if (!file.exists(file.path(dat_dir, filename)))
+	  stop(filename, " not found under '", dat_dir, "'.")
+
+	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+	fn_prefix <- gsub("\\.[^.]*$", "", filename)
+
+	if (fn_suffix %in% c("xls", "xlsx")) {
+		label_scheme_full <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Setup") %>%
+												dplyr::filter(rowSums(!is.na(.)) > 0)
+	} else if (fn_suffix == "csv") {
+		label_scheme_full <- read.csv(file.path(dat_dir, filename), check.names = TRUE,
+		                              header = TRUE, comment.char = "#", na.strings = c("", "NA")) %>%
+												dplyr::filter(rowSums(!is.na(.)) > 0)
+	} else {
+		stop(filename, " needs to be '.xls' or '.xlsx'.")
+	}
+	
+	label_scheme_full <- label_scheme_full %>% 
+	  dplyr::mutate(Sample_ID = ifelse(grepl("^Empty\\.[0-9]+", Sample_ID), NA, Sample_ID))
+	
+	check_tmt126 <- label_scheme_full %>% 
+	  dplyr::filter(TMT_Channel == "TMT-126") %>% 
+	  dplyr::filter(is.na(TMT_Set)|is.na(LCMS_Injection))
+	
+	if (nrow(check_tmt126) > 0) {
+	  stop("`TMT_Set` and/or `LCMS_Injection` indexes corresponding to `TMT-126` in `expt_smry.xlsx` cannot be empty.", 
+	       call. = FALSE)
+	}
+	rm(check_tmt126)
+
+	must_have <- c("TMT_Channel", "TMT_Set", "LCMS_Injection", "RAW_File",
+								"Sample_ID", "Reference")
+
+	missing_cols <- must_have[!must_have %in% names(label_scheme_full)]
+	if (length(missing_cols) > 0) {
+		purrr::walk(missing_cols, ~ cat(paste0("\'", ., "\' must be present in \'", filename, "\'\n")))
+		stop("Not all required columns are present in \'", filename, "\'", call. = TRUE)
+	}
+
+	default_names <- c("Select", "Group", "Order", "Fill",  "Color", "Shape", "Size", "Alpha", "Peptide_Yield")
+
+	purrr::walk(as.list(default_names), ~ {
+		if (!.x %in% names(label_scheme_full)) {
+		  message("Column \'", .x, "\' added to \'", filename, "\'")
+			label_scheme_full[[.x]] <<- NA
+		}
+	}, label_scheme_full)
+
+	# a case of label-free data
+	if (dplyr::n_distinct(label_scheme_full$TMT_Channel) == 1) label_scheme_full$TMT_Channel <- NA
+
+	TMT_plex <- TMT_plex(label_scheme_full)
+	TMT_levels <- TMT_levels(TMT_plex)
+
+	label_scheme_full <- label_scheme_full %>% 
+	  dplyr::mutate_at(vars(c("TMT_Channel")), ~ my_channels(.x)) %>% 
+	  dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% 
+	  dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
+		dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File, ignore.case = TRUE)) %>% # Bruker
+	  dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
+	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.x)) %>%
+	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(.x, digits = 2)) %>%
+	  tidyr::fill(one_of("TMT_Set", "LCMS_Injection", "RAW_File")) %>%
+	  dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
+	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
+
+	# add IDs to unused TMT channels
+	label_scheme_empty <- label_scheme_full %>%
+		dplyr::select(TMT_Channel, TMT_Set, Sample_ID) %>%
+		tidyr::unite(key, TMT_Channel, TMT_Set, remove = TRUE) %>%
+		dplyr::filter(!duplicated(key)) %>%
+		dplyr::mutate(Sample_ID = replace_na_smpls(Sample_ID, "Empty"))
+
+	label_scheme_full <- label_scheme_full %>%
+		tidyr::unite(key, TMT_Channel, TMT_Set, remove = FALSE) %>%
+		dplyr::select(-Sample_ID) %>%
+		dplyr::left_join(label_scheme_empty, by = "key") %>%
+		dplyr::select(-key) %>%
+		dplyr::mutate(Sample_ID = factor(Sample_ID))
+	  
+	label_scheme_full <- dplyr::bind_cols(
+	  label_scheme_full %>% dplyr::select(Sample_ID), 
+	  label_scheme_full %>% dplyr::select(-Sample_ID))
+
+	rm(label_scheme_empty)
+
+	# check the completeness of TMT_Channel
+	check_tmt <- label_scheme_full %>%
+		tidyr::complete(TMT_Set, LCMS_Injection, TMT_Channel) %>%
+		dplyr::filter(is.na(RAW_File)) %>%
+		dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+		dplyr::mutate(n = n()) %>%
+		dplyr::filter(n != TMT_plex)
+
+	if (nrow(check_tmt) > 0) {
+		check_tmt %>%
+			dplyr::select(TMT_Set, LCMS_Injection, TMT_Channel) %>%
+			print()
+	  
+	  stop("`", check_tmt$TMT_Channel, "` not found under set ", check_tmt$TMT_Set, 
+	          " injection ", check_tmt$LCMS_Injection, ".", 
+	          "\n(Use `TMT-131`, instead of `TMT-131N`, for 10-plex experiment(s).)", 
+	          call. = FALSE)
+	}
+
+	# check the uniqueness of RAW_File per TMT_Set and LCMS_Injection
+	check_fn <- label_scheme_full %>%
+		dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+		dplyr::summarise(count = n_distinct(RAW_File)) %>%
+		dplyr::filter(count > 1) %>%
+		dplyr::select(-count)
+
+	if (nrow(check_fn) > 0) {
+		check_fn %>% print()
+		stop("More than one RAW filename in the above combination of TMT sets and LCMS injections.")
+	}
+
+	# check the uniqueness of Sample_ID
+	check_smpls <- label_scheme_full %>%
+		dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+		dplyr::summarise(count = n_distinct(Sample_ID)) %>%
+		dplyr::filter(count != TMT_plex)
+
+	if (nrow(check_smpls) > 0 & TMT_plex > 0) {
+		check_smpls %>% print()
+		stop(paste("Need", TMT_plex,
+		           "unique samples in the above combination of TMT sets and LCMS injections." ))
+	}
+
+	save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.rda"))
+
+	wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
+	openxlsx::writeData(wb, sheet = "Setup", label_scheme_full)
+	openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
+	
+	simple_label_scheme(dat_dir, label_scheme_full)
+}
+
+
+#' Loads the information of analyte prefractionation
+#'
+#' @inheritParams load_expts
+#' @inheritParams prnHist
+#' @import dplyr purrr tidyr openxlsx
+#' @importFrom magrittr %>%
+#' @importFrom readxl read_excel
+prep_fraction_scheme <- function(dat_dir, filename) {
+	if (is.null(dat_dir))
+	  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+
+	if (dat_dir == 1) stop("Set up the working directory first.")
+
+	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+	fn_prefix <- gsub("\\.[^.]*$", "", filename)
+
+	if (file.exists(file.path(dat_dir, filename))) {
+		if (fn_suffix %in% c("xls", "xlsx")) {
+			fraction_scheme <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Fractions") %>%
+			  dplyr::filter(rowSums(!is.na(.)) > 0)
+		} else if (fn_suffix == "csv") {
+			fraction_scheme <- read.csv(file.path(dat_dir, filename), check.names = TRUE, header = TRUE,
+			                            comment.char = "#", na.strings = c("", "NA"))  %>%
+			  dplyr::filter(rowSums(!is.na(.)) > 0)
+		} else {
+			stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
+		}
+	  
+	  fraction_scheme <- fraction_scheme %>% 
+	    tidyr::fill(TMT_Set, LCMS_Injection) %>% 
+	    dplyr::group_by(TMT_Set, LCMS_Injection) %>% 
+	    dplyr::mutate(Fraction = row_number()) 
+
+	  wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
+	  openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
+	  openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
+ 	} else {
+ 	  assign(".auto_frac_smry", TRUE, envir = .GlobalEnv)
+ 	  
+ 	  # warning: data in a auto-generated `frac_smry.xlsx` will be incorrect 
+ 	  #   if they were based on wrong information from `expt_smry.xlsx`
+ 	  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+ 	  
+ 	  # in case forget to enter RAW_File names
+ 	  if (anyNA(label_scheme_full$RAW_File)) stop("Enter RAW file names in the experimental summary file")
+
+		fraction_scheme <- label_scheme_full %>%
+			dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
+			dplyr::filter(!duplicated(RAW_File)) %>%
+			dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+			dplyr::mutate(Fraction = row_number())
+
+		wb <- openxlsx::createWorkbook()
+		openxlsx::addWorksheet(wb, sheetName = "Fractions")
+		openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
+		openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
+ 	}
+	
+	save(fraction_scheme, file = file.path(dat_dir, "fraction_scheme.rda"))
+}
+
+
+#'Loads species-specific Databases
+#'
+#'A function loads a set of precompiled gene sets of 
+#'\href{http://current.geneontology.org/products/pages/downloads.html}{GO}
+#'and
+#'\href{http://software.broadinstitute.org/gsea/msigdb}{molecular signatures}.
+#'@seealso \code{\link{load_expts}} for supported species.
+#'
+#' @examples
+#' \donttest{load_dbs("go_sets", "human")}
+#'
+#'@param species Character string; the name of a species. 
+#'@inheritParams prnGSPA
+#'@import dplyr rlang
+#'@importFrom magrittr %>%
+#'@export
+load_dbs <- function (gset_nms = NULL, species = NULL) {
+  if (is.null(gset_nms)) stop("`gset_nms` cannot be NULL.", call. = FALSE)
+  if (is.null(species)) stop("`species` cannot be NULL.", call. = FALSE)
+  
+  defaults <- c("go_sets", "kegg_sets", "c2_msig")
+  sys_defs <- gset_nms %>% .[. %in% defaults]
+  not_sys_defs <- gset_nms %>% .[! . %in% defaults]
+
+  if (!purrr::is_empty(sys_defs)) {
+    abbr_sp <- purrr::map_chr(species, sp_lookup)
+    filelist <- map(abbr_sp, ~ paste0(sys_defs, "_", .x)) %>% unlist()
+    
+    data(package = "proteoQ", list = filelist)
+    gsets <- purrr::map(filelist, ~ try(get(.x))) %>% do.call(`c`, .)
+    
+    try(rm(list = filelist, envir = .GlobalEnv))
+    
+    if (length(gsets) > 0) names(gsets) <- gsub("/", "-", names(gsets))      
+  } else {
+    gsets <- NULL
+  }
+  
+  if (!purrr::is_empty(not_sys_defs)) {
+    if (!all(grepl("\\.rds$", not_sys_defs))) {
+      stop("Custom gene set files indicated by `gset_nms` must end with the `.rds` extension.", call. = FALSE)
+    }
+
+    not_oks <- not_sys_defs %>% .[!file.exists(not_sys_defs)]
+    if (!purrr::is_empty(not_oks)) {
+      stop("File not found: \n", purrr::reduce(not_oks, paste, sep = ", \n"), call. = FALSE)
+    }
+    
+    gsets2 <- purrr::map(not_sys_defs, readRDS) %>% do.call(`c`, .)
+    
+    if (length(gsets2) > 0)  {
+      names(gsets2) <- gsub("/", "-", names(gsets2))
+    } else {
+      stop("Empty data file in: \n", purrr::reduce(not_sys_defs, paste, sep = ", \n"), call. = FALSE)
+    }
+  } else {
+    gsets2 <- NULL
+  }
+  
+  gsets <- c(gsets, gsets2) %>% .[!duplicated(.)]
+  stopifnot(length(gsets) > 0)
+  
+  assign("gsets", gsets, envir = .GlobalEnv)
+} 
+
+
+#'Load TMT experiments
+#'
+#'\code{load_expts} processes \code{.xlsx} files containing the metadata of TMT
+#'experiments
+#'
+#'@section \code{expt_smry.xlsx}: The \code{expt_smry.xlsx} files should be
+#'  located immediately under the file folder defined by \code{dat_dir}. The tab
+#'  containing the metadata of TMT experiments should be named \code{Setup}. The
+#'  \code{Excel} spread sheet therein is comprised of three tiers of fields: (1)
+#'  essential, (2) optional default and (3) optional open. The \code{essential}
+#'  columns contain the mandatory information of TMT experiments. The
+#'  \code{optional default} columns serve as the fields for default lookups in
+#'  sample selection, grouping, ordering, aesthetics, etc. The \code{optional
+#'  open} fields allow users to define their own analysis, aesthetics, etc.
+#'
+#'  \tabular{ll}{ \strong{Essential column}   \tab \strong{Descrption}\cr
+#'  Sample_ID \tab Unique sample IDs \cr TMT_Channel \tab TMT channel names:
+#'  \code{126}, \code{127N}, \code{127C} et al. \cr TMT_Set \tab TMT experiment
+#'  indexes 1, 2, 3, ... \cr LCMS_Injection   \tab LC/MS injection indexes 1, 2,
+#'  3, ... under a \code{TMT_Set} \cr RAW_File \tab MS data file names
+#'  originated by \code{Xcalibur} with or without the \code{.raw} extension \cr
+#'  Reference \tab Labels indicating reference samples in TMT experiments \cr }
+#'
+#'  \code{Sample_ID}: values should be unique for entries at a unique
+#'  combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for
+#'  unused entries. Samples with the same indexes of \code{TMT_Channel} and
+#'  \code{TMT_Set} but different indexes of \code{LCMS_Injection} should have
+#'  the same value in \code{Sample_ID}. No white space or special characters are
+#'  allowed.
+#'
+#'  \code{RAW_File}: for analysis with off-line fractionation of peptides
+#'  before LC/MS, the \code{RAW_File} column should be left blank. Instead, the
+#'  correspondence between the fraction numbers and \code{RAW_File} names should
+#'  be specified in a separate file, for example, \code{frac_smry.xlsx}. For
+#'  analysis without off-line fractionation, it is recommended as well to leave
+#'  the field under the \code{RAW_File} column blank and instead enter the MS
+#'  file names in \code{frac_smry.xlsx}.
+#'
+#'  The set of \code{RAW_File} names in \code{frac_smry.xlsx} needs to be
+#'  identical to those in PSM data. Note that \code{OS} file names may be
+#'  altered by MS users and thus different to those recorded in \code{Xcalibur}.
+#'  The original names by \code{Xcalibur} should be used. MS files may
+#'  occasionally have no contributions to PSM findings. These MS file names
+#'  should be removed from \code{frac_smry.xlsx}.
+#'
+#'  Utilities \code{extract_raws()} and \code{extract_psm_raws()} may aid
+#'  matching MS file names between \code{frac_smry.xlsx} and PSM data. Utility
+#'  \code{extract_raws()} extracts the list of MS file names under a file
+#'  folder. For help, try \code{?extract_raws}. Utility
+#'  \code{extract_psm_raws()} extracts the list of MS file names that are
+#'  actually present in PSM data. For help, try \code{?extract_psm_raws}.
+#'
+#'  \code{Reference}: reference entry(entries) are indicated with non-void string(s).
+#'
+#'  \tabular{ll}{ \strong{Optional default column}   \tab \strong{Descrption}\cr
+#'  Select \tab Samples to be selected for indicated analysis \cr Group \tab
+#'  Aesthetic labels annotating the prior knowledge of sample groups, e.g.,
+#'  Ctrl_T1, Ctrl_T2, Disease_T1, Disease_T2, ...\cr Order \tab Numeric labels
+#'  specifying the order of sample \code{groups} \cr Fill \tab Aesthetic labels
+#'  for sample annotation by filled color\cr Color \tab Aesthetic labels for
+#'  sample annotation by edge color\cr Shape \tab Aesthetic labels for sample
+#'  annotation by shape\cr Size \tab Aesthetic labels for sample annotation by
+#'  size \cr Alpha \tab Aesthetic labels for sample annotation by transparency
+#'  \cr \cr}
+#'
+#'  \tabular{ll}{ \strong{Exemplary optional open column}   \tab
+#'  \strong{Descrption}\cr Term \tab Categorical terms for statistical modeling.
+#'  \cr Duplicate \tab Indicators of duplicated samples for corrections in
+#'  statistical significance \cr Peptide_Yield \tab Yields of peptides in sample
+#'  handling \cr}
+#'
+#'
+#'@section \code{frac_smry.xlsx}: \tabular{ll}{ \strong{Column}   \tab
+#'  \strong{Descrption}\cr TMT_Set \tab v.s.  \cr LCMS_Injection   \tab v.s. \cr
+#'  Fraction \tab Fraction indexes under a \code{TMT_Set} \cr RAW_File \tab v.s.
+#'  }
+#'  
+#'@family normalization functions
+#'@seealso 
+#'  \emph{Data normalization} \cr 
+#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
+#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
+#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
+#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
+#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
+#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
+#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
+#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
+#'  
+#'@family data row filtration
+#'@seealso 
+#'  \emph{Variable arguments of `filter_...`} \cr 
+#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
+#'  
+#'@family missing value imputation
+#'@seealso 
+#'  \emph{Missing values} \cr 
+#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
+#'  
+#'@family basic informatics
+#'@seealso 
+#'  \emph{Informatics} \cr 
+#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
+#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
+#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
+#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
+#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
+#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
+#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
+#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
+#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
+#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
+#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+#'  
+#'  \emph{Custom databases} \cr 
+#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
+#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
+#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
+#'  ontology}} \cr 
+#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
+#'  signatures} \cr 
+#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  # Mascot \cr
+#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'  # MaxQuant \cr
+#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
+#'  
+#'@param dat_dir A character string to the working directory. The default is to
+#'  match the value under the global environment.
+#'@param expt_smry A character string to the \code{.xlsx} file containing the
+#'  metadata of TMT experiments. The default is \code{expt_smry.xlsx}.
+#'@param frac_smry A character string to the \code{.xlsx} file containing
+#'  peptide fractionation summary. The default is \code{frac_smry.xlsx}.
+#'
+#'@example inst/extdata/examples/load_expts_.R
+#'
+#'@import dplyr rlang fs
+#'@importFrom magrittr %>%
+#'@export
+load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
+  on.exit(mget(names(formals()), rlang::current_env()) %>% save_call("load_expts"))
+  
+  expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
+  frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
+
+  if (is.null(dat_dir)) {
+    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+    if (dat_dir == 1) 
+      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+  } else {
+    assign("dat_dir", dat_dir, envir = .GlobalEnv)
+  }
+  
+  if (!fs::dir_exists(dat_dir)) {
+    new_dat_dir <- fs::path_expand_r(dat_dir)
+    new_dat_dir2 <- fs::path_expand(dat_dir)
+    
+    if (fs::dir_exists(new_dat_dir)) {
+      dat_dir <- new_dat_dir
+      assign("dat_dir", dat_dir, envir = .GlobalEnv)
+      cat("dat_dir <- \"", dat_dir, "\"", sep = "")
+    } else if (fs::dir_exists(new_dat_dir2)) {
+      dat_dir <- new_dat_dir2
+      assign("dat_dir", dat_dir, envir = .GlobalEnv)
+      cat("dat_dir <- \"", dat_dir, "\"", sep = "")
+    } else {
+      stop(dat_dir, " not existed.", call. = FALSE)
+    }
+    
+    rm(new_dat_dir, new_dat_dir2)
+  }
+
+  prep_label_scheme(dat_dir, expt_smry)
+  prep_fraction_scheme(dat_dir, frac_smry)
+}
+
+
+#' Reload the "expt_smry.xlsx" and "frac_smry.xlsx"
+#'
+#' @import rlang
+#' @importFrom magrittr %>%
+#' @importFrom fs file_info
+reload_expts <- function() {
+  expt_smry <- match_call_arg(load_expts, expt_smry)
+  frac_smry <- match_call_arg(load_expts, frac_smry)
+  
+  fi_xlsx <- fs::file_info(file.path(dat_dir, expt_smry))$change_time
+  if (is.na(fi_xlsx)) stop("Time stamp of ", expt_smry, " not available.")
+  
+  fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme.rda"))$change_time
+  if (fi_xlsx > fi_rda) {
+    load_expts(dat_dir = dat_dir, expt_smry = !!expt_smry, frac_smry = !!frac_smry)
+  }
+}
+
+
+#' Extracts the channel information in TMT experiments
+#'
+#' A function returns the indexes of TMT channels that are associated to
+#' reference(s), sample(s) and probable unused void(s).
+#'
+#' @param label_scheme The data frame returned by \code{\link{load_expts}}.
+#' @param set_idx Numeric.  The index of a multiplex TMT experiment.
+#' @return Three lists of indexes: \code{refChannels}, reference channels(s);
+#'   \code{emptyChannels}, empty channel(s) that were not used for sample
+#'   labeling; \code{labeledChannels}, non-empty channels including both
+#'   reference(s) and sample(s).
+#'
+#' @importFrom dplyr select filter
+channelInfo <- function (label_scheme, set_idx) {
+	stopifnot(length(set_idx) == 1)
+
+	label_scheme_sub <- label_scheme %>%
+	  dplyr::filter(!duplicated(Sample_ID), TMT_Set == set_idx)
+
+	ref <- label_scheme_sub$Reference
+
+	empty_channel_sub <- is.na(label_scheme_sub$Sample_ID) |
+	  grepl("^Empty|^Outlier", label_scheme_sub$Sample_ID, ignore.case = TRUE)
+
+	label_scheme_sub <- !empty_channel_sub
+
+	out <- list(
+		refChannels = ref,
+		emptyChannels = empty_channel_sub,
+		labeledChannels = label_scheme_sub
+	)
+
+	lapply(out, which)
+}
+
+
+#' Finds the number of multiplex TMT experiments
+#'
+#' @param label_scheme_full The label_scheme with the probable inclusion of
+#'   different LCMS_inj under the same TMT_Set.
+n_TMT_sets <- function (label_scheme_full) {
+	length(unique(label_scheme_full$TMT_Set))
+}
+
+
+#' Finds the multiplexity of TMT labels
+#'
+#' \code{TMT_plex} returns the multiplexity of TMT labels.
+#' @inheritParams check_label_scheme
+TMT_plex <- function (label_scheme_full) {
+	nlevels(as.factor(label_scheme_full$TMT_Channel))
+}
+
+
+#' Finds the factor levels of TMT labels
+#'
+#' \code{TMT_levels} returns the factor levels of TMT labels.
+#' @param TMT_plex Numeric; the multiplexity of TMT, i.e., 10, 11 etc.
+TMT_levels <- function (TMT_plex) {
+	if (TMT_plex == 16) {
+	  TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
+	                  "TMT-131N", "TMT-131C", "TMT-132N", "TMT-132C", 
+	                  "TMT-133N", "TMT-133C", "TMT-134N")
+	} else if (TMT_plex == 11) {
+	  TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
+	                  "TMT-131N", "TMT-131C")
+	} else if (TMT_plex == 10) {
+	  TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131")
+	} else if (TMT_plex == 6) {
+	  TMT_levels <- c("TMT-126", "TMT-127", "TMT-128", "TMT-129", "TMT-130", "TMT-131")
+	} else if (TMT_plex == 1) {
+	  TMT_levels <- c("TMT-126")
+	} else if (TMT_plex == 0) {
+	  TMT_levels <- NULL
+	}
+}
+
+
+#' Simplifies label schemes from \code{label_scheme_full}
+#'
+#' Removes duplicated sample entries under different LC/MS injections.
+#' @inheritParams load_expts
+#' @inheritParams check_label_scheme
+simple_label_scheme <- function (dat_dir, label_scheme_full) {
+	TMT_plex <- TMT_plex(label_scheme_full)
+	TMT_levels <- TMT_levels(TMT_plex)
+
+	label_scheme <- label_scheme_full %>%
+		dplyr::filter(!duplicated(Sample_ID), !is.na(Sample_ID)) %>%
+		dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
+		dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
+	
+	if (nrow(label_scheme) <(TMT_plex * n_TMT_sets(label_scheme))) {
+	  stop("Duplicated sample ID(s) in `expt_smry.xlsx`", call. = FALSE)
+	}
+
+	save(label_scheme, file = file.path(dat_dir, "label_scheme.rda"))
+}
+
+
+#' Checks the uniqueness of sample IDs in \code{label_scheme_full}
+#'
+#' \code{check_label_scheme} will stop the analysis if the number of unique
+#' samples are less than expected.
+#' @param label_scheme_full The data frame returned by \code{\link{load_expts}},
+#'   including multiple LCMS series.
+check_label_scheme <- function (label_scheme_full) {
+	load(file = file.path(dat_dir, "label_scheme.rda"))
+
+	TMT_plex <- TMT_plex(label_scheme)
+	if(!is.null(TMT_plex)) {
+		if((nlevels(as.factor(label_scheme$Sample_ID))) < 
+		   (TMT_plex * nlevels(as.factor(label_scheme$TMT_Set))))
+			stop("Not enough observations in unique 'Sample_ID'")
+	}
+}
+
+
+#' Find mismatches in RAW file names
+#'
+#' \code{check_raws} finds mismatched RAW files between expt_smry.xlsx and
+#' PSM outputs.
+#' @param df A data frame containing the PSM table from database searches.
+check_raws <- function(df) {
+  stopifnot ("RAW_File" %in% names(df))
+  
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  load(file = file.path(dat_dir, "label_scheme.rda"))
+  load(file = file.path(dat_dir, "fraction_scheme.rda"))
+
+  ## program-generated frac_smry.xlsx may be based on wrong information from expt_smry.xlsx
+  ls_raws <- label_scheme_full$RAW_File %>% unique()
+  fs_raws <- fraction_scheme$RAW_File %>% unique()
+  if (!(all(is.na(ls_raws)) | all(ls_raws %in% fs_raws))) {
+    load(file.path(dat_dir, "Calls", "load_expts.rda"))
+    fn_frac <- call_pars$frac_smry
+    unlink(file.path(dat_dir, fn_frac))
+    prep_fraction_scheme(dat_dir, fn_frac)
+    load(file = file.path(dat_dir, "fraction_scheme.rda"))
+  }
+  
+  tmtinj_raw <- fraction_scheme %>%
+    tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>%
+    dplyr::select(-Fraction) %>%
+    dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File)) %>% 
+		dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File)) # Bruker
+  
+  ms_raws <- df$RAW_File %>% unique()
+  label_scheme_raws <- tmtinj_raw$RAW_File %>% unique()
+  
+  missing_ms_raws <- ms_raws %>% .[! . %in% label_scheme_raws]
+  wrong_label_scheme_raws <- label_scheme_raws[! label_scheme_raws %in% ms_raws]
+  
+  if(!purrr::is_empty(missing_ms_raws) | !purrr::is_empty(wrong_label_scheme_raws)) {
+    cat("Required RAW MS file name(s) not found from the `expt_smry.xlsx` and/or `frac_smry.xlsx`:\n")
+    cat(paste0(missing_ms_raws, "\n"))
+    
+    cat("RAW MS files in `expt_smry.xlsx` and/or `frac_smry.xlsx` but not present in PSM data:\n")
+    cat(paste0("\t", wrong_label_scheme_raws, "\n"))
+    
+    stop("Check file names under the `RAW_File` column in `expt_smry.xlsx` and/or `frac_smry.xlsx`.", 
+         call. = FALSE)
+  }
+
+  return(tmtinj_raw)
+}
+

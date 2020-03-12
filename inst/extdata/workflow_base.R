@@ -63,7 +63,7 @@ normPSM(
 )
 
 # optional: cleanup of PSM groups under the same peptide IDs by CV
-purgePSM()
+purgePSM(ymax = 1)
 
 # PSMs to peptides
 PSM2Pep()
@@ -85,7 +85,7 @@ standPep(
 )
 
 # optional: cleanup of peptide groups under the same protein IDs by CV
-purgePep()
+purgePep(ymax = 1)
 
 # peptide histograms with logFC scaling
 pepHist(
@@ -366,7 +366,7 @@ prnGSVA(
   verbose = FALSE,
   parallel.sz = 0,
   mx.diff = TRUE,
-  gset_nms = "go_sets",
+  gset_nms = c("go_sets"),
 )
 
 ### GSEA
@@ -378,20 +378,19 @@ prnGSEA(
 )
 
 ### STRING database
-string_dir <- "~\\proteoQ\\dbs\\string"
-dir.create(string_dir, recursive = TRUE, showWarnings = FALSE)
-
-# download
-dl_stringdbs(
-  species = human,
-  db_path = string_dir,
+anal_prnString(
+  db_nms = c(prepString(human), prepString(mouse)),
+  score_cutoff = .9,
+  filter_prots_by = exprs(prot_n_pep >= 2),
+  filename = download_and_analysis_in_one_pot.tsv,
 )
 
-# human ppi
+# human ppi only
 anal_prnString(
-  db_path = string_dir,
+  db_nms = prepString(human),
   score_cutoff = .9,
   filter_by_sp = exprs(species == "human"),
   filter_prots_by = exprs(prot_n_pep >= 2),
+	filename = hu.tsv,
 )
 

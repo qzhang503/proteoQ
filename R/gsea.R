@@ -147,7 +147,7 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
 #'  # Mascot \cr
@@ -181,13 +181,15 @@ prnGSEA <- function (gset_nms = "go_sets",
   )
   
   check_dots(c("id", "anal_type", "df2"), ...)
-  
+
   dir.create(file.path(dat_dir, "Protein\\GSEA\\log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
+  stopifnot(vapply(c(scale_log2r, complete_cases, impute_na), rlang::is_logical, logical(1)))
+  stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), rlang::is_double, logical(1)))
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -197,16 +199,19 @@ prnGSEA <- function (gset_nms = "go_sets",
   fmls <- dots %>% .[grepl("^\\s*~", .)]
   dots <- dots[!names(dots) %in% names(fmls)]
   dots <- concat_fml_dots(fmls = fmls, fml_nms = fml_nms, dots = dots, anal_type = "GSEA")
-  
+
   reload_expts()
   
   # Sample selection criteria:
   #   !is_reference under "Reference"
   #   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
+  
+  message("`prnGSEA` compiles data for online GSEA and argument `gset_nms` not currently used.")
+  
   info_anal(df = !!df, df2 = NULL, id = !!id, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             filepath = !!filepath, filename = !!filename, 
-            anal_type = "GSEA")(gset_nms = gset_nms, 
+            anal_type = "GSEA")(gset_nms = "go_sets", 
                                 var_cutoff = var_cutoff, 
                                 pval_cutoff = pval_cutoff, 
                                 logFC_cutoff = logFC_cutoff, 
@@ -294,12 +299,12 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     rows_pos <- rows[rows > 0, , drop = FALSE] 
     rows_pos[, 1] <- rows_pos[, 1] %>% purrr::map_dbl(~ round(.x, digits = 2))
     nms_pos <- paste0(rows_pos, "x", rownames(rows_pos)) %>% 
-      reduce(paste, sep = "&")
+      purrr::reduce(paste, sep = "&")
     
     rows_neg <- rows[rows < 0, , drop = FALSE]
     rows_neg[, 1] <- rows_neg[, 1] %>% purrr::map_dbl(~ round(.x, digits = 2))
     nms_neg <- paste0(rows_neg, "x", rownames(rows_neg)) %>% 
-      reduce(paste, sep = "&")
+      purrr::reduce(paste, sep = "&")
     
     data.frame(pos = nms_pos, neg = nms_neg)
   }) %>% 

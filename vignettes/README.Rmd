@@ -1,10 +1,18 @@
 ---
-title: "Package proteoQ"
+title: "proteoQ"
 author:
 - name: Qiang Zhang
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
 output:
+  github_document:
+    toc: yes
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: gfm
+  word_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -16,14 +24,11 @@ output:
   pdf_document:
     toc: yes
     number_sections: true
-  word_document:
-    toc: yes
-  md_document:
-    toc: yes
-    toc_depth: 4
-    variant: gfm
-  github_document:
-    toc: yes
+  html_vignette: 
+  vignette: >
+    %\VignetteIndexEntry{proteoQ}
+    %\VignetteEncoding{UTF-8}`
+    %\VignetteEngine{knitr::rmarkdown}
 ---
 
 ---
@@ -77,7 +82,7 @@ knitr::opts_chunk$set(
 ## Introduction to proteoQ
 Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the operations against data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
 
-The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- or 11-plex TMT experiments using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags. https://github.com/qzhang503/proteoQ.]   
+The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags. https://github.com/qzhang503/proteoQ.]   
 
 (Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README. Mathematical symbols may display more properly under html.)  
 
@@ -88,7 +93,12 @@ To install this package, start R (version "3.6.3") as **administrator** and ente
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
-# devtools::install_github("qzhang503/proteoQ@v1.2.2.1")
+```
+
+It will install the latest version by default or a specific version with a version number:  
+
+```{r installation_2, include = TRUE, eval = FALSE}
+devtools::install_github("qzhang503/proteoQ@1.2.2.1")
 ```
 
 ## 1 Data normalization 
@@ -152,14 +162,14 @@ copy_global_mascot(dat_dir)
 When exporting Mascot PSMs, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. Under `Peptide Match Information`, the options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The inclusion of both `Start` and `End` is recommended and the file name(s) of the exports will be taken as is.
 
 ```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_export <- "images\\mascot\\mascot_export.png"
+img_export <- "images/mascot/mascot_export.png"
 knitr::include_graphics(c(img_export))
 ```
 
 The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To escape from the ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html).^[There are cases that the same peptide sequence being assigned to different proteins remain unambiguous. For example, peptide `MENGQSTAAK` can be found from either the middle region of protein `NP_510965` or the N-terminal of protein `NP_001129505`. In case of the additional information of protein, not peptide, N-terminal acetylation, the sequence can only come from `NP_001129505` between the two candidate proteins. In addition to handling such exceptions, the nomenclature in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.] If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed for now when constructing peptide reports.  
 
 ```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_daemon <- "images\\mascot\\mascot_daemon.png"
+img_daemon <- "images/mascot/mascot_daemon.png"
 knitr::include_graphics(c(img_daemon))
 ```
 
@@ -171,7 +181,7 @@ The workflow involves an `Excel` template containing the metadata of multiplex e
 Columns in the `expt_smry.xlsx` are approximately divided into the following three tiers: (1) `essential`, (2) `optional default` and (3) `optional open`. We supply the required information of the TMT experiments under the essential columns. The optional default columns serve as the fields for convenient lookups in sample selection, grouping, ordering, aesthetics etc. For instance, the program will by default look for values under the `Color` column if no instruction was given in the color coding of a PCA plot. The optional open fields on the other hand allow us to define our own analysis and aesthetics. For instance, we may openly define multiple columns of contrasts at different levels of granularity for uses in statistical modelings. Description of the column keys can be found from the help document by entering `?proteoQ::load_expts` from a `R` console.  
 
 ```{r str_expt_smry, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-str_expt_smry <- "images\\installation\\three_tier_expt_smry.png"
+str_expt_smry <- "images/installation/three_tier_expt_smry.png"
 knitr::include_graphics(c(str_expt_smry))
 ```
 
@@ -295,9 +305,9 @@ purgePSM ()
 Taking the sample entries under `TMT_Set` one and `LCMS_Injection` one in `label_scheme.xlsx` as an example, we can see that a small portion of peptides have CV greater than 0.5 at log2 scale (**Figure 1A**).  
 
 ```{r psm_purge_bf, echo=FALSE, fig.align='center', fig.cap="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile.", fig.show='hold', message=FALSE, warning=FALSE, out.width='30%'}
-psm_no_purge <- "images\\psm\\purge\\psm_no_purge.png"
-psm_maxcv_purge <- "images\\psm\\purge\\psm_maxcv_purge.png"
-psm_qt_purge <- "images\\psm\\purge\\psm_qt_purge.png"
+psm_no_purge <- "images/psm/purge/psm_no_purge.png"
+psm_maxcv_purge <- "images/psm/purge/psm_maxcv_purge.png"
+psm_qt_purge <- "images/psm/purge/psm_qt_purge.png"
 knitr::include_graphics(c(psm_no_purge, psm_maxcv_purge, psm_qt_purge))
 ```
 
@@ -445,17 +455,17 @@ pepHist(
 *NB*: We interactively told `pepHist()` that we are interested in sample entries under the newly created `BI_1` column. Behind the scene, the interactions are facilitated by [`openxlsx`](https://cran.r-project.org/web/packages/openxlsx/openxlsx.pdf) via the reading of the `Setup` workbook in `expt_smry.xlsx`. We also supply a file name, assuming that we want to keep the previously generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_Z.png`.  
 
 ```{r Peptide histogram F, echo=FALSE, fig.align='center', fig.cap="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='95%'}
-img1_path <- "images\\peptide\\histogram\\bi1_n_1.png"
-img2_path <- "images\\peptide\\histogram\\bi1_z_1.png"
+img1_path <- "images/peptide/histogram/bi1_n_1.png"
+img2_path <- "images/peptide/histogram/bi1_z_1.png"
 knitr::include_graphics(c(img1_path, img2_path))
 ```
 
 As expected, both the widths and the heights of `log2FC` profiles become more comparable after the scaling normalization. However, such adjustment may cause artifacts when the standard deviation across samples are genuinely different. I typically test `scale_log2r` at both `TRUE` and `FALSE`, then make a choice in data scaling together with my a priori knowledge of the characteristics of both samples and references.^[The default is `scale_log2r = TRUE` throughout the package. When calling functions involved parameter `scale_log2r`, users can specify explicitly `scale_log2r = FALSE` if needed, or more preferably define its value under the global environment.] We will use the same data set to illustrate the impacts of reference selections in scaling normalization in [Lab 3.1](### 3.1 Reference choices).  
 
 ##### 1.3.4.2 Side effects
-It should also be noted that the curves of Gaussian density in histograms are calculated during the latest call to `standPep(...)` with the option of `method_align = MGKernel`. There is a useful side effect when comparing leading and lagging profiles of `log2FC`. In the following barebone example, we align differently the peptide `log2FC` with the default method of median centering:  
+It should also be noted that the curves of Gaussian density in histograms are calculated during the latest call to `standPep(...)` with the option of `method_align = MGKernel`. There is a useful side effect when comparing leading and lagging profiles of `log2FC`. In the following bare-bones example, we align differently the peptide `log2FC` with the default method of median centering:  
 
-```{r PSM to peptides barebone, eval = FALSE}
+```{r PSM to peptides barebones, eval = FALSE}
 standPep()
 ```
 
@@ -473,8 +483,8 @@ pepHist(
 Within this document, the preceding example that involves `standPep(...)` at `method_align = MGKernel` is given in section 1.3.3. In this case, a comparison between the present and the prior histograms will reveal the difference in ratio alignments between a median centering and a three-Gaussian assumption. More examples in the side effects can be found from the help document via `?standPep` and `?pepHist`.  
 
 ```{r Peptide histogram MC, echo=FALSE, fig.align='center', fig.cap="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density", fig.show='hold', message=FALSE, warning=FALSE, out.width='95%'}
-img3_path <- "images\\peptide\\histogram\\bi1_z_mc_2.png"
-img4_path <- "images\\peptide\\histogram\\mixed_bed_3.png"
+img3_path <- "images/peptide/histogram/bi1_z_mc_2.png"
+img4_path <- "images/peptide/histogram/mixed_bed_3.png"
 knitr::include_graphics(c(img3_path, img4_path))
 ```
 
@@ -505,7 +515,7 @@ Now that we have been acquainted with `pepHist`, let's revisit and explore addit
 Needs in data (re)normalization may be encountered more often than not. One of the trivial circumstances is that a multi-Gaussian kernel can fail capturing the `log2FC` profiles for a subset of samples. This is less an issue with a small number of samples. Using a trial-and-error approach, we can start over with a new combination of parameters, such as a different `seed`, and/or a different range of `range_log2r` etc. However, the one-size-fit-all attempt may remain inadequate when the number of samples is relatively large. The `proteoQ` allows users to *focus* fit against selected samples. This is again the job of argument `col_select`. Let's say we want to re-fit the `log2FC` for samples `W2.BI.TR2.TMT1` and `W2.BI.TR2.TMT2`. We simply add a column, which I named it `Select_sub`, to `expt_smry.xlsx` with the sample entries for re-fit being indicated under the column:  
   
 ```{r peptide_partial_refit, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_partial_refit <- "images\\peptide\\histogram\\partial_refit.png"
+img_partial_refit <- "images/peptide/histogram/partial_refit.png"
 knitr::include_graphics(c(img_partial_refit))
 ```
 
@@ -531,7 +541,7 @@ pepHist(
 )
 ```
 
-In the preceding execution of barebone `standPep()`, samples were aligned by median centering (**Figure 2C**). As expected, the current partial re-normalization only affects samples `W2.BI.TR2.TMT1` and `W2.BI.TR2.TMT2` (**Figure 2D**, `W2.BI.TR2.TMT2` not shown). In other words, samples `W2.BI.TR2.TMT1` and `W2.BI.TR2.TMT2` are now aligned by their Gaussian densities whereas the remaining are by median centering. The combination allows us to align sample by mixed-bedding the `MC` or the `MGKernel` method.  
+In the preceding execution of bare-bones `standPep()`, samples were aligned by median centering (**Figure 2C**). As expected, the current partial re-normalization only affects samples `W2.BI.TR2.TMT1` and `W2.BI.TR2.TMT2` (**Figure 2D**, `W2.BI.TR2.TMT2` not shown). In other words, samples `W2.BI.TR2.TMT1` and `W2.BI.TR2.TMT2` are now aligned by their Gaussian densities whereas the remaining are by median centering. The combination allows us to align sample by mixed-bedding the `MC` or the `MGKernel` method.  
 
 #### 1.3.6 standPep(slice_ = ...) 
 We have previously applied the varargs of `filter_` in `normPSM`  and `mergePep` to subset data rows. With this type of arguments, data entries that have failed the filtration criteria will be *removed* for indicated analysis.  
@@ -655,8 +665,8 @@ prnHist(
 For simplicity, we only display the histograms with scaling normalization (**Figure 2E**).  
 
 ```{r Protein histogram, echo=FALSE, fig.align='center', fig.cap="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration", fig.show='hold', message=FALSE, warning=FALSE, out.width='50%'}
-img1_path <- "images\\protein\\histogram\\bi1_z.png"
-img2_path <- "images\\protein\\histogram\\bi1_z_npep10.png"
+img1_path <- "images/protein/histogram/bi1_z.png"
+img2_path <- "images/protein/histogram/bi1_z_npep10.png"
 knitr::include_graphics(c(img1_path, img2_path))
 ```
 
@@ -732,7 +742,7 @@ pepMDS(
 ```
 
 ```{r Peptide_MDS, echo=FALSE, fig.align='center', fig.cap="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_pepmds <- "images\\peptide\\mds\\mds.png"
+img_pepmds <- "images/peptide/mds/mds.png"
 knitr::include_graphics(c(img_pepmds))
 ```
 
@@ -750,8 +760,8 @@ pepMDS(
 ```
 
 ```{r Peptide_JHU_MDS, echo=FALSE, fig.align='center', fig.cap="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_jhu_pepmds <- "images\\peptide\\mds\\jhu.png"
-img_jhu_pepmds_2 <- "images\\peptide\\mds\\new_jhu.png"
+img_jhu_pepmds <- "images/peptide/mds/jhu.png"
+img_jhu_pepmds_2 <- "images/peptide/mds/new_jhu.png"
 knitr::include_graphics(c(img_jhu_pepmds, img_jhu_pepmds_2))
 ```
 
@@ -810,14 +820,14 @@ pepEucDist(
 The graphic controls of heat maps are achieved through [`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf) with modifications. Parameter `annot_cols` defines the tracks to be displayed on the top of distance-matrix plots. In this example, we have chosen `expt_smry.xlsx::Shape` and `expt_smry.xlsx::Alpha`, which encodes the WHIM subtypes and the batch numbers, respectively. Parameter `annot_colnames` allows us to rename the tracks from `Shape` and `Alpha` to `WHIM` and `Batch`, respectively, for better intuition. We can alternatively add columns `WHIM` and `Batch` if we choose not to recycle and rename columns `Shape` and `Alpha`.  
 
 ```{r Peptide_EucDist, echo=FALSE, fig.align='center', fig.cap="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_pepEucDist <- "images\\peptide\\mds\\eucdist_jhu.png"
+img_pepEucDist <- "images/peptide/mds/eucdist_jhu.png"
 knitr::include_graphics(c(img_pepEucDist))
 ```
 
 The utility is currently applied to Euclidean distances with an argument `adjEucDist` for a probable compensation of distances between TMT experiments. As mentioned earlier, the quantitative `log2FC` are measured in relative to the reference materials under each multiplex TMT experiments. When concatenating data across TMT experiments, the measurement errors may accumulate differently. Likely the uncertainty in the reference signals will be greater if we were to prepare the references at an earlier stage of sample handling as opposed to a later stage. I tried to go through the most fundamental calculations step-by-step to help myself understand the differences:  
 
 ```{r Interplex_EucDist, echo=FALSE, fig.align='center', fig.cap="**Figure 3E.** Accumulation of Euclidean distance in the interplex comparison of `log2FC`", fig.show='hold', message=FALSE, warning=FALSE, out.width='100%'}
-img_interplex_EucDist <- "images\\protein\\eucdist\\interplex_errors.png"
+img_interplex_EucDist <- "images/protein/eucdist/interplex_errors.png"
 knitr::include_graphics(c(img_interplex_EucDist))
 ```
 
@@ -843,8 +853,8 @@ prnCorr_logFC(
 ```
 
 ```{r Correlation plots, echo=FALSE, fig.align='center', fig.cap="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_jhu_pepcorr <- "images\\peptide\\corrplot\\corr_pnnl.png"
-img_jhu_prncorr <- "images\\protein\\corrplot\\corr_pnnl.png"
+img_jhu_pepcorr <- "images/peptide/corrplot/corr_pnnl.png"
+img_jhu_prncorr <- "images/protein/corrplot/corr_pnnl.png"
 knitr::include_graphics(c(img_jhu_pepcorr, img_jhu_prncorr))
 ```
 
@@ -875,7 +885,7 @@ prnHM(
 we chose to top annotate the heat map with the metadata that can be found under the columns of `Group`, `Color`, `Alpha` and `Shape` in `expt_smary.xlsx`. For better convention, we rename them to `Group`, `Lab`, `Batch` and `WHIM` to reflect their sample characteristics. We further supplied a vararg of `filter_sp` where we assume exclusive interests in human proteins.  
 
 ```{r Protein_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 5A.** Heat map visualization of protein log2FC", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_prnheat <- "images\\protein\\heatmap\\protein.png"
+img_prnheat <- "images/protein/heatmap/protein.png"
 knitr::include_graphics(c(img_prnheat))
 ```
 
@@ -904,7 +914,7 @@ prnHM(
 In the above example, we applied vararg `filter_kin` to subset human kinases from the protein data set by values under its `kin_attr` and the `species` columns. We further row annotate the heat map with argument `annot_rows`, which will look for values under the `kin_class` column. With the vararg, `arrange_kin`, we supervise the row ordering of kinases by values under the `kin_order` column and then those under the `gene` column. Analogous to the user-supplied `filter_` arguments, the row ordering varargs need to start with `arrange_` to indicate the task of row ordering.  
 
 ```{r Kinase_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 5B.** Heat map visualization of kinase log2FC", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_kinheat <- "images\\protein\\heatmap\\kinase.png"
+img_kinheat <- "images/protein/heatmap/kinase.png"
 knitr::include_graphics(c(img_kinheat))
 ```
 
@@ -939,8 +949,8 @@ Note that we have informed the `pepSig` and `prnSig` utility to look for contras
 The `pepVol` and `prnVol` utility will by default match the formulas of contrasts with those in `pepSig`. The following plots show the batch difference between two TMT experiments for each of the three laboratories and the location difference between any two laboratories.  
 
 ```{r Protein_volcano_batches plots, echo=FALSE, fig.align='left', fig.cap="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_volcplot_batches <- "images\\protein\\volcplot\\batches.png"
-img_volcplot_location <- "images\\protein\\volcplot\\locations.png"
+img_volcplot_batches <- "images/protein/volcplot/batches.png"
+img_volcplot_location <- "images/protein/volcplot/locations.png"
 knitr::include_graphics(c(img_volcplot_batches, img_volcplot_location))
 ```
 
@@ -999,8 +1009,8 @@ gspaMap(
 This will produce the volcano plots of proteins under gene sets that have passed our selection criteria. Here, we show one of the examples:  
 
 ```{r gspaMap_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_volcplot_gspa_geomean <- "images\\protein\\volcplot\\gspa_batch_geomean.png"
-img_volcplot_gspa_limma <- "images\\protein\\volcplot\\gspa_batch_limma.png"
+img_volcplot_gspa_geomean <- "images/protein/volcplot/gspa_batch_geomean.png"
+img_volcplot_gspa_limma <- "images/protein/volcplot/gspa_batch_limma.png"
 knitr::include_graphics(c(img_volcplot_gspa_geomean, img_volcplot_gspa_limma))
 ```
 
@@ -1085,9 +1095,9 @@ gspaMap(
 As expected, in the examples of `MSig`, some breast cancer signatures in basal and luminal subtypes were captured.  
 
 ```{r gspaMap_example_msig, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures.", fig.show='hold', message=FALSE, warning=FALSE, out.width='30%'}
-img_volcplot_gspa_basdn <- "images\\protein\\volcplot\\hs_SMID_BREAST_CANCER_BASAL_DN.png"
-img_volcplot_gspa_lumdn <- "images\\protein\\volcplot\\hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png"
-img_volcplot_gspa_lumup <- "images\\protein\\volcplot\\hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png"
+img_volcplot_gspa_basdn <- "images/protein/volcplot/hs_SMID_BREAST_CANCER_BASAL_DN.png"
+img_volcplot_gspa_lumdn <- "images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png"
+img_volcplot_gspa_lumup <- "images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png"
 knitr::include_graphics(c(img_volcplot_gspa_basdn, img_volcplot_gspa_lumdn, img_volcplot_gspa_lumup))
 ```
 
@@ -1119,7 +1129,7 @@ prnGSPAHM(
 The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs between two gene sets. The smaller the distance, the greater the overlap is between two gene sets. For convenience, a `distance` column is also made available in the `_essmap.txt` file.  
 
 ```{r prnGSPAHM_all, echo=FALSE, fig.align='center', fig.cap="**Figure 7C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_gspahm_all <- "images\\protein\\gspa\\all_sets.png"
+img_gspahm_all <- "images/protein/gspa/all_sets.png"
 knitr::include_graphics(c(img_gspahm_all))
 ```
 
@@ -1139,15 +1149,15 @@ prnGSPAHM(
 Note that there is a second `vararg` expression, `exprs(start_with_str("hs", term))`. In this expression, we have used a pseudonym approach to subset terms starting with character string `hs` under the column `term` in `GSPA` result files, which corresponds to human gene sets for both GO and KEGG.^[This will work as GO terms of human start with `hs_` and KEGG terms with `hsa`.] More examples of the pseudonym approach can be found from [Lab 3.2](### 3.2 Data subsets) in this document. More examples of the utility can be found via `?prnGSPAHM`.  
 
 ```{r prnGSPAHM_hs_d20, echo=FALSE, fig.align='center', fig.cap="**Figure 7D.** Heat map visualization of human gene sets at a distance cut-off 0.2", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_gspahm_hs_d20 <- "images\\protein\\gspa\\show_human_redundancy.png"
+img_gspahm_hs_d20 <- "images/protein/gspa/show_human_redundancy.png"
 knitr::include_graphics(c(img_gspahm_hs_d20))
 ```
 
 Aside from heat maps, `prnGSPAHM` produces the networks of gene sets via [`networkD3`](http://christophergandrud.github.io/networkD3/), for interactive exploration of gene set redundancy.  
 
 ```{r prnGSPAHM_networks, echo=FALSE, fig.align='center', fig.cap="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance <= 0.8; right, distance <= 0.2.", fig.show='hold', message=FALSE, warning=FALSE, out.width='40%'}
-img_gspahm_connect <- "images\\protein\\gspa\\gspa_connet.png"
-img_gspahm_redund <- "images\\protein\\gspa\\gspa_redund.png"
+img_gspahm_connect <- "images/protein/gspa/gspa_connet.png"
+img_gspahm_redund <- "images/protein/gspa/gspa_redund.png"
 knitr::include_graphics(c(img_gspahm_connect, img_gspahm_redund))
 ```
 
@@ -1173,7 +1183,7 @@ plot_prnTrend(
 The argument `col_order` provides a means to supervise the order of samples during the trend visualization. In the above example, the `plot_prnTrend` will look into the field under the `expt_smry.xlsx::Order` column for sample arrangement (see also Section 2.2 Correlation plots).  
 
 ```{r Protein_trends all_plots, echo=FALSE, fig.align='left', fig.cap="**Figure 8A.** Trends of protein log2FC (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_prn_trends <- "images\\protein\\trend\\prn_trend_n6.png"
+img_prn_trends <- "images/protein/trend/prn_trend_n6.png"
 knitr::include_graphics(c(img_prn_trends))
 ```
 
@@ -1190,7 +1200,7 @@ plot_prnTrend(
 ```
 
 ```{r Protein_trend_by_cluster, echo=FALSE, fig.align='left', fig.cap="**Figure 8B.** Trends of protein log2FC at cluster 4 (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_prn_trends_cl4 <- "images\\protein\\trend\\cl4_nclust6.png"
+img_prn_trends_cl4 <- "images/protein/trend/cl4_nclust6.png"
 knitr::include_graphics(c(img_prn_trends_cl4))
 ```
 
@@ -1205,7 +1215,7 @@ plot_prnTrend(
 ```
 
 ```{r Protein_trend_col_select, echo=FALSE, fig.align='left', fig.cap="**Figure 8C.** Trends of protein log2FC for BI subset (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='60%'}
-img_prn_trends_bi <- "images\\protein\\trend\\bi_nclust6.png"
+img_prn_trends_bi <- "images/protein/trend/bi_nclust6.png"
 knitr::include_graphics(c(img_prn_trends_bi))
 ```
 
@@ -1337,8 +1347,8 @@ plot_metaNMF(
 The silhouette information was obtained via the R package `cluster` and shown as a track on the top of consensus and coefficient heat maps.  
 
 ```{r Protein NMF heat maps, echo=FALSE, fig.align='left', fig.cap="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = \"lee\" not shown). Left: concensus; right: coefficients; metagenes not shown.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_nmf_con <- "images\\protein\\nmf\\bi_r5_con_rank5.png"
-img_nmf_coef <- "images\\protein\\nmf\\bi_r5_coef_rank5.png"
+img_nmf_con <- "images/protein/nmf/bi_r5_con_rank5.png"
+img_nmf_coef <- "images/protein/nmf/bi_r5_coef_rank5.png"
 knitr::include_graphics(c(img_nmf_con, img_nmf_coef))
 ```
 
@@ -1434,7 +1444,7 @@ pepHist(
 Notice that in the histograms the `log2FC` profiles of `WHIM16` samples are much narrower than those of `WHIM2` (**Figure S1A**). This will occur when a reference is more similar to one group of sample(s) than the other. In our case, the reference is one of `WHIM2`. The difference in the breadth of `log2FC` profiles between the `WHIM16` and the `WHIM2` groups is likely due to the genuine difference in their proteomes. If the above argument is valid, a scaling normalize would moderate, and thus bias, the quantitative difference in proteomes between `WHIM2` and `WHIM16`.  
 
 ```{r Peptide_reference_effect_1, echo=FALSE, fig.align='center', fig.cap="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_pep_ref_w2 <- "images\\peptide\\histogram\\peptide_refw2.png"
+img_pep_ref_w2 <- "images/peptide/histogram/peptide_refw2.png"
 knitr::include_graphics(c(img_pep_ref_w2))
 ```
 
@@ -1480,7 +1490,7 @@ pepHist(
 With the new reference, we have achieved `log2FC` profiles that are more comparable in breadth between `WHIM2` and `WHIM16` samples and a subsequent scaling normalization seems more suitable.  
 
 ```{r Peptide_reference_effect_2, echo=FALSE, fig.align='center', fig.cap="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
-img_pep_ref_w2_w16 <- "images\\peptide\\histogram\\peptide_refw2w16.png"
+img_pep_ref_w2_w16 <- "images/peptide/histogram/peptide_refw2w16.png"
 knitr::include_graphics(c(img_pep_ref_w2_w16))
 ```
 
@@ -1520,8 +1530,8 @@ purgePep(
 ```
 
 ```{r W2_reference_CV_fig12, echo=FALSE, fig.align='left', fig.cap="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_peppurge_bf_1 <- "images\\peptide\\purge\\bi1.png"
-img_peppurge_af_1 <- "images\\peptide\\purge\\bi1_ptcv.png"
+img_peppurge_bf_1 <- "images/peptide/purge/bi1.png"
+img_peppurge_af_1 <- "images/peptide/purge/bi1_ptcv.png"
 knitr::include_graphics(c(img_peppurge_bf_1, img_peppurge_af_1))
 ```
 
@@ -1605,8 +1615,8 @@ pepHist(
 Note that we have applied the new grammar of `contain_chars_in("sty", pep_seq_mod)` to extract character strings containing lower-case letters 's', 't' or 'y' under the `pep_seq_mod` column in `Peptide.txt`. This corresponds to the subsettting of peptides with phosphorylation(s) in serine, thereonine or tyrosine.^[Details on the notation of peptide modifications can be found via `?normPSM`.]  
 
 ```{r phosphopeptide_subset_hist, echo=FALSE, fig.align='left', fig.cap="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho.", fig.show='hold', message=FALSE, warning=FALSE, out.width='50%'}
-img_pep_phospho_scaley_no <- "images\\peptide\\histogram\\pSTY_bi1_scaley_no.png"
-img_pep_phospho_scaley_yes <- "images\\peptide\\histogram\\pSTY_bi1_scaley_yes.png"
+img_pep_phospho_scaley_no <- "images/peptide/histogram/pSTY_bi1_scaley_no.png"
+img_pep_phospho_scaley_yes <- "images/peptide/histogram/pSTY_bi1_scaley_yes.png"
 knitr::include_graphics(c(img_pep_phospho_scaley_no, img_pep_phospho_scaley_yes))
 ```
 
@@ -1637,8 +1647,8 @@ pepHist(
 ```
 
 ```{r NAc_peptide_subset_hist, echo=FALSE, fig.align='left', fig.cap="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling.", fig.show='hold', message=FALSE, warning=FALSE, out.width='50%'}
-img_nac_scaley_no <- "images\\peptide\\histogram\\bi1_nac_scaley_no.png"
-img_bi_nac_scaley_yes <- "images\\peptide\\histogram\\bi1_nac_scaley_yes.png"
+img_nac_scaley_no <- "images/peptide/histogram/bi1_nac_scaley_no.png"
+img_bi_nac_scaley_yes <- "images/peptide/histogram/bi1_nac_scaley_yes.png"
 knitr::include_graphics(c(img_nac_scaley_no, img_bi_nac_scaley_yes))
 ```
 
@@ -1743,7 +1753,7 @@ prnHM(
 Importantly, we need to supply the file name to argument `df`. This is because a higher precedence will be given to `Model\\Protein_pVals.txt` over `Protein.txt`. Without specifying the value of `df`, proteoQ will look for the `n_not_na` column that are indeed absent from `Protein_pVals.txt`.  
 
 ```{r custom_cols_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure S2E.** Scarce heat map.", fig.show='hold', message=FALSE, warning=FALSE, out.width='60%'}
-img_na_hm <- "images\\protein\\heatmap\\mostly_na_vals.png"
+img_na_hm <- "images/protein/heatmap/mostly_na_vals.png"
 knitr::include_graphics(c(img_na_hm))
 ```
 
@@ -1884,7 +1894,7 @@ read.csv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt"),
 The correlation plots indicate that the random effects of batches and laboratory locations are much smaller than the fixed effect of the biological differences of `WHIM2` and `WHIM16`.  
 
 ```{r Protein_mix_effects, echo=FALSE, fig.align='center', fig.cap="**Figure S3.** Pearson r of protein significance p-values.", fig.show='hold', message=FALSE, warning=FALSE, out.width='40%'}
-img_prn_mix_effs <- "images\\protein\\model\\raneff_models.png"
+img_prn_mix_effs <- "images/protein/model/raneff_models.png"
 knitr::include_graphics(c(img_prn_mix_effs))
 ```
 
