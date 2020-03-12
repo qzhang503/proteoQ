@@ -79,7 +79,7 @@
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
 #'  # Mascot \cr
@@ -115,6 +115,7 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
   )
   
   check_dots(c("id", "anal_type", "df2"), ...)
+  check_gset_nms(gset_nms)
   
   err_msg1 <- "Argument `expr`, `gset.idx.list` and `annotation` will be determined automatically.\n"
   if (any(names(rlang::enexprs(...)) %in% c("expr", "gset.idx.list", "annotation"))) 
@@ -123,10 +124,10 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
   dir.create(file.path(dat_dir, "Protein\\GSVA\\log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"))
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-  
+
 	df <- rlang::enexpr(df)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
@@ -178,6 +179,7 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                      var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
                      anal_type = "GSVA", ...) {
   
+  stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), rlang::is_double, logical(1)))
   stopifnot(nrow(label_scheme_sub) > 0)
   
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
@@ -231,7 +233,7 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     .x[[1]] <- NULL
     return(.x)
   }) %>% 
-    reduce(., `c`) %>% 
+    purrr::reduce(`c`, .init = NULL) %>% 
     purrr::walk(., write, out_path, append = TRUE)
   
   res <- purrr::map(quietly_log, `[[`, 1) %>%

@@ -1,7 +1,7 @@
-Package proteoQ
+proteoQ
 ================
 true
-2020-03-06
+2020-03-12
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -51,9 +51,9 @@ The tool currently processes the peptide spectrum matches (PSM) tables
 from [Mascot](https://http://www.matrixscience.com/),
 [MaxQuant](https://www.maxquant.org/) and [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill)
-searches, for 6-, 10- or 11-plex TMT experiments using Thermo’s Orbitrap
-mass analyzers. Peptide and protein results are then produced with
-users’ selection of parameters in data filtration, alignment and
+searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo’s
+Orbitrap mass analyzers. Peptide and protein results are then produced
+with users’ selection of parameters in data filtration, alignment and
 normalization. The package further offers a suite of tools and
 functionalities in statistics, informatics and data visualization by
 creating ‘wrappers’ around published R routines.\[1\]
@@ -72,6 +72,13 @@ and enter:
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
+```
+
+It will install the latest version by default or a specific version with
+a version number:
+
+``` r
+devtools::install_github("qzhang503/proteoQ@1.2.2.1")
 ```
 
 ## 1 Data normalization
@@ -168,7 +175,7 @@ include the search parameters and quantitative values. The inclusion of
 both `Start` and `End` is recommended and the file name(s) of the
 exports will be taken as is.
 
-<img src="images\mascot\mascot_export.png" width="45%" style="display: block; margin: auto;" />
+<img src="images/mascot/mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
 The same peptide sequence under different PSM files can be assigned to
 different protein IDs when
@@ -180,7 +187,7 @@ Daemon](http://www.matrixscience.com/daemon.html).\[2\] If the option is
 disabled, peptide sequences that have been assigned to multiple protein
 IDs will be removed for now when constructing peptide reports.
 
-<img src="images\mascot\mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
+<img src="images/mascot/mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 
 The merged search may become increasingly cumbersome with growing data
 sets. In this example, I combined the MS peak lists from the Hp-RP
@@ -215,7 +222,7 @@ different levels of granularity for uses in statistical modelings.
 Description of the column keys can be found from the help document by
 entering `?proteoQ::load_expts` from a `R` console.
 
-<img src="images\installation\three_tier_expt_smry.png" width="80%" style="display: block; margin: auto;" />
+<img src="images/installation/three_tier_expt_smry.png" width="80%" style="display: block; margin: auto;" />
 
 We next copy over a pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx`
 to the working directory:
@@ -513,7 +520,7 @@ peptides have CV greater than 0.5 at log2 scale (**Figure 1A**).
 
 <div class="figure" style="text-align: center">
 
-<img src="images\psm\purge\psm_no_purge.png" alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" /><img src="images\psm\purge\psm_maxcv_purge.png" alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" /><img src="images\psm\purge\psm_qt_purge.png" alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" />
+<img src="images/psm/purge/psm_no_purge.png" alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" /><img src="images/psm/purge/psm_maxcv_purge.png" alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" /><img src="images/psm/purge/psm_qt_purge.png" alt="**Figure 1A-1C.** CV of peptide log2FC (based on full data set). Left: no CV cut-off; middle: CV cut-off at 0.5; right: CV cut-off at 95 percentile." width="30%" />
 
 <p class="caption">
 
@@ -754,7 +761,7 @@ generated plots with default file names of `Peptide_Histogram_N.png` and
 
 <div class="figure" style="text-align: center">
 
-<img src="images\peptide\histogram\bi1_n_1.png" alt="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`" width="95%" /><img src="images\peptide\histogram\bi1_z_1.png" alt="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`" width="95%" />
+<img src="images/peptide/histogram/bi1_n_1.png" alt="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`" width="95%" /><img src="images/peptide/histogram/bi1_z_1.png" alt="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`" width="95%" />
 
 <p class="caption">
 
@@ -781,7 +788,7 @@ It should also be noted that the curves of Gaussian density in
 histograms are calculated during the latest call to `standPep(...)` with
 the option of `method_align = MGKernel`. There is a useful side effect
 when comparing leading and lagging profiles of `log2FC`. In the
-following barebone example, we align differently the peptide `log2FC`
+following bare-bones example, we align differently the peptide `log2FC`
 with the default method of median centering:
 
 ``` r
@@ -809,7 +816,7 @@ effects can be found from the help document via `?standPep` and
 
 <div class="figure" style="text-align: center">
 
-<img src="images\peptide\histogram\bi1_z_mc_2.png" alt="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density" width="95%" /><img src="images\peptide\histogram\mixed_bed_3.png" alt="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density" width="95%" />
+<img src="images/peptide/histogram/bi1_z_mc_2.png" alt="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density" width="95%" /><img src="images/peptide/histogram/mixed_bed_3.png" alt="**Figure 2C-2D.** Histograms of peptide log2FC. Top: median-centering for all samples; bottom: `W2.BI.TR2.TMT1` aligned differently by Gaussian density" width="95%" />
 
 <p class="caption">
 
@@ -866,7 +873,7 @@ number of samples is relatively large. The `proteoQ` allows users to
 named it `Select_sub`, to `expt_smry.xlsx` with the sample entries for
 re-fit being indicated under the column:
 
-<img src="images\peptide\histogram\partial_refit.png" width="80%" style="display: block; margin: auto;" />
+<img src="images/peptide/histogram/partial_refit.png" width="80%" style="display: block; margin: auto;" />
 
 We may then execute the following codes with argument `col_select` being
 linked to the newly created column:
@@ -891,7 +898,7 @@ pepHist(
 )
 ```
 
-In the preceding execution of barebone `standPep()`, samples were
+In the preceding execution of bare-bones `standPep()`, samples were
 aligned by median centering (**Figure 2C**). As expected, the current
 partial re-normalization only affects samples `W2.BI.TR2.TMT1` and
 `W2.BI.TR2.TMT2` (**Figure 2D**, `W2.BI.TR2.TMT2` not shown). In other
@@ -1087,7 +1094,7 @@ normalization (**Figure 2E**).
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\histogram\bi1_z.png" alt="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration" width="50%" /><img src="images\protein\histogram\bi1_z_npep10.png" alt="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration" width="50%" />
+<img src="images/protein/histogram/bi1_z.png" alt="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration" width="50%" /><img src="images/protein/histogram/bi1_z_npep10.png" alt="**Figure 2E-2F.** Histograms of protein log2FC at `scale_log2r = TRUE`. Left: before filtration; right, after filtration" width="50%" />
 
 <p class="caption">
 
@@ -1194,7 +1201,7 @@ pepMDS(
 
 <div class="figure" style="text-align: center">
 
-<img src="images\peptide\mds\mds.png" alt="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="images/peptide/mds/mds.png" alt="**Figure 3A.** MDS of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 
 <p class="caption">
 
@@ -1222,7 +1229,7 @@ pepMDS(
 
 <div class="figure" style="text-align: center">
 
-<img src="images\peptide\mds\jhu.png" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="images\peptide\mds\new_jhu.png" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
+<img src="images/peptide/mds/jhu.png" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" /><img src="images/peptide/mds/new_jhu.png" alt="**Figure 3B-3C.** MDS of peptide log2FC for the `JHU` subset. Left: original aesthetics; right, modefied aesthetics" width="45%" />
 
 <p class="caption">
 
@@ -1317,7 +1324,7 @@ and rename columns `Shape` and `Alpha`.
 
 <div class="figure" style="text-align: center">
 
-<img src="images\peptide\mds\eucdist_jhu.png" alt="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
+<img src="images/peptide/mds/eucdist_jhu.png" alt="**Figure 3D.** EucDist of peptide log2FC at `scale_log2r = TRUE`" width="45%" />
 
 <p class="caption">
 
@@ -1340,7 +1347,7 @@ step-by-step to help myself understand the differences:
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\eucdist\interplex_errors.png" alt="**Figure 3E.** Accumulation of Euclidean distance in the interplex comparison of `log2FC`" width="100%" />
+<img src="images/protein/eucdist/interplex_errors.png" alt="**Figure 3E.** Accumulation of Euclidean distance in the interplex comparison of `log2FC`" width="100%" />
 
 <p class="caption">
 
@@ -1395,7 +1402,7 @@ prnCorr_logFC(
 
 <div class="figure" style="text-align: center">
 
-<img src="images\peptide\corrplot\corr_pnnl.png" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" /><img src="images\protein\corrplot\corr_pnnl.png" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" />
+<img src="images/peptide/corrplot/corr_pnnl.png" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" /><img src="images/protein/corrplot/corr_pnnl.png" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" />
 
 <p class="caption">
 
@@ -1447,7 +1454,7 @@ interests in human proteins.
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\heatmap\protein.png" alt="**Figure 5A.** Heat map visualization of protein log2FC" width="80%" />
+<img src="images/protein/heatmap/protein.png" alt="**Figure 5A.** Heat map visualization of protein log2FC" width="80%" />
 
 <p class="caption">
 
@@ -1491,7 +1498,7 @@ row ordering.
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\heatmap\kinase.png" alt="**Figure 5B.** Heat map visualization of kinase log2FC" width="80%" />
+<img src="images/protein/heatmap/kinase.png" alt="**Figure 5B.** Heat map visualization of kinase log2FC" width="80%" />
 
 <p class="caption">
 
@@ -1555,7 +1562,7 @@ laboratories and the location difference between any two laboratories.
 
 <div class="figure" style="text-align: left">
 
-<img src="images\protein\volcplot\batches.png" alt="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" /><img src="images\protein\volcplot\locations.png" alt="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" />
+<img src="images/protein/volcplot/batches.png" alt="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" /><img src="images/protein/volcplot/locations.png" alt="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" />
 
 <p class="caption">
 
@@ -1666,7 +1673,7 @@ have passed our selection criteria. Here, we show one of the examples:
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\volcplot\gspa_batch_geomean.png" alt="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" /><img src="images\protein\volcplot\gspa_batch_limma.png" alt="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" />
+<img src="images/protein/volcplot/gspa_batch_geomean.png" alt="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" /><img src="images/protein/volcplot/gspa_batch_limma.png" alt="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" />
 
 <p class="caption">
 
@@ -1770,7 +1777,7 @@ basal and luminal subtypes were captured.
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\volcplot\hs_SMID_BREAST_CANCER_BASAL_DN.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images\protein\volcplot\hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images\protein\volcplot\hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" />
+<img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_BASAL_DN.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" />
 
 <p class="caption">
 
@@ -1851,7 +1858,7 @@ greater the overlap is between two gene sets. For convenience, a
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\gspa\all_sets.png" alt="**Figure 7C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" width="80%" />
+<img src="images/protein/gspa/all_sets.png" alt="**Figure 7C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" width="80%" />
 
 <p class="caption">
 
@@ -1892,7 +1899,7 @@ utility can be found via `?prnGSPAHM`.
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\gspa\show_human_redundancy.png" alt="**Figure 7D.** Heat map visualization of human gene sets at a distance cut-off 0.2" width="80%" />
+<img src="images/protein/gspa/show_human_redundancy.png" alt="**Figure 7D.** Heat map visualization of human gene sets at a distance cut-off 0.2" width="80%" />
 
 <p class="caption">
 
@@ -1909,7 +1916,7 @@ interactive exploration of gene set redundancy.
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\gspa\gspa_connet.png" alt="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" /><img src="images\protein\gspa\gspa_redund.png" alt="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" />
+<img src="images/protein/gspa/gspa_connet.png" alt="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" /><img src="images/protein/gspa/gspa_redund.png" alt="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" />
 
 <p class="caption">
 
@@ -1956,7 +1963,7 @@ samples during the trend visualization. In the above example, the
 
 <div class="figure" style="text-align: left">
 
-<img src="images\protein\trend\prn_trend_n6.png" alt="**Figure 8A.** Trends of protein log2FC (n_clust = 6)." width="80%" />
+<img src="images/protein/trend/prn_trend_n6.png" alt="**Figure 8A.** Trends of protein log2FC (n_clust = 6)." width="80%" />
 
 <p class="caption">
 
@@ -1982,7 +1989,7 @@ plot_prnTrend(
 
 <div class="figure" style="text-align: left">
 
-<img src="images\protein\trend\cl4_nclust6.png" alt="**Figure 8B.** Trends of protein log2FC at cluster 4 (n_clust = 6)." width="45%" />
+<img src="images/protein/trend/cl4_nclust6.png" alt="**Figure 8B.** Trends of protein log2FC at cluster 4 (n_clust = 6)." width="45%" />
 
 <p class="caption">
 
@@ -2005,7 +2012,7 @@ plot_prnTrend(
 
 <div class="figure" style="text-align: left">
 
-<img src="images\protein\trend\bi_nclust6.png" alt="**Figure 8C.** Trends of protein log2FC for BI subset (n_clust = 6)." width="60%" />
+<img src="images/protein/trend/bi_nclust6.png" alt="**Figure 8C.** Trends of protein log2FC for BI subset (n_clust = 6)." width="60%" />
 
 <p class="caption">
 
@@ -2171,7 +2178,7 @@ shown as a track on the top of consensus and coefficient heat maps.
 
 <div class="figure" style="text-align: left">
 
-<img src="images\protein\nmf\bi_r5_con_rank5.png" alt="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" /><img src="images\protein\nmf\bi_r5_coef_rank5.png" alt="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" />
+<img src="images/protein/nmf/bi_r5_con_rank5.png" alt="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" /><img src="images/protein/nmf/bi_r5_coef_rank5.png" alt="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" />
 
 <p class="caption">
 
@@ -2306,7 +2313,7 @@ thus bias, the quantitative difference in proteomes between `WHIM2` and
 
 <div class="figure" style="text-align: center">
 
-<img src="images\peptide\histogram\peptide_refw2.png" alt="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference." width="80%" />
+<img src="images/peptide/histogram/peptide_refw2.png" alt="**Figure S1A.** Histograms of peptide log2FC with a WHIM2 reference." width="80%" />
 
 <p class="caption">
 
@@ -2366,7 +2373,7 @@ subsequent scaling normalization seems more suitable.
 
 <div class="figure" style="text-align: center">
 
-<img src="images\peptide\histogram\peptide_refw2w16.png" alt="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." width="80%" />
+<img src="images/peptide/histogram/peptide_refw2w16.png" alt="**Figure S1B.** Histograms of peptide log2FC with a combined WHIM2 and WHIM16 reference." width="80%" />
 
 <p class="caption">
 
@@ -2425,7 +2432,7 @@ purgePep(
 
 <div class="figure" style="text-align: left">
 
-<img src="images\peptide\purge\bi1.png" alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" /><img src="images\peptide\purge\bi1_ptcv.png" alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" />
+<img src="images/peptide/purge/bi1.png" alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" /><img src="images/peptide/purge/bi1_ptcv.png" alt="**Figure S1C-S1D.** Protein CV from peptide measures with WHIM2 reference. Left: before trimming; right: after trimming." width="45%" />
 
 <p class="caption">
 
@@ -2541,7 +2548,7 @@ serine, thereonine or tyrosine.\[12\]
 
 <div class="figure" style="text-align: left">
 
-<img src="images\peptide\histogram\pSTY_bi1_scaley_no.png" alt="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." width="50%" /><img src="images\peptide\histogram\pSTY_bi1_scaley_yes.png" alt="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." width="50%" />
+<img src="images/peptide/histogram/pSTY_bi1_scaley_no.png" alt="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." width="50%" /><img src="images/peptide/histogram/pSTY_bi1_scaley_yes.png" alt="**Figure S2A-S2B.** Histograms of log2FC. Left: phosphopeptides without y-axix scaling; right: phosphopeptides with y-axix scaling. The density curves are from the combined data of global + phospho." width="50%" />
 
 <p class="caption">
 
@@ -2592,7 +2599,7 @@ pepHist(
 
 <div class="figure" style="text-align: left">
 
-<img src="images\peptide\histogram\bi1_nac_scaley_no.png" alt="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." width="50%" /><img src="images\peptide\histogram\bi1_nac_scaley_yes.png" alt="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." width="50%" />
+<img src="images/peptide/histogram/bi1_nac_scaley_no.png" alt="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." width="50%" /><img src="images/peptide/histogram/bi1_nac_scaley_yes.png" alt="**Figure S2C-S2D.** Histograms of the log2FC of peptides from N-terminal acetylated proteins. Left:  without y-axix scaling; right: with y-axix scaling." width="50%" />
 
 <p class="caption">
 
@@ -2725,7 +2732,7 @@ look for the `n_not_na` column that are indeed absent from
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\heatmap\mostly_na_vals.png" alt="**Figure S2E.** Scarce heat map." width="60%" />
+<img src="images/protein/heatmap/mostly_na_vals.png" alt="**Figure S2E.** Scarce heat map." width="60%" />
 
 <p class="caption">
 
@@ -2912,7 +2919,7 @@ biological differences of `WHIM2` and `WHIM16`.
 
 <div class="figure" style="text-align: center">
 
-<img src="images\protein\model\raneff_models.png" alt="**Figure S3.** Pearson r of protein significance p-values." width="40%" />
+<img src="images/protein/model/raneff_models.png" alt="**Figure S3.** Pearson r of protein significance p-values." width="40%" />
 
 <p class="caption">
 

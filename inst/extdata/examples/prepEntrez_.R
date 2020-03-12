@@ -25,6 +25,7 @@ copy_global_fracsmry(dat_dir)
 # (for Spectrum Mill, use `copy_global_sm()`)
 copy_global_mascot(dat_dir)
 
+
 # --- workflow begins ---
 library(proteoQ)
 dat_dir <- "~\\proteoQ\\custom_refseq_lookups"
@@ -115,15 +116,15 @@ normPSM(
 
 
 \dontrun{
-## Custom database(s) are required for  
-#  species other than `human`, `mouse` and `rat`
+## Custom database(s) are required for workflows 
+#  with species other than `human`, `mouse` and `rat`
 BiocManager::install("org.Ce.eg.db")
 library(org.Ce.eg.db)
 
 library(proteoQ)
 Uni2Entrez(species = "worm", abbr_species = "Ce", filename = uniprot_entrez_ce.rds)
 
-# PAUSE: prepare the Fasta file before proceed.
+# --- PAUSE: prepare Fasta file(s) before proceeding to `normPSM`. ---
 
 normPSM(
   fasta = "~\\proteoQ\\dbs\\fasta\\specify_your_worm.fasta",
@@ -133,13 +134,9 @@ normPSM(
 
 
 \dontrun{
-# wrong fasta 
-normPSM(
-  fasta = "~\\proteoQ\\dbs\\fasta\\wrong.fasta",
-)
-
-# missing mouse entry annotation
-normPSM(
-  fasta = "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
-)
+# wrong `abbr_species` provided `species` other than "human", "mouse" and "rat"
+Uni2Entrez(species = "my human", abbr_species = Hu, filename = my_human.rds, overwrite = TRUE)
+  
+# the value of `abbr_species` ignored at `species` among "human", "mouse" and "rat"
+Uni2Entrez(species = human, abbr_species = ok_not_Hs, filename = my_human.rds, overwrite = TRUE)
 }

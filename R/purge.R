@@ -256,7 +256,7 @@ purge_by_n <- function (df, id, min_n) {
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
 #'  # Mascot \cr
@@ -297,9 +297,14 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
-  stopifnot(group_psm_by %in% c("pep_seq", "pep_seq_mod"))
-  stopifnot(group_pep_by %in% c("prot_acc", "gene"))
-  # stopifnot(min_n > 0 & min_n%%1 == 0)
+  stopifnot(
+    group_psm_by %in% c("pep_seq", "pep_seq_mod"), 
+    group_pep_by %in% c("prot_acc", "gene"), 
+    length(group_psm_by) == 1, 
+    length(group_pep_by) == 1, 
+    is.logical(keep_ohw), 
+    length(keep_ohw) == 1
+  )
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -314,7 +319,6 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     
     df <- read.csv(file.path(dat_dir, "PSM", fn), check.names = FALSE, 
                    header = TRUE, sep = "\t", comment.char = "#") %>% 
-      # filters_in_call(!!!filter_dots) %>% 
       purge_by_qt(group_psm_by, pt_cv, keep_ohw) %>% 
       purge_by_cv(group_psm_by, max_cv, keep_ohw) %>% 
       dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
@@ -352,14 +356,6 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
         write.table(file.path(dat_dir, "PSM", fn), sep = "\t", col.names = TRUE, row.names = FALSE)      
     }
     
-    adjSD <- FALSE
-    if (adjSD) {
-      dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\purged_adj"), recursive = TRUE, showWarnings = FALSE)
-      filepath <- file.path(dat_dir, "PSM\\log2FC_cv\\purged_adj", gsub("_PSM_N.txt", "_sd.png", fn))
-    } else {
-      filepath <- file.path(dat_dir, "PSM\\log2FC_cv\\purged", gsub("_PSM_N.txt", "_sd.png", fn))
-    }
-    
     width <- eval(dots$width, env = caller_env())
     height <- eval(dots$height, env = caller_env())
     
@@ -367,8 +363,9 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     if (is.null(height)) height <- 8
     dots <- dots %>% .[! names(.) %in% c("width", "height")]
 
+    filepath <- file.path(dat_dir, "PSM\\log2FC_cv\\purged", gsub("_PSM_N.txt", "_sd.png", fn))
     quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_psm_by, filepath = filepath, 
-                                           width = width, height = height, type = "log2_R", adjSD = adjSD, 
+                                           width = width, height = height, type = "log2_R", adjSD = FALSE, 
                                            is_psm = TRUE, col_select = NULL, col_order = NULL, 
                                            theme = theme, !!!dots)
   }
@@ -448,7 +445,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'  ontology}} \cr 
 #'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
 #'  signatures} \cr 
-#'  \code{\link{dl_stringdbs}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
 #'  # Mascot \cr
@@ -501,11 +498,16 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
-
-  stopifnot(group_psm_by %in% c("pep_seq", "pep_seq_mod"))
-  stopifnot(group_pep_by %in% c("prot_acc", "gene"))
-  # stopifnot(min_n > 0 & min_n%%1 == 0)
   
+  stopifnot(
+    group_psm_by %in% c("pep_seq", "pep_seq_mod"), 
+    group_pep_by %in% c("prot_acc", "gene"), 
+    length(group_psm_by) == 1, 
+    length(group_pep_by) == 1, 
+    is.logical(keep_ohw), 
+    length(keep_ohw) == 1
+  )
+
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
 
@@ -514,7 +516,6 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   
   fn <- file.path(dat_dir, "Peptide", "Peptide.txt")
   df <- read.csv(fn, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
-    # filters_in_call(!!!filter_dots) %>% 
     purge_by_qt(group_pep_by, pt_cv, keep_ohw) %>% 
     purge_by_cv(group_pep_by, max_cv, keep_ohw) %>% 
     dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) 
@@ -560,17 +561,10 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   if (is.null(height)) height <- 8
   dots <- dots %>% .[! names(.) %in% c("width", "height")]
   
-  adjSD <- FALSE
-  if (adjSD) {
-    dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\purged_adj"), recursive = TRUE, showWarnings = FALSE)
-    filepath <- file.path(dat_dir, "Peptide\\log2FC_cv\\purged_adj", filename)
-  } else {
-    filepath <- file.path(dat_dir, "Peptide\\log2FC_cv\\purged", filename)
-  }
-  
+  filepath <- file.path(dat_dir, "Peptide\\log2FC_cv\\purged", filename)
   quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_pep_by, filepath = filepath, 
                                          width = width, height = height, type = "log2_R", 
-                                         adjSD = adjSD, is_psm = FALSE, 
+                                         adjSD = FALSE, is_psm = FALSE, 
                                          col_select = !!col_select, col_order = !!col_order, 
                                          theme = theme, !!!dots)
 }

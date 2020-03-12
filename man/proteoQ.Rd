@@ -6,30 +6,31 @@
 \title{proteoQ: A package for processing mass spectrometry data using tandem mass
 tags (\url{https://en.wikipedia.org/wiki/Tandem_mass_tag}).}
 \description{
-The proteoQ package provides three categories of functions in data
-preprocessing, quality assurance assessments and informatic analysis.
+The proteoQ package provides four categories of functions in data
+preprocessing, annotation, quality assurance assessments and informatic
+analysis.
 }
-\section{proteoQ functions in data preprocessing}{
+\section{functions in data preprocessing}{
  normPSM -> (purgePSM) ->
   PSM2Pep -> mergePep -> standPep -> (purgePep) -> standPrn
 }
 
-\section{proteoQ functions in data QA}{
+\section{functions in custom database preparation}{
+ prepGO, prepMSig,
+  prepString, Uni2Entrez, Ref2Entrez
+}
+
+\section{functions in data QA}{
  pepHist, prnHist, pepCorr_logFC,
   pepCorr_logInt, prnCorr_logFC, prnCorr_logInt,
 }
 
-\section{proteoQ functions in informatic analysis}{
+\section{functions in informatic analysis}{
  pepMDS, prnMDS, pepPCA,
   prnPCA, pepEucDist, prnEucDist, pepHM, prnHM, anal_pepNMF, anal_prnNMF,
   plot_pepNMFCon, plot_prnNMFCon, plot_pepNMFCoef, plot_prnNMFCoef,
   plot_metaNMF, anal_prnTrend, plot_prnTrend, pepSig, prnSig, pepVol, prnVol,
   prnGSPA, prnGSPAHM, gspaMap, anal_prnString, pepImp, prnImp, prnGSVA,
   prnGSEA
-}
-
-\section{proteoQ functions in custom database preparation}{
- prepGO, prepMSig, 
-Uni2Entrez, Ref2Entrez
 }
 

@@ -10,6 +10,7 @@ scale_log2r <- TRUE
 
 ## base
 # prerequisites in significance tests (impute_na = FALSE)
+# as `pVals` are needed
 pepSig(
   impute_na = FALSE, 
   W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
@@ -304,4 +305,20 @@ gspaMap(
   xco = 1.2, 
   yco = 0.05, 
 )
+
+## put custom `prepGO`, `prepMSig` into `prnGSPA` 
+# start over
+unlink(file.path("~\\proteoQ\\dbs\\go"), recursive = TRUE, force = TRUE)
+unlink(file.path("~\\proteoQ\\dbs\\msig"), recursive = TRUE, force = TRUE)
+
+prnGSPA(
+  impute_na = FALSE,
+  pval_cutoff = 5E-2,
+  logFC_cutoff = log2(1.2),
+  gspval_cutoff = 5E-2,
+  gset_nms = c(prepGO(human), prepGO(mouse), prepMSig(human), prepMSig(mouse)),
+  filename = cmbn.txt,
+)
 }
+
+
