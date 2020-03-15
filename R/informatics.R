@@ -234,7 +234,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	force(impute_na)
 	force(complete_cases)
 	
-	message("scale_log2r = ", scale_log2r)
+	message("\nscale_log2r = ", scale_log2r)
 	message("impute_na = ", impute_na)
 	message("complete_cases = ", complete_cases)
 	
@@ -603,7 +603,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	            var_cutoff = var_cutoff,
 	            pval_cutoff = pval_cutoff, 
 	            logFC_cutoff = logFC_cutoff, 
-	            gspval_cutoff = 1E-2, # dummy start
+	            gspval_cutoff = 0.05, # dummy
 	            gslogFC_cutoff = log2(1), 
 	            min_size = 10, 
 	            max_size = Inf, 

@@ -19,6 +19,14 @@ prnVol(
   yco = 0.01,
 )
 
+# hide `xco` and/or `yco` lines
+prnVol(
+  show_labels = TRUE,
+  xco = 0,
+  yco = Inf,
+  filename = no_xylines.png,
+)
+
 # kinases and prot_n_pep >= 2
 prnVol(
   show_labels = TRUE,
@@ -62,36 +70,44 @@ prnVol(theme = my_theme, filename = my_theme.png)
 # prerequisite analysis of GSPA
 prnGSPA(
   impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
+  pval_cutoff = 1E-2, # protein pVal threshold
+  logFC_cutoff = log2(1.1), # protein log2FC threshold
+  gspval_cutoff = 5E-2, # gene-set pVal threshold
+  gslogFC_cutoff = log2(1.2), # gene-set log2FC threshold
   gset_nms = c("go_sets"),
 )
 
-# filtered by proteins with two or more identifying peptides for visualization
+# mapping gene sets to volcano-plot visualization
+# (1) forced lines of `pval_cutoff` and `logFC_cutoff`  
+#   according to the corresponding `prnGSPA` in red; 
+# (2) optional lines of `xco` and `yco` in grey
 gspaMap(
-  gspval_cutoff = 5E-3,
-  gslogFC_cutoff = log2(1.2),
-  gset_nms = c("go_sets"),
-  topn = 100, 
-  show_sig = pVal,
-  show_labels = TRUE,
-  yco = 0.01,
-  filter_prots_by_npep = exprs(prot_n_pep >= 2),
-  # `filename`(s) will be automated, i.e., by gene-set names
+  impute_na = FALSE,
+  show_labels = TRUE, 
+  topn = 20, 
+  show_sig = pVal, 
 )
 
-# customized thresholds for the corresponding formulae in `pepSig` or `prnSig()`
-# (may be suitable with the examplary differences in `W16_vs_W2` being much greater than `W2_bat`...)
+# disable the lines of `xco` and `yco`, 
+gspaMap(
+  impute_na = FALSE,
+  show_labels = TRUE, 
+  topn = 20, 
+  show_sig = pVal, 
+  xco = 0, 
+  yco = Inf, 
+)
+
+# customized thresholds for visualization
 gspaMap(
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
   gspval_cutoff = c(5E-2, 5E-2, 1E-10),
   gslogFC_cutoff = log2(1.2),
-  topn = 100, 
+  topn = 20, 
   show_sig = pVal,
-  show_labels = TRUE,
-  yco = 0.05,
-  filter_prots = exprs(prot_n_pep >= 2),
+  show_labels = FALSE,
+  xco = 0, 
+  yco = Inf, 
 )
 
 ## gspaMap(...) maps secondary results of `[...]Protein_GSPA_{NZ}[_impNA].txt` 

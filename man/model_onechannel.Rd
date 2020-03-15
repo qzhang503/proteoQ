@@ -40,9 +40,9 @@ for selected samples.}
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 
-\item{method}{Character string; the method to assess the p-values of GSPA. The
-default is \code{mean}. See also section \code{Details} for the
-calculations.}
+\item{method}{Character string or vector; the method to assess the p-values of
+GSPA. The default is \code{mean} and the alternative is \code{limma}. See
+also section \code{Details} for the calculations.}
 
 \item{var_cutoff}{Numeric; the cut-off in the variances of protein log2FC.
 Entries with variances smaller than the threshold will be removed from GSVA.

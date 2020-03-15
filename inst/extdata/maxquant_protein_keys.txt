@@ -17,8 +17,8 @@ kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. PSM keys
 kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. PSM keys
 is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic peptide	
 ...	More column keys from MaxQuant	Median description from peptide data
-I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by `method_pep_prn` in `normPrn()` for indicated samples
+I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by `method_pep_prn` in `Pep2Prn()` for indicated samples
 N_I... (...)	Normalized I... (...)	Cf. Peptide keys
 log2_R (...)	log2FC relative to reference materials for indicated samples	Before normalization
-N_log2_R (...)	Aligned log2_R (...) according to 'method_align' in 'normPrn()' without scaling normalization	
+N_log2_R (...)	Aligned log2_R (...) according to 'method_align' in 'standPrn()' without scaling normalization	
 Z_log2_R (...)	N_log2_R (...) with scaling normalization	

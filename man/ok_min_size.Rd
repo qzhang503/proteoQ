@@ -4,7 +4,7 @@
 \alias{ok_min_size}
 \title{check the size of a gene set}
 \usage{
-ok_min_size(df, min_delta, gspval_cutoff, gslogFC_cutoff)
+ok_min_size(df, min_delta, gspval_cutoff = 1, gslogFC_cutoff = 0)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined

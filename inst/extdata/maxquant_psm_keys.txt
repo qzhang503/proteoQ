@@ -26,9 +26,9 @@ kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. `kin_attr`
 kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. `kin_attr`
 is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic peptide	
 ...	More column keys from MaxQuant	Cf. http://www.coxdocs.org/doku.php?id=maxquant:table:msmstable
-I126 et al.	Reporter-ion intensity	Corrected or uncorrected from MaxQuant; c.f. `?normPSM`
-N_I126 et al.	Normalized reporter-ion intensity	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity
-sd_log2_R126 et al.	Standard deviation of peptide log2FC 	Calculated from contributing PSMs under each TMT channel
-R126 et al.	Linear FC relative to TMT-126	
-log2_R126 et al.	log2FC relative to TMT-126	
-N_log2_R126 et al.	Median-centered log2FC relative to TMT-126	
+I126 etc.	Reporter-ion intensity	Corrected or uncorrected from MaxQuant; c.f. `?normPSM`
+N_I126 etc.	Normalized reporter-ion intensity	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity
+sd_log2_R126 etc.	Standard deviation of peptide log2FC 	Calculated from contributing PSMs under each TMT channel
+R126 etc.	Linear FC relative to TMT-126	
+log2_R126 etc.	log2FC in relative to the average intensity of reference(s) under each multiplex TMT	Relative to the row-mean intensity within each multiplex TMT if no reference(s) are present
+N_log2_R126 etc.	Median-centered log2_R...	

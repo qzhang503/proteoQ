@@ -1117,8 +1117,8 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   for (set_idx in seq_len(n_TMT_sets)) {
     sublist <- filelist[grep(paste0("set*.", set_idx), filelist, ignore.case = TRUE)]
     
-    out_fn <- data.frame(Filename =
-                           do.call('rbind', strsplit(as.character(sublist),
+    out_fn <- data.frame(Filename = 
+                           do.call('rbind', strsplit(as.character(sublist), 
                                                      '.txt', fixed = TRUE))) %>%
       dplyr::mutate(Filename = gsub("_Clean", "_PSM_N", Filename))
     
@@ -1219,16 +1219,16 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'experiments.
 #'
 #'In each primary output file, "\code{...PSM_N.txt}", values under columns
-#'\code{log2_R...} are logarithmic ratios at base 2 in relative to the
-#'\code{reference(s)} within each multiplex TMT set, or to the row means if no
-#'\code{reference(s)} are present. Values under columns \code{N_log2_R...} are
-#'\code{log2_R...} with median-centering alignment. Values under columns
-#'\code{I...} are raw \code{reporter-ion intensity} from database searches.
-#'Values under columns \code{N_I...} are normalized \code{reporter-ion
-#'intensity}. Values under columns \code{sd_log2_R...} are the standard
-#'deviation of the \code{log2FC} of peptides from ascribing PSMs. Character
-#'strings under \code{pep_seq_mod} denote peptide sequences with applicable
-#'variable modifications.
+#'\code{log2_R...} are logarithmic ratios at base 2 in relative to the average
+#'intensity of \code{reference(s)} within each multiplex TMT set, or to the
+#'row-mean intensity if no \code{reference(s)} are present. Values under columns
+#'\code{N_log2_R...} are \code{log2_R...} with median-centering alignment.
+#'Values under columns \code{I...} are raw \code{reporter-ion intensity} from
+#'database searches. Values under columns \code{N_I...} are normalized
+#'\code{reporter-ion intensity}. Values under columns \code{sd_log2_R...} are
+#'the standard deviation of the \code{log2FC} of peptides from ascribing PSMs.
+#'Character strings under \code{pep_seq_mod} denote peptide sequences with
+#'applicable variable modifications.
 #'
 #'\cr \strong{Nomenclature of \code{pep_seq_mod}}:
 #'

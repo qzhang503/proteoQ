@@ -4,7 +4,7 @@
 \alias{lm_gspa}
 \title{significance tests of pVals between the up and the down groups}
 \usage{
-lm_gspa(df, min_delta)
+lm_gspa(df, min_delta, gspval_cutoff, gslogFC_cutoff)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -25,6 +25,20 @@ assessed. The number is after data filtration by \code{pval_cutoff},
 \code{logFC_cutoff} or varargs expressions under \code{filter_}. The default
 is 4 for all formulas matched to or specified in argument \code{fml_nms}.
 Formula-specific threshold is allowed by supplying a vector of sizes.}
+
+\item{gspval_cutoff}{Numeric value or vector; the cut-off in gene-set
+significance \code{pVal}. Only enrichment terms with \code{pVals} more
+significant than the threshold will be reported. The default is 0.05 for all
+formulas matched to or specified in argument \code{fml_nms}.
+Formula-specific threshold is allowed by supplying a vector of cut-off
+values.}
+
+\item{gslogFC_cutoff}{Numeric value or vector; the cut-off in gene-set
+enrichment fold change. Only enrichment terms with absolute fold change
+greater than the threshold will be reported. The default magnitude is
+\code{log2(1.2)} for all formulas matched to or specified in argument
+\code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
+of absolute values in \code{log2FC}.}
 }
 \description{
 significance tests of pVals between the up and the down groups
