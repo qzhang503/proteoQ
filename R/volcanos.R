@@ -227,16 +227,23 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
 	      
 	      if (purrr::is_empty(df2)) stop("File(s) not found under ", filepath_fml, call. = FALSE)
 	    }
-	    
+
 	    # plot data ---------------------------
-	    purrr::walk(df2, gsVolcano, df = df, contrast_groups = contrast_groups, 
+	    purrr::walk(df2, gsVolcano, 
+	                df = df, 
+	                contrast_groups = contrast_groups, 
 	                gsea_key = "term", 
 	                gsets = gsets, 
 	                theme = theme, 
 	                fml_nm = fml_nm, 
-	                filepath = filepath, filename = filename, 
-	                adjP = adjP, show_labels = show_labels, show_sig = show_sig, 
-	                gspval_cutoff = gspval_cutoff, gslogFC_cutoff = gslogFC_cutoff, topn = topn, ...)
+	                filepath = filepath, 
+	                filename = filename, 
+	                adjP = adjP, 
+	                show_labels = show_labels, 
+	                show_sig = show_sig, 
+	                gspval_cutoff = gspval_cutoff, 
+	                gslogFC_cutoff = gslogFC_cutoff, 
+	                topn = topn, ...)
 	  }
 }
 
@@ -419,6 +426,38 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
                       filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE, show_sig = "none", 
                       gspval_cutoff = 1E-6, gslogFC_cutoff = log2(1.2), topn = Inf, ...) {
   
+  par_filepath <- file.path(dat_dir, "Calls", 
+                             gsub("\\.txt$", "@", df2) %>% paste0(fml_nm, ".rda"))
+  
+  if (file.exists(par_filepath))  load(par_filepath) else call_pars <- NULL
+  
+  df <- local({
+    par_filter_dots <- call_pars %>% 
+      .[purrr::map_lgl(., is.language)] %>% 
+      .[grepl("^filter_", names(.))]
+    
+    if (!purrr::is_empty(par_filter_dots)) {
+      message(
+        "\nApply the following vararg(s) from matching `prnGSPA` to: ", fml_nm, ".", 
+        paste(par_filter_dots, "\n")
+      )
+      df %>% filters_in_call(!!!par_filter_dots)
+    } else {
+      message("\nNo `filter_` varargs with ", fml_nm, ".")
+      invisible(df)
+    }
+  })
+  
+  pval_cutoff <- local({
+    par_pval_cutoff <- call_pars$pval_cutoff
+    if (!purrr::is_empty(par_pval_cutoff)) par_pval_cutoff else 0.05
+  })
+  
+  logFC_cutoff <- local({
+    par_logFC_cutoff <- call_pars$logFC_cutoff
+    if (!purrr::is_empty(par_logFC_cutoff)) par_logFC_cutoff else log2(1.2)
+  })
+  
   custom_prefix <- gsub("(.*_{0,1})Protein_GSPA.*", "\\1", df2)
   dir.create(path = file.path(filepath, fml_nm, custom_prefix), recursive = TRUE, showWarnings = FALSE)
 
@@ -578,6 +617,9 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   			geom_hline(yintercept = -log10(yco), linetype = "longdash", size = .5) +
   			geom_vline(xintercept = -log2(xco), linetype = "longdash", size = .5) +
   			geom_vline(xintercept = log2(xco), linetype = "longdash", size =.5) +
+  		  geom_hline(yintercept = -log10(pval_cutoff), linetype = "longdash", size = .5, color = "#fc9272") +
+  		  geom_vline(xintercept = -logFC_cutoff, linetype = "longdash", size = .5, color = "#fc9272") +
+  		  geom_vline(xintercept = logFC_cutoff, linetype = "longdash", size =.5, color = "#fc9272") +
   			labs(title = names(gsets_sub), x = x_label, y = y_label) +
   			scale_x_continuous(limits = c(-xmax, xmax)) +
   			scale_y_continuous(limits = c(0, ymax)) +
@@ -897,11 +939,12 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
-gspaMap <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+gspaMap <- function (gset_nms = c("go_sets", "c2_msig"), 
+                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      df = NULL, df2 = NULL, filepath = NULL, filename = NULL, fml_nms = NULL, 
                      adjP = FALSE, show_labels = TRUE, show_sig = "none", 
                      gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn = Inf, 
-                     gset_nms = c("go_sets", "c2_msig"), theme = NULL, ...) {
+                     theme = NULL, ...) {
   check_dots(c("id", "anal_type"), ...)
   check_depreciated_args(list(c("pval_cutoff", "gspval_cutoff"), c("logFC_cutoff", "gslogFC_cutoff")), ...)
   
@@ -918,11 +961,8 @@ gspaMap <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FAL
   show_sig <- rlang::as_string(rlang::enexpr(show_sig))
   stopifnot(show_sig %in% c("none", "pVal", "qVal"), length(show_sig) == 1)
 
-  stopifnot(gset_nms %in% c("go_sets", "c2_msig", "kegg_sets"))
-  if (any(gset_nms == "kegg_sets")) {
-    warning("\"kegg_sets\" softly depreciated; instead use \"c2_msig\".", call. = FALSE)
-  }
-  
+  check_gset_nms(gset_nms)
+
   reload_expts()
 
   info_anal(df = !!df, df2 = !!df2, id = !!id, filepath = !!filepath, filename = !!filename, 

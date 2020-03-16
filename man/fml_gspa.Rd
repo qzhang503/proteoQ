@@ -15,6 +15,7 @@ fml_gspa(
   max_size,
   min_delta,
   min_greedy_size,
+  method,
   df,
   col_ind,
   id,
@@ -24,7 +25,6 @@ fml_gspa(
   scale_log2r,
   filepath,
   filename,
-  method,
   ...
 )
 }
@@ -90,6 +90,10 @@ protein entries for a gene set to be considered essential. The default in
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of sizes.}
 
+\item{method}{Character string or vector; the method to assess the p-values of
+GSPA. The default is \code{mean} and the alternative is \code{limma}. See
+also section \code{Details} for the calculations.}
+
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an
 \code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
@@ -124,10 +128,6 @@ will be determined automatically. For text files, a typical file extension
 is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
-
-\item{method}{Character string; the method to assess the p-values of GSPA. The
-default is \code{mean}. See also section \code{Details} for the
-calculations.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 of data against the column keys in \code{Peptide.txt} for peptides or

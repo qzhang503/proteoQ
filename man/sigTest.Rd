@@ -58,9 +58,9 @@ is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
-\item{method}{Character string; the method to assess the p-values of GSPA. The
-default is \code{mean}. See also section \code{Details} for the
-calculations.}
+\item{method}{Character string or vector; the method to assess the p-values of
+GSPA. The default is \code{mean} and the alternative is \code{limma}. See
+also section \code{Details} for the calculations.}
 
 \item{var_cutoff}{Numeric; the cut-off in the variances of protein log2FC.
 Entries with variances smaller than the threshold will be removed from GSVA.

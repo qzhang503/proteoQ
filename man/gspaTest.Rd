@@ -133,9 +133,9 @@ protein entries for a gene set to be considered essential. The default in
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of sizes.}
 
-\item{method}{Character string; the method to assess the p-values of GSPA. The
-default is \code{mean}. See also section \code{Details} for the
-calculations.}
+\item{method}{Character string or vector; the method to assess the p-values of
+GSPA. The default is \code{mean} and the alternative is \code{limma}. See
+also section \code{Details} for the calculations.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined

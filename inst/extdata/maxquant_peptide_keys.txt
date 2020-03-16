@@ -26,9 +26,9 @@ kin_attr	The attribute of proteins being kinases	Cf. PSM keys
 kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. PSM keys
 kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. PSM keys
 ...	More column keys from MaxQuant	"Median description for the keys of ""Score"", ""PEP"", ""Charge"", ""Mass"", ""PIF"", ""Fraction of total spectrum"", ""Mass error [ppm]"",  ""Mass error [Da]"", ""Base peak fraction"", ""Precursor Intensity"", ""Precursor Apex Fraction"", ""Intensity coverage"", ""Peak coverage"", ""Combinatorics"""
-I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by `method_psm_pep` in `normPep()` for indicated samples
+I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by `method_psm_pep` in `PSM2Pep()` for indicated samples
 N_I... (...)	Normalized I... (...)	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity
 sd_log2_R (...)	Standard deviation of protein log2FC 	Calculated from contributing peptides under each sample
 log2_R (...)	log2FC relative to reference materials for indicated samples	Before normalization
-N_log2_R (...)	Aligned log2_R (...) according to 'method_align' in 'normPep()' without scaling normalization	
+N_log2_R (...)	Aligned log2_R (...) according to 'method_align' in 'standPep()' without scaling normalization	
 Z_log2_R (...)	N_log2_R (...) with scaling normalization	

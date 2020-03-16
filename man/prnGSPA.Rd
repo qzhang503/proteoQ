@@ -6,7 +6,7 @@
 \usage{
 prnGSPA(
   gset_nms = c("go_sets", "c2_msig"),
-  method = c("mean", "limma"),
+  method = "mean",
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -35,9 +35,9 @@ curated \code{MSig}, and/or additional species are also supported. See also
 \code{\link{prepGO}} for the preparation of custom \code{GO} and
 \code{\link{prepMSig}} for the preparation of custom \code{MSig}.}
 
-\item{method}{Character string; the method to assess the p-values of GSPA. The
-default is \code{mean}. See also section \code{Details} for the
-calculations.}
+\item{method}{Character string or vector; the method to assess the p-values of
+GSPA. The default is \code{mean} and the alternative is \code{limma}. See
+also section \code{Details} for the calculations.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
@@ -150,8 +150,8 @@ two \eqn{P} values is then used to represent the significance of gene set
 enrichment. The arguments \code{pval_cutoff} and \code{logFC_cutoff} are used
 to discriminate low influence genes. Additional subsetting of data via the
 \code{vararg} approach of \code{filter_} is feasible. At \code{method =
-limma}, moderated t-tests are performed between the up and the down groups via
-\code{\link[limma]{eBayes}}.
+limma}, moderated t-tests are performed against \code{-log10(pVals)} between
+the up and the down groups via \code{\link[limma]{eBayes}}.
 }
 \examples{
 \donttest{
@@ -166,7 +166,7 @@ scale_log2r <- TRUE
 
 ## base
 # prerequisites in significance tests (impute_na = FALSE)
-# as `pVals` are needed
+# as `pVals` are required
 pepSig(
   impute_na = FALSE, 
   W2_bat = ~ Term["(W2.BI.TMT2-W2.BI.TMT1)", 
@@ -190,118 +190,117 @@ prnGSPA(
   gset_nms = c("go_sets", "c2_msig"), 
 )
 
-# GSPA visualization under volcano plots
+# GSPA visualization under volcano plots 
+# forced lines of `pval_cutoff` and `logFC_cutoff`  
+#   from the corresponding `prnGSPA`;
+# more examples of aesthetics in `?gspaMap`
 gspaMap(
   impute_na = FALSE,
-  show_labels = FALSE, 
-  gspval_cutoff = 5E-2, 
-  gslogFC_cutoff = log2(1.2), 
-  topn = 100, 
+  show_labels = TRUE, 
+  topn = 50, 
   show_sig = pVal, 
-  xco = 1.2, # position of x-axis cut-off lines
-  yco = 0.05, # position of a y-axis cut-off line 
+  xco = 1.2, # optional x-axis cut-off lines
+  yco = 0.05, # a optional y-axis cut-off line 
 )
 
 ## row filtration
 prnGSPA(
   impute_na = FALSE,
-  gset_nms = c("go_sets"),
-  filter_prots_by_npep = exprs(prot_n_pep >= 3),
-  filename = unifil.txt,
+  gset_nms = c("go_sets", "c2_msig"),
+  filter_prots_by_npep = exprs(prot_n_pep >= 2),
+  filter_prots_by_species = exprs(species == "human"), 
+  filename = row_filters.txt,
 )
 
 # by default, volcano-plot visualization for all GSPA result files, 
-#   which are "Protein_GSPA_Z.txt" and "unifil_Protein_GSPA_Z.txt" 
+#   which are "Protein_GSPA_Z.txt" and "row_filters_Protein_GSPA_Z.txt" 
 #   up to this point
+# will match the primary `fliter_` varargs to 
+#   those in the corresponding `prnGSPA(...)`
 gspaMap(
   impute_na = FALSE,
-  topn = 100, 
   show_labels = FALSE, 
+  topn = 50, 
   show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
 )
 
 # or manually supply specific secondary file(s) with `df2`; 
-# may consider the same primary `fliter_` varargs as those
-#   in the corresponding `prnGSPA(...)`
 gspaMap(
-  df2 = "unifil_Protein_GSPA_Z.txt", 
-  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  df2 = "row_filters_Protein_GSPA_Z.txt", 
   impute_na = FALSE,
-  topn = 100, 
-  show_labels = FALSE, 
+  topn = 10, 
+  show_labels = TRUE, 
   show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
 )
 
-# possible to visualize all proteins without matching primary 
-#   `filter_` varargs (not recommended), 
-#   it is users' responsibility to note that 
-#   "unifil_Protein_GSPA_Z.txt" is from 
-#   prnGSA(filter_prots_by_npep = exprs(prot_n_pep >= 3), ...)
+# may apply additionally secondary `fliter2_` varargs against `df2`
 gspaMap(
-  df2 = "unifil_Protein_GSPA_Z.txt", 
-  impute_na = FALSE,
-  topn = 100, 
-  show_labels = FALSE, 
-  show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
-)
-
-# may apply both primary `filter_` varargs against `df` 
-#   and secondary `fliter2_` varargs aganist `df2`
-gspaMap(
-  df2 = "unifil_Protein_GSPA_Z.txt", 
-  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  df2 = "row_filters_Protein_GSPA_Z.txt", 
   filter2_ess_size = exprs(ess_size >= 1),   
   impute_na = FALSE,
-  topn = 100, 
+  topn = 10, 
   show_labels = FALSE, 
   show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
 )
 
 # can also visualize results for specific formula(e) and/or 
 #   specific `df2`
 gspaMap(
   fml_nms = "W16_vs_W2",
-  df2 = "unifil_Protein_GSPA_Z.txt", 
-  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  df2 = "row_filters_Protein_GSPA_Z.txt", 
   filter2_ess_size = exprs(ess_size >= 1),   
   impute_na = FALSE,
-  topn = 100, 
-  show_labels = FALSE, 
+  topn = 20, 
+  show_labels = TRUE, 
   show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
 )
 
 ## customized thresholds
 # (formula names defined a priori in `pepSig(...)`)
+# (higher thresholds for "W16_vs_W2"; also set `max_size` to 
+#  avoid trapping with large terms, such as "cell parts"...)
 prnGSPA(
   impute_na = FALSE, 
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
   pval_cutoff = c(5E-2, 5E-2, 1E-6), 
-  logFC_cutoff = c(log2(1.1), log2(1.1), log2(1.2)), 
+  logFC_cutoff = c(log2(1.2)), 
+  gslogFC_cutoff = c(log2(1.2)), 
   gspval_cutoff = c(5E-2, 5E-2, 1E-4), 
   max_size = c(Inf, Inf, 120), 
   gset_nms = c("go_sets"), 
-  filter_by_npep = exprs(prot_n_pep >= 3), 
-  filename = diffil.txt,
+  filter_by_npep = exprs(prot_n_pep >= 2), 
+  filter_prots_by_species = exprs(species == "human"), 
+  filename = thresholds.txt,
 )
 
 gspaMap(
-  df2 = "diffil_Protein_GSPA_Z.txt", 
+  df2 = "thresholds_Protein_GSPA_Z.txt", 
   impute_na = FALSE,
-  topn = 100, 
+  topn = 10, 
   show_labels = FALSE, 
   show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
+)
+
+# "limma" for "W16_vs_W2"
+prnGSPA(
+  impute_na = FALSE, 
+  fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
+  method = c("mean", "mean", "limma"),
+  max_size = c(Inf, Inf, 120), 
+  pval_cutoff = c(5E-2), 
+  logFC_cutoff = c(log2(1.2)), 
+  gspval_cutoff = c(5E-2), 
+  gset_nms = c("go_sets", "c2_msig"), 
+  filter_by = exprs(prot_n_pep >= 2, species == "human"), 
+  filename = methods.txt,
+)
+
+gspaMap(
+  df2 = "methods_Protein_GSPA_Z.txt", 
+  impute_na = FALSE,
+  topn = 25, 
+  show_labels = FALSE, 
+  show_sig = pVal, 
 )
 
 ## NA imputation
@@ -326,7 +325,7 @@ prnSig(impute_na = TRUE)
 prnGSPA(
   impute_na = TRUE,
   gset_nms = c("go_sets"),
-  filter_prots_by_npep = exprs(prot_n_pep >= 3),
+  filter_prots_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # ===================================
@@ -362,7 +361,7 @@ prnGSPAHM(
 
 # can also visualize results for specific `df2` and formula(e)
 prnGSPAHM(
-  df2 = "diffil_Protein_GSPA_Z_essmap.txt", 
+  df2 = "thresholds_Protein_GSPA_Z_essmap.txt", 
   fml_nms = "W16_vs_W2", 
   annot_cols = c("ess_idx", "ess_size"),
   annot_colnames = c("Eset index", "Size"),
@@ -400,27 +399,19 @@ head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\go", "go_mm.rds")))
 # analysis
 prnGSPA(
   impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
   gset_nms = c("~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
                "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
 )
 
 # It is possible that the system "go_sets" may be partially different to the
-# custom GO. Be explipit on `gset_nms`; otherwise, the default of `gset_nms =
+# custom GO. Be explicit on `gset_nms`; otherwise, the default of `gset_nms =
 # c("go_sets", "c2_msig")` will be applied.
 gspaMap(
   gset_nms = c("~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
                "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
   impute_na = FALSE,
-  topn = 100, 
-  show_labels = FALSE, 
-  gspval_cutoff = 5E-2, 
-  gslogFC_cutoff = log2(1.2), 
+  topn = 20, 
   show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
 )
 
 # ===================================
@@ -439,33 +430,27 @@ head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\msig", "msig_mm.rds")))
 # analysis
 prnGSPA(
   impute_na = FALSE,
-  pval_cutoff = 5E-2,
-  logFC_cutoff = log2(1.2),
-  gspval_cutoff = 5E-2,
   gset_nms = c("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_hs.rds",
                "~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_mm.rds"),
 )
 
 # It is possible that the system "c2_msig" may be partially different to the
-# custom databases. Be explipit on `gset_nms`; otherwise, the default of
+# custom databases. Be explicit on `gset_nms`; otherwise, the default of
 # `gset_nms = c("go_sets", "c2_msig")` will be applied.
 gspaMap(
   gset_nms = c("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_hs.rds",
                "~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_mm.rds"),
   impute_na = FALSE,
-  topn = 100, 
-  show_labels = FALSE, 
-  gspval_cutoff = 5E-2, 
-  gslogFC_cutoff = log2(1.2), 
+  topn = 20, 
   show_sig = pVal, 
-  xco = 1.2, 
-  yco = 0.05, 
 )
 
-## put custom `prepGO`, `prepMSig` into `prnGSPA` 
-# start over
+## put custom `prepGO`, `prepMSig` preparation into `prnGSPA` analysis
+# start over with fresh database preparation
 unlink(file.path("~\\\\proteoQ\\\\dbs\\\\go"), recursive = TRUE, force = TRUE)
 unlink(file.path("~\\\\proteoQ\\\\dbs\\\\msig"), recursive = TRUE, force = TRUE)
+
+library(magrittr)
 
 prnGSPA(
   impute_na = FALSE,
@@ -474,7 +459,15 @@ prnGSPA(
   gspval_cutoff = 5E-2,
   gset_nms = c(prepGO(human), prepGO(mouse), prepMSig(human), prepMSig(mouse)),
   filename = cmbn.txt,
-)
+) \%>\% 
+  gspaMap(
+    # gset_nms = ., 
+    df2 = "cmbn_Protein_GSPA_Z.txt", 
+    impute_na = FALSE,
+    topn = 20, 
+    show_labels = FALSE, 
+    show_sig = pVal, 
+  )
 }
 
 
