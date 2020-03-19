@@ -213,9 +213,9 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
 #' @importFrom purrr walk
 #' @importFrom magrittr %>%
 rmPSMHeaders <- function () {
-	old_opt <- options(max.print = 99999, warn = 0)
-	options(max.print = 5000000, warn = 1)
-	on.exit(options(old_opt), add = TRUE)
+	old_opts <- options(warn = 0)
+	options(warn = 1)
+	on.exit(options(old_opts), add = TRUE)
 
 	on.exit(message("Remove PSM headers --- Completed."), add = TRUE)
 
@@ -229,22 +229,27 @@ rmPSMHeaders <- function () {
 
 	batchPSMheader <- function(filelist, TMT_plex) {
 		data_all <- readLines(file.path(dat_dir, filelist))
+		output_prefix <- gsub("\\.csv$", "", filelist)
 
 		pep_seq_rows <- grep("pep_seq", data_all)
-		data_header <- data_all[1 : (pep_seq_rows[1] - 1)]
-		data_header <- gsub("\"", "", data_header, fixed = TRUE)
-
-		output_prefix <- gsub("\\.csv$", "", filelist)
-		write.table(data_header, file.path(dat_dir, "PSM\\cache",
-		            paste0(output_prefix, "_header", ".txt")),
-		            sep = "\t", col.names = FALSE, row.names = FALSE)
-		rm(data_header)
 		
+		local({
+  		data_header <- data_all[1 : (pep_seq_rows[1] - 1)]
+  		data_header <- gsub("\"", "", data_header, fixed = TRUE)
+  
+  		write.table(data_header, file.path(dat_dir, "PSM\\cache",
+  		            paste0(output_prefix, "_header", ".txt")),
+  		            sep = "\t", col.names = FALSE, row.names = FALSE)
+		})
+
 		if (length(pep_seq_rows) > 1) {
-		  data_queries <- data_all[pep_seq_rows[2] : length(data_all)]
-		  data_queries <- gsub("\"", "", data_queries, fixed = TRUE)
-		  writeLines(data_queries, file.path(dat_dir, "PSM\\cache", paste0(output_prefix, "_queries.csv")))
-		  rm(data_queries)
+		  local({
+  		  data_queries <- data_all[pep_seq_rows[2] : length(data_all)]
+  		  data_queries <- gsub("\"", "", data_queries, fixed = TRUE)
+  		  writeLines(data_queries, 
+  		             file.path(dat_dir, "PSM\\cache", paste0(output_prefix, "_queries.csv")))
+  		  prep_queries()
+		  })
 		}
 
 		unassign_hits_row <- grep("Peptide matches not assigned to protein hits", data_all)
@@ -257,7 +262,7 @@ rmPSMHeaders <- function () {
 		}
 	
 		local({
-		  first_line <- data_all[pep_seq_rows[1]+1]
+		  first_line <- data_all[pep_seq_rows[1] + 1]
 		  if (grepl("\"134\"", first_line, fixed = TRUE)) {
 		    mascot_tmtplex <- 16
 		  } else if (grepl("\"131C\"", first_line, fixed = TRUE)) {
@@ -293,6 +298,155 @@ rmPSMHeaders <- function () {
 	}
 
 	purrr::walk(filelist, batchPSMheader, TMT_plex)
+}
+
+
+#' Prepare query files from extended Mascot exports
+prep_queries <- function() {
+  
+  prep_queries_sub <- function(filelist, dat_dir) {
+    fn_prefix <- gsub("\\.[^.]*$", "", filelist)
+    fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filelist)
+    filepath <- file.path(dat_dir, "PSM\\cache")
+  
+    df <- readLines(file.path(dat_dir, "PSM\\cache", filelist))
+  
+    nms <- df[1] %>% stringr::str_split(",") %>% unlist()
+    
+    ind_a <- local({
+      ind <- which(nms == "NumVals")
+      
+      if (purrr::is_empty(ind)) {
+        ind <- which(nms == "StringIons1") - 1
+        if (purrr::is_empty(ind)) {
+          ind <- which(nms == "pep_rank") - 1
+          if (purrr::is_empty(ind)) {
+            stop("Column `StringIons1` or `pep_rank` not found.", call. = FALSE)
+          }
+        } 
+      }
+      
+      return(ind)
+    })
+    
+    nms_a <- nms[1:ind_a]
+    nms_c <- nms %>% 
+      .[(ind_a + 1): length(.)] %>% 
+      .[!grepl("^StringIons", .)]
+    
+    vals <- df[-1] %>% stringr::str_split(",")
+    
+    # before msms `StringIons`
+    vals_a <- vals %>% 
+      purrr::map(`[`, 1:ind_a) %>% 
+      do.call(rbind, .) %>% 
+      data.frame() %>% 
+      `colnames<-`(nms_a) 
+    
+    vals <- vals %>% purrr::map(~ .x[-c(1:ind_a)])
+  
+    # val_msms: ion table
+    try(
+      if ("StringIons1" %in% nms) {
+        val_msms <- vals %>% 
+          purrr::map(~ .x[grepl(":", .x)]) %>% 
+          purrr::map(~ .x[!grepl("^File:", .x)]) %T>% 
+          saveRDS(file.path(filepath, paste0(fn_prefix, "_msms.rds")))         
+      }
+    )
+
+    ## results after str_split:
+    # (1) with non_empty "StringIons1", "StringIons2" and "StringIons3"
+    # e.g. "670.380430:8541", "710.409550:7887",... , "", ""
+    # (2) with empty "StringIons1", "StringIons2" and "StringIons3"
+    # "", "", ""
+    # so entries without msms "StringIons" will have one more column
+    
+    # vals_c: information after `msms` e.g. phopho location probability
+    local({
+      vals_c <- vals %>% 
+        purrr::map(~ .x[!grepl("[0-9]+\\.{0,1}[0-9]*:", .x)]) %>% 
+        purrr::map(~ .x[-length(.x)])
+      
+      min_inds <- vals_c %>% 
+        purrr::map(~ which(nchar(.x) != 0)) %>% 
+        purrr::map(`[`, 1) %>% 
+        purrr::map(~ replace(.x, is.na(.x), 0))
+      
+      vals_c <- purrr::map2(vals_c, min_inds, ~ {
+        .x[.y : length(.x)]
+      }) 
+      
+      vals_c <- vals_c %>% 
+        plyr::ldply(rbind) %>% 
+        `colnames<-`(nms_c)
+
+      vals_ac <- dplyr::bind_cols(vals_a, vals_c)
+      vals_ac[vals_ac == ""] <- NA
+      
+      saveRDS(vals_ac, file.path(filepath, paste0(fn_prefix, "_conf.rds")))
+    })
+  }
+  
+  
+  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+  if (dat_dir == 1) 
+    stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", 
+         call. = FALSE)
+  
+  filepath <- file.path(dat_dir, "PSM\\cache")
+  filelist = list.files(path = filepath, pattern = "^F[0-9]+\\_queries.csv$")
+  
+  if (length(filelist) > 0) {
+    message(paste("Process PSM query files under", filepath))
+    purrr::walk(filelist, prep_queries_sub, dat_dir)
+  }
+}
+
+
+#' Add column "pep_var_mod_conf"
+#' 
+#' @param df A data frame of PSMs
+#' @inheritParams load_expts
+add_mod_conf <- function(df, dat_dir) {
+  dat_file <- unique(df$dat_file)
+  stopifnot(length(dat_file) == 1)
+  
+  filepath <- file.path(dat_dir, "PSM\\cache", paste0(dat_file, "_queries_conf.rds"))
+  
+  if (! file.exists(filepath)) return(df)
+  
+  queries <- readRDS(filepath) %>% 
+    dplyr::filter(!is.na(pep_rank)) %>% 
+    tidyr::unite(uniq_id, c("query_number", "pep_seq"), sep = ".", remove = FALSE)
+  
+  if (! "pep_var_mod_conf" %in% names(queries)) return(df)
+  
+  df <- df %>% 
+    tidyr::unite(uniq_id, c("pep_query", "pep_seq"), sep = ".", remove = FALSE) %>% 
+    dplyr::left_join(queries[, c("uniq_id", "pep_var_mod_conf")], by = "uniq_id")
+
+  df <- df %>% 
+    dplyr::mutate(.n = row_number()) %>% 
+    dplyr::mutate(pep_var_mod_conf = as.numeric(sub("%", "", pep_var_mod_conf))) %>% 
+    dplyr::arrange(-pep_var_mod_conf) %>% 
+    dplyr::group_by(uniq_id) 
+  
+  df_first <- df %>% 
+    dplyr::filter(row_number() == 1) %>% 
+    dplyr::ungroup(uniq_id) %>% 
+    dplyr::arrange(.n) 
+  
+  df_second <- df %>% 
+    dplyr::filter(row_number() == 2) %>% 
+    dplyr::ungroup(uniq_id) %>% 
+    dplyr::arrange(.n) %>% 
+    dplyr::select(uniq_id, pep_var_mod_conf) %>%
+    dplyr::rename(pep_var_mod_conf_2 = pep_var_mod_conf)
+  
+  df <- dplyr::left_join(df_first, df_second, by = "uniq_id") %>% 
+    dplyr::mutate(pep_var_mod_conf_delta = pep_var_mod_conf - pep_var_mod_conf_2) %>% 
+    dplyr::select(-uniq_id, -.n)
 }
 
 
@@ -586,9 +740,11 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
 	TMT_plex <- TMT_plex(label_scheme_full)
 
   filelist = list.files(path = file.path(dat_dir, "PSM\\cache"),
-                        pattern = "^F[0-9]{6}\\_hdr_rm.csv$")
+                        pattern = "^F[0-9]+\\_hdr_rm.csv$")
 
-	if (length(filelist) == 0) stop(paste("No intermediate PSM files under", file.path(dat_dir, "PSM//cache")))
+	if (length(filelist) == 0) 
+	  stop(paste("No intermediate PSM file(s) under", file.path(dat_dir, "PSM//cache")), 
+	       call. = FALSE)
 
   df <- purrr::map(filelist, ~ {
     data <- read.delim(file.path(dat_dir, "PSM\\cache", .x), sep = ',', check.names = FALSE, 
@@ -641,15 +797,31 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   dots <- dots %>% .[! . %in% filter_dots]
   
   message("Primary column keys in `F[...].csv` or `PSM/cache/[...]_hdr_rm.csv`  for `filter_` varargs.")
+  
+  # (1) the same `pep_query` can be assigned to different `pep_seq` at different `pep_rank`
+  # (2) the same combination of `pep_query` and `pep_seq` can be assigned to different
+  #     `prot_acc` (e.g. at "show duplicated peptides" during PSM export)
+  df <- df %>% 
+    tidyr::unite(uniq_id, c("pep_query", "pep_seq"), sep = ".", remove = FALSE) %>% 
+    dplyr::mutate(.n = row_number()) %>% 
+    dplyr::arrange(-prot_matches, -pep_isbold, -prot_mass) %>% 
+    dplyr::filter(!duplicated(uniq_id)) %>% 
+    dplyr::arrange(.n) %>% 
+    dplyr::select(-uniq_id, -.n)
 
+  # remove subset proteins
+  df <- df %>% 
+    dplyr::filter(!is.na(prot_family_member))
+  
   # note that `pep_seq` changed from such as MENGQSTAAK to K.MENGQSTAAK.L
   df <- df %>% 
-    dplyr::mutate(pep_len = str_length(pep_seq)) %>% 
+    dplyr::mutate(pep_len = stringr::str_length(pep_seq)) %>% 
     split(., .$dat_file, drop = TRUE) %>% 
+    purrr::map(add_mod_conf, dat_dir) %>% 
     purrr::map(add_mascot_pepseqmod, use_lowercase_aa) %>% 
-    bind_rows() %>% 
+    dplyr::bind_rows() %>% 
     dplyr::select(-dat_file)
-
+  
   df <- df %>% 
     dplyr::mutate(prot_acc_orig = prot_acc) %>% 
     dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
@@ -735,9 +907,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
       dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
       dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
       dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
-      dplyr::arrange(RAW_File, pep_seq, prot_acc) %>%
-      # a special case of redundant entries from Mascot
-      dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
+      dplyr::arrange(RAW_File, pep_seq, prot_acc) # %>%
+      # dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
   } else {
     df_split <- df %>%
       dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>% 
