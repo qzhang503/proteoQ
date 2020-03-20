@@ -45,7 +45,7 @@ copy_global_fracsmry(dat_dir)
 # ==============================================
 # metadata to workspace
 library(proteoQ)
-load_expts(dat_dir)
+load_expts("~\\proteoQ\\examples")
 
 # PSM standardization
 normPSM(

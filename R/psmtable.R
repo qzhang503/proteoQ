@@ -429,6 +429,7 @@ add_mod_conf <- function(df, dat_dir) {
   df <- df %>% 
     dplyr::mutate(.n = row_number()) %>% 
     dplyr::mutate(pep_var_mod_conf = as.numeric(sub("%", "", pep_var_mod_conf))) %>% 
+    dplyr::mutate(pep_var_mod_conf = pep_var_mod_conf/100) %>% 
     dplyr::arrange(-pep_var_mod_conf) %>% 
     dplyr::group_by(uniq_id) 
   
@@ -445,8 +446,9 @@ add_mod_conf <- function(df, dat_dir) {
     dplyr::rename(pep_var_mod_conf_2 = pep_var_mod_conf)
   
   df <- dplyr::left_join(df_first, df_second, by = "uniq_id") %>% 
-    dplyr::mutate(pep_var_mod_conf_delta = pep_var_mod_conf - pep_var_mod_conf_2) %>% 
-    dplyr::select(-uniq_id, -.n)
+    dplyr::mutate(pep_locdiff = pep_var_mod_conf - pep_var_mod_conf_2) %>% 
+    dplyr::rename(pep_locprob = pep_var_mod_conf) %>% 
+    dplyr::select(-pep_var_mod_conf_2, -uniq_id, -.n)
 }
 
 
@@ -810,9 +812,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
     dplyr::select(-uniq_id, -.n)
 
   # remove subset proteins
-  df <- df %>% 
-    dplyr::filter(!is.na(prot_family_member))
-  
+  df <- df %>% dplyr::filter(!is.na(prot_family_member))
+
   # note that `pep_seq` changed from such as MENGQSTAAK to K.MENGQSTAAK.L
   df <- df %>% 
     dplyr::mutate(pep_len = stringr::str_length(pep_seq)) %>% 
@@ -1724,7 +1725,7 @@ calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_i
     col_start <- which(names(df) == "Modifications") + 1
     col_end <- which(names(df) == "Charge") - 1
     
-    if (!(is_empty(col_start) | is_empty(col_end))) {
+    if (!(is_empty(col_start) || is_empty(col_end))) {
       df <- df %>% dplyr::select(-(col_start : col_end))
     }
     

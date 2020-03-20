@@ -458,13 +458,7 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
 
-  if (is.null(dat_dir)) {
-    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-    if (dat_dir == 1) 
-      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
-  } else {
-    assign("dat_dir", dat_dir, envir = .GlobalEnv)
-  }
+  set_dat_dir(dat_dir)
   
   if (!fs::dir_exists(dat_dir)) {
     new_dat_dir <- fs::path_expand_r(dat_dir)

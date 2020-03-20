@@ -35,8 +35,7 @@ if (!choose_one) {
 # PSM, peptide and protein processing
 # ===================================
 library(proteoQ)
-dat_dir <- "~\\proteoQ\\examples"
-load_expts()
+load_expts("~\\proteoQ\\examples")
 
 # PSM data standardization
 normPSM(
