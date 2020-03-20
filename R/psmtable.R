@@ -415,15 +415,17 @@ add_mod_conf <- function(df, dat_dir) {
   filepath <- file.path(dat_dir, "PSM\\cache", paste0(dat_file, "_queries_conf.rds"))
   
   if (! file.exists(filepath)) return(df)
-  
+
   queries <- readRDS(filepath) %>% 
     dplyr::filter(!is.na(pep_rank)) %>% 
-    tidyr::unite(uniq_id, c("query_number", "pep_seq"), sep = ".", remove = FALSE)
-  
+    tidyr::unite(uniq_id, c("query_number", "pep_seq", "pep_var_mod_pos"), sep = ".", remove = FALSE)
+
   if (! "pep_var_mod_conf" %in% names(queries)) return(df)
   
+  # also possible the same pep_query, pep_seq but different positions of M-Ox etc.
+  # http://www.matrixscience.com/msparser/help/group__duplicates_page.html
   df <- df %>% 
-    tidyr::unite(uniq_id, c("pep_query", "pep_seq"), sep = ".", remove = FALSE) %>% 
+    tidyr::unite(uniq_id, c("pep_query", "pep_seq", "pep_var_mod_pos"), sep = ".", remove = FALSE) %>% 
     dplyr::left_join(queries[, c("uniq_id", "pep_var_mod_conf")], by = "uniq_id")
 
   df <- df %>% 
@@ -801,16 +803,22 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   message("Primary column keys in `F[...].csv` or `PSM/cache/[...]_hdr_rm.csv`  for `filter_` varargs.")
   
   # (1) the same `pep_query` can be assigned to different `pep_seq` at different `pep_rank`
-  # (2) the same combination of `pep_query` and `pep_seq` can be assigned to different
-  #     `prot_acc` (e.g. at "show duplicated peptides" during PSM export)
+  # (2) the same combination of `pep_query`, `pep_seq` and `pep_var_mod_pos` (positional difference) 
+  # can be assigned to different `prot_acc` 
+  if ("pep_start" %in% names(df)) {
+    uniq_by <- c("pep_query", "pep_seq", "pep_var_mod_pos", "pep_start")
+  } else {
+    uniq_by <- c("pep_query", "pep_seq", "pep_var_mod_pos")
+  }
+  
   df <- df %>% 
-    tidyr::unite(uniq_id, c("pep_query", "pep_seq"), sep = ".", remove = FALSE) %>% 
+    tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
     dplyr::mutate(.n = row_number()) %>% 
     dplyr::arrange(-prot_matches, -pep_isbold, -prot_mass) %>% 
     dplyr::filter(!duplicated(uniq_id)) %>% 
     dplyr::arrange(.n) %>% 
     dplyr::select(-uniq_id, -.n)
-
+  
   # remove subset proteins
   df <- df %>% dplyr::filter(!is.na(prot_family_member))
 
