@@ -159,10 +159,19 @@ dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 copy_global_mascot(dat_dir)
 ```
 
-When exporting Mascot PSMs, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. Under `Peptide Match Information`, the options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The inclusion of both `Start` and `End` is recommended and the file name(s) of the exports will be taken as is.
+When exporting Mascot PSMs, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. If the option is set to `1`, the sub-set proteins will be remove during PSM processing. Analogous handling of redundancy will take place with `Include same-set protein hits` being checked.  
+
+Under `Peptide Match Information`, the options of `Header` and `Peptide quantitation` should be checked to include the search parameters and quantitative values. The inclusion of both `Start` and `End` is recommended and the file name(s) of the `.csv` exports should start with letter `F`, followed by and only by digits.
 
 ```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_export <- "images/mascot/mascot_export.png"
+knitr::include_graphics(c(img_export))
+```
+
+In the events of phosphopeptide analyses, the confidence in the variable modification sites can be incorporated into proteoQ reports by checking the `Raw peptide match data` under `Query level information`.  
+
+```{r Mascot_export_ext, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_export <- "images/mascot/mascot_query.png"
 knitr::include_graphics(c(img_export))
 ```
 
@@ -195,11 +204,11 @@ copy_global_fracsmry(dat_dir)
 We now have all the pieces that are required by `proteoQ` in place. Let's have a quick glance at the `expt_smry.xlsx` file. We note that no reference channels were indicated under the column `Reference`. With `proteoQ`, the `log2FC` of each species in a given sample is calculated either (*a*) in relative to the reference(s) within each multiplex TMT experiment or (*b*) to the mean of all samples in the same experiment if reference(s) are absent. Hence, the later approach will be employed to the exemplary data set that we are working with. In this special case, the `mean(log2FC)` for a given species in each TMT experiment is averaged from five `WHIM2` and five `WHIM16` aliquots, which are biologically equivalent across TMT experiments.  
 
 #### 1.1.4 Experiment upload
-As a final step of the setup, we will load the experimental summary into a work space:  
+As a final step of the setup, we will load the experimental summary into a work space:^[The *real* task of data analysis starts from this point. In general, individual modules in proteoQ are self-contained and creations of global variables by users are not recommended. One exception is the setting of `scale_log2r = FALSE`, which will overwrite the system default of `scale_log2r = TRUE` for all modules.]  
 
 ```{r load_proteoQ, include = TRUE, eval = FALSE}
 library(proteoQ)
-load_expts()
+load_expts("~\\proteoQ\\examples")
 ```
 
 ### 1.2 PSM summarization
@@ -233,7 +242,7 @@ Note that at present the `log2FC` of PSMs are always aligned by median centering
 Every time the `normPSM` module is executed, it will process the PSM data from the ground up. In other words, it has no memory on prior happenings. For instance, after inspecting graphically the intensity distributions at `plot_rptr_int = TRUE`, we may consider a new cut-off at `rptr_intco = 0`. The downward in `rptr_intco` is *not* going to cause information loss. This is trivia but worth mentioning here. As we will find out in following sections, utilities in peptide and protein normalization, `standPep` and `standPrn`, do pass information onto successive iterations.  
 
 #### 1.2.2 Outlier samples
-For experiments that are proximate in the quantities of input materials, there might still be unprecedented events that could have caused dipping in the ranges of reporter-ion intensity for certain samples. With proper justification, we might consider excluding the outlier samples from further analysis. The sample removal and PSM re-processing can be achieved by simply deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-execution of `normPSM()`.  
+For experiments that are proximate in the quantities of input materials, there might still be unprecedented events that could have caused dipping in the ranges of reporter-ion intensity for certain samples. With proper justification, we might consider excluding the outlier samples from further analysis. The sample removal and PSM re-processing can be achieved by simply deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`,^[the cell only, not the entire row] followed by the re-execution of `normPSM()`.  
 
 #### 1.2.3 Outlier data entries
 There is a subtle problem when we choose to remove PSM outliers at `rm_outliers = TRUE`. Note that PSM outliers will be assessed at a per-peptide-and-per-sample basis, which can be a slow process for large data sets. To circumvent repeated efforts in finding PSM outliers, we may initially set `rm_outliers = FALSE` and `plot_rptr_int = TRUE` when executing `normPSM()`. This will allow us to first decide on an ultimate threshold of reporter-ion intensity, before proceeding to the more time-consuming procedure in PSM outlier removals.  

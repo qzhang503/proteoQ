@@ -443,7 +443,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
       )
       df %>% filters_in_call(!!!par_filter_dots)
     } else {
-      message("\nNo `filter_` varargs with ", fml_nm, ".")
+      message("\nNo `filter_` varargs with formula `", fml_nm, "`.")
       invisible(df)
     }
   })

@@ -200,7 +200,7 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
 #' @import dplyr purrr rlang  magrittr
 med_summarise_keys <- function(df, id) {
   mascot_median_keys <- c("pep_score", "pep_rank", "pep_isbold", "pep_exp_mr", "pep_delta", 
-                          "pep_exp_mz", "pep_exp_z")
+                          "pep_exp_mz", "pep_exp_z", "pep_locprob", "pep_locdiff")
   mascot_geomean_keys <- c("pep_expect")
   
   df_mascot_med <- df %>% 

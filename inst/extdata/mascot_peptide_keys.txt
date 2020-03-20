@@ -27,7 +27,18 @@ pep_exp_z	"Observed or experimental charge
 "	Cf. `pep_rank`
 pep_delta	pep_exp_mr – pep_calc_mr	Cf. `pep_rank`
 pep_score	Mascot score for PSM	Cf. `pep_rank`
+pep_locprob	The highest probablity from Mascot site analysis for the variable modification sites	Median description from PSMs
+pep_locdiff	pep_locprob – pep_locprob2	Cf. PSM keys
 pep_expect	Expectation value for PSM	Geometric-mean description from PSMs
+pep_mod_protnt	Logical indicating if a sequence Protein N-terminal modification	Cf. `help(normPSM)` from an R console
+pep_mod_protntac	Logical indicating if a sequence contains Protein N-terminal acetylation	v.s.
+pep_mod_pepnt	Logical indicating if a sequence contains N-terminal modification	v.s.
+pep_mod_m	Logical indicating if a sequence contains methionine oxidation	v.s.
+pep_mod_n	Logical indicating if a sequence contains asparagine deamidation	v.s.
+pep_mod_sty	"Logical indicating if a sequence contains the phospholyration of serine, threonine or tyrosine"	v.s.
+pep_mod_pepct	Logical indicating if a sequence contains C-terminal modification	v.s.
+pep_mod_protctam	Logical indicating if a sequence contains Protein C-terminal amidation	v.s.
+pep_mod_protct	Logical indicating if a sequence contains Protein C-terminal modification	v.s.
 gene	Protein gene name	
 acc_type	The type of accession names	
 uniprot_id	Uniprot ID	Cf. PSM keys

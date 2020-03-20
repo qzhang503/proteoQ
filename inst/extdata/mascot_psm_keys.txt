@@ -37,8 +37,10 @@ pep_var_mod_pos	"Variable modifications as a string of digits, e.g. ’0.0001000.0
 pep_summed_mod_pos	"When two variable modifications occur at the same site, a string of digits defining the second mod"	Mascot	
 pep_local_mod_pos	Query-level variable modifications as a string of digits. The names of the mods will be listed in pep_var_mod	Mascot	
 pep_scan_title	Scan title taken from peak list	Mascot	
-pep_len	Number of amino acid residues in a peptide sequence		
 pep_...	Additional peptide keys from Mascot PSM exports	By users	
+pep_len	Number of amino acid residues in a peptide sequence		
+pep_locprob	The highest probablity from Mascot site analysis for the variable modification sites	"The second highest probablity, `pep_locprob2`, not shown directly but summarized under `pep_locdiff`; Cf. `pep_var_mod_conf` from Mascot"	
+pep_locdiff	pep_locprob – pep_locprob2		
 pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf. `prot_n_psm`	
 raw_file	MS file name(s) where peptides or proteins are identified		
 gene	Protein gene name		

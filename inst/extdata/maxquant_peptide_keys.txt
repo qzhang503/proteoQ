@@ -12,6 +12,15 @@ pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf
 pep_isunique	"Peptide sequence is unique at the levels of protein groups, protein IDs or none"	Cf. PSM keys
 pep_start	Ordinal position of first peptide residue in protein sequence	
 pep_end	Mascot: ordinal position of last peptide residue in protein sequence	
+pep_mod_protnt	Logical indicating if a sequence contains Protein N-terminal modification	Cf. `?normPSM` from an R console
+pep_mod_protntac	Logical indicating if a sequence contains Protein N-terminal acetylation	v.s.
+pep_mod_pepnt	Logical indicating if a sequence contains N-terminal modification	v.s.
+pep_mod_m	Logical indicating if a sequence contains methionine oxidation	v.s.
+pep_mod_n	Logical indicating if a sequence contains asparagine deamidation	v.s.
+pep_mod_sty	"Logical indicating if a sequence contains the phospholyration of serine, threonine or tyrosine"	v.s.
+pep_mod_pepct	Logical indicating if a sequence contains C-terminal modification	v.s.
+pep_mod_protctam	Logical indicating if a sequence contains Protein C-terminal amidation	v.s.
+pep_mod_protct	Logical indicating if a sequence contains Protein C-terminal modification	v.s.
 gene	Protein gene name	
 m/z	The mass-over-charge of the precursor ion.	Cf. PSM keys
 acc_type	The type of accession names	Cf. PSM keys

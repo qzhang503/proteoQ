@@ -1084,6 +1084,20 @@ save_call <- function(call_pars, fn) {
 }
 
 
+#' Match global \code{dat_dir}
+#' 
+#' @inheritParams load_expts
+set_dat_dir <- function(dat_dir = NULL) {
+  if (is.null(dat_dir)) {
+    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+    if (dat_dir == 1) 
+      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+  } else {
+    assign("dat_dir", dat_dir, envir = .GlobalEnv)
+  }
+}
+
+
 #' Matches formulas to those in calls to pepSig or prnSig
 #'
 #' @param formulas Language; the formulas in linear modeling.
