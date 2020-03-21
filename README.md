@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-03-20
+2020-03-21
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -177,8 +177,8 @@ checked.
 Under `Peptide Match Information`, the options of `Header` and `Peptide
 quantitation` should be checked to include the search parameters and
 quantitative values. The inclusion of both `Start` and `End` is
-recommended and the file name(s) of the `.csv` exports should start with
-letter `F`, followed by and only by digits.
+recommended and the file name(s) of the `.csv` exports will be taken as
+is.
 
 <img src="images/mascot/mascot_export.png" width="45%" style="display: block; margin: auto;" />
 
@@ -258,7 +258,7 @@ biologically equivalent across TMT experiments.
 #### 1.1.4 Experiment upload
 
 As a final step of the setup, we will load the experimental summary into
-a work space:\[4\]
+a work space:
 
 ``` r
 library(proteoQ)
@@ -299,7 +299,7 @@ normPSM(
 ```
 
 Note that at present the `log2FC` of PSMs are always aligned by median
-centering across samples.\[5\] At `group_psm_by = pep_seq`, PSM entries
+centering across samples.\[4\] At `group_psm_by = pep_seq`, PSM entries
 with the same primary peptide sequence but different variable
 modifications will be grouped for analysis using descriptive statistics.
 In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively
@@ -330,7 +330,7 @@ in the ranges of reporter-ion intensity for certain samples. With proper
 justification, we might consider excluding the outlier samples from
 further analysis. The sample removal and PSM re-processing can be
 achieved by simply deleting the corresponding entries under the column
-`Sample_ID` in `expt_smry.xlsx`,\[6\] followed by the re-execution of
+`Sample_ID` in `expt_smry.xlsx`,\[5\] followed by the re-execution of
 `normPSM()`.
 
 #### 1.2.3 Outlier data entries
@@ -544,7 +544,7 @@ percentile.
 </div>
 
 Quantitative differences greater than 0.5 at a log2 scale is relatively
-large in TMT experiments,\[7\] which can be in part ascribed to a
+large in TMT experiments,\[6\] which can be in part ascribed to a
 phenomenon called peptide co-isolation and co-fragmentation in reporter
 ion-based MS experiments. We might, for instance, perform an additional
 cleanup by removing column-wisely data points with CV greater than 0.5
@@ -692,7 +692,7 @@ peptide `log2FC` and reporter-ion intensity, respectively, for use in
 defining the CV and scaling the `log2FC` across samples. The `log2FC` of
 peptide data will be aligned by `median centering` across samples by
 default. If `method_align = MGKernel` is chosen, `log2FC` will be
-aligned under the assumption of multiple Gaussian kernels.\[8\] The
+aligned under the assumption of multiple Gaussian kernels.\[7\] The
 companion parameter `n_comp` defines the number of Gaussian kernels and
 `seed` set a seed for reproducible fittings. Additional parameters, such
 as, `maxit` and `epsilon`, are defined in and for use with
@@ -710,7 +710,7 @@ some helps from the `pepHist` utility in the immediately following.
 The `pepHist` utility plots the histograms of peptide `log2FC`. It
 further bins the data by their contributing reporter-ion intensity. In
 the examples shown below, we compare the `log2FC` profiles of peptides
-with and without scaling normalization:\[9\]
+with and without scaling normalization:\[8\]
 
 ``` r
 # without scaling
@@ -789,8 +789,8 @@ adjustment may cause artifacts when the standard deviation across
 samples are genuinely different. I typically test `scale_log2r` at both
 `TRUE` and `FALSE`, then make a choice in data scaling together with my
 a priori knowledge of the characteristics of both samples and
-references.\[10\] We will use the same data set to illustrate the
-impacts of reference selections in scaling normalization in [Lab
+references.\[9\] We will use the same data set to illustrate the impacts
+of reference selections in scaling normalization in [Lab
 3.1](###%203.1%20Reference%20choices).
 
 ##### 1.3.4.2 Side effects
@@ -964,7 +964,7 @@ every time we invoke `standPep`.
 Just like `col_select` and `filter_` in `pepHist`, the combination in
 *fixed* argument `col_select` and *variable* argument `slice_` can lead
 to features in versatile data processing. Several working examples are
-detailed and can be accessed via `?standPep` and `?standPrn`.\[11\]
+detailed and can be accessed via `?standPep` and `?standPrn`.\[10\]
 
 ##### 1.3.7 Housekeepers
 
@@ -996,7 +996,7 @@ rows available for the samples linked to `col_select`, after slicing out
 GAPDH\! The number of data points is too scare for fitting the selected
 samples against a 3-component Gaussian. A more detailed working example
 can also be found via `?standPep` where you would probably agree that
-GAPDH is actually not a good normalizer for the data set.\[12\]
+GAPDH is actually not a good normalizer for the data set.\[11\]
 
 #### 1.3.8 purgePep
 
@@ -1903,7 +1903,7 @@ Note that there is a second `vararg` expression,
 `exprs(start_with_str("hs", term))`. In this expression, we have used a
 pseudonym approach to subset terms starting with character string `hs`
 under the column `term` in `GSPA` result files, which corresponds to
-human gene sets for both GO and KEGG.\[13\] More examples of the
+human gene sets for both GO and KEGG.\[12\] More examples of the
 pseudonym approach can be found from [Lab
 3.2](###%203.2%20Data%20subsets) in this document. More examples of the
 utility can be found via `?prnGSPAHM`.
@@ -2555,7 +2555,7 @@ Note that we have applied the new grammar of `contain_chars_in("sty",
 pep_seq_mod)` to extract character strings containing lower-case letters
 ‘s’, ‘t’ or ‘y’ under the `pep_seq_mod` column in `Peptide.txt`. This
 corresponds to the subsettting of peptides with phosphorylation(s) in
-serine, thereonine or tyrosine.\[14\]
+serine, thereonine or tyrosine.\[13\]
 
 <div class="figure" style="text-align: left">
 
@@ -3283,43 +3283,37 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
     `extract_psm_raws(dat_dir)` was developed to extract the list of RAW
     files that are actually present in PSM files.
 
-4.  The *real* task of data analysis starts from this point. In general,
-    individual modules in proteoQ are self-contained and creations of
-    global variables by users are not recommended. One exception is the
-    setting of `scale_log2r = FALSE`, which will overwrite the system
-    default of `scale_log2r = TRUE` for all modules.
-
-5.  A slightly more thoughtful way to align PSM data might involve back
+4.  A slightly more thoughtful way to align PSM data might involve back
     propagation. For example after protein normalization, we apply the
     same offsets to back calculate peptide and then PSM `log2FC`.
 
-6.  the cell only, not the entire row
+5.  the cell only, not the entire row
 
-7.  On top of technical variabilities, the ranges of CV may be further
+6.  On top of technical variabilities, the ranges of CV may be further
     subject to the choice of reference materials. Examples are available
     in Lab 3.1.
 
-8.  Density kernel estimates can occasionally capture spikes in the
+7.  Density kernel estimates can occasionally capture spikes in the
     profiles of log2FC during data alignment. Users will need to inspect
     the alignment of ratio histograms and may optimize the data
     normalization in full with different combinations of tuning
     parameters or in part against a subset of samples, before proceeding
     to the next steps.
 
-9.  `standPep()` will report log2FC results both before and after the
+8.  `standPep()` will report log2FC results both before and after the
     scaling of standard deviations.
 
-10. The default is `scale_log2r = TRUE` throughout the package. When
+9.  The default is `scale_log2r = TRUE` throughout the package. When
     calling functions involved parameter `scale_log2r`, users can
     specify explicitly `scale_log2r = FALSE` if needed, or more
     preferably define its value under the global environment.
 
-11. A lab section is under construction.
+10. A lab section is under construction.
 
-12. A lab is under construction.
+11. A lab is under construction.
 
-13. This will work as GO terms of human start with `hs_` and KEGG terms
+12. This will work as GO terms of human start with `hs_` and KEGG terms
     with `hsa`.
 
-14. Details on the notation of peptide modifications can be found via
+13. Details on the notation of peptide modifications can be found via
     `?normPSM`.

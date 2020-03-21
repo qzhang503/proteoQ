@@ -1084,17 +1084,47 @@ save_call <- function(call_pars, fn) {
 }
 
 
-#' Match global \code{dat_dir}
+#' Set global \code{dat_dir}
 #' 
 #' @inheritParams load_expts
 set_dat_dir <- function(dat_dir = NULL) {
   if (is.null(dat_dir)) {
-    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-    if (dat_dir == 1) 
-      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+    dat_dir <- get_gl_dat_dir()
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
+  
+  if (!fs::dir_exists(dat_dir)) {
+    new_dat_dir <- fs::path_expand_r(dat_dir)
+    new_dat_dir2 <- fs::path_expand(dat_dir)
+    
+    if (fs::dir_exists(new_dat_dir)) {
+      dat_dir <- new_dat_dir
+      assign("dat_dir", dat_dir, envir = .GlobalEnv)
+      cat("dat_dir <- \"", dat_dir, "\"", sep = "")
+    } else if (fs::dir_exists(new_dat_dir2)) {
+      dat_dir <- new_dat_dir2
+      assign("dat_dir", dat_dir, envir = .GlobalEnv)
+      cat("dat_dir <- \"", dat_dir, "\"", sep = "")
+    } else {
+      stop(dat_dir, " not existed.", call. = FALSE)
+    }
+  }
+
+  invisible(dat_dir)
+}
+
+
+#' Fetch global \code{dat_dir}
+get_gl_dat_dir <- function () {
+  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+  if (dat_dir == 1) {
+    stop("Unknown working directory; 
+         run `load_expts(\"my\\\\fabulous\\\\working\\\\directory\")` first.", 
+         call. = FALSE)
+  }
+  
+  invisible(dat_dir)
 }
 
 
