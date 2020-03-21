@@ -24,11 +24,7 @@ prep_label_scheme <- function(dat_dir, filename) {
 	  ok <- (!is.na(x)) & (x != FALSE) & (x != 0)
 	}
 	
-	
-	if (is.null(dat_dir)) dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv),
-	                                         error = function(e) 1)
-
-	if (dat_dir == 1) stop("Set up the working directory first.", call. = FALSE)
+	if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
 
 	if (!file.exists(file.path(dat_dir, filename)))
 	  stop(filename, " not found under '", dat_dir, "'.")
@@ -37,12 +33,12 @@ prep_label_scheme <- function(dat_dir, filename) {
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
 	if (fn_suffix %in% c("xls", "xlsx")) {
-		label_scheme_full <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Setup") %>%
-												dplyr::filter(rowSums(!is.na(.)) > 0)
+		label_scheme_full <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Setup") %>% 
+		  dplyr::filter(rowSums(!is.na(.)) > 0)
 	} else if (fn_suffix == "csv") {
-		label_scheme_full <- read.csv(file.path(dat_dir, filename), check.names = TRUE,
-		                              header = TRUE, comment.char = "#", na.strings = c("", "NA")) %>%
-												dplyr::filter(rowSums(!is.na(.)) > 0)
+		label_scheme_full <- read.csv(file.path(dat_dir, filename), check.names = TRUE, 
+		                              header = TRUE, comment.char = "#", na.strings = c("", "NA")) %>% 
+		  dplyr::filter(rowSums(!is.na(.)) > 0)
 	} else {
 		stop(filename, " needs to be '.xls' or '.xlsx'.")
 	}
@@ -55,7 +51,8 @@ prep_label_scheme <- function(dat_dir, filename) {
 	  dplyr::filter(is.na(TMT_Set)|is.na(LCMS_Injection))
 	
 	if (nrow(check_tmt126) > 0) {
-	  stop("`TMT_Set` and/or `LCMS_Injection` indexes corresponding to `TMT-126` in `expt_smry.xlsx` cannot be empty.", 
+	  stop("The indexes of `TMT_Set` and/or `LCMS_Injection`  
+	       corresponding to the `TMT-126` rows in `expt_smry.xlsx` cannot be empty.", 
 	       call. = FALSE)
 	}
 	rm(check_tmt126)
@@ -458,26 +455,7 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
 
-  set_dat_dir(dat_dir)
-  
-  if (!fs::dir_exists(dat_dir)) {
-    new_dat_dir <- fs::path_expand_r(dat_dir)
-    new_dat_dir2 <- fs::path_expand(dat_dir)
-    
-    if (fs::dir_exists(new_dat_dir)) {
-      dat_dir <- new_dat_dir
-      assign("dat_dir", dat_dir, envir = .GlobalEnv)
-      cat("dat_dir <- \"", dat_dir, "\"", sep = "")
-    } else if (fs::dir_exists(new_dat_dir2)) {
-      dat_dir <- new_dat_dir2
-      assign("dat_dir", dat_dir, envir = .GlobalEnv)
-      cat("dat_dir <- \"", dat_dir, "\"", sep = "")
-    } else {
-      stop(dat_dir, " not existed.", call. = FALSE)
-    }
-    
-    rm(new_dat_dir, new_dat_dir2)
-  }
+  dat_dir <- set_dat_dir(dat_dir)
 
   prep_label_scheme(dat_dir, expt_smry)
   prep_fraction_scheme(dat_dir, frac_smry)
