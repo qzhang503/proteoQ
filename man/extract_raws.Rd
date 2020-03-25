@@ -4,10 +4,13 @@
 \alias{extract_raws}
 \title{Extract RAW MS file names}
 \usage{
-extract_raws(raw_dir = NULL)
+extract_raws(raw_dir = NULL, dat_dir = NULL)
 }
 \arguments{
 \item{raw_dir}{A character string to the directory of MS data.}
+
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
 }
 \description{
 Extract a list of \code{RAW} file names that can be passed to \code{frac_smry.xlsx}

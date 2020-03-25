@@ -158,11 +158,26 @@ pepPCA(
   filename = my_theme.png,
 )
 
-## Not run: 
+## direct uses of ggplot2
+library(ggplot2)
+res <- prnPCA(filename = default.png)
+
+# names(res)
+
+p <- ggplot(res$pca) +
+  geom_point(aes(x = Coordinate.1, y = Coordinate.2, colour = Color, shape = Shape, alpha = Alpha), 
+             size = 4, stroke = 0.02) + 
+  labs(title = "", x = paste0("PC1 (", res$var[1], ")"), y = paste0("PC2 (", res$var[2], ")")) +
+  coord_fixed() + 
+  geom_text(aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID), color = "gray", size = 1)
+
+ggsave(file.path(dat_dir, "Protein\\PCA\\my_ggplot2.png"))
+
+\dontrun{
 prnPCA(
   col_color = "column_key_not_existed",
   col_shape = "another_missing_column_key"
-)
-## End(Not run)
+)  
+}
 }
 

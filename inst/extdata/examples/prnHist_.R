@@ -109,7 +109,36 @@ pepHist(
   filename = bi1_dark.png,
 )
 
-## Not run: 
+
+## direct uses of ggplot2
+library(ggplot2)
+res <- pepHist(filename = default.png)
+
+# names(res)
+
+p <- ggplot() +
+  geom_histogram(data = res$raw, aes(x = value, y = ..count.., fill = Int_index),
+                 color = "white", alpha = .8, binwidth = .05, size = .1) +
+  scale_fill_brewer(palette = "Spectral", direction = -1) +
+  labs(title = "", x = expression("Ratio (" * log[2] * ")"), y = expression("Frequency")) +
+  scale_x_continuous(limits = c(-2, 2), breaks = seq(-2, 2, by = 1),
+                     labels = as.character(seq(-2, 2, by = 1))) +
+  scale_y_continuous(limits = NULL) + 
+  facet_wrap(~ Sample_ID, ncol = 5, scales = "fixed") # + 
+  # my_histo_theme
+
+p <- p + 
+  geom_line(data = res$fitted, mapping = aes(x = x, y = value, colour = variable), size = .2) +
+  scale_colour_manual(values = c("gray", "gray", "gray", "black"), name = "Gaussian",
+                      breaks = c(c("G1", "G2", "G3"), paste(c("G1", "G2", "G3"), collapse = " + ")),
+                      labels = c("G1", "G2", "G3", "G1 + G2 + G3"))
+
+p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
+
+ggsave(file.path(dat_dir, "Peptide\\Histogram\\my_ggplot2.png"), 
+       width = 22, height = 48, limitsize = FALSE)
+
+\dontrun{
 # sample selection
 pepHist(
   col_select = "a_column_key_not_in_`expt_smry.xlsx`",
@@ -122,7 +151,6 @@ pepHist(
 
 prnHist(
   lhs_not_start_with_filter_ = exprs(n_psm >= 5),
-)
-
-## End(Not run)  
+)  
+}
 }

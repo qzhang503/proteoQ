@@ -1088,29 +1088,26 @@ save_call <- function(call_pars, fn) {
 #' 
 #' @inheritParams load_expts
 set_dat_dir <- function(dat_dir = NULL) {
-  if (is.null(dat_dir)) {
-    dat_dir <- get_gl_dat_dir()
-  } else {
-    assign("dat_dir", dat_dir, envir = .GlobalEnv)
-  }
-  
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+
   if (!fs::dir_exists(dat_dir)) {
     new_dat_dir <- fs::path_expand_r(dat_dir)
     new_dat_dir2 <- fs::path_expand(dat_dir)
     
     if (fs::dir_exists(new_dat_dir)) {
       dat_dir <- new_dat_dir
-      assign("dat_dir", dat_dir, envir = .GlobalEnv)
-      cat("dat_dir <- \"", dat_dir, "\"", sep = "")
     } else if (fs::dir_exists(new_dat_dir2)) {
       dat_dir <- new_dat_dir2
-      assign("dat_dir", dat_dir, envir = .GlobalEnv)
-      cat("dat_dir <- \"", dat_dir, "\"", sep = "")
     } else {
       stop(dat_dir, " not existed.", call. = FALSE)
     }
   }
 
+  nm <- names(formals())[1]
+  
+  assign(nm, dat_dir, envir = .GlobalEnv)
+  message(nm, "<- \"", dat_dir, "\"")
+  
   invisible(dat_dir)
 }
 
