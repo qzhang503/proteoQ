@@ -5,7 +5,7 @@
 #' @import dplyr tidyr purrr openxlsx
 #' @importFrom magrittr %>%
 #' @importFrom readxl read_excel
-prep_label_scheme <- function(dat_dir, filename) {
+prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 
 	my_channels <- function (x) {
 		x <- as.character(x)
@@ -46,25 +46,30 @@ prep_label_scheme <- function(dat_dir, filename) {
 	label_scheme_full <- label_scheme_full %>% 
 	  dplyr::mutate(Sample_ID = ifelse(grepl("^Empty\\.[0-9]+", Sample_ID), NA, Sample_ID))
 	
-	check_tmt126 <- label_scheme_full %>% 
-	  dplyr::filter(TMT_Channel == "TMT-126") %>% 
-	  dplyr::filter(is.na(TMT_Set)|is.na(LCMS_Injection))
-	
-	if (nrow(check_tmt126) > 0) {
-	  stop("The indexes of `TMT_Set` and/or `LCMS_Injection`  
-	       corresponding to the `TMT-126` rows in `expt_smry.xlsx` cannot be empty.", 
-	       call. = FALSE)
-	}
-	rm(check_tmt126)
+	local({
+  	check_tmt126 <- label_scheme_full %>% 
+  	  dplyr::filter(TMT_Channel == "TMT-126" | TMT_Channel == "126") %>% 
+  	  dplyr::filter(is.na(TMT_Set)|is.na(LCMS_Injection))
+  	
+  	if (nrow(check_tmt126) > 0) {
+  	  stop("The indexes of `TMT_Set` and/or `LCMS_Injection`  
+  	       corresponding to the `TMT-126` rows in `expt_smry.xlsx` cannot be empty.", 
+  	       call. = FALSE)
+  	}
+	})
 
-	must_have <- c("TMT_Channel", "TMT_Set", "LCMS_Injection", "RAW_File",
-								"Sample_ID", "Reference")
-
-	missing_cols <- must_have[!must_have %in% names(label_scheme_full)]
-	if (length(missing_cols) > 0) {
-		purrr::walk(missing_cols, ~ cat(paste0("\'", ., "\' must be present in \'", filename, "\'\n")))
-		stop("Not all required columns are present in \'", filename, "\'", call. = TRUE)
-	}
+	local({
+  	must_have <- c("TMT_Channel", "TMT_Set", "LCMS_Injection", "RAW_File",
+  								"Sample_ID", "Reference")
+  	
+  	missing_cols <- must_have %>%  .[! . %in% names(label_scheme_full)]
+  	
+  	if (!purrr::is_empty(missing_cols)) {
+  	  purrr::walk(missing_cols, 
+  	              ~ cat(paste0("\'", ., "\' must be present in \'", filename, "\'\n")))
+  	  stop("Not all required columns are present in \'", filename, "\'", call. = FALSE)
+  	}
+	})
 
 	default_names <- c("Select", "Group", "Order", "Fill",  "Color", "Shape", "Size", "Alpha", "Peptide_Yield")
 
@@ -76,85 +81,103 @@ prep_label_scheme <- function(dat_dir, filename) {
 	}, label_scheme_full)
 
 	# a case of label-free data
-	if (dplyr::n_distinct(label_scheme_full$TMT_Channel) == 1) label_scheme_full$TMT_Channel <- NA
+	if (dplyr::n_distinct(label_scheme_full$TMT_Channel) == 1) 
+	  label_scheme_full$TMT_Channel <- NA
 
 	TMT_plex <- TMT_plex(label_scheme_full)
 	TMT_levels <- TMT_levels(TMT_plex)
+	
+	if (TMT_plex == 10) {
+	  label_scheme_full <- label_scheme_full %>% 
+	    dplyr::mutate(TMT_Channel = gsub("131N", "131", TMT_Channel))
+	}
 
 	label_scheme_full <- label_scheme_full %>% 
-	  dplyr::mutate_at(vars(c("TMT_Channel")), ~ my_channels(.x)) %>% 
 	  dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% 
+	  dplyr::mutate_at(vars(c("TMT_Channel")), ~ my_channels(.x)) %>% 
 	  dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
 		dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File, ignore.case = TRUE)) %>% # Bruker
 	  dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
 	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ as.numeric(.x)) %>%
 	  dplyr::mutate_at(vars(one_of("Peptide_Yield")), ~ round(.x, digits = 2)) %>%
 	  tidyr::fill(one_of("TMT_Set", "LCMS_Injection", "RAW_File")) %>%
+	  
+	  tidyr::complete(TMT_Set, LCMS_Injection, TMT_Channel) %>%
+	  tidyr::fill(one_of("TMT_Set", "LCMS_Injection", "RAW_File")) %>% 
+	  dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
+	  
 	  dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
 	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 
 	# add IDs to unused TMT channels
-	label_scheme_empty <- label_scheme_full %>%
-		dplyr::select(TMT_Channel, TMT_Set, Sample_ID) %>%
-		tidyr::unite(key, TMT_Channel, TMT_Set, remove = TRUE) %>%
-		dplyr::filter(!duplicated(key)) %>%
-		dplyr::mutate(Sample_ID = replace_na_smpls(Sample_ID, "Empty"))
-
-	label_scheme_full <- label_scheme_full %>%
-		tidyr::unite(key, TMT_Channel, TMT_Set, remove = FALSE) %>%
-		dplyr::select(-Sample_ID) %>%
-		dplyr::left_join(label_scheme_empty, by = "key") %>%
-		dplyr::select(-key) %>%
-		dplyr::mutate(Sample_ID = factor(Sample_ID))
-	  
-	label_scheme_full <- dplyr::bind_cols(
-	  label_scheme_full %>% dplyr::select(Sample_ID), 
-	  label_scheme_full %>% dplyr::select(-Sample_ID))
-
-	rm(label_scheme_empty)
-
-	# check the completeness of TMT_Channel
-	check_tmt <- label_scheme_full %>%
-		tidyr::complete(TMT_Set, LCMS_Injection, TMT_Channel) %>%
-		dplyr::filter(is.na(RAW_File)) %>%
-		dplyr::group_by(TMT_Set, LCMS_Injection) %>%
-		dplyr::mutate(n = n()) %>%
-		dplyr::filter(n != TMT_plex)
-
-	if (nrow(check_tmt) > 0) {
-		check_tmt %>%
-			dplyr::select(TMT_Set, LCMS_Injection, TMT_Channel) %>%
-			print()
-	  
-	  stop("`", check_tmt$TMT_Channel, "` not found under set ", check_tmt$TMT_Set, 
-	          " injection ", check_tmt$LCMS_Injection, ".", 
-	          "\n(Use `TMT-131`, instead of `TMT-131N`, for 10-plex experiment(s).)", 
-	          call. = FALSE)
-	}
+	label_scheme_full <- local({
+  	label_scheme_empty <- label_scheme_full %>%
+  		dplyr::select(TMT_Channel, TMT_Set, Sample_ID) %>%
+  		tidyr::unite(key, TMT_Channel, TMT_Set, remove = TRUE) %>%
+  		dplyr::filter(!duplicated(key)) %>%
+  		dplyr::mutate(Sample_ID = replace_na_smpls(Sample_ID, "Empty"))
+  
+  	label_scheme_full <- label_scheme_full %>%
+  		tidyr::unite(key, TMT_Channel, TMT_Set, remove = FALSE) %>%
+  		dplyr::select(-Sample_ID) %>%
+  		dplyr::left_join(label_scheme_empty, by = "key") %>%
+  		dplyr::select(-key) %>%
+  		dplyr::mutate(Sample_ID = factor(Sample_ID))
+  	  
+  	label_scheme_full <- dplyr::bind_cols(
+  	  label_scheme_full %>% dplyr::select(Sample_ID), 
+  	  label_scheme_full %>% dplyr::select(-Sample_ID))
+	})
+	
+	# may be deleted: check the completeness of TMT_Channel
+	# (RAW_File is either all NA or all filled)
+	local({
+  	check_tmt <- label_scheme_full %>%
+  		tidyr::complete(TMT_Set, LCMS_Injection, TMT_Channel) %>%
+  		dplyr::filter(is.na(RAW_File)) %>%
+  		dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+  		dplyr::mutate(n = n()) %>%
+  		dplyr::filter(n != TMT_plex)
+  
+  	if (nrow(check_tmt) > 0) {
+  		check_tmt %>%
+  			dplyr::select(TMT_Set, LCMS_Injection, TMT_Channel) %>%
+  			print()
+  	  
+  	  stop("`", check_tmt$TMT_Channel, "` not found under set ", check_tmt$TMT_Set, 
+  	          " injection ", check_tmt$LCMS_Injection, ".", 
+  	          "\n(Use `TMT-131`, instead of `TMT-131N`, for 10-plex experiment(s).)", 
+  	          call. = FALSE)
+  	}
+	})
 
 	# check the uniqueness of RAW_File per TMT_Set and LCMS_Injection
-	check_fn <- label_scheme_full %>%
-		dplyr::group_by(TMT_Set, LCMS_Injection) %>%
-		dplyr::summarise(count = n_distinct(RAW_File)) %>%
-		dplyr::filter(count > 1) %>%
-		dplyr::select(-count)
-
-	if (nrow(check_fn) > 0) {
-		check_fn %>% print()
-		stop("More than one RAW filename in the above combination of TMT sets and LCMS injections.")
-	}
+	local({
+  	check_fn <- label_scheme_full %>%
+  		dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+  		dplyr::summarise(count = n_distinct(RAW_File)) %>%
+  		dplyr::filter(count > 1) %>%
+  		dplyr::select(-count)
+  
+  	if (nrow(check_fn) > 0) {
+  		check_fn %>% print()
+  		stop("More than one RAW filename in the above combination of TMT sets and LCMS injections.")
+  	}	  
+	})
 
 	# check the uniqueness of Sample_ID
-	check_smpls <- label_scheme_full %>%
-		dplyr::group_by(TMT_Set, LCMS_Injection) %>%
-		dplyr::summarise(count = n_distinct(Sample_ID)) %>%
-		dplyr::filter(count != TMT_plex)
-
-	if (nrow(check_smpls) > 0 & TMT_plex > 0) {
-		check_smpls %>% print()
-		stop(paste("Need", TMT_plex,
-		           "unique samples in the above combination of TMT sets and LCMS injections." ))
-	}
+	local({
+  	check_smpls <- label_scheme_full %>%
+  		dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+  		dplyr::summarise(count = n_distinct(Sample_ID)) %>%
+  		dplyr::filter(count != TMT_plex)
+  
+  	if (nrow(check_smpls) > 0 & TMT_plex > 0) {
+  		check_smpls %>% print()
+  		stop(paste("Need", TMT_plex,
+  		           "unique samples in the above combination of TMT sets and LCMS injections." ))
+  	}	  
+	})
 
 	save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.rda"))
 
@@ -173,11 +196,8 @@ prep_label_scheme <- function(dat_dir, filename) {
 #' @import dplyr purrr tidyr openxlsx
 #' @importFrom magrittr %>%
 #' @importFrom readxl read_excel
-prep_fraction_scheme <- function(dat_dir, filename) {
-	if (is.null(dat_dir))
-	  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-
-	if (dat_dir == 1) stop("Set up the working directory first.")
+prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
+	if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
 
 	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -194,6 +214,50 @@ prep_fraction_scheme <- function(dat_dir, filename) {
 			stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
 		}
 	  
+	  local({
+	    load(file.path(dat_dir, "label_scheme_full.rda"))
+	    
+	    expt_raws <- label_scheme_full %>% 
+	      dplyr::select(RAW_File) %>% 
+	      filter(!duplicated(RAW_File)) %>% 
+	      dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File)) %>% 
+	      dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
+	      unlist()
+	    
+	    frac_raws <- fraction_scheme %>% 
+	      dplyr::select(RAW_File) %>% 
+	      filter(!duplicated(RAW_File)) %>% 
+	      dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File)) %>% 
+	      dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
+	      unlist()
+	    
+	    # deleted by users
+	    if (any(is.na(frac_raws))) {
+	      try(unlink(file.path(dat_dir, filename)))
+	      try(unlink(file.path(dat_dir, "fraction_scheme.rda")))
+	      stop("`RAW_File` in ", filename, " cannot be NA.", call. = FALSE)
+	    }
+	    
+	    # no prefractionation if any non-NA values in expt_smry.xlsx
+	    if (!all(is.na(expt_raws))) {
+	      not_oks <- frac_raws %>% .[! . %in% expt_raws]
+	      
+	      if (!purrr::is_empty(not_oks)) {
+	        n_fracs <- fraction_scheme$Fraction %>% unique() 
+	        
+	        # no prefractionation
+	        if (n_fracs == 1) {
+	          try(unlink(file.path(dat_dir, filename)))
+	          try(unlink(file.path(dat_dir, "fraction_scheme.rda")))
+	        }
+	        
+	        stop("`RAW_File` entries in `frac_smry.xlsx` not found in `expt_smry.xlsx`: \n", 
+	             purrr::reduce(not_oks, paste, sep = ", "), 
+	             "\nCheck `RAW_File` and run `load_expts(...) again.`", call. = FALSE)
+	      }
+	    }
+	  })
+
 	  fraction_scheme <- fraction_scheme %>% 
 	    tidyr::fill(TMT_Set, LCMS_Injection) %>% 
 	    dplyr::group_by(TMT_Set, LCMS_Injection) %>% 
@@ -210,7 +274,9 @@ prep_fraction_scheme <- function(dat_dir, filename) {
  	  load(file = file.path(dat_dir, "label_scheme_full.rda"))
  	  
  	  # in case forget to enter RAW_File names
- 	  if (anyNA(label_scheme_full$RAW_File)) stop("Enter RAW file names in the experimental summary file")
+ 	  if (anyNA(label_scheme_full$RAW_File)) 
+ 	    stop("File name(s) of RAW MS data not found under the column `RAW_File` in `expt_smry.xlsx`.", 
+ 	         call. = FALSE)
 
 		fraction_scheme <- label_scheme_full %>%
 			dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
@@ -503,7 +569,7 @@ channelInfo <- function (label_scheme, set_idx) {
 	ref <- label_scheme_sub$Reference
 
 	empty_channel_sub <- is.na(label_scheme_sub$Sample_ID) |
-	  grepl("^Empty|^Outlier", label_scheme_sub$Sample_ID, ignore.case = TRUE)
+	  grepl("^Empty", label_scheme_sub$Sample_ID, ignore.case = TRUE)
 
 	label_scheme_sub <- !empty_channel_sub
 

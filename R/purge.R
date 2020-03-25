@@ -286,9 +286,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   if (!rlang::is_empty(filter_dots)) warning("No data filtration by `filter_` varargs.", call. = FALSE)
   
   if (is.null(dat_dir)) {
-    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-    if (dat_dir == 1) 
-      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+    dat_dir <- get_gl_dat_dir()
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
@@ -488,9 +486,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   }
   
   if (is.null(dat_dir)) {
-    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-    if (dat_dir == 1) 
-      stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
+    dat_dir <- get_gl_dat_dir()
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }

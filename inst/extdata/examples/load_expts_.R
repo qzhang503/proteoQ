@@ -117,3 +117,15 @@ pepSig(
 prnSig(impute_na = TRUE)
 
 }
+
+\dontrun{
+load_expts(dat_dir = "~\\proteoQ\\examples", expt_smry = "expt_smry.xlsx")
+
+# not working; `expt_smry = my_expt` is an expression
+my_expt <- "expt_smry.xlsx"
+load_expts(dat_dir = "~\\proteoQ\\examples", expt_smry = my_expt)
+
+# need unquoting; 
+# see also: https://dplyr.tidyverse.org/articles/programming.html
+load_expts(dat_dir = "~\\proteoQ\\examples", expt_smry = !!my_expt)
+}

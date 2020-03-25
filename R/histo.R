@@ -53,9 +53,11 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 	if (is.null(height)) height <- length(label_scheme_sub$Sample_ID) * 4 / ncol
 	if (is.null(scales)) scales <- "fixed"
   
+	ylimits <- eval(dots$ylimits, env = caller_env()) 
+	
 	dots <- dots %>% 
     .[! names(.) %in% c("xmin", "xmax", "xbreaks", "binwidth", "ncol", "alpha", 
-                        "width", "height", "scales")]
+                        "width", "height", "scales", "ylimits")]
 
 	filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
 	arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
@@ -181,11 +183,12 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 		labs(title = "", x = x_label, y = expression("Frequency")) +
 		scale_x_continuous(limits = c(xmin, xmax), breaks = seq(xmin, xmax, by = xbreaks),
 		                   labels = as.character(seq(xmin, xmax, by = xbreaks))) +
+	  scale_y_continuous(limits = ylimits) + 
 		facet_wrap(~ Sample_ID, ncol = ncol, scales = scales) + 
 	  theme
 
-	if (show_curves) p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable),
-	                                   size = .2) +
+	if (show_curves) p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable), 
+	                                    size = .2) +
 											scale_colour_manual(values = myPalette, name = "Gaussian",
 											                    breaks = c(nm_comps, paste(nm_comps, collapse = " + ")),
 											                    labels = nm_full)
@@ -195,6 +198,11 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), 
 	             width = width, height = height, limitsize = FALSE, dots)
 	do.call(ggsave, gg_args)
+	
+	readr::write_tsv(df_melt, file.path(filepath, gsub("\\.[^.]*$", "_raw.txt", filename)))
+	readr::write_tsv(fit, file.path(filepath, gsub("\\.[^.]*$", "_fitted.txt", filename)))
+
+	invisible(list(raw = df_melt, fitted = fit))
 }
 
 
@@ -363,7 +371,8 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'
 #'@example inst/extdata/examples/prnHist_.R
 #'
-#'@return Histograms of \code{log2FC}
+#'@return Histograms of \code{log2FC}; raw histogram data: \code{[...]_raw.txt};
+#'  fitted data for curves: \code{[...]_fitted.txt}
 #'@export
 prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 

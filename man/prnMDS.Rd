@@ -358,12 +358,26 @@ pepMDS(
   filename = my_theme.png,
 )
 
-## Not run: 
+## direct uses of ggplot2
+library(ggplot2)
+res <- prnMDS(filename = default.png)
+
+p <- ggplot(res) +
+  geom_point(aes(x = Coordinate.1, y = Coordinate.2, colour = Color, shape = Shape, alpha = Alpha), 
+             size = 4, stroke = 0.02) + 
+  labs(title = "", x = expression("Coordinate 1"), y = expression("Coordinate 2")) +
+  coord_fixed() + 
+  geom_text(aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID), color = "gray", size = 1)
+
+ggsave(file.path(dat_dir, "Protein\\\\MDS\\\\my_ggplot2.png"))
+
+
+\dontrun{
 prnMDS(
   col_color = "column_key_not_existed",
   col_shape = "another_missing_column_key"
-)
-## End(Not run)  
+)  
+}
 }
 }
 \seealso{

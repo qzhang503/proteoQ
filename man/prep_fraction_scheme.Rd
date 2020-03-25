@@ -4,7 +4,7 @@
 \alias{prep_fraction_scheme}
 \title{Loads the information of analyte prefractionation}
 \usage{
-prep_fraction_scheme(dat_dir, filename)
+prep_fraction_scheme(dat_dir = NULL, filename = "frac_smry.xlsx")
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to

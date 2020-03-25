@@ -4,7 +4,7 @@
 \alias{prep_label_scheme}
 \title{Processes the metadata of TMT experiments}
 \usage{
-prep_label_scheme(dat_dir, filename)
+prep_label_scheme(dat_dir = NULL, filename = "expt_smry.xlsx")
 }
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to

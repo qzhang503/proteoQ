@@ -45,8 +45,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       p = p, 
       k = k, ) %>% 
     cmbn_meta(label_scheme_sub) %T>% 
-    write.table(file.path(filepath, paste0(fn_prefix, "_res.txt")), sep = "\t", 
-                col.names = TRUE, row.names = FALSE, quote = FALSE)	
+    readr::write_tsv(file.path(filepath, paste0(fn_prefix, "_res.txt")))
 
 	col_fill <- rlang::enexpr(col_fill)
 	col_color <- rlang::enexpr(col_color)
@@ -155,6 +154,8 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 
 	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), dots)
 	do.call(ggsave, gg_args)
+	
+	invisible(df)
 }
 
 
@@ -417,6 +418,8 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	filename <- gg_imgname(filename)
 	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), dots)
 	do.call(ggsave, gg_args)
+	
+	invisible(list(pca = df, var = prop_var))
 }
 
 

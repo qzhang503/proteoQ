@@ -3,6 +3,7 @@
 #' Extract a list of \code{RAW} file names that can be passed to \code{frac_smry.xlsx}
 #'
 #' @param raw_dir A character string to the directory of MS data. 
+#' @inheritParams load_expts
 #' @examples
 #' \dontrun{
 #' # Supposed that RAW MS files are stored under "~\my_raw"
@@ -14,13 +15,9 @@
 #' @importFrom magrittr %T>%
 #' @importFrom tools md5sum
 #' @export
-extract_raws <- function(raw_dir = NULL) {
-  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-  if (dat_dir == 1) 
-    stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", call. = FALSE)
-  
-  if (is.null(raw_dir)) 
-    stop("`raw_dir` cannot be `NULL`.", call. = FALSE)
+extract_raws <- function(raw_dir = NULL, dat_dir = NULL) {
+  if (is.null(raw_dir)) stop("`raw_dir` cannot be `NULL`.", call. = FALSE)
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
 
   fns <- names(tools::md5sum(dir(raw_dir, pattern = "\\.raw$", full.names = FALSE)))
   data.frame(Index = seq_along(fns), RAW_File = fns) %T>% 
@@ -172,9 +169,7 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
   if (type == "sm") type <- "spectrum_mill"
 
   if (is.null(dat_dir)) {
-    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-    if (dat_dir == 1) 
-      stop("Assign the working directory to variable `dat_dir` first.", call. = FALSE)
+    dat_dir <- get_gl_dat_dir()
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
@@ -345,7 +340,7 @@ prep_queries <- function() {
     
     vals <- vals %>% purrr::map(~ .x[-c(1:ind_a)])
   
-    # val_msms: ion table
+    # ion table
     try(
       if ("StringIons1" %in% nms) {
         val_msms <- vals %>% 
@@ -388,11 +383,7 @@ prep_queries <- function() {
     })
   }
   
-  
-  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-  if (dat_dir == 1) 
-    stop("Variable `dat_dir` not found; assign the working directory to `dat_dir` first.", 
-         call. = FALSE)
+  dat_dir <- get_gl_dat_dir()
   
   filepath <- file.path(dat_dir, "PSM\\cache")
   filelist = list.files(path = filepath, pattern = "^F[0-9]+\\_queries.csv$")
@@ -907,6 +898,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   )
 
   if (length(grep("^R[0-9]{3}", names(df))) > 0) {
+    # Shared peptides will be removed here
+    # if checked 'Unique peptide only' during Mascot export
     df_split <- df %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), ~ ifelse(.x == -1, NA, .x)) %>%
@@ -916,8 +909,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
       dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
       dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
       dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
-      dplyr::arrange(RAW_File, pep_seq, prot_acc) # %>%
-      # dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
+      dplyr::arrange(RAW_File, pep_seq, prot_acc) 
   } else {
     df_split <- df %>%
       dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>% 
@@ -1606,9 +1598,7 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
   dots <- rlang::enexprs(...)
 
   if (is.null(dat_dir)) {
-    dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-    if (dat_dir == 1) 
-      stop("Variable `dat_dir` not found; assign the working directory to the variable first.", call. = FALSE)
+    dat_dir <- get_gl_dat_dir()
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
     message("Variable `dat_dir` added to the Global Environment.")
