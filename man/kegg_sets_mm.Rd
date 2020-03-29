@@ -4,10 +4,12 @@
 \name{kegg_sets_mm}
 \alias{kegg_sets_mm}
 \title{Entrez IDs of mouse KEGG annotations.}
-\format{A list at a length of 225 
+\format{
+A list at a length of 225 
 \describe{
   \item{mmu...}{mouse entries}
-}}
+}
+}
 \source{
 \url{https://www.genome.jp/kegg/pathway.html}
 }

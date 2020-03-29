@@ -4,10 +4,12 @@
 \name{kegg_sets_rn}
 \alias{kegg_sets_rn}
 \title{Entrez IDs of rat KEGG annotations.}
-\format{A list at a length of 225 
+\format{
+A list at a length of 225 
 \describe{
   \item{mmu...}{rat entries}
-}}
+}
+}
 \source{
 \url{https://www.genome.jp/kegg/pathway.html}
 }

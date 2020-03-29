@@ -4,7 +4,8 @@
 \name{kinase_lookup}
 \alias{kinase_lookup}
 \title{Lookups of human or mouse kinases.}
-\format{A data frame with 2050 rows and 9 variables:
+\format{
+A data frame with 2050 rows and 9 variables:
 \describe{
   \item{refseq_acc}{RefSeq accession number}
   \item{gene}{gene names}
@@ -15,7 +16,8 @@
   \item{uniprot_id}{UniProt ID}
   \item{prot_desc}{protein description}
   \item{entrez}{Entrez ID}
-}}
+}
+}
 \source{
 \url{http://kinase.com/human/kinome/phylogeny.html}
 }

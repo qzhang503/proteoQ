@@ -743,12 +743,14 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
 
   df <- purrr::map(filelist, ~ {
     data <- read.delim(file.path(dat_dir, "PSM\\cache", .x), sep = ',', check.names = FALSE, 
-                       header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , skip = 0)
+                       header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , skip = 0) %>% 
+      pad_mascot_channels(TMT_plex)
+    
     data$dat_file <- gsub("_hdr_rm\\.csv", "", .x)
     return(data)
-  }) %>% 
+  }) %>% pad_mascot_fields() %>% 
     do.call(rbind, .)
-  
+
   r_start <- which(names(df) == "pep_scan_title") + 1
   int_end <- ncol(df) - 1
 	if (int_end > r_start) df <- df[, -c(seq(r_start, int_end, 2))]
@@ -967,6 +969,166 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
 		              width = 8, height = 8)
 		}
 	}
+}
+
+
+#' Pad Mascot TMT channels to the highest plex
+#' @param data A PSM table from Mascot export
+#' @param TMT_plex The multiplicity of TMT according to expt_smry.xlsx
+pad_mascot_channels <- function(data, TMT_plex) {
+  find_mascot_plex <- function (data) {
+    row_one <- data[1, ]
+    to_126 <- grep("/126", row_one, fixed = TRUE)
+    length(to_126) + 1    
+  }
+  
+  make_mascot_ratios <- function(TMT_plex, nrow) {
+    if (TMT_plex == 16) {
+      col_keys <- c("127N/126", "127C/126", "128N/126", "128C/126", "129N/126", "129C/126",
+                    "130N/126", "130C/126", "131N/126", "131C/126", 
+                    "132N/126", "132C/126", "133N/126", "133C/126", "134N/126")
+    } else if (TMT_plex == 11) {
+      col_keys <- c("127N/126", "127C/126", "128N/126", "128C/126", "129N/126", "129C/126",
+                    "130N/126", "130C/126", "131N/126", "131C/126")
+    } else if (TMT_plex == 10) {
+      col_keys <- c("127N/126", "127C/126", "128N/126", "128C/126", "129N/126", "129C/126",
+                    "130N/126", "130C/126", "131/126")
+    } else if(TMT_plex == 6) {
+      col_keys <- c("127/126", "128/126", "129/126", "130/126", "131/126")
+    } else {
+      col_keys <- NULL
+    }
+    
+    col_keys <- rep(col_keys, each = 2) 
+    col_keys[which(seq_along(col_keys)%%2 == 0)] <- NA
+    
+    purrr::map(col_keys, rep, each = nrow) %>% 
+      dplyr::bind_cols() %>% 
+      `colnames<-`("")
+  }
+  
+  make_mascot_intensities <- function(TMT_plex, nrow) {
+    if (TMT_plex == 16) {
+      col_keys <- c("126", "127N", "127C", "128N", "128C", "129N", "129C",
+                    "130N", "130C", "131N", "131C", 
+                    "132N", "132C", "133N", "133C", "134N")
+    } else if (TMT_plex == 11) {
+      col_keys <- c("126", "127N", "127C", "128N", "128C", "129N", "129C",
+                    "130N", "130C", "131N", "131C")
+    } else if (TMT_plex == 10) {
+      col_keys <- c("126", "127N", "127C", "128N", "128C", "129N", "129C",
+                    "130N", "130C", "131")
+    } else if(TMT_plex == 6) {
+      col_keys <- c("126", "127", "128", "129", "130", "131")
+    } else {
+      col_keys <- NULL
+    }
+    
+    col_keys <- rep(col_keys, each = 2) 
+    col_keys[which(seq_along(col_keys)%%2 == 0)] <- -1
+    
+    purrr::map(col_keys, rep, each = nrow) %>% 
+      dplyr::bind_cols() %>% 
+      `colnames<-`("")
+  }
+  
+
+  if (find_mascot_plex(data) < TMT_plex) {
+    data_r <- local({
+      if (TMT_plex > 10) {
+        row_one <- data[1, ] %>% unname() %>% as.character()
+        add_nitrogen <- grep("^12[7-9]{1}/126$|^13[0-1]{1}/126$", row_one)
+        for (ind in add_nitrogen) data[, ind] <- gsub("/126", "N/126", row_one[ind])
+        rm(row_one, ind, add_nitrogen)
+      }
+      
+      row_one <- data[1, ] %>% unname() %>% as.character()
+      nms <- row_one %>% .[grep("1[0-9]{2}[NC]{0,1}/126$", .)]
+      
+      holders <- make_mascot_ratios(TMT_plex, nrow(data))
+      holder_row_one <- holders[1, ] %>% unname() %>% as.character()
+      holder_nms <- holder_row_one %>% .[grep("1[0-9]{2}[NC]{0,1}/126$", .)]
+      
+      for(nm in nms) {
+        if (nm %in% holder_nms) {
+          holders[which(holder_row_one == nm) + 1] <- data[which(row_one == nm) + 1]
+        } 
+      }
+      
+      return(holders)
+    })
+    
+    data_int <- local({
+      if (TMT_plex > 10) {
+        row_one <- data[1, ] %>% unname() %>% as.character()
+        add_nitrogen <- grep("^12[7-9]{1}$|^13[0-1]{1}$", row_one)
+        for (ind in add_nitrogen) data[, ind] <- paste0(row_one[ind], "N")
+        rm(row_one, ind, add_nitrogen)
+      }
+      
+      row_one <- data[1, ] %>% unname() %>% as.character()
+      nms <- row_one %>% .[grep("^1[0-9]{2}[NC]{0,1}$", .)]
+      
+      holders <- make_mascot_intensities(TMT_plex, nrow(data))
+      holder_row_one <- holders[1, ] %>% unname() %>% as.character()
+      holder_nms <- holder_row_one %>% .[grep("^1[0-9]{2}[NC]{0,1}$", .)]
+      
+      for(nm in nms) {
+        if (nm %in% holder_nms) {
+          holders[which(holder_row_one == nm) + 1] <- data[which(row_one == nm) + 1]
+        } 
+      }
+      
+      return(holders)
+    })
+    
+    data <- dplyr::bind_cols(
+      data %>% .[, which(names(.) != "")],
+      data_r,
+      data_int,
+    )
+    
+    cols_no_nm <- (ncol(data) - ncol(data_r) - ncol(data_int) + 1) : ncol(data)
+    colnames(data)[cols_no_nm] <- ""
+  }
+    
+  invisible(data)
+}
+
+
+#' Pad Mascot PSM exports 
+#' 
+#' Intensity or ratio columns are excluded
+#' @param df An intermediate PSM table from Mascot export
+pad_mascot_fields <- function(df) {
+  ncols <- purrr::map_dbl(df, ncol)
+  
+  if (length(unique(ncols)) > 1) {
+    nms_union <- local({
+      nms <- df %>% purrr::map(~ names(.x) %>% .[. != ""] %>% .[. != "dat_file"]) 
+      nms_union <- purrr::reduce(nms, union) 
+      c(nms_union[nms_union != "pep_scan_title"], nms_union[nms_union == "pep_scan_title"])
+    })
+    
+    df <- purrr::map(df, ~ {
+      nms <- names(.x) %>% .[. != ""] %>% .[. != "dat_file"]
+      missing_nms <- setdiff(nms_union, nms)
+      
+      if (!purrr::is_empty(missing_nms)) {
+        for (nm in missing_nms) .x[[nm]] <- NA
+      } 
+      
+      dplyr::bind_cols(
+        .x[nms_union], 
+        .x %>% 
+          .[, ! names(.) %in% nms_union] %>% 
+          .[, ! names(.) == "dat_file"], 
+        .x["dat_file"],
+      )
+    })
+  }
+  
+  return(df)
 }
 
 

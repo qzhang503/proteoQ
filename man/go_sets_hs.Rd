@@ -4,10 +4,12 @@
 \name{go_sets_hs}
 \alias{go_sets_hs}
 \title{Entrez IDs of human gene-ontology annotations.}
-\format{A list at a length of 18320 
+\format{
+A list at a length of 18320 
 \describe{
   \item{hs_...}{human entries}
-}}
+}
+}
 \source{
 \url{http://current.geneontology.org/products/pages/downloads.html}
 }

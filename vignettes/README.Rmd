@@ -84,6 +84,8 @@ Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tan
 
 The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags. https://github.com/qzhang503/proteoQ.]   
 
+(Click <strong>[Recent Posts](https://proteoq.netlify.com/#posts)</strong> for additional examples.)  
+
 (Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README. Mathematical symbols may display more properly under html.)  
 
 ## Installation

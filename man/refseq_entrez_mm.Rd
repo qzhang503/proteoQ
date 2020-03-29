@@ -5,10 +5,12 @@
 \alias{refseq_entrez_mm}
 \title{Lookups among RefSeq accessions, Entrez IDs and gene names for mouse
 proteins.}
-\format{A data frame with 24906 rows and 4 variables: \describe{
+\format{
+A data frame with 24906 rows and 4 variables: \describe{
   \item{entrez}{Entrez ID} 
   \item{refseq_acc}{RefSeq accession number}
-  \item{gene}{gene names} }}
+  \item{gene}{gene names} }
+}
 \usage{
 refseq_entrez_mm
 }

@@ -4,10 +4,12 @@
 \name{go_sets_rn}
 \alias{go_sets_rn}
 \title{Entrez IDs of rat gene-ontology annotations.}
-\format{A list at a length of 18726 
+\format{
+A list at a length of 18726 
 \describe{
   \item{rn_...}{rat entries}
-}}
+}
+}
 \source{
 \url{http://current.geneontology.org/products/pages/downloads.html}
 }

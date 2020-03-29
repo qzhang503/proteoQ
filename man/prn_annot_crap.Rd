@@ -4,7 +4,8 @@
 \name{prn_annot_crap}
 \alias{prn_annot_crap}
 \title{Lookups of cRAP proteins.}
-\format{A data frame with 195 rows and 9 variables:
+\format{
+A data frame with 195 rows and 9 variables:
 \describe{
   \item{uniprot_acc}{UniProt accession number}
   \item{uniprot_id}{UniProt ID}
@@ -15,7 +16,8 @@
   \item{length}{the number of amino acid residues under a proposed protein}
   \item{refseq_acc}{RefSeq accession number}
   \item{entrez}{Entrez ID (not currently used)}
-}}
+}
+}
 \source{
 \url{https://www.thegpm.org/crap/}
 }

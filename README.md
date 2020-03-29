@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-03-25
+2020-03-29
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -57,6 +57,10 @@ with users’ selection of parameters in data filtration, alignment and
 normalization. The package further offers a suite of tools and
 functionalities in statistics, informatics and data visualization by
 creating ‘wrappers’ around published R routines.\[1\]
+
+(Click <strong>[Recent
+Posts](https://proteoq.netlify.com/#posts)</strong> for additional
+examples.)
 
 (Click
 <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong>

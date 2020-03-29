@@ -4,7 +4,9 @@
 \name{mart_rn}
 \alias{mart_rn}
 \title{BioMart-Ensembl for rat proteins.}
-\format{An object of class \code{Mart} of length 1.}
+\format{
+An object of class \code{Mart} of length 1.
+}
 \source{
 \url{https://bioconductor.org/packages/release/bioc/html/biomaRt.html}
 }
