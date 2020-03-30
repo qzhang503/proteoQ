@@ -266,7 +266,19 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 #' @importFrom magrittr %>%
 #' @importFrom readxl read_excel
 prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
-	if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  tbl_1 <- c(
+    "-----------------------------------------------------------------------\n", 
+    "     TMT_Set    | LCMS_Injection  |     RAW_File     |     PSM_File    \n", 
+    "----------------|-----------------|------------------|-----------------\n", 
+    "        1       |        1        | dup_msfile_1.raw |    F000001.csv  \n", 
+    "----------------|------------------------------------|-----------------\n",
+    "        2       |        1        | dup_msfile_1.raw |    F000002.csv  \n", 
+    "-----------------------------------------------------------------------\n", 
+    "      ...       |       ...       |        ...       |        ...      \n",
+    "-----------------------------------------------------------------------\n"
+  )
+  
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
 
 	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -283,6 +295,28 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 			stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
 		}
 	  
+	  if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
+	    stop("\nDuplicated `RAW_File` names.\n", 
+	         "This may occur when searching the same RAW files with different parameter sets.\n", 
+	         "To distinguish, add PSM file names to column `PSM_File`:\n", 
+	         tbl_1, call. = FALSE)
+	  }	
+	  
+	  if (!is.null(fraction_scheme[["PSM_File"]])) {
+	    fraction_scheme <- fraction_scheme %>% 
+	      dplyr::mutate(PSM_File = gsub("\\.csv$|\\.txt$|\\.ssv$", "", PSM_File)) 
+	    
+	    local({
+	      raw_psm <- fraction_scheme %>% 
+	        tidyr::unite(RAW_File, RAW_File, PSM_File, sep = "@") 
+	      
+	      if (any(duplicated(raw_psm$RAW_File))) {
+	        stop("The combination of `RAW_File` and `PSM_File` is not unique in `", filename, "`.",
+	             call. = FALSE)
+	      }
+	    })
+	  }
+
 	  local({
 	    load(file.path(dat_dir, "label_scheme_full.rda"))
 	    
@@ -336,7 +370,7 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	  openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
 	  openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
  	} else {
- 	  assign(".auto_frac_smry", TRUE, envir = .GlobalEnv)
+ 	  # assign(".auto_frac_smry", TRUE, envir = .GlobalEnv)
  	  
  	  # warning: data in a auto-generated `frac_smry.xlsx` will be incorrect 
  	  #   if they were based on wrong information from `expt_smry.xlsx`
@@ -365,6 +399,13 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
   			dplyr::group_by(TMT_Set, LCMS_Injection) %>%
   			dplyr::mutate(Fraction = row_number())
 		}
+		
+		if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
+		  stop("\nDuplicated `RAW_File` names detected during the auto-generation of `", filename, "`.\n",
+		       "This may occur when searching the same RAW files with different parameter sets.\n", 
+		       "To distinguish, create manually `frac_smry.xlsx` with column `PSM_File`:\n", 
+		       tbl_1, call. = FALSE)
+		}	
 
 		wb <- openxlsx::createWorkbook()
 		openxlsx::addWorksheet(wb, sheetName = "Fractions")
@@ -799,3 +840,26 @@ check_raws <- function(df) {
   return(tmtinj_raw)
 }
 
+
+#' Find the TMT-plex from Mascot PSM exports
+#' @param df A PSM export from Mascot
+#' @param pep_seq_rows The row(s) contain character string "pep_seq".
+find_masct_tmtplex <- function(df, pep_seq_rows = NULL) {
+  if (is.null(pep_seq_rows)) pep_seq_rows <- grep("pep_seq", df)
+  if (purrr::is_empty(pep_seq_rows)) stop("The row of `pep_seq` not found.", call. = FALSE)
+  
+  first_line <- df[pep_seq_rows[1] + 1]
+  
+  if (grepl("\"134\"", first_line, fixed = TRUE)) {
+    mascot_tmtplex <- 16
+  } else if (grepl("\"131C\"", first_line, fixed = TRUE)) {
+    mascot_tmtplex <- 11
+  } else if (grepl("\"131\"", first_line, fixed = TRUE) && 
+             grepl("\"130C\"", first_line, fixed = TRUE)) {
+    mascot_tmtplex <- 10
+  } else if (grepl("\"131\"", first_line, fixed = TRUE)) {
+    mascot_tmtplex <- 6
+  } else {
+    mascot_tmtplex <- 0
+  }
+}
