@@ -831,9 +831,6 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
     purrr::map(add_mascot_pepseqmod, use_lowercase_aa) %>% 
     dplyr::bind_rows() 
   
-  # ---
-  # df <- df %>% dplyr::select(-dat_file)
-
   df <- df %>% 
     dplyr::mutate(prot_acc_orig = prot_acc) %>% 
     dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc)) %>% 
@@ -886,10 +883,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   }
   
   if (annot_kinases) df <- annotKin(df, acc_type)
-  
-  
-  # why error in annotPeppos?
-  
+
   # `pep_start`, `pep_end` and `gene` will be used for protein percent coverage calculation
   if (!all(c("pep_start", "pep_end", "gene") %in% names(df))) df <- df %>% annotPeppos(fasta)
   
@@ -899,7 +893,9 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
     df <- df %>% 
       calc_cover(id = !!rlang::sym(group_pep_by), 
                  fasta = seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
-                                            seqtype = "AA", as.string = TRUE, set.attributes = TRUE))
+                                            seqtype = "AA", 
+                                            as.string = TRUE, 
+                                            set.attributes = TRUE))
   } 
   
   df <- dplyr::bind_cols(
@@ -913,8 +909,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   )
 
   if (length(grep("^R[0-9]{3}", names(df))) > 0) {
-    # Shared peptides will be removed here
-    # if checked 'Unique peptide only' during Mascot export
+    # Shared peptides will be removed here if 
+    #   checked 'Unique peptide only' during Mascot PSM export
     df_split <- df %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), ~ ifelse(.x == -1, NA, .x)) %>%
@@ -934,10 +930,15 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   }
   
   tmtinj_raw_map <- check_raws(df_split)
-  
-  if (is.null(tmtinj_raw_map$PSM_File)) {
+
+  if (! "PSM_File" %in% names(tmtinj_raw_map)) {
     df_split <- df_split %>%
-      dplyr::left_join(tmtinj_raw_map, id = "RAW_File") 
+      dplyr::left_join(tmtinj_raw_map, id = "RAW_File") %>% 
+      dplyr::group_by(TMT_inj) %>%
+      dplyr::mutate(psm_index = row_number()) %>%
+      data.frame(check.names = FALSE) %>% 
+      dplyr::select(-dat_file) %>% 
+      split(., .$TMT_inj, drop = TRUE)
   } else {
     tmtinj_raw_map <- tmtinj_raw_map %>% 
       dplyr::mutate(PSM_File = gsub("\\.csv$", "", PSM_File)) %>% 
@@ -946,16 +947,14 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
     df_split <- df_split %>% 
       tidyr::unite(RAW_File2, c("RAW_File", "dat_file"), sep = "@", remove = FALSE) %>% 
       dplyr::left_join(tmtinj_raw_map, by = "RAW_File2") %>% 
-      dplyr::select(-RAW_File2)
+      dplyr::select(-RAW_File2) %>% 
+      dplyr::group_by(TMT_inj) %>%
+      dplyr::mutate(psm_index = row_number()) %>%
+      data.frame(check.names = FALSE) %>% 
+      dplyr::select(-dat_file) %>% 
+      split(., .$TMT_inj, drop = TRUE)
   }
   
-  df_split <- df_split %>% 
-    dplyr::group_by(TMT_inj) %>%
-    dplyr::mutate(psm_index = row_number()) %>%
-    data.frame(check.names = FALSE) %>% 
-    dplyr::select(-dat_file) %>% 
-    split(., .$TMT_inj, drop = TRUE)
-
   missing_tmtinj <- setdiff(names(df_split), unique(tmtinj_raw_map$TMT_inj))
   if (!purrr::is_empty(missing_tmtinj)) {
     cat("The following TMT sets and LC/MS injections do not have corresponindg PSM files:\n")
@@ -2312,6 +2311,92 @@ add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
 }
 
 
+#' Pad MaxQuant TMT channels to the highest plex
+#' @param file A file name of PSM table from MaxQuant export
+pad_mq_channels <- function(file) {
+  # pad columns to a placeholder data frame
+  add_cols_at <- function (df, df2, idx) {
+    stopifnot(idx >= 0)
+    
+    dplyr::bind_cols(
+      df[, seq_len(idx), drop = FALSE],
+      df2,
+      df[, (idx + 1) : ncol(df), drop = FALSE]
+    )
+  }
+  
+  # replace columns in the original PSM table
+  replace_cols_at <- function (df, df2, idxs) {
+    dplyr::bind_cols(
+      df[, 1:(idxs[1]-1), drop = FALSE],
+      df2,
+      df[, (idxs[length(idxs)]+1):ncol(df), drop = FALSE]
+    )
+  }
+  
+  
+  df <- read.csv(file.path(dat_dir, file), 
+                 check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")
+  
+  load(file.path(dat_dir, "label_scheme_full.rda"))
+  load(file.path(dat_dir, "fraction_scheme.rda"))
+  
+  if (! "PSM_File" %in% names(fraction_scheme)) return(df)
+  
+  base_name <- file %>% gsub("\\.txt$", "", .)
+  
+  fraction_scheme_sub <- fraction_scheme %>% 
+      dplyr::mutate(PSM_File = gsub("\\.txt$", "", PSM_File)) %>% 
+      dplyr::filter(PSM_File == base_name, !duplicated(TMT_Set))
+
+  label_scheme_sub <- label_scheme_full %>% 
+    dplyr::filter(TMT_Set == unique(fraction_scheme_sub$TMT_Set), 
+                  LCMS_Injection == unique(fraction_scheme_sub$LCMS_Injection))
+  
+  nas <- data.frame(rep(NA, nrow(df)))
+  sample_ids <- as.character(label_scheme_sub$Sample_ID)
+  
+  str_int1 <- "^Reporter intensity [0-9]+"
+  str_int2 <- "^Reporter intensity corrected [0-9]+"
+  str_dev <- "^Reporter mass deviation \\[mDa\\] [0-9]+"
+
+  df_int <- df %>% dplyr::select(grep(str_int1, names(.)))
+  df_int2 <- df %>% dplyr::select(grep(str_int2, names(.)))
+  df_dev <- df %>% dplyr::select(grep(str_dev, names(.)))
+
+  for (idx in seq_along(sample_ids)) {
+    if (grepl("^Empty\\.[0-9]+", sample_ids[idx])) {
+      df_int <- add_cols_at(df_int, nas, idx - 1)
+      df_int2 <- add_cols_at(df_int2, nas, idx - 1)
+      df_dev <- add_cols_at(df_dev, nas, idx - 1)
+    }
+  }
+  rm(idx)
+  
+  len <- length(sample_ids)
+  
+  if (ncol(df_int) == len) {
+    names(df_int) <- paste("Reporter intensity", seq_len(len))
+    df <- replace_cols_at(df, df_int, grep(str_int1, names(df)))    
+  }
+  
+  if (ncol(df_int2) == len) {
+    names(df_int2) <- paste("Reporter intensity corrected", seq_len(len))
+    df <- replace_cols_at(df, df_int2, grep(str_int2, names(df)))
+  }
+  
+  if (ncol(df_dev) == len) {
+    names(df_dev) <- paste("Reporter mass deviation [mDa]", seq_len(len))
+    df <- replace_cols_at(df, df_dev, grep(str_dev, names(df)))
+  }
+
+  df$dat_file <- base_name
+  
+  return(df)
+}
+
+
+
 #'Splits PSM tables
 #'
 #'\code{splitPSM_mq} splits the PSM outputs after \code{rmPSMHeaders()}. It
@@ -2360,8 +2445,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
                "\nCheck that the names of PSM files start with `msms`."), call. = FALSE)
   }
 
-  df <- purrr::map(file.path(dat_dir, filelist), read.csv, 
-                   check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") 
+  df <- purrr::map(filelist, pad_mq_channels)
   df <- suppressWarnings(dplyr::bind_rows(df))
 
   # exception: empty string under `Proteins`
@@ -2424,7 +2508,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
   df <- local({
     phos_idx <- grep("Phospho (STY) Probabilities", names(df), fixed = TRUE)
 
-    if (!is_empty(phos_idx)) {
+    if (!purrr::is_empty(phos_idx)) {
       phos <- df %>% 
         dplyr::select(phos_idx) %>% 
         purrr::map(~ str_extract_all(.x, "\\([^()]+\\)")) %>% 
@@ -2440,7 +2524,9 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
       maxs <- phos_sort %>% purrr::map(`[`, 1) %>% unlist()
       sec_maxs <- phos_sort %>% purrr::map(`[`, 2) %>% unlist()
       
-      df <- bind_cols(df, pep_phospho_locprob = phos_max, pep_phospho_locdiff = maxs - sec_maxs) %>% 
+      df <- dplyr::bind_cols(df, 
+                             pep_phospho_locprob = phos_max, 
+                             pep_phospho_locdiff = maxs - sec_maxs) %>% 
         dplyr::mutate(is_locprob_one = equals(1, pep_phospho_locprob)) %>% 
         dplyr::mutate_at(vars("pep_phospho_locdiff"), ~ replace(.x, is_locprob_one, 1)) %>% 
         dplyr::mutate_at(vars("pep_phospho_locprob"), ~ replace(.x, is.infinite(.x), NA)) %>% 
@@ -2504,12 +2590,29 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
   
   tmtinj_raw_map <- check_raws(df_split)
   
-  df_split <- df_split %>%
-    dplyr::left_join(tmtinj_raw_map, id = "RAW_File") %>%
-    dplyr::group_by(TMT_inj) %>%
-    dplyr::mutate(psm_index = row_number()) %>%
-    data.frame(check.names = FALSE) %>%
-    split(., .$TMT_inj, drop = TRUE)
+  if (! "PSM_File" %in% names(tmtinj_raw_map)) {
+    # `dat_file` only for Mascot 
+    df_split <- df_split %>%
+      dplyr::left_join(tmtinj_raw_map, id = "RAW_File") %>%
+      dplyr::group_by(TMT_inj) %>%
+      dplyr::mutate(psm_index = row_number()) %>%
+      data.frame(check.names = FALSE) %>%
+      split(., .$TMT_inj, drop = TRUE)
+  } else {
+    tmtinj_raw_map <- tmtinj_raw_map %>% 
+      dplyr::mutate(PSM_File = gsub("\\.csv$", "", PSM_File)) %>% 
+      tidyr::unite(RAW_File2, c("RAW_File", "PSM_File"), sep = "@") 
+    
+    df_split <- df_split %>% 
+      tidyr::unite(RAW_File2, c("RAW_File", "dat_file"), sep = "@", remove = FALSE) %>% 
+      dplyr::left_join(tmtinj_raw_map, by = "RAW_File2") %>% 
+      dplyr::select(-RAW_File2) %>% 
+      dplyr::group_by(TMT_inj) %>%
+      dplyr::mutate(psm_index = row_number()) %>%
+      data.frame(check.names = FALSE) %>%
+      dplyr::select(-dat_file) %>% 
+      split(., .$TMT_inj, drop = TRUE)
+  }
   
   missing_tmtinj <- setdiff(names(df_split), unique(tmtinj_raw_map$TMT_inj))
   if (!purrr::is_empty(missing_tmtinj)) {
@@ -2685,6 +2788,113 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 }
 
 
+#' Pad Spectrum Mill TMT channels to the highest plex
+#' @param file A file name of PSM table from MaxQuant export
+pad_sm_channels <- function(file) {
+  # pad columns to a placeholder data frame
+  add_cols_at <- function (df, df2, idx) {
+    stopifnot(idx >= 0)
+    
+    dplyr::bind_cols(
+      df[, seq_len(idx), drop = FALSE],
+      df2,
+      df[, (idx + 1) : ncol(df), drop = FALSE]
+    )
+  }
+  
+  # replace columns in the original PSM table
+  replace_cols_at <- function (df, df2, idxs) {
+    dplyr::bind_cols(
+      df[, 1:(idxs[1]-1), drop = FALSE],
+      df2,
+      df[, (idxs[length(idxs)]+1):ncol(df), drop = FALSE]
+    )
+  }
+  
+  df <- suppressWarnings(readr::read_delim(file.path(dat_dir, file), delim = ";", 
+                                           col_types = cols(filename = col_character())))
+  
+  load(file.path(dat_dir, "label_scheme_full.rda"))
+  load(file.path(dat_dir, "fraction_scheme.rda"))
+  
+  if (! "PSM_File" %in% names(fraction_scheme)) return(df)
+
+  base_name <- file %>% gsub("\\.ssv$", "", .)
+  
+  fraction_scheme_sub <- fraction_scheme %>% 
+    dplyr::mutate(PSM_File = gsub("\\.ssv$", "", PSM_File)) %>% 
+    dplyr::filter(PSM_File == base_name, !duplicated(TMT_Set))
+  
+  label_scheme_sub <- label_scheme_full %>% 
+    dplyr::filter(TMT_Set == unique(fraction_scheme_sub$TMT_Set), 
+                  LCMS_Injection == unique(fraction_scheme_sub$LCMS_Injection))
+  
+  nas <- data.frame(rep(NA, nrow(df)))
+  sample_ids <- as.character(label_scheme_sub$Sample_ID)
+  
+  str_ratio <- "^TMT_1[0-9]{2}[NC]{0,1}_1[0-9]{2}[NC]{0,1}"
+  str_int <- "^TMT_1[0-9]{2}[NC]{0,1}$"
+  
+  df_int <- df %>% dplyr::select(grep(str_int, names(.)))
+  
+  ref <- names(df) %>% 
+    .[grepl(str_ratio, .)] %>% 
+    gsub(".*_(1[0-9]{2}[NC]{0,1})$", "\\1", .) %>% 
+    unique()
+  
+  stopifnot(length(ref) == 1)
+  
+  TMT_plex <- TMT_plex(label_scheme_full)
+  
+  if (TMT_plex == 16) {
+    keys_int <- paste0("TMT_", c("126", "127N", "127C", "128N", "128C", "129N", "129C", 
+                                 "130N", "130C", "131N", "131C", "132N", "132C", 
+                                 "133N", "133C", "134N"))
+    keys_ratio <- paste0(keys_int, "_", ref)
+  } else if (TMT_plex == 11) {
+    keys_int <- paste0("TMT_", c("126", "127N", "127C", "128N", "128C", "129N", "129C", 
+                                 "130N", "130C", "131N", "131C"))
+  } else if (TMT_plex == 10) {
+    keys_int <- paste0("TMT_", c("126", "127N", "127C", "128N", "128C", "129N", "129C", 
+                                 "130N", "130C", "131"))
+  } else if(TMT_plex == 6) {
+    keys_int <- paste0("TMT_", c("126", "127", "128", "129", "130", "131"))
+  } else {
+    keys_int <- NULL
+  }
+  keys_ratio <- paste0(keys_int, "_", ref) %>% .[!grepl(paste0("_", ref, "_", ref), .)]
+
+  for (idx in seq_along(sample_ids)) {
+    if (grepl("^Empty\\.[0-9]+", sample_ids[idx])) {
+      df_int <- add_cols_at(df_int, nas, idx - 1)
+    }
+  }
+  rm(idx)
+  
+  df_ratio <- local({
+    df_int <- as.data.frame(df_int)
+    
+    sweep(df_int, 1, df_int[, paste0("TMT_", ref)], "/") %>% 
+      `colnames<-`(paste0(names(.), "_", ref)) %>% 
+      dplyr::select(-grep(paste0("^TMT_", ref, "_", ref, "$"), names(.))) %>% 
+      dplyr::mutate_all(~ replace(.x, is.infinite(.x), NA))    
+  })
+  
+  if ((ncol(df_ratio) + 1) == TMT_plex) {
+    names(df_ratio) <- keys_ratio
+    df <- replace_cols_at(df, df_ratio, grep(str_ratio, names(df)))
+  }
+  
+  if (ncol(df_int) == TMT_plex) {
+    names(df_int) <- keys_int
+    df <- replace_cols_at(df, df_int, grep(str_int, names(df)))
+  }
+  
+  df$dat_file <- base_name
+  
+  return(df)
+}
+
 
 #' Splits PSM tables from \code{Spectrum Mill}
 #'
@@ -2718,10 +2928,8 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
     stop(paste("No PSM files were found under", file.path(dat_dir), 
                "\nCheck that the names of PSM files start with `PSMexport`."), call. = FALSE)
   
-  suppressMessages(
-    df <- purrr::map(file.path(dat_dir, filelist), readr::read_delim, delim = ";") %>% 
-      dplyr::bind_rows() 
-  )
+  df <- purrr::map(filelist, pad_sm_channels)
+  df <- suppressWarnings(dplyr::bind_rows(df))
   
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
@@ -2798,7 +3006,9 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
     df <- df %>% 
       calc_cover(id = !!rlang::sym(group_pep_by), 
                  fasta = seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
-                                            seqtype = "AA", as.string = TRUE, set.attributes = TRUE))
+                                            seqtype = "AA", 
+                                            as.string = TRUE, 
+                                            set.attributes = TRUE))
   }
   
   df <- df %>% 
@@ -2837,12 +3047,29 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
   
   tmtinj_raw_map <- check_raws(df_split)
   
-  df_split <- df_split %>%
-    dplyr::left_join(tmtinj_raw_map, id = "RAW_File") %>%
-    dplyr::group_by(TMT_inj) %>%
-    dplyr::mutate(psm_index = row_number()) %>%
-    data.frame(check.names = FALSE) %>%
-    split(., .$TMT_inj, drop = TRUE)
+  if (! "PSM_File" %in% names(tmtinj_raw_map)) {
+    # `dat_file` only for Mascot
+    df_split <- df_split %>%
+      dplyr::left_join(tmtinj_raw_map, id = "RAW_File") %>%
+      dplyr::group_by(TMT_inj) %>%
+      dplyr::mutate(psm_index = row_number()) %>%
+      data.frame(check.names = FALSE) %>%
+      split(., .$TMT_inj, drop = TRUE)
+  } else {
+    tmtinj_raw_map <- tmtinj_raw_map %>% 
+      dplyr::mutate(PSM_File = gsub("\\.csv$", "", PSM_File)) %>% 
+      tidyr::unite(RAW_File2, c("RAW_File", "PSM_File"), sep = "@") 
+    
+    df_split <- df_split %>% 
+      tidyr::unite(RAW_File2, c("RAW_File", "dat_file"), sep = "@", remove = FALSE) %>% 
+      dplyr::left_join(tmtinj_raw_map, by = "RAW_File2") %>% 
+      dplyr::select(-RAW_File2) %>% 
+      dplyr::group_by(TMT_inj) %>%
+      dplyr::mutate(psm_index = row_number()) %>%
+      data.frame(check.names = FALSE) %>% 
+      dplyr::select(-dat_file) %>% 
+      split(., .$TMT_inj, drop = TRUE)
+  }
   
   missing_tmtinj <- setdiff(names(df_split), unique(tmtinj_raw_map$TMT_inj))
   if (!purrr::is_empty(missing_tmtinj)) {

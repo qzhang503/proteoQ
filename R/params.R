@@ -266,13 +266,37 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 #' @importFrom magrittr %>%
 #' @importFrom readxl read_excel
 prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
-  tbl_1 <- c(
+  old_opts <- options()
+  on.exit(options(old_opts), add = TRUE)
+  options(warning.length = 5000L)
+  
+  tbl_mascot <- c(
+    "\nMascot (similarly for MaxQuant and Spectrum Mill):\n",
     "-----------------------------------------------------------------------\n", 
     "     TMT_Set    | LCMS_Injection  |     RAW_File     |     PSM_File    \n", 
     "----------------|-----------------|------------------|-----------------\n", 
-    "        1       |        1        | dup_msfile_1.raw |    F000001.csv  \n", 
+    "        1       |        1        | TMT1_Inj1_F1.raw |    F000001.csv  \n", 
+    "----------------|-----------------|------------------|-----------------\n", 
+    "                |                 | TMT1_Inj1_F2.raw |    F000001.csv  \n", 
+    "----------------|-----------------|------------------|-----------------\n", 
+    "       ...      |       ...       |        ...       |        ...      \n",
+    "----------------|-----------------|------------------|-----------------\n",
+    "        2       |        1        | TMT2_Inj1_F1.raw |    F000002.csv  \n", 
     "----------------|------------------------------------|-----------------\n",
-    "        2       |        1        | dup_msfile_1.raw |    F000002.csv  \n", 
+    "                |                 | TMT2_Inj1_F2.raw |    F000002.csv  \n", 
+    "----------------|-----------------|------------------|-----------------\n", 
+    "       ...      |       ...       |        ...       |        ...      \n",
+    "-----------------------------------------------------------------------\n"
+  )
+  
+  tbl_mq <- c(
+    "\nExamplary MaxQuant:\n",
+    "-----------------------------------------------------------------------\n", 
+    "     TMT_Set    | LCMS_Injection  |     RAW_File     |     PSM_File    \n", 
+    "----------------|-----------------|------------------|-----------------\n", 
+    "        1       |        1        | dup_msfile_1.raw |   msms_xxx.txt  \n", 
+    "----------------|------------------------------------|-----------------\n",
+    "        2       |        1        | dup_msfile_1.raw |   msms_yyy.txt  \n", 
     "-----------------------------------------------------------------------\n", 
     "      ...       |       ...       |        ...       |        ...      \n",
     "-----------------------------------------------------------------------\n"
@@ -296,10 +320,10 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 		}
 	  
 	  if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
-	    stop("\nDuplicated `RAW_File` names.\n", 
+	    stop("\nDuplicated `RAW_File` names in `", filename, "`:\n", 
 	         "This may occur when searching the same RAW files with different parameter sets.\n", 
 	         "To distinguish, add PSM file names to column `PSM_File`:\n", 
-	         tbl_1, call. = FALSE)
+	         tbl_mascot, call. = FALSE)
 	  }	
 	  
 	  if (!is.null(fraction_scheme[["PSM_File"]])) {
@@ -404,7 +428,7 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 		  stop("\nDuplicated `RAW_File` names detected during the auto-generation of `", filename, "`.\n",
 		       "This may occur when searching the same RAW files with different parameter sets.\n", 
 		       "To distinguish, create manually `frac_smry.xlsx` with column `PSM_File`:\n", 
-		       tbl_1, call. = FALSE)
+		       tbl_mascot, call. = FALSE)
 		}	
 
 		wb <- openxlsx::createWorkbook()

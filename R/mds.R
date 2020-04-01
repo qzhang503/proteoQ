@@ -444,7 +444,10 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	  .$log2R
 
 	D <- dist(t(df), method = method, p = p, diag = TRUE, upper = TRUE)
-	if (anyNA(D)) stop("Distance cannot be calculated for one more sample pairs.")
+	if (anyNA(D)) stop("Distance cannot be calculated for one more sample pairs.\n", 
+	                   "Check the entries under the column corresponding to `col_select` in metadata.",
+	                   call. = FALSE)
+	
 	D <- as.matrix(D)
 
 	if (adjEucDist && method == "euclidean") {

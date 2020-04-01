@@ -343,7 +343,9 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 		dplyr::select(annot_cols, Sample_ID) 
 	
 	idx <- !not_all_NA(x)
-	if (sum(idx) > 0) stop("No aesthetics defined under column `", names(x)[idx], "`")
+	if (sum(idx) > 0) stop("No aesthetics defined under column(s) `", 
+	                       purrr::reduce(names(x)[idx], paste, sep = ", "), "`.", 
+	                       call. = FALSE)
 
 	x <- x %>%
 		dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]),
