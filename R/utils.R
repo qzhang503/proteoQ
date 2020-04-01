@@ -343,7 +343,9 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 		dplyr::select(annot_cols, Sample_ID) 
 	
 	idx <- !not_all_NA(x)
-	if (sum(idx) > 0) stop("No aesthetics defined under column `", names(x)[idx], "`")
+	if (sum(idx) > 0) stop("No aesthetics defined under column(s) `", 
+	                       purrr::reduce(names(x)[idx], paste, sep = ", "), "`.", 
+	                       call. = FALSE)
 
 	x <- x %>%
 		dplyr::filter(!grepl("^Empty\\.", .[["Sample_ID"]]),
@@ -2457,4 +2459,36 @@ check_gset_nms <- function (gset_nms) {
   
   invisible(gset_nms)
 }
+
+
+#' @param filepath A file path to \code{"MGKernel_params_N.txt"}
+ok_existing_params <- function (filepath) {
+  load(file = file.path(dat_dir, "label_scheme.rda"))
+  
+  if (!file.exists(filepath)) return(TRUE)
+  
+  params <- readr::read_tsv(file.path(filepath), col_types = cols(Component = col_double()))
+
+  missing_samples <- local({
+    par_samples <- params$Sample_ID %>% unique() %>% .[!is.na(.)]
+    expt_samples <- label_scheme$Sample_ID %>% unique()
+    setdiff(expt_samples, par_samples)
+  })
+  
+  if (purrr::is_empty(missing_samples)) return(TRUE)
+  
+  try(unlink(file.path(dat_dir, "Peptide\\Histogram\\MGKernel_params_[NZ].txt")))
+  try(unlink(file.path(dat_dir, "Protein\\Histogram\\MGKernel_params_[NZ].txt")))
+
+  warning(
+    "\nThe following entries(s) in `expt_smry.xlsx` are missing from `MGKernel_params` files: \n\t", 
+    purrr::reduce(missing_samples, paste, sep = ", "), 
+    "\nThis is probably due to the modification of values under the `Sample_ID` columns.", 
+    "\n=========================================================", 
+    "\n=== The previous `MGKernel_params` files are deleted. ===", 
+    "\n=========================================================\n", 
+    call. = FALSE)
+  
+  invisible(return)  
+} 
 

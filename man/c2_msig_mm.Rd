@@ -4,10 +4,12 @@
 \name{c2_msig_mm}
 \alias{c2_msig_mm}
 \title{Entrez IDs of mouse molecular signatures.}
-\format{A list at a length of 5501 
+\format{
+A list at a length of 5501 
 \describe{
   \item{mm_...}{mouse entries}
-}}
+}
+}
 \source{
 \url{https://www.gsea-msigdb.org/gsea/index.jsp}
 }

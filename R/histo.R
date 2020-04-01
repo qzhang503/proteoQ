@@ -200,7 +200,9 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 	do.call(ggsave, gg_args)
 	
 	readr::write_tsv(df_melt, file.path(filepath, gsub("\\.[^.]*$", "_raw.txt", filename)))
-	readr::write_tsv(fit, file.path(filepath, gsub("\\.[^.]*$", "_fitted.txt", filename)))
+	
+	if (!any(is.na(fit))) 
+	  readr::write_tsv(fit, file.path(filepath, gsub("\\.[^.]*$", "_fitted.txt", filename)))
 
 	invisible(list(raw = df_melt, fitted = fit))
 }

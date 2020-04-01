@@ -33,7 +33,8 @@ ontology} and \href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular
 Signatures}, the argument is further applied to differentiate the same
 biological terms under different species.}
 
-\item{from}{Character string; the type of accession keys in c("UNIPROT", "REFSEQ").}
+\item{from}{Character string; the type of accession keys in c("UNIPROT",
+"REFSEQ", "ACCNUM").}
 
 \item{filename}{Character string; An output file name. At the \code{NULL}
 default, the name will be determined automatically at a given

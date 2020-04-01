@@ -4,10 +4,12 @@
 \name{go_sets_mm}
 \alias{go_sets_mm}
 \title{Entrez IDs of mouse gene-ontology annotations.}
-\format{A list at a length of 18364 
+\format{
+A list at a length of 18364 
 \describe{
   \item{mm_...}{mouse entries}
-}}
+}
+}
 \source{
 \url{http://current.geneontology.org/products/pages/downloads.html}
 }

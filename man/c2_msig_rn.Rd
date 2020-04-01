@@ -4,10 +4,12 @@
 \name{c2_msig_rn}
 \alias{c2_msig_rn}
 \title{Entrez IDs of rat molecular signatures.}
-\format{A list at a length of 5501 
+\format{
+A list at a length of 5501 
 \describe{
   \item{rn_...}{rat entries}
-}}
+}
+}
 \source{
 \url{https://www.gsea-msigdb.org/gsea/index.jsp}
 }

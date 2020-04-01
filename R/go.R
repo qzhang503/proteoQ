@@ -211,11 +211,11 @@ find_abbr_species <- function(species = "human", abbr_species = NULL) {
     abbr_species <- rlang::as_string(abbr_species)
     
     if (stringr::str_length(abbr_species) != 2) {
-      stop("The number of characters needs to be `2` for `abbr_species`.", call. = FALSE)
+      warning("The number of characters is typically `2` for `abbr_species`.", call. = FALSE)
     }
     
     if (abbr_species != stringr::str_to_title(abbr_species)) {
-      stop("`abbr_species` needs to be in Title case, i.e., `Xx`.", call. = FALSE)
+      warning("An `abbr_species` is typically in Title case, i.e., `Xx`.", call. = FALSE)
     }    
   }
 
@@ -635,7 +635,8 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
 
 #' Map UniProt or Refseq accessions to Entrez IDs
 #'
-#' @param from Character string; the type of accession keys in c("UNIPROT", "REFSEQ").
+#' @param from Character string; the type of accession keys in c("UNIPROT",
+#'   "REFSEQ", "ACCNUM").
 #' @inheritParams prepMSig
 #' @inheritParams annot_from_to
 #' @import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db

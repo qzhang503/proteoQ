@@ -635,10 +635,12 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
   reload_expts()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
+  
+  ok_existing_params(file.path(dat_dir, "Peptide\\Histogram\\MGKernel_params_N.txt"))
 
   filename <- file.path(dat_dir, "Peptide\\Peptide.txt")
   if (!file.exists(filename)) stop(filename, " not found; run `mergePep(...)` first", call. = FALSE)
-
+  
   id <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
   

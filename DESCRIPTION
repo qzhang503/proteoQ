@@ -77,6 +77,6 @@ Imports:
 		RcppGreedySetCover,
     RCurl,
     XML
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
 Remotes:
   qzhang503/proteoQDA

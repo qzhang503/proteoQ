@@ -154,6 +154,8 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   col_select <- ifelse(is.null(col_select), rlang::expr(Sample_ID), rlang::sym(col_select))
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
+  ok_existing_params(file.path(dat_dir, "Protein\\Histogram\\MGKernel_params_N.txt"))
+  
   if (is.null(label_scheme[[col_select]])) {
     col_select <- rlang::expr(Sample_ID)
     warning("Column \'", rlang::as_string(col_select), "\' does not exist.

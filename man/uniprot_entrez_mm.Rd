@@ -4,11 +4,13 @@
 \name{uniprot_entrez_mm}
 \alias{uniprot_entrez_mm}
 \title{Lookups between UniProt accessions and Entrez IDs for mouse proteins.}
-\format{A data frame with 33231 rows and 2 variables:
+\format{
+A data frame with 33231 rows and 2 variables:
 \describe{
   \item{entrez}{Entrez ID}
   \item{uniprot_acc}{UniProt accession number}
-}}
+}
+}
 \usage{
 uniprot_entrez_mm
 }

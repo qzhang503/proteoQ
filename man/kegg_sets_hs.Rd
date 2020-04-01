@@ -4,10 +4,12 @@
 \name{kegg_sets_hs}
 \alias{kegg_sets_hs}
 \title{Entrez IDs of human KEGG annotations.}
-\format{A list at a length of 229 
+\format{
+A list at a length of 229 
 \describe{
   \item{hsa...}{human entries}
-}}
+}
+}
 \source{
 \url{https://www.genome.jp/kegg/pathway.html}
 }

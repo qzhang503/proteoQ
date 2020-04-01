@@ -4,11 +4,13 @@
 \name{uniprot_species}
 \alias{uniprot_species}
 \title{A list of UniProt taxon IDs and Species names.}
-\format{A data frame with 10818 rows and 2 variables:
+\format{
+A data frame with 10818 rows and 2 variables:
 \describe{
   \item{taxid}{UniProt taxon ID}
   \item{organism}{UniProt Species name}
-}}
+}
+}
 \usage{
 uniprot_species
 }

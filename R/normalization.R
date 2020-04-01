@@ -178,8 +178,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 
 	if (!purrr::is_empty(nonslice_dots)) {
 	  data.frame(nonslice_dots) %>%
-			bind_cols(n_comp = n_comp) %>%
-			write.table(., file = file.path(filepath, "normalmixEM_pars.txt"),
+			dplyr::bind_cols(n_comp = n_comp) %>%
+			write.table(file = file.path(filepath, "normalmixEM_pars.txt"),
 			            sep = "\t", col.names = TRUE, row.names = FALSE)
 	}
 
@@ -218,7 +218,6 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  params_sub <- df %>% 
 	    filters_in_call(!!!slice_dots) %>% 
 	    dplyr::select(nm_log2r_n) %>% 
-	    # `names<-`(gsub("^N_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
 	    `names<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
 	    fitKernelDensity(n_comp = n_comp, seed = seed, !!!nonslice_dots) %>% 
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
@@ -235,15 +234,27 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
 	      dplyr::arrange(Sample_ID, Component)
       
-      if (anyNA(params$Sample_ID)) {
-        try(unlink(file.path(dat_dir, "Peptide\\Histogram\\MGKernel_params_[NZ].txt")))
-        try(unlink(file.path(dat_dir, "Peptide\\Peptide.txt")))
-        try(unlink(file.path(dat_dir, "Protein\\Histogram\\MGKernel_params_[NZ].txt")))
-        try(unlink(file.path(dat_dir, "Protein\\Protein.txt")))
-        stop("`MGKernel_params` files contain Sample_ID(s) not in `expt_smry.xlsx` and are removed; 
-             start the normalization over again.")
+      # may be deleted since `ok_existing_params(...)` earlier
+      run_scripts <- FALSE
+      if (run_scripts) {
+        if (anyNA(params$Sample_ID)) {
+          try(unlink(file.path(dat_dir, "Peptide\\Histogram\\MGKernel_params_[NZ].txt")))
+          try(unlink(file.path(dat_dir, "Protein\\Histogram\\MGKernel_params_[NZ].txt")))
+  
+          missing_samples <- local({
+            par_samples <- params$Sample_ID %>% unique() %>% .[!is.na(.)]
+            expt_samples <- label_scheme$Sample_ID %>% unique()
+            setdiff(expt_samples, par_samples)
+          })
+          
+          stop("`Sample_ID` in `expt_smry.xlsx` not found in `peptide.txt` or `protein.txt`: \n", 
+               purrr::reduce(missing_samples, paste, sep = ", "), 
+               "\nThis is probably due to the deletion or modification of values under the `Sample_ID` columns.", 
+               "\nA fresh-start rule has been applied and please re-execute `standPep(...)` and/or `standPrn(...)`.", 
+               call. = FALSE)
+        }        
       }
-	    
+
 	    rows <- params$Sample_ID %in% params_sub$Sample_ID
 	    params[rows, ] <- params_sub
     }

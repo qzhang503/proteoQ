@@ -4,10 +4,12 @@
 \name{c2_msig_hs}
 \alias{c2_msig_hs}
 \title{Entrez IDs of human molecular signatures.}
-\format{A list at a length of 5501 
+\format{
+A list at a length of 5501 
 \describe{
   \item{hs_...}{human entries}
-}}
+}
+}
 \source{
 \url{https://www.gsea-msigdb.org/gsea/index.jsp}
 }

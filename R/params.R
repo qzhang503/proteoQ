@@ -27,7 +27,7 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
 
 	if (!file.exists(file.path(dat_dir, filename)))
-	  stop(filename, " not found under '", dat_dir, "'.")
+	  stop(filename, " not found under '", dat_dir, "'.", call. = FALSE)
 
 	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -71,7 +71,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
   	}
 	})
 
-	default_names <- c("Select", "Group", "Order", "Fill",  "Color", "Shape", "Size", "Alpha", "Peptide_Yield")
+	default_names <- c("Select", "Group", "Order", "Fill",  "Color", "Shape", 
+	                   "Size", "Alpha", "Peptide_Yield")
 
 	purrr::walk(as.list(default_names), ~ {
 		if (!.x %in% names(label_scheme_full)) {
@@ -81,16 +82,63 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	}, label_scheme_full)
 
 	# a case of label-free data
-	if (dplyr::n_distinct(label_scheme_full$TMT_Channel) == 1) 
-	  label_scheme_full$TMT_Channel <- NA
+	if (dplyr::n_distinct(label_scheme_full$TMT_Channel) == 1) label_scheme_full$TMT_Channel <- NA
 
+	# --- standardize TMT channel names
+	label_scheme_full <- local({
+	  tmt_pairs <- tibble(
+	    tmt127 = c("127", "127N"), 
+	    tmt128 = c("128", "128N"), 
+	    tmt129 = c("129", "129N"),
+	    tmt130 = c("130", "130N"), 
+	    tmt131 = c("131", "131N"),
+	  )
+	  
+	  unique_tmt <- unique(label_scheme_full$TMT_Channel) %>% gsub("^TMT-", "", .)
+	  
+	  for (tmt_pair in tmt_pairs) {
+	    tmt_pair <- unlist(tmt_pair)
+	    
+	    if (tmt_pair[1] %in% unique_tmt && tmt_pair[2] %in% unique_tmt) {
+	      label_scheme_full <- label_scheme_full %>% 
+	        dplyr::mutate(
+	          TMT_Channel = gsub(paste0(tmt_pair[1], "$"), tmt_pair[2], TMT_Channel))
+	    }
+	  }
+	  
+	  label_scheme_full <- label_scheme_full %>% 
+	    dplyr::mutate(TMT_Channel = gsub("134$", "134N", TMT_Channel)) %>% 
+	    dplyr::mutate(TMT_Channel = gsub("126N$", "126", TMT_Channel))
+	  
+	  return(label_scheme_full)
+	})
+	
 	TMT_plex <- TMT_plex(label_scheme_full)
-	TMT_levels <- TMT_levels(TMT_plex)
+
+	# i.e. 131 in 10-plex and 131N in 16-plex and a total of 17-plex
+	run_scripts <- FALSE
+	if (run_scripts) {
+	  if (TMT_plex > 10) {
+	    label_scheme_full <- label_scheme_full %>% 
+	      dplyr::mutate(TMT_Channel = gsub("(12[7-9]{1})$", "\\1N", TMT_Channel)) %>% 
+	      dplyr::mutate(TMT_Channel = gsub("(13[0-1]{1})$", "\\1N", TMT_Channel))
+	    
+	    TMT_plex <- TMT_plex(label_scheme_full)
+	  }
+	}
 	
 	if (TMT_plex == 10) {
 	  label_scheme_full <- label_scheme_full %>% 
-	    dplyr::mutate(TMT_Channel = gsub("131N", "131", TMT_Channel))
+	    dplyr::mutate(TMT_Channel = gsub("126N$", "126", TMT_Channel)) %>% 
+	    dplyr::mutate(TMT_Channel = gsub("131N$", "131", TMT_Channel))
+	} else if (TMT_plex == 6) {
+	  label_scheme_full <- label_scheme_full %>% 
+	    dplyr::mutate(TMT_Channel = gsub("(12[6-9]{1})N$", "\\1", TMT_Channel)) %>% 
+	    dplyr::mutate(TMT_Channel = gsub("(13[0-1]{1})N$", "\\1", TMT_Channel)) 
 	}
+	
+	# --- auto fill
+	TMT_levels <- TMT_levels(TMT_plex)
 
 	label_scheme_full <- label_scheme_full %>% 
 	  dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% 
@@ -127,9 +175,25 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
   	label_scheme_full <- dplyr::bind_cols(
   	  label_scheme_full %>% dplyr::select(Sample_ID), 
   	  label_scheme_full %>% dplyr::select(-Sample_ID))
+  	
+  	# clean up of unused TMT channels
+  	opt_nms <- names(label_scheme_full) %>% 
+  	  .[! . %in% c("TMT_Channel", "TMT_Set", "LCMS_Injection", 
+  	               "RAW_File", "Sample_ID", "Reference")]
+  	
+  	empty_rows <- label_scheme_full %>% dplyr::filter(grepl("^Empty\\.[0-9]+", Sample_ID))
+  	if (nrow(empty_rows) > 0 ) {
+    	empty_rows[, opt_nms] <- NA
+    	empty_rows[, "Reference"] <- FALSE  	  
+  	}
+
+  	label_scheme_full <- label_scheme_full %>% 
+  	  dplyr::filter(! Sample_ID %in% empty_rows$Sample_ID) %>% 
+  	  dplyr::bind_rows(empty_rows) %>% 
+  	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 	})
 	
-	# may be deleted: check the completeness of TMT_Channel
+	# rows may be deleted later: check the completeness of TMT_Channel
 	# (RAW_File is either all NA or all filled)
 	local({
   	check_tmt <- label_scheme_full %>%
@@ -179,6 +243,11 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
   	}	  
 	})
 
+	if (!all(unique(label_scheme_full$TMT_Channel) %in% TMT_levels)) {
+	  stop("Not all `TMT_Channel` in `expt_smry.xlsx` in \n", 
+	       purrr::reduce(TMT_levels, paste, sep = ", "), call. = FALSE)
+	}
+
 	save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.rda"))
 
 	wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
@@ -197,7 +266,43 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 #' @importFrom magrittr %>%
 #' @importFrom readxl read_excel
 prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
-	if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  old_opts <- options()
+  on.exit(options(old_opts), add = TRUE)
+  options(warning.length = 5000L)
+  
+  tbl_mascot <- c(
+    "\nMascot (similarly for MaxQuant and Spectrum Mill):\n",
+    "-----------------------------------------------------------------------\n", 
+    "     TMT_Set    | LCMS_Injection  |     RAW_File     |     PSM_File    \n", 
+    "----------------|-----------------|------------------|-----------------\n", 
+    "        1       |        1        | TMT1_Inj1_F1.raw |    F000001.csv  \n", 
+    "----------------|-----------------|------------------|-----------------\n", 
+    "                |                 | TMT1_Inj1_F2.raw |    F000001.csv  \n", 
+    "----------------|-----------------|------------------|-----------------\n", 
+    "       ...      |       ...       |        ...       |        ...      \n",
+    "----------------|-----------------|------------------|-----------------\n",
+    "        2       |        1        | TMT2_Inj1_F1.raw |    F000002.csv  \n", 
+    "----------------|------------------------------------|-----------------\n",
+    "                |                 | TMT2_Inj1_F2.raw |    F000002.csv  \n", 
+    "----------------|-----------------|------------------|-----------------\n", 
+    "       ...      |       ...       |        ...       |        ...      \n",
+    "-----------------------------------------------------------------------\n"
+  )
+  
+  tbl_mq <- c(
+    "\nExamplary MaxQuant:\n",
+    "-----------------------------------------------------------------------\n", 
+    "     TMT_Set    | LCMS_Injection  |     RAW_File     |     PSM_File    \n", 
+    "----------------|-----------------|------------------|-----------------\n", 
+    "        1       |        1        | dup_msfile_1.raw |   msms_xxx.txt  \n", 
+    "----------------|------------------------------------|-----------------\n",
+    "        2       |        1        | dup_msfile_1.raw |   msms_yyy.txt  \n", 
+    "-----------------------------------------------------------------------\n", 
+    "      ...       |       ...       |        ...       |        ...      \n",
+    "-----------------------------------------------------------------------\n"
+  )
+  
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
 
 	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -214,6 +319,28 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 			stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
 		}
 	  
+	  if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
+	    stop("\nDuplicated `RAW_File` names in `", filename, "`:\n", 
+	         "This may occur when searching the same RAW files with different parameter sets.\n", 
+	         "To distinguish, add PSM file names to column `PSM_File`:\n", 
+	         tbl_mascot, call. = FALSE)
+	  }	
+	  
+	  if (!is.null(fraction_scheme[["PSM_File"]])) {
+	    fraction_scheme <- fraction_scheme %>% 
+	      dplyr::mutate(PSM_File = gsub("\\.csv$|\\.txt$|\\.ssv$", "", PSM_File)) 
+	    
+	    local({
+	      raw_psm <- fraction_scheme %>% 
+	        tidyr::unite(RAW_File, RAW_File, PSM_File, sep = "@") 
+	      
+	      if (any(duplicated(raw_psm$RAW_File))) {
+	        stop("The combination of `RAW_File` and `PSM_File` is not unique in `", filename, "`.",
+	             call. = FALSE)
+	      }
+	    })
+	  }
+
 	  local({
 	    load(file.path(dat_dir, "label_scheme_full.rda"))
 	    
@@ -267,7 +394,7 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	  openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
 	  openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
  	} else {
- 	  assign(".auto_frac_smry", TRUE, envir = .GlobalEnv)
+ 	  # assign(".auto_frac_smry", TRUE, envir = .GlobalEnv)
  	  
  	  # warning: data in a auto-generated `frac_smry.xlsx` will be incorrect 
  	  #   if they were based on wrong information from `expt_smry.xlsx`
@@ -278,11 +405,31 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
  	    stop("File name(s) of RAW MS data not found under the column `RAW_File` in `expt_smry.xlsx`.", 
  	         call. = FALSE)
 
+		# the same RAW file can go into different searches
+ 	  # e.g. the same RAW but different TMT_Set
 		fraction_scheme <- label_scheme_full %>%
-			dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
-			dplyr::filter(!duplicated(RAW_File)) %>%
-			dplyr::group_by(TMT_Set, LCMS_Injection) %>%
-			dplyr::mutate(Fraction = row_number())
+		  # tidyr::unite(tmt_lcms_raw, c("TMT_Set", "LCMS_Injection", "RAW_File"), remove = FALSE) %>% 
+		  tidyr::unite(tmt_lcms, c("TMT_Set", "LCMS_Injection"), remove = FALSE) %>% 
+		  dplyr::filter(!duplicated(tmt_lcms)) %>%
+		  dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
+		  dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+		  dplyr::mutate(Fraction = row_number())
+		
+		run_scripts <- FALSE
+		if (run_scripts) {
+  		fraction_scheme <- label_scheme_full %>%
+  			dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
+  			dplyr::filter(!duplicated(RAW_File)) %>%
+  			dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+  			dplyr::mutate(Fraction = row_number())
+		}
+		
+		if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
+		  stop("\nDuplicated `RAW_File` names detected during the auto-generation of `", filename, "`.\n",
+		       "This may occur when searching the same RAW files with different parameter sets.\n", 
+		       "To distinguish, create manually `frac_smry.xlsx` with column `PSM_File`:\n", 
+		       tbl_mascot, call. = FALSE)
+		}	
 
 		wb <- openxlsx::createWorkbook()
 		openxlsx::addWorksheet(wb, sheetName = "Fractions")
@@ -597,7 +744,7 @@ n_TMT_sets <- function (label_scheme_full) {
 #' \code{TMT_plex} returns the multiplexity of TMT labels.
 #' @inheritParams check_label_scheme
 TMT_plex <- function (label_scheme_full) {
-	nlevels(as.factor(label_scheme_full$TMT_Channel))
+  nlevels(as.factor(label_scheme_full$TMT_Channel))
 }
 
 
@@ -717,3 +864,26 @@ check_raws <- function(df) {
   return(tmtinj_raw)
 }
 
+
+#' Find the TMT-plex from Mascot PSM exports
+#' @param df A PSM export from Mascot
+#' @param pep_seq_rows The row(s) contain character string "pep_seq".
+find_masct_tmtplex <- function(df, pep_seq_rows = NULL) {
+  if (is.null(pep_seq_rows)) pep_seq_rows <- grep("pep_seq", df)
+  if (purrr::is_empty(pep_seq_rows)) stop("The row of `pep_seq` not found.", call. = FALSE)
+  
+  first_line <- df[pep_seq_rows[1] + 1]
+  
+  if (grepl("\"134\"", first_line, fixed = TRUE)) {
+    mascot_tmtplex <- 16
+  } else if (grepl("\"131C\"", first_line, fixed = TRUE)) {
+    mascot_tmtplex <- 11
+  } else if (grepl("\"131\"", first_line, fixed = TRUE) && 
+             grepl("\"130C\"", first_line, fixed = TRUE)) {
+    mascot_tmtplex <- 10
+  } else if (grepl("\"131\"", first_line, fixed = TRUE)) {
+    mascot_tmtplex <- 6
+  } else {
+    mascot_tmtplex <- 0
+  }
+}
