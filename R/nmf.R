@@ -272,14 +272,16 @@ plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, 
     clus <- data.frame(clus, check.names = FALSE)
     clus <- clus %>% .[rownames(.) %in% label_scheme_sub$Sample_ID, ]
     
-    annotation_col <- annotation_col %>% 
+    if (!is.na(annotation_col)) {
+      annotation_col <- annotation_col %>% 
       tibble::rownames_to_column() %>% 
       dplyr::bind_cols(clus) %>% 
       dplyr::select(-c("neighbor", "sil_width")) %>% 
       dplyr::rename(silhouette = cluster) %>% 
       dplyr::mutate(silhouette = factor(silhouette)) %>% 
       tibble::column_to_rownames()
-    
+    }
+
     p <- my_pheatmap(
       mat = D_matrix,
       filename = file.path(filepath, out_nm),
@@ -460,14 +462,16 @@ plotNMFCoef <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
     attr(clus, "class") <- NULL
     clus <- data.frame(clus, check.names = FALSE)
     
-    annotation_col <- annotation_col %>% 
+    if (!is.na(annotation_col)) {
+      annotation_col <- annotation_col %>% 
       tibble::rownames_to_column() %>% 
       dplyr::bind_cols(clus) %>% 
       dplyr::select(-c("neighbor", "sil_width")) %>% 
       dplyr::rename(silhouette = cluster) %>% 
       dplyr::mutate(silhouette = factor(silhouette)) %>% 
       tibble::column_to_rownames()
-    
+    }
+
     p <- my_pheatmap(
       mat = D_matrix,
       filename = file.path(filepath, out_nm),

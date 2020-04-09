@@ -4,11 +4,15 @@
 \alias{normPep_Mplex}
 \title{combined peptide reports across multiple TMT experiments}
 \usage{
-normPep_Mplex(id = "pep_seq_mod", group_pep_by = "prot_acc", ...)
+normPep_Mplex(group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", ...)
 }
 \arguments{
-\item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
-\code{prot_acc} and \code{gene}.}
+\item{group_psm_by}{A character string specifying the method in PSM grouping.
+At the \code{pep_seq} default, descriptive statistics will be calculated
+based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
+alternative, peptides with different variable modifications will be treated
+as different species and descriptive statistics will be calculated based on
+the same \code{pep_seq_mod} groups.}
 
 \item{group_pep_by}{A character string specifying the method in peptide
 grouping. At the \code{prot_acc} default, descriptive statistics will be

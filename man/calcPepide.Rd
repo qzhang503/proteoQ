@@ -7,7 +7,7 @@
 calcPepide(
   df,
   label_scheme,
-  id,
+  group_psm_by,
   method_psm_pep,
   group_pep_by,
   set_idx,
@@ -19,7 +19,12 @@ calcPepide(
 
 \item{label_scheme}{The data frame returned by \code{\link{load_expts}}.}
 
-\item{id}{The same as \code{group_psm_by} in \code{\link{normPSM}}.}
+\item{group_psm_by}{A character string specifying the method in PSM grouping.
+At the \code{pep_seq} default, descriptive statistics will be calculated
+based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
+alternative, peptides with different variable modifications will be treated
+as different species and descriptive statistics will be calculated based on
+the same \code{pep_seq_mod} groups.}
 
 \item{method_psm_pep}{Character string; the method to summarize the
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
