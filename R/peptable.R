@@ -34,17 +34,17 @@ newColnames <- function(i, x, label_scheme) {
 #'
 #' @inheritParams info_anal
 #' @inheritParams normPSM
-normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
+normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
-  id <- rlang::as_string(rlang::enexpr(id))
-  
+
   filter_dots <- rlang::enexprs(...) %>% 
     .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   
   filelist <- list.files(path = file.path(dat_dir, "Peptide"), 
-                         pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"), full.names = TRUE)
+                         pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"), 
+                         full.names = TRUE)
   
-  if (is_empty(filelist)) stop("No individual peptide tables; run `PSM2Pep()` first.")
+  if (purrr::is_empty(filelist)) stop("No individual peptide tables; run `PSM2Pep()` first.")
 
   df <- do.call(rbind, 
                 purrr::map(filelist, read.csv, check.names = FALSE, header = TRUE, 
@@ -57,61 +57,48 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
   if ("gene" %in% names(df)) 
     df <- df %>% dplyr::mutate(gene = forcats::fct_explicit_na(gene))
 
-  df <- local({
-    dup_peps <- df %>%
-      dplyr::select(!!rlang::sym(id), prot_acc) %>%
-      dplyr::group_by(!!rlang::sym(id)) %>%
-      dplyr::summarise(N = n_distinct(prot_acc)) %>%
-      dplyr::filter(N > 1)
+  df <- df %>% assign_duppeps(group_psm_by, group_pep_by)
+  
+  df_num <- local({
+    df_num <- df %>% 
+      dplyr::select(!!rlang::sym(group_psm_by), 
+                    TMT_Set, 
+                    grep("^sd_log2_R[0-9]{3}", names(.)), 
+                    grep("^log2_R[0-9]{3}", names(.)), 
+                    grep("^N_log2_R[0-9]{3}", names(.)), 
+                    grep("^Z_log2_R[0-9]{3}", names(.)), 
+                    grep("^I[0-9]{3}", names(.)), 
+                    grep("^N_I[0-9]{3}", names(.))) %>% 
+      dplyr::group_by(!!rlang::sym(group_psm_by), TMT_Set) %>%
+      dplyr::summarise_all(~ median(.x, na.rm = TRUE))
     
-    if (nrow(dup_peps) > 0) {
-      write.csv(dup_peps, file.path(dat_dir, "Peptide", "dbl_dipping_peptides.csv"), row.names = FALSE)
-      df <- df %>% dplyr::filter(! (!!rlang::sym(id) %in% dup_peps[[id]]))
+    df_num <- df_num %>%
+      dplyr::arrange(TMT_Set) %>%
+      tidyr::gather(grep("R[0-9]{3}|I[0-9]{3}", names(.)), key = ID, value = value) %>%
+      tidyr::unite(ID, ID, TMT_Set)
+    
+    # define the levels of TMT channels;
+    # otherwise, the order of channels will flip between N(itrogen) and C(arbon)
+    Levels <- unique(df_num$ID)
+    df_num <- df_num %>%
+      dplyr::mutate(ID = factor(ID, levels = Levels)) %>%
+      tidyr::spread(ID, value)
+    rm(Levels)
+    
+    for (set_idx in seq_len(n_TMT_sets(label_scheme))) {
+      df_num <- newColnames(set_idx, df_num, label_scheme)
     }
     
-    write.csv(df, file.path(dat_dir, "Peptide\\cache", "unambi_peptides.csv"), row.names = FALSE)
-    return(df)
+    df_num <- df_num %>% 
+      dplyr::select(!!rlang::sym(group_psm_by), grep("[RI][0-9]{3}[NC]*", names(.))) %>% 
+      dplyr::arrange(!!rlang::sym(group_psm_by))
   })
-  
-  df_num <- df %>% 
-    dplyr::select(!!rlang::sym(id), 
-                  TMT_Set, 
-                  grep("^sd_log2_R[0-9]{3}", names(.)), 
-                  grep("^log2_R[0-9]{3}", names(.)), 
-                  grep("^N_log2_R[0-9]{3}", names(.)), 
-                  grep("^Z_log2_R[0-9]{3}", names(.)), 
-                  grep("^I[0-9]{3}", names(.)), 
-                  grep("^N_I[0-9]{3}", names(.))) %>% 
-    dplyr::group_by(!!rlang::sym(id), TMT_Set) %>%
-    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-  
-  df_num <- df_num %>%
-    dplyr::arrange(TMT_Set) %>%
-    tidyr::gather(grep("R[0-9]{3}|I[0-9]{3}", names(.)), key = ID, value = value) %>%
-    tidyr::unite(ID, ID, TMT_Set)
-  
-  # define the levels of TMT channels;
-  # otherwise, the order of channels will flip between N(itrogen) and C(arbon)
-  Levels <- unique(df_num$ID)
-  df_num <- df_num %>%
-    dplyr::mutate(ID = factor(ID, levels = Levels)) %>%
-    tidyr::spread(ID, value)
-  rm(Levels)
-  
-  for (set_idx in seq_len(n_TMT_sets(label_scheme))) {
-    df_num <- newColnames(set_idx, df_num, label_scheme)
-  }
-  
-  df_num <- df_num %>% 
-    dplyr::select(!!rlang::sym(id), grep("[RI][0-9]{3}[NC]*", names(.))) %>% 
-    dplyr::arrange(!!rlang::sym(id)) %T>%
-    write.csv(file.path(dat_dir, "Peptide\\cache", "pep_num.csv"), row.names = FALSE)
-  
+
   pep_n_psm <- df %>%
-    dplyr::select(!!rlang::sym(id), pep_n_psm) %>%
-    dplyr::group_by(!!rlang::sym(id)) %>%
+    dplyr::select(!!rlang::sym(group_psm_by), pep_n_psm) %>%
+    dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
     dplyr::summarise(pep_n_psm = sum(pep_n_psm)) %>% 
-    dplyr::arrange(!!rlang::sym(id))
+    dplyr::arrange(!!rlang::sym(group_psm_by))
   
   prot_n_psm <- df %>% 
     dplyr::select(pep_n_psm, !!rlang::sym(group_pep_by)) %>% 
@@ -119,24 +106,24 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
     dplyr::summarise(prot_n_psm = sum(pep_n_psm))
 
   prot_n_pep <- df %>% 
-    dplyr::select(!!rlang::sym(id), !!rlang::sym(group_pep_by)) %>% 
-    dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
+    dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>% 
+    dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
     dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
     dplyr::summarise(prot_n_pep = n())
   
   df_first <- df %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-    med_summarise_keys(id) %>% 
-    dplyr::select(-pep_n_psm, -prot_n_psm, -prot_n_pep, -TMT_Set) %>% # remove old values from single `TMT_Set`
-    dplyr::arrange(!!rlang::sym(id))  
+    med_summarise_keys(group_psm_by) %>% 
+    dplyr::select(-pep_n_psm, -prot_n_psm, -prot_n_pep, -TMT_Set) %>% 
+    dplyr::arrange(!!rlang::sym(group_psm_by))  
 
   df <- list(pep_n_psm, df_first, df_num) %>%
-    purrr::reduce(left_join, by = id)
+    purrr::reduce(left_join, by = group_psm_by)
   
   df <- list(df, prot_n_psm, prot_n_pep) %>%
     purrr::reduce(left_join, by = group_pep_by)
   
-  if (("pep_seq_mod" %in% names(df)) & (match_call_arg(normPSM, use_lowercase_aa))) {
+  if (("pep_seq_mod" %in% names(df)) && (match_call_arg(normPSM, use_lowercase_aa))) {
     df <- df %>% 
       dplyr::mutate(pep_mod_protnt = ifelse(grepl("^[A-z\\-]\\.~", pep_seq_mod), TRUE, FALSE)) %>% 
       dplyr::mutate(pep_mod_protntac = ifelse(grepl("^[A-z\\-]\\._", pep_seq_mod), TRUE, FALSE)) %>% 
@@ -150,13 +137,13 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
   }
   
   df <- dplyr::bind_cols(
-    df %>% select(grep("^pep_", names(.))), 
-    df %>% select(-grep("^pep_", names(.))), 
+    df %>% dplyr::select(grep("^pep_", names(.))), 
+    df %>% dplyr::select(-grep("^pep_", names(.))), 
   )
   
   df <- dplyr::bind_cols(
-    df %>% select(grep("^prot_", names(.))), 
-    df %>% select(-grep("^prot_", names(.))), 
+    df %>% dplyr::select(grep("^prot_", names(.))), 
+    df %>% dplyr::select(-grep("^prot_", names(.))), 
   )
   
   df <- dplyr::bind_cols(
@@ -177,10 +164,9 @@ normPep_Mplex <- function (id = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
     dplyr::mutate_at(vars(grep("sd_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3))
   
   df <- df %>%
-    dplyr::filter(!duplicated(.[[id]])) %>% 
+    dplyr::filter(!duplicated(.[[group_psm_by]])) %>% 
     dplyr::filter(rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0) %>% 
-    dplyr::arrange(!!rlang::sym(id)) %T>%
-    write.csv(file.path(dat_dir, "Peptide\\cache", "Peptide_no_norm.csv"), row.names = FALSE)	
+    dplyr::arrange(!!rlang::sym(group_psm_by))
   
   df <- normMulGau(
     df = df,
@@ -452,7 +438,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  id <- match_call_arg(normPSM, group_psm_by)
+  group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
   filename <- file.path(dat_dir, "Peptide\\Peptide.txt")
   
@@ -461,14 +447,20 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 
   message("Primary column keys in `Peptide/TMTset1_LCMSinj1_Peptide_N.txt` etc. for `filter_` varargs.")
   
-  df <- normPep_Mplex(!!id, group_pep_by, !!!filter_dots) %T>% 
+  df <- normPep_Mplex(group_psm_by, group_pep_by, !!!filter_dots) %T>% 
     write.table(filename, sep = "\t", col.names = TRUE, row.names = FALSE)
 
-  if (plot_log2FC_cv & TMT_plex(label_scheme) > 0) {
-    quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_pep_by, 
-                                           filepath = file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
-                                           width = 8 * n_TMT_sets(label_scheme), height = 8, 
-                                           type = "log2_R", adjSD = FALSE, is_psm = FALSE)
+  if (plot_log2FC_cv && (TMT_plex(label_scheme) > 0)) {
+    quiet_out <- purrr::quietly(sd_violin)(
+      df = df, 
+      id = !!group_pep_by, 
+      filepath = file.path(dat_dir, "Peptide\\log2FC_cv\\raw\\Peptide_sd.png"), 
+      width = 8 * n_TMT_sets(label_scheme), 
+      height = 8, 
+      type = "log2_R", 
+      adjSD = FALSE, 
+      is_psm = FALSE
+    )
   }
 }
 
@@ -852,19 +844,16 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
   
   df <- pep_to_prn(!!id, method_pep_prn, use_unique_pep, gn_rollup, !!!filter_dots) 
   
-  to_mc <- TRUE
-  if (to_mc) {
-    df <- normMulGau(
-      df = df,
-      method_align = "MC",
-      n_comp = 1L,
-      range_log2r = c(0, 100),
-      range_int = c(0, 100),
-      filepath = file.path(dat_dir, "Protein\\Histogram"),
-      col_select = rlang::expr(Sample_ID), 
-    )    
-  }
-
+  df <- normMulGau(
+    df = df,
+    method_align = "MC",
+    n_comp = 1L,
+    range_log2r = c(0, 100),
+    range_int = c(0, 100),
+    filepath = file.path(dat_dir, "Protein\\Histogram"),
+    col_select = rlang::expr(Sample_ID), 
+  ) 
+  
   df <- df %>% 
     dplyr::filter(!nchar(as.character(.[["prot_acc"]])) == 0) %>% 
     dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
@@ -1014,5 +1003,66 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   return(df)
 }
 
+
+#' Assign duplicated peptides to a leading protein
+#' @param df A PSM data frame
+#' @inheritParams annotPSM
+assign_duppeps <- function(df, group_psm_by, group_pep_by) {
+  dup_peps <- df %>%
+    dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+    dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+    dplyr::summarise(N = n_distinct(!!rlang::sym(group_pep_by))) %>%
+    dplyr::filter(N > 1)
+  
+  if (nrow(dup_peps) > 0) {
+    df_dups <- purrr::map(as.character(unique(dup_peps[[group_psm_by]])), ~ {
+      df_sub <- df %>% 
+        dplyr::filter(!!rlang::sym(group_psm_by) == .x) %>% 
+        dplyr::arrange(-prot_n_pep)
+      
+      # if (group_pep_by prot_acc) use the first prot_acc and also the first gene
+      # if (group_pep_by gene) use the first gene and also the first prot_acc
+      
+      cols_prot1 <- suppressWarnings(
+        df_sub %>% 
+          dplyr::select(grep("^prot_", names(.))) %>% 
+          dplyr::select(-one_of(c("prot_n_psm", "prot_n_pep", "prot_cover", 
+                                  "prot_matches_sig", "prot_sequences_sig"))) %>% 
+          dplyr::slice(1))
+      
+      cols_prot2 <- suppressWarnings(
+        df_sub %>% dplyr::select(one_of(c("gene", "acc_type", "species", "entrez", 
+                                          "kin_attr", "kin_class", "kin_order"))) %>% 
+          dplyr::slice(1)) 
+      
+      cols_prot <- dplyr::bind_cols(cols_prot1, cols_prot2)
+      
+      df_sub2 <- df_sub %>% dplyr::slice(-1)
+      df_sub2[, names(df_sub2) %in% names(cols_prot)] <- cols_prot
+      df_sub <- dplyr::bind_rows(df_sub %>% dplyr::slice(1), df_sub2)
+    }) %>% 
+      dplyr::bind_rows() %>% 
+      dplyr::select(names(df)) 
+    
+    df <- dplyr::bind_rows(
+      df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% df_dups[[group_psm_by]])), 
+      df_dups) 
+    
+    # update `dup_peps`; should be empty
+    dup_peps_af <- df %>% 
+      dplyr::filter(!!rlang::sym(group_psm_by) %in% dup_peps[[group_psm_by]]) %>%
+      dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+      dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+      dplyr::summarise(N = n_distinct(!!rlang::sym(group_pep_by))) %>%
+      dplyr::filter(N > 1)
+    
+    if (nrow(dup_peps_af) > 0) {
+      write.csv(dup_peps_af, file.path(dat_dir, "Peptide\\dbl_dipping_peptides.csv"), row.names = FALSE)
+      df <- df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps_af[[group_psm_by]]))
+    }
+  }
+  
+  return(df)
+}
 
 

@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-03-29
+2020-04-09
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -205,7 +205,8 @@ the ambiguity in protein inference, I typically enable the option of
 `Merge MS/MS files into single search` in [Mascot
 Daemon](http://www.matrixscience.com/daemon.html).\[3\] If the option is
 disabled, peptide sequences that have been assigned to multiple protein
-IDs will be removed for now when constructing peptide reports.
+IDs will be simply ascribed to the protein with the greatest number of
+identifying peptides, when possible.
 
 <img src="images/mascot/mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
 

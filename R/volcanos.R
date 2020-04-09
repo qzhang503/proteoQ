@@ -175,8 +175,10 @@ byfml_volcano <- function (fml_nm, gspval_cutoff, gslogFC_cutoff, topn, df, df2,
 #' @inheritParams fml_gspa
 #' @import limma stringr purrr dplyr rlang grid gridExtra gtable
 #' @importFrom magrittr %>%
-byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL, filepath = NULL, filename = NULL, 
-                               adjP = FALSE, show_labels = TRUE, anal_type = "Volcano", gset_nms = "go_sets", 
+byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL, 
+                               filepath = NULL, filename = NULL, 
+                               adjP = FALSE, show_labels = TRUE, 
+                               anal_type = "Volcano", gset_nms = "go_sets", 
                                scale_log2r, impute_na, theme = NULL, ...) {
 
   id <- rlang::as_string(rlang::enexpr(id))
@@ -185,7 +187,8 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
 	  gsub("^log2Ratio\\s+\\(|\\)$", "", .)
 
 	if (anal_type %in% c("Volcano")) {
-		function(gspval_cutoff = 1, gslogFC_cutoff = 0, topn = Inf, show_sig = "none", theme = theme, ...) {
+		function(gspval_cutoff = 1, gslogFC_cutoff = 0, topn = Inf, 
+		         show_sig = "none", theme = theme, ...) {
 			rm(gspval_cutoff, gslogFC_cutoff, show_sig)
 
 			fullVolcano(df = df, id = !!id, contrast_groups = contrast_groups,
@@ -193,13 +196,17 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
 				adjP = adjP, show_labels = show_labels, ...)
 		}
 	} else if (anal_type == "mapGSPA")
-	  function(gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn = Inf, show_sig = "none", theme = theme, ...) {
+	  function(gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn = Inf, 
+	           show_sig = "none", theme = theme, ...) {
 	    stopifnot(!is.null(fml_nm))
 	    
 	    filepath_fml <- file.path(filepath, fml_nm)
 	    
 	    in_names <- list.files(path = filepath_fml, pattern = "_GSPA_[NZ]{1}.*\\.txt$")
-	    if (purrr::is_empty(in_names)) stop("No inputs under ", filepath_fml, call. = FALSE)
+	    if (purrr::is_empty(in_names)) {
+	      warning("No inputs under ", filepath_fml, call. = FALSE)
+	      return(NULL)
+	    }
 	    
 	    if (is.null(df2)) {
   	    in_names <- in_names %>% 

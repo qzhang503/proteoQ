@@ -7,6 +7,15 @@ date: "`r Sys.Date()`"
 output:
   github_document:
     toc: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  word_document:
+    toc: yes
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: gfm
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -15,15 +24,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  word_document:
-    toc: yes
-  md_document:
-    toc: yes
-    toc_depth: 4
-    variant: gfm
-  pdf_document:
-    toc: yes
-    number_sections: true
   html_vignette: 
   vignette: >
     %\VignetteIndexEntry{proteoQ}
@@ -185,7 +185,7 @@ In the events of phosphopeptide analyses, the confidence in the variable modific
 knitr::include_graphics("images/mascot/query_info.png")
 ```
 
-The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To escape from the ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html).^[There are cases that the same peptide sequence being assigned to different proteins remain unambiguous. For example, peptide `MENGQSTAAK` can be found from either the middle region of protein `NP_510965` or the N-terminal of protein `NP_001129505`. In case of the additional information of protein, not peptide, N-terminal acetylation, the sequence can only come from `NP_001129505` between the two candidate proteins. In addition to handling such exceptions, the nomenclature in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.] If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be removed for now when constructing peptide reports.  
+The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To escape from the ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html).^[There are cases that the same peptide sequence being assigned to different proteins remain unambiguous. For example, peptide `MENGQSTAAK` can be found from either the middle region of protein `NP_510965` or the N-terminal of protein `NP_001129505`. In case of the additional information of protein, not peptide, N-terminal acetylation, the sequence can only come from `NP_001129505` between the two candidate proteins. In addition to handling such exceptions, the nomenclature in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.] If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be simply ascribed to the protein with the greatest number of identifying peptides, when possible.  
 
 ```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_daemon <- "images/mascot/mascot_daemon.png"

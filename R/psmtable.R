@@ -1879,24 +1879,21 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
 #' 
 #' Argument \code{injn_idx} not currently used.
 #' 
-#' @param id The same as \code{group_psm_by} in \code{\link{normPSM}}.
 #' @param injn_idx Numeric; an index of \code{LCMS_Inj} in metadata \code{label_scheme.xlsx}.
 #' @inheritParams mcPSM
 #' @inheritParams PSM2Pep
 #' @inheritParams annotPSM
 #' @inheritParams channelInfo
 #' @inheritParams locate_outliers
-calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_idx, injn_idx) {
+calcPepide <- function(df, label_scheme, group_psm_by, method_psm_pep, group_pep_by, set_idx, injn_idx) {
   stopifnot("prot_acc" %in% names(df))
-  
-  id <- rlang::as_string(rlang::enexpr(id))
-  
+
   channelInfo <- label_scheme %>%
     dplyr::filter(TMT_Set == set_idx) %>%
     channelInfo(set_idx)
   
   df <- df[rowSums(!is.na(df[, grepl("^N_log2_R[0-9]{3}", names(df)), drop = FALSE])) > 0, ] %>%
-    dplyr::arrange(!!rlang::sym(id), prot_acc) %>%
+    dplyr::arrange(!!rlang::sym(group_psm_by), prot_acc) %>%
     dplyr::select(-grep("^R[0-9]{3}", names(.)))
   
   df <- df %>% 
@@ -1911,7 +1908,7 @@ calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_i
     col_start <- which(names(df) == "Modifications") + 1
     col_end <- which(names(df) == "Charge") - 1
     
-    if (!(is_empty(col_start) || is_empty(col_end))) {
+    if (!(purrr::is_empty(col_start) || is_empty(col_end))) {
       df <- df %>% dplyr::select(-(col_start : col_end))
     }
     
@@ -1957,25 +1954,25 @@ calcPepide <- function(df, label_scheme, id, method_psm_pep, group_pep_by, set_i
       dplyr::mutate(pep_scan_title = gsub("^File.*~~", "", pep_scan_title))
   }
   
-  # summarise log2FC and intensity from the same `set_idx` at one or multiple LCMS injections
+  # summaries log2FC and intensity from the same `set_idx` at one or multiple LCMS series
   if (method_psm_pep == "mean") {
-    df_num <- aggrNums(mean)(df, !!rlang::sym(id), na.rm = TRUE)
+    df_num <- aggrNums(mean)(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
   } else if (method_psm_pep == "top.3") {
-    df_num <- TMT_top_n(df, !!rlang::sym(id), na.rm = TRUE)
+    df_num <- TMT_top_n(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
   } else if (method_psm_pep == "weighted.mean") {
-    df_num <- TMT_wt_mean(df, !!rlang::sym(id), na.rm = TRUE)
+    df_num <- TMT_wt_mean(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
   } else {
-    df_num <- aggrNums(median)(df, !!rlang::sym(id), na.rm = TRUE)
+    df_num <- aggrNums(median)(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
   }
   
   df_first <- df %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-    med_summarise_keys(id)
+    med_summarise_keys(group_psm_by)
   
   df <- list(df_first, df_num) %>%
-    purrr::reduce(left_join, by = id)
+    purrr::reduce(left_join, by = group_psm_by)
   
-  if (id == "pep_seq_mod") {
+  if (group_psm_by == "pep_seq_mod") {
     df <- df %>% dplyr::select(-pep_seq)
   } else {
     df <- df %>% dplyr::select(-pep_seq_mod)
@@ -2113,7 +2110,7 @@ PSM2Pep <- function (method_psm_pep = c("median", "mean", "weighted.mean", "top.
   
   dots <- rlang::enexprs(...)
   
-  id <- match_call_arg(normPSM, group_psm_by)
+  group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
 
   method_psm_pep <- rlang::enexpr(method_psm_pep)
@@ -2142,9 +2139,8 @@ PSM2Pep <- function (method_psm_pep = c("median", "mean", "weighted.mean", "top.
     df <- read.csv(file.path(dat_dir, "PSM", .x), check.names = FALSE, header = TRUE,
                    sep = "\t", comment.char = "#") %>% 
       dplyr::select(-grep("^sd_log2_R", names(.))) %>% 
-      calcPepide(label_scheme = label_scheme, id = !!id, method_psm_pep = method_psm_pep, 
-                 group_pep_by = group_pep_by, set_idx = set_idx, injn_idx = injn_idx)
-    
+      calcPepide(label_scheme, group_psm_by, method_psm_pep, group_pep_by, set_idx, injn_idx)
+
     df <- dplyr::bind_cols(
       df %>% dplyr::select(grep("^pep_", names(.))), 
       df %>% dplyr::select(-grep("^pep_", names(.))), 
