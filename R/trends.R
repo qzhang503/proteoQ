@@ -6,6 +6,7 @@
 #' @import dplyr purrr rlang Biobase
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
+#' @importFrom cluster clusGap
 #' @importFrom magrittr %>%
 analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
                        scale_log2r, complete_cases, impute_na, 
@@ -35,16 +36,6 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
-	if (is.null(n_clust)) {
-	  n_clust <- local({
-	    nrow <- nrow(df)
-	    if (nrow >= 5000) n_clust <- c(5:6) else if (nrow >= 2000) n_clust <- c(3:5) else n_clust <- 3 
-	  })
-	  fn_prefix <- paste0(fn_prefix, n_clust)
-	} else {
-	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
-	}
-	
 	suppressWarnings(
 	  df_mean <- t(df) %>%
 	    data.frame(check.names = FALSE) %>%
@@ -69,7 +60,22 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 		tibble::rownames_to_column(id) %>%
 		dplyr::filter(complete.cases(.[, !grepl(id, names(.))])) %>%
 		tibble::column_to_rownames(id)
-
+	
+	if (is.null(n_clust)) {
+	  n_clust <- local({
+	    # nrow <- nrow(df)
+	    # if (nrow >= 5000) n_clust <- c(5:6) else if (nrow >= 2000) n_clust <- c(3:5) else n_clust <- 3 
+	    
+	    # n_clust <- fpc::pamk(df_mean, 2:10)$nc
+	    gap_stat <- cluster::clusGap(df_mean, kmeans, 10, B = 100)
+	    maxSE(f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
+	  })
+	  
+	  fn_prefix <- paste0(fn_prefix, n_clust)
+	} else {
+	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
+	}
+	
 	if (is.null(dots$m)) {
 	  dots$m <- local({
 	    N <- nrow(df_mean)
@@ -324,9 +330,9 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'@inheritParams prnCorr_logFC
 #'@inheritParams anal_prnNMF
 #'@param n_clust Numeric vector; the number(s) of clusters that data will be
-#'  divided into. At the NULL default, it will be determined by the number of
-#'  data entries. The \code{n_clust} overwrites the augument \code{centers} in
-#'  \code{\link[e1071]{cmeans}}.
+#'  divided into. At the NULL default, it will be determined by the gap method
+#'  in \code{\link[cluster]{clusGap}}. The \code{n_clust} overwrites the
+#'  argument \code{centers} in \code{\link[e1071]{cmeans}}.
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is FALSE.
 #'@param filepath Use system default.

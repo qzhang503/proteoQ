@@ -455,6 +455,19 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
     }
   })
   
+  local({
+    use_adjP <- call_pars$use_adjP
+    
+    if (use_adjP != adjP) {
+      warning("\n", 
+              "Current analysis: `adjP = ", adjP, "`.\n", 
+              "Data `", df2, "@", fml_nm, "`: based on `prnGSPA(use_adjP = ", use_adjP, ")`\n", 
+              "May consider `gspaMap(adjP = ", use_adjP, ")` for ", df2, "@", fml_nm, ".\n", 
+              "  See also `?gspaMap` for analyses against a specific file and and formula.\n\n", 
+              call. = FALSE)
+    }
+  })
+  
   pval_cutoff <- local({
     par_pval_cutoff <- call_pars$pval_cutoff
     if (!purrr::is_empty(par_pval_cutoff)) par_pval_cutoff else 0.05

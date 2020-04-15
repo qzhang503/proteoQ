@@ -4,6 +4,7 @@ author:
 - name: Qiang Zhang
 - name: R. Reid Townsend
 date: "`r Sys.Date()`"
+always_allow_html: true
 output:
   github_document:
     toc: yes
@@ -12,10 +13,6 @@ output:
     number_sections: true
   word_document:
     toc: yes
-  md_document:
-    toc: yes
-    toc_depth: 4
-    variant: gfm
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -24,6 +21,10 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: gfm
   html_vignette: 
   vignette: >
     %\VignetteIndexEntry{proteoQ}
@@ -82,7 +83,7 @@ knitr::opts_chunk$set(
 ## Introduction to proteoQ
 Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the operations against data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
 
-The tool currently processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags. https://github.com/qzhang503/proteoQ.]   
+The [framework](https://proteoq.netlify.com/#posts) of `proteoQ` consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags. https://github.com/qzhang503/proteoQ.]  
 
 (Click <strong>[Recent Posts](https://proteoq.netlify.com/#posts)</strong> for additional examples.)  
 
@@ -195,6 +196,7 @@ knitr::include_graphics(c(img_daemon))
 The merged search may become increasingly cumbersome with growing data sets. In this example, I combined the MS peak lists from the Hp-RP fractions within the same 10-plex TMT experiment, but not the lists across experiments. This results in a total of six pieces of PSM results in `Mascot` exports.  
 
 #### 1.1.3 Metadata
+
 The workflow involves an `Excel` template containing the metadata of multiplex experiments, including experiment numbers, TMT channels, LC/MS injection indices, sample IDs, reference channels, `RAW` MS data file names and additional fields from users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. ^[To extract the names of RAW MS files under a `raw_dir` folder: `extract_raws(raw_dir)`. Very occasionally, there may be RAW files without PSM contributions. In this case, the file names will be shown as missing by the program and need to be removed from `expt_smry.xlsx` or `frac_smry.xlsx`. The function `extract_psm_raws(dat_dir)` was developed to extract the list of RAW files that are actually present in PSM files.] Unless otherwise mentioned, we will assume these default file names throughout the document.  
 
 Columns in the `expt_smry.xlsx` are approximately divided into the following three tiers: (1) `essential`, (2) `optional default` and (3) `optional open`. We supply the required information of the TMT experiments under the essential columns. The optional default columns serve as the fields for convenient lookups in sample selection, grouping, ordering, aesthetics etc. For instance, the program will by default look for values under the `Color` column if no instruction was given in the color coding of a PCA plot. The optional open fields on the other hand allow us to define our own analysis and aesthetics. For instance, we may openly define multiple columns of contrasts at different levels of granularity for uses in statistical modelings. Description of the column keys can be found from the help document by entering `?proteoQ::load_expts` from a `R` console.  

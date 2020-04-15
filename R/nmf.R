@@ -272,7 +272,7 @@ plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, 
     clus <- data.frame(clus, check.names = FALSE)
     clus <- clus %>% .[rownames(.) %in% label_scheme_sub$Sample_ID, ]
     
-    if (!is.na(annotation_col)) {
+    if (!all(is.na(annotation_col))) {
       annotation_col <- annotation_col %>% 
       tibble::rownames_to_column() %>% 
       dplyr::bind_cols(clus) %>% 
@@ -462,7 +462,7 @@ plotNMFCoef <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
     attr(clus, "class") <- NULL
     clus <- data.frame(clus, check.names = FALSE)
     
-    if (!is.na(annotation_col)) {
+    if (!all(is.na(annotation_col))) {
       annotation_col <- annotation_col %>% 
       tibble::rownames_to_column() %>% 
       dplyr::bind_cols(clus) %>% 
