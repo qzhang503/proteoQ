@@ -536,6 +536,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), 
 		         gspval_cutoff = 1E-2, gslogFC_cutoff = log2(1), 
 		         min_size = 10, max_size = Inf, min_delta = 4, min_greedy_size = 1, 
+		         use_adjP = FALSE, 
 		         method = "mean", 
 		         ...) {
 		  gspaTest(df = df, 
@@ -556,6 +557,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           max_size = max_size, 
 		           min_delta = min_delta,
 		           min_greedy_size = min_greedy_size, 
+		           use_adjP = use_adjP,
 		           method = method, 
 		           anal_type = anal_type, 
 		           ...)

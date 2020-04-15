@@ -23,6 +23,7 @@ gspaTest(
   max_size = Inf,
   min_delta = 4,
   min_greedy_size = 1,
+  use_adjP = FALSE,
   method = "mean",
   anal_type = "GSPA",
   ...
@@ -132,6 +133,9 @@ protein entries for a gene set to be considered essential. The default in
 \code{1} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of sizes.}
+
+\item{use_adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals. The default is
+FALSE.}
 
 \item{method}{Character string or vector; the method to assess the p-values of
 GSPA. The default is \code{mean} and the alternative is \code{limma}. See

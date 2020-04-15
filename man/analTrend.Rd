@@ -50,9 +50,9 @@ column \code{Order} are left blank, samples will be ordered by their names.}
 for selected samples.}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be
-divided into. At the NULL default, it will be determined by the number of
-data entries. The \code{n_clust} overwrites the augument \code{centers} in
-\code{\link[e1071]{cmeans}}.}
+divided into. At the NULL default, it will be determined by the gap method
+in \code{\link[cluster]{clusGap}}. The \code{n_clust} overwrites the
+argument \code{centers} in \code{\link[e1071]{cmeans}}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}

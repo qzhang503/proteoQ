@@ -18,6 +18,7 @@ prnGSPA(
   max_size = Inf,
   min_delta = 4,
   min_greedy_size = 1,
+  use_adjP = FALSE,
   fml_nms = NULL,
   df = NULL,
   filepath = NULL,
@@ -104,6 +105,9 @@ protein entries for a gene set to be considered essential. The default in
 \code{1} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of sizes.}
+
+\item{use_adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals. The default is
+FALSE.}
 
 \item{fml_nms}{Character string or vector; the formula name(s). By default,
 the formula(s) will match those used in \code{\link{pepSig}} or

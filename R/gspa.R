@@ -84,6 +84,8 @@
 #'  \code{1} for all formulas matched to or specified in argument
 #'  \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 #'  of sizes.
+#'@param use_adjP Logical; if TRUE, use Benjamini-Hochberg pVals. The default is
+#'  FALSE.
 #'@param fml_nms Character string or vector; the formula name(s). By default,
 #'  the formula(s) will match those used in \code{\link{pepSig}} or
 #'  \code{\link{prnSig}}.
@@ -167,8 +169,9 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
                      gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
                      min_size = 10, max_size = Inf, 
                      min_delta = 4, min_greedy_size = 1, 
+                     use_adjP = FALSE, 
                      fml_nms = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
-  
+
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), current_env()) %>% 
@@ -223,6 +226,7 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
                                 max_size = max_size, 
                                 min_delta = min_delta, 
                                 min_greedy_size = min_greedy_size, 
+                                use_adjP = use_adjP, 
                                 method = method, 
                                 !!!dots)
 }
@@ -252,6 +256,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                      pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                      gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1), 
                      min_size = 6, max_size = Inf, min_delta = 4, min_greedy_size = 1, 
+                     use_adjP = FALSE, 
                      method = "mean", anal_type = "GSPA", ...) {
 
   # `GSPA`: use `pVals` instead of `N_log2R` or `Z_log2R`; 
@@ -332,6 +337,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                               scale_log2r = scale_log2r, 
                               filepath = filepath, 
                               filename = filename, 
+                              use_adjP = use_adjP, 
                               !!!filter_dots), 
           GSEA = purrr::pwalk(list(fmls, 
                                    fml_nms, 
@@ -375,7 +381,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gslogFC_cutoff, 
                       min_size, max_size, min_delta, min_greedy_size, method, 
                       df, col_ind, id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
-                      filepath, filename, ...) {
+                      filepath, filename, use_adjP = FALSE, ...) {
 
   on.exit(
     pars <- mget(names(formals()), current_env()) %>% 
@@ -389,7 +395,8 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   df <- df %>% prep_gspa(id = "entrez", fml_nm = fml_nm, col_ind = col_ind, 
-                         pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff) 
+                         pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
+                         use_adjP = use_adjP) 
   
   if (complete_cases) {
     df <- df[complete.cases(df), ]
@@ -704,7 +711,8 @@ lm_gspa <- function(df, min_delta, gspval_cutoff, gslogFC_cutoff) {
 #' @import purrr dplyr rlang
 #' @importFrom magrittr %>%
 #' @importFrom readr read_tsv
-prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2)) {
+prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
+                      use_adjP = FALSE) {
   id <- rlang::as_string(rlang::enexpr(id))
   
   df <- df %>%
@@ -712,8 +720,17 @@ prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff 
     `colnames<-`(gsub(paste0(fml_nm, "."), "", names(.))) %>%
     dplyr::bind_cols(df[, !col_ind, drop = FALSE], .) %>% 
     rm_pval_whitespace() %>% 
-    dplyr::select(id, grep("^pVal|^log2Ratio", names(.))) %>% 
+    dplyr::select(id, grep("^pVal|^adjP|^log2Ratio", names(.))) %>% 
     dplyr::mutate(!!id := as.character(.[[id]]))
+  
+  if (use_adjP) {
+    df <- df %>% 
+      dplyr::select(-grep("pVal", names(.))) %>% 
+      `names<-`(gsub("adjP", "pVal", names(.)))
+  } else {
+    df <- df %>% 
+      dplyr::select(-grep("adjP", names(.)))
+  }
   
   contrast_groups <- names(df[grep("^log2Ratio\\s+\\(", names(df))]) %>%
     gsub("^log2Ratio\\s+\\(|\\)$", "", .)

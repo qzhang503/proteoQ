@@ -10,7 +10,8 @@ prep_gspa(
   fml_nm,
   col_ind,
   pval_cutoff = 0.05,
-  logFC_cutoff = log2(1.2)
+  logFC_cutoff = log2(1.2),
+  use_adjP = FALSE
 )
 }
 \arguments{
@@ -43,6 +44,9 @@ threshold will be excluded from enrichment analysis. The default magnitude
 is \code{log2(1.2)} for all formulas matched to or specified in argument
 \code{fml_nms}. Formula-specific threshold is allowed by supplying a vector
 of absolute values in \code{log2FC}.}
+
+\item{use_adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals. The default is
+FALSE.}
 }
 \description{
 A helper function for GSPA

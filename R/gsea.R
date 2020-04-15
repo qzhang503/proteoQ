@@ -238,7 +238,7 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
   df <- local({
     ids <- df %>% 
       prep_gspa(id = !!id, fml_nm = fml_nm, col_ind = col_ind, 
-                pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff) %>% 
+                pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, use_adjP = FALSE) %>% 
       dplyr::select(id) %>% 
       unlist() %>% 
       unique()

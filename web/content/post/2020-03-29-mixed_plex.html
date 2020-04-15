@@ -1,0 +1,36 @@
+---
+title: Merge data at different TMT plexes
+author: Qiang Zhang
+date: '2020-04-08'
+slug: mixing data at different TMT plexes
+categories: []
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '"2020-04-08 09:42:44 CDT"'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+
+<p>The standard Tandem Mass Tag<sup>@</sup> (TMT) kits are capable of relative quantitation with up to 11 samples under one experiment, by adding a chemical structure at a monoisotopic mass of 229.162932 Da to the lysine residues or the N-terminals of peptides. More recently, <a href="https://www.thermofisher.com/us/en/home/life-science/protein-biology/protein-mass-spectrometry-analysis/protein-quantitation-mass-spectrometry/tandem-mass-tag-systems.html">TMTpro</a> was made available for the simultaneous quantitation with up to 16 samples in one experiment.</p>
+<p>TMTpro is similar in design to the standard TMT, but will tag the amine groups in peptides with a monoisotopic mass of 304.207146 Da. Due to the difference in precursor masses between TMT and TMTpro, we cannot simply perform a database search for standard TMT data using TMTpro settings.</p>
+<p>Chances may remain that we were allured to put together <em>old</em> data from standard TMT experiments and <em>new</em> data from TMTpro experiments.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> We might simply perform database searches against TMT and TMTpro data with separate sets of parameters. However, the so-generated PSM outputs will be different in both the numbers and the keys of columns.</p>
+<p>One resort is to manually compile PSM files to the same column format. Alternatively, we can let <code>proteoQ</code> automate the process by <em>padding</em> additional TMT channels in PSM outputs. In the hypothetical example shown below, we have two sets of TMT data, one at 6-plex and the other at 16-plex. We simply provide the sample information in a metadata file (named <code>expt_smry.xlsx</code> by default):</p>
+<p><img src="/post/2020-03-29-mixed_plex_files/mixplex_bf.png" style="width:60.0%;height:60.0%" /></p>
+<p>and load the experiment via <code>load_expts()</code>. The updated <code>expt_smry.xlsx</code> will look like:</p>
+<p><img src="/post/2020-03-29-mixed_plex_files/mixplex_af.png" style="width:60.0%;height:60.0%" /></p>
+<p>The <code>proteoQ</code> will later take the <em>standarized</em> metadata for padding the PSM table from 6-plex TMT to the highest possible plex, which is 16-plex, in this example.</p>
+<p>In a next post, I will show how to utilize repetitively the same RAW MS file with proteoQ. For example, one piece of MS file may be searched with different sets of parameters and analyzed side-by-side.</p>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>Of course, we need to apply the same reference material and be comfortable with the assumption of <em>reliable</em> peptide references over time<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
