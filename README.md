@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-04-09
+2020-04-15
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -47,8 +47,10 @@ apply metadata to openly address biological questions using various data
 preprocessing and informatic tools. In addition, the entire workflow is
 documented and can be conveniently reproduced upon revisiting.
 
-The tool currently processes the peptide spectrum matches (PSM) tables
-from [Mascot](https://http://www.matrixscience.com/),
+The [framework](https://proteoq.netlify.com/#posts) of `proteoQ`
+consists of data processing and informatics analysis. It first processes
+the peptide spectrum matches (PSM) tables from
+[Mascot](https://http://www.matrixscience.com/),
 [MaxQuant](https://www.maxquant.org/) and [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill)
 searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo’s
