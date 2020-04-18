@@ -806,12 +806,11 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   # (1) the same `pep_query` can be assigned to different `pep_seq` at different `pep_rank`
   # (2) the same combination of `pep_query`, `pep_seq` and `pep_var_mod_pos` (positional difference) 
   # can be assigned to different `prot_acc` 
-  if ("pep_start" %in% names(df)) {
-    uniq_by <- c("pep_query", "pep_seq", "pep_var_mod_pos", "pep_start")
-  } else {
-    uniq_by <- c("pep_query", "pep_seq", "pep_var_mod_pos")
-  }
   
+  uniq_by <- c("pep_query", "pep_seq", "pep_var_mod_pos")
+  
+  if (length(unique(df$dat_file)) > 1) uniq_by <- c(uniq_by, "dat_file")
+
   df <- df %>% 
     tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
     dplyr::mutate(.n = row_number()) %>% 
