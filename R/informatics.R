@@ -103,8 +103,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		col_group <- rlang::expr(Select)
 		warning("Column \'", rlang::as_string(col_group), "\' not found; use column \'Select\'.", call. = FALSE)
 	} else if (sum(!is.na(label_scheme[[col_group]])) == 0) {
-		col_group <- rlang::expr(Select)
 		warning("No samples under \'", rlang::as_string(col_group), "\'; use column \'Select\'.", call. = FALSE)
+		col_group <- rlang::expr(Select)
 	}
 
 	if (is.null(label_scheme[[col_order]])) {

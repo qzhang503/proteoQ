@@ -36,13 +36,29 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
     as.character(.) %>%
     .[!grepl("^Empty\\.[0-9]+", .)]
   
-  dfR <- df %>%
-    dplyr::select(grep(NorZ_ratios, names(.))) %>%
-    `colnames<-`(label_scheme$Sample_ID) %>%
-    dplyr::select(which(names(.) %in% sub_grp)) %>%
-    dplyr::select(which(not_all_zero(.))) %>% # reference will drop with single reference
-    dplyr::select(Levels[Levels %in% names(.)]) # ensure the same order
-  
+  dfR <- local({
+    dfR <- df %>%
+      dplyr::select(grep(NorZ_ratios, names(.))) %>%
+      `colnames<-`(label_scheme$Sample_ID) %>%
+      dplyr::select(which(names(.) %in% sub_grp)) 
+    
+    non_trivials <- dfR %>% 
+      dplyr::select(which(not_all_zero(.))) %>% # reference will drop with single reference
+      names()
+    
+    trivials <- names(dfR) %>% .[! . %in% non_trivials]
+    
+    if (!purrr::is_empty(trivials)) {
+      warning("Samples with all NA entries being dropped: ", 
+              purrr::reduce(trivials, paste, sep = ", "), 
+              call. = FALSE)
+    }
+    
+    dfR <- dfR %>%
+      dplyr::select(which(not_all_zero(.))) %>% 
+      dplyr::select(Levels[Levels %in% names(.)]) # ensure the same order  
+  })
+
   # dominated by log2R, no need to filter all-NA intensity rows
   dfI <- df %>%
     dplyr::select(grep("^N_I[0-9]{3}", names(.))) %>%

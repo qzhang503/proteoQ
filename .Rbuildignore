@@ -1,5 +1,5 @@
 ^LICENSE\.md$
-^READMD\.Rmd$
+^README\.Rmd$
 ^\.Rproj$
 ^\.Rproj\.user$
 ^cran-comments\.md$
@@ -7,4 +7,3 @@
 ^data-raw$
 ^\.github$
 ^images$
-^public$
