@@ -807,9 +807,10 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   # (2) the same combination of `pep_query`, `pep_seq` and `pep_var_mod_pos` (positional difference) 
   # can be assigned to different `prot_acc` 
   
+  # remove redundant peptides under each `dat_file`
+  # dbl-dipping peptides across `dat_file` will be handled in `mergePep`
   uniq_by <- c("pep_query", "pep_seq", "pep_var_mod_pos")
-  
-  if (length(unique(df$dat_file)) > 1) uniq_by <- c(uniq_by, "dat_file")
+  if (length(unique(df$dat_file)) >= 1) uniq_by <- c(uniq_by, "dat_file")
 
   df <- df %>% 
     tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
@@ -908,7 +909,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   )
 
   if (length(grep("^R[0-9]{3}", names(df))) > 0) {
-    # Shared peptides will be removed here if 
+    # Shared peptides will be removed here by `rowSums` if 
     #   checked 'Unique peptide only' during Mascot PSM export
     df_split <- df %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
