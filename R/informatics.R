@@ -611,6 +611,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	            max_size = Inf, 
 	            min_delta = 1, 
 	            min_greedy_size = 1, 
+	            use_adjP = FALSE, 
 	            method = method, # dummy end
 	            anal_type = anal_type, 
 	            ...)

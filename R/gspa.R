@@ -1080,10 +1080,14 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
   
   if (nrow(all_by_greedy) == 0) stop("No GSPA terms available after data filtration.")
   
-  if (max(all_by_greedy$distance) == 0) stop("Identical, all-zero distance detected; 
-                                             try lower the criteria in data filtrations
-                                             or rerun `prnGSPA` at more relaxed `gspval_cutoff` threshold.")
-  
+  if (max(all_by_greedy$distance) == 0) {
+    warning("Identical, all-zero distance detected; 
+         try lower the criteria in data filtrations or 
+         rerun `prnGSPA` at more relaxed `gspval_cutoff` threshold.")
+    
+    return(NULL)
+  }
+
   if (!is.null(dim(all_by_greedy))) {
     message(paste("File loaded:", ess_in, "at", fml_nm))
   } else {

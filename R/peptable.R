@@ -34,7 +34,8 @@ newColnames <- function(i, x, label_scheme) {
 #'
 #' @inheritParams info_anal
 #' @inheritParams normPSM
-normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", ...) {
+normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
+                           use_duppeps = TRUE, ...) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
 
   filter_dots <- rlang::enexprs(...) %>% 
@@ -57,7 +58,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   if ("gene" %in% names(df)) 
     df <- df %>% dplyr::mutate(gene = forcats::fct_explicit_na(gene))
 
-  df <- df %>% assign_duppeps(group_psm_by, group_pep_by)
+  df <- df %>% assign_duppeps(group_psm_by, group_pep_by, use_duppeps)
   
   df_num <- local({
     df_num <- df %>% 
@@ -336,6 +337,8 @@ fmt_num_cols <- function (df) {
 #'indicated under the \code{prot_n_pep} column after the peptide
 #'removals/cleanups using \code{purgePSM}.
 #'
+#'@param use_duppeps Logical; if TRUE, reassign the belonging ID of
+#'  double-dipped peptides.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  of data against the column keys in individual peptide tables of
 #'  \code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt}, etc.
@@ -419,7 +422,7 @@ fmt_num_cols <- function (df) {
 #'@importFrom magrittr %T>%
 #'@importFrom plyr ddply
 #'@export
-mergePep <- function (plot_log2FC_cv = TRUE, ...) {
+mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
   dir.create(file.path(dat_dir, "Peptide\\cache"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Peptide\\Histogram"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\raw"), recursive = TRUE, showWarnings = FALSE)
@@ -447,7 +450,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, ...) {
 
   message("Primary column keys in `Peptide/TMTset1_LCMSinj1_Peptide_N.txt` etc. for `filter_` varargs.")
   
-  df <- normPep_Mplex(group_psm_by, group_pep_by, !!!filter_dots) %T>% 
+  df <- normPep_Mplex(group_psm_by, group_pep_by, use_duppeps, !!!filter_dots) %T>% 
     write.table(filename, sep = "\t", col.names = TRUE, row.names = FALSE)
 
   if (plot_log2FC_cv && (TMT_plex(label_scheme) > 0)) {
@@ -1007,7 +1010,13 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
 #' Assign duplicated peptides to a leading protein
 #' @param df A PSM data frame
 #' @inheritParams annotPSM
-assign_duppeps <- function(df, group_psm_by, group_pep_by) {
+assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) {
+  # Scenario: 
+  # In `dat_file_1`, peptide_x assigned to Prn_MOUSE against "human + mouse" databases.
+  # In `dat_file_2` the same peptide_x assigned to PRN_HUMAN against "human only" database.
+  # When combining, `dat_file_1` and `dat_file_2`, all the peptide entries will be 
+  #   re-assigned to the protein id with the greater `prot_n_pep`.
+
   dup_peps <- df %>%
     dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
     dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
@@ -1015,50 +1024,55 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by) {
     dplyr::filter(N > 1)
   
   if (nrow(dup_peps) > 0) {
-    df_dups <- purrr::map(as.character(unique(dup_peps[[group_psm_by]])), ~ {
-      df_sub <- df %>% 
-        dplyr::filter(!!rlang::sym(group_psm_by) == .x) %>% 
-        dplyr::arrange(-prot_n_pep)
+    if (use_duppeps) {
+      df_dups <- purrr::map(as.character(unique(dup_peps[[group_psm_by]])), ~ {
+        df_sub <- df %>% 
+          dplyr::filter(!!rlang::sym(group_psm_by) == .x) %>% 
+          dplyr::arrange(-prot_n_pep, -prot_n_psm, -prot_mass)
+  
+        # if (group_pep_by prot_acc) use the first prot_acc and also the first gene
+        # if (group_pep_by gene) use the first gene and also the first prot_acc
+        
+        cols_prot1 <- suppressWarnings(
+          df_sub %>% 
+            dplyr::select(grep("^prot_", names(.))) %>% 
+            dplyr::select(-one_of(c("prot_n_psm", "prot_n_pep", "prot_cover", 
+                                    "prot_matches_sig", "prot_sequences_sig"))) %>% 
+            dplyr::slice(1))
+        
+        cols_prot2 <- suppressWarnings(
+          df_sub %>% dplyr::select(one_of(c("gene", "acc_type", "species", "entrez", 
+                                            "kin_attr", "kin_class", "kin_order"))) %>% 
+            dplyr::slice(1)) 
+        
+        cols_prot <- dplyr::bind_cols(cols_prot1, cols_prot2)
+        
+        df_sub2 <- df_sub %>% dplyr::slice(-1)
+        df_sub2[, names(df_sub2) %in% names(cols_prot)] <- cols_prot
+        df_sub <- dplyr::bind_rows(df_sub %>% dplyr::slice(1), df_sub2)
+      }) %>% 
+        dplyr::bind_rows() %>% 
+        dplyr::select(names(df)) 
       
-      # if (group_pep_by prot_acc) use the first prot_acc and also the first gene
-      # if (group_pep_by gene) use the first gene and also the first prot_acc
+      df <- dplyr::bind_rows(
+        df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% df_dups[[group_psm_by]])), 
+        df_dups) 
       
-      cols_prot1 <- suppressWarnings(
-        df_sub %>% 
-          dplyr::select(grep("^prot_", names(.))) %>% 
-          dplyr::select(-one_of(c("prot_n_psm", "prot_n_pep", "prot_cover", 
-                                  "prot_matches_sig", "prot_sequences_sig"))) %>% 
-          dplyr::slice(1))
+      # update `dup_peps`; should be empty
+      dup_peps_af <- df %>% 
+        dplyr::filter(!!rlang::sym(group_psm_by) %in% dup_peps[[group_psm_by]]) %>%
+        dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+        dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+        dplyr::summarise(N = n_distinct(!!rlang::sym(group_pep_by))) %>%
+        dplyr::filter(N > 1)
       
-      cols_prot2 <- suppressWarnings(
-        df_sub %>% dplyr::select(one_of(c("gene", "acc_type", "species", "entrez", 
-                                          "kin_attr", "kin_class", "kin_order"))) %>% 
-          dplyr::slice(1)) 
-      
-      cols_prot <- dplyr::bind_cols(cols_prot1, cols_prot2)
-      
-      df_sub2 <- df_sub %>% dplyr::slice(-1)
-      df_sub2[, names(df_sub2) %in% names(cols_prot)] <- cols_prot
-      df_sub <- dplyr::bind_rows(df_sub %>% dplyr::slice(1), df_sub2)
-    }) %>% 
-      dplyr::bind_rows() %>% 
-      dplyr::select(names(df)) 
-    
-    df <- dplyr::bind_rows(
-      df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% df_dups[[group_psm_by]])), 
-      df_dups) 
-    
-    # update `dup_peps`; should be empty
-    dup_peps_af <- df %>% 
-      dplyr::filter(!!rlang::sym(group_psm_by) %in% dup_peps[[group_psm_by]]) %>%
-      dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
-      dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
-      dplyr::summarise(N = n_distinct(!!rlang::sym(group_pep_by))) %>%
-      dplyr::filter(N > 1)
-    
-    if (nrow(dup_peps_af) > 0) {
-      write.csv(dup_peps_af, file.path(dat_dir, "Peptide\\dbl_dipping_peptides.csv"), row.names = FALSE)
-      df <- df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps_af[[group_psm_by]]))
+      if (nrow(dup_peps_af) > 0) {
+        write.csv(dup_peps_af, file.path(dat_dir, "Peptide\\dbl_dipping_peptides.csv"), row.names = FALSE)
+        df <- df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps_af[[group_psm_by]]))
+      }
+    } else {
+      write.csv(dup_peps, file.path(dat_dir, "Peptide\\dbl_dipping_peptides.csv"), row.names = FALSE)
+      df <- df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps[[group_psm_by]]))
     }
   }
   

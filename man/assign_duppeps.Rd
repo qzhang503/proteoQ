@@ -4,7 +4,7 @@
 \alias{assign_duppeps}
 \title{Assign duplicated peptides to a leading protein}
 \usage{
-assign_duppeps(df, group_psm_by, group_pep_by)
+assign_duppeps(df, group_psm_by, group_pep_by, use_duppeps = TRUE)
 }
 \arguments{
 \item{df}{A PSM data frame}

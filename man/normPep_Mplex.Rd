@@ -4,7 +4,12 @@
 \alias{normPep_Mplex}
 \title{combined peptide reports across multiple TMT experiments}
 \usage{
-normPep_Mplex(group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", ...)
+normPep_Mplex(
+  group_psm_by = "pep_seq_mod",
+  group_pep_by = "prot_acc",
+  use_duppeps = TRUE,
+  ...
+)
 }
 \arguments{
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
