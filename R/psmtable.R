@@ -821,7 +821,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
     dplyr::select(-uniq_id, -.n)
   
   # remove subset proteins
-  df <- df %>% dplyr::filter(!is.na(prot_family_member))
+  if ("prot_family_member" %in% names(df)) df <- df %>% dplyr::filter(!is.na(prot_family_member))
 
   # note that `pep_seq` changed from such as MENGQSTAAK to K.MENGQSTAAK.L
   df <- df %>% 
