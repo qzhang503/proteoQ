@@ -42,6 +42,8 @@ against data in a primary file linked to \code{df}. See also
 \code{arrange_}: Variable argument statements for the row ordering against
 data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 the format of \code{arrange_} statements. \cr \cr Additional parameters for
+\code{prcomp}: \cr \code{center}, data centering; \cr \code{tol}, the
+tolerance \cr \code{...} \cr \cr Additional parameters for
 \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
 height of plot \cr \code{...}}
 }

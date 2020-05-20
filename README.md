@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-04-15
+2020-05-20
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -12,17 +12,18 @@ true
       - [1.4 Peptides to proteins](#peptides-to-proteins)
       - [1.5 Workflow scripts](#workflow-scripts)
   - [2 Basic informatics](#basic-informatics)
-      - [2.1 MDS and PCA plots](#mds-and-pca-plots)
-      - [2.2 Correlation plots](#correlation-plots)
-      - [2.3 Heat maps](#heat-maps)
-      - [2.4 Significance tests](#significance-tests)
-      - [2.5 Gene sets under volcano
+      - [2.1 MDS](#mds)
+      - [2.2 PCA](#pca)
+      - [2.3 Correlation plots](#correlation-plots)
+      - [2.4 Heat maps](#heat-maps)
+      - [2.5 Significance tests](#significance-tests)
+      - [2.6 Gene sets under volcano
         plots](#gene-sets-under-volcano-plots)
-      - [2.6 Gene set networks](#gene-set-networks)
-      - [2.7 Trend Analysis](#trend-analysis)
-      - [2.8 NMF Analysis](#nmf-analysis)
-      - [2.9 STRING Analysis](#string-analysis)
-      - [2.9 Missing value imputation](#missing-value-imputation)
+      - [2.7 Gene set networks](#gene-set-networks)
+      - [2.8 Trend Analysis](#trend-analysis)
+      - [2.9 NMF Analysis](#nmf-analysis)
+      - [2.10 STRING Analysis](#string-analysis)
+      - [2.11 Missing value imputation](#missing-value-imputation)
   - [3 Labs](#labs)
       - [3.1 Reference choices](#reference-choices)
       - [3.2 Data subsets and additions](#data-subsets-and-additions)
@@ -47,9 +48,9 @@ apply metadata to openly address biological questions using various data
 preprocessing and informatic tools. In addition, the entire workflow is
 documented and can be conveniently reproduced upon revisiting.
 
-The [framework](https://proteoq.netlify.com/#posts) of `proteoQ`
-consists of data processing and informatics analysis. It first processes
-the peptide spectrum matches (PSM) tables from
+The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)
+of `proteoQ` consists of data processing and informatics analysis. It
+first processes the peptide spectrum matches (PSM) tables from
 [Mascot](https://http://www.matrixscience.com/),
 [MaxQuant](https://www.maxquant.org/) and [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill)
@@ -71,8 +72,7 @@ more properly under html.)
 
 ## Installation
 
-To install this package, start R (version “3.6.3”) as **administrator**
-and enter:
+To install this package, start R (version “4.1”) and enter:
 
 ``` r
 if (!requireNamespace("devtools", quietly = TRUE))
@@ -84,7 +84,7 @@ It will install the latest version by default or a specific version with
 a version number:
 
 ``` r
-devtools::install_github("qzhang503/proteoQ@1.2.2.1")
+devtools::install_github("qzhang503/proteoQ@1.2.2.2")
 ```
 
 ## 1 Data normalization
@@ -1211,10 +1211,10 @@ varargs of `filter_` is available throughout this section of informatic
 analysis. Row ordering of data, indicated by `arrange_`, is available
 for heat map applications using `pepHM`, `prnHM` and `plot_metaNMF`.
 
-### 2.1 MDS and PCA plots
+### 2.1 MDS
 
-We first visualize MDS, PCA and Euclidean distance against the peptide
-data. We start with metric MDS for peptide data:
+We first visualize MDS and Euclidean distance against the peptide data.
+We start with metric MDS for peptide data (`prnMDS` for proteins):
 
 ``` r
 # all data
@@ -1290,10 +1290,6 @@ pepMDS(
   width = 8,
 )
 ```
-
-Accordingly, the `prnMDS` performs `MDS` for protein data. For `PCA`
-analysis, the corresponding functions are `pepPCA` and `prnPCA` for
-peptide and protein data, respectively.
 
 While `MDS` approximates Euclidean and other distance measures at a
 low-dimensional space. Sometimes it may be useful to have an accurate
@@ -1390,7 +1386,14 @@ the cases that sample differences are exceedingly greater than handling
 errors, the setting of `adjEucDist = FALSE` would probably be more
 appropriate.
 
-### 2.2 Correlation plots
+### 2.2 PCA
+
+The utilities for PCA analysis are `pepPCA` and `prnPCA` for peptide and
+protein data, respectively. They are wrappers of the `stats::prcomp`.
+Additional notes about data centering and scaling can be found
+(<strong>[here](https://proteoq.netlify.app/post/wrapping-pca-into-proteoq/)</strong>).
+
+### 2.3 Correlation plots
 
 In this section, we visualize the batch effects and biological
 differences through correlation plots. The `proteoQ` tool currently
@@ -1441,7 +1444,7 @@ To visualize the correlation of intensity data, we can use
 `pepCorr_logInt` and `prnCorr_logInt` for peptide and protein data,
 respectively. More details can be assessed via `?pepCorr_logFC`.
 
-### 2.3 Heat maps
+### 2.4 Heat maps
 
 Heat map visualization is commonly applied in data sciences. The
 corresponding facilities in `proteoQ` are `pepHM` and `prnHM` for
@@ -1534,7 +1537,7 @@ row ordering.
 
 See `?standPep` for peptide examples.
 
-### 2.4 Significance tests
+### 2.5 Significance tests
 
 In this section, we perform the significance analysis of peptide and
 protein data. The approach of contrast fit (Chambers, J. M. Linear
@@ -1617,7 +1620,7 @@ additive random effects are also supported. More examples can be found
 via `?prnSig` and [Lab 3.3](###%203.3%20Random%20effects) in the
 document.
 
-### 2.5 Gene sets under volcano plots
+### 2.6 Gene sets under volcano plots
 
 There are a handful of `R` tools for gene set enrichement analysis, such
 as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we
@@ -1838,7 +1841,7 @@ Gene set variance analysis (GSVA) is available through `prnGSVA`.
 Details can be found via `?prnGSEA` and `?prnGSVA`, respectively, from
 an `R` console.
 
-### 2.6 Gene set networks
+### 2.7 Gene set networks
 
 In the above section, we have plotted the enrichment of gene sets by
 individual GO or KEGG terms. Depending on how much the sample groups
@@ -1951,7 +1954,7 @@ distance \<= 0.8; right, distance \<= 0.2.
 
 </div>
 
-### 2.7 Trend Analysis
+### 2.8 Trend Analysis
 
 In this section, we perform the trend analysis against protein
 expressions. More information can be found from
@@ -2066,7 +2069,7 @@ from the `BI` subset whereas the later is based on the findings from all
 samples. The same theme will hold for various informatic analysis in
 `proteoQ`, including the NMF analysis that we will next discuss.
 
-### 2.8 NMF Analysis
+### 2.9 NMF Analysis
 
 In this section, we will performs the analysis of non-negative matrix
 factorization (NMF) against protein data. More details can be found from
@@ -2236,7 +2239,7 @@ plot_metaNMF(
 )
 ```
 
-### 2.9 STRING Analysis
+### 2.10 STRING Analysis
 
 The following performs the [`STRING`](http://www.string-db.org) analysis
 of protein-protein interactions. More details can be found from
@@ -2266,7 +2269,7 @@ dl_stringdbs(
 )
 ```
 
-### 2.9 Missing value imputation
+### 2.11 Missing value imputation
 
 Imputation of peptide and protein data are handle with `pepImp` and
 `prnImp`. More information can be found from

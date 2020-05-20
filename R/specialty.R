@@ -84,6 +84,13 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
   
   if (length(filelist) == 0) stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
   
+  if (length(filelist) != 4) stop("Nee all four PSM files using search parameters of:\n", 
+                                  "1. TMT at both N-terminal and K\n", 
+                                  "2. TMT at N-terminal but not K\n", 
+                                  "3. TMT at K but not N-terminal\n",
+                                  "4. TMT on neither N-terminal or K",
+                                  call. = FALSE)
+  
   df <- purrr::map(filelist, ~ {
     df <- read.delim(file.path(dat_dir, "PSM\\cache", .x), sep = ',', check.names = FALSE, 
                      header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , skip = 0)

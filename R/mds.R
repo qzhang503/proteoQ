@@ -291,6 +291,26 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+  
+  # no need to handle "scale": prnPCA(scale = ...) parsed as prnPCA(scale_log2r = ...)
+  anal_dots <- dots %>% .[names(.) %in% c("x", "retx", "center", "scale.", "tol", "rank.")]
+  fml_dots <- dots[purrr::map_lgl(dots, is_formula)]
+  dots <- dots %>% .[! . %in% c(anal_dots, fml_dots)]
+  
+  if (!is.null(anal_dots$scale.)) {
+    anal_dots$scale. <- NULL
+    warning("Argument `scale.` disabled; instead `scale_log2r` will be used for `scale.`.", 
+            call. = FALSE)
+  }
+  if (!is.null(anal_dots$x)) {
+    anal_dots$x <- NULL
+    warning("Not use `x`; input data will be determined automatically.", call. = FALSE)
+  }
+  
+  if (!purrr::is_empty(fml_dots)) {
+    fml_dots <- NULL
+    warning("The cool feature of 'formula' is not yet available in proteoQ.", call. = FALSE)
+  }
 
   res <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
@@ -300,7 +320,8 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
       label_scheme_sub = label_scheme_sub, 
       anal_type = anal_type, 
       scale_log2r = scale_log2r, 
-      type = type, )
+      type = type, 
+      !!!anal_dots)
       
   df <- res$PCA
   df <- df %>% cmbn_meta(label_scheme_sub)
@@ -381,6 +402,19 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	  .[names(.) %in% names(mapping_fix)] %>% 
 	  .[!is.na(.)]
 	fix_args$stroke <- 0.02
+	
+	if (is.null(anal_dots$center)) {
+	  x_lable = paste0("PC1 (", prop_var[1], ")")
+	  y_lable = paste0("PC2 (", prop_var[2], ")")
+	} else {
+	  if (anal_dots$center) {
+	    x_lable = paste0("PC1 (", prop_var[1], ")")
+	    y_lable = paste0("PC2 (", prop_var[2], ")")
+	  } else {
+	    x_lable = "PC1"
+	    y_lable = "PC2"
+	  }
+	}
 
 	p <- ggplot() +
 	  rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args)))
@@ -404,7 +438,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	}
 	
 	p <- p +
-		labs(title = "", x = paste0("PC1 (", prop_var[1], ")"), y = paste0("PC2 (", prop_var[2], ")")) +
+		labs(title = "", x = x_lable, y = y_lable) +
 		coord_fixed() +
 	theme
 
@@ -504,9 +538,11 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ..
       data.frame(check.names = FALSE) %>%
       bind_cols(label_scheme_sub)
     
-    pr_out <- df_t %>%
-      dplyr::select(which(colnames(.) %in% rownames(df))) %>%
-      prcomp(scale = scale_log2r)
+    pr_out <- local({
+      tempdata <- df_t %>% dplyr::select(which(colnames(.) %in% rownames(df)))
+      pca_call <- rlang::expr(stats::prcomp(x = !!tempdata, scale. = !!scale_log2r, !!!dots))
+      rlang::eval_bare(pca_call, env = caller_env())
+    })
     
     rownames(pr_out$x) <- label_scheme_sub$Sample_ID
     
@@ -516,7 +552,10 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ..
       data.frame(check.names = FALSE) %>%
       `names<-`(gsub("^PC", "Coordinate\\.", names(.)))    
   } else if (type == "feats") {
-    pr_out <- df %>% prcomp(scale = scale_log2r)
+    pr_out <- local({
+      pca_call <- rlang::expr(stats::prcomp(x = !!df, scale. = !!scale_log2r, !!!dots))
+      rlang::eval_bare(pca_call, env = caller_env())
+    })
     
     df_pca <- pr_out$x %>%
       data.frame(check.names = FALSE) %>%
@@ -848,6 +887,10 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
                     show_ids = TRUE, type = c("obs", "feats"), 
                     df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
+  
+  message("=== The feature of 'formula prcomp` is not yet available in proteoQ. ===\n", 
+          "=== ONLY arguments with `Default prcomp` will be used. ===\n")
+  
   check_dots(c("id", "col_group", "df2", "anal_type"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
@@ -913,6 +956,8 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
 #'  \code{arrange_}: Variable argument statements for the row ordering against
 #'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 #'  the format of \code{arrange_} statements. \cr \cr Additional parameters for
+#'  \code{prcomp}: \cr \code{center}, data centering; \cr \code{tol}, the
+#'  tolerance \cr \code{...} \cr \cr Additional parameters for
 #'  \code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
 #'  height of plot \cr \code{...}
 #'
@@ -992,6 +1037,10 @@ prnPCA <- function (col_select = NULL, col_color = NULL,
                     show_ids = TRUE, type = c("obs", "feats"), 
                     df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
+  
+  message("=== The feature of 'formula prcomp` is not yet available in proteoQ. ===\n", 
+          "=== ONLY arguments with `Default prcomp` will be used. ===\n")
+
   check_dots(c("id", "col_group", "df2", "anal_type"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
