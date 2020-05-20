@@ -806,6 +806,7 @@ parse_acc <- function(df) {
   prn_acc <- df %>%
     dplyr::filter(!grepl("^REV__", prot_acc)) %>% 
     dplyr::filter(!grepl("^CON__", prot_acc)) %>% 
+    dplyr::filter(!grepl("\\|$", prot_acc)) %>% 
     dplyr::select(prot_acc) %>%
     unlist %>%
     .[1]
