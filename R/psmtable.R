@@ -820,6 +820,17 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
     dplyr::arrange(.n) %>% 
     dplyr::select(-uniq_id, -.n)
   
+  ## before
+  # prot_acc   I126 I127N   I127C
+  # 1 2::HBB1_MOUSE  29410 20920   27430
+  # 2  2::HBE_MOUSE  29410 20920   27430
+  # 3  2::HBE_MOUSE 137000 38330 1115000
+  
+  ## after
+  # prot_acc   I126 I127N   I127C
+  # 1 2::HBB1_MOUSE  29410 20920   27430
+  # 2  2::HBE_MOUSE 137000 38330 1115000
+  
   # remove subset proteins
   if ("prot_family_member" %in% names(df)) df <- df %>% dplyr::filter(!is.na(prot_family_member))
 

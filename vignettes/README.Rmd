@@ -209,6 +209,8 @@ knitr::include_graphics(c(str_expt_smry))
 We next copy over a pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx` to the working directory:  
 
 ```{r copy_expt_n_frac, include = TRUE, eval = FALSE}
+library(proteoQDA)
+
 copy_global_exptsmry(dat_dir)
 copy_global_fracsmry(dat_dir)
 ```
@@ -853,7 +855,127 @@ knitr::include_graphics(c(img_interplex_EucDist))
 The adjustment might be more suitable for studies where both the samples and references are largely similar in proteome compositions. The setting of `adjEucDist = TRUE` would discount the distances between references when using visualization techniques such a MDS or distance heat maps. In the cases that sample differences are exceedingly greater than handling errors, the setting of `adjEucDist = FALSE` would probably be more appropriate.  
 
 ### 2.2 PCA 
-The utilities for PCA analysis are `pepPCA` and `prnPCA` for peptide and protein data, respectively. They are wrappers of the `stats::prcomp`. Additional notes about data centering and scaling can be found (<strong>[here](https://proteoq.netlify.app/post/wrapping-pca-into-proteoq/)</strong>).  
+The utilities for PCA analysis are `pepPCA` and `prnPCA` for peptide and protein data, respectively. They are wrappers of the `stats::prcomp`. Data scaling and centering are the two aspects that have been emphasized greatly in PCA analysis. Some notes on proteoQ data scaling are available in section 3.1.1; hence in the present section, we will focus only on trials against data being scaled. Additional notes about data centering can be found <strong>[here](https://proteoq.netlify.app/post/wrapping-pca-into-proteoq/)</strong>.  
+
+#### 2.2.1 Overall settings
+With proteoQ, the option in data scaling is set by variable `scale_log2r`, which will be passed to the `scale.` in `stats::prcomp`. For data centering, proteoQ relays the `TRUE` default to `stats::prcomp`.  
+
+#### 2.2.2 Mean deviation
+Provided the importance of data centering in PCA and several other analyses such as MDS etc., proteoQ further incorporated the three columns of `prot_mean_raw`, `prot_mean_n` and `prot_mean_z` in protein outputs. The first one summarizes the mean `log2FC` before data alignment for individual proteins across selected samples. The second and the three compute the corresponding mean `log2FC` after data alignment, with and without scaling normalization, respectively  (see also section 4 for column keys). As usual, the sample selections can be customized through the argument `col_select`. The corresponding columns summarizing the mean deviation in peptide data are `pep_mean_raw`, `pep_mean_n` and `pep_mean_z`.  
+
+#### 2.2.3 Leverage points
+The mean `log2FC` of proteins or peptides may serve as indicators that how far a given protein or peptide species is away from the data centering format (a.k.a. mean deviation form) that will be enforced by default in PCA. Taking protein data as an example, we will go through couple settings in `prnPCA`. At first, we performed PCA with data centering by default (**Figure 4A**):  
+
+```{r Protein PCA with centering, eval = FALSE}
+prnPCA(
+  col_select = Select, 
+  show_ids = FALSE, 
+  filename = cent.png,
+)
+```
+
+We next performed another PCA with the removals of proteins that are far from mean deviation form  (**Figure 5B**):  
+
+```{r Protein PCA with centering and filtration, eval = FALSE}
+# observe that the overall deviations from "mean zero" may not be symmetric
+prnPCA(
+  col_select = Select, 
+  show_ids = FALSE, 
+  filter_prots_by = exprs(prot_mean_z >= -.25, prot_mean_z <= .3),
+  filename = sub_cent.png,
+)
+```
+
+Note that the clusterings are tightened under each sample type of W2 or W16 after the `filter_prots_by` filtration. Further note that the *proportion of variance explained* in the first principal axis decreased from 57.5% to 55.4% after the data filtration. This suggests that the entries deviating the most from *mean zero* are more leveraging towards the *explained* variance, even with data centering. In other words, high deviating entries are in general associated with above-average data variance, in relative to the entire data set. The observation also indicates that a high value of *proportion of variance explained* may not necessary be a go-to standard for differentiating sample types in that variance may be sensitive to leveraging data points.  
+
+```{r Protein_PCA_center, echo=FALSE, fig.align='center', fig.cap="**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left: without filtration; right, with filtration", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_pca_cent <- "images/protein/pca/cent.png"
+img_pca_subcent <- "images/protein/pca/sub_cent.png"
+knitr::include_graphics(c(img_pca_cent, img_pca_subcent))
+```
+
+We next explore the analogous, but by turning off data centering:  
+
+```{r Protein PCA without centering, eval = FALSE}
+prnPCA(
+  col_select = Select, 
+  center = FALSE,
+  show_ids = FALSE, 
+  filename = nocent.png,
+)
+
+prnPCA(
+  col_select = Select, 
+  center = FALSE,
+  show_ids = FALSE, 
+  filter_prots_by = exprs(prot_mean_z >= -.25, prot_mean_z <= .3),
+  filename = sub_nocent.png,
+)
+```
+
+First note that there is no labels of the *proportion of variance explained* since such a view of variance is often not suitable without data centering. Instead, an [interpretation](https://proteoq.netlify.app/post/wrapping-pca-into-proteoq/) as square Euclidean distance would be more appropriate.  
+
+Further note the wider spread in PC1 and narrower in PC2 for the analysis without the removal of high deviation entries (**Figure 4C versus 4D**). The driving force for the difference may be again ascribed to the more leveraging data entries. Intuitively speaking, the high leverage points tend to associate with higher-than-normal Euclidean distance. This becomes more evident after the removals of the high deviation entries (**Figure 4D**).  
+
+The above showcases that the choice in data centering can lead to different interpretation in biology, which may be in part ascribed to high deviation entries. The phenomena can, however, be conveniently explored via proteoQ.  
+
+```{r Protein_PCA_no_center, echo=FALSE, fig.align='center', fig.cap="**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off` without filtration; right, data centering `off` with filtration", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_pca_nocent <- "images/protein/pca/nocent.png"
+img_pca_sub_nocent <- "images/protein/pca/sub_nocent.png"
+knitr::include_graphics(c(img_pca_nocent, img_pca_sub_nocent))
+```
+
+#### 2.2.4 Graphic controls
+The y-labels in **Figure 4C** are not well separated. This can be fixed by providing a custom theme to `prnPCA` (see also the help document via `?prnPCA`). Alternatively, we may export the PCA results for direct `ggplot2`:  
+
+```{r Protein PCA use results, eval = FALSE}
+res <- prnPCA(
+  col_select = Select, 
+  center = FALSE,
+  show_ids = FALSE, 
+  filename = foo.png,
+)
+# names(res)
+
+library(ggplot2)
+
+my_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
+  axis.title.x = element_text(colour="black", size=20),
+  axis.title.y = element_text(colour="black", size=20),
+  plot.title = element_text(face="bold", colour="black", size=20, hjust=0.5, vjust=0.5),
+  
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.title = element_blank(),
+  legend.text = element_text(colour="black", size=14),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+p <- ggplot(res$pca) +
+  geom_point(aes(x = Coordinate.1, y = Coordinate.2, colour = Color, shape = Shape, 
+                 alpha = Alpha), size = 4, stroke = 0.02) + 
+  scale_y_continuous(breaks = seq(5, 15, by = 5)) + 
+  labs(title = "", x = paste0("PC1 (", res$var[1], ")"), y = paste0("PC2 (", res$var[2], ")")) +
+  coord_fixed() + 
+  my_theme
+
+ggsave(file.path(dat_dir, "Protein\\PCA\\nocent_2.png"), width = 6, height = 4)
+```
+
+
+```{r Protein_PCA_custom, echo=FALSE, fig.align='center', fig.cap="**Figure 4E.** Custom plot.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_pca_nocent_custom <- "images/protein/pca/nocent_2.png"
+knitr::include_graphics(c(img_pca_nocent_custom))
+```
+
 
 ### 2.3 Correlation plots
 In this section, we visualize the batch effects and biological differences through correlation plots. The `proteoQ` tool currently limits itself to a maximum of 44 samples for a correlation plot. In the document, we will perform correlation analysis against the `PNNL` data subset. By default, samples will be arranged by the alphabetical order for entries under the column `expt_smry.xlsx::Select`. We have learned from the earlier `MDS` analysis that the batch effects are smaller than the differences between `W2` and `W16`. We may wish to put the `TMT1` and `TMT2` groups adjacent to each other for visualization of more nuance batch effects, followed by the comparison of WHIM subtypes. We can achieve this by supervising sample IDs at a customized order. In the `expt_smry.xlsx`, We have prepared an `Order` column where samples within the `JHU` subset were arranged in the descending order of `W2.TMT1`, `W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look for the `Order` column for sample arrangement:  
@@ -874,7 +996,7 @@ prnCorr_logFC(
 )
 ```
 
-```{r Correlation plots, echo=FALSE, fig.align='center', fig.cap="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Correlation plots, echo=FALSE, fig.align='center', fig.cap="**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_jhu_pepcorr <- "images/peptide/corrplot/corr_pnnl.png"
 img_jhu_prncorr <- "images/protein/corrplot/corr_pnnl.png"
 knitr::include_graphics(c(img_jhu_pepcorr, img_jhu_prncorr))
@@ -906,7 +1028,7 @@ prnHM(
 
 we chose to top annotate the heat map with the metadata that can be found under the columns of `Group`, `Color`, `Alpha` and `Shape` in `expt_smary.xlsx`. For better convention, we rename them to `Group`, `Lab`, `Batch` and `WHIM` to reflect their sample characteristics. We further supplied a vararg of `filter_sp` where we assume exclusive interests in human proteins.  
 
-```{r Protein_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 5A.** Heat map visualization of protein log2FC", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r Protein_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 6A.** Heat map visualization of protein log2FC", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_prnheat <- "images/protein/heatmap/protein.png"
 knitr::include_graphics(c(img_prnheat))
 ```
@@ -935,7 +1057,7 @@ prnHM(
 
 In the above example, we applied vararg `filter_kin` to subset human kinases from the protein data set by values under its `kin_attr` and the `species` columns. We further row annotate the heat map with argument `annot_rows`, which will look for values under the `kin_class` column. With the vararg, `arrange_kin`, we supervise the row ordering of kinases by values under the `kin_order` column and then those under the `gene` column. Analogous to the user-supplied `filter_` arguments, the row ordering varargs need to start with `arrange_` to indicate the task of row ordering.  
 
-```{r Kinase_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 5B.** Heat map visualization of kinase log2FC", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r Kinase_heatmap, echo=FALSE, fig.align='center', fig.cap="**Figure 6B.** Heat map visualization of kinase log2FC", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_kinheat <- "images/protein/heatmap/kinase.png"
 knitr::include_graphics(c(img_kinheat))
 ```
@@ -970,7 +1092,7 @@ Note that we have informed the `pepSig` and `prnSig` utility to look for contras
 
 The `pepVol` and `prnVol` utility will by default match the formulas of contrasts with those in `pepSig`. The following plots show the batch difference between two TMT experiments for each of the three laboratories and the location difference between any two laboratories.  
 
-```{r Protein_volcano_batches plots, echo=FALSE, fig.align='left', fig.cap="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r Protein_volcano_batches plots, echo=FALSE, fig.align='left', fig.cap="**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between batches; right: between locations.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_volcplot_batches <- "images/protein/volcplot/batches.png"
 img_volcplot_location <- "images/protein/volcplot/locations.png"
 knitr::include_graphics(c(img_volcplot_batches, img_volcplot_location))
@@ -1030,7 +1152,7 @@ gspaMap(
 
 This will produce the volcano plots of proteins under gene sets that have passed our selection criteria. Here, we show one of the examples:  
 
-```{r gspaMap_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r gspaMap_example_1, echo=FALSE, fig.align='center', fig.cap="**Figure 8A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma.", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_volcplot_gspa_geomean <- "images/protein/volcplot/gspa_batch_geomean.png"
 img_volcplot_gspa_limma <- "images/protein/volcplot/gspa_batch_limma.png"
 knitr::include_graphics(c(img_volcplot_gspa_geomean, img_volcplot_gspa_limma))
@@ -1116,7 +1238,7 @@ gspaMap(
 
 As expected, in the examples of `MSig`, some breast cancer signatures in basal and luminal subtypes were captured.  
 
-```{r gspaMap_example_msig, echo=FALSE, fig.align='center', fig.cap="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures.", fig.show='hold', message=FALSE, warning=FALSE, out.width='30%'}
+```{r gspaMap_example_msig, echo=FALSE, fig.align='center', fig.cap="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures.", fig.show='hold', message=FALSE, warning=FALSE, out.width='30%'}
 img_volcplot_gspa_basdn <- "images/protein/volcplot/hs_SMID_BREAST_CANCER_BASAL_DN.png"
 img_volcplot_gspa_lumdn <- "images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png"
 img_volcplot_gspa_lumup <- "images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png"
@@ -1150,7 +1272,7 @@ prnGSPAHM(
 
 The distance in heat is $D = 1-f$ where $f$ is the fraction of overlap in IDs between two gene sets. The smaller the distance, the greater the overlap is between two gene sets. For convenience, a `distance` column is also made available in the `_essmap.txt` file.  
 
-```{r prnGSPAHM_all, echo=FALSE, fig.align='center', fig.cap="**Figure 7C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r prnGSPAHM_all, echo=FALSE, fig.align='center', fig.cap="**Figure 8C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_gspahm_all <- "images/protein/gspa/all_sets.png"
 knitr::include_graphics(c(img_gspahm_all))
 ```
@@ -1170,14 +1292,14 @@ prnGSPAHM(
 
 Note that there is a second `vararg` expression, `exprs(start_with_str("hs", term))`. In this expression, we have used a pseudonym approach to subset terms starting with character string `hs` under the column `term` in `GSPA` result files, which corresponds to human gene sets for both GO and KEGG.^[This will work as GO terms of human start with `hs_` and KEGG terms with `hsa`.] More examples of the pseudonym approach can be found from [Lab 3.2](### 3.2 Data subsets) in this document. More examples of the utility can be found via `?prnGSPAHM`.  
 
-```{r prnGSPAHM_hs_d20, echo=FALSE, fig.align='center', fig.cap="**Figure 7D.** Heat map visualization of human gene sets at a distance cut-off 0.2", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r prnGSPAHM_hs_d20, echo=FALSE, fig.align='center', fig.cap="**Figure 8D.** Heat map visualization of human gene sets at a distance cut-off 0.2", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_gspahm_hs_d20 <- "images/protein/gspa/show_human_redundancy.png"
 knitr::include_graphics(c(img_gspahm_hs_d20))
 ```
 
 Aside from heat maps, `prnGSPAHM` produces the networks of gene sets via [`networkD3`](http://christophergandrud.github.io/networkD3/), for interactive exploration of gene set redundancy.  
 
-```{r prnGSPAHM_networks, echo=FALSE, fig.align='center', fig.cap="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance <= 0.8; right, distance <= 0.2.", fig.show='hold', message=FALSE, warning=FALSE, out.width='40%'}
+```{r prnGSPAHM_networks, echo=FALSE, fig.align='center', fig.cap="**Figure 8E.** Snapshots of the networks of biological terms. Left, distance <= 0.8; right, distance <= 0.2.", fig.show='hold', message=FALSE, warning=FALSE, out.width='40%'}
 img_gspahm_connect <- "images/protein/gspa/gspa_connet.png"
 img_gspahm_redund <- "images/protein/gspa/gspa_redund.png"
 knitr::include_graphics(c(img_gspahm_connect, img_gspahm_redund))
@@ -1204,7 +1326,7 @@ plot_prnTrend(
 
 The argument `col_order` provides a means to supervise the order of samples during the trend visualization. In the above example, the `plot_prnTrend` will look into the field under the `expt_smry.xlsx::Order` column for sample arrangement (see also Section 2.2 Correlation plots).  
 
-```{r Protein_trends all_plots, echo=FALSE, fig.align='left', fig.cap="**Figure 8A.** Trends of protein log2FC (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
+```{r Protein_trends all_plots, echo=FALSE, fig.align='left', fig.cap="**Figure 9A.** Trends of protein log2FC (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_prn_trends <- "images/protein/trend/prn_trend_n6.png"
 knitr::include_graphics(c(img_prn_trends))
 ```
@@ -1221,7 +1343,7 @@ plot_prnTrend(
 )
 ```
 
-```{r Protein_trend_by_cluster, echo=FALSE, fig.align='left', fig.cap="**Figure 8B.** Trends of protein log2FC at cluster 4 (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Protein_trend_by_cluster, echo=FALSE, fig.align='left', fig.cap="**Figure 9B.** Trends of protein log2FC at cluster 4 (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_prn_trends_cl4 <- "images/protein/trend/cl4_nclust6.png"
 knitr::include_graphics(c(img_prn_trends_cl4))
 ```
@@ -1236,7 +1358,7 @@ plot_prnTrend(
 )
 ```
 
-```{r Protein_trend_col_select, echo=FALSE, fig.align='left', fig.cap="**Figure 8C.** Trends of protein log2FC for BI subset (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='60%'}
+```{r Protein_trend_col_select, echo=FALSE, fig.align='left', fig.cap="**Figure 9C.** Trends of protein log2FC for BI subset (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='60%'}
 img_prn_trends_bi <- "images/protein/trend/bi_nclust6.png"
 knitr::include_graphics(c(img_prn_trends_bi))
 ```
@@ -1368,7 +1490,7 @@ plot_metaNMF(
 
 The silhouette information was obtained via the R package `cluster` and shown as a track on the top of consensus and coefficient heat maps.  
 
-```{r Protein NMF heat maps, echo=FALSE, fig.align='left', fig.cap="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = \"lee\" not shown). Left: concensus; right: coefficients; metagenes not shown.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Protein NMF heat maps, echo=FALSE, fig.align='left', fig.cap="**Figure 10A-10B.** Heat map visualization of protein NMF results with default method  (results from method = \"lee\" not shown). Left: concensus; right: coefficients; metagenes not shown.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_nmf_con <- "images/protein/nmf/bi_r5_con_rank5.png"
 img_nmf_coef <- "images/protein/nmf/bi_r5_coef_rank5.png"
 knitr::include_graphics(c(img_nmf_con, img_nmf_coef))

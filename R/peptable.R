@@ -67,7 +67,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
                     grep("^sd_log2_R[0-9]{3}", names(.)), 
                     grep("^log2_R[0-9]{3}", names(.)), 
                     grep("^N_log2_R[0-9]{3}", names(.)), 
-                    grep("^Z_log2_R[0-9]{3}", names(.)), 
+                    # grep("^Z_log2_R[0-9]{3}", names(.)), 
                     grep("^I[0-9]{3}", names(.)), 
                     grep("^N_I[0-9]{3}", names(.))) %>% 
       dplyr::group_by(!!rlang::sym(group_psm_by), TMT_Set) %>%
