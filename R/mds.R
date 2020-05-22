@@ -325,7 +325,10 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
       
   df <- res$PCA
   df <- df %>% cmbn_meta(label_scheme_sub)
-  prop_var <- res$prop_var
+  prop_var <- res$prop_var %>% 
+    gsub("%", "", .) %>% 
+    as.numeric() %>% 
+    paste0("%")
   rm(res)
   
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)

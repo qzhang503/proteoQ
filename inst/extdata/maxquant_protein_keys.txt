@@ -7,6 +7,9 @@ prot_mass	Protein mass
 prot_len	The number of amino acid residues under a proposed protein	
 prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Cf. Peptide keys
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. Peptide keys
+prot_mean_raw	Mean log2_R (...) across selected samples	Sample selection vai `standPrn(col_select = ...)`
+prot_mean_n	Mean N_log2FC(...) across selected samples	v.s.
+prot_mean_z	Mean Z_log2FC(...) across selected samples	v.s.
 m/z	The mass-over-charge of the precursor ion.	Cf. PSM keys
 acc_type	The type of accession names	
 uniprot_id	Uniprot ID	Cf. PSM keys

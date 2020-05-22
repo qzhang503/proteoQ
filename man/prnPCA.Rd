@@ -210,6 +210,15 @@ prnPCA(
   filename = "prns_rowfil.png",
 )
 
+# subset by mean deviation values
+# deviations to means may not be symmetric;
+prnPCA(
+  col_select = Select, 
+  filter_peps_by = exprs(prot_mean_z >= -.25, prot_mean_z <= .3),
+  show_ids = FALSE, 
+  filename = "subset_by_mean_dev.png",
+)
+
 # proteins, custom palette
 prnPCA(
   col_shape = Shape,

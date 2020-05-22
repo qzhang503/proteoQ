@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-05-20
+2020-05-22
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -251,6 +251,8 @@ We next copy over a pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx`
 to the working directory:
 
 ``` r
+library(proteoQDA)
+
 copy_global_exptsmry(dat_dir)
 copy_global_fracsmry(dat_dir)
 ```
@@ -1390,8 +1392,200 @@ appropriate.
 
 The utilities for PCA analysis are `pepPCA` and `prnPCA` for peptide and
 protein data, respectively. They are wrappers of the `stats::prcomp`.
-Additional notes about data centering and scaling can be found
-(<strong>[here](https://proteoq.netlify.app/post/wrapping-pca-into-proteoq/)</strong>).
+Data scaling and centering are the two aspects that have been emphasized
+greatly in PCA analysis. Some notes on proteoQ data scaling are
+available in section 3.1.1; hence in the present section, we will focus
+only on trials against data being scaled. Additional notes about data
+centering can be found
+<strong>[here](https://proteoq.netlify.app/post/wrapping-pca-into-proteoq/)</strong>.
+
+#### 2.2.1 Overall settings
+
+With proteoQ, the option in data scaling is set by variable
+`scale_log2r`, which will be passed to the `scale.` in `stats::prcomp`.
+For data centering, proteoQ relays the `TRUE` default to
+`stats::prcomp`.
+
+#### 2.2.2 Mean deviation
+
+Provided the importance of data centering in PCA and several other
+analyses such as MDS etc., proteoQ further incorporated the three
+columns of `prot_mean_raw`, `prot_mean_n` and `prot_mean_z` in protein
+outputs. The first one summarizes the mean `log2FC` before data
+alignment for individual proteins across selected samples. The second
+and the three compute the corresponding mean `log2FC` after data
+alignment, with and without scaling normalization, respectively (see
+also section 4 for column keys). As usual, the sample selections can be
+customized through the argument `col_select`. The corresponding columns
+summarizing the mean deviation in peptide data are `pep_mean_raw`,
+`pep_mean_n` and `pep_mean_z`.
+
+#### 2.2.3 Leverage points
+
+The mean `log2FC` of proteins or peptides may serve as indicators that
+how far a given protein or peptide species is away from the data
+centering format (a.k.a. mean deviation form) that will be enforced by
+default in PCA. Taking protein data as an example, we will go through
+couple settings in `prnPCA`. At first, we performed PCA with data
+centering by default (**Figure 4A**):
+
+``` r
+prnPCA(
+  col_select = Select, 
+  show_ids = FALSE, 
+  filename = cent.png,
+)
+```
+
+We next performed another PCA with the removals of proteins that are far
+from mean deviation form (**Figure 5B**):
+
+``` r
+# observe that the overall deviations from "mean zero" may not be symmetric
+prnPCA(
+  col_select = Select, 
+  show_ids = FALSE, 
+  filter_prots_by = exprs(prot_mean_z >= -.25, prot_mean_z <= .3),
+  filename = sub_cent.png,
+)
+```
+
+Note that the clusterings are tightened under each sample type of W2 or
+W16 after the `filter_prots_by` filtration. Further note that the
+*proportion of variance explained* in the first principal axis decreased
+from 57.5% to 55.4% after the data filtration. This suggests that the
+entries deviating the most from *mean zero* are more leveraging towards
+the *explained* variance, even with data centering. In other words, high
+deviating entries are in general associated with above-average data
+variance, in relative to the entire data set. The observation also
+indicates that a high value of *proportion of variance explained* may
+not necessary be a go-to standard for differentiating sample types in
+that variance may be sensitive to leveraging data points.
+
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/pca/cent.png" alt="**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left: without filtration; right, with filtration" width="45%" /><img src="images/protein/pca/sub_cent.png" alt="**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left: without filtration; right, with filtration" width="45%" />
+
+<p class="caption">
+
+**Figure 4A-4B.** PCA of protein log2FC with data centering `on`. Left:
+without filtration; right, with filtration
+
+</p>
+
+</div>
+
+We next explore the analogous, but by turning off data centering:
+
+``` r
+prnPCA(
+  col_select = Select, 
+  center = FALSE,
+  show_ids = FALSE, 
+  filename = nocent.png,
+)
+
+prnPCA(
+  col_select = Select, 
+  center = FALSE,
+  show_ids = FALSE, 
+  filter_prots_by = exprs(prot_mean_z >= -.25, prot_mean_z <= .3),
+  filename = sub_nocent.png,
+)
+```
+
+First note that there is no labels of the *proportion of variance
+explained* since such a view of variance is often not suitable without
+data centering. Instead, an
+[interpretation](https://proteoq.netlify.app/post/wrapping-pca-into-proteoq/)
+as square Euclidean distance would be more appropriate.
+
+Further note the wider spread in PC1 and narrower in PC2 for the
+analysis without the removal of high deviation entries (**Figure 4C
+versus 4D**). The driving force for the difference may be again ascribed
+to the more leveraging data entries. Intuitively speaking, the high
+leverage points tend to associate with higher-than-normal Euclidean
+distance. This becomes more evident after the removals of the high
+deviation entries (**Figure 4D**).
+
+The above showcases that the choice in data centering can lead to
+different interpretation in biology, which may be in part ascribed to
+high deviation entries. The phenomena can, however, be conveniently
+explored via proteoQ.
+
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/pca/nocent.png" alt="**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off` without filtration; right, data centering `off` with filtration" width="45%" /><img src="images/protein/pca/sub_nocent.png" alt="**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off` without filtration; right, data centering `off` with filtration" width="45%" />
+
+<p class="caption">
+
+**Figure 4C-4D.** PCA of protein log2FC. Left: data centering `off`
+without filtration; right, data centering `off` with filtration
+
+</p>
+
+</div>
+
+#### 2.2.4 Graphic controls
+
+The y-labels in **Figure 4C** are not well separated. This can be fixed
+by providing a custom theme to `prnPCA` (see also the help document via
+`?prnPCA`). Alternatively, we may export the PCA results for direct
+`ggplot2`:
+
+``` r
+res <- prnPCA(
+  col_select = Select, 
+  center = FALSE,
+  show_ids = FALSE, 
+  filename = foo.png,
+)
+# names(res)
+
+library(ggplot2)
+
+my_theme <- theme_bw() + theme(
+  axis.text.x  = element_text(angle=0, vjust=0.5, size=20),
+  axis.text.y  = element_text(angle=0, vjust=0.5, size=20),
+  axis.title.x = element_text(colour="black", size=20),
+  axis.title.y = element_text(colour="black", size=20),
+  plot.title = element_text(face="bold", colour="black", size=20, hjust=0.5, vjust=0.5),
+  
+  panel.grid.major.x = element_blank(),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  
+  legend.key = element_rect(colour = NA, fill = 'transparent'),
+  legend.background = element_rect(colour = NA,  fill = "transparent"),
+  legend.title = element_blank(),
+  legend.text = element_text(colour="black", size=14),
+  legend.text.align = 0,
+  legend.box = NULL
+)
+
+p <- ggplot(res$pca) +
+  geom_point(aes(x = Coordinate.1, y = Coordinate.2, colour = Color, shape = Shape, 
+                 alpha = Alpha), size = 4, stroke = 0.02) + 
+  scale_y_continuous(breaks = seq(5, 15, by = 5)) + 
+  labs(title = "", x = paste0("PC1 (", res$var[1], ")"), y = paste0("PC2 (", res$var[2], ")")) +
+  coord_fixed() + 
+  my_theme
+
+ggsave(file.path(dat_dir, "Protein\\PCA\\nocent_2.png"), width = 6, height = 4)
+```
+
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/pca/nocent_2.png" alt="**Figure 4E.** Custom plot." width="45%" />
+
+<p class="caption">
+
+**Figure 4E.** Custom plot.
+
+</p>
+
+</div>
 
 ### 2.3 Correlation plots
 
@@ -1429,11 +1623,11 @@ prnCorr_logFC(
 
 <div class="figure" style="text-align: center">
 
-<img src="images/peptide/corrplot/corr_pnnl.png" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" /><img src="images/protein/corrplot/corr_pnnl.png" alt="**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" />
+<img src="images/peptide/corrplot/corr_pnnl.png" alt="**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" /><img src="images/protein/corrplot/corr_pnnl.png" alt="**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left: peptide; right, protein" width="45%" />
 
 <p class="caption">
 
-**Figure 4A-4B.** Correlation of log2FC for the `PNNL` subset. Left:
+**Figure 5A-5B.** Correlation of log2FC for the `PNNL` subset. Left:
 peptide; right, protein
 
 </p>
@@ -1481,11 +1675,11 @@ interests in human proteins.
 
 <div class="figure" style="text-align: center">
 
-<img src="images/protein/heatmap/protein.png" alt="**Figure 5A.** Heat map visualization of protein log2FC" width="80%" />
+<img src="images/protein/heatmap/protein.png" alt="**Figure 6A.** Heat map visualization of protein log2FC" width="80%" />
 
 <p class="caption">
 
-**Figure 5A.** Heat map visualization of protein log2FC
+**Figure 6A.** Heat map visualization of protein log2FC
 
 </p>
 
@@ -1525,11 +1719,11 @@ row ordering.
 
 <div class="figure" style="text-align: center">
 
-<img src="images/protein/heatmap/kinase.png" alt="**Figure 5B.** Heat map visualization of kinase log2FC" width="80%" />
+<img src="images/protein/heatmap/kinase.png" alt="**Figure 6B.** Heat map visualization of kinase log2FC" width="80%" />
 
 <p class="caption">
 
-**Figure 5B.** Heat map visualization of kinase log2FC
+**Figure 6B.** Heat map visualization of kinase log2FC
 
 </p>
 
@@ -1589,11 +1783,11 @@ laboratories and the location difference between any two laboratories.
 
 <div class="figure" style="text-align: left">
 
-<img src="images/protein/volcplot/batches.png" alt="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" /><img src="images/protein/volcplot/locations.png" alt="**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" />
+<img src="images/protein/volcplot/batches.png" alt="**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" /><img src="images/protein/volcplot/locations.png" alt="**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between batches; right: between locations." width="80%" />
 
 <p class="caption">
 
-**Figure 6A-6B.** Volcano plots of protein log2FC. Left: between
+**Figure 7A-7B.** Volcano plots of protein log2FC. Left: between
 batches; right: between locations.
 
 </p>
@@ -1700,11 +1894,11 @@ have passed our selection criteria. Here, we show one of the examples:
 
 <div class="figure" style="text-align: center">
 
-<img src="images/protein/volcplot/gspa_batch_geomean.png" alt="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" /><img src="images/protein/volcplot/gspa_batch_limma.png" alt="**Figure 7A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" />
+<img src="images/protein/volcplot/gspa_batch_geomean.png" alt="**Figure 8A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" /><img src="images/protein/volcplot/gspa_batch_limma.png" alt="**Figure 8A.** An example of volcano plots of protein log2FC under a gene set. Top, method = mean; bottom, method = limma." width="80%" />
 
 <p class="caption">
 
-**Figure 7A.** An example of volcano plots of protein log2FC under a
+**Figure 8A.** An example of volcano plots of protein log2FC under a
 gene set. Top, method = mean; bottom, method = limma.
 
 </p>
@@ -1804,11 +1998,11 @@ basal and luminal subtypes were captured.
 
 <div class="figure" style="text-align: center">
 
-<img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_BASAL_DN.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png" alt="**Figure 7B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" />
+<img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_BASAL_DN.png" alt="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_A_DN.png" alt="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" /><img src="images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINAL_B_UP.png" alt="**Figure 8B.** Examples of volcano plots of protein log2FC under molecular signatures." width="30%" />
 
 <p class="caption">
 
-**Figure 7B.** Examples of volcano plots of protein log2FC under
+**Figure 8B.** Examples of volcano plots of protein log2FC under
 molecular signatures.
 
 </p>
@@ -1885,11 +2079,11 @@ greater the overlap is between two gene sets. For convenience, a
 
 <div class="figure" style="text-align: center">
 
-<img src="images/protein/gspa/all_sets.png" alt="**Figure 7C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" width="80%" />
+<img src="images/protein/gspa/all_sets.png" alt="**Figure 8C.** Heat map visualization of the distance between all and essential gene sets. The contrasts are defined in 'prnSig(W2_loc = )' in section 2.4 Significance tests and volcano plot visualization" width="80%" />
 
 <p class="caption">
 
-**Figure 7C.** Heat map visualization of the distance between all and
+**Figure 8C.** Heat map visualization of the distance between all and
 essential gene sets. The contrasts are defined in ‘prnSig(W2\_loc = )’
 in section 2.4 Significance tests and volcano plot visualization
 
@@ -1926,11 +2120,11 @@ utility can be found via `?prnGSPAHM`.
 
 <div class="figure" style="text-align: center">
 
-<img src="images/protein/gspa/show_human_redundancy.png" alt="**Figure 7D.** Heat map visualization of human gene sets at a distance cut-off 0.2" width="80%" />
+<img src="images/protein/gspa/show_human_redundancy.png" alt="**Figure 8D.** Heat map visualization of human gene sets at a distance cut-off 0.2" width="80%" />
 
 <p class="caption">
 
-**Figure 7D.** Heat map visualization of human gene sets at a distance
+**Figure 8D.** Heat map visualization of human gene sets at a distance
 cut-off 0.2
 
 </p>
@@ -1943,11 +2137,11 @@ interactive exploration of gene set redundancy.
 
 <div class="figure" style="text-align: center">
 
-<img src="images/protein/gspa/gspa_connet.png" alt="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" /><img src="images/protein/gspa/gspa_redund.png" alt="**Figure 7E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" />
+<img src="images/protein/gspa/gspa_connet.png" alt="**Figure 8E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" /><img src="images/protein/gspa/gspa_redund.png" alt="**Figure 8E.** Snapshots of the networks of biological terms. Left, distance &lt;= 0.8; right, distance &lt;= 0.2." width="40%" />
 
 <p class="caption">
 
-**Figure 7E.** Snapshots of the networks of biological terms. Left,
+**Figure 8E.** Snapshots of the networks of biological terms. Left,
 distance \<= 0.8; right, distance \<= 0.2.
 
 </p>
@@ -1990,11 +2184,11 @@ samples during the trend visualization. In the above example, the
 
 <div class="figure" style="text-align: left">
 
-<img src="images/protein/trend/prn_trend_n6.png" alt="**Figure 8A.** Trends of protein log2FC (n_clust = 6)." width="80%" />
+<img src="images/protein/trend/prn_trend_n6.png" alt="**Figure 9A.** Trends of protein log2FC (n_clust = 6)." width="80%" />
 
 <p class="caption">
 
-**Figure 8A.** Trends of protein log2FC (n\_clust = 6).
+**Figure 9A.** Trends of protein log2FC (n\_clust = 6).
 
 </p>
 
@@ -2016,11 +2210,11 @@ plot_prnTrend(
 
 <div class="figure" style="text-align: left">
 
-<img src="images/protein/trend/cl4_nclust6.png" alt="**Figure 8B.** Trends of protein log2FC at cluster 4 (n_clust = 6)." width="45%" />
+<img src="images/protein/trend/cl4_nclust6.png" alt="**Figure 9B.** Trends of protein log2FC at cluster 4 (n_clust = 6)." width="45%" />
 
 <p class="caption">
 
-**Figure 8B.** Trends of protein log2FC at cluster 4 (n\_clust = 6).
+**Figure 9B.** Trends of protein log2FC at cluster 4 (n\_clust = 6).
 
 </p>
 
@@ -2039,11 +2233,11 @@ plot_prnTrend(
 
 <div class="figure" style="text-align: left">
 
-<img src="images/protein/trend/bi_nclust6.png" alt="**Figure 8C.** Trends of protein log2FC for BI subset (n_clust = 6)." width="60%" />
+<img src="images/protein/trend/bi_nclust6.png" alt="**Figure 9C.** Trends of protein log2FC for BI subset (n_clust = 6)." width="60%" />
 
 <p class="caption">
 
-**Figure 8C.** Trends of protein log2FC for BI subset (n\_clust = 6).
+**Figure 9C.** Trends of protein log2FC for BI subset (n\_clust = 6).
 
 </p>
 
@@ -2205,11 +2399,11 @@ shown as a track on the top of consensus and coefficient heat maps.
 
 <div class="figure" style="text-align: left">
 
-<img src="images/protein/nmf/bi_r5_con_rank5.png" alt="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" /><img src="images/protein/nmf/bi_r5_coef_rank5.png" alt="**Figure 9A-9B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" />
+<img src="images/protein/nmf/bi_r5_con_rank5.png" alt="**Figure 10A-10B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" /><img src="images/protein/nmf/bi_r5_coef_rank5.png" alt="**Figure 10A-10B.** Heat map visualization of protein NMF results with default method  (results from method = &quot;lee&quot; not shown). Left: concensus; right: coefficients; metagenes not shown." width="45%" />
 
 <p class="caption">
 
-**Figure 9A-9B.** Heat map visualization of protein NMF results with
+**Figure 10A-10B.** Heat map visualization of protein NMF results with
 default method (results from method = “lee” not shown). Left: concensus;
 right: coefficients; metagenes not shown.
 

@@ -134,7 +134,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
     df_z[, nan_cols] <- 0
     rm(nan_cols)
     
-    if (is_empty(nm_log2r_z)) {
+    if (purrr::is_empty(nm_log2r_z)) {
       df <- cbind(df, df_z)
       
       nm_log2r_z <- names(df) %>% 
@@ -148,9 +148,48 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
     df[, nm_log2r_n] <- sweep(df[, nm_log2r_n, drop = FALSE], 2, cf_x_fit$x, "-")
     df[, nm_int_n] <- sweep(df[, nm_int_n, drop = FALSE], 2, 2^cf_x_fit$x, "/")    
     
-    env_bind(caller_env(), nm_log2r_z = nm_log2r_z)
+    rlang::env_bind(caller_env(), nm_log2r_z = nm_log2r_z)
     
     return(df)
+  }
+  
+  
+  # add mean-deviation info for `expt_smry::Select`ed samples
+  add_mean_dev <- function (df, label_scheme_fit) {
+    if (grepl("Peptide\\\\", filepath)) {
+      prefix <- "pep_mean_"
+    } else if (grepl("Protein\\\\", filepath)) {
+      prefix <- "prot_mean_"
+    } else {
+      return(df)
+    }
+    
+    nm_log2r_raw <- names(df) %>% 
+      .[grepl("^log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+      find_fit_nms(label_scheme_fit$Sample_ID)
+    
+    nm_log2r_n <- names(df) %>% 
+      .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+      find_fit_nms(label_scheme_fit$Sample_ID)
+    
+    nm_log2r_z <- names(df) %>% 
+      .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+      find_fit_nms(label_scheme_fit$Sample_ID)
+    
+    df <- df %>% 
+      dplyr::mutate(!!paste0(prefix, "raw") := rowMeans(.[, names(.) %in% nm_log2r_raw], na.rm = TRUE), 
+                    !!paste0(prefix, "n") := rowMeans(.[, names(.) %in% nm_log2r_n], na.rm = TRUE), 
+                    !!paste0(prefix, "z") := rowMeans(.[, names(.) %in% nm_log2r_z], na.rm = TRUE)) 
+    
+    df[, grepl(paste0("^", prefix), names(df))] <- df[, grepl(paste0("^", prefix), names(df))] %>%
+      dplyr::mutate_if(is.logical, as.numeric) %>%
+      round(., digits = 3)
+
+    df <- dplyr::bind_cols(
+      df %>% dplyr::select(grep("^prot_", names(.))), 
+      df %>% dplyr::select(grep("^pep_", names(.))), 
+      df %>% dplyr::select(-grep("^pep_|^prot_", names(.)))
+    )
   }
   
   
@@ -196,11 +235,13 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   
   	if ((!ok_Z_ncomp) & (col_select != rlang::expr(sample_ID))) {
   	  col_select <- rlang::expr(Sample_ID)
-  	}	  
+  	}
 	}
 
 	load(file = file.path(dat_dir, "label_scheme.rda"))
 	label_scheme_fit <- label_scheme %>% .[!is.na(.[[col_select]]), ]
+	
+	## `nm_log2r_z` may not yet exist if this is the first `normMulGau` after `mergePep` or `mergePrn`
 	
 	nm_log2r_n <- names(df) %>% 
 	  .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
@@ -267,7 +308,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 			dplyr::arrange(Sample_ID) 
 
 		list(params, cf_x, sd_coefs) %>%
-			purrr::reduce(left_join, by = "Sample_ID") %>%
+			purrr::reduce(dplyr::left_join, by = "Sample_ID") %>%
 			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
 			dplyr::arrange(Sample_ID) %>%
 			write.table(., file = file.path(filepath, "MGKernel_params_N.txt"), sep = "\t",
@@ -277,12 +318,13 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		cf_x_fit <- cf_x %>% dplyr::filter(Sample_ID %in% label_scheme_fit$Sample_ID)
 		df <- update_df(df, label_scheme_fit, cf_x_fit, sd_coefs_fit)
 		
+		## non-empty `Z_log2_R` guaranteed after `update_df`
+		
 		# separate fits of Z_log2_R for updating curve parameters only
 		if (!ok_Z_ncomp) {
 		  params_z <- df %>% 
 		    filters_in_call(!!!slice_dots) %>% 
 		    dplyr::select(nm_log2r_z) %>% 
-		    # `names<-`(gsub("^Z_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>% 
 		    `names<-`(gsub("^Z_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
 		    fitKernelDensity(n_comp = n_comp, seed = seed, !!!nonslice_dots) %>% 
 		    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
@@ -320,10 +362,9 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  # profile widths based on all sample columns and data rows
 	  sd_coefs <- df %>% calc_sd_fcts(range_log2r, range_int, label_scheme)
 	  
-	  # initialization: NA for Empty smpls; 0 for the rest
+	  # initialization: NA for Empty samples; 0 for the remaining
 	  x_vals <- df %>%
 	    dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
-	    # `colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
 	    `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
 	    dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
 	    unlist() %>%
@@ -337,7 +378,6 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	    x_vals_fit <- df %>%
 	      filters_in_call(!!!slice_dots) %>% 
 	      dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
-	      # `colnames<-`(gsub(".*\\s*\\((.*)\\)$", "\\1", names(.))) %>%
 	      `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
 	      dplyr::select(which(names(.) %in% label_scheme_fit$Sample_ID)) %>% 
 	      dplyr::summarise_all(funs(median(., na.rm = TRUE))) 
@@ -395,6 +435,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		}
 	}
 
+	df <- df %>% add_mean_dev(label_scheme_fit)
+	
 	return(df)
 }
 
