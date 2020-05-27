@@ -734,7 +734,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
                      rm_craps = FALSE, rm_krts = FALSE, rptr_intco = 1000, 
                      annot_kinases = FALSE, plot_rptr_int = TRUE, use_lowercase_aa = TRUE, ...) {
 
-	on.exit(message("Split PSM by sample IDs and LCMS injections --- Completed."), add = TRUE)
+	on.exit(message("Split PSM by TMT experiments and LCMS injections --- Completed."), add = TRUE)
 
 	load(file = file.path(dat_dir, "label_scheme_full.rda"))
 	load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -746,7 +746,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
                         pattern = "^F[0-9]+\\_hdr_rm.csv$")
 
 	if (length(filelist) == 0) 
-	  stop(paste("No intermediate PSM file(s) under", file.path(dat_dir, "PSM//cache")), 
+	  stop(paste("No intermediate PSM file(s) under: ", file.path(dat_dir, "PSM//cache")), 
 	       call. = FALSE)
 
   df <- purrr::map(filelist, ~ {
@@ -1002,7 +1002,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
 		  df_int <- df_split[[i]] %>% 
 		    .[, grepl("^I[0-9]{3}", names(.))]
 		  
-		  rptr_violin(df = df_int, filepath = file.path(dat_dir, "PSM\\rprt_int\\raw", gsub("\\.csv", "\\.png", out_fn)), 
+		  rptr_violin(df = df_int, 
+		              filepath = file.path(dat_dir, "PSM\\rprt_int\\raw", gsub("\\.csv", "\\.png", out_fn)), 
 		              width = 8, height = 8)
 		}
 	}
@@ -1803,7 +1804,7 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
     message("Variable `dat_dir` added to the Global Environment.")
   }
   
-  if (is.null(fasta)) stop("Path(s) to fasta file(s) not found.", call. = FALSE)
+  if (is.null(fasta)) stop("Path(s) to fasta file(s) cannot be empty.", call. = FALSE)
   
   group_psm_by <- rlang::enexpr(group_psm_by)
   if (group_psm_by == rlang::expr(c("pep_seq", "pep_seq_mod"))) {
@@ -1830,10 +1831,13 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
   
   if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^F[0-9]+\\.csv$"))) {
     type <- "mascot"
+    message("Mascot results found.")
   } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^msms.*\\.txt$"))) {
     type <- "mq"
+    message("MaxQuant results found.")
   } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^PSMexport.*\\.ssv$"))) {
     type <- "sm"
+    message("Spectrum Mill results found.")
   } else {
     stop("Unknow data type or missing data files.", call. = FALSE)
 	}
@@ -1971,7 +1975,7 @@ calcPepide <- function(df, label_scheme, group_psm_by, method_psm_pep, group_pep
   } else if (method_psm_pep == "top.3") {
     df_num <- TMT_top_n(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
   } else if (method_psm_pep == "weighted.mean") {
-    df_num <- TMT_wt_mean(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
+    df_num <- tmt_wtmean(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
   } else {
     df_num <- aggrNums(median)(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
   }
@@ -2004,8 +2008,8 @@ calcPepide <- function(df, label_scheme, group_psm_by, method_psm_pep, group_pep
     
     col_int <- grepl("^I[0-9]{3}", names(df))
     df  <- cbind(df[, -grep("^N_I[0-9]{3}", names(df))],
-                 sweep(df[, col_int, drop=FALSE], 2, 2^cf, "/") %>%
-                   `colnames<-`(paste("N", colnames(.), sep="_")))
+                 sweep(df[, col_int, drop = FALSE], 2, 2^cf, "/") %>%
+                   `colnames<-`(paste("N", colnames(.), sep = "_")))
     
     return(df)
   })

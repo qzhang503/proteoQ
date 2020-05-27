@@ -216,7 +216,7 @@ aggrNums <- function(f) {
 
 #' Calculates weighted mean
 #'
-#' \code{TMT_wt_mean} calculates the weighted mean of \code{log2FC} and
+#' \code{tmt_wtmean} calculates the weighted mean of \code{log2FC} based on
 #' \code{intensity}.
 #'
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
@@ -226,47 +226,96 @@ aggrNums <- function(f) {
 #' @importFrom stringr str_length
 #' @importFrom tidyr gather
 #' @importFrom magrittr %>%
-TMT_wt_mean <- function (x, id, ...) {
-	id <- rlang::as_string(rlang::enexpr(id))
-	dots <- rlang::enexprs(...)
+tmt_wtmean <- function (x, id, na.rm = TRUE, ...) {
+  my_trim <- function (x, range_int = c(.05, .95), na.rm = TRUE) {
+    if (range_int[2] > 1) range_int <- range_int/100
+    min_x <- min(x, na.rm = na.rm)
+    qs <- quantile(x, probs = range_int, na.rm = na.rm)
+    x[x < qs[1] | x > qs[2]] <- min_x
+    return(x)
+  }
+  
+  my_wtmean <- function (x) {
+    x %>% 
+      dplyr::mutate_at(.vars = "Intensity", my_trim, range_int = range_int, na.rm = TRUE) %>% 
+      dplyr::mutate(n = stringr::str_length(.[[id]])) %>%
+      dplyr::filter(n != 0) %>%
+      dplyr::group_by(!!rlang::sym(id), variable) %>%
+      dplyr::summarise(log2_R = weighted.mean(log2_R, log10(Intensity), !!!dots)) %>%
+      tidyr::spread(variable, log2_R)
+  }
+  
+  
+  range_int <- c(.05, .95)
+  
+  id <- rlang::as_string(rlang::enexpr(id))
+  dots <- rlang::enexprs(...)
 
-	load(file = file.path(dat_dir, "label_scheme.rda"))
-	TMT_levels <- label_scheme %>% TMT_plex() %>% TMT_levels()
+  load(file = file.path(dat_dir, "label_scheme.rda"))
 
-	x_R <- x %>%
-			dplyr::select(id, grep("^log2_R[0-9]{3}", names(.))) %>%
-			tidyr::gather(key = variable, value = log2_R, -id)
+  # intensity
+  xi <- x %>%
+    dplyr::select(id, grep("^I[0-9]{3}[NC]{0,1}", names(.))) %>%
+    tidyr::gather(key = variable, value = Intensity, -id)
+  
+  # mean: `I` and `N_I`
+  xi_wt <- x %>%
+    dplyr::select(id, grep("^[N]{0,1}[_]{0,1}I[0-9]{3}[NC]{0,1}", names(.))) %>% 
+    dplyr::group_by(!!rlang::sym(id)) %>%
+    dplyr::summarise_all(mean, na.rm = TRUE, !!!dots) 
 
-	x_I <- x %>%
-			dplyr::select(id, grep("^I[0-9]{3}", names(.))) %>%
-			tidyr::gather(key = variable, value = Intensity, -id)
+  # weighted.mean `log2_R`
+  xr <- x %>%
+    dplyr::select(id, grep("^log2_R[0-9]{3}[NC]{0,1}", names(.))) %>%
+    tidyr::gather(key = variable, value = log2_R, -id)
+  
+  if ("log2_R" %in% names(xr)) {
+    xr_wt <- cbind.data.frame(xi, log2_R = xr[, c("log2_R")]) %>% 
+      dplyr::mutate(variable = gsub("^I([0-9]{3}[NC]{0,1})", "log2_R\\1", variable), 
+                    variable = factor(variable, levels = unique(variable))) %>% 
+      my_wtmean()
+  } else {
+    xr_wt <- xi_wt[, 1, drop = FALSE]
+  }
 
-	x_wt <- cbind.data.frame(x_I, log2_R = x_R[, c("log2_R")]) %>%
-			dplyr::mutate(variable = gsub("^I", "log2_R", variable)) %>%
-			dplyr::mutate(TMT = gsub("^log2_R(.*)\\s+.*", "TMT-\\1", variable)) %>%
-			dplyr::mutate(TMT = factor(TMT, levels = TMT_levels)) %>%
-			dplyr::mutate(variable = factor(variable, levels = unique(variable))) %>%
-			dplyr::mutate(n = stringr::str_length(.[[id]])) %>%
-			dplyr::filter(n != 0) %>%
-			dplyr::group_by(!!rlang::sym(id), variable) %>%
-			dplyr::summarise(log2_R = weighted.mean(log2_R, log10(Intensity), !!!dots)) %>%
-			tidyr::spread(variable, log2_R)
+  # weighted.mean `N_log2_R` 
+  xnr <- x %>%
+    dplyr::select(id, grep("^N_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>%
+    tidyr::gather(key = variable, value = log2_R, -id)
+  
+  if ("log2_R" %in% names(xnr)) {
+    xnr_wt <- cbind.data.frame(xi, log2_R = xnr[, c("log2_R")]) %>% 
+      dplyr::mutate(variable = gsub("^I([0-9]{3}[NC]{0,1})", "N_log2_R\\1", variable), 
+                    variable = factor(variable, levels = unique(variable))) %>% 
+      my_wtmean()
+  } else {
+    xnr_wt <- xi_wt[, 1, drop = FALSE]
+  }
 
-	x <- x %>%
-			dplyr::select(id, grep("(N_log2_R)|(Z_log2_R)|(I)[0-9]{3}", names(.))) %>%
-			dplyr::group_by(!!rlang::sym(id)) %>%
-			dplyr::summarise_all(funs(mean(., !!!dots))) %>%
-			dplyr::left_join(x_wt, by = id)
+  # weighted.mean `Z_log2_R` may not be available for PSM data
+  xzr <- x %>%
+    dplyr::select(id, grep("^Z_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>%
+    tidyr::gather(key = variable, value = log2_R, -id)
+  
+  if ("log2_R" %in% names(xzr)) {
+    xzr_wt <- cbind.data.frame(xi, log2_R = xzr[, c("log2_R")]) %>% 
+      dplyr::mutate(variable = gsub("^I([0-9]{3}[NC]{0,1})", "Z_log2_R\\1", variable), 
+                    variable = factor(variable, levels = unique(variable))) %>% 
+      my_wtmean()    
+  } else {
+    xzr_wt <- xi_wt[, 1, drop = FALSE]
+  }
 
-	rm(x_R, x_I, x_wt)
+  x <- list(xi_wt, xr_wt, xnr_wt, xzr_wt) %>% purrr::reduce(left_join, by = id)
 
-	cbind.data.frame(
-		x[, names(x) == id],
-		x[, grepl("^I[0-9]{3}", names(x))],
-		x[, grepl("^N_I[0-9]{3}", names(x))],
-		x[, grepl("^log2_R[0-9]{3}", names(x))],
-		x[, grepl("^N_log2_R[0-9]{3}", names(x))],
-		x[, grepl("^Z_log2_R[0-9]{3}", names(x))])
+  dplyr::bind_cols(
+    x[, names(x) == id],
+    x[, grepl("^I[0-9]{3}[NC]{0,1}", names(x))],
+    x[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(x))],
+    x[, grepl("^log2_R[0-9]{3}[NC]{0,1}", names(x))],
+    x[, grepl("^N_log2_R[0-9]{3}[NC]{0,1}", names(x))],
+    x[, grepl("^Z_log2_R[0-9]{3}[NC]{0,1}", names(x))],
+  )
 }
 
 

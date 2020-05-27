@@ -899,7 +899,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   df_num <- switch(method_pep_prn, 
                    mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
                    top.3 = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
-                   weighted.mean = TMT_wt_mean(df_num, !!rlang::sym(id), na.rm = TRUE), 
+                   weighted.mean = tmt_wtmean(df_num, !!rlang::sym(id), na.rm = TRUE), 
                    median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
                    aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
   

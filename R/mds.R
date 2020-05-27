@@ -8,7 +8,8 @@
 plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL, 
                      adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2, 
                      k = 3, show_ids = FALSE, 
-                     col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+                     col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, 
+                     col_alpha = NULL, 
                      color_brewer = NULL, fill_brewer = NULL, 
                      size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE,
@@ -27,6 +28,28 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
   dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+  
+  anal_dots <- dots %>% .[names(.) %in% c("d", "k", "eig", "add", "x.ret", "list.", # cmdscale
+                                          "y", "maxit", "trace", "tol", # isoMDS
+                                          "x", "method", "diag", "upper", "p", "m")] # dist
+  dots <- dots %>% .[! . %in% anal_dots]
+
+  if (!is.null(anal_dots$x)) warning("Argument `x` in `dist()` automated.", call. = FALSE)
+  if (!is.null(anal_dots$diag)) warning("Argument `diag` in `dist()` automated.", call. = FALSE)
+  if (!is.null(anal_dots$upper)) warning("Argument `upper` in `dist()` automated.", call. = FALSE)
+  if (!is.null(anal_dots$m)) warning("Argument `m` in `dist()` not used.", call. = FALSE)
+  
+  if (!is.null(anal_dots$d)) warning("Distance object `d` automated.", call. = FALSE)
+  if (!is.null(anal_dots$eig)) warning("Argument `eig` in `cmdscale()` automated.", call. = FALSE)
+  if (!is.null(anal_dots$x.ret)) warning("Argument `x.ret` in `cmdscale()` automated.", call. = FALSE)
+  if (!is.null(anal_dots$list.)) warning("Argument `list.` in `cmdscale()` automated.", call. = FALSE)
+  
+  if (!is.null(anal_dots$y)) warning("Argument `y` in `isoMDS()` automated.", call. = FALSE)
+
+  # note that `method`, `k`, `p` already in main arguments
+  anal_dots <- anal_dots %>% .[! names(.) %in% c("x", "method", "diag", "upper", "p", "m")]
+  anal_dots <- anal_dots %>% .[! names(.) %in% c("d", "k", "eig", "x.ret", "list.")] # "add", 
+  anal_dots <- anal_dots %>% .[! names(.) %in% c("y")] # "maxit", "trace", "tol"
 
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -43,7 +66,8 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       classical = classical, 
       method = method, 
       p = p, 
-      k = k, ) %>% 
+      k = k, 
+      !!!anal_dots) %>% 
     cmbn_meta(label_scheme_sub) %T>% 
     readr::write_tsv(file.path(filepath, paste0(fn_prefix, "_res.txt")))
 
@@ -302,14 +326,15 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
     warning("Argument `scale.` disabled; instead `scale_log2r` will be used for `scale.`.", 
             call. = FALSE)
   }
+  
   if (!is.null(anal_dots$x)) {
     anal_dots$x <- NULL
-    warning("Not use `x`; input data will be determined automatically.", call. = FALSE)
+    warning("Argument `x` in `prcomp()` automated.", call. = FALSE)
   }
   
   if (!purrr::is_empty(fml_dots)) {
     fml_dots <- NULL
-    warning("The cool feature of 'formula' is not yet available in proteoQ.", call. = FALSE)
+    warning("The method for class 'formula' is not yet available in proteoQ.", call. = FALSE)
   }
 
   res <- df %>% 
@@ -479,10 +504,13 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
 	             sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
 	  .$log2R
+	
+	center = FALSE # not matter to `dist` calculation
+	if (center) df <- sweep(df, 1, rowMeans(df, na.rm = TRUE), "-")
 
-	D <- dist(t(df), method = method, p = p, diag = TRUE, upper = TRUE)
-	if (anyNA(D)) stop("Distance cannot be calculated for one more sample pairs.\n", 
-	                   "Check the entries under the column corresponding to `col_select` in metadata.",
+	D <- dist(x = t(df), method = method, diag = TRUE, upper = TRUE, p = p)
+	if (anyNA(D)) stop("Distance cannot be calculated between one more sample pairs.\n", 
+	                   "Check entries under the column corresponding to `col_select` in metadata.", 
 	                   call. = FALSE)
 	
 	D <- as.matrix(D)
@@ -503,9 +531,21 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	}
 
 	if (!classical) {
-		df_mds <- data.frame(isoMDS(D, k = k)$points)
+		isomds_dots <- dots %>% .[names(.) %in% c("y", "maxit", "trace", "tol")]
+		isomds_dots$y <- NULL
+		
+		df_mds <- rlang::expr(MASS::isoMDS(d = !!D, k = !!k, p = !!p, !!!isomds_dots)) %>% 
+		  rlang::eval_bare(env = caller_env()) %>% 
+		  .$points %>% 
+		  data.frame()
 	} else {
-		df_mds <- data.frame(cmdscale(D, k = k))
+		cmdscale_dots <- dots %>% .[names(.) %in% c("eig", "add", "x.ret", "list.")]
+		cmdscale_dots$list. <- TRUE
+		
+		df_mds <- rlang::expr(stats::cmdscale(d = !!D, k = !!k, !!!cmdscale_dots)) %>% 
+		  rlang::eval_bare(env = caller_env()) %>% 
+		  .$points %>% 
+		  data.frame()
 	}
 	
 	df_mds <- df_mds %>%
