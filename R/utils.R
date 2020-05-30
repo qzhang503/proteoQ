@@ -1018,7 +1018,8 @@ parse_uniprot_fasta <- function (df, fasta, entrez) {
     acc_lookup <- local({
       na_org <- genes %>% 
         dplyr::filter(!grepl("OS=", .$prot_desc)) %>% 
-        dplyr::mutate(organism = NA)
+        dplyr::mutate(organism = NA) %>% 
+        dplyr::mutate(organism = as.character(organism))
       
       acc_lookup <- genes %>% 
         dplyr::filter(grepl("OS=", .$prot_desc)) %>% 

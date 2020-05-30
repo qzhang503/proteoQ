@@ -21,7 +21,8 @@ extract_raws <- function(raw_dir = NULL, dat_dir = NULL) {
 
   fns <- names(tools::md5sum(dir(raw_dir, pattern = "\\.raw$", full.names = FALSE)))
   data.frame(Index = seq_along(fns), RAW_File = fns) %T>% 
-    write.table(file.path(dat_dir, "raw_list.txt"), sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+    write.table(file.path(dat_dir, "raw_list.txt"), sep = "\t", 
+                col.names = TRUE, row.names = FALSE, quote = FALSE)
 		
 	message("RAW MS file names stored in ", file.path(dat_dir, "raw_list.txt"))
 }
@@ -196,7 +197,8 @@ extract_psm_raws <- function(type = c("mascot", "maxquant", "spectrum_mill"), da
   )
   
   filelist <- list.files(path = file.path(dat_dir), pattern = pattern)
-  if (purrr::is_empty(filelist)) stop("No ", toupper(type), " files(s) under ", dat_dir, call. = FALSE)
+  if (purrr::is_empty(filelist)) 
+    stop("No ", toupper(type), " files(s) under ", dat_dir, call. = FALSE)
 
   switch (type,
     mascot = find_mascot_psmraws(filelist),
@@ -407,14 +409,14 @@ add_mod_conf <- function(df, dat_dir) {
 
   queries <- readRDS(filepath) %>% 
     dplyr::filter(!is.na(pep_rank)) %>% 
-    tidyr::unite(uniq_id, c("query_number", "pep_seq", "pep_var_mod_pos"), sep = ".", remove = FALSE)
+    tidyr::unite(uniq_id, c("query_number", "pep_seq", "pep_var_mod_pos"), 
+                 sep = ".", remove = FALSE)
 
   if (! "pep_var_mod_conf" %in% names(queries)) return(df)
   
-  # also possible the same pep_query, pep_seq but different positions of M-Ox etc.
-  # http://www.matrixscience.com/msparser/help/group__duplicates_page.html
   df <- df %>% 
-    tidyr::unite(uniq_id, c("pep_query", "pep_seq", "pep_var_mod_pos"), sep = ".", remove = FALSE) %>% 
+    tidyr::unite(uniq_id, c("pep_query", "pep_seq", "pep_var_mod_pos"), 
+                 sep = ".", remove = FALSE) %>% 
     dplyr::left_join(queries[, c("uniq_id", "pep_var_mod_conf")], by = "uniq_id")
 
   df <- df %>% 
@@ -481,7 +483,7 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
     tidyr::separate(".", sep = ",", extra = "drop", c("Mascot_abbr", "Description", "Delta_mass")) %>%
     dplyr::mutate(Filename = gsub("[\\\\\\/\\:\\*\\?\\'\\<\\>\\|]", ".", Description))
   
-  if (is.null(df$pep_seq)) stop("column `pep_seq` not found.")
+  if (is.null(df$pep_seq)) stop("Column `pep_seq` not found.", call. = FALSE)
 
   if (nrow(var_mods) == 0) {
     df$pep_seq_mod <- df$pep_seq
@@ -682,6 +684,7 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa) {
       dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))
   }
 
+  # not used
   purrr::walk2(var_mods$Description, var_mods$Filename, ~ {
     try(
       df %>% 
@@ -801,7 +804,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
   
-  message("Primary column keys in `F[...].csv` or `PSM/cache/[...]_hdr_rm.csv`  for `filter_` varargs.")
+  message("Primary column keys in `F[...].csv` or `PSM/cache/[...]_hdr_rm.csv` for `filter_` varargs.")
   
   # (1) the same `pep_query` can be assigned to different `pep_seq` at different `pep_rank`
   # (2) the same combination of `pep_query`, `pep_seq` and `pep_var_mod_pos` (positional difference) 

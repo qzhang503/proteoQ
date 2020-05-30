@@ -43,14 +43,16 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
       dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
       dplyr::arrange(Sample_ID)
     
-    cf_x <- fit %>%
-      dplyr::group_by(Sample_ID) %>% 
-      dplyr::mutate(Max = max(Sum, na.rm = TRUE)) %>% 
-      dplyr::mutate(Max = ifelse(is.infinite(Max), NA, Max)) %>% 
-      dplyr::filter(Sum == Max) %>%
-      dplyr::mutate(x = mean(x, na.rm = TRUE)) %>% # tie-breaking
-      dplyr::filter(!duplicated(x)) %>% 
-      dplyr::select(-Max)
+    cf_x <- suppressWarnings(
+      fit %>%
+        dplyr::group_by(Sample_ID) %>% 
+        dplyr::mutate(Max = max(Sum, na.rm = TRUE)) %>% 
+        dplyr::mutate(Max = ifelse(is.infinite(Max), NA, Max)) %>% 
+        dplyr::filter(Sum == Max) %>%
+        dplyr::mutate(x = mean(x, na.rm = TRUE)) %>% # tie-breaking
+        dplyr::filter(!duplicated(x)) %>% 
+        dplyr::select(-Max)
+    )
     
     cf_empty <- fit %>%
       dplyr::filter(! Sample_ID %in% cf_x$Sample_ID)
