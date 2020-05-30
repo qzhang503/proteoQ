@@ -4,7 +4,13 @@
 \alias{calc_sd_fcts_psm}
 \title{Calculate PSM SDs}
 \usage{
-calc_sd_fcts_psm(df, range_log2r, range_int, set_idx, injn_idx)
+calc_sd_fcts_psm(
+  df,
+  range_log2r = c(5, 95),
+  range_int = c(5, 95),
+  set_idx,
+  injn_idx
+)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -32,5 +38,5 @@ the 5th and the 95th quantiles.}
 \item{injn_idx}{Numeric; an index of \code{LCMS_Inj} in metadata \code{label_scheme.xlsx}.}
 }
 \description{
-Calculate PSM SDs
+The standard deviations are based on samples under each TMT set and LCMS.
 }

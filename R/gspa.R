@@ -308,6 +308,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   }
 
   col_ind <- purrr::map(fml_nms, ~ grepl(.x, names(df))) %>%
+    `names<-`(paste0("nm_", seq_along(.))) %>% 
     dplyr::bind_cols() %>%
     rowSums() %>%
     `>`(0)
@@ -554,7 +555,6 @@ ok_min_size <- function (df, min_delta, gspval_cutoff = 1, gslogFC_cutoff = 0) {
     dplyr::summarise(p_val = mean(p_val, na.rm = TRUE)) %>% 
     dplyr::mutate(p_val = ifelse(is.nan(p_val), 0, p_val)) %>% 
     tidyr::spread(key = contrast, value = p_val) %>% 
-    dplyr::ungroup(valence) %>% 
     dplyr::select(-valence)
   delta_p[is.na(delta_p)] <- 0
   if (nrow(delta_p) == 2) delta_p <- delta_p[2, ] - delta_p[1, ]
@@ -563,7 +563,6 @@ ok_min_size <- function (df, min_delta, gspval_cutoff = 1, gslogFC_cutoff = 0) {
     dplyr::summarise(log2Ratio = mean(log2Ratio, na.rm = TRUE)) %>% 
     dplyr::mutate(log2Ratio = ifelse(is.nan(log2Ratio), 0, log2Ratio)) %>% 
     tidyr::spread(key = contrast, value = log2Ratio) %>% 
-    dplyr::ungroup(valence) %>% 
     dplyr::select(-valence)
   delta_fc[is.na(delta_fc)] <- 0
   if (nrow(delta_fc) == 2) delta_fc <- delta_fc[2, ] + delta_fc[1, ]
@@ -571,16 +570,23 @@ ok_min_size <- function (df, min_delta, gspval_cutoff = 1, gslogFC_cutoff = 0) {
   delta_n <- data %>% 
     dplyr::summarise(n = mean(n, na.rm = TRUE)) %>% # empty levels will be kept
     tidyr::spread(key = contrast, value = n) %>% 
-    dplyr::ungroup(valence) %>% 
     dplyr::select(-valence)
   delta_n[is.na(delta_n)] <- 0
   if (nrow(delta_n) == 2) delta_n <- delta_n[2, ] - delta_n[1, ]
 
-  sign(delta_p) == sign(delta_n) & 
+  oks <- sign(delta_p) == sign(delta_n) & 
     abs(delta_p) >= -log10(gspval_cutoff) & 
     abs(delta_n) >= min_delta & 
     abs(delta_fc) >= gslogFC_cutoff
-    
+  
+  if (length(oks) < nlevels(df$contrast)) {
+    levs <- levels(df$contrast)
+    missing_nms <- levs[!levs %in% colnames(oks)]
+    oks <- dplyr::bind_cols(!!missing_nms := FALSE, oks)
+    oks <- oks[, levs, drop = FALSE]
+  }
+  
+  return(oks)  
 }
 
 
@@ -597,8 +603,11 @@ gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4,
   
   df <- df %>% dplyr::group_by(contrast, valence)
 
-  ok_delta_n <- ok_min_size(df = df, min_delta = min_delta, gspval_cutoff = gspval_cutoff, gslogFC_cutoff = gslogFC_cutoff)
-
+  ok_delta_n <- ok_min_size(df = df, 
+                            min_delta = min_delta, 
+                            gspval_cutoff = gspval_cutoff, 
+                            gslogFC_cutoff = gslogFC_cutoff)
+  
   # penalty term
   dfw <- df %>% dplyr::mutate(p_val = ifelse(is.na(p_val), 1, p_val))
 
@@ -791,7 +800,7 @@ map_essential <- function (sig_sets) {
     dplyr::rename(ess_term = "term", term = "curr_sig_set") %>%
     dplyr::select(c("term", "ess_term", "size", "ess_size", "fraction")) %>% 
     dplyr::mutate(fraction = round(fraction, digits = 3)) %>% 
-    dplyr::ungroup(ess_term) %>% 
+    # dplyr::ungroup(ess_term) %>% 
     dplyr::mutate(distance = 1 - fraction) %>% 
     dplyr::mutate(term = factor(term, levels = unique(as.character(term)))) %>% 
     dplyr::mutate(ess_term = factor(ess_term, levels = levels(term))) %>%

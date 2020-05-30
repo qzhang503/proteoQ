@@ -993,6 +993,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
     dfc <- df %>% 
       dplyr::select(gene, prot_cover) %>% 
       dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
+      dplyr::filter(prot_cover != "NA%") %>% 
       dplyr::group_by(gene) %>% 
       dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
       dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 

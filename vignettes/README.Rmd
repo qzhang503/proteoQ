@@ -6,13 +6,6 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
-  github_document:
-    toc: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  word_document:
-    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -21,6 +14,13 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  word_document:
+    toc: yes
+  github_document:
+    toc: yes
   md_document:
     toc: yes
     toc_depth: 4
@@ -251,7 +251,7 @@ normPSM(
 )
 ```
 
-Note that at present the `log2FC` of PSMs are always aligned by median centering across samples.^[A slightly more thoughtful way to align PSM data might involve back propagation. For example after protein normalization, we apply the same offsets to back calculate peptide and then PSM `log2FC`.] At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence but different variable modifications will be grouped for analysis using descriptive statistics. In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively according to the unique combination of the primary sequences and the variable modifications of peptides. Analogously, `group_pep_by` specify the grouping of peptides by either protein accession names or gene names. The `fasta` argument points to the location of a copy of the RefSeq fasta files that were used in the corresponding MS/MS searches. Additional options include `rm_craps`, `rm_krts`, `annot_kinases` etc. More description of `normPSM` can be found by accessing its help document via `?normPSM`.  
+At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence but different variable modifications will be grouped for analysis using descriptive statistics. In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively according to the unique combination of the primary sequences and the variable modifications of peptides. Analogously, `group_pep_by` specify the grouping of peptides by either protein accession names or gene names. The `fasta` argument points to the location of a copy of the RefSeq fasta files that were used in the corresponding MS/MS searches. Additional options include `rm_craps`, `rm_krts`, `annot_kinases` etc. More description of `normPSM` can be found by accessing its help document via `?normPSM`.  
 
 Every time the `normPSM` module is executed, it will process the PSM data from the ground up. In other words, it has no memory on prior happenings. For instance, after inspecting graphically the intensity distributions of reporter ions at `plot_rptr_int = TRUE`, we may consider a more inclusive cut-off at `rptr_intco = 100`. The downward in `rptr_intco` is *not* going to cause information loss in the range of 100 to 1,000. This is trivia but worth mentioning here. As we will find out in following sections, utilities in peptide and protein normalization, `standPep` and `standPrn`, do pass information onto successive iterations.  
 

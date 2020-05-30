@@ -366,7 +366,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  x_vals <- df %>%
 	    dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
 	    `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
-	    dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
+	    dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>%
 	    unlist() %>%
 	    data.frame(x = .) %>%
 	    tibble::rownames_to_column("Sample_ID") %>%
@@ -380,8 +380,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	      dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
 	      `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
 	      dplyr::select(which(names(.) %in% label_scheme_fit$Sample_ID)) %>% 
-	      dplyr::summarise_all(funs(median(., na.rm = TRUE))) 
-	    
+	      dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+
 	    if (any(is.na(x_vals_fit))) {
 	      data.frame(Sample_ID = names(x_vals_fit)[is.na(x_vals_fit)], `mean(x)` = NA) %>% 
 	        print()
@@ -412,7 +412,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 			dplyr::filter(.[["gene"]] %in% method_align) %>%
 			dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
 			`colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
-			dplyr::summarise_all(funs(median(., na.rm = TRUE))) %>%
+		  dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>% 
 			unlist() %>%
 			data.frame(x = .) %>%
 			tibble::rownames_to_column("Sample_ID") %>%

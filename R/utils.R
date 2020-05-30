@@ -344,7 +344,7 @@ TMT_top_n <- function (x, id, ...) {
 		dplyr::group_by(!!id_var) %>%
 		dplyr::top_n(n = 3, wt = sum_Intensity) %>%
 		dplyr::select(-sum_Intensity) %>%
-		dplyr::summarise_all(funs(median(., !!!args)))
+	  dplyr::summarise_all(~ median(.x, !!!args))
 }
 
 
@@ -1590,7 +1590,8 @@ annotPeppos <- function (df, fasta){
         `colnames<-`(c("pep_seq_bare", "pep_res_before", "pep_start", "pep_end", "pep_res_after", 
                        "prot_acc", "is_tryptic")) %>% 
         data.frame(check.names = FALSE) %>% 
-        tidyr::unite(pep_prn, pep_seq_bare, prot_acc, sep = "|", remove = TRUE)
+        tidyr::unite(pep_prn, pep_seq_bare, prot_acc, sep = "|", remove = TRUE) %>% 
+        dplyr::mutate(pep_start = as.numeric(pep_start), pep_end = as.numeric(pep_end))
     } else {
       stop("Wrong FASTA file path or name(s).", call. = FALSE)
     }
@@ -1716,6 +1717,7 @@ calc_cover <- function(df, id, fasta = NULL) {
       dplyr::filter(!duplicated(prot_acc)) %>% 
       dplyr::left_join(df_sels, by = "prot_acc") %>% 
       dplyr::select(-prot_acc) %>% 
+      dplyr::filter(!is.na(gene)) %>% 
       dplyr::group_by(gene) %>% 
       dplyr::summarise_all(~ max(.x, na.rm = TRUE))
     
@@ -1760,7 +1762,7 @@ to_linfc <- function(df) {
 #' @importFrom magrittr %>%
 rm_sglval_cols <- function (x) {
   sgl_val <- x %>% 
-    summarise_all(funs(n_distinct(.))) %>% 
+    summarise_all(~ n_distinct(.x)) %>% 
     purrr::map(~ .x == 1) %>% 
     purrr::flatten_lgl()
   
@@ -1879,11 +1881,13 @@ arrangers_in_call <- function(.df, ..., .na.last = TRUE) {
 
 #' Calculate PSM SDs
 #' 
+#' The standard deviations are based on samples under each TMT set and LCMS.
+#' 
 #' @inheritParams info_anal
 #' @inheritParams standPep
 #' @inheritParams channelInfo
 #' @inheritParams calcPepide
-calc_sd_fcts_psm <- function (df, range_log2r, range_int, set_idx, injn_idx) {
+calc_sd_fcts_psm <- function (df, range_log2r = c(5, 95), range_int = c(5, 95), set_idx, injn_idx) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
   label_scheme <- label_scheme %>% 
@@ -2043,7 +2047,6 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
     df_sd <- df_sd %>%
       tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
       dplyr::rename(Channel := !!rlang::sym(id)) %>% 
-      dplyr::ungroup(Channel) %>% 
       dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
       dplyr::filter(!is.na(SD))
     
@@ -2527,6 +2530,8 @@ check_gset_nms <- function (gset_nms) {
 }
 
 
+#' Check the suitability of existing param files for MGKernel
+#' 
 #' @param filepath A file path to \code{"MGKernel_params_N.txt"}
 ok_existing_params <- function (filepath) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
