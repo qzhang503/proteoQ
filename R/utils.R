@@ -216,7 +216,7 @@ aggrNums <- function(f) {
 
 #' Calculates weighted mean
 #'
-#' \code{TMT_wt_mean} calculates the weighted mean of \code{log2FC} and
+#' \code{tmt_wtmean} calculates the weighted mean of \code{log2FC} based on
 #' \code{intensity}.
 #'
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
@@ -226,47 +226,96 @@ aggrNums <- function(f) {
 #' @importFrom stringr str_length
 #' @importFrom tidyr gather
 #' @importFrom magrittr %>%
-TMT_wt_mean <- function (x, id, ...) {
-	id <- rlang::as_string(rlang::enexpr(id))
-	dots <- rlang::enexprs(...)
+tmt_wtmean <- function (x, id, na.rm = TRUE, ...) {
+  my_trim <- function (x, range_int = c(.05, .95), na.rm = TRUE) {
+    if (range_int[2] > 1) range_int <- range_int/100
+    min_x <- min(x, na.rm = na.rm)
+    qs <- quantile(x, probs = range_int, na.rm = na.rm)
+    x[x < qs[1] | x > qs[2]] <- min_x
+    return(x)
+  }
+  
+  my_wtmean <- function (x) {
+    x %>% 
+      dplyr::mutate_at(.vars = "Intensity", my_trim, range_int = range_int, na.rm = TRUE) %>% 
+      dplyr::mutate(n = stringr::str_length(.[[id]])) %>%
+      dplyr::filter(n != 0) %>%
+      dplyr::group_by(!!rlang::sym(id), variable) %>%
+      dplyr::summarise(log2_R = weighted.mean(log2_R, log10(Intensity), !!!dots)) %>%
+      tidyr::spread(variable, log2_R)
+  }
+  
+  
+  range_int <- c(.05, .95)
+  
+  id <- rlang::as_string(rlang::enexpr(id))
+  dots <- rlang::enexprs(...)
 
-	load(file = file.path(dat_dir, "label_scheme.rda"))
-	TMT_levels <- label_scheme %>% TMT_plex() %>% TMT_levels()
+  load(file = file.path(dat_dir, "label_scheme.rda"))
 
-	x_R <- x %>%
-			dplyr::select(id, grep("^log2_R[0-9]{3}", names(.))) %>%
-			tidyr::gather(key = variable, value = log2_R, -id)
+  # intensity
+  xi <- x %>%
+    dplyr::select(id, grep("^I[0-9]{3}[NC]{0,1}", names(.))) %>%
+    tidyr::gather(key = variable, value = Intensity, -id)
+  
+  # mean: `I` and `N_I`
+  xi_wt <- x %>%
+    dplyr::select(id, grep("^[N]{0,1}[_]{0,1}I[0-9]{3}[NC]{0,1}", names(.))) %>% 
+    dplyr::group_by(!!rlang::sym(id)) %>%
+    dplyr::summarise_all(mean, na.rm = TRUE, !!!dots) 
 
-	x_I <- x %>%
-			dplyr::select(id, grep("^I[0-9]{3}", names(.))) %>%
-			tidyr::gather(key = variable, value = Intensity, -id)
+  # weighted.mean `log2_R`
+  xr <- x %>%
+    dplyr::select(id, grep("^log2_R[0-9]{3}[NC]{0,1}", names(.))) %>%
+    tidyr::gather(key = variable, value = log2_R, -id)
+  
+  if ("log2_R" %in% names(xr)) {
+    xr_wt <- cbind.data.frame(xi, log2_R = xr[, c("log2_R")]) %>% 
+      dplyr::mutate(variable = gsub("^I([0-9]{3}[NC]{0,1})", "log2_R\\1", variable), 
+                    variable = factor(variable, levels = unique(variable))) %>% 
+      my_wtmean()
+  } else {
+    xr_wt <- xi_wt[, 1, drop = FALSE]
+  }
 
-	x_wt <- cbind.data.frame(x_I, log2_R = x_R[, c("log2_R")]) %>%
-			dplyr::mutate(variable = gsub("^I", "log2_R", variable)) %>%
-			dplyr::mutate(TMT = gsub("^log2_R(.*)\\s+.*", "TMT-\\1", variable)) %>%
-			dplyr::mutate(TMT = factor(TMT, levels = TMT_levels)) %>%
-			dplyr::mutate(variable = factor(variable, levels = unique(variable))) %>%
-			dplyr::mutate(n = stringr::str_length(.[[id]])) %>%
-			dplyr::filter(n != 0) %>%
-			dplyr::group_by(!!rlang::sym(id), variable) %>%
-			dplyr::summarise(log2_R = weighted.mean(log2_R, log10(Intensity), !!!dots)) %>%
-			tidyr::spread(variable, log2_R)
+  # weighted.mean `N_log2_R` 
+  xnr <- x %>%
+    dplyr::select(id, grep("^N_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>%
+    tidyr::gather(key = variable, value = log2_R, -id)
+  
+  if ("log2_R" %in% names(xnr)) {
+    xnr_wt <- cbind.data.frame(xi, log2_R = xnr[, c("log2_R")]) %>% 
+      dplyr::mutate(variable = gsub("^I([0-9]{3}[NC]{0,1})", "N_log2_R\\1", variable), 
+                    variable = factor(variable, levels = unique(variable))) %>% 
+      my_wtmean()
+  } else {
+    xnr_wt <- xi_wt[, 1, drop = FALSE]
+  }
 
-	x <- x %>%
-			dplyr::select(id, grep("(N_log2_R)|(Z_log2_R)|(I)[0-9]{3}", names(.))) %>%
-			dplyr::group_by(!!rlang::sym(id)) %>%
-			dplyr::summarise_all(funs(mean(., !!!dots))) %>%
-			dplyr::left_join(x_wt, by = id)
+  # weighted.mean `Z_log2_R` may not be available for PSM data
+  xzr <- x %>%
+    dplyr::select(id, grep("^Z_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>%
+    tidyr::gather(key = variable, value = log2_R, -id)
+  
+  if ("log2_R" %in% names(xzr)) {
+    xzr_wt <- cbind.data.frame(xi, log2_R = xzr[, c("log2_R")]) %>% 
+      dplyr::mutate(variable = gsub("^I([0-9]{3}[NC]{0,1})", "Z_log2_R\\1", variable), 
+                    variable = factor(variable, levels = unique(variable))) %>% 
+      my_wtmean()    
+  } else {
+    xzr_wt <- xi_wt[, 1, drop = FALSE]
+  }
 
-	rm(x_R, x_I, x_wt)
+  x <- list(xi_wt, xr_wt, xnr_wt, xzr_wt) %>% purrr::reduce(left_join, by = id)
 
-	cbind.data.frame(
-		x[, names(x) == id],
-		x[, grepl("^I[0-9]{3}", names(x))],
-		x[, grepl("^N_I[0-9]{3}", names(x))],
-		x[, grepl("^log2_R[0-9]{3}", names(x))],
-		x[, grepl("^N_log2_R[0-9]{3}", names(x))],
-		x[, grepl("^Z_log2_R[0-9]{3}", names(x))])
+  dplyr::bind_cols(
+    x[, names(x) == id],
+    x[, grepl("^I[0-9]{3}[NC]{0,1}", names(x))],
+    x[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(x))],
+    x[, grepl("^log2_R[0-9]{3}[NC]{0,1}", names(x))],
+    x[, grepl("^N_log2_R[0-9]{3}[NC]{0,1}", names(x))],
+    x[, grepl("^Z_log2_R[0-9]{3}[NC]{0,1}", names(x))],
+  )
 }
 
 
@@ -295,7 +344,7 @@ TMT_top_n <- function (x, id, ...) {
 		dplyr::group_by(!!id_var) %>%
 		dplyr::top_n(n = 3, wt = sum_Intensity) %>%
 		dplyr::select(-sum_Intensity) %>%
-		dplyr::summarise_all(funs(median(., !!!args)))
+	  dplyr::summarise_all(~ median(.x, !!!args))
 }
 
 
@@ -1541,7 +1590,8 @@ annotPeppos <- function (df, fasta){
         `colnames<-`(c("pep_seq_bare", "pep_res_before", "pep_start", "pep_end", "pep_res_after", 
                        "prot_acc", "is_tryptic")) %>% 
         data.frame(check.names = FALSE) %>% 
-        tidyr::unite(pep_prn, pep_seq_bare, prot_acc, sep = "|", remove = TRUE)
+        tidyr::unite(pep_prn, pep_seq_bare, prot_acc, sep = "|", remove = TRUE) %>% 
+        dplyr::mutate(pep_start = as.numeric(pep_start), pep_end = as.numeric(pep_end))
     } else {
       stop("Wrong FASTA file path or name(s).", call. = FALSE)
     }
@@ -1667,6 +1717,7 @@ calc_cover <- function(df, id, fasta = NULL) {
       dplyr::filter(!duplicated(prot_acc)) %>% 
       dplyr::left_join(df_sels, by = "prot_acc") %>% 
       dplyr::select(-prot_acc) %>% 
+      dplyr::filter(!is.na(gene)) %>% 
       dplyr::group_by(gene) %>% 
       dplyr::summarise_all(~ max(.x, na.rm = TRUE))
     
@@ -1711,7 +1762,7 @@ to_linfc <- function(df) {
 #' @importFrom magrittr %>%
 rm_sglval_cols <- function (x) {
   sgl_val <- x %>% 
-    summarise_all(funs(n_distinct(.))) %>% 
+    summarise_all(~ n_distinct(.x)) %>% 
     purrr::map(~ .x == 1) %>% 
     purrr::flatten_lgl()
   
@@ -1830,11 +1881,13 @@ arrangers_in_call <- function(.df, ..., .na.last = TRUE) {
 
 #' Calculate PSM SDs
 #' 
+#' The standard deviations are based on samples under each TMT set and LCMS.
+#' 
 #' @inheritParams info_anal
 #' @inheritParams standPep
 #' @inheritParams channelInfo
 #' @inheritParams calcPepide
-calc_sd_fcts_psm <- function (df, range_log2r, range_int, set_idx, injn_idx) {
+calc_sd_fcts_psm <- function (df, range_log2r = c(5, 95), range_int = c(5, 95), set_idx, injn_idx) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
   label_scheme <- label_scheme %>% 
@@ -1994,7 +2047,6 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
     df_sd <- df_sd %>%
       tidyr::gather(key = !!rlang::sym(id), value = "SD") %>%
       dplyr::rename(Channel := !!rlang::sym(id)) %>% 
-      dplyr::ungroup(Channel) %>% 
       dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
       dplyr::filter(!is.na(SD))
     
@@ -2478,6 +2530,8 @@ check_gset_nms <- function (gset_nms) {
 }
 
 
+#' Check the suitability of existing param files for MGKernel
+#' 
 #' @param filepath A file path to \code{"MGKernel_params_N.txt"}
 ok_existing_params <- function (filepath) {
   load(file = file.path(dat_dir, "label_scheme.rda"))

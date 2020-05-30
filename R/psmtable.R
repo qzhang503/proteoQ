@@ -734,7 +734,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
                      rm_craps = FALSE, rm_krts = FALSE, rptr_intco = 1000, 
                      annot_kinases = FALSE, plot_rptr_int = TRUE, use_lowercase_aa = TRUE, ...) {
 
-	on.exit(message("Split PSM by sample IDs and LCMS injections --- Completed."), add = TRUE)
+	on.exit(message("Split PSM by TMT experiments and LCMS injections --- Completed."), add = TRUE)
 
 	load(file = file.path(dat_dir, "label_scheme_full.rda"))
 	load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -746,7 +746,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
                         pattern = "^F[0-9]+\\_hdr_rm.csv$")
 
 	if (length(filelist) == 0) 
-	  stop(paste("No intermediate PSM file(s) under", file.path(dat_dir, "PSM//cache")), 
+	  stop(paste("No intermediate PSM file(s) under: ", file.path(dat_dir, "PSM//cache")), 
 	       call. = FALSE)
 
   df <- purrr::map(filelist, ~ {
@@ -1002,7 +1002,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
 		  df_int <- df_split[[i]] %>% 
 		    .[, grepl("^I[0-9]{3}", names(.))]
 		  
-		  rptr_violin(df = df_int, filepath = file.path(dat_dir, "PSM\\rprt_int\\raw", gsub("\\.csv", "\\.png", out_fn)), 
+		  rptr_violin(df = df_int, 
+		              filepath = file.path(dat_dir, "PSM\\rprt_int\\raw", gsub("\\.csv", "\\.png", out_fn)), 
 		              width = 8, height = 8)
 		}
 	}
@@ -1394,9 +1395,10 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 #'
 #'@param df A data frame containing the PSM table from database searches.
 #'@inheritParams channelInfo
+#'@inheritParams annotPSM
 #'@import dplyr tidyr purrr
 #'@importFrom magrittr %>%
-mcPSM <- function(df, set_idx) {
+mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
   label_scheme_sub <- label_scheme[label_scheme$TMT_Set == set_idx & 
@@ -1422,11 +1424,25 @@ mcPSM <- function(df, set_idx) {
     log2(.) %>%
     `colnames<-`(gsub("I", "log2_R", names(.)))	%>%
     cbind(dfw, .) %>%
-    dplyr::mutate_at(.vars = grep("[I|R][0-9]{3}", names(.)), ~ replace(.x, is.infinite(.), NA))
+    dplyr::mutate_at(.vars = grep("[I|R][0-9]{3}[NC]{0,1}", names(.)), 
+                     ~ replace(.x, is.infinite(.), NA))
   
-  col_log2Ratio <- grepl("^log2_R[0-9]{3}", names(dfw))
-  cf <- apply(dfw[, col_log2Ratio, drop = FALSE], 2, median, na.rm = TRUE)
+  col_log2Ratio <- grepl("^log2_R[0-9]{3}[NC]{0,1}", names(dfw))
   
+  if (mc_psm_by == "peptide") {
+    cf <- dfw %>% 
+      dplyr::select(group_psm_by, grep("^log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
+      dplyr::group_by(!!rlang::sym(group_psm_by)) %>% 
+      dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>% 
+      dplyr::summarise_at(.vars = grep("^log2_R[0-9]{3}[NC]{0,1}", names(.)), 
+                          ~ median(.x, na.rm = TRUE)) %>% 
+      unlist()
+  } else if (mc_psm_by == "psm") {
+    cf <- apply(dfw[, col_log2Ratio, drop = FALSE], 2, median, na.rm = TRUE)
+  } else {
+    warning("Unknown setting in `mc_psm_by`; the default will be used", call. = FALSE)
+  }
+
   dfw <- sweep(dfw[, col_log2Ratio, drop = FALSE], 2, cf, "-") %>%
     `colnames<-`(paste("N", names(.), sep="_"))	%>%
     cbind(dfw, .)
@@ -1434,6 +1450,31 @@ mcPSM <- function(df, set_idx) {
   dfw <- sweep(dfw[, grepl("^I[0-9]{3}", names(dfw)), drop = FALSE], 2, 2^cf, "/") %>%
     `colnames<-`(paste("N", names(.), sep="_"))	%>%
     cbind(dfw, .)
+  
+  # no SD scaling at PSM levels
+  run_scripts <- FALSE
+  if (run_scripts) {
+    sd_coefs <- calc_sd_fcts_psm(df = dfw, range_log2r = c(5, 95), range_int = c(5, 95), 
+                                 set_idx = set_idx, injn_idx = injn_idx)
+    
+    nm_log2r_n <- names(dfw) %>% .[grepl("^N_log2_R[0-9]{3}[NC]{0,1}", .)]
+    nm_int_n <- names(dfw) %>% .[grepl("^N_I[0-9]{3}[NC]{0,1}", .)]
+    
+    df_z <- mapply(normSD, dfw[, nm_log2r_n, drop = FALSE], 
+                   center = 0, SD = sd_coefs$fct, SIMPLIFY = FALSE) %>%
+      data.frame(check.names = FALSE) %>%
+      `rownames<-`(rownames(df)) 
+    
+    ref_cols <- label_scheme_sub %>% 
+      dplyr::filter(Reference) %>% 
+      dplyr::select(TMT_Channel) %>% 
+      unlist() %>% 
+      gsub("^TMT-", "N_log2_R", .)
+    df_z[, ref_cols] <- 0
+    rm(ref_cols)
+    
+    dfw[, nm_log2r_n] <- df_z
+  }
   
   dfw <- dfw %>%
     reorderCols(endColIndex = grep("[RI][0-9]{3}", names(.)), col_to_rn = "pep_seq_mod") %>%
@@ -1457,6 +1498,12 @@ mcPSM <- function(df, set_idx) {
 #'  calculated based on the same \code{prot_acc} groups. At the \code{gene}
 #'  alternative, proteins with the same gene name but different accession
 #'  numbers will be treated as one group.
+#'@param mc_psm_by A character string specifying the method in the median
+#'  centering of PSM \code{log2FC} across samples. At the \code{peptide}
+#'  default, PSMs will be grouped according to \code{group_psm_by} and the
+#'  medians under each \code{group_psm_by} will be used for the median
+#'  centering. At the \code{psm} alternative, PSMs will be median centered
+#'  without grouping.
 #'@param plot_log2FC_cv Logical; if TRUE, the distributions of the CV of peptide
 #'  \code{log2FC} will be plotted. The default is TRUE.
 #'@param ... Not currently used.
@@ -1466,7 +1513,7 @@ mcPSM <- function(df, set_idx) {
 #'@importFrom stringr str_split
 #'@importFrom tidyr gather
 #'@importFrom magrittr %>%
-annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
+annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_psm_by = "peptide", 
                      fasta = NULL, expt_smry = "expt_smry.xlsx", 
                      plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...) {
   
@@ -1506,7 +1553,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       
       species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
 
-      if (TMT_plex > 0) df <- mcPSM(df, set_idx)
+      if (TMT_plex > 0) df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by)
       
       df <- df %>% 
         dplyr::mutate(!!group_psm_by := as.character(!!rlang::sym(group_psm_by)))
@@ -1781,6 +1828,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'@importFrom magrittr %>%
 #'@export
 normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c("prot_acc", "gene"), 
+                    mc_psm_by = c("peptide", "psm"), 
                     dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx", 
                     fasta = NULL, entrez = NULL, pep_unique_by = c("group", "protein"), 
                     corrected_int = TRUE, rm_reverses = TRUE, 
@@ -1803,7 +1851,7 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
     message("Variable `dat_dir` added to the Global Environment.")
   }
   
-  if (is.null(fasta)) stop("Path(s) to fasta file(s) not found.", call. = FALSE)
+  if (is.null(fasta)) stop("Path(s) to fasta file(s) cannot be empty.", call. = FALSE)
   
   group_psm_by <- rlang::enexpr(group_psm_by)
   if (group_psm_by == rlang::expr(c("pep_seq", "pep_seq_mod"))) {
@@ -1830,10 +1878,13 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
   
   if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^F[0-9]+\\.csv$"))) {
     type <- "mascot"
+    message("Mascot results found.")
   } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^msms.*\\.txt$"))) {
     type <- "mq"
+    message("MaxQuant results found.")
   } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^PSMexport.*\\.ssv$"))) {
     type <- "sm"
+    message("Spectrum Mill results found.")
   } else {
     stop("Unknow data type or missing data files.", call. = FALSE)
 	}
@@ -1846,6 +1897,14 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
     stopifnot(pep_unique_by %in% c("group", "protein"), length(pep_unique_by) == 1)
   }
   
+  mc_psm_by <- rlang::enexpr(mc_psm_by)
+  if (mc_psm_by == rlang::expr(c("peptide", "psm"))) {
+    mc_psm_by <- "peptide"
+  } else {
+    mc_psm_by <- rlang::as_string(mc_psm_by)
+    stopifnot(mc_psm_by %in% c("peptide", "psm"), length(mc_psm_by) == 1)
+  }
+
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
   
@@ -1868,18 +1927,19 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
     splitPSM(group_psm_by, group_pep_by, fasta, entrez, rm_craps, rm_krts, rptr_intco, 
              annot_kinases, plot_rptr_int, use_lowercase_aa, ...)
     cleanupPSM(rm_outliers)
-    annotPSM(group_psm_by, group_pep_by, fasta, expt_smry, plot_rptr_int, plot_log2FC_cv, ...)
+    annotPSM(group_psm_by, group_pep_by, mc_psm_by, fasta, expt_smry, plot_rptr_int, 
+             plot_log2FC_cv, ...)
   } else if (type == "mq") {
     splitPSM_mq(group_psm_by, group_pep_by, fasta, entrez, pep_unique_by, corrected_int, 
                 rptr_intco, rm_craps, rm_reverses, annot_kinases, plot_rptr_int, ...)
     cleanupPSM(rm_outliers)
-		annotPSM_mq(group_psm_by, group_pep_by, fasta, expt_smry, rm_krts, 
+		annotPSM_mq(group_psm_by, group_pep_by, mc_psm_by, fasta, expt_smry, rm_krts, 
 		            plot_rptr_int, plot_log2FC_cv, use_lowercase_aa, ...)
   } else if (type == "sm") {
     splitPSM_sm(group_psm_by, group_pep_by, fasta, entrez, rm_craps, rm_krts, rptr_intco, 
                 annot_kinases, plot_rptr_int, ...)
     cleanupPSM(rm_outliers)
-    annotPSM_sm(group_psm_by, group_pep_by, fasta, expt_smry, rm_krts, plot_rptr_int, 
+    annotPSM_sm(group_psm_by, group_pep_by, mc_psm_by, fasta, expt_smry, rm_krts, plot_rptr_int, 
                 plot_log2FC_cv, use_lowercase_aa, ...)
   }
 }
@@ -1971,7 +2031,7 @@ calcPepide <- function(df, label_scheme, group_psm_by, method_psm_pep, group_pep
   } else if (method_psm_pep == "top.3") {
     df_num <- TMT_top_n(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
   } else if (method_psm_pep == "weighted.mean") {
-    df_num <- TMT_wt_mean(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
+    df_num <- tmt_wtmean(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
   } else {
     df_num <- aggrNums(median)(df, !!rlang::sym(group_psm_by), na.rm = TRUE)
   }
@@ -2004,8 +2064,8 @@ calcPepide <- function(df, label_scheme, group_psm_by, method_psm_pep, group_pep
     
     col_int <- grepl("^I[0-9]{3}", names(df))
     df  <- cbind(df[, -grep("^N_I[0-9]{3}", names(df))],
-                 sweep(df[, col_int, drop=FALSE], 2, 2^cf, "/") %>%
-                   `colnames<-`(paste("N", colnames(.), sep="_")))
+                 sweep(df[, col_int, drop = FALSE], 2, 2^cf, "/") %>%
+                   `colnames<-`(paste("N", colnames(.), sep = "_")))
     
     return(df)
   })
@@ -2676,8 +2736,10 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 #' @importFrom tidyr gather
 #' @importFrom magrittr %>%
 #' @param ... Not currently used.
-annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, expt_smry = "expt_smry.xlsx", 
-                        rm_krts = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, use_lowercase_aa = TRUE, ...) {
+annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_psm_by = "peptide", 
+                        fasta = NULL, expt_smry = "expt_smry.xlsx", 
+                        rm_krts = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
+                        use_lowercase_aa = TRUE, ...) {
 
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -2723,7 +2785,7 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
         dplyr::filter(!pep_start_discrepancy) %>% 
         dplyr::select(-pep_start_discrepancy)
       
-      if (TMT_plex > 0) df <- mcPSM(df, set_idx)
+      if (TMT_plex > 0) df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by)
 			
 			df <- df %>% 
 			  calcSD_Splex(group_psm_by) %>% 
@@ -3134,8 +3196,10 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
 #' @importFrom tidyr gather
 #' @importFrom magrittr %>%
 #' @param ... Not currently used.
-annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta = NULL, expt_smry = "expt_smry.xlsx", 
-                        rm_krts = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, use_lowercase_aa = TRUE, ...) {
+annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_psm_by = "peptide", 
+                        fasta = NULL, expt_smry = "expt_smry.xlsx", 
+                        rm_krts = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
+                        use_lowercase_aa = TRUE, ...) {
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -3267,7 +3331,7 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
       }
 
       # median centering
-      if (TMT_plex > 0) df <- mcPSM(df, set_idx)
+      if (TMT_plex > 0) df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by)
       
       # add SD columns
       df <- df %>% 

@@ -6,13 +6,6 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
-  github_document:
-    toc: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  word_document:
-    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -21,6 +14,13 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  word_document:
+    toc: yes
+  github_document:
+    toc: yes
   md_document:
     toc: yes
     toc_depth: 4
@@ -251,7 +251,7 @@ normPSM(
 )
 ```
 
-Note that at present the `log2FC` of PSMs are always aligned by median centering across samples.^[A slightly more thoughtful way to align PSM data might involve back propagation. For example after protein normalization, we apply the same offsets to back calculate peptide and then PSM `log2FC`.] At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence but different variable modifications will be grouped for analysis using descriptive statistics. In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively according to the unique combination of the primary sequences and the variable modifications of peptides. Analogously, `group_pep_by` specify the grouping of peptides by either protein accession names or gene names. The `fasta` argument points to the location of a copy of the RefSeq fasta files that were used in the corresponding MS/MS searches. Additional options include `rm_craps`, `rm_krts`, `annot_kinases` etc. More description of `normPSM` can be found by accessing its help document via `?normPSM`.  
+At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence but different variable modifications will be grouped for analysis using descriptive statistics. In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively according to the unique combination of the primary sequences and the variable modifications of peptides. Analogously, `group_pep_by` specify the grouping of peptides by either protein accession names or gene names. The `fasta` argument points to the location of a copy of the RefSeq fasta files that were used in the corresponding MS/MS searches. Additional options include `rm_craps`, `rm_krts`, `annot_kinases` etc. More description of `normPSM` can be found by accessing its help document via `?normPSM`.  
 
 Every time the `normPSM` module is executed, it will process the PSM data from the ground up. In other words, it has no memory on prior happenings. For instance, after inspecting graphically the intensity distributions of reporter ions at `plot_rptr_int = TRUE`, we may consider a more inclusive cut-off at `rptr_intco = 100`. The downward in `rptr_intco` is *not* going to cause information loss in the range of 100 to 1,000. This is trivia but worth mentioning here. As we will find out in following sections, utilities in peptide and protein normalization, `standPep` and `standPrn`, do pass information onto successive iterations.  
 
@@ -861,7 +861,7 @@ The utilities for PCA analysis are `pepPCA` and `prnPCA` for peptide and protein
 With proteoQ, the option in data scaling is set by variable `scale_log2r`, which will be passed to the `scale.` in `stats::prcomp`. For data centering, proteoQ relays the `TRUE` default to `stats::prcomp`.  
 
 #### 2.2.2 Mean deviation
-Provided the importance of data centering in PCA and several other analyses such as MDS etc., proteoQ further incorporated the three columns of `prot_mean_raw`, `prot_mean_n` and `prot_mean_z` in protein outputs. The first one summarizes the mean `log2FC` before data alignment for individual proteins across selected samples. The second and the three compute the corresponding mean `log2FC` after data alignment, with and without scaling normalization, respectively  (see also section 4 for column keys). As usual, the sample selections can be customized through the argument `col_select`. The corresponding columns summarizing the mean deviation in peptide data are `pep_mean_raw`, `pep_mean_n` and `pep_mean_z`.  
+Provided the importance of data centering in PCA and several other analyses, proteoQ further incorporated the three columns of `prot_mean_raw`, `prot_mean_n` and `prot_mean_z` in protein outputs. The first one summarizes the mean `log2FC` before data alignment for individual proteins across selected samples. The second and the three compute the corresponding mean `log2FC` after data alignment, with and without scaling normalization, respectively  (see also section 4 for column keys). As usual, the sample selections can be customized through the argument `col_select`. The corresponding columns summarizing the mean deviation in peptide data are `pep_mean_raw`, `pep_mean_n` and `pep_mean_z`.  
 
 #### 2.2.3 Leverage points
 The mean `log2FC` of proteins or peptides may serve as indicators that how far a given protein or peptide species is away from the data centering format (a.k.a. mean deviation form) that will be enforced by default in PCA. Taking protein data as an example, we will go through couple settings in `prnPCA`. At first, we performed PCA with data centering by default (**Figure 4A**):  

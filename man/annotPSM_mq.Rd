@@ -7,6 +7,7 @@
 annotPSM_mq(
   group_psm_by = "pep_seq",
   group_pep_by = "prot_acc",
+  mc_psm_by = "peptide",
   fasta = NULL,
   expt_smry = "expt_smry.xlsx",
   rm_krts = FALSE,
@@ -29,6 +30,13 @@ grouping. At the \code{prot_acc} default, descriptive statistics will be
 calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
+
+\item{mc_psm_by}{A character string specifying the method in the median
+centering of PSM \code{log2FC} across samples. At the \code{peptide}
+default, PSMs will be grouped according to \code{group_psm_by} and the
+medians under each \code{group_psm_by} will be used for the median
+centering. At the \code{psm} alternative, PSMs will be median centered
+without grouping.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those

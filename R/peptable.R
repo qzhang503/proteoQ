@@ -899,7 +899,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   df_num <- switch(method_pep_prn, 
                    mean = aggrNums(mean)(df_num, !!rlang::sym(id), na.rm = TRUE), 
                    top.3 = TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
-                   weighted.mean = TMT_wt_mean(df_num, !!rlang::sym(id), na.rm = TRUE), 
+                   weighted.mean = tmt_wtmean(df_num, !!rlang::sym(id), na.rm = TRUE), 
                    median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
                    aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
   
@@ -993,6 +993,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
     dfc <- df %>% 
       dplyr::select(gene, prot_cover) %>% 
       dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
+      dplyr::filter(prot_cover != "NA%") %>% 
       dplyr::group_by(gene) %>% 
       dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
       dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 

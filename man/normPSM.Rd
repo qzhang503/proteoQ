@@ -7,6 +7,7 @@
 normPSM(
   group_psm_by = c("pep_seq", "pep_seq_mod"),
   group_pep_by = c("prot_acc", "gene"),
+  mc_psm_by = c("peptide", "psm"),
   dat_dir = NULL,
   expt_smry = "expt_smry.xlsx",
   frac_smry = "frac_smry.xlsx",
@@ -39,6 +40,13 @@ grouping. At the \code{prot_acc} default, descriptive statistics will be
 calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
+
+\item{mc_psm_by}{A character string specifying the method in the median
+centering of PSM \code{log2FC} across samples. At the \code{peptide}
+default, PSMs will be grouped according to \code{group_psm_by} and the
+medians under each \code{group_psm_by} will be used for the median
+centering. At the \code{psm} alternative, PSMs will be median centered
+without grouping.}
 
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}

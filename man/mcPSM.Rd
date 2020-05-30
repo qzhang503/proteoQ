@@ -4,12 +4,26 @@
 \alias{mcPSM}
 \title{Median-centering normalization of PSM data}
 \usage{
-mcPSM(df, set_idx)
+mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by)
 }
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}
 
 \item{set_idx}{Numeric.  The index of a multiplex TMT experiment.}
+
+\item{mc_psm_by}{A character string specifying the method in the median
+centering of PSM \code{log2FC} across samples. At the \code{peptide}
+default, PSMs will be grouped according to \code{group_psm_by} and the
+medians under each \code{group_psm_by} will be used for the median
+centering. At the \code{psm} alternative, PSMs will be median centered
+without grouping.}
+
+\item{group_psm_by}{A character string specifying the method in PSM grouping.
+At the \code{pep_seq} default, descriptive statistics will be calculated
+based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
+alternative, peptides with different variable modifications will be treated
+as different species and descriptive statistics will be calculated based on
+the same \code{pep_seq_mod} groups.}
 }
 \description{
 \code{mcPSM} adds fields of \code{log2_R, N_log2_R and N_I} to PSM tables.

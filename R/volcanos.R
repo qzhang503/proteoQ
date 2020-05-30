@@ -67,6 +67,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
   purrr::walk(file.path(filepath, fml_nms), ~ dir.create(.x, recursive = TRUE, showWarnings = FALSE))
   
   col_ind <- purrr::map(fml_nms, ~ grepl(.x, names(df))) %>%
+    `names<-`(paste0("nm_", seq_along(.))) %>% 
     dplyr::bind_cols() %>%
     rowSums() %>%
     `>`(0)
