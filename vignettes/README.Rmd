@@ -90,18 +90,12 @@ The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of `prot
 (Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README. Mathematical symbols may display more properly under html.)  
 
 ## Installation
-To install this package, start R (version "4.1") and enter:  
+To install this package, start R (version "4.1") and enter:^[For a specific version, for example 1.2.2.2: `devtools::install_github("qzhang503/proteoQ@1.2.2.2")`]  
 
 ```{r installation_1, include = TRUE, eval = FALSE}
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
-```
-
-It will install the latest version by default or a specific version with a version number:  
-
-```{r installation_2, include = TRUE, eval = FALSE}
-devtools::install_github("qzhang503/proteoQ@1.2.2.2")
 ```
 
 ## 1 Data normalization 
@@ -113,14 +107,10 @@ In this document, I (Qiang Zhang) first illustrate the following applications of
 * Mixed-bed normalization using full or partial data. 
 * Removal of low-quality entries from PSM, peptide and protein data.  
 
-The data set we will use in this section corresponds to the proteomics data from Mertins et al. [-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by `LC/MS` analysis. The MS data were analyzed against the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill). Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`.  
+The data set we will use in this section corresponds to the proteomics data from Mertins et al. [-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by LC/MS analysis. The MS data were analyzed against the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill). Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`.  
 
 ### 1.1 Experiment setup
-We first install the data package, `proteoQDA` for exemplary fasta, PSM and metadata files:  
-
-```{r install_proteoqda, include = TRUE, eval = FALSE}
-devtools::install_github("qzhang503/proteoQDA")
-```
+The data packages, `proteoQDA`, should have been made available through the `proteoQ` installation.^[If not, try `devtools::install_github("qzhang503/proteoQDA")`]  
 
 #### 1.1.1 Fasta databases
 RefSeq databases of human and mouse were used in the MS/MS searches against the WHIM data sets. To properly annotate protein entries with `proteoQ`, we would need the fasta file(s) that were used in the database searches.^[See https://www.uniprot.org/proteomes/ for lists of UniProt proteomes] In the example below, we copy over the corresponding fasta files from the `proteoQDA` to a database folder:
@@ -158,7 +148,6 @@ To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:
 ```{r copy_global_mascot, include = TRUE, eval = FALSE}
 dat_dir <- "~\\proteoQ\\examples"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
 copy_global_mascot(dat_dir)
 ```
 
@@ -209,8 +198,6 @@ knitr::include_graphics(c(str_expt_smry))
 We next copy over a pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx` to the working directory:  
 
 ```{r copy_expt_n_frac, include = TRUE, eval = FALSE}
-library(proteoQDA)
-
 copy_global_exptsmry(dat_dir)
 copy_global_fracsmry(dat_dir)
 ```
@@ -256,7 +243,7 @@ At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence 
 Every time the `normPSM` module is executed, it will process the PSM data from the ground up. In other words, it has no memory on prior happenings. For instance, after inspecting graphically the intensity distributions of reporter ions at `plot_rptr_int = TRUE`, we may consider a more inclusive cut-off at `rptr_intco = 100`. The downward in `rptr_intco` is *not* going to cause information loss in the range of 100 to 1,000. This is trivia but worth mentioning here. As we will find out in following sections, utilities in peptide and protein normalization, `standPep` and `standPrn`, do pass information onto successive iterations.  
 
 #### 1.2.2 Outlier samples
-For experiments that are proximate in the quantities of input materials, there might still be unprecedented events that could have caused dipping in the ranges of reporter-ion intensity for certain samples. With proper justification, we might consider excluding the outlier samples from further analysis. The sample removal and PSM re-processing can be achieved by simply deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`,^[the cell only, not the entire row] followed by the re-execution of `normPSM()`.  
+For experiments that are proximate in the quantities of input materials, there might still be unprecedented events that could have caused dipping in the ranges of reporter-ion intensity for certain samples. With proper justification, we might consider excluding the outlier samples from further analysis. The sample removal and PSM re-processing can be achieved by simply deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-execution of `normPSM()`.  
 
 #### 1.2.3 Outlier data entries
 There is a subtle problem when we choose to remove PSM outliers at `rm_outliers = TRUE`. Note that PSM outliers will be assessed at a per-peptide-and-per-sample basis, which can be a slow process for large data sets. To circumvent repeated efforts in finding PSM outliers, we may initially set `rm_outliers = FALSE` and `plot_rptr_int = TRUE` when executing `normPSM()`. This will allow us to first decide on an ultimate threshold of reporter-ion intensity, before proceeding to the more time-consuming procedure in PSM outlier removals.  

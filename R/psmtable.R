@@ -1401,7 +1401,7 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 #'@inheritParams annotPSM
 #'@import dplyr tidyr purrr
 #'@importFrom magrittr %>%
-mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by) {
+mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
   label_scheme_sub <- label_scheme[label_scheme$TMT_Set == set_idx & 
@@ -1436,6 +1436,14 @@ mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by) {
     cf <- dfw %>% 
       dplyr::select(group_psm_by, grep("^log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
       dplyr::group_by(!!rlang::sym(group_psm_by)) %>% 
+      dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>% 
+      dplyr::summarise_at(.vars = grep("^log2_R[0-9]{3}[NC]{0,1}", names(.)), 
+                          ~ median(.x, na.rm = TRUE)) %>% 
+      unlist()
+  } else if (mc_psm_by == "protein") {
+    cf <- dfw %>% 
+      dplyr::select(group_pep_by, grep("^log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
+      dplyr::group_by(!!rlang::sym(group_pep_by)) %>% 
       dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>% 
       dplyr::summarise_at(.vars = grep("^log2_R[0-9]{3}[NC]{0,1}", names(.)), 
                           ~ median(.x, na.rm = TRUE)) %>% 
@@ -1505,8 +1513,10 @@ mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by) {
 #'  centering of PSM \code{log2FC} across samples. At the \code{peptide}
 #'  default, PSMs will be grouped according to \code{group_psm_by} and the
 #'  medians under each \code{group_psm_by} will be used for the median
-#'  centering. At the \code{psm} alternative, PSMs will be median centered
-#'  without grouping.
+#'  centering. At \code{mc_psm_by = protein}, PSMs will be grouped according
+#'  to \code{group_pep_by} and the medians under each \code{group_pep_by} will
+#'  be used for the median centering. At the \code{mc_psm_by = psm}, PSMs will
+#'  be median centered without grouping.
 #'@param plot_log2FC_cv Logical; if TRUE, the distributions of the CV of peptide
 #'  \code{log2FC} will be plotted. The default is TRUE.
 #'@param ... Not currently used.
@@ -1556,7 +1566,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_psm
       
       species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
 
-      if (TMT_plex > 0) df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by)
+      if (TMT_plex > 0) df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
       
       df <- df %>% 
         dplyr::mutate(!!group_psm_by := as.character(!!rlang::sym(group_psm_by)))
@@ -1831,7 +1841,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_psm
 #'@importFrom magrittr %>%
 #'@export
 normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c("prot_acc", "gene"), 
-                    mc_psm_by = c("peptide", "psm"), 
+                    mc_psm_by = c("peptide", "protein", "psm"), 
                     dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx", 
                     fasta = NULL, entrez = NULL, pep_unique_by = c("group", "protein"), 
                     corrected_int = TRUE, rm_reverses = TRUE, 
@@ -1901,11 +1911,11 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
   }
   
   mc_psm_by <- rlang::enexpr(mc_psm_by)
-  if (mc_psm_by == rlang::expr(c("peptide", "psm"))) {
+  if (mc_psm_by == rlang::expr(c("peptide", "protein", "psm"))) {
     mc_psm_by <- "peptide"
   } else {
     mc_psm_by <- rlang::as_string(mc_psm_by)
-    stopifnot(mc_psm_by %in% c("peptide", "psm"), length(mc_psm_by) == 1)
+    stopifnot(mc_psm_by %in% c("peptide", "protein", "psm"), length(mc_psm_by) == 1)
   }
 
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
@@ -2788,7 +2798,7 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
         dplyr::filter(!pep_start_discrepancy) %>% 
         dplyr::select(-pep_start_discrepancy)
       
-      if (TMT_plex > 0) df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by)
+      if (TMT_plex > 0) df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
 			
 			df <- df %>% 
 			  calcSD_Splex(group_psm_by) %>% 
@@ -3334,7 +3344,7 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
       }
 
       # median centering
-      if (TMT_plex > 0) df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by)
+      if (TMT_plex > 0) df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
       
       # add SD columns
       df <- df %>% 
