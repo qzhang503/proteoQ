@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-05-29
+2020-06-02
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -72,19 +72,12 @@ more properly under html.)
 
 ## Installation
 
-To install this package, start R (version “4.1”) and enter:
+To install this package, start R (version “4.1”) and enter:\[2\]
 
 ``` r
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
-```
-
-It will install the latest version by default or a specific version with
-a version number:
-
-``` r
-devtools::install_github("qzhang503/proteoQ@1.2.2.2")
 ```
 
 ## 1 Data normalization
@@ -108,7 +101,7 @@ were each split and labeled with 10-plex TMT at equal sample sizes and
 repeated on a different day. This results in a total of 60 samples
 labeled under six 10-plex TMT experiments. The samples under each
 10-plex TMT were fractionated by off-line, high pH reversed-phase
-(Hp-RP) chromatography, followed by `LC/MS` analysis. The MS data were
+(Hp-RP) chromatography, followed by LC/MS analysis. The MS data were
 analyzed against the search engines of
 [Mascot](https://http://www.matrixscience.com/),
 [MaxQuant](https://www.maxquant.org/) and [Spectrum
@@ -118,19 +111,15 @@ data sets and stored in a companion package, `proteoQDA`.
 
 ### 1.1 Experiment setup
 
-We first install the data package, `proteoQDA` for exemplary fasta, PSM
-and metadata files:
-
-``` r
-devtools::install_github("qzhang503/proteoQDA")
-```
+The data packages, `proteoQDA`, should have been made available through
+the `proteoQ` installation.\[3\]
 
 #### 1.1.1 Fasta databases
 
 RefSeq databases of human and mouse were used in the MS/MS searches
 against the WHIM data sets. To properly annotate protein entries with
 `proteoQ`, we would need the fasta file(s) that were used in the
-database searches.\[2\] In the example below, we copy over the
+database searches.\[4\] In the example below, we copy over the
 corresponding fasta files from the `proteoQDA` to a database folder:
 
 ``` r
@@ -169,7 +158,6 @@ To illustrate, I copy over Mascot PSMs to a working directory,
 ``` r
 dat_dir <- "~\\proteoQ\\examples"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-
 copy_global_mascot(dat_dir)
 ```
 
@@ -205,7 +193,7 @@ different protein IDs when
 from peptides using algorithms such as greedy set cover. To escape from
 the ambiguity in protein inference, I typically enable the option of
 `Merge MS/MS files into single search` in [Mascot
-Daemon](http://www.matrixscience.com/daemon.html).\[3\] If the option is
+Daemon](http://www.matrixscience.com/daemon.html).\[5\] If the option is
 disabled, peptide sequences that have been assigned to multiple protein
 IDs will be simply ascribed to the protein with the greatest number of
 identifying peptides, when possible.
@@ -228,7 +216,7 @@ experimental summary is `expt_smry.xlsx`. If samples were fractionated
 off-line prior to `LC/MS`, a second `Excel` template will also be filled
 out to link multiple `RAW` MS file names that are associated to the same
 sample IDs. The default file name for the fractionation summary is
-`frac_smry.xlsx`.\[4\] Unless otherwise mentioned, we will assume these
+`frac_smry.xlsx`.\[6\] Unless otherwise mentioned, we will assume these
 default file names throughout the document.
 
 Columns in the `expt_smry.xlsx` are approximately divided into the
@@ -251,8 +239,6 @@ We next copy over a pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx`
 to the working directory:
 
 ``` r
-library(proteoQDA)
-
 copy_global_exptsmry(dat_dir)
 copy_global_fracsmry(dat_dir)
 ```
@@ -343,7 +329,7 @@ in the ranges of reporter-ion intensity for certain samples. With proper
 justification, we might consider excluding the outlier samples from
 further analysis. The sample removal and PSM re-processing can be
 achieved by simply deleting the corresponding entries under the column
-`Sample_ID` in `expt_smry.xlsx`,\[5\] followed by the re-execution of
+`Sample_ID` in `expt_smry.xlsx`, followed by the re-execution of
 `normPSM()`.
 
 #### 1.2.3 Outlier data entries
@@ -557,7 +543,7 @@ percentile.
 </div>
 
 Quantitative differences greater than 0.5 at a log2 scale is relatively
-large in TMT experiments,\[6\] which can be in part ascribed to a
+large in TMT experiments,\[7\] which can be in part ascribed to a
 phenomenon called peptide co-isolation and co-fragmentation in reporter
 ion-based MS experiments. We might, for instance, perform an additional
 cleanup by removing column-wisely data points with CV greater than 0.5
@@ -705,7 +691,7 @@ peptide `log2FC` and reporter-ion intensity, respectively, for use in
 defining the CV and scaling the `log2FC` across samples. The `log2FC` of
 peptide data will be aligned by `median centering` across samples by
 default. If `method_align = MGKernel` is chosen, `log2FC` will be
-aligned under the assumption of multiple Gaussian kernels.\[7\] The
+aligned under the assumption of multiple Gaussian kernels.\[8\] The
 companion parameter `n_comp` defines the number of Gaussian kernels and
 `seed` set a seed for reproducible fittings. Additional parameters, such
 as, `maxit` and `epsilon`, are defined in and for use with
@@ -723,7 +709,7 @@ some helps from the `pepHist` utility in the immediately following.
 The `pepHist` utility plots the histograms of peptide `log2FC`. It
 further bins the data by their contributing reporter-ion intensity. In
 the examples shown below, we compare the `log2FC` profiles of peptides
-with and without scaling normalization:\[8\]
+with and without scaling normalization:\[9\]
 
 ``` r
 # without scaling
@@ -802,8 +788,8 @@ adjustment may cause artifacts when the standard deviation across
 samples are genuinely different. I typically test `scale_log2r` at both
 `TRUE` and `FALSE`, then make a choice in data scaling together with my
 a priori knowledge of the characteristics of both samples and
-references.\[9\] We will use the same data set to illustrate the impacts
-of reference selections in scaling normalization in [Lab
+references.\[10\] We will use the same data set to illustrate the
+impacts of reference selections in scaling normalization in [Lab
 3.1](###%203.1%20Reference%20choices).
 
 ##### 1.3.4.2 Side effects
@@ -977,7 +963,7 @@ every time we invoke `standPep`.
 Just like `col_select` and `filter_` in `pepHist`, the combination in
 *fixed* argument `col_select` and *variable* argument `slice_` can lead
 to features in versatile data processing. Several working examples are
-detailed and can be accessed via `?standPep` and `?standPrn`.\[10\]
+detailed and can be accessed via `?standPep` and `?standPrn`.\[11\]
 
 ##### 1.3.7 Housekeepers
 
@@ -1009,7 +995,7 @@ rows available for the samples linked to `col_select`, after slicing out
 GAPDH\! The number of data points is too scare for fitting the selected
 samples against a 3-component Gaussian. A more detailed working example
 can also be found via `?standPep` where you would probably agree that
-GAPDH is actually not a good normalizer for the data set.\[11\]
+GAPDH is actually not a good normalizer for the data set.\[12\]
 
 #### 1.3.8 purgePep
 
@@ -2111,7 +2097,7 @@ Note that there is a second `vararg` expression,
 `exprs(start_with_str("hs", term))`. In this expression, we have used a
 pseudonym approach to subset terms starting with character string `hs`
 under the column `term` in `GSPA` result files, which corresponds to
-human gene sets for both GO and KEGG.\[12\] More examples of the
+human gene sets for both GO and KEGG.\[13\] More examples of the
 pseudonym approach can be found from [Lab
 3.2](###%203.2%20Data%20subsets) in this document. More examples of the
 utility can be found via `?prnGSPAHM`.
@@ -2763,7 +2749,7 @@ Note that we have applied the new grammar of `contain_chars_in("sty",
 pep_seq_mod)` to extract character strings containing lower-case letters
 ‘s’, ‘t’ or ‘y’ under the `pep_seq_mod` column in `Peptide.txt`. This
 corresponds to the subsettting of peptides with phosphorylation(s) in
-serine, thereonine or tyrosine.\[13\]
+serine, thereonine or tyrosine.\[14\]
 
 <div class="figure" style="text-align: left">
 
@@ -3274,9 +3260,9 @@ in the following:
 | pep\_mod\_pepct      | Logical indicating if a sequence contains C-terminal modification                                                                          | v.s.                                                                                                                              |
 | pep\_mod\_protctam   | Logical indicating if a sequence contains Protein C-terminal amidation                                                                     | v.s.                                                                                                                              |
 | pep\_mod\_protct     | Logical indicating if a sequence contains Protein C-terminal modification                                                                  | v.s.                                                                                                                              |
-| pep\_mean\_raw       | Mean log2\_R (…) across selected samples                                                                                                   | Sample selection vai `standPep(col_select = ...)`                                                                                 |
-| pep\_mean\_n         | Mean N\_log2FC(…) across selected samples                                                                                                  | v.s.                                                                                                                              |
-| pep\_mean\_z         | Mean Z\_log2FC(…) across selected samples                                                                                                  | v.s.                                                                                                                              |
+| pep\_mean\_raw       | Mean log2\_R (…) across samples                                                                                                            | Reference and `Empty` samples excluded.                                                                                           |
+| pep\_mean\_n         | Mean N\_log2FC(…) across samples                                                                                                           | v.s.                                                                                                                              |
+| pep\_mean\_z         | Mean Z\_log2FC(…) across samples                                                                                                           | v.s.                                                                                                                              |
 | gene                 | Protein gene name                                                                                                                          |                                                                                                                                   |
 | acc\_type            | The type of accession names                                                                                                                |                                                                                                                                   |
 | uniprot\_id          | Uniprot ID                                                                                                                                 | Cf. PSM keys                                                                                                                      |
@@ -3312,9 +3298,9 @@ described in the following:
 | prot\_len            | The number of amino acid residues under a proposed protein                                 | Cf. PSM keys                                                                                        |
 | prot\_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                         | Cf. Peptide keys                                                                                    |
 | prot\_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein            | Cf. Peptide keys                                                                                    |
-| prot\_mean\_raw      | Mean log2\_R (…) across selected samples                                                   | Sample selection vai `standPrn(col_select = ...)`                                                   |
-| prot\_mean\_n        | Mean N\_log2FC(…) across selected samples                                                  | v.s.                                                                                                |
-| prot\_mean\_z        | Mean Z\_log2FC(…) across selected samples                                                  | v.s.                                                                                                |
+| prot\_mean\_raw      | Mean log2\_R (…) across samples                                                            | Reference and `Empty` samples excluded.                                                             |
+| prot\_mean\_n        | Mean N\_log2FC(…) across samples                                                           | v.s.                                                                                                |
+| prot\_mean\_z        | Mean Z\_log2FC(…) across samples                                                           | v.s.                                                                                                |
 | acc\_type            | The type of accession names                                                                |                                                                                                     |
 | uniprot\_id          | Uniprot ID                                                                                 | Cf. PSM keys                                                                                        |
 | entrez               | Protein Entrez ID                                                                          |                                                                                                     |
@@ -3440,9 +3426,9 @@ The corresponidng column keys are described below:
 | prot\_len       | The number of amino acid residues under a proposed protein                                 |                                                                                                     |
 | prot\_n\_psm    | Count of significant PSMs in quantitation under a proposed protein                         | Cf. Peptide keys                                                                                    |
 | prot\_n\_pep    | Count of significant peptide sequences in quantitation under a proposed protein            | Cf. Peptide keys                                                                                    |
-| prot\_mean\_raw | Mean log2\_R (…) across selected samples                                                   | Sample selection vai `standPrn(col_select = ...)`                                                   |
-| prot\_mean\_n   | Mean N\_log2FC(…) across selected samples                                                  | v.s.                                                                                                |
-| prot\_mean\_z   | Mean Z\_log2FC(…) across selected samples                                                  | v.s.                                                                                                |
+| prot\_mean\_raw | Mean log2\_R (…) across samples                                                            | Reference and `Empty` samples excluded.                                                             |
+| prot\_mean\_n   | Mean N\_log2FC(…) across samples                                                           | v.s.                                                                                                |
+| prot\_mean\_z   | Mean Z\_log2FC(…) across samples                                                           | v.s.                                                                                                |
 | m/z             | The mass-over-charge of the precursor ion.                                                 | Cf. PSM keys                                                                                        |
 | acc\_type       | The type of accession names                                                                |                                                                                                     |
 | uniprot\_id     | Uniprot ID                                                                                 | Cf. PSM keys                                                                                        |
@@ -3485,10 +3471,15 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
     Proteomics Using Tandem Mass Tags.
     <https://github.com/qzhang503/proteoQ>.
 
-2.  See <https://www.uniprot.org/proteomes/> for lists of UniProt
+2.  For a specific version, for example 1.2.2.2:
+    `devtools::install_github("qzhang503/proteoQ@1.2.2.2")`
+
+3.  If not, try `devtools::install_github("qzhang503/proteoQDA")`
+
+4.  See <https://www.uniprot.org/proteomes/> for lists of UniProt
     proteomes
 
-3.  There are cases that the same peptide sequence being assigned to
+5.  There are cases that the same peptide sequence being assigned to
     different proteins remain unambiguous. For example, peptide
     `MENGQSTAAK` can be found from either the middle region of protein
     `NP_510965` or the N-terminal of protein `NP_001129505`. In case of
@@ -3498,7 +3489,7 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
     the nomenclature in `proteoQ` will annotate the former as
     `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.
 
-4.  To extract the names of RAW MS files under a `raw_dir` folder:
+6.  To extract the names of RAW MS files under a `raw_dir` folder:
     `extract_raws(raw_dir)`. Very occasionally, there may be RAW files
     without PSM contributions. In this case, the file names will be
     shown as missing by the program and need to be removed from
@@ -3506,33 +3497,31 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
     `extract_psm_raws(dat_dir)` was developed to extract the list of RAW
     files that are actually present in PSM files.
 
-5.  the cell only, not the entire row
-
-6.  On top of technical variabilities, the ranges of CV may be further
+7.  On top of technical variabilities, the ranges of CV may be further
     subject to the choice of reference materials. Examples are available
     in Lab 3.1.
 
-7.  Density kernel estimates can occasionally capture spikes in the
+8.  Density kernel estimates can occasionally capture spikes in the
     profiles of log2FC during data alignment. Users will need to inspect
     the alignment of ratio histograms and may optimize the data
     normalization in full with different combinations of tuning
     parameters or in part against a subset of samples, before proceeding
     to the next steps.
 
-8.  `standPep()` will report log2FC results both before and after the
+9.  `standPep()` will report log2FC results both before and after the
     scaling of standard deviations.
 
-9.  The default is `scale_log2r = TRUE` throughout the package. When
+10. The default is `scale_log2r = TRUE` throughout the package. When
     calling functions involved parameter `scale_log2r`, users can
     specify explicitly `scale_log2r = FALSE` if needed, or more
     preferably define its value under the global environment.
 
-10. A lab section is under construction.
+11. A lab section is under construction.
 
-11. A lab is under construction.
+12. A lab is under construction.
 
-12. This will work as GO terms of human start with `hs_` and KEGG terms
+13. This will work as GO terms of human start with `hs_` and KEGG terms
     with `hsa`.
 
-13. Details on the notation of peptide modifications can be found via
+14. Details on the notation of peptide modifications can be found via
     `?normPSM`.

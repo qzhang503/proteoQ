@@ -4,7 +4,7 @@
 \alias{mcPSM}
 \title{Median-centering normalization of PSM data}
 \usage{
-mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by)
+mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
 }
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}
@@ -15,8 +15,10 @@ mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by)
 centering of PSM \code{log2FC} across samples. At the \code{peptide}
 default, PSMs will be grouped according to \code{group_psm_by} and the
 medians under each \code{group_psm_by} will be used for the median
-centering. At the \code{psm} alternative, PSMs will be median centered
-without grouping.}
+centering. At \code{mc_psm_by = protein}, PSMs will be grouped according
+to \code{group_pep_by} and the medians under each \code{group_pep_by} will
+be used for the median centering. At the \code{mc_psm_by = psm}, PSMs will
+be median centered without grouping.}
 
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
 At the \code{pep_seq} default, descriptive statistics will be calculated
@@ -24,6 +26,12 @@ based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
 alternative, peptides with different variable modifications will be treated
 as different species and descriptive statistics will be calculated based on
 the same \code{pep_seq_mod} groups.}
+
+\item{group_pep_by}{A character string specifying the method in peptide
+grouping. At the \code{prot_acc} default, descriptive statistics will be
+calculated based on the same \code{prot_acc} groups. At the \code{gene}
+alternative, proteins with the same gene name but different accession
+numbers will be treated as one group.}
 }
 \description{
 \code{mcPSM} adds fields of \code{log2_R, N_log2_R and N_I} to PSM tables.

@@ -1026,6 +1026,17 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) {
   
   if (nrow(dup_peps) > 0) {
     if (use_duppeps) {
+      # to ensure the same order in column names during replacement
+      col_nms <- suppressWarnings(
+        df %>% 
+          dplyr::select(grep("^prot_", names(.)), 
+                        one_of(c("gene", "acc_type", "entrez", "species", 
+                                 "kin_attr", "kin_class", "kin_order"))) %>% 
+          dplyr::select(-one_of(c("prot_n_psm", "prot_n_pep", "prot_cover", 
+                                  "prot_matches_sig", "prot_sequences_sig"))) %>% 
+          names()
+      )
+      
       df_dups <- purrr::map(as.character(unique(dup_peps[[group_psm_by]])), ~ {
         df_sub <- df %>% 
           dplyr::filter(!!rlang::sym(group_psm_by) == .x) %>% 
@@ -1034,22 +1045,13 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) {
         # if (group_pep_by prot_acc) use the first prot_acc and also the first gene
         # if (group_pep_by gene) use the first gene and also the first prot_acc
         
-        cols_prot1 <- suppressWarnings(
-          df_sub %>% 
-            dplyr::select(grep("^prot_", names(.))) %>% 
-            dplyr::select(-one_of(c("prot_n_psm", "prot_n_pep", "prot_cover", 
-                                    "prot_matches_sig", "prot_sequences_sig"))) %>% 
-            dplyr::slice(1))
-        
-        cols_prot2 <- suppressWarnings(
-          df_sub %>% dplyr::select(one_of(c("gene", "acc_type", "species", "entrez", 
-                                            "kin_attr", "kin_class", "kin_order"))) %>% 
-            dplyr::slice(1)) 
-        
-        cols_prot <- dplyr::bind_cols(cols_prot1, cols_prot2)
-        
+        cols_replace <- df_sub %>% 
+          dplyr::select(col_nms) %>% 
+          dplyr::slice(1)
+
         df_sub2 <- df_sub %>% dplyr::slice(-1)
-        df_sub2[, names(df_sub2) %in% names(cols_prot)] <- cols_prot
+        df_sub2[, col_nms] <- cols_replace
+        
         df_sub <- dplyr::bind_rows(df_sub %>% dplyr::slice(1), df_sub2)
       }) %>% 
         dplyr::bind_rows() %>% 

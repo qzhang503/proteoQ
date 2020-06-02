@@ -9,9 +9,9 @@ prot_sequences_sig	Count of distinct sequences that have significant scores unde
 prot_len	The number of amino acid residues under a proposed protein	Cf. PSM keys
 prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Cf. Peptide keys
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. Peptide keys
-prot_mean_raw	Mean log2_R (...) across selected samples	Sample selection vai `standPrn(col_select = ...)`
-prot_mean_n	Mean N_log2FC(...) across selected samples	v.s.
-prot_mean_z	Mean Z_log2FC(...) across selected samples	v.s.
+prot_mean_raw	Mean log2_R (...) across samples	Reference and `Empty` samples excluded.
+prot_mean_n	Mean N_log2FC(...) across samples	v.s.
+prot_mean_z	Mean Z_log2FC(...) across samples	v.s.
 acc_type	The type of accession names	
 uniprot_id	Uniprot ID	Cf. PSM keys
 entrez	Protein Entrez ID	

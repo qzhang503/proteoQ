@@ -437,7 +437,13 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 		}
 	}
 
-	df <- df %>% add_mean_dev(label_scheme_fit)
+	# (1) mean deviation based sample IDs in `label_scheme` not `label_scheme_fit`
+	#  as sample IDs in `label_scheme_fit` may be only for mixed-bed normalization
+	# (2) the `mean` also get updated after normalization against sample subsets 
+	label_scheme_not_trivial <- label_scheme %>% 
+	  dplyr::filter(!Reference, !grepl("^Empty\\.[0-9]+", Sample_ID))
+	
+	df <- df %>% add_mean_dev(label_scheme_not_trivial)
 	
 	return(df)
 }

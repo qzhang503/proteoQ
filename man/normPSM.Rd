@@ -7,7 +7,7 @@
 normPSM(
   group_psm_by = c("pep_seq", "pep_seq_mod"),
   group_pep_by = c("prot_acc", "gene"),
-  mc_psm_by = c("peptide", "psm"),
+  mc_psm_by = c("peptide", "protein", "psm"),
   dat_dir = NULL,
   expt_smry = "expt_smry.xlsx",
   frac_smry = "frac_smry.xlsx",
@@ -45,8 +45,10 @@ numbers will be treated as one group.}
 centering of PSM \code{log2FC} across samples. At the \code{peptide}
 default, PSMs will be grouped according to \code{group_psm_by} and the
 medians under each \code{group_psm_by} will be used for the median
-centering. At the \code{psm} alternative, PSMs will be median centered
-without grouping.}
+centering. At \code{mc_psm_by = protein}, PSMs will be grouped according
+to \code{group_pep_by} and the medians under each \code{group_pep_by} will
+be used for the median centering. At the \code{mc_psm_by = psm}, PSMs will
+be median centered without grouping.}
 
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
@@ -313,6 +315,8 @@ library(org.Mm.eg.db)
 library(proteoQ)
 Ref2Entrez(species = human)
 Ref2Entrez(species = mouse)
+
+# see also Uni2Entrez(...) for Uniprot to Entrez lookups
 
 normPSM(
   group_psm_by = pep_seq_mod, 

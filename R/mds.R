@@ -173,7 +173,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	  p <- p +
 	    geom_text(data = df, 
 	              mapping = aes(x = Coordinate.1, y = Coordinate.2, 
-	                            label = df$Sample_ID), color = "gray", size = 3)	  
+	                            label = Sample_ID), color = "gray", size = 3)
 	}
 
 	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), dots)
@@ -473,7 +473,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	if (show_ids) {
 	  p <- p +
 	    geom_text(data = df,
-	              mapping = aes(x = Coordinate.1, y = Coordinate.2, label = df$Sample_ID),
+	              mapping = aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID),
 	              color = "gray", size = 3)
 	}
 

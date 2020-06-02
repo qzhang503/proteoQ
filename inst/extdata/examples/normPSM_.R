@@ -62,6 +62,8 @@ library(proteoQ)
 Ref2Entrez(species = human)
 Ref2Entrez(species = mouse)
 
+# see also Uni2Entrez(...) for Uniprot to Entrez lookups
+
 normPSM(
   group_psm_by = pep_seq_mod, 
   group_pep_by = gene, 

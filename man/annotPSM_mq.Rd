@@ -35,8 +35,10 @@ numbers will be treated as one group.}
 centering of PSM \code{log2FC} across samples. At the \code{peptide}
 default, PSMs will be grouped according to \code{group_psm_by} and the
 medians under each \code{group_psm_by} will be used for the median
-centering. At the \code{psm} alternative, PSMs will be median centered
-without grouping.}
+centering. At \code{mc_psm_by = protein}, PSMs will be grouped according
+to \code{group_pep_by} and the medians under each \code{group_pep_by} will
+be used for the median centering. At the \code{mc_psm_by = psm}, PSMs will
+be median centered without grouping.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
