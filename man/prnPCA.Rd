@@ -22,6 +22,7 @@ pepPCA(
   impute_na = FALSE,
   show_ids = TRUE,
   type = c("obs", "feats"),
+  dimension = 2,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -46,6 +47,7 @@ prnPCA(
   impute_na = FALSE,
   show_ids = TRUE,
   type = c("obs", "feats"),
+  dimension = 2,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -122,6 +124,9 @@ plots. The default is TRUE.}
 \item{type}{Character string indicating the type of PCA. At the \code{type =
 obs} default, the components are by observations; at \code{type = feats},
 the components are by features.}
+
+\item{dimension}{Numeric; The desired dimension for pairwise visualization.
+The default is 2.}
 
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an
@@ -309,6 +314,29 @@ pepPCA(
   filename = filpvals_impna.png,
 )
 
+## a higher dimension
+pepPCA(
+  show_ids = FALSE,
+  rank. = 5, 
+  dimension = 3,
+  filename = d3.pdf,
+)
+
+prnPCA(
+  show_ids = TRUE,
+  rank. = 4, 
+  dimension = 3,
+  filename = d3.png,
+)
+
+prnPCA(
+  type = feats,
+  rank. = 4, 
+  dimension = 3,
+  filename = feat_d3.png,
+)
+
+
 ## custom theme
 library(ggplot2)
 my_theme <- theme_bw() + theme(
@@ -344,16 +372,16 @@ pepPCA(
 
 ## direct uses of ggplot2
 library(ggplot2)
-res <- prnPCA(filename = default.png)
+res <- prnPCA(filename = foo.png)
 
 # names(res)
 
 p <- ggplot(res$pca) +
-  geom_point(aes(x = Coordinate.1, y = Coordinate.2, colour = Color, shape = Shape, alpha = Alpha), 
+  geom_point(aes(x = PC1, y = PC2, colour = Color, shape = Shape, alpha = Alpha), 
              size = 4, stroke = 0.02) + 
   labs(title = "", x = paste0("PC1 (", res$var[1], ")"), y = paste0("PC2 (", res$var[2], ")")) +
   coord_fixed() + 
-  geom_text(aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID), color = "gray", size = 1)
+  geom_text(aes(x = PC1, y = PC2, label = Sample_ID), color = "gray", size = 1)
 
 ggsave(file.path(dat_dir, "Protein\\\\PCA\\\\my_ggplot2.png"))
 

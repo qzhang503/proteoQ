@@ -25,6 +25,7 @@ pepMDS(
   method = "euclidean",
   p = 2,
   k = 3,
+  dimension = 2,
   show_ids = TRUE,
   df = NULL,
   filepath = NULL,
@@ -53,6 +54,7 @@ prnMDS(
   method = "euclidean",
   p = 2,
   k = 3,
+  dimension = 2,
   show_ids = TRUE,
   df = NULL,
   filepath = NULL,
@@ -149,6 +151,9 @@ MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
 
 \item{k}{Numeric; The desired dimension for the solution passed to
 \code{\link[stats]{cmdscale}}. The default is 3.}
+
+\item{dimension}{Numeric; The desired dimension for pairwise visualization.
+The default is 2.}
 
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots. The default is TRUE.}
@@ -325,6 +330,22 @@ pepMDS(
   filename = filpvals_impna.png,
 )
 
+## a higher dimension
+pepMDS(
+  show_ids = FALSE,
+  k = 5, 
+  dimension = 3,
+  filename = d3.pdf,
+)
+
+prnMDS(
+  show_ids = TRUE,
+  k = 4, 
+  dimension = 3,
+  filename = d3.png,
+)
+
+
 ## custom theme
 library(ggplot2)
 my_mds_theme <- theme_bw() + theme(
@@ -360,7 +381,7 @@ pepMDS(
 
 ## direct uses of ggplot2
 library(ggplot2)
-res <- prnMDS(filename = default.png)
+res <- prnMDS(filename = foo.png)
 
 p <- ggplot(res) +
   geom_point(aes(x = Coordinate.1, y = Coordinate.2, colour = Color, shape = Shape, alpha = Alpha), 

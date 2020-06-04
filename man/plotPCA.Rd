@@ -9,6 +9,7 @@ plotPCA(
   id = NULL,
   label_scheme_sub = NULL,
   type = "obs",
+  dimension = 2,
   show_ids = TRUE,
   col_color = NULL,
   col_fill = NULL,
@@ -50,6 +51,9 @@ for selected samples.}
 \item{type}{Character string indicating the type of PCA. At the \code{type =
 obs} default, the components are by observations; at \code{type = feats},
 the components are by features.}
+
+\item{dimension}{Numeric; The desired dimension for pairwise visualization.
+The default is 2.}
 
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots. The default is TRUE.}

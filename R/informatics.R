@@ -252,7 +252,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 	if (anal_type == "MDS") {
 		function(adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2, 
-		         k = 3, show_ids = TRUE, theme = NULL, ...) {
+		         k = 3, dimension = 2, show_ids = TRUE, theme = NULL, ...) {
 		  plotMDS(df = df, 
 		          id = !!id,
 		          label_scheme_sub = label_scheme_sub, 
@@ -261,6 +261,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		          method = method,
 		          p = p, 
 		          k = k,
+		          dimension = dimension, 
 		          show_ids = show_ids, 
 		          col_color = !!col_color, 
 		          col_fill = !!col_fill, 
@@ -281,11 +282,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		          ...)
 		}
 	} else if (anal_type == "PCA") {
-		function(type = "obs", show_ids = TRUE, theme = NULL, ...) {
+		function(type = "obs", dimension = 2, show_ids = TRUE, theme = NULL, ...) {
 		  plotPCA(df = df, 
 		          id = !!id,
 		          label_scheme_sub = label_scheme_sub, 
 		          type = type, 
+		          dimension = dimension, 
 		          show_ids = show_ids, 
 		          col_color = !!col_color, 
 		          col_fill = !!col_fill, 
@@ -297,7 +299,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		          size_manual = size_manual,
 		          shape_manual = shape_manual,
 		          alpha_manual = alpha_manual, 
-		          # prop_var = df_pca$prop_var, 
 		          scale_log2r = scale_log2r,
 		          complete_cases = complete_cases, 
 		          impute_na = impute_na, 

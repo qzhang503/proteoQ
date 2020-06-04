@@ -7,7 +7,7 @@
 #' @importFrom magrittr %>%
 plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL, 
                      adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2, 
-                     k = 3, show_ids = FALSE, 
+                     k = 3, dimension = 2, show_ids = FALSE, 
                      col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, 
                      col_alpha = NULL, 
                      color_brewer = NULL, fill_brewer = NULL, 
@@ -128,24 +128,105 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	)
 	
 	if (is.null(theme)) theme <- proteoq_mds_theme
-
-	mapping <- ggplot2::aes(x = Coordinate.1, y = Coordinate.2,
-	                        colour = !!col_color, fill = !!col_fill, shape = !!col_shape,
-	                        size = !!col_size, alpha = !!col_alpha)
-
-	idx <- purrr::map(mapping, `[[`, 1) %>% 
-	  purrr::map_lgl(is.null)
+	
+	# --- check dimension ---
+	if (dimension < 2) {
+	  warning("The `dimension` increased from ", dimension, " to a minimum of 2.", call. = FALSE)
+	  dimension <- 2
+	}
+	
+	ranges <- seq_len(dimension)
+	cols <- names(df) %>% .[. %in% paste0("Coordinate.", ranges)]
+	
+	max_dim <- names(df) %>% .[grepl("^Coordinate\\.[0-9]+", .)] %>% length()
+	if (dimension > max_dim) {
+	  warning("The `dimension` decreased from ", dimension, " to a maximum of ", max_dim, ".", 
+	          call. = FALSE)
+	  dimension <- max_dim
+	}
+	rm(max_dim)
+	
+	# --- set up aes ---
+	if (dimension > 2) {
+	  mapping <- ggplot2::aes(colour = !!col_color, fill = !!col_fill, shape = !!col_shape, 
+	                          size = !!col_size, alpha = !!col_alpha)
+	} else {
+	  mapping <- ggplot2::aes(x = Coordinate.1, y = Coordinate.2,
+	                          colour = !!col_color, fill = !!col_fill, shape = !!col_shape,
+	                          size = !!col_size, alpha = !!col_alpha)
+	}
+	
+	idx <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
 	
 	mapping_var <- mapping[!idx]
 	mapping_fix <- mapping[idx]
-
+	
 	fix_args <- list(colour = "darkgray", fill = NA, shape = 21, size = 4, alpha = 0.9) %>% 
 	  .[names(.) %in% names(mapping_fix)] %>% 
 	  .[!is.na(.)]
 	fix_args$stroke <- 0.02
-
-	p <- ggplot() + rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args)))
-
+	
+	# --- set up labels ---
+	col_labs <- cols %>% gsub("\\.", " ", .)
+	
+	# --- plots ---
+	if (dimension > 2) {
+	  geom_lower_notext <- function(data, mapping, params, ...){
+	    p <- ggplot() + 
+	      rlang::eval_tidy(rlang::quo(geom_point(data = data, mapping = mapping, !!!params)))
+	    p
+	  }
+	  
+	  geom_lower_text <- function(data, mapping, params, ...){
+	    mapping2 <- mapping %>% .[names(.) %in% c("x", "y")]
+	    
+	    p <- ggplot() + 
+	      rlang::eval_tidy(rlang::quo(geom_point(data = data, mapping = mapping, !!!params))) + 
+	      rlang::eval_tidy(rlang::quo(geom_text(data = data, mapping = mapping2, 
+	                                            label = data$Sample_ID, 
+	                                            color = "gray", size = 3)))
+	    p
+	  }
+	  
+	  if (show_ids) {
+	    p <- GGally::ggpairs(df, 
+	                         axisLabels = "internal",
+	                         columns = cols, 
+	                         mapping = mapping_var, 
+	                         columnLabels = col_labs, 
+	                         labeller = label_wrap_gen(10),
+	                         title = "", 
+	                         lower = list(continuous = wrap(geom_lower_text, params = fix_args)),
+	                         upper = "blank") 
+	  } else {
+	    p <- GGally::ggpairs(df, 
+	                         axisLabels = "internal",
+	                         columns = cols, 
+	                         mapping = mapping_var, 
+	                         columnLabels = col_labs, 
+	                         labeller = label_wrap_gen(10),
+	                         title = "", 
+	                         lower = list(continuous = wrap(geom_lower_notext, params = fix_args)),
+	                         upper = "blank") 
+	  }
+	  
+	  p <- p + theme
+	} else {
+	  p <- ggplot() +
+	    rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args))) +
+	    coord_fixed() 
+	  
+	  if (show_ids) {
+	    p <- p +
+	      geom_text(data = df,
+	                mapping = aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID),
+	                color = "gray", size = 3)
+	  }
+	  
+	  p <- p +
+	    labs(title = "", x = col_labs[1], y = col_labs[2]) + theme
+	}
+	
 	if (!is.null(fill_brewer)) p <- p + scale_color_brewer(palette = fill_brewer)
 	if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
 	
@@ -164,20 +245,8 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	  p <- p + scale_shape_manual(values = alpha_manual)
 	}
 	
-	p <- p +
-		labs(title = "", x = expression("Coordinate 1"), y = expression("Coordinate 2")) +
-		coord_fixed() +
-	  theme
-
-	if (show_ids) {
-	  p <- p +
-	    geom_text(data = df, 
-	              mapping = aes(x = Coordinate.1, y = Coordinate.2, 
-	                            label = Sample_ID), color = "gray", size = 3)
-	}
-
-	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), dots)
-	do.call(ggsave, gg_args)
+	rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)), 
+	                                   plot = p, !!!dots)))
 	
 	invisible(df)
 }
@@ -294,11 +363,11 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 #' @inheritParams gspaTest
 #' @import dplyr ggplot2 rlang
 #' @importFrom magrittr %>%
-plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs", show_ids = TRUE, 
+plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs", dimension = 2, 
+                     show_ids = TRUE, 
                      col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
                      color_brewer = NULL, fill_brewer = NULL, 
                      size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
-                     # prop_var, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      filepath = NULL, filename = NULL, theme = NULL, 
                      anal_type = "PCA", ...) {
@@ -415,13 +484,37 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 		 legend.box = NULL
 	)
 	if (is.null(theme)) theme <- proteoq_pca_theme
+	
+	# --- check dimension ---
+	if (dimension < 2) {
+	  warning("The `dimension` increased from ", dimension, " to a minimum of 2.", call. = FALSE)
+	  dimension <- 2
+	}
 
-	mapping <- ggplot2::aes(x = Coordinate.1, y = Coordinate.2,
-	                        colour = !!col_color, fill = !!col_fill, shape = !!col_shape,
-	                        size = !!col_size, alpha = !!col_alpha)
-
-	idx <- purrr::map(mapping, `[[`, 1) %>% 
-	  purrr::map_lgl(is.null)
+	names(df) <- gsub("^Coordinate\\.", "PC", names(df))
+	
+	ranges <- seq_len(dimension)
+	cols <- names(df) %>% .[. %in% paste0("PC", ranges)]
+	
+	max_dim <- names(df) %>% .[grepl("^PC[0-9]+", .)] %>% length()
+	if (dimension > max_dim) {
+	  warning("The `dimension` decreased from ", dimension, " to a maximum of ", max_dim, ".", 
+	          call. = FALSE)
+	  dimension <- max_dim
+	}
+	rm(max_dim)
+	
+	# --- set up aes ---
+	if (dimension > 2) {
+	  mapping <- ggplot2::aes(colour = !!col_color, fill = !!col_fill, shape = !!col_shape, 
+	                          size = !!col_size, alpha = !!col_alpha)
+	} else {
+	  mapping <- ggplot2::aes(x = PC1, y = PC2,
+	                          colour = !!col_color, fill = !!col_fill, shape = !!col_shape,
+	                          size = !!col_size, alpha = !!col_alpha)
+	}
+	
+	idx <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
 	
 	mapping_var <- mapping[!idx]
 	mapping_fix <- mapping[idx]
@@ -431,22 +524,79 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	  .[!is.na(.)]
 	fix_args$stroke <- 0.02
 	
+	# --- set up labels ---
 	if (is.null(anal_dots$center)) {
-	  x_lable = paste0("PC1 (", prop_var[1], ")")
-	  y_lable = paste0("PC2 (", prop_var[2], ")")
+	  col_labs <- 
+	    purrr::imap_chr(prop_var, ~ paste0("PC", .y, " (", .x, ")")) %>% 
+	    .[ranges]
 	} else {
 	  if (anal_dots$center) {
-	    x_lable = paste0("PC1 (", prop_var[1], ")")
-	    y_lable = paste0("PC2 (", prop_var[2], ")")
+	    col_labs <- 
+	      purrr::imap_chr(prop_var, ~ paste0("PC", .y, " (", .x, ")")) %>% 
+	      .[ranges]
 	  } else {
-	    x_lable = "PC1"
-	    y_lable = "PC2"
+	    col_labs <- cols
 	  }
 	}
-
-	p <- ggplot() +
-	  rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args)))
-
+	
+	# --- plots ---
+	if (dimension > 2) {
+	  geom_lower_notext <- function(data, mapping, params, ...){
+	    p <- ggplot() + 
+	      rlang::eval_tidy(rlang::quo(geom_point(data = data, mapping = mapping, !!!params)))
+	    p
+	  }
+	  
+	  geom_lower_text <- function(data, mapping, params, ...){
+	    mapping2 <- mapping %>% .[names(.) %in% c("x", "y")]
+	    
+	    p <- ggplot() + 
+	      rlang::eval_tidy(rlang::quo(geom_point(data = data, mapping = mapping, !!!params))) + 
+	      rlang::eval_tidy(rlang::quo(geom_text(data = data, mapping = mapping2, 
+	                                            label = data$Sample_ID, 
+	                                            color = "gray", size = 3)))
+	    p
+	  }
+	  
+	  if (show_ids) {
+	    p <- GGally::ggpairs(df, 
+	                         axisLabels = "internal",
+	                         columns = cols, 
+	                         mapping = mapping_var, 
+	                         columnLabels = col_labs, 
+	                         labeller = label_wrap_gen(10),
+	                         title = "", 
+	                         lower = list(continuous = wrap(geom_lower_text, params = fix_args)),
+	                         upper = "blank") 
+	  } else {
+	    p <- GGally::ggpairs(df, 
+	                         axisLabels = "internal",
+	                         columns = cols, 
+	                         mapping = mapping_var, 
+	                         columnLabels = col_labs, 
+	                         labeller = label_wrap_gen(10),
+	                         title = "", 
+	                         lower = list(continuous = wrap(geom_lower_notext, params = fix_args)),
+	                         upper = "blank") 
+	  }
+	  
+	  p <- p + theme
+	} else {
+	  p <- ggplot() +
+	    rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args))) +
+	    coord_fixed() 
+	  
+	  if (show_ids) {
+	    p <- p +
+	      geom_text(data = df,
+	                mapping = aes(x = PC1, y = PC2, label = Sample_ID),
+	                color = "gray", size = 3)
+	  }
+	  
+	  p <- p +
+	    labs(title = "", x = col_labs[1], y = col_labs[2]) + theme
+	}
+	
 	if (!is.null(fill_brewer)) p <- p + scale_color_brewer(palette = fill_brewer)
 	if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
 	
@@ -465,21 +615,8 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	  p <- p + scale_shape_manual(values = alpha_manual)
 	}
 	
-	p <- p +
-		labs(title = "", x = x_lable, y = y_lable) +
-		coord_fixed() +
-	theme
-
-	if (show_ids) {
-	  p <- p +
-	    geom_text(data = df,
-	              mapping = aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID),
-	              color = "gray", size = 3)
-	}
-
-	filename <- gg_imgname(filename)
-	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), dots)
-	do.call(ggsave, gg_args)
+	rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)), 
+	                                   plot = p, !!!dots)))
 	
 	invisible(list(pca = df, var = prop_var))
 }
@@ -575,6 +712,13 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ..
                sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
     .$log2R 
 
+  if (! purrr::is_empty(dots$rank.)) {
+    if (dots$rank. < 2) {
+      warning("PCA `rank.` increased from ", dots$rank., " to a minimum of 2.", call. = FALSE)
+      dots$rank. <- 2
+    }
+  }
+
   if (type == "obs") {
     df_t <- df %>% 
       t() %>%
@@ -609,6 +753,8 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ..
     stop("Unkown `type` for PCA.", call. = FALSE)
   }
 
+  # save pca results
+  
   return(list("PCA" = df_pca, "prop_var" = prop_var))
 }
 
@@ -670,7 +816,7 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                     adjEucDist = FALSE, classical = TRUE, 
-                    method = "euclidean", p = 2, k = 3, 
+                    method = "euclidean", p = 2, k = 3, dimension = 2, 
                     show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
   check_dots(c("id", "col_group", "df2", "anal_type"), ...)
@@ -709,7 +855,7 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method, 
-                               p = p, k = k, show_ids = show_ids,
+                               p = p, k = k, dimension = dimension, show_ids = show_ids,
                                theme = theme, ...)
   
 }
@@ -785,6 +931,8 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'  \code{\link[stats]{dist}}. The default is 2.
 #'@param k Numeric; The desired dimension for the solution passed to
 #'  \code{\link[stats]{cmdscale}}. The default is 3.
+#'@param dimension Numeric; The desired dimension for pairwise visualization.
+#'  The default is 2.
 #'@param show_ids Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 #'  plots. The default is TRUE.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
@@ -869,7 +1017,7 @@ prnMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                     adjEucDist = FALSE, classical = TRUE, 
-                    method = "euclidean", p = 2, k = 3, 
+                    method = "euclidean", p = 2, k = 3, dimension = 2, 
                     show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
   check_dots(c("id", "col_group", "df2", "anal_type"), ...)
@@ -908,7 +1056,7 @@ prnMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method, 
-                               p = p, k = k, show_ids = show_ids,
+                               p = p, k = k, dimension = dimension, show_ids = show_ids,
                                theme = theme, ...)
 }
 
@@ -927,7 +1075,7 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
                     color_brewer = NULL, fill_brewer = NULL, 
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                    show_ids = TRUE, type = c("obs", "feats"), 
+                    show_ids = TRUE, type = c("obs", "feats"), dimension = 2, 
                     df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
   
@@ -975,7 +1123,8 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
             size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "PCA")(type = type, show_ids = show_ids, theme = theme, ...)
+            anal_type = "PCA")(type = type, dimension = dimension, show_ids = show_ids, 
+                               theme = theme, ...)
 }
 
 
@@ -1077,7 +1226,7 @@ prnPCA <- function (col_select = NULL, col_color = NULL,
                     color_brewer = NULL, fill_brewer = NULL, 
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                    show_ids = TRUE, type = c("obs", "feats"), 
+                    show_ids = TRUE, type = c("obs", "feats"), dimension = 2, 
                     df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
   
@@ -1125,7 +1274,8 @@ prnPCA <- function (col_select = NULL, col_color = NULL,
             size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "PCA")(type = type, show_ids = show_ids, theme = theme, ...)
+            anal_type = "PCA")(type = type, dimension = dimension, show_ids = show_ids, 
+                               theme = theme, ...)
 }
 
 
