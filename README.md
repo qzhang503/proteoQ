@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-06-02
+2020-06-04
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -1570,6 +1570,35 @@ ggsave(file.path(dat_dir, "Protein\\PCA\\nocent_2.png"), width = 6, height = 4)
 </p>
 
 </div>
+
+#### 2.2.5 Beyond the first two dimensions
+
+The PCA findings at higher dimensions may be visualized via pairwise
+plots between principal components.
+
+``` r
+prnPCA(
+  show_ids = FALSE,
+  rank. = 4, 
+  dimension = 3,
+  filename = d3.png,
+)
+```
+
+<div class="figure" style="text-align: center">
+
+<img src="images/protein/pca/d3.png" alt="**Figure 4F.** Higher dimension." width="45%" />
+
+<p class="caption">
+
+**Figure 4F.** Higher dimension.
+
+</p>
+
+</div>
+
+Additional examples and analogous high-dimension MDS can be found from
+the help documents via `?prnPCA` and `?prnMDS`, respectively.
 
 ### 2.3 Correlation plots
 

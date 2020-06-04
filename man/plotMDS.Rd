@@ -13,6 +13,7 @@ plotMDS(
   method = "euclidean",
   p = 2,
   k = 3,
+  dimension = 2,
   show_ids = FALSE,
   col_color = NULL,
   col_fill = NULL,
@@ -74,6 +75,9 @@ MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
 
 \item{k}{Numeric; The desired dimension for the solution passed to
 \code{\link[stats]{cmdscale}}. The default is 3.}
+
+\item{dimension}{Numeric; The desired dimension for pairwise visualization.
+The default is 2.}
 
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots. The default is TRUE.}

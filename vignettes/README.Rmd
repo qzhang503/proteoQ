@@ -6,6 +6,17 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
+  github_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+    number_sections: true
+  word_document:
+    toc: yes
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: gfm
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -14,17 +25,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  word_document:
-    toc: yes
-  github_document:
-    toc: yes
-  md_document:
-    toc: yes
-    toc_depth: 4
-    variant: gfm
   html_vignette: 
   vignette: >
     %\VignetteIndexEntry{proteoQ}
@@ -963,6 +963,24 @@ img_pca_nocent_custom <- "images/protein/pca/nocent_2.png"
 knitr::include_graphics(c(img_pca_nocent_custom))
 ```
 
+#### 2.2.5 Beyond the first two dimensions
+The PCA findings at higher dimensions may be visualized via pairwise plots between principal components.  
+
+```{r Protein PCA higher dim, eval = FALSE}
+prnPCA(
+  show_ids = FALSE,
+  rank. = 4, 
+  dimension = 3,
+  filename = d3.png,
+)
+```
+
+```{r Protein_PCA_high_dim, echo=FALSE, fig.align='center', fig.cap="**Figure 4F.** Higher dimension.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_pca_d3 <- "images/protein/pca/d3.png"
+knitr::include_graphics(c(img_pca_d3))
+```
+
+Additional examples and analogous high-dimension MDS can be found from the help documents via `?prnPCA` and `?prnMDS`, respectively.  
 
 ### 2.3 Correlation plots
 In this section, we visualize the batch effects and biological differences through correlation plots. The `proteoQ` tool currently limits itself to a maximum of 44 samples for a correlation plot. In the document, we will perform correlation analysis against the `PNNL` data subset. By default, samples will be arranged by the alphabetical order for entries under the column `expt_smry.xlsx::Select`. We have learned from the earlier `MDS` analysis that the batch effects are smaller than the differences between `W2` and `W16`. We may wish to put the `TMT1` and `TMT2` groups adjacent to each other for visualization of more nuance batch effects, followed by the comparison of WHIM subtypes. We can achieve this by supervising sample IDs at a customized order. In the `expt_smry.xlsx`, We have prepared an `Order` column where samples within the `JHU` subset were arranged in the descending order of `W2.TMT1`, `W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look for the `Order` column for sample arrangement:  

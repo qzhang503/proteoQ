@@ -6,10 +6,6 @@ if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
 
-# data package: FASTA and PSM examples
-devtools::install_github("qzhang503/proteoQDA")
-
-
 # ==============================================
 # part 1 --- setup
 # ==============================================

@@ -187,11 +187,30 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
       dplyr::mutate_if(is.logical, as.numeric) %>%
       round(., digits = 3)
 
-    df <- dplyr::bind_cols(
-      df %>% dplyr::select(grep("^prot_", names(.))), 
-      df %>% dplyr::select(grep("^pep_", names(.))), 
-      df %>% dplyr::select(-grep("^pep_|^prot_", names(.)))
-    )
+    if (prefix == "pep_mean_") {
+      df <- dplyr::bind_cols(
+        df %>% dplyr::select(grep("^prot_", names(.))), 
+        df %>% dplyr::select(grep("^pep_", names(.))), 
+        df %>% dplyr::select(-grep("^pep_|^prot_", names(.)))
+      )
+    } else {
+      df <- local({
+        new_nms <- paste0(prefix, c("raw", "n", "z"))
+        
+        nm_last <- names(df) %>% 
+          .[! . %in% new_nms] %>% 
+          .[grepl(paste0("^", prefix %>% gsub("mean_", "", .)), .)] %>% 
+          .[length(.)]
+        
+        idx <- which(names(df) == nm_last)
+        
+        dplyr::bind_cols(
+          df %>% dplyr::select(1:idx), 
+          df %>% dplyr::select(new_nms), 
+          df %>% dplyr::select((idx+1):ncol(.)) %>% dplyr::select(-new_nms)
+        )    
+      })
+    }
   }
   
   

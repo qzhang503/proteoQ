@@ -134,6 +134,29 @@ pepPCA(
   filename = filpvals_impna.png,
 )
 
+## a higher dimension
+pepPCA(
+  show_ids = FALSE,
+  rank. = 5, 
+  dimension = 3,
+  filename = d3.pdf,
+)
+
+prnPCA(
+  show_ids = TRUE,
+  rank. = 4, 
+  dimension = 3,
+  filename = d3.png,
+)
+
+prnPCA(
+  type = feats,
+  rank. = 4, 
+  dimension = 3,
+  filename = feat_d3.png,
+)
+
+
 ## custom theme
 library(ggplot2)
 my_theme <- theme_bw() + theme(
@@ -169,16 +192,16 @@ pepPCA(
 
 ## direct uses of ggplot2
 library(ggplot2)
-res <- prnPCA(filename = default.png)
+res <- prnPCA(filename = foo.png)
 
 # names(res)
 
 p <- ggplot(res$pca) +
-  geom_point(aes(x = Coordinate.1, y = Coordinate.2, colour = Color, shape = Shape, alpha = Alpha), 
+  geom_point(aes(x = PC1, y = PC2, colour = Color, shape = Shape, alpha = Alpha), 
              size = 4, stroke = 0.02) + 
   labs(title = "", x = paste0("PC1 (", res$var[1], ")"), y = paste0("PC2 (", res$var[2], ")")) +
   coord_fixed() + 
-  geom_text(aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID), color = "gray", size = 1)
+  geom_text(aes(x = PC1, y = PC2, label = Sample_ID), color = "gray", size = 1)
 
 ggsave(file.path(dat_dir, "Protein\\PCA\\my_ggplot2.png"))
 

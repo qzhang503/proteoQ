@@ -119,6 +119,22 @@ pepMDS(
   filename = filpvals_impna.png,
 )
 
+## a higher dimension
+pepMDS(
+  show_ids = FALSE,
+  k = 5, 
+  dimension = 3,
+  filename = d3.pdf,
+)
+
+prnMDS(
+  show_ids = TRUE,
+  k = 4, 
+  dimension = 3,
+  filename = d3.png,
+)
+
+
 ## custom theme
 library(ggplot2)
 my_mds_theme <- theme_bw() + theme(
@@ -154,7 +170,7 @@ pepMDS(
 
 ## direct uses of ggplot2
 library(ggplot2)
-res <- prnMDS(filename = default.png)
+res <- prnMDS(filename = foo.png)
 
 p <- ggplot(res) +
   geom_point(aes(x = Coordinate.1, y = Coordinate.2, colour = Color, shape = Shape, alpha = Alpha), 
