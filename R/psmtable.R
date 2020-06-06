@@ -1069,6 +1069,7 @@ pad_mascot_channels <- function(data, TMT_plex) {
     col_keys[which(seq_along(col_keys)%%2 == 0)] <- -1
     
     purrr::map(col_keys, rep, each = nrow) %>% 
+      `names<-`(paste0("nm_", seq_along(.))) %>% 
       dplyr::bind_cols() %>% 
       `colnames<-`("")
   }

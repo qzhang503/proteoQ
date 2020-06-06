@@ -211,6 +211,50 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	  }
 	  
 	  p <- p + theme
+
+	  if (!is.null(fill_brewer)) {
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + scale_fill_brewer(palette = fill_brewer)
+	      }
+	    }
+	  }
+
+	  if (!is.null(color_brewer)) {
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + scale_color_brewer(palette = color_brewer)
+	      }
+	    }
+	  }
+
+	  if ((!is.null(col_size)) & (!is.null(size_manual))) {
+	    stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + scale_size_manual(values = size_manual)
+	      }
+	    }
+	  }
+	  
+	  if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
+	    stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + scale_shape_manual(values = shape_manual)
+	      }
+	    }
+	  }
+	  
+	  if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
+	    stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + scale_shape_manual(values = alpha_manual)
+	      }
+	    }
+	  }
+	  
 	} else {
 	  p <- ggplot() +
 	    rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args))) +
@@ -225,26 +269,26 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	  
 	  p <- p +
 	    labs(title = "", x = col_labs[1], y = col_labs[2]) + theme
+	  
+  	if (!is.null(fill_brewer)) p <- p + scale_fill_brewer(palette = fill_brewer)
+  	if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
+  	
+  	if ((!is.null(col_size)) & (!is.null(size_manual))) {
+  	  stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
+  	  p <- p + scale_size_manual(values = size_manual)
+  	}
+  	
+  	if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
+  	  stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
+  	  p <- p + scale_shape_manual(values = shape_manual)
+  	}
+  	
+  	if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
+  	  stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
+  	  p <- p + scale_shape_manual(values = alpha_manual)
+  	}
 	}
-	
-	if (!is.null(fill_brewer)) p <- p + scale_color_brewer(palette = fill_brewer)
-	if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
-	
-	if ((!is.null(col_size)) & (!is.null(size_manual))) {
-	  stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
-	  p <- p + scale_size_manual(values = size_manual)
-	}
-	
-	if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
-	  stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
-	  p <- p + scale_shape_manual(values = shape_manual)
-	}
-	
-	if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
-	  stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
-	  p <- p + scale_shape_manual(values = alpha_manual)
-	}
-	
+
 	rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)), 
 	                                   plot = p, !!!dots)))
 	
@@ -581,6 +625,50 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	  }
 	  
 	  p <- p + theme
+	  
+	  if (!is.null(fill_brewer)) {
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + scale_fill_brewer(palette = fill_brewer)
+	      }
+	    }
+	  }
+	  
+	  if (!is.null(color_brewer)) {
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + scale_color_brewer(palette = color_brewer)
+	      }
+	    }
+	  }
+	  
+	  if ((!is.null(col_size)) & (!is.null(size_manual))) {
+	    stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + scale_size_manual(values = size_manual)
+	      }
+	    }
+	  }
+	  
+	  if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
+	    stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + scale_shape_manual(values = shape_manual)
+	      }
+	    }
+	  }
+	  
+	  if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
+	    stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + scale_shape_manual(values = alpha_manual)
+	      }
+	    }
+	  }
+	  
 	} else {
 	  p <- ggplot() +
 	    rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args))) +
@@ -595,26 +683,26 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	  
 	  p <- p +
 	    labs(title = "", x = col_labs[1], y = col_labs[2]) + theme
+	  
+  	if (!is.null(fill_brewer)) p <- p + scale_fill_brewer(palette = fill_brewer)
+  	if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
+  	
+  	if ((!is.null(col_size)) & (!is.null(size_manual))) {
+  	  stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
+  	  p <- p + scale_size_manual(values = size_manual)
+  	}
+  	
+  	if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
+  	  stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
+  	  p <- p + scale_shape_manual(values = shape_manual)
+  	}
+  	
+  	if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
+  	  stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
+  	  p <- p + scale_shape_manual(values = alpha_manual)
+  	}	  
 	}
-	
-	if (!is.null(fill_brewer)) p <- p + scale_color_brewer(palette = fill_brewer)
-	if (!is.null(color_brewer)) p <- p + scale_color_brewer(palette = color_brewer)
-	
-	if ((!is.null(col_size)) & (!is.null(size_manual))) {
-	  stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
-	  p <- p + scale_size_manual(values = size_manual)
-	}
-	
-	if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
-	  stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
-	  p <- p + scale_shape_manual(values = shape_manual)
-	}
-	
-	if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
-	  stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
-	  p <- p + scale_shape_manual(values = alpha_manual)
-	}
-	
+
 	rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)), 
 	                                   plot = p, !!!dots)))
 	
