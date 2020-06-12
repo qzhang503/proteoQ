@@ -282,6 +282,23 @@ plot_prnTrend(
   theme = my_trend_theme,
   filename = my_theme.png,
 )
+
+## Cytoscape visualization
+# (Make sure that Cytoscape is open.)
+# Human
+cluego(
+  df2 = Protein_Trend_Z_nclust5.txt, 
+  species = c(human = "Homo Sapiens"), 
+  n_clust = c(3, 5)
+)
+
+# Mouse
+cluego(
+  df2 = Protein_Trend_Z_nclust5.txt, 
+  species = c(mouse = "Mus Musculus"), 
+  n_clust = c(3:4)
+)
+
 }
 }
 \seealso{
@@ -322,6 +339,7 @@ plot_prnTrend(
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+ \code{\link{cluego}} for the visualization of \code{\link{anal_prnTrend}} via \code{Cytoscape} \cr 
  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 

@@ -187,4 +187,21 @@ plot_prnTrend(
   theme = my_trend_theme,
   filename = my_theme.png,
 )
+
+## Cytoscape visualization
+# (Make sure that Cytoscape is open.)
+# Human
+cluego(
+  df2 = Protein_Trend_Z_nclust5.txt, 
+  species = c(human = "Homo Sapiens"), 
+  n_clust = c(3, 5)
+)
+
+# Mouse
+cluego(
+  df2 = Protein_Trend_Z_nclust5.txt, 
+  species = c(mouse = "Mus Musculus"), 
+  n_clust = c(3:4)
+)
+
 }
