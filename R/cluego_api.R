@@ -1,4 +1,4 @@
-#' ClueGO API
+#' ClueGO via API
 #' 
 #' \code{cluego} sends \code{\link{anal_prnTrend}} findings in, e.g.
 #' \code{Protein_Trend_[...].txt} etc. to
@@ -13,6 +13,8 @@
 #'  \code{\link{anal_prnTrend}} for visualization. 
 #' @import httr RJSONIO xml2 rlang dplyr purrr 
 #' @importFrom magrittr %>%
+#' @export
+#' 
 #' @examples \donttest{
 #' # Make sure CytoSpace is opened, and 
 #' # yFiles layouts and ClueGO plug-in are installed.

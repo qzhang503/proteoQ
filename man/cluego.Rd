@@ -2,7 +2,7 @@
 % Please edit documentation in R/cluego_api.R
 \name{cluego}
 \alias{cluego}
-\title{ClueGO API}
+\title{ClueGO via API}
 \usage{
 cluego(
   df2 = "Protein_Trend_Z_nclust5.txt",
