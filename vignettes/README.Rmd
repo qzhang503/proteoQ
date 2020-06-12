@@ -90,7 +90,7 @@ The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of `prot
 (Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README. Mathematical symbols may display more properly under html.)  
 
 ## Installation
-To install this package, start R (version "4.1") and enter:^[For a specific version, for example 1.2.2.2: `devtools::install_github("qzhang503/proteoQ@1.2.2.2")`]  
+To install this package, start R (version "4.0") and enter:^[For a specific version, for example 1.2.2.2: `devtools::install_github("qzhang503/proteoQ@1.2.2.2")`]  
 
 ```{r installation_1, include = TRUE, eval = FALSE}
 if (!requireNamespace("devtools", quietly = TRUE))
@@ -848,7 +848,7 @@ The utilities for PCA analysis are `pepPCA` and `prnPCA` for peptide and protein
 With proteoQ, the option in data scaling is set by variable `scale_log2r`, which will be passed to the `scale.` in `stats::prcomp`. For data centering, proteoQ relays the `TRUE` default to `stats::prcomp`.  
 
 #### 2.2.2 Mean deviation
-Provided the importance of data centering in PCA and several other analyses, proteoQ further incorporated the three columns of `prot_mean_raw`, `prot_mean_n` and `prot_mean_z` in protein outputs. The first one summarizes the mean `log2FC` before data alignment for individual proteins across selected samples. The second and the three compute the corresponding mean `log2FC` after data alignment, with and without scaling normalization, respectively  (see also section 4 for column keys). As usual, the sample selections can be customized through the argument `col_select`. The corresponding columns summarizing the mean deviation in peptide data are `pep_mean_raw`, `pep_mean_n` and `pep_mean_z`.  
+Provided the importance of data centering in PCA and several other analyses, proteoQ further incorporated the three columns of `prot_mean_raw`, `prot_mean_n` and `prot_mean_z` in protein outputs. The first one summarizes the mean `log2FC` before data alignment for individual proteins across selected samples. The second and the three compute the corresponding mean `log2FC` after data alignment, with and without scaling normalization, respectively  (see also section 4 for column keys). The corresponding columns summarizing the mean deviation in peptide data are `pep_mean_raw`, `pep_mean_n` and `pep_mean_z`. As usual, the sample selections can be customized through the argument `col_select`.  
 
 #### 2.2.3 Leverage points
 The mean `log2FC` of proteins or peptides may serve as indicators that how far a given protein or peptide species is away from the data centering format (a.k.a. mean deviation form) that will be enforced by default in PCA. Taking protein data as an example, we will go through couple settings in `prnPCA`. At first, we performed PCA with data centering by default (**Figure 4A**):  
@@ -975,7 +975,7 @@ prnPCA(
 )
 ```
 
-```{r Protein_PCA_high_dim, echo=FALSE, fig.align='center', fig.cap="**Figure 4F.** Higher dimension.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+```{r Protein_PCA_high_dim, echo=FALSE, fig.align='center', fig.cap="**Figure 4F.** Higher dimensions.", fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
 img_pca_d3 <- "images/protein/pca/d3.png"
 knitr::include_graphics(c(img_pca_d3))
 ```
@@ -1312,7 +1312,10 @@ knitr::include_graphics(c(img_gspahm_connect, img_gspahm_redund))
 
 
 ### 2.8 Trend Analysis
-In this section, we perform the trend analysis against protein expressions. More information can be found from [`cmeans`](https://www.rdocumentation.org/packages/e1071/versions/1.7-2/topics/cmeans),  [`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf) and `?anal_prnTrend`. Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.  
+In this section, we perform the trend analysis against protein expressions. More information can be found from [`cmeans`](https://www.rdocumentation.org/packages/e1071/versions/1.7-2/topics/cmeans).  
+
+#### 2.8.1 Clustering
+The utility for the clustering of protein log2FC is `anal_prnTrend`. Note that the number of clusters is provided by `n_clust`, which can be a single value or a vector of integers.  
 
 ```{r Protein trends, eval = FALSE}
 anal_prnTrend(
@@ -1321,7 +1324,10 @@ anal_prnTrend(
 )
 ```
 
-The above codes will generate result files, `Protein_Trend_Z_nclust5.txt` and `Protein_Trend_Z_nclust6.txt`, under the `...\Protein\Trend` directory. The letter `Z` in the file names remind us that the results were derived from normalized protein data with the option of `scale_log2r = TRUE`. We next visualize the results:  
+The above codes will generate result files, `Protein_Trend_Z_nclust5.txt` and `Protein_Trend_Z_nclust6.txt`, under the `...\Protein\Trend` directory. The letter `Z` in the file names remind us that the results were derived from normalized protein data with the option of `scale_log2r = TRUE`. More details are available via `?anal_prnTrend` from a R section.  
+
+#### 2.8.2 Visualization
+We next visualize the results:  
 
 ```{r Protein trends_plot, eval = FALSE}
 plot_prnTrend(
@@ -1329,14 +1335,14 @@ plot_prnTrend(
 )
 ```
 
-The argument `col_order` provides a means to supervise the order of samples during the trend visualization. In the above example, the `plot_prnTrend` will look into the field under the `expt_smry.xlsx::Order` column for sample arrangement (see also Section 2.2 Correlation plots).  
+The argument `col_order` provides a means to supervise the order of samples during the trend visualization. In the above example, the `plot_prnTrend` will look into the field under the `expt_smry.xlsx::Order` column for sample arrangement (see also Section 2.3 Correlation plots).  
 
 ```{r Protein_trends all_plots, echo=FALSE, fig.align='left', fig.cap="**Figure 9A.** Trends of protein log2FC (n_clust = 6).", fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 img_prn_trends <- "images/protein/trend/prn_trend_n6.png"
 knitr::include_graphics(c(img_prn_trends))
 ```
 
-We can subset the input data by `filter_` varargs. In the example shown below, we choose to visualize only the pattern of trends in cluster 4. Note that `cluster` is a column key in `Protein_Trend_[...].txt`:  
+We can subset the secondary input data by `filter2_` varargs. In the example shown below, we choose to visualize only the pattern of trends in cluster 4. Note that `cluster` is a column key in `Protein_Trend_[...].txt`:  
 
 ```{r Protein trends_plot_filter, eval = FALSE}
 plot_prnTrend(
@@ -1382,7 +1388,22 @@ anal_prnTrend(col_select = NULL, ...)
 plot_prnTrend(col_select = BI, ...)
 ```
 
-Apparently, they will both plot the trends of protein log2FC for the `BI` subset. In spite, the former is based on the clustering results from the `BI` subset whereas the later is based on the findings from all samples.  The same theme will hold for various informatic analysis in `proteoQ`, including the NMF analysis that we will next discuss.  
+Apparently, they will both plot the trends of protein log2FC for the `BI` subset. In spite, the former is based on the clustering results from the `BI` subset whereas the later is based on the findings from all samples.  The same consideration will typically hold for various informatic analysis in `proteoQ`, including the NMF analysis that we will next discuss.  
+
+#### 2.8.3 API
+The trend findings from `anal_prnTrend` can be loaded automatically to the [`ClueGO`](http://apps.cytoscape.org/apps/cluego) utility in [Cytoscape](https://cytoscape.org/). 
+The installation of [yFiles Layout Algorithms](http://apps.cytoscape.org/apps/with_tag/layout) is also required.  
+
+```{r trend_to_cluego, eval = FALSE}
+# Make sure that Cytoscape is open
+cluego(
+  df2 = Protein_Trend_Z_nclust5.txt, 
+  species = c(human = "Homo Sapiens"), 
+  n_clust = c(3, 5)
+)
+```
+
+Note that `human` is a value that can be found under the column `species` in `Protein_Trend_Z_nclust5.txt` and `Homo Sapiens` is the corresponding name used in ClueGO.  
 
 ### 2.9 NMF Analysis
 In this section, we will performs the analysis of non-negative matrix factorization (NMF) against protein data. More details can be found from [`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf) and the `?anal_prnNMF` wrapper. Since additional arguments can be passed on to NMF, we will test below protein classifications with both the default and the 'lee' method:  

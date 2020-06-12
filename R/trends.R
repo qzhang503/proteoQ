@@ -23,7 +23,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
 	dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
 	
-	df <- df %>% 
+	df_num <- df %>% 
 	  filters_in_call(!!!filter_dots) %>% 
 	  arrangers_in_call(!!!arrange_dots) %>% 
 	  prepDM(id = !!id, scale_log2r = scale_log2r, 
@@ -37,7 +37,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
 	suppressWarnings(
-	  df_mean <- t(df) %>%
+	  df_mean <- t(df_num) %>%
 	    data.frame(check.names = FALSE) %>%
 	    tibble::rownames_to_column("Sample_ID") %>%
 	    dplyr::left_join(label_scheme_sub, by = "Sample_ID") %>%
@@ -63,9 +63,8 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	
 	if (is.null(n_clust)) {
 	  n_clust <- local({
-	    # nrow <- nrow(df)
+	    # nrow <- nrow(df_num)
 	    # if (nrow >= 5000) n_clust <- c(5:6) else if (nrow >= 2000) n_clust <- c(3:5) else n_clust <- 3 
-	    
 	    # n_clust <- fpc::pamk(df_mean, 2:10)$nc
 	    gap_stat <- cluster::clusGap(df_mean, kmeans, 10, B = 100)
 	    maxSE(f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
@@ -98,13 +97,15 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	  
 	  Levels <- names(df_mean)
 	  
-	  df_mean %>%
+	  df_mean %>% 
 	    tibble::rownames_to_column(id) %>% 
-	    left_join(res_cl, by = id) %>% 
+	    dplyr::left_join(res_cl, by = id) %>% 
 	    tidyr::gather(key = variable, value = value, -id, -cluster) %>%
 	    dplyr::mutate(variable = factor(variable, levels = Levels)) %>%
 	    dplyr::arrange(variable) %>% 
-	    dplyr::rename(id = !!rlang::sym(id), group = variable, log2FC = value) %>% 
+	    dplyr::rename(group = variable, log2FC = value) %>% 
+	    dplyr::left_join(df[, c(id, "species")], by = id) %>% 
+	    # dplyr::rename(id = !!rlang::sym(id)) %>% 
 	    write.table(file.path(filepath, filename), sep = "\t", 
 	                col.names = TRUE, row.names = FALSE, quote = FALSE)	
 	})
@@ -230,7 +231,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     src_path <- file.path(filepath, .x)
 
     df <- tryCatch(
-      readr::read_tsv(src_path, col_types = cols(id = col_character(), group = col_factor())), 
+      readr::read_tsv(src_path, col_types = cols(group = col_factor())), 
       error = function(e) NA
     )
 
@@ -249,7 +250,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     if (!purrr::is_empty(dots)) {
       if (any(grepl("^filter_", names(dots)))) {
         stop("Primary `filter_` depreciated; use secondary `filter2_`.")
-      }      
+      }
     }
 
     filter2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter2_", names(.))]
@@ -304,9 +305,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     dots$units <- NULL
     
     p <- ggplot(data = df,
-                mapping = aes(x = group, y = log2FC, group = id)) +
+                mapping = aes(x = group, y = log2FC, group = !!rlang::sym(id))) +
       geom_line(colour = color, alpha = alpha) + 
-      # coord_cartesian(ylim = c(ymin, ymax)) + 
       scale_y_continuous(limits = c(ymin, ymax), breaks = c(ymin, 0, ymax)) +
       labs(title = "", x = "", y = x_label) +
       theme
@@ -390,6 +390,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
 #'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
+#'  \code{\link{cluego}} for the visualization of \code{\link{anal_prnTrend}} via \code{Cytoscape} \cr 
 #'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
 #'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 

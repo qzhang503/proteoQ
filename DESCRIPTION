@@ -45,6 +45,7 @@ Imports:
     gridExtra,
 		gtable,
 		htmltools,
+		httr,
 		limma,
     lme4,
     lmerTest,
@@ -65,6 +66,7 @@ Imports:
     rlang,
     seqinr,
     statmod,
+    xml2,
 		AnnotationDbi,
 		Biobase,
 		BiocManager,
@@ -76,6 +78,7 @@ Imports:
     RColorBrewer,
 		RcppGreedySetCover,
     RCurl,
+    RJSONIO,
     XML
 RoxygenNote: 7.1.0
 Remotes:

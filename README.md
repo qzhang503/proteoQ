@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-06-04
+2020-06-12
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -72,7 +72,7 @@ more properly under html.)
 
 ## Installation
 
-To install this package, start R (version “4.1”) and enter:\[2\]
+To install this package, start R (version “4.0”) and enter:\[2\]
 
 ``` r
 if (!requireNamespace("devtools", quietly = TRUE))
@@ -1399,10 +1399,10 @@ first one summarizes the mean `log2FC` before data alignment for
 individual proteins across selected samples. The second and the three
 compute the corresponding mean `log2FC` after data alignment, with and
 without scaling normalization, respectively (see also section 4 for
-column keys). As usual, the sample selections can be customized through
-the argument `col_select`. The corresponding columns summarizing the
-mean deviation in peptide data are `pep_mean_raw`, `pep_mean_n` and
-`pep_mean_z`.
+column keys). The corresponding columns summarizing the mean deviation
+in peptide data are `pep_mean_raw`, `pep_mean_n` and `pep_mean_z`. As
+usual, the sample selections can be customized through the argument
+`col_select`.
 
 #### 2.2.3 Leverage points
 
@@ -1587,11 +1587,11 @@ prnPCA(
 
 <div class="figure" style="text-align: center">
 
-<img src="images/protein/pca/d3.png" alt="**Figure 4F.** Higher dimension." width="45%" />
+<img src="images/protein/pca/d3.png" alt="**Figure 4F.** Higher dimensions." width="45%" />
 
 <p class="caption">
 
-**Figure 4F.** Higher dimension.
+**Figure 4F.** Higher dimensions.
 
 </p>
 
@@ -2165,10 +2165,13 @@ distance \<= 0.8; right, distance \<= 0.2.
 
 In this section, we perform the trend analysis against protein
 expressions. More information can be found from
-[`cmeans`](https://www.rdocumentation.org/packages/e1071/versions/1.7-2/topics/cmeans),
-[`Mfuzz`](https://www.bioconductor.org/packages/release/bioc/vignettes/Mfuzz/inst/doc/Mfuzz.pdf)
-and `?anal_prnTrend`. Note that the number of clusters is provided by
-`n_clust`, which can be a single value or a vector of integers.
+[`cmeans`](https://www.rdocumentation.org/packages/e1071/versions/1.7-2/topics/cmeans).
+
+#### 2.8.1 Clustering
+
+The utility for the clustering of protein log2FC is `anal_prnTrend`.
+Note that the number of clusters is provided by `n_clust`, which can be
+a single value or a vector of integers.
 
 ``` r
 anal_prnTrend(
@@ -2181,7 +2184,12 @@ The above codes will generate result files,
 `Protein_Trend_Z_nclust5.txt` and `Protein_Trend_Z_nclust6.txt`, under
 the `...\Protein\Trend` directory. The letter `Z` in the file names
 remind us that the results were derived from normalized protein data
-with the option of `scale_log2r = TRUE`. We next visualize the results:
+with the option of `scale_log2r = TRUE`. More details are available via
+`?anal_prnTrend` from a R section.
+
+#### 2.8.2 Visualization
+
+We next visualize the results:
 
 ``` r
 plot_prnTrend(
@@ -2193,7 +2201,7 @@ The argument `col_order` provides a means to supervise the order of
 samples during the trend visualization. In the above example, the
 `plot_prnTrend` will look into the field under the
 `expt_smry.xlsx::Order` column for sample arrangement (see also Section
-2.2 Correlation plots).
+2.3 Correlation plots).
 
 <div class="figure" style="text-align: left">
 
@@ -2207,9 +2215,10 @@ samples during the trend visualization. In the above example, the
 
 </div>
 
-We can subset the input data by `filter_` varargs. In the example shown
-below, we choose to visualize only the pattern of trends in cluster 4.
-Note that `cluster` is a column key in `Protein_Trend_[...].txt`:
+We can subset the secondary input data by `filter2_` varargs. In the
+example shown below, we choose to visualize only the pattern of trends
+in cluster 4. Note that `cluster` is a column key in
+`Protein_Trend_[...].txt`:
 
 ``` r
 plot_prnTrend(
@@ -2273,8 +2282,30 @@ plot_prnTrend(col_select = BI, ...)
 Apparently, they will both plot the trends of protein log2FC for the
 `BI` subset. In spite, the former is based on the clustering results
 from the `BI` subset whereas the later is based on the findings from all
-samples. The same theme will hold for various informatic analysis in
-`proteoQ`, including the NMF analysis that we will next discuss.
+samples. The same consideration will typically hold for various
+informatic analysis in `proteoQ`, including the NMF analysis that we
+will next discuss.
+
+#### 2.8.3 API
+
+The trend findings from `anal_prnTrend` can be loaded automatically to
+the [`ClueGO`](http://apps.cytoscape.org/apps/cluego) utility in
+[Cytoscape](https://cytoscape.org/). The installation of [yFiles Layout
+Algorithms](http://apps.cytoscape.org/apps/with_tag/layout) is also
+required.
+
+``` r
+# Make sure that Cytoscape is open
+cluego(
+  df2 = Protein_Trend_Z_nclust5.txt, 
+  species = c(human = "Homo Sapiens"), 
+  n_clust = c(3, 5)
+)
+```
+
+Note that `human` is a value that can be found under the column
+`species` in `Protein_Trend_Z_nclust5.txt` and `Homo Sapiens` is the
+corresponding name used in ClueGO.
 
 ### 2.9 NMF Analysis
 
