@@ -32,11 +32,11 @@ mascot_refseq2uniprot <- function(dat_dir) {
   
   suppressMessages(rmPSMHeaders())
   
-  filelist <- list.files(path = file.path(dat_dir, "PSM\\cache"), pattern = "^F[0-9]{6}\\_hdr_rm.csv$")
-  filelist_hdr <- list.files(path = file.path(dat_dir, "PSM\\cache"), pattern = "^F[0-9]{6}\\_header.txt$")
+  filelist <- list.files(path = file.path(dat_dir, "PSM/cache"), pattern = "^F[0-9]{6}_hdr_rm.csv$")
+  filelist_hdr <- list.files(path = file.path(dat_dir, "PSM/cache"), pattern = "^F[0-9]{6}_header.txt$")
   
   purrr::walk2(filelist, filelist_hdr, ~ {
-    df <- read.delim(file.path(dat_dir, "PSM\\cache", .x), sep = ',', check.names = FALSE, 
+    df <- read.delim(file.path(dat_dir, "PSM/cache", .x), sep = ',', check.names = FALSE, 
                      header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , skip = 0)
     df$psm_index <- seq_along(1:nrow(df))
     
@@ -98,15 +98,15 @@ mascot_refseq2uniprot <- function(dat_dir) {
     df[["prot_acc"]] <- unlist(uniprot_acc)
     df[["psm_index"]] <- NULL
     
-    dir.create(file.path(dat_dir, "PSM\\cache\\temp"))
-    write.table(df, file = file.path(dat_dir, "PSM\\cache\\temp", .x), sep = ",")
-    df <- readLines(file.path(dat_dir, "PSM\\cache\\temp", .x))
-    hdr <- readLines(file.path(dat_dir, "PSM\\cache", .y))
+    dir.create(file.path(dat_dir, "PSM/cache/temp"))
+    write.table(df, file = file.path(dat_dir, "PSM/cache/temp", .x), sep = ",")
+    df <- readLines(file.path(dat_dir, "PSM/cache/temp", .x))
+    hdr <- readLines(file.path(dat_dir, "PSM/cache", .y))
     
     write(append(hdr, df), file = file.path(dat_dir, gsub("_hdr_rm", "", .x)))
   })
   
-  unlink(file.path(dat_dir, "PSM\\cache\\temp"), recursive = TRUE)
+  unlink(file.path(dat_dir, "PSM/cache/temp"), recursive = TRUE)
 }
 
 

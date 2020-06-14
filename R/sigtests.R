@@ -385,7 +385,7 @@ sigTest <- function(df, id, label_scheme_sub,
 	
 	if (id %in% c("pep_seq", "pep_seq_mod")) {
 	  pepSig_formulas <- dots
-	  save(pepSig_formulas, file = file.path(dat_dir, "Calls\\pepSig_formulas.rda"))
+	  save(pepSig_formulas, file = file.path(dat_dir, "Calls/pepSig_formulas.rda"))
 	  rm(pepSig_formulas)
 	} else if (id %in% c("prot_acc", "gene")) {
 	  if (rlang::is_empty(dots)) {
@@ -417,9 +417,9 @@ sigTest <- function(df, id, label_scheme_sub,
 	})
 
 	if (id %in% c("pep_seq", "pep_seq_mod")) {
-	  out_path <- file.path(dat_dir, "Peptide\\Model\\log\\pepSig_log.txt")
+	  out_path <- file.path(dat_dir, "Peptide/Model/log/pepSig_log.txt")
 	} else if (id %in% c("prot_acc", "gene")) {
-	  out_path <- file.path(dat_dir, "Protein\\Model\\log\\prnSig_log.txt")
+	  out_path <- file.path(dat_dir, "Protein/Model/log/prnSig_log.txt")
 	}
 	
 	purrr::map(quietly_log, ~ {
@@ -563,8 +563,8 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'  \code{Protein[_impNA].txt}. See also \code{\link{normPSM}} for the format of
 #'  \code{filter_} statements.
 #'@return The primary output is
-#'  \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
-#'  \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. At
+#'  \code{~/dat_dir/Peptide/Model/Peptide_pVals.txt} for peptide data or
+#'  \code{~/dat_dir/Protein/Model/Protein_pVals.txt} for protein data. At
 #'  \code{impute_na = TRUE}, the corresponding outputs are
 #'  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 #'
@@ -639,7 +639,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit({
-    load(file.path(dat_dir, "Calls\\prnSig_formulas.rda"))
+    load(file.path(dat_dir, "Calls/prnSig_formulas.rda"))
     dots <- my_union(rlang::enexprs(...), prnSig_formulas)
     mget(names(formals()), current_env()) %>% c(dots) %>% save_call("prnSig")
   }, add = TRUE)

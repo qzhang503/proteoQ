@@ -589,14 +589,14 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 		                        comment.char = "#"), error = function(e) NA)
 
 		if (!is.null(dim(df))) {
-			message(paste("File loaded:", gsub("\\\\", "/", src_path)))
+		  message(paste("File loaded:", src_path))
 		} else {
-			stop(paste("File or directory not found:", gsub("\\\\", "/", src_path)))
+		  stop(paste("File or directory not found:", src_path))
 		}
 
 		df[, grep("N_log2_R", names(df))]  <- df[, grep("N_log2_R", names(df))]  %>% handleNA(...)
 
-		fn_params <- file.path(dat_dir, "Protein\\Histogram", "MGKernel_params_N.txt")
+		fn_params <- file.path(dat_dir, "Protein/Histogram", "MGKernel_params_N.txt")
 		if (file.exists(fn_params)) {
 			cf_SD <- 
 				read.csv(fn_params, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>%
@@ -1186,7 +1186,7 @@ get_gl_dat_dir <- function () {
   dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
   if (dat_dir == 1) {
     stop("Unknown working directory; 
-         run `load_expts(\"my\\\\fabulous\\\\working\\\\directory\")` first.", 
+         run `load_expts(\"my/fabulous/working/directory\")` first.", 
          call. = FALSE)
   }
   
@@ -1200,7 +1200,7 @@ get_gl_dat_dir <- function () {
 #' @import plyr dplyr purrr rlang
 #' @importFrom magrittr %>%
 match_fmls <- function(formulas) {
-  fml_file <-  file.path(dat_dir, "Calls\\pepSig_formulas.rda")
+  fml_file <-  file.path(dat_dir, "Calls/pepSig_formulas.rda")
   
   if (file.exists(fml_file)) {
     load(file = fml_file)
@@ -1260,14 +1260,14 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r 
   stopifnot(!is.null(subdir))
 
   if (anal_type == "GSPA") {
-    file <- file.path(dat_dir, "Calls\\anal_prnGSPA.rda")
+    file <- file.path(dat_dir, "Calls/anal_prnGSPA.rda")
     if (!file.exists(file)) stop("Run `prnGSPA` first.", call. = FALSE)
     load(file = file)
   }
   
   filename <- call_pars$filename
   if (rlang::is_empty(filename)) {
-    filename <- list.files(path = file.path(dat_dir, "Protein\\GSPA", subdir), 
+    filename <- list.files(path = file.path(dat_dir, "Protein/GSPA", subdir), 
                            pattern = "^Protein_GSPA_.*\\.txt$", 
                            full.names = FALSE)
     
@@ -1292,7 +1292,7 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r 
 #' 
 #' @inheritParams prnGSPA
 match_gset_nms <- function (gset_nms = NULL) {
-  file <- file.path(dat_dir, "Calls\\anal_prnGSPA.rda")
+  file <- file.path(dat_dir, "Calls/anal_prnGSPA.rda")
   
   if (is.null(gset_nms)) {
     if (file.exists(file)) {
@@ -1314,7 +1314,7 @@ match_gset_nms <- function (gset_nms = NULL) {
     stop ("The `gset_nms` is NULL after matching parameters to the latest `prnGSPA(...)`.", 
           "\n\tConsider providing explicitly the `gset_nms`: ", 
           "\n\t\t`gset_nms = \"go_sets\"` or ", 
-          "\n\t\t`gset_nms = \"~\\\\proteoQ\\\\dbs\\\\go_hs.rds\"` ...",
+          "\n\t\t`gset_nms = \"~/proteoQ/dbs/go_hs.rds\"` ...",
           call. = FALSE)
   }
   
@@ -2146,7 +2146,7 @@ count_phosphopeps <- function() {
   
   write.csv(
     data.frame(n_peps = n_phos_peps, n_sites = n_phos_sites), 
-    file.path(dat_dir, "Peptide\\cache", "phos_pep_nums.csv"), 
+    file.path(dat_dir, "Peptide/cache", "phos_pep_nums.csv"), 
     row.names = FALSE
   )
 }
@@ -2154,17 +2154,17 @@ count_phosphopeps <- function() {
 
 #' peptide mis-cleavage counts
 count_pepmiss <- function() {
-  dir.create(file.path(dat_dir, "PSM\\cache"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/cache"), recursive = TRUE, showWarnings = FALSE)
   
   rmPSMHeaders()
   
-  filelist = list.files(path = file.path(dat_dir, "PSM\\cache"),
-                        pattern = "^F[0-9]{6}\\_hdr_rm.csv$")
+  filelist <- list.files(path = file.path(dat_dir, "PSM/cache"),
+                        pattern = "^F[0-9]{6}_hdr_rm.csv$")
   
   if (length(filelist) == 0) stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
   
   df <- purrr::map(filelist, ~ {
-    data <- read.delim(file.path(dat_dir, "PSM\\cache", .x), sep = ',', check.names = FALSE, 
+    data <- read.delim(file.path(dat_dir, "PSM/cache", .x), sep = ',', check.names = FALSE, 
                        header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , skip = 0)
     
     data$dat_file <- gsub("_hdr_rm\\.csv", "", .x)
@@ -2177,7 +2177,7 @@ count_pepmiss <- function() {
     tibble::tibble(total = tot, miscleavage = mis, percent = miscleavage/tot)
   }) %>% do.call(rbind, .)
   
-  write.csv(df, file.path(dat_dir, "PSM\\cache\\miscleavage_nums.csv"), row.names = FALSE)
+  write.csv(df, file.path(dat_dir, "PSM/cache/miscleavage_nums.csv"), row.names = FALSE)
 }
 
 
@@ -2321,7 +2321,7 @@ concat_fml_dots <- function(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type 
   if ((!is_empty(fmls)) & (anal_type == "GSEA")) return(c(dots, fmls))
   
   if (purrr::is_empty(fmls)) {
-    fml_file <-  file.path(dat_dir, "Calls\\pepSig_formulas.rda")
+    fml_file <-  file.path(dat_dir, "Calls/pepSig_formulas.rda")
     if (file.exists(fml_file)) {
       load(file = fml_file)
       
@@ -2549,8 +2549,8 @@ ok_existing_params <- function (filepath) {
   
   if (purrr::is_empty(missing_samples)) return(TRUE)
   
-  try(unlink(file.path(dat_dir, "Peptide\\Histogram\\MGKernel_params_[NZ].txt")))
-  try(unlink(file.path(dat_dir, "Protein\\Histogram\\MGKernel_params_[NZ].txt")))
+  try(unlink(file.path(dat_dir, "Peptide/Histogram/MGKernel_params_[NZ].txt")))
+  try(unlink(file.path(dat_dir, "Protein/Histogram/MGKernel_params_[NZ].txt")))
 
   warning(
     "\nThe following entries(s) in `expt_smry.xlsx` are missing from `MGKernel_params` files: \n\t", 

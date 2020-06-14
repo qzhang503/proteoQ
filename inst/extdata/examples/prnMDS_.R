@@ -179,7 +179,7 @@ p <- ggplot(res) +
   coord_fixed() + 
   geom_text(aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID), color = "gray", size = 1)
 
-ggsave(file.path(dat_dir, "Protein\\MDS\\my_ggplot2.png"))
+ggsave(file.path(dat_dir, "Protein/MDS/my_ggplot2.png"))
 
 
 \dontrun{

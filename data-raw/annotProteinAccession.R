@@ -68,7 +68,7 @@ taxid_lookup <- function(species) {
 
 # a case of same GO term but different species
 # add species name to GO data sets
-devtools::document("c:\\results\\r\\proteoq")
+devtools::document("c:/results/r/proteoq")
 species <- "rat"
 abbr_sp <- purrr::map_chr(species, sp_lookup)
 filename <- paste0("go_sets_", abbr_sp)
@@ -79,7 +79,7 @@ if (!grepl(paste0("^", abbr_sp), temp[1])) {
   temp <- temp %>% 
     `names<-`(paste(abbr_sp, names(.), sep = "_"))
   assign(filename, temp)
-  save(list = filename, file = file.path("C:\\Results\\R\\proteoQ\\data", paste0(filename, ".RData")))
+  save(list = filename, file = file.path("C:/Results/R/proteoQ/data", paste0(filename, ".RData")))
 }
 
 # new_name <- paste0("go_sets_", abbr_species_lwr)
@@ -116,7 +116,7 @@ if (!grepl(paste0("^", abbr_sp), temp[1])) {
 
 
 # ----------------------------------------------
-devtools::document(pkg  = "C:\\Results\\R\\proteoQ")
+devtools::document(pkg  = "C:/Results/R/proteoQ")
 kinase_lookup <- kinase_lookup %>% 
 					dplyr::rename(
 						refseq_acc = REFSEQ_PROTEIN, 
@@ -137,7 +137,7 @@ kinase_lookup <- kinase_lookup %>%
 					)
 
 filename <- "kinase_lookup"
-save(list = filename, file = file.path("C:\\Results\\R\\proteoQ\\data", paste0(filename, ".rda")), compress = "xz")
+save(list = filename, file = file.path("C:/Results/R/proteoQ/data", paste0(filename, ".rda")), compress = "xz")
 
 	
 
@@ -183,15 +183,15 @@ map_refseq <- function(species) {
 
 
 # combine all .R files into one
-# foo_combine_codes(filepath = file.path("C:\\Results\\R\\proteoQ\\inst\\extdata\\examples"))
-foo_combine_codes <- function (filepath = file.path("C:\\Results\\R\\proteoQ\\R")) {
+# foo_combine_codes(filepath = file.path("C:/Results/R/proteoQ/inst/extdata/examples"))
+foo_combine_codes <- function (filepath = file.path("C:/Results/R/proteoQ/R")) {
   filenames <- dir(filepath, pattern = ".R$")
   
   dir.create(file.path(filepath, "temp"))
   
   purrr::map(file.path(filepath, filenames), readLines) %>% 
     purrr::reduce(`c`, init = NULL) %>% 
-    writeLines(file.path(filepath, "temp\\all.R"))  
+    writeLines(file.path(filepath, "temp/all.R"))  
 }
 
 

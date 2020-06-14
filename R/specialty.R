@@ -9,7 +9,7 @@
 #' @examples 
 #' \donttest{
 #' res <- labEffPSM(
-#'   fasta = c("~\\proteoQ\\dbs\\fasta\\uniprot\\uniprot_mm_2014_07.fasta"),
+#'   fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_mm_2014_07.fasta"),
 #' )
 #' }
 #' @export
@@ -48,12 +48,12 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
     stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   }
   
-  dir.create(file.path(dat_dir, "PSM\\cache"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "PSM\\rprt_int\\raw"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "PSM\\rprt_int\\mc"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\raw"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "PSM\\individual_mods"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/cache"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/rprt_int/raw"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/rprt_int/mc"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/log2FC_cv/raw"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/log2FC_cv/purged"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/individual_mods"), recursive = TRUE, showWarnings = FALSE)
   
   if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^F[0-9]+\\.csv$"))) {
     type <- "mascot"
@@ -79,8 +79,8 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
   
   TMT_plex <- TMT_plex(label_scheme_full)
   
-  filelist = list.files(path = file.path(dat_dir, "PSM\\cache"),
-                        pattern = "^F[0-9]{6}\\_hdr_rm.csv$")
+  filelist = list.files(path = file.path(dat_dir, "PSM/cache"),
+                        pattern = "^F[0-9]{6}_hdr_rm.csv$")
   
   if (length(filelist) == 0) stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
   
@@ -92,7 +92,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
                                   call. = FALSE)
   
   df <- purrr::map(filelist, ~ {
-    df <- read.delim(file.path(dat_dir, "PSM\\cache", .x), sep = ',', check.names = FALSE, 
+    df <- read.delim(file.path(dat_dir, "PSM/cache", .x), sep = ',', check.names = FALSE, 
                      header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , skip = 0)
     df$dat_file <- gsub("_hdr_rm\\.csv", "", .x)
     
@@ -132,7 +132,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
     }
     
     dat_id <- df$dat_file %>% unique()
-    dat_file <- file.path(dat_dir, "PSM\\cache", paste0(dat_id, "_header.txt"))
+    dat_file <- file.path(dat_dir, "PSM/cache", paste0(dat_id, "_header.txt"))
     stopifnot(length(dat_id)== 1, file.exists(dat_file))
     
     df_header <- readLines(dat_file)
@@ -283,7 +283,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
       dplyr::summarize(N = n()) %>% 
       dplyr::right_join(dat_files, by = "dat_file") %>% 
       dplyr::arrange(-N, dat_file) %T>% 
-      write.csv(file.path(dat_dir, "PSM\\cache", paste0(.y, ".csv")), row.names = FALSE)
+      write.csv(file.path(dat_dir, "PSM/cache", paste0(.y, ".csv")), row.names = FALSE)
     
     both <- res %>% 
       dplyr::filter(tmt_type == "both") %>% 
@@ -321,7 +321,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
 #'   df = Protein_delta.txt, 
 #'   id = gene, 
 #'   df_meta = hm_meta.xlsx, 
-#'   filepath = file.path(dat_dir, "Protein\\Heatmap"), 
+#'   filepath = file.path(dat_dir, "Protein/Heatmap"), 
 #'   filename = "kin_delta.png",
 #'   complete_cases = FALSE, 
 #'   annot_cols = NULL, 

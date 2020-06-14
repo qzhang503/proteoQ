@@ -27,7 +27,7 @@ tables of \code{TMTset1_LCMSinj1_Peptide_N.txt},
 with \code{pep_len > 50}. See also \code{\link{normPSM}}.}
 }
 \value{
-The primary output is in \code{...\\Peptide\\Peptide.txt}.
+The primary output is in \code{.../Peptide/Peptide.txt}.
 }
 \description{
 \code{mergePep} merges individual peptide table(s),

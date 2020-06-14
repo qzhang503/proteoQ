@@ -12,7 +12,7 @@ proc_obo(
 }
 \arguments{
 \item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\go"}.}
+is \code{"~/proteoQ/dbs/go"}.}
 
 \item{fn_obo}{filename according to \code{obo_url}}
 

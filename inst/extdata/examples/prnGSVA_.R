@@ -97,7 +97,7 @@ prnGSVA(
   verbose = FALSE,
   parallel.sz = 0,
   mx.diff = TRUE,
-  gset_nms = c("~\\proteoQ\\dbs\\go\\go_hs.rds",
-               "~\\proteoQ\\dbs\\go\\go_mm.rds"),
+  gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
+               "~/proteoQ/dbs/go/go_mm.rds"),
 )
 }

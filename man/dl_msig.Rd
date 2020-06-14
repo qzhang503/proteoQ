@@ -7,7 +7,7 @@
 dl_msig(
  
     msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
-  db_path = "~\\\\proteoQ\\\\dbs\\\\msig",
+  db_path = "~/proteoQ/dbs/msig",
   overwrite = FALSE
 )
 }
@@ -20,7 +20,7 @@ base. For simplicity, only files with entrez IDs will be handled;
 files of \code{c2.all.v[...].symbols.gmt} will not be parsed.}
 
 \item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\msig"}.}
+is \code{"~/proteoQ/dbs/msig"}.}
 
 \item{overwrite}{Logical; if TRUE, overwrite the downloaded database(s). The
 default is FALSE.}

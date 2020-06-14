@@ -72,7 +72,7 @@ for models without random effects and the \code{\link[lmerTest]{lmer}} will
 be used for models with random effects.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration
-against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 See also \code{\link{normPSM}} for the format of \code{filter_} statements.
 \cr \cr \code{arrange_}: Variable argument statements for the row ordering
 against data in a primary file linked to \code{df}. See also
@@ -187,8 +187,8 @@ prnGSVA(
   verbose = FALSE,
   parallel.sz = 0,
   mx.diff = TRUE,
-  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
-               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
+  gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
+               "~/proteoQ/dbs/go/go_mm.rds"),
 )
 }
 }

@@ -101,7 +101,7 @@
 #'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
-#'@return The primary output is in \code{...\\Protein\\Protein.txt}.
+#'@return The primary output is in \code{.../Protein/Protein.txt}.
 #'
 #'@example inst/extdata/examples/normPrn_.R
 #'@import stringr dplyr tidyr purrr data.table rlang
@@ -113,9 +113,9 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
                     range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL, seed = NULL, 
                     col_select = NULL, cache = TRUE, ...) {
   
-  dir.create(file.path(dat_dir, "Protein\\Histogram"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Protein\\cache"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Protein\\log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/Histogram"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/cache"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/log"), recursive = TRUE, showWarnings = FALSE)
   
   old_opts <- options()
   on.exit(options(old_opts), add = TRUE)
@@ -154,7 +154,7 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   col_select <- ifelse(is.null(col_select), rlang::expr(Sample_ID), rlang::sym(col_select))
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  ok_existing_params(file.path(dat_dir, "Protein\\Histogram\\MGKernel_params_N.txt"))
+  ok_existing_params(file.path(dat_dir, "Protein/Histogram/MGKernel_params_N.txt"))
   
   if (is.null(label_scheme[[col_select]])) {
     col_select <- rlang::expr(Sample_ID)
@@ -168,7 +168,7 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   
   dots <- rlang::enexprs(...)
   
-  filename <- file.path(dat_dir, "Protein\\Protein.txt")
+  filename <- file.path(dat_dir, "Protein/Protein.txt")
   
   if (!file.exists(filename)) {
     stop(filename, " not found; run `Pep2Prn` first.")
@@ -186,7 +186,7 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     seed = seed, 
     range_log2r = range_log2r, 
     range_int = range_int, 
-    filepath = file.path(dat_dir, "Protein\\Histogram"), 
+    filepath = file.path(dat_dir, "Protein/Histogram"), 
     col_select = col_select, 
     !!!dots,
   )

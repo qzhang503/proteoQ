@@ -8,7 +8,7 @@ proc_gaf(db_path, fn_gaf)
 }
 \arguments{
 \item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\go"}.}
+is \code{"~/proteoQ/dbs/go"}.}
 
 \item{fn_gaf}{filename according to \code{gaf_url}}
 }

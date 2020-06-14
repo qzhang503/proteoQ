@@ -37,7 +37,7 @@ with \code{Mascot} workflows. The statement of \code{filter_peps_at =
 exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.}
 }
 \value{
-The primary output in "\code{...\\Protein\\Protein.txt}".
+The primary output in "\code{.../Protein/Protein.txt}".
 }
 \description{
 \code{Pep2Prn} summarizes \code{Peptide.txt} to an interim protein report in

@@ -57,7 +57,7 @@ annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, filena
   outnm_ppi <- paste0(fn_prefix, "_ppi.tsv")
   outnm_expr <- paste0(fn_prefix, "_expr.tsv")
 
-  write.table(ppi, file.path(dat_dir, "Protein\\String", outnm_ppi), 
+  write.table(ppi, file.path(dat_dir, "Protein/String", outnm_ppi), 
               quote = FALSE, sep = "\t", row.names = FALSE)
   
   # --- expression data ---
@@ -72,7 +72,7 @@ annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, filena
 
   suppressWarnings(df[is.na(df)] <- "") # Cytoscape compatibility
 
-  write.table(df, file.path(dat_dir, "Protein\\String", outnm_expr), 
+  write.table(df, file.path(dat_dir, "Protein/String", outnm_expr), 
               quote = FALSE, sep = "\t", row.names = FALSE)
   
 }
@@ -118,7 +118,7 @@ stringTest <- function(df = NULL, id = gene,
   
   if (score_cutoff <= 1) score_cutoff <- score_cutoff * 1000
   
-  dir.create(file.path(dat_dir, "Protein\\String\\cache"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/String/cache"), recursive = TRUE, showWarnings = FALSE)
 
   annot_stringdb(df, db_nms, id, score_cutoff, filepath, filename)
 }
@@ -203,7 +203,7 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
 #'name lookups.
 #'
 #'@param db_path Character string; the local path for database(s). The default
-#'  is \code{"~\\proteoQ\\dbs\\string"}.
+#'  is \code{"~/proteoQ/dbs/string"}.
 #'@param species Character string; the name of a species for the
 #'  \emph{conveninent} preparation of STRING databases. The species available
 #'  for the convenience feature is in one of \code{c("human", "mouse", "rat")}
@@ -245,7 +245,7 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
 #'@export
 prepString <- function(species = "human", # abbr_species = NULL, 
                        links_url = NULL, aliases_url = NULL, info_url = NULL, 
-                       db_path = "~\\proteoQ\\dbs\\string", filename = NULL, overwrite = FALSE) {
+                       db_path = "~/proteoQ/dbs/string", filename = NULL, overwrite = FALSE) {
   
   old_opts <- options()
   options(warn = 1)
@@ -408,8 +408,8 @@ prepString <- function(species = "human", # abbr_species = NULL,
 #' prepString(mouse)
 #' 
 #' load_stringdbs(
-#'   db_nms = c("~\\proteoQ\\dbs\\string\\string_hs.rds",
-#'              "~\\proteoQ\\dbs\\string\\string_mm.rds")
+#'   db_nms = c("~/proteoQ/dbs/string/string_hs.rds",
+#'              "~/proteoQ/dbs/string/string_mm.rds")
 #' )
 #' }
 #'

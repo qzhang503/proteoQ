@@ -31,16 +31,16 @@ prepString(
 
 \dontrun{
 identical(
-  readRDS(file.path("~\\proteoQ\\dbs\\string\\string_hs.rds")), 
-  readRDS(file.path("~\\proteoQ\\dbs\\string\\my_hs.rds"))
+  readRDS(file.path("~/proteoQ/dbs/string/string_hs.rds")), 
+  readRDS(file.path("~/proteoQ/dbs/string/my_hs.rds"))
 )
 }
 
 \donttest{
 # analysis: both `human` and `mouse`
 anal_prnString(
-  db_nms = c("~\\proteoQ\\dbs\\string\\string_hs.rds",
-             "~\\proteoQ\\dbs\\string\\string_mm.rds"),
+  db_nms = c("~/proteoQ/dbs/string/string_hs.rds",
+             "~/proteoQ/dbs/string/string_mm.rds"),
   score_cutoff = .9,
   filter_prots_by = exprs(prot_n_pep >= 2),
 )
@@ -49,8 +49,8 @@ anal_prnString(
 # `human` only ('unknown' species will be removed)
 # OK to include both `string_hs.rds` and `string_mm.rds`
 anal_prnString(
-  db_nms = c("~\\proteoQ\\dbs\\string\\string_hs.rds",
-             "~\\proteoQ\\dbs\\string\\string_mm.rds"),
+  db_nms = c("~/proteoQ/dbs/string/string_hs.rds",
+             "~/proteoQ/dbs/string/string_mm.rds"),
   score_cutoff = .9,
   filter_by_sp = exprs(species == "human"),
   filter_prots_by = exprs(prot_n_pep >= 2),
@@ -59,8 +59,8 @@ anal_prnString(
 
 # `mouse` only
 anal_prnString(
-  db_nms = c("~\\proteoQ\\dbs\\string\\string_hs.rds",
-             "~\\proteoQ\\dbs\\string\\string_mm.rds"),
+  db_nms = c("~/proteoQ/dbs/string/string_hs.rds",
+             "~/proteoQ/dbs/string/string_mm.rds"),
   score_cutoff = .9,
   filter_by_sp = exprs(species == "mouse"),
   filter_prots_by = exprs(prot_n_pep >= 2),
@@ -71,7 +71,7 @@ anal_prnString(
 # additional filtration by `pVals` and `log2FC`; 
 # `W16_vs_W2.pVal (W16-W2)` is a column key in `Protein_pVals.txt`
 anal_prnString(
-  db_nms = "~\\proteoQ\\dbs\\string\\string_hs.rds",
+  db_nms = "~/proteoQ/dbs/string/string_hs.rds",
   score_cutoff = .9,
   filter_by_sp = exprs(species == "human", 
                        `W16_vs_W2.pVal (W16-W2)` <= 1E-6,
@@ -81,7 +81,7 @@ anal_prnString(
 )
 
 anal_prnString(
-  db_nms = "~\\proteoQ\\dbs\\string\\string_mm.rds",
+  db_nms = "~/proteoQ/dbs/string/string_mm.rds",
   score_cutoff = .9,
   filter_by_sp = exprs(species == "mouse", 
                        `W16_vs_W2.pVal (W16-W2)` <= 1E-6,

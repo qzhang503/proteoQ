@@ -383,7 +383,7 @@ p <- ggplot(res$pca) +
   coord_fixed() + 
   geom_text(aes(x = PC1, y = PC2, label = Sample_ID), color = "gray", size = 1)
 
-ggsave(file.path(dat_dir, "Protein\\\\PCA\\\\my_ggplot2.png"))
+ggsave(file.path(dat_dir, "Protein/PCA/my_ggplot2.png"))
 
 \dontrun{
 prnPCA(

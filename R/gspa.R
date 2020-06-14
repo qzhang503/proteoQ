@@ -90,10 +90,10 @@
 #'  the formula(s) will match those used in \code{\link{pepSig}} or
 #'  \code{\link{prnSig}}.
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration
-#'  against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+#'  against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 #'  See also \code{\link{normPSM}} for the format of \code{filter_} statements.
 #'  \cr \cr \code{arrange_}: Variable argument statements for the row ordering
-#'  against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+#'  against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 #'  See also \code{\link{prnHM}} for the format of \code{arrange_} statements.
 #'@import dplyr rlang ggplot2 networkD3
 #'@importFrom magrittr %>%
@@ -188,7 +188,7 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
   check_dots(c("id", "anal_type", "var_cutoff"), ...)
   check_gset_nms(gset_nms)
   
-  dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/GSPA/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
@@ -950,7 +950,7 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = F
                        annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                        df2 = NULL, filename = NULL, ...) {
   check_dots(c("id", "anal_type", "df", "filepath"), ...)
-  dir.create(file.path(dat_dir, "Protein\\GSPA\\log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/GSPA/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)

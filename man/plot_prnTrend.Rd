@@ -83,7 +83,7 @@ the transparency of lines.}
 }
 \details{
 The function reads \code{Protein_Trend_[...].txt} files under the
-\code{...\\Protein\\Trend} directory.
+\code{.../Protein/Trend} directory.
 }
 \section{\code{Protein_Trend_[...].txt}}{
 

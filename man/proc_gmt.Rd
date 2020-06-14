@@ -35,7 +35,7 @@ automatically unless otherwise specified.}
 \item{fn_gmt}{filename of downloaded gmt results.}
 
 \item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\msig"}.}
+is \code{"~/proteoQ/dbs/msig"}.}
 
 \item{filename}{Character string; An output file name. At the \code{NULL}
 default, the name will be determined automatically at a given

@@ -504,7 +504,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
 	                                                           log2fc = col_double())), 
 	                          error = function(e) NA)
 	
-	message("Secondary file loaded: ", gsub("\\\\", "/", file.path(filepath, fml_nm, df2)))
+	message("Secondary file loaded: ", file.path(filepath, fml_nm, df2))
 
 	filter2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter2_", names(.))]
 	arrange2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange2_", names(.))]

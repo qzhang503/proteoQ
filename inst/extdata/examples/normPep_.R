@@ -210,7 +210,7 @@ pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
 pepHist(scale_log2r = TRUE, col_select = BI_1, filter_ = exprs(gene == "GAPDH"), filename = mcGAPDH.png)
 
 # heat map for `BI_1` samples
-# (outputs under `Peptide\Heatmap` folder; for help, ?pepHM)
+# (outputs under `Peptide/Heatmap` folder; for help, ?pepHM)
 pepHM(
   col_select = BI_1, 
   xmin = -2,

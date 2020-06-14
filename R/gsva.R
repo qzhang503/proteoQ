@@ -23,7 +23,7 @@
 #'  absolute log2FC smaller than the threshold will be removed from multiple
 #'  test corrections. The default is at log2(1.1).
 #'@param ... \code{filter_}: Logical expression(s) for the row filtration
-#'  against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+#'  against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 #'  See also \code{\link{normPSM}} for the format of \code{filter_} statements.
 #'  \cr \cr \code{arrange_}: Variable argument statements for the row ordering
 #'  against data in a primary file linked to \code{df}. See also
@@ -121,7 +121,7 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
   if (any(names(rlang::enexprs(...)) %in% c("expr", "gset.idx.list", "annotation"))) 
     stop(err_msg1, call. = FALSE)
 
-  dir.create(file.path(dat_dir, "Protein\\GSVA\\log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/GSVA/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
@@ -138,7 +138,7 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
 	dots <- dots[!names(dots) %in% names(fmls)]
 
 	if (rlang::is_empty(fmls)) {
-	  fml_file <-  file.path(dat_dir, "Calls\\prnSig_formulas.rda")
+	  fml_file <-  file.path(dat_dir, "Calls/prnSig_formulas.rda")
 	  if (file.exists(fml_file)) {
 	    load(file = fml_file)
 	    dots <- c(dots, prnSig_formulas)
@@ -227,7 +227,7 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
       var_cutoff, pval_cutoff, logFC_cutoff
     )) 
   
-  out_path <- file.path(dat_dir, "Protein\\GSVA\\log\\prnGSVA_log.txt")
+  out_path <- file.path(dat_dir, "Protein/GSVA/log/prnGSVA_log.txt")
   
   purrr::map(quietly_log, ~ {
     .x[[1]] <- NULL

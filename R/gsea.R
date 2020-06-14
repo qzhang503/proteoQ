@@ -182,7 +182,7 @@ prnGSEA <- function (gset_nms = "go_sets",
   
   check_dots(c("id", "anal_type", "df2"), ...)
 
-  dir.create(file.path(dat_dir, "Protein\\GSEA\\log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/GSEA/log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)

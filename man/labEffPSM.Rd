@@ -112,7 +112,7 @@ TMT labeling efficiency
 \examples{
 \donttest{
 res <- labEffPSM(
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\uniprot\\\\uniprot_mm_2014_07.fasta"),
+  fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_mm_2014_07.fasta"),
 )
 }
 }

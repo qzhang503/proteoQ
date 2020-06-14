@@ -93,8 +93,8 @@ filtration against data in a primary file of \code{Peptide[_impNA].txt} or
 }
 \value{
 The primary output is
- \code{~\\dat_dir\\Peptide\\Model\\Peptide_pVals.txt} for peptide data or
- \code{~\\dat_dir\\Protein\\Model\\Protein_pVals.txt} for protein data. At
+ \code{~/dat_dir/Peptide/Model/Peptide_pVals.txt} for peptide data or
+ \code{~/dat_dir/Protein/Model/Protein_pVals.txt} for protein data. At
  \code{impute_na = TRUE}, the corresponding outputs are
  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 }

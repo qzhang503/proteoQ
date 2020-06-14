@@ -12,11 +12,11 @@ devtools::install_github("qzhang503/proteoQ")
 library(proteoQDA)
 
 # FASTA (all platforms)
-copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
-copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
+copy_refseq_hs("~/proteoQ/dbs/fasta/refseq")
+copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 
 # PSM data (choose one of the platforms)
-dat_dir <- "~\\proteoQ\\examples"
+dat_dir <- "~/proteoQ/examples"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 choose_one <- TRUE
@@ -41,14 +41,14 @@ copy_global_fracsmry(dat_dir)
 # ==============================================
 # metadata to workspace
 library(proteoQ)
-load_expts("~\\proteoQ\\examples")
+load_expts("~/proteoQ/examples")
 
 # PSM standardization
 normPSM(
 	group_psm_by = pep_seq_mod, 
 	group_pep_by = gene, 
-	fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-						"~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+	fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
+	          "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
 	rptr_intco = 1000,
 	rm_craps = TRUE,
 	rm_krts = FALSE,

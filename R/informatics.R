@@ -654,13 +654,13 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
 
   if (is.null(df)) {
     if (id %in% c("pep_seq", "pep_seq_mod")) {
-      fn_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_pVals.txt")
-      fn_imp_p <- file.path(dat_dir, "Peptide\\Model", "Peptide_impNA_pVals.txt")
+      fn_p <- file.path(dat_dir, "Peptide/Model", "Peptide_pVals.txt")
+      fn_imp_p <- file.path(dat_dir, "Peptide/Model", "Peptide_impNA_pVals.txt")
       fn_raw <- file.path(dat_dir, "Peptide", "Peptide.txt")
       fn_imp <- file.path(dat_dir, "Peptide", "Peptide_impNA.txt")
     } else if (id %in% c("prot_acc", "gene")) {
-      fn_p <- file.path(dat_dir, "Protein\\Model", "Protein_pVals.txt")
-      fn_imp_p <- file.path(dat_dir, "Protein\\Model", "Protein_impNA_pVals.txt")
+      fn_p <- file.path(dat_dir, "Protein/Model", "Protein_pVals.txt")
+      fn_imp_p <- file.path(dat_dir, "Protein/Model", "Protein_impNA_pVals.txt")
       fn_raw <- file.path(dat_dir, "Protein", "Protein.txt")
       fn_imp <- file.path(dat_dir, "Protein", "Protein_impNA.txt")
     } else {
@@ -721,10 +721,10 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
     if (anal_type == "Model") stop("Use default file name.", call. = FALSE)
     
     if (id %in% c("pep_seq", "pep_seq_mod")) {
-      src_path <- file.path(dat_dir, "Peptide\\Model", df)
+      src_path <- file.path(dat_dir, "Peptide/Model", df)
       if (!file.exists(src_path)) src_path <- file.path(dat_dir, "Peptide", df)
     } else if (id %in% c("prot_acc", "gene")) {
-      src_path <- file.path(dat_dir, "Protein\\Model", df)
+      src_path <- file.path(dat_dir, "Protein/Model", df)
       if (!file.exists(src_path)) src_path <- file.path(dat_dir, "Protein", df)
     }
   }
@@ -736,7 +736,7 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
   
   df <- df %>% reorderCols2()
 
-  message(paste("Primary file loaded:", gsub("\\\\", "/", src_path)))
+  message(paste("Primary file loaded:", src_path))
   
   return(df)
 }

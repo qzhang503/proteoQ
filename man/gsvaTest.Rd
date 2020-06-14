@@ -87,7 +87,7 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 "NMF", "Purge", "Trend", ...)}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration
-against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 See also \code{\link{normPSM}} for the format of \code{filter_} statements.
 \cr \cr \code{arrange_}: Variable argument statements for the row ordering
 against data in a primary file linked to \code{df}. See also

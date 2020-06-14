@@ -10,7 +10,7 @@ prepMSig(
   abbr_species = NULL,
   ortho_mart = switch(species, mouse = "mmusculus_gene_ensembl", rat =
     "rnorvegicus_gene_ensembl", human = "to_itself", "unknown"),
-  db_path = "~\\\\proteoQ\\\\dbs\\\\msig",
+  db_path = "~/proteoQ/dbs/msig",
   filename = NULL,
   overwrite = FALSE
 )
@@ -49,7 +49,7 @@ for the lookup of orthologs to \code{human} genes. For species in
 automatically unless otherwise specified.}
 
 \item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\msig"}.}
+is \code{"~/proteoQ/dbs/msig"}.}
 
 \item{filename}{Character string; An output file name. At the \code{NULL}
 default, the name will be determined automatically at a given
@@ -71,15 +71,15 @@ library(proteoQ)
 ## the default `MSig` is `c2.all`
 # `human`; outputs under `db_path`
 prepMSig()
-head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_hs.rds")))
+head(readRDS(file.path("~/proteoQ/dbs/msig/msig_hs.rds")))
 
 # `mouse`
 prepMSig(species = mouse, filename = msig_mm.rds)
-head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_mm.rds")))
+head(readRDS(file.path("~/proteoQ/dbs/msig/msig_mm.rds")))
 
 # `rat`
 prepMSig(species = rat, filename = msig_rn.rds)
-head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_rn.rds")))
+head(readRDS(file.path("~/proteoQ/dbs/msig/msig_rn.rds")))
 
 # `dog`; need `ortho_mart` for species other than `human`, `mouse` and `rat`
 # (try `?biomaRt::useMart` for a list of marts)
@@ -98,8 +98,8 @@ prepMSig(
   filename = msig_cf2.rds,
 )
 
-msig_cf <- readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_cf.rds"))
-msig_cf2 <- readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_cf2.rds"))
+msig_cf <- readRDS(file.path("~/proteoQ/dbs/msig/msig_cf.rds"))
+msig_cf2 <- readRDS(file.path("~/proteoQ/dbs/msig/msig_cf2.rds"))
 identical(msig_cf, msig_cf2)
 
 ## use an `MSig`other than the default of `c2.all`
@@ -120,8 +120,8 @@ prepMSig(
 \dontrun{
 # enrichment analysis with custom `MSig`
 prnGSPA(
-  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_hs.rds",
-               "~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_mm.rds"),
+  gset_nms = c("~/proteoQ/dbs/msig/msig_hs.rds",
+               "~/proteoQ/dbs/msig/msig_mm.rds"),
 )
 }
 
