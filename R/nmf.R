@@ -29,6 +29,8 @@ analNMF <- function(df, id, rank, nrun, seed, col_group, label_scheme_sub,
     prepDM(id = !!id, scale_log2r = scale_log2r, 
            sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
     .$log2R
+  
+  label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% colnames(df))
 
   col_group <- rlang::enexpr(col_group) # optional phenotypic information
 

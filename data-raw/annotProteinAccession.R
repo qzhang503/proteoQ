@@ -195,5 +195,9 @@ foo_combine_codes <- function (filepath = file.path("C:/Results/R/proteoQ/R")) {
 }
 
 
-
+# zipped base protein.txt, peptide.txt and call pars
+foo_zip <- function () {
+  zip("my.zip", "C:/proteoQ/examples")
+  unzip("./my.zip", exdir = "~/proteoQ_demo", overwrite  = FALSE)
+}
 

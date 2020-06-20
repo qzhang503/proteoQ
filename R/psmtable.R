@@ -987,6 +987,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fasta 
     dplyr::select(-RAW_File) %>%
     dplyr::left_join(tmtinj_raw_map, by = "TMT_inj")
 
+  df_split <- df_split %>% .[names(.) %>% as.numeric() %>% sort() %>% as.character()]
+  
 	for (i in seq_along(df_split)) {
 		df_split[[i]] <- df_split[[i]] %>% dplyr::select(-TMT_inj)
 
@@ -1043,9 +1045,9 @@ pad_mascot_channels <- function(data, TMT_plex) {
     col_keys <- rep(col_keys, each = 2) 
     col_keys[which(seq_along(col_keys)%%2 == 0)] <- NA
     
-    purrr::map(col_keys, rep, each = nrow) %>% 
+    suppressMessages(purrr::map(col_keys, rep, each = nrow) %>% 
       dplyr::bind_cols() %>% 
-      `colnames<-`("")
+      `colnames<-`(""))
   }
   
   make_mascot_intensities <- function(TMT_plex, nrow) {
@@ -1068,10 +1070,10 @@ pad_mascot_channels <- function(data, TMT_plex) {
     col_keys <- rep(col_keys, each = 2) 
     col_keys[which(seq_along(col_keys)%%2 == 0)] <- -1
     
-    purrr::map(col_keys, rep, each = nrow) %>% 
+    suppressMessages(purrr::map(col_keys, rep, each = nrow) %>% 
       `names<-`(paste0("nm_", seq_along(.))) %>% 
       dplyr::bind_cols() %>% 
-      `colnames<-`("")
+      `colnames<-`(""))
   }
   
 
@@ -1124,11 +1126,11 @@ pad_mascot_channels <- function(data, TMT_plex) {
       return(holders)
     })
     
-    data <- dplyr::bind_cols(
+    data <- suppressMessages(dplyr::bind_cols(
       data %>% .[, which(names(.) != "")],
       data_r,
       data_int,
-    )
+    ))
     
     cols_no_nm <- (ncol(data) - ncol(data_r) - ncol(data_int) + 1) : ncol(data)
     colnames(data)[cols_no_nm] <- ""
@@ -1289,8 +1291,9 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 	load(file = file.path(dat_dir, "label_scheme_full.rda"))
 	TMT_plex <- TMT_plex(label_scheme_full)
 
-	filelist = list.files(path = file.path(dat_dir, "PSM/cache"),
-	                      pattern = "^TMT.*LCMS.*\\.csv$")
+	filelist <- list.files(path = file.path(dat_dir, "PSM/cache"),
+	                      pattern = "^TMT.*LCMS.*\\.csv$") %>% 
+	  reorder_files()
 
 	for (i in seq_along(filelist)) {
 		df <- read.csv(file.path(dat_dir, "PSM/cache", filelist[i]), check.names = FALSE,
@@ -1405,8 +1408,11 @@ cleanupPSM <- function(rm_outliers = FALSE) {
 mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  label_scheme_sub <- label_scheme[label_scheme$TMT_Set == set_idx & 
-                                     label_scheme$LCMS_Injection == 1, ]
+  label_scheme_sub <- label_scheme %>% 
+    dplyr::filter(TMT_Set == set_idx) %>% 
+    dplyr::mutate(min_inj = min(LCMS_Injection)) %>% 
+    dplyr::filter(LCMS_Injection == min_inj) %>% 
+    dplyr::select(-min_inj)
   
   channelInfo <- channelInfo(label_scheme_sub, set_idx)
   
@@ -1544,10 +1550,15 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_psm
     path = file.path(dat_dir, "PSM/cache"),
     pattern = "^TMT.*LCMS.*_Clean.txt$"
   ) %>%
-    reorder_files(n_TMT_sets)
+    reorder_files()
   
-  for (set_idx in seq_len(n_TMT_sets)) {
-    sublist <- filelist[grep(paste0("set*.", set_idx), filelist, ignore.case = TRUE)]
+  set_indexes <- gsub("^TMTset(\\d+).*", "\\1", filelist) %>% 
+    unique() %>% 
+    as.integer() %>% 
+    sort() 
+  
+  for (set_idx in set_indexes) {
+    sublist <- filelist[grep(paste0("^TMTset", set_idx, "_"), filelist, ignore.case = TRUE)]
     
     out_fn <- data.frame(Filename = 
                            do.call('rbind', strsplit(as.character(sublist), 
@@ -2213,7 +2224,7 @@ PSM2Pep <- function (method_psm_pep = c("median", "mean", "weighted.mean", "top.
   dir.create(file.path(dat_dir, "Peptide/cache"), recursive = TRUE, showWarnings = FALSE)
   
   filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
-    reorder_files(n_TMT_sets(label_scheme_full))
+    reorder_files()
   
   purrr::walk(as.list(filelist), ~ {
     fn_prx <- gsub("_PSM_N.txt", "", .x, fixed = TRUE)
@@ -2713,6 +2724,8 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
     dplyr::select(-RAW_File) %>%
     dplyr::left_join(tmtinj_raw_map, by = "TMT_inj")
 
+  df_split <- df_split %>% .[names(.) %>% as.numeric() %>% sort() %>% as.character()]
+  
   for (i in seq_along(df_split)) {
     df_split[[i]] <- df_split[[i]] %>% dplyr::select(-TMT_inj)
     
@@ -2764,10 +2777,15 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
     path = file.path(dat_dir, "PSM/cache"),
     pattern = "^TMT.*LCMS.*_Clean.txt$"
   ) %>%
-    reorder_files(., n_TMT_sets)
+    reorder_files()
   
-  for (set_idx in seq_len(n_TMT_sets)) {
-    sublist <- filelist[grep(paste0("set*.", set_idx), filelist, ignore.case = TRUE)]
+  set_indexes <- gsub("^TMTset(\\d+).*", "\\1", filelist) %>% 
+    unique() %>% 
+    as.integer() %>% 
+    sort() 
+  
+  for (set_idx in set_indexes) {
+    sublist <- filelist[grep(paste0("^TMTset", set_idx, "_"), filelist, ignore.case = TRUE)]
     
     out_fn <- data.frame(Filename = 
                            do.call('rbind', strsplit(as.character(sublist), '.txt', fixed = TRUE))) %>%
@@ -3172,6 +3190,8 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", fas
     dplyr::select(-RAW_File) %>%
     dplyr::left_join(tmtinj_raw_map, by = "TMT_inj")
   
+  df_split <- df_split %>% .[names(.) %>% as.numeric() %>% sort() %>% as.character()]
+  
   for (i in seq_along(df_split)) {
     df_split[[i]] <- df_split[[i]] %>% dplyr::select(-TMT_inj)
     
@@ -3224,10 +3244,15 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
     path = file.path(dat_dir, "PSM/cache"),
     pattern = "^TMT.*LCMS.*_Clean.txt$"
   ) %>%
-    reorder_files(., n_TMT_sets)
+    reorder_files()
   
-  for(set_idx in seq_len(n_TMT_sets)){
-    sublist <- filelist[grep(paste0("set*.", set_idx), filelist, ignore.case = TRUE)]
+  set_indexes <- gsub("^TMTset(\\d+).*", "\\1", filelist) %>% 
+    unique() %>% 
+    as.integer() %>% 
+    sort() 
+  
+  for(set_idx in set_indexes) {
+    sublist <- filelist[grep(paste0("^TMTset", set_idx, "_"), filelist, ignore.case = TRUE)]
     
     out_fn <- data.frame(Filename = 
                            do.call('rbind', strsplit(as.character(sublist),

@@ -383,15 +383,22 @@ pepMDS(
 library(ggplot2)
 res <- prnMDS(filename = foo.png)
 
-p <- ggplot(res) +
-  geom_point(aes(x = Coordinate.1, y = Coordinate.2, colour = Color, shape = Shape, alpha = Alpha), 
-             size = 4, stroke = 0.02) + 
-  labs(title = "", x = expression("Coordinate 1"), y = expression("Coordinate 2")) +
+p <- ggplot(res, aes(x = Coordinate.1, y = Coordinate.2)) +
+  geom_point(aes(colour = Color, shape = Shape, alpha = Alpha), size = 4, stroke = 0.02) + 
+  stat_ellipse(aes(colour = Shape), linetype = 2) + 
+  labs(title = "", x = "Coordinate 1", y = "Coordinate 2") +
   coord_fixed() + 
   geom_text(aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID), color = "gray", size = 1)
 
 ggsave(file.path(dat_dir, "Protein/MDS/my_ggplot2.png"))
 
+p_fil <- ggplot(res, aes(x = Coordinate.1, y = Coordinate.2)) +
+  geom_point(aes(colour = Color, shape = Shape, alpha = Alpha), size = 4, stroke = 0.02) + 
+  stat_ellipse(aes(fill = Shape), geom = "polygon", alpha = .4) + 
+  labs(title = "", x = "Coordinate 1", y = "Coordinate 2") +
+  coord_fixed() 
+
+ggsave(file.path(dat_dir, "Protein/MDS/my_ggplot2_fil.png"))
 
 \dontrun{
 prnMDS(

@@ -29,6 +29,8 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	  prepDM(id = !!id, scale_log2r = scale_log2r, 
 	         sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
 	  .$log2R
+	
+	label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% colnames(df_num))
 
 	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)

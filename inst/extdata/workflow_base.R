@@ -215,18 +215,22 @@ prnPCA(
 
 ### correlation
 # peptide logFC, PNNL subset with sample-order supervision
-pepCorr_logFC(
+res <- pepCorr_logFC(
 	col_select = PNNL,
 	col_order = Order, 
 	filename = pnnl_ord.png
 )
 
+# head(res)
+
 # protein logFC, WHIM2 subset with supervision
-prnCorr_logFC(
+res <- prnCorr_logFC(
 	col_select = W2,
 	col_order = Group,
 	filename = w2_ord.png,
 )
+
+# head(res)
 
 ### heat map
 # protein, human subset with row-clustering and subtrees
@@ -276,6 +280,14 @@ anal_prnTrend(
 # protein visualization, sample-order supervision
 plot_prnTrend(
   col_order = Order,
+)
+
+# Make sure that Cytoscape is open.
+# Also note that "Protein_Trend_Z_nclust5.txt" is a secondary data file.
+cluego(
+  df2 = Protein_Trend_Z_nclust5.txt, 
+  species = c(human = "Homo Sapiens"), 
+  n_clust = c(3, 5)
 )
 
 ### NMF

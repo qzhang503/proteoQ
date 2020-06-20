@@ -308,7 +308,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
   filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
-    reorder_files(n_TMT_sets(label_scheme_full))
+    reorder_files()
   
   dir.create(file.path(dat_dir, "PSM/Copy"), recursive = TRUE, showWarnings = FALSE)
 

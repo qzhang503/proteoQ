@@ -105,10 +105,25 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
 #' @import dplyr
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
-reorder_files <- function(filelist, n_TMT_sets) {
+reorder_files <- function(filelist) {
   newlist <- NULL
-  for (i in seq_len(n_TMT_sets))
-    newlist <- c(newlist, filelist[grep(paste0("set*.",i), filelist, ignore.case = TRUE)])
+  
+  tmt_sets <- gsub("^TMTset(\\d+).*", "\\1", filelist) %>% unique() %>% as.integer() %>% sort() 
+  lcms_injs <- gsub("^.*_LCMSinj(\\d+).*", "\\1", filelist) %>% unique() %>% as.integer() %>% sort()
+  
+  if (anyNA(tmt_sets)) {
+    stop("Values under `expt_smry.xlsx::TMT_Set` need to be integers.", call. = FALSE)
+  }
+  
+  if (anyNA(lcms_injs)) {
+    stop("Values under `expt_smry.xlsx::LCMS_Injection` need to be integers.", call. = FALSE)
+  }
+  
+  for (i in tmt_sets) {
+    # newlist <- c(newlist, filelist[grep(paste0("TMTset*.",i), filelist, ignore.case = TRUE)])
+    newlist <- c(newlist, filelist[grep(paste0("TMTset", i, "_"), filelist, ignore.case = TRUE)])
+  }
+  
   return(newlist)
 }
 
@@ -2407,6 +2422,9 @@ my_complete_cases <- function (df, scale_log2r, label_scheme_sub) {
   
   NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
   
+  # in case that reference(s) are included in label_scheme_sub, 
+  # the values are zero for single ref or non-NA/NaN for multi ref 
+  # and will not affect the complete.cases assessment
   rows <- df %>%
     dplyr::select(grep(NorZ_ratios, names(.))) %>%
     `colnames<-`(label_scheme$Sample_ID) %>%

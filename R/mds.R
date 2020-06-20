@@ -450,6 +450,9 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
     warning("The method for class 'formula' is not yet available in proteoQ.", call. = FALSE)
   }
 
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  
   res <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots) %>% 
@@ -461,16 +464,17 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
       type = type, 
       !!!anal_dots)
       
-  df <- res$PCA
-  df <- df %>% cmbn_meta(label_scheme_sub)
+  df <- res$x %>% 
+    data.frame(check.names = FALSE) %>% 
+    cmbn_meta(label_scheme_sub) %T>% 
+    readr::write_tsv(file.path(filepath, paste0(fn_prefix, "_res.txt")))
+  
   prop_var <- res$prop_var %>% 
     gsub("%", "", .) %>% 
     as.numeric() %>% 
     paste0("%")
-  rm(res)
-  
-  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-  fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  res$pca <- df
+  res$prop_var <- prop_var
 
 	col_color <- rlang::enexpr(col_color)
 	col_fill <- rlang::enexpr(col_fill)
@@ -706,7 +710,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)), 
 	                                   plot = p, !!!dots)))
 	
-	invisible(list(pca = df, var = prop_var))
+	invisible(res)
 }
 
 
@@ -729,6 +733,8 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
 	             sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
 	  .$log2R
+	
+	label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% colnames(df))
 	
 	center = FALSE # not matter to `dist` calculation
 	if (center) df <- sweep(df, 1, rowMeans(df, na.rm = TRUE), "-")
@@ -790,7 +796,6 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 #' @importFrom MASS isoMDS
 #' @importFrom magrittr %>%
 scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ...) {
-  
   dots <- rlang::enexprs(...)
   id <- rlang::as_string(rlang::enexpr(id))
   
@@ -810,16 +815,12 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ..
   if (type == "obs") {
     df_t <- df %>% 
       t() %>%
-      data.frame(check.names = FALSE) %>%
-      bind_cols(label_scheme_sub)
-    
+      data.frame(check.names = FALSE) 
+
     pr_out <- local({
-      tempdata <- df_t %>% dplyr::select(which(colnames(.) %in% rownames(df)))
-      pca_call <- rlang::expr(stats::prcomp(x = !!tempdata, scale. = !!scale_log2r, !!!dots))
+      pca_call <- rlang::expr(stats::prcomp(x = !!df_t, scale. = !!scale_log2r, !!!dots))
       rlang::eval_bare(pca_call, env = caller_env())
     })
-    
-    rownames(pr_out$x) <- label_scheme_sub$Sample_ID
     
     prop_var <- summary(pr_out)$importance[2, ] %>% round(., digits = 3) %>% scales::percent()
     
@@ -832,18 +833,19 @@ scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ..
       rlang::eval_bare(pca_call, env = caller_env())
     })
     
-    df_pca <- pr_out$x %>%
+    prop_var <- summary(pr_out)$importance[2, ] %>% round(., digits = 3) %>% scales::percent()
+    
+    pr_out$x <- pr_out$x %>%
       data.frame(check.names = FALSE) %>%
       `names<-`(gsub("^PC", "Coordinate\\.", names(.)))
-    
-    prop_var <- summary(pr_out)$importance[2, ] %>% round(., digits = 3) %>% scales::percent()    
+
   } else {
     stop("Unkown `type` for PCA.", call. = FALSE)
   }
 
-  # save pca results
-  
-  return(list("PCA" = df_pca, "prop_var" = prop_var))
+  pr_out$prop_var <- prop_var
+
+  return(pr_out)
 }
 
 

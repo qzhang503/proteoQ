@@ -11,11 +11,11 @@ newColnames <- function(i, x, label_scheme) {
   label_scheme_sub <- label_scheme %>%
     dplyr::filter(TMT_Set == i)
   
-  cols <- grep(paste0("[RI][0-9]{3}[NC]*_", i, "$"), names(x))
-  nm_channel <- gsub(paste0("([RI][0-9]{3}[NC]*)_", i, "$"), "\\1", names(x)[cols])
+  cols <- grep(paste0("[RI][0-9]{3}[NC]{0,1}_", i, "$"), names(x))
+  nm_channel <- gsub(paste0("([RI][0-9]{3}[NC]{0,1})_", i, "$"), "\\1", names(x)[cols])
   names(x)[cols] <- paste0(nm_channel, " (", as.character(label_scheme_sub$Sample_ID), ")")
   
-  cols <- grep("[RI][0-9]{3}.*\\s+\\(.*\\)$", names(x))
+  cols <- grep("[RI][0-9]{3}[NC]{0,1}\\s+\\(.*\\)$", names(x))
   
   # cols with new names go first
   if (length(cols) < ncol(x)) x <- dplyr::bind_cols(x[, cols], x[, -cols, drop = FALSE])
@@ -86,7 +86,12 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
       tidyr::spread(ID, value)
     rm(Levels)
     
-    for (set_idx in seq_len(n_TMT_sets(label_scheme))) {
+    set_indexes <- gsub("^.*TMTset(\\d+).*", "\\1", filelist) %>% 
+      unique() %>% 
+      as.integer() %>% 
+      sort()
+    
+    for (set_idx in set_indexes) {
       df_num <- newColnames(set_idx, df_num, label_scheme)
     }
     
