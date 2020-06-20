@@ -338,11 +338,14 @@ cluego(
  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
- \code{\link{cluego}} for the visualization of \code{\link{anal_prnTrend}} via \code{Cytoscape} \cr 
- \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
+ analysis and visualization \cr \code{\link{cluego}} for the visualization of
+ \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} via
+ \code{Cytoscape/ClueGO} \cr \code{\link{anal_pepNMF}},
+ \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+ \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+ \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
+ analysis and visualization \cr
  
  \emph{Custom databases} \cr 
  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 

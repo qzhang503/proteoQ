@@ -29,6 +29,8 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 	  prepDM(id = !!id, scale_log2r = scale_log2r, 
 	         sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
 	  .$log2R
+	
+	label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% colnames(df_num))
 
 	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)
@@ -236,9 +238,9 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     )
 
     if (!is.null(dim(df))) {
-      message(paste("File loaded:", gsub("\\\\", "/", src_path)))
+      message(paste("File loaded:", src_path))
     } else {
-      stop(paste("Non-existed file or directory:", gsub("\\\\", "/", src_path)))
+      stop(paste("Non-existed file or directory:", src_path))
     }
     
     Levels <- label_scheme_sub %>% 
@@ -389,11 +391,14 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{cluego}} for the visualization of \code{\link{anal_prnTrend}} via \code{Cytoscape} \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend
+#'  analysis and visualization \cr \code{\link{cluego}} for the visualization of
+#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} via
+#'  \code{Cytoscape/ClueGO} \cr \code{\link{anal_pepNMF}},
+#'  \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'  \code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF
+#'  analysis and visualization \cr
 #'  
 #'  \emph{Custom databases} \cr 
 #'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
@@ -439,7 +444,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
   if (any(names(rlang::enexprs(...)) %in% c("x"))) stop(err_msg1, call. = FALSE)
   if (any(names(rlang::enexprs(...)) %in% c("centers"))) stop(err_msg2, call. = FALSE)
 
-  dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/Trend/log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
@@ -468,7 +473,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'\code{\link{anal_prnTrend}}.
 #'
 #'The function reads \code{Protein_Trend_[...].txt} files under the
-#'\code{...\\Protein\\Trend} directory.
+#'\code{.../Protein/Trend} directory.
 #'
 #'@section \code{Protein_Trend_[...].txt}:
 #'
@@ -583,7 +588,7 @@ plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL,
                            df2 = NULL, filename = NULL, theme = NULL, ...) {
   check_dots(c("id", "anal_type", "df", "col_group", "filepath"), ...)
   
-  dir.create(file.path(dat_dir, "Protein\\Trend\\log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/Trend/log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)

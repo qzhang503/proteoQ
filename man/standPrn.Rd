@@ -73,7 +73,7 @@ number of iterations allowed; \cr \code{epsilon}, tolerance limit for
 declaring algorithm convergence.}
 }
 \value{
-The primary output is in \code{...\\Protein\\Protein.txt}.
+The primary output is in \code{.../Protein/Protein.txt}.
 }
 \description{
 \code{standPrn} standardizes protein results from \code{\link{Pep2Prn}} with
@@ -309,7 +309,7 @@ prnHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
 prnHist(scale_log2r = TRUE, col_select = BI_1, filter_ = exprs(gene == "GAPDH"), filename = mcGAPDH.png)
 
 # heat map
-# (outputs under `Protein\Heatmap` folder; for help, ?pepHM)
+# (outputs under `Protein/Heatmap` folder; for help, ?pepHM)
 prnHM(
   col_select = BI_1, 
   xmin = -2,

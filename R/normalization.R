@@ -158,9 +158,9 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   
   # add mean-deviation info for `expt_smry::Select`ed samples
   add_mean_dev <- function (df, label_scheme_fit) {
-    if (grepl("Peptide\\\\", filepath)) {
+    if (grepl("Peptide\\\\", filepath) || grepl("Peptide/", filepath)) {
       prefix <- "pep_mean_"
-    } else if (grepl("Protein\\\\", filepath)) {
+    } else if (grepl("Protein\\\\", filepath) || grepl("Protein/", filepath)) {
       prefix <- "prot_mean_"
     } else {
       return(df)
@@ -300,8 +300,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
       run_scripts <- FALSE
       if (run_scripts) {
         if (anyNA(params$Sample_ID)) {
-          try(unlink(file.path(dat_dir, "Peptide\\Histogram\\MGKernel_params_[NZ].txt")))
-          try(unlink(file.path(dat_dir, "Protein\\Histogram\\MGKernel_params_[NZ].txt")))
+          try(unlink(file.path(dat_dir, "Peptide/Histogram/MGKernel_params_[NZ].txt")))
+          try(unlink(file.path(dat_dir, "Protein/Histogram/MGKernel_params_[NZ].txt")))
   
           missing_samples <- local({
             par_samples <- params$Sample_ID %>% unique() %>% .[!is.na(.)]

@@ -4,13 +4,13 @@
 # ===================================
 # fasta (all platforms)
 library(proteoQDA)
-fasta_dir <- "~\\proteoQ\\dbs\\fasta\\refseq"
+fasta_dir <- "~/proteoQ/dbs/fasta/refseq"
 dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
 copy_refseq_hs(fasta_dir)
 copy_refseq_mm(fasta_dir)
 
 # working directory (all platforms)
-dat_dir <- "~\\proteoQ\\examples"
+dat_dir <- "~/proteoQ/examples"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 # metadata (all platforms)
@@ -35,7 +35,7 @@ if (!choose_one) {
 # PSM, peptide and protein processing
 # ===================================
 library(proteoQ)
-load_expts("~\\proteoQ\\examples")
+load_expts("~/proteoQ/examples")
 
 # PSM data standardization
 normPSM(
@@ -45,8 +45,8 @@ normPSM(
   annot_kinases = TRUE, 
   
   # no default and required
-  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
-            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
 )
 
 # optional PSM purging
@@ -119,13 +119,13 @@ prnSig(impute_na = TRUE)
 }
 
 \dontrun{
-load_expts(dat_dir = "~\\proteoQ\\examples", expt_smry = "expt_smry.xlsx")
+load_expts(dat_dir = "~/proteoQ/examples", expt_smry = "expt_smry.xlsx")
 
 # not working; `expt_smry = my_expt` is an expression
 my_expt <- "expt_smry.xlsx"
-load_expts(dat_dir = "~\\proteoQ\\examples", expt_smry = my_expt)
+load_expts(dat_dir = "~/proteoQ/examples", expt_smry = my_expt)
 
 # need unquoting; 
 # see also: https://dplyr.tidyverse.org/articles/programming.html
-load_expts(dat_dir = "~\\proteoQ\\examples", expt_smry = !!my_expt)
+load_expts(dat_dir = "~/proteoQ/examples", expt_smry = !!my_expt)
 }

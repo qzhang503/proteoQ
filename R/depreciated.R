@@ -11,7 +11,7 @@
 #'@seealso \code{\link{anal_prnString}} for protein-protein interaction
 #'  networks.
 #'@export
-dl_stringdbs <- function(species = "human", db_path = "~\\proteoQ\\dbs\\string", overwrite = FALSE) {
+dl_stringdbs <- function(species = "human", db_path = "~/proteoQ/dbs/string", overwrite = FALSE) {
   species <- rlang::as_string(rlang::enexpr(species))
   db_path <- create_db_path(db_path)
   

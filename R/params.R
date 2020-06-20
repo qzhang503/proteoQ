@@ -24,6 +24,17 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	  ok <- (!is.na(x)) & (x != FALSE) & (x != 0)
 	}
 	
+	rm_empty_expts <- function (label_scheme_full, TMT_plex) {
+	  label_scheme_full %>% 
+	    tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = FALSE) %>% 
+	    dplyr::group_by(TMT_inj) %>% 
+	    dplyr::mutate(.count = sum(is.na(Sample_ID))) %>% 
+	    dplyr::filter(.count != TMT_plex) %>% 
+	    dplyr::ungroup() %>% 
+	    dplyr::select(-TMT_inj, -.count)
+	}
+	
+	
 	if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
 
 	if (!file.exists(file.path(dat_dir, filename)))
@@ -42,7 +53,7 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	} else {
 		stop(filename, " needs to be '.xls' or '.xlsx'.")
 	}
-	
+
 	label_scheme_full <- label_scheme_full %>% 
 	  dplyr::mutate(Sample_ID = ifelse(grepl("^Empty\\.[0-9]+", Sample_ID), NA, Sample_ID))
 	
@@ -151,11 +162,20 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	  tidyr::fill(one_of("TMT_Set", "LCMS_Injection", "RAW_File")) %>%
 	  
 	  tidyr::complete(TMT_Set, LCMS_Injection, TMT_Channel) %>%
+	  rm_empty_expts(TMT_plex) %>% 
 	  tidyr::fill(one_of("TMT_Set", "LCMS_Injection", "RAW_File")) %>% 
 	  dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
 	  
 	  dplyr::mutate(TMT_Channel = factor(TMT_Channel, levels = TMT_levels)) %>%
 	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
+	
+	if (!rlang::is_integerish(label_scheme_full$TMT_Set)) {
+	  stop("Values under `expt_smry.xlsx::TMT_Set` need to be integers.", call. = FALSE)
+	}
+	
+	if (!rlang::is_integerish(label_scheme_full$LCMS_Injection)) {
+	  stop("Values under `expt_smry.xlsx::LCMS_Injection` need to be integers.", call. = FALSE)
+	}
 
 	# add IDs to unused TMT channels
 	label_scheme_full <- local({
@@ -388,7 +408,20 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	  fraction_scheme <- fraction_scheme %>% 
 	    tidyr::fill(TMT_Set, LCMS_Injection) %>% 
 	    dplyr::group_by(TMT_Set, LCMS_Injection) %>% 
-	    dplyr::mutate(Fraction = row_number()) 
+	    dplyr::mutate(Fraction = row_number()) %>% 
+	    dplyr::arrange(TMT_Set, LCMS_Injection, Fraction)
+	  
+	  if (!rlang::is_integerish(fraction_scheme$TMT_Set)) {
+	    stop("Values under `frac_smry.xlsx::TMT_Set` need to be integers.", call. = FALSE)
+	  }
+	  
+	  if (!rlang::is_integerish(fraction_scheme$LCMS_Injection)) {
+	    stop("Values under `frac_smry.xlsx::LCMS_Injection` need to be integers.", call. = FALSE)
+	  }
+	  
+	  if (!rlang::is_integerish(fraction_scheme$Fraction)) {
+	    stop("Values under `frac_smry.xlsx::Fraction` need to be integers.", call. = FALSE)
+	  }
 
 	  wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
 	  openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
@@ -415,22 +448,13 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 		  dplyr::group_by(TMT_Set, LCMS_Injection) %>%
 		  dplyr::mutate(Fraction = row_number())
 		
-		run_scripts <- FALSE
-		if (run_scripts) {
-  		fraction_scheme <- label_scheme_full %>%
-  			dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
-  			dplyr::filter(!duplicated(RAW_File)) %>%
-  			dplyr::group_by(TMT_Set, LCMS_Injection) %>%
-  			dplyr::mutate(Fraction = row_number())
-		}
-		
 		if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
 		  stop("\nDuplicated `RAW_File` names detected during the auto-generation of `", filename, "`.\n",
 		       "This may occur when searching the same RAW files with different parameter sets.\n", 
 		       "To distinguish, create manually `frac_smry.xlsx` with column `PSM_File`:\n", 
 		       tbl_mascot, call. = FALSE)
 		}	
-
+		
 		wb <- openxlsx::createWorkbook()
 		openxlsx::addWorksheet(wb, sheetName = "Fractions")
 		openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
@@ -828,15 +852,65 @@ check_raws <- function(df) {
   load(file = file.path(dat_dir, "fraction_scheme.rda"))
 
   ## program-generated frac_smry.xlsx may be based on wrong information from expt_smry.xlsx
-  ls_raws <- label_scheme_full$RAW_File %>% unique()
-  fs_raws <- fraction_scheme$RAW_File %>% unique()
-  if (!(all(is.na(ls_raws)) | all(ls_raws %in% fs_raws))) {
-    load(file.path(dat_dir, "Calls", "load_expts.rda"))
-    fn_frac <- call_pars$frac_smry
-    unlink(file.path(dat_dir, fn_frac))
-    prep_fraction_scheme(dat_dir, fn_frac)
-    load(file = file.path(dat_dir, "fraction_scheme.rda"))
-  }
+  local({
+    ls_raws <- label_scheme_full$RAW_File %>% unique()
+    fs_raws <- fraction_scheme$RAW_File %>% unique()
+    if (!(all(is.na(ls_raws)) | all(ls_raws %in% fs_raws))) {
+      load(file.path(dat_dir, "Calls", "load_expts.rda"))
+      fn_frac <- call_pars$frac_smry
+      unlink(file.path(dat_dir, fn_frac))
+      prep_fraction_scheme(dat_dir, fn_frac)
+      load(file = file.path(dat_dir, "fraction_scheme.rda"))
+    }    
+  })
+
+  local({
+    ls_tmt <- unique(label_scheme$TMT_Set)
+    fs_tmt <- unique(fraction_scheme$TMT_Set)
+    extra_fs_tmt <- fs_tmt %>% .[! . %in% ls_tmt]
+    extra_ls_tmt <- ls_tmt %>% .[! . %in% fs_tmt]
+
+    if (!purrr::is_empty(extra_fs_tmt)) {
+      stop("TMT_Set ", purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
+           " in fraction scheme not found in label scheme.", 
+           call. = FALSE)
+    }
+    
+    if (!purrr::is_empty(extra_ls_tmt)) {
+      stop("TMT_Set ", purrr::reduce(extra_ls_tmt, paste, sep = ", "), 
+           " in label scheme not found in fraction scheme.", 
+           call. = FALSE)
+    }
+  })
+  
+  local({
+    ls_tmtinj <- label_scheme_full %>% 
+      tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>% 
+      dplyr::select(TMT_inj) %>% 
+      unique() %>% 
+      unlist()
+    
+    fs_tmtinj <- fraction_scheme %>% 
+      tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>% 
+      dplyr::select(TMT_inj) %>% 
+      unique() %>% 
+      unlist()
+    
+    extra_fs_tmt <- fs_tmtinj %>% .[! . %in% ls_tmtinj]
+    extra_ls_tmt <- ls_tmtinj %>% .[! . %in% fs_tmtinj]
+    
+    if (!purrr::is_empty(extra_fs_tmt)) {
+      stop("The combination of TMT_Set & LCMS ", purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
+           " in fraction scheme not found in label scheme.", 
+           call. = FALSE)
+    }
+    
+    if (!purrr::is_empty(extra_ls_tmt)) {
+      stop("The combination of TMT_Set & LCMS ", purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
+           " in label scheme not found in fraction scheme.", 
+           call. = FALSE)
+    }
+  })
   
   tmtinj_raw <- fraction_scheme %>%
     tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>%

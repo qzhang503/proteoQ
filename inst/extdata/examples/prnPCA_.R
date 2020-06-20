@@ -11,7 +11,7 @@ scale_log2r <- TRUE
 # peptides, all samples
 pepPCA(
   col_select = Select, 
-  filter_peps_by = exprs(pep_n_psm >= 10),
+  filter_peps_by = exprs(pep_n_psm >= 3),
   show_ids = FALSE, 
   filename = "peps_rowfil.png",
 )
@@ -196,14 +196,26 @@ res <- prnPCA(filename = foo.png)
 
 # names(res)
 
-p <- ggplot(res$pca) +
-  geom_point(aes(x = PC1, y = PC2, colour = Color, shape = Shape, alpha = Alpha), 
-             size = 4, stroke = 0.02) + 
-  labs(title = "", x = paste0("PC1 (", res$var[1], ")"), y = paste0("PC2 (", res$var[2], ")")) +
+p <- ggplot(res$pca, aes(x = PC1, y = PC2)) +
+  geom_point(aes(colour = Color, shape = Shape, alpha = Alpha), size = 4, stroke = 0.02) + 
+  stat_ellipse(aes(colour = Shape), linetype = 2) + 
+  labs(title = "", 
+       x = paste0("PC1 (", res$prop_var[1], ")"), 
+       y = paste0("PC2 (", res$prop_var[2], ")")) +
   coord_fixed() + 
-  geom_text(aes(x = PC1, y = PC2, label = Sample_ID), color = "gray", size = 1)
+  geom_text(aes(label = Sample_ID), color = "gray", size = 1)
 
-ggsave(file.path(dat_dir, "Protein\\PCA\\my_ggplot2.png"))
+ggsave(file.path(dat_dir, "Protein/PCA/my_ggplot2.png"))
+
+p_fil <- ggplot(res$pca, aes(PC1, PC2)) +
+  geom_point(aes(colour = Color, shape = Shape, alpha = Alpha), size = 4, stroke = 0.02) + 
+  stat_ellipse(aes(fill = Shape), geom = "polygon", alpha = .4) + 
+  labs(title = "", 
+       x = paste0("PC1 (", res$prop_var[1], ")"), 
+       y = paste0("PC2 (", res$prop_var[2], ")")) +
+  coord_fixed() 
+
+ggsave(file.path(dat_dir, "Protein/PCA/my_ggplot2_fil.png"))
 
 \dontrun{
 prnPCA(

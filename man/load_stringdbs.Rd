@@ -24,8 +24,8 @@ prepString(human)
 prepString(mouse)
 
 load_stringdbs(
-  db_nms = c("~\\\\proteoQ\\\\dbs\\\\string\\\\string_hs.rds",
-             "~\\\\proteoQ\\\\dbs\\\\string\\\\string_mm.rds")
+  db_nms = c("~/proteoQ/dbs/string/string_hs.rds",
+             "~/proteoQ/dbs/string/string_mm.rds")
 )
 }
 

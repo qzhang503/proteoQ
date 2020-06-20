@@ -106,7 +106,7 @@ proteo_hm(
   df = Protein_delta.txt, 
   id = gene, 
   df_meta = hm_meta.xlsx, 
-  filepath = file.path(dat_dir, "Protein\\\\Heatmap"), 
+  filepath = file.path(dat_dir, "Protein/Heatmap"), 
   filename = "kin_delta.png",
   complete_cases = FALSE, 
   annot_cols = NULL, 

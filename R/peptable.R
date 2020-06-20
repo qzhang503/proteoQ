@@ -11,11 +11,11 @@ newColnames <- function(i, x, label_scheme) {
   label_scheme_sub <- label_scheme %>%
     dplyr::filter(TMT_Set == i)
   
-  cols <- grep(paste0("[RI][0-9]{3}[NC]*_", i, "$"), names(x))
-  nm_channel <- gsub(paste0("([RI][0-9]{3}[NC]*)_", i, "$"), "\\1", names(x)[cols])
+  cols <- grep(paste0("[RI][0-9]{3}[NC]{0,1}_", i, "$"), names(x))
+  nm_channel <- gsub(paste0("([RI][0-9]{3}[NC]{0,1})_", i, "$"), "\\1", names(x)[cols])
   names(x)[cols] <- paste0(nm_channel, " (", as.character(label_scheme_sub$Sample_ID), ")")
   
-  cols <- grep("[RI][0-9]{3}.*\\s+\\(.*\\)$", names(x))
+  cols <- grep("[RI][0-9]{3}[NC]{0,1}\\s+\\(.*\\)$", names(x))
   
   # cols with new names go first
   if (length(cols) < ncol(x)) x <- dplyr::bind_cols(x[, cols], x[, -cols, drop = FALSE])
@@ -86,7 +86,12 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
       tidyr::spread(ID, value)
     rm(Levels)
     
-    for (set_idx in seq_len(n_TMT_sets(label_scheme))) {
+    set_indexes <- gsub("^.*TMTset(\\d+).*", "\\1", filelist) %>% 
+      unique() %>% 
+      as.integer() %>% 
+      sort()
+    
+    for (set_idx in set_indexes) {
       df_num <- newColnames(set_idx, df_num, label_scheme)
     }
     
@@ -175,7 +180,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     n_comp = 1L,
     range_log2r = c(0, 100),
     range_int = c(0, 100),
-    filepath = file.path(dat_dir, "Peptide\\Histogram"),
+    filepath = file.path(dat_dir, "Peptide/Histogram"),
     col_select = rlang::expr(Sample_ID), 
   )
 }
@@ -275,8 +280,8 @@ load_prior <- function(filename, id) {
     dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0) 
   
   if (! id %in% names(df)) {
-    try(unlink(file.path(dat_dir, "Peptide\\Peptide.txt")))
-    try(unlink(file.path(dat_dir, "Protein\\Protein.txt")))
+    try(unlink(file.path(dat_dir, "Peptide/Peptide.txt")))
+    try(unlink(file.path(dat_dir, "Protein/Protein.txt")))
     stop("`Peptide.txt` deleted as column `", id, "` not available.", call. = FALSE)
   }
   
@@ -414,7 +419,7 @@ fmt_num_cols <- function (df) {
 #'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
-#'@return The primary output is in \code{...\\Peptide\\Peptide.txt}.
+#'@return The primary output is in \code{.../Peptide/Peptide.txt}.
 #'
 #'@example inst/extdata/examples/mergePep_.R
 #'@import stringr dplyr tidyr purrr data.table rlang
@@ -423,11 +428,11 @@ fmt_num_cols <- function (df) {
 #'@importFrom plyr ddply
 #'@export
 mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
-  dir.create(file.path(dat_dir, "Peptide\\cache"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide\\Histogram"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\raw"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide\\log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/cache"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/Histogram"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/raw"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/purged"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/log"), recursive = TRUE, showWarnings = FALSE)
   
   old_opts <- options()
   options(warn = 1)
@@ -443,7 +448,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
-  filename <- file.path(dat_dir, "Peptide\\Peptide.txt")
+  filename <- file.path(dat_dir, "Peptide/Peptide.txt")
   
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
@@ -457,7 +462,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
     quiet_out <- purrr::quietly(sd_violin)(
       df = df, 
       id = !!group_pep_by, 
-      filepath = file.path(dat_dir, "Peptide\\log2FC_cv\\raw\\Peptide_sd.png"), 
+      filepath = file.path(dat_dir, "Peptide/log2FC_cv/raw/Peptide_sd.png"), 
       width = 8 * n_TMT_sets(label_scheme), 
       height = 8, 
       type = "log2_R", 
@@ -609,7 +614,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
 #'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
-#'@return The primary output is in \code{...\\Peptide\\Peptide.txt}.
+#'@return The primary output is in \code{.../Peptide/Peptide.txt}.
 #'
 #'@example inst/extdata/examples/normPep_.R
 #'
@@ -631,9 +636,9 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  ok_existing_params(file.path(dat_dir, "Peptide\\Histogram\\MGKernel_params_N.txt"))
+  ok_existing_params(file.path(dat_dir, "Peptide/Histogram/MGKernel_params_N.txt"))
 
-  filename <- file.path(dat_dir, "Peptide\\Peptide.txt")
+  filename <- file.path(dat_dir, "Peptide/Peptide.txt")
   if (!file.exists(filename)) stop(filename, " not found; run `mergePep(...)` first", call. = FALSE)
   
   id <- match_call_arg(normPSM, group_psm_by)
@@ -688,7 +693,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
       seed = seed,
       range_log2r = range_log2r,
       range_int = range_int,
-      filepath = file.path(dat_dir, "Peptide\\Histogram"),
+      filepath = file.path(dat_dir, "Peptide/Histogram"),
       col_select = col_select, 
       !!!dots, 
     ) %>% 
@@ -698,7 +703,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
 
   if (plot_log2FC_cv & TMT_plex(label_scheme) > 0) {
     sd_violin(df = df, id = !!group_pep_by, 
-              filepath = file.path(dat_dir, "Peptide\\log2FC_cv\\raw", "Peptide_sd.png"), 
+              filepath = file.path(dat_dir, "Peptide/log2FC_cv/raw", "Peptide_sd.png"), 
               width = 8 * n_TMT_sets(label_scheme), height = 8, 
               type = "log2_R", adjSD = FALSE, is_psm = FALSE)
   }
@@ -798,7 +803,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
 #'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
-#'@return The primary output in "\code{...\\Protein\\Protein.txt}".
+#'@return The primary output in "\code{.../Protein/Protein.txt}".
 #'
 #'@example inst/extdata/examples/Pep2Prn_.R
 #'@import stringr dplyr purrr rlang  magrittr
@@ -806,9 +811,9 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
 Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), 
                      use_unique_pep = TRUE, ...) {
   
-  dir.create(file.path(dat_dir, "Protein\\Histogram"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Protein\\cache"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Protein\\log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/Histogram"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/cache"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/log"), recursive = TRUE, showWarnings = FALSE)
   
   old_opts <- options()
   options(warn = 1)
@@ -853,7 +858,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
     n_comp = 1L,
     range_log2r = c(0, 100),
     range_int = c(0, 100),
-    filepath = file.path(dat_dir, "Protein\\Histogram"),
+    filepath = file.path(dat_dir, "Protein/Histogram"),
     col_select = rlang::expr(Sample_ID), 
   ) 
   
@@ -863,7 +868,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
     dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
     dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
     dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %T>% 
-    write.table(., file.path(dat_dir, "Protein\\Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
+    write.table(., file.path(dat_dir, "Protein/Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
 }
 
 
@@ -884,7 +889,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   stopifnot(file.exists(fn_fasta))
   fasta <- seqinr::read.fasta(fn_fasta, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
   
-  df <- read.csv(file.path(dat_dir, "Peptide\\Peptide.txt"), check.names = FALSE, 
+  df <- read.csv(file.path(dat_dir, "Peptide/Peptide.txt"), check.names = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
     dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
   
@@ -1070,11 +1075,11 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) {
         dplyr::filter(N > 1)
       
       if (nrow(dup_peps_af) > 0) {
-        write.csv(dup_peps_af, file.path(dat_dir, "Peptide\\dbl_dipping_peptides.csv"), row.names = FALSE)
+        write.csv(dup_peps_af, file.path(dat_dir, "Peptide/dbl_dipping_peptides.csv"), row.names = FALSE)
         df <- df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps_af[[group_psm_by]]))
       }
     } else {
-      write.csv(dup_peps, file.path(dat_dir, "Peptide\\dbl_dipping_peptides.csv"), row.names = FALSE)
+      write.csv(dup_peps, file.path(dat_dir, "Peptide/dbl_dipping_peptides.csv"), row.names = FALSE)
       df <- df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps[[group_psm_by]]))
     }
   }

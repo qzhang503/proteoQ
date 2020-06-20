@@ -290,7 +290,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
-  dir.create(file.path(dat_dir, "PSM\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/log2FC_cv/purged"), recursive = TRUE, showWarnings = FALSE)
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
@@ -308,12 +308,12 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
   filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
-    reorder_files(n_TMT_sets(label_scheme_full))
+    reorder_files()
   
-  dir.create(file.path(dat_dir, "PSM\\Copy"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/Copy"), recursive = TRUE, showWarnings = FALSE)
 
   for (fn in filelist) {
-    file.copy(file.path(dat_dir, "PSM", fn), file.path(dat_dir, "PSM\\Copy", fn))
+    file.copy(file.path(dat_dir, "PSM", fn), file.path(dat_dir, "PSM/Copy", fn))
     
     df <- read.csv(file.path(dat_dir, "PSM", fn), check.names = FALSE, 
                    header = TRUE, sep = "\t", comment.char = "#") %>% 
@@ -361,7 +361,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     if (is.null(height)) height <- 8
     dots <- dots %>% .[! names(.) %in% c("width", "height")]
 
-    filepath <- file.path(dat_dir, "PSM\\log2FC_cv\\purged", gsub("_PSM_N.txt", "_sd.png", fn))
+    filepath <- file.path(dat_dir, "PSM/log2FC_cv/purged", gsub("_PSM_N.txt", "_sd.png", fn))
     quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_psm_by, filepath = filepath, 
                                            width = width, height = height, type = "log2_R", adjSD = FALSE, 
                                            is_psm = TRUE, col_select = NULL, col_order = NULL, 
@@ -490,7 +490,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
   }
-  dir.create(file.path(dat_dir, "Peptide\\log2FC_cv\\purged"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/purged"), recursive = TRUE, showWarnings = FALSE)
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
@@ -507,8 +507,8 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
 
-  dir.create(file.path(dat_dir, "Peptide\\Copy"), recursive = TRUE, showWarnings = FALSE)
-  file.copy(file.path(dat_dir, "Peptide\\Peptide.txt"), file.path(dat_dir, "Peptide\\Copy\\Peptide.txt"))
+  dir.create(file.path(dat_dir, "Peptide/Copy"), recursive = TRUE, showWarnings = FALSE)
+  file.copy(file.path(dat_dir, "Peptide/Peptide.txt"), file.path(dat_dir, "Peptide/Copy/Peptide.txt"))
   
   fn <- file.path(dat_dir, "Peptide", "Peptide.txt")
   df <- read.csv(fn, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
@@ -557,7 +557,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   if (is.null(height)) height <- 8
   dots <- dots %>% .[! names(.) %in% c("width", "height")]
   
-  filepath <- file.path(dat_dir, "Peptide\\log2FC_cv\\purged", filename)
+  filepath <- file.path(dat_dir, "Peptide/log2FC_cv/purged", filename)
   quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_pep_by, filepath = filepath, 
                                          width = width, height = height, type = "log2_R", 
                                          adjSD = FALSE, is_psm = FALSE, 

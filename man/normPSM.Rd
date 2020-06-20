@@ -264,8 +264,8 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
 normPSM(
   group_psm_by = pep_seq_mod,
   group_pep_by = prot_acc,
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   
   # variable argument statement(s)
   filter_psms_at = exprs(pep_expect <= .1),
@@ -276,8 +276,8 @@ normPSM(
 normPSM(
   group_psm_by = pep_seq_mod,
   group_pep_by = prot_acc,
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   corrected_int = TRUE,
   rm_reverses = TRUE,
   
@@ -289,8 +289,8 @@ normPSM(
 normPSM(
   group_psm_by = pep_seq_mod,
   group_pep_by = prot_acc,
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   
   # vararg statement(s)
   filter_psms = exprs(score >= 10),
@@ -321,28 +321,28 @@ Ref2Entrez(species = mouse)
 normPSM(
   group_psm_by = pep_seq_mod, 
   group_pep_by = gene, 
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
-  entrez = c("~\\\\proteoQ\\\\dbs\\\\entrez\\\\refseq_entrez_hs.rds", 
-             "~\\\\proteoQ\\\\dbs\\\\entrez\\\\refseq_entrez_mm.rds"),
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
+  entrez = c("~/proteoQ/dbs/entrez/refseq_entrez_hs.rds", 
+             "~/proteoQ/dbs/entrez/refseq_entrez_mm.rds"),
 )
 
 
 ## Not run: 
 # wrong fasta 
 normPSM(
-  fasta = "~\\\\proteoQ\\\\dbs\\\\fasta\\\\wrong.fasta",
+  fasta = "~/proteoQ/dbs/fasta/wrong.fasta",
 )
 
 # no mouse entry annotation
 normPSM(
-  fasta = "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
+  fasta = "~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
 )
 
 # bad vararg statement
 normPSM(
-  fasta = c("~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_hs_2013_07.fasta",
-            "~\\\\proteoQ\\\\dbs\\\\fasta\\\\refseq\\\\refseq_mm_2013_07.fasta"),
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   filter_psms_at = exprs(column_key_not_in_psm_tables <= .1),
 )
 ## End(Not run)

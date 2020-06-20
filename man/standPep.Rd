@@ -74,7 +74,7 @@ number of iterations allowed; \cr \code{epsilon}, tolerance limit for
 declaring algorithm convergence.}
 }
 \value{
-The primary output is in \code{...\\Peptide\\Peptide.txt}.
+The primary output is in \code{.../Peptide/Peptide.txt}.
 }
 \description{
 \code{standPep} standardizes peptide results from \code{\link{mergePep}} with
@@ -318,7 +318,7 @@ pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc.png)
 pepHist(scale_log2r = TRUE, col_select = BI_1, filter_ = exprs(gene == "GAPDH"), filename = mcGAPDH.png)
 
 # heat map for `BI_1` samples
-# (outputs under `Peptide\Heatmap` folder; for help, ?pepHM)
+# (outputs under `Peptide/Heatmap` folder; for help, ?pepHM)
 pepHM(
   col_select = BI_1, 
   xmin = -2,

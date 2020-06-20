@@ -10,7 +10,7 @@ map_to_entrez_os_name(
   os_name = "Homo sapiens",
   from = "UNIPROT",
   filename = NULL,
-  db_path = "~\\\\proteoQ\\\\dbs\\\\entrez",
+  db_path = "~/proteoQ/dbs/entrez",
   overwrite = FALSE
 )
 }
@@ -39,7 +39,7 @@ default, the name will be determined automatically at a given
 saved as a \code{.rds} object for uses with \code{\link{prnGSPA}}.}
 
 \item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\entrez"}.}
+is \code{"~/proteoQ/dbs/entrez"}.}
 
 \item{overwrite}{Logical; if TRUE, overwrite the downloaded database(s). The
 default is FALSE.}

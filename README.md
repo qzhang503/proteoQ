@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-06-12
+2020-06-18
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -11,6 +11,7 @@ true
       - [1.3 PSMs to peptides](#psms-to-peptides)
       - [1.4 Peptides to proteins](#peptides-to-proteins)
       - [1.5 Workflow scripts](#workflow-scripts)
+      - [1.6 Quick start](#quick-start)
   - [2 Basic informatics](#basic-informatics)
       - [2.1 MDS](#mds)
       - [2.2 PCA](#pca)
@@ -124,8 +125,8 @@ corresponding fasta files from the `proteoQDA` to a database folder:
 
 ``` r
 library(proteoQDA)
-copy_refseq_hs("~\\proteoQ\\dbs\\fasta\\refseq")
-copy_refseq_mm("~\\proteoQ\\dbs\\fasta\\refseq")
+copy_refseq_hs("~/proteoQ/dbs/fasta/refseq")
+copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 ```
 
 #### 1.1.2 PSM data
@@ -156,7 +157,7 @@ To illustrate, I copy over Mascot PSMs to a working directory,
 `dat_dir`:
 
 ``` r
-dat_dir <- "~\\proteoQ\\examples"
+dat_dir <- "~/proteoQ/examples"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 copy_global_mascot(dat_dir)
 ```
@@ -262,7 +263,7 @@ a work space:
 
 ``` r
 library(proteoQ)
-load_expts("~\\proteoQ\\examples")
+load_expts("~/proteoQ/examples")
 ```
 
 ### 1.2 PSM summarization
@@ -283,8 +284,8 @@ We start the section by processing the PSM files exported directly from
 normPSM(
   group_psm_by = pep_seq_mod, 
   group_pep_by = gene, 
-  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
   rptr_intco = 1000,
   rm_craps = TRUE,
   rm_krts = FALSE,
@@ -1185,6 +1186,28 @@ system.file("extdata", "workflow_base.R", package = "proteoQ")
 Another good place to get started is via the help `?load_expts`. More
 workflow scripts are under construction.
 
+### 1.6 Quick start
+
+For quick demonstrations, steps in data preprocessing can be bypassed:
+
+``` r
+unzip(system.file("extdata", "demo.zip", package = "proteoQDA"), 
+      exdir = "~/proteoq_bypass", overwrite  = FALSE)
+
+# file.exists("~/proteoq_bypass/proteoQ/examples/Peptide/Peptide.txt")
+# file.exists("~/proteoq_bypass/proteoQ/examples/Protein/Protein.txt")
+
+library(proteoQ)
+load_expts("~/proteoq_bypass/proteoQ/examples")
+
+# Exemplary protein MDS
+prnMDS(
+  show_ids = FALSE, 
+  width = 8,
+  height = 4,
+)
+```
+
 ## 2 Basic informatics
 
 In this section I illustrate the following applications of `proteoQ`:
@@ -1549,14 +1572,14 @@ my_theme <- theme_bw() + theme(
 )
 
 p <- ggplot(res$pca) +
-  geom_point(aes(x = Coordinate.1, y = Coordinate.2, colour = Color, shape = Shape, 
+  geom_point(aes(x = PC1, y = PC2, colour = Color, shape = Shape, 
                  alpha = Alpha), size = 4, stroke = 0.02) + 
   scale_y_continuous(breaks = seq(5, 15, by = 5)) + 
-  labs(title = "", x = paste0("PC1 (", res$var[1], ")"), y = paste0("PC2 (", res$var[2], ")")) +
+  labs(title = "", x = paste0("PC1 (", res$prop_var[1], ")"), y = paste0("PC2 (", res$prop_var[2], ")")) +
   coord_fixed() + 
   my_theme
 
-ggsave(file.path(dat_dir, "Protein\\PCA\\nocent_2.png"), width = 6, height = 4)
+ggsave(file.path(dat_dir, "Protein/PCA/nocent_2.png"), width = 6, height = 4)
 ```
 
 <div class="figure" style="text-align: center">
@@ -1928,7 +1951,7 @@ under the file folder `~\\proteoQ\\dbs\\go`:
 ``` r
 prepGO(
   species = human,
-  db_path = "~\\proteoQ\\dbs\\go",
+  db_path = "~/proteoQ/dbs/go",
   gaf_url = "http://current.geneontology.org/annotations/goa_human.gaf.gz",
   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
   filename = go_hs.rds,
@@ -1936,14 +1959,14 @@ prepGO(
 
 prepGO(
   species = mouse,
-  db_path = "~\\proteoQ\\dbs\\go",
+  db_path = "~/proteoQ/dbs/go",
   gaf_url = "http://current.geneontology.org/annotations/mgi.gaf.gz",
   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
   filename = go_mm.rds,
 )
 
-# head(readRDS(file.path("~\\proteoQ\\dbs\\go", "go_hs.rds")))
-# head(readRDS(file.path("~\\proteoQ\\dbs\\go", "go_mm.rds")))
+# head(readRDS(file.path("~/proteoQ/dbs/go", "go_hs.rds")))
+# head(readRDS(file.path("~/proteoQ/dbs/go", "go_mm.rds")))
 ```
 
 Similarly, we prepare custom `MSig` data bases for `human` and `mouse`:
@@ -1951,7 +1974,7 @@ Similarly, we prepare custom `MSig` data bases for `human` and `mouse`:
 ``` r
 prepMSig(
   # msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
-  # db_path = "~\\proteoQ\\dbs\\msig",
+  # db_path = "~/proteoQ/dbs/msig",
   species = human,
   filename = msig_hs.rds,
 )
@@ -1959,13 +1982,13 @@ prepMSig(
 prepMSig(
   # msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt",
   # ortho_mart = mmusculus_gene_ensembl, 
-  # db_path = "~\\proteoQ\\dbs\\msig",  
+  # db_path = "~/proteoQ/dbs/msig",  
   species = mouse,
   filename = msig_mm.rds,
 )
 
-# head(readRDS(file.path("~\\proteoQ\\dbs\\msig", "msig_hs.rds")))
-# head(readRDS(file.path("~\\proteoQ\\dbs\\msig", "msig_mm.rds")))
+# head(readRDS(file.path("~/proteoQ/dbs/msig", "msig_hs.rds")))
+# head(readRDS(file.path("~/proteoQ/dbs/msig", "msig_mm.rds")))
 ```
 
 We need to provide the list name of `ortho_mart` for species other than
@@ -1977,7 +2000,7 @@ with `prnGSPA` and `gspaMap` for analysis and visualization:
 
 ``` r
 # start over
-unlink(file.path(dat_dir, "Protein\\GSPA"), recursive = TRUE, force = TRUE)
+unlink(file.path(dat_dir, "Protein/GSPA"), recursive = TRUE, force = TRUE)
 
 prnGSPA(
   impute_na = FALSE,
@@ -1985,17 +2008,17 @@ prnGSPA(
   logFC_cutoff = log2(1.2),
   gspval_cutoff = 5E-2,
   gslogFC_cutoff = log2(1.2), 
-  gset_nms = c("~\\proteoQ\\dbs\\go\\go_hs.rds",
-               "~\\proteoQ\\dbs\\go\\go_mm.rds", 
-               "~\\proteoQ\\dbs\\msig\\msig_hs.rds", 
-               "~\\proteoQ\\dbs\\msig\\msig_mm.rds"),
+  gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
+               "~/proteoQ/dbs/go/go_mm.rds", 
+               "~/proteoQ/dbs/msig/msig_hs.rds", 
+               "~/proteoQ/dbs/msig/msig_mm.rds"),
 )
 
 gspaMap(
-  gset_nms = c("~\\proteoQ\\dbs\\go\\go_hs.rds",
-               "~\\proteoQ\\dbs\\go\\go_mm.rds", 
-               "~\\proteoQ\\dbs\\msig\\msig_hs.rds", 
-               "~\\proteoQ\\dbs\\msig\\msig_mm.rds"),
+  gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
+               "~/proteoQ/dbs/go/go_mm.rds", 
+               "~/proteoQ/dbs/msig/msig_hs.rds", 
+               "~/proteoQ/dbs/msig/msig_mm.rds"),
   impute_na = FALSE,
   show_labels = FALSE, 
   gspval_cutoff = 5E-2, 
@@ -2485,7 +2508,7 @@ of protein-protein interactions. More details can be found from
 
 ``` r
 anal_prnString(
-  db_path = "~\\proteoQ\\dbs\\string",
+  db_path = "~/proteoQ/dbs/string",
   score_cutoff = .9,
   filter_by_sp = exprs(species %in% c("human", "mouse")), 
   filter_prots_by = exprs(prot_n_pep >= 2),
@@ -2503,7 +2526,7 @@ download separately the databases for a given `species`:
 ``` r
 dl_stringdbs(
   species = rat,
-  db_path = "~\\proteoQ\\dbs\\string", 
+  db_path = "~/proteoQ/dbs/string", 
 )
 ```
 
@@ -2529,7 +2552,7 @@ peptide `log2FC`.
 
 ``` r
 # exemplary data
-temp_dir <- "~\\proteoQ\\ref_w2"
+temp_dir <- "~/proteoQ/ref_w2"
 dir.create(temp_dir, recursive = TRUE, showWarnings = FALSE)
 
 library(proteoQDA)
@@ -2544,8 +2567,8 @@ load_expts(temp_dir, expt_smry_ref_w2.xlsx)
 normPSM(
   group_psm_by = pep_seq,
   group_pep_by = gene, 
-  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
   rptr_intco = 1000,
   rm_craps = TRUE,
   rm_krts = FALSE,
@@ -2596,7 +2619,7 @@ of the `WHIM2` and the `WHIM16` proteomes. We next perform analogously
 the data summary and histogram visualization.
 
 ``` r
-temp_dir_w2w16 <- "~\\proteoQ\\ref_w2w16"
+temp_dir_w2w16 <- "~/proteoQ/ref_w2w16"
 dir.create(temp_dir_w2w16, recursive = TRUE, showWarnings = FALSE)
 
 library(proteoQDA)
@@ -2610,8 +2633,8 @@ load_expts(temp_dir_w2w16, expt_smry_ref_w2_w16.xlsx)
 normPSM(
   group_psm_by = pep_seq,
   group_pep_by = gene, 
-  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
   rptr_intco = 1000,
   rm_craps = TRUE,
   rm_krts = FALSE,
@@ -2662,7 +2685,7 @@ S1C**):
 ``` r
 # continue on the `ref_w2` example in section 3.1.1
 library(proteoQ)
-load_expts("~\\proteoQ\\ref_w2", expt_smry_ref_w2.xlsx, frac_smry.xlsx)
+load_expts("~/proteoQ/ref_w2", expt_smry_ref_w2.xlsx, frac_smry.xlsx)
 
 # `BI_1` subset for visualization
 purgePep(
@@ -2751,7 +2774,7 @@ the `BI_1` subset.
 
 ``` r
 # exemplary data
-dat_dir <- "~\\proteoQ\\phospho_stoichiometry"
+dat_dir <- "~/proteoQ/phospho_stoichiometry"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 library(proteoQDA)
@@ -2768,8 +2791,8 @@ load_expts()
 normPSM(
   group_psm_by = pep_seq_mod,
   group_pep_by = gene, 
-  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta", 
-            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"), 
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
   filter_peps = exprs(pep_expect <= .1), 
 )
 
@@ -2946,7 +2969,7 @@ filtration during heat map visualization.
 
 ``` r
 # add a column to "Protein.txt"
-df <- readr::read_tsv(file.path(dat_dir, "Protein\\Protein.txt")) 
+df <- readr::read_tsv(file.path(dat_dir, "Protein/Protein.txt")) 
 
 library(magrittr)
 n_not_na <- df %>% 
@@ -2959,7 +2982,7 @@ n_not_na <- df %>%
 df %>% 
   dplyr::mutate(n_not_na = n_not_na) %>% 
   # proteoQ::reorderCols2() %>% 
-  readr::write_tsv(file.path(dat_dir, "Protein\\Protein.txt"))
+  readr::write_tsv(file.path(dat_dir, "Protein/Protein.txt"))
 ```
 
 Note that there is a restriction in column additions in that the custom
@@ -2970,7 +2993,7 @@ visualization:
 
 ``` r
 prnHM(
-  df = "Protein\\Protein.txt", 
+  df = "Protein/Protein.txt", 
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
@@ -2990,7 +3013,7 @@ prnHM(
 ```
 
 Importantly, we need to supply the file name to argument `df`. This is
-because a higher precedence will be given to `Model\\Protein_pVals.txt`
+because a higher precedence will be given to `Model/Protein_pVals.txt`
 over `Protein.txt`. Without specifying the value of `df`, proteoQ will
 look for the `n_not_na` column that are indeed absent from
 `Protein_pVals.txt`.
@@ -3010,7 +3033,7 @@ look for the `n_not_na` column that are indeed absent from
 Alternatively, we may add the custom column to `Protein_pVals.txt`:
 
 ``` r
-df <- readr::read_tsv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt")) 
+df <- readr::read_tsv(file.path(dat_dir, "Protein/Model/Protein_pVals.txt")) 
 
 n_not_na <- df %>% 
   dplyr::select(grep("Z_log2_R", names(.))) %>% 
@@ -3021,10 +3044,10 @@ n_not_na <- df %>%
 
 df %>% 
   dplyr::mutate(na_counts = na_counts) %>% 
-  readr::write_tsv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt"))
+  readr::write_tsv(file.path(dat_dir, "Protein/Model/Protein_pVals.txt"))
 
 prnHM(
-  df = "Protein\\Model\\Protein_pVals.txt", 
+  df = "Protein/Model/Protein_pVals.txt", 
   xmin = -1,
   xmax = 1,
   xmargin = 0.1,
@@ -3069,7 +3092,7 @@ We start off by (re)executing the reduced example shown in
 `?load_expts`:
 
 ``` r
-dat_dir <- "~\\proteoQ\\randeffs\\examples"
+dat_dir <- "~/proteoQ/randeffs/examples"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 library(proteoQDA)
@@ -3084,8 +3107,8 @@ normPSM(
   group_psm_by = pep_seq_mod, 
   group_pep_by = gene, 
   annot_kinases = TRUE, 
-  fasta = c("~\\proteoQ\\dbs\\fasta\\refseq\\refseq_hs_2013_07.fasta",
-            "~\\proteoQ\\dbs\\fasta\\refseq\\refseq_mm_2013_07.fasta"),
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
 )
 
 PSM2Pep()
@@ -3169,7 +3192,7 @@ prnSig(
 )
 
 # correlation plots
-read.csv(file.path(dat_dir, "Protein\\Model\\Protein_pVals.txt"), 
+read.csv(file.path(dat_dir, "Protein/Model/Protein_pVals.txt"), 
          check.names = FALSE, header = TRUE, sep = "\t") %>%
   dplyr::select(grep("pVal\\s+", names(.))) %>% 
   `colnames<-`(c("none", "one", "two")) %>% 

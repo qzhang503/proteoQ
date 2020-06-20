@@ -9,7 +9,7 @@ prepString(
   links_url = NULL,
   aliases_url = NULL,
   info_url = NULL,
-  db_path = "~\\\\proteoQ\\\\dbs\\\\string",
+  db_path = "~/proteoQ/dbs/string",
   filename = NULL,
   overwrite = FALSE
 )
@@ -44,7 +44,7 @@ the link will be determined automatically; note that users can overwrite the
 default \code{info} data by providing their own URL.}
 
 \item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\string"}.}
+is \code{"~/proteoQ/dbs/string"}.}
 
 \item{filename}{Use system default. Otherwise, the user-provided basename will
 be prepended with \code{_ppi.tsv} for network data and \code{_expr.tsv} for

@@ -8,7 +8,7 @@ create_db_path(db_path)
 }
 \arguments{
 \item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\go"}.}
+is \code{"~/proteoQ/dbs/go"}.}
 }
 \description{
 Helper to create `db_path`

@@ -129,10 +129,10 @@ require the fields of significance p-values, the \code{df} will be one of
 determined automatically by the name of the current call.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration
-against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 See also \code{\link{normPSM}} for the format of \code{filter_} statements.
 \cr \cr \code{arrange_}: Variable argument statements for the row ordering
-against data in a primary file of \code{\\Model\\Protein[_impNA]_pVals.txt}.
+against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 See also \code{\link{prnHM}} for the format of \code{arrange_} statements.}
 }
 \description{
@@ -378,12 +378,12 @@ prnGSPAHM(
 # custom GO databases
 # ===================================
 # start over
-unlink(file.path(dat_dir, "Protein\\\\GSPA"), recursive = TRUE, force = TRUE)
+unlink(file.path(dat_dir, "Protein/GSPA"), recursive = TRUE, force = TRUE)
 
 # prepare GO databases (see also ?prepGO)
 prepGO(
   species = human,
-  db_path = "~\\\\proteoQ\\\\dbs\\\\go",
+  db_path = "~/proteoQ/dbs/go",
   gaf_url = "http://current.geneontology.org/annotations/goa_human.gaf.gz",
   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
   filename = go_hs.rds,
@@ -391,28 +391,28 @@ prepGO(
 
 prepGO(
   species = mouse,
-  db_path = "~\\\\proteoQ\\\\dbs\\\\go",
+  db_path = "~/proteoQ/dbs/go",
   gaf_url = "http://current.geneontology.org/annotations/mgi.gaf.gz",
   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
   filename = go_mm.rds,
 )
 
-head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\go", "go_hs.rds")))
-head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\go", "go_mm.rds")))
+head(readRDS(file.path("~/proteoQ/dbs/go", "go_hs.rds")))
+head(readRDS(file.path("~/proteoQ/dbs/go", "go_mm.rds")))
 
 # analysis
 prnGSPA(
   impute_na = FALSE,
-  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
-               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
+  gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
+               "~/proteoQ/dbs/go/go_mm.rds"),
 )
 
 # It is possible that the system "go_sets" may be partially different to the
 # custom GO. Be explicit on `gset_nms`; otherwise, the default of `gset_nms =
 # c("go_sets", "c2_msig")` will be applied.
 gspaMap(
-  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
-               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
+  gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
+               "~/proteoQ/dbs/go/go_mm.rds"),
   impute_na = FALSE,
   topn = 20, 
   show_sig = pVal, 
@@ -422,28 +422,28 @@ gspaMap(
 # custom MSig databases
 # ===================================
 # start over
-unlink(file.path(dat_dir, "Protein\\\\GSPA"), recursive = TRUE, force = TRUE)
+unlink(file.path(dat_dir, "Protein/GSPA"), recursive = TRUE, force = TRUE)
 
 # prepare MSig databases (see also ?prepMSig)
 prepMSig(species = human)
 prepMSig(species = mouse)
 
-head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\msig", "msig_hs.rds")))
-head(readRDS(file.path("~\\\\proteoQ\\\\dbs\\\\msig", "msig_mm.rds")))
+head(readRDS(file.path("~/proteoQ/dbs/msig", "msig_hs.rds")))
+head(readRDS(file.path("~/proteoQ/dbs/msig", "msig_mm.rds")))
 
 # analysis
 prnGSPA(
   impute_na = FALSE,
-  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_hs.rds",
-               "~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_mm.rds"),
+  gset_nms = c("~/proteoQ/dbs/msig/msig_hs.rds",
+               "~/proteoQ/dbs/msig/msig_mm.rds"),
 )
 
 # It is possible that the system "c2_msig" may be partially different to the
 # custom databases. Be explicit on `gset_nms`; otherwise, the default of
 # `gset_nms = c("go_sets", "c2_msig")` will be applied.
 gspaMap(
-  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_hs.rds",
-               "~\\\\proteoQ\\\\dbs\\\\msig\\\\msig_mm.rds"),
+  gset_nms = c("~/proteoQ/dbs/msig/msig_hs.rds",
+               "~/proteoQ/dbs/msig/msig_mm.rds"),
   impute_na = FALSE,
   topn = 20, 
   show_sig = pVal, 
@@ -451,8 +451,8 @@ gspaMap(
 
 ## put custom `prepGO`, `prepMSig` preparation into `prnGSPA` analysis
 # start over with fresh database preparation
-unlink(file.path("~\\\\proteoQ\\\\dbs\\\\go"), recursive = TRUE, force = TRUE)
-unlink(file.path("~\\\\proteoQ\\\\dbs\\\\msig"), recursive = TRUE, force = TRUE)
+unlink(file.path("~/proteoQ/dbs/go"), recursive = TRUE, force = TRUE)
+unlink(file.path("~/proteoQ/dbs/msig"), recursive = TRUE, force = TRUE)
 
 library(magrittr)
 

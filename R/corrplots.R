@@ -58,6 +58,8 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
 	  stop("`data_select` nees to be either`logFC` or `logInt`.", call. = FALSE)
 	}
 	
+	label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% colnames(df))
+	
 	if (is.null(width)) width <- 1.4 * length(label_scheme_sub$Sample_ID)
 	if (is.null(height)) height <- width
 	if (ncol(df) > 44) stop("Maximal number of samples for correlation plots is 44.", call. = FALSE)
@@ -328,6 +330,8 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 
   quietly_log <- purrr::quietly(ggsave)(file.path(filepath, gg_imgname(filename)), 
                                         plot = p1, width = width, height = height, dpi = dpi, units = "in")
+  
+  invisible(p2$data)
 }
 
 

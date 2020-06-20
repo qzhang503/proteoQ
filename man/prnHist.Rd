@@ -255,7 +255,7 @@ p <- p +
 
 p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
 
-ggsave(file.path(dat_dir, "Peptide\\\\Histogram\\\\my_ggplot2.png"), 
+ggsave(file.path(dat_dir, "Peptide/Histogram/my_ggplot2.png"), 
        width = 22, height = 48, limitsize = FALSE)
 
 \dontrun{

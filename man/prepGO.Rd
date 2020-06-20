@@ -9,7 +9,7 @@ prepGO(
   abbr_species = NULL,
   gaf_url = NULL,
   obo_url = NULL,
-  db_path = "~\\\\proteoQ\\\\dbs\\\\go",
+  db_path = "~/proteoQ/dbs/go",
   type = c("biological_process", "cellular_component", "molecular_function"),
   filename = NULL,
   overwrite = FALSE
@@ -48,7 +48,7 @@ the web address will be determined automatically. Users can overwrite the
 default OBO by providing their own URL.}
 
 \item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\go"}.}
+is \code{"~/proteoQ/dbs/go"}.}
 
 \item{type}{Character vector. The name space in gene ontology to be included.
 The default is to include all in \code{c("biological_process",
@@ -78,8 +78,8 @@ library(proteoQ)
 prepGO(human)
 prepGO(mouse)
 
-# head(readRDS(file.path("~\\proteoQ\\dbs\\go\\go_hs.rds")))
-# head(readRDS(file.path("~\\proteoQ\\dbs\\go\\go_mm.rds")))
+# head(readRDS(file.path("~/proteoQ/dbs/go/go_hs.rds")))
+# head(readRDS(file.path("~/proteoQ/dbs/go/go_mm.rds")))
 
 # `mouse` with a slim OBO
 prepGO(
@@ -106,8 +106,8 @@ prepGO(
 \dontrun{
 # enrichment analysis with custom `GO`
 prnGSPA(
-  gset_nms = c("~\\\\proteoQ\\\\dbs\\\\go\\\\go_hs.rds",
-               "~\\\\proteoQ\\\\dbs\\\\go\\\\go_mm.rds"),
+  gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
+               "~/proteoQ/dbs/go/go_mm.rds"),
 )
 }
 }

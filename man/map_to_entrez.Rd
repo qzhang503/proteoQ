@@ -9,7 +9,7 @@ map_to_entrez(
   abbr_species = NULL,
   from = "UNIPROT",
   filename = NULL,
-  db_path = "~\\\\proteoQ\\\\dbs\\\\entrez",
+  db_path = "~/proteoQ/dbs/entrez",
   overwrite = FALSE
 )
 }
@@ -42,7 +42,7 @@ default, the name will be determined automatically at a given
 saved as a \code{.rds} object for uses with \code{\link{prnGSPA}}.}
 
 \item{db_path}{Character string; the local path for database(s). The default
-is \code{"~\\proteoQ\\dbs\\msig"}.}
+is \code{"~/proteoQ/dbs/msig"}.}
 
 \item{overwrite}{Logical; if TRUE, overwrite the downloaded database(s). The
 default is FALSE.}

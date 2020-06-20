@@ -257,6 +257,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
                         "clustering_method", 
                         "color", "annotation_colors", "breaks")]
   
+  # references under expt_smry::Sample_ID may be included
   p <- my_pheatmap(
     mat = df_hm,
     filename = file.path(filepath, filename),

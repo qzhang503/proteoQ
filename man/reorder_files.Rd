@@ -4,7 +4,7 @@
 \alias{reorder_files}
 \title{Re-order file names}
 \usage{
-reorder_files(filelist, n_TMT_sets)
+reorder_files(filelist)
 }
 \arguments{
 \item{filelist}{A list of file names.}
