@@ -766,6 +766,8 @@ Unless otherwise mentioned, the `in-function filtration` of data by varargs of `
 We first visualize MDS and Euclidean distance against the peptide data. We start with metric MDS for peptide data (`prnMDS` for proteins):  
 
 ```{r Peptide MDS, eval = FALSE}
+dat_dir <- "~/proteoQ/examples"
+
 # all data
 pepMDS(
   show_ids = FALSE,
@@ -1530,7 +1532,7 @@ plot_metaNMF(
   # cellwidth = 6,
   # cellheight = 6,
   cluster_rows = FALSE,
-  arrange_by = exprs("gene"),   
+  arrange_by = exprs(gene),   
   filename = bi_r5_rowordered.png,
 )
 ```

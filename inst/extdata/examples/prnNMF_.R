@@ -140,7 +140,7 @@ plot_pepNMFCon(
   col_select = BI,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  color = colorRampPalette(brewer.pal(n = 7, name = "Spectral"))(50), 
+  color = colorRampPalette(RColorBrewer::brewer.pal(n = 7, name = "Spectral"))(50), 
   width = 10,
   height = 10,
   filename = bi.pdf,

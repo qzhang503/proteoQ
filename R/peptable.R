@@ -9,15 +9,17 @@
 #' @importFrom magrittr %>%
 newColnames <- function(i, x, label_scheme) {
   label_scheme_sub <- label_scheme %>%
-    dplyr::filter(TMT_Set == i)
+    dplyr::filter(TMT_Set == i) # %>% 
+    # dplyr::arrange(TMT_Channel)
   
   cols <- grep(paste0("[RI][0-9]{3}[NC]{0,1}_", i, "$"), names(x))
   nm_channel <- gsub(paste0("([RI][0-9]{3}[NC]{0,1})_", i, "$"), "\\1", names(x)[cols])
   names(x)[cols] <- paste0(nm_channel, " (", as.character(label_scheme_sub$Sample_ID), ")")
   
+  # update the column indexes with TMT_Set being replaced with Sample_ID
   cols <- grep("[RI][0-9]{3}[NC]{0,1}\\s+\\(.*\\)$", names(x))
   
-  # cols with new names go first
+  # cols with the updated names go first
   if (length(cols) < ncol(x)) x <- dplyr::bind_cols(x[, cols], x[, -cols, drop = FALSE])
   
   return(x)
