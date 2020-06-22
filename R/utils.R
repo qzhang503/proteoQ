@@ -1851,6 +1851,13 @@ filters_in_call <- function (df, ...) {
     
     if (!rlang::is_list(row_exprs)) row_exprs <- list(row_exprs)
     
+    row_exprs <- map(row_exprs, ~ {
+      is_char <- is.character(.x)
+      if (is_char) .x <- rlang::sym(.x)
+      
+      return(.x)
+    })
+    
     row_vals <- row_exprs %>% 
       purrr::map(eval_tidy, df) %>% 
       purrr::reduce(`&`, .init = 1)
@@ -1883,6 +1890,13 @@ arrangers_in_call <- function(.df, ..., .na.last = TRUE) {
       rlang::eval_bare()
     
     if (!rlang::is_list(row_orders)) row_orders <- list(row_orders)
+    
+    row_orders <- purrr::map(row_orders, ~ {
+      is_char <- is.character(.x)
+      if (is_char) .x <- rlang::sym(.x)
+      
+      return(.x)
+    })
     
     order_call <- rlang::expr(order(!!!row_orders, na.last = !!.na.last))
     ord <- rlang::eval_tidy(order_call, .df)

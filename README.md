@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-06-18
+2020-06-22
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -1226,6 +1226,8 @@ We first visualize MDS and Euclidean distance against the peptide data.
 We start with metric MDS for peptide data (`prnMDS` for proteins):
 
 ``` r
+dat_dir <- "~/proteoQ/examples"
+
 # all data
 pepMDS(
   show_ids = FALSE,
@@ -2456,7 +2458,7 @@ plot_metaNMF(
   # cellwidth = 6,
   # cellheight = 6,
   cluster_rows = FALSE,
-  arrange_by = exprs("gene"),   
+  arrange_by = exprs(gene),   
   filename = bi_r5_rowordered.png,
 )
 ```
