@@ -37,7 +37,7 @@ require the fields of significance p-values, the \code{df} will be one of
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{data_select}{The type of data to be selected, for example, logFC or logInt.}
 

@@ -64,11 +64,8 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{filepath}{Use system default.}
 
-\item{filename}{A representative file name to outputs. By default, the name(s)
-will be determined automatically. For text files, a typical file extension
-is \code{.txt}. For image files, they are typically saved via
-\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
-image type will be determined by the extension of the file name.}
+\item{filename}{A representative file name to outputs. By default, it will be
+determined automatically by the name of the current call.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
@@ -335,6 +332,7 @@ cluego(
  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+ \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 

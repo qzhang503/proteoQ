@@ -86,7 +86,7 @@ of absolute values in \code{log2FC}.}
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 of data against the column keys in \code{Peptide.txt} for peptides or

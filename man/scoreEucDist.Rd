@@ -35,7 +35,7 @@ for selected samples.}
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}

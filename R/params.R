@@ -646,6 +646,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
@@ -724,7 +725,8 @@ reload_expts <- function() {
 #' reference(s), sample(s) and probable unused void(s).
 #'
 #' @param label_scheme The data frame returned by \code{\link{load_expts}}.
-#' @param set_idx Numeric.  The index of a multiplex TMT experiment.
+#' @param set_idx Numeric.  The index of a multiplex TMT experiment in metadata
+#'   files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.
 #' @return Three lists of indexes: \code{refChannels}, reference channels(s);
 #'   \code{emptyChannels}, empty channel(s) that were not used for sample
 #'   labeling; \code{labeledChannels}, non-empty channels including both

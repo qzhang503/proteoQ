@@ -119,6 +119,21 @@ pepMDS(
   filename = filpvals_impna.png,
 )
 
+## show ellipses
+prnMDS(
+  show_ellipses = TRUE,
+  col_group = Shape, 
+  show_ids = FALSE,
+  filename = ellipses_by_whims.png,
+)
+
+prnMDS(
+  show_ellipses = TRUE,
+  col_group = Color, 
+  show_ids = FALSE,
+  filename = ellipses_by_labs.png,
+)
+
 ## a higher dimension
 pepMDS(
   show_ids = FALSE,
@@ -132,6 +147,27 @@ prnMDS(
   k = 4, 
   dimension = 3,
   filename = d3.png,
+)
+
+# show ellipses
+# (column `expt_smry.xlsx::Color` codes `labs`.)
+prnMDS(
+  show_ids = FALSE,
+  show_ellipses = TRUE,
+  col_group = Color, 
+  k = 4, 
+  dimension = 3,
+  filename = d3_labs.png,
+)
+
+# (column `expt_smry.xlsx::Shape` codes `WHIMs`.)
+prnMDS(
+  show_ids = FALSE,
+  show_ellipses = TRUE,
+  col_group = Shape, 
+  k = 4, 
+  dimension = 3,
+  filename = d3_whims.png,
 )
 
 
@@ -172,18 +208,11 @@ pepMDS(
 library(ggplot2)
 res <- prnMDS(filename = foo.png)
 
-p <- ggplot(res, aes(x = Coordinate.1, y = Coordinate.2)) +
-  geom_point(aes(colour = Color, shape = Shape, alpha = Alpha), size = 4, stroke = 0.02) + 
-  stat_ellipse(aes(colour = Shape), linetype = 2) + 
-  labs(title = "", x = "Coordinate 1", y = "Coordinate 2") +
-  coord_fixed() + 
-  geom_text(aes(x = Coordinate.1, y = Coordinate.2, label = Sample_ID), color = "gray", size = 1)
-
-ggsave(file.path(dat_dir, "Protein/MDS/my_ggplot2.png"))
-
 p_fil <- ggplot(res, aes(x = Coordinate.1, y = Coordinate.2)) +
   geom_point(aes(colour = Color, shape = Shape, alpha = Alpha), size = 4, stroke = 0.02) + 
+  scale_alpha_manual(values = c(.5, .9)) + 
   stat_ellipse(aes(fill = Shape), geom = "polygon", alpha = .4) + 
+  guides(fill = FALSE) + 
   labs(title = "", x = "Coordinate 1", y = "Coordinate 2") +
   coord_fixed() 
 

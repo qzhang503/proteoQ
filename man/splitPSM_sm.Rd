@@ -11,9 +11,10 @@ splitPSM_sm(
   entrez = NULL,
   rm_craps = FALSE,
   rm_krts = FALSE,
-  rptr_intco = 1000,
+  purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
+  rptr_intco = 1000,
   ...
 )
 }
@@ -50,14 +51,18 @@ The default is FALSE.}
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
 is FALSE.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
-default is 1,000.}
+\item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
+variable modification(s), entries without phosphorylation will be removed.
+The default is TRUE.}
 
 \item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins
 will be annotated with their kinase attributes. The default is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
 intensities will be plotted. The default is TRUE.}
+
+\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
+default is 1,000.}
 
 \item{...}{Not currently used.}
 }

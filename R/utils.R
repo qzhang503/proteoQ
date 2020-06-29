@@ -101,7 +101,6 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
 #' injection numbers.
 #'
 #' @param filelist A list of file names.
-#' @param n_TMT_sets the number of multiplex TMT experiments.
 #' @import dplyr
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>%
@@ -120,7 +119,6 @@ reorder_files <- function(filelist) {
   }
   
   for (i in tmt_sets) {
-    # newlist <- c(newlist, filelist[grep(paste0("TMTset*.",i), filelist, ignore.case = TRUE)])
     newlist <- c(newlist, filelist[grep(paste0("TMTset", i, "_"), filelist, ignore.case = TRUE)])
   }
   
@@ -187,6 +185,33 @@ reorderCols2 <- function (df = NULL, pattern = NULL) {
 }
 
 
+#' Re-order columns in a data frame
+#'
+#' \code{ins_cols_after} re-orders columns in a data frame.
+#'
+#' @param df A data frame.
+#' @param idx_bf A column index for the insertion of columns after.
+#' @param idx_ins Column index(es) for the columns to be inserted after
+#'   \code{idx_bf}.
+#' @import dplyr rlang
+#' @importFrom stringr str_split
+#' @importFrom magrittr %>%
+#' @export
+ins_cols_after <- function (df = NULL, idx_bf = ncol(df), idx_ins = NULL) {
+  if (is.null(df)) stop("`df` cannot be `NULL`.", call. = FALSE)
+  if (is.null(idx_ins)) return(df)
+  if (idx_bf >= ncol(df)) return(df)
+  
+  col_nms <- names(df)[idx_ins]
+  
+  dplyr::bind_cols(
+    df[, 1:idx_bf, drop = FALSE], 
+    df[, idx_ins, drop = FALSE], 
+    df[, (idx_bf + 1):ncol(df), drop = FALSE] %>% dplyr::select(-col_nms),
+  )
+}
+
+
 #' Replace zero intensity with NA
 #'
 #' \code{na_zeroIntensity} replaces zero intensity with NA to avoid -Inf in
@@ -236,6 +261,7 @@ aggrNums <- function(f) {
 #'
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
 #' @param id The variable to summarize \code{log2FC}.
+#' @param na.rm Logical; if TRUE, removes NA values.
 #' @param ... Additional arguments for \code{weighted.mean}.
 #' @import dplyr rlang
 #' @importFrom stringr str_length
@@ -2081,11 +2107,16 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
       dplyr::filter(!is.na(SD))
     
     p <- ggplot() +
-      geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), size = .25, draw_quantiles = c(.95, .99)) +
-      geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), width = 0.1, lwd = .2, fill = "white") +
-      stat_summary(df_sd, mapping = aes(x = Channel, y = SD), fun = "mean", geom = "point",
+      geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), 
+                  alpha = .8, size = .25, linetype = 0, draw_quantiles = c(.95, .99)) +
+      geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), 
+                   width = 0.1, lwd = .2, fill = "white") +
+      stat_summary(df_sd, mapping = aes(x = Channel, y = SD), 
+                   fun = "mean", geom = "point",
                    shape=23, size=2, fill="white", alpha=.5) +
-      labs(title = expression(""), x = expression("Channel"), y = expression("SD ("*log[2]*"FC)")) 
+      labs(title = expression(""), 
+           x = expression("Channel"), 
+           y = expression("SD ("*log[2]*"FC)")) 
     
     if (!is.null(ymax)) {
       if (is.null(ybreaks)) {
@@ -2138,12 +2169,17 @@ rptr_violin <- function(df, filepath, width, height) {
     dplyr::mutate(Intensity = round(Intensity, digit = 1))
   
   p <- ggplot() +
-    geom_violin(df_int, mapping = aes(x = Channel, y = log10(Intensity), fill = Channel), size = .25) +
-    geom_boxplot(df_int, mapping = aes(x = Channel, y = log10(Intensity)), width = 0.2, lwd = .2, fill = "white") +
+    geom_violin(df_int, mapping = aes(x = Channel, y = log10(Intensity), fill = Channel), 
+                alpha = .8, size = .25, linetype = 0) +
+    geom_boxplot(df_int, mapping = aes(x = Channel, y = log10(Intensity)), 
+                 width = 0.2, lwd = .2, fill = "white") +
     stat_summary(df_int, mapping = aes(x = Channel, y = log10(Intensity)), fun = "mean", geom = "point",
                  shape = 23, size = 2, fill = "white", alpha = .5) +
-    labs(title = expression("Reporter ions"), x = expression("Channel"), y = expression("Intensity ("*log[10]*")")) + 
-    geom_text(data = mean_int, aes(x = Channel, label = Intensity, y = Intensity + 0.2), size = 5, colour = "red", alpha = .5) + 
+    labs(title = expression("Reporter ions"), 
+         x = expression("Channel"), 
+         y = expression("Intensity ("*log[10]*")")) + 
+    geom_text(data = mean_int, aes(x = Channel, label = Intensity, y = Intensity + 0.2), 
+              size = 5, colour = "red", alpha = .5) + 
     theme_psm_violin
   
   try(ggplot2::ggsave(filepath, p, width = width, height = height, units = "in"))

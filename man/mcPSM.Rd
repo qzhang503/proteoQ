@@ -9,7 +9,11 @@ mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}
 
-\item{set_idx}{Numeric.  The index of a multiplex TMT experiment.}
+\item{set_idx}{Numeric.  The index of a multiplex TMT experiment in metadata
+files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
+
+\item{injn_idx}{Numeric. The index of \code{LCMS_Inj} in metadata files such
+as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 
 \item{mc_psm_by}{A character string specifying the method in the median
 centering of PSM \code{log2FC} across samples. At the \code{peptide}

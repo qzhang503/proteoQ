@@ -25,6 +25,9 @@ calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
 
+\item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
+peptide sequences to the most likely proteins by majority votes.}
+
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains to a list of logical expression(s). The
 \code{lhs} needs to start with \code{filter_}. The logical condition(s) at

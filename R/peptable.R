@@ -36,6 +36,7 @@ newColnames <- function(i, x, label_scheme) {
 #'
 #' @inheritParams info_anal
 #' @inheritParams normPSM
+#' @inheritParams mergePep
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
                            use_duppeps = TRUE, ...) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -344,9 +345,9 @@ fmt_num_cols <- function (df) {
 #'indicated under the \code{prot_n_pep} column after the peptide
 #'removals/cleanups using \code{purgePSM}.
 #'
-#'@param use_duppeps Logical; if TRUE, reassign the belonging ID of
-#'  double-dipped peptides.
-#'@param ... \code{filter_}: Variable argument statements for the row filtration
+#' @param use_duppeps Logical; if TRUE, re-assigns double/multiple dipping
+#'   peptide sequences to the most likely proteins by majority votes.
+#' @param ... \code{filter_}: Variable argument statements for the row filtration
 #'  of data against the column keys in individual peptide tables of
 #'  \code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt}, etc.
 #'  \cr \cr The variable argument statements should be in the following format:
@@ -393,6 +394,7 @@ fmt_num_cols <- function (df) {
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
@@ -588,6 +590,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
@@ -777,6 +780,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
@@ -895,9 +899,46 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
     dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
   
+  if (! "pep_isunique" %in% names(df)) {
+    df$pep_isunique <- TRUE
+    warning("Column `pep_isunique` created and all TRUE values assumed.", call. = FALSE)
+  }
+  
   df <- df %>% filters_in_call(!!!filter_dots)
   
-  if (use_unique_pep & "pep_isunique" %in% names(df)) df <- df %>% dplyr::filter(pep_isunique == 1)
+  group_psm_by <- match_call_arg(normPSM, group_psm_by)
+  group_pep_by <- match_call_arg(normPSM, group_pep_by)
+  
+  df <- local({
+    df_shared <- df %>% 
+      dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by), 
+                    pep_n_psm, prot_n_psm, prot_n_pep, pep_isunique) %>% 
+      dplyr::filter(!pep_isunique)
+    
+    prot_n_sharepeps <- df_shared %>% 
+      dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>% 
+      dplyr::group_by(!!rlang::sym(group_pep_by)) %>% 
+      dplyr::summarise(prot_n_sharepeps = n())
+    
+    prot_n_sharepsms <- df_shared %>% 
+      dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by), pep_n_psm) %>% 
+      dplyr::group_by(!!rlang::sym(group_pep_by)) %>% 
+      dplyr::summarise(prot_n_sharepsms = sum(pep_n_psm))
+    
+    df <- list(df, prot_n_sharepeps, prot_n_sharepsms) %>% 
+      purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
+      dplyr::mutate(prot_n_sharepeps = replace(prot_n_sharepeps, is.na(prot_n_sharepeps), 0), 
+                    prot_n_sharepsms = replace(prot_n_sharepsms, is.na(prot_n_sharepsms), 0)) %>% 
+      dplyr::mutate(prot_n_uniqpep = prot_n_pep - prot_n_sharepeps, 
+                    prot_n_uniqpsm = prot_n_psm - prot_n_sharepsms) %>% 
+      dplyr::select(-prot_n_sharepeps, -prot_n_sharepsms)
+    
+    df %>% 
+      ins_cols_after(which(names(.) == "prot_n_psm"), which(names(.) == "prot_n_uniqpsm")) %>% 
+      ins_cols_after(which(names(.) == "prot_n_pep"), which(names(.) == "prot_n_uniqpep"))
+  })
+  
+  if (use_unique_pep && "pep_isunique" %in% names(df)) df <- df %>% dplyr::filter(pep_isunique == 1)
   
   df_num <- df %>% 
     dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
@@ -1017,6 +1058,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
 
 #' Assign duplicated peptides to a leading protein
 #' @param df A PSM data frame
+#' @inheritParams mergePep
 #' @inheritParams annotPSM
 assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) {
   # Scenario: 

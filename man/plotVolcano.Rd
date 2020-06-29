@@ -57,7 +57,7 @@ The default is TRUE.}
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{gspval_cutoff}{Numeric value or vector for uses with
 \code{\link{gspaMap}}. \code{Gene sets} with enrichment \code{pVals} less

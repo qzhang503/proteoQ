@@ -15,6 +15,9 @@ scoreMDS(
   method = "euclidean",
   p = 2,
   k = 3,
+  col_group,
+  folds,
+  out_file,
   ...
 )
 }
@@ -39,7 +42,7 @@ for selected samples.}
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
@@ -68,6 +71,17 @@ MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
 
 \item{k}{Numeric; The desired dimension for the solution passed to
 \code{\link[stats]{cmdscale}}. The default is 3.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
+
+\item{folds}{Not currently used. Integer; the degree of folding data into
+subsets. The default is one without data folding.}
+
+\item{out_file}{A file path object to an output file.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

@@ -17,7 +17,7 @@ find_pri_df(
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an

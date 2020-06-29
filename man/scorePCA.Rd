@@ -4,7 +4,18 @@
 \alias{scorePCA}
 \title{Scores PCA}
 \usage{
-scorePCA(df, id, label_scheme_sub, anal_type, scale_log2r, type, ...)
+scorePCA(
+  df,
+  id,
+  label_scheme_sub,
+  anal_type,
+  scale_log2r,
+  type,
+  col_group,
+  folds,
+  out_file,
+  ...
+)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -27,7 +38,7 @@ for selected samples.}
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
@@ -35,6 +46,17 @@ of standard deviation across all samples. The default is TRUE.}
 \item{type}{Character string indicating the type of PCA. At the \code{type =
 obs} default, the components are by observations; at \code{type = feats},
 the components are by features.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
+
+\item{folds}{Not currently used. Integer; the degree of folding data into
+subsets. The default is one without data folding.}
+
+\item{out_file}{A file path object to an output file.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

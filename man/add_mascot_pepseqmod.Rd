@@ -4,7 +4,7 @@
 \alias{add_mascot_pepseqmod}
 \title{Add the `pep_seq_mod` field to Mascot PSMs}
 \usage{
-add_mascot_pepseqmod(df, use_lowercase_aa)
+add_mascot_pepseqmod(df, use_lowercase_aa, purge_phosphodata)
 }
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}
@@ -12,6 +12,10 @@ add_mascot_pepseqmod(df, use_lowercase_aa)
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the
 table below for details. The default is TRUE.}
+
+\item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
+variable modification(s), entries without phosphorylation will be removed.
+The default is TRUE.}
 }
 \description{
 Add the `pep_seq_mod` field to Mascot PSMs

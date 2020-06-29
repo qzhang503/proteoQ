@@ -603,6 +603,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 

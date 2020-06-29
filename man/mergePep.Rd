@@ -10,8 +10,8 @@ mergePep(plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...)
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
 \code{log2FC} will be plotted. The default is TRUE.}
 
-\item{use_duppeps}{Logical; if TRUE, reassign the belonging ID of
-double-dipped peptides.}
+\item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
+peptide sequences to the most likely proteins by majority votes.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 of data against the column keys in individual peptide tables of
@@ -122,6 +122,7 @@ mergePep(
  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+ \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 

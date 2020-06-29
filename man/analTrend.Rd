@@ -65,17 +65,14 @@ will be used. The default is FALSE.}
 
 \item{filepath}{Use system default.}
 
-\item{filename}{A representative file name to outputs. By default, the name(s)
-will be determined automatically. For text files, a typical file extension
-is \code{.txt}. For image files, they are typically saved via
-\code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
-image type will be determined by the extension of the file name.}
+\item{filename}{A representative file name to outputs. By default, it will be
+determined automatically by the name of the current call.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

@@ -17,7 +17,7 @@ concat_fml_dots(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type = "zzz")
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 }
 \description{
 Concatenate formula(s) to varargs of dots

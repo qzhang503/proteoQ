@@ -11,6 +11,8 @@ tmt_wtmean(x, id, na.rm = TRUE, ...)
 
 \item{id}{The variable to summarize \code{log2FC}.}
 
+\item{na.rm}{Logical; if TRUE, removes NA values.}
+
 \item{...}{Additional arguments for \code{weighted.mean}.}
 }
 \description{

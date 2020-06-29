@@ -771,6 +771,7 @@ plotNMFmeta <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
@@ -947,6 +948,7 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
@@ -1173,6 +1175,7 @@ plot_prnNMFCoef <- function (col_select = NULL,
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
