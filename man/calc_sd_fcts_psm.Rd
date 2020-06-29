@@ -33,9 +33,11 @@ range of the \code{intensity} of reporter ions for use in the scaling
 normalization of standard deviation across samples. The default is between
 the 5th and the 95th quantiles.}
 
-\item{set_idx}{Numeric.  The index of a multiplex TMT experiment.}
+\item{set_idx}{Numeric.  The index of a multiplex TMT experiment in metadata
+files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 
-\item{injn_idx}{Numeric; an index of \code{LCMS_Inj} in metadata \code{label_scheme.xlsx}.}
+\item{injn_idx}{Numeric. The index of \code{LCMS_Inj} in metadata files such
+as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 }
 \description{
 The standard deviations are based on samples under each TMT set and LCMS.

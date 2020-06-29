@@ -9,7 +9,8 @@ channelInfo(label_scheme, set_idx)
 \arguments{
 \item{label_scheme}{The data frame returned by \code{\link{load_expts}}.}
 
-\item{set_idx}{Numeric.  The index of a multiplex TMT experiment.}
+\item{set_idx}{Numeric.  The index of a multiplex TMT experiment in metadata
+files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 }
 \value{
 Three lists of indexes: \code{refChannels}, reference channels(s);

@@ -21,6 +21,9 @@ grouping. At the \code{prot_acc} default, descriptive statistics will be
 calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
+
+\item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
+peptide sequences to the most likely proteins by majority votes.}
 }
 \description{
 Assign duplicated peptides to a leading protein

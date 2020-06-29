@@ -1,3 +1,29 @@
+#' Geom plot for ggpairs
+#' 
+#' @param data Input data.
+#' @param mapping The mapping for ggplot2.
+#' @param params Additional parameters for geom_point.
+#' @inheritParams prnPCA
+#' @import dplyr ggplot2 rlang
+#' @importFrom magrittr %>%
+geom_lower_text <- function(data, mapping, params, show_ids, ...) {
+  mapping_xy <- mapping %>% .[names(.) %in% c("x", "y")]
+  
+  p <- ggplot() + 
+    rlang::eval_tidy(rlang::quo(geom_point(data = data, mapping = mapping, !!!params)))
+  
+  if (show_ids) {
+    stopifnot("Label" %in% names(data))
+    
+    p <- p + rlang::eval_tidy(rlang::quo(geom_text(data = data, mapping = mapping_xy, 
+                                                   label = data$Label, 
+                                                   color = "gray", ...)))
+  }
+  
+  p
+}
+
+
 #' Plots MDS
 #' 
 #' @inheritParams prnMDS
@@ -7,7 +33,8 @@
 #' @importFrom magrittr %>%
 plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL, 
                      adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2, 
-                     k = 3, dimension = 2, show_ids = FALSE, 
+                     k = 3, dimension = 2, folds = 1, show_ids = FALSE, show_ellipses = FALSE, 
+                     col_group = NULL, 
                      col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, 
                      col_alpha = NULL, 
                      color_brewer = NULL, fill_brewer = NULL, 
@@ -20,6 +47,13 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                    rlang::is_logical, logical(1)))
   stopifnot(vapply(c(p, k), is.numeric, logical(1)))
   stopifnot(nrow(label_scheme_sub) > 0)
+  
+  col_group <- rlang::enexpr(col_group) 
+  col_fill <- rlang::enexpr(col_fill)
+  col_color <- rlang::enexpr(col_color)
+  col_shape <- rlang::enexpr(col_shape)
+  col_size <- rlang::enexpr(col_size)
+  col_alpha <- rlang::enexpr(col_alpha)
   
   if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
   
@@ -67,16 +101,20 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       method = method, 
       p = p, 
       k = k, 
-      !!!anal_dots) %>% 
-    cmbn_meta(label_scheme_sub) %T>% 
-    readr::write_tsv(file.path(filepath, paste0(fn_prefix, "_res.txt")))
+      col_group = !!col_group, 
+      folds = folds, 
+      out_file = file.path(filepath, paste0(fn_prefix, "_res.txt")), 
+      !!!anal_dots) 
 
-	col_fill <- rlang::enexpr(col_fill)
-	col_color <- rlang::enexpr(col_color)
-	col_shape <- rlang::enexpr(col_shape)
-	col_size <- rlang::enexpr(col_size)
-	col_alpha <- rlang::enexpr(col_alpha)
-
+  # key `Label` used in `geom_lower_text()`
+  if ("Sample_ID" %in% names(df)) {
+    df$Label <- df$Sample_ID
+  } else if (id %in% names(df)) {
+    df$Label <- df[[id]]
+  } else {
+    df$Label <- df[, 1, drop = FALSE]
+  }
+  
 	map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
 
 	if (col_color != rlang::expr(Color) | !rlang::as_string(sym(col_color)) %in% names(df)) 
@@ -166,49 +204,23 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	  .[!is.na(.)]
 	fix_args$stroke <- 0.02
 	
-	# --- set up labels ---
+	# --- set up axis labels ---
 	col_labs <- cols %>% gsub("\\.", " ", .)
 	
 	# --- plots ---
 	if (dimension > 2) {
-	  geom_lower_notext <- function(data, mapping, params, ...){
-	    p <- ggplot() + 
-	      rlang::eval_tidy(rlang::quo(geom_point(data = data, mapping = mapping, !!!params)))
-	    p
-	  }
-	  
-	  geom_lower_text <- function(data, mapping, params, ...){
-	    mapping2 <- mapping %>% .[names(.) %in% c("x", "y")]
-	    
-	    p <- ggplot() + 
-	      rlang::eval_tidy(rlang::quo(geom_point(data = data, mapping = mapping, !!!params))) + 
-	      rlang::eval_tidy(rlang::quo(geom_text(data = data, mapping = mapping2, 
-	                                            label = data$Sample_ID, 
-	                                            color = "gray", size = 3)))
-	    p
-	  }
-	  
-	  if (show_ids) {
-	    p <- GGally::ggpairs(df, 
-	                         axisLabels = "internal",
-	                         columns = cols, 
-	                         mapping = mapping_var, 
-	                         columnLabels = col_labs, 
-	                         labeller = label_wrap_gen(10),
-	                         title = "", 
-	                         lower = list(continuous = wrap(geom_lower_text, params = fix_args)),
-	                         upper = "blank") 
-	  } else {
-	    p <- GGally::ggpairs(df, 
-	                         axisLabels = "internal",
-	                         columns = cols, 
-	                         mapping = mapping_var, 
-	                         columnLabels = col_labs, 
-	                         labeller = label_wrap_gen(10),
-	                         title = "", 
-	                         lower = list(continuous = wrap(geom_lower_notext, params = fix_args)),
-	                         upper = "blank") 
-	  }
+	  p <- GGally::ggpairs(df, 
+	                       axisLabels = "internal",
+	                       columns = cols, 
+	                       mapping = mapping_var, 
+	                       columnLabels = col_labs, 
+	                       labeller = label_wrap_gen(10),
+	                       title = "", 
+	                       lower = list(continuous = wrap(geom_lower_text, 
+	                                                      params = fix_args, 
+	                                                      show_ids = show_ids, 
+	                                                      size = 3)),
+	                       upper = "blank") 
 	  
 	  p <- p + theme
 
@@ -255,10 +267,46 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	    }
 	  }
 	  
+	  if (show_ellipses) {
+	    if (anyNA(label_scheme_sub[[col_group]])) {
+	      warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx", 
+	              call. = FALSE)
+	    }
+	    
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + stat_ellipse(
+	          data = df, 
+	          aes(x = !!rlang::sym(paste("Coordinate", y, sep = ".")), 
+	              y = !!rlang::sym(paste("Coordinate", x, sep = ".")), 
+	              fill = !!rlang::sym(col_group)), 
+	          geom = "polygon", 
+	          alpha = .4, 
+	          show.legend = FALSE, 
+	        )
+	      }
+	    }
+	  }
+	  
 	} else {
 	  p <- ggplot() +
 	    rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args))) +
 	    coord_fixed() 
+	  
+	  if (show_ellipses) {
+	    if (anyNA(label_scheme_sub[[col_group]])) {
+	      warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx", 
+	              call. = FALSE)
+	    }
+	    
+	    p <- p + stat_ellipse(
+	      data = df, 
+	      aes(x = Coordinate.1, y = Coordinate.2, fill = !!rlang::sym(col_group)), 
+	      geom = "polygon", 
+	      alpha = .4, 
+	      show.legend = FALSE, 
+	    )
+	  }
 	  
 	  if (show_ids) {
 	    p <- p +
@@ -407,9 +455,12 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 #' @inheritParams gspaTest
 #' @import dplyr ggplot2 rlang
 #' @importFrom magrittr %>%
-plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs", dimension = 2, 
-                     show_ids = TRUE, 
-                     col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
+plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs", 
+                     dimension = 2, folds = 1, 
+                     show_ids = TRUE, show_ellipses = FALSE, 
+                     col_group = NULL, 
+                     col_color = NULL, col_fill = NULL, col_shape = NULL, 
+                     col_size = NULL, col_alpha = NULL, 
                      color_brewer = NULL, fill_brewer = NULL, 
                      size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
@@ -420,8 +471,20 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
                    rlang::is_logical, logical(1)))
   stopifnot(nrow(label_scheme_sub) > 0)
   
+  col_group <- rlang::enexpr(col_group) 
+  col_color <- rlang::enexpr(col_color)
+  col_fill <- rlang::enexpr(col_fill)
+  col_shape <- rlang::enexpr(col_shape)
+  col_size <- rlang::enexpr(col_size)
+  col_alpha <- rlang::enexpr(col_alpha)
+  
   complete_cases <- to_complete_cases(complete_cases = complete_cases, impute_na = impute_na)
   if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  
+  if (show_ellipses && type == "feats") {
+    show_ellipses <- FALSE
+    warning("No ellipses at `type = feats`.", call. = FALSE)
+  }
   
   id <- rlang::enexpr(id)
   dots <- rlang::enexprs(...)
@@ -462,25 +525,26 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
       anal_type = anal_type, 
       scale_log2r = scale_log2r, 
       type = type, 
+      col_group = !!col_group, 
+      folds = folds, 
+      out_file = file.path(filepath, paste0(fn_prefix, "_res.txt")), 
       !!!anal_dots)
       
-  df <- res$x %>% 
-    data.frame(check.names = FALSE) %>% 
-    cmbn_meta(label_scheme_sub) %T>% 
-    readr::write_tsv(file.path(filepath, paste0(fn_prefix, "_res.txt")))
+  df <- res$pca
   
-  prop_var <- res$prop_var %>% 
+  # key `Label` used in `geom_lower_text()`
+  if ("Sample_ID" %in% names(df)) {
+    df$Label <- df$Sample_ID
+  } else if (id %in% names(df)) {
+    df$Label <- df[[id]]
+  } else {
+    df$Label <- df[, 1, drop = FALSE]
+  }
+  
+  res$prop_var <- res$prop_var %>% 
     gsub("%", "", .) %>% 
     as.numeric() %>% 
     paste0("%")
-  res$pca <- df
-  res$prop_var <- prop_var
-
-	col_color <- rlang::enexpr(col_color)
-	col_fill <- rlang::enexpr(col_fill)
-	col_shape <- rlang::enexpr(col_shape)
-	col_size <- rlang::enexpr(col_size)
-	col_alpha <- rlang::enexpr(col_alpha)
 
 	map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
 	
@@ -539,10 +603,8 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	  dimension <- 2
 	}
 
-	names(df) <- gsub("^Coordinate\\.", "PC", names(df))
-	
 	ranges <- seq_len(dimension)
-	cols <- names(df) %>% .[. %in% paste0("PC", ranges)]
+	cols <- colnames(df) %>% .[. %in% paste0("PC", ranges)]
 	
 	max_dim <- names(df) %>% .[grepl("^PC[0-9]+", .)] %>% length()
 	if (dimension > max_dim) {
@@ -567,20 +629,35 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	mapping_var <- mapping[!idx]
 	mapping_fix <- mapping[idx]
 	
-	fix_args <- list(colour = "darkgray", fill = NA, shape = 21, size = 4, alpha = 0.9) %>% 
+	if (type == "obs") {
+	  dot_shape <- 21
+	  dot_size <- 4
+	  dot_alpha <- .9
+	  dot_stroke <- 0.02
+	  text_size <- 3
+	} else {
+	  dot_shape <- 20
+	  dot_size <- 2
+	  dot_alpha <- .6
+	  dot_stroke <- NA
+	  text_size = 2
+	}
+	
+	fix_args <- list(colour = "darkgray", fill = NA, shape = dot_shape, 
+	                 size = dot_size, alpha = dot_alpha) %>% 
 	  .[names(.) %in% names(mapping_fix)] %>% 
 	  .[!is.na(.)]
-	fix_args$stroke <- 0.02
+	fix_args$stroke <- dot_stroke
 	
-	# --- set up labels ---
+	# --- set up axis labels ---
 	if (is.null(anal_dots$center)) {
 	  col_labs <- 
-	    purrr::imap_chr(prop_var, ~ paste0("PC", .y, " (", .x, ")")) %>% 
+	    purrr::imap_chr(res$prop_var, ~ paste0("PC", .y, " (", .x, ")")) %>% 
 	    .[ranges]
 	} else {
 	  if (anal_dots$center) {
 	    col_labs <- 
-	      purrr::imap_chr(prop_var, ~ paste0("PC", .y, " (", .x, ")")) %>% 
+	      purrr::imap_chr(res$prop_var, ~ paste0("PC", .y, " (", .x, ")")) %>% 
 	      .[ranges]
 	  } else {
 	    col_labs <- cols
@@ -589,45 +666,19 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	
 	# --- plots ---
 	if (dimension > 2) {
-	  geom_lower_notext <- function(data, mapping, params, ...){
-	    p <- ggplot() + 
-	      rlang::eval_tidy(rlang::quo(geom_point(data = data, mapping = mapping, !!!params)))
-	    p
-	  }
-	  
-	  geom_lower_text <- function(data, mapping, params, ...){
-	    mapping2 <- mapping %>% .[names(.) %in% c("x", "y")]
-	    
-	    p <- ggplot() + 
-	      rlang::eval_tidy(rlang::quo(geom_point(data = data, mapping = mapping, !!!params))) + 
-	      rlang::eval_tidy(rlang::quo(geom_text(data = data, mapping = mapping2, 
-	                                            label = data$Sample_ID, 
-	                                            color = "gray", size = 3)))
-	    p
-	  }
-	  
-	  if (show_ids) {
-	    p <- GGally::ggpairs(df, 
-	                         axisLabels = "internal",
-	                         columns = cols, 
-	                         mapping = mapping_var, 
-	                         columnLabels = col_labs, 
-	                         labeller = label_wrap_gen(10),
-	                         title = "", 
-	                         lower = list(continuous = wrap(geom_lower_text, params = fix_args)),
-	                         upper = "blank") 
-	  } else {
-	    p <- GGally::ggpairs(df, 
-	                         axisLabels = "internal",
-	                         columns = cols, 
-	                         mapping = mapping_var, 
-	                         columnLabels = col_labs, 
-	                         labeller = label_wrap_gen(10),
-	                         title = "", 
-	                         lower = list(continuous = wrap(geom_lower_notext, params = fix_args)),
-	                         upper = "blank") 
-	  }
-	  
+	  p <- GGally::ggpairs(df, 
+	                       axisLabels = "internal",
+	                       columns = cols, 
+	                       mapping = mapping_var, 
+	                       columnLabels = col_labs, 
+	                       labeller = label_wrap_gen(10),
+	                       title = "", 
+	                       lower = list(continuous = wrap(geom_lower_text, 
+	                                                      params = fix_args, 
+	                                                      show_ids = show_ids, 
+	                                                      size = text_size)),
+	                       upper = "blank") 
+
 	  p <- p + theme
 	  
 	  if (!is.null(fill_brewer)) {
@@ -673,16 +724,51 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 	    }
 	  }
 	  
+	  if (show_ellipses) {
+	    if (anyNA(label_scheme_sub[[col_group]])) {
+	      warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx", 
+	              call. = FALSE)
+	    }
+	    
+	    for (x in 2:dimension) {
+	      for (y in 1:(x-1)) {
+	        p[x, y] <- p[x, y] + stat_ellipse(
+	          data = df, 
+	          aes(x = !!rlang::sym(paste0("PC", y)), 
+	              y = !!rlang::sym(paste0("PC", x)), 
+	              fill = !!rlang::sym(col_group)), 
+	          geom = "polygon", 
+	          alpha = .4, 
+	          show.legend = FALSE, 
+	        )
+	      }
+	    }
+	  }
 	} else {
 	  p <- ggplot() +
 	    rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args))) +
 	    coord_fixed() 
 	  
+	  if (show_ellipses) {
+	    if (anyNA(label_scheme_sub[[col_group]])) {
+	      warning("(Partial) NA aesthetics under column `", col_group, "` in expt_smry.xlsx", 
+	              call. = FALSE)
+	    }
+	    
+	    p <- p + ggplot2::stat_ellipse(
+	      data = df, 
+	      aes(x = PC1, y = PC2, fill = !!rlang::sym(col_group)), 
+	      geom = "polygon", 
+	      alpha = .4, 
+	      show.legend = FALSE, 
+	    )
+	  }
+	  
 	  if (show_ids) {
 	    p <- p +
 	      geom_text(data = df,
-	                mapping = aes(x = PC1, y = PC2, label = Sample_ID),
-	                color = "gray", size = 3)
+	                mapping = aes(x = PC1, y = PC2, label = Label),
+	                color = "gray", size = text_size)
 	  }
 	  
 	  p <- p +
@@ -716,6 +802,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 
 #' Scores MDS
 #'
+#' @param out_file A file path object to an output file.
 #' @inheritParams prnMDS
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
@@ -723,10 +810,12 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 #' @importFrom MASS isoMDS
 #' @importFrom magrittr %>%
 scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r, 
-                      adjEucDist = FALSE, classical, method = "euclidean", p = 2, k = 3, ...) {
+                      adjEucDist = FALSE, classical, method = "euclidean", 
+                      p = 2, k = 3, col_group, folds, out_file, ...) {
 
 	dots <- rlang::enexprs(...)
 	id <- rlang::as_string(rlang::enexpr(id))
+	col_group <- rlang::enexpr(col_group)
 	
 	stopifnot(nrow(df) > 50)
 
@@ -734,56 +823,125 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	             sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
 	  .$log2R
 	
-	label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% colnames(df))
+	nms <- names(df)
+	n_rows <- nrow(df)
 	
-	center = FALSE # not matter to `dist` calculation
+	center = FALSE # not matter in `dist` calculation
 	if (center) df <- sweep(df, 1, rowMeans(df, na.rm = TRUE), "-")
+	
+	label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% nms)
+	
+	res <- prep_folded_tdata(df, folds, label_scheme_sub, !!col_group)
+	df_t <- res$df_t
+	ls_sub <- res$ls_sub
+	rm(res)
+	
+	if (rlang::as_string(col_group) %in% names(df_t)) {
+	  df_t <- df_t %>% dplyr::select(-!!rlang::sym(col_group))
+	}
+	
+	stopifnot(vapply(df_t, is.numeric, logical(1)))
 
-	D <- dist(x = t(df), method = method, diag = TRUE, upper = TRUE, p = p)
+	D <- dist(x = df_t, method = method, diag = TRUE, upper = TRUE, p = p) %>% 
+	  as.matrix()
+	
 	if (anyNA(D)) stop("Distance cannot be calculated between one more sample pairs.\n", 
 	                   "Check entries under the column corresponding to `col_select` in metadata.", 
 	                   call. = FALSE)
 	
-	D <- as.matrix(D)
-
 	if (adjEucDist && method == "euclidean") {
 	  D <- local({
-  	  annotation_col <- colAnnot(annot_cols = c("TMT_Set"), sample_ids = attr(D, "Labels"))
-  
-  		for (i in 1:ncol(D)) {
-  			for (j in 1:ncol(D)) {
-  				if (annotation_col$TMT_Set[i] != annotation_col$TMT_Set[j])
-  				  D[i, j] <- D[i, j]/sqrt(2)
-  			}
-  		}
-  		
-  	  return(D)
-		})
-	}
+	    annotation_col <- colAnnot(annot_cols = c("TMT_Set"), sample_ids = nms) %>% 
+	      .[rep(seq_len(nrow(.)), folds), , drop = FALSE] %>% 
+	      `rownames<-`(paste(rep(nms, folds), rep(seq_len(folds), each = length(nms)), sep = "."))
 
-	if (!classical) {
-		isomds_dots <- dots %>% .[names(.) %in% c("y", "maxit", "trace", "tol")]
-		isomds_dots$y <- NULL
-		
-		df_mds <- rlang::expr(MASS::isoMDS(d = !!D, k = !!k, p = !!p, !!!isomds_dots)) %>% 
-		  rlang::eval_bare(env = caller_env()) %>% 
-		  .$points %>% 
-		  data.frame()
-	} else {
-		cmdscale_dots <- dots %>% .[names(.) %in% c("eig", "add", "x.ret", "list.")]
-		cmdscale_dots$list. <- TRUE
-		
-		df_mds <- rlang::expr(stats::cmdscale(d = !!D, k = !!k, !!!cmdscale_dots)) %>% 
-		  rlang::eval_bare(env = caller_env()) %>% 
-		  .$points %>% 
-		  data.frame()
+	    for (i in 1:ncol(D)) {
+	      for (j in 1:ncol(D)) {
+	        if (annotation_col$TMT_Set[i] != annotation_col$TMT_Set[j])
+	          D[i, j] <- D[i, j]/sqrt(2)
+	      }
+	    }
+	    
+	    return(D)
+	  })
 	}
 	
-	df_mds <- df_mds %>%
-		`colnames<-`(paste("Coordinate", 1:k, sep = ".")) %>%
-		tibble::rownames_to_column("Sample_ID") %>%
-		dplyr::select(which(not_all_zero(.))) %>%
-		tibble::column_to_rownames(var = "Sample_ID")
+	if (!classical) {
+	  isomds_dots <- dots %>% .[names(.) %in% c("y", "maxit", "trace", "tol")]
+	  isomds_dots$y <- NULL
+	  
+	  df_mds <- rlang::expr(MASS::isoMDS(d = !!D, k = !!k, p = !!p, !!!isomds_dots)) %>% 
+	    rlang::eval_bare(env = caller_env()) %>% 
+	    .$points %>% 
+	    data.frame()
+	} else {
+	  cmdscale_dots <- dots %>% .[names(.) %in% c("eig", "add", "x.ret", "list.")]
+	  cmdscale_dots$list. <- TRUE
+	  
+	  df_mds <- rlang::expr(stats::cmdscale(d = !!D, k = !!k, !!!cmdscale_dots)) %>% 
+	    rlang::eval_bare(env = caller_env()) %>% 
+	    .$points %>% 
+	    data.frame()
+	}
+	
+	df_mds %>%
+	  `colnames<-`(paste("Coordinate", 1:k, sep = ".")) %>%
+	  tibble::rownames_to_column("Sample_ID") %>%
+	  dplyr::select(which(not_all_zero(.))) %>%
+	  tibble::column_to_rownames(var = "Sample_ID") %>% 
+	  cmbn_meta(ls_sub) %T>% 
+	  readr::write_tsv(out_file)
+}
+
+
+
+
+#' Prepares folded, transposed data 
+#'
+#' @param df Input data frame
+#' @param label_scheme_sub Metadata for data subset
+#' @inheritParams prnPCA
+#' @inheritParams anal_pepNMF
+#' @import dplyr rlang
+#' @importFrom magrittr %>%
+prep_folded_tdata <- function (df, folds, label_scheme_sub, col_group) {
+  nms <- names(df)
+  n_rows <- nrow(df)
+  
+  # not used
+  col_group = rlang::enexpr(col_group)
+  
+  if (folds == 1) {
+    nms_feat <- rownames(df)
+    nms_smpl <- nms    
+    ls_sub <- label_scheme_sub
+    df_t <- df %>% t()
+  } else {
+    n_feats <- floor(n_rows/folds)
+    nms_feat <- paste("x", seq_len(n_feats), sep = ".")
+    nms_smpl <- paste(rep(nms, folds), rep(seq_len(folds), each = length(nms)), sep = ".")
+    ls_sub <- label_scheme_sub %>% 
+      .[rep(seq_len(nrow(.)), folds), , drop = FALSE] %>% 
+      dplyr::mutate(Sample_ID = nms_smpl)
+    
+    df_t <- purrr::map(seq_len(folds), ~ {
+      df[sample(n_rows, n_feats, replace = FALSE), ] %>% 
+        `rownames<-`(nms_feat) %>% 
+        t() 
+    }) %>% do.call(rbind, .)
+  }
+  
+  # need col_group column for LDA
+  df_t <- df_t %>% 
+    data.frame(check.names = FALSE) %>% 
+    
+    dplyr::mutate(Sample_ID = rep(nms, folds)) %>% 
+    dplyr::left_join(label_scheme_sub %>% dplyr::select(Sample_ID, !!rlang::sym(col_group)), by = "Sample_ID") %>% 
+    dplyr::select(-Sample_ID) %>% 
+    
+    `rownames<-`(nms_smpl)
+  
+  return(list(df_t = df_t, ls_sub = ls_sub))
 }
 
 
@@ -792,60 +950,79 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 #' @inheritParams prnPCA
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
+#' @inheritParams scoreMDS
 #' @import dplyr rlang
 #' @importFrom MASS isoMDS
 #' @importFrom magrittr %>%
-scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, ...) {
+scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, type, 
+                      col_group, folds, out_file, ...) {
   dots <- rlang::enexprs(...)
   id <- rlang::as_string(rlang::enexpr(id))
+  col_group <- rlang::enexpr(col_group)
   
-  stopifnot(nrow(df) > 50)
-  
-  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
-               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
-    .$log2R 
-
   if (! purrr::is_empty(dots$rank.)) {
     if (dots$rank. < 2) {
       warning("PCA `rank.` increased from ", dots$rank., " to a minimum of 2.", call. = FALSE)
       dots$rank. <- 2
     }
   }
+  
+  df_orig <- df
+  
+  df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
+               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
+    .$log2R 
+  
+  nms <- names(df)
+  n_rows <- nrow(df)
+  
+  if (n_rows <= 50) {
+    stop("Need 50 or more data rows for PCA.", call. = FALSE)
+  }
 
+  label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% nms)
+  
   if (type == "obs") {
-    df_t <- df %>% 
-      t() %>%
-      data.frame(check.names = FALSE) 
+    res <- prep_folded_tdata(df, folds, label_scheme_sub, !!col_group)
+    df_t <- res$df_t
+    ls_sub <- res$ls_sub
+    rm(res)
+    
+    if (rlang::as_string(col_group) %in% names(df_t)) {
+      df_t <- df_t %>% dplyr::select(-!!rlang::sym(col_group))
+    }
 
-    pr_out <- local({
-      pca_call <- rlang::expr(stats::prcomp(x = !!df_t, scale. = !!scale_log2r, !!!dots))
-      rlang::eval_bare(pca_call, env = caller_env())
-    })
+    stopifnot(vapply(df_t, is.numeric, logical(1)))
     
-    prop_var <- summary(pr_out)$importance[2, ] %>% round(., digits = 3) %>% scales::percent()
+    pr_out <- rlang::expr(stats::prcomp(x = !!df_t, scale. = !!scale_log2r, !!!dots)) %>% 
+        rlang::eval_bare(env = caller_env())
     
-    df_pca <- pr_out$x %>%
-      data.frame(check.names = FALSE) %>%
-      `names<-`(gsub("^PC", "Coordinate\\.", names(.)))    
+    pr_out$pca <- pr_out$x %>% 
+      data.frame(check.names = FALSE) %>% 
+      cmbn_meta(ls_sub) %T>% 
+      readr::write_tsv(out_file)
   } else if (type == "feats") {
-    pr_out <- local({
-      pca_call <- rlang::expr(stats::prcomp(x = !!df, scale. = !!scale_log2r, !!!dots))
-      rlang::eval_bare(pca_call, env = caller_env())
-    })
+    if (folds > 1) {
+      message("Coerce to `k_fold = 1` at `type = feats`.")
+    }
     
-    prop_var <- summary(pr_out)$importance[2, ] %>% round(., digits = 3) %>% scales::percent()
+    stopifnot(vapply(df, is.numeric, logical(1)))
     
-    pr_out$x <- pr_out$x %>%
-      data.frame(check.names = FALSE) %>%
-      `names<-`(gsub("^PC", "Coordinate\\.", names(.)))
-
+    pr_out <- rlang::expr(stats::prcomp(x = !!df, scale. = !!scale_log2r, !!!dots)) %>% 
+      rlang::eval_bare(env = caller_env())
+    
+    pr_out$pca <- pr_out$x %>% 
+      data.frame(check.names = FALSE) %>% 
+      tibble::rownames_to_column(id) %>%
+      dplyr::left_join(df_orig, by = id) %T>% 
+      readr::write_tsv(out_file)
   } else {
     stop("Unkown `type` for PCA.", call. = FALSE)
   }
 
-  pr_out$prop_var <- prop_var
+  pr_out$prop_var <- summary(pr_out)$importance[2, ] %>% round(., digits = 3) %>% scales::percent()
 
-  return(pr_out)
+  invisible(pr_out)
 }
 
 
@@ -900,23 +1077,25 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjE
 #'
 #'@import purrr
 #'@export
-pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
+pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
                     col_shape = NULL, col_size = NULL, col_alpha = NULL,
                     color_brewer = NULL, fill_brewer = NULL, 
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                     adjEucDist = FALSE, classical = TRUE, 
-                    method = "euclidean", p = 2, k = 3, dimension = 2, 
-                    show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL, 
+                    method = "euclidean", p = 2, k = 3, dimension = 2, folds = 1, 
+                    show_ids = TRUE, show_ellipses = FALSE, 
+                    df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
-  check_dots(c("id", "col_group", "df2", "anal_type"), ...)
-  
+  check_dots(c("id", "df2", "anal_type"), ...)
+
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   col_select <- rlang::enexpr(col_select)
+  col_group <- rlang::enexpr(col_group)
   col_color <- rlang::enexpr(col_color)
   col_fill <- rlang::enexpr(col_fill)
   col_shape <- rlang::enexpr(col_shape)
@@ -938,15 +1117,16 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
   reload_expts()
   
   info_anal(id = !!id,
-            col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
+            col_select = !!col_select, col_group = !!col_group, 
+            col_color = !!col_color, col_fill = !!col_fill,
             col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
             color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
             size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method, 
-                               p = p, k = k, dimension = dimension, show_ids = show_ids,
-                               theme = theme, ...)
+                               p = p, k = k, dimension = dimension, folds = folds, show_ids = show_ids,
+                               show_ellipses = show_ellipses, theme = theme, ...)
   
 }
 
@@ -964,19 +1144,20 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'
 #'@inheritParams  prnHist
 #'@inheritParams prnHM
-#'@param  col_color Character string to a column key in \code{expt_smry.xlsx}.
+#'@inheritParams anal_prnNMF
+#'@param col_color Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{color} aesthetics in plots. At
 #'  the NULL default, the column key \code{Color} will be used.
 #'@param  col_fill Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{fill} aesthetics in plots. At
 #'  the NULL default, the column key \code{Fill} will be used.
-#'@param  col_shape Character string to a column key in \code{expt_smry.xlsx}.
+#'@param col_shape Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{shape} aesthetics in plots. At
 #'  the NULL default, the column key \code{Shape} will be used.
-#'@param  col_size Character string to a column key in \code{expt_smry.xlsx}.
+#'@param col_size Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{size} aesthetics in plots. At
 #'  the NULL default, the column key \code{Size} will be used.
-#'@param  col_alpha Character string to a column key in \code{expt_smry.xlsx}.
+#'@param col_alpha Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{alpha} (transparency)
 #'  aesthetics in plots. At the NULL default, the column key \code{Alpha} will
 #'  be used.
@@ -1025,6 +1206,9 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'  The default is 2.
 #'@param show_ids Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 #'  plots. The default is TRUE.
+#'@param show_ellipses Logical; if TRUE, shows the ellipses by sample groups
+#'  according to \code{col_group}. The default is FALSE.
+#'@inheritParams prnPCA
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
@@ -1067,6 +1251,7 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
@@ -1101,23 +1286,25 @@ pepMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-prnMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
+prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
                     col_shape = NULL, col_size = NULL, col_alpha = NULL,
                     color_brewer = NULL, fill_brewer = NULL, 
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                     adjEucDist = FALSE, classical = TRUE, 
-                    method = "euclidean", p = 2, k = 3, dimension = 2, 
-                    show_ids = TRUE, df = NULL, filepath = NULL, filename = NULL, 
+                    method = "euclidean", p = 2, k = 3, dimension = 2, folds = 1, 
+                    show_ids = TRUE, show_ellipses = FALSE, 
+                    df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
-  check_dots(c("id", "col_group", "df2", "anal_type"), ...)
-  
+  check_dots(c("id", "df2", "anal_type"), ...)
+
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   col_select <- rlang::enexpr(col_select)
+  col_group <- rlang::enexpr(col_group)
   col_color <- rlang::enexpr(col_color)
   col_fill <- rlang::enexpr(col_fill)
   col_shape <- rlang::enexpr(col_shape)
@@ -1139,15 +1326,16 @@ prnMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
   reload_expts()
   
   info_anal(id = !!id,
-            col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
+            col_select = !!col_select, col_group = !!col_group, 
+            col_color = !!col_color, col_fill = !!col_fill,
             col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha,
             color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
             size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
             anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method, 
-                               p = p, k = k, dimension = dimension, show_ids = show_ids,
-                               theme = theme, ...)
+                               p = p, k = k, dimension = dimension, folds = folds, show_ids = show_ids,
+                               show_ellipses = show_ellipses, theme = theme, ...)
 }
 
 
@@ -1160,19 +1348,20 @@ prnMDS <- function (col_select = NULL, col_color = NULL, col_fill = NULL,
 #'
 #'@import purrr
 #'@export
-pepPCA <- function (col_select = NULL, col_color = NULL, 
+pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL, 
                     col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
                     color_brewer = NULL, fill_brewer = NULL, 
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                    show_ids = TRUE, type = c("obs", "feats"), dimension = 2, 
+                    show_ids = TRUE, show_ellipses = FALSE, 
+                    type = c("obs", "feats"), dimension = 2, folds = 1, 
                     df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
   
   message("=== The feature of 'formula prcomp` is not yet available in proteoQ. ===\n", 
           "=== ONLY arguments with `Default prcomp` will be used. ===\n")
   
-  check_dots(c("id", "col_group", "df2", "anal_type"), ...)
+  check_dots(c("id", "df2", "anal_type"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
@@ -1188,6 +1377,7 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
   }
   
   col_select <- rlang::enexpr(col_select)
+  col_group <- rlang::enexpr(col_group)
   col_color <- rlang::enexpr(col_color)
   col_fill <- rlang::enexpr(col_fill)
   col_shape <- rlang::enexpr(col_shape)
@@ -1207,14 +1397,15 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
   reload_expts()
   
   info_anal(id = !!id,
-            col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
+            col_select = !!col_select, col_group = !!col_group, 
+            col_color = !!col_color, col_fill = !!col_fill,
             col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha, 
             color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
             size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "PCA")(type = type, dimension = dimension, show_ids = show_ids, 
-                               theme = theme, ...)
+            anal_type = "PCA")(type = type, dimension = dimension, folds = folds, show_ids = show_ids, 
+                               show_ellipses = show_ellipses, theme = theme, ...)
 }
 
 
@@ -1228,10 +1419,13 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
 #'@inheritParams prnHist
 #'@inheritParams prnHM
 #'@inheritParams prnMDS
+#'@inheritParams anal_pepNMF
 #'@param complete_cases Logical; always TRUE for PCA.
 #'@param type Character string indicating the type of PCA. At the \code{type =
 #'  obs} default, the components are by observations; at \code{type = feats},
 #'  the components are by features.
+#'@param folds Not currently used. Integer; the degree of folding data into
+#'  subsets. The default is one without data folding.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
@@ -1277,6 +1471,7 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
@@ -1311,19 +1506,20 @@ pepPCA <- function (col_select = NULL, col_color = NULL,
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>%
 #'@export
-prnPCA <- function (col_select = NULL, col_color = NULL, 
+prnPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL, 
                     col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
                     color_brewer = NULL, fill_brewer = NULL, 
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, 
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                    show_ids = TRUE, type = c("obs", "feats"), dimension = 2, 
+                    show_ids = TRUE, show_ellipses = FALSE, 
+                    type = c("obs", "feats"), dimension = 2, folds = 1, 
                     df = NULL, filepath = NULL, filename = NULL, 
                     theme = NULL, ...) {
   
   message("=== The feature of 'formula prcomp` is not yet available in proteoQ. ===\n", 
           "=== ONLY arguments with `Default prcomp` will be used. ===\n")
 
-  check_dots(c("id", "col_group", "df2", "anal_type"), ...)
+  check_dots(c("id", "df2", "anal_type"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
@@ -1339,6 +1535,7 @@ prnPCA <- function (col_select = NULL, col_color = NULL,
   }
 
   col_select <- rlang::enexpr(col_select)
+  col_group <- rlang::enexpr(col_group)
   col_color <- rlang::enexpr(col_color)
   col_fill <- rlang::enexpr(col_fill)
   col_shape <- rlang::enexpr(col_shape)
@@ -1358,14 +1555,15 @@ prnPCA <- function (col_select = NULL, col_color = NULL,
   reload_expts()
   
   info_anal(id = !!id,
-            col_select = !!col_select, col_group = NULL, col_color = !!col_color, col_fill = !!col_fill,
+            col_select = !!col_select, col_group = !!col_group, 
+            col_color = !!col_color, col_fill = !!col_fill,
             col_shape = !!col_shape, col_size = !!col_size, col_alpha = !!col_alpha, 
             color_brewer = !!color_brewer, fill_brewer = !!fill_brewer, 
             size_manual = !!size_manual, shape_manual = !!shape_manual, alpha_manual = !!alpha_manual, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "PCA")(type = type, dimension = dimension, show_ids = show_ids, 
-                               theme = theme, ...)
+            anal_type = "PCA")(type = type, dimension = dimension, folds = folds, show_ids = show_ids, 
+                               show_ellipses = show_ellipses, theme = theme, ...)
 }
 
 
@@ -1472,6 +1670,7 @@ pepEucDist <- function (col_select = NULL,
 #'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
 #'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
 #'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
 #'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
 #'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
 #'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 

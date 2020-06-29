@@ -14,7 +14,10 @@ plotMDS(
   p = 2,
   k = 3,
   dimension = 2,
+  folds = 1,
   show_ids = FALSE,
+  show_ellipses = FALSE,
+  col_group = NULL,
   col_color = NULL,
   col_fill = NULL,
   col_shape = NULL,
@@ -79,8 +82,20 @@ MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
 \item{dimension}{Numeric; The desired dimension for pairwise visualization.
 The default is 2.}
 
+\item{folds}{Not currently used. Integer; the degree of folding data into
+subsets. The default is one without data folding.}
+
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots. The default is TRUE.}
+
+\item{show_ellipses}{Logical; if TRUE, shows the ellipses by sample groups
+according to \code{col_group}. The default is FALSE.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
 
 \item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
 Values under which will be used for the \code{color} aesthetics in plots. At
@@ -154,7 +169,7 @@ theme will be applied.}
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

@@ -8,7 +8,7 @@
 #'   method dispatch in function factories. The value will be determined
 #'   automatically. Exemplary values include \code{anal_type = c("PCA",
 #'   "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-#'   "NMF", "Purge", "Trend", ...)}.
+#'   "NMF", "Purge", "Trend", "LDA", ...)}.
 #' @inheritParams prnHist
 #' @inheritParams prnHM
 #' @inheritParams prnMDS
@@ -200,7 +200,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 	use_pri_data <- c("MDS", "PCA", "EucDist", "Heatmap", "Histogram", "Corrplot", 
 	                  "Model", "Volcano", "Trend", "NMF", "NMF_meta", "GSPA", "mapGSPA", 
-	                  "GSVA", "GSEA", "String")
+	                  "GSVA", "GSEA", "String", "LDA")
 	use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", "NMF_meta", "GSPA_hm", "mapGSPA")
 
 	if (anal_type %in% use_pri_data) {
@@ -252,7 +252,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 	if (anal_type == "MDS") {
 		function(adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2, 
-		         k = 3, dimension = 2, show_ids = TRUE, theme = NULL, ...) {
+		         k = 3, dimension = 2, folds = 1, 
+		         show_ids = TRUE, show_ellipses = FALsE, theme = NULL, ...) {
 		  plotMDS(df = df, 
 		          id = !!id,
 		          label_scheme_sub = label_scheme_sub, 
@@ -262,7 +263,10 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		          p = p, 
 		          k = k,
 		          dimension = dimension, 
+		          folds = folds, 
 		          show_ids = show_ids, 
+		          show_ellipses = show_ellipses, 
+		          col_group = !!col_group, 
 		          col_color = !!col_color, 
 		          col_fill = !!col_fill, 
 		          col_shape = !!col_shape, 
@@ -282,13 +286,17 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		          ...)
 		}
 	} else if (anal_type == "PCA") {
-		function(type = "obs", dimension = 2, show_ids = TRUE, theme = NULL, ...) {
+		function(type = "obs", dimension = 2, folds = 1, 
+		         show_ids = TRUE, show_ellipses = FALsE, theme = NULL, ...) {
 		  plotPCA(df = df, 
 		          id = !!id,
 		          label_scheme_sub = label_scheme_sub, 
 		          type = type, 
 		          dimension = dimension, 
+		          folds = folds, 
 		          show_ids = show_ids, 
+		          show_ellipses = show_ellipses, 
+		          col_group = !!col_group, 
 		          col_color = !!col_color, 
 		          col_fill = !!col_fill, 
 		          col_shape = !!col_shape, 
@@ -631,6 +639,37 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	               filename = paste0(fn_prefix, ".csv"), 
 	               ...)
 	  }
+	} else if (anal_type == "LDA") {
+	  function(type = "obs", dimension = 2, folds = 1, show_ids = TRUE, 
+	           show_ellipses = FALsE, theme = NULL, ...) {
+	    plotLDA(df = df, 
+	            id = !!id,
+	            label_scheme_sub = label_scheme_sub, 
+	            type = type, 
+	            dimension = dimension, 
+	            folds = folds, 
+	            show_ids = show_ids, 
+	            show_ellipses = show_ellipses, 
+	            col_group = !!col_group, 
+	            col_color = !!col_color, 
+	            col_fill = !!col_fill, 
+	            col_shape = !!col_shape, 
+	            col_size = !!col_size, 
+	            col_alpha = !!col_alpha, 
+	            color_brewer = !!color_brewer,
+	            fill_brewer = !!fill_brewer, 
+	            size_manual = size_manual,
+	            shape_manual = shape_manual,
+	            alpha_manual = alpha_manual, 
+	            scale_log2r = scale_log2r,
+	            complete_cases = complete_cases, 
+	            impute_na = impute_na, 
+	            filepath = filepath, 
+	            filename = paste0(fn_prefix, ".", fn_suffix), 
+	            theme = theme,
+	            anal_type = anal_type, 
+	            ...)
+	  }
 	} 
 	
 }
@@ -700,7 +739,8 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
         message("Primary column keys in `Model/Protein[_impNA]_pVals.txt` for `filter_` varargs.")
       }
     } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", "NMF", "NMF_meta", 
-                                "GSVA", "Corrplot", "String")) { # optional impute_na and possible pVals
+                                "GSVA", "Corrplot", "String", 
+                                "LDA")) { # optional impute_na and possible pVals
       if (impute_na) {
         if (file.exists(fn_imp_p)) src_path <- fn_imp_p else if (file.exists(fn_imp)) src_path <- fn_imp else 
           stop(paste(fn_imp, err_msg3), call. = FALSE)

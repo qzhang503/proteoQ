@@ -8,8 +8,6 @@ reorder_files(filelist)
 }
 \arguments{
 \item{filelist}{A list of file names.}
-
-\item{n_TMT_sets}{the number of multiplex TMT experiments.}
 }
 \description{
 \code{reorder_files} re-orders file names by TMT set numbers then by LCMS

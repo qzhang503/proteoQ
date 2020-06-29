@@ -11,11 +11,12 @@ splitPSM_mq(
   entrez = NULL,
   pep_unique_by = "group",
   corrected_int = TRUE,
-  rptr_intco = 1000,
   rm_craps = FALSE,
   rm_reverses = TRUE,
+  purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
+  rptr_intco = 1000,
   ...
 )
 }
@@ -57,9 +58,6 @@ the TRUE default, values under columns "Reporter intensity corrected..." in
 \code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
 "Reporter intensity" values without corrections will be used.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
-default is 1,000.}
-
 \item{rm_craps}{Logical; if TRUE,
 \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
 The default is FALSE.}
@@ -67,11 +65,18 @@ The default is FALSE.}
 \item{rm_reverses}{A logical argument for uses with \code{MaxQuant} data. At
 the TRUE default, \code{Reverse} entries will be removed.}
 
+\item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
+variable modification(s), entries without phosphorylation will be removed.
+The default is TRUE.}
+
 \item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins
 will be annotated with their kinase attributes. The default is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
 intensities will be plotted. The default is TRUE.}
+
+\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
+default is 1,000.}
 
 \item{...}{Not currently used.}
 }

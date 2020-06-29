@@ -7,6 +7,7 @@
 \usage{
 pepPCA(
   col_select = NULL,
+  col_group = NULL,
   col_color = NULL,
   col_fill = NULL,
   col_shape = NULL,
@@ -21,8 +22,10 @@ pepPCA(
   complete_cases = FALSE,
   impute_na = FALSE,
   show_ids = TRUE,
+  show_ellipses = FALSE,
   type = c("obs", "feats"),
   dimension = 2,
+  folds = 1,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -32,6 +35,7 @@ pepPCA(
 
 prnPCA(
   col_select = NULL,
+  col_group = NULL,
   col_color = NULL,
   col_fill = NULL,
   col_shape = NULL,
@@ -46,8 +50,10 @@ prnPCA(
   complete_cases = FALSE,
   impute_na = FALSE,
   show_ids = TRUE,
+  show_ellipses = FALSE,
   type = c("obs", "feats"),
   dimension = 2,
+  folds = 1,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -62,6 +68,12 @@ At the \code{NULL} default, the column key of \code{Select} in
 specified under \code{Select}, the column key of \code{Sample_ID} will be
 used. The non-empty entries under the ascribing column will be used in
 indicated analysis.}
+
+\item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
+Samples corresponding to non-empty entries under \code{col_group} will be
+used for sample grouping in the indicated analysis. At the NULL default, the
+column key \code{Group} will be used. No data annotation by groups will be
+performed if the fields under the indicated group column is empty.}
 
 \item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
 Values under which will be used for the \code{color} aesthetics in plots. At
@@ -121,12 +133,18 @@ will be used. The default is FALSE.}
 \item{show_ids}{Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 plots. The default is TRUE.}
 
+\item{show_ellipses}{Logical; if TRUE, shows the ellipses by sample groups
+according to \code{col_group}. The default is FALSE.}
+
 \item{type}{Character string indicating the type of PCA. At the \code{type =
 obs} default, the components are by observations; at \code{type = feats},
 the components are by features.}
 
 \item{dimension}{Numeric; The desired dimension for pairwise visualization.
 The default is 2.}
+
+\item{folds}{Not currently used. Integer; the degree of folding data into
+subsets. The default is one without data folding.}
 
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an
@@ -336,6 +354,26 @@ prnPCA(
   filename = feat_d3.png,
 )
 
+# show ellipses
+# (column `expt_smry.xlsx::Color` codes `labs`.)
+prnPCA(
+  show_ids = FALSE,
+  show_ellipses = TRUE,
+  col_group = Color, 
+  rank. = 4, 
+  dimension = 3,
+  filename = d3_labs.png,
+)
+
+# (column `expt_smry.xlsx::Shape` codes `WHIMs`.)
+prnPCA(
+  show_ids = FALSE,
+  show_ellipses = TRUE,
+  col_group = Shape, 
+  rank. = 4, 
+  dimension = 3,
+  filename = d3_whims.png,
+)
 
 ## custom theme
 library(ggplot2)
@@ -376,20 +414,11 @@ res <- prnPCA(filename = foo.png)
 
 # names(res)
 
-p <- ggplot(res$pca, aes(x = PC1, y = PC2)) +
-  geom_point(aes(colour = Color, shape = Shape, alpha = Alpha), size = 4, stroke = 0.02) + 
-  stat_ellipse(aes(colour = Shape), linetype = 2) + 
-  labs(title = "", 
-       x = paste0("PC1 (", res$prop_var[1], ")"), 
-       y = paste0("PC2 (", res$prop_var[2], ")")) +
-  coord_fixed() + 
-  geom_text(aes(label = Sample_ID), color = "gray", size = 1)
-
-ggsave(file.path(dat_dir, "Protein/PCA/my_ggplot2.png"))
-
 p_fil <- ggplot(res$pca, aes(PC1, PC2)) +
   geom_point(aes(colour = Color, shape = Shape, alpha = Alpha), size = 4, stroke = 0.02) + 
+  scale_alpha_manual(values = c(.5, .9)) + 
   stat_ellipse(aes(fill = Shape), geom = "polygon", alpha = .4) + 
+  guides(fill = FALSE) + 
   labs(title = "", 
        x = paste0("PC1 (", res$prop_var[1], ")"), 
        y = paste0("PC2 (", res$prop_var[2], ")")) +
@@ -440,6 +469,7 @@ prnPCA(
  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+ \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 

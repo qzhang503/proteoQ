@@ -40,9 +40,11 @@ calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
 
-\item{set_idx}{Numeric.  The index of a multiplex TMT experiment.}
+\item{set_idx}{Numeric.  The index of a multiplex TMT experiment in metadata
+files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 
-\item{injn_idx}{Numeric; an index of \code{LCMS_Inj} in metadata \code{label_scheme.xlsx}.}
+\item{injn_idx}{Numeric. The index of \code{LCMS_Inj} in metadata files such
+as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 }
 \description{
 Argument \code{injn_idx} not currently used.

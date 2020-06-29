@@ -71,7 +71,7 @@ determined automatically by the name of the current call.}
 method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
-"NMF", "Purge", "Trend", ...)}.}
+"NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration
 against data in a primary file linked to \code{df}. See also

@@ -247,7 +247,7 @@ plot_pepNMFCon(
   col_select = BI,
   annot_cols = c("Color", "Alpha", "Shape"),
   annot_colnames = c("Lab", "Batch", "WHIM"),
-  color = colorRampPalette(brewer.pal(n = 7, name = "Spectral"))(50), 
+  color = colorRampPalette(RColorBrewer::brewer.pal(n = 7, name = "Spectral"))(50), 
   width = 10,
   height = 10,
   filename = bi.pdf,
@@ -442,6 +442,7 @@ plot_metaNMF(
  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+ \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 

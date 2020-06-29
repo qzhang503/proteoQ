@@ -12,7 +12,7 @@
 #' @section functions in data QA: pepHist, prnHist, pepCorr_logFC,
 #'   pepCorr_logInt, prnCorr_logFC, prnCorr_logInt,
 #' @section functions in informatic analysis: pepMDS, prnMDS, pepPCA,
-#'   prnPCA, pepEucDist, prnEucDist, pepHM, prnHM, anal_pepNMF, anal_prnNMF,
+#'   prnPCA, pepLDA, prnLDA, pepEucDist, prnEucDist, pepHM, prnHM, anal_pepNMF, anal_prnNMF,
 #'   plot_pepNMFCon, plot_prnNMFCon, plot_pepNMFCoef, plot_prnNMFCoef,
 #'   plot_metaNMF, anal_prnTrend, plot_prnTrend, pepSig, prnSig, pepVol, prnVol,
 #'   prnGSPA, prnGSPAHM, gspaMap, anal_prnString, pepImp, prnImp, prnGSVA,

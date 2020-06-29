@@ -24,6 +24,7 @@ normPSM(
   plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE,
   use_lowercase_aa = TRUE,
+  purge_phosphodata = TRUE,
   ...
 )
 }
@@ -113,6 +114,10 @@ intensities will be plotted. The default is TRUE.}
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the
 table below for details. The default is TRUE.}
+
+\item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
+variable modification(s), entries without phosphorylation will be removed.
+The default is TRUE.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains to a list of logical expression(s). The
@@ -225,6 +230,8 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
  prnMDS \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
  pepPCA \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
  prnPCA \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ pepLDA \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
+ prnLDA \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
  pepEucDist \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
  prnEucDist \tab filter_\tab \code{Protein[_impNA][_pVal].txt} \tab NA \tab NA \cr 
  pepCorr_logFC \tab filter_\tab \code{Peptide[_impNA][_pVal].txt} \tab NA \tab NA \cr 
@@ -382,6 +389,7 @@ normPSM(
  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
+ \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
  \code{\link{prnCorr_logInt}}  for correlation plots \cr 

@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-06-22
+2020-06-29
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -3238,7 +3238,7 @@ Science`](http://www.matrixscience.com/help/csv_headers.html) with the
 following additions or modifications:
 
 | Header                | Descrption                                                                                                                                                                         | Note                                                                                                                                                                                                                                                       |    |
-| :-------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -- |
+| :-------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :- |
 | prot\_hit\_num        | Ordinal number of the protein hit (or protein family when grouping enabled)                                                                                                        | Mascot                                                                                                                                                                                                                                                     | NA |
 | prot\_family\_member  | Ordinal number of the protein family member when grouping enabled                                                                                                                  | Mascot                                                                                                                                                                                                                                                     | NA |
 | prot\_acc             | Protein accession string                                                                                                                                                           | Mascot                                                                                                                                                                                                                                                     | NA |
@@ -3382,7 +3382,9 @@ described in the following:
 | prot\_sequences\_sig | Count of distinct sequences that have significant scores under a proposed protein          | Cf. PSM keys                                                                                        |
 | prot\_len            | The number of amino acid residues under a proposed protein                                 | Cf. PSM keys                                                                                        |
 | prot\_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                         | Cf. Peptide keys                                                                                    |
+| prot\_n\_uniqpsm     | Count of unique, significant PSMs in quantitation under a proposed protein                 |                                                                                                     |
 | prot\_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein            | Cf. Peptide keys                                                                                    |
+| prot\_n\_uniqpep     | Count of unique, significant peptide sequences in quantitation under a proposed protein    |                                                                                                     |
 | prot\_mean\_raw      | Mean log2\_R (…) across samples                                                            | Reference and `Empty` samples excluded.                                                             |
 | prot\_mean\_n        | Mean N\_log2FC(…) across samples                                                           | v.s.                                                                                                |
 | prot\_mean\_z        | Mean Z\_log2FC(…) across samples                                                           | v.s.                                                                                                |
@@ -3501,34 +3503,36 @@ The column keys in peptide tables are described below:
 
 The corresponidng column keys are described below:
 
-| Header          | Descrption                                                                                 | Note                                                                                                |
-| :-------------- | :----------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
-| gene            | Protein gene name                                                                          |                                                                                                     |
-| prot\_cover     | Protein sequence coverage                                                                  | Cf. PSM keys                                                                                        |
-| prot\_acc       | Protein accession string                                                                   | Cf. PSM keys                                                                                        |
-| prot\_desc      | Protein description taken from Fasta title line                                            |                                                                                                     |
-| prot\_mass      | Protein mass                                                                               |                                                                                                     |
-| prot\_len       | The number of amino acid residues under a proposed protein                                 |                                                                                                     |
-| prot\_n\_psm    | Count of significant PSMs in quantitation under a proposed protein                         | Cf. Peptide keys                                                                                    |
-| prot\_n\_pep    | Count of significant peptide sequences in quantitation under a proposed protein            | Cf. Peptide keys                                                                                    |
-| prot\_mean\_raw | Mean log2\_R (…) across samples                                                            | Reference and `Empty` samples excluded.                                                             |
-| prot\_mean\_n   | Mean N\_log2FC(…) across samples                                                           | v.s.                                                                                                |
-| prot\_mean\_z   | Mean Z\_log2FC(…) across samples                                                           | v.s.                                                                                                |
-| m/z             | The mass-over-charge of the precursor ion.                                                 | Cf. PSM keys                                                                                        |
-| acc\_type       | The type of accession names                                                                |                                                                                                     |
-| uniprot\_id     | Uniprot ID                                                                                 | Cf. PSM keys                                                                                        |
-| entrez          | Protein Entrez ID                                                                          |                                                                                                     |
-| species         | The species of a protein entry                                                             |                                                                                                     |
-| kin\_attr       | The attribute of proteins being kinases                                                    | Cf. PSM keys                                                                                        |
-| kin\_class      | The classes of kinases, e.g., TK, TKL…                                                     | Cf. PSM keys                                                                                        |
-| kin\_order      | The order of “kin\_class” from the kinase tree diagram                                     | Cf. PSM keys                                                                                        |
-| is\_tryptic     | Logical indicating if a sequence belongs to a canonical tryptic peptide                    |                                                                                                     |
-| …               | More column keys from MaxQuant                                                             | Median description from peptide data                                                                |
-| I… (…)          | Reporter-ion intensity                                                                     | Calculated from the descriptive statistics by `method_pep_prn` in `Pep2Prn()` for indicated samples |
-| N\_I… (…)       | Normalized I… (…)                                                                          | Cf. Peptide keys                                                                                    |
-| log2\_R (…)     | log2FC relative to reference materials for indicated samples                               | Before normalization                                                                                |
-| N\_log2\_R (…)  | Aligned log2\_R (…) according to method\_align in standPrn() without scaling normalization |                                                                                                     |
-| Z\_log2\_R (…)  | N\_log2\_R (…) with scaling normalization                                                  |                                                                                                     |
+| Header           | Descrption                                                                                 | Note                                                                                                |
+| :--------------- | :----------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| gene             | Protein gene name                                                                          |                                                                                                     |
+| prot\_cover      | Protein sequence coverage                                                                  | Cf. PSM keys                                                                                        |
+| prot\_acc        | Protein accession string                                                                   | Cf. PSM keys                                                                                        |
+| prot\_desc       | Protein description taken from Fasta title line                                            |                                                                                                     |
+| prot\_mass       | Protein mass                                                                               |                                                                                                     |
+| prot\_len        | The number of amino acid residues under a proposed protein                                 |                                                                                                     |
+| prot\_n\_psm     | Count of significant PSMs in quantitation under a proposed protein                         | Cf. Peptide keys                                                                                    |
+| prot\_n\_uniqpsm | Count of unique, significant PSMs in quantitation under a proposed protein                 |                                                                                                     |
+| prot\_n\_pep     | Count of significant peptide sequences in quantitation under a proposed protein            | Cf. Peptide keys                                                                                    |
+| prot\_n\_uniqpep | Count of unique, significant peptide sequences in quantitation under a proposed protein    |                                                                                                     |
+| prot\_mean\_raw  | Mean log2\_R (…) across samples                                                            | Reference and `Empty` samples excluded.                                                             |
+| prot\_mean\_n    | Mean N\_log2FC(…) across samples                                                           | v.s.                                                                                                |
+| prot\_mean\_z    | Mean Z\_log2FC(…) across samples                                                           | v.s.                                                                                                |
+| m/z              | The mass-over-charge of the precursor ion.                                                 | Cf. PSM keys                                                                                        |
+| acc\_type        | The type of accession names                                                                |                                                                                                     |
+| uniprot\_id      | Uniprot ID                                                                                 | Cf. PSM keys                                                                                        |
+| entrez           | Protein Entrez ID                                                                          |                                                                                                     |
+| species          | The species of a protein entry                                                             |                                                                                                     |
+| kin\_attr        | The attribute of proteins being kinases                                                    | Cf. PSM keys                                                                                        |
+| kin\_class       | The classes of kinases, e.g., TK, TKL…                                                     | Cf. PSM keys                                                                                        |
+| kin\_order       | The order of “kin\_class” from the kinase tree diagram                                     | Cf. PSM keys                                                                                        |
+| is\_tryptic      | Logical indicating if a sequence belongs to a canonical tryptic peptide                    |                                                                                                     |
+| …                | More column keys from MaxQuant                                                             | Median description from peptide data                                                                |
+| I… (…)           | Reporter-ion intensity                                                                     | Calculated from the descriptive statistics by `method_pep_prn` in `Pep2Prn()` for indicated samples |
+| N\_I… (…)        | Normalized I… (…)                                                                          | Cf. Peptide keys                                                                                    |
+| log2\_R (…)      | log2FC relative to reference materials for indicated samples                               | Before normalization                                                                                |
+| N\_log2\_R (…)   | Aligned log2\_R (…) according to method\_align in standPrn() without scaling normalization |                                                                                                     |
+| Z\_log2\_R (…)   | N\_log2\_R (…) with scaling normalization                                                  |                                                                                                     |
 
 ## References
 
