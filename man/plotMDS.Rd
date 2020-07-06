@@ -32,6 +32,8 @@ plotMDS(
   complete_cases = FALSE,
   filepath = NULL,
   filename = NULL,
+  center_features = TRUE,
+  scale_features = TRUE,
   theme = NULL,
   anal_type = "MDS",
   ...
@@ -159,6 +161,17 @@ will be determined automatically. For text files, a typical file extension
 is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
+
+\item{center_features}{Logical; if TRUE, adjusts log2FC to center zero by
+features (proteins or peptides). The default is TRUE. Note the difference to
+data alignment with \code{method_align} in \code{\link[proteoQ]{standPrn}}
+or \code{\link[proteoQ]{standPep}} where log2FC are aligned by observations
+(samples).}
+
+\item{scale_features}{Logical; if TRUE, adjusts log2FC to the same scale of
+variance by features (proteins or peptides). The default is TRUE. Note the
+difference to data scaling with \code{scale_log2r} where log2FC are scaled
+by observations (samples).}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}

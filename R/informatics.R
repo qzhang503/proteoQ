@@ -15,38 +15,38 @@
 #' @inheritParams anal_pepNMF
 #' @inheritParams gspaMap
 #' @inheritParams prnCorr_logFC
-#' 
+#'
 #' @return A function to the given \code{anal_type}.
 #' @import dplyr rlang ggplot2 pheatmap openxlsx
 #' @importFrom magrittr %>%
 info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order = NULL,
-                       col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL, 
-                       color_brewer = NULL, fill_brewer = NULL, 
-                       size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, col_benchmark = NULL, 
-                       scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                       col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL,
+                       color_brewer = NULL, fill_brewer = NULL,
+                       size_manual = NULL, shape_manual = NULL, alpha_manual = NULL, col_benchmark = NULL,
+                       scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                        df = NULL, df2 = NULL, filepath = NULL, filename = NULL,
                        anal_type = c("Corrplot", "Heatmap", "Histogram", "MA", "MDS", "Model",
                                      "NMF", "Trend")) {
-  
+
   if (anal_type %in% c("MDS", "Volcano", "mapGSPA")) scipen = 999 else scipen = 0
-  
+
   old_opts <- options()
-  
+
   options(
     scipen = scipen,
     warn = 1
   )
-  
+
   on.exit(options(old_opts), add = TRUE)
-  
+
   old_dir <- getwd()
   on.exit(setwd(old_dir), add = TRUE)
-  
+
   stopifnot(vapply(c(scale_log2r, complete_cases, impute_na), rlang::is_logical, logical(1)))
 
   err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
   warn_msg1 <- "Coerce `complete_cases = TRUE` at `impute_na = FALSE`."
-  
+
 	col_select <- rlang::enexpr(col_select)
 	col_group <- rlang::enexpr(col_group)
 	col_order <- rlang::enexpr(col_order)
@@ -66,7 +66,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	col_size <- ifelse(is.null(col_size), rlang::expr(Size), rlang::sym(col_size))
 	col_alpha <- ifelse(is.null(col_alpha), rlang::expr(Alpha), rlang::sym(col_alpha))
 	col_benchmark <- ifelse(is.null(col_benchmark), rlang::expr(Benchmark), rlang::sym(col_benchmark))
-	
+
 	if (col_select == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if (col_group == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if (col_order == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
@@ -76,12 +76,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	if (col_size == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if (col_alpha == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if (col_benchmark == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
-	
+
 	color_brewer <- rlang::enexpr(color_brewer)
 	fill_brewer <- rlang::enexpr(fill_brewer)
 	if (!is.null(color_brewer)) color_brewer <- rlang::as_string(color_brewer)
 	if (!is.null(fill_brewer)) fill_brewer <- rlang::as_string(fill_brewer)
-	
+
 	size_manual <- rlang::enexpr(size_manual)
 	shape_manual <- rlang::enexpr(shape_manual)
 	alpha_manual <- rlang::enexpr(alpha_manual)
@@ -90,9 +90,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	df2 <- rlang::enexpr(df2)
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
-	
+
 	load(file = file.path(dat_dir, "label_scheme.rda"))
-	
+
 	if (is.null(label_scheme[[col_select]])) {
 		stop("Column \'", rlang::as_string(col_select), "\' not found.", call. = FALSE)
 	} else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
@@ -158,12 +158,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else if (id %in% c("pep_seq", "pep_seq_mod")) {
 		data_type <- "Peptide"
 	} else {
-		stop("Unrecognized 'id'; needs to be in c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")", 
+		stop("Unrecognized 'id'; needs to be in c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")",
 		     call. = TRUE)
 	}
 
 	anal_type <- rlang::as_string(rlang::enexpr(anal_type))
-	
+
 	if (is.null(filepath)) {
 		if (grepl("Trend", anal_type)) {
 		  filepath = file.path(dat_dir, data_type, "Trend")
@@ -190,7 +190,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  fn_prefix <- gsub("\\.[^.]*$", "", filename)
 	  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 		if (fn_prefix == fn_suffix) stop("No '.' in the file name.", call. = FALSE)
-	  
+
 	  if (anal_type %in% c("Trend", "NMF", "GSPA")) {
 	    fn_prefix <- paste(fn_prefix, data_type, anal_type, sep = "_")
 	    fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
@@ -198,8 +198,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	  }
 	}
 
-	use_pri_data <- c("MDS", "PCA", "EucDist", "Heatmap", "Histogram", "Corrplot", 
-	                  "Model", "Volcano", "Trend", "NMF", "NMF_meta", "GSPA", "mapGSPA", 
+	use_pri_data <- c("MDS", "PCA", "EucDist", "Heatmap", "Histogram", "Corrplot",
+	                  "Model", "Volcano", "Trend", "NMF", "NMF_meta", "GSPA", "mapGSPA",
 	                  "GSVA", "GSEA", "String", "LDA")
 	use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", "NMF_meta", "GSPA_hm", "mapGSPA")
 
@@ -209,7 +209,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	} else {
 	  df <- NULL
 	}
-	
+
 	if (anal_type %in% use_sec_data) {
 	  df2 <- rlang::eval_bare(df2, env = current_env())
 	  vararg_secmsg(id = !!id, anal_type = !!anal_type)
@@ -229,21 +229,21 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 
 	if (nrow(label_scheme_sub) == 0)
 	  stop(paste0("No samples or conditions were defined for \"", anal_type, "\""))
-	
+
 	force(scale_log2r)
 	force(impute_na)
 	force(complete_cases)
-	
+
 	message("\nscale_log2r = ", scale_log2r)
 	message("impute_na = ", impute_na)
 	message("complete_cases = ", complete_cases)
-	
-	## primary functions: 
+
+	## primary functions:
 	# `impute_na` determines the `src_path` for `df`
 	# `scale_log2r` determines `N_log2R` or `Z_log2R` columns in `df`
 	# `complete_cases` subsets data rows in `df` for samples in `label_scheme_sub`
 	#   (`Model` and `GSVA`: `complete_cases` further subjects to lm formulae)
-	
+
 	## Secondary analysis
 	# `scale_log2r` for matching '_N' or '_Z' in input filenames from the corresponding primary function
 	#   (special case of `GSPA`: match to the value in `prnSig`)
@@ -251,433 +251,445 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	# `complete_cases` subsets data rows in primary outputs
 
 	if (anal_type == "MDS") {
-		function(adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2, 
-		         k = 3, dimension = 2, folds = 1, 
-		         show_ids = TRUE, show_ellipses = FALsE, theme = NULL, ...) {
-		  plotMDS(df = df, 
+		function(adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2,
+		         k = 3, dimension = 2, folds = 1,
+		         show_ids = TRUE, show_ellipses = FALsE, 
+		         center_features = TRUE, scale_features = TRUE,
+		         theme = NULL, ...) {
+		  plotMDS(df = df,
 		          id = !!id,
-		          label_scheme_sub = label_scheme_sub, 
-		          adjEucDist = adjEucDist, 
-		          classical = classical, 
+		          label_scheme_sub = label_scheme_sub,
+		          adjEucDist = adjEucDist,
+		          classical = classical,
 		          method = method,
-		          p = p, 
+		          p = p,
 		          k = k,
-		          dimension = dimension, 
-		          folds = folds, 
-		          show_ids = show_ids, 
-		          show_ellipses = show_ellipses, 
-		          col_group = !!col_group, 
-		          col_color = !!col_color, 
-		          col_fill = !!col_fill, 
-		          col_shape = !!col_shape, 
-		          col_size = !!col_size, 
-		          col_alpha = !!col_alpha, 
+		          dimension = dimension,
+		          folds = folds,
+		          show_ids = show_ids,
+		          show_ellipses = show_ellipses,
+		          col_group = !!col_group,
+		          col_color = !!col_color,
+		          col_fill = !!col_fill,
+		          col_shape = !!col_shape,
+		          col_size = !!col_size,
+		          col_alpha = !!col_alpha,
 		          color_brewer = !!color_brewer,
-		          fill_brewer = !!fill_brewer, 
+		          fill_brewer = !!fill_brewer,
 		          size_manual = size_manual,
 		          shape_manual = shape_manual,
-		          alpha_manual = alpha_manual, 
+		          alpha_manual = alpha_manual,
 		          scale_log2r = scale_log2r,
-		          complete_cases = complete_cases, 
-		          filepath = filepath, 
-		          filename = paste0(fn_prefix, ".", fn_suffix), 
+		          complete_cases = complete_cases,
+		          filepath = filepath,
+		          filename = paste0(fn_prefix, ".", fn_suffix),
+		          center_features = center_features,
+		          scale_features = scale_features,
 		          theme = theme,
-		          anal_type = anal_type, 
+		          anal_type = anal_type,
 		          ...)
 		}
 	} else if (anal_type == "PCA") {
-		function(type = "obs", dimension = 2, folds = 1, 
-		         show_ids = TRUE, show_ellipses = FALsE, theme = NULL, ...) {
-		  plotPCA(df = df, 
+		function(type = "obs", dimension = 2, folds = 1,
+		         show_ids = TRUE, show_ellipses = FALsE, 
+		         center_features = TRUE, scale_features = TRUE,
+		         theme = NULL, ...) {
+		  plotPCA(df = df,
 		          id = !!id,
-		          label_scheme_sub = label_scheme_sub, 
-		          type = type, 
-		          dimension = dimension, 
-		          folds = folds, 
-		          show_ids = show_ids, 
-		          show_ellipses = show_ellipses, 
-		          col_group = !!col_group, 
-		          col_color = !!col_color, 
-		          col_fill = !!col_fill, 
-		          col_shape = !!col_shape, 
-		          col_size = !!col_size, 
-		          col_alpha = !!col_alpha, 
+		          label_scheme_sub = label_scheme_sub,
+		          type = type,
+		          dimension = dimension,
+		          folds = folds,
+		          show_ids = show_ids,
+		          show_ellipses = show_ellipses,
+		          col_group = !!col_group,
+		          col_color = !!col_color,
+		          col_fill = !!col_fill,
+		          col_shape = !!col_shape,
+		          col_size = !!col_size,
+		          col_alpha = !!col_alpha,
 		          color_brewer = !!color_brewer,
-		          fill_brewer = !!fill_brewer, 
+		          fill_brewer = !!fill_brewer,
 		          size_manual = size_manual,
 		          shape_manual = shape_manual,
-		          alpha_manual = alpha_manual, 
+		          alpha_manual = alpha_manual,
 		          scale_log2r = scale_log2r,
-		          complete_cases = complete_cases, 
-		          impute_na = impute_na, 
-		          filepath = filepath, 
-		          filename = paste0(fn_prefix, ".", fn_suffix), 
+		          complete_cases = complete_cases,
+		          impute_na = impute_na,
+		          filepath = filepath,
+		          filename = paste0(fn_prefix, ".", fn_suffix),
+		          center_features = center_features,
+		          scale_features = scale_features,
 		          theme = theme,
-		          anal_type = anal_type, 
+		          anal_type = anal_type,
 		          ...)
 		}
 	} else if (anal_type == "EucDist") {
 		function(adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, ...) {
-		  plotEucDist(df = df, 
+		  plotEucDist(df = df,
 		              id = !!id,
-    		          label_scheme_sub = label_scheme_sub, 
-    		          adjEucDist = adjEucDist, 
+    		          label_scheme_sub = label_scheme_sub,
+    		          adjEucDist = adjEucDist,
     		          scale_log2r = scale_log2r,
-    		          complete_cases = complete_cases, 
-		              annot_cols = annot_cols, 
-	                annot_colnames = annot_colnames, 
-    		          filepath = filepath, 
-    		          filename = paste0(fn_prefix, ".", fn_suffix), 
-    		          anal_type = anal_type, 
+    		          complete_cases = complete_cases,
+		              annot_cols = annot_cols,
+	                annot_colnames = annot_colnames,
+    		          filepath = filepath,
+    		          filename = paste0(fn_prefix, ".", fn_suffix),
+    		          anal_type = anal_type,
     		          ...)
 		}
 	} else if (anal_type == "Heatmap") {
 		function(xmin = -1, xmax = 1, xmargin = 0.1,
-		         annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
-		         p_dist_rows = 2, p_dist_cols = 2, 
+		         annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL,
+		         p_dist_rows = 2, p_dist_cols = 2,
 		         hc_method_rows = "complete", hc_method_cols = "complete", ...) {
-		  plotHM(df = df, 
-		         id = !!id, 
+		  plotHM(df = df,
+		         id = !!id,
 		         col_benchmark = !!col_benchmark,
 			       label_scheme_sub = label_scheme_sub,
-			       filepath = filepath, 
+			       filepath = filepath,
 			       filename = paste0(fn_prefix, ".", fn_suffix),
-			       scale_log2r = scale_log2r, 
-			       complete_cases = complete_cases, 
-			       annot_cols = annot_cols, 
-			       annot_colnames = annot_colnames, 
-			       annot_rows = annot_rows, 
-			       xmin = xmin, 
-			       xmax = xmax, 
+			       scale_log2r = scale_log2r,
+			       complete_cases = complete_cases,
+			       annot_cols = annot_cols,
+			       annot_colnames = annot_colnames,
+			       annot_rows = annot_rows,
+			       xmin = xmin,
+			       xmax = xmax,
 			       xmargin = xmargin,
-			       p_dist_rows = p_dist_rows, 
-			       p_dist_cols = p_dist_cols, 
-			       hc_method_rows = hc_method_rows, 
-			       hc_method_cols = hc_method_cols, 
+			       p_dist_rows = p_dist_rows,
+			       p_dist_cols = p_dist_cols,
+			       hc_method_rows = hc_method_rows,
+			       hc_method_cols = hc_method_cols,
 			       ...)
 		}
 	} else if (anal_type == "Histogram") {
 		function(show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, theme = NULL, ...) {
-			plotHisto(df = df, 
-			          id = !!id, 
-			          label_scheme_sub = label_scheme_sub, 
-			          scale_log2r = scale_log2r, 
-			          complete_cases = complete_cases, 
-			          show_curves = show_curves, 
-			          show_vline = show_vline, 
-			          scale_y = scale_y, 
-			          filepath = filepath, 
-			          filename = paste0(fn_prefix, ".", fn_suffix), 
+			plotHisto(df = df,
+			          id = !!id,
+			          label_scheme_sub = label_scheme_sub,
+			          scale_log2r = scale_log2r,
+			          complete_cases = complete_cases,
+			          show_curves = show_curves,
+			          show_vline = show_vline,
+			          scale_y = scale_y,
+			          filepath = filepath,
+			          filename = paste0(fn_prefix, ".", fn_suffix),
 			          theme = theme,
 			          ...)
 		}
 	} else if (anal_type == "Corrplot") {
 		function(data_select = "logFC", ...) {
-		  plotCorr(df = df, 
-		           id = !!id, 
-		           anal_type = anal_type, 
-		           data_select = data_select, 
-		           col_select = !!col_select, 
+		  plotCorr(df = df,
+		           id = !!id,
+		           anal_type = anal_type,
+		           data_select = data_select,
+		           col_select = !!col_select,
 		           col_order = !!col_order,
-		           label_scheme_sub = label_scheme_sub, 
-		           scale_log2r = scale_log2r, 
-		           complete_cases = complete_cases, 
-		           filepath = filepath, 
-		           filename = paste0(fn_prefix, "_", data_select, ".", fn_suffix), 
+		           label_scheme_sub = label_scheme_sub,
+		           scale_log2r = scale_log2r,
+		           complete_cases = complete_cases,
+		           filepath = filepath,
+		           filename = paste0(fn_prefix, "_", data_select, ".", fn_suffix),
 		           ...)
 		}
 	} else if (anal_type == "Model") {
 	  function(method = "limma", var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), ...) {
-	    sigTest(df = df, 
-	            id = !!id, 
+	    sigTest(df = df,
+	            id = !!id,
 	            label_scheme_sub = label_scheme_sub,
 	            scale_log2r = scale_log2r,
-	            complete_cases = complete_cases, 
+	            complete_cases = complete_cases,
 	            impute_na = impute_na,
-	            filepath = filepath, 
-	            filename = paste0(fn_prefix, ".", fn_suffix), 
-	            method = !!method, 
+	            filepath = filepath,
+	            filename = paste0(fn_prefix, ".", fn_suffix),
+	            method = !!method,
 	            var_cutoff = var_cutoff,
-	            pval_cutoff = pval_cutoff, 
-	            logFC_cutoff = logFC_cutoff, 
-	            data_type = data_type, 
+	            pval_cutoff = pval_cutoff,
+	            logFC_cutoff = logFC_cutoff,
+	            data_type = data_type,
 	            anal_type = anal_type,
 	            ...)
 	  }
 	} else if (anal_type == "Volcano") {
 	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, theme = NULL, ...) {
-	    plotVolcano(df = df, 
-	                df2 = NULL, 
-	                id = !!id, 
-	                adjP = adjP, 
-	                show_labels = show_labels, 
+	    plotVolcano(df = df,
+	                df2 = NULL,
+	                id = !!id,
+	                adjP = adjP,
+	                show_labels = show_labels,
 	                anal_type = anal_type,
-	                gspval_cutoff = 1, 
-	                gslogFC_cutoff = 0, 
-	                topn = 0, 
-	                show_sig = "none", 
+	                gspval_cutoff = 1,
+	                gslogFC_cutoff = 0,
+	                topn = 0,
+	                show_sig = "none",
 	                fml_nms = fml_nms,
-	                gset_nms = NULL, 
-	                scale_log2r = scale_log2r, 
-	                complete_cases = complete_cases, 
-	                impute_na = impute_na, 
-	                filepath = filepath, 
-	                filename = paste0(fn_prefix, ".", fn_suffix), 
-	                theme = theme, 
+	                gset_nms = NULL,
+	                scale_log2r = scale_log2r,
+	                complete_cases = complete_cases,
+	                impute_na = impute_na,
+	                filepath = filepath,
+	                filename = paste0(fn_prefix, ".", fn_suffix),
+	                theme = theme,
 	                ...)
 	  }
 	} else if (anal_type == "mapGSPA") {
-	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, gspval_cutoff = 0.05, 
-	           gslogFC_cutoff = log2(1.2), topn = 100, show_sig = "none", gset_nms = "go_sets", 
+	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, gspval_cutoff = 0.05,
+	           gslogFC_cutoff = log2(1.2), topn = 100, show_sig = "none", gset_nms = "go_sets",
 	           theme = NULL, ...) {
-	    plotVolcano(df = df, 
+	    plotVolcano(df = df,
 	                df2 = df2,
-	                id = !!id, 
-	                adjP = adjP, 
-	                show_labels = show_labels, 
-	                anal_type = anal_type, 
-	                gspval_cutoff = gspval_cutoff, 
-	                gslogFC_cutoff = gslogFC_cutoff, 
-	                topn = topn, 
-	                show_sig = show_sig, 
-	                fml_nms = fml_nms, 
-	                gset_nms = gset_nms, 
-	                scale_log2r = scale_log2r, 
-	                complete_cases = complete_cases, 
-	                impute_na = impute_na, 
-	                filepath = filepath, 
-	                filename = paste0(fn_prefix, ".", fn_suffix), 
-	                theme = theme, 
+	                id = !!id,
+	                adjP = adjP,
+	                show_labels = show_labels,
+	                anal_type = anal_type,
+	                gspval_cutoff = gspval_cutoff,
+	                gslogFC_cutoff = gslogFC_cutoff,
+	                topn = topn,
+	                show_sig = show_sig,
+	                fml_nms = fml_nms,
+	                gset_nms = gset_nms,
+	                scale_log2r = scale_log2r,
+	                complete_cases = complete_cases,
+	                impute_na = impute_na,
+	                filepath = filepath,
+	                filename = paste0(fn_prefix, ".", fn_suffix),
+	                theme = theme,
 	                ...)
 	  }
 	} else if (anal_type == "Trend") {
 		function(n_clust = NULL, ...) {
-		  analTrend(df = df, 
-		            id = !!id, 
-                col_group = !!col_group, 
+		  analTrend(df = df,
+		            id = !!id,
+                col_group = !!col_group,
                 col_order = !!col_order,
-                label_scheme_sub = label_scheme_sub, 
+                label_scheme_sub = label_scheme_sub,
                 n_clust = n_clust,
 		            scale_log2r = scale_log2r,
-		            complete_cases = complete_cases, 
+		            complete_cases = complete_cases,
 		            impute_na = impute_na,
-                filepath = filepath, 
-                filename = paste0(fn_prefix %>% paste0(., "_nclust", n_clust), ".txt"), 
+                filepath = filepath,
+                filename = paste0(fn_prefix %>% paste0(., "_nclust", n_clust), ".txt"),
 		            anal_type = anal_type,
                 ...)
 		}
 	} else if (anal_type == "Trend_line") {
 	  function(n_clust = NULL, theme = NULL, ...) {
 	    plotTrend(df2 = df2,
-	              id = !!id, 
-	              col_group = !!col_group, 
-	              col_order = !!col_order, 
-	              label_scheme_sub = label_scheme_sub, 
-	              n_clust = n_clust, 
+	              id = !!id,
+	              col_group = !!col_group,
+	              col_order = !!col_order,
+	              label_scheme_sub = label_scheme_sub,
+	              n_clust = n_clust,
 	              scale_log2r = scale_log2r,
-	              complete_cases = complete_cases, 
+	              complete_cases = complete_cases,
 	              impute_na = impute_na,
-	              filepath = filepath, 
-	              filename = paste0(fn_prefix, ".", fn_suffix), 
-	              theme = theme, 
+	              filepath = filepath,
+	              filename = paste0(fn_prefix, ".", fn_suffix),
+	              theme = theme,
 	              ...)
 	  }
 	} else if (anal_type == "NMF") {
 		function(rank = NULL, nrun = 50, seed = NULL, ...) {
-		  analNMF(df = df, 
-		          id = !!id, 
-		          rank = rank, 
-		          nrun = nrun, 
-		          seed = seed, 
-		          col_group = !!col_group, 
+		  analNMF(df = df,
+		          id = !!id,
+		          rank = rank,
+		          nrun = nrun,
+		          seed = seed,
+		          col_group = !!col_group,
 		          label_scheme_sub = label_scheme_sub,
 		          scale_log2r = scale_log2r,
-		          complete_cases = complete_cases, 
+		          complete_cases = complete_cases,
 		          impute_na = impute_na,
-		          filepath = filepath, 
-		          filename = paste0(fn_prefix %>% paste0(., "_rank", rank), ".txt"), 
+		          filepath = filepath,
+		          filename = paste0(fn_prefix %>% paste0(., "_rank", rank), ".txt"),
 		          anal_type = anal_type,
 		          ...)
 		}
 	} else if (anal_type == "NMF_con") {
 	  function(rank = NULL, ...) {
-	    plotNMFCon(df2 = df2, 
-	               id = !!id, 
-	               rank = rank, 
-	               label_scheme_sub = label_scheme_sub, 
-	               scale_log2r = scale_log2r, 
-	               complete_cases = complete_cases, 
+	    plotNMFCon(df2 = df2,
+	               id = !!id,
+	               rank = rank,
+	               label_scheme_sub = label_scheme_sub,
+	               scale_log2r = scale_log2r,
+	               complete_cases = complete_cases,
 	               impute_na = impute_na,
-	               filepath = filepath, 
-	               filename = paste0(fn_prefix, ".", fn_suffix), 
+	               filepath = filepath,
+	               filename = paste0(fn_prefix, ".", fn_suffix),
 	               ...)
 	  }
 	} else if (anal_type == "NMF_coef") {
 	  function(rank = NULL, ...) {
-	    plotNMFCoef(df2 = df2, 
-	                id = !!id, 
-	                rank = rank, 
-	                label_scheme_sub = label_scheme_sub, 
+	    plotNMFCoef(df2 = df2,
+	                id = !!id,
+	                rank = rank,
+	                label_scheme_sub = label_scheme_sub,
 	                scale_log2r = scale_log2r,
 	                complete_cases = complete_cases,
-	                impute_na = impute_na, 
-	                filepath = filepath, 
-	                filename = paste0(fn_prefix, ".", fn_suffix), 
+	                impute_na = impute_na,
+	                filepath = filepath,
+	                filename = paste0(fn_prefix, ".", fn_suffix),
 	                ...)
 	  }
 	} else if (anal_type == "NMF_meta") {
 	  function(rank = NULL, ...) {
-	    plotNMFmeta(df = df, 
+	    plotNMFmeta(df = df,
 	                df2 = df2,
-	                id = !!id, 
-	                rank = rank, 
-	                label_scheme_sub = label_scheme_sub, 
+	                id = !!id,
+	                rank = rank,
+	                label_scheme_sub = label_scheme_sub,
 	                scale_log2r = scale_log2r,
-	                complete_cases = complete_cases, 
+	                complete_cases = complete_cases,
 	                impute_na = impute_na,
-	                filepath = filepath, 
-	                filename = paste0(fn_prefix, ".", fn_suffix), 
+	                filepath = filepath,
+	                filename = paste0(fn_prefix, ".", fn_suffix),
 	                anal_type = anal_type,
 	                ...)
 	  }
 	} else if (anal_type == "GSPA") {
 		function(gset_nms = "go_sets", var_cutoff = .5,
-		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), 
-		         gspval_cutoff = 1E-2, gslogFC_cutoff = log2(1), 
-		         min_size = 10, max_size = Inf, min_delta = 4, min_greedy_size = 1, 
-		         use_adjP = FALSE, 
-		         method = "mean", 
+		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1),
+		         gspval_cutoff = 1E-2, gslogFC_cutoff = log2(1),
+		         min_size = 10, max_size = Inf, min_delta = 4, min_greedy_size = 1,
+		         use_adjP = FALSE,
+		         method = "mean",
 		         ...) {
-		  gspaTest(df = df, 
-		           id = !!id, 
-		           label_scheme_sub = label_scheme_sub, 
-		           scale_log2r = scale_log2r, 
-		           complete_cases = complete_cases, 
-		           impute_na = impute_na, 
-		           filepath = filepath, 
+		  gspaTest(df = df,
+		           id = !!id,
+		           label_scheme_sub = label_scheme_sub,
+		           scale_log2r = scale_log2r,
+		           complete_cases = complete_cases,
+		           impute_na = impute_na,
+		           filepath = filepath,
 		           filename = paste0(fn_prefix, ".txt"),
-		           gset_nms = gset_nms, 
+		           gset_nms = gset_nms,
 		           var_cutoff = var_cutoff,
-		           pval_cutoff = pval_cutoff, 
-		           logFC_cutoff = logFC_cutoff, 
-		           gspval_cutoff = gspval_cutoff, 
-		           gslogFC_cutoff = gslogFC_cutoff, 
-		           min_size = min_size, 
-		           max_size = max_size, 
+		           pval_cutoff = pval_cutoff,
+		           logFC_cutoff = logFC_cutoff,
+		           gspval_cutoff = gspval_cutoff,
+		           gslogFC_cutoff = gslogFC_cutoff,
+		           min_size = min_size,
+		           max_size = max_size,
 		           min_delta = min_delta,
-		           min_greedy_size = min_greedy_size, 
+		           min_greedy_size = min_greedy_size,
 		           use_adjP = use_adjP,
-		           method = method, 
-		           anal_type = anal_type, 
+		           method = method,
+		           anal_type = anal_type,
 		           ...)
 		}
 	} else if (anal_type == "GSPA_hm") {
 	  function(...) {
 	    gspaHM(df2 = df2,
-	           scale_log2r = scale_log2r, 
-	           complete_cases = complete_cases, 
-	           impute_na = impute_na, 
-	           filepath = filepath, 
-	           filename = paste0(fn_prefix, ".", fn_suffix), 
+	           scale_log2r = scale_log2r,
+	           complete_cases = complete_cases,
+	           impute_na = impute_na,
+	           filepath = filepath,
+	           filename = paste0(fn_prefix, ".", fn_suffix),
 	           ...)
 	  }
 	} else if(anal_type == "GSVA") {
 	  function(lm_method = "limma", gset_nms = "go_sets", var_cutoff = .5,
 	           pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
-      gsvaTest(df = df, 
-               id = !!id, 
-               label_scheme_sub = label_scheme_sub, 
-               filepath = filepath, 
-               filename = paste0(fn_prefix, ".txt"), 
-               scale_log2r = scale_log2r, 
-               complete_cases = complete_cases, 
-               impute_na = impute_na, 
+      gsvaTest(df = df,
+               id = !!id,
+               label_scheme_sub = label_scheme_sub,
+               filepath = filepath,
+               filename = paste0(fn_prefix, ".txt"),
+               scale_log2r = scale_log2r,
+               complete_cases = complete_cases,
+               impute_na = impute_na,
                gset_nms = gset_nms,
-               lm_method = lm_method, 
-               var_cutoff = var_cutoff, 
-               pval_cutoff = pval_cutoff, 
-               logFC_cutoff = logFC_cutoff, 
-               anal_type = anal_type, 
+               lm_method = lm_method,
+               var_cutoff = var_cutoff,
+               pval_cutoff = pval_cutoff,
+               logFC_cutoff = logFC_cutoff,
+               anal_type = anal_type,
                ...)
 	  }
 	} else if (anal_type == "GSEA") {
 	  function(gset_nms = "go_sets", var_cutoff = 0.5, pval_cutoff = 1E-2, logFC_cutoff = log2(1.1), ...) {
-	    gspaTest(df = df, 
-	            id = !!id, 
+	    gspaTest(df = df,
+	            id = !!id,
 	            label_scheme_sub = label_scheme_sub,
-	            scale_log2r = scale_log2r, 
-	            complete_cases = complete_cases, 
+	            scale_log2r = scale_log2r,
+	            complete_cases = complete_cases,
 	            impute_na = impute_na,
-	            filepath = filepath, 
+	            filepath = filepath,
 	            filename = paste0(fn_prefix, ".txt"),
-	            gset_nms = gset_nms, 
+	            gset_nms = gset_nms,
 	            var_cutoff = var_cutoff,
-	            pval_cutoff = pval_cutoff, 
-	            logFC_cutoff = logFC_cutoff, 
+	            pval_cutoff = pval_cutoff,
+	            logFC_cutoff = logFC_cutoff,
 	            gspval_cutoff = 0.05, # dummy
-	            gslogFC_cutoff = log2(1), 
-	            min_size = 10, 
-	            max_size = Inf, 
-	            min_delta = 1, 
-	            min_greedy_size = 1, 
-	            use_adjP = FALSE, 
+	            gslogFC_cutoff = log2(1),
+	            min_size = 10,
+	            max_size = Inf,
+	            min_delta = 1,
+	            min_greedy_size = 1,
+	            use_adjP = FALSE,
 	            method = method, # dummy end
-	            anal_type = anal_type, 
+	            anal_type = anal_type,
 	            ...)
 	  }
 	} else if (anal_type == "String") {
 	  function(db_nms = NULL, score_cutoff = .7, adjP = FALSE, ...) {
-	    stringTest(df = df, 
-	               id = !!id, 
-	               label_scheme_sub = label_scheme_sub, 
-	               db_nms = db_nms, 
+	    stringTest(df = df,
+	               id = !!id,
+	               label_scheme_sub = label_scheme_sub,
+	               db_nms = db_nms,
 	               score_cutoff = score_cutoff,
-	               adjP = adjP, 
-	               scale_log2r = scale_log2r, 
-	               complete_cases = complete_cases, 
-	               filepath = filepath, 
-	               filename = paste0(fn_prefix, ".csv"), 
+	               adjP = adjP,
+	               scale_log2r = scale_log2r,
+	               complete_cases = complete_cases,
+	               filepath = filepath,
+	               filename = paste0(fn_prefix, ".csv"),
 	               ...)
 	  }
 	} else if (anal_type == "LDA") {
-	  function(type = "obs", dimension = 2, folds = 1, show_ids = TRUE, 
-	           show_ellipses = FALsE, theme = NULL, ...) {
-	    plotLDA(df = df, 
+	  function(type = "obs", dimension = 2, folds = 1, show_ids = TRUE,
+	           show_ellipses = FALsE, 
+	           center_features = TRUE, scale_features = TRUE,
+	           theme = NULL, ...) {
+	    plotLDA(df = df,
 	            id = !!id,
-	            label_scheme_sub = label_scheme_sub, 
-	            type = type, 
-	            dimension = dimension, 
-	            folds = folds, 
-	            show_ids = show_ids, 
-	            show_ellipses = show_ellipses, 
-	            col_group = !!col_group, 
-	            col_color = !!col_color, 
-	            col_fill = !!col_fill, 
-	            col_shape = !!col_shape, 
-	            col_size = !!col_size, 
-	            col_alpha = !!col_alpha, 
+	            label_scheme_sub = label_scheme_sub,
+	            type = type,
+	            dimension = dimension,
+	            folds = folds,
+	            show_ids = show_ids,
+	            show_ellipses = show_ellipses,
+	            col_group = !!col_group,
+	            col_color = !!col_color,
+	            col_fill = !!col_fill,
+	            col_shape = !!col_shape,
+	            col_size = !!col_size,
+	            col_alpha = !!col_alpha,
 	            color_brewer = !!color_brewer,
-	            fill_brewer = !!fill_brewer, 
+	            fill_brewer = !!fill_brewer,
 	            size_manual = size_manual,
 	            shape_manual = shape_manual,
-	            alpha_manual = alpha_manual, 
+	            alpha_manual = alpha_manual,
 	            scale_log2r = scale_log2r,
-	            complete_cases = complete_cases, 
-	            impute_na = impute_na, 
-	            filepath = filepath, 
-	            filename = paste0(fn_prefix, ".", fn_suffix), 
+	            complete_cases = complete_cases,
+	            impute_na = impute_na,
+	            filepath = filepath,
+	            filename = paste0(fn_prefix, ".", fn_suffix),
+	            center_features = center_features,
+	            scale_features = scale_features,
 	            theme = theme,
-	            anal_type = anal_type, 
+	            anal_type = anal_type,
 	            ...)
 	  }
-	} 
-	
+	}
+
 }
 
 
 
 #' helper for finding input `df`
-#' 
+#'
 #' @param ... Not currently used.
 #' @inheritParams info_anal
 find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na = FALSE, ...) {
@@ -705,22 +717,22 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
     } else {
       stop("Unknown `id`.", call. = FALSE)
     }
-    
+
     if (anal_type %in% c("Histogram", "MA")) { # never impute_na and no pVals
       if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
-      
+
       if (id %in% c("pep_seq", "pep_seq_mod")) {
         message("Primary column keys in `Peptide/Peptide.txt` for `filter_` varargs.")
       } else if (id %in% c("prot_acc", "gene")) {
         message("Primary column keys in `Protein/Protein.txt` for `filter_` varargs.")
-      } 
+      }
     } else if (anal_type %in% c("Model")) { # optional impute_na but no pVals
       if (impute_na) {
         if (file.exists(fn_imp)) src_path <- fn_imp else stop(paste(fn_imp, err_msg3), call. = FALSE)
       } else {
         if (file.exists(fn_raw)) src_path <- fn_raw else stop(paste(fn_raw, err_msg2), call. = FALSE)
       }
-      
+
       if (id %in% c("pep_seq", "pep_seq_mod")) {
         message("Primary column keys in `Peptide/Peptide[_impNA].txt` for `filter_` varargs.")
       } else if (id %in% c("prot_acc", "gene")) {
@@ -732,34 +744,34 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
       } else {
         if (file.exists(fn_p)) src_path <- fn_p else stop(paste(fn_p, err_msg5), call. = FALSE)
       }
-      
+
       if (id %in% c("pep_seq", "pep_seq_mod")) {
         message("Primary column keys in `Model/Peptide[_impNA]_pVals.txt` for `filter_` varargs.")
       } else if (id %in% c("prot_acc", "gene")) {
         message("Primary column keys in `Model/Protein[_impNA]_pVals.txt` for `filter_` varargs.")
       }
-    } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", "NMF", "NMF_meta", 
-                                "GSVA", "Corrplot", "String", 
+    } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", "NMF", "NMF_meta",
+                                "GSVA", "Corrplot", "String",
                                 "LDA")) { # optional impute_na and possible pVals
       if (impute_na) {
-        if (file.exists(fn_imp_p)) src_path <- fn_imp_p else if (file.exists(fn_imp)) src_path <- fn_imp else 
+        if (file.exists(fn_imp_p)) src_path <- fn_imp_p else if (file.exists(fn_imp)) src_path <- fn_imp else
           stop(paste(fn_imp, err_msg3), call. = FALSE)
       } else {
-        if (file.exists(fn_p)) src_path <- fn_p else if (file.exists(fn_raw)) src_path <- fn_raw else 
+        if (file.exists(fn_p)) src_path <- fn_p else if (file.exists(fn_raw)) src_path <- fn_raw else
           stop(paste(fn_raw, err_msg2), call. = FALSE)
       }
-      
+
       if (id %in% c("pep_seq", "pep_seq_mod")) {
         message("Primary column keys in `Model/Peptide[_impNA_pVals].txt` for `filter_` varargs.")
       } else if (id %in% c("prot_acc", "gene")) {
         message("Primary column keys in `Model/Protein[_impNA_pVals].txt` for `filter_` varargs.")
       }
-    } 
+    }
   } else {
     df <- rlang::as_string(df)
-    
+
     if (anal_type == "Model") stop("Use default file name.", call. = FALSE)
-    
+
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       src_path <- file.path(dat_dir, "Peptide/Model", df)
       if (!file.exists(src_path)) src_path <- file.path(dat_dir, "Peptide", df)
@@ -768,22 +780,22 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
       if (!file.exists(src_path)) src_path <- file.path(dat_dir, "Protein", df)
     }
   }
-  
+
   df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
                           comment.char = "#"), error = function(e) NA)
 
   if (is.null(dim(df))) stop(src_path, " not found.", call. = FALSE)
-  
+
   df <- df %>% reorderCols2()
 
   message(paste("Primary file loaded:", src_path))
-  
+
   return(df)
 }
 
 
 #' helper for finding input `df` (not currently used)
-#' 
+#'
 #' @param ... Not currently used.
 #' @inheritParams info_anal
 find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) {
@@ -792,16 +804,16 @@ find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) {
   id <- rlang::enexpr(id)
 
   if (is.null(df) || is.null(anal_type) || is.null(id)) return (NULL)
-  
+
   df <- rlang::as_string(df)
   anal_type <- rlang::as_string(anal_type)
   id <- rlang::as_string(id)
 
-  new_anal_type <- anal_type %>% 
-    gsub("^Trend_.*", "Trend", .) %>% 
-    gsub("^NMF_.*", "NMF", .) %>% 
+  new_anal_type <- anal_type %>%
+    gsub("^Trend_.*", "Trend", .) %>%
+    gsub("^NMF_.*", "NMF", .) %>%
     gsub("^GSPA_.*", "GSPA", .)
-  
+
   if (id %in% c("pep_seq", "pep_seq_mod")) {
     src_path <- file.path(dat_dir, "Peptide", new_anal_type, df)
   } else if (id %in% c("prot_acc", "gene")) {
@@ -809,18 +821,18 @@ find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) {
   } else {
     stop("Unknown `id`", call. = FALSE)
   }
-  
+
   df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
                           comment.char = "#"), error = function(e) NA)
-  
+
   if (is.null(dim(df))) stop(src_path, " not found.", call. = FALSE)
-  
+
   return(df)
 }
 
 
 #' helper for finding input `df`
-#' 
+#'
 #' @param ... Not currently used.
 #' @inheritParams info_anal
 vararg_secmsg <- function (id = NULL, anal_type = NULL, ...) {
@@ -834,7 +846,7 @@ vararg_secmsg <- function (id = NULL, anal_type = NULL, ...) {
       message("Secondary column keys in `NMF/[...]Peptide_NMF[...]_consensus.txt` for `filter2_` varargs.")
     } else if (anal_type == "NMF_coef") {
       message("Secondary column keys in `NMF/[...]Peptide_NMF[...]_coef.txt` for `filter2_` varargs.")
-    } 
+    }
   } else if (id %in% c("prot_acc", "gene")) {
     if (anal_type == "mapGSPA") {
       message("Secondary column keys in `GSPA/[...]Protein_GSPA_{NZ}[_impNA].txt` for `filter2_` varargs.")
@@ -847,7 +859,7 @@ vararg_secmsg <- function (id = NULL, anal_type = NULL, ...) {
       message("Secondary column keys in `NMF/[...]Protein_NMF[...]_consensus.txt` for `filter2_` varargs.")
     } else if (anal_type == "NMF_coef") {
       message("Secondary column keys in `NMF/[...]Protein_NMF[...]_coef.txt` for `filter2_` varargs.")
-    } 
+    }
   } else {
     stop("Unknown `id`", call. = FALSE)
   }

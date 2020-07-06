@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-06-29
+2020-07-02
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -15,16 +15,17 @@ true
   - [2 Basic informatics](#basic-informatics)
       - [2.1 MDS](#mds)
       - [2.2 PCA](#pca)
-      - [2.3 Correlation plots](#correlation-plots)
-      - [2.4 Heat maps](#heat-maps)
-      - [2.5 Significance tests](#significance-tests)
-      - [2.6 Gene sets under volcano
+      - [2.3 LDA](#lda)
+      - [2.4 Correlation plots](#correlation-plots)
+      - [2.5 Heat maps](#heat-maps)
+      - [2.6 Significance tests](#significance-tests)
+      - [2.7 Gene sets under volcano
         plots](#gene-sets-under-volcano-plots)
-      - [2.7 Gene set networks](#gene-set-networks)
-      - [2.8 Trend Analysis](#trend-analysis)
-      - [2.9 NMF Analysis](#nmf-analysis)
-      - [2.10 STRING Analysis](#string-analysis)
-      - [2.11 Missing value imputation](#missing-value-imputation)
+      - [2.8 Gene set networks](#gene-set-networks)
+      - [2.9 Trend Analysis](#trend-analysis)
+      - [2.10 NMF Analysis](#nmf-analysis)
+      - [2.11 STRING Analysis](#string-analysis)
+      - [2.12 Missing value imputation](#missing-value-imputation)
   - [3 Labs](#labs)
       - [3.1 Reference choices](#reference-choices)
       - [3.2 Data subsets and additions](#data-subsets-and-additions)
@@ -1625,7 +1626,12 @@ prnPCA(
 Additional examples and analogous high-dimension MDS can be found from
 the help documents via `?prnPCA` and `?prnMDS`, respectively.
 
-### 2.3 Correlation plots
+### 2.3 LDA
+
+See notes
+<strong>[here](https://proteoq.netlify.app/post/lda-in-proteoq/)</strong>.
+
+### 2.4 Correlation plots
 
 In this section, we visualize the batch effects and biological
 differences through correlation plots. The `proteoQ` tool currently
@@ -1676,7 +1682,7 @@ To visualize the correlation of intensity data, we can use
 `pepCorr_logInt` and `prnCorr_logInt` for peptide and protein data,
 respectively. More details can be assessed via `?pepCorr_logFC`.
 
-### 2.4 Heat maps
+### 2.5 Heat maps
 
 Heat map visualization is commonly applied in data sciences. The
 corresponding facilities in `proteoQ` are `pepHM` and `prnHM` for
@@ -1769,7 +1775,7 @@ row ordering.
 
 See `?standPep` for peptide examples.
 
-### 2.5 Significance tests
+### 2.6 Significance tests
 
 In this section, we perform the significance analysis of peptide and
 protein data. The approach of contrast fit (Chambers, J. M. Linear
@@ -1852,7 +1858,7 @@ additive random effects are also supported. More examples can be found
 via `?prnSig` and [Lab 3.3](###%203.3%20Random%20effects) in the
 document.
 
-### 2.6 Gene sets under volcano plots
+### 2.7 Gene sets under volcano plots
 
 There are a handful of `R` tools for gene set enrichement analysis, such
 as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we
@@ -2073,7 +2079,7 @@ Gene set variance analysis (GSVA) is available through `prnGSVA`.
 Details can be found via `?prnGSEA` and `?prnGSVA`, respectively, from
 an `R` console.
 
-### 2.7 Gene set networks
+### 2.8 Gene set networks
 
 In the above section, we have plotted the enrichment of gene sets by
 individual GO or KEGG terms. Depending on how much the sample groups
@@ -2186,7 +2192,7 @@ distance \<= 0.8; right, distance \<= 0.2.
 
 </div>
 
-### 2.8 Trend Analysis
+### 2.9 Trend Analysis
 
 In this section, we perform the trend analysis against protein
 expressions. More information can be found from
@@ -2332,7 +2338,7 @@ Note that `human` is a value that can be found under the column
 `species` in `Protein_Trend_Z_nclust5.txt` and `Homo Sapiens` is the
 corresponding name used in ClueGO.
 
-### 2.9 NMF Analysis
+### 2.10 NMF Analysis
 
 In this section, we will performs the analysis of non-negative matrix
 factorization (NMF) against protein data. More details can be found from
@@ -2502,7 +2508,7 @@ plot_metaNMF(
 )
 ```
 
-### 2.10 STRING Analysis
+### 2.11 STRING Analysis
 
 The following performs the [`STRING`](http://www.string-db.org) analysis
 of protein-protein interactions. More details can be found from
@@ -2532,7 +2538,7 @@ dl_stringdbs(
 )
 ```
 
-### 2.11 Missing value imputation
+### 2.12 Missing value imputation
 
 Imputation of peptide and protein data are handle with `pepImp` and
 `prnImp`. More information can be found from

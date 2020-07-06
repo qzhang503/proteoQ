@@ -10,6 +10,8 @@ scoreMDS(
   label_scheme_sub,
   anal_type,
   scale_log2r,
+  center_features,
+  scale_features,
   adjEucDist = FALSE,
   classical,
   method = "euclidean",
@@ -46,6 +48,17 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
+
+\item{center_features}{Logical; if TRUE, adjusts log2FC to center zero by
+features (proteins or peptides). The default is TRUE. Note the difference to
+data alignment with \code{method_align} in \code{\link[proteoQ]{standPrn}}
+or \code{\link[proteoQ]{standPep}} where log2FC are aligned by observations
+(samples).}
+
+\item{scale_features}{Logical; if TRUE, adjusts log2FC to the same scale of
+variance by features (proteins or peptides). The default is TRUE. Note the
+difference to data scaling with \code{scale_log2r} where log2FC are scaled
+by observations (samples).}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex \code{Euclidean}
 distance by \eqn{1/sqrt(2)} at \code{method = "euclidean"}. The option

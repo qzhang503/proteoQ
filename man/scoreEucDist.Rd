@@ -59,9 +59,9 @@ against data in a primary file linked to \code{df}. See also
 data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 the format of \code{arrange_} statements. \cr \cr Additional parameters for
 plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
-of plot \cr 
-\cr Additional arguments for \code{\link[pheatmap]{pheatmap}}: \cr 
-\code{cluster_rows, clustering_method, clustering_distance_rows}... \cr 
+of plot \cr
+\cr Additional arguments for \code{\link[pheatmap]{pheatmap}}: \cr
+\code{cluster_rows, clustering_method, clustering_distance_rows}... \cr
 \cr Notes about \code{pheatmap}:
 \cr \code{annotation_col} disabled; instead use keys indicated in \code{annot_cols}
 \cr \code{annotation_row} disabled; instead use keys indicated in \code{annot_rows}}

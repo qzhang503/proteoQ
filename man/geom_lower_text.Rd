@@ -19,13 +19,14 @@ plots. The default is TRUE.}
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-\code{arrange_}: Variable argument statements for the row ordering against
-data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
-the format of \code{arrange_} statements. \cr \cr Additional parameters for
-\code{prcomp}: \cr \code{center}, data centering; \cr \code{tol}, the
-tolerance \cr \code{...} \cr \cr Additional parameters for
-\code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
-height of plot \cr \code{...}}
+Arguments passed to \code{\link[stats]{prcomp}}: \code{rank.}, \code{tol}
+etc. At \code{type = obs}, argument \code{scale} becomes
+\code{scale_features} and \code{center} matches \code{center_features}. At
+\code{type = feats}, the setting of \code{scale_log2r} will be applied for
+data scaling and data centering be automated by
+\code{\link[proteoQ]{stanPep}} or \code{\link[proteoQ]{stanPrn}}. \cr \cr
+Additional arguments for \code{ggsave}: \cr \code{width}, the width of plot;
+\cr \code{height}, the height of plot \cr \code{...}}
 }
 \description{
 Geom plot for ggpairs
