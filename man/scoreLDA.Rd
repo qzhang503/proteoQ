@@ -10,6 +10,8 @@ scoreLDA(
   label_scheme_sub,
   anal_type,
   scale_log2r,
+  center_features,
+  scale_features,
   type,
   col_group,
   folds,
@@ -43,9 +45,24 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
 
-\item{type}{Character string indicating the type of PCA. At the \code{type =
-obs} default, the components are by observations; at \code{type = feats},
-the components are by features.}
+\item{center_features}{Logical; if TRUE, adjusts log2FC to center zero by
+features (proteins or peptides). The default is TRUE. Note the difference to
+data alignment with \code{method_align} in \code{\link[proteoQ]{standPrn}}
+or \code{\link[proteoQ]{standPep}} where log2FC are aligned by observations
+(samples).}
+
+\item{scale_features}{Logical; if TRUE, adjusts log2FC to the same scale of
+variance by features (proteins or peptides). The default is TRUE. Note the
+difference to data scaling with \code{scale_log2r} where log2FC are scaled
+by observations (samples).}
+
+\item{type}{Character string indicating the type of PCA by either
+\emph{observations} or \emph{features}. At the \code{type = obs} default,
+observations (samples) are in rows and features (peptides or proteins) in
+columns for \code{\link[stats]{prcomp}}. The principal components are then
+plotted by observations. Alternatively at \code{type = feats}, features
+(peptides or proteins) are in rows and observations (samples) are in
+columns. The principal components are then plotted by features.}
 
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be
@@ -61,13 +78,14 @@ subsets. The default is one without data folding.}
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-\code{arrange_}: Variable argument statements for the row ordering against
-data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
-the format of \code{arrange_} statements. \cr \cr Additional parameters for
-\code{prcomp}: \cr \code{center}, data centering; \cr \code{tol}, the
-tolerance \cr \code{...} \cr \cr Additional parameters for
-\code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
-height of plot \cr \code{...}}
+Arguments passed to \code{\link[stats]{prcomp}}: \code{rank.}, \code{tol}
+etc. At \code{type = obs}, argument \code{scale} becomes
+\code{scale_features} and \code{center} matches \code{center_features}. At
+\code{type = feats}, the setting of \code{scale_log2r} will be applied for
+data scaling and data centering be automated by
+\code{\link[proteoQ]{stanPep}} or \code{\link[proteoQ]{stanPrn}}. \cr \cr
+Additional arguments for \code{ggsave}: \cr \code{width}, the width of plot;
+\cr \code{height}, the height of plot \cr \code{...}}
 }
 \description{
 Scores LDA

@@ -229,6 +229,10 @@ p_fil <- ggplot(res$pca, aes(PC1, PC2)) +
 ggsave(file.path(dat_dir, "Protein/PCA/my_ggplot2_fil.png"))
 
 \dontrun{
+# Ambiguous matches of `scale` to `scale_log2r` or `scale_features`
+prnPCA(scale = TRUE)
+
+# need to match correct column key(s) in `expt_smry.xlsx`
 prnPCA(
   col_color = "column_key_not_existed",
   col_shape = "another_missing_column_key"

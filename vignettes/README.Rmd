@@ -1005,7 +1005,10 @@ knitr::include_graphics(c(img_pca_d3))
 
 Additional examples and analogous high-dimension MDS can be found from the help documents via `?prnPCA` and `?prnMDS`, respectively.  
 
-### 2.3 Correlation plots
+### 2.3 LDA
+See notes <strong>[here](https://proteoq.netlify.app/post/lda-in-proteoq/)</strong>.
+
+### 2.4 Correlation plots
 In this section, we visualize the batch effects and biological differences through correlation plots. The `proteoQ` tool currently limits itself to a maximum of 44 samples for a correlation plot. In the document, we will perform correlation analysis against the `PNNL` data subset. By default, samples will be arranged by the alphabetical order for entries under the column `expt_smry.xlsx::Select`. We have learned from the earlier `MDS` analysis that the batch effects are smaller than the differences between `W2` and `W16`. We may wish to put the `TMT1` and `TMT2` groups adjacent to each other for visualization of more nuance batch effects, followed by the comparison of WHIM subtypes. We can achieve this by supervising sample IDs at a customized order. In the `expt_smry.xlsx`, We have prepared an `Order` column where samples within the `JHU` subset were arranged in the descending order of `W2.TMT1`, `W2.TMT2`, `W16.TMT1` and `W16.TMT2`. Now we tell the program to look for the `Order` column for sample arrangement:  
 
 ```{r correlation, eval = FALSE}
@@ -1032,7 +1035,7 @@ knitr::include_graphics(c(img_jhu_pepcorr, img_jhu_prncorr))
 
 To visualize the correlation of intensity data, we can use `pepCorr_logInt` and `prnCorr_logInt` for peptide and protein data, respectively. More details can be assessed via `?pepCorr_logFC`.  
 
-### 2.4 Heat maps
+### 2.5 Heat maps
 Heat map visualization is commonly applied in data sciences. The corresponding facilities in `proteoQ` are `pepHM` and `prnHM` for peptide and protein data, respectively. They are wrappers of [`pheatmap`](https://cran.r-project.org/web/packages/pheatmap/pheatmap.pdf) with modifications and exception handlings. More details can be found by accessing the help document via `?prnHM`.  
 
 The following shows an example of protein heat map:  
@@ -1092,7 +1095,7 @@ knitr::include_graphics(c(img_kinheat))
 
 See `?standPep` for peptide examples.  
 
-### 2.5 Significance tests
+### 2.6 Significance tests
 In this section, we perform the significance analysis of peptide and protein data. The approach of contrast fit (Chambers, J. M. Linear models, 1992; Gordon Smyth et al., `limma`) is taken in `proteoQ`. We will first define the contrast groups for significance tests. For this purpose, I have devided the samples by their WHIM subtypes, laboratory locations and batch numbers. This ends up with entries of `W2.BI.TMT1`, `W2.BI.TMT2` etc. under the `expt_smry.xlsx::Term` column. The interactive environment between the Excel file and the `proteoQ` tool allows us to enter more columns of contrasts when needed. For instance, we might also be interested in a more course comparison of inter-laboratory differences without batch effects. The corresponding contrasts of `W2.BI`, `W16.BI` etc. can be found under a pre-made column, `Term_2`. Having these columns in hand, we next perform significance tests and data visualization for peptide and protein data:  
 
 ```{r SigTest, eval = FALSE}
@@ -1137,7 +1140,7 @@ prnSig(
 
 In addition to the fixed effects shown above, significance tests with additive random effects are also supported. More examples can be found via `?prnSig` and [Lab 3.3](### 3.3 Random effects) in the document.  
 
-### 2.6 Gene sets under volcano plots
+### 2.7 Gene sets under volcano plots
 There are a handful of `R` tools for gene set enrichement analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can analyze and visualize the enrichment of gene sets under the context of volcano plots at given contrasts. Provided the richness of `R` utilities in linear modelings, the `preoteoQ` takes a naive approach thereafter to assess the *asymmetricity* of protein probability $p$ values under volcano plots.  
 
 In the analysis of Gene Set Probability Asymmetricity (`GSPA`), protein significance $p$ values from linear modeling are first taken and separated into the groups of up or down expressed proteins within a gene set. The default is to calculate the geometric means, $P$, for each of the two groups with a penalty-like term:  
@@ -1281,7 +1284,7 @@ In addition to finding gene sets with significance, `prnGSPA` reports the essent
 
 The utility in `proteoQ` for conventional GSEA analysis is `prnGSEA()`. Gene set variance analysis (GSVA) is available through `prnGSVA`. Details can be found via `?prnGSEA` and `?prnGSVA`, respectively, from an `R` console.  
 
-### 2.7 Gene set networks
+### 2.8 Gene set networks
 In the above section, we have plotted the enrichment of gene sets by individual GO or KEGG terms. Depending on how much the sample groups contrast to each other, we could have produced more plots where many of them might never get viewed. Besides, gene sets can be redundant with overlaps to one another to varying degrees. A means to communicate the gene set results at high levels is to present them as hierarchical trees or grouped networks.  
 
 In this section, we will visualize the connectivity of significant gene sets by both distance heat maps and networks. For simplicity, the heat maps or networks will be constructed only between gene sets and essential gene sets. As mentioned in section `Gene sets under volcano plots`, the essential gene sets were approximated with greedy set cover. This will reduce the dimensionality of data from $n \times n$ to $n \times m$ ($m \le n$).  
@@ -1334,7 +1337,7 @@ knitr::include_graphics(c(img_gspahm_connect, img_gspahm_redund))
 ```
 
 
-### 2.8 Trend Analysis
+### 2.9 Trend Analysis
 In this section, we perform the trend analysis against protein expressions. More information can be found from [`cmeans`](https://www.rdocumentation.org/packages/e1071/versions/1.7-2/topics/cmeans).  
 
 #### 2.8.1 Clustering
@@ -1428,7 +1431,7 @@ cluego(
 
 Note that `human` is a value that can be found under the column `species` in `Protein_Trend_Z_nclust5.txt` and `Homo Sapiens` is the corresponding name used in ClueGO.  
 
-### 2.9 NMF Analysis
+### 2.10 NMF Analysis
 In this section, we will performs the analysis of non-negative matrix factorization (NMF) against protein data. More details can be found from [`NMF`](https://cran.r-project.org/web/packages/NMF/vignettes/NMF-vignette.pdf) and the `?anal_prnNMF` wrapper. Since additional arguments can be passed on to NMF, we will test below protein classifications with both the default and the 'lee' method:  
 
 ```{r Protein NMF, eval = FALSE}
@@ -1563,7 +1566,7 @@ plot_metaNMF(
 ```
 
 
-### 2.10 STRING Analysis
+### 2.11 STRING Analysis
 The following performs the [`STRING`](http://www.string-db.org) analysis of protein-protein interactions. More details can be found from `?anal_prnString`.  
 
 ```{r Protein StringDB, eval = FALSE}
@@ -1584,7 +1587,7 @@ dl_stringdbs(
 )
 ```
 
-### 2.11 Missing value imputation 
+### 2.12 Missing value imputation 
 Imputation of peptide and protein data are handle with `pepImp` and `prnImp`. More information can be found from [`mice`](https://cran.r-project.org/web/packages/mice/mice.pdf) and `?prnImp`.  
 
 
