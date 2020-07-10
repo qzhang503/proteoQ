@@ -2,7 +2,7 @@
 #' 
 #' @param x A data frame.
 #' @param na.rm The same as in \code{mean}.
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 rowVars <- function (x, na.rm = TRUE) {
 		sqr <- function(x) x * x
 		n <- rowSums(!is.na(x))
@@ -17,7 +17,7 @@ rowVars <- function (x, na.rm = TRUE) {
 #' @inheritParams gn_rollup
 #' @inheritParams prnSig
 #' @import dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
   if (is.null(cols)) cols <- 1:ncol(df)
   
@@ -42,7 +42,7 @@ filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
 #' 
 #' @inheritParams gspaTest
 #' @inheritParams model_onechannel
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 prepFml <- function(formula, label_scheme_sub, ...) {
 
 	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
@@ -165,7 +165,7 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 #' 
 #' @param df_pval A data frame containing pVals
 #' @inheritParams prnSig 
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 my_padj <- function(df_pval, pval_cutoff) {
 	df_pval %>%
 		purrr::map(~ .x <= pval_cutoff)	%>%
@@ -175,9 +175,9 @@ my_padj <- function(df_pval, pval_cutoff) {
 		dplyr::bind_cols() %>%
 		`names<-`(gsub("pVal", "adjP", colnames(.))) %>%
 		dplyr::mutate(rowname = rownames(df_pval)) %>%
-		bind_cols(df_pval, .) %>%
-		mutate_at(.vars = grep("pVal\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
-		mutate_at(.vars = grep("adjP\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
+    dplyr::bind_cols(df_pval, .) %>%
+    dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
+    dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
 		tibble::column_to_rownames()
 }
 
@@ -187,7 +187,7 @@ my_padj <- function(df_pval, pval_cutoff) {
 #' @param pvals A data frame of pVal
 #' @param log2rs A data frame of log2FC
 #' @inheritParams prnSig
-#' @importFrom magrittr %>% %$%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 	nms <- rownames(pvals)
 
@@ -204,8 +204,8 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 		`rownames<-`(nms) %>%
 		tibble::rownames_to_column() %>%
 		dplyr::bind_cols(pvals, .) %>%
-		mutate_at(.vars = grep("pVal\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
-		mutate_at(.vars = grep("adjP\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
+	  dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
+	  dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
 		tibble::column_to_rownames()
 
 	log2rs <- log2rs %>%
@@ -315,7 +315,21 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 			tidyr::nest()
 
 		if (!purrr::is_empty(random_vars)) {
-			res_lm <- df_lm %>%
+		  if (!requireNamespace("broom.mixed", quietly = TRUE)) {
+		    stop("\n====================================================================", 
+		         "\nNeed install package \"broom.mixed\" needed for this function to work.",
+		         "\n====================================================================",
+		         call. = FALSE)
+		  }
+		  
+		  if (!requireNamespace("lmerTest", quietly = TRUE)) {
+		    stop("\n====================================================================", 
+		         "\nNeed install package \"lmerTest\" needed for this function to work.",
+		         "\n====================================================================",
+		         call. = FALSE)
+		  }
+		  
+		  res_lm <- df_lm %>%
 				dplyr::mutate(
 				  model = purrr::map(
 				    data, ~ lmerTest::lmer(data = .x, formula = new_formula, contrasts = contr_mat_lm))) %>%
@@ -331,7 +345,14 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 				`names<-`(paste0("pVal (", names(.), ")")) %>%
 				lm_summary(log2rs, pval_cutoff, logFC_cutoff)
 		} else {
-			res_lm <- df_lm %>%
+		  if (!requireNamespace("broom", quietly = TRUE)) {
+		    stop("\n====================================================================", 
+		         "\nNeed install package \"broom\" needed for this function to work.",
+		         "\n====================================================================",
+		         call. = FALSE)
+		  }
+		  
+		  res_lm <- df_lm %>%
 				dplyr::mutate(model = purrr::map(data, ~ lm(data = .x, formula = new_formula,
 				                                            contrasts = contr_mat_lm))) %>%
 				dplyr::mutate(glance = purrr::map(model, broom::tidy)) %>%
@@ -362,8 +383,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 #' @inheritParams gspaTest
 #' @inheritParams prnSig
 #' @import limma stringr purrr tidyr dplyr rlang
-#' @importFrom magrittr %>% %$%
-#' @importFrom broom.mixed tidy
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 sigTest <- function(df, id, label_scheme_sub, 
                     scale_log2r, complete_cases, impute_na, 
                     filepath, filename, 
@@ -633,7 +653,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, 
                     method = c("limma", "lm"),

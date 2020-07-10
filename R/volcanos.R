@@ -3,8 +3,8 @@
 #' @inheritParams info_anal
 #' @inheritParams prnVol
 #' @inheritParams gspaMap
-#' @import limma stringr purrr dplyr rlang grid gridExtra gtable
-#' @importFrom magrittr %>%
+#' @import limma stringr purrr dplyr rlang  
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", 
                         adjP = FALSE, show_labels = TRUE, anal_type = "Volcano", 
                         gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn = Inf, 
@@ -73,7 +73,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
     `>`(0)
   
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
-  if (!(rlang::is_empty(species) || is.null(gset_nms))) load_dbs(gset_nms = gset_nms, species = species)
+  if (!(purrr::is_empty(species) || is.null(gset_nms))) load_dbs(gset_nms = gset_nms, species = species)
 
   proteoq_volcano_theme <- theme_bw() +
     theme(
@@ -131,7 +131,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
 #' @inheritParams gspaMap
 #' @inheritParams fml_gspa
 #' @import purrr dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 byfml_volcano <- function (fml_nm, gspval_cutoff, gslogFC_cutoff, topn, df, df2, 
                            col_ind, id, 
                            filepath, filename, adjP, show_labels, anal_type, 
@@ -174,8 +174,8 @@ byfml_volcano <- function (fml_nm, gspval_cutoff, gslogFC_cutoff, topn, df, df2,
 #' @inheritParams prnVol
 #' @inheritParams gspaMap
 #' @inheritParams fml_gspa
-#' @import limma stringr purrr dplyr rlang grid gridExtra gtable
-#' @importFrom magrittr %>%
+#' @import limma stringr purrr dplyr rlang  
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL, 
                                filepath = NULL, filename = NULL, 
                                adjP = FALSE, show_labels = TRUE, 
@@ -264,7 +264,7 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
 #' @inheritParams gspaMap
 #' @inheritParams fml_gspa
 #' @import dplyr purrr rlang ggplot2
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom limma vennDiagram
 fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = NULL,
                         fml_nm = NULL, filepath = NULL, filename = NULL, adjP = FALSE, 
@@ -283,8 +283,9 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 	dfw <- do.call(rbind, purrr::map(contrast_groups, ~ {
 			df[, grepl(paste0(" (", .x, ")"), names(df), fixed = TRUE)] %>%
 				`colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
-				mutate(Contrast = .x) %>%
-				bind_cols(df[, !grepl("^pVal\\s+|^adjP\\s+|^log2Ratio\\s+", names(df)), drop = FALSE], .)
+				dplyr::mutate(Contrast = .x) %>%
+				dplyr::bind_cols(df[, !grepl("^pVal\\s+|^adjP\\s+|^log2Ratio\\s+", names(df)), 
+				                    drop = FALSE], .)
 		} )) %>% 
 	  dplyr::mutate(
 	    Contrast = factor(Contrast, levels = contrast_groups),
@@ -304,13 +305,6 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 		dplyr::group_by(Contrast) %>%
 		dplyr::top_n(n = -20, wt = pVal) %>%
 		data.frame (check.names = FALSE)
-
-	# tt <- gridExtra::ttheme_minimal(core = list(fg_params=list(cex = .7)), 
-	#                                 colhead = list(fg_params=list(cex = .7), parse=TRUE), 
-	#                                 rowhead = list(fg_params=list(cex = .7)))
-	# nrow <- max(min(nrow(dfw_sub),20), 1)
-	# tbl <- tableGrob(dfw_sub_top20[,c("Contrast", "Index","gene")], rows=NULL, col=NULL, theme=tt)
-	# tbl$heights <- tbl$heights*.6
 
 	# data table for labels
 	dt <- purrr::map(contrast_groups, ~ {
@@ -426,7 +420,7 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 #' @inheritParams fml_gspa
 #' @inheritParams fullVolcano
 #' @import dplyr rlang ggplot2
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL, 
                       gsea_key = "term", gsets = NULL, 
                       theme = NULL, 
@@ -539,8 +533,8 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   		purrr::map(contrast_groups, ~ {
   			df[, grepl(paste0(" (", .x, ")"), names(df), fixed = TRUE)] %>%
   				`colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
-  				mutate(Contrast = .x) %>%
-  				bind_cols(df[, !grepl("^pVal\\s+|^adjP\\s+|^log2Ratio\\s+", names(df))], .)
+  				dplyr::mutate(Contrast = .x) %>%
+  		    dplyr::bind_cols(df[, !grepl("^pVal\\s+|^adjP\\s+|^log2Ratio\\s+", names(df))], .)
   		} )) %>%
   		dplyr::mutate(Contrast = factor(Contrast, levels = contrast_groups),
   			pVal = as.numeric(pVal),
@@ -582,8 +576,8 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   			# dplyr::mutate(p_val = as.numeric(p_val)) %>%
   			# dplyr::mutate(q_val = format(q_val, scientific = TRUE, digits = 2)) %>%
   			# dplyr::mutate(q_val = as.numeric(q_val)) %>%
-  			# mutate(sig_level = ifelse(.$q.val > 0.05, "n.s.", ifelse(.$q.val > 0.005, "*", "**"))) %>%
-  			# mutate(newContrast = paste0(Contrast, " (", sig_level, ")"))
+  			# dplyr::mutate(sig_level = ifelse(.$q.val > 0.05, "n.s.", ifelse(.$q.val > 0.005, "*", "**"))) %>%
+  			# dplyr::mutate(newContrast = paste0(Contrast, " (", sig_level, ")"))
   			dplyr::mutate(newContrast = Contrast)
 				
   		if (show_sig != "none") {
@@ -736,7 +730,7 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  in a plot.
 #'
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
 #'@example inst/extdata/examples/prnVol_.R
 #'
@@ -894,7 +888,7 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  \code{nrow}, the number of rows in a plot.
 #'
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
 #'@example inst/extdata/examples/prnVol_.R
 #'

@@ -38,7 +38,6 @@
 #'  declaring algorithm convergence.
 #'@inheritParams normPSM
 #'@inheritParams standPep
-#'@inheritParams mixtools::normalmixEM
 #'@seealso 
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
@@ -105,9 +104,8 @@
 #'@return The primary output is in \code{.../Protein/Protein.txt}.
 #'
 #'@example inst/extdata/examples/normPrn_.R
-#'@import stringr dplyr tidyr purrr data.table rlang
-#'@importFrom magrittr %>%
-#'@importFrom magrittr %T>%
+#'@import stringr dplyr tidyr purrr rlang
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@importFrom plyr ddply
 #'@export
 standPrn <- function (method_align = c("MC", "MGKernel"), 

@@ -11,75 +11,65 @@ Description: Data Processing and Informatic Analysis of Mass Spectrometrirc Data
     It reads and processes data from multiplex TMT experiments in mass spectrometry. 
 		It further provides basic informatic analysis.
 biocViews: 
+Depends: R (>= 4.0)
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Suggests: 
-    testthat
+		AnnotationDbi,
+		GSVA, 
+    RJSONIO,
+		NMF,
+		broom,
+    broom.mixed,
+    data.table,
+		downloader,
+		httr,
+    knitr,
+    lmerTest,
+    mice,
+		org.Ce.eg.db,
+		outliers,
+    rmarkdown,
+		testthat
 VignetteBuilder: knitr
 Imports: 
-    backports,
     biomaRt,
-		broom,
+    boot,		
 		cluster,
-		digest,
-		downloader,
 		dplyr,
+    e1071,		
 		forcats,
     ggplot2,
+		networkD3,
     purrr,
     readxl,
     readr,
-    rmarkdown,
-		scales,
     stringr,
-    tibble,
     tidyr,
     fs,
     magrittr,
-    boot,
-    broom.mixed,
-    data.table,
-    e1071,
-    grid,
-    gridExtra,
-		gtable,
-		htmltools,
-		httr,
 		limma,
-    lme4,
-    lmerTest,
-    mice,
     mixtools,
-		networkD3,
-    knitr,
 		org.Hs.eg.db,
 		org.Mm.eg.db, 
 		org.Rn.eg.db,
-		org.Ce.eg.db,
-    outliers,
     openxlsx,
+		parallel,
     pheatmap,
     plyr,
 		proteoQDA,
 		reshape2,
     rlang,
     seqinr,
-    statmod,
-    xml2,
-		AnnotationDbi,
 		Biobase,
 		BiocManager,
-    EnvStats,
+		EnvStats,
     GGally,
-		GSVA,
 		MASS,
-    NMF,
     RColorBrewer,
 		RcppGreedySetCover,
-    RCurl,
-    RJSONIO,
-    XML
-RoxygenNote: 7.1.0
+    RCurl
+RoxygenNote: 7.1.1
 Remotes:
-  qzhang503/proteoQDA
+	qzhang503/proteoQDA

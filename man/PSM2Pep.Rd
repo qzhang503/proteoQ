@@ -4,7 +4,11 @@
 \alias{PSM2Pep}
 \title{Interim peptide tables}
 \usage{
-PSM2Pep(method_psm_pep = c("median", "mean", "weighted.mean", "top.3"), ...)
+PSM2Pep(
+  method_psm_pep = c("median", "mean", "weighted.mean", "top.3"),
+  parallel = TRUE,
+  ...
+)
 }
 \arguments{
 \item{method_psm_pep}{Character string; the method to summarize the
@@ -14,6 +18,9 @@ The descriptive statistics includes \code{c("mean", "median", "top.3",
 \code{log10-intensity} of reporter ions at the \code{PSMs} levels will be
 the weight when summarizing \code{log2FC} with \code{"top.3"} or
 \code{"weighted.mean"}.}
+
+\item{parallel}{Logical; if TRUE, performs parallel computation. The default
+is TRUE.}
 
 \item{...}{Not currently used.}
 }

@@ -5,12 +5,11 @@
 #'
 #'@param df An input data frame
 #'@inheritParams prnHist
-#'@inheritParams mixtools::normalmixEM
 #'@inheritParams standPep
 #'@return A data frame.
 #'
-#'@import dplyr purrr rlang mixtools
-#'@importFrom magrittr %>%
+#'@import dplyr purrr rlang 
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range_int, filepath, 
                        col_select = NULL, ...) {
 
@@ -479,8 +478,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 #' @inheritParams standPep
 #' 
 #' @return A data frame.
-#' @import dplyr purrr rlang mixtools
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang 
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 dblTrim <- function(df, range_log2r, range_int, type_r = "N_log2_R", type_int = "N_I") {
 	df_trim <- df
 	
@@ -527,8 +526,8 @@ dblTrim <- function(df, range_log2r, range_int, type_r = "N_log2_R", type_int = 
 #' @param xmax the maximal x values.
 #' @param by the step length.
 #' @return A data frame.
-#' @import dplyr purrr rlang mixtools
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang 
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 	wt_dnorm <- function (x, lambda, mean, sd) lambda * dnorm(x, mean = mean, sd = sd)
 
@@ -556,8 +555,8 @@ sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 #' @param x A numeric vector.
 #' @param center The position of \code{x} to be centered at.
 #' @param SD The standard deviation that data will be scaled to.
-#' @import dplyr purrr rlang mixtools
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang 
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
 normSD <- function (x, center = 0, SD = 1) {
 	if (sum(is.na(x)) == length(x)) {
@@ -581,8 +580,9 @@ normSD <- function (x, center = 0, SD = 1) {
 #' @inheritParams standPep
 #' @return A data frame.
 #'
-#' @import dplyr purrr rlang mixtools
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang 
+#' @importFrom mixtools normalmixEM 
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 fitKernelDensity <- function (df, n_comp = 3, seed = NULL, ...) {
 
 	nmix_params <- function (x, n_comp = 3, seed = seed, ...) {

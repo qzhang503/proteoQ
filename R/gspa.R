@@ -95,8 +95,8 @@
 #'  \cr \cr \code{arrange_}: Variable argument statements for the row ordering
 #'  against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 #'  See also \code{\link{prnHM}} for the format of \code{arrange_} statements.
-#'@import dplyr rlang ggplot2 networkD3
-#'@importFrom magrittr %>%
+#'@import dplyr rlang ggplot2 
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
 #'@example inst/extdata/examples/prnGSPA_.R
 #'
@@ -247,9 +247,7 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 #' @param label_scheme_sub A data frame. Subset entries from \code{label_scheme}
 #'   for selected samples.
 #' @import limma stringr purrr tidyr dplyr rlang
-#' @importFrom magrittr %>% %$% %T>%
-#' @importFrom outliers grubbs.test
-#' @importFrom broom.mixed tidy
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                      filepath = NULL, filename = NULL, 
@@ -379,7 +377,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 #' @inheritParams gspaTest
 #' @inheritParams gsVolcano
 #' @import purrr dplyr rlang
-#' @importFrom magrittr %>% %T>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gslogFC_cutoff, 
                       min_size, max_size, min_delta, min_greedy_size, method, 
                       df, col_ind, id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
@@ -470,6 +468,13 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
   
   if (nrow(res_pass) == 0) return(NULL)
   
+  if (!requireNamespace("RcppGreedySetCover", quietly = TRUE)) {
+    stop("\n============================================================================", 
+         "\nNeed install package \"RcppGreedySetCover\" needed for this function to work.",
+         "\n============================================================================",
+         call. = FALSE)
+  }
+
   out <- local({
     adjp <- res_pass %>% 
       dplyr::select(grep("^pVal\\s+\\(", names(.))) %>% 
@@ -719,7 +724,7 @@ lm_gspa <- function(df, min_delta, gspval_cutoff, gslogFC_cutoff) {
 #' @inheritParams fml_gspa
 #' 
 #' @import purrr dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom readr read_tsv
 prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                       use_adjP = FALSE) {
@@ -771,8 +776,8 @@ prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff 
 #'
 #' @param sig_sets A data frame containing the gene sets that are significant
 #'   under given criteria.
-#' @import purrr dplyr rlang RcppGreedySetCover
-#' @importFrom magrittr %>%
+#' @import purrr dplyr rlang 
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 map_essential <- function (sig_sets) {
   ess_terms <- sig_sets %>% 
     dplyr::filter(!is.na(ess_size), !duplicated(term)) %>% 
@@ -1006,8 +1011,8 @@ gspaHM <- function(scale_log2r, complete_cases, impute_na, df2, filepath, filena
 #' @inheritParams prnHM
 #' @inheritParams gspaMap
 #' @inheritParams fml_gspa
-#' @import purrr dplyr rlang pheatmap networkD3
-#' @importFrom magrittr %>%
+#' @import purrr dplyr rlang pheatmap 
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r, impute_na, ...) {
   ins <- list.files(path = file.path(filepath, fml_nm), pattern = "_essmap\\.txt$")
   
@@ -1055,8 +1060,8 @@ byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r, impute_n
 #' @inheritParams prnHist
 #' @inheritParams prnHM
 #' @inheritParams fml_gspa
-#' @import purrr dplyr rlang pheatmap networkD3
-#' @importFrom magrittr %>%
+#' @import purrr dplyr rlang pheatmap 
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_log2r, impute_na, ...) {
   custom_prefix <- gsub("(.*_{0,1})Protein_GSPA.*", "\\1", ess_in)
   
@@ -1281,8 +1286,14 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
     !!!dots,
   )
   
-  
   # networks
+  if (!requireNamespace("networkD3", quietly = TRUE)) {
+    stop("\n====================================================================", 
+         "\nNeed install package \"networkD3\" needed for this function to work.",
+         "\n====================================================================",
+         call. = FALSE)
+  }
+  
   cluster <- data.frame(cluster = cutree(ph$tree_col, h = max_d_col)) %>% 
     tibble::rownames_to_column("term")
   
@@ -1350,7 +1361,7 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
 #' @param sample_ids A character vecotr containing the sample IDs for an ascribing analysis. 
 #' @inheritParams prnEucDist
 #' @import dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 gspa_colAnnot <- function (annot_cols = NULL, df, sample_ids, annot_colnames = NULL) {
   if (is.null(annot_cols)) return(NA)
   

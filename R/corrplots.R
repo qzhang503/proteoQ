@@ -5,7 +5,7 @@
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @import stringr dplyr ggplot2 GGally rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, col_order = NULL,
                       label_scheme_sub = label_scheme_sub, 
                       scale_log2r = scale_log2r, complete_cases = complete_cases, 
@@ -95,7 +95,7 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
 #' @inheritParams info_anal
 #' 
 #' @import stringr dplyr ggplot2 GGally purrr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 plot_corr_sub <- function (df, xlab, ylab, filename, filepath, 
                            xmin, xmax, xbreaks, width, height, ...) {
                            
@@ -495,7 +495,7 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'
 #'@return Correlation plots.
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 prnCorr_logFC <- function (col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 

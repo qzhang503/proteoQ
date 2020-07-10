@@ -10,7 +10,7 @@
 #' @param ... Additional arguments for \link[pheatmap]{pheatmap}.
 #' 
 #' @import dplyr rlang pheatmap
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, annotation_colors, breaks, ...) {
   mat <- rlang::enexpr(mat)
   filename <- rlang::enexpr(filename)
@@ -44,8 +44,7 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, an
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
-#' @importFrom magrittr %>%
-#' @importFrom magrittr %T>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
                    scale_log2r, complete_cases, 
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, 
@@ -576,8 +575,8 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'@example inst/extdata/examples/prnHM_.R
 #'
 #'@return Heat maps and optional sub trees.
-#'@import NMF dplyr rlang ggplot2
-#'@importFrom magrittr %>%
+#'@import dplyr rlang ggplot2
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 prnHM <- function (col_select = NULL, col_benchmark = NULL,
                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 

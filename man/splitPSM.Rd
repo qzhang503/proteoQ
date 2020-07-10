@@ -14,8 +14,9 @@ splitPSM(
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
-  use_lowercase_aa = TRUE,
   rptr_intco = 1000,
+  use_lowercase_aa = TRUE,
+  parallel = TRUE,
   ...
 )
 }
@@ -62,12 +63,15 @@ will be annotated with their kinase attributes. The default is FALSE.}
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
 intensities will be plotted. The default is TRUE.}
 
+\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
+default is 1,000.}
+
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the
 table below for details. The default is TRUE.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
-default is 1,000.}
+\item{parallel}{Logical; if TRUE, performs parallel computation. The default
+is TRUE.}
 
 \item{...}{Not currently used.}
 }

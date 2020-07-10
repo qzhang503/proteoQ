@@ -195,7 +195,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
     dplyr::summarise(prot_sequences_sig_new = n())
   
   df <- list(df, prot_matches_sig, prot_sequences_sig) %>% 
-    purrr::reduce(left_join, by = group_pep_by) %>% 
+    purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
     dplyr::mutate(prot_matches_sig = prot_matches_sig_new, 
                   prot_sequences_sig = prot_sequences_sig_new) %>%
     dplyr::select(-prot_matches_sig_new, -prot_sequences_sig_new)
@@ -337,7 +337,8 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
 #' )
 #' }
 #' 
-#' @import stringr dplyr magrittr readr readxl rlang ggplot2 RColorBrewer pheatmap
+#' @import stringr dplyr readr readxl rlang ggplot2 RColorBrewer pheatmap
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
 proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL, 
                       filepath = NULL, filename = NULL, complete_cases = FALSE, 

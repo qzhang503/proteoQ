@@ -3,7 +3,7 @@
 #' @inheritParams load_expts
 #' @inheritParams prnHist
 #' @import dplyr tidyr purrr openxlsx
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom readxl read_excel
 prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 
@@ -283,7 +283,7 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 #' @inheritParams load_expts
 #' @inheritParams prnHist
 #' @import dplyr purrr tidyr openxlsx
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom readxl read_excel
 prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
   old_opts <- options()
@@ -479,7 +479,7 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 #'@param species Character string; the name of a species. 
 #'@inheritParams prnGSPA
 #'@import dplyr rlang
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 load_dbs <- function (gset_nms = NULL, species = NULL) {
   if (is.null(gset_nms)) stop("`gset_nms` cannot be NULL.", call. = FALSE)
@@ -685,7 +685,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'@example inst/extdata/examples/load_expts_.R
 #'
 #'@import dplyr rlang fs
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
   on.exit(mget(names(formals()), rlang::current_env()) %>% save_call("load_expts"))
@@ -703,7 +703,7 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
 #' Reload the "expt_smry.xlsx" and "frac_smry.xlsx"
 #'
 #' @import rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom fs file_info
 reload_expts <- function() {
   expt_smry <- match_call_arg(load_expts, expt_smry)
@@ -762,6 +762,22 @@ channelInfo <- function (label_scheme, set_idx) {
 #'   different LCMS_inj under the same TMT_Set.
 n_TMT_sets <- function (label_scheme_full) {
 	length(unique(label_scheme_full$TMT_Set))
+}
+
+
+#' Finds the maximum number of LCMS injections under the same TMT_Set.
+#'
+#' @inheritParams n_TMT_sets
+n_LCMS <- function (label_scheme_full) {
+  label_scheme_full %>% 
+    dplyr::select(TMT_Set, LCMS_Injection) %>% 
+    tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = FALSE) %>% 
+    dplyr::filter(!duplicated(TMT_inj)) %>% 
+    dplyr::group_by(TMT_Set) %>% 
+    dplyr::mutate(n_LCMS = n()) %>% 
+    dplyr::select(TMT_Set, n_LCMS) %>% 
+    dplyr::filter(!duplicated(TMT_Set)) %>% 
+    dplyr::ungroup() 
 }
 
 

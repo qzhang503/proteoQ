@@ -187,11 +187,8 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-\code{arrange_}: Variable argument statements for the row ordering against
-data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
-the format of \code{arrange_} statements. \cr \cr Additional parameters for
-\code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
-height of plot \cr \code{...}}
+Additional parameters for \code{ggsave}: \cr \code{width}, the width of
+plot; \cr \code{height}, the height of plot \cr \code{...}}
 }
 \description{
 Plots MDS

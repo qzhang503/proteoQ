@@ -5,7 +5,7 @@ library(reshape2)
 library(dplyr)
 library(purrr)
 library(stringr)
-library(magrittr)
+# library(magrittr)
 
 #' Prefix form of colnames(x)[c(2, 5, ...)] for use in pipes
 #'
@@ -17,7 +17,7 @@ library(magrittr)
 #' @return The data frame with new names.
 #'
 #' @import dplyr
-#' @importFrom magrittr %>%
+#'@rawNamespace import(magrittr, except = c(set_names))
 `names_pos<-` <- function(x, pos, value) {
   names(x)[pos] <- value
   x

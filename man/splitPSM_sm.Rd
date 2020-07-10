@@ -15,6 +15,8 @@ splitPSM_sm(
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
   rptr_intco = 1000,
+  use_lowercase_aa = TRUE,
+  parallel = TRUE,
   ...
 )
 }
@@ -63,6 +65,13 @@ intensities will be plotted. The default is TRUE.}
 
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
 default is 1,000.}
+
+\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
+residues will be abbreviated with lower-case and/or \code{^_~}. See the
+table below for details. The default is TRUE.}
+
+\item{parallel}{Logical; if TRUE, performs parallel computation. The default
+is TRUE.}
 
 \item{...}{Not currently used.}
 }

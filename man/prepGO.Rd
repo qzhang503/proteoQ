@@ -99,7 +99,8 @@ prepGO(
   # species = worm,
   abbr_species = Ce,
   gaf_url = "http://current.geneontology.org/annotations/wb.gaf.gz",
-  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
+  obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo", 
+  filename = go_ce.rds,
 )
 }
 

@@ -5,7 +5,7 @@
 #' @param params Additional parameters for geom_point.
 #' @inheritParams prnPCA
 #' @import dplyr ggplot2 rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 geom_lower_text <- function(data, mapping, params, show_ids, ...) {
   mapping_xy <- mapping %>% .[names(.) %in% c("x", "y")]
 
@@ -30,7 +30,7 @@ geom_lower_text <- function(data, mapping, params, show_ids, ...) {
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @import dplyr ggplot2 rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                      adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2,
                      k = 3, dimension = 2, folds = 1, show_ids = FALSE, show_ellipses = FALSE,
@@ -355,7 +355,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @import dplyr ggplot2 rlang pheatmap
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDist = FALSE,
                          scale_log2r = TRUE, complete_cases = FALSE,
                          annot_cols, annot_colnames,
@@ -461,7 +461,7 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 #' @inheritParams gspaTest
 #' @import dplyr rlang
 #' @importFrom MASS isoMDS
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                       center_features, scale_features,
                       adjEucDist = FALSE, classical, method = "euclidean",
@@ -562,7 +562,7 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 #' @inheritParams prnPCA
 #' @inheritParams anal_pepNMF
 #' @import dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 prep_folded_tdata <- function (df, folds, label_scheme_sub, col_group) {
   nms <- names(df)
   n_rows <- nrow(df)
@@ -611,7 +611,7 @@ prep_folded_tdata <- function (df, folds, label_scheme_sub, col_group) {
 #' @inheritParams gspaTest
 #' @import dplyr rlang
 #' @importFrom MASS isoMDS
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 scoreEucDist <- function (df, id, label_scheme_sub, anal_type, scale_log2r, adjEucDist = FALSE, ...) {
 
   dots <- rlang::enexprs(...)
@@ -867,7 +867,7 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, col_f
 #'
 #'@return MDS plots.
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, col_fill = NULL,
                     col_shape = NULL, col_size = NULL, col_alpha = NULL,
@@ -1064,7 +1064,7 @@ pepEucDist <- function (col_select = NULL,
 #'@return Heat map visualization of distance matrices.
 #'
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 prnEucDist <- function (col_select = NULL,
                         scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,

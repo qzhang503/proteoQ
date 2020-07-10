@@ -18,7 +18,7 @@
 #'
 #' @return A function to the given \code{anal_type}.
 #' @import dplyr rlang ggplot2 pheatmap openxlsx
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order = NULL,
                        col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL,
                        color_brewer = NULL, fill_brewer = NULL,

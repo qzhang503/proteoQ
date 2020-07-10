@@ -8,6 +8,7 @@ normPep_Mplex(
   group_psm_by = "pep_seq_mod",
   group_pep_by = "prot_acc",
   use_duppeps = TRUE,
+  parallel = TRUE,
   ...
 )
 }
@@ -27,6 +28,9 @@ numbers will be treated as one group.}
 
 \item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
 peptide sequences to the most likely proteins by majority votes.}
+
+\item{parallel}{Logical; if TRUE, performs parallel computation. The default
+is TRUE.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains to a list of logical expression(s). The
