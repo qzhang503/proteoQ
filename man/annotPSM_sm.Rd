@@ -14,7 +14,6 @@ annotPSM_sm(
   rm_krts = FALSE,
   plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE,
-  use_lowercase_aa = TRUE,
   ...
 )
 }
@@ -57,10 +56,6 @@ intensities will be plotted. The default is TRUE.}
 
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
 \code{log2FC} will be plotted. The default is TRUE.}
-
-\item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
-residues will be abbreviated with lower-case and/or \code{^_~}. See the
-table below for details. The default is TRUE.}
 
 \item{...}{Not currently used.}
 }

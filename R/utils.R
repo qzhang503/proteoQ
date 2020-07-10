@@ -12,7 +12,7 @@
 #' @examples
 #' \donttest{tempData <- prepDM(df, entrez, scale_log2r, label_scheme_sub$Sample_ID)}
 #'@import dplyr
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
   stopifnot(nrow(df) > 0)
   
@@ -88,7 +88,7 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
 #' @return The data frame with new names.
 #'
 #' @import dplyr
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 `names_pos<-` <- function(x, pos, value) {
 	names(x)[pos] <- value
 	x
@@ -103,7 +103,7 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
 #' @param filelist A list of file names.
 #' @import dplyr
 #' @importFrom stringr str_split
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 reorder_files <- function(filelist) {
   newlist <- NULL
   
@@ -137,7 +137,7 @@ reorder_files <- function(filelist) {
 #'   will be used as row names.
 #' @import dplyr rlang
 #' @importFrom stringr str_split
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 reorderCols <- function (df, endColIndex, col_to_rn) {
 	if (length(endColIndex) == 0) endColIndex <- grep("I[0-9]{3}|log2_R[0-9]{3}", names(df))
 	
@@ -168,7 +168,7 @@ reorderCols <- function (df, endColIndex, col_to_rn) {
 #'   \code{df}.
 #' @import dplyr rlang
 #' @importFrom stringr str_split
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
 reorderCols2 <- function (df = NULL, pattern = NULL) {
   if (is.null(df)) stop("`df` cannot be `NULL`.", call. = FALSE)
@@ -195,7 +195,7 @@ reorderCols2 <- function (df = NULL, pattern = NULL) {
 #'   \code{idx_bf}.
 #' @import dplyr rlang
 #' @importFrom stringr str_split
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
 ins_cols_after <- function (df = NULL, idx_bf = ncol(df), idx_ins = NULL) {
   if (is.null(df)) stop("`df` cannot be `NULL`.", call. = FALSE)
@@ -220,7 +220,7 @@ ins_cols_after <- function (df = NULL, idx_bf = ncol(df), idx_ins = NULL) {
 #' @param df A list of file names.
 #' @import dplyr
 #' @importFrom stringr str_split
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 na_zeroIntensity <- function (df) {
 	ind <- grep("I1[0-9]{2}", names(df))
 
@@ -240,7 +240,7 @@ na_zeroIntensity <- function (df) {
 #' @param f A function for data summarization.
 #' @examples \donttest{df_num <- aggrNums(median)(df, prot_acc, na.rm = TRUE)}
 #' @import dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 aggrNums <- function(f) {
 	function (df, id, ...) {
 		id <- rlang::as_string(rlang::enexpr(id))
@@ -266,7 +266,7 @@ aggrNums <- function(f) {
 #' @import dplyr rlang
 #' @importFrom stringr str_length
 #' @importFrom tidyr gather
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 tmt_wtmean <- function (x, id, na.rm = TRUE, ...) {
   my_trim <- function (x, range_int = c(.05, .95), na.rm = TRUE) {
     if (range_int[2] > 1) range_int <- range_int/100
@@ -347,7 +347,7 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...) {
     xzr_wt <- xi_wt[, 1, drop = FALSE]
   }
 
-  x <- list(xi_wt, xr_wt, xnr_wt, xzr_wt) %>% purrr::reduce(left_join, by = id)
+  x <- list(xi_wt, xr_wt, xnr_wt, xzr_wt) %>% purrr::reduce(dplyr::left_join, by = id)
 
   dplyr::bind_cols(
     x[, names(x) == id],
@@ -370,7 +370,7 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...) {
 #' @param ... Additional arguments for \code{mean}.
 #' @examples \donttest{df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)}
 #' @import dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 TMT_top_n <- function (x, id, ...) {
 
 	id_var <- rlang::enexpr(id)
@@ -403,7 +403,7 @@ not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
 #'
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
 #' @import dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
 
 
@@ -429,7 +429,7 @@ is_all_nan <- function(x, ...) {
 #' @inheritParams prnEucDist
 #' @inheritParams gspa_colAnnot
 #' @import dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NULL) {
 	if (is.null(annot_cols)) return(NA)
 
@@ -468,7 +468,7 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 	if ("TMT_Set" %in% names(x)) {
 		x <- x %>%
 			tibble::rownames_to_column() %>%
-			mutate(TMT_Set, as.factor(TMT_Set)) %>%
+			dplyr::mutate(TMT_Set, as.factor(TMT_Set)) %>%
 			tibble::column_to_rownames(var = "rowname")
 	}
 
@@ -480,7 +480,7 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 #' 
 #' @param annotation_col The same as in \link[pheatmap]{pheatmap}.
 #' @import dplyr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 setHMColor <- function (annotation_col) {
 	ncol <- ncol(annotation_col)
 
@@ -530,7 +530,7 @@ setHMColor <- function (annotation_col) {
 #' @param xmax the upper limit.
 #' @import dplyr rlang
 #' @importFrom stringr str_split
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 setHMlims <- function (x, xmin, xmax) {
 	x[x < xmin] <- xmin
 	x[x > xmax] <- xmax
@@ -586,16 +586,15 @@ ratio_toCtrl <- function(df, id, label_scheme_sub, nm_ctrl) {
 #'@return \code{Peptide_impNA.txt} for peptide data and \code{Protein_impNA.txt}
 #'  for protein data.
 #'
-#'@import dplyr purrr rlang mice
-#'@importFrom magrittr %>%
+#'@import dplyr purrr rlang 
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 imputeNA <- function (id, overwrite = FALSE, ...) {
 	my_mice <- function (data, ...) {
 		data <- rlang::enexpr(data)
 		dots <- rlang::enexprs(...)
 
-		mice_call <- rlang::expr(mice(data = !!data, !!!dots))
-		rlang::eval_bare(mice_call, env = caller_env())
+		rlang::eval_bare(rlang::expr(mice::mice(data = !!data, !!!dots)), env = caller_env())
 	}
 
 	handleNA <- function (x, ...) {
@@ -615,6 +614,14 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 		return(x)
 	}
 
+	
+	if (!requireNamespace("mice", quietly = TRUE)) {
+	  stop("\n====================================================================", 
+	       "\nNeed install package \"mice\" needed for this function to work.",
+	       "\n====================================================================",
+	       call. = FALSE)
+	}
+	
 	id <- rlang::as_string(rlang::enexpr(id))
 
 	if (id %in% c("pep_seq", "pep_seq_mod")) {
@@ -635,7 +642,7 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 		  stop(paste("File or directory not found:", src_path))
 		}
 
-		df[, grep("N_log2_R", names(df))]  <- df[, grep("N_log2_R", names(df))]  %>% handleNA(...)
+		df[, grep("N_log2_R", names(df))] <- handleNA(df[, grep("N_log2_R", names(df))], ...)
 
 		fn_params <- file.path(dat_dir, "Protein/Histogram", "MGKernel_params_N.txt")
 		if (file.exists(fn_params)) {
@@ -819,9 +826,9 @@ add_entrez <- function (acc_lookup) {
       dplyr::mutate(!!entrez_key := as.character(!!rlang::sym(entrez_key)))
   
     if (acc_type == "uniprot_id") {
-      acc_lookup <- left_join(acc_lookup, entrez, by = c("uniprot_acc" = entrez_key))
+      acc_lookup <- dplyr::left_join(acc_lookup, entrez, by = c("uniprot_acc" = entrez_key))
     } else {
-      acc_lookup <- left_join(acc_lookup, entrez, by = c("prot_acc" = entrez_key))
+      acc_lookup <- dplyr::left_join(acc_lookup, entrez, by = c("prot_acc" = entrez_key))
     }    
   } else {
     acc_lookup <- acc_lookup %>% dplyr::mutate(entrez = NA)
@@ -1116,7 +1123,8 @@ parse_uniprot_fasta <- function (df, fasta, entrez) {
 #' 
 #' @inheritParams info_anal
 #' @inheritParams normPSM
-#' @import plyr dplyr purrr rlang seqinr stringr 
+#' @import dplyr purrr rlang stringr 
+#' @rawNamespace import(seqinr, except = c(consensus, count, zscore))
 #' @importFrom magrittr %>% %$% %T>% 
 annotPrn <- function (df, fasta, entrez) {
 	acc_lookup <- parse_uniprot_fasta(df, fasta, entrez)
@@ -1157,8 +1165,8 @@ annotPrn <- function (df, fasta, entrez) {
 #' @inheritParams info_anal
 #' @param acc_type Character string; the type of protein accessions in one of
 #'   c("refseq_acc", "uniprot_acc", "uniprot_id")
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 annotKin <- function (df, acc_type) {
 	stopifnot ("prot_acc" %in% names(df))
 	
@@ -1186,7 +1194,7 @@ annotKin <- function (df, acc_type) {
 #' @param fn The name of function being saved.
 #'
 #' @import dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 save_call <- function(call_pars, fn) {
 	dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)
 	call_pars[names(call_pars) == "..."] <- NULL
@@ -1238,8 +1246,8 @@ get_gl_dat_dir <- function () {
 #' Matches formulas to those in calls to pepSig or prnSig
 #'
 #' @param formulas Language; the formulas in linear modeling.
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 match_fmls <- function(formulas) {
   fml_file <-  file.path(dat_dir, "Calls/pepSig_formulas.rda")
   
@@ -1272,7 +1280,7 @@ match_fmls <- function(formulas) {
 #' @param arg Argument to be matched.
 #'
 #' @import dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") {
   call_rda <- rlang::as_string(rlang::enexpr(call_rda))
   arg <- rlang::as_string(rlang::enexpr(arg))
@@ -1296,7 +1304,7 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") {
 #' @inheritParams prnHM
 #'
 #' @import dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r = TRUE, impute_na = FALSE) {
   stopifnot(!is.null(subdir))
 
@@ -1467,8 +1475,8 @@ match_pepSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE) {
 #' 
 #' @inheritParams info_anal
 #' @inheritParams annotKin
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 replace_na_genes <- function(df, acc_type) {
 	acc_type <- tolower(acc_type)
 
@@ -1498,8 +1506,8 @@ replace_na_genes <- function(df, acc_type) {
 #' Replaces NA genes
 #' 
 #' @param df A data frame.
-#' @import plyr dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 na_genes_by_acc <- function(df) {
   stopifnot("prot_acc" %in% names(df), "gene" %in% names(df))
   
@@ -1519,8 +1527,9 @@ na_genes_by_acc <- function(df) {
 #' @param prot_acc Protein accession
 #' @param pep_seq Peptide sequence
 #' @inheritParams normPSM
-#' @import dplyr purrr rlang stringr seqinr tidyr
-#' @importFrom magrittr %>% %$%
+#' @import dplyr purrr rlang stringr tidyr
+#' @rawNamespace import(seqinr, except = c(consensus, count, zscore))
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 find_pep_pos <- function (prot_acc, pep_seq, fasta) {
   fasta_sub <- fasta %>% .[names(.) == prot_acc]
   pep_seq <- as.character(pep_seq)
@@ -1587,8 +1596,9 @@ find_pep_pos <- function (prot_acc, pep_seq, fasta) {
 #' 
 #' @inheritParams info_anal
 #' @inheritParams normPSM
-#' @import dplyr purrr rlang stringr seqinr tidyr
-#' @importFrom magrittr %>% %$%
+#' @import dplyr purrr rlang stringr tidyr
+#' @rawNamespace import(seqinr, except = c(consensus, count, zscore))
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 annotPeppos <- function (df, fasta){
   stopifnot(all(c("prot_acc", "pep_seq") %in% names(df)))
   acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
@@ -1661,8 +1671,9 @@ annotPeppos <- function (df, fasta){
 #' @inheritParams info_anal
 #' @inheritParams normPSM
 #' @inheritParams annotKin
-#' @import plyr dplyr purrr rlang seqinr
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang 
+#' @rawNamespace import(seqinr, except = c(consensus, count, zscore))
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 subset_fasta <- function (df, fasta, acc_type) {
   stopifnot("prot_acc" %in% names(df))
   
@@ -1694,8 +1705,8 @@ subset_fasta <- function (df, fasta, acc_type) {
 #' 
 #' @inheritParams info_anal
 #' @inheritParams normPSM
-#' @import plyr dplyr purrr rlang seqinr
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang 
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 calc_cover <- function(df, id, fasta = NULL) {
   stopifnot(all(c("prot_acc", "gene", "pep_start", "pep_end") %in% names(df)))
 
@@ -1786,7 +1797,7 @@ calc_cover <- function(df, id, fasta = NULL) {
 #' 
 #' @inheritParams info_anal
 #' @import dplyr purrr
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 to_linfc <- function(df) {
 		nms <- rownames(df)
 
@@ -1801,10 +1812,10 @@ to_linfc <- function(df) {
 #' 
 #' @inheritParams setHMlims
 #' @import dplyr purrr
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 rm_sglval_cols <- function (x) {
   sgl_val <- x %>% 
-    summarise_all(~ n_distinct(.x)) %>% 
+    dplyr::summarise_all(~ n_distinct(.x)) %>% 
     purrr::map(~ .x == 1) %>% 
     purrr::flatten_lgl()
   
@@ -1817,7 +1828,7 @@ rm_sglval_cols <- function (x) {
 #' @param data A data frame
 #' @param metadata Another data frame 
 #' @import dplyr purrr
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 cmbn_meta <- function(data, metadata) {
   suppressWarnings(
     data %>% 
@@ -1851,7 +1862,7 @@ gg_imgname <- function(filename) {
 #' 
 #' @inheritParams info_anal
 #' @import dplyr purrr
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 rm_pval_whitespace <- function(df) {
   df <- df %>% 
     dplyr::mutate_at(vars(grep("pVal|adjP", names(.))), as.character) %>% 
@@ -1866,7 +1877,7 @@ rm_pval_whitespace <- function(df) {
 #' @param ... Arguments for \link[dplyr]{filter}
 #'
 #' @import dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 filters_in_call <- function (df, ...) {
   dots <- rlang::enexprs(...)
   nms <- names(dots)
@@ -1906,7 +1917,7 @@ filters_in_call <- function (df, ...) {
 #' @param ... Arguments for \link[dplyr]{arrange}
 #'
 #' @import dplyr purrr rlang
-#' @importFrom magrittr %>% 
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 arrangers_in_call <- function(.df, ..., .na.last = TRUE) {
   dots <- rlang::enexprs(...)
   nms <- names(dots)
@@ -2125,7 +2136,7 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
       p <- p + scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, ybreaks))
     }
 
-    if (is.null(theme)) theme <- theme_psm_violin
+    if (is.null(theme) || purrr::is_function(theme)) theme <- theme_psm_violin
     p <- p + theme
 
     if (flip_coord) {

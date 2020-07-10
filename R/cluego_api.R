@@ -11,8 +11,8 @@
 #'   Sapiens"} is the corresponding species name in ClueGO.
 #' @param n_clust Numeric vector; the cluster ID(s) corresponding to
 #'  \code{\link{anal_prnTrend}} for visualization. 
-#' @import httr RJSONIO xml2 rlang dplyr purrr 
-#' @importFrom magrittr %>%
+#' @import rlang dplyr purrr 
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
 #' 
 #' @examples \donttest{
@@ -35,6 +35,20 @@
 #' }
 cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "Homo Sapiens"), 
                     n_clust = 3) {
+  
+  if (!requireNamespace("RJSONIO", quietly = TRUE)) {
+    stop("\n====================================================================", 
+         "\nNeed install package \"RJSONIO\" needed for this function to work.",
+         "\n====================================================================",
+         call. = FALSE)
+  }
+  
+  if (!requireNamespace("httr", quietly = TRUE)) {
+    stop("\n====================================================================", 
+         "\nNeed install package \"httr\" needed for this function to work.",
+         "\n====================================================================",
+         call. = FALSE)
+  }
   
   df2 <- rlang::as_string(rlang::enexpr(df2))
   filepath <- file.path(dat_dir, "Protein", "Trend")

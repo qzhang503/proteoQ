@@ -97,7 +97,7 @@ proc_gaf <- function(db_path, fn_gaf) {
 #' @param from the type of \code{keys}
 #' @param to the type of target IDs
 #' @inheritParams prepGO
-#' @import dplyr purrr AnnotationDbi
+#' @import dplyr purrr 
 annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL", to = "ENTREZID") {
   if (all(is.null(keys))) stop("Argument `keys` cannot be NULL", call. = FALSE)
 
@@ -261,6 +261,13 @@ dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msig
     stop("Use a link to a `.entrez.gmt` file; not `.symbols.gmt`.", call. = FALSE)
   }
   
+  if (!requireNamespace("downloader", quietly = TRUE)) {
+    stop("\n====================================================================", 
+         "\nNeed install package \"downloader\" needed for this function to work.",
+         "\n====================================================================",
+         call. = FALSE)
+  }
+
   fn_msig <- msig_url %>% gsub("^.*/(.*)$", "\\1", .)
   
   if ((!file.exists(file.path(db_path, "cache", fn_msig))) | overwrite)  {
@@ -321,8 +328,9 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #'\href{http://current.geneontology.org/products/pages/downloads.html}{gene
 #'ontology} (GO) for enrichment analysis by gene sets.
 #'
-#'@import rlang dplyr magrittr purrr fs readr downloader org.Hs.eg.db
-#'  org.Mm.eg.db org.Rn.eg.db 
+#'@import rlang dplyr purrr fs readr org.Hs.eg.db org.Mm.eg.db
+#'  org.Rn.eg.db
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@param overwrite Logical; if TRUE, overwrite the downloaded database(s). The
 #'  default is FALSE.
 #'@param species Character string; the name of a species for the
@@ -393,7 +401,8 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #'   # species = worm,
 #'   abbr_species = Ce,
 #'   gaf_url = "http://current.geneontology.org/annotations/wb.gaf.gz",
-#'   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo",
+#'   obo_url = "http://purl.obolibrary.org/obo/go/go-basic.obo", 
+#'   filename = go_ce.rds,
 #' )
 #' }
 #' 
@@ -414,6 +423,24 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
   
+  if (!requireNamespace("downloader", quietly = TRUE)) {
+    stop("\n====================================================================", 
+         "\nNeed install package \"downloader\" needed for this function to work.",
+         "\n====================================================================",
+         call. = FALSE)
+  }
+  
+  if (!requireNamespace("AnnotationDbi", quietly = TRUE)) {
+    stop("\n====================================================================", 
+         "\nNeed install package \"AnnotationDbi\" needed for this function to work.\n",
+         "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
+         "\n\tinstall.packages(\"BiocManager\")",
+         "\nBiocManager::install(\"AnnotationDbi\")", 
+         "\n====================================================================",
+         call. = FALSE)
+  }
+  
+
   species <- rlang::as_string(rlang::enexpr(species))
 
   db_path <- create_db_path(db_path)
@@ -452,7 +479,7 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
     fn_obo <- obo_url %>% gsub("^.*/(.*)$", "\\1", .)
   }
 
-  if ((!file.exists(file.path(db_path, "cache", fn_gaf))) | overwrite)  {
+  if ((!file.exists(file.path(db_path, "cache", fn_gaf))) || overwrite)  {
     downloader::download(gaf_url, file.path(db_path, "cache", fn_gaf), mode = "wb")
   }
   
@@ -497,7 +524,8 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'\href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular Signatures}
 #'(MSig) for enrichment analysis by gene sets.
 #'
-#'@import rlang dplyr magrittr purrr fs readr downloader biomaRt org.Hs.eg.db
+#'@import rlang dplyr purrr fs readr org.Hs.eg.db
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@inheritParams prepGO
 #'@param species Character string; the name of a species for the
 #'  \emph{conveninent} preparation of \code{MSig} data bases. The species
@@ -596,6 +624,16 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
   
+  if (!requireNamespace("biomaRt", quietly = TRUE)) {
+    stop("\n====================================================================", 
+         "\nNeed install package \"biomaRt\" needed for this function to work.\n",
+         "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
+         "\n\tinstall.packages(\"BiocManager\")",
+         "\nBiocManager::install(\"biomaRt\")", 
+         "\n====================================================================",
+         call. = FALSE)
+  }
+
   if (is.null(msig_url)) {
     msig_url <- "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt"
   } else {
@@ -639,8 +677,9 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
 #'   "REFSEQ", "ACCNUM").
 #' @inheritParams prepMSig
 #' @inheritParams annot_from_to
-#' @import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db
+#' @import dplyr purrr tidyr reshape2 org.Hs.eg.db org.Mm.eg.db
 #'   org.Rn.eg.db
+#' @importFrom plyr ldply
 #' @export
 map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPROT", 
                           filename = NULL, db_path = "~/proteoQ/dbs/entrez", overwrite = FALSE) {
@@ -721,7 +760,7 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
 #'@param db_path Character string; the local path for database(s). The default
 #'  is \code{"~/proteoQ/dbs/entrez"}.
 #'@inheritParams prepMSig
-#'@import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
+#'@import dplyr purrr tidyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
 #'@example inst/extdata/examples/prepEntrez_.R
 #'@export
 Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
@@ -748,7 +787,7 @@ Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 #'\code{proteoQ}.
 #'
 #'@rdname Uni2Entrez
-#'@import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
+#'@import dplyr purrr tidyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
 #'@example inst/extdata/examples/prepEntrez_.R
 #'@export
 Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
@@ -769,8 +808,8 @@ Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 #' @param os_name An organism name by UniProt.
 #' @inheritParams Uni2Entrez
 #' @inheritParams annot_from_to
-#' @import dplyr purrr tidyr plyr reshape2 org.Hs.eg.db org.Mm.eg.db
-#'   org.Rn.eg.db
+#' @import dplyr purrr tidyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
+#' @importFrom plyr ldply
 map_to_entrez_os_name <- function(species = "human", abbr_species = NULL, 
                                   os_name = "Homo sapiens", 
                                   from = "UNIPROT", 

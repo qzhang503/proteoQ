@@ -93,8 +93,8 @@
 #'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
-#'@import dplyr rlang ggplot2 GSVA
-#'@importFrom magrittr %>%
+#'@import dplyr rlang ggplot2
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"), 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
@@ -170,15 +170,23 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @import limma stringr purrr tidyr dplyr rlang
-#' @importFrom magrittr %>% %$%
-#' @importFrom outliers grubbs.test
-#' @importFrom broom.mixed tidy
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
                      filepath = NULL, filename = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                      gset_nms = "go_sets", lm_method = "limma", 
                      var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
                      anal_type = "GSVA", ...) {
+  
+  if (!requireNamespace("GSVA", quietly = TRUE)) {
+    stop("\n====================================================================", 
+         "\nNeed install package \"GSVA\" needed for this function to work.\n",
+         "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
+         "\n\tinstall.packages(\"BiocManager\")",
+         "\nBiocManager::install(\"GSVA\")", 
+         "\n====================================================================",
+         call. = FALSE)
+  }
   
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), rlang::is_double, logical(1)))
   stopifnot(nrow(label_scheme_sub) > 0)

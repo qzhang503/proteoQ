@@ -25,6 +25,7 @@ normPSM(
   plot_log2FC_cv = TRUE,
   use_lowercase_aa = TRUE,
   purge_phosphodata = TRUE,
+  parallel = TRUE,
   ...
 )
 }
@@ -118,6 +119,9 @@ table below for details. The default is TRUE.}
 \item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
 variable modification(s), entries without phosphorylation will be removed.
 The default is TRUE.}
+
+\item{parallel}{Logical; if TRUE, performs parallel computation. The default
+is TRUE.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains to a list of logical expression(s). The

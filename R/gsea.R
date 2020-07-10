@@ -9,7 +9,7 @@ make_gct <- function(df, filepath, fn_prefix) {
     tibble::rownames_to_column("NAME") %>% 
     dplyr::mutate(Description = NA) 
   
-  df <- bind_cols(
+  df <- dplyr::bind_cols(
     df %>% dplyr::select(NAME, Description), 
     df %>% dplyr::select(-NAME, -Description), 
   )
@@ -93,8 +93,8 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'  \code{arrange_}: Variable argument statements for the row ordering against
 #'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 #'  the format of \code{arrange_} statements. 
-#'@import dplyr rlang ggplot2 networkD3
-#'@importFrom magrittr %>%
+#'@import dplyr rlang ggplot2 
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
 #'@example inst/extdata/examples/prnGSEA_.R
 #'

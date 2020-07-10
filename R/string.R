@@ -2,7 +2,8 @@
 #'
 #'@inheritParams info_anal
 #'@inheritParams anal_prnString
-#'@import rlang dplyr purrr magrittr
+#'@import rlang dplyr purrr 
+#'@importFrom magrittr %>% %T>% %$% %<>%
 annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, filename = NULL, ...) {
   df <- df %>% dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
   dbs <- load_stringdbs(db_nms)
@@ -91,7 +92,7 @@ annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, filena
 #' @inheritParams prnCorr_logFC
 #' @inheritParams anal_prnString
 #' @import dplyr purrr rlang fs
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 stringTest <- function(df = NULL, id = gene, 
                        label_scheme_sub = NULL, 
                        db_nms = NULL, score_cutoff = .7, 
@@ -239,7 +240,8 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
 #'  info_url = "https://stringdb-static.org/download/protein.info.v11.0/7227.protein.info.v11.0.txt.gz", 
 #'  filename = string_dm.rds,
 #')
-#'@import rlang dplyr magrittr purrr fs downloader
+#'@import rlang dplyr purrr fs
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@seealso \code{\link{anal_prnString}} for protein-protein interaction
 #'  networks.
 #'@export
@@ -250,6 +252,13 @@ prepString <- function(species = "human", # abbr_species = NULL,
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
+  
+  if (!requireNamespace("downloader", quietly = TRUE)) {
+    stop("\n====================================================================", 
+         "\nNeed install package \"downloader\" needed for this function to work.",
+         "\n====================================================================",
+         call. = FALSE)
+  }
   
   species <- rlang::as_string(rlang::enexpr(species))
   db_path <- create_db_path(db_path)
@@ -414,7 +423,8 @@ prepString <- function(species = "human", # abbr_species = NULL,
 #' }
 #'
 #'@inheritParams anal_prnString
-#'@import rlang dplyr magrittr purrr fs
+#'@import rlang dplyr purrr fs
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@seealso \code{\link{load_dbs}} for loading databases of \code{GO} and
 #'  \code{MSig}.
 load_stringdbs <- function (db_nms = NULL) {

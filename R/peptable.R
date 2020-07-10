@@ -6,7 +6,7 @@
 #' @param x Data frame; log2FC data
 #' @param label_scheme Experiment summary
 #' @import dplyr purrr rlang forcats
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 newColnames <- function(i, x, label_scheme) {
   label_scheme_sub <- label_scheme %>%
     dplyr::filter(TMT_Set == i) # %>% 
@@ -36,10 +36,12 @@ newColnames <- function(i, x, label_scheme) {
 #'
 #' @inheritParams info_anal
 #' @inheritParams normPSM
+#' @inheritParams splitPSM
 #' @inheritParams mergePep
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
-                           use_duppeps = TRUE, ...) {
+                           use_duppeps = TRUE, parallel = TRUE, ...) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
 
   filter_dots <- rlang::enexprs(...) %>% 
     .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
@@ -73,9 +75,56 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
                     # grep("^Z_log2_R[0-9]{3}", names(.)), 
                     grep("^I[0-9]{3}", names(.)), 
                     grep("^N_I[0-9]{3}", names(.))) %>% 
-      dplyr::group_by(!!rlang::sym(group_psm_by), TMT_Set) %>%
-      dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+      dplyr::group_by(!!rlang::sym(group_psm_by), TMT_Set)
     
+    tbl_lcms <- n_LCMS(label_scheme_full)
+    
+    if (any(tbl_lcms$n_LCMS > 1)) {
+      tbl_n <- tbl_lcms %>% dplyr::filter(n_LCMS > 1)
+      
+      df_n <- df_num %>% dplyr::filter(TMT_Set %in% tbl_n$TMT_Set)
+      df_1 <- df_num %>% dplyr::filter(! TMT_Set %in% tbl_n$TMT_Set)
+      
+      if (parallel) {
+        n_cores <- parallel::detectCores()
+        cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+        
+        # first two columns: group_psm_by and "TMT_Set"
+        df_num <- suppressWarnings(
+          parallel::clusterApply(
+            cl, 3:ncol(df_n), function(i) {
+              df_n %>% 
+                dplyr::select(c(1:2, i)) %>% 
+                dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+            }
+          )
+        ) %>% 
+          purrr::map(~ tidyr::unite(.x, id, group_psm_by, TMT_Set, sep = "@"))  %>% 
+          purrr::reduce(dplyr::left_join, by = "id") %>% 
+          tidyr::separate(id, into = c(group_psm_by, "TMT_Set"), sep = "@", remove = TRUE) %>% 
+          dplyr::bind_rows(df_1)
+        
+        parallel::stopCluster(cl)
+      } else {
+        df_num <- df_num %>% dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+      }
+    } 
+    
+    run_scripts <- FALSE
+    if (run_scripts) {
+      df_num <- df %>% 
+        dplyr::select(!!rlang::sym(group_psm_by), 
+                      TMT_Set, 
+                      grep("^sd_log2_R[0-9]{3}", names(.)), 
+                      grep("^log2_R[0-9]{3}", names(.)), 
+                      grep("^N_log2_R[0-9]{3}", names(.)), 
+                      # grep("^Z_log2_R[0-9]{3}", names(.)), 
+                      grep("^I[0-9]{3}", names(.)), 
+                      grep("^N_I[0-9]{3}", names(.))) %>% 
+        dplyr::group_by(!!rlang::sym(group_psm_by), TMT_Set) %>%
+        dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+    }
+
     df_num <- df_num %>%
       dplyr::arrange(TMT_Set) %>%
       tidyr::gather(grep("R[0-9]{3}|I[0-9]{3}", names(.)), key = ID, value = value) %>%
@@ -134,15 +183,24 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   
   if (("pep_seq_mod" %in% names(df)) && (match_call_arg(normPSM, use_lowercase_aa))) {
     df <- df %>% 
-      dplyr::mutate(pep_mod_protnt = ifelse(grepl("^[A-z\\-]\\.~", pep_seq_mod), TRUE, FALSE)) %>% 
-      dplyr::mutate(pep_mod_protntac = ifelse(grepl("^[A-z\\-]\\._", pep_seq_mod), TRUE, FALSE)) %>% 
-      dplyr::mutate(pep_mod_pepnt = ifelse(grepl("^[A-z\\-]\\.[_~]?\\^", pep_seq_mod), TRUE, FALSE)) %>% 
-      dplyr::mutate(pep_mod_m = ifelse(grepl("m", pep_seq_mod), TRUE, FALSE)) %>% 
-      dplyr::mutate(pep_mod_n = ifelse(grepl("n", pep_seq_mod), TRUE, FALSE)) %>% 
-      dplyr::mutate(pep_mod_sty = ifelse(grepl("[sty]", pep_seq_mod), TRUE, FALSE)) %>% 
-      dplyr::mutate(pep_mod_pepct = ifelse(grepl("[\\^]{1}[_~]?\\.[A-z\\-]{1}$", pep_seq_mod), TRUE, FALSE)) %>% 
-      dplyr::mutate(pep_mod_protctam = ifelse(grepl("_{1}\\.[A-z\\-]{1}$", pep_seq_mod), TRUE, FALSE)) %>% 
-      dplyr::mutate(pep_mod_protct = ifelse(grepl("~{1}\\.[A-z\\-]{1}$", pep_seq_mod), TRUE, FALSE))
+      dplyr::mutate(pep_mod_protnt = ifelse(grepl("^[A-z\\-]\\.~", pep_seq_mod), 
+                                            TRUE, FALSE)) %>% 
+      dplyr::mutate(pep_mod_protntac = ifelse(grepl("^[A-z\\-]\\._", pep_seq_mod), 
+                                              TRUE, FALSE)) %>% 
+      dplyr::mutate(pep_mod_pepnt = ifelse(grepl("^[A-z\\-]\\.[_~]?\\^", pep_seq_mod), 
+                                           TRUE, FALSE)) %>% 
+      dplyr::mutate(pep_mod_m = ifelse(grepl("m", pep_seq_mod), 
+                                       TRUE, FALSE)) %>% 
+      dplyr::mutate(pep_mod_n = ifelse(grepl("n", pep_seq_mod), 
+                                       TRUE, FALSE)) %>% 
+      dplyr::mutate(pep_mod_sty = ifelse(grepl("[sty]", pep_seq_mod), 
+                                         TRUE, FALSE)) %>% 
+      dplyr::mutate(pep_mod_pepct = ifelse(grepl("[\\^]{1}[_~]?\\.[A-z\\-]{1}$", pep_seq_mod), 
+                                           TRUE, FALSE)) %>% 
+      dplyr::mutate(pep_mod_protctam = ifelse(grepl("_{1}\\.[A-z\\-]{1}$", pep_seq_mod), 
+                                              TRUE, FALSE)) %>% 
+      dplyr::mutate(pep_mod_protct = ifelse(grepl("~{1}\\.[A-z\\-]{1}$", pep_seq_mod), 
+                                            TRUE, FALSE))
   }
   
   df <- dplyr::bind_cols(
@@ -166,11 +224,16 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   )
   
   df <- df %>% 
-    dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
-    dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
-    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
-    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %>% 
-    dplyr::mutate_at(vars(grep("sd_log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3))
+    dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), 
+                     as.numeric) %>% 
+    dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), 
+                     ~ round(.x, digits = 0)) %>% 
+    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), 
+                     as.numeric) %>% 
+    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), 
+                     ~ round(.x, digits = 3)) %>% 
+    dplyr::mutate_at(vars(grep("sd_log2_R[0-9]{3}[NC]*", names(.))), 
+                     ~ round(.x, digits = 3))
   
   df <- df %>%
     dplyr::filter(!duplicated(.[[group_psm_by]])) %>% 
@@ -192,7 +255,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
 #' Summary of peptide keys by mean or geomean
 #' 
 #' @inheritParams info_anal
-#' @import dplyr purrr rlang  magrittr
+#' @import dplyr purrr rlang
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 med_summarise_keys <- function(df, id) {
   mascot_median_keys <- c("pep_score", "pep_rank", "pep_isbold", "pep_exp_mr", "pep_delta", 
                           "pep_exp_mz", "pep_exp_z", "pep_locprob", "pep_locdiff")
@@ -264,7 +328,7 @@ med_summarise_keys <- function(df, id) {
              df_mascot_med, df_mascot_geomean, 
              df_mq_rptr_mass_dev, df_mq_med, df_mq_geomean, 
              df_sm_med) %>%
-    purrr::reduce(left_join, by = id) %>%
+    purrr::reduce(dplyr::left_join, by = id) %>%
     data.frame(check.names = FALSE)
   
   df <- dplyr::bind_cols(
@@ -275,6 +339,7 @@ med_summarise_keys <- function(df, id) {
 
 
 #' load prior Peptide.txt
+#' 
 #' @inheritParams info_anal
 load_prior <- function(filename, id) {
   stopifnot(file.exists(filename))
@@ -293,6 +358,7 @@ load_prior <- function(filename, id) {
 
 
 #' format numeric columns
+#' 
 #' @inheritParams info_anal
 fmt_num_cols <- function (df) {
   df[, grepl("^Z_log2_R[0-9]{3}", names(df))] <-  
@@ -360,6 +426,7 @@ fmt_num_cols <- function (df) {
 #'  \code{filter_peps_at = exprs(pep_len <= 50)} will remove peptide entries
 #'  with \code{pep_len > 50}. See also \code{\link{normPSM}}.
 #'@inheritParams normPSM
+#'@inheritParams splitPSM
 #'@seealso 
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
@@ -426,12 +493,11 @@ fmt_num_cols <- function (df) {
 #'@return The primary output is in \code{.../Peptide/Peptide.txt}.
 #'
 #'@example inst/extdata/examples/mergePep_.R
-#'@import stringr dplyr tidyr purrr data.table rlang
-#'@importFrom magrittr %>%
-#'@importFrom magrittr %T>%
+#'@import stringr dplyr tidyr purrr rlang
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@importFrom plyr ddply
 #'@export
-mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
+mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, parallel = TRUE, ...) {
   dir.create(file.path(dat_dir, "Peptide/cache"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Peptide/Histogram"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Peptide/log2FC_cv/raw"), recursive = TRUE, showWarnings = FALSE)
@@ -442,7 +508,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
   
-  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("mergePep"), add = TRUE)
+  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("mergePep"), 
+          add = TRUE)
   
   stopifnot(vapply(c(plot_log2FC_cv), rlang::is_logical, logical(1)))
 
@@ -459,7 +526,11 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
 
   message("Primary column keys in `Peptide/TMTset1_LCMSinj1_Peptide_N.txt` etc. for `filter_` varargs.")
   
-  df <- normPep_Mplex(group_psm_by, group_pep_by, use_duppeps, !!!filter_dots) %T>% 
+  df <- normPep_Mplex(group_psm_by = group_psm_by, 
+                      group_pep_by = group_pep_by, 
+                      use_duppeps = use_duppeps, 
+                      parallel = parallel, 
+                      !!!filter_dots) %T>% 
     write.table(filename, sep = "\t", col.names = TRUE, row.names = FALSE)
 
   if (plot_log2FC_cv && (TMT_plex(label_scheme) > 0)) {
@@ -555,7 +626,6 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
 #'  number of iterations allowed; \cr \code{epsilon}, tolerance limit for
 #'  declaring algorithm convergence.
 #'@inheritParams normPSM
-#'@inheritParams mixtools::normalmixEM
 #'@seealso 
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
@@ -623,9 +693,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...) {
 #'
 #'@example inst/extdata/examples/normPep_.R
 #'
-#'@import stringr dplyr tidyr purrr data.table rlang
-#'@importFrom magrittr %>%
-#'@importFrom magrittr %T>%
+#'@import stringr dplyr tidyr purrr rlang
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@importFrom plyr ddply
 #'@export
 standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, range_log2r = c(10, 90), 
@@ -812,7 +881,8 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
 #'@return The primary output in "\code{.../Protein/Protein.txt}".
 #'
 #'@example inst/extdata/examples/Pep2Prn_.R
-#'@import stringr dplyr purrr rlang  magrittr
+#'@import stringr dplyr purrr rlang
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), 
                      use_unique_pep = TRUE, ...) {
@@ -883,6 +953,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
 #' @param gn_rollup Logical; if TRUE, rolls up protein accessions to gene names.
 #' @inheritParams info_anal
 #' @inheritParams Pep2Prn
+#' @rawNamespace import(seqinr, except = c(consensus, count, zscore))
 pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   load(file = file.path(dat_dir, "label_scheme.rda"))
   id <- rlang::as_string(rlang::enexpr(id))

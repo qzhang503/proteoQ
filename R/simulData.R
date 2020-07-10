@@ -2,7 +2,8 @@
 #' 
 #' @inheritParams load_expts
 #' @param type The type of PSM data in \code{c("Masoct", "MaxQuant")}.
-#' @import rlang magrittr dplyr tidyr stringr
+#' @import rlang dplyr tidyr stringr
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
 simulUniprotPSM <- function(type = "Mascot", dat_dir = NULL) {
   type <- rlang::as_string(rlang::enexpr(type)) %>% 

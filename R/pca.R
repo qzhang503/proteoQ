@@ -4,7 +4,7 @@
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @import dplyr ggplot2 rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs",
                      dimension = 2, folds = 1,
                      show_ids = TRUE, show_ellipses = FALSE,
@@ -380,7 +380,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 #' @inheritParams scoreMDS
 #' @import dplyr rlang
 #' @importFrom MASS isoMDS
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 scorePCA <- function (df, id, label_scheme_sub, anal_type, scale_log2r, 
                       center_features, scale_features, 
                       type, col_group, 
@@ -666,7 +666,7 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'
 #'@return PCA plots.
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 prnPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
                     col_fill = NULL, col_shape = NULL, col_size = NULL, col_alpha = NULL,

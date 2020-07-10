@@ -3,11 +3,11 @@
 #' @inheritParams anal_prnTrend
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr purrr rlang Biobase
+#' @import dplyr purrr rlang 
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
 #' @importFrom cluster clusGap
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
                        scale_log2r, complete_cases, impute_na, 
                        filepath, filename, anal_type, ...) {
@@ -122,7 +122,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 #' @import dplyr rlang purrr ggplot2 RColorBrewer
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust, 
                       scale_log2r, complete_cases, impute_na, 
                       df2 = NULL, filepath, filename, theme, ...) {
@@ -351,7 +351,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  automatically
 #'@return Fuzzy c-mean classification of \code{log2FC}.
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
 #'@example inst/extdata/examples/prnTrend_.R
 #'

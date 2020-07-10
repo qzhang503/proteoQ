@@ -4,7 +4,7 @@
 \alias{mergePep}
 \title{Merge peptide table(s) into one}
 \usage{
-mergePep(plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...)
+mergePep(plot_log2FC_cv = TRUE, use_duppeps = TRUE, parallel = TRUE, ...)
 }
 \arguments{
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
@@ -12,6 +12,9 @@ mergePep(plot_log2FC_cv = TRUE, use_duppeps = TRUE, ...)
 
 \item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
 peptide sequences to the most likely proteins by majority votes.}
+
+\item{parallel}{Logical; if TRUE, performs parallel computation. The default
+is TRUE.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 of data against the column keys in individual peptide tables of

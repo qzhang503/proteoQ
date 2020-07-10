@@ -50,7 +50,7 @@ sd_lgl_cleanup <- function (df) {
 #'   will be replaced with NA. The default is NULL with no data trimming by max
 #'   CV.
 #' @import dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
   if (!is.null(max_cv)) {
     stopifnot(is.numeric(max_cv))
@@ -101,7 +101,7 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
 #'   percentile threshold will be replaced with NA. The default is NULL with no
 #'   data trimming by CV percentile.
 #' @import dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
   if (!is.null(pt_cv)) {
     stopifnot(is.numeric(pt_cv))
@@ -163,7 +163,7 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
 #'   protein entries in peptide tables with the number of identifying peptides
 #'   smaller than \code{min_n} will be replaced with NA.
 #' @import dplyr purrr rlang
-#' @importFrom magrittr %>%
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 purge_by_n <- function (df, id, min_n) {
   kept <- df %>%
     dplyr::select(!!rlang::sym(id)) %>%
@@ -176,6 +176,75 @@ purge_by_n <- function (df, id, min_n) {
 
   df %>% 
     dplyr::filter(.[[id]] %in% kept) 
+}
+
+
+#' Purge PSM helper
+#' 
+#' May be used for parallel processes.
+#' 
+#' @param file A list of file (names).
+#' @inheritParams purgePSM
+#' @inheritParams annotPSM
+#' @inheritParams prnHist
+psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by, pt_cv, max_cv, keep_ohw, 
+                        theme, ...) {
+  dots <- rlang::enexprs(...)
+
+  file.copy(file.path(dat_dir, "PSM", file), file.path(dat_dir, "PSM/Copy", file))
+  
+  df <- read.csv(file.path(dat_dir, "PSM", file), check.names = FALSE, 
+                 header = TRUE, sep = "\t", comment.char = "#") %>% 
+    purge_by_qt(group_psm_by, pt_cv, keep_ohw) %>% 
+    purge_by_cv(group_psm_by, max_cv, keep_ohw) %>% 
+    dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
+  
+  cdns_changed <- any(!is.null(pt_cv), !is.null(max_cv))
+  
+  if (cdns_changed) {
+    pep_n_psm <- df %>%
+      dplyr::select(!!rlang::sym(group_psm_by)) %>%
+      dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+      dplyr::summarise(pep_n_psm = n())
+    
+    prot_n_psm <- df %>%
+      dplyr::select(!!rlang::sym(group_pep_by)) %>%
+      dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+      dplyr::summarise(prot_n_psm = n())
+    
+    prot_n_pep <- df %>%
+      dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+      dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
+      dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+      dplyr::summarise(prot_n_pep = n())
+    
+    df <- df %>% 
+      dplyr::left_join(pep_n_psm, by = group_psm_by) %>% 
+      dplyr::mutate(pep_n_psm.x = pep_n_psm.y) %>% 
+      dplyr::rename("pep_n_psm" = "pep_n_psm.x") %>% 
+      dplyr::select(-pep_n_psm.y)
+    
+    df <- list(df, prot_n_psm, prot_n_pep) %>%
+      purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
+      dplyr::mutate(prot_n_psm.x = prot_n_psm.y, prot_n_pep.x = prot_n_pep.y) %>% 
+      dplyr::rename(prot_n_psm = prot_n_psm.x, prot_n_pep = prot_n_pep.x) %>% 
+      dplyr::select(-prot_n_psm.y, -prot_n_pep.y) %T>% 
+      write.table(file.path(dat_dir, "PSM", file), sep = "\t", col.names = TRUE, row.names = FALSE)      
+  }
+  
+  width <- eval(dots$width, env = caller_env())
+  height <- eval(dots$height, env = caller_env())
+  
+  if (is.null(width)) width <- 8 
+  if (is.null(height)) height <- 8
+  dots <- dots %>% .[! names(.) %in% c("width", "height")]
+  
+  filepath <- file.path(dat_dir, "PSM/log2FC_cv/purged", gsub("_PSM_N.txt", "_sd.png", file))
+  quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_psm_by, filepath = filepath, 
+                                         width = width, height = height, type = "log2_R", 
+                                         adjSD = FALSE, 
+                                         is_psm = TRUE, col_select = NULL, col_order = NULL, 
+                                         theme = theme, !!!dots)
 }
 
 
@@ -204,8 +273,7 @@ purge_by_n <- function (df, id, min_n) {
 #'  height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
 #'  \code{y} axis.
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
-#'@importFrom magrittr %T>%
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@example inst/extdata/examples/purgePSM_.R
 #'@seealso 
 #'  \emph{Metadata} \cr 
@@ -312,62 +380,9 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     reorder_files()
   
   dir.create(file.path(dat_dir, "PSM/Copy"), recursive = TRUE, showWarnings = FALSE)
-
-  for (fn in filelist) {
-    file.copy(file.path(dat_dir, "PSM", fn), file.path(dat_dir, "PSM/Copy", fn))
-    
-    df <- read.csv(file.path(dat_dir, "PSM", fn), check.names = FALSE, 
-                   header = TRUE, sep = "\t", comment.char = "#") %>% 
-      purge_by_qt(group_psm_by, pt_cv, keep_ohw) %>% 
-      purge_by_cv(group_psm_by, max_cv, keep_ohw) %>% 
-      dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
-    
-    cdns_changed <- any(!is.null(pt_cv), !is.null(max_cv))
-    
-    if (cdns_changed) {
-      pep_n_psm <- df %>%
-        dplyr::select(!!rlang::sym(group_psm_by)) %>%
-        dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
-        dplyr::summarise(pep_n_psm = n())
-      
-      prot_n_psm <- df %>%
-        dplyr::select(!!rlang::sym(group_pep_by)) %>%
-        dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-        dplyr::summarise(prot_n_psm = n())
-      
-      prot_n_pep <- df %>%
-        dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
-        dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
-        dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-        dplyr::summarise(prot_n_pep = n())
-      
-      df <- df %>% 
-        dplyr::left_join(pep_n_psm, by = group_psm_by) %>% 
-        dplyr::mutate(pep_n_psm.x = pep_n_psm.y) %>% 
-        dplyr::rename("pep_n_psm" = "pep_n_psm.x") %>% 
-        dplyr::select(-pep_n_psm.y)
   
-      df <- list(df, prot_n_psm, prot_n_pep) %>%
-        purrr::reduce(left_join, by = group_pep_by) %>% 
-        dplyr::mutate(prot_n_psm.x = prot_n_psm.y, prot_n_pep.x = prot_n_pep.y) %>% 
-        dplyr::rename(prot_n_psm = prot_n_psm.x, prot_n_pep = prot_n_pep.x) %>% 
-        dplyr::select(-prot_n_psm.y, -prot_n_pep.y) %T>% 
-        write.table(file.path(dat_dir, "PSM", fn), sep = "\t", col.names = TRUE, row.names = FALSE)      
-    }
-    
-    width <- eval(dots$width, env = caller_env())
-    height <- eval(dots$height, env = caller_env())
-    
-    if (is.null(width)) width <- 8 
-    if (is.null(height)) height <- 8
-    dots <- dots %>% .[! names(.) %in% c("width", "height")]
-
-    filepath <- file.path(dat_dir, "PSM/log2FC_cv/purged", gsub("_PSM_N.txt", "_sd.png", fn))
-    quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_psm_by, filepath = filepath, 
-                                           width = width, height = height, type = "log2_R", adjSD = FALSE, 
-                                           is_psm = TRUE, col_select = NULL, col_order = NULL, 
-                                           theme = theme, !!!dots)
-  }
+  purrr::walk(filelist, psm_mpurge, dat_dir, group_psm_by, group_pep_by, pt_cv, max_cv, keep_ohw, 
+              theme, !!!dots)
 }
 
 
@@ -392,8 +407,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'@inheritParams purge_by_qt
 #'@inheritParams plot_prnTrend
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
-#'@importFrom magrittr %T>%
+#'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@example inst/extdata/examples/purgePep_.R
 #'@seealso 
 #'  \emph{Metadata} \cr 
@@ -545,7 +559,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
       dplyr::select(-pep_n_psm.y)
     
     df <- list(df, prot_n_psm, prot_n_pep) %>%
-      purrr::reduce(left_join, by = group_pep_by) %>% 
+      purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
       dplyr::mutate(prot_n_psm.x = prot_n_psm.y, prot_n_pep.x = prot_n_pep.y) %>% 
       dplyr::rename(prot_n_psm = prot_n_psm.x, prot_n_pep = prot_n_pep.x) %>% 
       dplyr::select(-prot_n_psm.y, -prot_n_pep.y) %T>% 

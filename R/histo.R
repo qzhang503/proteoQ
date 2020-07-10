@@ -3,8 +3,8 @@
 #' @inheritParams prnHist
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr purrr rlang mixtools ggplot2 RColorBrewer
-#' @importFrom magrittr %>%
+#' @import dplyr purrr rlang ggplot2 RColorBrewer
+#' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom tidyr gather
 plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_cases, 
                        show_curves, show_vline, scale_y, filepath = NULL, filename, 
@@ -370,7 +370,7 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@import dplyr rlang ggplot2
-#'@importFrom magrittr %>%
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'
 #'@example inst/extdata/examples/prnHist_.R
 #'
