@@ -1028,11 +1028,11 @@ GeomTable <- ggproto(
   	x_rng <- range(d$x, na.rm = TRUE)
   	y_rng <- range(d$y, na.rm = TRUE)
 
-  	vp <- viewport(x = mean(x_rng), y = mean(y_rng), width = diff(x_rng), height = diff(y_rng), 
+  	vp <- grid::viewport(x = mean(x_rng), y = mean(y_rng), width = diff(x_rng), height = diff(y_rng), 
   	               just = c("center", "center"))
   	  
-  	grob <- tableGrob(table, rows = NULL, col = NULL,
-  	                  theme = ttheme_minimal(core = list(fg_params=list(cex = .7)),
+  	grob <- gridExtra::tableGrob(table, rows = NULL, col = NULL,
+  	                  theme = gridExtra::ttheme_minimal(core = list(fg_params=list(cex = .7)),
   	                                         colhead = list(fg_params=list(cex = .7), parse=TRUE),
   	                                         rowhead = list(fg_params=list(cex = .7))))
   	grob$heights <- grob$heights*.6
@@ -1046,7 +1046,7 @@ GeomTable <- ggproto(
   	#   l = 1,
   	#   r = ncol(d) + 1
   	# )
-  	editGrob(grob, vp = vp, name = paste(grob$name, facet_id()))
+  	grid::editGrob(grob, vp = vp, name = paste(grob$name, facet_id()))
 	}
 )
 
