@@ -122,6 +122,7 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
   if (any(names(rlang::enexprs(...)) %in% c("expr", "gset.idx.list", "annotation"))) 
     stop(err_msg1, call. = FALSE)
 
+  dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/GSVA/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
@@ -177,6 +178,7 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                      gset_nms = "go_sets", lm_method = "limma", 
                      var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
                      anal_type = "GSVA", ...) {
+  dat_dir <- get_gl_dat_dir()
   
   if (!requireNamespace("GSVA", quietly = TRUE)) {
     stop("\n====================================================================", 

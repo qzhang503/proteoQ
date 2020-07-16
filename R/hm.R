@@ -51,7 +51,6 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
                    xmin = -1, xmax = 1, xmargin = .1, 
                    p_dist_rows = 2, p_dist_cols = 2, 
                    hc_method_rows = "complete", hc_method_cols = "complete", ...) {
-  
   stopifnot(vapply(c(xmin, xmax, xmargin, p_dist_rows, p_dist_cols), is.numeric, logical(1)))
   stopifnot(vapply(c(hc_method_rows, hc_method_cols), rlang::is_string, logical(1)))
   stopifnot(xmin < xmax, xmargin >= 0, xmargin <= abs(xmax))
@@ -126,7 +125,9 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
   NorZ_ratios_to_ctrl <- paste("toCtrl", NorZ_ratios, sep = "_")
   
+  dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
+  
   acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
   stopifnot(length(acc_type) == 1)
 

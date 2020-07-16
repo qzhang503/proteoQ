@@ -427,7 +427,9 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 	                             "annotation_colors", "breaks")
 	dots[nm_idx] <- NULL
 
-	load(file = file.path(dat_dir, "label_scheme.rda"))
+	# dat_dir <- get_gl_dat_dir()
+	# load(file = file.path(dat_dir, "label_scheme.rda"))
+	
 	n_TMT_sets <- n_TMT_sets(label_scheme_sub)
 	max_width <- 77
 

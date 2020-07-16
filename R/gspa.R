@@ -1,3 +1,83 @@
+#'GSPA of peptide data
+#'
+#'\code{pepGSPA} performs the analysis of Gene Set Probability Asymmetricity
+#'(GSPA) against peptide \code{log2FC} data.
+#'
+#'@rdname prnGSPA
+#'
+#'@import purrr rlang dplyr
+#'@export
+pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean", 
+                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                     pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
+                     gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
+                     min_size = 10, max_size = Inf, 
+                     min_delta = 4, min_greedy_size = 1, 
+                     use_adjP = FALSE, 
+                     fml_nms = NULL, df = NULL, filepath = NULL, filename = NULL, ...) {
+  
+  on.exit(
+    if (id %in% c("pep_seq", "pep_seq_mod")) {
+      mget(names(formals()), current_env()) %>% 
+        c(rlang::enexprs(...)) %>% 
+        save_call(paste0("anal", "_pepGSPA"))
+    } else if (id %in% c("prot_acc", "gene")) {
+      mget(names(formals()), current_env()) %>% 
+        c(rlang::enexprs(...)) %>% 
+        save_call(paste0("anal", "_prnGSPA"))
+    }
+    , add = TRUE
+  )  
+  
+  check_dots(c("id", "anal_type", "var_cutoff"), ...)
+  check_gset_nms(gset_nms)
+  
+  dat_dir <- get_gl_dat_dir()
+  dir.create(file.path(dat_dir, "Peptide/GSPA/log"), recursive = TRUE, showWarnings = FALSE)
+  
+  id <- match_call_arg(normPSM, group_psm_by)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
+  
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  
+  df <- rlang::enexpr(df)
+  filepath <- rlang::enexpr(filepath)
+  filename <- rlang::enexpr(filename)
+  
+  method <- rlang::enexpr(method)
+  if (rlang::is_call(method)) {
+    method <- eval(method, env = caller_env())
+  } else {
+    method <- rlang::as_string(method)
+  }
+  stopifnot(all(method %in% c("mean", "limma")))
+  
+  dots <- rlang::enexprs(...)
+  fmls <- dots %>% .[grepl("^\\s*~", .)]
+  dots <- dots[!names(dots) %in% names(fmls)]
+  dots <- concat_fml_dots(fmls = fmls, fml_nms = fml_nms, dots = dots, anal_type = "GSPA")
+  
+  reload_expts()
+  
+  info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
+            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+            anal_type = "GSPA")(gset_nms = gset_nms, 
+                                var_cutoff = 1000, 
+                                pval_cutoff = pval_cutoff, 
+                                logFC_cutoff = logFC_cutoff, 
+                                gspval_cutoff = gspval_cutoff, 
+                                gslogFC_cutoff = gslogFC_cutoff,
+                                min_size = min_size, 
+                                max_size = max_size, 
+                                min_delta = min_delta, 
+                                min_greedy_size = min_greedy_size, 
+                                use_adjP = use_adjP, 
+                                method = method, 
+                                !!!dots)
+}
+
+
+
 #'GSPA of protein data
 #'
 #'\code{prnGSPA} performs the analysis of Gene Set Probability Asymmetricity
@@ -189,6 +269,7 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
   check_dots(c("id", "anal_type", "var_cutoff"), ...)
   check_gset_nms(gset_nms)
   
+  dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/GSPA/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
@@ -497,7 +578,8 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
       tidyr::gather(key = contrast, value = p_val, -term)
     
     dplyr::bind_cols(pval, adjp, log2fc) %>% 
-      dplyr::mutate_at(.vars = grep("^p_val$|^adjP$", names(.)), format, scientific = TRUE, digits = 2) %>%
+      dplyr::mutate_at(.vars = grep("^p_val$|^adjP$", names(.)), format, 
+                       scientific = TRUE, digits = 2) %>%
       dplyr::mutate_at(.vars = grep("^log2Ratio|^FC\\s*\\(", names(.)), round, 2)
   })
 
@@ -957,6 +1039,8 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = F
                        annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                        df2 = NULL, filename = NULL, ...) {
   check_dots(c("id", "anal_type", "df", "filepath"), ...)
+  
+  dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/GSPA/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)

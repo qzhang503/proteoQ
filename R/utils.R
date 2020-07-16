@@ -14,9 +14,10 @@
 #'@import dplyr
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
-  stopifnot(nrow(df) > 0)
-  
+  dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
+  
+  stopifnot(nrow(df) > 0)  
   
   id <- rlang::as_string(rlang::enexpr(id))
   if (anal_type %in% c("ESGAGE", "GSVA")) id <- "entrez"
@@ -292,8 +293,6 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...) {
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
 
-  load(file = file.path(dat_dir, "label_scheme.rda"))
-
   # intensity
   xi <- x %>%
     dplyr::select(id, grep("^I[0-9]{3}[NC]{0,1}", names(.))) %>%
@@ -433,6 +432,7 @@ is_all_nan <- function(x, ...) {
 colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NULL) {
 	if (is.null(annot_cols)) return(NA)
 
+  dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
 	exists <- annot_cols %in% names(label_scheme)
 
@@ -614,6 +614,8 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 		return(x)
 	}
 
+	
+	dat_dir <- get_gl_dat_dir()
 	
 	if (!requireNamespace("mice", quietly = TRUE)) {
 	  stop("\n====================================================================", 
@@ -956,6 +958,9 @@ parse_uniprot_fasta <- function (df, fasta, entrez) {
     "Rattus norvegicus" = "rat"
   )
 
+  
+  dat_dir <- get_gl_dat_dir()
+  
   stopifnot ("prot_acc" %in% names(df))
 
   acc_type <- parse_acc(df)
@@ -1196,50 +1201,10 @@ annotKin <- function (df, acc_type) {
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 save_call <- function(call_pars, fn) {
-	dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)
+  dat_dir <- get_gl_dat_dir()
+  dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)
 	call_pars[names(call_pars) == "..."] <- NULL
 	save(call_pars, file = file.path(dat_dir, "Calls", paste0(fn, ".rda")))
-}
-
-
-#' Set global \code{dat_dir}
-#' 
-#' @inheritParams load_expts
-set_dat_dir <- function(dat_dir = NULL) {
-  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
-
-  if (!fs::dir_exists(dat_dir)) {
-    new_dat_dir <- fs::path_expand_r(dat_dir)
-    new_dat_dir2 <- fs::path_expand(dat_dir)
-    
-    if (fs::dir_exists(new_dat_dir)) {
-      dat_dir <- new_dat_dir
-    } else if (fs::dir_exists(new_dat_dir2)) {
-      dat_dir <- new_dat_dir2
-    } else {
-      stop(dat_dir, " not existed.", call. = FALSE)
-    }
-  }
-
-  nm <- names(formals())[1]
-  
-  assign(nm, dat_dir, envir = .GlobalEnv)
-  message(nm, "<- \"", dat_dir, "\"")
-  
-  invisible(dat_dir)
-}
-
-
-#' Fetch global \code{dat_dir}
-get_gl_dat_dir <- function () {
-  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
-  if (dat_dir == 1) {
-    stop("Unknown working directory; 
-         run `load_expts(\"my/fabulous/working/directory\")` first.", 
-         call. = FALSE)
-  }
-  
-  invisible(dat_dir)
 }
 
 
@@ -1249,6 +1214,7 @@ get_gl_dat_dir <- function () {
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 match_fmls <- function(formulas) {
+  dat_dir <- get_gl_dat_dir()
   fml_file <-  file.path(dat_dir, "Calls/pepSig_formulas.rda")
   
   if (file.exists(fml_file)) {
@@ -1282,6 +1248,8 @@ match_fmls <- function(formulas) {
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") {
+  dat_dir <- get_gl_dat_dir()
+  
   call_rda <- rlang::as_string(rlang::enexpr(call_rda))
   arg <- rlang::as_string(rlang::enexpr(arg))
   
@@ -1305,9 +1273,12 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") {
 #'
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r = TRUE, impute_na = FALSE) {
+match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, 
+                                 scale_log2r = TRUE, impute_na = FALSE) {
   stopifnot(!is.null(subdir))
 
+  dat_dir <- get_gl_dat_dir()
+  
   if (anal_type == "GSPA") {
     file <- file.path(dat_dir, "Calls/anal_prnGSPA.rda")
     if (!file.exists(file)) stop("Run `prnGSPA` first.", call. = FALSE)
@@ -1341,6 +1312,7 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL, scale_log2r 
 #' 
 #' @inheritParams prnGSPA
 match_gset_nms <- function (gset_nms = NULL) {
+  dat_dir <- get_gl_dat_dir()
   file <- file.path(dat_dir, "Calls/anal_prnGSPA.rda")
   
   if (is.null(gset_nms)) {
@@ -1604,8 +1576,6 @@ annotPeppos <- function (df, fasta){
   acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
   stopifnot(length(acc_type) == 1)
   
-  load(file = file.path(dat_dir, "label_scheme.rda"))
-
   # ok cases that same `pep_seq` but different `prot_acc`
   # (K)	MENGQSTAAK	(L) NP_510965
   # (-)	MENGQSTAAK	(L) NP_001129505  
@@ -1708,6 +1678,8 @@ subset_fasta <- function (df, fasta, acc_type) {
 #' @import dplyr purrr rlang 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 calc_cover <- function(df, id, fasta = NULL) {
+  dat_dir <- get_gl_dat_dir()
+  
   stopifnot(all(c("prot_acc", "gene", "pep_start", "pep_end") %in% names(df)))
 
   if (all(is.factor(df$pep_start))) {
@@ -1726,7 +1698,6 @@ calc_cover <- function(df, id, fasta = NULL) {
     gn_rollup <- FALSE
   }
   
-  load(file = file.path(dat_dir, "label_scheme.rda"))
   load(file = file.path(dat_dir, "acc_lookup.rda"))
   
   if (length(fasta) == 0) {
@@ -1772,7 +1743,7 @@ calc_cover <- function(df, id, fasta = NULL) {
       dplyr::select(-prot_acc) %>% 
       dplyr::filter(!is.na(gene)) %>% 
       dplyr::group_by(gene) %>% 
-      dplyr::summarise_all(~ max(.x, na.rm = TRUE))
+      suppressWarnings(dplyr::summarise_all(~ max(.x, na.rm = TRUE)))
     
     df_sels <- df %>% 
       dplyr::select(prot_acc, gene) %>% 
@@ -1953,11 +1924,13 @@ arrangers_in_call <- function(.df, ..., .na.last = TRUE) {
 #' @inheritParams info_anal
 #' @inheritParams standPep
 #' @inheritParams channelInfo
-#' @inheritParams calcPepide
+#' @inheritParams calcPeptide
 calc_sd_fcts_psm <- function (df, range_log2r = c(5, 95), range_int = c(5, 95), set_idx, injn_idx) {
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  dat_dir <- get_gl_dat_dir()
   
-  label_scheme <- label_scheme %>% 
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  
+  label_scheme <- label_scheme_full %>% 
     dplyr::filter(TMT_Set == set_idx, LCMS_Injection == injn_idx) %>% 
     dplyr::mutate(tmt_nm = gsub("TMT-", "N_log2_R", TMT_Channel))
   
@@ -2026,6 +1999,8 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
                       type = "log2_R", adjSD = FALSE, 
                       is_psm = FALSE, col_select = NULL, col_order = NULL, theme = NULL, ...) {
 
+  dat_dir <- get_gl_dat_dir()
+  
   err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
   
   col_select <- rlang::enexpr(col_select)
@@ -2037,23 +2012,41 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
   if (col_select == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
   if (col_order == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
   
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  if (is.null(label_scheme[[col_select]])) {
+  if (is.null(label_scheme_full[[col_select]])) {
     stop("Column \'", rlang::as_string(col_select), "\' does not exist.", call. = FALSE)
-  } else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
+  } else if (sum(!is.na(label_scheme_full[[col_select]])) == 0) {
     stop("No samples were selected under column \'", rlang::as_string(col_select), "\'.",
          call. = FALSE)
   }
   
-  if (is.null(label_scheme[[col_order]])) {
+  if (is.null(label_scheme_full[[col_order]])) {
     warning("Column \'", rlang::as_string(col_order), "\' does not exist.
 			Samples will be arranged by the alphebatic order.", call. = FALSE)
-  } else if (sum(!is.na(label_scheme[[col_order]])) == 0) {
+  } else if (sum(!is.na(label_scheme_full[[col_order]])) == 0) {
     # warning("No samples were specified under column \'", rlang::as_string(col_order), "\'.", call. = FALSE)
   }
   
-  label_scheme_sub <- label_scheme %>% 
+  if (is_psm) {
+    label_scheme_sub <- local({
+      set_idx <- filepath %>% 
+        gsub("^.*TMTset(\\d+)_.*", "\\1", .) %>% 
+        as.integer()
+      
+      injn_idx <- filepath %>% 
+        gsub("^.*TMTset\\d+_LCMSinj(\\d+)_sd\\.png$", "\\1", .) %>% 
+        as.integer()
+    
+      label_scheme_full %>% 
+        dplyr::filter(TMT_Set == set_idx, LCMS_Injection == injn_idx) 
+    })
+  } else {
+    label_scheme_sub <- label_scheme
+  }
+  
+  label_scheme_sub <- label_scheme_sub %>% 
     dplyr::mutate(new_id = paste0(TMT_Channel, " (", Sample_ID, ")")) %>% 
     dplyr::mutate(new_id = gsub("TMT-", "", new_id)) %>% 
     dplyr::select(Sample_ID, TMT_Set, new_id, !!col_select, !!col_order) %>%
@@ -2209,6 +2202,8 @@ my_geomean <- function (x, ...) {
 
 #' phospho counts
 count_phosphopeps <- function() {
+  dat_dir <- get_gl_dat_dir()
+  
   df <- read.csv(file.path(dat_dir, "Peptide", "Peptide.txt"), check.names = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
     dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
@@ -2230,6 +2225,7 @@ count_phosphopeps <- function() {
 
 #' peptide mis-cleavage counts
 count_pepmiss <- function() {
+  dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "PSM/cache"), recursive = TRUE, showWarnings = FALSE)
   
   rmPSMHeaders()
@@ -2394,6 +2390,8 @@ rows_are_not_all <- function (match, vars, ignore.case = FALSE) {
 #' @param fml_nms A character vector containing the names of \code{fmls}.
 #' @inheritParams info_anal
 concat_fml_dots <- function(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type = "zzz") {
+  dat_dir <- get_gl_dat_dir()
+  
   if ((!is_empty(fmls)) & (anal_type == "GSEA")) return(c(dots, fmls))
   
   if (purrr::is_empty(fmls)) {
@@ -2446,7 +2444,7 @@ gn_rollup <- function (df, cols) {
       dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
       dplyr::group_by(gene) %>% 
       dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
-      dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 
+      suppressWarnings(dplyr::summarise_all(~ max(.x, na.rm = TRUE))) %>% 
       dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
   } else {
     dfc <- df %>% 
@@ -2466,6 +2464,8 @@ gn_rollup <- function (df, cols) {
 #' @param curr_dots The values of the current dots.
 #' @param pattern The pattern for comparison.
 identical_dots <- function(call_nm, curr_dots, pattern) {
+  dat_dir <- get_gl_dat_dir()
+  
   file <- file.path(dat_dir, "Calls", paste0(call_nm, ".rda"))
   if (!file.exists(file)) return(FALSE)
   
@@ -2479,6 +2479,7 @@ identical_dots <- function(call_nm, curr_dots, pattern) {
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 my_complete_cases <- function (df, scale_log2r, label_scheme_sub) {
+  dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
   NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
@@ -2614,6 +2615,7 @@ check_gset_nms <- function (gset_nms) {
 #' 
 #' @param filepath A file path to \code{"MGKernel_params_N.txt"}
 ok_existing_params <- function (filepath) {
+  dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
   if (!file.exists(filepath)) return(TRUE)

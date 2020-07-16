@@ -91,6 +91,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 
+	dat_dir <- get_gl_dat_dir()
 	load(file = file.path(dat_dir, "label_scheme.rda"))
 
 	if (is.null(label_scheme[[col_select]])) {
@@ -693,6 +694,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 #' @param ... Not currently used.
 #' @inheritParams info_anal
 find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na = FALSE, ...) {
+  dat_dir <- get_gl_dat_dir()
+  
   err_msg2 <- "not found. \n Run functions PSM, peptide and protein normalization first."
   err_msg3 <- "not found. \nImpute NA values with `pepImp()` or `prnImp()` or set `impute_na = FALSE`."
   err_msg4 <- "not found at impute_na = TRUE. \nRun `prnSig(impute_na = TRUE)` first."
@@ -799,6 +802,8 @@ find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na 
 #' @param ... Not currently used.
 #' @inheritParams info_anal
 find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) {
+  dat_dir <- get_gl_dat_dir()
+  
   df <- rlang::enexpr(df)
   anal_type <- rlang::enexpr(anal_type)
   id <- rlang::enexpr(id)

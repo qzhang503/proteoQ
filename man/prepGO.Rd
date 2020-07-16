@@ -81,6 +81,12 @@ prepGO(mouse)
 # head(readRDS(file.path("~/proteoQ/dbs/go/go_hs.rds")))
 # head(readRDS(file.path("~/proteoQ/dbs/go/go_mm.rds")))
 
+# enrichment analysis with custom `GO`
+prnGSPA(
+  gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
+               "~/proteoQ/dbs/go/go_mm.rds"),
+)
+
 # `mouse` with a slim OBO
 prepGO(
   species = mouse,
@@ -104,11 +110,4 @@ prepGO(
 )
 }
 
-\dontrun{
-# enrichment analysis with custom `GO`
-prnGSPA(
-  gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
-               "~/proteoQ/dbs/go/go_mm.rds"),
-)
-}
 }

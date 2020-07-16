@@ -183,6 +183,7 @@ prnGSEA <- function (gset_nms = "go_sets",
   
   check_dots(c("id", "anal_type", "df2"), ...)
 
+  dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/GSEA/log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_pep_by)

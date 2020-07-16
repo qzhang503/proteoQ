@@ -229,6 +229,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   
   
   dir.create(filepath, recursive = TRUE, showWarnings = FALSE)
+  dat_dir <- get_gl_dat_dir()
 
 	dots <- rlang::enexprs(...)
 	slice_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^slice_", names(.))]

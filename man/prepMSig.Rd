@@ -73,6 +73,10 @@ library(proteoQ)
 prepMSig()
 head(readRDS(file.path("~/proteoQ/dbs/msig/msig_hs.rds")))
 
+prnGSPA(
+  gset_nms = file.path("~/proteoQ/dbs/msig/msig_hs.rds"), 
+)
+
 # `mouse`
 prepMSig(species = mouse, filename = msig_mm.rds)
 head(readRDS(file.path("~/proteoQ/dbs/msig/msig_mm.rds")))

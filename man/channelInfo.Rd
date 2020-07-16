@@ -4,13 +4,17 @@
 \alias{channelInfo}
 \title{Extracts the channel information in TMT experiments}
 \usage{
-channelInfo(label_scheme, set_idx)
+channelInfo(dat_dir = NULL, set_idx = NULL, injn_idx = 1)
 }
 \arguments{
-\item{label_scheme}{The data frame returned by \code{\link{load_expts}}.}
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
 
 \item{set_idx}{Numeric.  The index of a multiplex TMT experiment in metadata
 files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
+
+\item{injn_idx}{Numeric. The index of \code{LCMS_Inj} in metadata files such
+as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 }
 \value{
 Three lists of indexes: \code{refChannels}, reference channels(s);
