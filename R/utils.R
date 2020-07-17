@@ -213,6 +213,26 @@ ins_cols_after <- function (df = NULL, idx_bf = ncol(df), idx_ins = NULL) {
 }
 
 
+#' Sort by the indexes of TMT_Set and LCMS_Injection
+#' 
+#' "8.3"    "8.5"   "11.1"   "11.3"   "99.2"  "99.10" 
+#' Not "8.3"    "8.5"   "11.1"   "11.3"   "99.10"  "99.2" 
+#' Nor "11.1"   "11.3"  "8.3"    "8.5"   "99.10"  "99.2" 
+#' @param nms A list of names of "TMT_Set" and "LCMS_Injection" separated by dot.
+sort_tmt_lcms <- function (nms) {
+  nms %>% 
+    purrr::map(~ strsplit(.x, "[.]") %>% unlist()) %>% 
+    do.call(rbind, .) %>% 
+    data.frame() %>% 
+    `colnames<-`(c("TMT_Set", "LCMS_Injection")) %>% 
+    dplyr::mutate(TMT_Set = as.numeric(TMT_Set), LCMS_Injection = as.numeric(LCMS_Injection)) %>% 
+    dplyr::arrange(TMT_Set, LCMS_Injection) %>% 
+    dplyr::mutate(tmt_inj = paste(TMT_Set, LCMS_Injection, sep = ".")) %>% 
+    dplyr::select(tmt_inj) %>% 
+    unlist()
+}
+
+
 #' Replace zero intensity with NA
 #'
 #' \code{na_zeroIntensity} replaces zero intensity with NA to avoid -Inf in

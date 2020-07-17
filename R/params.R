@@ -306,7 +306,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
     	}	  
   	})
   
-  	# check the uniqueness of Sample_ID
+  	# check the counts of Sample_ID under each TMT_Set and LCMS_Injection
+  	# should equal to the TMT_plex
   	local({
     	check_smpls <- label_scheme_full %>%
     		dplyr::group_by(TMT_Set, LCMS_Injection) %>%
@@ -318,6 +319,22 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
     		stop(paste("Need", TMT_plex,
     		           "unique samples in the above combination of TMT sets and LCMS injections." ))
     	}	  
+  	})
+  	
+  	# check the uniqueness of Sample_ID under the same TMT_Set but different LCMS_Injection
+  	# OK one is `sample_1` and the other is `Empty.xxx`
+  	local({
+  	  dups <- label_scheme_full %>% 
+  	    dplyr::filter(!grepl("^Empty\\.[0-9]+$", Sample_ID)) %>% 
+  	    dplyr::group_by(TMT_Set, TMT_Channel) %>% 
+  	    dplyr::summarise(count = n_distinct(Sample_ID)) %>% 
+  	    dplyr::filter(count > 1) 
+  	  
+  	  if (nrow(dups) > 1) {
+  	    stop("Fix the above duplication(s) in sample IDs.\n", 
+  	         print(data.frame(dups)),
+  	         call. = FALSE)
+  	  }
   	})
   	
   	if (!all(unique(label_scheme_full$TMT_Channel) %in% TMT_levels)) {
@@ -402,6 +419,8 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 			stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
 		}
 	  
+	  fraction_scheme <- fraction_scheme %>% dplyr::filter(!is.na(RAW_File))
+	  
 	  if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
 	    stop("\nDuplicated `RAW_File` names in `", filename, "`:\n", 
 	         "This may occur when searching the same RAW files with different parameter sets.\n", 
@@ -441,13 +460,16 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	      dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
 	      unlist()
 	    
-	    # deleted by users
-	    if (any(is.na(frac_raws))) {
-	      try(unlink(file.path(dat_dir, filename)))
-	      try(unlink(file.path(dat_dir, "fraction_scheme.rda")))
-	      stop("`RAW_File` in ", filename, " cannot be NA.", call. = FALSE)
+	    run_scripts <- FALSE
+	    if (run_scripts) {
+  	    # deleted by users
+  	    if (any(is.na(frac_raws))) {
+  	      try(unlink(file.path(dat_dir, filename)))
+  	      try(unlink(file.path(dat_dir, "fraction_scheme.rda")))
+  	      stop("`RAW_File` in ", filename, " cannot be NA.", call. = FALSE)
+  	    }	      
 	    }
-	    
+
 	    # no prefractionation if any non-NA values in expt_smry.xlsx
 	    if (!all(is.na(expt_raws))) {
 	      not_oks <- frac_raws %>% .[! . %in% expt_raws]
@@ -486,12 +508,11 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	    stop("Values under `frac_smry.xlsx::Fraction` need to be integers.", call. = FALSE)
 	  }
 
-	  wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
+	  wb <- openxlsx::createWorkbook()
+	  openxlsx::addWorksheet(wb, sheetName = "Fractions")
 	  openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
 	  openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
  	} else {
- 	  # assign(".auto_frac_smry", TRUE, envir = .GlobalEnv)
- 	  
  	  # warning: data in a auto-generated `frac_smry.xlsx` will be incorrect 
  	  #   if they were based on wrong information from `expt_smry.xlsx`
  	  load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -953,7 +974,7 @@ check_raws <- function(df) {
   local({
     ls_raws <- label_scheme_full$RAW_File %>% unique()
     fs_raws <- fraction_scheme$RAW_File %>% unique()
-    if (!(all(is.na(ls_raws)) | all(ls_raws %in% fs_raws))) {
+    if (! (all(is.na(ls_raws)) || all(ls_raws %in% fs_raws))) {
       load(file.path(dat_dir, "Calls", "load_expts.rda"))
       fn_frac <- call_pars$frac_smry
       unlink(file.path(dat_dir, fn_frac))
@@ -1020,20 +1041,26 @@ check_raws <- function(df) {
   label_scheme_raws <- tmtinj_raw$RAW_File %>% unique()
   
   missing_ms_raws <- ms_raws %>% .[! . %in% label_scheme_raws]
-  wrong_label_scheme_raws <- label_scheme_raws[! label_scheme_raws %in% ms_raws]
+  wrong_label_scheme_raws <- label_scheme_raws %>% .[! . %in% ms_raws]
   
-  if (!purrr::is_empty(missing_ms_raws) | !purrr::is_empty(wrong_label_scheme_raws)) {
-    cat("Required RAW MS file name(s) not found from the `expt_smry.xlsx` and/or `frac_smry.xlsx`:\n")
-    cat(paste0(missing_ms_raws, "\n"))
-    
-    cat("RAW MS files in `expt_smry.xlsx` and/or `frac_smry.xlsx` but not present in PSM data:\n")
-    cat(paste0("\t", wrong_label_scheme_raws, "\n"))
-    
-    stop("Check file names under the `RAW_File` column in `expt_smry.xlsx` and/or `frac_smry.xlsx`.", 
+  # --- rm `missing_ms_raws` from `df`
+  if (!purrr::is_empty(missing_ms_raws)) {
+    df <- df %>% dplyr::filter(! RAW_File %in% missing_ms_raws)
+    warning("RAW file (names) not in metadata and corresponding entries removed from PSM data:\n", 
+            purrr::reduce(missing_ms_raws, paste, sep = "\n"), 
+            call. = FALSE)
+  }
+  
+  if (!purrr::is_empty(wrong_label_scheme_raws)) {
+    stop("Following RAW file name(s) in metadata have no corresponding entries in PSM data:\n", 
+         "(Hint: also check the possibility that MS file(s) may have zero PSM contributions.)\n\n", 
+         purrr::reduce(wrong_label_scheme_raws, paste, sep = "\n"), 
          call. = FALSE)
   }
-
-  return(tmtinj_raw)
+  
+  ## RAW_File may not be unique if the same RAW goes into different DAT files (searches)
+  # df <- df %>% dplyr::left_join(tmtinj_raw, id = "RAW_File")
+  invisible (list(lookup = tmtinj_raw, df = df))
 }
 
 
