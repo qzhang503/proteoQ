@@ -6,8 +6,14 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
-  github_document:
+  html_document:
+    fig_caption: yes
+    highlight: haddock
+    keep_md: yes
+    theme: united
     toc: yes
+    toc_depth: 4
+    toc_float: yes
   pdf_document:
     toc: yes
     number_sections: true
@@ -17,14 +23,8 @@ output:
     toc: yes
     toc_depth: 4
     variant: gfm
-  html_document:
-    fig_caption: yes
-    highlight: haddock
-    keep_md: yes
-    theme: united
+  github_document:
     toc: yes
-    toc_depth: 4
-    toc_float: yes
   html_vignette: 
   vignette: >
     %\VignetteIndexEntry{proteoQ}
@@ -143,7 +143,7 @@ copy_global_maxquant()
 copy_global_sm()
 ```
 
-To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:  
+To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:^[See Appendix for notes on the export of Mascot PSMs.]  
 
 ```{r copy_global_mascot, include = TRUE, eval = FALSE}
 dat_dir <- "~/proteoQ/examples"
@@ -151,41 +151,7 @@ dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 copy_global_mascot(dat_dir)
 ```
 
-When exporting Mascot PSMs, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. If the option is set to `1`, the sub-set proteins will be remove during PSM processing. Analogous handling of redundancy will take place with `Include same-set protein hits` being checked.  
-
-```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-knitr::include_graphics("images/mascot/mascot_export.png")
-```
-
-Under `Search Information`, the options of `Header` and `Search parameters` should be checked to include information such as database(s) and assumptions in the modifications of amino acid residues. 
-
-```{r Mascot_search_info, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-knitr::include_graphics("images/mascot/search_info.png")
-```
-
-Under `Peptide Match Information`, the inclusion of both `Start` and `End` is recommended and the `Peptide quantitation` is required.
-
-```{r Mascot_psm_info, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-knitr::include_graphics("images/mascot/psm_info.png")
-```
-
-In the events of phosphopeptide analyses, the confidence in the variable modification sites can be incorporated into proteoQ reports by checking the `Raw peptide match data` under `Query level information`.  
-
-```{r Mascot_export_ext, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-knitr::include_graphics("images/mascot/query_info.png")
-```
-
-The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To escape from the ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html).^[There are cases that the same peptide sequence being assigned to different proteins remain unambiguous. For example, peptide `MENGQSTAAK` can be found from either the middle region of protein `NP_510965` or the N-terminal of protein `NP_001129505`. In case of the additional information of protein, not peptide, N-terminal acetylation, the sequence can only come from `NP_001129505` between the two candidate proteins. In addition to handling such exceptions, the nomenclature in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.] If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be simply ascribed to the protein with the greatest number of identifying peptides, when possible.  
-
-```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_daemon <- "images/mascot/mascot_daemon.png"
-knitr::include_graphics(c(img_daemon))
-```
-
-The merged search may become increasingly cumbersome with growing data sets. In this example, I combined the MS peak lists from the Hp-RP fractions within the same 10-plex TMT experiment, but not the lists across experiments. This results in a total of six pieces of PSM results in `Mascot` exports.  
-
 #### 1.1.3 Metadata
-
 The workflow involves an `Excel` template containing the metadata of multiplex experiments, including experiment numbers, TMT channels, LC/MS injection indices, sample IDs, reference channels, `RAW` MS data file names and additional fields from users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to `LC/MS`, a second `Excel` template will also be filled out to link multiple `RAW` MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`. ^[To extract the names of RAW MS files under a `raw_dir` folder: `extract_raws(raw_dir)`. Very occasionally, there may be RAW files without PSM contributions. In this case, the file names will be shown as missing by the program and need to be removed from `expt_smry.xlsx` or `frac_smry.xlsx`. The function `extract_psm_raws(dat_dir)` was developed to extract the list of RAW files that are actually present in PSM files.] Unless otherwise mentioned, we will assume these default file names throughout the document.  
 
 Columns in the `expt_smry.xlsx` are approximately divided into the following three tiers: (1) `essential`, (2) `optional default` and (3) `optional open`. We supply the required information of the TMT experiments under the essential columns. The optional default columns serve as the fields for convenient lookups in sample selection, grouping, ordering, aesthetics etc. For instance, the program will by default look for values under the `Color` column if no instruction was given in the color coding of a PCA plot. The optional open fields on the other hand allow us to define our own analysis and aesthetics. For instance, we may openly define multiple columns of contrasts at different levels of granularity for uses in statistical modelings. Description of the column keys can be found from the help document by entering `?proteoQ::load_expts` from a `R` console.  
@@ -291,13 +257,7 @@ For this reason, I named the varargs `filter_psms_at` and `filter_psms_more` in 
 #### 1.2.6 Varargs and data files
 Vararg statements of `filter_` and `arrange_` are available in proteoQ for flexible filtration and ordering of data rows. To take advantage of the feature, we need to be aware of the column keys in input files. As indicated by their names, `filter_` and `filter2_` perform row filtration against column keys from a primary data file, `df`, and secondary data file(s), `df2`, respectively. The same correspondence is applicable for `arrange_` and `arrange2_` varargs.  
 
-Users will typically employ either primary or secondary vararg statements, but not both. In the more extreme case of `gspaMap(...)`, it links `prnGSPA(...)` findings in `df2` to the significance p-values and abundance fold changes in `df` for volcano plot visualizaitons by gene sets. The table below summarizes the `df` and the `df2` for varargs in `proteoQ`.  
-
-```{r varargs_dfs, echo=FALSE, results="asis"}
-file <- system.file("extdata", "varargs.txt", package = "proteoQ")
-keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
-knitr::kable(keys) 
-```
+Users will typically employ either primary or secondary vararg statements, but not both. In the more extreme case of `gspaMap(...)`, it links `prnGSPA(...)` findings in `df2` to the significance p-values and abundance fold changes in `df` for volcano plot visualization by gene sets. The table in `section 5.1 Vararg table` summarizes the `df` and the `df2` for varargs in `proteoQ`.  
 
 #### 1.2.7 purgePSM
 To finish our discussion of PSM processing, let us consider having one more bash in data cleanup. The corresponding utility is `purgePSM`. It performs data purging by the CV of peptides, measured from contributing PSMs within the same sample. Namely, quantitations that have yielded peptide CV greater than a user-supplied cut-off will be replaced with NA.  
@@ -753,6 +713,7 @@ prnMDS(
   height = 4,
 )
 ```
+
 
 ## 2 Basic informatics
 In this section I illustrate the following applications of `proteoQ`:  
@@ -1591,6 +1552,7 @@ dl_stringdbs(
 Imputation of peptide and protein data are handle with `pepImp` and `prnImp`. More information can be found from [`mice`](https://cran.r-project.org/web/packages/mice/mice.pdf) and `?prnImp`.  
 
 
+
 ## 3 Labs  
 ### 3.1 Reference choices  
 In this lab, we explore the effects of reference choices on data normalization and cleanup. 
@@ -2154,6 +2116,49 @@ The corresponidng column keys are described below:
 
 ```{r maxquant_protein_keys, echo=FALSE, results="asis"}
 file <- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ")
+keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
+knitr::kable(keys) 
+```
+
+
+## 5 Appendix
+### 5.1 Mascot PSM tables
+When exporting Mascot PSMs, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. If the option is set to `1`, the sub-set proteins will be remove during PSM processing. Analogous handling of redundancy will take place with `Include same-set protein hits` being checked.  
+
+```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+knitr::include_graphics("images/mascot/mascot_export.png")
+```
+
+Under `Search Information`, the options of `Header` and `Search parameters` should be checked to include information such as database(s) and assumptions in the modifications of amino acid residues. 
+
+```{r Mascot_search_info, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+knitr::include_graphics("images/mascot/search_info.png")
+```
+
+Under `Peptide Match Information`, the inclusion of both `Start` and `End` is recommended and the `Peptide quantitation` is required.
+
+```{r Mascot_psm_info, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+knitr::include_graphics("images/mascot/psm_info.png")
+```
+
+In the events of phosphopeptide analyses, the confidence in the variable modification sites can be incorporated into proteoQ reports by checking the `Raw peptide match data` under `Query level information`.  
+
+```{r Mascot_export_ext, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+knitr::include_graphics("images/mascot/query_info.png")
+```
+
+The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To escape from the ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html).^[There are cases that the same peptide sequence being assigned to different proteins remain unambiguous. For example, peptide `MENGQSTAAK` can be found from either the middle region of protein `NP_510965` or the N-terminal of protein `NP_001129505`. In case of the additional information of protein, not peptide, N-terminal acetylation, the sequence can only come from `NP_001129505` between the two candidate proteins. In addition to handling such exceptions, the nomenclature in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.] If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be simply ascribed to the protein with the greatest number of identifying peptides, when possible.  
+
+```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
+img_daemon <- "images/mascot/mascot_daemon.png"
+knitr::include_graphics(c(img_daemon))
+```
+
+The merged search may become increasingly cumbersome with growing data sets. In this example, I combined the MS peak lists from the Hp-RP fractions within the same 10-plex TMT experiment, but not the lists across experiments. This results in a total of six pieces of PSM results in `Mascot` exports.  
+
+### 5.2 Vararg table
+```{r varargs_dfs, echo=FALSE, results="asis"}
+file <- system.file("extdata", "varargs.txt", package = "proteoQ")
 keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
 knitr::kable(keys) 
 ```

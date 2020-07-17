@@ -821,7 +821,7 @@ anal_pepNMF <- function (col_select = NULL, col_group = NULL,
   
   check_dots(c("id", "df2", "anal_type"), ...)
   
-  dir.create(file.path(dat_dir, "Peptide/NMF/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(get_gl_dat_dir(), "Peptide/NMF/log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
@@ -866,7 +866,7 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
   
   check_dots(c("id", "df2", "anal_type"), ...)
   
-  dir.create(file.path(dat_dir, "Protein/NMF/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(get_gl_dat_dir(), "Protein/NMF/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
@@ -991,7 +991,7 @@ plot_pepNMFCon <- function (col_select = NULL,
                             annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...) {
   check_dots(c("id", "anal_type", "df", "col_group", "filepath"), ...)
 
-  dir.create(file.path(dat_dir, "Peptide/NMF/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(get_gl_dat_dir(), "Peptide/NMF/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)  
@@ -1028,7 +1028,7 @@ plot_prnNMFCon <- function (col_select = NULL,
                             annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...) {
   check_dots(c("id", "anal_type", "df", "col_group", "filepath"), ...)
   
-  dir.create(file.path(dat_dir, "Protein/NMF/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(get_gl_dat_dir(), "Protein/NMF/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)  
@@ -1065,7 +1065,7 @@ plot_pepNMFCoef <- function (col_select = NULL,
                              annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...) {
   check_dots(c("id", "anal_type", "df", "col_group", "filepath"), ...)
   
-  dir.create(file.path(dat_dir, "Peptide/NMF/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(get_gl_dat_dir(), "Peptide/NMF/log"), recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)  
@@ -1102,7 +1102,7 @@ plot_prnNMFCoef <- function (col_select = NULL,
                              annot_cols = NULL, annot_colnames = NULL, rank = NULL, ...) {
   check_dots(c("id", "anal_type", "df", "col_group", "filepath"), ...)
   
-  dir.create(file.path(dat_dir, "Protein/NMF/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(get_gl_dat_dir(), "Protein/NMF/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
@@ -1218,7 +1218,7 @@ plot_metaNMF <- function (col_select = NULL,
                           rank = NULL, annot_cols = NULL, annot_colnames = NULL, ...) {
   check_dots(c("id", "anal_type", "col_group"), ...)
   
-  dir.create(file.path(dat_dir, "Protein/NMF/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(get_gl_dat_dir(), "Protein/NMF/log"), recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)  

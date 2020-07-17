@@ -382,6 +382,12 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #' 
 #' # head(readRDS(file.path("~/proteoQ/dbs/go/go_hs.rds")))
 #' # head(readRDS(file.path("~/proteoQ/dbs/go/go_mm.rds")))
+#' 
+#' # enrichment analysis with custom `GO`
+#' prnGSPA(
+#'   gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
+#'                "~/proteoQ/dbs/go/go_mm.rds"),
+#' )
 #'
 #' # `mouse` with a slim OBO
 #' prepGO(
@@ -406,13 +412,6 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #' )
 #' }
 #' 
-#' \dontrun{
-#' # enrichment analysis with custom `GO`
-#' prnGSPA(
-#'   gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
-#'                "~/proteoQ/dbs/go/go_mm.rds"),
-#' )
-#' }
 #'@export
 prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_url = NULL, 
                    db_path = "~/proteoQ/dbs/go", 
@@ -558,6 +557,10 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #' # `human`; outputs under `db_path`
 #' prepMSig()
 #' head(readRDS(file.path("~/proteoQ/dbs/msig/msig_hs.rds")))
+#' 
+#' prnGSPA(
+#'   gset_nms = file.path("~/proteoQ/dbs/msig/msig_hs.rds"), 
+#' )
 #'
 #' # `mouse`
 #' prepMSig(species = mouse, filename = msig_mm.rds)
@@ -894,6 +897,8 @@ create_os_lookup <- function(species, os_name, overwrite = FALSE) {
     
     return(os_name)
   }
+  
+  dat_dir <- get_gl_dat_dir()
   
   os_name <- convert_default_os(species, os_name)
   curr_lookup <- uniprot_entrez_lookup <- setNames(species, os_name)

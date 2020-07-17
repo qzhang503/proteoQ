@@ -40,8 +40,9 @@ newColnames <- function(i, x, label_scheme) {
 #' @inheritParams mergePep
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
                            use_duppeps = TRUE, parallel = TRUE, ...) {
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  load(file = file.path(dat_dir, "label_scheme.rda"))
 
   filter_dots <- rlang::enexprs(...) %>% 
     .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
@@ -81,15 +82,16 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     
     if (any(tbl_lcms$n_LCMS > 1)) {
       tbl_n <- tbl_lcms %>% dplyr::filter(n_LCMS > 1)
-      
       df_n <- df_num %>% dplyr::filter(TMT_Set %in% tbl_n$TMT_Set)
       df_1 <- df_num %>% dplyr::filter(! TMT_Set %in% tbl_n$TMT_Set)
       
       if (parallel) {
+        nms <- names(df_n)
+        stopifnot(nms[1] == group_psm_by, nms[2] == "TMT_Set")
+        
         n_cores <- parallel::detectCores()
         cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
         
-        # first two columns: group_psm_by and "TMT_Set"
         df_num <- suppressWarnings(
           parallel::clusterApply(
             cl, 3:ncol(df_n), function(i) {
@@ -102,7 +104,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
           purrr::map(~ tidyr::unite(.x, id, group_psm_by, TMT_Set, sep = "@"))  %>% 
           purrr::reduce(dplyr::left_join, by = "id") %>% 
           tidyr::separate(id, into = c(group_psm_by, "TMT_Set"), sep = "@", remove = TRUE) %>% 
-          dplyr::bind_rows(df_1)
+          dplyr::bind_rows(df_1) # the same order of columns ensured
         
         parallel::stopCluster(cl)
       } else {
@@ -110,21 +112,6 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
       }
     } 
     
-    run_scripts <- FALSE
-    if (run_scripts) {
-      df_num <- df %>% 
-        dplyr::select(!!rlang::sym(group_psm_by), 
-                      TMT_Set, 
-                      grep("^sd_log2_R[0-9]{3}", names(.)), 
-                      grep("^log2_R[0-9]{3}", names(.)), 
-                      grep("^N_log2_R[0-9]{3}", names(.)), 
-                      # grep("^Z_log2_R[0-9]{3}", names(.)), 
-                      grep("^I[0-9]{3}", names(.)), 
-                      grep("^N_I[0-9]{3}", names(.))) %>% 
-        dplyr::group_by(!!rlang::sym(group_psm_by), TMT_Set) %>%
-        dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-    }
-
     df_num <- df_num %>%
       dplyr::arrange(TMT_Set) %>%
       tidyr::gather(grep("R[0-9]{3}|I[0-9]{3}", names(.)), key = ID, value = value) %>%
@@ -342,6 +329,8 @@ med_summarise_keys <- function(df, id) {
 #' 
 #' @inheritParams info_anal
 load_prior <- function(filename, id) {
+  dat_dir <- get_gl_dat_dir()
+  
   stopifnot(file.exists(filename))
   
   df <- read.csv(filename, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
@@ -498,11 +487,7 @@ fmt_num_cols <- function (df) {
 #'@importFrom plyr ddply
 #'@export
 mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, parallel = TRUE, ...) {
-  dir.create(file.path(dat_dir, "Peptide/cache"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide/Histogram"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/raw"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/purged"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide/log"), recursive = TRUE, showWarnings = FALSE)
+  dat_dir <- get_gl_dat_dir()  
   
   old_opts <- options()
   options(warn = 1)
@@ -514,8 +499,15 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, parallel = TRUE
   stopifnot(vapply(c(plot_log2FC_cv), rlang::is_logical, logical(1)))
 
   reload_expts()
+
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
+  
+  dir.create(file.path(dat_dir, "Peptide/cache"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/Histogram"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/raw"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/purged"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/log"), recursive = TRUE, showWarnings = FALSE)
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
@@ -700,6 +692,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, parallel = TRUE
 standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, range_log2r = c(10, 90), 
                       range_int = c(5, 95), n_comp = NULL, seed = NULL, plot_log2FC_cv = FALSE, ...) {
 
+  dat_dir <- get_gl_dat_dir()
+  
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
@@ -887,6 +881,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
 Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), 
                      use_unique_pep = TRUE, ...) {
   
+  dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/Histogram"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Protein/cache"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Protein/log"), recursive = TRUE, showWarnings = FALSE)
@@ -955,6 +950,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
 #' @inheritParams Pep2Prn
 #' @rawNamespace import(seqinr, except = c(consensus, count, zscore))
 pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
+  dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   id <- rlang::as_string(rlang::enexpr(id))
   
@@ -1138,6 +1134,8 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) {
   # When combining, `dat_file_1` and `dat_file_2`, all the peptide entries will be 
   #   re-assigned to the protein id with the greater `prot_n_pep`.
 
+  dat_dir <- get_gl_dat_dir()
+  
   dup_peps <- df %>%
     dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
     dplyr::group_by(!!rlang::sym(group_psm_by)) %>%

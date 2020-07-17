@@ -7,8 +7,8 @@
 TMT_plex(label_scheme_full)
 }
 \arguments{
-\item{label_scheme_full}{The data frame returned by \code{\link{load_expts}},
-including multiple LCMS series.}
+\item{label_scheme_full}{The label_scheme with the probable inclusion of
+different LCMS_inj under the same TMT_Set.}
 }
 \description{
 \code{TMT_plex} returns the multiplexity of TMT labels.

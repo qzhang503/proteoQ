@@ -352,7 +352,8 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
   
-  if (!rlang::is_empty(filter_dots)) warning("No data filtration by `filter_` varargs.", call. = FALSE)
+  if (!rlang::is_empty(filter_dots)) 
+    warning("No data filtration by `filter_` varargs. will be applied", call. = FALSE)
   
   if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()
@@ -374,8 +375,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   )
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
-  
+
   filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
     reorder_files()
   
@@ -486,7 +486,8 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
   
-  if (!rlang::is_empty(filter_dots)) warning("No data filtration by `filter_` varargs.", call. = FALSE)
+  if (!rlang::is_empty(filter_dots)) 
+    warning("No data filtration by `filter_` varargs will be applied.", call. = FALSE)
 
   col_select <- rlang::enexpr(col_select)
   col_order <- rlang::enexpr(col_order)
@@ -521,7 +522,6 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   )
 
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
 
   dir.create(file.path(dat_dir, "Peptide/Copy"), recursive = TRUE, showWarnings = FALSE)
   file.copy(file.path(dat_dir, "Peptide/Peptide.txt"), file.path(dat_dir, "Peptide/Copy/Peptide.txt"))
@@ -569,7 +569,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   width <- eval(dots$width, env = caller_env())
   height <- eval(dots$height, env = caller_env())
   
-  if (is.null(width)) width <- 8 * n_TMT_sets(label_scheme)
+  if (is.null(width)) width <- 8 * n_TMT_sets(label_scheme_full)
   if (is.null(height)) height <- 8
   dots <- dots %>% .[! names(.) %in% c("width", "height")]
   

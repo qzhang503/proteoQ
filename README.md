@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2020-07-02
+2020-07-12
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -33,6 +33,8 @@ true
   - [4 Column keys](#column-keys)
       - [4.1 Mascot](#mascot)
       - [4.2 MaxQuant](#maxquant)
+  - [5 Appendix](#appendix)
+      - [5.1 Vararg table](#vararg-table)
   - [References](#references)
 
 ## Introduction to proteoQ
@@ -456,45 +458,9 @@ applicable for `arrange_` and `arrange2_` varargs.
 Users will typically employ either primary or secondary vararg
 statements, but not both. In the more extreme case of `gspaMap(...)`, it
 links `prnGSPA(...)` findings in `df2` to the significance p-values and
-abundance fold changes in `df` for volcano plot visualizaitons by gene
-sets. The table below summarizes the `df` and the `df2` for varargs in
-`proteoQ`.
-
-| Utility          | Vararg\_            | df                                                                  | Vararg2\_ | df2                                             |
-| :--------------- | :------------------ | :------------------------------------------------------------------ | :-------- | :---------------------------------------------- |
-| normPSM          | filter\_            | Mascot, F\[…\].csv; MaxQuant, msms\[…\].txt; SM, PSMexport\[…\].ssv | NA        | NA                                              |
-| PSM2Pep          | NA                  | NA                                                                  | NA        | NA                                              |
-| mergePep         | filter\_            | TMTset1\_LCMSinj1\_Peptide\_N.txt                                   | NA        | NA                                              |
-| standPep         | slice\_             | Peptide.txt                                                         | NA        | NA                                              |
-| Pep2Prn          | filter\_            | Peptide.txt                                                         | NA        | NA                                              |
-| standPrn         | slice\_             | Protein.txt                                                         | NA        | NA                                              |
-| pepHist          | filter\_            | Peptide.txt                                                         | NA        | NA                                              |
-| prnHist          | filter\_            | Protein.txt                                                         | NA        | NA                                              |
-| pepSig           | filter\_            | Peptide\[\_impNA\].txt                                              | NA        | NA                                              |
-| prnSig           | filter\_            | Protein\[\_impNA\].txt                                              | NA        | NA                                              |
-| pepMDS           | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnMDS           | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| pepPCA           | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnPCA           | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| pepEucDist       | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnEucDist       | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| pepCorr\_logFC   | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnCorr\_logFC   | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| pepHM            | filter\_, arrange\_ | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnHM            | filter\_, arrange\_ | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| anal\_prnTrend   | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| plot\_prnTrend   | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_Trend\_{NZ}\[\_impNA\]\[…\].txt   |
-| anal\_pepNMF     | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| anal\_prnNMF     | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| plot\_pepNMFCon  | NA                  | NA                                                                  | filter2\_ | \[…\]Peptide\_NMF\[…\]\_consensus.txt           |
-| plot\_prnNMFCon  | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_NMF\[…\]\_consensus.txt           |
-| plot\_pepNMFCoef | NA                  | NA                                                                  | filter2\_ | \[…\]Peptide\_NMF\[…\]\_coef.txt                |
-| plot\_prnNMFCoef | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_NMF\[…\]\_coef.txt                |
-| plot\_metaNMF    | filter\_, arrange\_ | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnGSPA          | filter\_            | Protein\[\_impNA\]\_pVals.txt                                       | NA        | NA                                              |
-| prnGSPAHM        | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_GSPA\_{NZ}\[\_impNA\]\_essmap.txt |
-| gspaMap          | filter\_            | Protein\[\_impNA\]\_pVal.txt                                        | filter2\_ | \[…\]Protein\_GSPA\_{NZ}\[\_impNA\].txt         |
-| anal\_prnString  | filter\_            | Protein\[\_impNA\]\[\_pVals\].txt                                   | NA        | NA                                              |
+abundance fold changes in `df` for volcano plot visualization by gene
+sets. The table in `section 5.1 Vararg table` summarizes the `df` and
+the `df2` for varargs in `proteoQ`.
 
 #### 1.2.7 purgePSM
 
@@ -3539,6 +3505,46 @@ The corresponidng column keys are described below:
 | log2\_R (…)      | log2FC relative to reference materials for indicated samples                               | Before normalization                                                                                |
 | N\_log2\_R (…)   | Aligned log2\_R (…) according to method\_align in standPrn() without scaling normalization |                                                                                                     |
 | Z\_log2\_R (…)   | N\_log2\_R (…) with scaling normalization                                                  |                                                                                                     |
+
+## 5 Appendix
+
+### 5.1 Vararg table
+
+| Utility          | Vararg\_            | df                                                                  | Vararg2\_ | df2                                             |
+| :--------------- | :------------------ | :------------------------------------------------------------------ | :-------- | :---------------------------------------------- |
+| normPSM          | filter\_            | Mascot, F\[…\].csv; MaxQuant, msms\[…\].txt; SM, PSMexport\[…\].ssv | NA        | NA                                              |
+| PSM2Pep          | NA                  | NA                                                                  | NA        | NA                                              |
+| mergePep         | filter\_            | TMTset1\_LCMSinj1\_Peptide\_N.txt                                   | NA        | NA                                              |
+| standPep         | slice\_             | Peptide.txt                                                         | NA        | NA                                              |
+| Pep2Prn          | filter\_            | Peptide.txt                                                         | NA        | NA                                              |
+| standPrn         | slice\_             | Protein.txt                                                         | NA        | NA                                              |
+| pepHist          | filter\_            | Peptide.txt                                                         | NA        | NA                                              |
+| prnHist          | filter\_            | Protein.txt                                                         | NA        | NA                                              |
+| pepSig           | filter\_            | Peptide\[\_impNA\].txt                                              | NA        | NA                                              |
+| prnSig           | filter\_            | Protein\[\_impNA\].txt                                              | NA        | NA                                              |
+| pepMDS           | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnMDS           | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| pepPCA           | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnPCA           | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| pepEucDist       | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnEucDist       | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| pepCorr\_logFC   | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnCorr\_logFC   | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| pepHM            | filter\_, arrange\_ | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnHM            | filter\_, arrange\_ | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| anal\_prnTrend   | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| plot\_prnTrend   | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_Trend\_{NZ}\[\_impNA\]\[…\].txt   |
+| anal\_pepNMF     | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| anal\_prnNMF     | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| plot\_pepNMFCon  | NA                  | NA                                                                  | filter2\_ | \[…\]Peptide\_NMF\[…\]\_consensus.txt           |
+| plot\_prnNMFCon  | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_NMF\[…\]\_consensus.txt           |
+| plot\_pepNMFCoef | NA                  | NA                                                                  | filter2\_ | \[…\]Peptide\_NMF\[…\]\_coef.txt                |
+| plot\_prnNMFCoef | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_NMF\[…\]\_coef.txt                |
+| plot\_metaNMF    | filter\_, arrange\_ | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
+| prnGSPA          | filter\_            | Protein\[\_impNA\]\_pVals.txt                                       | NA        | NA                                              |
+| prnGSPAHM        | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_GSPA\_{NZ}\[\_impNA\]\_essmap.txt |
+| gspaMap          | filter\_            | Protein\[\_impNA\]\_pVal.txt                                        | filter2\_ | \[…\]Protein\_GSPA\_{NZ}\[\_impNA\].txt         |
+| anal\_prnString  | filter\_            | Protein\[\_impNA\]\[\_pVals\].txt                                   | NA        | NA                                              |
 
 ## References
 

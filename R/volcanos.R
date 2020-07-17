@@ -428,6 +428,7 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
                       filepath = NULL, filename = NULL, adjP = FALSE, show_labels = TRUE, show_sig = "none", 
                       gspval_cutoff = 1E-6, gslogFC_cutoff = log2(1.2), topn = Inf, ...) {
   
+  dat_dir <- get_gl_dat_dir()
   par_filepath <- file.path(dat_dir, "Calls", 
                              gsub("\\.txt$", "@", df2) %>% paste0(fml_nm, ".rda"))
   

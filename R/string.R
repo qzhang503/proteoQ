@@ -5,6 +5,8 @@
 #'@import rlang dplyr purrr 
 #'@importFrom magrittr %>% %T>% %$% %<>%
 annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, filename = NULL, ...) {
+  dat_dir <- get_gl_dat_dir()
+  
   df <- df %>% dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
   dbs <- load_stringdbs(db_nms)
 
@@ -98,7 +100,7 @@ stringTest <- function(df = NULL, id = gene,
                        db_nms = NULL, score_cutoff = .7, 
                        scale_log2r = TRUE, complete_cases = FALSE, 
                        filepath = NULL, filename = NULL, ...) {
-  
+  dat_dir <- get_gl_dat_dir()
   id <- rlang::as_string(rlang::enexpr(id))
   
   stopifnot(id %in% names(df), 

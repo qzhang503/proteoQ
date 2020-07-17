@@ -225,13 +225,14 @@ rmPSMHeaders <- function () {
 
 	on.exit(message("Remove PSM headers --- Completed."), add = TRUE)
 
+	dat_dir <- get_gl_dat_dir()
 	filelist = list.files(path = file.path(dat_dir), pattern = "^F[0-9]+\\.csv$")
 
 	if (purrr::is_empty(filelist))
 	  stop("No PSM files(s) with `.csv` extension under ", dat_dir, call. = FALSE)
 
-	load(file = file.path(dat_dir, "label_scheme.rda"))
-	TMT_plex <- TMT_plex(label_scheme)
+	load(file = file.path(dat_dir, "label_scheme_full.rda"))
+	TMT_plex <- TMT_plex(label_scheme_full)
 
 	batchPSMheader <- function(filelist, TMT_plex) {
 		data_all <- readLines(file.path(dat_dir, filelist))
@@ -382,6 +383,7 @@ prep_queries <- function() {
     })
   }
   
+  
   dat_dir <- get_gl_dat_dir()
   
   filepath <- file.path(dat_dir, "PSM/cache")
@@ -516,7 +518,12 @@ add_mod_conf <- function(df, dat_dir) {
 #' @importFrom purrr walk
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 add_mascot_pepseqmod <- function(df, use_lowercase_aa, purge_phosphodata) {
+  dat_dir <- get_gl_dat_dir()
+  
+  stopifnot("dat_file" %in% names(df))
+  
   dat_id <- df$dat_file %>% unique()
+  
   dat_file <- file.path(dat_dir, "PSM/cache", paste0(dat_id, "_header.txt"))
   stopifnot(length(dat_id)== 1, file.exists(dat_file))
   
@@ -844,8 +851,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 	
   on.exit(message("Split PSM by TMT experiments and LCMS injections --- Completed."), add = TRUE)
 
+  dat_dir <- get_gl_dat_dir()
 	load(file = file.path(dat_dir, "label_scheme_full.rda"))
-	load(file = file.path(dat_dir, "label_scheme.rda"))
 	load(file = file.path(dat_dir, "fraction_scheme.rda"))
 
 	TMT_plex <- TMT_plex(label_scheme_full)
@@ -1030,32 +1037,32 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     df %>% dplyr::select(-grep("^prot_", names(.))), 
   )
 
+  # ---
   if (length(grep("^R[0-9]{3}", names(df))) > 0) {
     # Shared peptides will be removed here by `rowSums` if 
     #   checked 'Unique peptide only' during Mascot PSM export
-    df_split <- df %>%
+    df <- df %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), ~ ifelse(.x == -1, NA, .x)) %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), ~ ifelse(.x <= rptr_intco, NA, .x)) %>%
       dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
-      dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) %>%
-      dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
-      dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
-      dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
-      dplyr::arrange(RAW_File, pep_seq, prot_acc) 
-  } else {
-    df_split <- df %>%
-      dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>% 
-			dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
-      dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
-      dplyr::arrange(RAW_File, pep_seq, prot_acc)
+      dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0)
   }
   
+  df <- df %>%
+    dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>% 
+    dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
+    dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
+    dplyr::arrange(RAW_File, pep_seq, prot_acc)
+  
+  res <- check_raws(df)
+  df <- res$df
+  tmtinj_raw_map <- res$lookup
+  rm(res)
+  
   # --- split by TMT and LCMS ---
-  tmtinj_raw_map <- check_raws(df_split)
-
   if (! "PSM_File" %in% names(tmtinj_raw_map)) {
-    df_split <- df_split %>%
+    df_split <- df %>%
       dplyr::left_join(tmtinj_raw_map, id = "RAW_File") %>% 
       dplyr::group_by(TMT_inj) %>%
       dplyr::mutate(psm_index = row_number()) %>%
@@ -1067,7 +1074,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       dplyr::mutate(PSM_File = gsub("\\.csv$", "", PSM_File)) %>% 
       tidyr::unite(RAW_File2, c("RAW_File", "PSM_File"), sep = "@") 
     
-    df_split <- df_split %>% 
+    df_split <- df %>% 
       tidyr::unite(RAW_File2, c("RAW_File", "dat_file"), sep = "@", remove = FALSE) %>% 
       dplyr::left_join(tmtinj_raw_map, by = "RAW_File2") %>% 
       dplyr::select(-RAW_File2) %>% 
@@ -1077,7 +1084,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       dplyr::select(-dat_file) %>% 
       split(., .$TMT_inj, drop = TRUE)
   }
-  
+
   missing_tmtinj <- setdiff(names(df_split), unique(tmtinj_raw_map$TMT_inj))
   if (!purrr::is_empty(missing_tmtinj)) {
     cat("The following TMT sets and LC/MS injections do not have corresponindg PSM files:\n")
@@ -1097,12 +1104,11 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::select(-RAW_File) %>%
     dplyr::left_join(tmtinj_raw_map, by = "TMT_inj")
 
-  df_split <- df_split %>% .[names(.) %>% as.numeric() %>% sort() %>% as.character()]
+  df_split <- df_split %>% .[names(.) %>% sort_tmt_lcms()]
   
   if (parallel) {
     n_cores <- pmin(parallel::detectCores(), length(filelist))
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-    # parallel::clusterExport(cl, "dat_dir")
 
     suppressWarnings(
       silent_out <- parallel::clusterMap(
@@ -1111,7 +1117,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       )
     )
     
-    parallel::stopCluster(cl)    
+    parallel::stopCluster(cl)
   } else {
     purrr::walk2(df_split, names(df_split), psm_msplit, 
                  fn_lookup, dat_dir, plot_rptr_int, TMT_plex)
@@ -1287,8 +1293,6 @@ pad_mascot_fields <- function(df) {
 #' @inheritParams cleanupPSM
 #' @inheritParams TMT_levels
 psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
-  load(file = file.path(dat_dir, "label_scheme.rda"))
-  
   df <- read.csv(file.path(dat_dir, "PSM/cache", file), 
                  check.names = FALSE, header = TRUE, comment.char = "#")
   
@@ -1312,9 +1316,10 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
       dplyr::select(-n)
   })
   
-  channelInfo <- channelInfo(label_scheme = label_scheme, 
-                             set_idx = as.integer(gsub("TMTset(\\d+)_.*", "\\1", file)))
-  
+  set_idx <- file %>% gsub("TMTset(\\d+)_.*", "\\1", .) %>% as.integer()
+  injn_idx <- file %>% gsub("^TMTset\\d+_LCMSinj(\\d+)\\.csv$", "\\1", .) %>% as.integer()
+  channelInfo <- channelInfo(dat_dir = dat_dir, set_idx = set_idx, injn_idx = injn_idx)
+
   # add column "R126"
   df <- local({
     pos_af <- min(grep("^R1[0-9]{2}", names(df)))
@@ -1343,9 +1348,6 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
         `colnames<-`(gsub("I", "X", names(.))) %>%
         dplyr::mutate_at(.vars = grep("^X[0-9]{3}", names(.)), 
                          ~ replace(.x, is.infinite(.x), NA)) %>%
-        
-        # `pep_seq_mod` not yet existed for MaxQuant
-        
         dplyr::bind_cols(df[, c("psm_index", group_psm_by)], .) %>%
         split(., .[[group_psm_by]], drop = TRUE)
       
@@ -1422,39 +1424,26 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
 #' @import dplyr tidyr
 #' @importFrom stringr str_split
 cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq", parallel = TRUE) {
-	load(file = file.path(dat_dir, "label_scheme.rda"))
-	load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  dat_dir <- get_gl_dat_dir()
+
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
 	TMT_plex <- TMT_plex(label_scheme_full)
 
 	filelist <- list.files(path = file.path(dat_dir, "PSM/cache"),
 	                      pattern = "^TMT.*LCMS.*\\.csv$") %>% 
 	  reorder_files()
-	
+
 	if (parallel) {
 	  n_cores <- pmin(parallel::detectCores(), length(filelist))
 	  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
 	  
-  	# need to export `dat_dir` with clusterApply
-  	run_scripts <- FALSE
-  	if (run_scripts) {
-  	  parallel::clusterExport(cl, "dat_dir")
-  	  
-  	  suppressWarnings(
-  	    silent_out <- parallel::clusterApply(
-  	      cl, filelist, psm_mcleanup, rm_outliers, group_psm_by, dat_dir, TMT_plex
-  	    )
-  	  )
-  	  rm(silent_out)
-  	}
-  		  
-  	suppressWarnings(
-  	  silent_out <- parallel::clusterMap(
-  	    cl, psm_mcleanup, filelist, 
-  	    MoreArgs = list(rm_outliers, group_psm_by, dat_dir, TMT_plex)
-  	  )
-  	)
-  	rm(silent_out)
-  	
+	  # parallel::clusterExport(cl, list("channelInfo"), envir = env_parent(current_env()))
+	  suppressWarnings(
+	    silent_out <- parallel::clusterApply(
+	      cl, filelist, psm_mcleanup, rm_outliers, group_psm_by, dat_dir, TMT_plex)
+	  )
+	  rm(silent_out)
+
   	parallel::stopCluster(cl)	  
 	} else {
 	  purrr::walk(filelist, psm_mcleanup, rm_outliers, group_psm_by, dat_dir, TMT_plex)
@@ -1469,20 +1458,20 @@ cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq", parallel =
 #'@param df A data frame containing the PSM table from database searches.
 #'@inheritParams channelInfo
 #'@inheritParams annotPSM
-#'@inheritParams calcPepide
+#'@inheritParams calcPeptide
 #'@import dplyr tidyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>%
 mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by) {
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  dat_dir <- get_gl_dat_dir()
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  channelInfo <- channelInfo(dat_dir = dat_dir, set_idx = set_idx, injn_idx = injn_idx)
   
-  label_scheme_sub <- label_scheme %>% 
-    dplyr::filter(TMT_Set == set_idx) %>% 
-    dplyr::mutate(min_inj = min(LCMS_Injection)) %>% 
-    dplyr::filter(LCMS_Injection == min_inj) %>% 
-    dplyr::select(-min_inj)
-  
-  channelInfo <- channelInfo(label_scheme_sub, set_idx)
-  
+  label_scheme_sub <- label_scheme_full %>% 
+    dplyr::filter(TMT_Set == set_idx, LCMS_Injection == injn_idx) # %>% 
+    # dplyr::mutate(min_inj = min(LCMS_Injection)) %>% 
+    # dplyr::filter(LCMS_Injection == min_inj) %>% 
+    # dplyr::select(-min_inj)
+
   dfw <- df[rowSums(!is.na(df[, grepl("^R[0-9]{3}", names(df)), drop = FALSE])) > 1, ] %>%
     dplyr::arrange(pep_seq, prot_acc) %>%
     dplyr::mutate_at(.vars = which(names(.) == "I126") - 1 +
@@ -1604,12 +1593,13 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_psm
                      fasta = NULL, expt_smry = "expt_smry.xlsx", 
                      plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...) {
 
+  dat_dir <- get_gl_dat_dir()
+  
   hd_fn <- list.files(path = file.path(dat_dir, "PSM/cache"),
                       pattern = "^F\\d+_header.txt$")
   assign("df_header", readLines(file.path(dat_dir, "PSM/cache", hd_fn[1])))
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
   n_TMT_sets <- n_TMT_sets(label_scheme_full)
   TMT_plex <- TMT_plex(label_scheme_full)
   
@@ -1632,11 +1622,9 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_psm
                                                      '.txt', fixed = TRUE))) %>%
       dplyr::mutate(Filename = gsub("_Clean", "_PSM_N", Filename))
     
-    channelInfo <- channelInfo(label_scheme, set_idx)
-    
     # LCMS injections under the same TMT experiment
-    for (injn_idx in seq_along(sublist)) {
-      df <- read.csv(file.path(dat_dir, "PSM/cache", sublist[injn_idx]),
+    for (idx in seq_along(sublist)) {
+      df <- read.csv(file.path(dat_dir, "PSM/cache", sublist[idx]),
                      check.names = FALSE, header = TRUE, sep = "\t",
                      comment.char = "#")
 
@@ -1645,7 +1633,15 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_psm
       
       species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
 
-      if (TMT_plex > 0) df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
+      if (TMT_plex > 0) {
+        df <- local({
+          injn_idx <- sublist[idx] %>% 
+            gsub("^TMTset\\d+_LCMSinj(\\d+)_Clean.txt$", "\\1", .) %>% 
+            as.integer()
+          
+          df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
+        })
+      }
       
       df <- df %>% 
         dplyr::mutate(!!group_psm_by := as.character(!!rlang::sym(group_psm_by)))
@@ -1697,21 +1693,21 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_psm
         df %>% dplyr::select(grep("R[0-9]{3}[NC]*", names(.))), 
       )
       
-      write.table(df, file.path(dat_dir, "PSM", paste0(out_fn[injn_idx, 1], ".txt")),
+      write.table(df, file.path(dat_dir, "PSM", paste0(out_fn[idx, 1], ".txt")),
                   sep = "\t", col.names = TRUE, row.names = FALSE)
       
       if (plot_rptr_int && TMT_plex > 0) {
         df_int <- df %>% .[, grepl("^N_I[0-9]{3}", names(.))]
         rptr_violin(df = df_int, 
                     filepath = file.path(dat_dir, "PSM/rprt_int/mc",
-                                         paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 
+                                         paste0(gsub("_PSM_N", "", out_fn[idx, 1]), "_rprt.png")), 
                     width = 8, height = 8)
       }
 
       if (plot_log2FC_cv && TMT_plex > 0) {
         sd_violin(df = df, id = !!group_psm_by, 
                   filepath = file.path(dat_dir, "PSM/log2FC_cv/raw", 
-                                       paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                                       paste0(gsub("_PSM_N", "", out_fn[idx, 1]), "_sd.png")), 
                   width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
       }
       
@@ -2104,20 +2100,16 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
 #' 
 #' Argument \code{injn_idx} not currently used.
 #' 
-#' @param injn_idx Numeric. The index of \code{LCMS_Inj} in metadata files such
-#'   as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.
 #' @inheritParams mcPSM
 #' @inheritParams PSM2Pep
 #' @inheritParams annotPSM
 #' @inheritParams channelInfo
 #' @inheritParams locate_outliers
-calcPepide <- function(df, label_scheme, group_psm_by, method_psm_pep, 
-                       group_pep_by, set_idx, injn_idx) {
+calcPeptide <- function(df, group_psm_by, method_psm_pep, 
+                       group_pep_by, dat_dir, set_idx, injn_idx) {
   stopifnot("prot_acc" %in% names(df))
 
-  channelInfo <- label_scheme %>%
-    dplyr::filter(TMT_Set == set_idx) %>%
-    channelInfo(set_idx)
+  channelInfo <- channelInfo(dat_dir = dat_dir, set_idx = set_idx, injn_idx = injn_idx)
   
   df <- df[rowSums(!is.na(df[, grepl("^N_log2_R[0-9]{3}", names(df)), drop = FALSE])) > 0, ] %>%
     dplyr::arrange(!!rlang::sym(group_psm_by), prot_acc) %>%
@@ -2244,11 +2236,9 @@ calcPepide <- function(df, label_scheme, group_psm_by, method_psm_pep,
 #' 
 #' @param file The name of a PSM file.
 #' @inheritParams load_expts
-#' @inheritParams calcPepide
+#' @inheritParams calcPeptide
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 psm_to_pep <- function (file, dat_dir, group_psm_by, group_pep_by, method_psm_pep) {
-  load(file = file.path(dat_dir, "label_scheme.rda"))
-  
   fn_prx <- gsub("_PSM_N.txt", "", file, fixed = TRUE)
   set_idx <- as.integer(gsub(".*TMTset(\\d+)_.*", "\\1", fn_prx))
   injn_idx <- as.integer(gsub(".*LCMSinj(\\d+).*", "\\1", fn_prx))
@@ -2256,7 +2246,7 @@ psm_to_pep <- function (file, dat_dir, group_psm_by, group_pep_by, method_psm_pe
   df <- read.csv(file.path(dat_dir, "PSM", file), check.names = FALSE, header = TRUE,
                  sep = "\t", comment.char = "#") %>% 
     dplyr::select(-grep("^sd_log2_R", names(.))) %>% 
-    calcPepide(label_scheme, group_psm_by, method_psm_pep, group_pep_by, set_idx, injn_idx)
+    calcPeptide(group_psm_by, method_psm_pep, group_pep_by, dat_dir, set_idx, injn_idx)
   
   df <- dplyr::bind_cols(
     df %>% dplyr::select(grep("^pep_", names(.))), 
@@ -2366,6 +2356,8 @@ psm_to_pep <- function (file, dat_dir, group_psm_by, group_pep_by, method_psm_pe
 #'@export
 PSM2Pep <- function (method_psm_pep = c("median", "mean", "weighted.mean", "top.3"), 
                      parallel = TRUE, ...) {
+  dat_dir <- get_gl_dat_dir()
+  
   old_opts <- options()
   on.exit(options(old_opts), add = TRUE)
   options(warn = 1)
@@ -2388,17 +2380,13 @@ PSM2Pep <- function (method_psm_pep = c("median", "mean", "weighted.mean", "top.
   }
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
-  
   dir.create(file.path(dat_dir, "Peptide/cache"), recursive = TRUE, showWarnings = FALSE)
-  
   filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
     reorder_files()
   
   if (parallel) {
     n_cores <- pmin(parallel::detectCores(), length(filelist))
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-    parallel::clusterExport(cl, "dat_dir")
 
     suppressWarnings(
       silent_out <- parallel::clusterApply(
@@ -2587,6 +2575,8 @@ pad_mq_channels <- function(file) {
   }
   
   
+  dat_dir <- get_gl_dat_dir()
+  
   df <- read.csv(file.path(dat_dir, file), 
                  check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")
   
@@ -2687,8 +2677,8 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   on.exit(message("Split PSM by sample IDs and LCMS injections --- Completed."), 
           add = TRUE)
   
+  dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
   load(file = file.path(dat_dir, "fraction_scheme.rda"))
   
   TMT_plex <- TMT_plex(label_scheme_full)
@@ -2846,7 +2836,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   )
   
   if (length(grep("^R[0-9]{3}", names(df))) > 0) {
-    df_split <- df %>%
+    df <- df %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), 
                        as.numeric) %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
@@ -2855,29 +2845,32 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                        ~ ifelse(.x <= rptr_intco, NA, .x)) %>%
       dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
       dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) %>%
-      dplyr::arrange(RAW_File, pep_seq, prot_acc) %>%
-      dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
+      dplyr::arrange(RAW_File, pep_seq, prot_acc) # %>%
+      # dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
   } else {
-    df_split <- df %>%
+    df <- df %>%
       dplyr::arrange(RAW_File, pep_seq, prot_acc)
   }
   
   # make available `pep_seq_mod` 
   # for cleanupPSM(group_psm_by = pep_seq_mod)
-  stopifnot("Modified sequence" %in% names(df_split))
+  stopifnot("Modified sequence" %in% names(df))
   
-  df_split <- df_split %>% 
+  df <- df %>% 
     dplyr::rename(pep_seq_mod = `Modified sequence`) %>%
     dplyr::select(which(names(.) == "pep_seq_mod"),
                   which(names(.) != "pep_seq_mod")) %>% 
     add_maxquant_pepseqmod(use_lowercase_aa)
 
   # --- split by TMT and LCMS ---
-  tmtinj_raw_map <- check_raws(df_split)
+  res <- check_raws(df)
+  df <- res$df
+  tmtinj_raw_map <- res$lookup
+  rm(res)
   
   if (! "PSM_File" %in% names(tmtinj_raw_map)) {
     # `dat_file` only for Mascot 
-    df_split <- df_split %>%
+    df_split <- df %>%
       dplyr::left_join(tmtinj_raw_map, id = "RAW_File") %>%
       dplyr::group_by(TMT_inj) %>%
       dplyr::mutate(psm_index = row_number()) %>%
@@ -2888,7 +2881,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       dplyr::mutate(PSM_File = gsub("\\.csv$", "", PSM_File)) %>% 
       tidyr::unite(RAW_File2, c("RAW_File", "PSM_File"), sep = "@") 
     
-    df_split <- df_split %>% 
+    df_split <- df %>% 
       tidyr::unite(RAW_File2, c("RAW_File", "dat_file"), 
                    sep = "@", remove = FALSE) %>% 
       dplyr::left_join(tmtinj_raw_map, by = "RAW_File2") %>% 
@@ -2918,12 +2911,11 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::select(-RAW_File) %>%
     dplyr::left_join(tmtinj_raw_map, by = "TMT_inj")
 
-  df_split <- df_split %>% .[names(.) %>% as.numeric() %>% sort() %>% as.character()]
+  df_split <- df_split %>% .[names(.) %>% sort_tmt_lcms()]
   
   if (parallel) {
     n_cores <- pmin(parallel::detectCores(), length(filelist))
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-    # parallel::clusterExport(cl, "dat_dir")
 
     suppressWarnings(
       silent_out <- parallel::clusterMap(
@@ -2956,9 +2948,10 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
                         fasta = NULL, expt_smry = "expt_smry.xlsx", 
                         rm_krts = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
                         ...) {
-
+  
+  dat_dir <- get_gl_dat_dir()
+  
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
   n_TMT_sets <- n_TMT_sets(label_scheme_full)
   TMT_plex <- TMT_plex(label_scheme_full)
   
@@ -2982,11 +2975,9 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
     ) %>%
       dplyr::mutate(Filename = gsub("_Clean", "_PSM_N", Filename))
     
-    channelInfo <- channelInfo(label_scheme, set_idx)
-    
     # LCMS injections under the same TMT experiment
-    for (injn_idx in seq_along(sublist)) {
-      df <- read.csv(file.path(dat_dir, "PSM/cache", sublist[injn_idx]),
+    for (idx in seq_along(sublist)) {
+      df <- read.csv(file.path(dat_dir, "PSM/cache", sublist[idx]),
                      check.names = FALSE, header = TRUE, sep = "\t",
                      comment.char = "#") 
 
@@ -3006,8 +2997,16 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
         dplyr::select(-pep_start_discrepancy)
       
       if (TMT_plex > 0) {
-        df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
+        df <- local({
+          injn_idx <- sublist[idx] %>% 
+            gsub("^TMTset\\d+_LCMSinj(\\d+)_Clean.txt$", "\\1", .) %>% 
+            as.integer()
+          
+          df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
+        })
       }
+      
+      
 			
 			df <- df %>% 
 			  calcSD_Splex(group_psm_by) %>% 
@@ -3060,7 +3059,7 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
 			  df %>% dplyr::select(grep("R[0-9]{3}[NC]*", names(.))), 
 			)
       
-      write.table(df, file.path(dat_dir, "PSM", paste0(out_fn[injn_idx, 1], ".txt")),
+      write.table(df, file.path(dat_dir, "PSM", paste0(out_fn[idx, 1], ".txt")),
                   sep = "\t", col.names = TRUE, row.names = FALSE)
       
       if (plot_rptr_int && TMT_plex > 0) {
@@ -3069,7 +3068,7 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
         rptr_violin(
           df = df_int, 
           filepath = file.path(dat_dir, "PSM/rprt_int/mc", 
-                               paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 
+                               paste0(gsub("_PSM_N", "", out_fn[idx, 1]), "_rprt.png")), 
           width = 8, height = 8)
       }
       
@@ -3077,7 +3076,7 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
         sd_violin(
           df = df, id = !!group_psm_by, 
           filepath = file.path(dat_dir, "PSM/log2FC_cv/raw", 
-                               paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                               paste0(gsub("_PSM_N", "", out_fn[idx, 1]), "_sd.png")), 
           width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
       }
     }
@@ -3109,6 +3108,8 @@ pad_sm_channels <- function(file) {
     )
   }
   
+  
+  dat_dir <- get_gl_dat_dir()
   df <- suppressWarnings(readr::read_delim(file.path(dat_dir, file), delim = ";", 
                                            col_types = cols(filename = col_character())))
   
@@ -3320,8 +3321,8 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   if (is.null(fasta)) stop("FASTA file(s) not provided.", call. = FALSE)
   
+  dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
   load(file = file.path(dat_dir, "fraction_scheme.rda"))
   
   TMT_plex <- TMT_plex(label_scheme_full)
@@ -3457,23 +3458,23 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   )
 
   if (length(grep("^R[0-9]{3}", names(df))) > 0) {
-    df_split <- df %>%
+    df <- df %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), ~ ifelse(.x == -1, NA, .x)) %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), ~ ifelse(.x <= rptr_intco, NA, .x)) %>%
       dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
       dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) %>%
-      dplyr::arrange(RAW_File, pep_seq, prot_acc) %>% 
+      dplyr::arrange(RAW_File, pep_seq, prot_acc) # %>% 
       # dplyr::select(which(not_all_zero(.))) %>% # don't: empty channels are all NA too
-      dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
+      # dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
   } else {
-    df_split <- df %>% 
+    df <- df %>% 
       dplyr::arrange(RAW_File, pep_seq, prot_acc)
   }
   
   # make available `pep_seq_mod` 
   # for cleanupPSM(group_psm_by = pep_seq_mod)
-  df_split <- df_split %>%
+  df <- df %>%
     dplyr::mutate(pep_seq_mod = pep_seq) %>% 
     dplyr::mutate(pep_seq_mod = as.character(pep_seq_mod)) %>% 
     dplyr::select(which(names(.) == "pep_seq_mod"),
@@ -3481,11 +3482,14 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     add_sm_pepseqmod(use_lowercase_aa)
 
   # --- split by TMT and LCMS ---
-  tmtinj_raw_map <- check_raws(df_split)
+  res <- check_raws(df)
+  df <- res$df
+  tmtinj_raw_map <- res$lookup
+  rm(res)
   
   if (! "PSM_File" %in% names(tmtinj_raw_map)) {
     # `dat_file` only for Mascot
-    df_split <- df_split %>%
+    df_split <- df %>%
       dplyr::left_join(tmtinj_raw_map, id = "RAW_File") %>%
       dplyr::group_by(TMT_inj) %>%
       dplyr::mutate(psm_index = row_number()) %>%
@@ -3496,7 +3500,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       dplyr::mutate(PSM_File = gsub("\\.csv$", "", PSM_File)) %>% 
       tidyr::unite(RAW_File2, c("RAW_File", "PSM_File"), sep = "@") 
     
-    df_split <- df_split %>% 
+    df_split <- df %>% 
       tidyr::unite(RAW_File2, c("RAW_File", "dat_file"), sep = "@", remove = FALSE) %>% 
       dplyr::left_join(tmtinj_raw_map, by = "RAW_File2") %>% 
       dplyr::select(-RAW_File2) %>% 
@@ -3525,13 +3529,12 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::select(-RAW_File) %>%
     dplyr::left_join(tmtinj_raw_map, by = "TMT_inj")
   
-  df_split <- df_split %>% .[names(.) %>% as.numeric() %>% sort() %>% as.character()]
+  df_split <- df_split %>% .[names(.) %>% sort_tmt_lcms()]
   
   if (parallel) {
     n_cores <- pmin(parallel::detectCores(), length(filelist))
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-    # parallel::clusterExport(cl, "dat_dir")
-    
+
     suppressWarnings(
       silent_out <- parallel::clusterMap(
         cl, psm_msplit, df_split, names(df_split), 
@@ -3565,8 +3568,8 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
                         rm_krts = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
                         ...) {
   
+  dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
   n_TMT_sets <- n_TMT_sets(label_scheme_full)
   TMT_plex <- TMT_plex(label_scheme_full)
   
@@ -3589,10 +3592,8 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
                                                      '.txt', fixed = TRUE))) %>%
       dplyr::mutate(Filename = gsub("_Clean", "_PSM_N", Filename))
     
-    channelInfo <- channelInfo(label_scheme, set_idx)
-    
-    for (injn_idx in seq_along(sublist)) {
-      df <- read.csv(file.path(dat_dir, "PSM/cache", sublist[injn_idx]),
+    for (idx in seq_along(sublist)) {
+      df <- read.csv(file.path(dat_dir, "PSM/cache", sublist[idx]),
                      check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") 
                      
       acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
@@ -3605,7 +3606,13 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
 
       # median centering
       if (TMT_plex > 0) {
-        df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
+        df <- local({
+          injn_idx <- sublist[idx] %>% 
+            gsub("^TMTset\\d+_LCMSinj(\\d+)_Clean.txt$", "\\1", .) %>% 
+            as.integer()
+          
+          df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
+        })
       }
       
       # add SD columns
@@ -3661,7 +3668,7 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
         df %>% dplyr::select(grep("R[0-9]{3}[NC]*", names(.))), 
       )
       
-      write.table(df, file.path(dat_dir, "PSM", paste0(out_fn[injn_idx, 1], ".txt")),
+      write.table(df, file.path(dat_dir, "PSM", paste0(out_fn[idx, 1], ".txt")),
                   sep = "\t", col.names = TRUE, row.names = FALSE)
       
       if (plot_rptr_int & TMT_plex > 0) {
@@ -3671,7 +3678,7 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
         rptr_violin(
           df = df_int, 
           filepath = file.path(dat_dir, "PSM/rprt_int/mc", 
-                               paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_rprt.png")), 
+                               paste0(gsub("_PSM_N", "", out_fn[idx, 1]), "_rprt.png")), 
           width = 8, height = 8)
       }
       
@@ -3680,7 +3687,7 @@ annotPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
           df = df, 
           id = !!group_psm_by, 
           filepath = file.path(dat_dir, "PSM/log2FC_cv/raw", 
-                               paste0(gsub("_PSM_N", "", out_fn[injn_idx, 1]), "_sd.png")), 
+                               paste0(gsub("_PSM_N", "", out_fn[idx, 1]), "_sd.png")), 
           width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
       }
       

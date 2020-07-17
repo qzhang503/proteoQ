@@ -390,6 +390,8 @@ sigTest <- function(df, id, label_scheme_sub,
 										method, var_cutoff, pval_cutoff, logFC_cutoff, 
 										data_type, anal_type, ...) {
 
+  dat_dir <- get_gl_dat_dir()
+  
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), is.numeric, logical(1)))
   
 	id <- rlang::as_string(rlang::enexpr(id))
@@ -660,7 +662,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit({
-    load(file.path(dat_dir, "Calls/prnSig_formulas.rda"))
+    load(file.path(get_gl_dat_dir(), "Calls/prnSig_formulas.rda"))
     dots <- my_union(rlang::enexprs(...), prnSig_formulas)
     mget(names(formals()), current_env()) %>% c(dots) %>% save_call("prnSig")
   }, add = TRUE)

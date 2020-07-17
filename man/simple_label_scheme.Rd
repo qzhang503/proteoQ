@@ -10,8 +10,8 @@ simple_label_scheme(dat_dir, label_scheme_full)
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
 
-\item{label_scheme_full}{The data frame returned by \code{\link{load_expts}},
-including multiple LCMS series.}
+\item{label_scheme_full}{The label_scheme with the probable inclusion of
+different LCMS_inj under the same TMT_Set.}
 }
 \description{
 Removes duplicated sample entries under different LC/MS injections.

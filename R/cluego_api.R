@@ -51,6 +51,8 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "
   }
   
   df2 <- rlang::as_string(rlang::enexpr(df2))
+  
+  dat_dir <- get_gl_dat_dir()
   filepath <- file.path(dat_dir, "Protein", "Trend")
 
   if (length(species) > 1) {
