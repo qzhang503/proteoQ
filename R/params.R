@@ -80,9 +80,6 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	label_scheme_full <- label_scheme_full %>% 
 	  dplyr::mutate(Sample_ID = ifelse(grepl("^Empty\\.[0-9]+", Sample_ID), NA, Sample_ID))
 
-	## a case of label-free data
-	# if (dplyr::n_distinct(label_scheme_full$TMT_Channel) == 1) label_scheme_full$TMT_Channel <- NA
-
 	local({
   	check_tmt126 <- label_scheme_full %>% 
   	  dplyr::filter(TMT_Channel == "TMT-126" || TMT_Channel == "126") %>% 
@@ -125,19 +122,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	})
 	
 	TMT_plex <- TMT_plex(label_scheme_full)
+	stopifnot(TMT_plex %in% c(0, 6, 10, 11, 16))
 
-	# i.e. 131 in 10-plex and 131N in 16-plex and a total of 17-plex
-	run_scripts <- FALSE
-	if (run_scripts) {
-	  if (TMT_plex > 10) {
-	    label_scheme_full <- label_scheme_full %>% 
-	      dplyr::mutate(TMT_Channel = gsub("(12[7-9]{1})$", "\\1N", TMT_Channel)) %>% 
-	      dplyr::mutate(TMT_Channel = gsub("(13[0-1]{1})$", "\\1N", TMT_Channel))
-	    
-	    TMT_plex <- TMT_plex(label_scheme_full)
-	  }
-	}
-	
 	if (TMT_plex == 10) {
 	  label_scheme_full <- label_scheme_full %>% 
 	    dplyr::mutate(TMT_Channel = gsub("126N$", "126", TMT_Channel)) %>% 
@@ -173,30 +159,21 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	  stop("Values under `expt_smry.xlsx::TMT_Set` need to be integers.", call. = FALSE)
 	}
 	
-	if (!rlang::is_integerish(label_scheme_full$LCMS_Injection)) {
-	  stop("Values under `expt_smry.xlsx::LCMS_Injection` need to be integers.", call. = FALSE)
+	if (!is.null(TMT_levels)) {
+	  if (!rlang::is_integerish(label_scheme_full$LCMS_Injection)) {
+	    stop("Values under `expt_smry.xlsx::LCMS_Injection` need to be integers.", call. = FALSE)
+	  }
+	} else {
+	  if (all(is.na(label_scheme_full$LCMS_Injection))) {
+	    label_scheme_full$LCMS_Injection <- 1
+	  }
 	}
 
+	# Check Sample_ID
 	if (!is.null(TMT_levels)) {
   	# add IDs to unused TMT channels
   	label_scheme_full <- local({
     	
-  	  run_scripts <- FALSE
-  	  if (run_scripts) {
-    	  label_scheme_empty <- label_scheme_full %>%
-      		dplyr::select(TMT_Channel, TMT_Set, Sample_ID) %>%
-      		tidyr::unite(key, TMT_Channel, TMT_Set, remove = TRUE) %>%
-      		dplyr::filter(!duplicated(key)) %>%
-      		dplyr::mutate(Sample_ID = replace_na_smpls(Sample_ID, "Empty"))
-      
-      	label_scheme_full <- label_scheme_full %>%
-      		tidyr::unite(key, TMT_Channel, TMT_Set, remove = FALSE) %>%
-      		dplyr::select(-Sample_ID) %>%
-      		dplyr::left_join(label_scheme_empty, by = "key") %>%
-      		dplyr::select(-key) %>%
-      		dplyr::mutate(Sample_ID = factor(Sample_ID))  	    
-  	  }
-
   	  # the first pass - all possible Empty.1, Empty.2 ... Sample_IDs
   	  label_scheme_empty <- local({
   	    label_scheme_empty <- label_scheme_full %>% dplyr::filter(is.na(Sample_ID))
@@ -341,19 +318,87 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
   	  stop("Not all `TMT_Channel` in `expt_smry.xlsx` in \n", 
   	       purrr::reduce(TMT_levels, paste, sep = ", "), call. = FALSE)
   	}
+  	
+  	# Re-check TMT_Channel (after my_channels() for "126" to become "TMT-126" etc.)
+  	# i.e., 16-plex TMT may become 10-plex after Sample_ID removals
+  	# but TMT_Channel may include 134 etc. (make sure is compatible with mix-plexes)
+  	local({
+  	  ls_channels <- unique(label_scheme_full$TMT_Channel)
+  	  wrongs <- ls_channels %>% .[! . %in% TMT_levels]
+  	  
+  	  if (!purrr::is_empty(wrongs)) {
+  	    stop("Channels not belong to TMT-", TMT_plex, ":\n", 
+  	         purrr::reduce(wrongs, paste, sep = ", "),
+  	         call. = FALSE)
+  	  }	  
+  	})
+  	
+  	wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
+  	openxlsx::writeData(wb, sheet = "Setup", label_scheme_full)
+  	openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
 	} else {
-  	# check the uniqueness of Sample_ID for LFQ 
-  	# the same Sample_ID at different LCMS is OK
+	  label_scheme_full <- label_scheme_full %>% dplyr::filter(!is.na(Sample_ID)) 
 	  
-	  # replace NA Sample_ID with Empty.1 ...
+	  # check the uniqueness of Sample_ID for LFQ
+	  local({
+	    dups <- label_scheme_full %>% 
+	      tidyr::unite(key, LCMS_Injection, Sample_ID, remove = FALSE) %>% 
+	      dplyr::filter(duplicated(key))
+	    
+	    if (nrow(dups) > 0) {
+	      dups %>%
+	        dplyr::select(LCMS_Injection, Sample_ID) %>% 
+	        print()
+	      
+	      stop("Non-unique RAW_File in the above combination of LCMS_Injection and Sample_ID.", 
+	           call. = FALSE)
+	    }
+	  })
+	  
+	  label_scheme_full <- local({
+  	  label_scheme_full <- label_scheme_full%>% 
+  	    dplyr::mutate(Sample_ID. = Sample_ID) %>% 
+  	    tidyr::complete(LCMS_Injection, Sample_ID) %>% 
+  	    dplyr::mutate(Sample_ID = Sample_ID., Sample_ID = replace_na_smpls(Sample_ID, "Empty")) %>% 
+  	    dplyr::select(-Sample_ID.) %>% 
+  	    dplyr::arrange(LCMS_Injection) %>% 
+  	    dplyr::group_by(LCMS_Injection) %>% 
+  	    dplyr::mutate(TMT_Set = row_number()) %>% 
+  	    dplyr::ungroup()
+  	  
+  	  if (!all(is.na(label_scheme_full$RAW_File))) {
+  	    label_scheme_full <- label_scheme_full %>% 
+  	      dplyr::filter(!is.na(RAW_File))
+  	    
+  	    # check the unique of Raw_file for LFQ
+  	    dup_raws <- label_scheme_full %>% 
+  	      dplyr::filter(duplicated(RAW_File)) %>% 
+  	      dplyr::select(RAW_File) %>% 
+  	      unlist()
+  	    
+  	    if (!purrr::is_empty(dup_raws)) {
+  	      stop("Duplicaed entries under `RAW_File`:\n", 
+  	           purrr::reduce(dup_raws, paste, sep = ", "), 
+  	           call. = FALSE)
+  	    }
+  	  }
+  	  
+  	  return(label_scheme_full)
+	  })
+
+	  label_scheme_full <- dplyr::bind_cols(
+	    label_scheme_full %>% dplyr::select(Sample_ID), 
+	    label_scheme_full %>% dplyr::select(-Sample_ID))
+	  
+	  wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
+	  openxlsx::renameWorksheet(wb, "Setup", "Setup_old")
+	  openxlsx::addWorksheet(wb, sheetName = "Setup")
+	  openxlsx::removeWorksheet(wb, "Setup_old")
+	  openxlsx::writeData(wb, sheet = "Setup", label_scheme_full)
+	  openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
 	}
 	
 	save(label_scheme_full, file = file.path(dat_dir, "label_scheme_full.rda"))
-
-	wb <- openxlsx::loadWorkbook(file.path(dat_dir, filename))
-	openxlsx::writeData(wb, sheet = "Setup", label_scheme_full)
-	openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
-	
 	simple_label_scheme(dat_dir, label_scheme_full)
 }
 
@@ -402,7 +447,11 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
     "-----------------------------------------------------------------------\n"
   )
   
+  
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  load(file.path(dat_dir, "label_scheme_full.rda"))
+  TMT_plex <- TMT_plex2()
+  TMT_levels <- TMT_levels(TMT_plex)
 
 	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
@@ -444,8 +493,6 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	  }
 
 	  local({
-	    load(file.path(dat_dir, "label_scheme_full.rda"))
-	    
 	    expt_raws <- label_scheme_full %>% 
 	      dplyr::select(RAW_File) %>% 
 	      filter(!duplicated(RAW_File)) %>% 
@@ -460,44 +507,76 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	      dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
 	      unlist()
 	    
-	    run_scripts <- FALSE
-	    if (run_scripts) {
-  	    # deleted by users
-  	    if (any(is.na(frac_raws))) {
-  	      try(unlink(file.path(dat_dir, filename)))
-  	      try(unlink(file.path(dat_dir, "fraction_scheme.rda")))
-  	      stop("`RAW_File` in ", filename, " cannot be NA.", call. = FALSE)
-  	    }	      
-	    }
-
-	    # no prefractionation if any non-NA values in expt_smry.xlsx
+	    # no prefractionation
 	    if (!all(is.na(expt_raws))) {
 	      not_oks <- frac_raws %>% .[! . %in% expt_raws]
 	      
 	      if (!purrr::is_empty(not_oks)) {
-	        n_fracs <- fraction_scheme$Fraction %>% unique() 
+	        stop(
+	          "Remove superfluous file(s) in `", filename, "` not in `expt_smry.xlsx`:\n", 
+	          purrr::reduce(not_oks, paste, sep = ", "), 
+	          call. = FALSE
+	        )
 	        
-	        # no prefractionation
-	        if (n_fracs == 1) {
-	          try(unlink(file.path(dat_dir, filename)))
-	          try(unlink(file.path(dat_dir, "fraction_scheme.rda")))
+	        run_scripts <- FALSE
+	        if (run_scripts) {
+  	        # assume automated frac_smry.xlsx if no prefractionation
+	          n_fracs <- fraction_scheme$Fraction %>% unique() 
+  	        if (n_fracs == 1) {
+  	          try(unlink(file.path(dat_dir, filename)))
+  	          try(unlink(file.path(dat_dir, "fraction_scheme.rda")))
+  	        }
+  	        
+  	        stop("`RAW_File` entries in `frac_smry.xlsx` not found in `expt_smry.xlsx`: \n", 
+  	             purrr::reduce(not_oks, paste, sep = ", "), 
+  	             "\nFile `frac_smry.xlsx` deleted.`", 
+  	             "!!!  Please RERUN `load_expts(...). !!!",
+  	             call. = FALSE)	          
 	        }
-	        
-	        stop("`RAW_File` entries in `frac_smry.xlsx` not found in `expt_smry.xlsx`: \n", 
-	             purrr::reduce(not_oks, paste, sep = ", "), 
-	             "\nCheck `RAW_File` and run `load_expts(...) again.`", call. = FALSE)
+
+	      }
+	      
+	      not_oks_2 <- expt_raws %>% .[! . %in% frac_raws]
+	      
+	      if (!purrr::is_empty(not_oks_2)) {
+	        stop(
+	          "File(s) in `expt_smry` not in `", filename, "`:\n", 
+	          purrr::reduce(not_oks_2, paste, sep = ", "), 
+	          call. = FALSE
+	        )
 	      }
 	    }
 	  })
 
-	  fraction_scheme <- fraction_scheme %>% 
-	    tidyr::fill(TMT_Set, LCMS_Injection) %>% 
-	    dplyr::group_by(TMT_Set, LCMS_Injection) %>% 
-	    dplyr::mutate(Fraction = row_number()) %>% 
-	    dplyr::arrange(TMT_Set, LCMS_Injection, Fraction)
-	  
-	  if (!rlang::is_integerish(fraction_scheme$TMT_Set)) {
+	  if (!(is.null(TMT_levels) || rlang::is_integerish(fraction_scheme$TMT_Set))) {
 	    stop("Values under `frac_smry.xlsx::TMT_Set` need to be integers.", call. = FALSE)
+	  }
+	  
+	  if (!is.null(TMT_levels)) {
+	    stopifnot("TMT_Set" %in% names(fraction_scheme))
+	    
+	    fraction_scheme <- fraction_scheme %>% 
+	      tidyr::fill(TMT_Set, LCMS_Injection) %>% 
+	      dplyr::group_by(TMT_Set, LCMS_Injection) %>% 
+	      dplyr::mutate(Fraction = row_number()) %>% 
+	      dplyr::arrange(TMT_Set, LCMS_Injection, Fraction)
+	  } else {
+	    stopifnot("Sample_ID" %in% names(fraction_scheme))
+	    
+	    fraction_scheme <- fraction_scheme %>% 
+	      tidyr::fill(Sample_ID, LCMS_Injection) %>% 
+	      dplyr::group_by(Sample_ID, LCMS_Injection) %>% 
+	      dplyr::mutate(Fraction = row_number()) %>% 
+	      dplyr::arrange(Sample_ID, LCMS_Injection, Fraction) %>% 
+	      dplyr::ungroup()
+	    
+	    fraction_scheme <- fraction_scheme %>% 
+	      dplyr::select(-TMT_Set) %>% 
+	      dplyr::left_join(label_scheme_full %>% 
+	                         dplyr::select(Sample_ID, TMT_Set) %>% 
+	                         dplyr::filter(!duplicated(Sample_ID)), 
+	                       by = "Sample_ID") %>% 
+	      dplyr::select(names(fraction_scheme))
 	  }
 	  
 	  if (!rlang::is_integerish(fraction_scheme$LCMS_Injection)) {
@@ -507,7 +586,7 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	  if (!rlang::is_integerish(fraction_scheme$Fraction)) {
 	    stop("Values under `frac_smry.xlsx::Fraction` need to be integers.", call. = FALSE)
 	  }
-
+	  
 	  wb <- openxlsx::createWorkbook()
 	  openxlsx::addWorksheet(wb, sheetName = "Fractions")
 	  openxlsx::writeData(wb, sheet = "Fractions", fraction_scheme)
@@ -515,8 +594,7 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
  	} else {
  	  # warning: data in a auto-generated `frac_smry.xlsx` will be incorrect 
  	  #   if they were based on wrong information from `expt_smry.xlsx`
- 	  load(file = file.path(dat_dir, "label_scheme_full.rda"))
- 	  
+
  	  # in case forget to enter RAW_File names
  	  if (anyNA(label_scheme_full$RAW_File)) 
  	    stop("File name(s) of RAW MS data not found under the column `RAW_File` in `expt_smry.xlsx`.", 
@@ -524,18 +602,27 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 
 		# the same RAW file can go into different searches
  	  # e.g. the same RAW but different TMT_Set
-		fraction_scheme <- label_scheme_full %>%
-		  # tidyr::unite(tmt_lcms_raw, c("TMT_Set", "LCMS_Injection", "RAW_File"), remove = FALSE) %>% 
-		  tidyr::unite(tmt_lcms, c("TMT_Set", "LCMS_Injection"), remove = FALSE) %>% 
-		  dplyr::filter(!duplicated(tmt_lcms)) %>%
-		  dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
-		  dplyr::group_by(TMT_Set, LCMS_Injection) %>%
-		  dplyr::mutate(Fraction = row_number())
+ 	  if (!is.null(TMT_levels)) {
+ 	    fraction_scheme <- label_scheme_full %>%
+ 	      # tidyr::unite(tmt_lcms_raw, c("TMT_Set", "LCMS_Injection", "RAW_File"), remove = FALSE) %>% 
+ 	      tidyr::unite(tmt_lcms, c("TMT_Set", "LCMS_Injection"), remove = FALSE) %>% 
+ 	      dplyr::filter(!duplicated(tmt_lcms)) %>%
+ 	      dplyr::select(TMT_Set, LCMS_Injection, RAW_File) %>%
+ 	      dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+ 	      dplyr::mutate(Fraction = row_number())
+ 	  } else {
+ 	    fraction_scheme <- label_scheme_full %>%
+ 	      tidyr::unite(tmt_lcms, c("TMT_Set", "LCMS_Injection"), remove = FALSE) %>% 
+ 	      dplyr::filter(!duplicated(tmt_lcms)) %>%
+ 	      dplyr::select(Sample_ID, TMT_Set, LCMS_Injection, RAW_File) %>%
+ 	      dplyr::group_by(TMT_Set, LCMS_Injection) %>%
+ 	      dplyr::mutate(Fraction = row_number())
+ 	  }
 		
 		if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
 		  stop("\nDuplicated `RAW_File` names detected during the auto-generation of `", filename, "`.\n",
-		       "This may occur when searching the same RAW files with different parameter sets.\n", 
-		       "To distinguish, create manually `frac_smry.xlsx` with column `PSM_File`:\n", 
+		       "(1) This may occur when searching the same RAW files with different parameter sets;\n", 
+		       "    to distinguish, create manually `frac_smry.xlsx` with column `PSM_File`:\n", 
 		       tbl_mascot, call. = FALSE)
 		}	
 		
@@ -545,6 +632,9 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 		openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
  	}
 	
+	# LFQ: Sample_ID in .xlsx, but not .rda
+	# TMT: no Sample_ID in both
+	fraction_scheme <- fraction_scheme %>% dplyr::select(-one_of("Sample_ID"))
 	save(fraction_scheme, file = file.path(dat_dir, "fraction_scheme.rda"))
 }
 
@@ -886,6 +976,15 @@ TMT_plex <- function (label_scheme_full) {
   nlevels(as.factor(label_scheme_full$TMT_Channel))
 }
 
+#' Finds the multiplexity of TMT labels from previously made
+#' label_scheme_full.rda
+#'
+#' \code{TMT_plex} returns the multiplexity of TMT labels.
+TMT_plex2 <- function () {
+  load(file.path(get_gl_dat_dir(), "label_scheme_full.rda"))
+  TMT_plex(label_scheme_full)
+}
+
 
 #' Finds the factor levels of TMT labels
 #'
@@ -1031,7 +1130,7 @@ check_raws <- function(df) {
     }
   })
   
-  tmtinj_raw <- fraction_scheme %>%
+  tmtinj_raw <- fraction_scheme %>% 
     tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>%
     dplyr::select(-Fraction) %>%
     dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File)) %>% 

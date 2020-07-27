@@ -136,7 +136,10 @@ fold changes at position \code{x}; the default is at \eqn{-1.2} and
 \eqn{+1.2}. \cr \code{yco}, the cut-off line of \code{pVal} at position
 \code{y}; the default is \eqn{0.05}. \cr \code{width}, the width of plot;
 \cr \code{height}, the height of plot. \cr \code{nrow}, the number of rows
-in a plot.}
+in a plot. \cr \code{xmin}, the minimum \code{x}. \cr \code{xmax}, the
+maximum \code{x}. \cr \code{ymin}, the minimum \code{y}. \cr \code{ymax},
+the maximum \code{y}. \cr \code{x_label}, the label on \code{x}. \cr
+\code{y_label}, the label on \code{y}.}
 }
 \description{
 Plot volcanos

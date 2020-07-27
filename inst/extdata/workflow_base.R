@@ -185,6 +185,7 @@ prnVol(impute_na = TRUE)
 # part 4 --- basic informatics
 # ==============================================
 ## !!! decision on scaling normalization
+#  (resetting in case of a new R session)
 scale_log2r <- TRUE
 
 ### MDS
@@ -274,7 +275,7 @@ prnHM(
 anal_prnTrend(
   col_order = Order,
   n_clust = c(5:6), 
-  filter_by_npep = exprs(prot_n_pep >= 3),
+  filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # protein visualization, sample-order supervision

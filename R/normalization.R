@@ -1,3 +1,88 @@
+#' Find sample IDS for used in the current fitting.
+#' 
+#' @param nm_a A name list from data table.
+#' @param nm_b A name list from metadata.
+find_fit_nms <- function(nm_a, nm_b) {
+  ind <- purrr::map(nm_b, ~ grepl(paste0(" (", .x, ")"), nm_a, fixed = TRUE)) %>% 
+    purrr::reduce(`|`) # .init = FALSE
+  nm_a <- nm_a[ind]
+}
+
+#' SD for all non-trival samples.
+#' 
+#' @param df A data frame.
+#' @param label_scheme Experiment summary
+#' @inheritParams standPep
+calc_sd_fcts <- function (df, range_log2r, range_int, label_scheme) {
+  label_scheme_sd <- label_scheme %>%
+    dplyr::filter(!Reference, !grepl("^Empty\\.", Sample_ID))	%>%
+    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = (.$Sample_ID)))
+  
+  SD <- df %>%
+    dplyr::select(grep("^N_log2_R|^N_I", names(.))) %>%
+    dblTrim(., range_log2r, range_int) %>%
+    `names<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.)))
+  
+  cf_SD <- SD/mean(SD %>% .[names(.) %in% label_scheme_sd$Sample_ID], na.rm = TRUE)
+  cf_SD <- cbind.data.frame(fct = cf_SD, SD) %>%
+    tibble::rownames_to_column("Sample_ID") %>%
+    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+    dplyr::arrange(Sample_ID)
+}
+
+
+#' Update df after normalization.
+#' 
+#' @param df A data frame of peptide or protein table.
+#' @param label_scheme_fit Experiment summary for samples being selected for
+#'   fitting.
+#' @param cf_x_fit A data frame containing the \code{x} positions for each
+#'   samples indicated in label_scheme_fit.
+#' @param sd_coefs_fit The standard deviations for each samples indicated in
+#'   label_scheme_fit.
+update_df <- function (df, label_scheme_fit, cf_x_fit, sd_coefs_fit) {
+  nm_log2r_n <- names(df) %>% 
+    .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+    find_fit_nms(label_scheme_fit$Sample_ID)
+  
+  nm_int_n <- names(df) %>% 
+    .[grepl("^N_I[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+    find_fit_nms(label_scheme_fit$Sample_ID)
+  
+  nm_log2r_z <- names(df) %>% 
+    .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+    find_fit_nms(label_scheme_fit$Sample_ID)  
+  
+  df_z <- mapply(normSD, df[, nm_log2r_n, drop = FALSE], 
+                 center = cf_x_fit$x, SD = sd_coefs_fit$fct, SIMPLIFY = FALSE) %>%
+    data.frame(check.names = FALSE) %>%
+    `colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
+    `rownames<-`(rownames(df))    
+  
+  nan_cols <- purrr::map_lgl(df_z, is_all_nan, na.rm = TRUE)
+  df_z[, nan_cols] <- 0
+  rm(nan_cols)
+  
+  if (purrr::is_empty(nm_log2r_z)) {
+    df <- cbind(df, df_z)
+    
+    nm_log2r_z <- names(df) %>% 
+      .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+      find_fit_nms(label_scheme_fit$Sample_ID)
+  } else {
+    df[, nm_log2r_z] <- df_z
+  }
+  
+  # aligned log2FC and intensity after the calculation of "df_z"
+  df[, nm_log2r_n] <- sweep(df[, nm_log2r_n, drop = FALSE], 2, cf_x_fit$x, "-")
+  df[, nm_int_n] <- sweep(df[, nm_int_n, drop = FALSE], 2, 2^cf_x_fit$x, "/")    
+  
+  rlang::env_bind(caller_env(), nm_log2r_z = nm_log2r_z)
+  
+  return(df)
+}
+
+
 #'Data normalization
 #'
 #'\code{normMulGau} normalizes \code{log2FC} under the assumption of multi
@@ -70,34 +155,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
       dplyr::arrange(Sample_ID)
   }
   
- 
-  # SD for all non-trival samples
-  calc_sd_fcts <- function (df, range_log2r, range_int, label_scheme) {
-    label_scheme_sd <- label_scheme %>%
-      dplyr::filter(!Reference, !grepl("^Empty\\.", Sample_ID))	%>%
-      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = (.$Sample_ID)))
-    
-    SD <- df %>%
-      dplyr::select(grep("^N_log2_R|^N_I", names(.))) %>%
-      dblTrim(., range_log2r, range_int) %>%
-      `names<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.)))
 
-    cf_SD <- SD/mean(SD %>% .[names(.) %in% label_scheme_sd$Sample_ID], na.rm = TRUE)
-    cf_SD <- cbind.data.frame(fct = cf_SD, SD) %>%
-      tibble::rownames_to_column("Sample_ID") %>%
-      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
-      dplyr::arrange(Sample_ID)
-  }
-  
-  
-  # sample IDS for used in the current fitting
-  find_fit_nms <- function(nm_a, nm_b) {
-    ind <- purrr::map(nm_b, ~ grepl(.x, nm_a, fixed = TRUE)) %>% 
-      purrr::reduce(`|`) # .init = FALSE
-    nm_a <- nm_a[ind]
-  }
-  
-  
   # compare to prior n_comp value
   ok_file_ncomp <- function(filepath, filename, n_comp) {
     if (file.exists(file.path(filepath, filename))) {
@@ -111,50 +169,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   }
   
 
-  # update df
-  update_df <- function (df, label_scheme_fit, cf_x_fit, sd_coefs_fit) {
-    nm_log2r_n <- names(df) %>% 
-      .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-      find_fit_nms(label_scheme_fit$Sample_ID)
-    
-    nm_int_n <- names(df) %>% 
-      .[grepl("^N_I[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-      find_fit_nms(label_scheme_fit$Sample_ID)
-    
-    nm_log2r_z <- names(df) %>% 
-      .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-      find_fit_nms(label_scheme_fit$Sample_ID)  
-    
-    df_z <- mapply(normSD, df[, nm_log2r_n, drop = FALSE], 
-                   center = cf_x_fit$x, SD = sd_coefs_fit$fct, SIMPLIFY = FALSE) %>%
-      data.frame(check.names = FALSE) %>%
-      `colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
-      `rownames<-`(rownames(df))    
-    
-    nan_cols <- purrr::map_lgl(df_z, is_all_nan, na.rm = TRUE)
-    df_z[, nan_cols] <- 0
-    rm(nan_cols)
-    
-    if (purrr::is_empty(nm_log2r_z)) {
-      df <- cbind(df, df_z)
-      
-      nm_log2r_z <- names(df) %>% 
-        .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-        find_fit_nms(label_scheme_fit$Sample_ID)
-    } else {
-      df[, nm_log2r_z] <- df_z
-    }
-    
-    # aligned log2FC and intensity after the calculation of "df_z"
-    df[, nm_log2r_n] <- sweep(df[, nm_log2r_n, drop = FALSE], 2, cf_x_fit$x, "-")
-    df[, nm_int_n] <- sweep(df[, nm_int_n, drop = FALSE], 2, 2^cf_x_fit$x, "/")    
-    
-    rlang::env_bind(caller_env(), nm_log2r_z = nm_log2r_z)
-    
-    return(df)
-  }
-  
-  
+
   # add mean-deviation info for `expt_smry::Select`ed samples
   add_mean_dev <- function (df, label_scheme_fit) {
     if (grepl("Peptide\\\\", filepath) || grepl("Peptide/", filepath)) {
@@ -267,7 +282,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	nm_log2r_n <- names(df) %>% 
 	  .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
 	  find_fit_nms(label_scheme_fit$Sample_ID)
-
+	
 	nm_int_n <- names(df) %>% 
 	  .[grepl("^N_I[0-9]{3}[NC]*\\s+\\(", .)] %>% 
 	  find_fit_nms(label_scheme_fit$Sample_ID)

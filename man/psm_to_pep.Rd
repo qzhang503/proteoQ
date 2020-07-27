@@ -4,7 +4,14 @@
 \alias{psm_to_pep}
 \title{Helper of PSM2Pep}
 \usage{
-psm_to_pep(file, dat_dir, group_psm_by, group_pep_by, method_psm_pep)
+psm_to_pep(
+  file,
+  dat_dir,
+  label_scheme_full,
+  group_psm_by,
+  group_pep_by,
+  method_psm_pep
+)
 }
 \arguments{
 \item{file}{The name of a PSM file.}
