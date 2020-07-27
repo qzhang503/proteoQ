@@ -1,7 +1,7 @@
 proteoQ
 ================
-true
-2020-07-12
+truetrue
+2020-07-27
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -12,6 +12,7 @@ true
       - [1.4 Peptides to proteins](#peptides-to-proteins)
       - [1.5 Workflow scripts](#workflow-scripts)
       - [1.6 Quick start](#quick-start)
+      - [1.7 LFQ](#lfq)
   - [2 Basic informatics](#basic-informatics)
       - [2.1 MDS](#mds)
       - [2.2 PCA](#pca)
@@ -34,23 +35,25 @@ true
       - [4.1 Mascot](#mascot)
       - [4.2 MaxQuant](#maxquant)
   - [5 Appendix](#appendix)
-      - [5.1 Vararg table](#vararg-table)
+      - [5.1 Mascot PSM tables](#mascot-psm-tables)
+      - [5.2 Vararg table](#vararg-table)
   - [References](#references)
 
 ## Introduction to proteoQ
 
 Chemical labeling using tandem mass tag
-([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly
-applied in mass spectrometry (MS)-based quantification of proteins and
-peptides. The `proteoQ` tool is designed for automated and reproducible
-analysis of proteomics data. It interacts with an `Excel` spread sheet
-for dynamic sample selections, aesthetics controls and statistical
-modelings. It further integrates the operations against data rows and
-columns into functions at the users’ interface. The arrangements allow
-users to put *ad hoc* manipulation of data behind the scene and instead
-apply metadata to openly address biological questions using various data
-preprocessing and informatic tools. In addition, the entire workflow is
-documented and can be conveniently reproduced upon revisiting.
+([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free
+quantitaion (LFQ) have been commonly applied in mass spectrometry
+(MS)-based quantification of proteins and peptides. The `proteoQ` tool
+is designed for automated and reproducible analysis of proteomics data.
+It interacts with an `Excel` spread sheet for dynamic sample selections,
+aesthetics controls and statistical modelings. It further integrates the
+operations against data rows and columns into functions at the users’
+interface. The arrangements allow users to put *ad hoc* manipulation of
+data behind the scene and instead apply metadata to openly address
+biological questions using various data preprocessing and informatic
+tools. In addition, the entire workflow is documented and can be
+conveniently reproduced upon revisiting.
 
 The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)
 of `proteoQ` consists of data processing and informatics analysis. It
@@ -59,11 +62,12 @@ first processes the peptide spectrum matches (PSM) tables from
 [MaxQuant](https://www.maxquant.org/) and [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill)
 searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo’s
-Orbitrap mass analyzers. Peptide and protein results are then produced
-with users’ selection of parameters in data filtration, alignment and
-normalization. The package further offers a suite of tools and
-functionalities in statistics, informatics and data visualization by
-creating ‘wrappers’ around published R routines.\[1\]
+Orbitrap mass analyzers. It is also capable of processing the LFQ data
+from [MaxQuant](https://www.maxquant.org/). Peptide and protein results
+are then produced with users’ selection of parameters in data
+filtration, alignment and normalization. The package further offers a
+suite of tools and functionalities in statistics, informatics and data
+visualization by creating ‘wrappers’ around published R routines.\[1\]
 
 (Click <strong>[Recent
 Posts](https://proteoq.netlify.com/#posts)</strong> for additional
@@ -71,8 +75,7 @@ examples.)
 
 (Click
 <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong>
-to render a html version of the README. Mathematical symbols may display
-more properly under html.)
+to render a html version of the README.)
 
 ## Installation
 
@@ -157,58 +160,13 @@ copy_global_sm()
 ```
 
 To illustrate, I copy over Mascot PSMs to a working directory,
-`dat_dir`:
+`dat_dir`:\[5\]
 
 ``` r
 dat_dir <- "~/proteoQ/examples"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 copy_global_mascot(dat_dir)
 ```
-
-When exporting Mascot PSMs, I typically set the option of `Include
-sub-set protein hits` to `0` with my opinionated choice in satisfying
-the principle of parsimony. If the option is set to `1`, the sub-set
-proteins will be remove during PSM processing. Analogous handling of
-redundancy will take place with `Include same-set protein hits` being
-checked.
-
-<img src="images/mascot/mascot_export.png" width="45%" style="display: block; margin: auto;" />
-
-Under `Search Information`, the options of `Header` and `Search
-parameters` should be checked to include information such as database(s)
-and assumptions in the modifications of amino acid residues.
-
-<img src="images/mascot/search_info.png" width="45%" style="display: block; margin: auto;" />
-
-Under `Peptide Match Information`, the inclusion of both `Start` and
-`End` is recommended and the `Peptide quantitation` is required.
-
-<img src="images/mascot/psm_info.png" width="45%" style="display: block; margin: auto;" />
-
-In the events of phosphopeptide analyses, the confidence in the variable
-modification sites can be incorporated into proteoQ reports by checking
-the `Raw peptide match data` under `Query level information`.
-
-<img src="images/mascot/query_info.png" width="45%" style="display: block; margin: auto;" />
-
-The same peptide sequence under different PSM files can be assigned to
-different protein IDs when
-[inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins
-from peptides using algorithms such as greedy set cover. To escape from
-the ambiguity in protein inference, I typically enable the option of
-`Merge MS/MS files into single search` in [Mascot
-Daemon](http://www.matrixscience.com/daemon.html).\[5\] If the option is
-disabled, peptide sequences that have been assigned to multiple protein
-IDs will be simply ascribed to the protein with the greatest number of
-identifying peptides, when possible.
-
-<img src="images/mascot/mascot_daemon.png" width="45%" style="display: block; margin: auto;" />
-
-The merged search may become increasingly cumbersome with growing data
-sets. In this example, I combined the MS peak lists from the Hp-RP
-fractions within the same 10-plex TMT experiment, but not the lists
-across experiments. This results in a total of six pieces of PSM results
-in `Mascot` exports.
 
 #### 1.1.3 Metadata
 
@@ -334,7 +292,10 @@ justification, we might consider excluding the outlier samples from
 further analysis. The sample removal and PSM re-processing can be
 achieved by simply deleting the corresponding entries under the column
 `Sample_ID` in `expt_smry.xlsx`, followed by the re-execution of
-`normPSM()`.
+`normPSM()` (See additional notes on [data
+exclusion](https://proteoq.netlify.app/post/sample-exlusion-from-metadata/)
+and [metadata for
+LFQ](https://proteoq.netlify.app/post/metadata-files-for-lfq/)).
 
 #### 1.2.3 Outlier data entries
 
@@ -452,15 +413,16 @@ for flexible filtration and ordering of data rows. To take advantage of
 the feature, we need to be aware of the column keys in input files. As
 indicated by their names, `filter_` and `filter2_` perform row
 filtration against column keys from a primary data file, `df`, and
-secondary data file(s), `df2`, respectively. The same correspondence is
-applicable for `arrange_` and `arrange2_` varargs.
+secondary data file(s), `df2`, respectively (`df` and `df2` defined
+[here](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)). The
+same correspondence is applicable for `arrange_` and `arrange2_`
+varargs.
 
 Users will typically employ either primary or secondary vararg
 statements, but not both. In the more extreme case of `gspaMap(...)`, it
 links `prnGSPA(...)` findings in `df2` to the significance p-values and
 abundance fold changes in `df` for volcano plot visualization by gene
-sets. The table in `section 5.1 Vararg table` summarizes the `df` and
-the `df2` for varargs in `proteoQ`.
+sets.
 
 #### 1.2.7 purgePSM
 
@@ -1174,6 +1136,11 @@ prnMDS(
   height = 4,
 )
 ```
+
+### 1.7 LFQ
+
+See notes
+<strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>.
 
 ## 2 Basic informatics
 
@@ -3508,47 +3475,19 @@ The corresponidng column keys are described below:
 
 ## 5 Appendix
 
-### 5.1 Vararg table
+### 5.1 Mascot PSM tables
 
-| Utility          | Vararg\_            | df                                                                  | Vararg2\_ | df2                                             |
-| :--------------- | :------------------ | :------------------------------------------------------------------ | :-------- | :---------------------------------------------- |
-| normPSM          | filter\_            | Mascot, F\[…\].csv; MaxQuant, msms\[…\].txt; SM, PSMexport\[…\].ssv | NA        | NA                                              |
-| PSM2Pep          | NA                  | NA                                                                  | NA        | NA                                              |
-| mergePep         | filter\_            | TMTset1\_LCMSinj1\_Peptide\_N.txt                                   | NA        | NA                                              |
-| standPep         | slice\_             | Peptide.txt                                                         | NA        | NA                                              |
-| Pep2Prn          | filter\_            | Peptide.txt                                                         | NA        | NA                                              |
-| standPrn         | slice\_             | Protein.txt                                                         | NA        | NA                                              |
-| pepHist          | filter\_            | Peptide.txt                                                         | NA        | NA                                              |
-| prnHist          | filter\_            | Protein.txt                                                         | NA        | NA                                              |
-| pepSig           | filter\_            | Peptide\[\_impNA\].txt                                              | NA        | NA                                              |
-| prnSig           | filter\_            | Protein\[\_impNA\].txt                                              | NA        | NA                                              |
-| pepMDS           | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnMDS           | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| pepPCA           | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnPCA           | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| pepEucDist       | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnEucDist       | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| pepCorr\_logFC   | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnCorr\_logFC   | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| pepHM            | filter\_, arrange\_ | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnHM            | filter\_, arrange\_ | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| anal\_prnTrend   | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| plot\_prnTrend   | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_Trend\_{NZ}\[\_impNA\]\[…\].txt   |
-| anal\_pepNMF     | filter\_            | Peptide\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| anal\_prnNMF     | filter\_            | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| plot\_pepNMFCon  | NA                  | NA                                                                  | filter2\_ | \[…\]Peptide\_NMF\[…\]\_consensus.txt           |
-| plot\_prnNMFCon  | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_NMF\[…\]\_consensus.txt           |
-| plot\_pepNMFCoef | NA                  | NA                                                                  | filter2\_ | \[…\]Peptide\_NMF\[…\]\_coef.txt                |
-| plot\_prnNMFCoef | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_NMF\[…\]\_coef.txt                |
-| plot\_metaNMF    | filter\_, arrange\_ | Protein\[\_impNA\]\[\_pVal\].txt                                    | NA        | NA                                              |
-| prnGSPA          | filter\_            | Protein\[\_impNA\]\_pVals.txt                                       | NA        | NA                                              |
-| prnGSPAHM        | NA                  | NA                                                                  | filter2\_ | \[…\]Protein\_GSPA\_{NZ}\[\_impNA\]\_essmap.txt |
-| gspaMap          | filter\_            | Protein\[\_impNA\]\_pVal.txt                                        | filter2\_ | \[…\]Protein\_GSPA\_{NZ}\[\_impNA\].txt         |
-| anal\_prnString  | filter\_            | Protein\[\_impNA\]\[\_pVals\].txt                                   | NA        | NA                                              |
+See notes
+<strong>[here](https://proteoq.netlify.app/post/exporting-mascot-psms)</strong>.
+
+### 5.2 Vararg table
+
+See notes
+<strong>[here](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)</strong>.
 
 ## References
 
-<div id="refs" class="references">
+<div id="refs" class="references hanging-indent">
 
 <div id="ref-mertins2018np">
 
@@ -3580,15 +3519,7 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
 4.  See <https://www.uniprot.org/proteomes/> for lists of UniProt
     proteomes
 
-5.  There are cases that the same peptide sequence being assigned to
-    different proteins remain unambiguous. For example, peptide
-    `MENGQSTAAK` can be found from either the middle region of protein
-    `NP_510965` or the N-terminal of protein `NP_001129505`. In case of
-    the additional information of protein, not peptide, N-terminal
-    acetylation, the sequence can only come from `NP_001129505` between
-    the two candidate proteins. In addition to handling such exceptions,
-    the nomenclature in `proteoQ` will annotate the former as
-    `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.
+5.  See Appendix for notes on the export of Mascot PSMs.
 
 6.  To extract the names of RAW MS files under a `raw_dir` folder:
     `extract_raws(raw_dir)`. Very occasionally, there may be RAW files

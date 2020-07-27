@@ -6,14 +6,8 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
-  html_document:
-    fig_caption: yes
-    highlight: haddock
-    keep_md: yes
-    theme: united
+  github_document:
     toc: yes
-    toc_depth: 4
-    toc_float: yes
   pdf_document:
     toc: yes
     number_sections: true
@@ -23,8 +17,14 @@ output:
     toc: yes
     toc_depth: 4
     variant: gfm
-  github_document:
+  html_document:
+    fig_caption: yes
+    highlight: haddock
+    keep_md: yes
+    theme: united
     toc: yes
+    toc_depth: 4
+    toc_float: yes
   html_vignette: 
   vignette: >
     %\VignetteIndexEntry{proteoQ}
@@ -81,13 +81,13 @@ knitr::opts_chunk$set(
 
 
 ## Introduction to proteoQ
-Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) has been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the operations against data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
+Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the operations against data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
 
-The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of `proteoQ` consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags. https://github.com/qzhang503/proteoQ.]  
+The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of `proteoQ` consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo's Orbitrap mass analyzers. It is also capable of processing the LFQ data from [MaxQuant](https://www.maxquant.org/). Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags. https://github.com/qzhang503/proteoQ.]  
 
 (Click <strong>[Recent Posts](https://proteoq.netlify.com/#posts)</strong> for additional examples.)  
 
-(Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README. Mathematical symbols may display more properly under html.)  
+(Click <strong>[here](https://htmlpreview.github.io/?https://github.com/qzhang503/proteoQ/blob/master/README.html)</strong> to render a html version of the README.)  
 
 ## Installation
 To install this package, start R (version "4.0") and enter:^[For a specific version, for example 1.2.2.2: `devtools::install_github("qzhang503/proteoQ@1.2.2.2")`]  
@@ -209,7 +209,7 @@ At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence 
 Every time the `normPSM` module is executed, it will process the PSM data from the ground up. In other words, it has no memory on prior happenings. For instance, after inspecting graphically the intensity distributions of reporter ions at `plot_rptr_int = TRUE`, we may consider a more inclusive cut-off at `rptr_intco = 100`. The downward in `rptr_intco` is *not* going to cause information loss in the range of 100 to 1,000. This is trivia but worth mentioning here. As we will find out in following sections, utilities in peptide and protein normalization, `standPep` and `standPrn`, do pass information onto successive iterations.  
 
 #### 1.2.2 Outlier samples
-For experiments that are proximate in the quantities of input materials, there might still be unprecedented events that could have caused dipping in the ranges of reporter-ion intensity for certain samples. With proper justification, we might consider excluding the outlier samples from further analysis. The sample removal and PSM re-processing can be achieved by simply deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-execution of `normPSM()`.  
+For experiments that are proximate in the quantities of input materials, there might still be unprecedented events that could have caused dipping in the ranges of reporter-ion intensity for certain samples. With proper justification, we might consider excluding the outlier samples from further analysis. The sample removal and PSM re-processing can be achieved by simply deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-execution of `normPSM()` (See additional notes on [data exclusion](https://proteoq.netlify.app/post/sample-exlusion-from-metadata/) and [metadata for LFQ](https://proteoq.netlify.app/post/metadata-files-for-lfq/)).  
 
 #### 1.2.3 Outlier data entries
 There is a subtle problem when we choose to remove PSM outliers at `rm_outliers = TRUE`. Note that PSM outliers will be assessed at a per-peptide-and-per-sample basis, which can be a slow process for large data sets. To circumvent repeated efforts in finding PSM outliers, we may initially set `rm_outliers = FALSE` and `plot_rptr_int = TRUE` when executing `normPSM()`. This will allow us to first decide on an ultimate threshold of reporter-ion intensity, before proceeding to the more time-consuming procedure in PSM outlier removals.  
@@ -255,9 +255,9 @@ Let's first consider a different column `pep_len`. The values underneath are uni
 For this reason, I named the varargs `filter_psms_at` and `filter_psms_more` in the above `normPSM` examples. This allows me to readily recall that I was filtering data based on criteria that are specific to PSMs.  
 
 #### 1.2.6 Varargs and data files
-Vararg statements of `filter_` and `arrange_` are available in proteoQ for flexible filtration and ordering of data rows. To take advantage of the feature, we need to be aware of the column keys in input files. As indicated by their names, `filter_` and `filter2_` perform row filtration against column keys from a primary data file, `df`, and secondary data file(s), `df2`, respectively. The same correspondence is applicable for `arrange_` and `arrange2_` varargs.  
+Vararg statements of `filter_` and `arrange_` are available in proteoQ for flexible filtration and ordering of data rows. To take advantage of the feature, we need to be aware of the column keys in input files. As indicated by their names, `filter_` and `filter2_` perform row filtration against column keys from a primary data file, `df`, and secondary data file(s), `df2`, respectively (`df` and `df2` defined [here](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)). The same correspondence is applicable for `arrange_` and `arrange2_` varargs.  
 
-Users will typically employ either primary or secondary vararg statements, but not both. In the more extreme case of `gspaMap(...)`, it links `prnGSPA(...)` findings in `df2` to the significance p-values and abundance fold changes in `df` for volcano plot visualization by gene sets. The table in `section 5.1 Vararg table` summarizes the `df` and the `df2` for varargs in `proteoQ`.  
+Users will typically employ either primary or secondary vararg statements, but not both. In the more extreme case of `gspaMap(...)`, it links `prnGSPA(...)` findings in `df2` to the significance p-values and abundance fold changes in `df` for volcano plot visualization by gene sets.  
 
 #### 1.2.7 purgePSM
 To finish our discussion of PSM processing, let us consider having one more bash in data cleanup. The corresponding utility is `purgePSM`. It performs data purging by the CV of peptides, measured from contributing PSMs within the same sample. Namely, quantitations that have yielded peptide CV greater than a user-supplied cut-off will be replaced with NA.  
@@ -714,6 +714,9 @@ prnMDS(
 )
 ```
 
+
+### 1.7 LFQ
+See notes <strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>.
 
 ## 2 Basic informatics
 In this section I illustrate the following applications of `proteoQ`:  
@@ -2123,45 +2126,9 @@ knitr::kable(keys)
 
 ## 5 Appendix
 ### 5.1 Mascot PSM tables
-When exporting Mascot PSMs, I typically set the option of `Include sub-set protein hits` to `0` with my opinionated choice in satisfying the principle of parsimony. If the option is set to `1`, the sub-set proteins will be remove during PSM processing. Analogous handling of redundancy will take place with `Include same-set protein hits` being checked.  
-
-```{r Mascot_export, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-knitr::include_graphics("images/mascot/mascot_export.png")
-```
-
-Under `Search Information`, the options of `Header` and `Search parameters` should be checked to include information such as database(s) and assumptions in the modifications of amino acid residues. 
-
-```{r Mascot_search_info, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-knitr::include_graphics("images/mascot/search_info.png")
-```
-
-Under `Peptide Match Information`, the inclusion of both `Start` and `End` is recommended and the `Peptide quantitation` is required.
-
-```{r Mascot_psm_info, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-knitr::include_graphics("images/mascot/psm_info.png")
-```
-
-In the events of phosphopeptide analyses, the confidence in the variable modification sites can be incorporated into proteoQ reports by checking the `Raw peptide match data` under `Query level information`.  
-
-```{r Mascot_export_ext, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-knitr::include_graphics("images/mascot/query_info.png")
-```
-
-The same peptide sequence under different PSM files can be assigned to different protein IDs when [inferring](https://www.ncbi.nlm.nih.gov/m/pubmed/21447708/) proteins from peptides using algorithms such as greedy set cover. To escape from the ambiguity in protein inference, I typically enable the option of `Merge MS/MS files into single search` in [Mascot Daemon](http://www.matrixscience.com/daemon.html).^[There are cases that the same peptide sequence being assigned to different proteins remain unambiguous. For example, peptide `MENGQSTAAK` can be found from either the middle region of protein `NP_510965` or the N-terminal of protein `NP_001129505`. In case of the additional information of protein, not peptide, N-terminal acetylation, the sequence can only come from `NP_001129505` between the two candidate proteins. In addition to handling such exceptions, the nomenclature in `proteoQ` will annotate the former as `K.MENGQSTAAK.L` and the later as `-._MENGQSTAAK.L`.] If the option is disabled, peptide sequences that have been assigned to multiple protein IDs will be simply ascribed to the protein with the greatest number of identifying peptides, when possible.  
-
-```{r Mascot_daemon, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='45%'}
-img_daemon <- "images/mascot/mascot_daemon.png"
-knitr::include_graphics(c(img_daemon))
-```
-
-The merged search may become increasingly cumbersome with growing data sets. In this example, I combined the MS peak lists from the Hp-RP fractions within the same 10-plex TMT experiment, but not the lists across experiments. This results in a total of six pieces of PSM results in `Mascot` exports.  
+See notes <strong>[here](https://proteoq.netlify.app/post/exporting-mascot-psms)</strong>.  
 
 ### 5.2 Vararg table
-```{r varargs_dfs, echo=FALSE, results="asis"}
-file <- system.file("extdata", "varargs.txt", package = "proteoQ")
-keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
-knitr::kable(keys) 
-```
-
+See notes <strong>[here](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)</strong>.  
 
 ## References

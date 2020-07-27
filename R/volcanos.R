@@ -276,8 +276,18 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 	xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
 	yco <- ifelse(is.null(dots$yco), .05, dots$yco)
 
-	x_label <- expression("Ratio ("*log[2]*")")
+	if (is.null(dots$x_label)) {
+	  x_label <- expression("Ratio ("*log[2]*")")
+	} else {
+	  x_label <- dots$x_label
+	}
 
+	if (is.null(dots$y_label)) {
+	  y_label <- ifelse(adjP, expression("pVal ("*-log[10]*")"), expression("adjP ("*-log[10]*")"))
+	} else {
+	  y_label <- dots$y_label
+	}
+	
 	stopifnot(length(contrast_groups) > 0)
 
 	dfw <- do.call(rbind, purrr::map(contrast_groups, ~ {
@@ -321,17 +331,43 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
 	myPalette <- c("#377EB8", "#E41A1C")
-	xmax <- ceiling(pmax(abs(min(dfw$log2Ratio, na.rm = TRUE)), max(dfw$log2Ratio, na.rm = TRUE)))
-	ymax <- ceiling(max(-log10(dfw$pVal), na.rm = TRUE)) * 1.1
 	dfw_greater <- dfw_sub[dfw_sub$valence == "pos", ]
 	dfw_less <- dfw_sub[dfw_sub$valence == "neg", ]
 
-	if(is.null(dots$nrow)) {
+	if (is.null(dots$nrow)) {
 		nrow <- ifelse(length(unique(dfw$Contrast)) > 3, 2, 1)
 	} else {
 		nrow <- dots$nrow
 	}
+	
+	if (is.null(dots$xmax)) {
+	  xmax <- ceiling(pmax(abs(min(dfw$log2Ratio, na.rm = TRUE)), max(dfw$log2Ratio, na.rm = TRUE)))
+	} else {
+	  xmax <- eval(dots$xmax)
+	  stopifnot(xmax > 0)
+	}
+	
+	if (is.null(dots$xmin)) {
+	  xmin <- -xmax
+	} else {
+	  xmin <- eval(dots$xmin)
+	  stopifnot(xmin < 0)
+	}
 
+	if (is.null(dots$ymax)) {
+	  ymax <- ceiling(max(-log10(dfw$pVal), na.rm = TRUE)) * 1.1
+	} else {
+	  ymax <- eval(dots$ymax)
+	  stopifnot(ymax > 0)
+	}	
+
+	if (is.null(dots$ymin)) {
+	  ymin <- 0
+	} else {
+	  ymin <- eval(dots$ymin)
+	  stopifnot(ymin < ymax)
+	}	
+	
 	p <-ggplot() +
 		geom_point(data = dfw, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
 		           size = 3, colour = "gray", shape = 20, alpha = .5) +
@@ -342,9 +378,9 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 		geom_hline(yintercept = -log10(yco), linetype = "longdash", size = .5) +
 		geom_vline(xintercept = -log2(xco), linetype = "longdash", size = .5) +
 		geom_vline(xintercept = log2(xco), linetype = "longdash", size = .5) +
-		scale_x_continuous(limits = c(-xmax, xmax)) +
-		scale_y_continuous(limits = c(0, ymax)) +
-		labs(title = "", x = x_label, y = expression("P-value ("*-log[10]*")")) +
+		scale_x_continuous(limits = c(xmin, xmax)) +
+		scale_y_continuous(limits = c(ymin, ymax)) +
+		labs(title = "", x = x_label, y = y_label) +
 		theme
 
 	if (show_labels) {
@@ -362,13 +398,13 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 		width <- ifelse(nrow > 1, 6*length(unique(dfw$Contrast))/nrow + 1, 
 		                6*length(unique(dfw$Contrast)) / nrow)
 	} else {
-		width <- dots$width
+		width <- eval(dots$width)
 	}
 
 	if(is.null(dots$height)) {
 		height <- 6*nrow
 	} else {
-		height <- dots$height
+		height <- eval(dots$height)
 	}
 
 	ggsave(file.path(filepath, fml_nm, filename), p, width = width, height = height, units = "in")
@@ -482,11 +518,21 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   filename <- paste0(custom_prefix, fn_prefix, ".", fn_suffix)
   
   dots <- rlang::enexprs(...)
-
+  
 	xco <- ifelse(is.null(dots$xco), 1.2, dots$xco)
 	yco <- ifelse(is.null(dots$yco), .05, dots$yco)
-	x_label <- expression("Ratio ("*log[2]*")")
-	y_label <- ifelse(adjP, expression("pVal ("*-log[10]*")"), expression("adjP ("*-log[10]*")"))
+
+	if (is.null(dots$x_label)) {
+	  x_label <- expression("Ratio ("*log[2]*")")
+	} else {
+	  x_label <- dots$x_label
+	}
+	
+	if (is.null(dots$y_label)) {
+	  y_label <- ifelse(adjP, expression("pVal ("*-log[10]*")"), expression("adjP ("*-log[10]*")"))
+	} else {
+	  y_label <- dots$y_label
+	}
 	
 	gsea_res <- tryCatch(readr::read_tsv(file.path(filepath, fml_nm, df2), 
 	                                          col_types = cols(term = col_character(),
@@ -558,8 +604,34 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
 
   		if (nrow(dfw_sub) == 0) return(NULL) 
 
-  		xmax <- ceiling(pmax(abs(min(dfw_sub$log2Ratio)), max(dfw_sub$log2Ratio)))
-  		ymax <- ceiling(max(-log10(dfw_sub$pVal))) * 1.1
+  		if (is.null(dots$xmax)) {
+  		  xmax <- ceiling(pmax(abs(min(dfw_sub$log2Ratio, na.rm = TRUE)), 
+  		                       max(dfw_sub$log2Ratio, na.rm = TRUE)))
+  		} else {
+  		  xmax <- eval(dots$xmax)
+  		  stopifnot(xmax > 0)
+  		}
+  		
+  		if (is.null(dots$xmin)) {
+  		  xmin <- -xmax
+  		} else {
+  		  xmin <- eval(dots$xmin)
+  		  stopifnot(xmin < 0)
+  		}
+  		
+  		if (is.null(dots$ymax)) {
+  		  ymax <- ceiling(max(-log10(dfw_sub$pVal))) * 1.1
+  		} else {
+  		  ymax <- eval(dots$ymax)
+  		  stopifnot(ymax > 0)
+  		}
+  		
+  		if (is.null(dots$ymin)) {
+  		  ymin <- 0
+  		} else {
+  		  ymin <- eval(dots$ymin)
+  		  stopifnot(ymin < ymax)
+  		}	
 
   		# ensure the same levels between "Levels" and "newLevels"
   		Levels <- levels(dfw_sub$Contrast)
@@ -627,9 +699,12 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   		}
 
   		p <- ggplot() +
-  			geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), size = 3, colour = "gray", shape = 20, alpha = .5) +
-  			geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), size = 3, color = myPalette[2], shape = 20, alpha = .8) +
-  			geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), size = 3, color = myPalette[1], shape = 20, alpha = .8) +
+  			geom_point(data = dfw_sub, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+  			           size = 3, colour = "gray", shape = 20, alpha = .5) +
+  			geom_point(data = dfw_greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+  			           size = 3, color = myPalette[2], shape = 20, alpha = .8) +
+  			geom_point(data = dfw_less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+  			           size = 3, color = myPalette[1], shape = 20, alpha = .8) +
   			geom_hline(yintercept = -log10(yco), linetype = "longdash", size = .5) +
   			geom_vline(xintercept = -log2(xco), linetype = "longdash", size = .5) +
   			geom_vline(xintercept = log2(xco), linetype = "longdash", size =.5) +
@@ -637,8 +712,8 @@ gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL,
   		  geom_vline(xintercept = -logFC_cutoff, linetype = "longdash", size = .5, color = "#fc9272") +
   		  geom_vline(xintercept = logFC_cutoff, linetype = "longdash", size =.5, color = "#fc9272") +
   			labs(title = names(gsets_sub), x = x_label, y = y_label) +
-  			scale_x_continuous(limits = c(-xmax, xmax)) +
-  			scale_y_continuous(limits = c(0, ymax)) +
+  			scale_x_continuous(limits = c(xmin, xmax)) +
+  			scale_y_continuous(limits = c(ymin, ymax)) +
   			theme
   		p <- p + facet_wrap(~ newContrast, nrow = nrow, labeller = label_value)
 
@@ -728,7 +803,10 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  \eqn{+1.2}. \cr \code{yco}, the cut-off line of \code{pVal} at position
 #'  \code{y}; the default is \eqn{0.05}. \cr \code{width}, the width of plot;
 #'  \cr \code{height}, the height of plot. \cr \code{nrow}, the number of rows
-#'  in a plot.
+#'  in a plot. \cr \code{xmin}, the minimum \code{x}. \cr \code{xmax}, the
+#'  maximum \code{x}. \cr \code{ymin}, the minimum \code{y}. \cr \code{ymax},
+#'  the maximum \code{y}. \cr \code{x_label}, the label on \code{x}. \cr
+#'  \code{y_label}, the label on \code{y}.
 #'
 #'@import dplyr rlang ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 

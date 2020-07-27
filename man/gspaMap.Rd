@@ -168,6 +168,20 @@ prnVol(
   filename = "kin_npep2.png"
 )
 
+# selected formula and/or customization
+prnVol(
+  fml_nms = "W2_bat",
+  xmin = -5,
+  xmax = 5, 
+  ymin = 0, 
+  ymax = 30,
+  x_label = "Ratio ("*log[2]*")",
+  y_label = "pVal ("*-log[10]*")", 
+  height = 6,
+  width = 6*2.7,
+  filename = custom.png,
+)
+
 # custom theme
 library(ggplot2)
 my_theme <- theme_bw() +

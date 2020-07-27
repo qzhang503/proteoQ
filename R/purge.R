@@ -375,6 +375,11 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   )
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  TMT_plex <- TMT_plex(label_scheme_full)
+  
+  if (TMT_plex == 0) {
+    stop("No PSM purging for LFQ using MS1 peak area.", call. = FALSE)
+  }
 
   filelist <- list.files(path = file.path(dat_dir, "PSM"), pattern = "*_PSM_N\\.txt$") %>%
     reorder_files()

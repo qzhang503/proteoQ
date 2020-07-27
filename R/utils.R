@@ -243,7 +243,7 @@ sort_tmt_lcms <- function (nms) {
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 na_zeroIntensity <- function (df) {
-	ind <- grep("I1[0-9]{2}", names(df))
+	ind <- grep("I[0-9]{3}", names(df))
 
 	temp <- df[, ind]
 	temp[temp == 0] <- NA
@@ -251,6 +251,11 @@ na_zeroIntensity <- function (df) {
 
 	return(df)
 }
+
+#' Find all zero rows
+#' 
+#' @param x A data frame.
+not_allzero_rows <- function (x) (rowSums(x != 0, na.rm = TRUE) > 0)
 
 #' Summarizes numeric values
 #'
@@ -400,7 +405,7 @@ TMT_top_n <- function (x, id, ...) {
 
 	x %>%
 		dplyr::select(id_nm, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
-		dplyr::mutate(sum_Intensity =rowSums(.[grep("^I1[0-9]{2}", names(.))], na.rm = TRUE)) %>%
+		dplyr::mutate(sum_Intensity =rowSums(.[grep("^I[0-9]{3}", names(.))], na.rm = TRUE)) %>%
 		dplyr::group_by(!!id_var) %>%
 		dplyr::top_n(n = 3, wt = sum_Intensity) %>%
 		dplyr::select(-sum_Intensity) %>%
@@ -2071,6 +2076,11 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
     dplyr::mutate(new_id = gsub("TMT-", "", new_id)) %>% 
     dplyr::select(Sample_ID, TMT_Set, new_id, !!col_select, !!col_order) %>%
     dplyr::filter(!is.na(!!col_select))
+  
+  TMT_plex <- TMT_plex(label_scheme_full)
+  if (TMT_plex == 0) {
+    label_scheme_sub$new_id <- label_scheme_sub$Sample_ID
+  }
 
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
@@ -2114,8 +2124,12 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
     rm(df_z, nan_cols, SD)
   }
 
-  df_sd <- df_sd %>% 
-    `names<-`(gsub("^.*log2_R", "", names(.))) 
+  if (TMT_plex > 0) {
+    df_sd <- df_sd %>% `names<-`(gsub("^.*log2_R", "", names(.))) 
+  } else {
+    df_sd <- df_sd %>% 
+      `names<-`(gsub("sd_log2_R000 \\((.*)\\)$", "\\1", names(.))) 
+  }
   
   if (!is_psm) {
     df_sd <- df_sd %>% dplyr::select(id, which(names(.) %in% label_scheme_sub$new_id))
