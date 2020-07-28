@@ -214,6 +214,19 @@ prnPCA(
 	show_ids = FALSE, 
 )
 
+### LDA
+# peptide
+pepLDA(
+  col_group = Group,
+  show_ids = FALSE,
+)
+
+# protein
+prnLDA(
+  col_group = Group,
+  show_ids = FALSE, 
+)
+
 ### correlation
 # peptide logFC, PNNL subset with sample-order supervision
 res <- pepCorr_logFC(
