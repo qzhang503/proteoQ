@@ -2471,11 +2471,16 @@ add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
     # "_(Acetyl (Protein N-term))(Gln->pyro-Glu)QAAAAQGSN(Deamidation (N))GPVK_" -> 
     # ".(Acetyl (Protein N-term))(Gln->pyro-Glu)QAAAAQGSnGPVK."
     
+    # "(Hex(1)HexNAc(1) (ST))", "(Hex(5) HexNAc(4) NeuAc(2) Sodium (N))"
+    # No cases like: X(YYY (zzz) xxx) but X(YYY (zzz) xxx (kkk)) ends with "))"
+    
     df <- df %>% 
       tidyr::separate("pep_seq_mod", c("nt", "interior", "ct"), sep = "_") %>% 
+      dplyr::mutate(interior = gsub("([A-Z]){1}\\([^\\(\\)]*\\)", 
+                                    paste0("@", "\\1"), interior)) %>% 
       dplyr::mutate(interior = gsub("([A-Z]{1})\\(.*\\s+?\\(+?.*\\){2}", 
                                     paste0("@", "\\1"), interior)) %>% 
-      dplyr::mutate_at(vars("interior"), ~ map_chr(.x, my_tolower, "@")) %>% 
+      dplyr::mutate_at(vars("interior"), ~ purrr::map_chr(.x, my_tolower, "@")) %>% 
       tidyr::unite(pep_seq_mod, nt, interior, ct, sep = ".", remove = TRUE)
     
     # (2-1) add "_" to sequences from protein N-terminal acetylation
@@ -2595,7 +2600,13 @@ add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
       dplyr::mutate(pep_seq_mod = 
                       gsub("(^[_~]{0,1})\\([^\\(\\)]*\\)", paste0("\\1", "^"), pep_seq_mod)) %>% 
       dplyr::mutate(pep_seq_mod = 
+                      gsub("(^[_~]{0,1})\\(.*\\s+?\\(+?.*\\){2}", paste0("\\1", "^"), pep_seq_mod)) %>% 
+      
+      dplyr::mutate(pep_seq_mod = 
                       gsub("\\([^\\(\\)]*\\)([_~]{0,1}$)", paste0("^", "\\1"), pep_seq_mod)) %>% 
+      dplyr::mutate(pep_seq_mod = 
+                      gsub("\\(.*\\s+?\\(+?.*\\){2}([_~]{0,1}$)", paste0("^", "\\1"), pep_seq_mod)) %>% 
+      
       dplyr::mutate(pep_seq_mod = 
                       paste(pep_res_before, pep_seq_mod, pep_res_after, sep = ".")) %>% 
       dplyr::mutate(pep_seq = 
