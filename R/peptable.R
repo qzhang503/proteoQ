@@ -94,6 +94,71 @@ check_mq_df <- function (df, label_scheme) {
 #' 
 #' @param df A data frame of MaxQuant results.
 extract_mq_ints <- function (df) {
+  calc_log2r <- function (df, type, refChannels) {
+    type <- paste0("^", type, " ")
+    col_smpls <- grep(type, names(df))
+    
+    if (length(refChannels) > 0) {
+      col_refs <- paste0(type, refChannels) %>% 
+        purrr::map_dbl(~ grep(.x, names(df)))
+    } else {
+      col_refs <- grep(type, names(df)) 
+    }
+    
+    if (type == "^Intensity ") {
+      prefix <- "log2_R000"
+    } else if (type == "^LFQ intensity ") {
+      prefix <- "N_log2_R000"
+    } else {
+      stop("`type` needs to be either `Intensity` or `LFQ intensity`.", call. = FALSE)
+    }
+    
+    sweep(df[, col_smpls], 1,
+          rowMeans(df[, col_refs, drop = FALSE], na.rm = TRUE), "/") %>%
+      log2(.)  %>% 
+      `colnames<-`(gsub(paste0(type, "(.*)$"), paste0(prefix, " \\(", "\\1", "\\)"), names(.))) %>%
+      cbind(df, .)
+  }
+  
+  
+  load(file.path(dat_dir, "label_scheme.rda"))
+  
+  refChannels <- label_scheme %>% 
+    dplyr::filter(Reference) %>% 
+    dplyr::select(Sample_ID) %>% 
+    unlist()
+  
+  df <- df %>% 
+    calc_log2r("Intensity", refChannels) %>% 
+    calc_log2r("LFQ intensity", refChannels) %>% 
+    dplyr::mutate_at(.vars = grep("log2_R000\\s", names(.)), ~ replace(.x, is.infinite(.), NA)) 
+  
+  log2sd <- df %>% 
+    dplyr::select(grep("Intensity\\s", names(.))) %>% 
+    `names<-`(gsub("^Intensity\\s(.*)", "sd_log2_R000 \\(\\1\\)", names(.))) %>% 
+    dplyr::mutate_all(~ replace(.x, !is.na(.x), NA))
+  
+  df <- dplyr::bind_cols(df, log2sd)
+  
+  df <- df %>% 
+    `names<-`(gsub("^Intensity (.*)$", paste0("I000 \\(", "\\1", "\\)"), names(.))) %>% 
+    `names<-`(gsub("^LFQ intensity (.*)$", paste0("N_I000 \\(", "\\1", "\\)"), names(.)))
+  
+  df <- dplyr::bind_cols(
+    df %>% dplyr::select(-grep("[IR]{1}000 \\(", names(.))),
+    df %>% dplyr::select(grep("^I000 \\(", names(.))),
+    df %>% dplyr::select(grep("^N_I000 \\(", names(.))),
+    df %>% dplyr::select(grep("^sd_log2_R000 \\(", names(.))),
+    df %>% dplyr::select(grep("^log2_R000 \\(", names(.))),
+    df %>% dplyr::select(grep("^N_log2_R000 \\(", names(.))),  
+  )
+}
+
+
+
+
+
+extract_mq_ints_orig <- function (df) {
   df <- df %>% 
     dplyr::mutate(Mean_Int = rowMeans(.[, grepl("^Intensity\\s", names(.))], na.rm = TRUE))
   
@@ -130,7 +195,6 @@ extract_mq_ints <- function (df) {
     `names<-`(gsub("^Intensity (.*)$", paste0("I000 \\(", "\\1", "\\)"), names(.))) %>% 
     `names<-`(gsub("^LFQ intensity (.*)$", paste0("N_I000 \\(", "\\1", "\\)"), names(.)))
 }
-
 
 #' load MaxQuant peptide table
 #' 
@@ -201,9 +265,7 @@ pep_mq_lfq <- function(label_scheme) {
       na_zeroIntensity() 
   })
 
-  # df <- df %>% 
-  #   dplyr::select(group_psm_by, grep("^Intensity |^LFQ intensity ", names(.))) %>% 
-  #   extract_mq_ints()
+  # calculate log2FC to reference(s)
 
   df %>% 
     dplyr::select(
@@ -1292,9 +1354,6 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
                    weighted.mean = tmt_wtmean(df_num, !!rlang::sym(id), na.rm = TRUE), 
                    median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
                    aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
-  
-  ## from MaxQuant proteinGroups.txt
-  # df_num <- prn_mq_lfq(label_scheme)
   
   df <- df %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.)))
