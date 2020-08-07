@@ -84,8 +84,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 		# offset by the percentage of non-NA values
 		perc_nna <- df %>%
 			dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}"), names(.))) %>%
-			# `names<-`(gsub(".*_log2_R[0-9]{3}.*\\((.*)\\)$", "\\1", names(.))) %>%
-		  `names<-`(gsub(".*_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
+		  `names<-`(gsub(".*_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
 			lapply(function(x) sum(!is.na(x)) / length(x) * nrow * binwidth)
 
 		perc_nna <- perc_nna[names(perc_nna) %in% label_scheme_sub$Sample_ID]
@@ -167,8 +166,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 		dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}", names(.))], na.rm = TRUE))) %>%
 		dplyr::mutate_at(.vars = "Int_index", cut, seq, labels = seq[1:(length(seq)-1)]) %>%
 		dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
-		# `names<-`(gsub(".*log2_R[0-9]{3}.*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
-	  `names<-`(gsub("^[NZ]{1}_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
+	  `names<-`(gsub("^[NZ]{1}_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.))) %>%
 		tidyr::gather(key = Sample_ID, value = value, -Int_index) %>%
 		dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
 		dplyr::arrange(Sample_ID) %>%

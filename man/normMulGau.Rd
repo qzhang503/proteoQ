@@ -13,6 +13,7 @@ normMulGau(
   range_int,
   filepath,
   col_select = NULL,
+  cut_points = Inf,
   ...
 )
 }

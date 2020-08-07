@@ -1084,7 +1084,8 @@ parse_uniprot_fasta <- function (df, fasta, entrez) {
       
       na_genes <- genes %>% 
         dplyr::filter(!grepl("GN=", .$prot_desc)) %>% 
-        dplyr::mutate(gene = NA)
+        dplyr::mutate(gene = NA) %>% 
+        dplyr::mutate(gene = as.character(gene))
       
       genes <- genes %>% 
         dplyr::filter(grepl("GN=", .$prot_desc)) %>% 

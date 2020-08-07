@@ -201,3 +201,43 @@ foo_zip <- function () {
   unzip("./my.zip", exdir = "~/proteoQ_demo", overwrite  = FALSE)
 }
 
+
+# Annotation of subcellular locations
+foo_subcellular <- function () {
+  dat_dir <- "~/proteoQ/examples"
+  
+  scc <- readr::read_tsv(
+    file.path(dat_dir, "uniprot-filtered-organism__Homo+sapiens+(Human)+[9606]_+AND+review--.tab")) %>% 
+    dplyr::rename(uniprot_acc = Entry, scc = "Subcellular location [CC]") %>% 
+    dplyr::select(uniprot_acc, scc) %>% 
+    dplyr::filter(!is.na(scc))
+  
+  scc <- scc %>% 
+    dplyr::mutate(scc = gsub(";.*\\.+?", ".", scc)) %>% 
+    dplyr::mutate(scc = gsub("\\s*\\{+?.*\\}+?", "", scc)) %>% 
+    dplyr::mutate(scc = gsub("\\s*Note\\=.*$", "", scc)) %>% 
+    dplyr::mutate(scc = gsub("\\s*\\[+?.*\\]+?\\:", "", scc)) %>% 
+    dplyr::mutate(scc = gsub("SUBCELLULAR LOCATION: ", "", scc)) %>% 
+    dplyr::mutate(scc = gsub("\\.\\s*$", "", scc))
+  
+  scc <- as.character(scc$scc) %>% 
+    strsplit("\\.") %>% 
+    plyr::ldply(rbind) %>% 
+    purrr::map(~ gsub("^.*\\,\\s+(.*)", "\\1", .x)) %>% 
+    dplyr::bind_cols() %>% 
+    `colnames<-`(paste0("scc_", names(.))) %>% 
+    dplyr::bind_cols(scc, .) %>% 
+    dplyr::select(-scc)
+  
+  run_scripts <- FALSE
+  if (run_scripts) {
+    scc <- scc %>% 
+      tidyr::gather("id", "scc", -uniprot_acc) %>% 
+      dplyr::select(-id) %>% 
+      dplyr::filter(!is.na(scc))
+  }
+
+  save(scc, file = file.path(dat_dir, "scc_hs.rda"), compress = "xz")
+  # load(file.path(dat_dir, "scc_hs.rda"))
+}
+

@@ -436,7 +436,7 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) {
 #' @inheritParams splitPSM
 #' @inheritParams mergePep
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
-                           use_duppeps = TRUE, parallel = TRUE, ...) {
+                           use_duppeps = TRUE, cut_points = Inf, parallel = TRUE, ...) {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -558,6 +558,14 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     dplyr::filter(rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0) %>% 
     dplyr::arrange(!!rlang::sym(group_psm_by))
   
+  # a placeholder so no need to handle the exception of no `Z_log2_R` columns before `normMulGau`
+  if (purrr::is_empty(grep("^Z_log2_R[0-9]{3}[NC]{0,1}", names(df)))) {
+    df <- df %>% 
+      dplyr::select(grep("^N_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
+      `names<-`(gsub("^N_log2_R", "Z_log2_R", names(.))) %>% 
+      dplyr::bind_cols(df, .)
+  }
+  
   df <- normMulGau(
     df = df,
     method_align = "MC",
@@ -566,6 +574,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     range_int = c(0, 100),
     filepath = file.path(dat_dir, "Peptide/Histogram"),
     col_select = rlang::expr(Sample_ID), 
+    cut_points = cut_points, 
   )
 }
 
@@ -731,9 +740,18 @@ fmt_num_cols <- function (df) {
 #'indicated under the \code{prot_n_pep} column after the peptide
 #'removals/cleanups using \code{purgePSM}.
 #'
-#' @param use_duppeps Logical; if TRUE, re-assigns double/multiple dipping
-#'   peptide sequences to the most likely proteins by majority votes.
-#' @param ... \code{filter_}: Variable argument statements for the row filtration
+#'@param cut_points A numeric vector defines the cut points (knots) for the
+#'  median-centering of \code{log2FC} by sections. The values of the knots
+#'  indicate the summarized \code{log10(Intentisy)} of reporter ions. For
+#'  example, at \code{cut_points = seq(4, 7, .5)}, values of \code{log2FC} will
+#'  be binned from \eqn{-Inf} to \eqn{Inf} according to the cut points at the
+#'  reporter-ion intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
+#'  \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
+#'  \code{log2FC} under each sample will be median-centered all together. See
+#'  also \code{\link{prnHist}} for data binning and intensity-coded histograms.
+#'@param use_duppeps Logical; if TRUE, re-assigns double/multiple dipping
+#'  peptide sequences to the most likely proteins by majority votes.
+#'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  of data against the column keys in individual peptide tables of
 #'  \code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt}, etc.
 #'  \cr \cr The variable argument statements should be in the following format:
@@ -817,7 +835,7 @@ fmt_num_cols <- function (df) {
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@importFrom plyr ddply
 #'@export
-mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, parallel = TRUE, ...) {
+mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = Inf, parallel = TRUE, ...) {
   dat_dir <- get_gl_dat_dir()  
   
   old_opts <- options()
@@ -856,6 +874,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, parallel = TRUE
   df <- normPep_Mplex(group_psm_by = group_psm_by, 
                       group_pep_by = group_pep_by, 
                       use_duppeps = use_duppeps, 
+                      cut_points = cut_points, 
                       parallel = parallel, 
                       !!!filter_dots) %T>% 
     write.table(filename, sep = "\t", col.names = TRUE, row.names = FALSE)
@@ -872,7 +891,6 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, parallel = TRUE
       is_psm = FALSE
     )
   }
-  
 }
 
 
@@ -1099,6 +1117,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
       range_int = range_int,
       filepath = file.path(dat_dir, "Peptide/Histogram"),
       col_select = col_select, 
+      cut_points = Inf, 
       !!!dots, 
     ) %>% 
     fmt_num_cols() %T>% 
@@ -1123,28 +1142,29 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
 #'Fields other than \code{log2FC} and \code{intensity} are summarized with
 #'median statistics.
 #'
-#'@param method_pep_prn Character string; the method to summarize the
-#'  \code{log2FC} and the \code{intensity} of peptides by protein entries. The
-#'  descriptive statistics includes \code{c("mean", "median", "top.3",
-#'  "weighted.mean")} with \code{median} being the default. The representative
-#'  \code{log10-intensity} of reporter ions at the peptide levels (from
-#'  \code{\link{standPep}}) will be the weight when summarizing \code{log2FC}
-#'  with \code{top.3} or \code{weighted.mean}.
-#'@param use_unique_pep Logical. If TRUE, only entries that are \code{TRUE} or
-#'  equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
-#'  will be used, for summarizing the \code{log2FC} and the \code{intensity} of
-#'  peptides into protein values. The default is to use unique peptides only.
-#'  For \code{MaxQuant} data, the levels of uniqueness are according to the
-#'  \code{pep_unique_by} in \code{\link{normPSM}}. The argument currently do
-#'  nothing to \code{Spectrum Mill} data where both unique and shared peptides
-#'  will be kept.
-#'@param ... \code{filter_}: Variable argument statements for the filtration of
-#'  data rows. Each statement contains a list of logical expression(s). The
-#'  \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
-#'  the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-#'  For example, \code{pep_len} is a column key present in \code{Peptide.txt}
-#'  with \code{Mascot} workflows. The statement of \code{filter_peps_at =
-#'  exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
+#' @param method_pep_prn Character string; the method to summarize the
+#'   \code{log2FC} and the \code{intensity} of peptides by protein entries. The
+#'   descriptive statistics includes \code{c("mean", "median", "top.3",
+#'   "weighted.mean")} with \code{median} being the default. The representative
+#'   \code{log10-intensity} of reporter ions at the peptide levels (from
+#'   \code{\link{standPep}}) will be the weight when summarizing \code{log2FC}
+#'   with \code{top.3} or \code{weighted.mean}.
+#' @param use_unique_pep Logical. If TRUE, only entries that are \code{TRUE} or
+#'   equal to \code{1} under the column \code{pep_isunique} in
+#'   \code{Peptide.txt} will be used, for summarizing the \code{log2FC} and the
+#'   \code{intensity} of peptides into protein values. The default is to use
+#'   unique peptides only. For \code{MaxQuant} data, the levels of uniqueness
+#'   are according to the \code{pep_unique_by} in \code{\link{normPSM}}. The
+#'   argument currently do nothing to \code{Spectrum Mill} data where both
+#'   unique and shared peptides will be kept.
+#' @param ... \code{filter_}: Variable argument statements for the filtration of
+#'   data rows. Each statement contains a list of logical expression(s). The
+#'   \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+#'   the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+#'   For example, \code{pep_len} is a column key present in \code{Peptide.txt}
+#'   with \code{Mascot} workflows. The statement of \code{filter_peps_at =
+#'   exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
+#'  @inheritParams mergePep
 #'@seealso 
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
@@ -1215,7 +1235,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.3"), 
-                     use_unique_pep = TRUE, ...) {
+                     use_unique_pep = TRUE, cut_points = Inf, ...) {
   
   dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/Histogram"), recursive = TRUE, showWarnings = FALSE)
@@ -1267,6 +1287,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
     range_int = c(0, 100),
     filepath = file.path(dat_dir, "Protein/Histogram"),
     col_select = rlang::expr(Sample_ID), 
+    cut_points = cut_points, 
   ) 
   
   df <- df %>% 
