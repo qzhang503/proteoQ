@@ -96,7 +96,7 @@ update_df <- function (df, label_scheme_fit, cf_x_fit, sd_coefs_fit) {
 #'@import dplyr purrr rlang 
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range_int, filepath, 
-                       col_select = NULL, ...) {
+                       col_select = NULL, cut_points = Inf, ...) {
 
   # check n_comp
   find_n_comp <- function (n_comp, method_align) {
@@ -168,8 +168,43 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
     }
   }
   
-
-
+  
+  # calculates `x` positions by spline points (only for method_align = MC)
+  spline_coefs <- function (df, label_scheme, label_scheme_fit, ...) {
+    dots <- rlang::enexprs(...)
+    slice_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^slice_", names(.))]
+    
+    # initialization: NA for Empty samples; 0 for the remaining
+    x_vals <- df %>%
+      dplyr::select(grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s+\\(", names(.))) %>% 
+      `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
+      dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>%
+      unlist() %>%
+      data.frame(x = .) %>%
+      tibble::rownames_to_column("Sample_ID") %>%
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+      dplyr::arrange(Sample_ID) %>% 
+      dplyr::mutate(x = ifelse(is.na(x), NA, 0))
+    
+    x_vals_fit <- df %>%
+      filters_in_call(!!!slice_dots) %>% 
+      dplyr::select(grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s+\\(", names(.))) %>% 
+      `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.))) %>%
+      dplyr::select(which(names(.) %in% label_scheme_fit$Sample_ID)) %>% 
+      dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>%
+      unlist() %>%
+      data.frame(x = .) %>%
+      tibble::rownames_to_column("Sample_ID") %>%
+      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
+      dplyr::arrange(Sample_ID)
+    
+    rows <- x_vals$Sample_ID %in% x_vals_fit$Sample_ID
+    x_vals[rows, ] <- x_vals_fit
+    
+    invisible(x_vals)
+  }
+  
+  
   # add mean-deviation info for `expt_smry::Select`ed samples
   add_mean_dev <- function (df, label_scheme_fit) {
     if (grepl("Peptide\\\\", filepath) || grepl("Peptide/", filepath)) {
@@ -265,11 +300,11 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	ok_Z_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)
 	
 	if (method_align == "MGKernel") {
-  	if ((!ok_N_ncomp) & (col_select != rlang::expr(sample_ID))) {
+  	if ((!ok_N_ncomp) && (col_select != rlang::expr(sample_ID))) {
   	  col_select <- rlang::expr(Sample_ID)
   	}
   
-  	if ((!ok_Z_ncomp) & (col_select != rlang::expr(sample_ID))) {
+  	if ((!ok_Z_ncomp) && (col_select != rlang::expr(sample_ID))) {
   	  col_select <- rlang::expr(Sample_ID)
   	}
 	}
@@ -277,7 +312,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	load(file = file.path(dat_dir, "label_scheme.rda"))
 	label_scheme_fit <- label_scheme %>% .[!is.na(.[[col_select]]), ]
 	
-	## `nm_log2r_z` may not yet exist if this is the first `normMulGau` after `mergePep` or `mergePrn`
+	## `nm_log2r_z` the same as `nm_log2r_n` if is the first `normMulGau` after `mergePep` or `mergePrn`
 	
 	nm_log2r_n <- names(df) %>% 
 	  .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
@@ -311,27 +346,6 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
 	      dplyr::arrange(Sample_ID, Component)
       
-      # may be deleted since `ok_existing_params(...)` earlier
-      run_scripts <- FALSE
-      if (run_scripts) {
-        if (anyNA(params$Sample_ID)) {
-          try(unlink(file.path(dat_dir, "Peptide/Histogram/MGKernel_params_[NZ].txt")))
-          try(unlink(file.path(dat_dir, "Protein/Histogram/MGKernel_params_[NZ].txt")))
-  
-          missing_samples <- local({
-            par_samples <- params$Sample_ID %>% unique() %>% .[!is.na(.)]
-            expt_samples <- label_scheme$Sample_ID %>% unique()
-            setdiff(expt_samples, par_samples)
-          })
-          
-          stop("`Sample_ID` in `expt_smry.xlsx` not found in `peptide.txt` or `protein.txt`: \n", 
-               purrr::reduce(missing_samples, paste, sep = ", "), 
-               "\nThis is probably due to the deletion or modification of values under the `Sample_ID` columns.", 
-               "\nA fresh-start rule has been applied and please re-execute `standPep(...)` and/or `standPrn(...)`.", 
-               call. = FALSE)
-        }        
-      }
-
 	    rows <- params$Sample_ID %in% params_sub$Sample_ID
 	    params[rows, ] <- params_sub
     }
@@ -398,77 +412,23 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  # profile widths based on all sample columns and data rows
 	  sd_coefs <- df %>% calc_sd_fcts(range_log2r, range_int, label_scheme)
 	  
-	  # initialization: NA for Empty samples; 0 for the remaining
-	  x_vals <- df %>%
-	    dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
-	    `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
-	    dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>%
-	    unlist() %>%
-	    data.frame(x = .) %>%
-	    tibble::rownames_to_column("Sample_ID") %>%
-	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
-	    dplyr::arrange(Sample_ID) %>% 
-	    dplyr::mutate(x = ifelse(is.na(x), NA, 0))
+	  seq <- c(-Inf, cut_points, Inf)
 	  
-	  x_vals <- local({
-	    x_vals_fit <- df %>%
-	      filters_in_call(!!!slice_dots) %>% 
-	      dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
-	      `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
-	      dplyr::select(which(names(.) %in% label_scheme_fit$Sample_ID)) %>% 
-	      dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-
-	    if (any(is.na(x_vals_fit))) {
-	      data.frame(Sample_ID = names(x_vals_fit)[is.na(x_vals_fit)], `mean(x)` = NA) %>% 
-	        print()
-	    }
-
-	    x_vals_fit <- x_vals_fit %>%
-	      unlist() %>%
-	      data.frame(x = .) %>%
-	      tibble::rownames_to_column("Sample_ID") %>%
-	      dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
-	      dplyr::arrange(Sample_ID)
-	    
-	    rows <- x_vals$Sample_ID %in% x_vals_fit$Sample_ID
-	    x_vals[rows, ] <- x_vals_fit
-	    
-	    return(x_vals)
-	  })
+	  if (sum(is.infinite(seq)) == 2) {
+	    df <- df %>% 
+	      dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.))], 
+	                                               na.rm = TRUE))) %>% 
+	      dplyr::mutate_at(.vars = "Int_index", cut, seq, labels = seq[1:(length(seq)-1)]) %>%
+	      split(., .$Int_index, drop = TRUE) %>% 
+	      purrr::map(~ .x %>% dplyr::select(-Int_index))
+	  } else {
+	    df <- list(df)
+	  }
 	  
-	  df <- update_df(df, label_scheme, x_vals, sd_coefs)
-	} else { 
-		# depreciated
-	  if(!all(method_align %in% df[["gene"]])) {
-			stop(paste(setdiff(method_align, df[["gene"]]),
-			           "in 'method_align' not found in gene names."), call. = TRUE)
-		}
-
-		cf_x <- df %>%
-			dplyr::filter(.[["gene"]] %in% method_align) %>%
-			dplyr::select(matches("^N_log2_R[0-9]{3}")) %>%
-			`colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
-		  dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>% 
-			unlist() %>%
-			data.frame(x = .) %>%
-			tibble::rownames_to_column("Sample_ID") %>%
-			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
-			dplyr::arrange(Sample_ID)
-
-		if (sum(!is.na(cf_x$x)) == 0) {
-			stop(paste("Protein ID/Alignment method", method_align, "not found.") , call. = TRUE)
-		} else {
-			df <- mapply(normSD, df[,grepl("^N_log2_R[0-9]{3}", names(df))],
-			             center = cf_x$x, SD = cf_SD$fct, SIMPLIFY = FALSE) %>% # scale to the same SD
-					data.frame(check.names = FALSE) %>%
-					`colnames<-`(gsub("N_log2", "Z_log2", names(.))) %>%
-					cbind(df, .)
-
-			df[, grepl("^N_log2_R[0-9]{3}", names(df))] <-
-			  sweep(df[, grepl("^N_log2_R[0-9]{3}", names(df))], 2, cf_x$x, "-")
-			df[, grepl("^N_I[0-9]{3}", names(df))] <-
-			  sweep(df[, grepl("^N_I[0-9]{3}", names(df))], 2, 2^cf_x$x, "/")
-		}
+	  x_vals <- df %>% purrr::map(spline_coefs, label_scheme, label_scheme_fit, slice_dots)
+	  
+	  df <- purrr::map2(df, x_vals, ~ update_df(.x, label_scheme, .y, sd_coefs)) %>% 
+	    dplyr::bind_rows()
 	}
 
 	# (1) mean deviation based sample IDs in `label_scheme` not `label_scheme_fit`

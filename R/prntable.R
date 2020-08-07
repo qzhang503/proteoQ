@@ -38,6 +38,7 @@
 #'  declaring algorithm convergence.
 #'@inheritParams normPSM
 #'@inheritParams standPep
+#'@inheritParams mergePep
 #'@seealso 
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
@@ -109,8 +110,8 @@
 #'@importFrom plyr ddply
 #'@export
 standPrn <- function (method_align = c("MC", "MGKernel"), 
-                    range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL, seed = NULL, 
-                    col_select = NULL, cache = TRUE, ...) {
+                      range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL, seed = NULL, 
+                      col_select = NULL, cut_points = Inf, cache = TRUE, ...) {
   dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/Histogram"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Protein/cache"), recursive = TRUE, showWarnings = FALSE)
@@ -187,6 +188,7 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     range_int = range_int, 
     filepath = file.path(dat_dir, "Protein/Histogram"), 
     col_select = col_select, 
+    cut_points = cut_points, 
     !!!dots,
   )
   

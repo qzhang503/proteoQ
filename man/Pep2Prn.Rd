@@ -7,6 +7,7 @@
 Pep2Prn(
   method_pep_prn = c("median", "mean", "weighted.mean", "top.3"),
   use_unique_pep = TRUE,
+  cut_points = Inf,
   ...
 )
 }
@@ -20,21 +21,22 @@ descriptive statistics includes \code{c("mean", "median", "top.3",
 with \code{top.3} or \code{weighted.mean}.}
 
 \item{use_unique_pep}{Logical. If TRUE, only entries that are \code{TRUE} or
-equal to \code{1} under the column \code{pep_isunique} in \code{Peptide.txt}
-will be used, for summarizing the \code{log2FC} and the \code{intensity} of
-peptides into protein values. The default is to use unique peptides only.
-For \code{MaxQuant} data, the levels of uniqueness are according to the
-\code{pep_unique_by} in \code{\link{normPSM}}. The argument currently do
-nothing to \code{Spectrum Mill} data where both unique and shared peptides
-will be kept.}
+equal to \code{1} under the column \code{pep_isunique} in
+\code{Peptide.txt} will be used, for summarizing the \code{log2FC} and the
+\code{intensity} of peptides into protein values. The default is to use
+unique peptides only. For \code{MaxQuant} data, the levels of uniqueness
+are according to the \code{pep_unique_by} in \code{\link{normPSM}}. The
+argument currently do nothing to \code{Spectrum Mill} data where both
+unique and shared peptides will be kept.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
-data rows. Each statement contains a list of logical expression(s). The
-\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
-the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-For example, \code{pep_len} is a column key present in \code{Peptide.txt}
-with \code{Mascot} workflows. The statement of \code{filter_peps_at =
-exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.}
+ data rows. Each statement contains a list of logical expression(s). The
+ \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+ the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+ For example, \code{pep_len} is a column key present in \code{Peptide.txt}
+ with \code{Mascot} workflows. The statement of \code{filter_peps_at =
+ exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
+@inheritParams mergePep}
 }
 \value{
 The primary output in "\code{.../Protein/Protein.txt}".
@@ -60,6 +62,9 @@ Pep2Prn()
 
 # include shared peptides
 Pep2Prn(use_unique_pep = FALSE)  
+
+# alignment of data by segments
+Pep2Prn(cut_points = seq(4, 7, 0.5))
 }
 }
 \seealso{

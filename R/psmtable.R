@@ -2762,6 +2762,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   df <- suppressWarnings(dplyr::bind_rows(df))
 
   # exception: empty string under `Proteins`
+  # ver 1.6.15 also removed "Reverse"
   df <- df %>% dplyr::filter(as.character(.$Proteins) > 0)
   
   dots <- rlang::enexprs(...)
@@ -2795,7 +2796,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   }
   
   if (rm_reverses) {
-    df <- df %>% dplyr::filter(.$Reverse != "+")
+    df <- df %>% dplyr::filter(is.na(Reverse) || Reverse != "+")
   }
   
   df <- df %>% 

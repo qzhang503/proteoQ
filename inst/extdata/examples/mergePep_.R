@@ -8,7 +8,7 @@
 # everything included
 mergePep()
 
-# row filtrations aganist column keys in `TMTset1_LCMSinj1_Peptide_N.txt`...
+# row filtrations against column keys in `TMTset1_LCMSinj1_Peptide_N.txt`...
 # (with Mascot column keys)
 mergePep(
   filter_peps_by_sp = exprs(species == "human", pep_len <= 50),
@@ -23,4 +23,8 @@ mergePep(
 mergePep(
   filter_peps_by_sp = exprs(species == "human", pep_miss <= 3),
 )
+
+
+# alignment of data by segments
+mergePep(cut_points = seq(4, 7, .5))
 }

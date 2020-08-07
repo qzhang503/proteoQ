@@ -4,7 +4,13 @@
 \alias{mergePep}
 \title{Merge peptide table(s) into one}
 \usage{
-mergePep(plot_log2FC_cv = TRUE, use_duppeps = TRUE, parallel = TRUE, ...)
+mergePep(
+  plot_log2FC_cv = TRUE,
+  use_duppeps = TRUE,
+  cut_points = Inf,
+  parallel = TRUE,
+  ...
+)
 }
 \arguments{
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
@@ -12,6 +18,16 @@ mergePep(plot_log2FC_cv = TRUE, use_duppeps = TRUE, parallel = TRUE, ...)
 
 \item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
 peptide sequences to the most likely proteins by majority votes.}
+
+\item{cut_points}{A numeric vector defines the cut points (knots) for the
+median-centering of \code{log2FC} by sections. The values of the knots
+indicate the summarized \code{log10(Intentisy)} of reporter ions. For
+example, at \code{cut_points = seq(4, 7, .5)}, values of \code{log2FC} will
+be binned from \eqn{-Inf} to \eqn{Inf} according to the cut points at the
+reporter-ion intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
+\code{cut_points = Inf}, or equivalently \code{-Inf}, where the
+\code{log2FC} under each sample will be median-centered all together. See
+also \code{\link{prnHist}} for data binning and intensity-coded histograms.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
@@ -74,7 +90,7 @@ removals/cleanups using \code{purgePSM}.
 # everything included
 mergePep()
 
-# row filtrations aganist column keys in `TMTset1_LCMSinj1_Peptide_N.txt`...
+# row filtrations against column keys in `TMTset1_LCMSinj1_Peptide_N.txt`...
 # (with Mascot column keys)
 mergePep(
   filter_peps_by_sp = exprs(species == "human", pep_len <= 50),
@@ -89,6 +105,10 @@ mergePep(
 mergePep(
   filter_peps_by_sp = exprs(species == "human", pep_miss <= 3),
 )
+
+
+# alignment of data by segments
+mergePep(cut_points = seq(4, 7, .5))
 }
 }
 \seealso{
