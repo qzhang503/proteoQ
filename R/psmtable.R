@@ -753,16 +753,6 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa, purge_phosphodata) {
       dplyr::mutate(pep_seq_mod = paste(pep_res_before, pep_seq_mod, pep_res_after, sep = "."))
   }
 
-  # not used
-  purrr::walk2(var_mods$Description, var_mods$Filename, ~ {
-    try(
-      df %>% 
-        dplyr::filter(grepl(.x, pep_var_mod, fixed = TRUE)) %>% 
-        write.table(file.path(dat_dir, "PSM/individual_mods", paste0(.y, ".txt")), 
-                    sep = "\t", col.names = TRUE, row.names = FALSE)
-    )
-  })
-
   return(df)
 }
 
@@ -1298,13 +1288,13 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
   
   stopifnot(group_psm_by %in% names(df))
   
-  if (TMT_plex == 0) { # lable-free data; re-save ".csv" as ".txt"
+  if (TMT_plex == 0) {
+    df$psm_index <- NULL
     fn <- paste0(gsub(".csv", "", file), "_Clean.txt")
     write.table(df, file.path(dat_dir, "PSM/cache", fn), 
                 sep = "\t", col.names = TRUE, row.names = FALSE)
     message(file, "processed (no PSM cleanup for MS1-based LFQ).\n")
     
-    # next
     return(fn)
   }
   
@@ -1366,8 +1356,6 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
         dplyr::left_join(dfw_split, by = "pep_seq_i")  %>%
         tidyr::separate(pep_seq_i, into = c(group_psm_by, "psm_index"), sep = ":", remove = TRUE) %>%
         dplyr::select(-c("psm_index"))
-      
-      # rm(dfw_split, range_colRatios)      
     })
     
     df[, grepl("^I[0-9]{3}", names(df))] <-
@@ -1978,6 +1966,9 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
   } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^PSMexport.*\\.ssv$"))) {
     type <- "sm"
     message("Spectrum Mill results found.")
+  } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^MSstats.*\\.csv$"))) {
+    type <- "mf"
+    message("MSFragger results found.")
   } else {
     stop("Unknow data type or missing data files.", call. = FALSE)
 	}
@@ -2092,7 +2083,22 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c
                 plot_rptr_int = plot_rptr_int, 
                 plot_log2FC_cv = plot_log2FC_cv, 
                 ...)
-  }
+  } else if (type == "mf") {
+    splitPSM_mf(group_psm_by = group_psm_by, 
+                group_pep_by = group_pep_by, 
+                fasta = fasta, 
+                entrez = entrez, 
+                pep_unique_by = pep_unique_by, 
+                corrected_int = corrected_int, 
+                rm_craps = rm_craps, 
+                rm_reverses = rm_reverses, 
+                purge_phosphodata = purge_phosphodata, 
+                annot_kinases = annot_kinases, 
+                plot_rptr_int = plot_rptr_int, 
+                rptr_intco = rptr_intco, 
+                use_lowercase_aa = use_lowercase_aa, 
+                parallel = parallel, ...)
+  } 
 }
 
 
@@ -2125,6 +2131,7 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
       "raw_file", "pep_query", "pep_summed_mod_pos", "pep_local_mod_pos")))
   
   df <- local({
+    # "Gene Names" and "Protein Names" between col_start:col_start also removed
     col_start <- which(names(df) == "Modifications") + 1
     col_end <- which(names(df) == "Charge") - 1
     
@@ -2617,31 +2624,75 @@ add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
 }
 
 
+#' Pad columns to a placeholder data frame.
+#' 
+#' @param df The original data frame.
+#' @param df2 The data frame to be inserted.
+#' @param idx The index of \code{df} column for \code{df2} to be inserted
+#'   (after).
+add_cols_at <- function (df, df2, idx) {
+  stopifnot(idx >= 0)
+  
+  if (idx == 0) {
+    bf <- NULL
+  } else {
+    bf <- df[, seq_len(idx), drop = FALSE]
+  }
+  
+  if ((idx + 1) <= ncol(df)) {
+    af <- df[, (idx + 1) : ncol(df), drop = FALSE]
+  } else {
+    af <- NULL
+  }
+  
+  dplyr::bind_cols(
+    bf,
+    df2,
+    af,
+  )
+}
+
+
+#' Replace columns in the original PSM table.
+#' 
+#' @param df The original data frame.
+#' @param df2 The data columns to replace those in \code{df}.
+#' @param idxs The sequences of column indexes in \code{df}. Note that
+#'   \code{idxs} need to be a continuous sequences.
+replace_cols_at <- function (df, df2, idxs) {
+  ncol <- ncol(df)
+  stopifnot(all(idxs >= 1), all(idxs <= ncol))
+  
+  idxs <- sort(idxs)
+  stopifnot(all.equal(idxs - idxs[1] + 1, seq_along(idxs)))
+  
+  if (idxs[1] >= 2) {
+    bf <- df[, 1:(idxs[1]-1), drop = FALSE]
+  } else {
+    bf <- NULL
+  }
+  
+  if (idxs[length(idxs)] < ncol(df)) {
+    af <- df[, (idxs[length(idxs)]+1):ncol(df), drop = FALSE]
+  } else {
+    af <- NULL
+  }
+  
+  dplyr::bind_cols(
+    bf,
+    df2,
+    af
+  )
+}
+
+
 #' Pad MaxQuant TMT channels to the highest plex
 #' @param file A file name of PSM table from MaxQuant export
-pad_mq_channels <- function(file) {
-  # pad columns to a placeholder data frame
-  add_cols_at <- function (df, df2, idx) {
-    stopifnot(idx >= 0)
-    
-    dplyr::bind_cols(
-      df[, seq_len(idx), drop = FALSE],
-      df2,
-      df[, (idx + 1) : ncol(df), drop = FALSE]
-    )
-  }
-  
-  # replace columns in the original PSM table
-  replace_cols_at <- function (df, df2, idxs) {
-    dplyr::bind_cols(
-      df[, 1:(idxs[1]-1), drop = FALSE],
-      df2,
-      df[, (idxs[length(idxs)]+1):ncol(df), drop = FALSE]
-    )
-  }
-  
-  
+#' @inheritParams splitPSM
+pad_mq_channels <- function(file, fasta, entrez) {
   dat_dir <- get_gl_dat_dir()
+  
+  base_name <- file %>% gsub("\\.txt$", "", .)
   
   df <- read.csv(file.path(dat_dir, file), 
                  check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#")
@@ -2649,60 +2700,138 @@ pad_mq_channels <- function(file) {
   load(file.path(dat_dir, "label_scheme_full.rda"))
   load(file.path(dat_dir, "fraction_scheme.rda"))
   
-  if (! "PSM_File" %in% names(fraction_scheme)) return(df)
-  
-  base_name <- file %>% gsub("\\.txt$", "", .)
-  
-  fraction_scheme_sub <- fraction_scheme %>% 
-      dplyr::mutate(PSM_File = gsub("\\.txt$", "", PSM_File)) %>% 
-      dplyr::filter(PSM_File == base_name, !duplicated(TMT_Set))
+  # --- Inconsistency in MaxQuant msms.txt ---
+  # TMT: no `Gene Names` and `Protein Names` columns
+  # LFQ: 
+  #  (1) UniProt identifiers: with `Gene Names` and `Protein Names` columns
+  #  (2) RefSeq identifiers: without `Gene Names` and `Protein Names` columns
+  if (!("Gene Names" %in% names(df) && "Protein Names" %in% names(df))) {
+    stopifnot("Proteins" %in% names(df))
+    
+    df$"Gene names" <- df$"Gene Names" <- df$"Protein names" <- df$"Protein Names" <- NULL
 
-  label_scheme_sub <- label_scheme_full %>% 
-    dplyr::filter(TMT_Set == unique(fraction_scheme_sub$TMT_Set), 
-                  LCMS_Injection == unique(fraction_scheme_sub$LCMS_Injection))
+    df <- local({
+      df <- df %>% dplyr::mutate(prot_acc = gsub(";.*$", "", Proteins))
+      
+      tempdata <- df %>% 
+        dplyr::select(prot_acc) %>% 
+        dplyr::filter(!duplicated(prot_acc)) %>% 
+        annotPrn(fasta, entrez) %>% 
+        dplyr::select(prot_acc, gene, prot_desc) %>% 
+        dplyr::rename(`Gene Names` = "gene", "Protein Names" = "prot_desc")
+      
+      df <- df %>% 
+        dplyr::left_join(tempdata, by = "prot_acc") %>% 
+        dplyr::select(-prot_acc) 
+      
+      col <- which(names(df) == "Proteins")
+      
+      dplyr::bind_cols(
+        df[, 1:col],
+        df[, c("Gene Names", "Protein Names")],
+        df %>% 
+          dplyr::select(-c("Gene Names", "Protein Names")) %>% 
+          dplyr::select((col+1):ncol(.))
+      )
+    })
+  }
   
+  if (! "PSM_File" %in% names(fraction_scheme)) {
+    label_scheme_sub <- local({
+      raw_files <- unique(df$`Raw file`) %>% 
+        gsub("\\.raw$", "", .) %>% 
+        gsub("\\.d$", "", .)
+      
+      tmt_sets <- fraction_scheme %>% 
+        dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File), 
+                      RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
+        dplyr::filter(RAW_File %in% raw_files, !duplicated(TMT_Set)) %>% 
+        dplyr::ungroup() %>% 
+        dplyr::select(TMT_Set) %>% 
+        unlist()
+  
+      label_scheme_full %>% dplyr::filter(TMT_Set %in% tmt_sets)
+    })
+  } else {
+    label_scheme_sub <- local({
+      tmt_sets <- fraction_scheme %>% 
+          dplyr::mutate(PSM_File = gsub("\\.[^\\.]*$", "", PSM_File)) %>% 
+          dplyr::filter(PSM_File == base_name, !duplicated(TMT_Set)) %>% 
+        dplyr::ungroup() %>% 
+        dplyr::select(TMT_Set) %>% 
+        unlist()
+    
+      label_scheme_full %>% dplyr::filter(TMT_Set %in% tmt_sets)
+    })
+  }
+
   nas <- data.frame(rep(NA, nrow(df)))
   sample_ids <- as.character(label_scheme_sub$Sample_ID)
-  
+
   str_int1 <- "^Reporter intensity [0-9]+"
   str_int2 <- "^Reporter intensity corrected [0-9]+"
   str_dev <- "^Reporter mass deviation \\[mDa\\] [0-9]+"
-
+  
   df_int <- df %>% dplyr::select(grep(str_int1, names(.)))
   df_int2 <- df %>% dplyr::select(grep(str_int2, names(.)))
   df_dev <- df %>% dplyr::select(grep(str_dev, names(.)))
-
-  for (idx in seq_along(sample_ids)) {
-    if (grepl("^Empty\\.[0-9]+", sample_ids[idx])) {
-      df_int <- add_cols_at(df_int, nas, idx - 1)
-      df_int2 <- add_cols_at(df_int2, nas, idx - 1)
-      df_dev <- add_cols_at(df_dev, nas, idx - 1)
+  
+  this_plex <- ncol(df_int)
+  TMT_plex <- TMT_plex(label_scheme_full)
+  stopifnot(this_plex <= TMT_plex, this_plex >= 0)
+  
+  # Empty.xxx can be due to either channel padding or removals
+  if (this_plex > 0 && this_plex < TMT_plex) {
+    if (this_plex == 6) {
+      if (TMT_plex == 10) {
+        pos <- c(3, 5, 7, 9)
+      } else if (TMT_plex == 11) {
+        pos <- c(3, 5, 7, 9, 11)
+      } else if (TMT_plex == 16) {
+        pos <- c(3, 5, 7, 9, 11:16)
+      } else {
+        stop("TMT_plex not one of c(10, 11, 16).", call. = FALSE)
+      }
+    } else if (this_plex == 10) {
+      if (TMT_plex == 11) {
+        pos <- 11
+      } else if (TMT_plex == 16) {
+        pos <- c(11:16)
+      } else {
+        stop("TMT_plex not one of c(11, 16).", call. = FALSE)
+      }
+    } else if (this_plex == 11) {
+      if (TMT_plex == 16) {
+        pos <- c(12:16)
+      } else {
+        stop("TMT_plex not one of c(16).", call. = FALSE)
+      }
     }
-  }
-  rm(idx)
-  
-  len <- length(sample_ids)
-  
-  if (ncol(df_int) == len) {
-    names(df_int) <- paste("Reporter intensity", seq_len(len))
-    df <- replace_cols_at(df, df_int, grep(str_int1, names(df)))    
-  }
-  
-  if (ncol(df_int2) == len) {
-    names(df_int2) <- paste("Reporter intensity corrected", seq_len(len))
-    df <- replace_cols_at(df, df_int2, grep(str_int2, names(df)))
-  }
-  
-  if (ncol(df_dev) == len) {
-    names(df_dev) <- paste("Reporter mass deviation [mDa]", seq_len(len))
-    df <- replace_cols_at(df, df_dev, grep(str_dev, names(df)))
+    
+    for (idx in seq_along(pos)) {
+      df_int <- suppressMessages(add_cols_at(df_int, nas, pos[idx] - 1))
+      df_int2 <- suppressMessages(add_cols_at(df_int2, nas, pos[idx] - 1))
+      df_dev <- suppressMessages(add_cols_at(df_dev, nas, pos[idx] - 1))
+    }
+    rm(idx)
+    
+    len <- length(sample_ids)
+    if (ncol(df_int) == len && ncol(df_int2) == len && ncol(df_dev) == len) {
+      names(df_int) <- paste("Reporter intensity", seq_len(len))
+      df <- replace_cols_at(df, df_int, grep(str_int1, names(df)))
+      
+      names(df_int2) <- paste("Reporter intensity corrected", seq_len(len))
+      df <- replace_cols_at(df, df_int2, grep(str_int2, names(df)))
+      
+      names(df_dev) <- paste("Reporter mass deviation [mDa]", seq_len(len))
+      df <- replace_cols_at(df, df_dev, grep(str_dev, names(df)))
+    }
   }
 
   df$dat_file <- base_name
   
-  return(df)
+  invisible(df)
 }
-
 
 
 #'Splits PSM tables
@@ -2758,11 +2887,11 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
          call. = FALSE)
   }
 
-  df <- purrr::map(filelist, pad_mq_channels)
+  df <- purrr::map(filelist, pad_mq_channels, fasta, entrez)
   df <- suppressWarnings(dplyr::bind_rows(df))
 
   # exception: empty string under `Proteins`
-  # ver 1.6.15 also removed "Reverse"
+  # in ver 1.6.15, "Reverse" also removed
   df <- df %>% dplyr::filter(as.character(.$Proteins) > 0)
   
   dots <- rlang::enexprs(...)
@@ -2935,7 +3064,6 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   }
   
   # make available `pep_seq_mod` 
-  # for cleanupPSM(group_psm_by = pep_seq_mod)
   stopifnot("Modified sequence" %in% names(df))
   
   df <- df %>% 
@@ -3087,9 +3215,7 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
           df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
         })
       }
-      
-      
-			
+
 			df <- df %>% 
 			  calcSD_Splex(group_psm_by) %>% 
 			  `names<-`(gsub("^log2_R", "sd_log2_R", names(.))) %>% 
@@ -3162,7 +3288,6 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
           width = 8, height = 8, type = "log2_R", adjSD = FALSE, is_psm = TRUE)
       }
     }
-    
   }
 }
 
@@ -3170,27 +3295,6 @@ annotPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", mc_
 #' Pad Spectrum Mill TMT channels to the highest plex
 #' @param file A file name of PSM table from MaxQuant export
 pad_sm_channels <- function(file) {
-  # pad columns to a placeholder data frame
-  add_cols_at <- function (df, df2, idx) {
-    stopifnot(idx >= 0)
-    
-    dplyr::bind_cols(
-      df[, seq_len(idx), drop = FALSE],
-      df2,
-      df[, (idx + 1) : ncol(df), drop = FALSE]
-    )
-  }
-  
-  # replace columns in the original PSM table
-  replace_cols_at <- function (df, df2, idxs) {
-    dplyr::bind_cols(
-      df[, 1:(idxs[1]-1), drop = FALSE],
-      df2,
-      df[, (idxs[length(idxs)]+1):ncol(df), drop = FALSE]
-    )
-  }
-  
-  
   dat_dir <- get_gl_dat_dir()
   df <- suppressWarnings(readr::read_delim(file.path(dat_dir, file), delim = ";", 
                                            col_types = cols(filename = col_character())))

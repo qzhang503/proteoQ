@@ -155,47 +155,6 @@ extract_mq_ints <- function (df) {
 }
 
 
-
-
-
-extract_mq_ints_orig <- function (df) {
-  df <- df %>% 
-    dplyr::mutate(Mean_Int = rowMeans(.[, grepl("^Intensity\\s", names(.))], na.rm = TRUE))
-  
-  log2r <- df %>% 
-    dplyr::select(grep("^Intensity\\s", names(.)), Mean_Int) %>% 
-    dplyr::mutate_at(.vars = grep("^Intensity\\s", names(.)), 
-                     ~ log2(.x/Mean_Int)) %>% 
-    dplyr::select(-Mean_Int) %>% 
-    `names<-`(gsub("Intensity\\s(.*)", "log2_R000 \\(\\1\\)", names(.))) %>% 
-    dplyr::mutate_at(.vars = grep("^log2_R000\\s", names(.)), 
-                     ~ replace(.x, is.infinite(.x), NA)) 
-  
-  df <- df %>% 
-    dplyr::mutate(Mean_Int = rowMeans(.[, grepl("^LFQ intensity\\s", names(.))], na.rm = TRUE))
-  
-  n_log2r <- df %>% 
-    dplyr::select(grep("^LFQ intensity\\s", names(.)), Mean_Int) %>% 
-    dplyr::mutate_at(.vars = grep("^LFQ intensity\\s", names(.)), 
-                     ~ log2(.x/Mean_Int)) %>% 
-    dplyr::select(-Mean_Int) %>% 
-    `names<-`(gsub("LFQ intensity\\s(.*)", "N_log2_R000 \\(\\1\\)", names(.))) %>% 
-    dplyr::mutate_at(.vars = grep("^N_log2_R000\\s", names(.)), 
-                     ~ replace(.x, is.infinite(.x), NA)) 
-  
-  log2sd <- log2r %>% 
-    `names<-`(paste0("sd_", names(.))) %>% 
-    dplyr::mutate_all(~ replace(.x, !is.na(.x), NA))
-  
-  df <- list(df, log2sd, log2r, n_log2r) %>% 
-    dplyr::bind_cols() %>% 
-    dplyr::select(-Mean_Int)
-  
-  df <- df %>% 
-    `names<-`(gsub("^Intensity (.*)$", paste0("I000 \\(", "\\1", "\\)"), names(.))) %>% 
-    `names<-`(gsub("^LFQ intensity (.*)$", paste0("N_I000 \\(", "\\1", "\\)"), names(.)))
-}
-
 #' load MaxQuant peptide table
 #' 
 #' @inheritParams n_TMT_sets
@@ -216,17 +175,51 @@ pep_mq_lfq <- function(label_scheme) {
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
     dplyr::filter(not_allzero_rows(.[grep("^LFQ intensity ", names(.))])) 
   
-  df <- check_mq_df(df, label_scheme)
-
-  # note: empty `Gene names` will not be coerced to `prot_acc`
-  df <- df %>% 
+  ## handle inconsistency in MaxQuant column keys
+  # (1) "Gene names" vs "Gene Names" etc.
+  # (2) presence or absence of "Gene Names", "Protein Names" etc.
+  if (!("Gene Names" %in% names(df) && "Protein Names" %in% names(df))) {
+    stopifnot("Proteins" %in% names(df))
+    
+    df$"Gene names" <- df$"Gene Names" <- df$"Protein names" <- df$"Protein Names" <- NULL
+    
+    fasta <- match_call_arg(normPSM, fasta)
+    entrez <- match_call_arg(normPSM, entrez)
+    
+    df <- local({
+      df <- df %>% dplyr::mutate(prot_acc = gsub(";.*$", "", Proteins))
+      
+      tempdata <- df %>% 
+        dplyr::select(prot_acc) %>% 
+        dplyr::filter(!duplicated(prot_acc)) %>% 
+        annotPrn(fasta, entrez) %>% 
+        dplyr::select(prot_acc, gene, prot_desc) %>% 
+        dplyr::rename(`Gene Names` = "gene", "Protein Names" = "prot_desc")
+      
+      df <- df %>% 
+        dplyr::left_join(tempdata, by = "prot_acc") %>% 
+        dplyr::select(-prot_acc) 
+      
+      col <- which(names(df) == "Proteins")
+      
+      dplyr::bind_cols(
+        df[, 1:col],
+        df[, c("Gene Names", "Protein Names")],
+        df %>% 
+          dplyr::select(-c("Gene Names", "Protein Names")) %>% 
+          dplyr::select((col+1):ncol(.))
+      )
+    })
+  }
+  
+  df <- df %>% check_mq_df(label_scheme) %>% 
     dplyr::rename(
       pep_seq = Sequence, 
       prot_acc = Proteins, 
     ) %>% 
-    dplyr::mutate(gene = gsub("\\;.*", "", `Gene names`)) %>% 
+    dplyr::mutate(gene = gsub("\\;.*", "", `Gene Names`)) %>% 
     dplyr::mutate(prot_acc = gsub("\\;.*", "", prot_acc))
-  
+
   # `Modified sequence` not available in `peptides.txt` at version 1.6.15
   # group_psm_by = "pep_seq" only in normPSM
   if (group_psm_by == "pep_seq_mod") {

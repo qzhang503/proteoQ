@@ -1284,7 +1284,7 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") {
   if (!file.exists(file)) stop(rda, " not found.")
   
   load(file = file)
-  if (is.null(call_pars[[arg]])) 
+  if (!arg %in% names(call_pars)) 
     stop(arg, " not found in the latest call to ", call_rda, call. = FALSE)
   
   call_pars[[arg]]

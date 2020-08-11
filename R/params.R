@@ -40,8 +40,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	if (!file.exists(file.path(dat_dir, filename)))
 	  stop(filename, " not found under '", dat_dir, "'.", call. = FALSE)
 
-	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-	fn_prefix <- gsub("\\.[^.]*$", "", filename)
+	fn_suffix <- gsub("^.*\\.([^\\.]*)$", "\\1", filename)
+	fn_prefix <- gsub("\\.[^\\.]*$", "", filename)
 
 	if (fn_suffix %in% c("xls", "xlsx")) {
 		label_scheme_full <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Setup") %>% 
@@ -453,8 +453,8 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
   TMT_plex <- TMT_plex2()
   TMT_levels <- TMT_levels(TMT_plex)
 
-	fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-	fn_prefix <- gsub("\\.[^.]*$", "", filename)
+	fn_suffix <- gsub("^.*\\.([^\\.]*)$", "\\1", filename)
+	fn_prefix <- gsub("\\.[^\\.]*$", "", filename)
 
 	if (file.exists(file.path(dat_dir, filename))) {
 		if (fn_suffix %in% c("xls", "xlsx")) {
@@ -468,7 +468,10 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 			stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
 		}
 	  
-	  fraction_scheme <- fraction_scheme %>% dplyr::filter(!is.na(RAW_File))
+	  fraction_scheme <- fraction_scheme %>% 
+	    dplyr::filter(!is.na(RAW_File)) %>% 
+	    dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
+	    dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File, ignore.case = TRUE))
 	  
 	  if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
 	    stop("\nDuplicated `RAW_File` names in `", filename, "`:\n", 
@@ -479,8 +482,8 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	  
 	  if (!is.null(fraction_scheme[["PSM_File"]])) {
 	    fraction_scheme <- fraction_scheme %>% 
-	      dplyr::mutate(PSM_File = gsub("\\.csv$|\\.txt$|\\.ssv$", "", PSM_File)) 
-	    
+	      dplyr::mutate(PSM_File = gsub("\\.[^\\.]*$", "", PSM_File))
+
 	    local({
 	      raw_psm <- fraction_scheme %>% 
 	        tidyr::unite(RAW_File, RAW_File, PSM_File, sep = "@") 
