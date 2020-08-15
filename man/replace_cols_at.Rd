@@ -15,5 +15,5 @@ replace_cols_at(df, df2, idxs)
 \code{idxs} need to be a continuous sequences.}
 }
 \description{
-Replace columns in the original PSM table.
+The column index(es) need to be continuous.
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{pad_mq_channels}
 \alias{pad_mq_channels}
-\title{Pad MaxQuant TMT channels to the highest plex}
+\title{Pad MaxQuant TMT channels to the highest plex.}
 \usage{
 pad_mq_channels(file, fasta, entrez)
 }
@@ -22,5 +22,5 @@ table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 for preparing custom entrez files.}
 }
 \description{
-Pad MaxQuant TMT channels to the highest plex
+Pad MaxQuant TMT channels to the highest plex.
 }

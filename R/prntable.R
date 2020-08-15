@@ -198,6 +198,7 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
     dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
     dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %T>% 
-    write.table(., file.path(dat_dir, "Protein", "Protein.txt"), sep = "\t", col.names = TRUE, row.names = FALSE)
+    write.table(file.path(dat_dir, "Protein", "Protein.txt"), 
+                sep = "\t", col.names = TRUE, row.names = FALSE)
 }
 

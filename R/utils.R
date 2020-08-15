@@ -2680,3 +2680,20 @@ ok_existing_params <- function (filepath) {
   invisible(return)  
 } 
 
+
+#' Find the environment of a function
+#' 
+#' This is from Hadley's Advanced R.
+#' @param name The name of a function.
+#' @param env The environment.
+#' @import rlang
+env_where <- function(name, env = caller_env()) {
+  if (identical(env, empty_env())) {
+    stop("Can't find ", name, call. = FALSE)
+  } else if (env_has(env, name)) {
+    env
+  } else {
+    env_where(name, env_parent(env))
+  }
+}
+

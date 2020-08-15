@@ -9,8 +9,7 @@
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 newColnames <- function(i, x, label_scheme) {
   label_scheme_sub <- label_scheme %>%
-    dplyr::filter(TMT_Set == i) # %>% 
-    # dplyr::arrange(TMT_Channel)
+    dplyr::filter(TMT_Set == i) 
   
   cols <- grep(paste0("[RI][0-9]{3}[NC]{0,1}_", i, "$"), names(x))
   nm_channel <- gsub(paste0("([RI][0-9]{3}[NC]{0,1})_", i, "$"), "\\1", names(x)[cols])
@@ -80,10 +79,17 @@ check_mq_df <- function (df, label_scheme) {
   
   if (!all(mq_nms %in% ls_nms)) {
     missing_nms <- mq_nms %>% .[! . %in% ls_nms]
+    
+    warning("Sample ID(s) in MaxQuant `peptides.txt` not found in metadata:\n", 
+            purrr::reduce(missing_nms, paste, sep = ", "), 
+            call. = FALSE)
 
     # the same ID occurs in "Identification type", "Experiment", "Intensity", "LFQ intensity"
-    df <- df %>% 
-      dplyr::mutate_at(.vars = grep(paste0(" ", missing_nms, "$"), names(.)), ~ {.x <- NULL})
+    # df <- df %>% dplyr::mutate_at(.vars = grep(paste0(" ", missing_nms, "$"), names(.)), ~ {.x <- NULL})
+    purrr::walk(missing_nms, ~ {
+      df[, grep(paste0(" ", .x, "$"), names(df))] <- NULL
+      df <<- df
+    }, df)
   }
   
   invisible(df)
@@ -119,7 +125,6 @@ extract_mq_ints <- function (df) {
       `colnames<-`(gsub(paste0(type, "(.*)$"), paste0(prefix, " \\(", "\\1", "\\)"), names(.))) %>%
       cbind(df, .)
   }
-  
   
   load(file.path(dat_dir, "label_scheme.rda"))
   
@@ -257,8 +262,6 @@ pep_mq_lfq <- function(label_scheme) {
       dplyr::left_join(df_sds, by = group_pep_by) %>% 
       na_zeroIntensity() 
   })
-
-  # calculate log2FC to reference(s)
 
   df %>% 
     dplyr::select(
@@ -444,11 +447,14 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   
   if (purrr::is_empty(filelist)) stop("No individual peptide tables; run `PSM2Pep()` first.")
 
-  df <- do.call(rbind, 
-                purrr::map(filelist, read.csv, check.names = FALSE, header = TRUE, 
-                           sep = "\t", comment.char = "#")) %>%
-    dplyr::mutate(TMT_Set = factor(TMT_Set)) %>%
-    dplyr::arrange(TMT_Set) 
+  df <- suppressWarnings(
+    do.call(rbind, 
+            purrr::map(filelist, read.csv, check.names = FALSE, header = TRUE, 
+                       sep = "\t", comment.char = "#")) %>%
+      dplyr::select(-one_of("dat_file")) %>% 
+      dplyr::mutate(TMT_Set = factor(TMT_Set)) %>%
+      dplyr::arrange(TMT_Set) 
+  )
   
   df <- df %>% filters_in_call(!!!filter_dots)
   
@@ -480,11 +486,13 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
     dplyr::summarise(prot_n_pep = n())
   
-  df_first <- df %>% 
-    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-    med_summarise_keys(group_psm_by) %>% 
-    dplyr::select(-pep_n_psm, -prot_n_psm, -prot_n_pep, -TMT_Set) %>% 
-    dplyr::arrange(!!rlang::sym(group_psm_by))  
+  df_first <- suppressWarnings(
+    df %>% 
+      dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
+      med_summarise_keys(group_psm_by) %>% 
+      dplyr::select(-one_of("pep_n_psm", "prot_n_psm", "prot_n_pep", "TMT_Set")) %>% 
+      dplyr::arrange(!!rlang::sym(group_psm_by))
+  )
 
   df <- list(pep_n_psm, df_first, df_num) %>%
     purrr::reduce(dplyr::left_join, by = group_psm_by)
@@ -551,7 +559,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     dplyr::filter(rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0) %>% 
     dplyr::arrange(!!rlang::sym(group_psm_by))
   
-  # a placeholder so no need to handle the exception of no `Z_log2_R` columns before `normMulGau`
+  # a placeholder so no need to handle the exception of 
+  # no `Z_log2_R` columns before the first `normMulGau`
   if (purrr::is_empty(grep("^Z_log2_R[0-9]{3}[NC]{0,1}", names(df)))) {
     df <- df %>% 
       dplyr::select(grep("^N_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
@@ -578,6 +587,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
 #' @import dplyr purrr rlang
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 med_summarise_keys <- function(df, id) {
+  ## --- Mascot ---
   mascot_median_keys <- c("pep_score", "pep_rank", "pep_isbold", "pep_exp_mr", "pep_delta", 
                           "pep_exp_mz", "pep_exp_z", "pep_locprob", "pep_locdiff")
   mascot_geomean_keys <- c("pep_expect")
@@ -595,6 +605,7 @@ med_summarise_keys <- function(df, id) {
   df <- df %>% 
     dplyr::select(-which(names(.) %in% c(mascot_median_keys, mascot_geomean_keys)))
   
+  ## --- MaxQuants ---
   df_mq_rptr_mass_dev <- df %>% 
     dplyr::select(!!rlang::sym(id), grep("^Reporter mass deviation", names(.))) %>% 
     dplyr::group_by(!!rlang::sym(id)) %>% 
@@ -625,6 +636,35 @@ med_summarise_keys <- function(df, id) {
   df <- df %>% 
     dplyr::select(-which(names(.) %in% c(mq_median_keys, mq_geomean_keys)))
   
+  # better redo it when processing msms.txt and standardize the column names. 
+  # (i.e. it may be named "Missed Cleavages" instead of "Missed cleavages" etc.)
+  if ("Length" %in% names(df)) df <- df %>% dplyr::mutate(pep_len = Length)
+  if ("Missed cleavages" %in% names(df)) df <- df %>% dplyr::mutate(pep_miss = `Missed cleavages`)
+  if ("Missed Cleavages" %in% names(df)) df <- df %>% dplyr::mutate(pep_miss = `Missed cleavages`)
+  
+  df <- suppressWarnings(
+    df %>% 
+      dplyr::select(-one_of("Scan number", "Scan index", "Length", "Missed cleavages", "Missed Cleavages"))
+  )
+  
+  if (all(c("Modifications", "Retention time") %in% names(df))) 
+    df <- df %>% dplyr::select(!`Modifications`:`Retention time`)
+  
+  df <- suppressWarnings(
+    df %>% dplyr::select(-one_of("Delta score", "Score diff", "Localization prob", 
+                                 "Precursor full scan number", "Precursor apex fraction",
+                                 "Precursor apex offset", "Precursor apex offset time", "Matches", 
+                                 "Mass deviations [ppm]", "Masses", "Number of matches", 
+                                 "Neutral loss level", "Intensities", "Mass deviations [Da]", 
+                                 "ETD identification type", "Reverse", "All scores", "All sequences", 
+                                 "All modified sequences", 
+                                 "Reporter PIF", "Reporter fraction", 
+                                 "ID", "Protein group IDs", "Peptide ID", "Mod. peptide ID", 
+                                 "Evidence ID"))
+  ) %>% 
+    dplyr::select(-grep("site\\s+IDs$", names(.)))
+  
+  ## --- Spectrum Mill ---
   sm_median_keys <- c(
     "score", "parent_charge", 
     "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
@@ -641,6 +681,7 @@ med_summarise_keys <- function(df, id) {
   df <- df %>% 
     dplyr::select(-which(names(.) %in% sm_median_keys))
   
+  ## --- put together ---
   df_first <- df %>% 
     dplyr::filter(!duplicated(!!rlang::sym(id)))
   
@@ -828,7 +869,8 @@ fmt_num_cols <- function (df) {
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@importFrom plyr ddply
 #'@export
-mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = Inf, parallel = TRUE, ...) {
+mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = Inf, 
+                      parallel = TRUE, ...) {
   dat_dir <- get_gl_dat_dir()  
   
   old_opts <- options()
@@ -869,7 +911,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
                       use_duppeps = use_duppeps, 
                       cut_points = cut_points, 
                       parallel = parallel, 
-                      !!!filter_dots) %T>% 
+                      !!!filter_dots) %>% 
+    reloc_col("m/z", "Mass") %T>% 
     write.table(filename, sep = "\t", col.names = TRUE, row.names = FALSE)
   
   if (plot_log2FC_cv) {
@@ -1370,32 +1413,28 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
                    aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
   
   df <- df %>% 
-    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.)))
-  
-  df_mq_rptr_mass_dev <- df %>% 
-    dplyr::select(!!rlang::sym(id), grep("^Reporter mass deviation", names(.))) %>% 
-    dplyr::group_by(!!rlang::sym(id)) %>% 
-    dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-  
-  df <- df %>% 
-    dplyr::select(-grep("^Reporter mass deviation", names(.)))	  
-  
-  mq_median_keys <- c(
-    "Score", "Missed cleavages", "PEP", 
-    "Charge", "Mass", "PIF", "Fraction of total spectrum", "Mass error [ppm]", 
-    "Mass error [Da]", "Base peak fraction", "Precursor Intensity", 
-    "Precursor Apex Fraction", "Intensity coverage", "Peak coverage", 
-    "Combinatorics"
+    dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
+    dplyr::select(-one_of("is_tryptic")) %>% 
+    dplyr::select(-grep("^Reporter mass deviation", names(.))) 
+
+  df <- suppressWarnings(
+    df %>% dplyr::select(-one_of("m/z", "Charge", "Mass", "Mass error [ppm]", 
+                                 "Mass error [Da]", "Score", "Combinatorics", 
+                                 "PIF", "Fraction of total spectrum", 
+                                 "Base peak fraction", 
+                                 "Precursor Intensity", "Precursor intensity", 
+                                 "Precursor Apex Fraction", 
+                                 "Intensity coverage", "Intensity Coverage", 
+                                 "Peak coverage", "Peak Coverage", "PEP"))
   )
   
+  mq_median_keys <- NULL
   df_mq_med <- df %>% 
     dplyr::select(!!rlang::sym(id), which(names(.) %in% mq_median_keys)) %>% 
     dplyr::group_by(!!rlang::sym(id)) %>% 
     dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-  
-  df <- df %>% 
-    dplyr::select(-which(names(.) %in% mq_median_keys))		
-  
+  df <- df %>% dplyr::select(-which(names(.) %in% mq_median_keys))
+
   sm_median_keys <- c(
     "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
     "precursorAveragineChiSquared", "precursorIsolationPurityPercent", 
@@ -1415,7 +1454,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
     dplyr::select(-grep("^pep_", names(.)))    
   
   df <- list(df_first, 
-             df_mq_rptr_mass_dev, df_mq_med, 
+             df_mq_med, 
              df_sm_med, 
              df_num) %>% 
     purrr::reduce(left_join, by = id) %>% 
