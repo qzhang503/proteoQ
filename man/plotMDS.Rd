@@ -169,9 +169,9 @@ or \code{\link[proteoQ]{standPep}} where log2FC are aligned by observations
 (samples).}
 
 \item{scale_features}{Logical; if TRUE, adjusts log2FC to the same scale of
-variance by features (proteins or peptides). The default is TRUE. Note the
-difference to data scaling with \code{scale_log2r} where log2FC are scaled
-by observations (samples).}
+variance by features (protein or peptide entries). The default is TRUE. Note
+the difference to data scaling with \code{scale_log2r} where log2FC are
+scaled by observations (samples).}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}

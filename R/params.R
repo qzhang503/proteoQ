@@ -481,8 +481,26 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	  }	
 	  
 	  if (!is.null(fraction_scheme[["PSM_File"]])) {
+	    local({
+	      meta_psm_files <- unique(fraction_scheme$PSM_File)
+	      
+	      if (!is.null(meta_psm_files)) {
+	        not_oks <- purrr::map(meta_psm_files, 
+	                              ~ list.files(dat_dir, 
+	                                           pattern = paste0(.x, "\\.csv$|\\.txt$|\\.ssv$|\\.tsv$"))) %>% 
+	          purrr::map_lgl(purrr::is_empty)
+	        
+	        if (any(not_oks)) {
+	          stop("PSM file (names) in `", filename, "` not found under ", dat_dir, ":\n", 
+	               purrr::reduce(meta_psm_files[not_oks], paste, sep = "\n"), 
+	               call. = FALSE)
+	        }
+	      }
+	    })
+
 	    fraction_scheme <- fraction_scheme %>% 
-	      dplyr::mutate(PSM_File = gsub("\\.[^\\.]*$", "", PSM_File))
+	      # make explicit file extension to avoid ".dot.csv" etc.
+	      dplyr::mutate(PSM_File = gsub("\\.csv$|\\.txt$|\\.ssv$|\\.tsv$", "", PSM_File))
 
 	    local({
 	      raw_psm <- fraction_scheme %>% 
@@ -493,7 +511,7 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	             call. = FALSE)
 	      }
 	    })
-	  }
+	  } 
 
 	  local({
 	    expt_raws <- label_scheme_full %>% 
@@ -708,35 +726,37 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 } 
 
 
-#'Load TMT experiments
+#'Load TMT or LFQ experiments
 #'
 #'\code{load_expts} processes \code{.xlsx} files containing the metadata of TMT
-#'experiments
+#'or LFQ (MaxQuant) experiments
 #'
 #'@section \code{expt_smry.xlsx}: The \code{expt_smry.xlsx} files should be
-#'  located immediately under the file folder defined by \code{dat_dir}. The tab
-#'  containing the metadata of TMT experiments should be named \code{Setup}. The
-#'  \code{Excel} spread sheet therein is comprised of three tiers of fields: (1)
-#'  essential, (2) optional default and (3) optional open. The \code{essential}
-#'  columns contain the mandatory information of TMT experiments. The
-#'  \code{optional default} columns serve as the fields for default lookups in
-#'  sample selection, grouping, ordering, aesthetics, etc. The \code{optional
-#'  open} fields allow users to define their own analysis, aesthetics, etc.
+#'  placed immediately under the file folder defined by \code{dat_dir}. The tab
+#'  containing the metadata of TMT or LFQ experiments should be named
+#'  \code{Setup}. The \code{Excel} spread sheet therein is comprised of three
+#'  tiers of fields: (1) essential, (2) optional default and (3) optional open.
+#'  The \code{essential} columns contain the mandatory information of the
+#'  experiments. The \code{optional default} columns serve as the fields for
+#'  default lookups in sample selection, grouping, ordering, aesthetics, etc.
+#'  The \code{optional open} fields allow users to define their own analysis,
+#'  aesthetics, etc.
 #'
 #'  \tabular{ll}{ \strong{Essential column}   \tab \strong{Descrption}\cr
 #'  Sample_ID \tab Unique sample IDs \cr TMT_Channel \tab TMT channel names:
-#'  \code{126}, \code{127N}, \code{127C} et al. \cr TMT_Set \tab TMT experiment
-#'  indexes 1, 2, 3, ... \cr LCMS_Injection   \tab LC/MS injection indexes 1, 2,
-#'  3, ... under a \code{TMT_Set} \cr RAW_File \tab MS data file names
-#'  originated by \code{Xcalibur} with or without the \code{.raw} extension \cr
-#'  Reference \tab Labels indicating reference samples in TMT experiments \cr }
+#'  \code{126}, \code{127N}, \code{127C} etc. or left void for LFQ \cr TMT_Set
+#'  \tab TMT experiment indexes 1, 2, 3, ... or auto-filled for LFQ \cr
+#'  LCMS_Injection   \tab LC/MS injection indexes 1, 2, 3, ... under a
+#'  \code{TMT_Set} \cr RAW_File \tab MS data file names originated by
+#'  \code{MS} software(s) \cr Reference \tab Labels indicating reference samples in
+#'  TMT or LFQ experiments \cr }
 #'
 #'  \code{Sample_ID}: values should be unique for entries at a unique
-#'  combination of \code{TMT_Channel} and \code{TMT_Set}, or left blank for
+#'  combination of \code{TMT_Channel} and \code{TMT_Set}, or voided for
 #'  unused entries. Samples with the same indexes of \code{TMT_Channel} and
 #'  \code{TMT_Set} but different indexes of \code{LCMS_Injection} should have
 #'  the same value in \code{Sample_ID}. No white space or special characters are
-#'  allowed.
+#'  allowed. See also posts at \link{http://proteoq.netlify.com}.  
 #'
 #'  \code{RAW_File}: for analysis with off-line fractionation of peptides
 #'  before LC/MS, the \code{RAW_File} column should be left blank. Instead, the
@@ -746,19 +766,19 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  the field under the \code{RAW_File} column blank and instead enter the MS
 #'  file names in \code{frac_smry.xlsx}.
 #'
-#'  The set of \code{RAW_File} names in \code{frac_smry.xlsx} needs to be
-#'  identical to those in PSM data. Note that \code{OS} file names may be
-#'  altered by MS users and thus different to those recorded in \code{Xcalibur}.
-#'  The original names by \code{Xcalibur} should be used. MS files may
-#'  occasionally have no contributions to PSM findings. These MS file names
-#'  should be removed from \code{frac_smry.xlsx}.
+#'  The set of \code{RAW_File} names in metadata needs to be identifiable in PSM
+#'  data. Impalpable mismatches might occur when \code{OS} file names were
+#'  altered by MS users and thus different to those recorded internally in MS
+#'  data for parsing by search engine(s). In the case, machine-generated MS file
+#'  names should be used. In addition, MS files may occasionally have no
+#'  contributions to PSM findings. In the case, users will be prompted to remove
+#'  these MS file names.
 #'
-#'  Utilities \code{extract_raws()} and \code{extract_psm_raws()} may aid
-#'  matching MS file names between \code{frac_smry.xlsx} and PSM data. Utility
-#'  \code{extract_raws()} extracts the list of MS file names under a file
-#'  folder. For help, try \code{?extract_raws}. Utility
-#'  \code{extract_psm_raws()} extracts the list of MS file names that are
-#'  actually present in PSM data. For help, try \code{?extract_psm_raws}.
+#'  Utilities \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} may
+#'  aid matching MS file names between metadata and PSM data. Utility
+#'  \code{\link{extract_raws}} extracts the names of MS files under a file
+#'  folder. Utility \code{\link{extract_psm_raws}} extracts the names of MS
+#'  files that are available in PSM data.
 #'
 #'  \code{Reference}: reference entry(entries) are indicated with non-void string(s).
 #'
@@ -775,14 +795,15 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'
 #'  \tabular{ll}{ \strong{Exemplary optional open column}   \tab
 #'  \strong{Descrption}\cr Term \tab Categorical terms for statistical modeling.
-#'  \cr Duplicate \tab Indicators of duplicated samples for corrections in
-#'  statistical significance \cr Peptide_Yield \tab Yields of peptides in sample
-#'  handling \cr}
+#'  \cr Peptide_Yield \tab Yields of peptides in sample handling \cr}
 #'
 #'
 #'@section \code{frac_smry.xlsx}: \tabular{ll}{ \strong{Column}   \tab
 #'  \strong{Descrption}\cr TMT_Set \tab v.s.  \cr LCMS_Injection   \tab v.s. \cr
 #'  Fraction \tab Fraction indexes under a \code{TMT_Set} \cr RAW_File \tab v.s.
+#'  \cr PSM_File \tab Names of PSM files, e.g. F012345.csv. Only required when
+#'  the same \code{RAW_File} can be linked to multiple PSM files (see also
+#'  \link{http://proteoq.netlify.com}).
 #'  }
 #'  
 #'@family normalization functions
@@ -842,21 +863,16 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  # Mascot \cr
+#'  # Mascot, MaxQuant and Spectrum Mill \cr
 #'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
 #'  
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
-#'  
 #'@param dat_dir A character string to the working directory. The default is to
 #'  match the value under the global environment.
-#'@param expt_smry A character string to the \code{.xlsx} file containing the
-#'  metadata of TMT experiments. The default is \code{expt_smry.xlsx}.
-#'@param frac_smry A character string to the \code{.xlsx} file containing
+#'@param expt_smry A character string to a \code{.xlsx} file containing the
+#'  metadata of TMT or LFQ experiments. The default is \code{expt_smry.xlsx}.
+#'@param frac_smry A character string to a \code{.xlsx} file containing
 #'  peptide fractionation summary. The default is \code{frac_smry.xlsx}.
 #'
 #'@example inst/extdata/examples/load_expts_.R
@@ -1154,9 +1170,11 @@ check_raws <- function(df) {
   }
   
   if (!purrr::is_empty(wrong_label_scheme_raws)) {
-    stop("Following RAW file name(s) in metadata have no corresponding entries in PSM data:\n", 
+    stop("\n======================================================================================\n", 
+         "Following RAW file name(s) in metadata have no corresponding entries in PSM data:\n", 
          "(Hint: also check the possibility that MS file(s) may have zero PSM contributions.)\n\n", 
          purrr::reduce(wrong_label_scheme_raws, paste, sep = "\n"), 
+         "\n======================================================================================\n", 
          call. = FALSE)
   }
   
@@ -1175,7 +1193,7 @@ find_masct_tmtplex <- function(df, pep_seq_rows = NULL) {
   
   first_line <- df[pep_seq_rows[1] + 1]
   
-  if (grepl("\"134\"", first_line, fixed = TRUE)) {
+  if (grepl("\"134N\"", first_line, fixed = TRUE) || grepl("\"134\"", first_line, fixed = TRUE)) {
     mascot_tmtplex <- 16
   } else if (grepl("\"131C\"", first_line, fixed = TRUE)) {
     mascot_tmtplex <- 11

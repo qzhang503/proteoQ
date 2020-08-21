@@ -372,7 +372,7 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
 #'Correlation plots
 #'
 #'\code{pepCorr_logInt} plots Pearson correlation of the \code{log10} intensity
-#'of reporter ions for peptide data.
+#'of ions for peptide data.
 #'
 #'@rdname prnCorr_logFC
 #'
@@ -407,9 +407,9 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'
 #'\code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}. 
 #'
-#'The function matches the current \code{id} to the grouping argument in the
-#'latest \code{call} to \code{\link{normPSM}}. See also \code{\link{prnHist}}
-#'for details.
+#' With TMT experiments, the same peptide sequence may be triggered any where
+#' between the baseline and the apex of a peak profile. The comparison of
+#' intensity between plex-es probably have a very different or little meaning.
 #'
 #'@inheritParams prnHist
 #'@inheritParams prnMDS
@@ -481,16 +481,10 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  # Mascot \cr
 #'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
 #'  
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
-#'
 #'@example inst/extdata/examples/prnCorr_.R
 #'
 #'@return Correlation plots.
@@ -525,7 +519,7 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
 #'Correlation Plots
 #'
 #'\code{prnCorr_logInt} plots Pearson correlation of the \code{log10} intensity
-#'of reporter ions for protein data.
+#'of ions for protein data.
 #'
 #'
 #'@rdname prnCorr_logFC

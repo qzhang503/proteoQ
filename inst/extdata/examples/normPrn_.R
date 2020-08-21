@@ -9,9 +9,10 @@
 # (1) `MGKernel`
 # ===================================
 
-# !!! initial `Protein.txt` results from `Pep2Prn()` aligned by median centering (MC)
-# !!! the first `MGKernel` normalization will apply to all samples
-# !!! succeeding `MGKernel` normalization(s) will also apply to all samples if changing `n_comp` (see section 4)
+# !!! Initial `Protein.txt` results from `Pep2Prn()` are in median centering.
+# !!! The first `MGKernel` normalization will always be applied to all samples.
+# !!! If changing `n_comp`, succeeding `MGKernel` normalization(s) will be 
+#     applied to all samples (a fresh-start principle, see also section 4)
 
 # fresh start of `Protein.txt` (for demonstration)
 unlink(file.path(dat_dir, "Protein"), recursive = TRUE, force = TRUE)

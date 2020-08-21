@@ -236,13 +236,7 @@ prnGSPAHM(
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot \cr
  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
- 
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

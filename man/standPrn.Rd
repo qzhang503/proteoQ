@@ -41,8 +41,8 @@ the 5th and the 95th quantiles.}
 \code{n_comp} overwrites the argument \code{k} in
 \code{\link[mixtools]{normalmixEM}}.}
 
-\item{seed}{Integer; a seed setting a starting point for reproducible
-analyses.}
+\item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
+MGKernel}.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in
@@ -53,10 +53,10 @@ indicated analysis.}
 
 \item{cut_points}{A numeric vector defines the cut points (knots) for the
 median-centering of \code{log2FC} by sections. The values of the knots
-indicate the summarized \code{log10(Intentisy)} of reporter ions. For
+indicate the summarized \code{log10(Intentisy)} of ions. For
 example, at \code{cut_points = seq(4, 7, .5)}, values of \code{log2FC} will
 be binned from \eqn{-Inf} to \eqn{Inf} according to the cut points at the
-reporter-ion intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
+reporter-ion (or LFQ) intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
 \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
 \code{log2FC} under each sample will be median-centered all together. See
 also \code{\link{prnHist}} for data binning and intensity-coded histograms.}
@@ -94,15 +94,15 @@ normalization against data under selected sample columns, data rows or both.
 \details{
 In the primary output file, "\code{Protein.txt}", values under columns
 \code{log2_R...} are logarithmic ratios at base 2 in relative to the
-\code{reference(s)} within each multiplex TMT set, or to the row means if no
-\code{reference(s)} are present. Values under columns \code{N_log2_R...} are
-aligned \code{log2_R...} according to \code{method_align} without scaling
-normalization. Values under columns \code{Z_log2_R...} are \code{N_log2_R...}
-with additional scaling normalization. Values under columns \code{I...} are
-\code{reporter-ion intensity} before normalization. Values under columns
-\code{N_I...} are normalized \code{I...}. Values under columns
-\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
-proteins from ascribing peptides.
+\code{reference(s)} within each multiplex TMT set, or to the row means within
+each plex if no \code{reference(s)} are present. Values under columns
+\code{N_log2_R...} are aligned \code{log2_R...} according to
+\code{method_align} without scaling normalization. Values under columns
+\code{Z_log2_R...} are \code{N_log2_R...} with additional scaling
+normalization. Values under columns \code{I...} are reporter-ion or LFQ
+intensity before normalization. Values under columns \code{N_I...} are
+normalized \code{I...}. Values under columns \code{sd_log2_R...} are the
+standard deviation of the \code{log2FC} of proteins from ascribing peptides.
 }
 \examples{
 \donttest{
@@ -116,9 +116,10 @@ proteins from ascribing peptides.
 # (1) `MGKernel`
 # ===================================
 
-# !!! initial `Protein.txt` results from `Pep2Prn()` aligned by median centering (MC)
-# !!! the first `MGKernel` normalization will apply to all samples
-# !!! succeeding `MGKernel` normalization(s) will also apply to all samples if changing `n_comp` (see section 4)
+# !!! Initial `Protein.txt` results from `Pep2Prn()` are in median centering.
+# !!! The first `MGKernel` normalization will always be applied to all samples.
+# !!! If changing `n_comp`, succeeding `MGKernel` normalization(s) will be 
+#     applied to all samples (a fresh-start principle, see also section 4)
 
 # fresh start of `Protein.txt` (for demonstration)
 unlink(file.path(dat_dir, "Protein"), recursive = TRUE, force = TRUE)
@@ -437,13 +438,7 @@ standPrn(
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot \cr
  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
- 
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

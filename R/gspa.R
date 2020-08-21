@@ -233,15 +233,9 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  # Mascot \cr
 #'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
-#'  
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean", 
@@ -1024,16 +1018,10 @@ map_essential <- function (sig_sets) {
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  # Mascot \cr
 #'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
 #'  
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
-#'
 #'@export
 prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, fml_nms = NULL, 
                        annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 

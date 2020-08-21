@@ -15,8 +15,8 @@ PSM2Pep(
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
 The descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")} with \code{median} being the default. The
-\code{log10-intensity} of reporter ions at the \code{PSMs} levels will be
-the weight when summarizing \code{log2FC} with \code{"top.3"} or
+\code{log10-intensity} of reporter (or LFQ) ions at the \code{PSMs} levels
+will be the weight when summarizing \code{log2FC} with \code{"top.3"} or
 \code{"weighted.mean"}.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
@@ -26,12 +26,12 @@ is TRUE.}
 }
 \value{
 Tables under \code{PSM} folder for each TMT experiment and LC/MS
- series: \code{TMTset1_LCMSinj1_PSM_N.txt}, \code{TMTset1_LCMSinj2_PSM_N.txt}...
+ series: \code{TMTset1_LCMSinj1_PSM_N.txt}, \code{TMTset1_LCMSinj2_PSM_N.txt} etc.
 }
 \description{
 \code{PSM2Pep} summarizes
 \href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSMs} to
-peptides by individual TMT experiments and LC/MS series.
+peptides by individual TMT (or LFQ) experiments and LC/MS series.
 }
 \details{
 In general, fields other than \code{log2FC} and \code{intensity} are
@@ -106,14 +106,8 @@ PSM2Pep(method_psm_pep = mean)
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot \cr
  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
- 
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }
 \concept{custom database preparation}

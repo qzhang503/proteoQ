@@ -46,7 +46,8 @@ height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
 \description{
 \code{purgePSM} removes \code{peptide} entries from PSM tables by selection
 criteria. It further plots the distributions of \code{log2FC} by TMT
-experiments and LC/MS series.
+experiments and LC/MS series. The utility will have no effect against LFQ data
+using MS1 peak area/intensity.
 }
 \details{
 The CV of peptides are calculated from contributing PSMs at the basis of per
@@ -136,13 +137,7 @@ purgePSM(dpi = 300, theme = ggplot2::theme_dark())
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot \cr
  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
- 
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

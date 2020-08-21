@@ -4,12 +4,10 @@
 \alias{pad_mascot_channels}
 \title{Pad Mascot TMT channels to the highest plex}
 \usage{
-pad_mascot_channels(data, TMT_plex)
+pad_mascot_channels(file)
 }
 \arguments{
-\item{data}{A PSM table from Mascot export}
-
-\item{TMT_plex}{The multiplicity of TMT according to expt_smry.xlsx}
+\item{df}{An intermediate PSM table from Mascot export}
 }
 \description{
 Pad Mascot TMT channels to the highest plex

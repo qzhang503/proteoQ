@@ -252,7 +252,8 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by, pt_cv, max_cv
 #'
 #'\code{purgePSM} removes \code{peptide} entries from PSM tables by selection
 #'criteria. It further plots the distributions of \code{log2FC} by TMT
-#'experiments and LC/MS series.
+#'experiments and LC/MS series. The utility will have no effect against LFQ data
+#'using MS1 peak area/intensity.
 #'
 #'The CV of peptides are calculated from contributing PSMs at the basis of per
 #'TMT experiment per series of LC/MS. Note that greater CV may be encountered
@@ -328,15 +329,9 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by, pt_cv, max_cv
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  # Mascot \cr
 #'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
-#'  
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, 
@@ -467,15 +462,9 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  # Mascot \cr
 #'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
-#'  
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@export
 purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, keep_ohw = TRUE, 

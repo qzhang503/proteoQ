@@ -81,7 +81,7 @@ knitr::opts_chunk$set(
 
 
 ## Introduction to proteoQ
-Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible analysis of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the operations against data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
+Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible mining of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the operations against data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
 
 The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of `proteoQ` consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo's Orbitrap mass analyzers. It is also capable of processing the LFQ data from [MaxQuant](https://www.maxquant.org/). Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags. https://github.com/qzhang503/proteoQ.]  
 
@@ -168,7 +168,7 @@ copy_global_exptsmry(dat_dir)
 copy_global_fracsmry(dat_dir)
 ```
 
-We now have all the pieces that are required by `proteoQ` in place. Let's have a quick glance at the `expt_smry.xlsx` file. We note that no reference channels were indicated under the column `Reference`. With `proteoQ`, the `log2FC` of each species in a given sample is calculated either (*a*) in relative to the reference(s) within each multiplex TMT experiment or (*b*) to the mean of all samples in the same experiment if reference(s) are absent. Hence, the later approach will be employed to the exemplary data set that we are working with. In this special case, the `mean(log2FC)` for a given species in each TMT experiment is averaged from five `WHIM2` and five `WHIM16` aliquots, which are biologically equivalent across TMT experiments.  
+We now have all the pieces that are required by `proteoQ` in place. Let's have a quick glance at the `expt_smry.xlsx` file. We note that no reference channels were indicated under the column `Reference`. With `proteoQ`, the `log2FC` of each species in a given sample is calculated either (*a*) in relative to the reference(s) within each multiplex TMT experiment or (*b*) to the mean of all samples in the same plex if reference(s) are absent. Hence, the later approach will be employed to the exemplary data set that we are working with. In this special case, the `mean(log2FC)` for a given species in each TMT experiment is averaged from five `WHIM2` and five `WHIM16` aliquots, which are biologically equivalent across TMT experiments.  
 
 #### 1.1.4 Experiment upload
 As a final step of the setup, we will load the experimental summary into a work space:  
@@ -354,13 +354,6 @@ mergePep(
 
 Similar to `normPSM`, we can filter data via column keys linked to the varargs of `filter_`. In the exemplary vararg statement of `filter_peps_by`, we exlcude longer peptide sequences with more than 100 amino acid residues. If we are interested in human, but not mouse, peptides from the pdx samples, we can specify similarly that `species == "human"`. Sometimes, it may remain unclear on proper data filtration at the early stage of analysis. In that case, we may need additional quality assessments that we will soon explore. Alternatively, we may keep as much information as possible and apply varargs in downstream analysis.  
 
-Note that `pep_len` is a column key in `TMTset1_LCMSinj1_Peptide_N.txt` with Mascot workflows. Depends on the search engines, we might need to employ different key names for the same purpose:  
-
-```{r mergePep_2, eval = FALSE}
-# `Length` in a column key in TMTset1_LCMSinj1_Peptide_N.txt with MaxQuant
-mergePep(filter_peps_at = exprs(Length <= 100))
-```
-
 #### 1.3.3 standPep
 The utility `standPep` standardizes peptide results from `mergePep` with additional choices in data alignment.  
 
@@ -381,7 +374,7 @@ The parameters `range_log2r` and `range_int` outline the ranges of peptide `log2
 It is also feasible to perform `standPep` against defined sample columns and data rows. Moreover, the utility can be applied interactively with cumulative effects. Combinations and iterations of the features can lead to specialty sample alignments that will discuss soon (sections 1.3.5 - 1.3.7). Before delving more into the details, we would probably need some helps from the `pepHist` utility in the immediately following.  
 
 #### 1.3.4 pepHist
-The `pepHist` utility plots the histograms of peptide `log2FC`. It further bins the data by their contributing reporter-ion intensity. In the examples shown below, we compare the `log2FC` profiles of peptides with and without scaling normalization:^[`standPep()` will report log2FC results both before and after the scaling of standard deviations.]  
+The `pepHist` utility plots the histograms of peptide `log2FC`. It further bins the data by their contributing reporter-ion or LFQ intensity. In the examples shown below, we compare the `log2FC` profiles of peptides with and without scaling normalization:^[`standPep()` will report log2FC results both before and after the scaling of standard deviations.]  
 
 ```{r Peptide log2FC, eval = FALSE}
 # without scaling
@@ -422,7 +415,7 @@ pepHist(
 )
 ```
 
-*NB*: We interactively told `pepHist()` that we are interested in sample entries under the newly created `BI_1` column. Behind the scene, the interactions are facilitated by [`openxlsx`](https://cran.r-project.org/web/packages/openxlsx/openxlsx.pdf) via the reading of the `Setup` workbook in `expt_smry.xlsx`. We also supply a file name, assuming that we want to keep the previously generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_Z.png`.  
+*NB*: We interactively told `pepHist()` that we are interested in sample entries under the newly created `BI_1` column. Behind the scene, the interactions occurred via the reading of the `Setup` workbook in `expt_smry.xlsx`. We also supply a file name, assuming that we want to keep the previously generated plots with default file names of `Peptide_Histogram_N.png` and `Peptide_Histogram_Z.png`.  
 
 ```{r Peptide histogram F, echo=FALSE, fig.align='center', fig.cap="**Figure 2A-2B.** Histograms of peptide log2FC. Top: `scale_log2r = FALSE`; bottom, `scale_log2r = TRUE`", fig.show='hold', message=FALSE, warning=FALSE, out.width='95%'}
 img1_path <- "images/peptide/histogram/bi1_n_1.png"
@@ -716,7 +709,7 @@ prnMDS(
 
 
 ### 1.7 LFQ
-See notes <strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>.
+See notes <strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>. More examples to come.  
 
 ## 2 Basic informatics
 In this section I illustrate the following applications of `proteoQ`:  
@@ -2062,12 +2055,10 @@ knitr::include_graphics(c(img_prn_mix_effs))
 
 
 ## 4 Column keys
+The results are reported at the levels of PSMs, peptides and proteins. The order of column keys may vary slightly provided differences in databases, accession types, and/or function parameters.  
 
-### 4.1 Mascot
-The results are reported at the levels of PSMs, peptides and proteins. The order of column keys can vary slightly provided different databases or accession types.  
-
-#### 4.1.1 PSMs
-PSMs are reported at the basis of per TMT experiment per series of LC/MS data acquisition. The names of the result files are `TMTset1_LCMSinj1_PSM_N.txt`, `TMTset2_LCMSinj1_PSM_N.txt` et al. with the indexes of TMT experiment and LC/MS injection index being indicated in the names. The column keys are described in [`Matrix Science`](http://www.matrixscience.com/help/csv_headers.html) with the following additions or modifications:  
+### 4.1 PSMs
+PSMs are reported at the basis of per TMT experiment per series of LC/MS data acquisition. The names of the result files are `TMTset1_LCMSinj1_PSM_N.txt`, `TMTset2_LCMSinj1_PSM_N.txt` etc. with the indexes of TMT experiment and LC/MS injection index being indicated . The column keys are described in [`Matrix Science`](http://www.matrixscience.com/help/csv_headers.html), [`MaxQuant`](http://www.coxdocs.org/doku.php?id=maxquant:table:evidencetable), or the users' manual of Spectrum Mill, with the following additions or modifications:  
 
 ```{r mascot_psm_keys, echo=FALSE, results="asis"}
 file <- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ")
@@ -2075,7 +2066,7 @@ keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
 knitr::kable(keys) 
 ```
 
-#### 4.1.2 Peptides
+### 4.2 Peptides
 Prior to significance tests, the primary peptide outputs with and without the imputation of NA values are summarized in `Peptide.txt` and `Peptide_impNA.txt`, respectively. The column keys therein are described in the following:  
 
 ```{r mascot_peptide_keys, echo=FALSE, results="asis"}
@@ -2084,7 +2075,9 @@ keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
 knitr::kable(keys) 
 ```
 
-#### 4.1.3 Proteins
+Following optional significance tests, the primary peptide outputs with and without the imputation of NA values are summarized in `Peptide_pVals.txt` and `Peptide_impNA_pVals.txt`, respectively. Additional column keys include p-values, log2FC and linear FC, with the incorporation of contrast and formula names that have been specified in calls to `pepSig`.  
+
+### 4.3 Proteins
 Prior to significance tests, the primary protein outputs with and without the imputation of NA values are summarized in `Protein.txt` and `Protein_impNA.txt`, respectively. The corresponding column keys are described in the following:  
 
 ```{r mascot_protein_keys, echo=FALSE, results="asis"}
@@ -2093,39 +2086,10 @@ keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
 knitr::kable(keys) 
 ```
 
-### 4.2 MaxQuant
-MaxQuant files shares the same folder structure as those of Mascot.  
-
-#### 4.2.1 PSMs
-The column keys are defined in [`MaxQuant`](http://www.coxdocs.org/doku.php?id=maxquant:table:msmstable) with the following additions or modifications:  
-
-```{r maxquant_psm_keys, echo=FALSE, results="asis"}
-file <- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ")
-keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
-knitr::kable(keys) 
-```
-
-#### 4.2.2 Peptides
-The column keys in peptide tables are described below:  
-
-```{r maxquant_peptide_keys, echo=FALSE, results="asis"}
-file <- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ")
-keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
-knitr::kable(keys) 
-```
-
-#### 4.2.3 Proteins
-The corresponidng column keys are described below:  
-
-```{r maxquant_protein_keys, echo=FALSE, results="asis"}
-file <- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ")
-keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
-knitr::kable(keys) 
-```
-
+Analogous to the peptide tables, the primary protein outputs with and without the imputation of NA values are summarized in `Protein_pVals.txt` and `Protein_impNA_pVals.txt`, respectively.  
 
 ## 5 Appendix
-### 5.1 Mascot PSM tables
+### 5.1 Mascot PSM exports
 See notes <strong>[here](https://proteoq.netlify.app/post/exporting-mascot-psms)</strong>.  
 
 ### 5.2 Vararg table

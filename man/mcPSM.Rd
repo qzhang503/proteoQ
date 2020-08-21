@@ -17,12 +17,14 @@ as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 
 \item{mc_psm_by}{A character string specifying the method in the median
 centering of PSM \code{log2FC} across samples. At the \code{peptide}
-default, PSMs will be grouped according to \code{group_psm_by} and the
-medians under each \code{group_psm_by} will be used for the median
-centering. At \code{mc_psm_by = protein}, PSMs will be grouped according
-to \code{group_pep_by} and the medians under each \code{group_pep_by} will
-be used for the median centering. At the \code{mc_psm_by = psm}, PSMs will
-be median centered without grouping.}
+default, the median description of PSMs (grouped by \code{pep_seq} or
+\code{pep_seq_mod} according to \code{group_psm_by}) will be first
+calculated and the offsets to zero (of logarithmic 2) will be used for the
+centering of PSMs across samples. At \code{mc_psm_by = protein}, the median
+description of PSMs (grouped by \code{prot_acc} or \code{gene} according to
+\code{group_pep_by}) will be calculated and the corresponding offsets to
+zero will be applied. At the \code{mc_psm_by = psm}, PSMs will be median
+centered without grouping.}
 
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
 At the \code{pep_seq} default, descriptive statistics will be calculated

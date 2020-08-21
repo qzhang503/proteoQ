@@ -1,60 +1,62 @@
-Header	Descrption	Note	
-prot_hit_num	Ordinal number of the protein hit (or protein family when grouping enabled)	Mascot	
-prot_family_member	Ordinal number of the protein family member when grouping enabled	Mascot	
-prot_acc	Protein accession string	Mascot	
-prot_desc	Protein description taken from Fasta title line	Mascot	
-prot_score	Protein Mascot score	Mascot	
-prot_mass	Protein mass	Mascot	
-prot_matches	Count of PSMs	Mascot	
-prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Joint Mascot `prot_matches_sig` from individual data sources; PSMs with void reporter-ion intensity (of shared peptides) are included.	
-prot_sequences	Count of distinct sequences	Mascot	
-prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Joint Mascot `prot_sequences_sig` from individual data sources; the counts may be greater than `prot_sequences` when peptides with different variable modifications are treated as different identities	
-prot_len	The number of amino acid residues under a proposed protein	Mascot; or proteoQ if absent from Mascot PSM exports	
-prot_cover	Protein sequence coverage	Calculated from the union of individual data sources	
-prot_...	Additional protein keys from Mascot PSM exports	By users	
-prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users	
-prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. `prot_n_psm`	
-pep_seq_mod	'pep_seq' with variable modifications in the lower cases	"See the help `?proteoQ::normPSM` from an R console for nomenclatures; for example, ""-._mAsGVAVSDGVIK.V"", with a methionine oxidation and a serine phosphorylation"	
-pep_query	Ordinal number of query after sorting by Mr	Mascot	
-pep_rank	Peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.	Mascot	
-pep_isbold	"If grouping enabled, then a significant PSM. Otherwise, indicates this is the highest scoring protein that contains a match to this query."	Mascot	
-pep_isunique	Peptide sequence is unique to hit (grouping off) or family member (grouping on)	Mascot	
-pep_exp_mz	Observed or experimental m/z value	Mascot	
-pep_exp_mr	Molecular mass calculated from experimental m/z value	Mascot	
-pep_exp_z	Observed or experimental charge	Mascot	
-pep_calc_mr	Molecular mass calculated from matched peptide sequence	Mascot	
-pep_delta	pep_exp_mr – pep_calc_mr	Mascot	
-pep_start	Ordinal position of first peptide residue in protein sequence	Cf. `prot_len`	
-pep_end	Ordinal position of last peptide residue in protein sequence	Cf. `prot_len`	
-pep_miss	Count of missed cleavage sites in peptide	Mascot	
-pep_score	Mascot score for PSM	Mascot	
-pep_expect	Expectation value for PSM	Mascot	
-pep_res_before	Flanking residue on N-term side of peptide	Mascot	
-pep_seq	One-letter representation of peptide sequences	"See the help `?proteoQ::normPSM` from an R console for nomenclatures. For example,  ""-._MASGVAVSDGVIK.V"", the acetylations of protein N-terminals is indicated by '_' and the flanking residues on the N- or C-terminal side of peptides separated by '.'"	
-pep_res_after	Flanking residue on C-term side of peptide	Mascot	
-pep_var_mod	Variable modifications from all sources as list of names	Mascot	
-pep_var_mod_pos	"Variable modifications as a string of digits, e.g. ’0.0001000.0?. Non-zero digits identify mods according to key in export header. First and last positions are for terminus mods."	Mascot	
-pep_summed_mod_pos	"When two variable modifications occur at the same site, a string of digits defining the second mod"	Mascot	
-pep_local_mod_pos	Query-level variable modifications as a string of digits. The names of the mods will be listed in pep_var_mod	Mascot	
-pep_scan_title	Scan title taken from peak list	Mascot	
-pep_...	Additional peptide keys from Mascot PSM exports	By users	
-pep_len	Number of amino acid residues in a peptide sequence		
-pep_locprob	The highest probablity from Mascot site analysis for the variable modification sites	"The second highest probablity, `pep_locprob2`, not shown directly but summarized under `pep_locdiff`; Cf. `pep_var_mod_conf` from Mascot"	
-pep_locdiff	pep_locprob – pep_locprob2		
-pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf. `prot_n_psm`	
-raw_file	MS file name(s) where peptides or proteins are identified		
-gene	Protein gene name		
-acc_type	The type of accession names	"One of `refseq_acc`, `uniprot_acc` or `uniprot_id`"	
-uniprot_id	Uniprot ID	Optional for UniProt Fasta; the key will become `uniprot_acc` if the primary one is `uniprot_id`	
-species	The species of a protein entry		
-entrez	Protein Entrez ID		
-kin_attr	The attribute of proteins being kinases	"Optional at `normPSM(annot_kinases = TRUE, ...)`"	
-kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. `kin_attr`	
-kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. `kin_attr`	
-is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic peptide	Optional when `pep_start` and `pep_end` are absent from Mascot PSMs	
-I126 etc.	Reporter-ion intensity from MS/MS ion search	Mascot	
-N_I126 etc.	Normalized reporter-ion intensity	The calibration factors for the alignment of `log2R...` are used to scale the reporter-ion intensity	
-sd_log2_R126 etc.	Standard deviation of peptide log2FC 	Calculated from contributing PSMs under each TMT channel	
-R126 etc.	Linear FC relative to TMT-126		
-log2_R126 etc.	log2FC in relative to the average intensity of reference(s) under each multiplex TMT	Relative to the row-mean intensity within each multiplex TMT if no reference(s) are present	
-N_log2_R126 etc.	Median-centered `log2_R...`		
+Header	Descrption	Note
+prot_hit_num	Ordinal number of the protein hit (or protein family when grouping enabled)	Mascot only.
+prot_family_member	Ordinal number of the protein family member when grouping enabled	Mascot only.
+prot_acc	Protein accession string	"MaxQuant, the leading entry in `Proteins`. Spectrum Mill, `accession_number`."
+prot_desc	Protein description taken from Fasta title line	
+prot_score	Protein Mascot score	Mascot only.
+prot_mass	Protein mass	
+prot_matches	Count of PSMs	Mascot only.
+prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Mascot only. Joint Mascot `prot_matches_sig` from individual data sources; PSMs with void reporter-ion intensity (of shared peptides) are also included.
+prot_sequences	Count of distinct sequences	Mascot only.
+prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Mascot only. Joint Mascot `prot_sequences_sig` from individual data sources; the counts may be greater than `prot_sequences` when peptides with different variable modifications are treated as different identities.
+prot_len	The number of amino acid residues under a proposed protein	
+prot_cover	Protein sequence coverage	Calculated from the union of individual data sources.
+prot_...	Additional protein keys from Mascot PSM exports by users.	
+prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users.
+prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. `prot_n_psm`.
+pep_query	Ordinal number of query after sorting by Mr	Mascot only.
+pep_rank	Peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.	Mascot only.
+pep_isbold	"If grouping enabled, then a significant PSM. Otherwise, indicates this is the highest scoring protein that contains a match to this query."	Mascot only.
+pep_isunique	Peptide sequence is unique or not.	"Mascot: unique to hit (grouping off) or family member (grouping on). MaxQuant: unique at the levels of protein groups, protein IDs or none. Spectrum Mill: NA."
+pep_exp_mz	Observed or experimental m/z value	Mascot only.
+pep_exp_mr	Molecular mass calculated from experimental m/z value	Mascot only.
+pep_exp_z	Observed or experimental charge	Mascot only.
+pep_calc_mr	Molecular mass calculated from matched peptide sequence	Mascot only.
+pep_delta	pep_exp_mr – pep_calc_mr	Mascot only.
+pep_score	Score of PSM	"MaxQuant, `Score`. Spectrum Mill, `score`."
+pep_expect	Expectation value or posterior error probability of PSM	"MaxQuant, `PEP`. Spectrum Mill, NA."
+pep_res_before	Flanking residue on N-term side of peptide	
+pep_seq	One-letter representation of peptide sequences without variable modifications	"E.g. ""-.MASGVAVSDGVIK.V""; the flanking residues on the N- or C-terminal side of peptides separated by '.'; see also `proteoQ::normPSM`."
+pep_seq_mod	`pep_seq` with variable modifications	"E.g. ""-._mAsGVAVSDGVIK.V"" with a methionine oxidation and a serine phosphorylation. The acetylation of a protein N-terminal is indicated by '_'."
+pep_res_after	Flanking residue on C-term side of peptide	
+pep_start	Ordinal position of first peptide residue in protein sequence	
+pep_end	Ordinal position of last peptide residue in protein sequence	
+pep_len	Number of amino acid residues in a peptide sequence	
+pep_miss	Count of missed cleavage sites in peptide	
+pep_var_mod	Variable modifications from all sources as list of names	Mascot only.
+pep_var_mod_pos	"Variable modifications as a string of digits, e.g. ’0.0001000.0?. Non-zero digits identify mods according to key in export header. First and last positions are for terminus mods."	Mascot only.
+pep_summed_mod_pos	"When two variable modifications occur at the same site, a string of digits defining the second mod"	Mascot only.
+pep_local_mod_pos	Query-level variable modifications as a string of digits. The names of the mods will be listed in pep_var_mod	Mascot only.
+pep_scan_title	Scan title taken from peak list	Mascot only.
+pep_...	Additional peptide keys from Mascot PSM exports by users	Mascot only.
+pep_locprob	The highest probablity from the Mascot site analysis of the variable modification sites	"Mascot oprional with the selection of `Query Level Information` during  PSM export. The second highest probablity, `pep_locprob2` is made implicit through `pep_locdiff`. Cf. `pep_var_mod_conf` from Mascot."
+pep_locdiff	pep_locprob – pep_locprob2	Mascot only.
+pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	Cf. `prot_n_psm`.
+gene	Protein gene name	
+uniprot_id	Uniprot ID	Optional for UniProt Fasta. The key will become `uniprot_acc` if the primary one is `uniprot_id`.
+entrez	Protein Entrez ID	
+species	The species of a protein entry	
+acc_type	The type of accession names	"One of `refseq_acc`, `uniprot_acc` or `uniprot_id`."
+kin_attr	The attribute of proteins being kinases	"Optional at `normPSM(annot_kinases = TRUE, ...)`."
+kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. `kin_attr`.
+kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. `kin_attr`.
+is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic peptide	
+dat_file	File name(s) of PSM results	
+raw_file	MS file name(s) where peptides or proteins are identified	
+...	Additional column keys	"MaxQuant, http://www.coxdocs.org/doku.php?id=maxquant:table:msmstable. Spectrum Mill, users' manual."
+I126 etc.	Reporter-ion intensity from MS/MS ion search	"With MaxQuant, corrected or uncorrected intensities; c.f. `?normPSM`."
+N_I126 etc.	Normalized reporter-ion intensity	The calibration factors for the alignment of `log2R...` are used to scale the reporter-ion intensity.
+R126 etc.	Linear FC relative to TMT-126	
+sd_log2_R126 etc.	Standard deviation of peptide log2FC 	Calculated from contributing PSMs under each TMT channel.
+log2_R126 etc.	log2FC in relative to the average intensity of reference(s) under each multiplex TMT	Relative to the row-mean intensity within each multiplex TMT if no reference(s) are present.
+N_log2_R126 etc.	Median-centered `log2_R...`	

@@ -43,10 +43,10 @@ numbers will be treated as one group.}
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
 
-\item{expt_smry}{A character string to the \code{.xlsx} file containing the
-metadata of TMT experiments. The default is \code{expt_smry.xlsx}.}
+\item{expt_smry}{A character string to a \code{.xlsx} file containing the
+metadata of TMT or LFQ experiments. The default is \code{expt_smry.xlsx}.}
 
-\item{frac_smry}{A character string to the \code{.xlsx} file containing
+\item{frac_smry}{A character string to a \code{.xlsx} file containing
 peptide fractionation summary. The default is \code{frac_smry.xlsx}.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with

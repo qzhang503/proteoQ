@@ -1649,6 +1649,11 @@ annotPeppos <- function (df, fasta){
   
   rm(fasta)
   
+  df$pep_res_before <- NULL
+  df$pep_res_after <- NULL
+  df$pep_start <- NULL
+  df$pep_end <- NULL
+  
   if ("pep_res_before" %in% names(df)) pep_pos_all$pep_res_before <- NULL
   if ("pep_res_after" %in% names(df)) pep_pos_all$pep_res_after <- NULL
   if ("pep_start" %in% names(df)) pep_pos_all$pep_start <- NULL
@@ -1658,7 +1663,9 @@ annotPeppos <- function (df, fasta){
 
   df <- df %>% 
     dplyr::left_join(pep_pos_all, by = "pep_prn") %>% 
-    dplyr::select(-pep_prn)
+    dplyr::select(-pep_prn) %>% 
+    reloc_col("pep_end", "pep_res_before") %>% 
+    reloc_col("pep_start", "pep_end")
 }
 
 
@@ -1992,20 +1999,11 @@ calcSD_Splex <- function (df, id, type = "log2_R") {
       dplyr::select(!!rlang::sym(id), grep("^Z_log2_R[0-9]{3}", names(.)))
   }
   
-  run_scripts <- FALSE
-  if (run_scripts) {
-    df %>% 
-      dplyr::arrange(!!rlang::sym(id)) %>% 
-      dplyr::group_by(!!rlang::sym(id)) %>%
-      dplyr::summarise_at(vars(starts_with(type)), ~ sd(.x, na.rm = TRUE))     
-  }
-
   df %>% 
     dplyr::mutate(!!id := as.character(!!rlang::sym(id))) %>% 
     dplyr::arrange(!!rlang::sym(id)) %>% 
     dplyr::group_by(!!rlang::sym(id)) %>%
-    dplyr::summarise_at(vars(starts_with(type)), ~ sd(.x, na.rm = TRUE)) # %>% 
-    # dplyr::mutate(!!id := as.factor(!!rlang::sym(id)))
+    dplyr::summarise_at(vars(starts_with(type)), ~ sd(.x, na.rm = TRUE)) 
 }
 
 

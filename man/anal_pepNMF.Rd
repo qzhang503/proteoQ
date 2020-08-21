@@ -79,8 +79,7 @@ determined automatically by the name of the current call.}
 \item{nrun}{Numeric; the number of runs in \code{\link[NMF]{nmf}}. The default
 is 50.}
 
-\item{seed}{Integer; a seed setting a starting point for reproducible
-analyses.}
+\item{seed}{Integer; a seed for reproducible analysis.}
 
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration
 against data in a primary file linked to \code{df}. See also
@@ -461,13 +460,7 @@ plot_metaNMF(
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot \cr
  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
- 
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

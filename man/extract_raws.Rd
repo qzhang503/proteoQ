@@ -13,7 +13,8 @@ extract_raws(raw_dir = NULL, dat_dir = NULL)
 match the value under the global environment.}
 }
 \description{
-Extract a list of \code{RAW} file names that can be passed to \code{frac_smry.xlsx}
+Extract a list of \code{RAW} file names that can be passed to metadata file
+of \code{expt_smry.xlsx} and/or \code{frac_smry.xlsx}
 }
 \examples{
 \dontrun{

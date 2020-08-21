@@ -41,8 +41,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{nrun}{Numeric; the number of runs in \code{\link[NMF]{nmf}}. The default
 is 50.}
 
-\item{seed}{Integer; a seed setting a starting point for reproducible
-analyses.}
+\item{seed}{Integer; a seed for reproducible analysis.}
 
 \item{col_group}{Character string to a column key in \code{expt_smry.xlsx}.
 Samples corresponding to non-empty entries under \code{col_group} will be

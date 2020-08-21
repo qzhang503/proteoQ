@@ -6,15 +6,15 @@
 #'
 #'In the primary output file, "\code{Protein.txt}", values under columns
 #'\code{log2_R...} are logarithmic ratios at base 2 in relative to the
-#'\code{reference(s)} within each multiplex TMT set, or to the row means if no
-#'\code{reference(s)} are present. Values under columns \code{N_log2_R...} are
-#'aligned \code{log2_R...} according to \code{method_align} without scaling
-#'normalization. Values under columns \code{Z_log2_R...} are \code{N_log2_R...}
-#'with additional scaling normalization. Values under columns \code{I...} are
-#'\code{reporter-ion intensity} before normalization. Values under columns
-#'\code{N_I...} are normalized \code{I...}. Values under columns
-#'\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
-#'proteins from ascribing peptides.
+#'\code{reference(s)} within each multiplex TMT set, or to the row means within
+#'each plex if no \code{reference(s)} are present. Values under columns
+#'\code{N_log2_R...} are aligned \code{log2_R...} according to
+#'\code{method_align} without scaling normalization. Values under columns
+#'\code{Z_log2_R...} are \code{N_log2_R...} with additional scaling
+#'normalization. Values under columns \code{I...} are reporter-ion or LFQ
+#'intensity before normalization. Values under columns \code{N_I...} are
+#'normalized \code{I...}. Values under columns \code{sd_log2_R...} are the
+#'standard deviation of the \code{log2FC} of proteins from ascribing peptides.
 #'
 #'@param cache Not currently used.
 #'@param ... \code{slice_}: Variable argument statements for the identification
@@ -92,15 +92,9 @@
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  # Mascot \cr
 #'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
-#'  
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@return The primary output is in \code{.../Protein/Protein.txt}.
 #'

@@ -1,12 +1,11 @@
 Header	Descrption	Note
-gene	Protein gene name	
-prot_cover	Protein sequence coverage	Cf. PSM keys
-prot_acc	Protein accession string	Mascot
-prot_desc	Protein description taken from Fasta title line	Mascot
-prot_mass	Protein mass	Mascot
+prot_acc	Protein accession string	
+prot_desc	Protein description taken from Fasta title line	
+prot_mass	Protein mass	
 prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Cf. PSM keys
 prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Cf. PSM keys
 prot_len	The number of amino acid residues under a proposed protein	Cf. PSM keys
+prot_cover	Protein sequence coverage	Cf. PSM keys
 prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Cf. Peptide keys
 prot_n_uniqpsm	"Count of unique, significant PSMs in quantitation under a proposed protein"	
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	Cf. Peptide keys
@@ -14,15 +13,16 @@ prot_n_uniqpep	"Count of unique, significant peptide sequences in quantitation u
 prot_mean_raw	Mean log2_R (...) across samples	Reference and `Empty` samples excluded.
 prot_mean_n	Mean N_log2FC(...) across samples	v.s.
 prot_mean_z	Mean Z_log2FC(...) across samples	v.s.
-acc_type	The type of accession names	
+gene	Protein gene name	
 uniprot_id	Uniprot ID	Cf. PSM keys
 entrez	Protein Entrez ID	
 species	The species of a protein entry	
+acc_type	The type of accession names	
 kin_attr	The attribute of proteins being kinases	Cf. PSM keys
 kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. PSM keys
 kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. PSM keys
 I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by `method_pep_prn` in `Pep2Prn()` for indicated samples
 N_I... (...)	Normalized I... (...)	Cf. Peptide keys
 log2_R (...)	log2FC relative to reference materials for indicated samples	Cf. Peptide keys
-N_log2_R (...)	Aligned log2_R (...) according to 'method_align' in 'standPrn()' without scaling normalization	
+N_log2_R (...)	Aligned log2_R (...)	According to 'method_align' in 'standPrn()' without scaling normalization
 Z_log2_R (...)	N_log2_R (...) with scaling normalization	
