@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{normPSM}
 \alias{normPSM}
-\title{Standardization of PSM results}
+\title{Standardization of PSM}
 \usage{
 normPSM(
   group_psm_by = c("pep_seq", "pep_seq_mod"),
@@ -45,20 +45,22 @@ numbers will be treated as one group.}
 
 \item{mc_psm_by}{A character string specifying the method in the median
 centering of PSM \code{log2FC} across samples. At the \code{peptide}
-default, PSMs will be grouped according to \code{group_psm_by} and the
-medians under each \code{group_psm_by} will be used for the median
-centering. At \code{mc_psm_by = protein}, PSMs will be grouped according
-to \code{group_pep_by} and the medians under each \code{group_pep_by} will
-be used for the median centering. At the \code{mc_psm_by = psm}, PSMs will
-be median centered without grouping.}
+default, the median description of PSMs (grouped by \code{pep_seq} or
+\code{pep_seq_mod} according to \code{group_psm_by}) will be first
+calculated and the offsets to zero (of logarithmic 2) will be used for the
+centering of PSMs across samples. At \code{mc_psm_by = protein}, the median
+description of PSMs (grouped by \code{prot_acc} or \code{gene} according to
+\code{group_pep_by}) will be calculated and the corresponding offsets to
+zero will be applied. At the \code{mc_psm_by = psm}, PSMs will be median
+centered without grouping.}
 
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
 
-\item{expt_smry}{A character string to the \code{.xlsx} file containing the
-metadata of TMT experiments. The default is \code{expt_smry.xlsx}.}
+\item{expt_smry}{A character string to a \code{.xlsx} file containing the
+metadata of TMT or LFQ experiments. The default is \code{expt_smry.xlsx}.}
 
-\item{frac_smry}{A character string to the \code{.xlsx} file containing
+\item{frac_smry}{A character string to a \code{.xlsx} file containing
 peptide fractionation summary. The default is \code{frac_smry.xlsx}.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
@@ -140,21 +142,20 @@ Outputs are under the directory of \code{PSM} sub to \code{dat_dir}.
 \description{
 \code{normPSM} standardizes
 \href{https://www.ebi.ac.uk/pride/help/archive/search/tables}{PSM}
-results from \href{https://en.wikipedia.org/wiki/Tandem_mass_tag}{TMT}
-experiments.
+results from database search engines.
 }
 \details{
 In each primary output file, "\code{...PSM_N.txt}", values under columns
 \code{log2_R...} are logarithmic ratios at base 2 in relative to the average
 intensity of \code{reference(s)} within each multiplex TMT set, or to the
-row-mean intensity if no \code{reference(s)} are present. Values under columns
-\code{N_log2_R...} are \code{log2_R...} with median-centering alignment.
-Values under columns \code{I...} are raw \code{reporter-ion intensity} from
-database searches. Values under columns \code{N_I...} are normalized
-\code{reporter-ion intensity}. Values under columns \code{sd_log2_R...} are
-the standard deviation of the \code{log2FC} of peptides from ascribing PSMs.
-Character strings under \code{pep_seq_mod} denote peptide sequences with
-applicable variable modifications.
+row-mean intensity within each plex if no \code{reference(s)} are present.
+Values under columns \code{N_log2_R...} are \code{log2_R...} with
+median-centering alignment. Values under columns \code{I...} are raw
+\code{reporter-ion intensity} from database searches. Values under columns
+\code{N_I...} are normalized \code{reporter-ion intensity}. Values under
+columns \code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
+peptides from ascribing PSMs. Character strings under \code{pep_seq_mod}
+denote peptide sequences with applicable variable modifications.
 
 \cr \strong{Nomenclature of \code{pep_seq_mod}}:
 
@@ -176,7 +177,7 @@ right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
  \href{https://http://www.matrixscience.com/}{Mascot} at a \code{.csv}
  format and store them under the file folder indicated by \code{dat_dir}. The
  header information should be included during the \code{.csv} export. The
- file name(s) should be defaulted by
+ format of file name(s) should be defaulted by
  \href{https://http://www.matrixscience.com/}{Mascot}: starting with
  the letter \code{'F'}, followed by digits without space and ended with a
  \code{'.csv'} extension \code{(e.g., F004453.csv)}.
@@ -412,13 +413,7 @@ normPSM(
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot \cr
  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
- 
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

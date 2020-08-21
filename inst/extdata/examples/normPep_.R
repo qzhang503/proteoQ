@@ -9,12 +9,13 @@
 # (1) `MGKernel`
 # ===================================
 
-# !!! initial `Peptide.txt` results from `mergePep()` aligned by median centering (MC)
-# !!! the first `MGKernel` normalization will apply to all samples
-# !!! succeeding `MGKernel` normalization(s) will also apply to all samples if changing `n_comp` (see section 4)
+# !!! Initial `Peptide.txt` results from `mergePep()` are in median centering.
+# !!! The first `MGKernel` normalization will always be applied to all samples.
+# !!! If changing `n_comp`, succeeding `MGKernel` normalization(s) will be 
+#     applied to all samples (a fresh-start principle, see also section 4)
 
 # (1.1) the first `MGKernel` after `mergePep()`
-# (default double trimming by log2FC and intensity percentiles also apply)
+# (default double trimming by log2FC and intensity percentiles also applied)
 standPep(
   method_align = MGKernel, 
   n_comp = 3, 
@@ -65,7 +66,7 @@ standPep(
 # (W16 samples are now also aligned)
 pepHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human_slicehuw16.png)
 
-# side effects: to recaptulate the misalignment between human data and human + mouse data
+# a side effect: to recapitulate the misalignment between human data and human + mouse data
 # (this is because density curves are based on the latest `standPep` at `method_align = MGKernel`)
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = bi1_recap.png)
 
@@ -128,7 +129,7 @@ standPep(
 
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc_selrows.png)
 
-# (3.2) first `MGKernel` for all samples using selected data rows
+# (3.2) the first `MGKernel` for all samples using selected data rows
 standPep(
   method_align = MGKernel, 
   n_comp = 3, 
@@ -152,7 +153,7 @@ standPep(
   slice_peps_by = exprs(prot_n_psm >= 10),
 )
 
-# side-effects comparing `MC` and `MGKernel`
+# A side effect in comparing `MC` and `MGKernel`
 # (density curves are from the preceding `MGKernel` in (3.2))
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mix_selcols_selrows.png)
 
@@ -233,7 +234,7 @@ pepHM(
 )
 
 # heat map for all samples
-# (no GAPDH under `JHU_TMT1` and `PNNL_TMT1`; will be problematic data alignment next)
+# (no GAPDH under `JHU_TMT1` and `PNNL_TMT1`; will be problematic in data alignment next)
 pepHM(
   # col_select = BI_1, 
   xmin = -2,

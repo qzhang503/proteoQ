@@ -21,10 +21,10 @@ peptide sequences to the most likely proteins by majority votes.}
 
 \item{cut_points}{A numeric vector defines the cut points (knots) for the
 median-centering of \code{log2FC} by sections. The values of the knots
-indicate the summarized \code{log10(Intentisy)} of reporter ions. For
+indicate the summarized \code{log10(Intentisy)} of ions. For
 example, at \code{cut_points = seq(4, 7, .5)}, values of \code{log2FC} will
 be binned from \eqn{-Inf} to \eqn{Inf} according to the cut points at the
-reporter-ion intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
+reporter-ion (or LFQ) intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
 \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
 \code{log2FC} under each sample will be median-centered all together. See
 also \code{\link{prnHist}} for data binning and intensity-coded histograms.}
@@ -54,25 +54,24 @@ The primary output is in \code{.../Peptide/Peptide.txt}.
 into one interim \code{Peptide.txt}. The \code{log2FC} values in the interim
 result are centered with the medians at zero (median centering). The utility
 is typically applied after the conversion of PSMs to peptides via
-\code{\link{PSM2Pep}} and is required even for a experiment with one multiplex
-TMT and one LCMS injection.
+\code{\link{PSM2Pep}} and is required even with a experiment at one multiplex
+TMT and one LC/MS series.
 }
 \details{
 In the interim output file, "\code{Peptide.txt}", values under columns
 \code{log2_R...} are logarithmic ratios at base 2 in relative to the
-\code{reference(s)} within each multiplex TMT set, or to the row means if no
-\code{reference(s)} are present. Values under columns \code{N_log2_R...} are
-median-centered \code{log2_R...} without scaling normalization. Values under
-columns \code{Z_log2_R...} are \code{N_log2_R...} with additional scaling
-normalization. Values under columns \code{I...} are \code{reporter-ion
-intensity} before normalization. Values under columns \code{N_I...} are
-normalized \code{I...}. Values under columns \code{sd_log2_R...} are the
-standard deviation of the \code{log2FC} of proteins from ascribing peptides.
+\code{reference(s)} within each multiplex TMT set, or to the row means within
+each plex if no \code{reference(s)} are present. Values under columns
+\code{N_log2_R...} are median-centered \code{log2_R...} without scaling
+normalization. Values under columns \code{Z_log2_R...} are \code{N_log2_R...}
+with additional scaling normalization. Values under columns \code{I...} are
+reporter-ion or LFQ intensity before normalization. Values under columns
+\code{N_I...} are normalized \code{I...}. Values under columns
+\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
+proteins from ascribing peptides.
 
-Description of the column keys in the output: \cr \code{system.file("extdata",
-"mascot_peptide_keys.txt", package = "proteoQ")} \cr
-\code{system.file("extdata", "maxquant_peptide_keys.txt", package =
-"proteoQ")}
+Description of the column keys in the output: \cr 
+\code{system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ")}
 
 The peptide counts in individual peptide tables,
 \code{TMTset1_LCMSinj1_Peptide_N.txt} etc., may be fewer than the entries
@@ -91,21 +90,9 @@ removals/cleanups using \code{purgePSM}.
 mergePep()
 
 # row filtrations against column keys in `TMTset1_LCMSinj1_Peptide_N.txt`...
-# (with Mascot column keys)
 mergePep(
   filter_peps_by_sp = exprs(species == "human", pep_len <= 50),
 )
-
-# (with MaxQuant column keys)
-mergePep(
-  filter_peps_by_sp = exprs(species == "human", `Missed cleavages` <= 3),
-)
-
-# (with Spectrum Mill column keys)
-mergePep(
-  filter_peps_by_sp = exprs(species == "human", pep_miss <= 3),
-)
-
 
 # alignment of data by segments
 mergePep(cut_points = seq(4, 7, .5))
@@ -164,13 +151,7 @@ mergePep(cut_points = seq(4, 7, .5))
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot \cr
  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
- 
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

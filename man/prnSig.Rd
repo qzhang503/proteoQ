@@ -93,8 +93,8 @@ filtration against data in a primary file of \code{Peptide[_impNA].txt} or
 }
 \value{
 The primary output is
- \code{~/dat_dir/Peptide/Model/Peptide_pVals.txt} for peptide data or
- \code{~/dat_dir/Protein/Model/Protein_pVals.txt} for protein data. At
+ \code{.../Peptide/Model/Peptide_pVals.txt} for peptide data or
+ \code{.../Protein/Model/Protein_pVals.txt} for protein data. At
  \code{impute_na = TRUE}, the corresponding outputs are
  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 }
@@ -260,13 +260,7 @@ prnVol()
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot \cr
  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
- 
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

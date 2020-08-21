@@ -575,9 +575,9 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'  or \code{\link[proteoQ]{standPep}} where log2FC are aligned by observations
 #'  (samples).
 #'@param scale_features Logical; if TRUE, adjusts log2FC to the same scale of
-#'  variance by features (proteins or peptides). The default is TRUE. Note the
-#'  difference to data scaling with \code{scale_log2r} where log2FC are scaled
-#'  by observations (samples).
+#'  variance by features (protein or peptide entries). The default is TRUE. Note
+#'  the difference to data scaling with \code{scale_log2r} where log2FC are
+#'  scaled by observations (samples).
 #'@param type Character string indicating the type of PCA by either
 #'  \emph{observations} or \emph{features}. At the \code{type = obs} default,
 #'  observations (samples) are in rows and features (peptides or proteins) in
@@ -652,15 +652,9 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr
-#'  # Mascot \cr
 #'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
-#'
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@example inst/extdata/examples/prnPCA_.R
 #'

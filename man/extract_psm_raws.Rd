@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{extract_psm_raws}
 \alias{extract_psm_raws}
-\title{Extract RAW file names from Mascot PSM outputs}
+\title{Extract the names of RAW MS files from PSM data}
 \usage{
 extract_psm_raws(
   type = c("mascot", "maxquant", "spectrum_mill"),
@@ -16,8 +16,8 @@ extract_psm_raws(
 match the value under the global environment.}
 }
 \description{
-\code{extract_psm_raws} extracts the RAW file names from the PSM data under
-the current working directory.
+\code{extract_psm_raws} extracts the MS file names from the PSM data under
+the working directory.
 }
 \examples{
 \donttest{

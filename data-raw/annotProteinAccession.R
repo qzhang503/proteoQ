@@ -241,3 +241,86 @@ foo_subcellular <- function () {
   # load(file.path(dat_dir, "scc_hs.rda"))
 }
 
+
+# Prepares MaxQuant modifications 
+# compile modification table
+# fixed and variable mods and counts
+parse_mq_mods <- function() {
+  dat_dir <- "~/proteoQ/examples"
+  contents <- xml2::read_xml(file.path(dat_dir, "mq_modifications.xml")) %>% 
+    xml2::xml_contents() 
+  
+  titles <- contents %>% 
+    xml2::xml_attrs() %>% 
+    purrr::map_chr(`[`, "title")
+  
+  children <- purrr::map(contents, xml2::xml_children)
+  
+  pos_i <- children %>% 
+    purrr::map(xml2::xml_name) %>% 
+    purrr::map_dbl(~ which(.x == "position"))
+  
+  positions <- children %>% 
+    purrr::map(xml2::xml_text) %>% 
+    purrr::map2_chr(pos_i, `[`)
+  
+  ## --- compositions and masses ---
+  compositions <- contents %>% 
+    xml2::xml_attrs() %>% 
+    purrr::map_chr(`[`, "composition")
+  
+  element_universe <- compositions %>% 
+    gsub("\\([^\\(]*\\)+?", "", .) %>% 
+    purrr::map(~ stringr::str_split(.x, " ", simplify = TRUE)) %>% 
+    purrr::reduce(`c`) %>% 
+    unique() %>% 
+    .[. != ""]
+  
+  # https://www.sisweb.com/referenc/source/exactmas.htm
+  masses_lookup <- c(
+    "H" = 1.007825,
+    "Hx" = 2.014102,
+    "C" = 12.000000,
+    "Cx" = 13.003355, 
+    "N" = 14.003074,
+    "Nx" = 15.000109,
+    "O" = 15.994915,
+    "Ox" = 17.999159,
+    "P" = 30.973763,
+    "S" = 31.972072, 
+    "Na" = 22.989770
+  )
+  
+  counts <- suppressWarnings(
+    compositions %>% 
+      stringr::str_split(" ") %>% 
+      purrr::map(~ gsub("^[A-z]+\\(*(-{0,1}\\d*)\\)*$", "\\1", .x) %>% 
+                   as.numeric(.) %>% 
+                   replace(is.na(.), 1)) 
+  )
+  
+  elements <- compositions %>% 
+    stringr::str_split(" ") %>% 
+    purrr::map(~ gsub("\\(*-{0,1}\\d*\\)*", "", .x))
+  
+  masses <- rep(NA, length(elements))
+  for (i in seq_along(elements)) {
+    masses[i] <- purrr::map2(masses_lookup[elements[[i]]], counts[[i]], `*`) %>% 
+      purrr::reduce(sum)
+  }
+  rm(i)
+  
+  ## --- outputs --- 
+  mq_mods <- data.frame(title = titles, position = positions, 
+                        composition = compositions, mass = masses) %>% 
+    dplyr::mutate(position = gsub("anyCterm", "C-term", position), 
+                  position = gsub("anyNterm", "N-term", position),
+                  position = gsub("proteinNterm", "Protein N-term", position), 
+                  position = gsub("proteinCterm", "Protein C-term", position), 
+                  position = gsub("notCterm", "Not C-term", position), 
+                  position = gsub("notNterm", "Not N-term", position), 
+                  position = gsub("anywhere", "Anywhere", position), )
+  
+  save(mq_mods, file = file.path(dat_dir, "mq_mods.rda"), compress = "xz")
+}
+

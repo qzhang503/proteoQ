@@ -33,20 +33,22 @@ numbers will be treated as one group.}
 
 \item{mc_psm_by}{A character string specifying the method in the median
 centering of PSM \code{log2FC} across samples. At the \code{peptide}
-default, PSMs will be grouped according to \code{group_psm_by} and the
-medians under each \code{group_psm_by} will be used for the median
-centering. At \code{mc_psm_by = protein}, PSMs will be grouped according
-to \code{group_pep_by} and the medians under each \code{group_pep_by} will
-be used for the median centering. At the \code{mc_psm_by = psm}, PSMs will
-be median centered without grouping.}
+default, the median description of PSMs (grouped by \code{pep_seq} or
+\code{pep_seq_mod} according to \code{group_psm_by}) will be first
+calculated and the offsets to zero (of logarithmic 2) will be used for the
+centering of PSMs across samples. At \code{mc_psm_by = protein}, the median
+description of PSMs (grouped by \code{prot_acc} or \code{gene} according to
+\code{group_pep_by}) will be calculated and the corresponding offsets to
+zero will be applied. At the \code{mc_psm_by = psm}, PSMs will be median
+centered without grouping.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search. There is no default and users need to provide the
 correct file path(s) and name(s).}
 
-\item{expt_smry}{A character string to the \code{.xlsx} file containing the
-metadata of TMT experiments. The default is \code{expt_smry.xlsx}.}
+\item{expt_smry}{A character string to a \code{.xlsx} file containing the
+metadata of TMT or LFQ experiments. The default is \code{expt_smry.xlsx}.}
 
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
 is FALSE.}

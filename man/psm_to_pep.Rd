@@ -36,8 +36,8 @@ numbers will be treated as one group.}
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
 The descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")} with \code{median} being the default. The
-\code{log10-intensity} of reporter ions at the \code{PSMs} levels will be
-the weight when summarizing \code{log2FC} with \code{"top.3"} or
+\code{log10-intensity} of reporter (or LFQ) ions at the \code{PSMs} levels
+will be the weight when summarizing \code{log2FC} with \code{"top.3"} or
 \code{"weighted.mean"}.}
 }
 \description{

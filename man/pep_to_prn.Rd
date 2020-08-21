@@ -14,7 +14,7 @@ pep_to_prn(id, method_pep_prn, use_unique_pep, gn_rollup, ...)
 \code{log2FC} and the \code{intensity} of peptides by protein entries. The
 descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")} with \code{median} being the default. The representative
-\code{log10-intensity} of reporter ions at the peptide levels (from
+\code{log10-intensity} of ions at the peptide levels (from
 \code{\link{standPep}}) will be the weight when summarizing \code{log2FC}
 with \code{top.3} or \code{weighted.mean}.}
 
@@ -30,13 +30,12 @@ unique and shared peptides will be kept.}
 \item{gn_rollup}{Logical; if TRUE, rolls up protein accessions to gene names.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
- data rows. Each statement contains a list of logical expression(s). The
- \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
- the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
- For example, \code{pep_len} is a column key present in \code{Peptide.txt}
- with \code{Mascot} workflows. The statement of \code{filter_peps_at =
- exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-@inheritParams mergePep}
+data rows. Each statement contains a list of logical expression(s). The
+\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+For example, \code{pep_len} is a column key in \code{Peptide.txt}. The
+statement of \code{filter_peps_at = exprs(pep_len <= 50)} will remove
+peptide entries with \code{pep_len > 50}.}
 }
 \description{
 Helper of Pep2Prn

@@ -489,27 +489,25 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'  to a list of logical expression(s). The \code{lhs} needs to start with
 #'  \code{filter_}. The logical condition(s) at the \code{rhs} needs to be
 #'  enclosed in \code{exprs} with round parenthesis. For example, \code{pep_len}
-#'  is a column key present in \code{Mascot} peptide tables of
-#'  \code{Peptide.txt}. The statement \code{filter_peps_at = exprs(pep_len <=
-#'  50)} will remove peptide entries with \code{pep_len > 50}. See also
-#'  \code{\link{pepHist}}, \code{\link{normPSM}}. \cr \cr \code{arrange_}:
-#'  Variable argument statements for the row ordering against data in a primary
-#'  file linked to \code{df}. The \code{lhs} needs to start with
-#'  \code{arrange_}. The expression(s) at the \code{rhs} needs to be enclosed in
-#'  \code{exprs} with round parenthesis. For example, \code{arrange_peps_by =
-#'  exprs(gene, prot_n_pep)} will arrange entries by \code{gene}, then by
-#'  \code{prot_n_pep}. \cr \cr Additional parameters for plotting: \cr
-#'  \code{width}, the width of plot \cr \code{height}, the height of plot \cr
-#'  \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}: \cr 
-#'  \code{cluster_rows, clustering_method, clustering_distance_rows}... \cr 
-#'  \cr Notes about \code{pheatmap}:
-#'  \cr \code{annotation_col} disabled; instead use keys indicated in \code{annot_cols}
-#'  \cr \code{annotation_row} disabled; instead use keys indicated in \code{annot_rows}
-#'  \cr \code{clustering_method} breaks into \code{hc_method_rows} for row data 
-#'  and \code{hc_method_cols} for column data
-#'  \cr \code{clustering_distance_rows = "minkowski"} allowed at the powder of \code{p_dist_rows} 
-#'  and/or \code{p_dist_cols}
-#'
+#'  is a column key in \code{Peptide.txt}. The statement \code{filter_peps_at =
+#'  exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
+#'  See also \code{\link{pepHist}}, \code{\link{normPSM}}. \cr \cr
+#'  \code{arrange_}: Variable argument statements for the row ordering against
+#'  data in a primary file linked to \code{df}. The \code{lhs} needs to start
+#'  with \code{arrange_}. The expression(s) at the \code{rhs} needs to be
+#'  enclosed in \code{exprs} with round parenthesis. For example,
+#'  \code{arrange_peps_by = exprs(gene, prot_n_pep)} will arrange entries by
+#'  \code{gene}, then by \code{prot_n_pep}. \cr \cr Additional parameters for
+#'  plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
+#'  of plot \cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}:
+#'  \cr \code{cluster_rows, clustering_method, clustering_distance_rows}... \cr
+#'  \cr Notes about \code{pheatmap}: \cr \code{annotation_col} disabled; instead
+#'  use keys indicated in \code{annot_cols} \cr \code{annotation_row} disabled;
+#'  instead use keys indicated in \code{annot_rows} \cr \code{clustering_method}
+#'  breaks into \code{hc_method_rows} for row data and \code{hc_method_cols} for
+#'  column data \cr \code{clustering_distance_rows = "minkowski"} allowed at the
+#'  powder of \code{p_dist_rows} and/or \code{p_dist_cols}
+#'  
 #'@seealso 
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
@@ -563,16 +561,10 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  # Mascot \cr
 #'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
 #'  
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
-#'
 #'@example inst/extdata/examples/prnHM_.R
 #'
 #'@return Heat maps and optional sub trees.

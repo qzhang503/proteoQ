@@ -256,3 +256,32 @@
 #' }
 "uniprot_species"
 
+
+#' A list of MaxQuant modifications.
+#'
+#' The dataset is based on "modificatins.xml" in MaxQuant.
+#'
+#' @format A data frame with 549 rows and 4 variables:
+#' \describe{
+#'   \item{title}{Modification}
+#'   \item{position}{Position of a modification}
+#'   \item{composition}{Composition of elements under a modification}
+#'   \item{mass}{Monoisotopic mass of a modification}
+#' }
+"mq_mods"
+
+
+#' Masses of amino acid residues.
+#'
+#' The dataset is based on Mascot.
+#'
+#' @format A data frame with 26 rows and 6 variables:
+#' \describe{
+#'   \item{one_letter}{A one-letter representation of amino acid residues}
+#'   \item{three_letter}{A three-letter representation of amino acid residues}
+#'   \item{fullname}{The full name of amino acid residues}
+#'   \item{monoisotopic_da}{Monoisotopic mass of a amino acid residue in Dalton}
+#'   \item{average_da}{Average mass of a amino acid residue in Dalton}
+#'   \item{composition}{Elemental composition of a amino acid residue}
+#' }
+"aa_residues"

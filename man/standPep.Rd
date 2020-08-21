@@ -47,8 +47,8 @@ the 5th and the 95th quantiles.}
 \code{n_comp} overwrites the argument \code{k} in
 \code{\link[mixtools]{normalmixEM}}.}
 
-\item{seed}{Integer; a seed setting a starting point for reproducible
-analyses.}
+\item{seed}{Integer; a seed for reproducible fitting at \code{method_align =
+MGKernel}.}
 
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
 \code{log2FC} will be plotted. The default is TRUE.}
@@ -56,54 +56,51 @@ analyses.}
 \item{...}{\code{slice_}: variable argument statements for the identification
 of row subsets. The partial data will be taken for parameterizing the
 alignment of \code{log2FC} across samples. The full data set will be updated
-subsequently with the newly derived paramters. Note that there is no data
+subsequently with the newly derived parameters. Note that there is no data
 entry removals from the complete data set with the \code{slice_} procedure.
 \cr \cr The variable argument statements should be in the following format:
 each of the statement contains a list of logical expression(s). The
 \code{lhs} needs to start with \code{slice_}. The logical condition(s) at
 the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
-For example, \code{pep_len} is a column key present in \code{Peptide.txt}
-with \code{Mascot} workflows. The \code{slice_peps_at = exprs(pep_len >= 10,
-pep_len <= 50)} will extract peptide entries with the number of amino acid
-residues betwen 10 and 50 for \code{log2FC} alignment. Shorter or longer
-peptide sequences will remain in \code{Peptide.txt} but not used in the
-parameterization. See also \code{\link{normPSM}} for the variable arguments
-of \code{filter_}. \cr \cr Additional parameters from
-\code{\link[mixtools]{normalmixEM}}, i.e., \cr \code{maxit}, the maximum
-number of iterations allowed; \cr \code{epsilon}, tolerance limit for
-declaring algorithm convergence.}
+For example, \code{pep_len} is a column key present in \code{Peptide.txt}.
+The \code{slice_peps_at = exprs(pep_len >= 10, pep_len <= 50)} will extract
+peptide entries with the number of amino acid residues betwen 10 and 50 for
+\code{log2FC} alignment. Shorter or longer peptide sequences will remain in
+\code{Peptide.txt} but not used in the parameterization. See also
+\code{\link{normPSM}} for the variable arguments of \code{filter_}. \cr \cr
+Additional parameters from \code{\link[mixtools]{normalmixEM}}, i.e., \cr
+\code{maxit}, the maximum number of iterations allowed; \cr \code{epsilon},
+tolerance limit for declaring algorithm convergence.}
 }
 \value{
 The primary output is in \code{.../Peptide/Peptide.txt}.
 }
 \description{
 \code{standPep} standardizes peptide results from \code{\link{mergePep}} with
-additional choices in data alignment. The utility is typically applied after
-the assembly of peptide data via \code{\link{mergePep}}. It further supports
-iterative normalization against data under selected sample columns, data rows
-or both.
+additional, stand-alone choices in data alignment. The utility is typically
+applied after the assembly of peptide data via \code{\link{mergePep}}. It
+further supports iterative normalization against data under selected sample
+columns, data rows or both.
 }
 \details{
 In the primary output file, "\code{Peptide.txt}", values under columns
 \code{log2_R...} are logarithmic ratios at base 2 in relative to the
-\code{reference(s)} within each multiplex TMT set, or to the row means if no
-\code{reference(s)} are present. Values under columns \code{N_log2_R...} are
-aligned \code{log2_R...} according to \code{method_align} without scaling
-normalization. Values under columns \code{Z_log2_R...} are \code{N_log2_R...}
-with additional scaling normalization. Values under columns \code{I...} are
-\code{reporter-ion intensity} before normalization. Values under columns
-\code{N_I...} are normalized \code{I...}. Values under columns
-\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
-proteins from ascribing peptides.
+\code{reference(s)} within each multiplex TMT set, or to the row means within
+each plex if no \code{reference(s)} are present. Values under columns
+\code{N_log2_R...} are aligned \code{log2_R...} according to
+\code{method_align} without scaling normalization. Values under columns
+\code{Z_log2_R...} are \code{N_log2_R...} with additional scaling
+normalization. Values under columns \code{I...} are reporter-ion or LFQ
+intensity before normalization. Values under columns \code{N_I...} are
+normalized \code{I...}. Values under columns \code{sd_log2_R...} are the
+standard deviation of the \code{log2FC} of proteins from ascribing peptides.
 
 In general, median statistics is applied when summarizing numeric peptide data
-from different LCMS series. One exception is \code{pep_expect} with Mascot
-workflow where geometric mean is used.
+from different LCMS series. One exception is \code{pep_expect} where geometric
+mean is used.
 
 Description of the column keys in the inputs and outputs: \cr
 \code{system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ")}
-\cr \code{system.file("extdata", "maxquant_peptide_keys.txt", package =
-"proteoQ")}
 }
 \examples{
 \donttest{
@@ -117,12 +114,13 @@ Description of the column keys in the inputs and outputs: \cr
 # (1) `MGKernel`
 # ===================================
 
-# !!! initial `Peptide.txt` results from `mergePep()` aligned by median centering (MC)
-# !!! the first `MGKernel` normalization will apply to all samples
-# !!! succeeding `MGKernel` normalization(s) will also apply to all samples if changing `n_comp` (see section 4)
+# !!! Initial `Peptide.txt` results from `mergePep()` are in median centering.
+# !!! The first `MGKernel` normalization will always be applied to all samples.
+# !!! If changing `n_comp`, succeeding `MGKernel` normalization(s) will be 
+#     applied to all samples (a fresh-start principle, see also section 4)
 
 # (1.1) the first `MGKernel` after `mergePep()`
-# (default double trimming by log2FC and intensity percentiles also apply)
+# (default double trimming by log2FC and intensity percentiles also applied)
 standPep(
   method_align = MGKernel, 
   n_comp = 3, 
@@ -173,7 +171,7 @@ standPep(
 # (W16 samples are now also aligned)
 pepHist(scale_log2r = TRUE, col_select = BI_1, filter_by = exprs(species == "human"), filename = bi1_human_slicehuw16.png)
 
-# side effects: to recaptulate the misalignment between human data and human + mouse data
+# a side effect: to recapitulate the misalignment between human data and human + mouse data
 # (this is because density curves are based on the latest `standPep` at `method_align = MGKernel`)
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = bi1_recap.png)
 
@@ -236,7 +234,7 @@ standPep(
 
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mc_selrows.png)
 
-# (3.2) first `MGKernel` for all samples using selected data rows
+# (3.2) the first `MGKernel` for all samples using selected data rows
 standPep(
   method_align = MGKernel, 
   n_comp = 3, 
@@ -260,7 +258,7 @@ standPep(
   slice_peps_by = exprs(prot_n_psm >= 10),
 )
 
-# side-effects comparing `MC` and `MGKernel`
+# A side effect in comparing `MC` and `MGKernel`
 # (density curves are from the preceding `MGKernel` in (3.2))
 pepHist(scale_log2r = TRUE, col_select = BI_1, filename = mix_selcols_selrows.png)
 
@@ -341,7 +339,7 @@ pepHM(
 )
 
 # heat map for all samples
-# (no GAPDH under `JHU_TMT1` and `PNNL_TMT1`; will be problematic data alignment next)
+# (no GAPDH under `JHU_TMT1` and `PNNL_TMT1`; will be problematic in data alignment next)
 pepHM(
   # col_select = BI_1, 
   xmin = -2,
@@ -413,65 +411,62 @@ standPep(
 
 }
 \seealso{
-\emph{Metadata} \cr 
- \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+\emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+and a reduced working example in data normalization \cr
 
- \emph{Data normalization} \cr 
- \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \emph{Variable arguments of `filter_...`} \cr 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \emph{Missing values} \cr 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- 
- \emph{Informatics} \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
- \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
- \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
- \code{\link{prnGSVA}} for gene set variance analysis \cr 
- \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
- \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
- \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
- \code{\link{prnCorr_logInt}}  for correlation plots \cr 
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
- \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
- 
- \emph{Custom databases} \cr 
- \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
- \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
- \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
- ontology}} \cr 
- \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
- signatures} \cr 
- \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
- 
- \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot \cr
- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
- 
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
+\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
+to peptide summarization \cr \code{\link{mergePep}} for extended examples in
+peptide data merging \cr \code{\link{standPep}} for extended examples in
+peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
+peptide to protein summarization \cr \code{\link{standPrn}} for extended
+examples in protein data normalization. \cr \code{\link{purgePSM}} and
+\code{\link{purgePep}} for extended examples in data purging \cr
+\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
+histogram visualization. \cr \code{\link{extract_raws}} and
+\code{\link{extract_psm_raws}} for extracting MS file names \cr
+
+\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+
+\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+missing value imputation \cr
+
+\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
+plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
+trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
+and visualization \cr
+
+\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+among RefSeq accessions, gene names and Entrez IDs \cr \code{\link{prepGO}}
+for
+\code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ontology}} \cr \code{\link{prepMSig}} for
+\href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}} for
+STRING-DB \cr
+
+\emph{Column keys in PSM, peptide and protein outputs} \cr 
+system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
+system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
+system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
 }

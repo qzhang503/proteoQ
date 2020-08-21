@@ -64,18 +64,17 @@ of data against the column keys in \code{Peptide.txt} for peptides or
 logical expression(s). The \code{lhs} needs to start with \code{filter_}.
 The logical condition(s) at the \code{rhs} needs to be enclosed in
 \code{exprs} with round parenthesis. \cr \cr For example, \code{pep_len} is
-a column key present in \code{Mascot} peptide tables of \code{Peptide.txt}.
-The statement \code{filter_peps_at = exprs(pep_len <= 50)} will remove
-peptide entries with \code{pep_len > 50}. See also \code{\link{normPSM}}.
-\cr \cr Additional parameters for plotting with \code{ggplot2}: \cr
-\code{xmin}, the minimum \eqn{x} at a log2 scale; the default is -2. \cr
-\code{xmax}, the maximum \eqn{x} at a log2 scale; the default is +2. \cr
-\code{xbreaks}, the breaks in \eqn{x}-axis at a log2 scale; the default is
-1. \cr \code{binwidth}, the binwidth of \code{log2FC}; the default is
-\eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of columns; the default
-is 1. \cr \code{width}, the width of plot; \cr \code{height}, the height of
-plot. \cr \code{scales}, should the scales be fixed across panels; the
-default is "fixed" and the alternative is "free".}
+a column key in \code{Peptide.txt}. The statement \code{filter_peps_at =
+exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
+See also \code{\link{normPSM}}. \cr \cr Additional parameters for plotting
+with \code{ggplot2}: \cr \code{xmin}, the minimum \eqn{x} at a log2 scale;
+the default is -2. \cr \code{xmax}, the maximum \eqn{x} at a log2 scale; the
+default is +2. \cr \code{xbreaks}, the breaks in \eqn{x}-axis at a log2
+scale; the default is 1. \cr \code{binwidth}, the binwidth of \code{log2FC};
+the default is \eqn{(xmax - xmin)/80}. \cr \code{ncol}, the number of
+columns; the default is 1. \cr \code{width}, the width of plot; \cr
+\code{height}, the height of plot. \cr \code{scales}, should the scales be
+fixed across panels; the default is "fixed" and the alternative is "free".}
 }
 \description{
 The input \code{df} contains pVal fields.

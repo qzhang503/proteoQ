@@ -16,7 +16,7 @@ Pep2Prn(
 \code{log2FC} and the \code{intensity} of peptides by protein entries. The
 descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")} with \code{median} being the default. The representative
-\code{log10-intensity} of reporter ions at the peptide levels (from
+\code{log10-intensity} of ions at the peptide levels (from
 \code{\link{standPep}}) will be the weight when summarizing \code{log2FC}
 with \code{top.3} or \code{weighted.mean}.}
 
@@ -29,14 +29,23 @@ are according to the \code{pep_unique_by} in \code{\link{normPSM}}. The
 argument currently do nothing to \code{Spectrum Mill} data where both
 unique and shared peptides will be kept.}
 
+\item{cut_points}{A numeric vector defines the cut points (knots) for the
+median-centering of \code{log2FC} by sections. The values of the knots
+indicate the summarized \code{log10(Intentisy)} of ions. For
+example, at \code{cut_points = seq(4, 7, .5)}, values of \code{log2FC} will
+be binned from \eqn{-Inf} to \eqn{Inf} according to the cut points at the
+reporter-ion (or LFQ) intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
+\code{cut_points = Inf}, or equivalently \code{-Inf}, where the
+\code{log2FC} under each sample will be median-centered all together. See
+also \code{\link{prnHist}} for data binning and intensity-coded histograms.}
+
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
- data rows. Each statement contains a list of logical expression(s). The
- \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
- the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
- For example, \code{pep_len} is a column key present in \code{Peptide.txt}
- with \code{Mascot} workflows. The statement of \code{filter_peps_at =
- exprs(pep_len <= 50)} will remove peptide entries with \code{pep_len > 50}.
-@inheritParams mergePep}
+data rows. Each statement contains a list of logical expression(s). The
+\code{lhs} needs to start with \code{filter_}. The logical condition(s) at
+the \code{rhs} needs to be enclosed in \code{exprs} with round parenthesis.
+For example, \code{pep_len} is a column key in \code{Peptide.txt}. The
+statement of \code{filter_peps_at = exprs(pep_len <= 50)} will remove
+peptide entries with \code{pep_len > 50}.}
 }
 \value{
 The primary output in "\code{.../Protein/Protein.txt}".
@@ -120,13 +129,7 @@ Pep2Prn(cut_points = seq(4, 7, 0.5))
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot \cr
  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
- 
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
 }

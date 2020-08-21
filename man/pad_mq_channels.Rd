@@ -2,13 +2,25 @@
 % Please edit documentation in R/psmtable.R
 \name{pad_mq_channels}
 \alias{pad_mq_channels}
-\title{Pad MaxQuant TMT channels to the highest plex}
+\title{Pad MaxQuant TMT channels to the highest plex.}
 \usage{
-pad_mq_channels(file)
+pad_mq_channels(file, fasta, entrez)
 }
 \arguments{
 \item{file}{A file name of PSM table from MaxQuant export}
+
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search. There is no default and users need to provide the
+correct file path(s) and name(s).}
+
+\item{entrez}{Character string(s) to the name(s) of entrez file(s) with
+prepended directory path. At the \code{NULL} default, a convenience lookup
+is available for species among \code{c("human", "mouse", "rat")}. For other
+species, users need to provide the file path(s) and name(s) for the lookup
+table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
+for preparing custom entrez files.}
 }
 \description{
-Pad MaxQuant TMT channels to the highest plex
+Pad MaxQuant TMT channels to the highest plex.
 }

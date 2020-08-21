@@ -28,8 +28,8 @@ the same \code{pep_seq_mod} groups.}
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
 The descriptive statistics includes \code{c("mean", "median", "top.3",
 "weighted.mean")} with \code{median} being the default. The
-\code{log10-intensity} of reporter ions at the \code{PSMs} levels will be
-the weight when summarizing \code{log2FC} with \code{"top.3"} or
+\code{log10-intensity} of reporter (or LFQ) ions at the \code{PSMs} levels
+will be the weight when summarizing \code{log2FC} with \code{"top.3"} or
 \code{"weighted.mean"}.}
 
 \item{group_pep_by}{A character string specifying the method in peptide
