@@ -126,12 +126,6 @@ extract_mq_ints <- function (df) {
       cbind(df, .)
   }
   
-  if (purrr::is_empty(grep("log2_R000", names(df)))) {
-    stop("No `log2_R000...` columns available.\n",
-         "Probably inconsistent sample IDs between metadata and MaxQuant `peptides.txt`.", 
-         call. = FALSE)
-  }
-  
   load(file.path(dat_dir, "label_scheme.rda"))
   
   refChannels <- label_scheme %>% 
@@ -154,6 +148,12 @@ extract_mq_ints <- function (df) {
   df <- df %>% 
     `names<-`(gsub("^Intensity (.*)$", paste0("I000 \\(", "\\1", "\\)"), names(.))) %>% 
     `names<-`(gsub("^LFQ intensity (.*)$", paste0("N_I000 \\(", "\\1", "\\)"), names(.)))
+  
+  if (purrr::is_empty(grep("log2_R000", names(df)))) {
+    stop("No `log2_R000...` columns available.\n",
+         "Probably inconsistent sample IDs between metadata and MaxQuant `peptides.txt`.", 
+         call. = FALSE)
+  }
   
   df <- dplyr::bind_cols(
     df %>% dplyr::select(-grep("[IR]{1}000 \\(", names(.))),
