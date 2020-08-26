@@ -412,19 +412,22 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  # profile widths based on all sample columns and data rows
 	  sd_coefs <- df %>% calc_sd_fcts(range_log2r, range_int, label_scheme)
 	  
-	  seq <- c(-Inf, cut_points, Inf)
+	  if (is.null(cut_points)) cut_points <- Inf
+	  cut_points <- set_cutpoints(cut_points)
 	  
-	  if (sum(is.infinite(seq)) == 2) {
+	  if (identical(cut_points, c(-Inf, Inf))) {
+	    df <- list(df)
+	  } else {
 	    df <- df %>% 
 	      dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.))], 
 	                                               na.rm = TRUE))) %>% 
-	      dplyr::mutate_at(.vars = "Int_index", cut, seq, labels = seq[1:(length(seq)-1)]) %>%
+	      dplyr::mutate_at(.vars = "Int_index", cut, 
+	                       breaks = cut_points, 
+	                       labels = cut_points[1:(length(cut_points)-1)]) %>%
 	      split(., .$Int_index, drop = TRUE) %>% 
 	      purrr::map(~ .x %>% dplyr::select(-Int_index))
-	  } else {
-	    df <- list(df)
 	  }
-	  
+
 	  x_vals <- df %>% purrr::map(spline_coefs, label_scheme, label_scheme_fit, slice_dots)
 	  
 	  df <- purrr::map2(df, x_vals, ~ update_df(.x, label_scheme, .y, sd_coefs)) %>% 

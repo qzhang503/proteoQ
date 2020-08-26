@@ -2695,3 +2695,36 @@ env_where <- function(name, env = caller_env()) {
   }
 }
 
+
+#' Generate cut points.
+#' 
+#' @param data A sequence of numeric values with probable NA value.
+#' @inheritParams prnHist
+set_cutpoints <- function (cut_points = NULL, data = NULL) {
+  if (is.null(cut_points) && is.null(data)) {
+    stop("`cut_points` and `data` can not be both NULL.", call. = FALSE)
+  }
+    
+  if (!is.null(data)) {
+    oks <- data %>% .[!is.na(.)] %>% is.numeric() %>% all()
+    if (!oks) stop("All numeric values are required for setting cut points.", call. = FALSE)
+  }
+  
+  if (!is.null(cut_points)) {
+    oks <- cut_points %>% is.numeric() %>% all()
+    if (!oks) stop("All numeric values are required for `cut_points`.", call. = FALSE)
+  }
+
+  if (is.null(data) && !is.null(cut_points)) {
+    cut_points <- cut_points %>% c(-Inf, ., Inf) %>% .[!duplicated(.)] %>% .[order(.)]
+    return(cut_points)
+  }
+  
+  if (is.null(cut_points) && !is.null(data)) {
+    cut_points <- data %>% quantile() %>% c(-Inf, ., Inf) %>% round(digits = 1)
+    return(cut_points)
+  }
+  
+  cut_points %>% c(-Inf, ., Inf) %>% .[!duplicated(.)] %>% .[order(.)]
+}
+
