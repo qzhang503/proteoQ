@@ -21,8 +21,9 @@ acc_type	The type of accession names
 kin_attr	The attribute of proteins being kinases	Cf. PSM keys
 kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. PSM keys
 kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. PSM keys
-I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by `method_pep_prn` in `Pep2Prn()` for indicated samples
-N_I... (...)	Normalized I... (...)	Cf. Peptide keys
-log2_R (...)	log2FC relative to reference materials for indicated samples	Cf. Peptide keys
-N_log2_R (...)	Aligned log2_R (...)	According to 'method_align' in 'standPrn()' without scaling normalization
-Z_log2_R (...)	N_log2_R (...) with scaling normalization	
+count_nna	Count of non-NA log2FC	`Reference` and `Empty` samples excluded.
+I... (...)	Reporter-ion intensity; I000 for LFQ	Calculated from the descriptive statistics by `method_pep_prn` in `Pep2Prn()` for indicated samples
+N_I... (...)	Normalized I... (...); N_I000 for LFQ	Cf. Peptide keys
+log2_R... (...)	log2FC relative to reference materials for indicated samples; log2_R000 for LFQ	Cf. Peptide keys
+N_log2_R... (...)	Aligned log2_R... (...); N_log2_R000 for LFQ	According to 'method_align' in 'standPrn()' without scaling normalization
+Z_log2_R... (...)	N_log2_R... (...) with scaling normalization; Z_log2_R000 for LFQ	

@@ -1,7 +1,7 @@
 proteoQ
 ================
 truetrue
-2020-08-21
+2020-08-25
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -12,7 +12,6 @@ truetrue
       - [1.4 Peptides to proteins](#peptides-to-proteins)
       - [1.5 Workflow scripts](#workflow-scripts)
       - [1.6 Quick start](#quick-start)
-      - [1.7 LFQ](#lfq)
   - [2 Basic informatics](#basic-informatics)
       - [2.1 MDS](#mds)
       - [2.2 PCA](#pca)
@@ -1096,14 +1095,24 @@ analysis to analysis.
 
 ### 1.5 Workflow scripts
 
+#### 1.5.1 TMT
+
 Scripts that were used in this document can be accessed via:
 
 ``` r
 system.file("extdata", "workflow_base.R", package = "proteoQ")
 ```
 
-Another good place to get started is via the help `?load_expts`. More
-workflow scripts are under construction.
+Another place to get help is via `?load_expts`.
+
+#### 1.5.2 LFQ (MaxQuant)
+
+``` r
+system.file("extdata", "workflow_lfq.R", package = "proteoQ")
+```
+
+Additional notes available in
+<strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>.
 
 ### 1.6 Quick start
 
@@ -1126,12 +1135,6 @@ prnMDS(
   height = 4,
 )
 ```
-
-### 1.7 LFQ
-
-See notes
-<strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>.
-More examples to come.
 
 ## 2 Basic informatics
 
@@ -3224,12 +3227,12 @@ modifications:
 | dat\_file             | File name(s) of PSM results                                                                                                                                                        |                                                                                                                                                                                                                       |
 | raw\_file             | MS file name(s) where peptides or proteins are identified                                                                                                                          |                                                                                                                                                                                                                       |
 | …                     | Additional column keys                                                                                                                                                             | MaxQuant, <http://www.coxdocs.org/doku.php?id=maxquant:table:msmstable>. Spectrum Mill, users’ manual.                                                                                                                |
-| I126 etc.             | Reporter-ion intensity from MS/MS ion search                                                                                                                                       | With MaxQuant, corrected or uncorrected intensities; c.f. `?normPSM`.                                                                                                                                                 |
-| N\_I126 etc.          | Normalized reporter-ion intensity                                                                                                                                                  | The calibration factors for the alignment of `log2R...` are used to scale the reporter-ion intensity.                                                                                                                 |
-| R126 etc.             | Linear FC relative to TMT-126                                                                                                                                                      |                                                                                                                                                                                                                       |
-| sd\_log2\_R126 etc.   | Standard deviation of peptide log2FC                                                                                                                                               | Calculated from contributing PSMs under each TMT channel.                                                                                                                                                             |
-| log2\_R126 etc.       | log2FC in relative to the average intensity of reference(s) under each multiplex TMT                                                                                               | Relative to the row-mean intensity within each multiplex TMT if no reference(s) are present.                                                                                                                          |
-| N\_log2\_R126 etc.    | Median-centered `log2_R...`                                                                                                                                                        |                                                                                                                                                                                                                       |
+| I126 etc.             | Reporter-ion intensity from MS/MS ion search (void in LFQ)                                                                                                                         | With MaxQuant, corrected or uncorrected intensities; c.f. `?normPSM`.                                                                                                                                                 |
+| N\_I126 etc.          | Normalized I126 etc.(void in LFQ)                                                                                                                                                  | The calibration factors for the alignment of `log2R...` are used to scale the reporter-ion intensity.                                                                                                                 |
+| R126 etc.             | Linear FC relative to TMT-126 (void in LFQ)                                                                                                                                        |                                                                                                                                                                                                                       |
+| sd\_log2\_R126 etc.   | Standard deviation of peptide log2FC (void in LFQ)                                                                                                                                 | Calculated from contributing PSMs under each TMT channel.                                                                                                                                                             |
+| log2\_R126 etc.       | log2FC in relative to the average intensity of reference(s) under each multiplex TMT (void in LFQ)                                                                                 | Relative to the row-mean intensity within each multiplex TMT if no reference(s) are present.                                                                                                                          |
+| N\_log2\_R126 etc.    | Median-centered `log2_R...` (void in LFQ)                                                                                                                                          |                                                                                                                                                                                                                       |
 
 ### 4.2 Peptides
 
@@ -3238,58 +3241,59 @@ without the imputation of NA values are summarized in `Peptide.txt` and
 `Peptide_impNA.txt`, respectively. The column keys therein are described
 in the following:
 
-| Header               | Descrption                                                                                     | Note                                                                                                                               |
-| :------------------- | :--------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------- |
-| prot\_acc            | Protein accession string                                                                       |                                                                                                                                    |
-| prot\_desc           | Protein description taken from Fasta title line                                                |                                                                                                                                    |
-| prot\_mass           | Protein mass                                                                                   |                                                                                                                                    |
-| prot\_matches\_sig   | Count of PSMs that have significant scores under a proposed protein                            | Mascot only. Cf. PSM keys.                                                                                                         |
-| prot\_sequences\_sig | Count of distinct sequences that have significant scores under a proposed protein              | Mascot only. Cf. PSM keys.                                                                                                         |
-| prot\_len            | The number of amino acid residues under a proposed protein                                     | Cf. PSM keys.                                                                                                                      |
-| prot\_cover          | Protein sequence coverage                                                                      | Cf. PSM keys.                                                                                                                      |
-| prot\_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                             | Joint results from individual PSM tables; the counts exclude entries that are void in reporter-ion intensity or filtered by users. |
-| prot\_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein                | Cf. `prot_n_psm`.                                                                                                                  |
-| pep\_n\_psm          | Counts of significant PSMs in quantitation under a proposed peptide                            | Cf. `prot_n_psm`.                                                                                                                  |
-| pep\_isunique        | Peptide sequence is unique or not.                                                             | Cf. PSM keys.                                                                                                                      |
-| pep\_res\_before     | Flanking residue on N-term side of peptide                                                     |                                                                                                                                    |
-| pep\_seq             | One-letter representation of peptide sequences without variable modifications                  | Cf. PSM keys; the key will become `pep_seq_mod` at `normPSM(group_psm_by = pep_seq_mod)`                                           |
-| pep\_seq\_mod        | `pep_seq` with variable modifications                                                          | Cf. PSM keys; the key will become `pep_seq` at `normPSM(group_psm_by = pep_seq)`                                                   |
-| pep\_res\_after      | Flanking residue on C-term side of peptide                                                     |                                                                                                                                    |
-| pep\_start           | Ordinal position of first peptide residue in protein sequence                                  |                                                                                                                                    |
-| pep\_end             | Mascot: ordinal position of last peptide residue in protein sequence                           |                                                                                                                                    |
-| pep\_len             | Number of amino acid residues in a peptide sequence                                            |                                                                                                                                    |
-| pep\_miss            | Count of missed cleavage sites in peptide                                                      |                                                                                                                                    |
-| pep\_score           | Score of PSM                                                                                   | Cf. `pep_rank`.                                                                                                                    |
-| pep\_expect          | Expectation value or posterior error probability of PSM                                        | Geometric-mean description from PSMs.                                                                                              |
-| pep\_locprob         | The highest probablity from the Mascot site analysis of the variable modification sites        | Mascot only. Cf. `pep_rank`.                                                                                                       |
-| pep\_locdiff         | pep\_locprob – pep\_locprob2                                                                   | Mascot only. Cf. `pep_rank`.                                                                                                       |
-| pep\_mod\_protnt     | Logical indicating if a sequence Protein N-terminal modification                               | Optional at “normPSM(group\_psm\_by = pep\_seq\_mod, use\_lowercase\_aa = TRUE)”. Cf. `?proteoQ::normPSM`.                         |
-| pep\_mod\_protntac   | Logical indicating if a sequence contains Protein N-terminal acetylation                       | v.s.                                                                                                                               |
-| pep\_mod\_pepnt      | Logical indicating if a sequence contains N-terminal modification                              | v.s.                                                                                                                               |
-| pep\_mod\_m          | Logical indicating if a sequence contains methionine oxidation                                 | v.s.                                                                                                                               |
-| pep\_mod\_n          | Logical indicating if a sequence contains asparagine deamidation                               | v.s.                                                                                                                               |
-| pep\_mod\_sty        | Logical indicating if a sequence contains the phospholyration of serine, threonine or tyrosine | v.s.                                                                                                                               |
-| pep\_mod\_pepct      | Logical indicating if a sequence contains C-terminal modification                              | v.s.                                                                                                                               |
-| pep\_mod\_protctam   | Logical indicating if a sequence contains Protein C-terminal amidation                         | v.s.                                                                                                                               |
-| pep\_mod\_protct     | Logical indicating if a sequence contains Protein C-terminal modification                      | v.s.                                                                                                                               |
-| pep\_mean\_raw       | Mean log2\_R (…) across samples                                                                | Reference and `Empty` samples excluded.                                                                                            |
-| pep\_mean\_n         | Mean N\_log2FC(…) across samples                                                               | v.s.                                                                                                                               |
-| pep\_mean\_z         | Mean Z\_log2FC(…) across samples                                                               | v.s.                                                                                                                               |
-| gene                 | Protein gene name                                                                              |                                                                                                                                    |
-| uniprot\_id          | Uniprot ID                                                                                     | Cf. PSM keys.                                                                                                                      |
-| entrez               | Protein Entrez ID                                                                              |                                                                                                                                    |
-| species              | The species of a protein entry                                                                 |                                                                                                                                    |
-| acc\_type            | The type of accession names                                                                    |                                                                                                                                    |
-| kin\_attr            | The attribute of proteins being kinases                                                        | Cf. PSM keys.                                                                                                                      |
-| kin\_class           | The classes of kinases, e.g., TK, TKL…                                                         | Cf. PSM keys.                                                                                                                      |
-| kin\_order           | The order of “kin\_class” from the kinase tree diagram                                         | Cf. PSM keys.                                                                                                                      |
-| is\_tryptic          | Logical indicating if a sequence belongs to a canonical tryptic peptide                        | Cf. PSM keys.                                                                                                                      |
-| I… (…)               | Reporter-ion intensity                                                                         | Calculated from the descriptive statistics by `method_psm_pep` in `PSM2Pep()` for indicated samples.                               |
-| N\_I… (…)            | Normalized I… (…)                                                                              | The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity.                                  |
-| sd\_log2\_R (…)      | Standard deviation of protein log2FC                                                           | Calculated from contributing peptides under each sample.                                                                           |
-| log2\_R (…)          | log2FC relative to reference materials for indicated samples                                   | Before normalization.                                                                                                              |
-| N\_log2\_R (…)       | Aligned log2\_R (…) according to method\_align in standPep() without scaling normalization     |                                                                                                                                    |
-| Z\_log2\_R (…)       | N\_log2\_R (…) with scaling normalization                                                      |                                                                                                                                    |
+| Header               | Descrption                                                                                                         | Note                                                                                                                               |
+| :------------------- | :----------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------- |
+| prot\_acc            | Protein accession string                                                                                           |                                                                                                                                    |
+| prot\_desc           | Protein description taken from Fasta title line                                                                    |                                                                                                                                    |
+| prot\_mass           | Protein mass                                                                                                       |                                                                                                                                    |
+| prot\_matches\_sig   | Count of PSMs that have significant scores under a proposed protein                                                | Mascot only. Cf. PSM keys.                                                                                                         |
+| prot\_sequences\_sig | Count of distinct sequences that have significant scores under a proposed protein                                  | Mascot only. Cf. PSM keys.                                                                                                         |
+| prot\_len            | The number of amino acid residues under a proposed protein                                                         | Cf. PSM keys.                                                                                                                      |
+| prot\_cover          | Protein sequence coverage                                                                                          | Cf. PSM keys.                                                                                                                      |
+| prot\_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                                                 | Joint results from individual PSM tables; the counts exclude entries that are void in reporter-ion intensity or filtered by users. |
+| prot\_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein                                    | Cf. `prot_n_psm`.                                                                                                                  |
+| pep\_n\_psm          | Counts of significant PSMs in quantitation under a proposed peptide                                                | Cf. `prot_n_psm`.                                                                                                                  |
+| pep\_isunique        | Peptide sequence is unique or not.                                                                                 | Cf. PSM keys.                                                                                                                      |
+| pep\_res\_before     | Flanking residue on N-term side of peptide                                                                         |                                                                                                                                    |
+| pep\_seq             | One-letter representation of peptide sequences without variable modifications                                      | Cf. PSM keys; the key will become `pep_seq_mod` at `normPSM(group_psm_by = pep_seq_mod)`                                           |
+| pep\_seq\_mod        | `pep_seq` with variable modifications                                                                              | Cf. PSM keys; the key will become `pep_seq` at `normPSM(group_psm_by = pep_seq)`                                                   |
+| pep\_res\_after      | Flanking residue on C-term side of peptide                                                                         |                                                                                                                                    |
+| pep\_start           | Ordinal position of first peptide residue in protein sequence                                                      |                                                                                                                                    |
+| pep\_end             | Mascot: ordinal position of last peptide residue in protein sequence                                               |                                                                                                                                    |
+| pep\_len             | Number of amino acid residues in a peptide sequence                                                                |                                                                                                                                    |
+| pep\_miss            | Count of missed cleavage sites in peptide                                                                          |                                                                                                                                    |
+| pep\_score           | Score of PSM                                                                                                       | Cf. `pep_rank`.                                                                                                                    |
+| pep\_expect          | Expectation value or posterior error probability of PSM                                                            | Geometric-mean description from PSMs.                                                                                              |
+| pep\_locprob         | The highest probablity from the Mascot site analysis of the variable modification sites                            | Mascot only. Cf. `pep_rank`.                                                                                                       |
+| pep\_locdiff         | pep\_locprob – pep\_locprob2                                                                                       | Mascot only. Cf. `pep_rank`.                                                                                                       |
+| pep\_mod\_protnt     | Logical indicating if a sequence Protein N-terminal modification                                                   | Optional at “normPSM(group\_psm\_by = pep\_seq\_mod, use\_lowercase\_aa = TRUE)”. Cf. `?proteoQ::normPSM`.                         |
+| pep\_mod\_protntac   | Logical indicating if a sequence contains Protein N-terminal acetylation                                           | v.s.                                                                                                                               |
+| pep\_mod\_pepnt      | Logical indicating if a sequence contains N-terminal modification                                                  | v.s.                                                                                                                               |
+| pep\_mod\_m          | Logical indicating if a sequence contains methionine oxidation                                                     | v.s.                                                                                                                               |
+| pep\_mod\_n          | Logical indicating if a sequence contains asparagine deamidation                                                   | v.s.                                                                                                                               |
+| pep\_mod\_sty        | Logical indicating if a sequence contains the phospholyration of serine, threonine or tyrosine                     | v.s.                                                                                                                               |
+| pep\_mod\_pepct      | Logical indicating if a sequence contains C-terminal modification                                                  | v.s.                                                                                                                               |
+| pep\_mod\_protctam   | Logical indicating if a sequence contains Protein C-terminal amidation                                             | v.s.                                                                                                                               |
+| pep\_mod\_protct     | Logical indicating if a sequence contains Protein C-terminal modification                                          | v.s.                                                                                                                               |
+| pep\_mean\_raw       | Mean log2\_R (…) across samples                                                                                    | `Reference` and `Empty` samples excluded.                                                                                          |
+| pep\_mean\_n         | Mean N\_log2FC(…) across samples                                                                                   | v.s.                                                                                                                               |
+| pep\_mean\_z         | Mean Z\_log2FC(…) across samples                                                                                   | v.s.                                                                                                                               |
+| gene                 | Protein gene name                                                                                                  |                                                                                                                                    |
+| uniprot\_id          | Uniprot ID                                                                                                         | Cf. PSM keys.                                                                                                                      |
+| entrez               | Protein Entrez ID                                                                                                  |                                                                                                                                    |
+| species              | The species of a protein entry                                                                                     |                                                                                                                                    |
+| acc\_type            | The type of accession names                                                                                        |                                                                                                                                    |
+| kin\_attr            | The attribute of proteins being kinases                                                                            | Cf. PSM keys.                                                                                                                      |
+| kin\_class           | The classes of kinases, e.g., TK, TKL…                                                                             | Cf. PSM keys.                                                                                                                      |
+| kin\_order           | The order of “kin\_class” from the kinase tree diagram                                                             | Cf. PSM keys.                                                                                                                      |
+| is\_tryptic          | Logical indicating if a sequence belongs to a canonical tryptic peptide                                            | Cf. PSM keys.                                                                                                                      |
+| count\_nna           | Count of non-NA log2FC                                                                                             | `Reference` and `Empty` samples excluded.                                                                                          |
+| I… (…)               | Reporter-ion intensity; I000 for LFQ                                                                               | Calculated from the descriptive statistics by `method_psm_pep` in `PSM2Pep()` for indicated samples.                               |
+| N\_I… (…)            | Normalized I… (…); N\_I000 for LFQ                                                                                 | The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity.                                  |
+| sd\_log2\_R… (…)     | Standard deviation of protein log2FC; sd\_log2\_R000 for LFQ                                                       | Calculated from contributing peptides under each sample.                                                                           |
+| log2\_R… (…)         | log2FC relative to reference materials for indicated samples; log2\_R000 for LFQ                                   | Before normalization.                                                                                                              |
+| N\_log2\_R… (…)      | Aligned log2\_R… (…) according to method\_align in standPep() without scaling normalization; N\_log2\_R000 for LFQ |                                                                                                                                    |
+| Z\_log2\_R… (…)      | N\_log2\_R… (…) with scaling normalization; Z\_log2\_R000 for LFQ                                                  |                                                                                                                                    |
 
 Following optional significance tests, the primary peptide outputs with
 and without the imputation of NA values are summarized in
@@ -3329,11 +3333,12 @@ described in the following:
 | kin\_attr            | The attribute of proteins being kinases                                                 | Cf. PSM keys                                                                                        |
 | kin\_class           | The classes of kinases, e.g., TK, TKL…                                                  | Cf. PSM keys                                                                                        |
 | kin\_order           | The order of “kin\_class” from the kinase tree diagram                                  | Cf. PSM keys                                                                                        |
-| I… (…)               | Reporter-ion intensity                                                                  | Calculated from the descriptive statistics by `method_pep_prn` in `Pep2Prn()` for indicated samples |
-| N\_I… (…)            | Normalized I… (…)                                                                       | Cf. Peptide keys                                                                                    |
-| log2\_R (…)          | log2FC relative to reference materials for indicated samples                            | Cf. Peptide keys                                                                                    |
-| N\_log2\_R (…)       | Aligned log2\_R (…)                                                                     | According to method\_align in standPrn() without scaling normalization                              |
-| Z\_log2\_R (…)       | N\_log2\_R (…) with scaling normalization                                               |                                                                                                     |
+| count\_nna           | Count of non-NA log2FC                                                                  | `Reference` and `Empty` samples excluded.                                                           |
+| I… (…)               | Reporter-ion intensity; I000 for LFQ                                                    | Calculated from the descriptive statistics by `method_pep_prn` in `Pep2Prn()` for indicated samples |
+| N\_I… (…)            | Normalized I… (…); N\_I000 for LFQ                                                      | Cf. Peptide keys                                                                                    |
+| log2\_R… (…)         | log2FC relative to reference materials for indicated samples; log2\_R000 for LFQ        | Cf. Peptide keys                                                                                    |
+| N\_log2\_R… (…)      | Aligned log2\_R… (…); N\_log2\_R000 for LFQ                                             | According to method\_align in standPrn() without scaling normalization                              |
+| Z\_log2\_R… (…)      | N\_log2\_R… (…) with scaling normalization; Z\_log2\_R000 for LFQ                       |                                                                                                     |
 
 Analogous to the peptide tables, the primary protein outputs with and
 without the imputation of NA values are summarized in

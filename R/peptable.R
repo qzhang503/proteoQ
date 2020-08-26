@@ -169,7 +169,7 @@ extract_mq_ints <- function (df) {
 #' load MaxQuant peptide table
 #' 
 #' @inheritParams n_TMT_sets
-pep_mq_lfq <- function(label_scheme) {
+pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
   dat_dir <- get_gl_dat_dir()
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
@@ -186,6 +186,21 @@ pep_mq_lfq <- function(label_scheme) {
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
     dplyr::filter(not_allzero_rows(.[grep("^LFQ intensity ", names(.))])) 
   
+  if (omit_single_lfq) {
+    df <- local({
+      df_lfq <- df[, grep("^LFQ intensity ", names(df))]
+      counts <- rowSums(df_lfq > 0)
+      
+      for (i in 1:nrow(df_lfq)) {
+        if (counts[i] == 1) df_lfq[i, which(df_lfq[i, ] > 0)] <- Inf
+      }
+      
+      df[, grep("^LFQ intensity ", names(df))] <- df_lfq
+      
+      return(df)
+    })
+  }
+
   ## handle inconsistency in MaxQuant column keys
   # (1) "Gene names" vs "Gene Names" etc.
   # (2) presence or absence of "Gene Names", "Protein Names" etc.
@@ -254,7 +269,7 @@ pep_mq_lfq <- function(label_scheme) {
   
   df <- local({
     df_vals <- df %>% 
-      dplyr::select(group_psm_by, grep("^Intensity |^LFQ intensity ", names(.))) %>% 
+      dplyr::select(group_psm_by, grep("^Intensity\\s|^LFQ\\sintensity\\s", names(.))) %>% 
       extract_mq_ints() %>% 
       dplyr::select(-grep("sd_log2_R000", names(.)))
     
@@ -438,7 +453,8 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) {
 #' @inheritParams splitPSM
 #' @inheritParams mergePep
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
-                           use_duppeps = TRUE, cut_points = Inf, parallel = TRUE, ...) {
+                           use_duppeps = TRUE, cut_points = Inf, 
+                           omit_single_lfq = TRUE, parallel = TRUE, ...) {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -451,8 +467,10 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
                          pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"), 
                          full.names = TRUE)
   
-  if (purrr::is_empty(filelist)) stop("No individual peptide tables; run `PSM2Pep()` first.")
-
+  if (purrr::is_empty(filelist)) {
+    stop("No individual peptide tables available; run `PSM2Pep()` first.", call. = FALSE)
+  }
+  
   df <- suppressWarnings(
     do.call(rbind, 
             purrr::map(filelist, read.csv, check.names = FALSE, header = TRUE, 
@@ -472,8 +490,20 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   if (TMT_plex > 0) {
     df_num <- calc_tmt_nums(df, filelist, group_psm_by, parallel)
   } else {
-    df_num <- pep_mq_lfq(label_scheme)
+    df_num <- pep_mq_lfq(label_scheme, omit_single_lfq)
   }
+  
+  df_num <- local({
+    count_nna <- df_num %>% 
+      dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", names(.)))%>% 
+      dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Ref\\.[0-9]+\\)$", names(.))) %>% 
+      dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", names(.))) %>% 
+      is.na() %>% 
+      `!`() %>% 
+      rowSums()
+    
+    dplyr::bind_cols(count_nna = count_nna, df_num)
+  })
 
   pep_n_psm <- df %>%
     dplyr::select(!!rlang::sym(group_psm_by), pep_n_psm) %>%
@@ -502,7 +532,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
 
   df <- list(pep_n_psm, df_first, df_num) %>%
     purrr::reduce(dplyr::left_join, by = group_psm_by) %>% 
-    reloc_col(group_psm_by, "pep_res_after")
+    reloc_col_before(group_psm_by, "pep_res_after")
   
   df <- list(df, prot_n_psm, prot_n_pep) %>%
     purrr::reduce(dplyr::left_join, by = group_pep_by)
@@ -785,6 +815,8 @@ fmt_num_cols <- function (df) {
 #'  also \code{\link{prnHist}} for data binning and intensity-coded histograms.
 #'@param use_duppeps Logical; if TRUE, re-assigns double/multiple dipping
 #'  peptide sequences to the most likely proteins by majority votes.
+#'@param omit_single_lfq Logical for LFQ; if TRUE, omits LFQ entries with single
+#'  measured values across all samples. The default is TRUE.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  of data against the column keys in individual peptide tables of
 #'  \code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt}, etc.
@@ -864,7 +896,7 @@ fmt_num_cols <- function (df) {
 #'@importFrom plyr ddply
 #'@export
 mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = Inf, 
-                      parallel = TRUE, ...) {
+                      omit_single_lfq = TRUE, parallel = TRUE, ...) {
   dat_dir <- get_gl_dat_dir()  
   
   old_opts <- options()
@@ -904,9 +936,9 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
                       group_pep_by = group_pep_by, 
                       use_duppeps = use_duppeps, 
                       cut_points = cut_points, 
+                      omit_single_lfq = omit_single_lfq,
                       parallel = parallel, 
-                      !!!filter_dots) %>% 
-    reloc_col("m/z", "Mass") %T>% 
+                      !!!filter_dots) %T>% 
     write.table(filename, sep = "\t", col.names = TRUE, row.names = FALSE)
   
   if (plot_log2FC_cv) {
@@ -1396,9 +1428,21 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
                    median = aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE), 
                    aggrNums(median)(df_num, !!rlang::sym(id), na.rm = TRUE))
   
+  df_num <- local({
+    count_nna <- df_num %>% 
+      dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", names(.)))%>% 
+      dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Ref\\.[0-9]+\\)$", names(.))) %>% 
+      dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", names(.))) %>% 
+      is.na() %>% 
+      `!`() %>% 
+      rowSums()
+    
+    dplyr::bind_cols(count_nna = count_nna, df_num)
+  })
+  
   df <- df %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-    dplyr::select(-one_of("is_tryptic")) %>% 
+    dplyr::select(-one_of("is_tryptic", "count_nna")) %>% 
     dplyr::select(-grep("^Reporter mass deviation", names(.))) 
 
   df <- suppressWarnings(
@@ -1468,12 +1512,26 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
     .[rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0, ]
   
   if (gn_rollup) {
-    dfa <- df %>% 
-      dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
-      dplyr::filter(!is.na(gene)) %>% 
-      dplyr::group_by(gene) %>% 
-      dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
+    df$count_nna <- NULL
     
+    dfa <- local({
+      dfa <- df %>% 
+        dplyr::select(gene, grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
+        dplyr::filter(!is.na(gene)) %>% 
+        dplyr::group_by(gene) %>% 
+        dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
+      
+      count_nna <- dfa %>% 
+        dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", names(.)))%>% 
+        dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Ref\\.[0-9]+\\)$", names(.))) %>% 
+        dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", names(.))) %>% 
+        is.na() %>% 
+        `!`() %>% 
+        rowSums() 
+      
+      dplyr::bind_cols(count_nna = count_nna, dfa)
+    })
+
     dfb <- df %>% 
       dplyr::select(-prot_cover, -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
       dplyr::filter(!is.na(gene)) %>% 
@@ -1496,9 +1554,9 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
       df %>% dplyr::select(prot_acc), 
       df %>% dplyr::select(-prot_acc), 
     ) %>% 
-      reloc_col("gene", "uniprot_id") %>% 
-      reloc_col("prot_cover", "prot_n_psm")
-  }
+      reloc_col_before("gene", "uniprot_id") %>% 
+      reloc_col_before("prot_cover", "prot_n_psm")
+  } 
   
   return(df)
 }

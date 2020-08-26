@@ -9,6 +9,7 @@ normPep_Mplex(
   group_pep_by = "prot_acc",
   use_duppeps = TRUE,
   cut_points = Inf,
+  omit_single_lfq = TRUE,
   parallel = TRUE,
   ...
 )
@@ -39,6 +40,9 @@ reporter-ion (or LFQ) intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
 \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
 \code{log2FC} under each sample will be median-centered all together. See
 also \code{\link{prnHist}} for data binning and intensity-coded histograms.}
+
+\item{omit_single_lfq}{Logical for LFQ; if TRUE, omits LFQ entries with single
+measured values across all samples. The default is TRUE.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}

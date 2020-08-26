@@ -678,13 +678,21 @@ In this way, we can skip the repetitive setting of `scale_log2r` in our workflow
 
 
 ### 1.5 Workflow scripts
+#### 1.5.1 TMT
 Scripts that were used in this document can be accessed via:  
 
-```{r workflow_scripts, include = TRUE, eval = FALSE}
+```{r workflow_scripts_tmt, include = TRUE, eval = FALSE}
 system.file("extdata", "workflow_base.R", package = "proteoQ")
 ```
 
-Another good place to get started is via the help `?load_expts`. More workflow scripts are under construction.  
+Another place to get help is via `?load_expts`.
+
+#### 1.5.2 LFQ (MaxQuant)
+```{r workflow_scripts_lfq, include = TRUE, eval = FALSE}
+system.file("extdata", "workflow_lfq.R", package = "proteoQ")
+```
+
+Additional notes available in <strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>.  
 
 ### 1.6 Quick start
 For quick demonstrations, steps in data preprocessing can be bypassed:  
@@ -706,10 +714,6 @@ prnMDS(
   height = 4,
 )
 ```
-
-
-### 1.7 LFQ
-See notes <strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>. More examples to come.  
 
 ## 2 Basic informatics
 In this section I illustrate the following applications of `proteoQ`:  

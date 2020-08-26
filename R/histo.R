@@ -7,7 +7,7 @@
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom tidyr gather
 plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_cases, 
-                       show_curves, show_vline, scale_y, filepath = NULL, filename, 
+                       cut_points, show_curves, show_vline, scale_y, filepath = NULL, filename, 
                        theme, ...) {
   
   stopifnot(vapply(c(scale_log2r, complete_cases, show_curves, show_vline, scale_y), 
@@ -148,8 +148,6 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 	
 	if (is.null(theme)) theme <- proteoq_histo_theme
 
-	seq <- c(-Inf, seq(4, 7, .5), Inf)
-
 	if (!scale_y) {
 	  df <- df %>% 
 	  filters_in_call(!!!filter_dots) %>% 
@@ -164,7 +162,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 		dplyr::select(which(not_all_zero(.))) %>%
 		dplyr::select(which(colSums(!is.na(.)) > 0)) %>%
 		dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}", names(.))], na.rm = TRUE))) %>%
-		dplyr::mutate_at(.vars = "Int_index", cut, seq, labels = seq[1:(length(seq)-1)]) %>%
+		dplyr::mutate_at(.vars = "Int_index", cut, cut_points, labels = cut_points[1:(length(cut_points)-1)]) %>%
 		dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
 	  `names<-`(gsub("^[NZ]{1}_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.))) %>%
 		tidyr::gather(key = Sample_ID, value = value, -Int_index) %>%
@@ -214,6 +212,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 #'@import purrr
 #'@export
 pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
+                     cut_points = seq(4, 7, .5), 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                      df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
   check_dots(c("id", "anal_type", "df2"), ...)
@@ -237,7 +236,7 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
   info_anal(id = !!id, col_select = !!col_select, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "Histogram")(show_curves = show_curves,
+            anal_type = "Histogram")(cut_points = cut_points, show_curves = show_curves,
                                      show_vline = show_vline, scale_y = scale_y, 
                                      theme = theme, !!!dots)
 }
@@ -264,6 +263,14 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  The default is TRUE.
 #'@param scale_y Logical; if TRUE, scale data on the \code{y-axis}. The default
 #'  is TRUE.
+#'@param cut_points A numeric vector defines the cut points (knots) in
+#'  histograms. The values of the knots indicate the summarized
+#'  \code{log10(Intentisy)} of ions. For example, at \code{cut_points = seq(4,
+#'  7, .5)}, values of \code{log2FC} will be binned from \eqn{-Inf} to \eqn{Inf}
+#'  according to the cut points at the reporter-ion (or LFQ) intensity of
+#'  \eqn{10^4, 10^4.5, ... 10^7}. The default is \code{cut_points = Inf}, or
+#'  equivalently \code{-Inf}. See also \code{\link{mergePep}} for data alignment
+#'  with binning.
 #'@param df The name of a primary data file. By default, it will be determined
 #'  automatically after matching the types of data and analysis with an
 #'  \code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
@@ -369,6 +376,7 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  fitted data for curves: \code{[...]_fitted.txt}
 #'@export
 prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
+                     cut_points = seq(4, 7, .5), 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                      df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
   check_dots(c("id", "anal_type", "df2"), ...)
@@ -392,7 +400,7 @@ prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
   info_anal(id = !!id, col_select = !!col_select, 
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "Histogram")(show_curves = show_curves,
+            anal_type = "Histogram")(cut_points = cut_points, show_curves = show_curves,
                                      show_vline = show_vline, scale_y = scale_y, 
                                      theme = theme, !!!dots)
 }

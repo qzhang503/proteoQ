@@ -285,3 +285,4 @@
 #'   \item{composition}{Elemental composition of a amino acid residue}
 #' }
 "aa_residues"
+

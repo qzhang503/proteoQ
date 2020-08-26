@@ -366,12 +366,14 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			       ...)
 		}
 	} else if (anal_type == "Histogram") {
-		function(show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, theme = NULL, ...) {
+		function(cut_points = seq(4, 7, .5), show_curves = TRUE, show_vline = TRUE, 
+		         scale_y = TRUE, theme = NULL, ...) {
 			plotHisto(df = df,
 			          id = !!id,
 			          label_scheme_sub = label_scheme_sub,
 			          scale_log2r = scale_log2r,
 			          complete_cases = complete_cases,
+			          cut_points = cut_points,
 			          show_curves = show_curves,
 			          show_vline = show_vline,
 			          scale_y = scale_y,

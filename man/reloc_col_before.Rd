@@ -4,14 +4,14 @@
 \alias{reloc_col_before}
 \title{Relocate column "to_move" immediately before anchor column "col_after".}
 \usage{
-reloc_col_before(df, to_move = "before_col_after", col_after = "anchor")
+reloc_col_before(df, to_move = "before_anchor", col_after = "anchor")
 }
 \arguments{
 \item{df}{The original data frame.}
 
 \item{to_move}{The column to be moved.}
 
-\item{col_after}{The column to which the \code{to_move} will be moved before.}
+\item{col_after}{The anchor column to which the \code{to_move} will be moved before.}
 }
 \description{
 The same as \code{reloc_col}.

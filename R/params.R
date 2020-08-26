@@ -468,6 +468,8 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 			stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
 		}
 	  
+	  if (all(is.na(fraction_scheme$LCMS_Injection))) fraction_scheme$LCMS_Injection <- 1
+	  
 	  fraction_scheme <- fraction_scheme %>% 
 	    dplyr::filter(!is.na(RAW_File)) %>% 
 	    dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
@@ -654,7 +656,7 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
  	}
 	
 	# LFQ: Sample_ID in .xlsx, but not .rda
-	# TMT: no Sample_ID in both
+	# TMT: no Sample_ID in either
 	fraction_scheme <- fraction_scheme %>% dplyr::select(-one_of("Sample_ID"))
 	save(fraction_scheme, file = file.path(dat_dir, "fraction_scheme.rda"))
 }

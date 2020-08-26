@@ -4,7 +4,7 @@
 \alias{pep_mq_lfq}
 \title{load MaxQuant peptide table}
 \usage{
-pep_mq_lfq(label_scheme)
+pep_mq_lfq(label_scheme, omit_single_lfq)
 }
 \description{
 load MaxQuant peptide table

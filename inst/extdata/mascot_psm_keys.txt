@@ -54,9 +54,9 @@ is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic pepti
 dat_file	File name(s) of PSM results	
 raw_file	MS file name(s) where peptides or proteins are identified	
 ...	Additional column keys	"MaxQuant, http://www.coxdocs.org/doku.php?id=maxquant:table:msmstable. Spectrum Mill, users' manual."
-I126 etc.	Reporter-ion intensity from MS/MS ion search	"With MaxQuant, corrected or uncorrected intensities; c.f. `?normPSM`."
-N_I126 etc.	Normalized reporter-ion intensity	The calibration factors for the alignment of `log2R...` are used to scale the reporter-ion intensity.
-R126 etc.	Linear FC relative to TMT-126	
-sd_log2_R126 etc.	Standard deviation of peptide log2FC 	Calculated from contributing PSMs under each TMT channel.
-log2_R126 etc.	log2FC in relative to the average intensity of reference(s) under each multiplex TMT	Relative to the row-mean intensity within each multiplex TMT if no reference(s) are present.
-N_log2_R126 etc.	Median-centered `log2_R...`	
+I126 etc.	Reporter-ion intensity from MS/MS ion search (void in LFQ)	"With MaxQuant, corrected or uncorrected intensities; c.f. `?normPSM`."
+N_I126 etc.	Normalized I126 etc.(void in LFQ)	The calibration factors for the alignment of `log2R...` are used to scale the reporter-ion intensity.
+R126 etc.	Linear FC relative to TMT-126 (void in LFQ)	
+sd_log2_R126 etc.	Standard deviation of peptide log2FC (void in LFQ)	Calculated from contributing PSMs under each TMT channel.
+log2_R126 etc.	log2FC in relative to the average intensity of reference(s) under each multiplex TMT (void in LFQ)	Relative to the row-mean intensity within each multiplex TMT if no reference(s) are present.
+N_log2_R126 etc.	Median-centered `log2_R...` (void in LFQ)	
