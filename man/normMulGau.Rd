@@ -63,9 +63,10 @@ histograms. The values of the knots indicate the summarized
 \code{log10(Intentisy)} of ions. For example, at \code{cut_points = seq(4,
 7, .5)}, values of \code{log2FC} will be binned from \eqn{-Inf} to \eqn{Inf}
 according to the cut points at the reporter-ion (or LFQ) intensity of
-\eqn{10^4, 10^4.5, ... 10^7}. The default is \code{cut_points = Inf}, or
-equivalently \code{-Inf}. See also \code{\link{mergePep}} for data alignment
-with binning.}
+\eqn{10^4, 10^4.5, ... 10^7}. The default is \code{cut_points = NULL} where
+the cut points will be at the quantiles of 25%, 50%, 75%. To disable data
+binning, set \code{cut_points} to \code{Inf} or \code{-Inf}. See also
+\code{\link{mergePep}} for data alignment with binning.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 of data against the column keys in \code{Peptide.txt} for peptides or

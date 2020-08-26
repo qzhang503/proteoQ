@@ -366,7 +366,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			       ...)
 		}
 	} else if (anal_type == "Histogram") {
-		function(cut_points = seq(4, 7, .5), show_curves = TRUE, show_vline = TRUE, 
+		function(cut_points = NULL, show_curves = TRUE, show_vline = TRUE, 
 		         scale_y = TRUE, theme = NULL, ...) {
 			plotHisto(df = df,
 			          id = !!id,

@@ -156,22 +156,30 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 
 	stopifnot(nrow(df) > 0)
 	
-	df_melt <- df %>%
-		dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%
-		dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>%
-		dplyr::select(which(not_all_zero(.))) %>%
-		dplyr::select(which(colSums(!is.na(.)) > 0)) %>%
-		dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}", names(.))], na.rm = TRUE))) %>%
-		dplyr::mutate_at(.vars = "Int_index", cut, cut_points, labels = cut_points[1:(length(cut_points)-1)]) %>%
-		dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
-	  `names<-`(gsub("^[NZ]{1}_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.))) %>%
-		tidyr::gather(key = Sample_ID, value = value, -Int_index) %>%
-		dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
-		dplyr::arrange(Sample_ID) %>%
-		dplyr::filter(!is.na(value), !is.na(Int_index)) %>%
-		dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID) %>% 
-	  dplyr::mutate(value = setHMlims(value, xmin, xmax))
+	df_melt <- local({
+	  df_melt <- df %>%
+	    dplyr::select(grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%
+	    dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>%
+	    dplyr::select(which(not_all_zero(.))) %>%
+	    dplyr::select(which(colSums(!is.na(.)) > 0)) %>%
+	    dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}", names(.))], na.rm = TRUE))) 
+	  
+	  cut_points <- set_cutpoints(cut_points, df_melt$Int_index)
 
+	  df_melt %>%
+	    dplyr::mutate_at(.vars = "Int_index", cut, 
+	                     breaks = cut_points, 
+	                     labels = cut_points[1:(length(cut_points)-1)]) %>%
+	    dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
+	    `names<-`(gsub("^[NZ]{1}_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.))) %>%
+	    tidyr::gather(key = Sample_ID, value = value, -Int_index) %>%
+	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
+	    dplyr::arrange(Sample_ID) %>%
+	    dplyr::filter(!is.na(value), !is.na(Int_index)) %>%
+	    dplyr::filter(Sample_ID %in% label_scheme_sub$Sample_ID) %>% 
+	    dplyr::mutate(value = setHMlims(value, xmin, xmax))
+	})
+	
 	p <- ggplot() +
 		geom_histogram(data = df_melt, aes(x = value, y = ..count.., fill = Int_index),
 		               color = "white", alpha = alpha, binwidth = binwidth, size = .1) +
@@ -212,7 +220,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_ca
 #'@import purrr
 #'@export
 pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
-                     cut_points = seq(4, 7, .5), 
+                     cut_points = NULL, 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                      df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
   check_dots(c("id", "anal_type", "df2"), ...)
@@ -268,9 +276,10 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  \code{log10(Intentisy)} of ions. For example, at \code{cut_points = seq(4,
 #'  7, .5)}, values of \code{log2FC} will be binned from \eqn{-Inf} to \eqn{Inf}
 #'  according to the cut points at the reporter-ion (or LFQ) intensity of
-#'  \eqn{10^4, 10^4.5, ... 10^7}. The default is \code{cut_points = Inf}, or
-#'  equivalently \code{-Inf}. See also \code{\link{mergePep}} for data alignment
-#'  with binning.
+#'  \eqn{10^4, 10^4.5, ... 10^7}. The default is \code{cut_points = NULL} where
+#'  the cut points will be at the quantiles of 25%, 50%, 75%. To disable data
+#'  binning, set \code{cut_points} to \code{Inf} or \code{-Inf}. See also
+#'  \code{\link{mergePep}} for data alignment with binning.
 #'@param df The name of a primary data file. By default, it will be determined
 #'  automatically after matching the types of data and analysis with an
 #'  \code{id} among \code{c("pep_seq", "pep_seq_mod", "prot_acc", "gene")}. A
@@ -376,7 +385,7 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  fitted data for curves: \code{[...]_fitted.txt}
 #'@export
 prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
-                     cut_points = seq(4, 7, .5), 
+                     cut_points = NULL, 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
                      df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
   check_dots(c("id", "anal_type", "df2"), ...)
