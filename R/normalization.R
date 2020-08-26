@@ -330,7 +330,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  params_sub <- df %>% 
 	    filters_in_call(!!!slice_dots) %>% 
 	    dplyr::select(nm_log2r_n) %>% 
-	    `names<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
+	    `names<-`(gsub("^N_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.))) %>% 
 	    fitKernelDensity(n_comp = n_comp, seed = seed, !!!nonslice_dots) %>% 
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>% 
 	    dplyr::arrange(Sample_ID, Component)

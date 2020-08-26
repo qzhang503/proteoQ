@@ -14,5 +14,5 @@ reloc_col(df, from = "m/z", to = "Mass")
 \item{to}{The column to which the \code{from} will be moved before.}
 }
 \description{
-Relocate column "m/z" to be immediately before column "Mass".
+Not currently used.
 }

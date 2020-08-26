@@ -1004,7 +1004,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
     dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
     dplyr::arrange(RAW_File, pep_seq, prot_acc) %>% 
-    reloc_col("dat_file", "RAW_File")
+    reloc_col_before("dat_file", "RAW_File")
   
   df <- dplyr::bind_cols(
     df %>% dplyr::select(grep("^prot_", names(.))),
@@ -1451,7 +1451,7 @@ cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq", parallel =
 	  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
 	  
 	  parallel::clusterExport(cl, list("add_cols_at"), envir = env_where("add_cols_at"))
-	  parallel::clusterExport(cl, list("reloc_col"), envir = env_where("reloc_col"))
+	  parallel::clusterExport(cl, list("reloc_col_before"), envir = env_where("reloc_col_before"))
 	  
 	  suppressWarnings(
 	    silent_out <- parallel::clusterApply(
@@ -2500,7 +2500,7 @@ PSM2Pep <- function (method_psm_pep = c("median", "mean", "weighted.mean", "top.
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
     
     parallel::clusterExport(cl, list("add_cols_at"), envir = env_where("add_cols_at"))
-    parallel::clusterExport(cl, list("reloc_col"), envir = env_where("reloc_col"))
+    parallel::clusterExport(cl, list("reloc_col_before"), envir = env_where("reloc_col_before"))
     
     suppressWarnings(
       silent_out <- parallel::clusterApply(
@@ -2765,6 +2765,8 @@ replace_cols_at <- function (df, df2, idxs) {
 
 #' Relocate column "m/z" to be immediately before column "Mass".
 #' 
+#' Not currently used.
+#' 
 #' @param df The original data frame.
 #' @param from The column to be moved from.
 #' @param to The column to which the \code{from} will be moved before.
@@ -2788,9 +2790,10 @@ reloc_col <- function (df, from = "m/z", to = "Mass") {
 #' 
 #' @param df The original data frame.
 #' @param to_move The column to be moved.
-#' @param col_before The column to which the \code{to_move} will be moved after.
-reloc_col_after <- function (df, to_move = "after_col_before", col_before = "anchor") {
-  stopifnot(to_move %in% names(df), col_before %in% names(df))
+#' @param col_before The anchor column to which the \code{to_move} will be moved after.
+reloc_col_after <- function (df, to_move = "after_anchor", col_before = "anchor") {
+  if (!(to_move %in% names(df) && col_before %in% names(df))) return(df)
+  
   if (to_move == col_before) return(df)
   
   df2 <- df %>% dplyr::select(one_of(to_move))
@@ -2809,17 +2812,16 @@ reloc_col_after <- function (df, to_move = "after_col_before", col_before = "anc
 #' 
 #' @param df The original data frame.
 #' @param to_move The column to be moved.
-#' @param col_after The column to which the \code{to_move} will be moved before.
-reloc_col_before <- function (df, to_move = "before_col_after", col_after = "anchor") {
-  stopifnot(to_move %in% names(df), col_after %in% names(df))
-  if (to_move == col_after) return(df)
-  
+#' @param col_after The anchor column to which the \code{to_move} will be moved before.
+reloc_col_before <- function (df, to_move = "before_anchor", col_after = "anchor") {
+  if (!(to_move %in% names(df) && col_after %in% names(df))) return(df)
+
   df2 <- df %>% dplyr::select(one_of(to_move))
   df <- df %>% dplyr::select(-one_of(to_move))
   
   idx <- which(names(df) == col_after)
   
-  df <- add_cols_at(df, df2, idx-1)
+  df <- add_cols_at(df, df2, idx - 1)
   
   return(df)
 }
@@ -3058,10 +3060,9 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   message("Primary column keys in `msms[...].txt` for `filter_` varargs.")
   
-  df <- df %>% 
-    filters_in_call(!!!filter_dots) %>% 
-    dplyr::rename(ID = id)
-  
+  df <- df %>% filters_in_call(!!!filter_dots) 
+  if ("id" %in% names(df)) df <- df %>% dplyr::rename(ID = id)
+
   if (pep_unique_by == "group") {
     df <- df %>% 
       dplyr::mutate(pep_isunique = ifelse(grepl(";", `Protein group IDs`), 0, 1))
@@ -3153,15 +3154,16 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     # (1) `Modified sequence` not yet available in MaxQuant `peptides.txt` 
     #     for matching with those in `msms.ttx`
     # (2) `Precusor intensity` not available in `msms.txt`
+    
     warning("Currently with MaxQuant LFQ,\n", 
             "(1) `group_psm_by` will only be `pep_seq`.\n", 
             # "(2) `rptr_intco` has no effects.", 
             call. = FALSE)
     
     if (group_psm_by == "pep_seq_mod") {
-      group_psm_by <- "pep_seq"
-      warning("Coerce `group_psm_by` from `pep_seq_mod` to `pep_seq`.", 
-              call. = FALSE)
+      # group_psm_by <- "pep_seq"
+      stop("Currently only `group_psm_by = pep_seq` to match queries in `peptides.txt`.", 
+           call. = FALSE)
     }
   }
   
@@ -3197,8 +3199,8 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   if ("pep_res_after" %in% names(df) && "pep_res_before" %in% names(df)) {
     df <- df %>% 
-      reloc_col("pep_seq", "pep_res_after") %>% 
-      reloc_col("pep_res_before", "pep_seq")
+      reloc_col_before("pep_seq", "pep_res_after") %>% 
+      reloc_col_before("pep_res_before", "pep_seq")
   }
 
   df <- df %>% 
@@ -3229,7 +3231,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     df[, grepl("^[A-Z]", names(df)) & !grepl("^[IR][0-9]{3}[NC]{0,1}", names(df))], 
     df[, grepl("^[R][0-9]{3}[NC]{0,1}", names(df))], 
     df[, grepl("^[I][0-9]{3}[NC]{0,1}", names(df))]
-  ) %>% reloc_col("m/z", "Mass")
+  ) %>% reloc_col_before("m/z", "Mass")
   
   df <- dplyr::bind_cols(
     df %>% dplyr::select(grep("^prot_", names(.))),
@@ -3264,19 +3266,19 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     #               which(names(.) != "pep_seq_mod")) %>% 
     
     add_maxquant_pepseqmod(use_lowercase_aa) %>% 
-    reloc_col("dat_file", "RAW_File") 
+    reloc_col_before("dat_file", "RAW_File") 
   
   df <- df %>% 
     reloc_col_after("pep_seq_mod", "pep_seq") %>% 
-    reloc_col("pep_res_before", "pep_seq") %>% 
+    reloc_col_before("pep_res_before", "pep_seq") %>% 
     reloc_col_after("pep_res_after", "pep_seq_mod") %>% 
     reloc_col_after("pep_start", "pep_res_after") %>% 
     reloc_col_after("pep_end", "pep_start") %>% 
     reloc_col_after("pep_len", "pep_end") %>% 
     reloc_col_after("pep_miss", "pep_len") %>% 
-    reloc_col("pep_isunique", "pep_res_before") %>% 
-    reloc_col("pep_score", "pep_res_before") %>% 
-    reloc_col("pep_expect", "pep_res_before")
+    reloc_col_before("pep_isunique", "pep_res_before") %>% 
+    reloc_col_before("pep_score", "pep_res_before") %>% 
+    reloc_col_before("pep_expect", "pep_res_before")
   
   # --- split by TMT and LCMS ---
   res <- check_raws(df)
@@ -3942,7 +3944,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::select(which(names(.) == "pep_seq_mod"),
                   which(names(.) != "pep_seq_mod")) %>% 
     add_sm_pepseqmod(use_lowercase_aa) %>% 
-    reloc_col("dat_file", "RAW_File") %>% 
+    reloc_col_before("dat_file", "RAW_File") %>% 
     reloc_col_after("pep_seq_mod", "pep_seq") %>% 
     reloc_col_before("pep_res_before", "pep_seq") %>% 
     reloc_col_after("pep_res_after", "pep_seq_mod") %>% 
@@ -3950,9 +3952,9 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     reloc_col_after("pep_end", "pep_start") %>% 
     reloc_col_after("pep_len", "pep_end") %>% 
     reloc_col_after("pep_miss", "pep_len") %>% 
-    reloc_col("pep_isunique", "pep_res_before") %>% 
-    reloc_col("pep_score", "pep_res_before") %>% 
-    reloc_col("pep_expect", "pep_res_before") %>% 
+    reloc_col_before("pep_isunique", "pep_res_before") %>% 
+    reloc_col_before("pep_score", "pep_res_before") %>% 
+    reloc_col_before("pep_expect", "pep_res_before") %>% 
     reloc_col_after("dat_file", "is_tryptic") %>% 
     reloc_col_after("RAW_File", "dat_file")
 

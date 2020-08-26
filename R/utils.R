@@ -243,7 +243,7 @@ sort_tmt_lcms <- function (nms) {
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 na_zeroIntensity <- function (df) {
-	ind <- grep("I[0-9]{3}", names(df))
+	ind <- grep("I[0-9]{3}|^LFQ\\sintensity\\s|^Intensity\\s", names(df))
 
 	temp <- df[, ind]
 	temp[temp == 0] <- NA
@@ -1664,8 +1664,8 @@ annotPeppos <- function (df, fasta){
   df <- df %>% 
     dplyr::left_join(pep_pos_all, by = "pep_prn") %>% 
     dplyr::select(-pep_prn) %>% 
-    reloc_col("pep_end", "pep_res_before") %>% 
-    reloc_col("pep_start", "pep_end")
+    reloc_col_before("pep_end", "pep_res_before") %>% 
+    reloc_col_before("pep_start", "pep_end")
 }
 
 

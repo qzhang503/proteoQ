@@ -31,7 +31,7 @@ pep_mod_sty	"Logical indicating if a sequence contains the phospholyration of se
 pep_mod_pepct	Logical indicating if a sequence contains C-terminal modification	v.s.
 pep_mod_protctam	Logical indicating if a sequence contains Protein C-terminal amidation	v.s.
 pep_mod_protct	Logical indicating if a sequence contains Protein C-terminal modification	v.s.
-pep_mean_raw	Mean log2_R (...) across samples	Reference and `Empty` samples excluded.
+pep_mean_raw	Mean log2_R (...) across samples	`Reference` and `Empty` samples excluded.
 pep_mean_n	Mean N_log2FC(...) across samples	v.s.
 pep_mean_z	Mean Z_log2FC(...) across samples	v.s.
 gene	Protein gene name	
@@ -43,9 +43,10 @@ kin_attr	The attribute of proteins being kinases	Cf. PSM keys.
 kin_class	"The classes of kinases, e.g., TK, TKL..."	Cf. PSM keys.
 kin_order	"The order of ""kin_class"" from the kinase tree diagram"	Cf. PSM keys.
 is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic peptide	Cf. PSM keys.
-I... (...)	Reporter-ion intensity	Calculated from the descriptive statistics by `method_psm_pep` in `PSM2Pep()` for indicated samples.
-N_I... (...)	Normalized I... (...)	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity.
-sd_log2_R (...)	Standard deviation of protein log2FC 	Calculated from contributing peptides under each sample.
-log2_R (...)	log2FC relative to reference materials for indicated samples	Before normalization.
-N_log2_R (...)	Aligned log2_R (...) according to 'method_align' in 'standPep()' without scaling normalization	
-Z_log2_R (...)	N_log2_R (...) with scaling normalization	
+count_nna	Count of non-NA log2FC	`Reference` and `Empty` samples excluded.
+I... (...)	Reporter-ion intensity; I000 for LFQ	Calculated from the descriptive statistics by `method_psm_pep` in `PSM2Pep()` for indicated samples.
+N_I... (...)	Normalized I... (...); N_I000 for LFQ	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity.
+sd_log2_R... (...)	Standard deviation of protein log2FC; sd_log2_R000 for LFQ 	Calculated from contributing peptides under each sample.
+log2_R... (...)	log2FC relative to reference materials for indicated samples; log2_R000 for LFQ	Before normalization.
+N_log2_R... (...)	Aligned log2_R... (...) according to 'method_align' in 'standPep()' without scaling normalization; N_log2_R000 for LFQ	
+Z_log2_R... (...)	N_log2_R... (...) with scaling normalization; Z_log2_R000 for LFQ	

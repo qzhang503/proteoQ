@@ -10,6 +10,7 @@ plotHisto(
   label_scheme_sub,
   scale_log2r,
   complete_cases,
+  cut_points,
   show_curves,
   show_vline,
   scale_y,
@@ -41,6 +42,15 @@ of standard deviation across all samples. The default is TRUE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
+
+\item{cut_points}{A numeric vector defines the cut points (knots) in
+histograms. The values of the knots indicate the summarized
+\code{log10(Intentisy)} of ions. For example, at \code{cut_points = seq(4,
+7, .5)}, values of \code{log2FC} will be binned from \eqn{-Inf} to \eqn{Inf}
+according to the cut points at the reporter-ion (or LFQ) intensity of
+\eqn{10^4, 10^4.5, ... 10^7}. The default is \code{cut_points = Inf}, or
+equivalently \code{-Inf}. See also \code{\link{mergePep}} for data alignment
+with binning.}
 
 \item{show_curves}{Logical; if TRUE, shows the fitted curves. At the TRUE
 default, the curve parameters are based on the latest call to

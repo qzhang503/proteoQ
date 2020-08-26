@@ -278,17 +278,26 @@ plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, 
     attr(clus, "Ordered") <- NULL
     attr(clus, "call") <- NULL
     attr(clus, "class") <- NULL
-    clus <- data.frame(clus, check.names = FALSE)
+    
+    if (is.null(dim(clus))) {
+      warning("Cannot calculate `silhouette` cluster; use `Sample_ID` instead.", call. = FALSE)
+      clus <- data.frame(cluster = rownames(annotation_col), neighbor = NA, sil_width = NA)
+      rownames(clus) <- rownames(annotation_col)
+    } else {
+      clus <- clus %>% data.frame(check.names = FALSE)
+      
+    }
     clus <- clus %>% .[rownames(.) %in% label_scheme_sub$Sample_ID, ]
     
+
     if (!all(is.na(annotation_col))) {
       annotation_col <- annotation_col %>% 
-      tibble::rownames_to_column() %>% 
-      dplyr::bind_cols(clus) %>% 
-      dplyr::select(-c("neighbor", "sil_width")) %>% 
-      dplyr::rename(silhouette = cluster) %>% 
-      dplyr::mutate(silhouette = factor(silhouette)) %>% 
-      tibble::column_to_rownames()
+        tibble::rownames_to_column() %>% 
+        dplyr::bind_cols(clus) %>% 
+        dplyr::select(- which(names(.) %in% c("neighbor", "sil_width"))) %>% 
+        dplyr::rename(silhouette = cluster) %>% 
+        dplyr::mutate(silhouette = factor(silhouette)) %>% 
+        tibble::column_to_rownames()
     }
 
     p <- my_pheatmap(
@@ -469,14 +478,23 @@ plotNMFCoef <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
     attr(clus, "Ordered") <- NULL
     attr(clus, "call") <- NULL
     attr(clus, "class") <- NULL
-    clus <- clus %>% data.frame(check.names = FALSE) 
-    
+
+    if (is.null(dim(clus))) {
+      warning("Cannot calculate `silhouette` cluster; use `Sample_ID` instead.", call. = FALSE)
+      clus <- data.frame(cluster = rownames(annotation_col), neighbor = NA, sil_width = NA)
+      rownames(clus) <- rownames(annotation_col)
+    } else {
+      clus <- clus %>% data.frame(check.names = FALSE)
+      
+    }
+    clus <- clus %>% .[rownames(.) %in% label_scheme_sub$Sample_ID, ]
+
     if (!all(is.na(annotation_col))) {
       annotation_col <- suppressMessages(
         annotation_col %>% 
           tibble::rownames_to_column() %>% 
           dplyr::left_join(clus %>% tibble::rownames_to_column(), id = "rowname") %>% 
-          dplyr::select(-c("neighbor", "sil_width")) %>% 
+          dplyr::select(- which(names(.) %in% c("neighbor", "sil_width"))) %>% 
           dplyr::rename(silhouette = cluster) %>% 
           dplyr::mutate(silhouette = factor(silhouette)) %>% 
           tibble::column_to_rownames())

@@ -58,6 +58,15 @@ specified under \code{Select}, the column key of \code{Sample_ID} will be
 used. The non-empty entries under the ascribing column will be used in
 indicated analysis.}
 
+\item{cut_points}{A numeric vector defines the cut points (knots) in
+histograms. The values of the knots indicate the summarized
+\code{log10(Intentisy)} of ions. For example, at \code{cut_points = seq(4,
+7, .5)}, values of \code{log2FC} will be binned from \eqn{-Inf} to \eqn{Inf}
+according to the cut points at the reporter-ion (or LFQ) intensity of
+\eqn{10^4, 10^4.5, ... 10^7}. The default is \code{cut_points = Inf}, or
+equivalently \code{-Inf}. See also \code{\link{mergePep}} for data alignment
+with binning.}
+
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 of data against the column keys in \code{Peptide.txt} for peptides or
 \code{Protein.txt} for proteins. Each statement contains to a list of
