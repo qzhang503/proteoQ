@@ -9,5 +9,6 @@
                         "See ?mergePep and ?Pep2Prn for data alignment by sections:\n",
                         "\tmergePep(cut_points = seq(4, 7, .5))\n", 
                         "\tPep2Prn(cut_points = seq(4, 7, .5))\n", 
+                        "Support multiple and/or custom FASTA files.\n", 
                         "======================================================================\n")
 }

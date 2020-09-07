@@ -12,11 +12,12 @@ splitPSM_mq(
   pep_unique_by = "group",
   corrected_int = TRUE,
   rm_craps = FALSE,
+  rm_krts = FALSE,
   rm_reverses = TRUE,
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
-  rptr_intco = 1000,
+  rptr_intco = 0,
   use_lowercase_aa = TRUE,
   parallel = TRUE,
   ...
@@ -64,6 +65,9 @@ the TRUE default, values under columns "Reporter intensity corrected..." in
 \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
 The default is FALSE.}
 
+\item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
+is FALSE.}
+
 \item{rm_reverses}{A logical argument for uses with \code{MaxQuant} data. At
 the TRUE default, \code{Reverse} entries will be removed.}
 
@@ -75,10 +79,12 @@ The default is TRUE.}
 will be annotated with their kinase attributes. The default is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
-intensities will be plotted. The default is TRUE.}
+intensities will be plotted. The default is TRUE. The argument is also
+applicable to the precursor intensity with MaxQuant LFQ.}
 
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
-default is 1,000.}
+default is 0 without cut-offs. The filter is also applicable to the
+precursor intensity with MaxQuant LFQ.}
 
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the
@@ -90,8 +96,8 @@ is TRUE.}
 \item{...}{Not currently used.}
 }
 \description{
-\code{splitPSM_mq} splits the PSM outputs after \code{rmPSMHeaders()}. It
-separates PSM data by TMT experiment and LC/MS injection.
+\code{splitPSM_mq} splits the PSM outputs by TMT experiment and LC/MS
+injection.
 }
 \details{
 Different to \code{splitPSM} used in \code{Mascot} processes,

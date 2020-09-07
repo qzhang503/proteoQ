@@ -11,7 +11,7 @@ p_dixon(q, n, type = 10)
 
 \item{n}{Length of sample Length of sample.}
 
-\item{type}{The type of Dixon method. See also \link[outliers]{dixon.test}.}
+\item{type}{The type of Dixon method. See also outliers::dixon.test.}
 }
 \description{
 Outlier removals with Dixon's method

@@ -4,7 +4,7 @@
 \alias{calc_cover}
 \title{Calculates protein percent coverage}
 \usage{
-calc_cover(df, id, fasta = NULL)
+calc_cover(df, id)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -19,11 +19,6 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
-
-\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
-prepended directory path. The \code{fasta} database(s) need to match those
-used in MS/MS ion search. There is no default and users need to provide the
-correct file path(s) and name(s).}
 }
 \description{
 Calculates protein percent coverage

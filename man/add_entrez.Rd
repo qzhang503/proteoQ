@@ -4,10 +4,12 @@
 \alias{add_entrez}
 \title{Add Entrez IDs}
 \usage{
-add_entrez(acc_lookup)
+add_entrez(acc_lookup, acc_type)
 }
 \arguments{
 \item{acc_lookup}{A data frame of protein accession lookups}
+
+\item{acc_type}{The type of protein accessions}
 }
 \description{
 Add Entrez IDs

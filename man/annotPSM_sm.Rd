@@ -54,7 +54,8 @@ metadata of TMT or LFQ experiments. The default is \code{expt_smry.xlsx}.}
 is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
-intensities will be plotted. The default is TRUE.}
+intensities will be plotted. The default is TRUE. The argument is also
+applicable to the precursor intensity with MaxQuant LFQ.}
 
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
 \code{log2FC} will be plotted. The default is TRUE.}

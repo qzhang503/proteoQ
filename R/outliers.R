@@ -21,10 +21,10 @@ locate_outliers <- function (df, range_colRatios) {
 #' Outlier removals with Dixon's method
 #' 
 #' @param x A data frame.
-#' @param type The type of Dixon method. See also \link[outliers]{dixon.test}.
-#' @param opposite The high or low. See also \link[outliers]{dixon.test}.
+#' @param type The type of Dixon method. See also outliers::dixon.test.
+#' @param opposite The high or low. See also outliers::dixon.test.
 #' @param two.sided Logical; is two-sided or not. See also
-#'   \link[outliers]{dixon.test}.
+#'   outliers::dixon.test.
 dixon_test <- function (x, type = 0, opposite = FALSE, two.sided = TRUE) {
   x <- sort(x[complete.cases(x)])
   n <- length(x)
@@ -115,7 +115,7 @@ dixon_test <- function (x, type = 0, opposite = FALSE, two.sided = TRUE) {
 
 #' Distribution function
 #' 
-#' @param p Vector of probabilities. See also \link[outliers]{dixon.test}.
+#' @param p Vector of probabilities. See also outliers::dixon.test.
 #' @param n Length of sample Length of sample. 
 #' @param rev Logical; if TRUE, acts as p_dixon.
 #' @inheritParams dixon_test
@@ -608,7 +608,7 @@ Grubbs_outliers <- function(x, type = 10) {
 
 #' Outlier removals with Grubbs' method
 #' 
-#' See also \link[outliers]{grubbs.test}
+#' See also outliers::grubbs.test.
 #' 
 #' @inheritParams dixon_test
 grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) {
@@ -670,7 +670,7 @@ grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) {
 
 #' Distribution function
 #' 
-#' @param p Vector of probabilities. See also \link[outliers]{dixon.test}.
+#' @param p Vector of probabilities. See also outliers::dixon.test.
 #' @param n Length of sample Length of sample. 
 #' @param rev Logical; if TRUE, acts as p_dixon.
 #' @inheritParams dixon_test

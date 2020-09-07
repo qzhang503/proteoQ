@@ -679,17 +679,18 @@ In this way, we can skip the repetitive setting of `scale_log2r` in our workflow
 
 ### 1.5 Workflow scripts
 #### 1.5.1 TMT
-Scripts that were used in this document can be accessed via:  
+Exemplary scripts are summarized in:  
 
 ```{r workflow_scripts_tmt, include = TRUE, eval = FALSE}
-system.file("extdata", "workflow_base.R", package = "proteoQ")
+system.file("extdata", "workflow_tmt_base.R", package = "proteoQ")
+system.file("extdata", "workflow_tmt_ext.R", package = "proteoQ")
 ```
 
 Another place to get help is via `?load_expts`.
 
 #### 1.5.2 LFQ (MaxQuant)
 ```{r workflow_scripts_lfq, include = TRUE, eval = FALSE}
-system.file("extdata", "workflow_lfq.R", package = "proteoQ")
+system.file("extdata", "workflow_mq_lfq.R", package = "proteoQ")
 ```
 
 Additional notes available in <strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>.  
@@ -2064,8 +2065,8 @@ The results are reported at the levels of PSMs, peptides and proteins. The order
 ### 4.1 PSMs
 PSMs are reported at the basis of per TMT experiment per series of LC/MS data acquisition. The names of the result files are `TMTset1_LCMSinj1_PSM_N.txt`, `TMTset2_LCMSinj1_PSM_N.txt` etc. with the indexes of TMT experiment and LC/MS injection index being indicated . The column keys are described in [`Matrix Science`](http://www.matrixscience.com/help/csv_headers.html), [`MaxQuant`](http://www.coxdocs.org/doku.php?id=maxquant:table:evidencetable), or the users' manual of Spectrum Mill, with the following additions or modifications:  
 
-```{r mascot_psm_keys, echo=FALSE, results="asis"}
-file <- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ")
+```{r psm_keys, echo=FALSE, results="asis"}
+file <- system.file("extdata", "psm_keys.txt", package = "proteoQ")
 keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
 knitr::kable(keys) 
 ```
@@ -2073,19 +2074,20 @@ knitr::kable(keys)
 ### 4.2 Peptides
 Prior to significance tests, the primary peptide outputs with and without the imputation of NA values are summarized in `Peptide.txt` and `Peptide_impNA.txt`, respectively. The column keys therein are described in the following:  
 
-```{r mascot_peptide_keys, echo=FALSE, results="asis"}
-file <- system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ")
+```{r peptide_keys, echo=FALSE, results="asis"}
+file <- system.file("extdata", "peptide_keys.txt", package = "proteoQ")
 keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
 knitr::kable(keys) 
 ```
+
 
 Following optional significance tests, the primary peptide outputs with and without the imputation of NA values are summarized in `Peptide_pVals.txt` and `Peptide_impNA_pVals.txt`, respectively. Additional column keys include p-values, log2FC and linear FC, with the incorporation of contrast and formula names that have been specified in calls to `pepSig`.  
 
 ### 4.3 Proteins
 Prior to significance tests, the primary protein outputs with and without the imputation of NA values are summarized in `Protein.txt` and `Protein_impNA.txt`, respectively. The corresponding column keys are described in the following:  
 
-```{r mascot_protein_keys, echo=FALSE, results="asis"}
-file <- system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ")
+```{r protein_keys, echo=FALSE, results="asis"}
+file <- system.file("extdata", "protein_keys.txt", package = "proteoQ")
 keys <- read.table(file, check.names = FALSE, sep = "\t", header = TRUE)
 knitr::kable(keys) 
 ```

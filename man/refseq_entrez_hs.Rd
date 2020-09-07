@@ -6,11 +6,12 @@
 \title{Lookups among RefSeq accessions, Entrez IDs and gene names for human
 proteins.}
 \format{
-A data frame with 31833 rows and 4 variables:
+A data frame with 275081 rows and 4 variables:
 \describe{
-  \item{entrez}{Entrez ID}
   \item{refseq_acc}{RefSeq accession number}
-  \item{gene}{gene names}
+  \item{gene}{Gene name}
+  \item{entrez}{Entrez ID}
+  \item{species}{Species name}
 }
 }
 \usage{

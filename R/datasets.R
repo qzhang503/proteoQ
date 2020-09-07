@@ -152,7 +152,7 @@
 #'
 #' A dataset containing the IDs of cRAP proteins. 
 #'
-#' @format A data frame with 195 rows and 9 variables:
+#' @format A data frame with 195 rows and 10 variables:
 #' \describe{
 #'   \item{uniprot_acc}{UniProt accession number}
 #'   \item{uniprot_id}{UniProt ID}
@@ -163,6 +163,7 @@
 #'   \item{length}{the number of amino acid residues under a proposed protein}
 #'   \item{refseq_acc}{RefSeq accession number}
 #'   \item{entrez}{Entrez ID (not currently used)}
+#'   \item{fasta_name}{Fasta name according to \code{read_fasta(pattern = ...)}}
 #' }
 #' @source \url{https://www.thegpm.org/crap/}
 "prn_annot_crap"
@@ -174,11 +175,12 @@
 #' A dataset containing human \code{refseq} accessions, \code{entrez} IDs and
 #' \code{gene} names.
 #'
-#' @format A data frame with 31833 rows and 4 variables:
+#' @format A data frame with 275081 rows and 4 variables:
 #' \describe{
-#'   \item{entrez}{Entrez ID}
 #'   \item{refseq_acc}{RefSeq accession number}
-#'   \item{gene}{gene names}
+#'   \item{gene}{Gene name}
+#'   \item{entrez}{Entrez ID}
+#'   \item{species}{Species name}
 #' }
 "refseq_entrez_hs"
 
@@ -189,10 +191,13 @@
 #' A dataset containing mouse \code{refseq} accessions, \code{entrez} IDs and
 #' \code{gene} names.
 #'
-#' @format A data frame with 24906 rows and 4 variables: \describe{
-#'   \item{entrez}{Entrez ID} 
+#' @format A data frame with 209384 rows and 4 variables: 
+#' \describe{
 #'   \item{refseq_acc}{RefSeq accession number}
-#'   \item{gene}{gene names} }
+#'   \item{gene}{Gene name}
+#'   \item{entrez}{Entrez ID}
+#'   \item{species}{Species name}
+#' }
 "refseq_entrez_mm"
 
 
@@ -202,10 +207,13 @@
 #' A dataset containing mouse \code{refseq} accessions, \code{entrez} IDs and
 #' \code{gene} names.
 #'
-#' @format A data frame with 158959 rows and 3 variables: \describe{
-#'   \item{entrez}{Entrez ID} 
+#' @format A data frame with 158959 rows and 4 variables:
+#' \describe{
 #'   \item{refseq_acc}{RefSeq accession number}
-#'   \item{gene}{gene names} }
+#'   \item{gene}{Gene name}
+#'   \item{entrez}{Entrez ID}
+#'   \item{species}{Species name}
+#' }
 "refseq_entrez_rn"
 
 
@@ -213,10 +221,12 @@
 #'
 #' A dataset containing human \code{entrez} IDs and \code{UniProt} accessions.
 #'
-#' @format A data frame with 33194 rows and 2 variables:
+#' @format A data frame with 34383 rows and 4 variables:
 #' \describe{
-#'   \item{entrez}{Entrez ID}
 #'   \item{uniprot_acc}{UniProt accession number}
+#'   \item{gene}{Gene name}
+#'   \item{entrez}{Entrez ID}
+#'   \item{species}{Species name}
 #' }
 "uniprot_entrez_hs"
 
@@ -225,10 +235,12 @@
 #'
 #' A dataset containing mouse \code{entrez} IDs and \code{UniProt} accessions.
 #'
-#' @format A data frame with 33231 rows and 2 variables:
+#' @format A data frame with 35818 rows and 4 variables:
 #' \describe{
-#'   \item{entrez}{Entrez ID}
 #'   \item{uniprot_acc}{UniProt accession number}
+#'   \item{gene}{Gene name}
+#'   \item{entrez}{Entrez ID}
+#'   \item{species}{Species name}
 #' }
 "uniprot_entrez_mm"
 
@@ -237,10 +249,12 @@
 #'
 #' A dataset containing rat \code{entrez} IDs and \code{UniProt} accessions.
 #'
-#' @format A data frame with 21197 rows and 2 variables:
+#' @format A data frame with 23097 rows and 4 variables:
 #' \describe{
-#'   \item{entrez}{Entrez ID}
 #'   \item{uniprot_acc}{UniProt accession number}
+#'   \item{gene}{Gene name}
+#'   \item{entrez}{Entrez ID}
+#'   \item{species}{Species name}
 #' }
 "uniprot_entrez_rn"
 

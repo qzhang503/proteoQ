@@ -427,7 +427,7 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
     "       ...      |       ...       |        ...       |        ...      \n",
     "----------------|-----------------|------------------|-----------------\n",
     "        2       |        1        | TMT2_Inj1_F1.raw |    F000002.csv  \n", 
-    "----------------|------------------------------------|-----------------\n",
+    "----------------|-----------------|------------------|-----------------\n",
     "                |                 | TMT2_Inj1_F2.raw |    F000002.csv  \n", 
     "----------------|-----------------|------------------|-----------------\n", 
     "       ...      |       ...       |        ...       |        ...      \n",
@@ -440,11 +440,24 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
     "     TMT_Set    | LCMS_Injection  |     RAW_File     |     PSM_File    \n", 
     "----------------|-----------------|------------------|-----------------\n", 
     "        1       |        1        | dup_msfile_1.raw |   msms_xxx.txt  \n", 
-    "----------------|------------------------------------|-----------------\n",
+    "----------------|-----------------|------------------|-----------------\n",
     "        2       |        1        | dup_msfile_1.raw |   msms_yyy.txt  \n", 
-    "-----------------------------------------------------------------------\n", 
+    "----------------|-----------------|------------------|-----------------\n", 
     "      ...       |       ...       |        ...       |        ...      \n",
     "-----------------------------------------------------------------------\n"
+  )
+  
+  tbl_lfq <- c(
+    "\nExamplary LFQ:\n",
+    "-------------------------------------------------------------------------------\n", 
+    "    Sample_ID   |    TMT_Set    | LCMS_Injection |    RAW_File    |  Fraction  \n", 
+    "----------------|---------------|----------------|----------------|------------\n", 
+    "       s1       |  (automated)  |       1        |  msfile_1.raw  |      1     \n", 
+    "----------------|---------------|----------------|----------------|------------\n", 
+    "       s1       |               |       1        |  msfile_2.raw  |      2     \n", 
+    "----------------|---------------|----------------|----------------|------------\n",
+    "       ...      |               |      ...       |       ...      |     ...    \n",
+    "-------------------------------------------------------------------------------\n"
   )
   
   
@@ -483,8 +496,10 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	  }	
 	  
 	  if (!is.null(fraction_scheme[["PSM_File"]])) {
+	    fraction_scheme <- fraction_scheme %>% tidyr::fill(PSM_File) 
+
 	    local({
-	      meta_psm_files <- unique(fraction_scheme$PSM_File)
+	      meta_psm_files <- unique(fraction_scheme$PSM_File) 
 	      
 	      if (!is.null(meta_psm_files)) {
 	        not_oks <- purrr::map(meta_psm_files, 
@@ -584,7 +599,12 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	      dplyr::mutate(Fraction = row_number()) %>% 
 	      dplyr::arrange(TMT_Set, LCMS_Injection, Fraction)
 	  } else {
-	    stopifnot("Sample_ID" %in% names(fraction_scheme))
+	    # Although one-to-one between `Sample_ID` and `TMT_Set` in LFQ, 
+	    # the use of `TMT_Set` may be counterintuitive and 
+	    # users may leave `TMT_Set` column blank. Therefore, column `Sample_ID` enforced.
+	    if (!"Sample_ID" %in% names(fraction_scheme)) {
+	      stop("Need column `Sample_ID` in `frac_smry.xlsx` for LFQ.\n", tbl_lfq, call. = FALSE)
+	    }
 	    
 	    fraction_scheme <- fraction_scheme %>% 
 	      tidyr::fill(Sample_ID, LCMS_Injection) %>% 
@@ -688,6 +708,11 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 
   if (!purrr::is_empty(sys_defs)) {
     abbr_sp <- purrr::map_chr(species, sp_lookup)
+    
+    if (purrr::is_empty(abbr_sp)) {
+      warning("Unknown species.", call. = FALSE)
+    }
+    
     filelist <- map(abbr_sp, ~ paste0(sys_defs, "_", .x)) %>% unlist()
     
     data(package = "proteoQ", list = filelist)
@@ -702,7 +727,8 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
   
   if (!purrr::is_empty(not_sys_defs)) {
     if (!all(grepl("\\.rds$", not_sys_defs))) {
-      stop("Custom gene set files indicated by `gset_nms` must end with the `.rds` extension.", call. = FALSE)
+      stop("Custom gene set files indicated by `gset_nms` must end with extension `.rds`.", 
+           call. = FALSE)
     }
 
     not_oks <- not_sys_defs %>% .[!file.exists(not_sys_defs)]
@@ -722,8 +748,11 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
   }
   
   gsets <- c(gsets, gsets2) %>% .[!duplicated(.)]
-  stopifnot(length(gsets) > 0)
   
+  if (length(gsets) == 0) {
+    warning("Zero entries in `gsets`.", call. = FALSE)
+  }
+
   assign("gsets", gsets, envir = .GlobalEnv)
 } 
 
@@ -746,27 +775,28 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'
 #'  \tabular{ll}{ \strong{Essential column}   \tab \strong{Descrption}\cr
 #'  Sample_ID \tab Unique sample IDs \cr TMT_Channel \tab TMT channel names:
-#'  \code{126}, \code{127N}, \code{127C} etc. or left void for LFQ \cr TMT_Set
-#'  \tab TMT experiment indexes 1, 2, 3, ... or auto-filled for LFQ \cr
+#'  \code{126}, \code{127N}, \code{127C} etc. (left void for LFQ) \cr TMT_Set
+#'  \tab TMT experiment indexes 1, 2, 3, ... (auto-filled for LFQ) \cr
 #'  LCMS_Injection   \tab LC/MS injection indexes 1, 2, 3, ... under a
-#'  \code{TMT_Set} \cr RAW_File \tab MS data file names originated by
-#'  \code{MS} software(s) \cr Reference \tab Labels indicating reference samples in
-#'  TMT or LFQ experiments \cr }
+#'  \code{TMT_Set} \cr RAW_File \tab MS data file names originated by \code{MS}
+#'  software(s) \cr Reference \tab Labels indicating reference samples in TMT or
+#'  LFQ experiments \cr }
 #'
 #'  \code{Sample_ID}: values should be unique for entries at a unique
-#'  combination of \code{TMT_Channel} and \code{TMT_Set}, or voided for
-#'  unused entries. Samples with the same indexes of \code{TMT_Channel} and
+#'  combination of \code{TMT_Channel} and \code{TMT_Set}, or voided for unused
+#'  entries. Samples with the same indexes of \code{TMT_Channel} and
 #'  \code{TMT_Set} but different indexes of \code{LCMS_Injection} should have
 #'  the same value in \code{Sample_ID}. No white space or special characters are
-#'  allowed. See also posts at \link{http://proteoq.netlify.com}.  
+#'  allowed. See also posts at
+#'  \link{https://proteoq.netlify.app/post/sample-exlusion-from-metadata/}.
 #'
-#'  \code{RAW_File}: for analysis with off-line fractionation of peptides
-#'  before LC/MS, the \code{RAW_File} column should be left blank. Instead, the
-#'  correspondence between the fraction numbers and \code{RAW_File} names should
-#'  be specified in a separate file, for example, \code{frac_smry.xlsx}. For
-#'  analysis without off-line fractionation, it is recommended as well to leave
-#'  the field under the \code{RAW_File} column blank and instead enter the MS
-#'  file names in \code{frac_smry.xlsx}.
+#'  \code{RAW_File}: for analysis with off-line fractionation of peptides before
+#'  LC/MS, values under the \code{RAW_File} column should be left void. Instead,
+#'  the correspondence between the fraction numbers and \code{RAW_File} names
+#'  should be specified in a separate file, for example, \code{frac_smry.xlsx}.
+#'  For analysis without off-line fractionation, it is recommended as well to
+#'  leave the field under the \code{RAW_File} column blank and instead enter the
+#'  MS file names in \code{frac_smry.xlsx}.
 #'
 #'  The set of \code{RAW_File} names in metadata needs to be identifiable in PSM
 #'  data. Impalpable mismatches might occur when \code{OS} file names were
@@ -801,11 +831,12 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'
 #'
 #'@section \code{frac_smry.xlsx}: \tabular{ll}{ \strong{Column}   \tab
-#'  \strong{Descrption}\cr TMT_Set \tab v.s.  \cr LCMS_Injection   \tab v.s. \cr
-#'  Fraction \tab Fraction indexes under a \code{TMT_Set} \cr RAW_File \tab v.s.
-#'  \cr PSM_File \tab Names of PSM files, e.g. F012345.csv. Only required when
-#'  the same \code{RAW_File} can be linked to multiple PSM files (see also
-#'  \link{http://proteoq.netlify.com}).
+#'  \strong{Descrption}\cr Sample_ID \tab Unique sample IDs (with LFQ only) \cr
+#'  TMT_Set \tab TMT experiment indexes (auto-filled for LFQ) \cr LCMS_Injection
+#'  \tab LC/MS injection indexes \cr Fraction \tab Fraction indexes under a
+#'  \code{TMT_Set} \cr RAW_File \tab MS data file names \cr PSM_File \tab Names
+#'  of PSM files. Required only when the same \code{RAW_File} can be linked to
+#'  multiple PSM files (e.g. F012345.csv and F012346.csv both from ms_1.raw).
 #'  }
 #'  
 #'@family normalization functions
@@ -823,7 +854,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  
 #'@family data row filtration
 #'@seealso 
-#'  \emph{Variable arguments of `filter_...`} \cr 
+#'  \emph{User-friendly utilities for variable arguments of `filter_...`} \cr 
 #'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
 #'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
 #'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
@@ -864,11 +895,56 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  signatures} \cr 
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
+#'  \emph{Workflow scripts} \cr 
+#'  # TMT \cr 
+#'  system.file("extdata", "workflow_tmt_base.R", package = "proteoQ") \cr
+#'  system.file("extdata", "workflow_tmt_ext.R", package = "proteoQ") \cr
+#'  
+#'  # LFQ \cr 
+#'  system.file("extdata", "workflow_mq_lfq.R", package = "proteoQ") \cr
+#'  
+#'  \emph{Metadata files} \cr 
+#'  # TMT, global, prefractionation \cr
+#'  # (no references) \cr 
+#'  system.file("extdata", "expt_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+#'  
+#'  # (W2 references) \cr
+#'  system.file("extdata", "expt_smry_ref_w2.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+#'  
+#'  # (W2 and W16 references) \cr
+#'  system.file("extdata", "expt_smry_ref_w2_w16.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+#'  
+#'  # TMT, global + phospho, prefractionation \cr
+#'  system.file("extdata", "expt_smry_cptac_cmbn.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_cptac_cmbn.xlsx", package = "proteoQDA") \cr
+#'  
+#'  # TMT, global, prefractionation, one MS to multiple PSM files \cr
+#'  system.file("extdata", "expt_smry_psmfiles.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_psmfiles.xlsx", package = "proteoQDA") \cr
+#'  
+#'  # TMT, global, prefractionation, mixed-plexes \cr
+#'  # (column PSM_file needed as the this example, \cr 
+#'  #  mixed-plexes results are actually from the same MS files \cr
+#'  #  but searched separately at 6- and 10-plex settings) \cr 
+#'  system.file("extdata", "expt_smry_mixplexes.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_mixplexes.xlsx", package = "proteoQDA") \cr
+#'  
+#'  # TMT, global, no fractionation \cr
+#'  # (no need of `frac_smry.xlsx`) \cr 
+#'  system.file("extdata", "expt_smry_no_prefrac.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "expt_smry_no_prefrac_ref_w2_w16.xlsx", package = "proteoQDA") \cr
+#'  
+#'  # LFQ, global, prefractionation \cr
+#'  system.file("extdata", "expt_smry_mq_lfq.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_mq_lfq.xlsx", package = "proteoQDA") \cr
+#'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  # Mascot, MaxQuant and Spectrum Mill \cr
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@param dat_dir A character string to the working directory. The default is to
 #'  match the value under the global environment.
@@ -879,7 +955,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'
 #'@example inst/extdata/examples/load_expts_.R
 #'
-#'@import dplyr rlang fs
+#'@import rlang dplyr fs
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
@@ -897,7 +973,7 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
 
 #' Reload the "expt_smry.xlsx" and "frac_smry.xlsx"
 #'
-#' @import rlang
+#' @rawNamespace import(rlang, except = c(list_along))
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom fs file_info
 reload_expts <- function() {
