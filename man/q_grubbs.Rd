@@ -7,11 +7,11 @@
 q_grubbs(p, n, type = 10, rev = FALSE)
 }
 \arguments{
-\item{p}{Vector of probabilities. See also \link[outliers]{dixon.test}.}
+\item{p}{Vector of probabilities. See also outliers::dixon.test.}
 
 \item{n}{Length of sample Length of sample.}
 
-\item{type}{The type of Dixon method. See also \link[outliers]{dixon.test}.}
+\item{type}{The type of Dixon method. See also outliers::dixon.test.}
 
 \item{rev}{Logical; if TRUE, acts as p_dixon.}
 }

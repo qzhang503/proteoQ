@@ -7,7 +7,7 @@
 q_table(p, probs, quants)
 }
 \arguments{
-\item{p}{Vector of probabilities. See also \link[outliers]{dixon.test}.}
+\item{p}{Vector of probabilities. See also outliers::dixon.test.}
 
 \item{probs}{Vector of given probabilities.}
 

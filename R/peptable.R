@@ -85,7 +85,6 @@ check_mq_df <- function (df, label_scheme) {
             call. = FALSE)
 
     # the same ID occurs in "Identification type", "Experiment", "Intensity", "LFQ intensity"
-    # df <- df %>% dplyr::mutate_at(.vars = grep(paste0(" ", missing_nms, "$"), names(.)), ~ {.x <- NULL})
     purrr::walk(missing_nms, ~ {
       df[, grep(paste0(" ", .x, "$"), names(df))] <- NULL
       df <<- df
@@ -247,7 +246,7 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
     dplyr::mutate(prot_acc = gsub("\\;.*", "", prot_acc))
 
   # `Modified sequence` not available in `peptides.txt` at version 1.6.15
-  # group_psm_by = "pep_seq" only in normPSM
+  # group_psm_by = "pep_seq" only in `normPSM()`
   if (group_psm_by == "pep_seq_mod") {
     if ("Modified sequence" %in% names(df)) {
       use_lowercase_aa <- match_call_arg(normPSM, use_lowercase_aa)
@@ -675,7 +674,8 @@ med_summarise_keys <- function(df, id) {
   
   df <- suppressWarnings(
     df %>% 
-      dplyr::select(-one_of("Scan number", "Scan index", "Length", "Missed cleavages", "Missed Cleavages"))
+      dplyr::select(-one_of("Scan number", "Scan index", "Length", 
+                            "Missed cleavages", "Missed Cleavages"))
   )
   
   if (all(c("Modifications", "Retention time") %in% names(df))) 
@@ -1355,7 +1355,6 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted.mean", "top.
 #' @param gn_rollup Logical; if TRUE, rolls up protein accessions to gene names.
 #' @inheritParams info_anal
 #' @inheritParams Pep2Prn
-#' @rawNamespace import(seqinr, except = c(consensus, count, zscore))
 pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -1364,10 +1363,6 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   filter_dots <- rlang::enexprs(...) %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
-  
-  fn_fasta <- file.path(dat_dir, "my_project.fasta")
-  stopifnot(file.exists(fn_fasta))
-  fasta <- seqinr::read.fasta(fn_fasta, seqtype = "AA", as.string = TRUE, set.attributes = TRUE)
   
   df <- read.csv(file.path(dat_dir, "Peptide/Peptide.txt"), check.names = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
@@ -1554,7 +1549,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
       df %>% dplyr::select(prot_acc), 
       df %>% dplyr::select(-prot_acc), 
     ) %>% 
-      reloc_col_before("gene", "uniprot_id") %>% 
+      reloc_col_before("gene", "fasta_name") %>% 
       reloc_col_before("prot_cover", "prot_n_psm")
   } 
   

@@ -128,9 +128,6 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  acc_type <- df$acc_type %>% unique() %>% .[!is.na(.)] %>% as.character()
-  stopifnot(length(acc_type) == 1)
-
   sample_ids <- label_scheme_sub$Sample_ID
   
   pattern <- "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("

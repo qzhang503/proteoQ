@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.2.6.4
+Version: 1.2.7.0
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -28,7 +28,7 @@ Suggests:
     knitr,
     lmerTest,
     mice,
-		org.Ce.eg.db,
+    org.Ce.eg.db,
 		outliers,
     rmarkdown,
 		testthat
@@ -64,7 +64,6 @@ Imports:
 		proteoQDA,
 		reshape2,
     rlang,
-    seqinr,
 		Biobase,
 		BiocManager,
 		EnvStats,

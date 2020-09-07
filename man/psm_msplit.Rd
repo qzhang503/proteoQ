@@ -15,7 +15,8 @@ psm_msplit(df, nm, fn_lookup, dat_dir, plot_rptr_int, TMT_plex)
 match the value under the global environment.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
-intensities will be plotted. The default is TRUE.}
+intensities will be plotted. The default is TRUE. The argument is also
+applicable to the precursor intensity with MaxQuant LFQ.}
 
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
 }

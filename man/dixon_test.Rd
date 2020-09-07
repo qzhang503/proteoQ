@@ -9,12 +9,12 @@ dixon_test(x, type = 0, opposite = FALSE, two.sided = TRUE)
 \arguments{
 \item{x}{A data frame.}
 
-\item{type}{The type of Dixon method. See also \link[outliers]{dixon.test}.}
+\item{type}{The type of Dixon method. See also outliers::dixon.test.}
 
-\item{opposite}{The high or low. See also \link[outliers]{dixon.test}.}
+\item{opposite}{The high or low. See also outliers::dixon.test.}
 
 \item{two.sided}{Logical; is two-sided or not. See also
-\link[outliers]{dixon.test}.}
+outliers::dixon.test.}
 }
 \description{
 Outlier removals with Dixon's method

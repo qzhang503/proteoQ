@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{add_custom_entrez}
 \alias{add_custom_entrez}
-\title{Add custom Entrez IDs}
+\title{Add custom Entrez IDs and optional overwriting species}
 \usage{
 add_custom_entrez(acc_lookup, entrez, acc_type)
 }
@@ -16,9 +16,8 @@ species, users need to provide the file path(s) and name(s) for the lookup
 table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 for preparing custom entrez files.}
 
-\item{acc_type}{Character string; the type of protein accessions in one of
-c("refseq_acc", "uniprot_acc", "uniprot_id")}
+\item{acc_type}{The type of protein accessions}
 }
 \description{
-Add custom Entrez IDs
+Add custom Entrez IDs and optional overwriting species
 }

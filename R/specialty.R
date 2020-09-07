@@ -207,19 +207,8 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
     dplyr::mutate(prot_acc = gsub("[1-9]{1}::", "", prot_acc))
   
   # re-apply craps after annotation
-  # 'acc_type' will be NA for entries not found in fasta
-  acc_type <- unique(df$acc_type) %>% .[!is.na(.)]
-  
-  stopifnot(length(acc_type) == 1)
-  
   if (rm_craps) {
-    data(package = "proteoQ", prn_annot_crap)
-    
-    craps <- prn_annot_crap %>% 
-      dplyr::filter(!duplicated(.[[acc_type]])) %>% 
-      dplyr::select(acc_type) %>% 
-      unlist()
-    
+    craps <- load_craps(unique(df$acc_type) %>% .[!is.na(.)])
     df <- df %>% dplyr::filter(! prot_acc %in% craps)
   }
   
@@ -227,18 +216,18 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
     df <- df %>% dplyr::filter(!grepl("^krt[0-9]+", gene, ignore.case = TRUE))
   }
   
-  if (annot_kinases) df <- annotKin(df, acc_type)
-  
-  # `pep_start`, `pep_end` and `gene` will be used for protein percent coverage calculation
-  if (!all(c("pep_start", "pep_end", "gene") %in% names(df))) df <- df %>% annotPeppos(fasta)
-  
-  if (!("prot_cover" %in% names(df) & length(filelist) == 1)) {
-    df$prot_cover <- NULL
-    
+  if (annot_kinases) {
     df <- df %>% 
-      calc_cover(id = !!rlang::sym(group_pep_by), 
-                 fasta = seqinr::read.fasta(file.path(dat_dir, "my_project.fasta"), 
-                                            seqtype = "AA", as.string = TRUE, set.attributes = TRUE))
+      split(., .$acc_type, drop = TRUE) %>% 
+      .[acc_types] %>% 
+      purrr::imap( ~ annotKin(.x, .y)) %>% 
+      do.call(rbind, .)
+  }
+  
+  df <- df %>% annotPeppos()
+
+  if (!("prot_cover" %in% names(df) && length(filelist) == 1)) {
+    df <- df %>% calc_cover(id = !!rlang::sym(group_pep_by))
   } 
   
   df <- dplyr::bind_cols(
@@ -253,16 +242,18 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
   
   if (length(grep("^R[0-9]{3}", names(df))) > 0) {
     df_split <- df %>%
-      dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), as.numeric) %>%
-      dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), ~ ifelse(.x == -1, NA, .x)) %>%
-      dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), ~ ifelse(.x <= rptr_intco, NA, .x)) %>%
+      dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), 
+                       as.numeric) %>%
+      dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
+                       ~ ifelse(.x == -1, NA, .x)) %>%
+      dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
+                       ~ ifelse(.x <= rptr_intco, NA, .x)) %>%
       # dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
       # dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) %>%
       dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
       dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
       dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%
-      dplyr::arrange(RAW_File, pep_seq, prot_acc) # %>%
-    # dplyr::filter(!duplicated(.[grep("^pep_seq$|I[0-9]{3}", names(.))]))
+      dplyr::arrange(RAW_File, pep_seq, prot_acc)
   } else {
     df_split <- df %>%
       dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>% 

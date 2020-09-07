@@ -10,7 +10,7 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 BiocManager::install("org.Hs.eg.db")
 BiocManager::install("org.Mm.eg.db")
 
-# Prep II: set up RefSeq Fasta(s) if not yet
+# Prep II: make available RefSeq Fasta(s) if not yet
 library(proteoQDA)
 db_path <- "~/proteoQ/dbs/fasta/refseq"
 copy_refseq_hs(db_path)
@@ -28,8 +28,7 @@ copy_global_mascot(dat_dir)
 
 # --- workflow begins ---
 library(proteoQ)
-dat_dir <- "~/proteoQ/custom_refseq_lookups"
-load_expts()
+load_expts("~/proteoQ/custom_refseq_lookups")
 
 # prepare RefSeq-to-Entrez lookups
 Ref2Entrez(species = human)

@@ -93,54 +93,96 @@ if (!grepl(paste0("^", abbr_sp), temp[1])) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
 # ----------------------------------------------
-devtools::document(pkg  = "C:/Results/R/proteoQ")
-kinase_lookup <- kinase_lookup %>% 
-					dplyr::rename(
-						refseq_acc = REFSEQ_PROTEIN, 
-						gene = Gene, 
-						kinase = Kinase, 
-						classification = Classification, 
-						order = Order, 
-						uniprot_acc = Uniprot_accession, 
-						uniprot_id = Uniprot_id, 
-						prot_desc = Description
-					)
+make_kin_lookup <- function (include_mouse = FALSE) {
+  to_title_case <- function(x) {
+    paste0(substr(x, 1, 1), substr(x, 2, nchar(x)) %>% tolower())
+  }
+  
+  
+  load_expts("~/proteoQ/examples_mascot")
+  
+  fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2014_07.fasta", 
+            "~/proteoQ/dbs/fasta/uniprot/uniprot_mm_2014_07.fasta")
+  
+  kin_order <- c("TK" = 1, "TKL" = 2, "STE" = 3, "CK1" = 4, "AGC" = 5, "CAMK" = 6, "CMGC" = 7, 
+                 "Atypical" = 8, "Other" = 9, "RGC" = 10, "Unclassified" = 11, "FAM20" = 12, 
+                 "Lipid" = 13, "Metabolic" = 14)
+  
+  ## --- three columns in `df`
+  # prot_acc	kin_class	gene
+  # P31749	AGC 	AKT1
+  # P31751	AGC 	AKT2
+  # Q9Y243	AGC 	AKT3
+  
+  df <- readr::read_tsv(file.path("~/proteoQ/kin_lookup_08282020.txt")) %>% 
+    dplyr::mutate(kin_class = gsub("Lipid Kinase", "Lipid", kin_class), 
+                  kin_class = gsub("Metabolic Enzyme", "Metabolic", kin_class))
+  
+  # mouse
+  if (include_mouse) {
+    df <- local({
+      df_mm <- df %>% 
+        dplyr::select(-prot_acc) %>% 
+        dplyr::mutate(gene = to_title_case(gene))
+      
+      annot_from_to(abbr_species = "Mm", 
+                    keys = unique(df_mm$gene), 
+                    from = "SYMBOL", 
+                    to = "UNIPROT") %>% 
+        dplyr::filter(!is.na(UNIPROT)) %>% 
+        dplyr::rename(gene = SYMBOL, prot_acc = UNIPROT) %>% 
+        dplyr::mutate(gene2 = toupper(gene)) %>% 
+        dplyr::left_join(df[, c("kin_class", "gene")], by = c("gene2" = "gene")) %>% 
+        dplyr::select(prot_acc, kin_class, gene) 
+    }) %>% 
+      rbind(df, .)
+  }
 
-kinase_lookup <- kinase_lookup %>% 
-					dplyr::rename(
-						kin_attr = kinase, 
-						kin_class = classification, 
-						kin_order = order
-					)
+  # [1] "refseq_acc"  "gene"        "kin_attr"    "kin_class"   "kin_order"   "uniprot_acc" "uniprot_id" 
+  # [8] "prot_desc"   "entrez"     
 
-filename <- "kinase_lookup"
-save(list = filename, file = file.path("C:/Results/R/proteoQ/data", paste0(filename, ".rda")), compress = "xz")
+  df <- df %>% 
+    dplyr::mutate(kin_order = .env$kin_order[.data$kin_class]) %>% 
+    annotPrn(fasta, entrez = NULL) %>% 
+    dplyr::rename(uniprot_acc = prot_acc) %>% 
+    dplyr::mutate(kin_attr = TRUE)
+  
+  # refseq
+  refseq_hs <- local({
+    up <- UniProt.ws(taxId = 9606)
+    
+    refseq_hs <- UniProt.ws::select(up,
+                       keys = up@taxIdUniprots %>% .[. %in% df$uniprot_acc],
+                       keytype = "UNIPROTKB", 
+                       columns = c("REFSEQ_PROTEIN")) %>% 
+      mutate(REFSEQ_PROTEIN = gsub("\\..*$", "", REFSEQ_PROTEIN)) %>% 
+      dplyr::rename(uniprot_acc = UNIPROTKB, refseq_acc = REFSEQ_PROTEIN)
+  })
+  
+  if (include_mouse) {
+    refseq_mm <- local({
+      up <- UniProt.ws(taxId = 10090)
+      
+      UniProt.ws::select(up,
+                         keys = up@taxIdUniprots %>% .[. %in% df$uniprot_acc],
+                         keytype = "UNIPROTKB", 
+                         columns = c("REFSEQ_PROTEIN")) %>% 
+        mutate(REFSEQ_PROTEIN = gsub("\\..*$", "", REFSEQ_PROTEIN)) %>% 
+        dplyr::rename(uniprot_acc = UNIPROTKB, refseq_acc = REFSEQ_PROTEIN)
+    })
+    
+    refseq <- rbind(refseq_hs, refseq_mm)
+  } else {
+    refseq <- refseq_hs
+  }
 
-	
+  kinase_lookup <- dplyr::left_join(df, refseq, by = "uniprot_acc") %>% 
+    dplyr::select(refseq_acc, gene, kin_attr, kin_class, kin_order, 
+                  uniprot_acc, uniprot_id, prot_desc, entrez)
 
+  save(kinase_lookup, file = "~/proteoQ/kinase_lookup.rda", compress = "xz")
+}
 
 	
 	

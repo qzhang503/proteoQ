@@ -5,10 +5,12 @@
 \alias{uniprot_entrez_hs}
 \title{Lookups between UniProt accessions and Entrez IDs for human proteins.}
 \format{
-A data frame with 33194 rows and 2 variables:
+A data frame with 34383 rows and 4 variables:
 \describe{
-  \item{entrez}{Entrez ID}
   \item{uniprot_acc}{UniProt accession number}
+  \item{gene}{Gene name}
+  \item{entrez}{Entrez ID}
+  \item{species}{Species name}
 }
 }
 \usage{

@@ -38,27 +38,28 @@ or LFQ (MaxQuant) experiments
 
  \tabular{ll}{ \strong{Essential column}   \tab \strong{Descrption}\cr
  Sample_ID \tab Unique sample IDs \cr TMT_Channel \tab TMT channel names:
- \code{126}, \code{127N}, \code{127C} etc. or left void for LFQ \cr TMT_Set
- \tab TMT experiment indexes 1, 2, 3, ... or auto-filled for LFQ \cr
+ \code{126}, \code{127N}, \code{127C} etc. (left void for LFQ) \cr TMT_Set
+ \tab TMT experiment indexes 1, 2, 3, ... (auto-filled for LFQ) \cr
  LCMS_Injection   \tab LC/MS injection indexes 1, 2, 3, ... under a
- \code{TMT_Set} \cr RAW_File \tab MS data file names originated by
- \code{MS} software(s) \cr Reference \tab Labels indicating reference samples in
- TMT or LFQ experiments \cr }
+ \code{TMT_Set} \cr RAW_File \tab MS data file names originated by \code{MS}
+ software(s) \cr Reference \tab Labels indicating reference samples in TMT or
+ LFQ experiments \cr }
 
  \code{Sample_ID}: values should be unique for entries at a unique
- combination of \code{TMT_Channel} and \code{TMT_Set}, or voided for
- unused entries. Samples with the same indexes of \code{TMT_Channel} and
+ combination of \code{TMT_Channel} and \code{TMT_Set}, or voided for unused
+ entries. Samples with the same indexes of \code{TMT_Channel} and
  \code{TMT_Set} but different indexes of \code{LCMS_Injection} should have
  the same value in \code{Sample_ID}. No white space or special characters are
- allowed. See also posts at \link{http://proteoq.netlify.com}.  
+ allowed. See also posts at
+ \link{https://proteoq.netlify.app/post/sample-exlusion-from-metadata/}.
 
- \code{RAW_File}: for analysis with off-line fractionation of peptides
- before LC/MS, the \code{RAW_File} column should be left blank. Instead, the
- correspondence between the fraction numbers and \code{RAW_File} names should
- be specified in a separate file, for example, \code{frac_smry.xlsx}. For
- analysis without off-line fractionation, it is recommended as well to leave
- the field under the \code{RAW_File} column blank and instead enter the MS
- file names in \code{frac_smry.xlsx}.
+ \code{RAW_File}: for analysis with off-line fractionation of peptides before
+ LC/MS, values under the \code{RAW_File} column should be left void. Instead,
+ the correspondence between the fraction numbers and \code{RAW_File} names
+ should be specified in a separate file, for example, \code{frac_smry.xlsx}.
+ For analysis without off-line fractionation, it is recommended as well to
+ leave the field under the \code{RAW_File} column blank and instead enter the
+ MS file names in \code{frac_smry.xlsx}.
 
  The set of \code{RAW_File} names in metadata needs to be identifiable in PSM
  data. Impalpable mismatches might occur when \code{OS} file names were
@@ -94,11 +95,12 @@ or LFQ (MaxQuant) experiments
 
 \section{\code{frac_smry.xlsx}}{
  \tabular{ll}{ \strong{Column}   \tab
- \strong{Descrption}\cr TMT_Set \tab v.s.  \cr LCMS_Injection   \tab v.s. \cr
- Fraction \tab Fraction indexes under a \code{TMT_Set} \cr RAW_File \tab v.s.
- \cr PSM_File \tab Names of PSM files, e.g. F012345.csv. Only required when
- the same \code{RAW_File} can be linked to multiple PSM files (see also
- \link{http://proteoq.netlify.com}).
+ \strong{Descrption}\cr Sample_ID \tab Unique sample IDs (with LFQ only) \cr
+ TMT_Set \tab TMT experiment indexes (auto-filled for LFQ) \cr LCMS_Injection
+ \tab LC/MS injection indexes \cr Fraction \tab Fraction indexes under a
+ \code{TMT_Set} \cr RAW_File \tab MS data file names \cr PSM_File \tab Names
+ of PSM files. Required only when the same \code{RAW_File} can be linked to
+ multiple PSM files (e.g. F012345.csv and F012346.csv both from ms_1.raw).
  }
 }
 
@@ -246,7 +248,7 @@ load_expts(dat_dir = "~/proteoQ/examples", expt_smry = !!my_expt)
  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr
 
-\emph{Variable arguments of `filter_...`} \cr 
+\emph{User-friendly utilities for variable arguments of `filter_...`} \cr 
  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
@@ -283,11 +285,56 @@ load_expts(dat_dir = "~/proteoQ/examples", expt_smry = !!my_expt)
  signatures} \cr 
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
+ \emph{Workflow scripts} \cr 
+ # TMT \cr 
+ system.file("extdata", "workflow_tmt_base.R", package = "proteoQ") \cr
+ system.file("extdata", "workflow_tmt_ext.R", package = "proteoQ") \cr
+ 
+ # LFQ \cr 
+ system.file("extdata", "workflow_mq_lfq.R", package = "proteoQ") \cr
+ 
+ \emph{Metadata files} \cr 
+ # TMT, global, prefractionation \cr
+ # (no references) \cr 
+ system.file("extdata", "expt_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+ system.file("extdata", "frac_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+ 
+ # (W2 references) \cr
+ system.file("extdata", "expt_smry_ref_w2.xlsx", package = "proteoQDA") \cr
+ system.file("extdata", "frac_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+ 
+ # (W2 and W16 references) \cr
+ system.file("extdata", "expt_smry_ref_w2_w16.xlsx", package = "proteoQDA") \cr
+ system.file("extdata", "frac_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+ 
+ # TMT, global + phospho, prefractionation \cr
+ system.file("extdata", "expt_smry_cptac_cmbn.xlsx", package = "proteoQDA") \cr
+ system.file("extdata", "frac_smry_cptac_cmbn.xlsx", package = "proteoQDA") \cr
+ 
+ # TMT, global, prefractionation, one MS to multiple PSM files \cr
+ system.file("extdata", "expt_smry_psmfiles.xlsx", package = "proteoQDA") \cr
+ system.file("extdata", "frac_smry_psmfiles.xlsx", package = "proteoQDA") \cr
+ 
+ # TMT, global, prefractionation, mixed-plexes \cr
+ # (column PSM_file needed as the this example, \cr 
+ #  mixed-plexes results are actually from the same MS files \cr
+ #  but searched separately at 6- and 10-plex settings) \cr 
+ system.file("extdata", "expt_smry_mixplexes.xlsx", package = "proteoQDA") \cr
+ system.file("extdata", "frac_smry_mixplexes.xlsx", package = "proteoQDA") \cr
+ 
+ # TMT, global, no fractionation \cr
+ # (no need of `frac_smry.xlsx`) \cr 
+ system.file("extdata", "expt_smry_no_prefrac.xlsx", package = "proteoQDA") \cr
+ system.file("extdata", "expt_smry_no_prefrac_ref_w2_w16.xlsx", package = "proteoQDA") \cr
+ 
+ # LFQ, global, prefractionation \cr
+ system.file("extdata", "expt_smry_mq_lfq.xlsx", package = "proteoQDA") \cr
+ system.file("extdata", "frac_smry_mq_lfq.xlsx", package = "proteoQDA") \cr
+ 
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- # Mascot, MaxQuant and Spectrum Mill \cr
- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 }
 \concept{basic informatics}
 \concept{data row filtration}

@@ -77,7 +77,8 @@ the TRUE default, values under columns "Reporter intensity corrected..." in
 the TRUE default, \code{Reverse} entries will be removed.}
 
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
-default is 1,000.}
+default is 0 without cut-offs. The filter is also applicable to the
+precursor intensity with MaxQuant LFQ.}
 
 \item{rm_craps}{Logical; if TRUE,
 \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
@@ -95,7 +96,8 @@ used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
 will be annotated with their kinase attributes. The default is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
-intensities will be plotted. The default is TRUE.}
+intensities will be plotted. The default is TRUE. The argument is also
+applicable to the precursor intensity with MaxQuant LFQ.}
 
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
 \code{log2FC} will be plotted. The default is TRUE.}

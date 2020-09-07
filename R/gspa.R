@@ -366,8 +366,6 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
   gsets <- load_dbs(gset_nms = gset_nms, species = species)
   
-  stopifnot(length(gsets) > 0)
-
   fml_nms <- names(df) %>% 
     .[grepl("pVal\\s*\\(", .)] %>% 
     gsub("(.*)\\.pVal.*", "\\1", .) %>% 
@@ -464,6 +462,10 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
       c(rlang::enexprs(...)) %>% 
       save_call(paste0(fn_prefix, "@", fml_nm))
   )
+  
+  if (length(gsets) == 0) {
+    stop("Zero entries in `gsets`.", call. = FALSE)
+  }
   
   dir.create(file.path(filepath, fml_nm), recursive = TRUE, showWarnings = FALSE)
   id <- rlang::as_string(rlang::enexpr(id))

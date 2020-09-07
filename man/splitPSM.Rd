@@ -14,7 +14,7 @@ splitPSM(
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
-  rptr_intco = 1000,
+  rptr_intco = 0,
   use_lowercase_aa = TRUE,
   parallel = TRUE,
   ...
@@ -61,10 +61,12 @@ The default is TRUE.}
 will be annotated with their kinase attributes. The default is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
-intensities will be plotted. The default is TRUE.}
+intensities will be plotted. The default is TRUE. The argument is also
+applicable to the precursor intensity with MaxQuant LFQ.}
 
 \item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
-default is 1,000.}
+default is 0 without cut-offs. The filter is also applicable to the
+precursor intensity with MaxQuant LFQ.}
 
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the

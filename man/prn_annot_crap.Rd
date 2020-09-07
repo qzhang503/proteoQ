@@ -5,7 +5,7 @@
 \alias{prn_annot_crap}
 \title{Lookups of cRAP proteins.}
 \format{
-A data frame with 195 rows and 9 variables:
+A data frame with 195 rows and 10 variables:
 \describe{
   \item{uniprot_acc}{UniProt accession number}
   \item{uniprot_id}{UniProt ID}
@@ -16,6 +16,7 @@ A data frame with 195 rows and 9 variables:
   \item{length}{the number of amino acid residues under a proposed protein}
   \item{refseq_acc}{RefSeq accession number}
   \item{entrez}{Entrez ID (not currently used)}
+  \item{fasta_name}{Fasta name according to \code{read_fasta(pattern = ...)}}
 }
 }
 \source{

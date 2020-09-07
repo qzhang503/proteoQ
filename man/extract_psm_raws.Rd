@@ -5,7 +5,7 @@
 \title{Extract the names of RAW MS files from PSM data}
 \usage{
 extract_psm_raws(
-  type = c("mascot", "maxquant", "spectrum_mill"),
+  type = c("mascot", "maxquant", "spectrum_mill", "msfragger"),
   dat_dir = NULL
 )
 }
