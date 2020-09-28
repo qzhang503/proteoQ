@@ -1,7 +1,7 @@
 proteoQ
 ================
 truetrue
-2020-09-26
+2020-09-27
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -59,11 +59,12 @@ The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)
 of `proteoQ` consists of data processing and informatics analysis. It
 first processes the peptide spectrum matches (PSM) tables from
 [Mascot](https://http://www.matrixscience.com/),
-[MaxQuant](https://www.maxquant.org/) and [Spectrum
+[MaxQuant](https://www.maxquant.org/) or [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill)
 searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo’s
 Orbitrap mass analyzers. It is also capable of processing the LFQ data
-from [MaxQuant](https://www.maxquant.org/). Peptide and protein results
+from [MaxQuant](https://www.maxquant.org/) or
+[MSFragger](http://msfragger.nesvilab.org/). Peptide and protein results
 are then produced with users’ selection of parameters in data
 filtration, alignment and normalization. The package further offers a
 suite of tools and functionalities in statistics, informatics and data

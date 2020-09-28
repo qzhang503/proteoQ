@@ -11,7 +11,8 @@ calcPeptide(
   group_pep_by,
   dat_dir,
   set_idx,
-  injn_idx
+  injn_idx,
+  TMT_plex
 )
 }
 \arguments{
@@ -48,6 +49,8 @@ files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 
 \item{injn_idx}{Numeric. The index of \code{LCMS_Inj} in metadata files such
 as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
+
+\item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
 }
 \description{
 Argument \code{injn_idx} not currently used.
