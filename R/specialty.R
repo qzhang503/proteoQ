@@ -1,6 +1,6 @@
 #' TMT labeling efficiency
 #' 
-#' @import dplyr rlang ggplot2
+#' @import dplyr ggplot2
 #' @inheritParams load_expts
 #' @inheritParams splitPSM
 #' @inheritParams cleanupPSM
@@ -328,7 +328,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
 #' )
 #' }
 #' 
-#' @import stringr dplyr readr readxl rlang ggplot2 RColorBrewer pheatmap
+#' @import stringr dplyr readr readxl ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
 proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL, 

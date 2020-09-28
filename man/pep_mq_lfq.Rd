@@ -2,10 +2,10 @@
 % Please edit documentation in R/peptable.R
 \name{pep_mq_lfq}
 \alias{pep_mq_lfq}
-\title{load MaxQuant peptide table}
+\title{Handling of MaxQuant peptide.txt}
 \usage{
 pep_mq_lfq(label_scheme, omit_single_lfq)
 }
 \description{
-load MaxQuant peptide table
+Fill back temporarily intensity values that are not filled in LFQ msms.txt.
 }

@@ -4,7 +4,7 @@
 #' @inheritParams prnCorr_logFC
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import stringr dplyr ggplot2 GGally rlang
+#' @import stringr dplyr ggplot2 GGally 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, col_order = NULL,
                       label_scheme_sub = label_scheme_sub, 
@@ -94,7 +94,7 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
 #' @param ... additional arguments for ggsave.
 #' @inheritParams info_anal
 #' 
-#' @import stringr dplyr ggplot2 GGally purrr rlang
+#' @import stringr dplyr ggplot2 GGally purrr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plot_corr_sub <- function (df, xlab, ylab, filename, filepath, 
                            xmin, xmax, xbreaks, width, height, ...) {
@@ -488,7 +488,7 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'@example inst/extdata/examples/prnCorr_.R
 #'
 #'@return Correlation plots.
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 prnCorr_logFC <- function (col_select = NULL, col_order = NULL, 

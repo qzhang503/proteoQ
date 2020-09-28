@@ -49,7 +49,7 @@ sd_lgl_cleanup <- function (df) {
 #' @param max_cv Numeric; the cut-off in maximum CV. Values above the threshold
 #'   will be replaced with NA. The default is NULL with no data trimming by max
 #'   CV.
-#' @import dplyr purrr rlang
+#' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
   if (!is.null(max_cv)) {
@@ -100,7 +100,7 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
 #' @param pt_cv Numeric between 0 and 1; the percentile of CV. Values above the
 #'   percentile threshold will be replaced with NA. The default is NULL with no
 #'   data trimming by CV percentile.
-#' @import dplyr purrr rlang
+#' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
   if (!is.null(pt_cv)) {
@@ -162,7 +162,7 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
 #'   \code{min_n} will be replaced with NA. When calling from \code{purgePep},
 #'   protein entries in peptide tables with the number of identifying peptides
 #'   smaller than \code{min_n} will be replaced with NA.
-#' @import dplyr purrr rlang
+#' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 purge_by_n <- function (df, id, min_n) {
   kept <- df %>%
@@ -273,7 +273,7 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by, pt_cv, max_cv
 #'  log2 scale. \cr \code{width}, the width of plot. \cr \code{height}, the
 #'  height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
 #'  \code{y} axis.
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@example inst/extdata/examples/purgePSM_.R
 #'@seealso 
@@ -406,7 +406,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'@inheritParams purge_by_n
 #'@inheritParams purge_by_qt
 #'@inheritParams plot_prnTrend
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@example inst/extdata/examples/purgePep_.R
 #'@seealso 

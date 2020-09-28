@@ -328,7 +328,7 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 #'\href{http://current.geneontology.org/products/pages/downloads.html}{gene
 #'ontology} (GO) for enrichment analysis by gene sets.
 #'
-#'@import rlang dplyr purrr fs readr org.Hs.eg.db org.Mm.eg.db
+#'@import dplyr purrr fs readr org.Hs.eg.db org.Mm.eg.db
 #'  org.Rn.eg.db
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@param overwrite Logical; if TRUE, overwrite the downloaded database(s). The
@@ -527,7 +527,7 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 #'\href{https://www.gsea-msigdb.org/gsea/index.jsp}{Molecular Signatures}
 #'(MSig) for enrichment analysis by gene sets.
 #'
-#'@import rlang dplyr purrr fs readr org.Hs.eg.db
+#'@import dplyr purrr fs readr org.Hs.eg.db
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@inheritParams prepGO
 #'@param species Character string; the name of a species for the

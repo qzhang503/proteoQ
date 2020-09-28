@@ -17,7 +17,9 @@ prot_n_pep	Count of significant peptide sequences in quantitation under a propos
 pep_query	Ordinal number of query after sorting by Mr	Mascot only.
 pep_rank	Peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.	Mascot only.
 pep_isbold	"If grouping enabled, then a significant PSM. Otherwise, indicates this is the highest scoring protein that contains a match to this query."	Mascot only.
-pep_isunique	Peptide sequence is unique or not.	"Mascot: unique to hit (grouping off) or family member (grouping on). MaxQuant: unique at the levels of protein groups, protein IDs or none. Spectrum Mill: NA."
+pep_isunique	Peptide sequence is unique or not.	"Mascot: unique to hit (grouping off) or family member (grouping on). MaxQuant: unique at the levels of protein groups, protein IDs or none. Spectrum Mill: NA. See also ?normPSM argument `pep_unique_by`."
+pep_literal_unique	Peptide sequence is unique to hit or not.	Mascot: need to enable same-set and sub-set proteins during PSM exports; otherwise equivalent to `pep_isunique`.
+pep_razor_unique	Peptide sequence is unique to group or not.	v.s.
 pep_exp_mz	Observed or experimental m/z value	Mascot only.
 pep_exp_mr	Molecular mass calculated from experimental m/z value	Mascot only.
 pep_exp_z	Observed or experimental charge	Mascot only.
@@ -41,6 +43,9 @@ pep_scan_title	Scan title taken from peak list	Mascot only.
 pep_...	Additional peptide keys from Mascot PSM exports by users	Mascot only.
 pep_locprob	The highest probablity from the Mascot site analysis of the variable modification sites	"Mascot oprional with the selection of `Query Level Information` during  PSM export. The second highest probablity, `pep_locprob2` is made implicit through `pep_locdiff`. Cf. `pep_var_mod_conf` from Mascot."
 pep_locdiff	pep_locprob – pep_locprob2	Mascot only.
+pep_tot_int	Total MS1 intenisty of a peptide match	LFQ
+pep_unique_int	Unique MS1 intenisty of a peptide match	v.s.
+pep_razor_int	Razor MS1 intenisty of a peptide match	v.s.
 pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	See also `prot_n_psm`.
 gene	Protein gene name	
 fasta_name	Protein name taken from Fasta title line	The character string before the first white space.

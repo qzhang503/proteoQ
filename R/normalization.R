@@ -93,7 +93,7 @@ update_df <- function (df, label_scheme_fit, cf_x_fit, sd_coefs_fit) {
 #'@inheritParams standPep
 #'@return A data frame.
 #'
-#'@import dplyr purrr rlang 
+#'@import dplyr purrr  
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range_int, filepath, 
                        col_select = NULL, cut_points = Inf, ...) {
@@ -457,7 +457,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 #' @inheritParams standPep
 #' 
 #' @return A data frame.
-#' @import dplyr purrr rlang 
+#' @import dplyr purrr  
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 dblTrim <- function(df, range_log2r, range_int, type_r = "N_log2_R", type_int = "N_I") {
 	df_trim <- df
@@ -505,7 +505,7 @@ dblTrim <- function(df, range_log2r, range_int, type_r = "N_log2_R", type_int = 
 #' @param xmax the maximal x values.
 #' @param by the step length.
 #' @return A data frame.
-#' @import dplyr purrr rlang 
+#' @import dplyr purrr  
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 	wt_dnorm <- function (x, lambda, mean, sd) lambda * dnorm(x, mean = mean, sd = sd)
@@ -534,7 +534,7 @@ sumdnorm <- function (x, xmin = -4, xmax = 4, by = xmax/200) {
 #' @param x A numeric vector.
 #' @param center The position of \code{x} to be centered at.
 #' @param SD The standard deviation that data will be scaled to.
-#' @import dplyr purrr rlang 
+#' @import dplyr purrr  
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
 normSD <- function (x, center = 0, SD = 1) {
@@ -559,7 +559,7 @@ normSD <- function (x, center = 0, SD = 1) {
 #' @inheritParams standPep
 #' @return A data frame.
 #'
-#' @import dplyr purrr rlang 
+#' @import dplyr purrr  
 #' @importFrom mixtools normalmixEM 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 fitKernelDensity <- function (df, n_comp = 3, seed = NULL, ...) {

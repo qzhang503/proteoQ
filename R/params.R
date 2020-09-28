@@ -695,7 +695,7 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 #'
 #'@param species Character string; the name of a species. 
 #'@inheritParams prnGSPA
-#'@import dplyr rlang
+#'@import dplyr
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 load_dbs <- function (gset_nms = NULL, species = NULL) {
@@ -713,12 +713,12 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
       warning("Unknown species.", call. = FALSE)
     }
     
-    filelist <- map(abbr_sp, ~ paste0(sys_defs, "_", .x)) %>% unlist()
-    
-    data(package = "proteoQ", list = filelist)
-    gsets <- purrr::map(filelist, ~ try(get(.x))) %>% do.call(`c`, .)
-    
-    try(rm(list = filelist, envir = .GlobalEnv))
+    filelist <- purrr::map(abbr_sp, ~ paste0(sys_defs, "_", .x)) %>% 
+      unlist()
+
+    suppressWarnings(data(package = "proteoQ", list = filelist))
+    gsets <- purrr::map(filelist, ~ try(get(.x), silent = TRUE)) %>% do.call(`c`, .)
+    suppressWarnings(rm(list = filelist, envir = .GlobalEnv))
     
     if (length(gsets) > 0) names(gsets) <- gsub("/", "-", names(gsets))      
   } else {
@@ -733,7 +733,8 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 
     not_oks <- not_sys_defs %>% .[!file.exists(not_sys_defs)]
     if (!purrr::is_empty(not_oks)) {
-      stop("File not found: \n", purrr::reduce(not_oks, paste, sep = ", \n"), call. = FALSE)
+      stop("File not found: \n", purrr::reduce(not_oks, paste, sep = ", \n"), 
+           call. = FALSE)
     }
     
     gsets2 <- purrr::map(not_sys_defs, readRDS) %>% do.call(`c`, .)
@@ -741,7 +742,8 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
     if (length(gsets2) > 0)  {
       names(gsets2) <- gsub("/", "-", names(gsets2))
     } else {
-      stop("Empty data file in: \n", purrr::reduce(not_sys_defs, paste, sep = ", \n"), call. = FALSE)
+      stop("Empty data file in: \n", purrr::reduce(not_sys_defs, paste, sep = ", \n"), 
+           call. = FALSE)
     }
   } else {
     gsets2 <- NULL
@@ -901,7 +903,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  system.file("extdata", "workflow_tmt_ext.R", package = "proteoQ") \cr
 #'  
 #'  # LFQ \cr 
-#'  system.file("extdata", "workflow_mq_lfq.R", package = "proteoQ") \cr
+#'  system.file("extdata", "workflow_lfq_base.R", package = "proteoQ") \cr
 #'  
 #'  \emph{Metadata files} \cr 
 #'  # TMT, global, prefractionation \cr
@@ -926,7 +928,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  system.file("extdata", "frac_smry_psmfiles.xlsx", package = "proteoQDA") \cr
 #'  
 #'  # TMT, global, prefractionation, mixed-plexes \cr
-#'  # (column PSM_file needed as the this example, \cr 
+#'  # (column PSM_file needed as with this example, \cr 
 #'  #  mixed-plexes results are actually from the same MS files \cr
 #'  #  but searched separately at 6- and 10-plex settings) \cr 
 #'  system.file("extdata", "expt_smry_mixplexes.xlsx", package = "proteoQDA") \cr
@@ -938,8 +940,8 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  system.file("extdata", "expt_smry_no_prefrac_ref_w2_w16.xlsx", package = "proteoQDA") \cr
 #'  
 #'  # LFQ, global, prefractionation \cr
-#'  system.file("extdata", "expt_smry_mq_lfq.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_mq_lfq.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "expt_smry_lfq.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_lfq.xlsx", package = "proteoQDA") \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
 #'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
@@ -955,7 +957,10 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'
 #'@example inst/extdata/examples/load_expts_.R
 #'
-#'@import rlang dplyr fs
+#'@import dplyr fs
+#' @rawNamespace import(rlang, except = c(list_along, invoke, flatten_raw,
+#'   modify, as_function, flatten_dbl, flatten_lgl, flatten_int,
+#'   flatten_chr, splice, flatten, prepend, "%@%"))
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
@@ -973,7 +978,6 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry 
 
 #' Reload the "expt_smry.xlsx" and "frac_smry.xlsx"
 #'
-#' @rawNamespace import(rlang, except = c(list_along))
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom fs file_info
 reload_expts <- function() {

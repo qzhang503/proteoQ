@@ -9,7 +9,7 @@
 #' @param filename The output filename.
 #' @param ... Additional arguments for \link[pheatmap]{pheatmap}.
 #' 
-#' @import dplyr rlang pheatmap
+#' @import dplyr pheatmap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, annotation_colors, breaks, ...) {
   mat <- rlang::enexpr(mat)
@@ -43,7 +43,7 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, an
 #' @inheritParams prnHM
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import stringr dplyr rlang ggplot2 RColorBrewer pheatmap
+#' @import stringr dplyr ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
                    scale_log2r, complete_cases, 
@@ -565,7 +565,7 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'@example inst/extdata/examples/prnHM_.R
 #'
 #'@return Heat maps and optional sub trees.
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 prnHM <- function (col_select = NULL, col_benchmark = NULL,

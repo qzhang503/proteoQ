@@ -3,7 +3,7 @@
 #' @inheritParams anal_prnNMF
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr purrr rlang 
+#' @import dplyr purrr  
 #' @importFrom Biobase ExpressionSet 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 analNMF <- function(df, id, rank, nrun, seed, col_group, label_scheme_sub, 
@@ -96,7 +96,7 @@ analNMF <- function(df, id, rank, nrun, seed, col_group, label_scheme_sub,
 #' @inheritParams plot_prnNMFCoef
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr purrr rlang cluster 
+#' @import dplyr purrr cluster 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, impute_na, 
                        df2, filepath, filename, ...) {
@@ -321,7 +321,7 @@ plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, 
 #' @inheritParams plot_prnNMFCoef
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr purrr rlang cluster 
+#' @import dplyr purrr cluster 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotNMFCoef <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, impute_na, 
                         df2, filepath, filename, ...) {
@@ -521,7 +521,7 @@ plotNMFCoef <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
 #' @inheritParams plot_prnNMFCoef
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr rlang 
+#' @import dplyr  
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotNMFmeta <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, impute_na, 
                         df, df2, filepath, filename, anal_type, ...) {
@@ -760,7 +760,7 @@ plotNMFmeta <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
 #'  the format of \code{arrange_} statements. \cr \cr Additional arguments for
 #'  \code{\link[NMF]{nmf}}.
 #'@return NMF classification of \code{log2FC} data.
-#'@import dplyr rlang readr ggplot2
+#'@import dplyr readr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@example inst/extdata/examples/prnNMF_.R
 #'
@@ -863,7 +863,7 @@ anal_pepNMF <- function (col_select = NULL, col_group = NULL,
 #'The function is a wrapper of \code{\link[NMF]{nmf}}.
 #'
 #'@rdname anal_pepNMF
-#'@import dplyr rlang readr ggplot2
+#'@import dplyr readr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'
 #'@export
@@ -931,7 +931,7 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
 #'@inheritParams plot_prnTrend
 #'@inheritParams  prnEucDist
 #'@return Consensus heat maps from NMF classification.
-#'@import dplyr rlang readr ggplot2
+#'@import dplyr readr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@example inst/extdata/examples/prnNMF_.R
 #'
@@ -1027,7 +1027,7 @@ plot_pepNMFCon <- function (col_select = NULL,
 #'classification of protein \code{log2FC}.
 #'
 #'@rdname plot_pepNMFCon
-#'@import dplyr rlang readr ggplot2
+#'@import dplyr readr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 plot_prnNMFCon <- function (col_select = NULL, 
@@ -1064,7 +1064,7 @@ plot_prnNMFCon <- function (col_select = NULL,
 #'classification of peptide \code{log2FC}.
 #'
 #'@rdname plot_pepNMFCon
-#'@import dplyr rlang readr ggplot2
+#'@import dplyr readr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 plot_pepNMFCoef <- function (col_select = NULL, 
@@ -1101,7 +1101,7 @@ plot_pepNMFCoef <- function (col_select = NULL,
 #'classification of protein \code{log2FC}.
 #'
 #'@rdname plot_pepNMFCon
-#'@import dplyr rlang readr ggplot2
+#'@import dplyr readr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 plot_prnNMFCoef <- function (col_select = NULL, 

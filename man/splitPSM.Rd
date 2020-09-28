@@ -9,6 +9,7 @@ splitPSM(
   group_pep_by = "prot_acc",
   fasta = NULL,
   entrez = NULL,
+  pep_unique_by = "group",
   rm_craps = FALSE,
   rm_krts = FALSE,
   purge_phosphodata = TRUE,

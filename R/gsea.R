@@ -93,7 +93,7 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'  \code{arrange_}: Variable argument statements for the row ordering against
 #'  data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 #'  the format of \code{arrange_} statements. 
-#'@import dplyr rlang ggplot2 
+#'@import dplyr ggplot2 
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
 #'@example inst/extdata/examples/prnGSEA_.R
