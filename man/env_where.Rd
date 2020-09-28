@@ -4,7 +4,7 @@
 \alias{env_where}
 \title{Find the environment of a function}
 \usage{
-env_where(name, env = caller_env())
+env_where(name, env = rlang::caller_env())
 }
 \arguments{
 \item{name}{The name of a function.}

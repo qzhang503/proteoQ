@@ -9,6 +9,7 @@ splitPSM_sm(
   group_pep_by = "prot_acc",
   fasta = NULL,
   entrez = NULL,
+  pep_unique_by = "group",
   rm_craps = FALSE,
   rm_krts = FALSE,
   purge_phosphodata = TRUE,
@@ -45,6 +46,17 @@ is available for species among \code{c("human", "mouse", "rat")}. For other
 species, users need to provide the file path(s) and name(s) for the lookup
 table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 for preparing custom entrez files.}
+
+\item{pep_unique_by}{A character string for annotating the uniqueness of
+peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
+uniqueness of peptides is by groups with the collapses of same-set or
+sub-set proteins. At a more stringent criterion of \code{protein}, the
+uniqueness of peptides is by protein entries without grouping. On the other
+extreme of choice \code{none}, all peptides are treated as unique. A new
+column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
+be added to the PSM reports. Note that the choice of \code{none} is only for
+convenience, as the same can be achieved by setting \code{use_unique_pep =
+FALSE} in \link{Pep2Prn}.}
 
 \item{rm_craps}{Logical; if TRUE,
 \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.

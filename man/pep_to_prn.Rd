@@ -12,11 +12,12 @@ pep_to_prn(id, method_pep_prn, use_unique_pep, gn_rollup, ...)
 
 \item{method_pep_prn}{Character string; the method to summarize the
 \code{log2FC} and the \code{intensity} of peptides by protein entries. The
-descriptive statistics includes \code{c("mean", "median", "top.3",
-"weighted.mean")} with \code{median} being the default. The representative
-\code{log10-intensity} of ions at the peptide levels (from
-\code{\link{standPep}}) will be the weight when summarizing \code{log2FC}
-with \code{top.3} or \code{weighted.mean}.}
+descriptive statistics includes \code{c("mean", "median", "weighted_mean",
+"top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all")} with
+\code{median} being the default for TMT and \code{lfq_top_3_sum} for LFQ.
+The representative \code{log10-intensity} of reporter (or LFQ) ions at the
+peptide levels will be the weight when summarizing \code{log2FC} with
+various \code{"top_n"} statistics or \code{"weighted_mean"}.}
 
 \item{use_unique_pep}{Logical. If TRUE, only entries that are \code{TRUE} or
 equal to \code{1} under the column \code{pep_isunique} in

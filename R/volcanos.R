@@ -3,7 +3,7 @@
 #' @inheritParams info_anal
 #' @inheritParams prnVol
 #' @inheritParams gspaMap
-#' @import limma stringr purrr dplyr rlang  
+#' @import limma stringr purrr dplyr   
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", 
                         adjP = FALSE, show_labels = TRUE, anal_type = "Volcano", 
@@ -130,7 +130,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
 #' @inheritParams prnVol
 #' @inheritParams gspaMap
 #' @inheritParams fml_gspa
-#' @import purrr dplyr rlang
+#' @import purrr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 byfml_volcano <- function (fml_nm, gspval_cutoff, gslogFC_cutoff, topn, df, df2, 
                            col_ind, id, 
@@ -174,7 +174,7 @@ byfml_volcano <- function (fml_nm, gspval_cutoff, gslogFC_cutoff, topn, df, df2,
 #' @inheritParams prnVol
 #' @inheritParams gspaMap
 #' @inheritParams fml_gspa
-#' @import limma stringr purrr dplyr rlang  
+#' @import limma stringr purrr dplyr   
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL, 
                                filepath = NULL, filename = NULL, 
@@ -263,7 +263,7 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
 #' @inheritParams prnVol
 #' @inheritParams gspaMap
 #' @inheritParams fml_gspa
-#' @import dplyr purrr rlang ggplot2
+#' @import dplyr purrr ggplot2
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom limma vennDiagram
 fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = NULL,
@@ -455,7 +455,7 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 #' @inheritParams gspaMap
 #' @inheritParams fml_gspa
 #' @inheritParams fullVolcano
-#' @import dplyr rlang ggplot2
+#' @import dplyr ggplot2
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 gsVolcano <- function(df2 = NULL, df = NULL, contrast_groups = NULL, 
                       gsea_key = "term", gsets = NULL, 
@@ -808,7 +808,7 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  the maximum \code{y}. \cr \code{x_label}, the label on \code{x}. \cr
 #'  \code{y_label}, the label on \code{y}.
 #'
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
 #'@example inst/extdata/examples/prnVol_.R
@@ -960,7 +960,7 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  \code{width}, the width of plot; \cr \code{height}, the height of plot. \cr
 #'  \code{nrow}, the number of rows in a plot.
 #'
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
 #'@example inst/extdata/examples/prnVol_.R

@@ -291,7 +291,7 @@ load_expts(dat_dir = "~/proteoQ/examples", expt_smry = !!my_expt)
  system.file("extdata", "workflow_tmt_ext.R", package = "proteoQ") \cr
  
  # LFQ \cr 
- system.file("extdata", "workflow_mq_lfq.R", package = "proteoQ") \cr
+ system.file("extdata", "workflow_lfq_base.R", package = "proteoQ") \cr
  
  \emph{Metadata files} \cr 
  # TMT, global, prefractionation \cr
@@ -316,7 +316,7 @@ load_expts(dat_dir = "~/proteoQ/examples", expt_smry = !!my_expt)
  system.file("extdata", "frac_smry_psmfiles.xlsx", package = "proteoQDA") \cr
  
  # TMT, global, prefractionation, mixed-plexes \cr
- # (column PSM_file needed as the this example, \cr 
+ # (column PSM_file needed as with this example, \cr 
  #  mixed-plexes results are actually from the same MS files \cr
  #  but searched separately at 6- and 10-plex settings) \cr 
  system.file("extdata", "expt_smry_mixplexes.xlsx", package = "proteoQDA") \cr
@@ -328,8 +328,8 @@ load_expts(dat_dir = "~/proteoQ/examples", expt_smry = !!my_expt)
  system.file("extdata", "expt_smry_no_prefrac_ref_w2_w16.xlsx", package = "proteoQDA") \cr
  
  # LFQ, global, prefractionation \cr
- system.file("extdata", "expt_smry_mq_lfq.xlsx", package = "proteoQDA") \cr
- system.file("extdata", "frac_smry_mq_lfq.xlsx", package = "proteoQDA") \cr
+ system.file("extdata", "expt_smry_lfq.xlsx", package = "proteoQDA") \cr
+ system.file("extdata", "frac_smry_lfq.xlsx", package = "proteoQDA") \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr

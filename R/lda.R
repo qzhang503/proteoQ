@@ -3,7 +3,7 @@
 #' @inheritParams prnPCA
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr ggplot2 rlang
+#' @import dplyr ggplot2 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs",
                      dimension = 2, folds = 1,
@@ -335,7 +335,7 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL, type = "obs"
 #' @inheritParams scoreMDS
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr rlang
+#' @import dplyr 
 #' @importFrom MASS lda
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 scoreLDA <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
@@ -569,7 +569,7 @@ pepLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'@example inst/extdata/examples/prnLDA_.R
 #'
 #'@return LDA plots.
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 prnLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,

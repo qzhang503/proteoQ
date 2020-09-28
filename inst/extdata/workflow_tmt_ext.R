@@ -628,7 +628,7 @@ prnHM(
 	fontsize_row = 2, 
 	cellheight = 2, 
 	cellwidth = 14, 
-	filter_kin = exprs(kin_attr),
+	filter_kin = exprs(kin_attr, species == "human"),
 	arrange_kin = exprs(kin_order, gene),
 	filename = hukin.png, 
 )
@@ -638,7 +638,7 @@ prnHM(
 anal_prnTrend(
   col_order = Order,
   n_clust = c(5:6), 
-  filter_by_npep = exprs(prot_n_pep >= 3),
+  filter_by_npep = exprs(prot_n_pep >= 2),
 )
 
 # protein visualization, sample-order supervision
@@ -730,7 +730,7 @@ if (!dontrun) {
 		gspval_cutoff = c(5E-3, 5E-3, 1E-6), # gene-set pVal cut-offs 
 		max_size = c(Inf, Inf, 120), # maxixmum sizes of gene sets for consideration
 		
-		gset_nms = c("go_sets", "kegg_sets"), 
+		gset_nms = c("go_sets", "c2_msig"), 
 		filter_prots = exprs(prot_n_pep >= 2), 
 	)
 	

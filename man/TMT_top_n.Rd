@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{TMT_top_n}
 \alias{TMT_top_n}
-\title{Calculate top.3}
+\title{Average top_n}
 \usage{
 TMT_top_n(x, id, ...)
 }
@@ -15,7 +15,8 @@ TMT_top_n(x, id, ...)
 }
 \description{
 \code{TMT_wt_mean} calculates the weighted mean of \code{log2FC} and
-\code{intensity}.
+\code{intensity}. Note the difference to \link{aggrTopn}, which uses sum
+statistics.
 }
 \examples{
 \donttest{df_num <- TMT_top_n(df, prot_acc, na.rm = TRUE)}

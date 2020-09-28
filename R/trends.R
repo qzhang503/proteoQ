@@ -3,7 +3,7 @@
 #' @inheritParams anal_prnTrend
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr purrr rlang 
+#' @import dplyr purrr  
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
 #' @importFrom cluster clusGap
@@ -119,7 +119,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub, n_clust,
 #' @inheritParams plot_prnTrend
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr rlang purrr ggplot2 RColorBrewer
+#' @import dplyr purrr ggplot2 RColorBrewer
 #' @importFrom tidyr gather
 #' @importFrom e1071 cmeans
 #' @importFrom magrittr %>% %T>% %$% %<>% 
@@ -350,7 +350,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  not provided; \cr \code{x} is disabled with input data being determined
 #'  automatically
 #'@return Fuzzy c-mean classification of \code{log2FC}.
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
 #'@example inst/extdata/examples/prnTrend_.R

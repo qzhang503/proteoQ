@@ -87,8 +87,15 @@ if (!grepl(paste0("^", abbr_sp), temp[1])) {
 # save(list = new_name, file = file.path(db_path, paste0(new_name, ".rda")))
 
 
+# --- craps lookup --- 
+foo_craps <- function () {
+  data(package = "proteoQ", prn_annot_crap)
+  
+  prn_annot_crap <- prn_annot_crap %>% 
+    dplyr::mutate_all(~ ifelse(is.factor(.x), as.character(.x), .x))
 
-
+  save(prn_annot_crap, file = "~/proteoQ/prn_annot_crap.rda", compress = "xz")
+}
 
 
 

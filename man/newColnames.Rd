@@ -4,7 +4,7 @@
 \alias{newColnames}
 \title{Make new column names}
 \usage{
-newColnames(i, x, label_scheme)
+newColnames(i, x, label_scheme, pattern = "[RI][0-9]{3}[NC]{0,1}")
 }
 \arguments{
 \item{i}{Integer; the index of TMT experiment}

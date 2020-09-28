@@ -16,7 +16,7 @@ rowVars <- function (x, na.rm = TRUE) {
 #' @inheritParams info_anal
 #' @inheritParams gn_rollup
 #' @inheritParams prnSig
-#' @import dplyr rlang
+#' @import dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
   if (is.null(cols)) cols <- 1:ncol(df)
@@ -382,7 +382,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
 #' @inheritParams prnSig
-#' @import limma stringr purrr tidyr dplyr rlang
+#' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 sigTest <- function(df, id, label_scheme_sub, 
                     scale_log2r, complete_cases, impute_na, 
@@ -648,7 +648,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
 #'
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, 

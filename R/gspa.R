@@ -5,7 +5,7 @@
 #'
 #'@rdname prnGSPA
 #'
-#'@import purrr rlang dplyr
+#'@import purrr dplyr
 #'@export
 pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean", 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
@@ -175,7 +175,7 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 #'  \cr \cr \code{arrange_}: Variable argument statements for the row ordering
 #'  against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 #'  See also \code{\link{prnHM}} for the format of \code{arrange_} statements.
-#'@import dplyr rlang ggplot2 
+#'@import dplyr ggplot2 
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
 #'@example inst/extdata/examples/prnGSPA_.R
@@ -321,7 +321,7 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 #' @param id Currently only "entrez".
 #' @param label_scheme_sub A data frame. Subset entries from \code{label_scheme}
 #'   for selected samples.
-#' @import limma stringr purrr tidyr dplyr rlang
+#' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
@@ -373,10 +373,11 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     .[. %in% names(fmls)]
   
   fmls <- fmls %>% .[names(.) %in% fml_nms]
-  fml_nms <- fml_nms %>% .[map_dbl(., ~ which(.x == names(fmls)))]
+  fml_nms <- fml_nms %>% .[purrr::map_dbl(., ~ which(.x == names(fmls)))]
 
   if (purrr::is_empty(fml_nms)) {
-    stop("No formula matached; compare the formula name(s) with those in `prnSig(..)`")
+    stop("No formula matached; compare the formula name(s) with those in `prnSig(..)`", 
+         ccall. = FALSE)
   }
 
   col_ind <- purrr::map(fml_nms, ~ grepl(.x, names(df))) %>%
@@ -449,7 +450,7 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 #' @inheritParams prnGSPA
 #' @inheritParams gspaTest
 #' @inheritParams gsVolcano
-#' @import purrr dplyr rlang
+#' @import purrr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gslogFC_cutoff, 
                       min_size, max_size, min_delta, min_greedy_size, method, 
@@ -478,7 +479,8 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
   if (complete_cases) {
     df <- df[complete.cases(df), ]
     if (!purrr::is_empty(names(df))) 
-      message("Complete cases against columns: ", purrr::reduce(names(df), paste, sep = ", "))
+      message("Complete cases against columns: ", 
+              purrr::reduce(names(df), paste, sep = ", "))
   }
   
   df <- df %>% 
@@ -801,7 +803,7 @@ lm_gspa <- function(df, min_delta, gspval_cutoff, gslogFC_cutoff) {
 #' @inheritParams prnGSPA
 #' @inheritParams fml_gspa
 #' 
-#' @import purrr dplyr rlang
+#' @import purrr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom readr read_tsv
 prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
@@ -854,7 +856,7 @@ prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff 
 #'
 #' @param sig_sets A data frame containing the gene sets that are significant
 #'   under given criteria.
-#' @import purrr dplyr rlang 
+#' @import purrr dplyr  
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 map_essential <- function (sig_sets) {
   ess_terms <- sig_sets %>% 
@@ -1085,7 +1087,7 @@ gspaHM <- function(scale_log2r, complete_cases, impute_na, df2, filepath, filena
 #' @inheritParams prnHM
 #' @inheritParams gspaMap
 #' @inheritParams fml_gspa
-#' @import purrr dplyr rlang pheatmap 
+#' @import purrr dplyr pheatmap 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r, impute_na, ...) {
   ins <- list.files(path = file.path(filepath, fml_nm), pattern = "_essmap\\.txt$")
@@ -1134,7 +1136,7 @@ byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r, impute_n
 #' @inheritParams prnHist
 #' @inheritParams prnHM
 #' @inheritParams fml_gspa
-#' @import purrr dplyr rlang pheatmap 
+#' @import purrr dplyr pheatmap 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_log2r, impute_na, ...) {
   custom_prefix <- gsub("(.*_{0,1})Protein_GSPA.*", "\\1", ess_in)
@@ -1434,7 +1436,7 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
 #' 
 #' @param sample_ids A character vecotr containing the sample IDs for an ascribing analysis. 
 #' @inheritParams prnEucDist
-#' @import dplyr rlang
+#' @import dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 gspa_colAnnot <- function (annot_cols = NULL, df, sample_ids, annot_colnames = NULL) {
   if (is.null(annot_cols)) return(NA)

@@ -11,7 +11,7 @@
 #'   Sapiens"} is the corresponding species name in ClueGO.
 #' @param n_clust Numeric vector; the cluster ID(s) corresponding to
 #'  \code{\link{anal_prnTrend}} for visualization. 
-#' @import rlang dplyr purrr 
+#' @import dplyr purrr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
 #' 

@@ -10,6 +10,8 @@ prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Jo
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	v.s.
 pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	v.s.
 pep_isunique	Peptide sequence is unique or not.	See also PSM keys.
+pep_literal_unique	Peptide sequence is unique to hit or not.	v.s.
+pep_razor_unique	Peptide sequence is unique to group or not.	v.s.
 pep_res_before	Flanking residue on N-term side of peptide	
 pep_seq	One-letter representation of peptide sequences without variable modifications	See also PSM keys; the key will become `pep_seq_mod` at `normPSM(group_psm_by = pep_seq_mod)`
 pep_seq_mod	`pep_seq` with variable modifications	See also PSM keys; the key will become `pep_seq` at `normPSM(group_psm_by = pep_seq)`
@@ -22,6 +24,9 @@ pep_score	Score of PSM	See also `pep_rank`.
 pep_expect	Expectation value or posterior error probability of PSM	Geometric-mean description from PSMs.
 pep_locprob	The highest probablity from the Mascot site analysis of the variable modification sites	Mascot only. See also `pep_rank`.
 pep_locdiff	pep_locprob – pep_locprob2	v.s.
+pep_tot_int (...)	Total MS1 intenisty of a peptide	LFQ; various descriptive statistics from PSMs
+pep_unique_int (...)	Unique MS1 intenisty of a peptide	v.s.
+pep_razor_int (...)	Razor MS1 intenisty of a peptide	v.s.
 pep_mod_protnt	Logical indicating if a sequence Protein N-terminal modification	"Optional at ""normPSM(group_psm_by = pep_seq_mod, use_lowercase_aa = TRUE)"". See also. `?proteoQ::normPSM`."
 pep_mod_protntac	Logical indicating if a sequence contains Protein N-terminal acetylation	v.s.
 pep_mod_pepnt	Logical indicating if a sequence contains N-terminal modification	v.s.
@@ -47,6 +52,7 @@ kin_attr	The attribute of proteins being kinases
 kin_class	"The classes of kinases, e.g., TK, TKL..."	
 kin_order	"The order of ""kin_class"" from the kinase tree diagram"	
 is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic peptide	
+...	Additional column keys	
 count_nna	Count of non-NA log2FC	`Reference` and `Empty` samples excluded.
 I... (...)	Reporter-ion intensity; I000 for LFQ	Calculated from the descriptive statistics by `method_psm_pep` in `PSM2Pep()` for indicated samples.
 N_I... (...)	Normalized I... (...); N_I000 for LFQ	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity.

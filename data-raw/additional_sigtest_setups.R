@@ -1,6 +1,6 @@
 #' Perform significance tests
 #' 
-#' @import limma stringr purrr tidyr dplyr rlang
+#' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %$% 
 #' @importFrom broom.mixed tidy
 sigTest_v1 <- function(df, id, label_scheme_sub, filepath, filename, complete_cases, method, ...) {
@@ -562,7 +562,7 @@ sigTest_v1 <- function(df, id, label_scheme_sub, filepath, filename, complete_ca
 
 #' Perform significance tests
 #' 
-#' @import limma stringr purrr tidyr dplyr rlang
+#' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %$% 
 #' @importFrom broom.mixed tidy
 sigTest_master_col <- function(df, id, master_col, label_scheme_sub, filepath, filename, complete_cases, method, ...) {
@@ -1112,7 +1112,7 @@ sigTest_master_col <- function(df, id, master_col, label_scheme_sub, filepath, f
 #' 	
 #' \dontrun{
 #' }
-#' @import dplyr rlang ggplot2
+#' @import dplyr ggplot2
 #' @importFrom magrittr %>%
 proteoSigtest_master_col <- function (df = NULL, id = gene, scale_log2r = FALSE, filepath = NULL, filename = NULL, 
 											impute_na = TRUE, complete_cases = FALSE, method = "limma", master_col = "log2Ratio", ...) {
@@ -1132,7 +1132,7 @@ proteoSigtest_master_col <- function (df = NULL, id = gene, scale_log2r = FALSE,
 
 #' Perform significance tests
 #' 
-#' @import limma stringr purrr tidyr dplyr rlang
+#' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %$% 
 #' @importFrom broom.mixed tidy
 sigTest_v2 <- function(df, id, master_col, label_scheme_sub, filepath, filename, complete_cases, method, ...) {

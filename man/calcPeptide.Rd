@@ -26,11 +26,13 @@ the same \code{pep_seq_mod} groups.}
 
 \item{method_psm_pep}{Character string; the method to summarize the
 \code{log2FC} and the \code{intensity} of \code{PSMs} by peptide entries.
-The descriptive statistics includes \code{c("mean", "median", "top.3",
-"weighted.mean")} with \code{median} being the default. The
-\code{log10-intensity} of reporter (or LFQ) ions at the \code{PSMs} levels
-will be the weight when summarizing \code{log2FC} with \code{"top.3"} or
-\code{"weighted.mean"}.}
+The descriptive statistics includes \code{c("mean", "median",
+"weighted_mean", "top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum",
+"lfq_all")} with \code{median} being the default for TMT and
+\code{lfq_top_2_sum} for LFQ. The \code{log10-intensity} of reporter (or
+LFQ) ions at the \code{PSMs} levels will be the weight when summarizing
+\code{log2FC} with various \code{"top_n"} statistics or
+\code{"weighted_mean"}.}
 
 \item{group_pep_by}{A character string specifying the method in peptide
 grouping. At the \code{prot_acc} default, descriptive statistics will be

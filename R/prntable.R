@@ -99,7 +99,7 @@
 #'@return The primary output is in \code{.../Protein/Protein.txt}.
 #'
 #'@example inst/extdata/examples/normPrn_.R
-#'@import stringr dplyr tidyr purrr rlang
+#'@import stringr dplyr tidyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@importFrom plyr ddply
 #'@export

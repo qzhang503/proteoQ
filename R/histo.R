@@ -3,7 +3,7 @@
 #' @inheritParams prnHist
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import dplyr purrr rlang ggplot2 RColorBrewer
+#' @import dplyr purrr ggplot2 RColorBrewer
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom tidyr gather
 plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r, complete_cases, 
@@ -376,7 +376,7 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
 #'  
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'
 #'@example inst/extdata/examples/prnHist_.R

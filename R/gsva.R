@@ -87,7 +87,7 @@
 #'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
 #'
-#'@import dplyr rlang ggplot2
+#'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"), 
@@ -164,7 +164,7 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
 #' @inheritParams prnGSVA
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
-#' @import limma stringr purrr tidyr dplyr rlang
+#' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
                      filepath = NULL, filename = NULL, 

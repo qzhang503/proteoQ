@@ -6,8 +6,14 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
-  github_document:
+  html_document:
+    fig_caption: yes
+    highlight: haddock
+    keep_md: yes
+    theme: united
     toc: yes
+    toc_depth: 4
+    toc_float: yes
   pdf_document:
     toc: yes
     number_sections: true
@@ -17,14 +23,8 @@ output:
     toc: yes
     toc_depth: 4
     variant: gfm
-  html_document:
-    fig_caption: yes
-    highlight: haddock
-    keep_md: yes
-    theme: united
+  github_document:
     toc: yes
-    toc_depth: 4
-    toc_float: yes
   html_vignette: 
   vignette: >
     %\VignetteIndexEntry{proteoQ}
@@ -688,9 +688,9 @@ system.file("extdata", "workflow_tmt_ext.R", package = "proteoQ")
 
 Another place to get help is via `?load_expts`.
 
-#### 1.5.2 LFQ (MaxQuant)
+#### 1.5.2 LFQ (MaxQuant, MSFragger)
 ```{r workflow_scripts_lfq, include = TRUE, eval = FALSE}
-system.file("extdata", "workflow_mq_lfq.R", package = "proteoQ")
+system.file("extdata", "workflow_lfq_base.R", package = "proteoQ")
 ```
 
 Additional notes available in <strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>.  

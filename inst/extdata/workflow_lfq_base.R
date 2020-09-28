@@ -20,7 +20,15 @@ copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 # (some columns in msms.txt omitted)
 dat_dir <- "~/proteoQ/examples"
 dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-copy_global_maxquant_lfq(dat_dir)
+
+choose_one <- TRUE
+if (choose_one) {
+  ## MaxQuant
+  copy_global_maxquant_lfq(dat_dir)
+  
+  ## MSFragger
+  copy_global_msfragger_lfq(dat_dir)
+}
 
 # metadata
 copy_global_exptsmry_lfq(dat_dir)
@@ -54,7 +62,7 @@ PSM2Pep()
 # peptide data merging
 mergePep()
 
-# peptide histograms (median-centered)
+# peptide histograms (median-centered, may capture spikes)
 pepHist(
   scale_log2r = TRUE,
   cut_points = seq(6, 10, 1),
@@ -225,9 +233,9 @@ prnHM(
 	fontsize_row = 2, 
 	cellheight = 2, 
 	cellwidth = 14, 
-	filter_kin = exprs(kin_attr),
+	filter_kin = exprs(kin_attr, species == "human"),
 	arrange_kin = exprs(kin_order, gene),
-	filename = kin.png, 
+	filename = hukin.png, 
 )
 
 ### trend

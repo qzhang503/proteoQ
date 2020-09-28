@@ -13,7 +13,7 @@ normPSM(
   frac_smry = "frac_smry.xlsx",
   fasta = NULL,
   entrez = NULL,
-  pep_unique_by = c("group", "protein"),
+  pep_unique_by = c("group", "protein", "none"),
   corrected_int = TRUE,
   rm_reverses = TRUE,
   rptr_intco = 0,
@@ -77,10 +77,14 @@ for preparing custom entrez files.}
 
 \item{pep_unique_by}{A character string for annotating the uniqueness of
 peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
-uniqueness of peptides is by protein groups. At a more stringent criterion of
-\code{protein}, the uniqueness of peptides is by protein entries. A new
+uniqueness of peptides is by groups with the collapses of same-set or
+sub-set proteins. At a more stringent criterion of \code{protein}, the
+uniqueness of peptides is by protein entries without grouping. On the other
+extreme of choice \code{none}, all peptides are treated as unique. A new
 column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
-be added to the PSM reports.}
+be added to the PSM reports. Note that the choice of \code{none} is only for
+convenience, as the same can be achieved by setting \code{use_unique_pep =
+FALSE} in \link{Pep2Prn}.}
 
 \item{corrected_int}{A logical argument for uses with \code{MaxQuant} data. At
 the TRUE default, values under columns "Reporter intensity corrected..." in

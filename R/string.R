@@ -2,7 +2,7 @@
 #'
 #'@inheritParams info_anal
 #'@inheritParams anal_prnString
-#'@import rlang dplyr purrr 
+#'@import dplyr purrr 
 #'@importFrom magrittr %>% %T>% %$% %<>%
 annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, filename = NULL, ...) {
   dat_dir <- get_gl_dat_dir()
@@ -93,7 +93,7 @@ annot_stringdb <- function(df, db_nms, id, score_cutoff, filepath = NULL, filena
 #' @inheritParams gspaTest
 #' @inheritParams prnCorr_logFC
 #' @inheritParams anal_prnString
-#' @import dplyr purrr rlang fs
+#' @import dplyr purrr fs
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 stringTest <- function(df = NULL, id = gene, 
                        label_scheme_sub = NULL, 
@@ -157,7 +157,7 @@ stringTest <- function(df = NULL, id = gene,
 #'  the format of \code{arrange_} statements.
 #'@example inst/extdata/examples/prnString_.R
 #'@seealso \code{\link{prepString}} for database downloads and preparation. \cr
-#'@import dplyr purrr rlang fs
+#'@import dplyr purrr fs
 #'@export
 anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                             db_nms = NULL, score_cutoff = .7, 
@@ -242,7 +242,7 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
 #'  info_url = "https://stringdb-static.org/download/protein.info.v11.0/7227.protein.info.v11.0.txt.gz", 
 #'  filename = string_dm.rds,
 #')
-#'@import rlang dplyr purrr fs
+#'@import dplyr purrr fs
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@seealso \code{\link{anal_prnString}} for protein-protein interaction
 #'  networks.
@@ -425,7 +425,7 @@ prepString <- function(species = "human", # abbr_species = NULL,
 #' }
 #'
 #'@inheritParams anal_prnString
-#'@import rlang dplyr purrr fs
+#'@import dplyr purrr fs
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@seealso \code{\link{load_dbs}} for loading databases of \code{GO} and
 #'  \code{MSig}.

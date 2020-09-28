@@ -11,7 +11,6 @@ annotPSM_sm(
   mc_psm_by = "peptide",
   fasta = NULL,
   expt_smry = "expt_smry.xlsx",
-  rm_krts = FALSE,
   plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE,
   ...
@@ -49,9 +48,6 @@ correct file path(s) and name(s).}
 
 \item{expt_smry}{A character string to a \code{.xlsx} file containing the
 metadata of TMT or LFQ experiments. The default is \code{expt_smry.xlsx}.}
-
-\item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
-is FALSE.}
 
 \item{plot_rptr_int}{Logical; if TRUE, the distributions of reporter-ion
 intensities will be plotted. The default is TRUE. The argument is also

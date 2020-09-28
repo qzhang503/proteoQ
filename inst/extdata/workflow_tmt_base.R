@@ -282,7 +282,7 @@ prnHM(
 	fontsize_row = 2, 
 	cellheight = 2, 
 	cellwidth = 14, 
-	filter_kin = exprs(kin_attr),
+	filter_kin = exprs(kin_attr, species == "human"),
 	arrange_kin = exprs(kin_order, gene),
 	filename = hukin.png, 
 )
