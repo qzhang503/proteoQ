@@ -62,7 +62,7 @@ PSM2Pep()
 # peptide data merging
 mergePep()
 
-# peptide histograms (median-centered, may capture spikes)
+# peptide histograms (median-centered)
 pepHist(
   scale_log2r = TRUE,
   cut_points = seq(6, 10, 1),

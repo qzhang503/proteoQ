@@ -452,15 +452,11 @@ calc_lfq_log2r <- function (df, type, refChannels) {
 #' @param pattern The pattern of intensity fields.
 na_single_lfq <- function (df, pattern = "^I000 ") {
   df_lfq <- df[, grep(pattern, names(df))]
-  counts <- rowSums(df_lfq > 0, na.rm = TRUE)
+  not_single_zero <- (rowSums(df_lfq > 0, na.rm = TRUE) > 1) 
+  not_single_zero[!not_single_zero] <- NA
   
-  for (i in 1:nrow(df_lfq)) {
-    if (counts[i] == 1) df_lfq[i, which(df_lfq[i, ] > 0)] <- NA
-  }
-  
+  df_lfq[] <- purrr::map(df_lfq, `*`, not_single_zero)
   df[, grep(pattern, names(df))] <- df_lfq
-  
-  
   
   invisible(df)
 }
@@ -477,7 +473,9 @@ calc_lfq_pepnums <- function (df, omit_single_lfq) {
   load(file.path(dat_dir, "label_scheme.rda"))
   
   if (omit_single_lfq) {
-    df <- df %>% na_single_lfq("^I000 ")
+    df <- df %>% 
+      na_single_lfq("^I000 ") %>% 
+      na_single_lfq("^N_I000 ")
   }
   
   refChannels <- label_scheme %>% 
@@ -486,6 +484,7 @@ calc_lfq_pepnums <- function (df, omit_single_lfq) {
     unlist()
   
   df <- df %>% 
+    dplyr::mutate_if(is.numeric, ~ replace(.x, is.nan(.x), NA_real_)) %>% 
     calc_lfq_log2r("I000", refChannels) %>% 
     calc_lfq_log2r("N_I000", refChannels) %>% 
     dplyr::mutate_at(.vars = grep("log2_R000\\s", names(.)), 

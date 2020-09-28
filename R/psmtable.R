@@ -2344,17 +2344,24 @@ rm_cols_mqpsm <- function(df, group_psm_by, set_idx) {
 #' @inheritParams annotPSM
 #' @inheritParams channelInfo
 #' @inheritParams locate_outliers
+#' @inheritParams TMT_levels
 calcPeptide <- function(df, group_psm_by, method_psm_pep, 
-                       group_pep_by, dat_dir, set_idx, injn_idx) {
+                       group_pep_by, dat_dir, set_idx, injn_idx, TMT_plex) {
   stopifnot("prot_acc" %in% names(df))
 
   channelInfo <- channelInfo(dat_dir = dat_dir, set_idx = set_idx, injn_idx = injn_idx)
   
-  df <- df[rowSums(!is.na(df[, grepl("^N_log2_R[0-9]{3}", names(df)), drop = FALSE])) > 0, ] %>%
+  if (TMT_plex > 0) {
+    df <- df[rowSums(!is.na(df[, grepl("^N_log2_R[0-9]{3}", names(df)), drop = FALSE])) > 0, ]
+  } 
+  
+  df <- df %>%
     dplyr::arrange(!!rlang::sym(group_psm_by), prot_acc) %>%
     dplyr::select(-grep("^R[0-9]{3}", names(.)))
   
   # --- Mascot ---
+  is_mascot <- if ("pep_var_mod" %in% names(df)) TRUE else FALSE
+  
   df <- df %>% 
     dplyr::select(-which(names(.) %in% c(
       "prot_hit_num", "prot_family_member", "prot_score", 
@@ -2371,6 +2378,8 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
   }
   
   # --- MaxQuant ---
+  is_mq <- if (any(c("Scan number", "Scan Number") %in% names(df))) TRUE else FALSE
+  
   df <- local({
     col_start <- which(names(df) == "Scan number")
     col_end <- which(names(df) == "Retention time")
@@ -2416,6 +2425,8 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
     dplyr::select(-grep("^Reporter mass deviation ", names(.)))
   
   # --- Spectrum Mill ---
+  is_sm <- if ("matched_parent_mass" %in% names(df)) TRUE else FALSE
+  
   df <- df %>% 
     dplyr::select(-which(names(.) %in% c(
       "number", "modifications", 
@@ -2430,11 +2441,6 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
   # --- MSFragger ---
   is_mf <- if ("Number of Enzymatic Termini" %in% names(df)) TRUE else FALSE
   
-  if (is_mf) {
-    message("`sd_log2R`, `log2_R000` and `N_log2_R000` are merely placeholders ", 
-            "at the levels of individual peptide tables.")
-  }
-  
   df <- df %>% 
     dplyr::select(-which(names(.) %in% c(
       "Spectrum", "Spectrum File", "Ion Mobility", "raw_file", "Peptide Length", 
@@ -2444,6 +2450,7 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
       "Number of Enzymatic Termini", 
       "Ion Mobility", "Assigned Modifications", "Observed Modifications", 
       "Entry Name", "Protein Description")))
+  
   
   # summarizes log2FC and intensity from the same `set_idx` at one or multiple LCMS series
   df_num <- switch(method_psm_pep, 
@@ -2456,6 +2463,10 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
                    lfq_top_3_sum = aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 3, na.rm = TRUE), 
                    lfq_all = aggrTopn(sum)(df, !!rlang::sym(group_psm_by), Inf, na.rm = TRUE), 
                    aggrNums(median)(df, !!rlang::sym(group_psm_by), na.rm = TRUE))
+  
+  if (TMT_plex == 0) {
+    df_num <- df_num %>% dplyr::mutate(log2_R000 = NA, N_log2_R000 = NA)
+  }
   
   df_first <- df %>% 
     dplyr::select(-which(names(.) %in% c("pep_tot_int", "pep_unique_int", "pep_razor_int"))) %>% 
@@ -2485,7 +2496,7 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
   } else {
     # df <- df %>% dplyr::mutate(pep_tot_int = NA, pep_unique_int = NA, pep_razor_int = NA)
   }
-
+  
   if (group_psm_by == "pep_seq_mod") {
     df <- df %>% dplyr::select(-pep_seq)
   } else {
@@ -2498,22 +2509,22 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
     dplyr::mutate_at(.vars = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)),
                      list(~ replace(.x, is.infinite(.x), NA)))
   
-  df <- local({
-    col_r <- grepl("^log2_R[0-9]{3}", names(df))
-    cf <- apply(df[, col_r, drop = FALSE], 2, median, na.rm = TRUE)
-    
-    df <- cbind(df[, -grep("^N_log2_R[0-9]{3}", names(df))],
-                sweep(df[, col_r, drop = FALSE], 2, cf, "-") %>%
-                  `colnames<-`(paste("N", colnames(.), sep="_")))
-    
-    col_int <- grepl("^I[0-9]{3}", names(df))
-    df  <- cbind(df[, -grep("^N_I[0-9]{3}", names(df))],
-                 sweep(df[, col_int, drop = FALSE], 2, 2^cf, "/") %>%
-                   `colnames<-`(paste("N", colnames(.), sep = "_")))
-    
-    return(df)
-  })
-  
+  if (TMT_plex > 0) {
+    df <- local({
+      col_r <- grepl("^log2_R[0-9]{3}", names(df))
+      cf <- apply(df[, col_r, drop = FALSE], 2, median, na.rm = TRUE)
+      
+      df <- cbind(df[, -grep("^N_log2_R[0-9]{3}", names(df))],
+                  sweep(df[, col_r, drop = FALSE], 2, cf, "-") %>%
+                    `colnames<-`(paste("N", colnames(.), sep="_")))
+      
+      col_int <- grepl("^I[0-9]{3}", names(df))
+      cbind(df[, -grep("^N_I[0-9]{3}", names(df))],
+                   sweep(df[, col_int, drop = FALSE], 2, 2^cf, "/") %>%
+                     `colnames<-`(paste("N", colnames(.), sep = "_")))
+    })
+  }
+
   df <- df %>% 
     dplyr::mutate(!!group_pep_by := as.character(!!rlang::sym(group_pep_by)))
   
@@ -2562,7 +2573,8 @@ psm_to_pep <- function (file, dat_dir, label_scheme_full,
     df <- rm_cols_mqpsm(df, group_psm_by, set_idx)
   } else {
     df <- df %>% 
-      calcPeptide(group_psm_by, method_psm_pep, group_pep_by, dat_dir, set_idx, injn_idx)
+        calcPeptide(group_psm_by, method_psm_pep, group_pep_by, dat_dir, 
+                    set_idx, injn_idx, TMT_plex)
   }
   
   df <- dplyr::bind_cols(
@@ -5139,7 +5151,7 @@ annotPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         })
       } else {
         df <- df %>% 
-          dplyr::mutate(N_I000 = I000, log2_R000 = log2(R000), N_log2_R000 = log2_R000)
+          dplyr::mutate(N_I000 = I000, R000 = NA, log2_R000 = NA, N_log2_R000 = NA)
       }
       
       df <- df %>% 
@@ -5184,7 +5196,7 @@ annotPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       ) %>% 
         reloc_col_before("pep_seq", "pep_res_after") %>% 
         reloc_col_after("pep_seq_mod", "pep_seq") 
-      
+
       df <- dplyr::bind_cols(
         df %>% dplyr::select(-grep("[RI]{1}[0-9]{3}[NC]{0,1}", names(.))), 
         df %>% dplyr::select(grep("^I[0-9]{3}[NC]{0,1}", names(.))), 

@@ -91,8 +91,10 @@ if (!grepl(paste0("^", abbr_sp), temp[1])) {
 foo_craps <- function () {
   data(package = "proteoQ", prn_annot_crap)
   
-  prn_annot_crap <- prn_annot_crap %>% 
-    dplyr::mutate_all(~ ifelse(is.factor(.x), as.character(.x), .x))
+  prn_annot_crap[] <- prn_annot_crap %>% 
+    purrr::map(~ {
+      if (is.factor(.x)) as.character(.x) else (.x)
+    })
 
   save(prn_annot_crap, file = "~/proteoQ/prn_annot_crap.rda", compress = "xz")
 }
