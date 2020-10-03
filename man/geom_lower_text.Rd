@@ -24,7 +24,7 @@ etc. At \code{type = obs}, argument \code{scale} becomes
 \code{scale_features} and \code{center} matches \code{center_features}. At
 \code{type = feats}, the setting of \code{scale_log2r} will be applied for
 data scaling and data centering be automated by
-\code{\link[proteoQ]{stanPep}} or \code{\link[proteoQ]{stanPrn}}. \cr \cr
+\code{\link{standPep}} or \code{\link{standPrn}}. \cr \cr
 Additional arguments for \code{ggsave}: \cr \code{width}, the width of plot;
 \cr \code{height}, the height of plot \cr \code{...}}
 }

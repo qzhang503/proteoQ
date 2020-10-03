@@ -178,7 +178,7 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
   dat_dir <- get_gl_dat_dir()
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
-  
+
   filelist <- list.files(path = file.path(dat_dir), pattern = "^peptides.*\\.txt$")
   
   if (purrr::is_empty(filelist)) {
@@ -188,10 +188,55 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
          call. = FALSE)
   }
   
-  df <- read.csv(file.path(dat_dir, filelist), check.names = FALSE, 
-                 header = TRUE, sep = "\t", comment.char = "#") %>% 
-    dplyr::filter(not_allzero_rows(.[grep("^LFQ intensity ", names(.))])) 
-  
+  df <- local({
+    df <- read.csv(file.path(dat_dir, filelist), check.names = FALSE, 
+                   header = TRUE, sep = "\t", comment.char = "#")
+    
+    df <- local({
+      if (purrr::is_empty(grep("^LFQ intensity |^Intensity ", names(df)))) {
+        nas <- data.frame(rep(NA, nrow(df)))
+        sample_ids <- as.character(label_scheme$Sample_ID)
+        
+        df_int <- purrr::map(sample_ids, ~ {
+          nas %>% `colnames<-`(paste("Intensity", .x))
+        }) %>% 
+          dplyr::bind_cols()
+        
+        df_int2 <- purrr::map(sample_ids, ~ {
+          nas %>% `colnames<-`(paste("LFQ intensity", .x))
+        }) %>% 
+          dplyr::bind_cols()
+        
+        df <- dplyr::bind_cols(df, df_int, df_int2)
+      } else if (purrr::is_empty(grep("^LFQ intensity ", names(df)))) {
+        warning("Columns `LFQ intensity` not found in `", filelist, "`; ", 
+                "columns `Intensity` used instead.",
+                call. = FALSE)
+        
+        df_int <- df %>% 
+          dplyr::select(grep("^Intensity ", names(.))) %>% 
+          `names<-`(gsub("^Intensity ", "LFQ intensity ", names(.)))
+        
+        df <- dplyr::bind_cols(df, df_int)
+      } else if (purrr::is_empty(grep("^Intensity ", names(df)))) {
+        warning("Columns `Intensity` not found in `", filelist, "`; ", 
+                "columns `LFQ intensity` used instead.",
+                call. = FALSE)
+        
+        df_int <- df %>% 
+          dplyr::select(grep("^LFQ intensity ", names(.))) %>% 
+          `names<-`(gsub("^LFQ intensity ", "Intensity ", names(.)))
+        
+        df <- dplyr::bind_cols(df, df_int)
+      }
+      
+      invisible(df)
+    })
+    
+    df <- df %>% 
+      dplyr::filter(not_allzero_rows(.[grep("^LFQ intensity ", names(.))])) 
+  })
+
   if (omit_single_lfq) {
     df <- df %>% na_single_lfq("^LFQ intensity ")
   }
@@ -309,9 +354,56 @@ pep_mq_lfq2 <- function() {
          call. = FALSE)
   }
   
-  df <- read.csv(file.path(dat_dir, filelist), check.names = FALSE, 
-                 header = TRUE, sep = "\t", comment.char = "#") %>% 
-    dplyr::filter(not_allzero_rows(.[grep("^LFQ intensity ", names(.))])) 
+  # identical codes to those in pep_mq_lfq
+  # since temporary exception handling so no makes of function
+  df <- local({
+    df <- read.csv(file.path(dat_dir, filelist), check.names = FALSE, 
+                   header = TRUE, sep = "\t", comment.char = "#")
+    
+    df <- local({
+      if (purrr::is_empty(grep("^LFQ intensity |^Intensity ", names(df)))) {
+        nas <- data.frame(rep(NA, nrow(df)))
+        sample_ids <- as.character(label_scheme$Sample_ID)
+        
+        df_int <- purrr::map(sample_ids, ~ {
+          nas %>% `colnames<-`(paste("Intensity", .x))
+        }) %>% 
+          dplyr::bind_cols()
+        
+        df_int2 <- purrr::map(sample_ids, ~ {
+          nas %>% `colnames<-`(paste("LFQ intensity", .x))
+        }) %>% 
+          dplyr::bind_cols()
+        
+        df <- dplyr::bind_cols(df, df_int, df_int2)
+      } else if (purrr::is_empty(grep("^LFQ intensity ", names(df)))) {
+        warning("Columns `LFQ intensity` not found in `", filelist, "`; ", 
+                "columns `Intensity` used instead.",
+                call. = FALSE)
+        
+        df_int <- df %>% 
+          dplyr::select(grep("^Intensity ", names(.))) %>% 
+          `names<-`(gsub("^Intensity ", "LFQ intensity ", names(.)))
+        
+        df <- dplyr::bind_cols(df, df_int)
+      } else if (purrr::is_empty(grep("^Intensity ", names(df)))) {
+        warning("Columns `Intensity` not found in `", filelist, "`; ", 
+                "columns `LFQ intensity` used instead.",
+                call. = FALSE)
+        
+        df_int <- df %>% 
+          dplyr::select(grep("^LFQ intensity ", names(.))) %>% 
+          `names<-`(gsub("^LFQ intensity ", "Intensity ", names(.)))
+        
+        df <- dplyr::bind_cols(df, df_int)
+      }
+      
+      invisible(df)
+    })
+    
+    df <- df %>% 
+      dplyr::filter(not_allzero_rows(.[grep("^LFQ intensity ", names(.))])) 
+  })
   
   stopifnot("Proteins" %in% names(df), 
             "Sequence" %in% names(df), 
@@ -1599,12 +1691,9 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_
   
   if (group_pep_by == "gene") {
     gn_rollup <- TRUE
-    group_pep_by <- "prot_acc"
   } else {
     gn_rollup <- FALSE
   }
-  
-  stopifnot(group_pep_by == "prot_acc") 
   
   message("Primary column keys in `Peptide/Peptide.txt` ", 
           "for `filter_` varargs.")
@@ -1614,7 +1703,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
   
-  df <- pep_to_prn(!!group_pep_by, 
+  df <- pep_to_prn(prot_acc, 
                    method_pep_prn, 
                    use_unique_pep, 
                    gn_rollup, 
@@ -1682,6 +1771,16 @@ map_peps_prots <- function (df, group_psm_by = "pep_seq", group_pep_by = "prot_a
     x <- x %>% 
       dplyr::mutate(pri_col = NA) %>% 
       dplyr::select(pri_col, sec_col)
+    
+    run_scripts <- FALSE
+    if (run_scripts) {
+      load(file.path(dat_dir, "acc_lookup.rda"))
+      x <- x %>% 
+        dplyr::left_join(acc_lookup[, c("prot_acc", "fasta_name")], 
+                         by = c("sec_col" = "prot_acc")) %>% 
+        dplyr::select(-sec_col) %>% 
+        dplyr::rename(sec_col = fasta_name)      
+    }
   }
   
   stopifnot(nrow(x) == nrow(df))
@@ -1735,7 +1834,7 @@ find_prot_family_rows <- function (df, group_psm_by, group_pep_by) {
 #'   entries will be used at \eqn{n = Inf}.
 #' @inheritParams normPSM
 calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, 
-                              group_pep_by, method_pep_prn, type = "mf") {
+                              method_pep_prn, type = "mf") {
   my_sum_n <- function (x, n = 3, ...) {
     if (n < 1) stop("`n` need to be a positive integer.", call. = FALSE)
     if (is.infinite(n)) n <- length(x)
@@ -1744,6 +1843,14 @@ calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by,
   
   
   load(file.path(dat_dir, "label_scheme.rda"))
+
+  if (type == "mf") {
+    group_pep_by <- "fasta_name"
+  } else if (type == "mq") {
+    group_pep_by <- "prot_acc"
+  } else {
+    group_pep_by <- "fasta_name"
+  }
   
   refChannels <- label_scheme %>% 
     dplyr::filter(Reference) %>% 
@@ -1918,8 +2025,10 @@ calc_tmt_prnnums <- function (df, use_unique_pep, id = "prot_acc", method_pep_pr
 pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
+  TMT_plex <- TMT_plex(label_scheme)
   
-  # `id` is always "prot_acc"; `group_pep_by` could be "gene"
+  # `id` is always "prot_acc"; 
+  # `group_pep_by` could be "gene"
   id <- rlang::as_string(rlang::enexpr(id))
   
   filter_dots <- rlang::enexprs(...) %>% 
@@ -1944,7 +2053,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
-  
+
   df <- local({
     df_shared <- df %>% 
       dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by), 
@@ -1974,20 +2083,37 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
       ins_cols_after(which(names(.) == "prot_n_pep"), which(names(.) == "prot_n_uniqpep"))
   })
   
-  # temporarily for special handling MaxQuant
   if ("Mapped Proteins" %in% names(df)) {
-    type = "mf"
+    type <- "mf"
   } else if ("Proteins" %in% names(df)) {
-    type = "mq"
+    type <- "mq"
+  } else {
+    type <- "other"
   }
   
   if (grepl("^lfq_", method_pep_prn)) {
-    df_num <- calc_lfq_prnnums(df, use_unique_pep, group_psm_by, 
-                               "fasta_name", method_pep_prn, type) %>% 
-      dplyr::left_join(df[, c("fasta_name", id)] %>% 
-                         dplyr::filter(!duplicated(!!rlang::sym(id))),
-                       by = "fasta_name") %>% 
-      dplyr::select(-fasta_name) %>% 
+    if (type == "other") {
+      stop("`method_pep_prn = lfq_[...]` only for MaxQuant or MSFragger.", 
+           call. = FALSE)
+    }
+    
+    if (TMT_plex > 0) {
+      stop("`method_pep_prn = lfq_[...]` only for LFQ.", 
+           call. = FALSE)
+    }
+    
+    df_num <- calc_lfq_prnnums(df, use_unique_pep, group_psm_by, method_pep_prn, type) 
+    
+    # MaxQuant used prot_acc; MSFragger used fasta_name
+    if (type == "mf") {
+      df_num <- df_num %>% 
+        dplyr::left_join(df[, c("fasta_name", id)] %>% 
+                           dplyr::filter(!duplicated(!!rlang::sym(id))),
+                         by = "fasta_name") %>% 
+        dplyr::select(-fasta_name) 
+    }
+
+    df_num <- df_num %>% 
       dplyr::filter(!is.na(!!rlang::sym(id)))
   } else {
     df_num <- calc_tmt_prnnums(df, use_unique_pep, id, method_pep_prn)

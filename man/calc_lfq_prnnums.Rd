@@ -5,14 +5,7 @@
 \title{Calculates the \code{total}, \code{razor} and \code{unique} intensities of
 proteins}
 \usage{
-calc_lfq_prnnums(
-  df,
-  use_unique_pep,
-  group_psm_by,
-  group_pep_by,
-  method_pep_prn,
-  type = "mf"
-)
+calc_lfq_prnnums(df, use_unique_pep, group_psm_by, method_pep_prn, type = "mf")
 }
 \arguments{
 \item{df}{A data frame.}
@@ -23,12 +16,6 @@ based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
 alternative, peptides with different variable modifications will be treated
 as different species and descriptive statistics will be calculated based on
 the same \code{pep_seq_mod} groups.}
-
-\item{group_pep_by}{A character string specifying the method in peptide
-grouping. At the \code{prot_acc} default, descriptive statistics will be
-calculated based on the same \code{prot_acc} groups. At the \code{gene}
-alternative, proteins with the same gene name but different accession
-numbers will be treated as one group.}
 
 \item{n}{Numeric; the top \code{n} entries to be used. The default is 3. All
 entries will be used at \eqn{n = Inf}.}
