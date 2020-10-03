@@ -571,8 +571,8 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'@param complete_cases Logical; always TRUE for PCA.
 #'@param center_features Logical; if TRUE, adjusts log2FC to center zero by
 #'  features (proteins or peptides). The default is TRUE. Note the difference to
-#'  data alignment with \code{method_align} in \code{\link[proteoQ]{standPrn}}
-#'  or \code{\link[proteoQ]{standPep}} where log2FC are aligned by observations
+#'  data alignment with \code{method_align} in \code{\link{standPrn}}
+#'  or \code{\link{standPep}} where log2FC are aligned by observations
 #'  (samples).
 #'@param scale_features Logical; if TRUE, adjusts log2FC to the same scale of
 #'  variance by features (protein or peptide entries). The default is TRUE. Note
@@ -595,7 +595,7 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'  \code{scale_features} and \code{center} matches \code{center_features}. At
 #'  \code{type = feats}, the setting of \code{scale_log2r} will be applied for
 #'  data scaling and data centering be automated by
-#'  \code{\link[proteoQ]{stanPep}} or \code{\link[proteoQ]{stanPrn}}. \cr \cr
+#'  \code{\link{standPep}} or \code{\link{standPrn}}. \cr \cr
 #'  Additional arguments for \code{ggsave}: \cr \code{width}, the width of plot;
 #'  \cr \code{height}, the height of plot \cr \code{...}
 #'  

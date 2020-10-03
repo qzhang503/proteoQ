@@ -50,9 +50,10 @@ or LFQ (MaxQuant) experiments
  entries. Samples with the same indexes of \code{TMT_Channel} and
  \code{TMT_Set} but different indexes of \code{LCMS_Injection} should have
  the same value in \code{Sample_ID}. No white space or special characters are
- allowed. See also posts at
- \link{https://proteoq.netlify.app/post/sample-exlusion-from-metadata/}.
-
+ allowed. See also posts for
+ \href{https://proteoq.netlify.app/post/sample-exlusion-from-metadata}{sample
+ exclusion}.
+ 
  \code{RAW_File}: for analysis with off-line fractionation of peptides before
  LC/MS, values under the \code{RAW_File} column should be left void. Instead,
  the correspondence between the fraction numbers and \code{RAW_File} names

@@ -51,8 +51,8 @@ of standard deviation across all samples. The default is TRUE.}
 
 \item{center_features}{Logical; if TRUE, adjusts log2FC to center zero by
 features (proteins or peptides). The default is TRUE. Note the difference to
-data alignment with \code{method_align} in \code{\link[proteoQ]{standPrn}}
-or \code{\link[proteoQ]{standPep}} where log2FC are aligned by observations
+data alignment with \code{method_align} in \code{\link{standPrn}}
+or \code{\link{standPep}} where log2FC are aligned by observations
 (samples).}
 
 \item{scale_features}{Logical; if TRUE, adjusts log2FC to the same scale of
