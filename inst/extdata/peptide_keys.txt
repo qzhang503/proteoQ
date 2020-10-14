@@ -5,7 +5,8 @@ prot_mass	Protein mass
 prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	Mascot only. See also PSM keys.
 prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Mascot only. See also PSM keys.
 prot_len	The number of amino acid residues under a proposed protein	
-prot_cover	Protein sequence coverage	See also PSM keys.
+prot_icover	Protein sequence coverage by tryptic peptides	See also PSM keys.
+prot_cover	Protein sequence coverage	v.s.
 prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Joint results from individual PSM tables; the counts exclude entries that are void in reporter-ion intensity or filtered by users.
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	v.s.
 pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	v.s.
@@ -53,7 +54,8 @@ kin_class	"The classes of kinases, e.g., TK, TKL..."
 kin_order	"The order of ""kin_class"" from the kinase tree diagram"	
 is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic peptide	
 ...	Additional column keys	
-count_nna	Count of non-NA log2FC	`Reference` and `Empty` samples excluded.
+mean_lint	Mean log10 intensity (N_I...) across samples	`Reference` and `Empty` samples excluded.
+count_nna	Count of non-NA log2FC	v.s.
 I... (...)	Reporter-ion intensity; I000 for LFQ	Calculated from the descriptive statistics by `method_psm_pep` in `PSM2Pep()` for indicated samples.
 N_I... (...)	Normalized I... (...); N_I000 for LFQ	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity.
 sd_log2_R... (...)	Standard deviation of protein log2FC; sd_log2_R000 for LFQ 	Calculated from contributing peptides under each sample.

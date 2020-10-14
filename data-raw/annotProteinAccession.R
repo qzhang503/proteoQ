@@ -1,29 +1,3 @@
-# library(proteoQ)
-# library(UniProt.ws)
-library(plyr)
-library(reshape2)
-library(dplyr)
-library(purrr)
-library(stringr)
-# library(magrittr)
-
-#' Prefix form of colnames(x)[c(2, 5, ...)] for use in pipes
-#'
-#' \code{names_pos<-} rename the columns at the indeces of \code{pos}.
-#'
-#' @param x A data frame.
-#' @param pos Numeric.  The index of coloumns for name change.
-#' @param value Characters.  The new column names.
-#' @return The data frame with new names.
-#'
-#' @import dplyr
-#'@rawNamespace import(magrittr, except = c(set_names))
-`names_pos<-` <- function(x, pos, value) {
-  names(x)[pos] <- value
-  x
-}
-
-
 #'Species lookup
 sp_lookup <- function(species) {
   switch(species, 
@@ -230,6 +204,22 @@ map_refseq <- function(species) {
 }
 
 
+foo_spec_lib <- function () {
+  library(magrittr)
+  library(dplyr)
+  
+  dat_dir <- "Z:/Skeath/2017/SKEATH-002/Mass Spectrometry/QE2/QZ"
+  
+  df <- readr::read_tsv(file.path(dat_dir, "lab_contams.txt"))
+  
+  fasta <- proteoQ::read_fasta(file = "Y:/QZHANG/dbs/fasta/uniprot/uniprot_20201007.fasta")
+  names(fasta) <- gsub("^..\\|.*\\|(.*)$", "\\1", names(fasta))
+  
+  lab_contams <- fasta %>% 
+    .[names(.) %in% df$Accession]
+  
+  proteoQ::write_fasta(lab_contams, file.path(dat_dir, "Lab_Contaminants.fasta"))
+}
 
 
 
@@ -291,6 +281,8 @@ foo_subcellular <- function () {
   save(scc, file = file.path(dat_dir, "scc_hs.rda"), compress = "xz")
   # load(file.path(dat_dir, "scc_hs.rda"))
 }
+
+
 
 
 # Prepares MaxQuant modifications 

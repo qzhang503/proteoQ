@@ -1,7 +1,7 @@
 proteoQ
 ================
 truetrue
-2020-09-27
+2020-10-13
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)

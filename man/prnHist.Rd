@@ -9,7 +9,7 @@ pepHist(
   col_select = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
-  cut_points = NULL,
+  cut_points = c(mean_lint = NA),
   show_curves = TRUE,
   show_vline = TRUE,
   scale_y = TRUE,
@@ -24,7 +24,7 @@ prnHist(
   col_select = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
-  cut_points = NULL,
+  cut_points = c(mean_lint = NA),
   show_curves = TRUE,
   show_vline = TRUE,
   scale_y = TRUE,
@@ -49,14 +49,14 @@ of standard deviation across all samples. The default is TRUE.}
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
 
-\item{cut_points}{A numeric vector defines the cut points (knots) in
-histograms. The values of the knots indicate the summarized
-\code{log10(Intentisy)} of ions. For example, at \code{cut_points = seq(4,
-7, .5)}, values of \code{log2FC} will be binned from \eqn{-Inf} to \eqn{Inf}
-according to the cut points at the reporter-ion (or LFQ) intensity of
-\eqn{10^4, 10^4.5, ... 10^7}. The default is \code{cut_points = NULL} where
-the cut points will be at the quantiles of 25%, 50%, 75%. To disable data
-binning, set \code{cut_points} to \code{Inf} or \code{-Inf}. See also
+\item{cut_points}{A named, numeric vector defines the cut points (knots) in
+histograms. The default is \code{cut_points = c(mean_lint = NA)} where the
+cut points correspond to the quantile values under column \code{mean_lint}
+(mean log10 intensity) of input data. Values of \code{log2FC} will be then
+binned from \eqn{-Inf} to \eqn{Inf} according to the cut points. To disable
+data binning, set \code{cut_points = Inf} or \code{-Inf}. The binning of
+\code{log2FC} can also be achieved through a different numeric column, e.g.,
+\code{cut_points = c(prot_icover = seq(.25, .75, .25))}. See also
 \code{\link{mergePep}} for data alignment with binning.}
 
 \item{show_curves}{Logical; if TRUE, shows the fitted curves. At the TRUE
@@ -203,7 +203,13 @@ pepHist(
   filename = lag.png,
 )
 
-## custom theme
+## (5) Data binning by `prot_icover`
+pepHist(
+  cut_points = c(prot_icover = NA),
+  filename = prot_icover_coded.png,
+)
+
+## (6) custom theme
 library(ggplot2)
 my_histo_theme <- theme_bw() + theme(
   axis.text.x  = element_text(angle=0, vjust=0.5, size=18),
@@ -241,7 +247,7 @@ pepHist(
 )
 
 
-## direct uses of ggplot2
+## (7) direct uses of ggplot2
 library(ggplot2)
 res <- pepHist(filename = default.png)
 

@@ -94,7 +94,7 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      df = NULL, filepath = NULL, filename = NULL, 
                      var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
-                     lm_method = "limma", ...) {
+                     lm_method = "limma", padj_method = "BH", ...) {
 
   on.exit(
     if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
@@ -128,6 +128,7 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
 	filepath <- rlang::enexpr(filepath)
 	filename <- rlang::enexpr(filename)
 	lm_method <- rlang::as_string(rlang::enexpr(lm_method))
+	padj_method <- rlang::as_string(rlang::enexpr(padj_method))
 
 	dots <- rlang::enexprs(...)
 	fmls <- dots %>% .[grepl("^\\s*~", .)]
@@ -151,9 +152,21 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
 	# Sample selection criteria:
 	#   !is_reference under "Reference"
 	#   !is_empty & !is.na under the column specified by a formula e.g. ~Term["KO-WT"]
-	info_anal(df = !!df, df2 = NULL, id = !!id, filepath = !!filepath, filename = !!filename, 
-	          scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-	          anal_type = "GSVA")(lm_method, gset_nms, var_cutoff, pval_cutoff, logFC_cutoff, !!!dots)
+	info_anal(df = !!df, 
+	          df2 = NULL, 
+	          id = !!id, 
+	          filepath = !!filepath, 
+	          filename = !!filename, 
+	          scale_log2r = scale_log2r, 
+	          complete_cases = complete_cases, 
+	          impute_na = impute_na, 
+	          anal_type = "GSVA")(lm_method = lm_method, 
+	                              padj_method = padj_method, 
+	                              gset_nms = gset_nms, 
+	                              var_cutoff = var_cutoff, 
+	                              pval_cutoff = pval_cutoff, 
+	                              logFC_cutoff = logFC_cutoff, 
+	                              !!!dots)
 }
 
 
@@ -169,7 +182,7 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
 gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
                      filepath = NULL, filename = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-                     gset_nms = "go_sets", lm_method = "limma", 
+                     gset_nms = "go_sets", lm_method = "limma", padj_method = "BH", 
                      var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 
                      anal_type = "GSVA", ...) {
   dat_dir <- get_gl_dat_dir()
@@ -223,13 +236,14 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     GSVA::gsva(gsets, !!!dots) %>% 
     data.frame(check.names = FALSE) %>% 
     tibble::rownames_to_column("term") %T>%
-    write.table(file.path(filepath, paste0(fn_prefix, "_ES.txt")), sep = "\t", col.names = TRUE, row.names = FALSE)    
+    write.table(file.path(filepath, paste0(fn_prefix, "_ES.txt")), 
+                sep = "\t", col.names = TRUE, row.names = FALSE)    
 
   quietly_log <- 
     purrr::map(fmls, ~ purrr::quietly(model_onechannel)(
       res_es %>% tibble::column_to_rownames("term"), id = !!id,
       .x, label_scheme_sub, complete_cases, method = lm_method,
-      var_cutoff, pval_cutoff, logFC_cutoff
+      padj_method = padj_method, var_cutoff, pval_cutoff, logFC_cutoff
     )) 
   
   out_path <- file.path(dat_dir, "Protein/GSVA/log/prnGSVA_log.txt")

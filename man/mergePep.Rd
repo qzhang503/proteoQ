@@ -20,15 +20,14 @@ mergePep(
 \item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
 peptide sequences to the most likely proteins by majority votes.}
 
-\item{cut_points}{A numeric vector defines the cut points (knots) for the
-median-centering of \code{log2FC} by sections. The values of the knots
-indicate the summarized \code{log10(Intentisy)} of ions. For
-example, at \code{cut_points = seq(4, 7, .5)}, values of \code{log2FC} will
-be binned from \eqn{-Inf} to \eqn{Inf} according to the cut points at the
-reporter-ion (or LFQ) intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
-\code{cut_points = Inf}, or equivalently \code{-Inf}, where the
-\code{log2FC} under each sample will be median-centered all together. See
-also \code{\link{prnHist}} for data binning and intensity-coded histograms.}
+\item{cut_points}{A named, numeric vector defines the cut points (knots) for
+the median-centering of \code{log2FC} by sections. For example, at
+\code{cut_points = c(mean_lint = seq(4, 7, .5))}, \code{log2FC} will be
+binned according to the intervals of \eqn{-Inf, 4, 4.5, ..., 7, Inf} under
+column \code{mean_lint} (mean log10 intensity) in the input data. The
+default is \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
+\code{log2FC} under each sample will be median-centered as one piece. See
+also \code{\link{prnHist}} for data binning in histogram visualization.}
 
 \item{omit_single_lfq}{Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
 with single measured values across all samples. The default is TRUE.}
@@ -99,7 +98,11 @@ mergePep(
 )
 
 # alignment of data by segments
-mergePep(cut_points = seq(4, 7, .5))
+mergePep(cut_points = c(mean_lint = seq(4, 7, .5)))
+
+# alignment of data by empirical protein abundance
+# `10^prot_icover - 1` comparable to emPAI
+mergePep(cut_points = c(prot_icover = seq(0, 1, .25)))
 }
 }
 \seealso{

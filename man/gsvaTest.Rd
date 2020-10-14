@@ -15,6 +15,7 @@ gsvaTest(
   impute_na = FALSE,
   gset_nms = "go_sets",
   lm_method = "limma",
+  padj_method = "BH",
   var_cutoff = 0.5,
   pval_cutoff = 1e-04,
   logFC_cutoff = log2(1.1),

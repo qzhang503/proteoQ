@@ -10,6 +10,7 @@ pepSig(
   impute_na = TRUE,
   complete_cases = FALSE,
   method = c("limma", "lm"),
+  padj_method = "BH",
   var_cutoff = 0.001,
   pval_cutoff = 1,
   logFC_cutoff = log2(1),
@@ -24,6 +25,7 @@ prnSig(
   impute_na = TRUE,
   complete_cases = FALSE,
   method = c("limma", "lm"),
+  padj_method = "BH",
   var_cutoff = 0.001,
   pval_cutoff = 1,
   logFC_cutoff = log2(1),
@@ -47,6 +49,10 @@ missing values will be used. The default is FALSE.}
 \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
 for models without random effects and the \code{\link[lmerTest]{lmer}} will
 be used for models with random effects.}
+
+\item{padj_method}{Character string; the method of multiple-test corrections
+for uses with \link[stats]{p.adjust}. The default is "BH". See
+?p.adjust.methods for additional choices.}
 
 \item{var_cutoff}{Numeric; the cut-off in the variances of \code{log2FC}.
 Entries with variances smaller than the threshold will be excluded from

@@ -72,7 +72,13 @@ pepHist(
   filename = lag.png,
 )
 
-## custom theme
+## (5) Data binning by `prot_icover`
+pepHist(
+  cut_points = c(prot_icover = NA),
+  filename = prot_icover_coded.png,
+)
+
+## (6) custom theme
 library(ggplot2)
 my_histo_theme <- theme_bw() + theme(
   axis.text.x  = element_text(angle=0, vjust=0.5, size=18),
@@ -110,7 +116,7 @@ pepHist(
 )
 
 
-## direct uses of ggplot2
+## (7) direct uses of ggplot2
 library(ggplot2)
 res <- pepHist(filename = default.png)
 

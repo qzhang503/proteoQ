@@ -405,11 +405,12 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 
 #'Correlation plots
 #'
-#'\code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}. 
+#' code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}.
 #'
 #' With TMT experiments, the same peptide sequence may be triggered any where
 #' between the baseline and the apex of a peak profile. The comparison of
-#' intensity between plex-es probably have a very different or little meaning.
+#' intensity between plex-es would probably have a very different or little
+#' meaning.
 #'
 #'@inheritParams prnHist
 #'@inheritParams prnMDS

@@ -412,20 +412,27 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  # profile widths based on all sample columns and data rows
 	  sd_coefs <- df %>% calc_sd_fcts(range_log2r, range_int, label_scheme)
 	  
-	  if (is.null(cut_points)) cut_points <- Inf
-	  cut_points <- set_cutpoints(cut_points)
+	  # cut_points = c(mean_lint = seq(4, 7, .5))
+	  # cut_points = c(prot_icover = seq(.25, .75, .25))
+	  # cut_points = c(prot_icover = Inf)
+	  # cut_points = c(prot_icover = NULL)
+	  # cut_points = c(prot_icover = NA)
+	  # cut_points = Inf
+	  # cut_points = NULL
+	  # cut_points = NA
 	  
-	  if (identical(cut_points, c(-Inf, Inf))) {
+	  cut_points <- set_cutpoints2(cut_points, df)
+
+	  if (all(is.infinite(cut_points))) {
 	    df <- list(df)
 	  } else {
 	    df <- df %>% 
-	      dplyr::mutate(Int_index = log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.))], 
-	                                               na.rm = TRUE))) %>% 
-	      dplyr::mutate_at(.vars = "Int_index", cut, 
+	      dplyr::mutate(col_cut = !!rlang::sym(names(cut_points)[1])) %>% 
+	      dplyr::mutate_at(.vars = "col_cut", cut, 
 	                       breaks = cut_points, 
 	                       labels = cut_points[1:(length(cut_points)-1)]) %>%
-	      split(., .$Int_index, drop = TRUE) %>% 
-	      purrr::map(~ .x %>% dplyr::select(-Int_index))
+	      split(., .$col_cut, drop = TRUE) %>% 
+	      purrr::map(~ .x %>% dplyr::select(-col_cut))
 	  }
 
 	  x_vals <- df %>% purrr::map(spline_coefs, label_scheme, label_scheme_fit, slice_dots)
@@ -433,7 +440,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	  df <- purrr::map2(df, x_vals, ~ update_df(.x, label_scheme, .y, sd_coefs)) %>% 
 	    dplyr::bind_rows()
 	}
-
+  
 	# (1) mean deviation based sample IDs in `label_scheme` not `label_scheme_fit`
 	#  as sample IDs in `label_scheme_fit` may be only for mixed-bed normalization
 	# (2) the `mean` also get updated after normalization against sample subsets 

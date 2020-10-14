@@ -785,7 +785,7 @@ psm_msplit <- function (df, nm, fn_lookup, dat_dir, plot_rptr_int, TMT_plex) {
 }
 
 
-#' Find the peptides unique by protein entries
+#' Find peptides that are unique by protein entries
 #' 
 #' @param df PSM data.
 #' @param pep_id the column key of peptide sequences.
@@ -897,6 +897,10 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     return(df)
   })
   
+  # --- remove rows of emPAI etc.
+  # partial columns of emPAI etc. form new rows with "empty" prot_acc
+  df <- df %>% dplyr::filter(prot_acc != "")
+    
   # --- check the grouping of proteins ---
   if (! "prot_family_member" %in% names(df)) {
     warning("PSMs were exported from Mascot without protein grouping.", 
@@ -1056,6 +1060,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::mutate(pep_miss = ifelse(grepl("[KR]$", pep_seq_bare), 
                                     stringr::str_count(pep_seq_bare, "[KR]") - 1,
                                     stringr::str_count(pep_seq_bare, "[KR]"))) %>% 
+    add_prot_icover() %>% 
     dplyr::select(-pep_seq_bare) %>% 
     reloc_col_after("pep_seq_mod", "pep_seq") %>% 
     reloc_col_before("pep_res_before", "pep_seq") %>% 
@@ -1070,7 +1075,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   } 
   
   # --  column arrangements --- 
-  df <- df %>% reloc_col_after("prot_index", "prot_cover")
+  df <- df %>% reloc_col_after("prot_index", "prot_cover") 
   
   df <- df %>% 
     order_psm_cols(c("gene", "fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
@@ -2469,7 +2474,9 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
   }
   
   df_first <- df %>% 
-    dplyr::select(-which(names(.) %in% c("pep_tot_int", "pep_unique_int", "pep_razor_int"))) %>% 
+    dplyr::select(-which(names(.) %in% c("pep_tot_int", 
+                                         "pep_unique_int", 
+                                         "pep_razor_int"))) %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
     med_summarise_keys(group_psm_by) 
   
@@ -3615,6 +3622,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::mutate(pep_miss = ifelse(grepl("[KR]$", pep_seq_bare), 
                                     stringr::str_count(pep_seq_bare, "[KR]") - 1,
                                     stringr::str_count(pep_seq_bare, "[KR]"))) %>% 
+    add_prot_icover() %>% 
     dplyr::select(-pep_seq_bare) %>% 
     dplyr::select(-which(names(.) %in% c("Length", "Missed cleavages", "Missed Clevages"))) 
   
@@ -3623,7 +3631,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   }
   
   # --  column arrangements --- 
-  df <- df %>% reloc_col_after("prot_index", "prot_cover")
+  df <- df %>% reloc_col_after("prot_index", "prot_cover") 
   
   df <- df %>% 
     order_psm_cols(c("gene", "fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
@@ -4301,7 +4309,6 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   }
   
   # make available `pep_res_before` and `pep_res_after`
-  # load(file = file.path(dat_dir, "fasta_db.rda"))
   df <- df %>% 
     annotPeppos() %>% 
     dplyr::mutate(pep_seq_bare = gsub("^.*\\.([^\\.]+)\\..*", "\\1", pep_seq)) %>% 
@@ -4309,6 +4316,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::mutate(pep_miss = ifelse(grepl("[KR]$", pep_seq_bare), 
                                     stringr::str_count(pep_seq_bare, "[KR]") - 1,
                                     stringr::str_count(pep_seq_bare, "[KR]"))) %>% 
+    add_prot_icover() %>% 
     dplyr::select(-pep_seq_bare)
 
   # M._sequence.c; -._sequence.c; n.sequence.c; -.sequence.c
@@ -4320,7 +4328,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   df <- df %>% dplyr::mutate(pep_seq = toupper(pep_seq))
 
   # --  column arrangements --- 
-  df <- df %>% reloc_col_after("prot_index", "prot_cover")
+  df <- df %>% reloc_col_after("prot_index", "prot_cover") 
   
   df <- df %>% 
     order_psm_cols(c("gene", "fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
@@ -4934,6 +4942,7 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::mutate(pep_miss = ifelse(grepl("[KR]$", pep_seq_bare), 
                                     stringr::str_count(pep_seq_bare, "[KR]") - 1,
                                     stringr::str_count(pep_seq_bare, "[KR]"))) %>% 
+    add_prot_icover() %>% 
     dplyr::select(-pep_seq_bare)
   
   if (!("prot_cover" %in% names(df) && length(filelist) == 1)) {
@@ -4941,7 +4950,7 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   }
   
   # --  column arrangements --- 
-  df <- df %>% reloc_col_after("prot_index", "prot_cover")
+  df <- df %>% reloc_col_after("prot_index", "prot_cover") 
   
   df <- df %>% 
     order_psm_cols(c("gene", "fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
