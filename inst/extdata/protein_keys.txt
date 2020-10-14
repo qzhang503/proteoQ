@@ -5,6 +5,7 @@ prot_mass	Protein mass
 prot_matches_sig	Count of PSMs that have significant scores under a proposed protein	See also PSM keys
 prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	See also PSM keys
 prot_len	The number of amino acid residues under a proposed protein	
+prot_icover	Protein sequence coverage by tryptic peptides	See also PSM keys.
 prot_cover	Protein sequence coverage	See also PSM keys
 prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	See also Peptide keys
 prot_n_uniqpsm	"Count of unique, significant PSMs in quantitation under a proposed protein"	
@@ -25,7 +26,8 @@ acc_type	The type of accession names
 kin_attr	The attribute of proteins being kinases	
 kin_class	"The classes of kinases, e.g., TK, TKL..."	
 kin_order	"The order of ""kin_class"" from the kinase tree diagram"	
-count_nna	Count of non-NA log2FC	`Reference` and `Empty` samples excluded.
+mean_lint	Mean log10 intensity (N_I...) across samples	`Reference` and `Empty` samples excluded.
+count_nna	Count of non-NA log2FC	v.s.
 I... (...)	Reporter-ion intensity; I000 for LFQ	Calculated from the descriptive statistics by `method_pep_prn` in `Pep2Prn()` for indicated samples
 N_I... (...)	Normalized I... (...); N_I000 for LFQ	See also Peptide keys
 log2_R... (...)	log2FC relative to reference materials for indicated samples; log2_R000 for LFQ	See also Peptide keys

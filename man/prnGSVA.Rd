@@ -16,6 +16,7 @@ prnGSVA(
   pval_cutoff = 1e-04,
   logFC_cutoff = log2(1.1),
   lm_method = "limma",
+  padj_method = "BH",
   ...
 )
 }

@@ -10,7 +10,8 @@ prot_matches_sig	Count of PSMs that have significant scores under a proposed pro
 prot_sequences	Count of distinct sequences	Mascot only.
 prot_sequences_sig	Count of distinct sequences that have significant scores under a proposed protein	Mascot only. Joint Mascot `prot_sequences_sig` from individual data sources; the counts may be greater than `prot_sequences` when peptides with different variable modifications are treated as different identities.
 prot_len	The number of amino acid residues under a proposed protein	
-prot_cover	Protein sequence coverage	Calculated from the union of individual data sources.
+prot_icover	Protein sequence coverage by tryptic peptides	Number of observed divided by number of possible
+prot_cover	Protein sequence coverage by amino acid residues	Calculated from the union of individual data sources.
 prot_...	Additional protein keys from Mascot PSM exports by users.	
 prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users.
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	v.s.

@@ -31,15 +31,14 @@ are according to the \code{pep_unique_by} in \code{\link{normPSM}}. The
 argument currently do nothing to \code{Spectrum Mill} data where both
 unique and shared peptides will be kept.}
 
-\item{cut_points}{A numeric vector defines the cut points (knots) for the
-median-centering of \code{log2FC} by sections. The values of the knots
-indicate the summarized \code{log10(Intentisy)} of ions. For
-example, at \code{cut_points = seq(4, 7, .5)}, values of \code{log2FC} will
-be binned from \eqn{-Inf} to \eqn{Inf} according to the cut points at the
-reporter-ion (or LFQ) intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
-\code{cut_points = Inf}, or equivalently \code{-Inf}, where the
-\code{log2FC} under each sample will be median-centered all together. See
-also \code{\link{prnHist}} for data binning and intensity-coded histograms.}
+\item{cut_points}{A named, numeric vector defines the cut points (knots) for
+the median-centering of \code{log2FC} by sections. For example, at
+\code{cut_points = c(mean_lint = seq(4, 7, .5))}, \code{log2FC} will be
+binned according to the intervals of \eqn{-Inf, 4, 4.5, ..., 7, Inf} under
+column \code{mean_lint} (mean log10 intensity) in the input data. The
+default is \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
+\code{log2FC} under each sample will be median-centered as one piece. See
+also \code{\link{prnHist}} for data binning in histogram visualization.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains a list of logical expression(s). The

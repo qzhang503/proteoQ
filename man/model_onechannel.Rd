@@ -12,6 +12,7 @@ model_onechannel(
   label_scheme_sub,
   complete_cases,
   method,
+  padj_method,
   var_cutoff,
   pval_cutoff,
   logFC_cutoff,
@@ -43,6 +44,10 @@ missing values will be used. The default is FALSE.}
 \item{method}{Character string or vector; the method to assess the p-values of
 GSPA. The default is \code{mean} and the alternative is \code{limma}. See
 also section \code{Details} for the calculations.}
+
+\item{padj_method}{Character string; the method of multiple-test corrections
+for uses with \link[stats]{p.adjust}. The default is "BH". See
+?p.adjust.methods for additional choices.}
 
 \item{var_cutoff}{Numeric; the cut-off in the variances of protein log2FC.
 Entries with variances smaller than the threshold will be removed from GSVA.

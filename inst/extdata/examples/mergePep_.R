@@ -14,5 +14,9 @@ mergePep(
 )
 
 # alignment of data by segments
-mergePep(cut_points = seq(4, 7, .5))
+mergePep(cut_points = c(mean_lint = seq(4, 7, .5)))
+
+# alignment of data by empirical protein abundance
+# `10^prot_icover - 1` comparable to emPAI
+mergePep(cut_points = c(prot_icover = seq(0, 1, .25)))
 }

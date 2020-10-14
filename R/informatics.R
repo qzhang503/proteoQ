@@ -366,7 +366,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 			       ...)
 		}
 	} else if (anal_type == "Histogram") {
-		function(cut_points = NULL, show_curves = TRUE, show_vline = TRUE, 
+		function(cut_points = NA, show_curves = TRUE, show_vline = TRUE, 
 		         scale_y = TRUE, theme = NULL, ...) {
 			plotHisto(df = df,
 			          id = !!id,
@@ -398,7 +398,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 		           ...)
 		}
 	} else if (anal_type == "Model") {
-	  function(method = "limma", var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), ...) {
+	  function(method = "limma", padj_method = "BH", 
+	           var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), ...) {
 	    sigTest(df = df,
 	            id = !!id,
 	            label_scheme_sub = label_scheme_sub,
@@ -408,6 +409,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	            filepath = filepath,
 	            filename = paste0(fn_prefix, ".", fn_suffix),
 	            method = !!method,
+	            padj_method = padj_method, 
 	            var_cutoff = var_cutoff,
 	            pval_cutoff = pval_cutoff,
 	            logFC_cutoff = logFC_cutoff,
@@ -593,7 +595,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	           ...)
 	  }
 	} else if(anal_type == "GSVA") {
-	  function(lm_method = "limma", gset_nms = "go_sets", var_cutoff = .5,
+	  function(lm_method = "limma", padj_method = "BH", 
+	           gset_nms = "go_sets", var_cutoff = .5,
 	           pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
       gsvaTest(df = df,
                id = !!id,
@@ -604,7 +607,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
                complete_cases = complete_cases,
                impute_na = impute_na,
                gset_nms = gset_nms,
-               lm_method = lm_method,
+               lm_method = lm_method, 
+               padj_method = padj_method,
                var_cutoff = var_cutoff,
                pval_cutoff = pval_cutoff,
                logFC_cutoff = logFC_cutoff,

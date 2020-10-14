@@ -65,7 +65,7 @@ mergePep()
 # peptide histograms (median-centered)
 pepHist(
   scale_log2r = TRUE,
-  cut_points = seq(6, 10, 1),
+  cut_points = c(mean_lint = seq(6, 10, 1)),
   xmin = -4, 
   xmax = 4,
   ncol = 6, 
@@ -86,7 +86,7 @@ standPep(
 
 # updated histograms
 pepHist(
-  cut_points = seq(6, 10, 1),
+  cut_points = c(mean_lint = seq(6, 10, 1)),
   xmin = -4, 
   xmax = 4,
   ncol = 6, 
@@ -103,7 +103,7 @@ Pep2Prn(use_unique_pep = TRUE)
 # protein histograms (median-centered)
 prnHist(
   scale_log2r = TRUE,
-  cut_points = seq(6, 10, 1),
+  cut_points = c(mean_lint = seq(6, 10, 1)),
   xmin = -5, 
   xmax = 5,
   ncol = 6, 
@@ -124,7 +124,7 @@ standPrn(
 
 prnHist(
   scale_log2r = TRUE,
-  cut_points = seq(6, 10, 1),
+  cut_points = c(mean_lint = seq(6, 10, 1)),
   xmin = -5, 
   xmax = 5,
   ncol = 6, 

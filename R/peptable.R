@@ -795,15 +795,21 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   rm(df_num2)
   
   df_num <- local({
+    df_num <- df_num %>% 
+      dplyr::mutate(mean_lint = log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.))], 
+                                              na.rm = TRUE)), 
+                    mean_lint = round(mean_lint, digits = 2))
+    
     count_nna <- df_num %>% 
-      dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", names(.)))%>% 
+      dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
       dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Ref\\.[0-9]+\\)$", names(.))) %>% 
       dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", names(.))) %>% 
       is.na() %>% 
       `!`() %>% 
       rowSums()
     
-    dplyr::bind_cols(count_nna = count_nna, df_num)
+    dplyr::bind_cols(count_nna = count_nna, df_num) %>% 
+      reloc_col_before("mean_lint", "count_nna")
   })
 
   pep_n_psm <- df %>%
@@ -1157,15 +1163,14 @@ fmt_num_cols <- function (df) {
 #'indicated under the \code{prot_n_pep} column after the peptide
 #'removals/cleanups using \code{purgePSM}.
 #'
-#'@param cut_points A numeric vector defines the cut points (knots) for the
-#'  median-centering of \code{log2FC} by sections. The values of the knots
-#'  indicate the summarized \code{log10(Intentisy)} of ions. For
-#'  example, at \code{cut_points = seq(4, 7, .5)}, values of \code{log2FC} will
-#'  be binned from \eqn{-Inf} to \eqn{Inf} according to the cut points at the
-#'  reporter-ion (or LFQ) intensity of \eqn{10^4, 10^4.5, ... 10^7}. The default is
-#'  \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
-#'  \code{log2FC} under each sample will be median-centered all together. See
-#'  also \code{\link{prnHist}} for data binning and intensity-coded histograms.
+#'@param cut_points A named, numeric vector defines the cut points (knots) for
+#'  the median-centering of \code{log2FC} by sections. For example, at
+#'  \code{cut_points = c(mean_lint = seq(4, 7, .5))}, \code{log2FC} will be
+#'  binned according to the intervals of \eqn{-Inf, 4, 4.5, ..., 7, Inf} under
+#'  column \code{mean_lint} (mean log10 intensity) in the input data. The
+#'  default is \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
+#'  \code{log2FC} under each sample will be median-centered as one piece. See
+#'  also \code{\link{prnHist}} for data binning in histogram visualization.
 #'@param use_duppeps Logical; if TRUE, re-assigns double/multiple dipping
 #'  peptide sequences to the most likely proteins by majority votes.
 #'@param omit_single_lfq Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
@@ -1648,7 +1653,8 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
-  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("Pep2Prn"), add = TRUE)
+  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("Pep2Prn"), 
+          add = TRUE)
   
   reload_expts()
   
@@ -2053,7 +2059,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
-
+  
   df <- local({
     df_shared <- df %>% 
       dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by), 
@@ -2120,6 +2126,11 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   }
   
   df_num <- local({
+    df_num <- df_num %>% 
+      dplyr::mutate(mean_lint = log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.))], 
+                                              na.rm = TRUE)), 
+                    mean_lint = round(mean_lint, digits = 2))
+    
     count_nna <- df_num %>% 
       dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", names(.)))%>% 
       dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Ref\\.[0-9]+\\)$", 
@@ -2130,12 +2141,13 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
       `!`() %>% 
       rowSums()
     
-    dplyr::bind_cols(count_nna = count_nna, df_num)
+    df_num <- dplyr::bind_cols(count_nna = count_nna, df_num) %>% 
+      reloc_col_before("mean_lint", "count_nna")
   })
   
   df <- df %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-    dplyr::select(-which(names(.) %in% c("is_tryptic", "count_nna"))) %>% 
+    dplyr::select(-which(names(.) %in% c("is_tryptic", "mean_lint", "count_nna"))) %>% 
     dplyr::select(-grep("^Reporter mass deviation", names(.))) %>% 
     dplyr::select(-which(names(.) %in% c("m/z", "Charge", "Mass", "Mass error [ppm]", 
                                          "Mass error [Da]", "Score", "Combinatorics", 
@@ -2214,6 +2226,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   
   if (gn_rollup) {
     df$count_nna <- NULL
+    df$mean_lint <- NULL
     
     dfa <- local({
       dfa <- df %>% 
@@ -2221,6 +2234,11 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
         dplyr::filter(!is.na(gene)) %>% 
         dplyr::group_by(gene) %>% 
         dplyr::summarise_all(list(~ median(.x, na.rm = TRUE)))
+      
+      dfa <- dfa %>% 
+        dplyr::mutate(mean_lint = log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.))], 
+                                                na.rm = TRUE)), 
+                      mean_lint = round(mean_lint, digits = 2))
       
       count_nna <- dfa %>% 
         dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", 
@@ -2233,22 +2251,25 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
         `!`() %>% 
         rowSums() 
       
-      dplyr::bind_cols(count_nna = count_nna, dfa)
+      dfa <- dplyr::bind_cols(count_nna = count_nna, dfa) %>% 
+        reloc_col_before("mean_lint", "count_nna")
     })
 
     dfb <- df %>% 
-      dplyr::select(-prot_cover, -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
+      dplyr::select(-prot_icover, -prot_cover, 
+                    -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
       dplyr::filter(!is.na(gene)) %>% 
       dplyr::filter(!duplicated(.$gene))
     
     dfc <- df %>% 
-      dplyr::select(gene, prot_cover) %>% 
+      dplyr::select(gene, prot_icover, prot_cover) %>% 
       dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
-      dplyr::filter(prot_cover != "NA%") %>% 
+      # dplyr::filter(prot_cover != "NA%") %>% 
+      dplyr::filter(!is.na(prot_cover)) %>% 
       dplyr::group_by(gene) %>% 
-      dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
-      dplyr::summarise_all(~ max(.x, na.rm = TRUE)) %>% 
-      dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+      # dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
+      dplyr::summarise_all(~ max(.x, na.rm = TRUE)) # %>% 
+      # dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
     
     df <- list(dfc, dfb, dfa) %>% 
       purrr::reduce(right_join, by = "gene") %>% 
@@ -2259,7 +2280,8 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
       df %>% dplyr::select(-prot_acc), 
     ) %>% 
       reloc_col_before("gene", "fasta_name") %>% 
-      reloc_col_before("prot_cover", "prot_n_psm")
+      reloc_col_before("prot_cover", "prot_n_psm") %>% 
+      reloc_col_before("prot_icover", "prot_cover")
   } 
   
   return(df)

@@ -4,7 +4,7 @@
 \alias{lm_summary}
 \title{Model summary}
 \usage{
-lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff)
+lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff, padj_method = "BH")
 }
 \arguments{
 \item{pvals}{A data frame of pVal}
@@ -19,6 +19,10 @@ test corrections. The default is at \code{1} to include all entries.}
 absolute \code{log2FC} smaller than the threshold will be removed from
 multiple test corrections. The default is at \code{log2(1)} to include all
 entries.}
+
+\item{padj_method}{Character string; the method of multiple-test corrections
+for uses with \link[stats]{p.adjust}. The default is "BH". See
+?p.adjust.methods for additional choices.}
 }
 \description{
 Model summary

@@ -118,7 +118,7 @@ data.
 \code{pepCorr_logInt} plots Pearson correlation of the \code{log10} intensity
 of ions for peptide data.
 
-\code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}.
+code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}.
 
 \code{prnCorr_logInt} plots Pearson correlation of the \code{log10} intensity
 of ions for protein data.
@@ -126,7 +126,8 @@ of ions for protein data.
 \details{
 With TMT experiments, the same peptide sequence may be triggered any where
 between the baseline and the apex of a peak profile. The comparison of
-intensity between plex-es probably have a very different or little meaning.
+intensity between plex-es would probably have a very different or little
+meaning.
 }
 \examples{
 \donttest{

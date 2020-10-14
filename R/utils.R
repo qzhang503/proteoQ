@@ -2039,6 +2039,76 @@ subset_fasta <- function (df, fasta, acc_type) {
 }
 
 
+#' Find peptide abundance indexes.
+#' 
+#' @param max_len The maximum length of peptide sequence for consideration.
+#' @inheritParams info_anal
+#' @inheritParams find_literal_unique_peps
+add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq_bare", 
+                             max_len = 50) {
+  dat_dir <- get_gl_dat_dir()
+  
+  ok <- tryCatch(load(file = file.path(dat_dir, "fasta_db.rda")),
+                 error = function(e) "e")
+  if (ok != "fasta_db") {
+    stop("`fasta_db.rda` not found under ", dat_dir, ".", call. = FALSE)
+  }
+  
+  id <- rlang::as_string(rlang::enexpr(id))
+  if (id == "gene") {
+    gn_rollup <- TRUE
+    id <- "prot_acc"
+  } else {
+    gn_rollup <- FALSE
+  }
+  
+  min_len <- min(nchar(df[[pep_id]])) - 1
+  max_len2 <- max_len - 1
+  
+  zero_npeps <- df %>%
+    dplyr::filter(pep_len <= max_len, pep_miss == 0) %>% 
+    dplyr::select(c(pep_id, "fasta_name")) %>%
+    dplyr::filter(!duplicated(!!rlang::sym(pep_id))) %>% 
+    dplyr::group_by(fasta_name) %>%
+    dplyr::summarise(prot_n_pep0 = n())
+  
+  max_npeps <- fasta_db %>% 
+    purrr::map_int(~ {
+      x <- stringr::str_split(.x, "[KR]")
+      
+      x %>% purrr::map_int(~ {
+        len <- stringr::str_length(.x)
+        sum(len >= min_len & len <= max_len2)
+      })
+    }) %>% 
+    tibble::tibble(
+      fasta_name = names(.), 
+      prot_n_pepi = .,
+    ) %>% 
+    dplyr::left_join(zero_npeps, by = "fasta_name") %>% 
+    dplyr::mutate(prot_icover = prot_n_pep0/prot_n_pepi, 
+                  prot_icover = round(prot_icover, digits = 3)) %>% 
+    dplyr::select(-c("prot_n_pepi", "prot_n_pep0"))
+  
+  if (gn_rollup) {
+    df <- df %>% 
+      dplyr::select(fasta_name, gene) %>% 
+      dplyr::filter(!duplicated(fasta_name)) %>% 
+      dplyr::left_join(max_npeps, by = "fasta_name") %>% 
+      dplyr::select(-fasta_name) %>% 
+      dplyr::filter(!is.na(gene)) %>% 
+      dplyr::group_by(gene) %>% 
+      suppressWarnings(dplyr::summarise_all(~ max(.x, na.rm = TRUE))) %>% 
+      dplyr::left_join(df, ., by = "gene")
+  } else {
+    df <- df %>% 
+      dplyr::left_join(max_npeps, by = "fasta_name")
+  }
+  
+  invisible(df)
+}
+
+
 #' Calculates protein percent coverage
 #' 
 #' @inheritParams info_anal
@@ -2073,7 +2143,8 @@ calc_cover <- function(df, id) {
   load(file = file.path(dat_dir, "acc_lookup.rda"))
   
   if (length(fasta_db) == 0) {
-    stop("No fasta entries match protein accessions. Check the correctness of fasta file(s).", 
+    stop("No fasta entries match protein accessions.", 
+         "Check the correctness of fasta file(s).", 
          call. = FALSE)
   }
   
@@ -2131,9 +2202,18 @@ calc_cover <- function(df, id) {
     dplyr::mutate(index = row_number()) %>% 
     dplyr::left_join(df_sels, by = "prot_acc") %>% 
     dplyr::filter(!duplicated(index)) %>% 
-    dplyr::select(-index) %>% 
-    dplyr::mutate(prot_cover = round(prot_cover * 100, digits = 1)) %>%
-    dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+    dplyr::select(-index) 
+  
+  if ("prot_icover" %in% names(df)) {
+    df <- df %>% 
+      dplyr::mutate(prot_icover = ifelse(!is.na(prot_icover), prot_icover, prot_cover), 
+                    prot_icover = round(prot_icover, digits = 3))
+  }
+  
+  df <- df %>% 
+    dplyr::mutate(prot_cover = round(prot_cover, digits = 3)) # %>% 
+    # dplyr::mutate(prot_cover = round(prot_cover * 100, digits = 1)) %>%
+    # dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
 
   invisible(df)
 }
@@ -2817,9 +2897,9 @@ gn_rollup <- function (df, cols) {
       dplyr::select(gene, prot_cover) %>% 
       dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
       dplyr::group_by(gene) %>% 
-      dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
-      suppressWarnings(dplyr::summarise_all(~ max(.x, na.rm = TRUE))) %>% 
-      dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+      # dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
+      suppressWarnings(dplyr::summarise_all(~ max(.x, na.rm = TRUE))) # %>% 
+      # dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
   } else {
     dfc <- df %>% 
       dplyr::select(gene) %>% 
@@ -3038,34 +3118,105 @@ env_where <- function(name, env = rlang::caller_env()) {
 
 #' Generate cut points.
 #' 
-#' @param data A sequence of numeric values with probable NA value.
+#' @param x A sequence of numeric values with probable NA value.
 #' @inheritParams prnHist
-set_cutpoints <- function (cut_points = NULL, data = NULL) {
-  if (is.null(cut_points) && is.null(data)) {
-    stop("`cut_points` and `data` can not be both NULL.", call. = FALSE)
+set_cutpoints <- function (cut_points = NULL, x = NULL) {
+  if (is.null(cut_points) && is.null(x)) {
+    stop("`cut_points` and `x` can not be both NULL.", call. = FALSE)
   }
     
-  if (!is.null(data)) {
-    oks <- data %>% .[!is.na(.)] %>% is.numeric() %>% all()
-    if (!oks) stop("All numeric values are required for setting cut points.", call. = FALSE)
+  if (!is.null(x)) {
+    oks <- x %>% .[!is.na(.)] %>% is.numeric() %>% all()
+    
+    if (!oks) {
+      stop("All numeric `x` are required for setting cut points.", 
+           call. = FALSE)
+    }
   }
   
   if (!is.null(cut_points)) {
     oks <- cut_points %>% is.numeric() %>% all()
-    if (!oks) stop("All numeric values are required for `cut_points`.", call. = FALSE)
+    
+    if (!oks) {
+      stop("All numeric values are required for `cut_points`.", 
+           call. = FALSE)
+    }
   }
 
-  if (is.null(data) && !is.null(cut_points)) {
-    cut_points <- cut_points %>% c(-Inf, ., Inf) %>% .[!duplicated(.)] %>% .[order(.)]
+  if (is.null(x) && !is.null(cut_points)) {
+    cut_points <- cut_points %>% 
+      c(-Inf, ., Inf) %>% 
+      .[!duplicated(.)] %>% 
+      .[order(.)]
+    
     return(cut_points)
   }
   
-  if (is.null(cut_points) && !is.null(data)) {
-    cut_points <- data %>% quantile() %>% c(-Inf, ., Inf) %>% round(digits = 1)
+  if (is.null(cut_points) && !is.null(x)) {
+    cut_points <- x %>% 
+      quantile() %>% 
+      c(-Inf, ., Inf) %>% 
+      round(digits = 1)
+    
     return(cut_points)
   }
   
-  cut_points %>% c(-Inf, ., Inf) %>% .[!duplicated(.)] %>% .[order(.)]
+  cut_points %>% 
+    c(-Inf, ., Inf) %>% 
+    .[!duplicated(.)] %>% 
+    .[order(.)]
+}
+
+
+#' A wrapper of \code{set_cutpoint}.
+#' 
+#' @param df A data frame.
+#' @inheritParams prnHist
+set_cutpoints2 <- function(cut_points, df) {
+  if (is.null(cut_points) || is.infinite(cut_points)) {
+    return(c(mean_lint = -Inf, mean_lint = Inf))
+  }
+  
+  if (any(is.na(cut_points))) {
+    cut_points <- cut_points[1]
+    
+    if (is.null(names(cut_points))) {
+      cut_nm <- "mean_lint"
+    } else {
+      cut_nm <- names(cut_points)
+    }
+    
+    if (! cut_nm %in% names(df)) {
+      warning("Column `", cut_nm, "` not found in `df`;", 
+              "instead use column `mean_lint`.", 
+              call. = FALSE)
+      cut_nm <- "mean_lint"
+    }
+    
+    cut_points <- quantile(df[[cut_nm]], na.rm = TRUE) 
+    seqs <- seq_along(cut_points)
+    names(cut_points)[seqs] <- cut_nm
+  } else {
+    cut_nm <- cut_points %>% 
+      `[`(1) %>% 
+      names() %>% 
+      gsub("1$", "", .)
+    
+    if (purrr::is_empty(cut_nm)) cut_nm <- "mean_lint"
+    
+    if (! cut_nm %in% names(df)) {
+      warning("Column `", cut_nm, "` not found in `df`;", 
+              "instead use column `mean_lint`.", 
+              call. = FALSE)
+      cut_nm <- "mean_lint"
+    }
+    
+    cut_points <- set_cutpoints(cut_points, df[[cut_nm]])
+    seqs <- seq_along(cut_points)
+    names(cut_points)[seqs] <- cut_nm
+  }
+
+  invisible(cut_points)
 }
 
 

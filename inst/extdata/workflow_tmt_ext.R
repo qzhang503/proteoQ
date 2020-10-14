@@ -158,7 +158,7 @@ if (!dontrun) {
   mergePep(filter_peps_at = exprs(Length <= 100))
   
   ## Splines
-  mergePep(cut_points = seq(4, 7, .5))
+  mergePep(cut_points = c(mean_lint = seq(4, 7, .5)))
 }
 ## END of DO NOT RUN
 
@@ -277,7 +277,7 @@ if (!dontrun) {
   )
   
   # Spline
-  Pep2Prn(cut_points = seq(4, 7, 0.5))
+  Pep2Prn(cut_points = c(mean_lint = seq(4, 7, 0.5)))
 }
 ## END of DO NOT RUN
 

@@ -156,7 +156,10 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 
 	message("random_vars: ", random_vars %>% as.character, "\n\n")
 	
-	return(list(design = design, contr_mat = contr_mat, key_col = key_col, random_vars = random_vars,
+	return(list(design = design, 
+	            contr_mat = contr_mat, 
+	            key_col = key_col, 
+	            random_vars = random_vars,
 							label_scheme_sub_sub = label_scheme_sub_sub))
 }
 
@@ -176,8 +179,10 @@ my_padj <- function(df_pval, pval_cutoff) {
 		`names<-`(gsub("pVal", "adjP", colnames(.))) %>%
 		dplyr::mutate(rowname = rownames(df_pval)) %>%
     dplyr::bind_cols(df_pval, .) %>%
-    dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
-    dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
+    dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
+                     scientific = TRUE, digits = 2) %>%
+    dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, 
+                     scientific = TRUE, digits = 2) %>%
 		tibble::column_to_rownames()
 }
 
@@ -188,7 +193,7 @@ my_padj <- function(df_pval, pval_cutoff) {
 #' @param log2rs A data frame of log2FC
 #' @inheritParams prnSig
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
+lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff, padj_method = "BH") {
 	nms <- rownames(pvals)
 
 	pass_pvals <- pvals %>% purrr::map(~ .x <= pval_cutoff)
@@ -198,14 +203,16 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 
 	res_padj <- pvals %>%
 		purrr::map2(pass_both, `*`) %>%
-		purrr::map(~ p.adjust(.x, "BH")) %>%
+		purrr::map(~ p.adjust(.x, padj_method)) %>%
 		data.frame(check.names = FALSE) %>%
 		`names<-`(gsub("pVal", "adjP", colnames(.))) %>%
 		`rownames<-`(nms) %>%
 		tibble::rownames_to_column() %>%
 		dplyr::bind_cols(pvals, .) %>%
-	  dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
-	  dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, scientific = TRUE, digits = 2) %>%
+	  dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
+	                   scientific = TRUE, digits = 2) %>%
+	  dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, 
+	                   scientific = TRUE, digits = 2) %>%
 		tibble::column_to_rownames()
 
 	log2rs <- log2rs %>%
@@ -227,7 +234,8 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff) {
 #' @inheritParams gspaTest
 #' @inheritParams prnSig
 #' @importFrom MASS ginv
-model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases, method, var_cutoff, 
+model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases, 
+                              method, padj_method, var_cutoff, 
                               pval_cutoff, logFC_cutoff, ...) {
 
 	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
@@ -264,8 +272,13 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 
 	if (length(random_vars) > 0) {
 		# only use the first random variable
+	  if (length(random_vars) > 1) {
+	    warning("Uses only the first random variable: ", random_vars[1], call. = FALSE)
+	  }
+	  
 	  design_random <- label_scheme_sub_sub[[random_vars[1]]] 
 		corfit <- duplicateCorrelation(df, design = design, block = design_random)
+		
 		fit <- df %>%
 			lmFit(design = design, block = design_random, correlation = corfit$consensus) %>%
 			contrasts.fit(contr_mat) %>%
@@ -289,7 +302,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 		data.frame(check.names = FALSE) %>%
 		`names<-`(paste0("pVal (", names(.), ")"))
 
-	res_lm <- lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff)
+	res_lm <- lm_summary(pvals, log2rs, pval_cutoff, logFC_cutoff, padj_method)
 
 	if (method %in% c("lmer", "lme", "lm")) {
 		fml_rhs <- gsub("\\[.*\\]", "", formula) %>% .[length(.)]
@@ -309,7 +322,8 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 			tibble::rownames_to_column(id) %>%
 			tidyr::gather(-id, key = Sample_ID, value = log2Ratio) %>%
 			dplyr::mutate(Sample_ID = factor(Sample_ID, levels = smpl_levels)) %>%
-			dplyr::left_join(label_scheme_sub_sub[, c("Sample_ID", key_col, random_vars)], by = "Sample_ID") %>%
+			dplyr::left_join(label_scheme_sub_sub[, c("Sample_ID", key_col, random_vars)], 
+			                 by = "Sample_ID") %>%
 			dplyr::select(which(not_all_NA(.))) %>%
 			dplyr::group_by(!!rlang::sym(id)) %>%
 			tidyr::nest()
@@ -332,7 +346,8 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 		  res_lm <- df_lm %>%
 				dplyr::mutate(
 				  model = purrr::map(
-				    data, ~ lmerTest::lmer(data = .x, formula = new_formula, contrasts = contr_mat_lm))) %>%
+				    data, 
+				    ~ lmerTest::lmer(data = .x, formula = new_formula, contrasts = contr_mat_lm))) %>%
 				dplyr::mutate(glance = purrr::map(model, broom.mixed::tidy)) %>%
 			  tidyr::unnest(glance, keep_empty = TRUE) %>% 
 				dplyr::filter(!grepl("Intercept", term), effect != "ran_pars") %>%
@@ -343,7 +358,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 				tidyr::spread(term , p.value) %>%
 				tibble::column_to_rownames(id) %>%
 				`names<-`(paste0("pVal (", names(.), ")")) %>%
-				lm_summary(log2rs, pval_cutoff, logFC_cutoff)
+				lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
 		} else {
 		  if (!requireNamespace("broom", quietly = TRUE)) {
 		    stop("\n====================================================================", 
@@ -365,7 +380,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 				tidyr::spread(term , p.value)	%>% 
 				tibble::column_to_rownames(id) %>%
 				`names<-`(paste0("pVal (", names(.), ")"))  %>% 
-			  lm_summary(log2rs, pval_cutoff, logFC_cutoff)
+			  lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
 		}
 	}
 
@@ -387,7 +402,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 sigTest <- function(df, id, label_scheme_sub, 
                     scale_log2r, complete_cases, impute_na, 
                     filepath, filename, 
-										method, var_cutoff, pval_cutoff, logFC_cutoff, 
+										method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
 										data_type, anal_type, ...) {
 
   dat_dir <- get_gl_dat_dir()
@@ -398,9 +413,17 @@ sigTest <- function(df, id, label_scheme_sub,
 	method <- rlang::as_string(rlang::enexpr(method))
 
 	dots <- rlang::enexprs(...)
-	filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-	arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
-	dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+	
+	filter_dots <- dots %>% 
+	  .[purrr::map_lgl(., is.language)] %>% 
+	  .[grepl("^filter_", names(.))]
+	
+	arrange_dots <- dots %>% 
+	  .[purrr::map_lgl(., is.language)] %>% 
+	  .[grepl("^arrange_", names(.))]
+	
+	dots <- dots %>% 
+	  .[! . %in% c(filter_dots, arrange_dots)]
 	
 	non_fml_dots <- dots[!map_lgl(dots, is_formula)]
 	dots <- dots[map_lgl(dots, is_formula)]
@@ -434,7 +457,7 @@ sigTest <- function(df, id, label_scheme_sub,
   	# `complete_cases` depends on lm contrasts
 	  purrr::map(dots, ~ purrr::quietly(model_onechannel)
 	             (dfw, !!id, .x, label_scheme_sub, 
-	               complete_cases, method, var_cutoff, 
+	               complete_cases, method, padj_method, var_cutoff, 
 	               pval_cutoff, logFC_cutoff, !!!non_fml_dots)) 
 	})
 
@@ -482,7 +505,8 @@ sigTest <- function(df, id, label_scheme_sub,
 	wb <- createWorkbook("proteoQ")
 	addWorksheet(wb, sheetName = "Results")
 	openxlsx::writeData(wb, sheet = "Results", df_op)
-	saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), overwrite = TRUE) 
+	saveWorkbook(wb, file = file.path(filepath, paste0(data_type, "_pVals.xlsx")), 
+	             overwrite = TRUE) 
 
 	invisible(df_op)
 }
@@ -497,11 +521,13 @@ sigTest <- function(df, id, label_scheme_sub,
 #'@import purrr
 #'@export
 pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, 
-                    method = c("limma", "lm"),
+                    method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit({
-    mget(names(formals()), current_env()) %>% c(rlang::enexprs(...)) %>% save_call("pepSig")
+    mget(names(formals()), current_env()) %>% 
+      c(rlang::enexprs(...)) %>% 
+      save_call("pepSig")
   }, add = TRUE)
   
   check_dots(c("id", "anal_type", "df2"), ...)
@@ -522,18 +548,28 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
+  padj_method <- rlang::as_string(rlang::enexpr(padj_method))
 
   reload_expts()
   
-  if (!impute_na & method != "limma") {
+  if ((!impute_na) && (method != "limma")) {
     impute_na <- TRUE
     warning("Coerce `impute_na = ", impute_na, "` at method = ", method, call. = FALSE)
   }
   
-  info_anal(df = !!df, df2 = NULL, id = !!id, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            filepath = !!filepath, filename = !!filename, 
-            anal_type = "Model")(method = method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
+  info_anal(df = !!df, 
+            df2 = NULL, 
+            id = !!id, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
+            filepath = !!filepath, 
+            filename = !!filename, 
+            anal_type = "Model")(method = method, 
+                                 padj_method = padj_method, 
+                                 var_cutoff = var_cutoff, 
+                                 pval_cutoff = pval_cutoff, 
+                                 logFC_cutoff = logFC_cutoff, ...)
 }
 
 
@@ -562,6 +598,9 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
 #'  for models without random effects and the \code{\link[lmerTest]{lmer}} will
 #'  be used for models with random effects.
+#'@param padj_method Character string; the method of multiple-test corrections
+#'  for uses with \link[stats]{p.adjust}. The default is "BH". See
+#'  ?p.adjust.methods for additional choices.
 #'@param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
 #'  Entries with variances smaller than the threshold will be excluded from
 #'  linear modeling. The default is 1E-3.
@@ -652,13 +691,15 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, 
-                    method = c("limma", "lm"),
+                    method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit({
     load(file.path(get_gl_dat_dir(), "Calls/prnSig_formulas.rda"))
     dots <- my_union(rlang::enexprs(...), prnSig_formulas)
-    mget(names(formals()), current_env()) %>% c(dots) %>% save_call("prnSig")
+    mget(names(formals()), current_env()) %>% 
+      c(dots) %>% 
+      save_call("prnSig")
   }, add = TRUE)
   
   check_dots(c("id", "anal_type", "df2"), ...)
@@ -682,14 +723,23 @@ prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 
   reload_expts()
   
-  if (!impute_na & method != "limma") {
+  if ((!impute_na) && (method != "limma")) {
     impute_na <- TRUE
     warning("Coerce `impute_na = ", impute_na, "` at method = ", method, call. = FALSE)
   }
   
-  info_anal(df = !!df, df2 = NULL, id = !!id, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            filepath = !!filepath, filename = !!filename, 
-            anal_type = "Model")(method = method, var_cutoff, pval_cutoff, logFC_cutoff, ...)
+  info_anal(df = !!df, 
+            df2 = NULL, 
+            id = !!id, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
+            filepath = !!filepath, 
+            filename = !!filename, 
+            anal_type = "Model")(method = method, 
+                                 padj_method = padj_method, 
+                                 var_cutoff = var_cutoff, 
+                                 pval_cutoff = pval_cutoff, 
+                                 logFC_cutoff = logFC_cutoff, ...)
 }
 

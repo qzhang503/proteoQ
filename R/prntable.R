@@ -104,7 +104,8 @@
 #'@importFrom plyr ddply
 #'@export
 standPrn <- function (method_align = c("MC", "MGKernel"), 
-                      range_log2r = c(10, 90), range_int = c(5, 95), n_comp = NULL, seed = NULL, 
+                      range_log2r = c(10, 90), range_int = c(5, 95), 
+                      n_comp = NULL, seed = NULL, 
                       col_select = NULL, cut_points = Inf, cache = TRUE, ...) {
   dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/Histogram"), recursive = TRUE, showWarnings = FALSE)
@@ -115,7 +116,8 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   on.exit(options(old_opts), add = TRUE)
   options(warn = 1)
   
-  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("standPrn"), add = TRUE)
+  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("standPrn"), 
+          add = TRUE)
   
   reload_expts()
   
@@ -168,7 +170,8 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     stop(filename, " not found; run `Pep2Prn` first.")
   }
   
-  df <- read.csv(filename, sep = "\t", check.names = FALSE, header = TRUE, comment.char = "#") %>% 
+  df <- read.csv(filename, sep = "\t", check.names = FALSE, 
+                 header = TRUE, comment.char = "#") %>% 
     dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 
   message("Primary column keys in `Protein/Protein.txt` for `slice_` varargs.")
