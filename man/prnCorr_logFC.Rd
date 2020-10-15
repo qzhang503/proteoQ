@@ -124,9 +124,9 @@ code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}.
 of ions for protein data.
 }
 \details{
-With TMT experiments, the same peptide sequence may be triggered any where
-between the baseline and the apex of a peak profile. The comparison of
-intensity between plex-es would probably have a very different or little
+With TMT experiments, the same polypeptide may be triggered for MS2 any where
+between the baseline and the apex levels during a peak elution. The direct
+comparison of reporter-ion intensities between plex-es might have little
 meaning.
 }
 \examples{

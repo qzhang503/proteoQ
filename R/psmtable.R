@@ -3258,12 +3258,14 @@ pad_mq_channels <- function(file, fasta, entrez) {
     df <- local({
       df <- df %>% dplyr::mutate(prot_acc = gsub(";.*$", "", Proteins))
       
-      tempdata <- df %>% 
-        dplyr::select(prot_acc) %>% 
-        dplyr::filter(!duplicated(prot_acc)) %>% 
-        annotPrn(fasta, entrez) %>% 
-        dplyr::select(prot_acc, gene, prot_desc) %>% 
-        dplyr::rename(`Gene Names` = "gene", "Protein Names" = "prot_desc")
+      tempdata <- suppressWarnings(
+        df %>% 
+          dplyr::select(prot_acc) %>% 
+          dplyr::filter(!duplicated(prot_acc)) %>% 
+          annotPrn(fasta, entrez) %>% 
+          dplyr::select(prot_acc, gene, prot_desc) %>% 
+          dplyr::rename(`Gene Names` = "gene", "Protein Names" = "prot_desc")
+      )
       
       df <- df %>% 
         dplyr::left_join(tempdata, by = "prot_acc") %>% 

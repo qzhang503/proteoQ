@@ -191,7 +191,7 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
   df <- local({
     df <- read.csv(file.path(dat_dir, filelist), check.names = FALSE, 
                    header = TRUE, sep = "\t", comment.char = "#")
-    
+
     df <- local({
       if (purrr::is_empty(grep("^LFQ intensity |^Intensity ", names(df)))) {
         nas <- data.frame(rep(NA, nrow(df)))
@@ -231,6 +231,26 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
       }
       
       invisible(df)
+    })
+    
+    # MaxQuant peptide.txt may contains extra_sample_ids not in label_scheme
+    # e.g. one may delete a Sample_ID from label_scheme, 
+    #   the corresponding Sample_ID will be removed from compiled PSM tables.
+    # However, the same needs to be done 
+    #  when backfilling intensity data from peptide.txt.
+    # Otherwise would cause columns of `pep_razor_int (extra_sample_ids)` etc. 
+    #   in peptide table.
+    # This will cause an error with Pep2Prn(method_pep_prn = lfq_...), 
+    # which involves columns of `pep_razor_int (extra_sample_ids)` etc. 
+    # for the identification of top_n.
+    df <- local({
+      extra_sample_ids <- names(df) %>% 
+        .[grep("^Intensity\\s.*", .)] %>% 
+        gsub("^Intensity\\s(.*)$", "\\1", .) %>% 
+        .[! . %in% label_scheme$Sample_ID]
+      
+      df <- df %>% 
+        dplyr::select(-grep(paste0(" ", extra_sample_ids, "$"), names(.)))
     })
     
     df <- df %>% 
@@ -339,7 +359,8 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
 #' Total, razor and unique intensity of peptides 
 #' 
 #' Temporary handling using MaxQuant peptide.txt.
-pep_mq_lfq2 <- function() {
+#' @inheritParams n_TMT_sets
+pep_mq_lfq2 <- function(label_scheme) {
   dat_dir <- get_gl_dat_dir()
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
@@ -397,13 +418,34 @@ pep_mq_lfq2 <- function() {
         
         df <- dplyr::bind_cols(df, df_int)
       }
-      
+
       invisible(df)
+    })
+    
+    # MaxQuant peptide.txt may contains extra_sample_ids not in label_scheme
+    # e.g. one may delete a Sample_ID from label_scheme, 
+    #   the corresponding Sample_ID will be removed from compiled PSM tables.
+    # However, the same needs to be done 
+    #  when backfilling intensity data from peptide.txt.
+    # Otherwise would cause columns of `pep_razor_int (extra_sample_ids)` etc. 
+    #   in peptide table.
+    # This will cause an error with Pep2Prn(method_pep_prn = lfq_...), 
+    # which involves columns of `pep_razor_int (extra_sample_ids)` etc. 
+    # for the identification of top_n.
+    df <- local({
+      extra_sample_ids <- names(df) %>% 
+        .[grep("^Intensity\\s.*", .)] %>% 
+        gsub("^Intensity\\s(.*)$", "\\1", .) %>% 
+        .[! . %in% label_scheme$Sample_ID]
+      
+      df <- df %>% 
+        dplyr::select(-grep(paste0(" ", extra_sample_ids, "$"), names(.)))
     })
     
     df <- df %>% 
       dplyr::filter(not_allzero_rows(.[grep("^LFQ intensity ", names(.))])) 
   })
+  
   
   stopifnot("Proteins" %in% names(df), 
             "Sequence" %in% names(df), 
@@ -788,7 +830,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   } else {
     # temporarily back-fill from a peptide table
     df_num <- pep_mq_lfq(label_scheme, omit_single_lfq)
-    df_num2 <- pep_mq_lfq2()
+    df_num2 <- pep_mq_lfq2(label_scheme)
   }
   
   df_num <- dplyr::left_join(df_num2, df_num, by = group_psm_by)
@@ -2044,7 +2086,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   df <- read.csv(file.path(dat_dir, "Peptide/Peptide.txt"), check.names = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
     dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
-  
+
   if (! "pep_isunique" %in% names(df)) {
     df$pep_isunique <- TRUE
     warning("Column `pep_isunique` created and TRUE values assumed.", 
@@ -2259,17 +2301,14 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
       dplyr::select(-prot_icover, -prot_cover, 
                     -grep("I[0-9]{3}|log2_R[0-9]{3}", names(.))) %>% 
       dplyr::filter(!is.na(gene)) %>% 
-      dplyr::filter(!duplicated(.$gene))
+      dplyr::filter(!duplicated(gene))
     
     dfc <- df %>% 
       dplyr::select(gene, prot_icover, prot_cover) %>% 
       dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
-      # dplyr::filter(prot_cover != "NA%") %>% 
       dplyr::filter(!is.na(prot_cover)) %>% 
       dplyr::group_by(gene) %>% 
-      # dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
-      dplyr::summarise_all(~ max(.x, na.rm = TRUE)) # %>% 
-      # dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+      dplyr::summarise_all(~ max(.x, na.rm = TRUE)) 
     
     df <- list(dfc, dfb, dfa) %>% 
       purrr::reduce(right_join, by = "gene") %>% 

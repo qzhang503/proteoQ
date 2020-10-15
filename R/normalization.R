@@ -182,6 +182,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
       unlist() %>%
       data.frame(x = .) %>%
       tibble::rownames_to_column("Sample_ID") %>%
+      dplyr::filter(.data$Sample_ID %in% label_scheme$Sample_ID) %>% 
       dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
       dplyr::arrange(Sample_ID) %>% 
       dplyr::mutate(x = ifelse(is.na(x), NA, 0))
