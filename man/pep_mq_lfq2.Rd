@@ -4,7 +4,7 @@
 \alias{pep_mq_lfq2}
 \title{Total, razor and unique intensity of peptides}
 \usage{
-pep_mq_lfq2()
+pep_mq_lfq2(label_scheme)
 }
 \description{
 Temporary handling using MaxQuant peptide.txt.

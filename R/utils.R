@@ -1260,7 +1260,7 @@ parse_fasta <- function (df, fasta, entrez) {
     purrr::map(acc_types, ~ {
       if (.x == "uniprot_acc") {
         fasta_names_sub <- acc_lookup %>% 
-          dplyr::filter(!is.na(.x)) %>% 
+          dplyr::filter(!is.na(!!rlang::sym(.x))) %>% 
           .[["fasta_name"]] %>% 
           unique()
         
@@ -1283,7 +1283,7 @@ parse_fasta <- function (df, fasta, entrez) {
         
       } else if (.x == "uniprot_id") {
         fasta_names_sub <- acc_lookup %>% 
-          dplyr::filter(!is.na(.x)) %>% 
+          dplyr::filter(!is.na(!!rlang::sym(.x))) %>% 
           .[["fasta_name"]] %>% 
           unique()
         
@@ -1305,7 +1305,7 @@ parse_fasta <- function (df, fasta, entrez) {
         
       } else if (.x == "refseq_acc") {
         fasta_names_sub <- acc_lookup %>% 
-          dplyr::filter(!is.na(.x)) %>% 
+          dplyr::filter(!is.na(!!rlang::sym(.x))) %>% 
           .[["fasta_name"]] %>% 
           unique()
         
@@ -1352,6 +1352,7 @@ parse_fasta <- function (df, fasta, entrez) {
     }) %>% 
       do.call(`c`, .)
   }) 
+  fasta_db <- fasta_db %>% .[!duplicated(names(.))]
   save(fasta_db, file = file.path(dat_dir, "fasta_db.rda"))
 
   # -- add columns prot_desc, prot_mass, prot_len ---
@@ -2054,6 +2055,8 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq_bare",
     stop("`fasta_db.rda` not found under ", dat_dir, ".", call. = FALSE)
   }
   
+  fasta_db <- fasta_db %>% .[!duplicated(names(.))]
+  
   id <- rlang::as_string(rlang::enexpr(id))
   if (id == "gene") {
     gn_rollup <- TRUE
@@ -2091,15 +2094,21 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq_bare",
     dplyr::select(-c("prot_n_pepi", "prot_n_pep0"))
   
   if (gn_rollup) {
-    df <- df %>% 
-      dplyr::select(fasta_name, gene) %>% 
-      dplyr::filter(!duplicated(fasta_name)) %>% 
-      dplyr::left_join(max_npeps, by = "fasta_name") %>% 
-      dplyr::select(-fasta_name) %>% 
-      dplyr::filter(!is.na(gene)) %>% 
-      dplyr::group_by(gene) %>% 
-      suppressWarnings(dplyr::summarise_all(~ max(.x, na.rm = TRUE))) %>% 
-      dplyr::left_join(df, ., by = "gene")
+    df <- local({
+      tempdata <- df %>% 
+        dplyr::select(fasta_name, gene) %>% 
+        dplyr::filter(!duplicated(fasta_name)) %>% 
+        dplyr::left_join(max_npeps, by = "fasta_name") %>% 
+        dplyr::select(-fasta_name) %>% 
+        dplyr::filter(!is.na(gene)) %>% 
+        dplyr::group_by(gene)
+      
+      suppressWarnings(
+        tempdata %>% 
+          dplyr::summarise_all(~ max(.x, na.rm = TRUE))
+      ) %>% 
+        dplyr::left_join(df, ., by = "gene")
+    })
   } else {
     df <- df %>% 
       dplyr::left_join(max_npeps, by = "fasta_name")
@@ -2188,8 +2197,11 @@ calc_cover <- function(df, id) {
       dplyr::left_join(df_sels, by = "prot_acc") %>% 
       dplyr::select(-prot_acc) %>% 
       dplyr::filter(!is.na(gene)) %>% 
-      dplyr::group_by(gene) %>% 
-      suppressWarnings(dplyr::summarise_all(~ max(.x, na.rm = TRUE)))
+      dplyr::group_by(gene) 
+    
+    df_sels <- suppressWarnings(
+      df_sels %>% dplyr::summarise_all(~ max(.x, na.rm = TRUE))
+    )
     
     df_sels <- df %>% 
       dplyr::select(prot_acc, gene) %>% 
@@ -2211,9 +2223,7 @@ calc_cover <- function(df, id) {
   }
   
   df <- df %>% 
-    dplyr::mutate(prot_cover = round(prot_cover, digits = 3)) # %>% 
-    # dplyr::mutate(prot_cover = round(prot_cover * 100, digits = 1)) %>%
-    # dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+    dplyr::mutate(prot_cover = round(prot_cover, digits = 3)) 
 
   invisible(df)
 }
@@ -2896,10 +2906,11 @@ gn_rollup <- function (df, cols) {
     dfc <- df %>% 
       dplyr::select(gene, prot_cover) %>% 
       dplyr::filter(!is.na(gene), !is.na(prot_cover)) %>% 
-      dplyr::group_by(gene) %>% 
-      # dplyr::mutate(prot_cover = as.numeric(sub("%", "", prot_cover))) %>% 
-      suppressWarnings(dplyr::summarise_all(~ max(.x, na.rm = TRUE))) # %>% 
-      # dplyr::mutate(prot_cover = paste0(prot_cover, "%"))
+      dplyr::group_by(gene) 
+    
+    dfc <- suppressWarnings(
+      dfc %>% dplyr::summarise_all(~ max(.x, na.rm = TRUE))
+    )
   } else {
     dfc <- df %>% 
       dplyr::select(gene) %>% 
@@ -3193,6 +3204,10 @@ set_cutpoints2 <- function(cut_points, df) {
       cut_nm <- "mean_lint"
     }
     
+    if (! is.numeric(df[[cut_nm]])) {
+      stop("Column `", cut_nm, "` is not numeric.", call. = FALSE)
+    }
+    
     cut_points <- quantile(df[[cut_nm]], na.rm = TRUE) 
     seqs <- seq_along(cut_points)
     names(cut_points)[seqs] <- cut_nm
@@ -3209,6 +3224,10 @@ set_cutpoints2 <- function(cut_points, df) {
               "instead use column `mean_lint`.", 
               call. = FALSE)
       cut_nm <- "mean_lint"
+    }
+    
+    if (! is.numeric(df[[cut_nm]])) {
+      stop("Column `", cut_nm, "` is not numeric.", call. = FALSE)
     }
     
     cut_points <- set_cutpoints(cut_points, df[[cut_nm]])

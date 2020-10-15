@@ -367,3 +367,45 @@ parse_mq_mods <- function() {
   save(mq_mods, file = file.path(dat_dir, "mq_mods.rda"), compress = "xz")
 }
 
+
+foo_fc_tables <- function () {
+  library(magrittr)
+  library(dplyr)
+  library(purrr)
+  library(readr)
+  library(openxlsx)
+  
+  scale_log2r <- TRUE
+  NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
+  
+  df <- readr::read_tsv(file.path(dat_dir, "Protein/Protein.txt")) %>% 
+    dplyr::select("gene", grep(NorZ_ratios, names(.))) %>% 
+    `names<-`(gsub("^.*[NZ]{1}_log2_R[0-9]{3}[NC]{0,1}\\s\\((.*)\\)$", "\\1", names(.))) %T>% 
+    write_tsv(file.path(dat_dir, "Protein/protein_logFC.txt")) 
+  
+  wb <- openxlsx::createWorkbook()
+  openxlsx::addWorksheet(wb, sheetName = "logFC")
+  openxlsx::writeData(wb, sheet = "logFC", df)
+  openxlsx::saveWorkbook(wb, file.path(dat_dir, "Protein/protein_logFC.xlsx"), overwrite = TRUE)
+  
+  df <- df %>% 
+    dplyr::mutate_if(is.numeric, ~ ifelse(.x > 0, 2^.x, -1/(2^.x)) %>% round(digits = 2)) %T>% 
+    write_tsv(file.path(dat_dir, "Protein/protein_FC.txt")) 
+  
+  wb <- openxlsx::createWorkbook()
+  openxlsx::addWorksheet(wb, sheetName = "FC")
+  openxlsx::writeData(wb, sheet = "FC", df)
+  openxlsx::saveWorkbook(wb, file.path(dat_dir, "Protein/protein_FC.xlsx"), overwrite = TRUE)
+  
+  # --- to nmb 
+  # (not run)
+  df <- readr::read_tsv(file.path(dat_dir, "Protein/Protein.txt")) %>% 
+    dplyr::select("gene", grep(NorZ_ratios, names(.))) %>% 
+    `names<-`(gsub("^.*[NZ]{1}_log2_R[0-9]{3}[NC]{0,1}\\s\\((.*)\\)$", "\\1", names(.))) %>% 
+    dplyr::mutate_if(is.numeric, ~ .x - .data$NBM) %>% 
+    dplyr::select(-grep("^Ref\\.[0-9]+", names(.))) %T>% 
+    write_tsv(file.path(dat_dir, "Protein/protein_logFC_to_nbm.txt")) %>% 
+    dplyr::mutate_if(is.numeric, ~ ifelse(.x > 0, 2^.x, -1/(2^.x)) %>% round(digits = 2)) %T>% 
+    write_tsv(file.path(dat_dir, "Protein/protein_FC_to_nbm.txt")) 
+  
+}
