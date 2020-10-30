@@ -21,6 +21,11 @@
 #'                     pattern = ">(.{50}).*")
 #' head(names(fasta))
 #' 
+#' # uniprot_acc
+#' fasta <- read_fasta(file = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
+#'                     pattern = ">..\\|([^\\|]+)\\|.*")
+#' head(names(fasta))
+#' 
 #' # use every in the header
 #' fasta <- read_fasta(file = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
 #'                     pattern = ">(.*)")

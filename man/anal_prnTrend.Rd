@@ -8,6 +8,7 @@ anal_prnTrend(
   col_select = NULL,
   col_group = NULL,
   col_order = NULL,
+  meth_clust = c("cmeans", "clara", "kmeans", "pam", "fanny"),
   n_clust = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -37,6 +38,9 @@ Numeric values under which will be used for the left-to-right arrangement of
 samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
+
+\item{meth_clust}{Character string; the clustering method in \code{c("cmeans",
+"clara", "kmeans", "pam", "fanny")}. The default is "cmeans".}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be
 divided into. At the NULL default, it will be determined by the gap method
@@ -73,10 +77,13 @@ against data in a primary file linked to \code{df}. See also
 \code{arrange_}: Variable argument statements for the row ordering against
 data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
 the format of \code{arrange_} statements. \cr \cr Additional arguments for
-\code{\link[e1071]{cmeans}} by noting that: \cr \code{centers} is replaced
-with \code{n_clust} \cr \code{m} is according to Schwaemmle and Jensen if
-not provided; \cr \code{x} is disabled with input data being determined
-automatically}
+\link[e1071]{cmeans}, \link[stats]{kmeans}, \link[cluster]{clara},
+\link[cluster]{pam}. Note that \code{centers} in \link[e1071]{cmeans} or
+\link[stats]{kmeans} is replaced with \code{n_clust}. The same applies to
+\code{k} in \link[cluster]{clara} or \link[cluster]{pam}. \cr With
+\link[e1071]{cmeans}, \code{m} is according to Schwaemmle and Jensen if not
+provided; \cr \code{x} is disabled with input data being determined
+automatically.}
 }
 \value{
 Fuzzy c-mean classification of \code{log2FC}.

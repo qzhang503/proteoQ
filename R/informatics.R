@@ -252,14 +252,16 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	# `complete_cases` subsets data rows in primary outputs
 
 	if (anal_type == "MDS") {
-		function(adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2,
-		         k = 3, dimension = 2, folds = 1,
+		function(dist_co = log2(1), adjEucDist = FALSE, classical = TRUE, 
+		         method = "euclidean", 
+		         p = 2, k = 3, dimension = 2, folds = 1,
 		         show_ids = TRUE, show_ellipses = FALsE, 
 		         center_features = TRUE, scale_features = TRUE,
 		         theme = NULL, ...) {
 		  plotMDS(df = df,
 		          id = !!id,
 		          label_scheme_sub = label_scheme_sub,
+		          dist_co = dist_co, 
 		          adjEucDist = adjEucDist,
 		          classical = classical,
 		          method = method,
@@ -464,12 +466,13 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL, col_order
 	                ...)
 	  }
 	} else if (anal_type == "Trend") {
-		function(n_clust = NULL, ...) {
+		function(meth_clust = "cmeans", n_clust = NULL, ...) {
 		  analTrend(df = df,
 		            id = !!id,
                 col_group = !!col_group,
                 col_order = !!col_order,
                 label_scheme_sub = label_scheme_sub,
+		            meth_clust = meth_clust,
                 n_clust = n_clust,
 		            scale_log2r = scale_log2r,
 		            complete_cases = complete_cases,

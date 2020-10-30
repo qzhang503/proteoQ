@@ -32,7 +32,8 @@ geom_lower_text <- function(data, mapping, params, show_ids, ...) {
 #' @import dplyr ggplot2 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
-                     adjEucDist = FALSE, classical = TRUE, method = "euclidean", p = 2,
+                     dist_co = log2(1), adjEucDist = FALSE, classical = TRUE, 
+                     method = "euclidean", p = 2,
                      k = 3, dimension = 2, folds = 1, show_ids = FALSE, show_ellipses = FALSE,
                      col_group = NULL,
                      col_color = NULL, col_fill = NULL, col_shape = NULL, col_size = NULL,
@@ -71,17 +72,26 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                                           "x", "method", "diag", "upper", "p", "m")] # dist
   dots <- dots %>% .[! . %in% anal_dots]
 
-  if (!is.null(anal_dots$x)) warning("Argument `x` in `dist()` automated.", call. = FALSE)
-  if (!is.null(anal_dots$diag)) warning("Argument `diag` in `dist()` automated.", call. = FALSE)
-  if (!is.null(anal_dots$upper)) warning("Argument `upper` in `dist()` automated.", call. = FALSE)
-  if (!is.null(anal_dots$m)) warning("Argument `m` in `dist()` not used.", call. = FALSE)
+  if (!is.null(anal_dots$x)) warning("Argument `x` in `dist()` automated.", 
+                                     call. = FALSE)
+  if (!is.null(anal_dots$diag)) warning("Argument `diag` in `dist()` automated.", 
+                                        call. = FALSE)
+  if (!is.null(anal_dots$upper)) warning("Argument `upper` in `dist()` automated.", 
+                                         call. = FALSE)
+  if (!is.null(anal_dots$m)) warning("Argument `m` in `dist()` not used.", 
+                                     call. = FALSE)
 
-  if (!is.null(anal_dots$d)) warning("Distance object `d` automated.", call. = FALSE)
-  if (!is.null(anal_dots$eig)) warning("Argument `eig` in `cmdscale()` automated.", call. = FALSE)
-  if (!is.null(anal_dots$x.ret)) warning("Argument `x.ret` in `cmdscale()` automated.", call. = FALSE)
-  if (!is.null(anal_dots$list.)) warning("Argument `list.` in `cmdscale()` automated.", call. = FALSE)
+  if (!is.null(anal_dots$d)) warning("Distance object `d` automated.", 
+                                     call. = FALSE)
+  if (!is.null(anal_dots$eig)) warning("Argument `eig` in `cmdscale()` automated.", 
+                                       call. = FALSE)
+  if (!is.null(anal_dots$x.ret)) warning("Argument `x.ret` in `cmdscale()` automated.", 
+                                         call. = FALSE)
+  if (!is.null(anal_dots$list.)) warning("Argument `list.` in `cmdscale()` automated.", 
+                                         call. = FALSE)
 
-  if (!is.null(anal_dots$y)) warning("Argument `y` in `isoMDS()` automated.", call. = FALSE)
+  if (!is.null(anal_dots$y)) warning("Argument `y` in `isoMDS()` automated.", 
+                                     call. = FALSE)
 
   # note that `method`, `k`, `p` already in main arguments
   anal_dots <- anal_dots %>% .[! names(.) %in% c("x", "method", "diag", "upper", "p", "m")]
@@ -101,6 +111,7 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       scale_log2r = scale_log2r,
       center_features = center_features,
       scale_features = scale_features,
+      dist_co = dist_co,
       adjEucDist = adjEucDist,
       classical = classical,
       method = method,
@@ -466,7 +477,8 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
                       center_features, scale_features,
-                      adjEucDist = FALSE, classical, method = "euclidean",
+                      dist_co = log2(1), adjEucDist = FALSE, classical, 
+                      method = "euclidean",
                       p = 2, k = 3, col_group, folds, out_file, ...) {
 
 	dots <- rlang::enexprs(...)
@@ -476,13 +488,15 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	stopifnot(nrow(df) > 50)
 
 	df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r,
-	             sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>%
+	             sub_grp = label_scheme_sub$Sample_ID, 
+	             anal_type = anal_type) %>%
 	  .$log2R
 
 	nms <- names(df)
 	n_rows <- nrow(df)
 
-	label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% nms)
+	label_scheme_sub <- label_scheme_sub %>% 
+	  dplyr::filter(Sample_ID %in% nms)
 
 	res <- prep_folded_tdata(df, folds, label_scheme_sub, !!col_group)
 	df_t <- res$df_t
@@ -503,18 +517,50 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	  df_t <- df_t %>% sweep(., 2, colMeans(., na.rm = TRUE), "-")
 	}
   
-	D <- dist(x = df_t, method = method, diag = TRUE, upper = TRUE, p = p) %>%
-	  as.matrix()
-
-	if (anyNA(D)) stop("Distance cannot be calculated between one more sample pairs.\n",
-	                   "Check entries under the column corresponding to `col_select` in metadata.",
-	                   call. = FALSE)
+	if (dist_co > 0) {
+	  D <- local({
+	    len <- nrow(df_t)
+	    D <- matrix(ncol = len, nrow = len)
+	    colnames(D) <- rownames(D) <- rownames(df_t)
+	    
+	    for (i in seq_len(len)) {
+	      for (j in 1:i) {
+	        x_i <- df_t[i, ]
+	        x_j <- df_t[j, ]
+	        oks <- (abs(x_i - x_j) < dist_co)
+	        
+	        x_i[oks] <- x_j[oks] <- NA
+	        x <- rbind(x_i, x_j)
+	        
+	        D[j, i] <- D[i, j] <- 
+	          dist(x = x, method = method, diag = TRUE, upper = TRUE, p = p) %>% 
+	          `[`(1)
+	      }
+	      
+	      D[i, i] <- 0
+	    }
+	    
+	    invisible(D)
+	  })
+	} else if (identical(dist_co, 0)) {
+	  D <- dist(x = df_t, method = method, diag = TRUE, upper = TRUE, p = p) %>%
+	    as.matrix()
+	} else {
+	  stop("`dist_co` cannot be negative.", call. = FALSE)
+	}
+	
+	if (anyNA(D)) {
+	  stop("Distance cannot be calculated between one or more sample pairs.\n", 
+	       "Check entries under the column corresponding to `col_select` in metadata.", 
+	       call. = FALSE)
+	}
 
 	if (adjEucDist && method == "euclidean") {
 	  D <- local({
 	    annotation_col <- colAnnot(annot_cols = c("TMT_Set"), sample_ids = nms) %>%
 	      .[rep(seq_len(nrow(.)), folds), , drop = FALSE] %>%
-	      `rownames<-`(paste(rep(nms, folds), rep(seq_len(folds), each = length(nms)), sep = "."))
+	      `rownames<-`(paste(rep(nms, folds), rep(seq_len(folds), each = length(nms)), 
+	                         sep = "."))
 
 	    for (i in 1:ncol(D)) {
 	      for (j in 1:ncol(D)) {
@@ -526,7 +572,7 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	    return(D)
 	  })
 	}
-
+  
 	if (!classical) {
 	  isomds_dots <- dots %>% .[names(.) %in% c("y", "maxit", "trace", "tol")]
 	  isomds_dots$y <- NULL
@@ -662,7 +708,7 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, col_f
                     color_brewer = NULL, fill_brewer = NULL,
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-                    adjEucDist = FALSE, classical = TRUE,
+                    dist_co = dist_co, adjEucDist = FALSE, classical = TRUE,
                     method = "euclidean", p = 2, k = 3, dimension = 2, folds = 1,
                     center_features = TRUE, scale_features = TRUE,
                     show_ids = TRUE, show_ellipses = FALSE,
@@ -706,7 +752,9 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, col_f
             alpha_manual = !!alpha_manual,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method,
+            anal_type = "MDS")(dist_co = dist_co, 
+                               adjEucDist = adjEucDist, 
+                               classical = classical, method = method,
                                p = p, k = k, dimension = dimension, folds = folds, 
                                show_ids = show_ids,
                                show_ellipses = show_ellipses, 
@@ -792,6 +840,11 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, col_f
 #'  \code{\link[stats]{cmdscale}}. The default is 3.
 #'@param dimension Numeric; The desired dimension for pairwise visualization.
 #'  The default is 2.
+#'@param dist_co Numeric; The cut-off in the absolute distance measured by
+#'  \eqn{d = abs(x_i - x_j)}. Data pairs, \eqn{x_i} and \eqn{x_j}, with
+#'  corresponding \eqn{d} smaller than \code{dist_co} will be excluded from
+#'  distance calculations by \link[stats]{dist}. The default is no distance
+#'  cut-off at \eqn{dist_co = log2(1)}.
 #'@param show_ids Logical; if TRUE, shows the sample IDs in \code{MDS/PCA}
 #'  plots. The default is TRUE.
 #'@param show_ellipses Logical; if TRUE, shows the ellipses by sample groups
@@ -870,7 +923,7 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, col_f
                     color_brewer = NULL, fill_brewer = NULL,
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-                    adjEucDist = FALSE, classical = TRUE,
+                    dist_co = log2(1), adjEucDist = FALSE, classical = TRUE,
                     method = "euclidean", p = 2, k = 3, dimension = 2, folds = 1,
                     center_features = TRUE, scale_features = TRUE,
                     show_ids = TRUE, show_ellipses = FALSE,
@@ -914,7 +967,10 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, col_f
             alpha_manual = !!alpha_manual,
             scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "MDS")(adjEucDist = adjEucDist, classical = classical, method = method,
+            anal_type = "MDS")(dist_co = dist_co, 
+                               adjEucDist = adjEucDist, 
+                               classical = classical, 
+                               method = method,
                                p = p, k = k, dimension = dimension, folds = folds, 
                                show_ids = show_ids,
                                show_ellipses = show_ellipses, 

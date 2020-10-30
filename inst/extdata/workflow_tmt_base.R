@@ -196,8 +196,8 @@ scale_log2r <- TRUE
 # peptide
 pepMDS(
 	show_ids = FALSE,
-	width = 10,
-	height = 3.75,	
+	width = 8,
+	height = 4,	
 )
 
 # protein

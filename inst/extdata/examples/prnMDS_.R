@@ -171,6 +171,15 @@ prnMDS(
 )
 
 
+# toy example of finding samples(s) that are 
+# most different in large fold changes;
+prnMDS(
+  show_ids = TRUE, 
+  dist_co = log2(4),
+  filename = where_are_the_large_diffs.png,
+)
+
+
 ## custom theme
 library(ggplot2)
 my_mds_theme <- theme_bw() + theme(

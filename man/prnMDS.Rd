@@ -21,6 +21,7 @@ pepMDS(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
+  dist_co = dist_co,
   adjEucDist = FALSE,
   classical = TRUE,
   method = "euclidean",
@@ -55,6 +56,7 @@ prnMDS(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
+  dist_co = log2(1),
   adjEucDist = FALSE,
   classical = TRUE,
   method = "euclidean",
@@ -142,6 +144,12 @@ missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{dist_co}{Numeric; The cut-off in the absolute distance measured by
+\eqn{d = abs(x_i - x_j)}. Data pairs, \eqn{x_i} and \eqn{x_j}, with
+corresponding \eqn{d} smaller than \code{dist_co} will be excluded from
+distance calculations by \link[stats]{dist}. The default is no distance
+cut-off at \eqn{dist_co = log2(1)}.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex \code{Euclidean}
 distance by \eqn{1/sqrt(2)} at \code{method = "euclidean"}. The option
@@ -411,6 +419,15 @@ prnMDS(
   k = 4, 
   dimension = 3,
   filename = d3_whims.png,
+)
+
+
+# toy example of finding samples(s) that are 
+# most different in large fold changes;
+prnMDS(
+  show_ids = TRUE, 
+  dist_co = log2(4),
+  filename = where_are_the_large_diffs.png,
 )
 
 
