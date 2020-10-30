@@ -12,6 +12,7 @@ scoreMDS(
   scale_log2r,
   center_features,
   scale_features,
+  dist_co = log2(1),
   adjEucDist = FALSE,
   classical,
   method = "euclidean",
@@ -59,6 +60,12 @@ or \code{\link{standPep}} where log2FC are aligned by observations
 variance by features (protein or peptide entries). The default is TRUE. Note
 the difference to data scaling with \code{scale_log2r} where log2FC are
 scaled by observations (samples).}
+
+\item{dist_co}{Numeric; The cut-off in the absolute distance measured by
+\eqn{d = abs(x_i - x_j)}. Data pairs, \eqn{x_i} and \eqn{x_j}, with
+corresponding \eqn{d} smaller than \code{dist_co} will be excluded from
+distance calculations by \link[stats]{dist}. The default is no distance
+cut-off at \eqn{dist_co = log2(1)}.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex \code{Euclidean}
 distance by \eqn{1/sqrt(2)} at \code{method = "euclidean"}. The option

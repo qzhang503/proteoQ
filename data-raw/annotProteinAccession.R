@@ -201,6 +201,38 @@ map_refseq <- function(species) {
 		columns = c("REFSEQ_PROTEIN")) %>% 
 		mutate(REFSEQ_PROTEIN = gsub("\\..*", "", REFSEQ_PROTEIN)) %>% 
 		dplyr::rename(Uniprot_accession = UNIPROTKB)
+	
+	## ---- easier new approach ----
+	# human
+	dat_dir <- "~/proteoQ"
+	fasta <- read_fasta(pattern = ">..\\|([^\\|]+)\\|.*", 
+	                    file = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta")
+	
+	# (1) uniprot_acc ~ gene
+	up_gn <- data.frame(prot_desc = purrr::map_chr(fasta, attr, "header")) %>% 
+	  dplyr::mutate(uniprot_acc = gsub(">..\\|([^\\|]+)\\|.*", "\\1", prot_desc)) %>% 
+	  dplyr::mutate(gene = gsub("^.*GN=(\\S+)\\s*.*", "\\1", prot_desc)) %>% 
+	  dplyr::select(-prot_desc) 
+	
+	# (2) refseq_acc ~ uniprot_acc
+	up_gn %>% 
+	  dplyr::select(uniprot_acc) %>% 
+	  readr::write_tsv(file.path(dat_dir, "uniprot_acc.txt"))
+
+	# load "uniprot_acc.txt" to uniprot web site
+	# ...
+	# save results: "uniprot_acc_to_refseq_hs.txt"
+
+	up_rs <- readr::read_tsv("~/proteoQ/uniprot_acc_to_refseq_hs.txt", 
+	                                 col_types = cols(From = col_character())) %>% 
+	  dplyr::rename(uniprot_acc = From, refseq_acc = To) %>% 
+	  dplyr::mutate(refseq_acc = gsub("\\.[0-9]*$", "", refseq_acc))
+	
+	# (3) refseq_acc ~ gene
+	rs_gn <- up_rs %>% 
+	  dplyr::left_join(up_gn, by = "uniprot_acc") %>% 
+	  dplyr::select(-uniprot_acc) %>% 
+	  dplyr::filter(!duplicated(refseq_acc))
 }
 
 

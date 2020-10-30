@@ -8,6 +8,7 @@ plotMDS(
   df = NULL,
   id = NULL,
   label_scheme_sub = NULL,
+  dist_co = log2(1),
   adjEucDist = FALSE,
   classical = TRUE,
   method = "euclidean",
@@ -55,6 +56,12 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
+
+\item{dist_co}{Numeric; The cut-off in the absolute distance measured by
+\eqn{d = abs(x_i - x_j)}. Data pairs, \eqn{x_i} and \eqn{x_j}, with
+corresponding \eqn{d} smaller than \code{dist_co} will be excluded from
+distance calculations by \link[stats]{dist}. The default is no distance
+cut-off at \eqn{dist_co = log2(1)}.}
 
 \item{adjEucDist}{Logical; if TRUE, adjusts the inter-plex \code{Euclidean}
 distance by \eqn{1/sqrt(2)} at \code{method = "euclidean"}. The option

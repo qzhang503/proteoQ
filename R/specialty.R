@@ -408,6 +408,10 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL,
     color_breaks <- c(seq(from = xmin, -xmargin, length = n_color/2)[1:(n_color/2-1)],
                       seq(-xmargin, xmargin, length = 3),
                       seq(xmargin, xmax, length = n_color/2)[2:(n_color/2)])
+    
+    color_breaks <- color_breaks %>% 
+      .[. >= xmin] %>% 
+      unique()
   } else if (is.na(dots$breaks)) {
     color_breaks <- NA
   } else {
