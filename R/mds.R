@@ -708,7 +708,7 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL, col_f
                     color_brewer = NULL, fill_brewer = NULL,
                     size_manual = NULL, shape_manual = NULL, alpha_manual = NULL,
                     scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
-                    dist_co = dist_co, adjEucDist = FALSE, classical = TRUE,
+                    dist_co = log2(1), adjEucDist = FALSE, classical = TRUE,
                     method = "euclidean", p = 2, k = 3, dimension = 2, folds = 1,
                     center_features = TRUE, scale_features = TRUE,
                     show_ids = TRUE, show_ellipses = FALSE,

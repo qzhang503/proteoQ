@@ -21,7 +21,7 @@ pepMDS(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
-  dist_co = dist_co,
+  dist_co = log2(1),
   adjEucDist = FALSE,
   classical = TRUE,
   method = "euclidean",
