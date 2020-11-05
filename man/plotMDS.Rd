@@ -8,9 +8,9 @@ plotMDS(
   df = NULL,
   id = NULL,
   label_scheme_sub = NULL,
+  choice = "cmdscale",
   dist_co = log2(1),
   adjEucDist = FALSE,
-  classical = TRUE,
   method = "euclidean",
   p = 2,
   k = 3,
@@ -57,6 +57,9 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
 
+\item{choice}{Character string; the MDS method in \code{c("cmdscale",
+"isoMDS")}. The default is "cmdscale".}
+
 \item{dist_co}{Numeric; The cut-off in the absolute distance measured by
 \eqn{d = abs(x_i - x_j)}. Data pairs, \eqn{x_i} and \eqn{x_j}, with
 corresponding \eqn{d} smaller than \code{dist_co} will be excluded from
@@ -75,12 +78,9 @@ labeling. Also see online
 \href{https://github.com/qzhang503/proteoQ}{README, section MDS} for a brief
 reasoning.}
 
-\item{classical}{Logical. Metric MDS will be performed at TRUE and non-metric
-MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
-\code{\link[MASS]{isoMDS}}). The default is TRUE.}
-
-\item{method}{Character string; the distance measure in
-\code{\link[stats]{dist}}. The default method is "euclidean".}
+\item{method}{Character string; the distance measure in one of c("euclidean",
+"maximum", "manhattan", "canberra", "binary") for \code{\link[stats]{dist}}.
+The default method is "euclidean".}
 
 \item{p}{Numeric; The power of the Minkowski distance in
 \code{\link[stats]{dist}}. The default is 2.}

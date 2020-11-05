@@ -137,9 +137,8 @@ of sizes.}
 \item{use_adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals. The default is
 FALSE.}
 
-\item{method}{Character string or vector; the method to assess the p-values of
-GSPA. The default is \code{mean} and the alternative is \code{limma}. See
-also section \code{Details} for the calculations.}
+\item{method}{Dummy argument to avoid incurring the corresponding argument in
+\link[stats]{dist} by partial argument matches.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined

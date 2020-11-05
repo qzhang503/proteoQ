@@ -14,7 +14,7 @@ scoreMDS(
   scale_features,
   dist_co = log2(1),
   adjEucDist = FALSE,
-  classical,
+  choice = "cmdscale",
   method = "euclidean",
   p = 2,
   k = 3,
@@ -79,12 +79,12 @@ labeling. Also see online
 \href{https://github.com/qzhang503/proteoQ}{README, section MDS} for a brief
 reasoning.}
 
-\item{classical}{Logical. Metric MDS will be performed at TRUE and non-metric
-MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
-\code{\link[MASS]{isoMDS}}). The default is TRUE.}
+\item{choice}{Character string; the MDS method in \code{c("cmdscale",
+"isoMDS")}. The default is "cmdscale".}
 
-\item{method}{Character string; the distance measure in
-\code{\link[stats]{dist}}. The default method is "euclidean".}
+\item{method}{Character string; the distance measure in one of c("euclidean",
+"maximum", "manhattan", "canberra", "binary") for \code{\link[stats]{dist}}.
+The default method is "euclidean".}
 
 \item{p}{Numeric; The power of the Minkowski distance in
 \code{\link[stats]{dist}}. The default is 2.}

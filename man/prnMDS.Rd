@@ -18,12 +18,12 @@ pepMDS(
   size_manual = NULL,
   shape_manual = NULL,
   alpha_manual = NULL,
+  choice = c("cmdscale", "isoMDS"),
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
   dist_co = log2(1),
   adjEucDist = FALSE,
-  classical = TRUE,
   method = "euclidean",
   p = 2,
   k = 3,
@@ -53,12 +53,12 @@ prnMDS(
   size_manual = NULL,
   shape_manual = NULL,
   alpha_manual = NULL,
+  choice = c("cmdscale", "isoMDS"),
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
   dist_co = log2(1),
   adjEucDist = FALSE,
-  classical = TRUE,
   method = "euclidean",
   p = 2,
   k = 3,
@@ -136,6 +136,9 @@ use in
  , i.e., \code{alpha_manual = c(.5, .9)}. At the NULL default, the setting
 in \code{ggplot2} will be used.}
 
+\item{choice}{Character string; the MDS method in \code{c("cmdscale",
+"isoMDS")}. The default is "cmdscale".}
+
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
 
@@ -163,12 +166,9 @@ labeling. Also see online
 \href{https://github.com/qzhang503/proteoQ}{README, section MDS} for a brief
 reasoning.}
 
-\item{classical}{Logical. Metric MDS will be performed at TRUE and non-metric
-MDS at FALSE (see also \code{\link[stats]{cmdscale}} and
-\code{\link[MASS]{isoMDS}}). The default is TRUE.}
-
-\item{method}{Character string; the distance measure in
-\code{\link[stats]{dist}}. The default method is "euclidean".}
+\item{method}{Character string; the distance measure in one of c("euclidean",
+"maximum", "manhattan", "canberra", "binary") for \code{\link[stats]{dist}}.
+The default method is "euclidean".}
 
 \item{p}{Numeric; The power of the Minkowski distance in
 \code{\link[stats]{dist}}. The default is 2.}
@@ -454,7 +454,7 @@ my_mds_theme <- theme_bw() + theme(
 )
 
 pepMDS(
-  impute_na = TRUE,
+  impute_na = FALSE,
   col_color = Color,
   col_shape = Shape,
   show_ids = FALSE,

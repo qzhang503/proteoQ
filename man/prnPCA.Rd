@@ -18,6 +18,7 @@ pepPCA(
   size_manual = NULL,
   shape_manual = NULL,
   alpha_manual = NULL,
+  choice = c("prcomp"),
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -48,6 +49,7 @@ prnPCA(
   size_manual = NULL,
   shape_manual = NULL,
   alpha_manual = NULL,
+  choice = c("prcomp"),
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -125,6 +127,9 @@ use in
 \href{https://ggplot2.tidyverse.org/reference/scale_manual.html}{ggplot2::scale_alpha_manual}
  , i.e., \code{alpha_manual = c(.5, .9)}. At the NULL default, the setting
 in \code{ggplot2} will be used.}
+
+\item{choice}{Character string; the PCA method in \code{c("prcomp")}. The
+default is "prcomp".}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}

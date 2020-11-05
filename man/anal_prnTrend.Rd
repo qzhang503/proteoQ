@@ -8,7 +8,7 @@ anal_prnTrend(
   col_select = NULL,
   col_group = NULL,
   col_order = NULL,
-  meth_clust = c("cmeans", "clara", "kmeans", "pam", "fanny"),
+  choice = c("cmeans", "clara", "kmeans", "pam", "fanny"),
   n_clust = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -39,7 +39,7 @@ samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 the NULL default, the column key \code{Order} will be used. If values under
 column \code{Order} are left blank, samples will be ordered by their names.}
 
-\item{meth_clust}{Character string; the clustering method in \code{c("cmeans",
+\item{choice}{Character string; the clustering method in \code{c("cmeans",
 "clara", "kmeans", "pam", "fanny")}. The default is "cmeans".}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be
@@ -86,11 +86,11 @@ provided; \cr \code{x} is disabled with input data being determined
 automatically.}
 }
 \value{
-Fuzzy c-mean classification of \code{log2FC}.
+Classified \code{log2FC}.
 }
 \description{
-\code{anal_prnTrend} applies the soft clustering algorithm in
-\code{\link[e1071]{cmeans}} for the trend analysis of protein \code{log2FC}.
+\code{anal_prnTrend} performs unsupervised clustering of protein
+\code{log2FC}.
 }
 \details{
 The option of \code{complete_cases} will be forced to \code{TRUE} at
@@ -132,7 +132,7 @@ anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
-  filter_prots_by = exprs(prot_n_pep >= 3),
+  filter_prots_by = exprs(prot_n_pep >= 2),
 )
 
 ## manual m degree of fuzziness (proteins)
@@ -140,7 +140,7 @@ anal_prnTrend(
   impute_na = FALSE,
   col_order = Order,
   n_clust = c(5:6), 
-  filter_prots = exprs(prot_n_pep >= 3),
+  filter_prots = exprs(prot_n_pep >= 2),
   m = 1.5,
   filename = my_m.txt,
 )
@@ -287,18 +287,51 @@ plot_prnTrend(
   filename = my_theme.png,
 )
 
+## no grouping 
+# each sample under column `Select` forms its own group
+anal_prnTrend(
+  col_group = Select,
+  col_order = Order,
+  n_clust = 6, 
+  filter_prots = exprs(prot_n_pep >= 2),
+  filename = sample_ids_as_groups.txt,
+)
+
+plot_prnTrend(
+  df2 = "sample_ids_as_groups_Protein_Trend_Z_nclust6.txt",
+  filter2_by_clusters = exprs(cluster == 4),
+  width = 24,
+  height = 16,
+)
+
+## grouped by column `Term_2` in metadata
+anal_prnTrend(
+  col_group = Term_2,
+  col_order = Order,
+  n_clust = 6, 
+  filter_prots = exprs(prot_n_pep >= 2),
+  filename = term_2_grouping.txt,
+)
+
+plot_prnTrend(
+  df2 = "term_2_grouping_Protein_Trend_Z_nclust6.txt",
+  filter2_by_clusters = exprs(cluster == 3),
+  width = 6,
+  height = 6,
+)
+
 ## Cytoscape visualization
 # (Make sure that Cytoscape is open.)
 # Human
 cluego(
-  df2 = Protein_Trend_Z_nclust5.txt, 
+  df2 = "Protein_Trend_Z_nclust5.txt", 
   species = c(human = "Homo Sapiens"), 
   n_clust = c(3, 5)
 )
 
 # Mouse
 cluego(
-  df2 = Protein_Trend_Z_nclust5.txt, 
+  df2 = "Protein_Trend_Z_nclust5.txt", 
   species = c(mouse = "Mus Musculus"), 
   n_clust = c(3:4)
 )

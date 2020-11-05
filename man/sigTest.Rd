@@ -59,9 +59,8 @@ is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
-\item{method}{Character string or vector; the method to assess the p-values of
-GSPA. The default is \code{mean} and the alternative is \code{limma}. See
-also section \code{Details} for the calculations.}
+\item{method}{Dummy argument to avoid incurring the corresponding argument in
+\link[stats]{dist} by partial argument matches.}
 
 \item{padj_method}{Character string; the method of multiple-test corrections
 for uses with \link[stats]{p.adjust}. The default is "BH". See

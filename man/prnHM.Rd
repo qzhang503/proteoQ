@@ -24,6 +24,14 @@ pepHM(
   hc_method_cols = "complete",
   p_dist_rows = 2,
   p_dist_cols = 2,
+  x = NULL,
+  p = NULL,
+  method = NULL,
+  diag = NULL,
+  upper = NULL,
+  annotation_col = NULL,
+  annotation_row = NULL,
+  clustering_method = NULL,
   ...
 )
 
@@ -46,6 +54,14 @@ prnHM(
   hc_method_cols = "complete",
   p_dist_rows = 2,
   p_dist_cols = 2,
+  x = NULL,
+  p = NULL,
+  method = NULL,
+  diag = NULL,
+  upper = NULL,
+  annotation_col = NULL,
+  annotation_row = NULL,
+  clustering_method = NULL,
   ...
 )
 }
@@ -119,6 +135,30 @@ The default is 2.}
 
 \item{p_dist_cols}{Numeric; similar to \code{p_dist_rows} but for column data.}
 
+\item{x}{Dummy argument to avoid incurring the corresponding argument in
+\link[stats]{dist} by partial argument matches.}
+
+\item{p}{Dummy argument to avoid incurring the corresponding argument in
+\link[stats]{dist} by partial argument matches.}
+
+\item{method}{Dummy argument to avoid incurring the corresponding argument in
+\link[stats]{dist} by partial argument matches.}
+
+\item{diag}{Dummy argument to avoid incurring the corresponding argument in
+\link[stats]{dist} by partial argument matches.}
+
+\item{upper}{Dummy argument to avoid incurring the corresponding argument in
+\link[stats]{dist} by partial argument matches.}
+
+\item{annotation_col}{Dummy argument to avoid incurring the corresponding
+argument in \link[pheatmap]{pheatmap}.}
+
+\item{annotation_row}{Dummy argument to avoid incurring the corresponding
+argument in \link[pheatmap]{pheatmap}.}
+
+\item{clustering_method}{Dummy argument to avoid incurring the corresponding
+argument in \link[pheatmap]{pheatmap}.}
+
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. Each statement contains
 to a list of logical expression(s). The \code{lhs} needs to start with
@@ -140,8 +180,8 @@ of plot \cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}:
 use keys indicated in \code{annot_cols} \cr \code{annotation_row} disabled;
 instead use keys indicated in \code{annot_rows} \cr \code{clustering_method}
 breaks into \code{hc_method_rows} for row data and \code{hc_method_cols} for
-column data \cr \code{clustering_distance_rows = "minkowski"} allowed at the
-powder of \code{p_dist_rows} and/or \code{p_dist_cols}}
+column data \cr \code{clustering_distance_rows = "minkowski"} allowed
+together with the powder of \code{p_dist_rows} and/or \code{p_dist_cols}}
 }
 \value{
 Heat maps and optional sub trees.
