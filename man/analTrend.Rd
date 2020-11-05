@@ -10,7 +10,7 @@ analTrend(
   col_group,
   col_order,
   label_scheme_sub,
-  meth_clust,
+  choice,
   n_clust,
   scale_log2r,
   complete_cases,
@@ -50,7 +50,7 @@ column \code{Order} are left blank, samples will be ordered by their names.}
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
 
-\item{meth_clust}{Character string; the clustering method in \code{c("cmeans",
+\item{choice}{Character string; the clustering method in \code{c("cmeans",
 "clara", "kmeans", "pam", "fanny")}. The default is "cmeans".}
 
 \item{n_clust}{Numeric vector; the number(s) of clusters that data will be

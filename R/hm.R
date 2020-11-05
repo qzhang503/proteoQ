@@ -11,7 +11,8 @@
 #' 
 #' @import dplyr pheatmap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-my_pheatmap <- function(mat, filename, annotation_col, annotation_row, color, annotation_colors, breaks, ...) {
+my_pheatmap <- function(mat, filename, annotation_col, annotation_row, 
+                        color, annotation_colors, breaks, ...) {
   mat <- rlang::enexpr(mat)
   filename <- rlang::enexpr(filename)
   annotation_col <- rlang::enexpr(annotation_col)
@@ -50,25 +51,84 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, 
                    xmin = -1, xmax = 1, xmargin = .1, 
                    p_dist_rows = 2, p_dist_cols = 2, 
-                   hc_method_rows = "complete", hc_method_cols = "complete", ...) {
-  stopifnot(vapply(c(xmin, xmax, xmargin, p_dist_rows, p_dist_cols), is.numeric, logical(1)))
-  stopifnot(vapply(c(hc_method_rows, hc_method_cols), rlang::is_string, logical(1)))
+                   hc_method_rows = "complete", hc_method_cols = "complete", 
+                   
+                   x = NULL, 
+                   p = NULL, 
+                   method = NULL, 
+                   diag = NULL, 
+                   upper = NULL, 
+                   annotation_col = NULL, 
+                   annotation_row = NULL, 
+                   clustering_method = NULL, 
+                   ...) {
+  
+  # (1) `x`, `p` etc. defined as NULL @param
+  dummies <- c("x", "diag", "upper", "method", "p", 
+               "annotation_col", "annotation_row", "clustering_method")
+  msgs <- c(
+    "`x` in `dist()` automated.",
+    "`diag` in `dist()` automated.",
+    "`upper` in `dist()` automated.",
+    paste0("`method` in `dist()` replaced with ", 
+           "`clustering_distance_rows` and `clustering_distance_cols` ", 
+           "in `pheatmap()`."), 
+    paste0("`p` in `dist()` replaced with ", 
+           "`p_dist_rows` and `p_dist_cols`."), 
+    paste0("`annotation_col` in `pheatmap()` disabled; \n", 
+           "instead, use `annot_cols`."), 
+    paste0("`annotation_row` in `pheatmap()` disabled; \n", 
+           "instead, use `annot_rows`."), 
+    paste0("`clustering_method` in `pheatmap()` split into ", 
+           "`hc_method_rows` and `hc_method_cols`.")
+  )
+  stopifnot(length(dummies) == length(msgs))
+  
+  # (2) checking (for developer only)
+  check_formalArgs(prnHM, dist, dummies)
+  check_formalArgs(pepHM, dist, dummies)
+  
+  # (3) values back to default
+  purrr::walk2(dummies, msgs, ~ {
+    if (!is.null(get(.x))) {
+      warning(.y, call. = FALSE)
+      assign(.x, NULL, envir = rlang::env_parent())
+    } 
+  })
+  
+
+  stopifnot(vapply(c(xmin, xmax, xmargin, p_dist_rows, p_dist_cols), 
+                   is.numeric, logical(1)))
+  stopifnot(vapply(c(hc_method_rows, hc_method_cols), 
+                   rlang::is_string, logical(1)))
   stopifnot(xmin < xmax, xmargin >= 0, xmargin <= abs(xmax))
   stopifnot(p_dist_rows > 0, p_dist_cols > 0)
   
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
-  dir.create(file.path(filepath, "Subtrees", fn_prefix), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(filepath, "Subtrees", fn_prefix), 
+             recursive = TRUE, showWarnings = FALSE)
   
   id <- rlang::as_string(rlang::enexpr(id))
   col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
   
   dots <- rlang::enexprs(...)
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
-  select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
-  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
+  
+  filter_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  
+  arrange_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange_", names(.))]
+  
+  select_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^select_", names(.))]
+  
+  dots <- dots %>% 
+    .[! . %in% c(filter_dots, arrange_dots, select_dots)]
 
   # needed defaults before calling `pheatmap`
   if (is.null(dots$cluster_rows)) {
@@ -104,9 +164,9 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
 
   n_color <- 500
   if (is.null(dots$breaks)) {
-    color_breaks <- c(seq(from = xmin, -xmargin, length = n_color/2)[1:(n_color/2-1)],
-                      seq(-xmargin, xmargin, length = 3),
-                      seq(xmargin, xmax, length = n_color/2)[2:(n_color/2)])
+    color_breaks <- c(seq(xmin, -xmargin, length.out = n_color/2)[1:(n_color/2-1)],
+                      seq(-xmargin, xmargin, length.out = 3),
+                      seq(xmargin, xmax, length.out = n_color/2)[2:(n_color/2)])
     
     color_breaks <- color_breaks %>% 
       .[. >= xmin] %>% 
@@ -114,15 +174,15 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   } else if (is.na(dots$breaks)) {
     color_breaks <- NA
   } else {
-    color_breaks <- eval(dots$breaks, env = caller_env())
+    color_breaks <- eval(dots$breaks, envir = rlang::caller_env())
   }
   
   if (is.null(dots$color)) {
-    mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
+    mypalette <- grDevices::colorRampPalette(c("blue", "white", "red"))(n_color)
   } else if (is.na(dots$color)) {
-    mypalette <- colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
+    mypalette <- grDevices::colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
   } else {
-    mypalette <- eval(dots$color, env = caller_env())
+    mypalette <- eval(dots$color, envir = rlang::caller_env())
   }
   
   x_label <- expression("Ratio ("*log[2]*")")
@@ -134,13 +194,15 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   
   sample_ids <- label_scheme_sub$Sample_ID
   
-  pattern <- "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
+  pattern <- 
+    "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
   
   df <- df %>%
     dplyr::mutate_at(vars(grep("^pVal|^adjP", names(.))), as.numeric) %>%
     dplyr::mutate(Mean_log10Int = log10(rowMeans(.[, grepl("^I[0-9]{3}", names(.))],
                                                  na.rm = TRUE))) %>%
-    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}", names(.))), ~ setHMlims(.x, xmin, xmax)) %>%
+    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}", names(.))), 
+                     ~ setHMlims(.x, xmin, xmax)) %>%
     dplyr::filter(!duplicated(!!rlang::sym(id)),
                   !is.na(!!rlang::sym(id)),
                   rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>% 
@@ -150,7 +212,8 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
   
-  if (nrow(df) == 0) stop("Zero data rows available after data filtration.", call. = FALSE)
+  if (nrow(df) == 0) stop("Zero data rows available after data filtration.", 
+                          call. = FALSE)
 
   dfR <- df %>%
     dplyr::select(grep(NorZ_ratios, names(.))) %>%
@@ -166,12 +229,14 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   
   if (!is.null(dots$annotation_row)) {
     dots$annotation_row <- NULL
-    warning("Argument `annotation_row` disabled; use `annot_rows` instead.", call. = FALSE)
+    warning("Argument `annotation_row` disabled; use `annot_rows` instead.", 
+            call. = FALSE)
   }
   
   if (!is.null(dots$annotation_col)) {
     dots$annotation_col <- NULL
-    warning("Argument `annotation_col` disabled; use `annot_cols` instead.", call. = FALSE)
+    warning("Argument `annotation_col` disabled; use `annot_cols` instead.", 
+            call. = FALSE)
   }
 
   if (is.null(annot_cols)) {
@@ -195,7 +260,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   } else if (is.na(dots$annotation_colors)) {
     annotation_colors <- NA
   } else {
-    annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+    annotation_colors <- eval(dots$annotation_colors, envir = rlang::caller_env())
   }
   
   if (complete_cases) {
@@ -210,7 +275,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
     dplyr::select(which(names(.) %in% sample_ids))
   
   if (cluster_rows) {
-    d <- dist(df_hm, method = clustering_distance_rows, p = p_dist_rows)
+    d <- stats::dist(df_hm, method = clustering_distance_rows, p = p_dist_rows)
     d[is.na(d)] <- .5 * max(d, na.rm = TRUE)
 
     h <- tryCatch(
@@ -230,7 +295,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   }
   
   if (cluster_cols) {
-    d_cols <- dist(t(df_hm), method = clustering_distance_cols, p = p_dist_cols)
+    d_cols <- stats::dist(t(df_hm), method = clustering_distance_cols, p = p_dist_cols)
     d_cols[is.na(d_cols)] <- .5 * max(d_cols, na.rm = TRUE)
 
     h_cols <- tryCatch(
@@ -271,7 +336,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   )
   
   # subtrees
-  cutree_rows <- eval(dots$cutree_rows, env = caller_env())
+  cutree_rows <- eval(dots$cutree_rows, envir = rlang::caller_env())
   df <- df %>% dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
   
   if (!is.null(cutree_rows) & cluster_rows) {
@@ -280,7 +345,8 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
         dplyr::mutate(!!id := rownames(.)) %>%
         dplyr::left_join(df, by = id) %T>% 
         write.csv(file.path(filepath, "Subtrees", fn_prefix, 
-                            paste0(fn_prefix, " n-", cutree_rows, "_subtrees.csv")), row.names = FALSE)
+                            paste0(fn_prefix, " n-", cutree_rows, "_subtrees.csv")), 
+                  row.names = FALSE)
 
       Cluster <- Cluster %>%
         tibble::column_to_rownames(var = id)
@@ -297,7 +363,9 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
 
         if (cluster_rows) {
           nrow <- nrow(df_sub)
-          d_sub <- dist(df_sub, method = clustering_distance_rows, p = p_dist_rows)
+          d_sub <- stats::dist(df_sub, 
+                               method = clustering_distance_rows, 
+                               p = p_dist_rows)
           max_d_row <- suppressWarnings(max(d_sub, na.rm = TRUE))
           
           if (length(d_sub) == 0 || is.infinite(max_d_row)) {
@@ -325,7 +393,9 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
           t_df_sub <- t(df_sub)
           
           nrow_trans <- nrow(t_df_sub)
-          d_sub_col <- dist(t_df_sub, method = clustering_distance_cols, p = p_dist_cols)
+          d_sub_col <- stats::dist(t_df_sub, 
+                                   method = clustering_distance_cols, 
+                                   p = p_dist_cols)
           max_d_col <- suppressWarnings(max(d_sub_col, na.rm = TRUE))
           
           if (length(d_sub_col) == 0) next
@@ -344,7 +414,8 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
               )
               
               if (class(v_sub) != "hclust" && v_sub == 1) {
-                warning("No column clustering for subtree: ", cluster_id, call. = FALSE)
+                warning("No column clustering for subtree: ", cluster_id, 
+                        call. = FALSE)
                 v_sub <- FALSE
               }
             }            
@@ -382,7 +453,8 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
             height = height, 
             annotation_colors = annotation_colors,
             filename = file.path(filepath, "Subtrees", fn_prefix, 
-                                 paste0("Subtree_", cutree_rows, "-", cluster_id, ".", fn_suffix))
+                                 paste0("Subtree_", cutree_rows, "-", cluster_id, ".",
+                                        fn_suffix))
           )
         )
 
@@ -409,12 +481,21 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                    xmin = -1, xmax = 1, xmargin = 0.1, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
-                   p_dist_rows = 2, p_dist_cols = 2, ...) {
+                   p_dist_rows = 2, p_dist_cols = 2, 
+                   
+                   x = NULL, p = NULL, method = NULL, 
+                   diag = NULL, upper = NULL, 
+                   annotation_col = NULL, annotation_row = NULL, 
+                   clustering_method = NULL, ...) {
+  old_opts <- options()
+  options(warn = 1, warnPartialMatchArgs = TRUE)
+  on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "anal_type", "df2"), ...)
-  
+
   id <- match_call_arg(normPSM, group_psm_by)
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
+            length(id) == 1)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -428,8 +509,12 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 
   reload_expts()
   
-  info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
-            scale_log2r = scale_log2r, complete_cases = complete_cases,impute_na = impute_na, 
+  info_anal(id = !!id, 
+            col_select = !!col_select, 
+            col_benchmark = !!col_benchmark,
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename, 
             anal_type = "Heatmap")(xmin = xmin, xmax = xmax, xmargin = xmargin, 
                                    annot_cols = annot_cols, 
@@ -438,7 +523,17 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
                                    p_dist_rows = p_dist_rows, 
                                    p_dist_cols = p_dist_cols, 
                                    hc_method_rows = hc_method_rows, 
-                                   hc_method_cols = hc_method_cols, ...)
+                                   hc_method_cols = hc_method_cols, 
+
+                                   x = x, 
+                                   p = p, 
+                                   method = method, 
+                                   diag = diag, 
+                                   upper = upper, 
+                                   annotation_col = annotation_col, 
+                                   annotation_row = annotation_row, 
+                                   clustering_method = clustering_method, 
+                                   ...)
 }
 
 
@@ -485,6 +580,22 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'  of row \code{\link[stats]{dist}} at \code{clustering_distance_rows = "minkowski"}. 
 #'  The default is 2.
 #'@param p_dist_cols Numeric; similar to \code{p_dist_rows} but for column data.
+#'@param x Dummy argument to avoid incurring the corresponding argument in
+#'  \link[stats]{dist} by partial argument matches.
+#'@param p Dummy argument to avoid incurring the corresponding argument in
+#'  \link[stats]{dist} by partial argument matches.
+#'@param method Dummy argument to avoid incurring the corresponding argument in
+#'  \link[stats]{dist} by partial argument matches.
+#'@param diag Dummy argument to avoid incurring the corresponding argument in
+#'  \link[stats]{dist} by partial argument matches.
+#'@param upper Dummy argument to avoid incurring the corresponding argument in
+#'  \link[stats]{dist} by partial argument matches.
+#'@param annotation_col Dummy argument to avoid incurring the corresponding
+#'  argument in \link[pheatmap]{pheatmap}.
+#'@param annotation_row Dummy argument to avoid incurring the corresponding
+#'  argument in \link[pheatmap]{pheatmap}.
+#'@param clustering_method Dummy argument to avoid incurring the corresponding
+#'  argument in \link[pheatmap]{pheatmap}.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  against data in a primary file linked to \code{df}. Each statement contains
 #'  to a list of logical expression(s). The \code{lhs} needs to start with
@@ -506,8 +617,8 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'  use keys indicated in \code{annot_cols} \cr \code{annotation_row} disabled;
 #'  instead use keys indicated in \code{annot_rows} \cr \code{clustering_method}
 #'  breaks into \code{hc_method_rows} for row data and \code{hc_method_cols} for
-#'  column data \cr \code{clustering_distance_rows = "minkowski"} allowed at the
-#'  powder of \code{p_dist_rows} and/or \code{p_dist_cols}
+#'  column data \cr \code{clustering_distance_rows = "minkowski"} allowed
+#'  together with the powder of \code{p_dist_rows} and/or \code{p_dist_cols}
 #'  
 #'@seealso 
 #'  \emph{Metadata} \cr 
@@ -578,12 +689,29 @@ prnHM <- function (col_select = NULL, col_benchmark = NULL,
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                    xmin = -1, xmax = 1, xmargin = 0.1, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
-                   p_dist_rows = 2, p_dist_cols = 2, ...) {
-
-  check_dots(c("id", "anal_type", "df2"), ...)
+                   p_dist_rows = 2, p_dist_cols = 2, 
+                   
+                   x = NULL, p = NULL, method = NULL, 
+                   diag = NULL, upper = NULL, 
+                   annotation_col = NULL, annotation_row = NULL, 
+                   clustering_method = NULL, ...) {
   
+  ## incorrect match of `x` to `xmargin` if `x` from dot-dot-dot
+  ## correct match if `x` defined explictly in `prnHM`
+  # prnHM(xmin = -1, xmax = 1, x = df)
+  
+  ## otherwise need all arguments starting with "x" in `prnHM`
+  # prnHM(xmin = -1, xmax = 1, xmargin = .1, x = df)
+
+  old_opts <- options()
+  options(warn = 1, warnPartialMatchArgs = TRUE)
+  on.exit(options(old_opts), add = TRUE)
+  
+  check_dots(c("id", "anal_type", "df2"), ...)
+
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+            length(id) == 1)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -597,8 +725,12 @@ prnHM <- function (col_select = NULL, col_benchmark = NULL,
 
   reload_expts()
   
-  info_anal(id = !!id, col_select = !!col_select, col_benchmark = !!col_benchmark,
-            scale_log2r = scale_log2r, complete_cases = complete_cases,impute_na = impute_na, 
+  info_anal(id = !!id, 
+            col_select = !!col_select, 
+            col_benchmark = !!col_benchmark,
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
             df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename, 
             anal_type = "Heatmap")(xmin = xmin, 
                                    xmax = xmax, 
@@ -609,7 +741,17 @@ prnHM <- function (col_select = NULL, col_benchmark = NULL,
                                    p_dist_rows = p_dist_rows, 
                                    p_dist_cols = p_dist_cols, 
                                    hc_method_rows = hc_method_rows, 
-                                   hc_method_cols = hc_method_cols, ...)
+                                   hc_method_cols = hc_method_cols, 
+                                   
+                                   x = x, 
+                                   p = p, 
+                                   method = method, 
+                                   diag = diag, 
+                                   upper = upper, 
+                                   annotation_col = annotation_col, 
+                                   annotation_row = annotation_row, 
+                                   clustering_method = clustering_method, 
+                                   ...)
 }
 
 

@@ -92,8 +92,8 @@ of plot \cr \cr Additional arguments for \code{\link[pheatmap]{pheatmap}}:
 use keys indicated in \code{annot_cols} \cr \code{annotation_row} disabled;
 instead use keys indicated in \code{annot_rows} \cr \code{clustering_method}
 breaks into \code{hc_method_rows} for row data and \code{hc_method_cols} for
-column data \cr \code{clustering_distance_rows = "minkowski"} allowed at the
-powder of \code{p_dist_rows} and/or \code{p_dist_cols}}
+column data \cr \code{clustering_distance_rows = "minkowski"} allowed
+together with the powder of \code{p_dist_rows} and/or \code{p_dist_cols}}
 }
 \description{
 Makes heat maps

@@ -8,6 +8,7 @@ plotPCA(
   df = NULL,
   id = NULL,
   label_scheme_sub = NULL,
+  choice = "prcomp",
   type = "obs",
   dimension = 2,
   folds = 1,
@@ -52,6 +53,9 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
+
+\item{choice}{Character string; the PCA method in \code{c("prcomp")}. The
+default is "prcomp".}
 
 \item{type}{Character string indicating the type of PCA by either
 \emph{observations} or \emph{features}. At the \code{type = obs} default,

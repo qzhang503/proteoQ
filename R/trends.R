@@ -9,7 +9,7 @@
 #' @importFrom cluster clusGap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 analTrend <- function (df, id, col_group, col_order, label_scheme_sub, 
-                       meth_clust, n_clust,
+                       choice, n_clust,
                        scale_log2r, complete_cases, impute_na, 
                        filepath, filename, anal_type, ...) {
 
@@ -23,12 +23,15 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	
 	id <- rlang::as_string(rlang::enexpr(id))
 	dots <- rlang::enexprs(...)
+	
 	filter_dots <- dots %>% 
 	  .[purrr::map_lgl(., is.language)] %>% 
 	  .[grepl("^filter_", names(.))]
+	
 	arrange_dots <- dots %>% 
 	  .[purrr::map_lgl(., is.language)] %>% 
 	  .[grepl("^arrange_", names(.))]
+	
 	dots <- dots %>% 
 	  .[! . %in% c(filter_dots, arrange_dots)]
 	
@@ -82,17 +85,21 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	  
 	  fn_prefix <- paste0(fn_prefix, n_clust)
 	} else {
-	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
+	  stopifnot(all(n_clust >= 2) && all(n_clust %% 1 == 0))
 	}
 	
 	dots <- local({
-	  if (meth_clust == "cmeans") {
+	  if (choice == "cmeans") {
+	    # (1) overwriting args: to this <- from `cmeans`
 	    if (!is.null(dots$centers)) {
 	      n_clust <- centers
 	      dots$centers <- NULL
-	      warning("Replace the value of `n_clust` with `centers`.", call. = FALSE)
+	      warning("Replace the value of `n_clust` with `centers`.", 
+	              call. = FALSE)
 	    }
 	    
+	    # (2) excluded formalArgs: `x` & `centers`
+	    # no mismatch between "m" and "method" with `%in%`
 	    dots <- dots %>% 
 	      .[names(.) %in% c("iter.max", 
 	                        "verbose",
@@ -103,10 +110,12 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	                        "weights", 
 	                        "control")]
 	    
+	    # (3) conversion: expr to character string
 	    purrr::map(c("dist", "method"), ~ {
 	      if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
 	    })
 
+	    # (4) overwriting from this -> to `cmeans` defaults
 	    if (is.null(dots$m)) {
 	      dots$m <- local({
 	        N <- nrow(df_mean)
@@ -114,16 +123,17 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	        m <- 1 + (1418/N + 22.05) * D^(-2) + (12.33/N + 0.243) *
 	          D^(-0.0406 * log(N) - 0.1134)
 	        
-	        message("Set `m` to ", m, ".")
+	        message("Set `m` to ", round(m, digits = 2), ".")
 	        
 	        invisible(m)
 	      })
 	    }
-	  } else if (meth_clust == "kmeans") {
+	  } else if (choice == "kmeans") {
 	    if (!is.null(dots$centers)) {
 	      n_clust <- centers
 	      dots$centers <- NULL
-	      warning("Replace the value of `n_clust` with `centers`.", call. = FALSE)
+	      warning("Replace the value of `n_clust` with `centers`.", 
+	              call. = FALSE)
 	    }
 	    
 	    dots <- dots %>% 
@@ -140,11 +150,12 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	      dots$nstart <- 20
 	      message("Set `n_start` to 20.")
 	    }
-	  } else if (meth_clust == "clara") {
+	  } else if (choice == "clara") {
 	    if (!is.null(dots[["k"]])) {
 	      n_clust <- k
 	      dots[["k"]] <- NULL
-	      warning("Replace the value of `n_clust` with `k`.", call. = FALSE)
+	      warning("Replace the value of `n_clust` with `k`.", 
+	              call. = FALSE)
 	    }
 	    
 	    dots <- dots %>% 
@@ -167,11 +178,12 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	      dots$samples <- 50
 	      message("Set `samples` to 50.")
 	    }
-	  } else if (meth_clust == "pam") {
+	  } else if (choice == "pam") {
 	    if (!is.null(dots[["k"]])) {
 	      n_clust <- k
 	      dots[["k"]] <- NULL
-	      warning("Replace the value of `n_clust` with `k`.", call. = FALSE)
+	      warning("Replace the value of `n_clust` with `k`.", 
+	              call. = FALSE)
 	    }
 	    
 	    dots <- dots %>% 
@@ -189,11 +201,12 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	    purrr::map(c("metric"), ~ {
 	      if (.x %in% names(dots)) dots[[.x]] <<- rlang::as_string(dots[[.x]])
 	    })
-	  } else if (meth_clust == "fanny") {
+	  } else if (choice == "fanny") {
 	    if (!is.null(dots[["k"]])) {
 	      n_clust <- k
 	      dots[["k"]] <- NULL
-	      warning("Replace the value of `n_clust` with `k`.", call. = FALSE)
+	      warning("Replace the value of `n_clust` with `k`.", 
+	              call. = FALSE)
 	    }
 	    
 	    dots <- dots %>% 
@@ -218,7 +231,8 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	      message("Set `maxit` to 50.")
 	    }
 	  } else {
-	    stop("Unknown `meth_clust = ", meth_clust, "`.", call. = FALSE)
+	    stop("Unknown `choice = ", choice, "`.", 
+	         call. = FALSE)
 	  }
 	  
 	  invisible(dots)
@@ -231,30 +245,31 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	  
 	  filename <- paste0(.x, ".txt")
 
-	  if (meth_clust %in% c("cmeans", "kmeans")) {
+	  if (choice %in% c("cmeans", "kmeans")) {
 	    args <- c(list(x = as.matrix(df_mean), centers = n_clust), dots)
-	  } else if (meth_clust %in% c("clara", "pam", "fanny")) {
+	  } else if (choice %in% c("clara", "pam", "fanny")) {
 	    args <- c(list(x = as.matrix(df_mean), k = n_clust), dots)
 	  } else {
-	    stop("Unknown `meth_clust` ", meth_clust, ".", 
+	    stop("Unknown `choice` ", choice, ".", 
 	         call. = FALSE)
 	  }
 	  
-	  if (meth_clust == "cmeans") {
-	    cl <- do.call(e1071::cmeans, args) 
-	  } else if (meth_clust == "kmeans") {
-	    cl <- do.call(stats::kmeans, args) 
-	  } else if (meth_clust == "clara") {
-	    cl <- do.call(cluster::clara, args) 
+	  if (choice == "cmeans") {
+	    # Warning of cmeans: partial argument match of 'length' to 'length.out'
+	    suppressWarnings(cl <- do.call(e1071::cmeans, args))
+	  } else if (choice == "kmeans") {
+	    cl <- do.call(stats::kmeans, args)
+	  } else if (choice == "clara") {
+	    cl <- do.call(cluster::clara, args)
 	    names(cl)[which(names(cl) == "clustering")] <- "cluster"
-	  } else if (meth_clust == "pam") {
-	    cl <- do.call(cluster::pam, args) 
+	  } else if (choice == "pam") {
+	    cl <- do.call(cluster::pam, args)
 	    names(cl)[which(names(cl) == "clustering")] <- "cluster"
-	  } else if (meth_clust == "fanny") {
-	    cl <- do.call(cluster::fanny, args) 
+	  } else if (choice == "fanny") {
+	    cl <- do.call(cluster::fanny, args)
 	    names(cl)[which(names(cl) == "clustering")] <- "cluster"
 	  } else {
-	    stop("Unknown `meth_clust` ", meth_clust, ".", 
+	    stop("Unknown `choice` ", choice, ".", 
 	         call. = FALSE)
 	  }
 
@@ -272,6 +287,8 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	    dplyr::arrange(variable) %>% 
 	    dplyr::rename(group = variable, log2FC = value) %>% 
 	    dplyr::left_join(df[, c(id, "species")], by = id) %>% 
+	    dplyr::mutate(col_group = rlang::as_string(col_group), 
+	                  col_order = rlang::as_string(col_order)) %>% 
 	    write.table(file.path(filepath, filename), sep = "\t", 
 	                col.names = TRUE, row.names = FALSE, quote = FALSE)	
 	})
@@ -314,7 +331,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     }
     
     if (purrr::is_empty(ins)) 
-      stop("No inputs correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+      stop("No inputs correspond to impute_na = ", impute_na, 
+           ", scale_log2r = ", scale_log2r, 
            call. = FALSE)
     
   	if (is.null(n_clust)) {
@@ -371,9 +389,6 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
   # plot data ---------------------------
-  col_group <- rlang::enexpr(col_group)
-  col_order <- rlang::enexpr(col_order)
-
   proteoq_trend_theme <- theme_bw() + theme(
     axis.text.x  = element_text(angle=60, vjust=0.5, size=24),
     axis.ticks.x  = element_blank(), 
@@ -422,11 +437,33 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
       stop(paste("Non-existed file or directory:", src_path))
     }
     
+    col_group <- df[["col_group"]][1]
+    col_order <- df[["col_order"]][1]
+    
     Levels <- label_scheme_sub %>% 
       dplyr::arrange(!!col_order) %>% 
       dplyr::select(!!col_group) %>% 
       unique() %>% 
       unlist()
+    
+    local({
+      levs_df <- levels(df$group)
+      mis_levs <- levs_df %>% .[! . %in% Levels]
+
+      if (!purrr::is_empty(mis_levs)) {
+        if (length(mis_levs) > 12) mis_levs <- c(mis_levs[1:12], "...")
+        
+        stop("\n--- Mismatches in data levels ---\n\n", 
+                "Levels in `", .x, "`:\n",
+             purrr::reduce(mis_levs, paste, sep = ", "), "\n\n", 
+             "Levels by `col_group = ", rlang::as_string(col_group), "`:\n", 
+             purrr::reduce(Levels, paste, sep = ", "), "\n\n", 
+             "??? Check for consistency in the setting of `anal_prnTrend(col_group = ...)` ", 
+             "and `plot_prnTrend(col_group = ...)` for file `", 
+             .x, "`.", 
+             call. = FALSE)
+      }
+    })
     
     if (!purrr::is_empty(dots)) {
       if (any(grepl("^filter_", names(dots)))) {
@@ -509,8 +546,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 
 #'Trend analysis of protein data
 #'
-#'\code{anal_prnTrend} applies the soft clustering algorithm in
-#'\code{\link[e1071]{cmeans}} for the trend analysis of protein \code{log2FC}.
+#'\code{anal_prnTrend} performs unsupervised clustering of protein
+#'\code{log2FC}.
 #'
 #'The option of \code{complete_cases} will be forced to \code{TRUE} at
 #'\code{impute_na = FALSE}
@@ -518,7 +555,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'@inheritParams prnCorr_logFC
 #'@inheritParams anal_prnNMF
 #'@inheritParams prnHM
-#'@param meth_clust Character string; the clustering method in \code{c("cmeans",
+#'@param choice Character string; the clustering method in \code{c("cmeans",
 #'  "clara", "kmeans", "pam", "fanny")}. The default is "cmeans".
 #'@param n_clust Numeric vector; the number(s) of clusters that data will be
 #'  divided into. At the NULL default, it will be determined by the gap method
@@ -540,7 +577,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'  \link[e1071]{cmeans}, \code{m} is according to Schwaemmle and Jensen if not
 #'  provided; \cr \code{x} is disabled with input data being determined
 #'  automatically.
-#'@return Fuzzy c-mean classification of \code{log2FC}.
+#'@return Classified \code{log2FC}.
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'
@@ -609,7 +646,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 #'
 #'@export
 anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL, 
-                           meth_clust = c("cmeans", "clara", "kmeans", "pam", "fanny"), 
+                           choice = c("cmeans", "clara", "kmeans", "pam", "fanny"), 
                            n_clust = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, 
@@ -625,9 +662,16 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
         save_call(paste0("anal", "_prnTrend"))
     }
     , add = TRUE
-  )  
+  )
+  
+  old_opts <- options()
+  options(warn = 1, warnPartialMatchArgs = TRUE)
+  on.exit(options(old_opts), add = TRUE)
   
   check_dots(c("id", "df2", "anal_type"), ...)
+  
+  purrr::walk(formals(anal_prnTrend)[["choice"]] %>% eval(), 
+              ~ check_formalArgs(anal_prnTrend, !!.x))
   
   dots <- rlang::enexprs(...)
   
@@ -642,18 +686,18 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
     stop(err_msg1, call. = FALSE)
   }
   
-  meth_clust <- rlang::enexpr(meth_clust)
-  if (length(meth_clust) > 1) {
-    meth_clust <- "cmeans"
+  choice <- rlang::enexpr(choice)
+  if (length(choice) > 1) {
+    choice <- "cmeans"
   } else {
-    meth_clust <- rlang::as_string(meth_clust)
+    choice <- rlang::as_string(choice)
   }
   
-  if (any(names(dots) %in% c("centers")) && meth_clust %in% c("cmeans", "kmeans")) {
+  if (any(names(dots) %in% c("centers")) && choice %in% c("cmeans", "kmeans")) {
     stop(err_msg2, call. = FALSE)
   }
   
-  if (any(names(dots) %in% c("k")) && meth_clust %in% c("clara", "pam")) {
+  if (any(names(dots) %in% c("k")) && choice %in% c("clara", "pam")) {
     stop(err_msg3, call. = FALSE)
   }
 
@@ -672,7 +716,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  meth_clust <- rlang::as_string(rlang::enexpr(meth_clust))
+  choice <- rlang::as_string(rlang::enexpr(choice))
   
   reload_expts()
   
@@ -687,8 +731,9 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
             df2 = NULL, 
             filepath = !!filepath, 
             filename = !!filename,
-            anal_type = "Trend")(meth_clust = meth_clust, 
-                                 n_clust = n_clust, !!!dots)
+            anal_type = "Trend")(choice = choice, 
+                                 n_clust = n_clust, 
+                                 !!!dots)
 }
 
 
@@ -804,15 +849,17 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
 #'
 #'@export
 plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL, 
-                           scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                           scale_log2r = TRUE, complete_cases = FALSE, 
+                           impute_na = FALSE, 
                            df2 = NULL, filename = NULL, theme = NULL, ...) {
   check_dots(c("id", "anal_type", "df", "col_group", "filepath"), ...)
-  
+
   dir.create(file.path(get_gl_dat_dir(), "Protein/Trend/log"), 
              recursive = TRUE, showWarnings = FALSE)
 
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+            length(id) == 1)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -830,7 +877,11 @@ plot_prnTrend <- function (col_select = NULL, col_order = NULL, n_clust = NULL,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
             impute_na = impute_na,
-            df = NULL, df2 = !!df2, filepath = NULL, filename = !!filename,
-            anal_type = "Trend_line")(n_clust = n_clust, theme = theme, ...)
+            df = NULL, 
+            df2 = !!df2, 
+            filepath = NULL, 
+            filename = !!filename,
+            anal_type = "Trend_line")(n_clust = n_clust, 
+                                      theme = theme, ...)
 }
 

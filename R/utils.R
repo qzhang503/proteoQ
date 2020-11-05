@@ -3036,8 +3036,11 @@ check_depreciated_args <- function (blacklist = NULL, ...) {
   new_args <- new_args %>% .[ind]
   
   if (!rlang::is_empty(nms)) {
-    message("Depreciated argument(s): ", purrr::reduce(old_args, paste, sep = ", "))
-    stop("Use replacement argument(s): ", purrr::reduce(new_args, paste, sep = ", "), call. = FALSE)
+    message("Depreciated argument(s): ", 
+            purrr::reduce(old_args, paste, sep = ", "))
+    stop("Use replacement argument(s): ", 
+         purrr::reduce(new_args, paste, sep = ", "), 
+         call. = FALSE)
   }
 }
 
@@ -3307,6 +3310,7 @@ find_ratio_cols <- function (TMT_plex) {
 
 
 #' Process MaxQuant mqpar.xml
+#' 
 #' @inheritParams load_expts
 #' @param mqpar The name of .xml file. The default is "mqpar.xml".
 #' @param filename The name of metadata file.
@@ -3314,10 +3318,10 @@ find_ratio_cols <- function (TMT_plex) {
 #' @rawNamespace import(xml2, except = as_list)
 make_mq_meta <- function (dat_dir = proteoQ:::get_gl_dat_dir(), mqpar = "mqpar.xml", 
                           filename = "mq_meta.txt", out = "new_mqpar.xml") {
-  # lookup <- readxl::read_excel(file.path(dat_dir, "mq_meta.xlsx"))
   lookup <- readr::read_tsv(file.path(dat_dir, filename)) %>% 
-    dplyr::rename(RAW_File = Name, Sample_ID = Experiment)
-  
+    dplyr::rename(RAW_File = Name, Sample_ID = Experiment) %>% 
+    dplyr::filter(rowSums(!is.na(.)) > 0)
+
   n_smpls <- nrow(lookup)
   
   parent <- xml2::read_xml(file.path(dat_dir, mqpar))
@@ -3355,8 +3359,10 @@ make_mq_meta <- function (dat_dir = proteoQ:::get_gl_dat_dir(), mqpar = "mqpar.x
     ptms <- ptms[1:n_smpls]
   }
   
-  paramGroupIndices <- xml_children(children[[which(xml_name(contents) == "paramGroupIndices")]])
-  referenceChannel <- xml_children(children[[which(xml_name(contents) == "referenceChannel")]])
+  paramGroupIndices <- 
+    xml_children(children[[which(xml_name(contents) == "paramGroupIndices")]])
+  referenceChannel <- 
+    xml_children(children[[which(xml_name(contents) == "referenceChannel")]])
   
   write_xml(parent, file.path(dat_dir, out), options = "format")
 }
@@ -3374,9 +3380,10 @@ make_mq_meta <- function (dat_dir = proteoQ:::get_gl_dat_dir(), mqpar = "mqpar.x
 #' make_mq_meta2()
 #' }
 make_mq_meta2 <- function (dat_dir = proteoQ:::get_gl_dat_dir(), mqpar = "mqpar.xml", 
-                             filename = "mq_meta.txt", out = "new_mqpar.xml") {
+                           filename = "mq_meta.txt", out = "new_mqpar.xml") {
   
-  update_nodes <- function(mqxml, field = "filePaths", type = "string", vals = lookup$Name) {
+  update_nodes <- function(mqxml, field = "filePaths", type = "string", 
+                           vals = lookup$Name) {
     row_1 <- grep(paste0("<", field, ">"), mqxml)
     row_2 <- grep(paste0("</", field, ">"), mqxml)
     
@@ -3464,6 +3471,113 @@ add_entry_ids <- function (df, col_in = "pep_seq", col_out = "pep_index") {
   seqs <- tibble(!!col_in := names(seqs), !!col_out := seqs) 
   
   df %>% dplyr::left_join(seqs, by = col_in)
+}
+
+
+#' Check conflicts in function arguments.
+#' 
+#' Conflicts between wrapper and function to be wrapped. Note that \code{f}
+#' contains function name but not package name.
+#' 
+#' if `method` in the formalArgs and "m" in the "..." of `foo`, 
+#' foo(m = 2) without `method` interpreted as `method`.
+#' Call foo(method = kmeans, m =2) to avoid such ambiguity. 
+#' 
+#' @param w Expression; the wrapper function.
+#' @param f Expression; the function to be wrapped.
+#' @param excludes Character string; arguments from \code{f} to be excluded for
+#'   checking.
+check_formalArgs <- function(w = anal_prnTrend, f = cmeans, excludes = NULL) {
+  w <- rlang::as_string(rlang::enexpr(w))
+  f <- rlang::as_string(rlang::enexpr(f))
+  
+  args_w <- formalArgs(w) %>% .[! . == "..."]
+  args_f <- formalArgs(f) %>% .[! . == "..."]
+
+  if (!is.null(excludes)) {
+    args_f <- args_f %>% .[! . %in% excludes]
+  }
+  
+  if (!purrr::is_empty(args_f)) {
+    purrr::walk(args_w, ~ {
+      ambi <- stringr::str_detect(.x, paste0("^", args_f)) %>% 
+        which()
+      
+      if (!purrr::is_empty(ambi)) {
+        warning("Ambiguous arguments between \"", 
+                purrr::reduce(args_f[ambi], paste, sep = ", "), 
+                "\" from `", f, 
+                "` and \"", .x, 
+                "\" from `", w, 
+                "`.\n", 
+                "### Include explicitly \"", .x, "\"", 
+                " when calling `", w, "`. ###\n",  
+                call. = FALSE)
+      }
+    })
+  }
+}
+
+
+#' Check conflicts in function arguments.
+#' 
+#' Conflicts between wrapper and function to be wrapped. Note that \code{f}
+#' contains both function name and package name.
+#' 
+#' @inheritParams check_formalArgs
+check_formalArgs2 <- function(w = anal_prnTrend, f = NMF::nmf, excludes = NULL) {
+  # for error messages
+  nm_f <- rlang::enexpr(f)
+  if (any(grepl("::", nm_f))) {
+    nm_f <- nm_f %>% as.character() 
+    stopifnot(length(nm_f) ==3)
+    nm_f <- nm_f %>% `[`(3)
+  }
+  
+  w <- rlang::as_string(rlang::enexpr(w))
+
+  args_w <- formalArgs(w) %>% .[! . == "..."]
+  args_f <- formalArgs(f) %>% .[! . == "..."]
+    
+  if (!is.null(excludes)) {
+    args_f <- args_f %>% .[! . %in% excludes]
+  }
+  
+  purrr::walk(args_w, ~ {
+    ambi <- stringr::str_detect(.x, paste0("^", args_f)) %>% 
+      which()
+    
+    if (!purrr::is_empty(ambi)) {
+      warning("Ambiguous arguments between \"", 
+              purrr::reduce(args_f[ambi], paste, sep = ", "), 
+              "\" from `", nm_f, 
+              "` and \"", .x, 
+              "\" from `", w, 
+              "`.\n", 
+              "### Include explicitly \"", .x, "\"", 
+              " when calling `", w, "`. ###\n",  
+              call. = FALSE)
+    }
+  })
+}
+
+
+#' \link[stats]{dist} with handling in partial matches of arguments.
+my_dist <- function (...) {
+  dots <- rlang::enexprs(...)
+  
+  rmvls <- c("p")
+  
+  purrr::walk(rmvls, ~ {
+    if (.x %in% names(dots)) {
+      warning("Argument `", .x, "` disabled.", 
+              call. = FALSE)
+      dots[[.x]] <<- NULL
+    } 
+  })
+  
+  rlang::expr(stats::dist(!!!dots)) %>% 
+    rlang::eval_bare(env = caller_env())
 }
 
 

@@ -203,7 +203,7 @@ my_mds_theme <- theme_bw() + theme(
 )
 
 pepMDS(
-  impute_na = TRUE,
+  impute_na = FALSE,
   col_color = Color,
   col_shape = Shape,
   show_ids = FALSE,

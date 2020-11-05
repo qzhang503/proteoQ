@@ -89,7 +89,8 @@ analNMF <- function(df, id, rank, nrun, seed, col_group, label_scheme_sub,
     rank <- gsub("^.*_rank(\\d+).*", "\\1", .x) %>% as.numeric()
     if (!is.null(seed)) set.seed(seed) else set.seed(sample(.Random.seed, 1))
     args <- c(list(x = exampleSet, rank = rank, nrun = nrun, seed = seed), dots)
-    res_nmf <- do.call(NMF::nmf, args) 
+    # NMF warning from warnPartialMatchArgs
+    suppressWarnings(res_nmf <- do.call(NMF::nmf, args))
     save(res_nmf, file = file.path(filepath, paste0(.x, ".rda")))
     
     res_nmf@consensus %>% 
@@ -907,6 +908,7 @@ anal_pepNMF <- function (col_select = NULL, col_group = NULL,
   )
   
   check_dots(c("id", "df2", "anal_type"), ...)
+  check_formalArgs(anal_pepNMF, NMF::nmf, "rank")
   
   dir.create(file.path(get_gl_dat_dir(), "Peptide/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
@@ -960,6 +962,7 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
   )
   
   check_dots(c("id", "df2", "anal_type"), ...)
+  check_formalArgs2(anal_prnNMF, NMF::nmf, "rank")
   
   dir.create(file.path(get_gl_dat_dir(), "Protein/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
