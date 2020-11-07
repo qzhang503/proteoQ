@@ -1,3 +1,33 @@
+#' Check the dot-dot-dot of \link{anal_prnTrend}.
+#' 
+#' Stop if \code{...} contains disabled argument(s) for a given \code{choice}.
+#' 
+#' @inheritParams anal_prnTrend
+#' @param ... A character vector of argument(s) in \code{dots}.
+checkdots_analTrend <- function(choice, ...) {
+  ## error
+  # anal_prnTrend(choice = cmeans, centers = 3)
+  
+  ## `k` later excluded as not in `formalArgs(cmeans)`
+  # anal_prnTrend(choice = cmeans, k = 3)
+  
+  dots <- rlang::enexprs(...)
+  
+  msg1 <- "determined automatically."
+  msg2 <- "replaced with `n_clust`."
+  
+  if (choice %in% c("cmeans", "kmeans")) {
+    purrr::walk2(c("x", "centers"), c(msg1, msg2), ~ {
+      if (.x %in% names(dots)) stop("`", .x, "` ", .y, call. = FALSE)
+    })
+  } else if (choice %in% c("clara", "pam", "fanny")) {
+    purrr::walk2(c("x", "k"), c(msg1, msg2), ~ {
+      if (.x %in% names(dots)) stop("`", .x, "` ", .y, call. = FALSE)
+    })
+  }
+}
+
+
 #' Trend analysis
 #' 
 #' @inheritParams anal_prnTrend
@@ -82,6 +112,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	    gap_stat <- cluster::clusGap(df_mean, kmeans, 10, B = 100)
 	    cluster::maxSE(f = gap_stat$Tab[, "gap"], SE.f = gap_stat$Tab[, "SE.sim"])
 	  })
+	  message("Set `n_clust` to ", n_clust, ".")
 	  
 	  fn_prefix <- paste0(fn_prefix, n_clust)
 	} else {
@@ -98,8 +129,9 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	              call. = FALSE)
 	    }
 	    
-	    # (2) excluded formalArgs: `x` & `centers`
-	    # no mismatch between "m" and "method" with `%in%`
+	    # (2) excluded formalArgs: `x` & `centers`; 
+	    #     mistaken `k` intended for `cluster::clara` excluded as well; 
+	    #     no mismatch between "m" and "method" with `%in%`
 	    dots <- dots %>% 
 	      .[names(.) %in% c("iter.max", 
 	                        "verbose",
@@ -309,7 +341,6 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
                       df2 = NULL, filepath, filename, theme, ...) {
   
   stopifnot(nrow(label_scheme_sub) > 0)
-  sample_ids <- label_scheme_sub$Sample_ID
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
 
@@ -338,7 +369,7 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
   	if (is.null(n_clust)) {
   	  df2 <- ins
   	} else {
-  	  stopifnot(all(n_clust >= 2) & all(n_clust %% 1 == 0))
+  	  stopifnot(all(n_clust >= 2) && all(n_clust %% 1 == 0))
   	  
   	  df2 <- local({
     	  possibles <- ins %>% 
@@ -363,13 +394,15 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     local({
       non_exists <- df2 %>% .[! . %in% ins]
       if (!purrr::is_empty(non_exists)) {
-        stop("Missing trend file(s): ", purrr::reduce(non_exists, paste, sep = ", "), 
+        stop("Missing trend file(s): ", 
+             purrr::reduce(non_exists, paste, sep = ", "), 
              call. = FALSE)
       }
     })
     
-    if (purrr::is_empty(df2)) stop("File(s) not found under ", filepath, 
-                                   call. = FALSE)
+    if (purrr::is_empty(df2)) {
+      stop("File(s) not found under ", filepath, call. = FALSE)
+    }
   }
 
   # prepare output filename ---------------------------	
@@ -434,7 +467,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     if (!is.null(dim(df))) {
       message(paste("File loaded:", src_path))
     } else {
-      stop(paste("Non-existed file or directory:", src_path))
+      stop(paste("Non-exist file or directory:", src_path), 
+           call. = FALSE)
     }
     
     col_group <- df[["col_group"]][1]
@@ -467,7 +501,8 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     
     if (!purrr::is_empty(dots)) {
       if (any(grepl("^filter_", names(dots)))) {
-        stop("Primary `filter_` depreciated; use secondary `filter2_`.")
+        stop("Primary `filter_` depreciated; use secondary `filter2_`.", 
+             call. = FALSE)
       }
     }
 
@@ -491,14 +526,13 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
 
     if (complete_cases) df <- df %>% .[complete.cases(.), ]
     
-    ymin <- eval(dots$ymin, env = caller_env())
-    ymax <- eval(dots$ymax, env = caller_env())
-    ybreaks <- eval(dots$ybreaks, env = caller_env())
+    ymin <- eval(dots$ymin, envir = rlang::caller_env())
+    ymax <- eval(dots$ymax, envir = rlang::caller_env())
+    ybreaks <- eval(dots$ybreaks, envir = rlang::caller_env())
     ncol <- dots$ncol
     nrow <- dots$nrow
     width <- dots$width
     height <- dots$height
-    units <- dots$units
     color <- dots$color
     alpha <- dots$alpha
     
@@ -523,12 +557,10 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
     n_clust <- length(unique(df$cluster))
     if (is.null(width)) width <- n_clust * 8 / nrow + 2
     if (is.null(height)) height <- 8 * nrow
-    if (is.null(units)) units <- "in"
-    
+
     dots$width <- NULL
     dots$height <- NULL
-    dots$units <- NULL
-    
+
     p <- ggplot(data = df,
                 mapping = aes(x = group, y = log2FC, group = !!rlang::sym(id))) +
       geom_line(colour = color, alpha = alpha) + 
@@ -537,9 +569,14 @@ plotTrend <- function(id, col_group, col_order, label_scheme_sub, n_clust,
       theme
     p <- p + facet_wrap(~ cluster, nrow = nrow, labeller = label_value)
     
-    gg_args <- c(filename = file.path(filepath, gg_imgname(out_nm)), 
-                 width = width, height = height, units = units, dots) %>% 
-      do.call(ggsave, .)
+    ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
+    
+    rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(out_nm)),
+                      plot = p, 
+                      width = width, 
+                      height = height, 
+                      !!!ggsave_dots)) %>% 
+      rlang::eval_tidy()
   }, complete_cases = complete_cases)
 }
 
@@ -653,12 +690,12 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
                            df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), current_env()) %>% 
-        c(enexprs(...)) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+        c(rlang::enexprs(...)) %>% 
         save_call(paste0("anal", "_pepTrend"))
     } else if (id %in% c("prot_acc", "gene")) {
-      mget(names(formals()), current_env()) %>% 
-        c(enexprs(...)) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+        c(rlang::enexprs(...)) %>% 
         save_call(paste0("anal", "_prnTrend"))
     }
     , add = TRUE
@@ -673,19 +710,6 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
   purrr::walk(formals(anal_prnTrend)[["choice"]] %>% eval(), 
               ~ check_formalArgs(anal_prnTrend, !!.x))
   
-  dots <- rlang::enexprs(...)
-  
-  err_msg1 <- 
-    "Do not use argument `x`; input data will be determined automatically.\n"
-  err_msg2 <- 
-    "Do not use argument `centers`; instead use `n_clust`.\n"
-  err_msg3 <- 
-    "Do not use argument `k`; instead use `n_clust`.\n"
-  
-  if (any(names(dots) %in% c("x"))) {
-    stop(err_msg1, call. = FALSE)
-  }
-  
   choice <- rlang::enexpr(choice)
   if (length(choice) > 1) {
     choice <- "cmeans"
@@ -693,14 +717,13 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
     choice <- rlang::as_string(choice)
   }
   
-  if (any(names(dots) %in% c("centers")) && choice %in% c("cmeans", "kmeans")) {
-    stop(err_msg2, call. = FALSE)
-  }
+  checkdots_analTrend(choice, ...)
   
-  if (any(names(dots) %in% c("k")) && choice %in% c("clara", "pam")) {
-    stop(err_msg3, call. = FALSE)
-  }
-
+  ##############################################################
+  # unlike `prnHM` that only wraps `dist` and `pheatmap`;
+  # difficult to make every dummy variables in the instance
+  ##############################################################
+  
   dir.create(file.path(get_gl_dat_dir(), "Protein/Trend/log"), 
              recursive = TRUE, showWarnings = FALSE)
 
@@ -716,8 +739,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  choice <- rlang::as_string(rlang::enexpr(choice))
-  
+
   reload_expts()
   
   info_anal(id = !!id, 
@@ -733,7 +755,7 @@ anal_prnTrend <- function (col_select = NULL, col_group = NULL, col_order = NULL
             filename = !!filename,
             anal_type = "Trend")(choice = choice, 
                                  n_clust = n_clust, 
-                                 !!!dots)
+                                 ...)
 }
 
 

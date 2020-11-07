@@ -525,7 +525,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit({
-    mget(names(formals()), current_env()) %>% 
+    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
       c(rlang::enexprs(...)) %>% 
       save_call("pepSig")
   }, add = TRUE)
@@ -697,7 +697,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
   on.exit({
     load(file.path(get_gl_dat_dir(), "Calls/prnSig_formulas.rda"))
     dots <- my_union(rlang::enexprs(...), prnSig_formulas)
-    mget(names(formals()), current_env()) %>% 
+    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
       c(dots) %>% 
       save_call("prnSig")
   }, add = TRUE)

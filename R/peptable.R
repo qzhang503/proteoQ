@@ -52,14 +52,17 @@ use_mq_peptable <- function (dat_dir, label_scheme_full) {
 #' 
 #' @inheritParams load_expts
 single_mq_prntable <- function (dat_dir) {
-  filelist <- list.files(path = file.path(dat_dir), pattern = "^proteinGroups.*\\.txt$")
+  filelist <- list.files(path = file.path(dat_dir), 
+                         pattern = "^proteinGroups.*\\.txt$")
   
   if (length(filelist) > 1) {
-    stop("Only single MaxQuant `proteinGroups.txt` allowed.", call. = FALSE)
+    stop("Only single MaxQuant `proteinGroups.txt` allowed.", 
+         call. = FALSE)
   }
   
   if (!file.exists(file.path(dat_dir, filelist))) {
-    stop("No MaxQuant LFQ file `proteinGroups[...].txt` udner", dat_dir, call. = FALSE)
+    stop("No MaxQuant LFQ file `proteinGroups[...].txt` udner", dat_dir, 
+         call. = FALSE)
   }
   
   message("MaxQuant file `", filelist, "` found.")  
@@ -119,14 +122,17 @@ extract_mq_ints <- function (df) {
     } else if (type == "^LFQ intensity ") {
       prefix <- "N_log2_R000"
     } else {
-      stop("`type` needs to be either `Intensity` or `LFQ intensity`.", call. = FALSE)
+      stop("`type` needs to be either `Intensity` or `LFQ intensity`.", 
+           call. = FALSE)
     }
     
     sweep(df[, col_smpls], 1,
           rowMeans(df[, col_refs, drop = FALSE], na.rm = TRUE), "/") %>%
       log2(.)  %>% 
       dplyr::mutate_all(~ replace(.x, is.infinite(.), NA)) %>% 
-      `colnames<-`(gsub(paste0(type, "(.*)$"), paste0(prefix, " \\(", "\\1", "\\)"), names(.))) %>%
+      `colnames<-`(gsub(paste0(type, "(.*)$"), 
+                        paste0(prefix, " \\(", "\\1", "\\)"), 
+                        names(.))) %>%
       cbind(df, .)
   }
   
@@ -140,18 +146,25 @@ extract_mq_ints <- function (df) {
   df <- df %>% 
     calc_mq_log2r("Intensity", refChannels) %>% 
     calc_mq_log2r("LFQ intensity", refChannels) %>% 
-    dplyr::mutate_at(.vars = grep("log2_R000\\s", names(.)), ~ replace(.x, is.infinite(.), NA)) 
+    dplyr::mutate_at(.vars = grep("log2_R000\\s", names(.)), 
+                     ~ replace(.x, is.infinite(.), NA)) 
   
   log2sd <- df %>% 
     dplyr::select(grep("Intensity\\s", names(.))) %>% 
-    `names<-`(gsub("^Intensity\\s(.*)", "sd_log2_R000 \\(\\1\\)", names(.))) %>% 
+    `names<-`(gsub("^Intensity\\s(.*)", 
+                   "sd_log2_R000 \\(\\1\\)", 
+                   names(.))) %>% 
     dplyr::mutate_all(~ replace(.x, !is.na(.x), NA))
   
   df <- dplyr::bind_cols(df, log2sd)
   
   df <- df %>% 
-    `names<-`(gsub("^Intensity (.*)$", paste0("I000 \\(", "\\1", "\\)"), names(.))) %>% 
-    `names<-`(gsub("^LFQ intensity (.*)$", paste0("N_I000 \\(", "\\1", "\\)"), names(.)))
+    `names<-`(gsub("^Intensity (.*)$", 
+                   paste0("I000 \\(", "\\1", "\\)"), 
+                   names(.))) %>% 
+    `names<-`(gsub("^LFQ intensity (.*)$", 
+                   paste0("N_I000 \\(", "\\1", "\\)"), 
+                   names(.)))
   
   if (purrr::is_empty(grep("log2_R000", names(df)))) {
     stop("No `log2_R000...` columns available.\n",
@@ -273,14 +286,16 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
     entrez <- match_call_arg(normPSM, entrez)
     
     df <- local({
-      df <- df %>% dplyr::mutate(prot_acc = gsub(";.*$", "", Proteins))
+      df <- df %>% 
+        dplyr::mutate(prot_acc = gsub(";.*$", "", Proteins))
       
       tempdata <- df %>% 
         dplyr::select(prot_acc) %>% 
         dplyr::filter(!duplicated(prot_acc)) %>% 
         annotPrn(fasta, entrez) %>% 
         dplyr::select(prot_acc, gene, prot_desc) %>% 
-        dplyr::rename(`Gene Names` = "gene", "Protein Names" = "prot_desc")
+        dplyr::rename(`Gene Names` = "gene", 
+                      "Protein Names" = "prot_desc")
       
       df <- df %>% 
         dplyr::left_join(tempdata, by = "prot_acc") %>% 
@@ -324,7 +339,8 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
     }
   } else {
     df <- df %>% 
-      dplyr::mutate(pep_seq = paste(`Amino acid before`, pep_seq, `Amino acid after`, sep = ".")) 
+      dplyr::mutate(pep_seq = paste(`Amino acid before`, pep_seq, `Amino acid after`, 
+                                    sep = ".")) 
   }
   
   df <- local({
@@ -366,7 +382,8 @@ pep_mq_lfq2 <- function(label_scheme) {
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
   corrected_int <- match_call_arg(normPSM, corrected_int)
   
-  filelist <- list.files(path = file.path(dat_dir), pattern = "^peptides.*\\.txt$")
+  filelist <- list.files(path = file.path(dat_dir), 
+                         pattern = "^peptides.*\\.txt$")
   
   if (purrr::is_empty(filelist)) {
     stop(paste("No MaxQuant LFQ file of `peptides[...].txt` under", 
@@ -517,7 +534,8 @@ prn_mq_lfq <- function(label_scheme) {
     extract_mq_ints()
   
   # (1) calculate Z_log2_R
-  sd_coefs <- df %>% calc_sd_fcts(range_log2r = c(5, 95), range_int = c(5, 95), label_scheme)
+  sd_coefs <- df %>% 
+    calc_sd_fcts(range_log2r = c(5, 95), range_int = c(5, 95), label_scheme)
   
   x_vals <- df %>%
     dplyr::select(grep("^N_log2_R[0-9]{3}", names(.))) %>% 
@@ -838,14 +856,18 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   
   df_num <- local({
     df_num <- df_num %>% 
-      dplyr::mutate(mean_lint = log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.))], 
-                                              na.rm = TRUE)), 
+      dplyr::mutate(mean_lint = 
+                      log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.))], 
+                                     na.rm = TRUE)), 
                     mean_lint = round(mean_lint, digits = 2))
     
     count_nna <- df_num %>% 
-      dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
-      dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Ref\\.[0-9]+\\)$", names(.))) %>% 
-      dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", names(.))) %>% 
+      dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", 
+                         names(.))) %>% 
+      dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Ref\\.[0-9]+\\)$", 
+                          names(.))) %>% 
+      dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", 
+                          names(.))) %>% 
       is.na() %>% 
       `!`() %>% 
       rowSums()
@@ -999,8 +1021,10 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 med_summarise_keys <- function(df, id) {
   ## --- Mascot ---
-  mascot_median_keys <- c("pep_score", "pep_rank", "pep_isbold", "pep_exp_mr", "pep_delta", 
-                          "pep_exp_mz", "pep_exp_z", "pep_locprob", "pep_locdiff")
+  mascot_median_keys <- c("pep_score", "pep_rank", "pep_isbold", 
+                          "pep_exp_mr", "pep_delta", 
+                          "pep_exp_mz", "pep_exp_z", 
+                          "pep_locprob", "pep_locdiff")
   mascot_geomean_keys <- c("pep_expect")
   
   df_mascot_med <- df %>% 
@@ -1139,13 +1163,15 @@ load_prior <- function(filename, id) {
   
   stopifnot(file.exists(filename))
   
-  df <- read.csv(filename, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>% 
+  df <- read.csv(filename, check.names = FALSE, 
+                 header = TRUE, sep = "\t", comment.char = "#") %>% 
     dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0) 
   
   if (! id %in% names(df)) {
     try(unlink(file.path(dat_dir, "Peptide/Peptide.txt")))
     try(unlink(file.path(dat_dir, "Protein/Protein.txt")))
-    stop("`Peptide.txt` deleted as column `", id, "` not available.", call. = FALSE)
+    stop("`Peptide.txt` deleted as column `", id, "` not available.", 
+         call. = FALSE)
   }
   
   df <- df %>% dplyr::arrange(!!rlang::sym(id))
@@ -1303,7 +1329,9 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
   
-  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("mergePep"), 
+  on.exit(mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+            c(dots) %>% 
+            save_call("mergePep"), 
           add = TRUE)
   
   stopifnot(vapply(c(plot_log2FC_cv), rlang::is_logical, logical(1)))
@@ -1313,18 +1341,25 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
 
-  dir.create(file.path(dat_dir, "Peptide/cache"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide/Histogram"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/raw"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/purged"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Peptide/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/cache"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/Histogram"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/raw"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/log2FC_cv/purged"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/log"), 
+             recursive = TRUE, showWarnings = FALSE)
   
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
   filename <- file.path(dat_dir, "Peptide/Peptide.txt")
   
   dots <- rlang::enexprs(...)
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
+  filter_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
   
   use_mq_pep <- use_mq_peptable(dat_dir, label_scheme_full)
 
@@ -1347,7 +1382,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
       height = 8, 
       type = "log2_R", 
       adjSD = FALSE, 
-      is_psm = FALSE
+      is_psm = FALSE, 
+      ...
     )
   }
 }
@@ -1495,8 +1531,10 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@importFrom plyr ddply
 #'@export
-standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, range_log2r = c(10, 90), 
-                      range_int = c(5, 95), n_comp = NULL, seed = NULL, plot_log2FC_cv = FALSE, ...) {
+standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, 
+                      range_log2r = c(10, 90), 
+                      range_int = c(5, 95), n_comp = NULL, seed = NULL, 
+                      plot_log2FC_cv = FALSE, ...) {
 
   dat_dir <- get_gl_dat_dir()
   
@@ -1504,7 +1542,10 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, ran
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
   
-  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("standPep"), add = TRUE)
+  on.exit(mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+            c(dots) %>% 
+            save_call("standPep"), 
+          add = TRUE)
 
   reload_expts()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -1688,14 +1729,19 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_
                      use_unique_pep = TRUE, cut_points = Inf, ...) {
   
   dat_dir <- get_gl_dat_dir()
-  dir.create(file.path(dat_dir, "Protein/Histogram"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Protein/cache"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Protein/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/Histogram"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/cache"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/log"), 
+             recursive = TRUE, showWarnings = FALSE)
   
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
-  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("Pep2Prn"), 
+  on.exit(mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+            c(dots) %>% 
+            save_call("Pep2Prn"), 
           add = TRUE)
   
   reload_expts()
@@ -1836,7 +1882,8 @@ map_peps_prots <- function (df, group_psm_by = "pep_seq", group_pep_by = "prot_a
   x <- x %>% 
     dplyr::select(sec_col) %$% 
     stringr::str_split(.$sec_col, sep) %>% 
-    purrr::map2(as.list(x$pri_col), ., ~ c(.x, .y) %>% .[!is.na(.)] %>% unique()) %>% 
+    purrr::map2(as.list(x$pri_col), ., 
+                ~ c(.x, .y) %>% .[!is.na(.)] %>% unique()) %>% 
     `names<-`(df[[group_psm_by]]) 
   
   pep_prot_map <- x 
@@ -2120,15 +2167,19 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
     
     df <- list(df, prot_n_sharepeps, prot_n_sharepsms) %>% 
       purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
-      dplyr::mutate(prot_n_sharepeps = replace(prot_n_sharepeps, is.na(prot_n_sharepeps), 0), 
-                    prot_n_sharepsms = replace(prot_n_sharepsms, is.na(prot_n_sharepsms), 0)) %>% 
+      dplyr::mutate(prot_n_sharepeps = replace(prot_n_sharepeps, 
+                                               is.na(prot_n_sharepeps), 0), 
+                    prot_n_sharepsms = replace(prot_n_sharepsms, 
+                                               is.na(prot_n_sharepsms), 0)) %>% 
       dplyr::mutate(prot_n_uniqpep = prot_n_pep - prot_n_sharepeps, 
                     prot_n_uniqpsm = prot_n_psm - prot_n_sharepsms) %>% 
       dplyr::select(-prot_n_sharepeps, -prot_n_sharepsms)
     
     df %>% 
-      ins_cols_after(which(names(.) == "prot_n_psm"), which(names(.) == "prot_n_uniqpsm")) %>% 
-      ins_cols_after(which(names(.) == "prot_n_pep"), which(names(.) == "prot_n_uniqpep"))
+      ins_cols_after(which(names(.) == "prot_n_psm"), 
+                     which(names(.) == "prot_n_uniqpsm")) %>% 
+      ins_cols_after(which(names(.) == "prot_n_pep"), 
+                     which(names(.) == "prot_n_uniqpep"))
   })
   
   if ("Mapped Proteins" %in% names(df)) {
@@ -2394,12 +2445,14 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) {
       if (nrow(dup_peps_af) > 0) {
         write.csv(dup_peps_af, file.path(dat_dir, "Peptide/dbl_dipping_peptides.csv"), 
                   row.names = FALSE)
-        df <- df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps_af[[group_psm_by]]))
+        df <- df %>% 
+          dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps_af[[group_psm_by]]))
       }
     } else {
       write.csv(dup_peps, file.path(dat_dir, "Peptide/dbl_dipping_peptides.csv"), 
                 row.names = FALSE)
-      df <- df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps[[group_psm_by]]))
+      df <- df %>% 
+        dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps[[group_psm_by]]))
     }
   }
   

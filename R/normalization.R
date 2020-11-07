@@ -95,7 +95,8 @@ update_df <- function (df, label_scheme_fit, cf_x_fit, sd_coefs_fit) {
 #'
 #'@import dplyr purrr  
 #'@importFrom magrittr %>% %T>% %$% %<>% 
-normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range_int, filepath, 
+normMulGau <- function(df, method_align, n_comp, seed = NULL, 
+                       range_log2r, range_int, filepath, 
                        col_select = NULL, cut_points = Inf, ...) {
 
   # check n_comp
@@ -160,7 +161,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   ok_file_ncomp <- function(filepath, filename, n_comp) {
     if (file.exists(file.path(filepath, filename))) {
       params <- read.table(file.path(filepath, filename), 
-                           check.names = FALSE, header = TRUE, comment.char = "#")
+                           check.names = FALSE, header = TRUE, 
+                           comment.char = "#")
       
       n_comp == dplyr::n_distinct(params$Component)
     } else {
@@ -172,7 +174,10 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   # calculates `x` positions by spline points (only for method_align = MC)
   spline_coefs <- function (df, label_scheme, label_scheme_fit, ...) {
     dots <- rlang::enexprs(...)
-    slice_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^slice_", names(.))]
+    
+    slice_dots <- dots %>% 
+      .[purrr::map_lgl(., is.language)] %>% 
+      .[grepl("^slice_", names(.))]
     
     # initialization: NA for Empty samples; 0 for the remaining
     x_vals <- df %>%
@@ -229,11 +234,15 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
       find_fit_nms(label_scheme_fit$Sample_ID)
     
     df <- df %>% 
-      dplyr::mutate(!!paste0(prefix, "raw") := rowMeans(.[, names(.) %in% nm_log2r_raw], na.rm = TRUE), 
-                    !!paste0(prefix, "n") := rowMeans(.[, names(.) %in% nm_log2r_n], na.rm = TRUE), 
-                    !!paste0(prefix, "z") := rowMeans(.[, names(.) %in% nm_log2r_z], na.rm = TRUE)) 
+      dplyr::mutate(!!paste0(prefix, "raw") := rowMeans(.[, names(.) %in% nm_log2r_raw], 
+                                                        na.rm = TRUE), 
+                    !!paste0(prefix, "n") := rowMeans(.[, names(.) %in% nm_log2r_n], 
+                                                      na.rm = TRUE), 
+                    !!paste0(prefix, "z") := rowMeans(.[, names(.) %in% nm_log2r_z], 
+                                                      na.rm = TRUE)) 
     
-    df[, grepl(paste0("^", prefix), names(df))] <- df[, grepl(paste0("^", prefix), names(df))] %>%
+    df[, grepl(paste0("^", prefix), names(df))] <- 
+      df[, grepl(paste0("^", prefix), names(df))] %>%
       dplyr::mutate_if(is.logical, as.numeric) %>%
       round(., digits = 3)
 
@@ -266,13 +275,18 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   
   plot_foo <- function () {
     # Pass arguments by row
-    args <- params %>% dplyr::select(c("lambda", "mean", "sd")) %>% pmap(list)
+    args <- params %>% 
+      dplyr::select(c("lambda", "mean", "sd")) %>% pmap(list)
     
     # Define the function, i.e., normal density function with the weight of lambda
-    wt_dnorm <- function(x, lambda, mean, sd) lambda * length(x) * dnorm(x, mean, sd)
+    wt_dnorm <- function(x, lambda, mean, sd) {
+      lambda * length(x) * dnorm(x, mean, sd)
+    }
     
     # The wrapper of stat_function(); easier to pass "x"
-    stat_dnorm <- function(x, args) stat_function(aes(x), fun = wt_dnorm, n = 100, args = args, size = .2)
+    stat_dnorm <- function(x, args) {
+      stat_function(aes(x), fun = wt_dnorm, n = 100, args = args, size = .2)
+    }
     
     # Pass the list of "args" to the wrapper function "stat_dnorm()" for plotting
     # ggplot() + lapply(args, stat_dnorm, x = seq(-2, 2, 0.1))
@@ -283,8 +297,14 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
   dat_dir <- get_gl_dat_dir()
 
 	dots <- rlang::enexprs(...)
-	slice_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^slice_", names(.))]
-	nonslice_dots <- dots %>% .[! . %in% slice_dots]
+	
+	slice_dots <- dots %>% 
+	  .[purrr::map_lgl(., is.language)] %>% 
+	  .[grepl("^slice_", names(.))]
+	
+	nonslice_dots <- dots %>% 
+	  .[! . %in% slice_dots]
+	
 	n_comp <- find_n_comp(n_comp, method_align)
 
 	if (!purrr::is_empty(nonslice_dots)) {
@@ -294,8 +314,10 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 			            sep = "\t", col.names = TRUE, row.names = FALSE)
 	}
 
-	# if different `n_comp` between two `method_align = MGKernel`, force `col_select` to all samples
-	# if `n_comp` is given but with `method_align = MC`, ignore difference in n_comp
+	# if different `n_comp` between two `method_align = MGKernel`, 
+	#   force `col_select` to all samples
+	# if `n_comp` is given but with `method_align = MC`, 
+	#   ignore difference in n_comp
 	
 	ok_N_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_N.txt", n_comp)
 	ok_Z_ncomp <- ok_file_ncomp(filepath, "MGKernel_params_Z.txt", n_comp)
@@ -313,7 +335,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	load(file = file.path(dat_dir, "label_scheme.rda"))
 	label_scheme_fit <- label_scheme %>% .[!is.na(.[[col_select]]), ]
 	
-	## `nm_log2r_z` the same as `nm_log2r_n` if is the first `normMulGau` after `mergePep` or `mergePrn`
+	## `nm_log2r_z` the same as `nm_log2r_n` 
+	#   if is the first `normMulGau` after `mergePep` or `mergePrn`
 	
 	nm_log2r_n <- names(df) %>% 
 	  .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
@@ -365,8 +388,12 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 			write.table(., file = file.path(filepath, "MGKernel_params_N.txt"), sep = "\t",
 			            col.names = TRUE, row.names = FALSE)
 		
-		sd_coefs_fit <- sd_coefs %>% dplyr::filter(Sample_ID %in% label_scheme_fit$Sample_ID)
-		cf_x_fit <- cf_x %>% dplyr::filter(Sample_ID %in% label_scheme_fit$Sample_ID)
+		sd_coefs_fit <- sd_coefs %>% 
+		  dplyr::filter(Sample_ID %in% label_scheme_fit$Sample_ID)
+		
+		cf_x_fit <- cf_x %>% 
+		  dplyr::filter(Sample_ID %in% label_scheme_fit$Sample_ID)
+		
 		df <- update_df(df, label_scheme_fit, cf_x_fit, sd_coefs_fit)
 		
 		## non-empty `Z_log2_R` guaranteed after `update_df`
@@ -436,7 +463,8 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL, range_log2r, range
 	      purrr::map(~ .x %>% dplyr::select(-col_cut))
 	  }
 
-	  x_vals <- df %>% purrr::map(spline_coefs, label_scheme, label_scheme_fit, slice_dots)
+	  x_vals <- df %>% 
+	    purrr::map(spline_coefs, label_scheme, label_scheme_fit, slice_dots)
 	  
 	  df <- purrr::map2(df, x_vals, ~ update_df(.x, label_scheme, .y, sd_coefs)) %>% 
 	    dplyr::bind_rows()
@@ -596,7 +624,10 @@ fitKernelDensity <- function (df, n_comp = 3, seed = NULL, ...) {
 			
 			quietly_out <- purrr::quietly(rlang::eval_tidy)(mixEM_call, caller_env())
 			x_k2 <- quietly_out$result
-			df_par <- data.frame(Component = 1:n_comp, lambda = x_k2$lambda, mean = x_k2$mu, sd = x_k2$sigma)
+			df_par <- data.frame(Component = 1:n_comp, 
+			                     lambda = x_k2$lambda, 
+			                     mean = x_k2$mu, 
+			                     sd = x_k2$sigma)
 		}
 
 		return(df_par)
@@ -615,7 +646,10 @@ fitKernelDensity <- function (df, n_comp = 3, seed = NULL, ...) {
       min()
 	})
 
-	if (min_n < 50) stop("Too few data points for fitting with multiple Gaussian functions.")
+	if (min_n < 50) {
+	  stop("Too few data points for fitting with multiple Gaussian functions.", 
+	       call. = FALSE)
+	}
 
 	lapply(df, nmix_params, n_comp, seed = seed, !!!dots) %>%
 		do.call(rbind, .) %>%

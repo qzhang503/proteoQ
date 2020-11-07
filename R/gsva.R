@@ -98,15 +98,15 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
 
   on.exit(
     if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), current_env()) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(dots) %>% 
         save_call("pepGSVA")
     } else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
-      mget(names(formals()), current_env()) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(dots) %>% 
         save_call("prnGSVA")
-    }
-    , add = TRUE
+    }, 
+    add = TRUE
   )
   
   check_dots(c("id", "anal_type", "df2"), ...)

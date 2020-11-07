@@ -108,15 +108,20 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
                       n_comp = NULL, seed = NULL, 
                       col_select = NULL, cut_points = Inf, cache = TRUE, ...) {
   dat_dir <- get_gl_dat_dir()
-  dir.create(file.path(dat_dir, "Protein/Histogram"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Protein/cache"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "Protein/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/Histogram"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/cache"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/log"), 
+             recursive = TRUE, showWarnings = FALSE)
   
   old_opts <- options()
   on.exit(options(old_opts), add = TRUE)
   options(warn = 1)
   
-  on.exit(mget(names(formals()), current_env()) %>% c(dots) %>% save_call("standPrn"), 
+  on.exit(mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+            c(dots) %>% 
+            save_call("standPrn"), 
           add = TRUE)
   
   reload_expts()

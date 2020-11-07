@@ -6,28 +6,38 @@
 #' @inheritParams gspaTest
 #' @import stringr dplyr ggplot2 GGally 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, col_order = NULL,
+plotCorr <- function (df = NULL, id, anal_type, data_select, 
+                      col_select = NULL, col_order = NULL,
                       label_scheme_sub = label_scheme_sub, 
                       scale_log2r = scale_log2r, complete_cases = complete_cases, 
                       filepath = filepath, filename = filename, ...) {
 
-  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  if (complete_cases) {
+    df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  }
   
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
-  xmin <- eval(dots$xmin, env = caller_env()) # `xmin = -1` is `language`
-  xmax <- eval(dots$xmax, env = caller_env()) # `xmax = +1` is `language`
-  xbreaks <- eval(dots$xbreaks, env = caller_env())
-  width <- eval(dots$width, env = caller_env())
-  height <- eval(dots$height, env = caller_env())
+  xmin <- eval(dots$xmin, envir = rlang::caller_env()) 
+  xmax <- eval(dots$xmax, envir = rlang::caller_env()) 
+  xbreaks <- eval(dots$xbreaks, envir = rlang::caller_env())
+  width <- eval(dots$width, envir = rlang::caller_env())
+  height <- eval(dots$height, envir = rlang::caller_env())
 
   dots <- dots %>% 
     .[! names(.) %in% c("xmin", "xmax", "xbreaks", "width", "height")]
   
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
-  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+  filter_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  
+  arrange_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange_", names(.))]
+  
+  dots <- dots %>% 
+    .[! . %in% c(filter_dots, arrange_dots)]
   
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
@@ -40,7 +50,8 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
 	fn_prefix <- gsub("\\.[^.]*$", "", filename)
 
 	df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
-	             sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) 
+	             sub_grp = label_scheme_sub$Sample_ID, 
+	             anal_type = anal_type) 
 	
 	if (data_select == "logFC") {
 	  df <- df %>% .$log2R
@@ -55,14 +66,17 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
 	  if (is.null(xmax)) xmax <- 6
 	  if (is.null(xbreaks)) xbreaks <- 1
 	} else {
-	  stop("`data_select` nees to be either`logFC` or `logInt`.", call. = FALSE)
+	  stop("`data_select` nees to be either`logFC` or `logInt`.", 
+	       call. = FALSE)
 	}
 	
-	label_scheme_sub <- label_scheme_sub %>% dplyr::filter(Sample_ID %in% colnames(df))
+	label_scheme_sub <- label_scheme_sub %>% 
+	  dplyr::filter(Sample_ID %in% colnames(df))
 	
 	if (is.null(width)) width <- 1.4 * length(label_scheme_sub$Sample_ID)
 	if (is.null(height)) height <- width
-	if (ncol(df) > 44) stop("Maximal number of samples for correlation plots is 44.", call. = FALSE)
+	if (ncol(df) > 44) stop("Maximum number of samples for correlation plots is 44.", 
+	                        call. = FALSE)
 
 	if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1) {
 		df <- df[, order(names(df))]
@@ -78,7 +92,8 @@ plotCorr <- function (df = NULL, id, anal_type, data_select, col_select = NULL, 
 
 	plot_corr_sub(df = df, xlab = x_label, ylab = y_label,
 	              filename = filename, filepath = filepath,
-	              xmin = xmin, xmax = xmax, xbreaks = xbreaks, width = width, height = height, !!!dots)
+	              xmin = xmin, xmax = xmax, xbreaks = xbreaks, 
+	              width = width, height = height, !!!dots)
 }
 
 
@@ -177,7 +192,8 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
     p
   }
 
-  my_custom_cor <- function(data, mapping, color = I("grey50"), sizeRange = c(1, 4), ...) {
+  my_custom_cor <- function(data, mapping, color = I("grey50"), 
+                            sizeRange = c(1, 4), ...) {
     x <- GGally::eval_data_col(data, mapping$x)
     y <- GGally::eval_data_col(data, mapping$y)
 
@@ -256,16 +272,12 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 
   ncol <- ncol(df)
   
-  if (is.null(dots$dpi)) {
-    dpi <- 300
-  } else {
-    dpi <- eval(dots$dpi, env = caller_env())
-    dots$dpi <- NULL
-  }
-
-  p1 <- ggpairs(df, columnLabels = as.character(names(df)), labeller = label_wrap_gen(10),
-                title = "", xlab = xlab, ylab = ylab, lower = list(continuous = my_lower_no_sm),
-                upper = list(continuous = my_custom_cor, digits = 2))
+  p1 <- ggpairs(df, columnLabels = as.character(names(df)), 
+                labeller = label_wrap_gen(10),
+                title = "", xlab = xlab, ylab = ylab, 
+                lower = list(continuous = my_lower_no_sm),
+                upper = list(continuous = my_custom_cor, 
+                             digits = 2))
   p2 <- ggcorr(df, label = TRUE, label_round = 2)
 
   g2 <- ggplotGrob(p2)
@@ -328,8 +340,16 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
     theme(plot.title = element_text(face = "bold", colour = "black", size = 20,
                                     hjust = 0.5, vjust = 0.5))
 
-  quietly_log <- purrr::quietly(ggsave)(file.path(filepath, gg_imgname(filename)), 
-                                        plot = p1, width = width, height = height, dpi = dpi, units = "in")
+  ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
+  
+  suppressWarnings(
+    rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
+                      plot = p1, 
+                      width = width, 
+                      height = height, 
+                      !!!ggsave_dots)) %>% 
+      rlang::eval_tidy()
+  )
   
   invisible(p2$data)
 }
@@ -345,12 +365,14 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 #'@import purrr
 #'@export
 pepCorr_logFC <- function (col_select = NULL, col_order = NULL, 
-                           scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                           scale_log2r = TRUE, complete_cases = FALSE, 
+                           impute_na = FALSE, 
                            df = NULL, filepath = NULL, filename = NULL, ...) {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
+            length(id) == 1)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -362,9 +384,16 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
   
   reload_expts()
   
-  info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
+  info_anal(id = !!id, 
+            col_select = !!col_select, 
+            col_order = !!col_order,
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na,
+            df = !!df, 
+            df2 = NULL, 
+            filepath = !!filepath, 
+            filename = !!filename,
             anal_type = "Corrplot")(data_select = "logFC", ...)
 }
 
@@ -379,12 +408,14 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
 #'@import purrr
 #'@export
 pepCorr_logInt <- function (col_select = NULL, col_order = NULL, 
-                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                            scale_log2r = TRUE, complete_cases = FALSE, 
+                            impute_na = FALSE, 
                             df = NULL, filepath = NULL, filename = NULL, ...) {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
+            length(id) == 1)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -396,9 +427,16 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
   
   reload_expts()
   
-  info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
+  info_anal(id = !!id, 
+            col_select = !!col_select, 
+            col_order = !!col_order,
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na,
+            df = !!df, 
+            df2 = NULL, 
+            filepath = !!filepath, 
+            filename = !!filename,
             anal_type = "Corrplot")(data_select = "logInt", ...)
 }
 
@@ -493,12 +531,14 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
 prnCorr_logFC <- function (col_select = NULL, col_order = NULL, 
-                           scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                           scale_log2r = TRUE, complete_cases = FALSE, 
+                           impute_na = FALSE, 
                            df = NULL, filepath = NULL, filename = NULL, ...) {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+            length(id) == 1)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -510,9 +550,16 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
   
   reload_expts()
   
-  info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
+  info_anal(id = !!id, 
+            col_select = !!col_select, 
+            col_order = !!col_order,
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na,
+            df = !!df, 
+            df2 = NULL, 
+            filepath = !!filepath, 
+            filename = !!filename,
             anal_type = "Corrplot")(data_select = "logFC", ...)
 }
 
@@ -528,12 +575,14 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
 #'@import purrr
 #'@export
 prnCorr_logInt <- function (col_select = NULL, col_order = NULL, 
-                            scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                            scale_log2r = TRUE, complete_cases = FALSE, 
+                            impute_na = FALSE, 
                             df = NULL, filepath = NULL, filename = NULL, ...) {
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+            length(id) == 1)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -545,9 +594,16 @@ prnCorr_logInt <- function (col_select = NULL, col_order = NULL,
   
   reload_expts()
   
-  info_anal(id = !!id, col_select = !!col_select, col_order = !!col_order,
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
+  info_anal(id = !!id, 
+            col_select = !!col_select, 
+            col_order = !!col_order,
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na,
+            df = !!df, 
+            df2 = NULL, 
+            filepath = !!filepath, 
+            filename = !!filename,
             anal_type = "Corrplot")(data_select = "logInt", ...)
 }
 

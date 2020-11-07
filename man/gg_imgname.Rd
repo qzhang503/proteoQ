@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{gg_imgname}
 \alias{gg_imgname}
-\title{Check file names for ggsave()}
+\title{Check file names for ggsave}
 \usage{
 gg_imgname(filename)
 }
@@ -10,5 +10,5 @@ gg_imgname(filename)
 \item{filename}{Character string; An output file name.}
 }
 \description{
-Check file names for ggsave()
+Check file names for ggsave
 }

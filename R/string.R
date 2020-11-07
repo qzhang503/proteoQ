@@ -164,15 +164,15 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
                             df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), current_env()) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(enexprs(...)) %>% 
         save_call(paste0("anal", "_pepString"))
     } else if (id %in% c("prot_acc", "gene")) {
-      mget(names(formals()), current_env()) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(enexprs(...)) %>% 
         save_call(paste0("anal", "_prnString"))
-    }
-    , add = TRUE
+    }, 
+    add = TRUE
   )
   
   check_dots(c("id", "anal_type", "df2"), ...)

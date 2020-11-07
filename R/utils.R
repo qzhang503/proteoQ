@@ -20,12 +20,19 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
   stopifnot(nrow(df) > 0)  
   
   id <- rlang::as_string(rlang::enexpr(id))
-  if (anal_type %in% c("ESGAGE", "GSVA")) id <- "entrez"
-  if ((anal_type %in% c("GSEA")) && (id != "gene")) stop("Primary ID is not `gene`.")
+  
+  if (anal_type %in% c("ESGAGE", "GSVA")) {
+    id <- "entrez"
+  }
+  
+  if ((anal_type %in% c("GSEA")) && (id != "gene")) {
+    stop("Primary ID is not `gene`.", call. = FALSE)
+  }
   
   NorZ_ratios <- paste0(ifelse(scale_log2r, "Z", "N"), "_log2_R")
   
-  pattern <- "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
+  pattern <- 
+    "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
 
   df <- df %>% 
     dplyr::ungroup() %>% 
@@ -44,8 +51,9 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
       `colnames<-`(label_scheme$Sample_ID) %>%
       dplyr::select(which(names(.) %in% sub_grp)) 
     
+    # reference will drop with single reference
     non_trivials <- dfR %>% 
-      dplyr::select(which(not_all_zero(.))) %>% # reference will drop with single reference
+      dplyr::select(which(not_all_zero(.))) %>% 
       names()
     
     trivials <- names(dfR) %>% .[! . %in% non_trivials]
@@ -188,7 +196,8 @@ reorderCols2 <- function (df = NULL, pattern = NULL) {
   if (is.null(df)) stop("`df` cannot be `NULL`.", call. = FALSE)
   
   if (is.null(pattern)) {
-    pattern <- "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
+    pattern <- 
+      "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
   }
 
   endColIndex <- grep(pattern, names(df))
@@ -311,7 +320,8 @@ aggrTopn <- function(f) {
     # OK for LFQ: rowSums against single column
     df %>%
       dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
-      dplyr::mutate(sum_Intensity =rowSums(.[grep("^I[0-9]{3}", names(.))], na.rm = TRUE)) %>%
+      dplyr::mutate(sum_Intensity = rowSums(.[grep("^I[0-9]{3}", names(.))], 
+                                            na.rm = TRUE)) %>%
       dplyr::group_by(!!rlang::sym(id)) %>%
       dplyr::top_n(n = n, wt = sum_Intensity) %>%
       dplyr::select(-sum_Intensity) %>%
@@ -344,11 +354,13 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...) {
   
   my_wtmean <- function (x) {
     x %>% 
-      dplyr::mutate_at(.vars = "Intensity", my_trim, range_int = range_int, na.rm = TRUE) %>% 
+      dplyr::mutate_at(.vars = "Intensity", my_trim, range_int = range_int, 
+                       na.rm = TRUE) %>% 
       dplyr::mutate(n = stringr::str_length(.[[id]])) %>%
       dplyr::filter(n != 0) %>%
       dplyr::group_by(!!rlang::sym(id), variable) %>%
-      dplyr::summarise(log2_R = weighted.mean(log2_R, log10(Intensity), !!!dots)) %>%
+      dplyr::summarise(log2_R = weighted.mean(log2_R, log10(Intensity), 
+                                              !!!dots)) %>%
       tidyr::spread(variable, log2_R)
   }
   
@@ -411,7 +423,8 @@ tmt_wtmean <- function (x, id, na.rm = TRUE, ...) {
     xzr_wt <- xi_wt[, 1, drop = FALSE]
   }
 
-  x <- list(xi_wt, xr_wt, xnr_wt, xzr_wt) %>% purrr::reduce(dplyr::left_join, by = id)
+  x <- list(xi_wt, xr_wt, xnr_wt, xzr_wt) %>% 
+    purrr::reduce(dplyr::left_join, by = id)
 
   dplyr::bind_cols(
     x[, names(x) == id],
@@ -442,7 +455,8 @@ TMT_top_n <- function (x, id, ...) {
 	
 	x %>%
 	  dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
-	  dplyr::mutate(sum_Intensity =rowSums(.[grep("^I[0-9]{3}", names(.))], na.rm = TRUE)) %>%
+	  dplyr::mutate(sum_Intensity = rowSums(.[grep("^I[0-9]{3}", names(.))], 
+	                                        na.rm = TRUE)) %>%
 	  dplyr::group_by(!!rlang::sym(id)) %>%
 	  dplyr::top_n(n = 3, wt = sum_Intensity) %>%
 	  dplyr::select(-sum_Intensity) %>%
@@ -695,7 +709,8 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 		data <- rlang::enexpr(data)
 		dots <- rlang::enexprs(...)
 
-		rlang::eval_bare(rlang::expr(mice::mice(data = !!data, !!!dots)), env = caller_env())
+		rlang::eval_bare(rlang::expr(mice::mice(data = !!data, !!!dots)), 
+		                 env = rlang::caller_env())
 	}
 
 	handleNA <- function (x, ...) {
@@ -736,21 +751,24 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 	}
 
 	if ((!file.exists(filename)) || overwrite) {
-		df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
-		                        comment.char = "#"), error = function(e) NA)
+		df <- tryCatch(read.csv(src_path, check.names = FALSE, 
+		                        header = TRUE, sep = "\t",
+		                        comment.char = "#"), 
+		               error = function(e) NA)
 
 		if (!is.null(dim(df))) {
 		  message(paste("File loaded:", src_path))
 		} else {
-		  stop(paste("File or directory not found:", src_path))
+		  stop("File or directory not found: ", src_path, 
+		       call. = FALSE)
 		}
 
 		df[, grep("N_log2_R", names(df))] <- handleNA(df[, grep("N_log2_R", names(df))], ...)
 
 		fn_params <- file.path(dat_dir, "Protein/Histogram", "MGKernel_params_N.txt")
 		if (file.exists(fn_params)) {
-			cf_SD <- 
-				read.csv(fn_params, check.names = FALSE, header = TRUE, sep = "\t", comment.char = "#") %>%
+			cf_SD <- read.csv(fn_params, check.names = FALSE, 
+			                  header = TRUE, sep = "\t", comment.char = "#") %>%
 				dplyr::filter(!duplicated(Sample_ID)) %>%
 				dplyr::select(Sample_ID, fct)
 
@@ -767,12 +785,14 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 
 		if (any(duplicated(df[[id]]))) {
 			if (id == "pep_seq") {
-				warning("\`pep_seq\` is not uqique for rownames; use \`pep_seq_mod\` instead.\n", 
+				warning("\`pep_seq\` is not uqique for rownames; ", 
+				        "uses \`pep_seq_mod\` instead.\n", 
 				        call. = FALSE)
 				rownames(df) <- df[["pep_seq_mod"]]
 			}
 			if (id == "gene") {
-				warning("\`gene\` is not uqique for rownames; use \`prot_acc\` instead.\n", 
+				warning("\`gene\` is not uqique for rownames; ", 
+				        "uses \`prot_acc\` instead.\n", 
 				        call. = FALSE)
 				rownames(df) <- df[["prot_acc"]]
 			}
@@ -931,9 +951,11 @@ add_refseq_gene <- function (acc_lookup, acc_type) {
                     !!entrez_key := as.character(!!rlang::sym(entrez_key))) %>% 
       dplyr::select(entrez_key, "gene")
 
-    acc_lookup <- dplyr::left_join(acc_lookup, entrez_db, by = c("prot_acc" = entrez_key)) 
+    acc_lookup <- dplyr::left_join(acc_lookup, entrez_db, 
+                                   by = c("prot_acc" = entrez_key)) 
   } else {
-    acc_lookup <- acc_lookup %>% dplyr::mutate(gene = NA_character_) 
+    acc_lookup <- acc_lookup %>% 
+      dplyr::mutate(gene = NA_character_) 
   }
   
   invisible(acc_lookup)
@@ -1071,9 +1093,12 @@ parse_acc <- function(df) {
     unlist %>% 
     unique()
   
-  pat_uni_acc <- "^[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}"
-  pat_uni_id <- "^[[:alnum:]]+_[A-Z]{1,10}$"
-  pat_ref_acc <- "^[XNY]{1}[MRP]{1}_"
+  pat_uni_acc <- 
+    "^[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}"
+  pat_uni_id <- 
+    "^[[:alnum:]]+_[A-Z]{1,10}$"
+  pat_ref_acc <- 
+    "^[XNY]{1}[MRP]{1}_"
   
   acc_types <- purrr::map_chr(prot_accs, ~ {
     if (grepl(pat_uni_id, .x)) {
@@ -1088,7 +1113,9 @@ parse_acc <- function(df) {
   }, prot_accs)
   
   df %>% 
-    dplyr::left_join(data.frame(prot_acc = prot_accs, acc_type = acc_types), by = "prot_acc")
+    dplyr::left_join(data.frame(prot_acc = prot_accs, 
+                                acc_type = acc_types), 
+                     by = "prot_acc")
 }
 
 
@@ -1116,7 +1143,8 @@ parse_fasta <- function (df, fasta, entrez) {
     if (nrow(acc_lookup) > 0 && 
         "organism" %in% names(acc_lookup) && 
         "species" %in% names(acc_lookup)) {
-      na_species <- (is.na(acc_lookup$species)) | (stringr::str_length(acc_lookup$species) == 0)
+      na_species <- 
+        (is.na(acc_lookup$species)) | (stringr::str_length(acc_lookup$species) == 0)
       acc_lookup$species <- as.character(acc_lookup$species)
       acc_lookup$species[na_species] <- as.character(acc_lookup$organism[na_species])
     }
@@ -1181,8 +1209,13 @@ parse_fasta <- function (df, fasta, entrez) {
 
   # load fasta_db
   fasta_db <- local({
-    if (is.null(fasta)) stop("FASTA file(s) are required.", call. = FALSE)
-    if (!all(file.exists(fasta))) stop("Wrong FASTA file path(s) or name(s).", call. = FALSE)
+    if (is.null(fasta)) {
+      stop("FASTA file(s) are required.", call. = FALSE)
+    }
+    
+    if (!all(file.exists(fasta))) {
+      stop("Wrong FASTA file path(s) or name(s).", call. = FALSE)
+    }
     
     purrr::map(fasta, ~ read_fasta(.x)) %>% 
       do.call(`c`, .) %>% 
@@ -1345,7 +1378,6 @@ parse_fasta <- function (df, fasta, entrez) {
           attr(.x, "prot_desc") <- .y
           return(.x)
         })
-        
       }
       
       invisible(fasta_db_sub)
@@ -1469,7 +1501,8 @@ parse_fasta <- function (df, fasta, entrez) {
 annotPrn <- function (df, fasta, entrez) {
   na_fasta_name_by_prot_acc <- function(df) {
     if (nrow(df) > 0 && "fasta_name" %in% names(df)) {
-      na_fasta_name <- (is.na(df$fasta_name)) | (stringr::str_length(df$fasta_name) == 0)
+      na_fasta_name <- 
+        (is.na(df$fasta_name)) | (stringr::str_length(df$fasta_name) == 0)
       df$fasta_name[na_fasta_name] <- df$prot_acc[na_fasta_name]
     }
     
@@ -1478,7 +1511,8 @@ annotPrn <- function (df, fasta, entrez) {
   
   na_acc_type_to_other <- function(df) {
     if (nrow(df) > 0 && "acc_type" %in% names(df)) {
-      na_acc_type <- (is.na(df$acc_type)) | (stringr::str_length(df$acc_type) == 0)
+      na_acc_type <- 
+        (is.na(df$acc_type)) | (stringr::str_length(df$acc_type) == 0)
       df$acc_type[na_acc_type] <- "other_acc"
     }
 
@@ -1539,7 +1573,10 @@ annotKin <- function (df, acc_type) {
   
   if (!acc_type %in% names(kinase_lookup)) {
     df <- df %>% 
-      dplyr::mutate(kin_attr = FALSE, kin_class = NA_character_, kin_order = NA_integer_)
+      dplyr::mutate(kin_attr = FALSE, 
+                    kin_class = NA_character_, 
+                    kin_order = NA_integer_)
+    
     return(df)
   }
 
@@ -1601,7 +1638,8 @@ match_fmls <- function(formulas) {
   
   if (!all(ok))
     stop("Formula match failed: ", formulas[[which(!ok)]],
-         " not found in the latest call to 'pepSig(...)'.")
+         " not found in the latest call to 'pepSig(...)'.", 
+         call. = FALSE)
 }
 
 
@@ -1624,7 +1662,8 @@ match_call_arg <- function (call_rda = "foo", arg = "scale_log2r") {
   
   load(file = file)
   if (!arg %in% names(call_pars)) 
-    stop(arg, " not found in the latest call to ", call_rda, call. = FALSE)
+    stop(arg, " not found in the latest call to ", call_rda, 
+         call. = FALSE)
   
   call_pars[[arg]]
 }
@@ -1677,7 +1716,8 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL,
     }
     
     if (rlang::is_empty(filename)) 
-      stop("No input files correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+      stop("No input files correspond to impute_na = ", 
+           impute_na, ", scale_log2r = ", scale_log2r, 
            call. = FALSE)
   }
 
@@ -1696,7 +1736,8 @@ match_gset_nms <- function (gset_nms = NULL) {
     if (file.exists(file)) {
       gset_nms <- match_call_arg(anal_prnGSPA, gset_nms)
     } else {
-      stop("`gset_nms` is NULL and ", file, " not found.", call. = FALSE)
+      stop("`gset_nms` is NULL and ", file, " not found.", 
+           call. = FALSE)
     }
   } else {
     if (file.exists(file)) {
@@ -1704,7 +1745,8 @@ match_gset_nms <- function (gset_nms = NULL) {
         .[. %in% match_call_arg(anal_prnGSPA, gset_nms)]
     } else {
       warning("File `", file, "`` not available for `gset_nms` matches.", 
-              "\nUse the `gset_nms` value as it.", call. = FALSE)
+              "\nUse the `gset_nms` value as it.", 
+              call. = FALSE)
     }
   }
   
@@ -1758,12 +1800,14 @@ match_scale_log2r <- function(scale_log2r) {
 #' }
 match_logi_gv <- function(var, val) {
   oval <- val
-  gvar <-tryCatch(gvar <- get(var, envir = .GlobalEnv), error = function(e) "e")
+  gvar <- tryCatch(gvar <- get(var, envir = .GlobalEnv), 
+                   error = function(e) "e")
   
   if (gvar != "e") {
     stopifnot(rlang::is_logical(gvar))
     if (gvar != oval) {
-      warning("Coerce ", var, " to ", gvar, " after matching to the global setting.", 
+      warning("Coerce ", var, " to ", gvar, 
+              " after matching to the global setting.", 
               call. = FALSE)
     }
     return(gvar)
@@ -1789,7 +1833,8 @@ match_prnSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE) {
   }
   
   if (scale_log2r != mscale_log2r) {
-    warning("scale_log2r = ", mscale_log2r, " after matching to prnSig(impute_na = ", impute_na, ", ...)", 
+    warning("scale_log2r = ", mscale_log2r, 
+            " after matching to prnSig(impute_na = ", impute_na, ", ...)", 
             call. = FALSE)
   }
   
@@ -1812,7 +1857,8 @@ match_pepSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE) {
   }
   
   if (scale_log2r != mscale_log2r) {
-    warning("scale_log2r = ", mscale_log2r, " after matching to pepSig(impute_na = ", impute_na, ", ...)", 
+    warning("scale_log2r = ", mscale_log2r, 
+            " after matching to pepSig(impute_na = ", impute_na, ", ...)", 
             call. = FALSE)
   }
   
@@ -1834,7 +1880,10 @@ replace_na_genes <- function(df, acc_type) {
 		df$gene <- as.character(df$gene)
 		df$gene[na_gene] <- as.character(df$prot_acc[na_gene])
 	} else if (acc_type == "uniprot_id") {
-		temp <- data.frame(do.call('rbind', strsplit(as.character(df$prot_desc), 'GN=', fixed = TRUE))) %>%
+		temp <- data.frame(do.call('rbind', 
+		                           strsplit(as.character(df$prot_desc), 
+		                                    'GN=', 
+		                                    fixed = TRUE))) %>%
 				dplyr::select(2) %>%
 				`colnames<-`("gene") %>%
 				dplyr::mutate(gene = gsub("PE\\=.*", "", gene)) %>%
@@ -1982,7 +2031,8 @@ annotPeppos <- function (df){
                 fasta_db_sub)
   ) %>% 
     do.call(rbind, .) %>% 
-    `colnames<-`(c("pep_seq_bare", "pep_res_before", "pep_start", "pep_end", "pep_res_after", 
+    `colnames<-`(c("pep_seq_bare", "pep_res_before", "pep_start", 
+                   "pep_end", "pep_res_after", 
                    "fasta_name", "is_tryptic")) %>% 
     data.frame(check.names = FALSE) %>% 
     tidyr::unite(pep_prn, pep_seq_bare, fasta_name, sep = "@", remove = TRUE) %>% 
@@ -2019,7 +2069,8 @@ subset_fasta <- function (df, fasta, acc_type) {
   stopifnot("prot_acc" %in% names(df))
   
   if (! acc_type %in% c("refseq_acc", "uniprot_id", "uniprot_acc")) {
-    stop("The type of protein accesion needs to one of \'uniprot_id\', \'uniprot_acc\' or \'refseq_acc\'",
+    stop("The type of protein accesion needs to one of ", 
+         "\'uniprot_id\', \'uniprot_acc\' or \'refseq_acc\'.",
          call. = FALSE)
   }
   
@@ -2052,7 +2103,8 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq_bare",
   ok <- tryCatch(load(file = file.path(dat_dir, "fasta_db.rda")),
                  error = function(e) "e")
   if (ok != "fasta_db") {
-    stop("`fasta_db.rda` not found under ", dat_dir, ".", call. = FALSE)
+    stop("`fasta_db.rda` not found under ", dat_dir, ".", 
+         call. = FALSE)
   }
   
   fasta_db <- fasta_db %>% .[!duplicated(names(.))]
@@ -2158,8 +2210,8 @@ calc_cover <- function(df, id) {
   }
   
   if (length(fasta_db) <= 200) {
-    warning("Less than 200 entries in fasta matched by protein accessions. 
-            Make sure the fasta file is correct.", 
+    warning("Less than 200 entries in fasta matched by protein accessions.\n", 
+            "Make sure the fasta file is correct.", 
             call. = FALSE)
   }
   
@@ -2171,7 +2223,8 @@ calc_cover <- function(df, id) {
     dplyr::select(-index)
   
   if (nrow(df_sels) == 0) {
-    stop("Probably incorrect accession types in the fasta file(s).", call. = FALSE)
+    stop("Probably incorrect accession types in the fasta file(s).", 
+         call. = FALSE)
   }
   
   df_sels <- df_sels %>%
@@ -2181,7 +2234,11 @@ calc_cover <- function(df, id) {
     purrr::map(function (.x) {
       len <- .x[1, "prot_len"]
       aa_map <- rep(NA, len)
-      for (i in 1:nrow(.x)) aa_map[.x[i, ]$pep_start : .x[i, ]$pep_end] <- TRUE
+      
+      for (i in 1:nrow(.x)) {
+        aa_map[.x[i, ]$pep_start : .x[i, ]$pep_end] <- TRUE
+      }
+      
       sum(aa_map, na.rm = TRUE)/len
     } ) %>%
     do.call("rbind", .) %>%
@@ -2218,7 +2275,8 @@ calc_cover <- function(df, id) {
   
   if ("prot_icover" %in% names(df)) {
     df <- df %>% 
-      dplyr::mutate(prot_icover = ifelse(!is.na(prot_icover), prot_icover, prot_cover), 
+      dplyr::mutate(prot_icover = 
+                      ifelse(!is.na(prot_icover), prot_icover, prot_cover), 
                     prot_icover = round(prot_icover, digits = 3))
   }
   
@@ -2270,14 +2328,15 @@ cmbn_meta <- function(data, metadata) {
     data %>% 
       tibble::rownames_to_column("Sample_ID") %>%
       dplyr::left_join(metadata, by = "Sample_ID") %>%
-      dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), ~ as.factor(.)) %>%
+      dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), 
+                       ~ as.factor(.)) %>%
       dplyr::select(which(not_all_NA(.))) %>% 
       rm_sglval_cols()    
   )
 }
 
 
-#' Check file names for ggsave()
+#' Check file names for ggsave
 #' @param filename Character string; An output file name.
 gg_imgname <- function(filename) {
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
@@ -2286,7 +2345,10 @@ gg_imgname <- function(filename) {
   exts <- c("png", "eps", "ps", "tex", "pdf", "jpeg", "tiff", "png", "bmp", "svg") 
   
   if(! fn_suffix %in% exts) {
-    warning(paste0("Unrecognized file extenstion: '", fn_suffix, "'. Image will be saved as a '.png'.\n"))
+    warning("Unrecognized file extenstion: '", fn_suffix, 
+            "'. Image will be saved as a '.png'.", 
+            call. = FALSE)
+    
     fn_suffix <- "png"
   }
   
@@ -2294,7 +2356,7 @@ gg_imgname <- function(filename) {
 }
 
 
-#' Check file names for ggsave()
+#' Check file names for ggsave
 #' 
 #' @inheritParams info_anal
 #' @import dplyr purrr
@@ -2390,7 +2452,8 @@ arrangers_in_call <- function(.df, ..., .na.last = TRUE) {
 #' @inheritParams standPep
 #' @inheritParams channelInfo
 #' @inheritParams calcPeptide
-calc_sd_fcts_psm <- function (df, range_log2r = c(5, 95), range_int = c(5, 95), set_idx, injn_idx) {
+calc_sd_fcts_psm <- function (df, range_log2r = c(5, 95), range_int = c(5, 95), 
+                              set_idx, injn_idx) {
   dat_dir <- get_gl_dat_dir()
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -2452,9 +2515,11 @@ calcSD_Splex <- function (df, id, type = "log2_R") {
 #' @inheritParams prnCorr_logFC
 #' @inheritParams calcSD_Splex
 #' @import dplyr ggplot2
-sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, height = NULL, 
+sd_violin <- function(df = NULL, id = NULL, filepath = NULL, 
+                      width = NULL, height = NULL, 
                       type = "log2_R", adjSD = FALSE, 
-                      is_psm = FALSE, col_select = NULL, col_order = NULL, theme = NULL, ...) {
+                      is_psm = FALSE, col_select = NULL, col_order = NULL, 
+                      theme = NULL, ...) {
 
   dat_dir <- get_gl_dat_dir()
   
@@ -2473,7 +2538,8 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
   if (is.null(label_scheme_full[[col_select]])) {
-    stop("Column \'", rlang::as_string(col_select), "\' does not exist.", call. = FALSE)
+    stop("Column \'", rlang::as_string(col_select), "\' does not exist.", 
+         call. = FALSE)
   } else if (sum(!is.na(label_scheme_full[[col_select]])) == 0) {
     stop("No samples were selected under column \'", rlang::as_string(col_select), "\'.",
          call. = FALSE)
@@ -2481,9 +2547,10 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
   
   if (is.null(label_scheme_full[[col_order]])) {
     warning("Column \'", rlang::as_string(col_order), "\' does not exist.
-			Samples will be arranged by the alphebatic order.", call. = FALSE)
+			Samples will be arranged by the alphebatic order.", 
+            call. = FALSE)
   } else if (sum(!is.na(label_scheme_full[[col_order]])) == 0) {
-    # warning("No samples were specified under column \'", rlang::as_string(col_order), "\'.", call. = FALSE)
+    # warning("No orders under column \'", rlang::as_string(col_order), "\'.", call. = FALSE)
   }
   
   if (is_psm) {
@@ -2543,9 +2610,11 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
   if (adjSD) {
     SD <- df %>%
       dplyr::select(grep("^log2_R[0-9]{3}|^I[0-9]{3}", names(.))) %>%
-      dblTrim(., range_log2r = c(0, 100), range_int = c(0, 100), type_r = "log2_R", type_int = "I")
+      dblTrim(., range_log2r = c(0, 100), range_int = c(0, 100), 
+              type_r = "log2_R", type_int = "I")
     
-    df_sd[, grep("^.*log2_R", names(df_sd))] <- df_sd[, grep("^.*log2_R", names(df_sd)), drop = FALSE] %>% 
+    df_sd[, grep("^.*log2_R", names(df_sd))] <- 
+      df_sd[, grep("^.*log2_R", names(df_sd)), drop = FALSE] %>% 
       sweep(., 2, sqrt(SD), "/")
     
     df_z <- df_sd %>% dplyr::select(grep("^.*log2_R[0-9]{3}", names(.)))
@@ -2564,7 +2633,8 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
   }
   
   if (!is_psm) {
-    df_sd <- df_sd %>% dplyr::select(id, which(names(.) %in% label_scheme_sub$new_id))
+    df_sd <- df_sd %>% 
+      dplyr::select(id, which(names(.) %in% label_scheme_sub$new_id))
   }
 
   Levels <- names(df_sd) %>% .[! . %in% id]
@@ -2578,7 +2648,8 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
     
     p <- ggplot() +
       geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), 
-                  alpha = .8, size = .25, linetype = 0, draw_quantiles = c(.95, .99)) +
+                  alpha = .8, size = .25, linetype = 0, 
+                  draw_quantiles = c(.95, .99)) +
       geom_boxplot(df_sd, mapping = aes(x = Channel, y = SD), 
                    width = 0.1, lwd = .2, fill = "white") +
       stat_summary(df_sd, mapping = aes(x = Channel, y = SD), 
@@ -2592,10 +2663,13 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
       if (is.null(ybreaks)) {
         ybreaks <- ifelse(ymax > 1, 0.5, ifelse(ymax > 0.5, 0.2, 0.1))
       }
-      p <- p + scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, ybreaks))
+      p <- p + scale_y_continuous(limits = c(0, ymax), 
+                                  breaks = seq(0, ymax, ybreaks))
     }
 
-    if (is.null(theme) || purrr::is_function(theme)) theme <- theme_psm_violin
+    if (is.null(theme) || purrr::is_function(theme)) {
+      theme <- theme_psm_violin
+    }
     p <- p + theme
 
     if (flip_coord) {
@@ -2606,13 +2680,14 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL, width = NULL, heigh
       rm(width_temp)
     }
     
-    dots <- dots %>% .[! names(.) %in% c("width", "height", "in", "limitsize", 
-                                         "ymax", "ybreaks", "flip_coord")]
+    ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height", 
+                                           "limitsize"))
     
     my_call <- rlang::expr(ggplot2::ggsave(filename = !!filepath, plot = !!p, 
                                            width = !!width, height = !!height, 
-                                  units = "in", limitsize = FALSE, !!!dots))
-    
+                                           limitsize = FALSE, 
+                                           !!!ggsave_dots))
+
     suppressWarnings(try(eval(my_call, caller_env())))
   }
 }
@@ -2643,7 +2718,8 @@ rptr_violin <- function(df, filepath, width, height) {
                 alpha = .8, size = .25, linetype = 0) +
     geom_boxplot(df_int, mapping = aes(x = Channel, y = log10(Intensity)), 
                  width = 0.2, lwd = .2, fill = "white") +
-    stat_summary(df_int, mapping = aes(x = Channel, y = log10(Intensity)), fun = "mean", geom = "point",
+    stat_summary(df_int, mapping = aes(x = Channel, y = log10(Intensity)), 
+                 fun = "mean", geom = "point",
                  shape = 23, size = 2, fill = "white", alpha = .5) +
     labs(title = expression("Ions"), 
          x = expression("Channel"), 
@@ -2702,8 +2778,10 @@ count_pepmiss <- function() {
   if (length(filelist) == 0) stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
   
   df <- purrr::map(filelist, ~ {
-    data <- read.delim(file.path(dat_dir, "PSM/cache", .x), sep = ',', check.names = FALSE, 
-                       header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , skip = 0)
+    data <- read.delim(file.path(dat_dir, "PSM/cache", .x), sep = ',', 
+                       check.names = FALSE, header = TRUE, 
+                       stringsAsFactors = FALSE, quote = "\"", 
+                       fill = TRUE , skip = 0)
     
     data$dat_file <- gsub("_hdr_rm\\.csv", "", .x)
     data <- data %>% 
@@ -2715,7 +2793,8 @@ count_pepmiss <- function() {
     tibble::tibble(total = tot, miscleavage = mis, percent = miscleavage/tot)
   }) %>% do.call(rbind, .)
   
-  write.csv(df, file.path(dat_dir, "PSM/cache/miscleavage_nums.csv"), row.names = FALSE)
+  write.csv(df, file.path(dat_dir, "PSM/cache/miscleavage_nums.csv"), 
+            row.names = FALSE)
 }
 
 
@@ -2855,7 +2934,8 @@ rows_are_not_all <- function (match, vars, ignore.case = FALSE) {
 #' @param dots A character vector of formula(s) in \code{dots}
 #' @param fml_nms A character vector containing the names of \code{fmls}.
 #' @inheritParams info_anal
-concat_fml_dots <- function(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type = "zzz") {
+concat_fml_dots <- function(fmls = NULL, fml_nms = NULL, 
+                            dots = NULL, anal_type = "zzz") {
   dat_dir <- get_gl_dat_dir()
   
   if ((!is_empty(fmls)) & (anal_type == "GSEA")) return(c(dots, fmls))
@@ -2867,12 +2947,15 @@ concat_fml_dots <- function(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type 
       
       if (!is.null(fml_nms)) {
         stopifnot(all(fml_nms %in% names(pepSig_formulas)))
-        pepSig_formulas <- pepSig_formulas %>% .[names(.) %in% fml_nms]
+        
+        pepSig_formulas <- pepSig_formulas %>% 
+          .[names(.) %in% fml_nms]
       }
       
       dots <- c(dots, pepSig_formulas)
     } else {
-      stop("Run both `pepSig()` and `prnSig()` first.")
+      stop("Run both `pepSig()` and `prnSig()` first.", 
+           call. = FALSE)
     }
   } else {
     match_fmls(fmls)
@@ -2958,7 +3041,9 @@ my_complete_cases <- function (df, scale_log2r, label_scheme_sub) {
     dplyr::select(which(names(.) %in% label_scheme_sub$Sample_ID)) %>% 
     complete.cases(.)
   
-  if (sum(rows) == 0) stop("None of the cases are complete.", call. = FALSE)
+  if (sum(rows) == 0) {
+    stop("None of the cases are complete.", call. = FALSE)
+  }
   
   df <- df[rows, ]
 }
@@ -3014,7 +3099,8 @@ check_dots <- function (blacklist = NULL, ...) {
   nms <- names(dots[dups])
   
   if (!rlang::is_empty(nms)) {
-    stop("Do not use argument(s): ", purrr::reduce(nms, paste, sep = ", "), call. = FALSE)
+    stop("Do not use argument(s): ", purrr::reduce(nms, paste, sep = ", "), 
+         call. = FALSE)
   }
 }
 
@@ -3050,10 +3136,12 @@ check_depreciated_args <- function (blacklist = NULL, ...) {
 #' @inheritParams prnHM
 to_complete_cases <- function (complete_cases = FALSE, impute_na = FALSE) {
   warn_msg1 <- "Coerce `complete_cases = TRUE` at `impute_na = FALSE`."
+  
   if (!(impute_na || complete_cases)) {
     complete_cases <- TRUE
     rlang::warn(warn_msg1)
   }
+  
   return(complete_cases)
 }
 
@@ -3066,12 +3154,15 @@ to_complete_cases <- function (complete_cases = FALSE, impute_na = FALSE) {
 check_gset_nms <- function (gset_nms) {
   customs <- gset_nms %>% .[! . %in% c("go_sets", "c2_msig", "kegg_sets")]
   if (!purrr::is_empty(customs)) {
-    message("Apply custom database(s): ", purrr::reduce(customs, paste, sep = ", ", .init = ""))
+    message("Apply custom database(s): ", 
+            purrr::reduce(customs, paste, sep = ", ", .init = ""))
   }
   
   soft_dep <- gset_nms %>% .[. == "kegg_sets"]
+  
   if (!rlang::is_empty(soft_dep)) {
-    warning("Data set(s) softely depreciated: ", purrr::reduce(soft_dep, paste, sep = ", ", .init = ""), 
+    warning("Data set(s) softely depreciated: ", 
+            purrr::reduce(soft_dep, paste, sep = ", ", .init = ""), 
             call. = FALSE)
   }
   
@@ -3088,7 +3179,8 @@ ok_existing_params <- function (filepath) {
   
   if (!file.exists(filepath)) return(TRUE)
   
-  params <- readr::read_tsv(file.path(filepath), col_types = cols(Component = col_double()))
+  params <- readr::read_tsv(file.path(filepath), 
+                            col_types = cols(Component = col_double()))
 
   missing_samples <- local({
     par_samples <- params$Sample_ID %>% unique() %>% .[!is.na(.)]
@@ -3102,7 +3194,7 @@ ok_existing_params <- function (filepath) {
   try(unlink(file.path(dat_dir, "Protein/Histogram/MGKernel_params_[NZ].txt")))
 
   warning(
-    "\nThe following entries(s) in `expt_smry.xlsx` are missing from `MGKernel_params` files: \n\t", 
+    "\nEntries(s) in `expt_smry.xlsx` missing from `MGKernel_params` files: \n  ", 
     purrr::reduce(missing_samples, paste, sep = ", "), 
     "\nThis is probably due to the modification of values under the `Sample_ID` columns.", 
     "\n=========================================================", 
@@ -3136,7 +3228,8 @@ env_where <- function(name, env = rlang::caller_env()) {
 #' @inheritParams prnHist
 set_cutpoints <- function (cut_points = NULL, x = NULL) {
   if (is.null(cut_points) && is.null(x)) {
-    stop("`cut_points` and `x` can not be both NULL.", call. = FALSE)
+    stop("`cut_points` and `x` can not be both NULL.", 
+         call. = FALSE)
   }
     
   if (!is.null(x)) {
@@ -3208,7 +3301,8 @@ set_cutpoints2 <- function(cut_points, df) {
     }
     
     if (! is.numeric(df[[cut_nm]])) {
-      stop("Column `", cut_nm, "` is not numeric.", call. = FALSE)
+      stop("Column `", cut_nm, "` is not numeric.", 
+           call. = FALSE)
     }
     
     cut_points <- quantile(df[[cut_nm]], na.rm = TRUE) 
@@ -3364,7 +3458,7 @@ make_mq_meta <- function (dat_dir = proteoQ:::get_gl_dat_dir(), mqpar = "mqpar.x
   referenceChannel <- 
     xml_children(children[[which(xml_name(contents) == "referenceChannel")]])
   
-  write_xml(parent, file.path(dat_dir, out), options = "format")
+  xml2::write_xml(parent, file.path(dat_dir, out), options = "format")
 }
 
 
@@ -3562,22 +3656,18 @@ check_formalArgs2 <- function(w = anal_prnTrend, f = NMF::nmf, excludes = NULL) 
 }
 
 
-#' \link[stats]{dist} with handling in partial matches of arguments.
-my_dist <- function (...) {
-  dots <- rlang::enexprs(...)
+#' Set dot-dot-dot for ggsave.
+#' 
+#' @param dots Arguments passed on.
+#' @param dummies Arguments automated for ggsave.
+set_ggsave_dots <- function(dots, dummies = c("filename", "plot", "device", "path")) {
+  if (purrr::is_empty(dots)) return(dots)
   
-  rmvls <- c("p")
+  args <- formalArgs(ggplot2::ggsave) %>% .[! . == "..."]
   
-  purrr::walk(rmvls, ~ {
-    if (.x %in% names(dots)) {
-      warning("Argument `", .x, "` disabled.", 
-              call. = FALSE)
-      dots[[.x]] <<- NULL
-    } 
-  })
-  
-  rlang::expr(stats::dist(!!!dots)) %>% 
-    rlang::eval_bare(env = caller_env())
+  dots %>% 
+    .[names(.) %in% args] %>% 
+    .[! names(.) %in% dummies]
 }
 
 

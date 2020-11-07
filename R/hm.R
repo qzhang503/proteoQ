@@ -90,9 +90,9 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   
   # (3) values back to default
   purrr::walk2(dummies, msgs, ~ {
-    if (!is.null(get(.x))) {
+    if (!is.null(get(.x, envir = rlang::env_parent(), inherits = FALSE))) {
       warning(.y, call. = FALSE)
-      assign(.x, NULL, envir = rlang::env_parent())
+      assign(.x, NULL, envir = rlang::env_parent(), inherits = FALSE)
     } 
   })
   
