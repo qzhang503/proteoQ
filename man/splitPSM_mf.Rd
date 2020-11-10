@@ -10,6 +10,7 @@ splitPSM_mf(
   fasta = NULL,
   entrez = NULL,
   pep_unique_by = "group",
+  scale_ms2 = FALSE,
   rm_craps = FALSE,
   rm_krts = FALSE,
   purge_phosphodata = TRUE,
@@ -46,6 +47,13 @@ is available for species among \code{c("human", "mouse", "rat")}. For other
 species, users need to provide the file path(s) and name(s) for the lookup
 table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 for preparing custom entrez files.}
+
+\item{scale_ms2}{Logical; if TRUE, scales (up) MS2 reporter-ion intensities by MS1
+precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}. \eqn{I_{MS1}}, MS1
+precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion intensity; \eqn{I_{x}},
+MS2 reporter-ion intensity under TMT channel \eqn{x}. Note that the scaling
+will not affect \code{log2FC}. The argument is currently available for
+MSFragger workflows.}
 
 \item{rm_craps}{Logical; if TRUE,
 \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.

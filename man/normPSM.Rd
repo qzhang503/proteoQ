@@ -8,6 +8,7 @@ normPSM(
   group_psm_by = c("pep_seq", "pep_seq_mod"),
   group_pep_by = c("prot_acc", "gene"),
   mc_psm_by = c("peptide", "protein", "psm"),
+  scale_ms2 = FALSE,
   dat_dir = NULL,
   expt_smry = "expt_smry.xlsx",
   frac_smry = "frac_smry.xlsx",
@@ -53,6 +54,13 @@ description of PSMs (grouped by \code{prot_acc} or \code{gene} according to
 \code{group_pep_by}) will be calculated and the corresponding offsets to
 zero will be applied. At the \code{mc_psm_by = psm}, PSMs will be median
 centered without grouping.}
+
+\item{scale_ms2}{Logical; if TRUE, scales (up) MS2 reporter-ion intensities by MS1
+precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}. \eqn{I_{MS1}}, MS1
+precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion intensity; \eqn{I_{x}},
+MS2 reporter-ion intensity under TMT channel \eqn{x}. Note that the scaling
+will not affect \code{log2FC}. The argument is currently available for
+MSFragger workflows.}
 
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}

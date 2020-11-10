@@ -1,7 +1,7 @@
 proteoQ
 ================
 truetrue
-2020-10-13
+2020-11-10
 
   - [Introduction to proteoQ](#introduction-to-proteoq)
   - [Installation](#installation)
@@ -45,8 +45,8 @@ Chemical labeling using tandem mass tag
 ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free
 quantitaion (LFQ) have been commonly applied in mass spectrometry
 (MS)-based quantification of proteins and peptides. The `proteoQ` tool
-is designed for automated and reproducible mining of proteomics data. It
-interacts with an `Excel` spread sheet for dynamic sample selections,
+is designed for automated and reproducible *mining* of proteomics data.
+It interacts with an `Excel` spread sheet for dynamic sample selections,
 aesthetics controls and statistical modelings. It further integrates the
 operations against data rows and columns into functions at the users’
 interface. The arrangements allow users to put *ad hoc* manipulation of
@@ -59,7 +59,8 @@ The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)
 of `proteoQ` consists of data processing and informatics analysis. It
 first processes the peptide spectrum matches (PSM) tables from
 [Mascot](https://http://www.matrixscience.com/),
-[MaxQuant](https://www.maxquant.org/) or [Spectrum
+[MaxQuant](https://www.maxquant.org/),
+[MSFragger](http://msfragger.nesvilab.org/) or [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill)
 searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo’s
 Orbitrap mass analyzers. It is also capable of processing the LFQ data
@@ -3185,7 +3186,8 @@ modifications:
 | prot\_sequences       | Count of distinct sequences                                                                                                                                                        | Mascot only.                                                                                                                                                                                                          |
 | prot\_sequences\_sig  | Count of distinct sequences that have significant scores under a proposed protein                                                                                                  | Mascot only. Joint Mascot `prot_sequences_sig` from individual data sources; the counts may be greater than `prot_sequences` when peptides with different variable modifications are treated as different identities. |
 | prot\_len             | The number of amino acid residues under a proposed protein                                                                                                                         |                                                                                                                                                                                                                       |
-| prot\_cover           | Protein sequence coverage                                                                                                                                                          | Calculated from the union of individual data sources.                                                                                                                                                                 |
+| prot\_icover          | Protein sequence coverage by tryptic peptides                                                                                                                                      | Number of observed divided by number of possible                                                                                                                                                                      |
+| prot\_cover           | Protein sequence coverage by amino acid residues                                                                                                                                   | Calculated from the union of individual data sources.                                                                                                                                                                 |
 | prot\_…               | Additional protein keys from Mascot PSM exports by users.                                                                                                                          |                                                                                                                                                                                                                       |
 | prot\_n\_psm          | Count of significant PSMs in quantitation under a proposed protein                                                                                                                 | By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users.                                                                                     |
 | prot\_n\_pep          | Count of significant peptide sequences in quantitation under a proposed protein                                                                                                    | v.s.                                                                                                                                                                                                                  |
@@ -3260,7 +3262,8 @@ in the following:
 | prot\_matches\_sig   | Count of PSMs that have significant scores under a proposed protein                                                | Mascot only. See also PSM keys.                                                                                                    |
 | prot\_sequences\_sig | Count of distinct sequences that have significant scores under a proposed protein                                  | Mascot only. See also PSM keys.                                                                                                    |
 | prot\_len            | The number of amino acid residues under a proposed protein                                                         |                                                                                                                                    |
-| prot\_cover          | Protein sequence coverage                                                                                          | See also PSM keys.                                                                                                                 |
+| prot\_icover         | Protein sequence coverage by tryptic peptides                                                                      | See also PSM keys.                                                                                                                 |
+| prot\_cover          | Protein sequence coverage                                                                                          | v.s.                                                                                                                               |
 | prot\_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                                                 | Joint results from individual PSM tables; the counts exclude entries that are void in reporter-ion intensity or filtered by users. |
 | prot\_n\_pep         | Count of significant peptide sequences in quantitation under a proposed protein                                    | v.s.                                                                                                                               |
 | pep\_n\_psm          | Counts of significant PSMs in quantitation under a proposed peptide                                                | v.s.                                                                                                                               |
@@ -3308,7 +3311,8 @@ in the following:
 | kin\_order           | The order of “kin\_class” from the kinase tree diagram                                                             |                                                                                                                                    |
 | is\_tryptic          | Logical indicating if a sequence belongs to a canonical tryptic peptide                                            |                                                                                                                                    |
 | …                    | Additional column keys                                                                                             |                                                                                                                                    |
-| count\_nna           | Count of non-NA log2FC                                                                                             | `Reference` and `Empty` samples excluded.                                                                                          |
+| mean\_lint           | Mean log10 intensity (N\_I…) across samples                                                                        | `Reference` and `Empty` samples excluded.                                                                                          |
+| count\_nna           | Count of non-NA log2FC                                                                                             | v.s.                                                                                                                               |
 | I… (…)               | Reporter-ion intensity; I000 for LFQ                                                                               | Calculated from the descriptive statistics by `method_psm_pep` in `PSM2Pep()` for indicated samples.                               |
 | N\_I… (…)            | Normalized I… (…); N\_I000 for LFQ                                                                                 | The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity.                                  |
 | sd\_log2\_R… (…)     | Standard deviation of protein log2FC; sd\_log2\_R000 for LFQ                                                       | Calculated from contributing peptides under each sample.                                                                           |
@@ -3338,6 +3342,7 @@ described in the following:
 | prot\_matches\_sig   | Count of PSMs that have significant scores under a proposed protein                     | See also PSM keys                                                                                   |
 | prot\_sequences\_sig | Count of distinct sequences that have significant scores under a proposed protein       | See also PSM keys                                                                                   |
 | prot\_len            | The number of amino acid residues under a proposed protein                              |                                                                                                     |
+| prot\_icover         | Protein sequence coverage by tryptic peptides                                           | See also PSM keys.                                                                                  |
 | prot\_cover          | Protein sequence coverage                                                               | See also PSM keys                                                                                   |
 | prot\_n\_psm         | Count of significant PSMs in quantitation under a proposed protein                      | See also Peptide keys                                                                               |
 | prot\_n\_uniqpsm     | Count of unique, significant PSMs in quantitation under a proposed protein              |                                                                                                     |
@@ -3358,7 +3363,8 @@ described in the following:
 | kin\_attr            | The attribute of proteins being kinases                                                 |                                                                                                     |
 | kin\_class           | The classes of kinases, e.g., TK, TKL…                                                  |                                                                                                     |
 | kin\_order           | The order of “kin\_class” from the kinase tree diagram                                  |                                                                                                     |
-| count\_nna           | Count of non-NA log2FC                                                                  | `Reference` and `Empty` samples excluded.                                                           |
+| mean\_lint           | Mean log10 intensity (N\_I…) across samples                                             | `Reference` and `Empty` samples excluded.                                                           |
+| count\_nna           | Count of non-NA log2FC                                                                  | v.s.                                                                                                |
 | I… (…)               | Reporter-ion intensity; I000 for LFQ                                                    | Calculated from the descriptive statistics by `method_pep_prn` in `Pep2Prn()` for indicated samples |
 | N\_I… (…)            | Normalized I… (…); N\_I000 for LFQ                                                      | See also Peptide keys                                                                               |
 | log2\_R… (…)         | log2FC relative to reference materials for indicated samples; log2\_R000 for LFQ        | See also Peptide keys                                                                               |
@@ -3404,7 +3410,7 @@ Wickham, Hadley. 2019. *Advanced R*. 2nd ed. Chapman & Hall/CRC.
 </div>
 
 1.  To cite this work: (2019) R package proteoQ for Quantitative
-    Proteomics Using Tandem Mass Tags.
+    Proteomics Using Tandem Mass Tags or Label-free Approaches.
     <https://github.com/qzhang503/proteoQ>.
 
 2.  For a specific version, for example 1.2.2.2:

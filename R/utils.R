@@ -1246,6 +1246,20 @@ parse_fasta <- function (df, fasta, entrez) {
                       other_acc = NA_character_, 
                       acc_type = acc_type, 
                       prot_acc = !!rlang::sym(acc_type))
+      
+      local({
+        n_fasta <- length(fasta_db)
+        n_lookup <- nrow(acc_lookup)
+        perc <- n_lookup/n_fasta 
+
+        if (perc < .1) {
+          warning("The portion of uniprot accessions being annotated with \n", 
+                  purrr::reduce(fasta, paste, sep = "\n"), " is ", 
+                  format(round(perc, 3), nsmall = 3), 
+                  "\nInsepct the specification of fasta databases for probable mismatches", 
+                  call. = FALSE)
+        }
+      })
     } else if (acc_type == "refseq_acc") {
       acc_lookup <- tibble::tibble(fasta_name = names(fasta_db), 
                                    refseq_acc = names(fasta_db)) %>% 
@@ -1259,6 +1273,20 @@ parse_fasta <- function (df, fasta, entrez) {
                       prot_acc = !!rlang::sym(acc_type)) %>% 
         dplyr::select(c("fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
                         "other_acc", "acc_type", "prot_acc"))
+      
+      local({
+        n_fasta <- length(fasta_db)
+        n_lookup <- nrow(acc_lookup)
+        perc <- n_lookup/n_fasta 
+        
+        if (perc < .1) {
+          warning("The portion of refseq accessions being annotated with \n", 
+                  purrr::reduce(fasta, paste, sep = "\n"), " is ", 
+                  format(round(perc, 3), nsmall = 3), 
+                  "\nInsepct the specification of fasta databases for probable mismatches", 
+                  call. = FALSE)
+        }
+      })
     } else if (acc_type == "other_acc") {
       acc_lookup <- tibble::tibble(fasta_name = names(fasta_db), 
                                    other_acc = names(fasta_db)) %>% 
@@ -1272,6 +1300,8 @@ parse_fasta <- function (df, fasta, entrez) {
         dplyr::select(c("fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
                         "other_acc", "acc_type", "prot_acc")) 
     }
+
+    invisible(acc_lookup)
   }) %>% 
     dplyr::bind_rows()
   
@@ -1567,7 +1597,9 @@ annotPrn <- function (df, fasta, entrez) {
 #' @import dplyr purrr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 annotKin <- function (df, acc_type) {
-	stopifnot ("prot_acc" %in% names(df))
+	if (is.null(df)) return(df)
+  
+  stopifnot ("prot_acc" %in% names(df))
 	
   data(package = "proteoQ", kinase_lookup)
   

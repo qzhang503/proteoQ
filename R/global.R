@@ -26,12 +26,12 @@ set_dat_dir <- function(dat_dir = NULL) {
 
 
 #' Fetch global \code{dat_dir}
-get_gl_dat_dir <- function () {
+get_gl_dat_dir <- function() {
   dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv, inherits = FALSE), 
                       error = function(e) 1)
   if (dat_dir == 1) {
-    stop("Unknown working directory; 
-         run `load_expts(\"my/fabulous/working/directory\")` first.", 
+    stop("Unknown working directory; ", 
+         "run `load_expts(\"my/fabulous/working/directory\")` first.", 
          call. = FALSE)
   }
   
