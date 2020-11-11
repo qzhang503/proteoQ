@@ -18,15 +18,15 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
   
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), current_env()) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(rlang::enexprs(...)) %>% 
         save_call(paste0("anal", "_pepGSPA"))
     } else if (id %in% c("prot_acc", "gene")) {
-      mget(names(formals()), current_env()) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(rlang::enexprs(...)) %>% 
         save_call(paste0("anal", "_prnGSPA"))
-    }
-    , add = TRUE
+    }, 
+    add = TRUE
   )  
   
   check_dots(c("id", "anal_type", "var_cutoff"), ...)
@@ -249,15 +249,15 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 
   on.exit(
     if (id %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), current_env()) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(rlang::enexprs(...)) %>% 
         save_call(paste0("anal", "_pepGSPA"))
     } else if (id %in% c("prot_acc", "gene")) {
-      mget(names(formals()), current_env()) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(rlang::enexprs(...)) %>% 
         save_call(paste0("anal", "_prnGSPA"))
-    }
-    , add = TRUE
+    }, 
+    add = TRUE
   )  
   
   check_dots(c("id", "anal_type", "var_cutoff"), ...)
@@ -458,7 +458,7 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
                       filepath, filename, use_adjP = FALSE, ...) {
 
   on.exit(
-    pars <- mget(names(formals()), current_env()) %>% 
+    pars <- mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
       .[! names(.) %in% c("gsets", "df", "label_scheme_sub", "col_ind")] %>% 
       c(rlang::enexprs(...)) %>% 
       save_call(paste0(fn_prefix, "@", fml_nm))

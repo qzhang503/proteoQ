@@ -402,8 +402,9 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     }
   }
   
+  ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot"))
   rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
-                                     plot = p, !!!dots)))
+                                     plot = p, !!!ggsave_dots)))
   
   invisible(res)
 }
@@ -598,8 +599,7 @@ pepPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  choice <- rlang::as_string(rlang::enexpr(choice))
-  
+
   reload_expts()
   
   info_anal(id = !!id,
@@ -802,8 +802,7 @@ prnPCA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  choice <- rlang::as_string(rlang::enexpr(choice))
-  
+
   reload_expts()
   
   info_anal(id = !!id,

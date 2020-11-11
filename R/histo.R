@@ -36,15 +36,15 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
 
-	xmin <- eval(dots$xmin, env = caller_env()) # `xmin = -1` is `language`
-	xmax <- eval(dots$xmax, env = caller_env()) 
-	xbreaks <- eval(dots$xbreaks, env = caller_env())
-	binwidth <- eval(dots$binwidth, env = caller_env())
-	alpha <- eval(dots$alpha, env = caller_env())
-	ncol <- eval(dots$ncol, env = caller_env())
-	width <- eval(dots$width, env = caller_env())
-	height <- eval(dots$height, env = caller_env())
-	scales <- eval(dots$scales, env = caller_env())
+	xmin <- eval(dots$xmin, envir = rlang::caller_env()) 
+	xmax <- eval(dots$xmax, envir = rlang::caller_env()) 
+	xbreaks <- eval(dots$xbreaks, envir = rlang::caller_env())
+	binwidth <- eval(dots$binwidth, envir = rlang::caller_env())
+	alpha <- eval(dots$alpha, envir = rlang::caller_env())
+	ncol <- eval(dots$ncol, envir = rlang::caller_env())
+	width <- eval(dots$width, envir = rlang::caller_env())
+	height <- eval(dots$height, envir = rlang::caller_env())
+	scales <- eval(dots$scales, envir = rlang::caller_env())
 
 	if (is.null(xmin)) xmin <- -2
 	if (is.null(xmax)) xmax <- 2
@@ -56,11 +56,13 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 	if (is.null(height)) height <- length(label_scheme_sub$Sample_ID) * 4 / ncol
 	if (is.null(scales)) scales <- "fixed"
   
-	ylimits <- eval(dots$ylimits, env = caller_env()) 
+	ylimits <- eval(dots$ylimits, envir = rlang::caller_env()) 
 	
 	dots <- dots %>% 
-    .[! names(.) %in% c("xmin", "xmax", "xbreaks", "binwidth", "ncol", "alpha", 
-                        "width", "height", "scales", "ylimits")]
+    .[! names(.) %in% c("xmin", "xmax", "xbreaks", 
+                        "binwidth", "ncol", "alpha", 
+                        "width", "height", "scales", 
+                        "ylimits")]
 
 	filter_dots <- dots %>% 
 	  .[purrr::map_lgl(., is.language)] %>% 
@@ -70,7 +72,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 	  .[purrr::map_lgl(., is.language)] %>% 
 	  .[grepl("^arrange_", names(.))]
 	
-	dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots)]
+	dots <- dots %>% 
+	  .[! . %in% c(filter_dots, arrange_dots)]
 	
 	if (scale_y) {
 	  df <- df %>% 
@@ -182,7 +185,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 
 	  df_melt <- df %>% 
 	    dplyr::mutate(col_cut = !!rlang::sym(nm)) %>% 
-	    dplyr::select(col_cut, grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%
+	    dplyr::select(col_cut, 
+	                  grep(paste0(NorZ_ratios, "[0-9]{3}", "|^N_I[0-9]{3}"), names(.))) %>%
 	    dplyr::filter(rowSums(!is.na(.[, grepl("[IR][0-9]{3}", names(.))])) > 0) %>%
 	    dplyr::select(which(not_all_zero(.))) %>%
 	    dplyr::select(which(colSums(!is.na(.)) > 0)) 
@@ -192,7 +196,8 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 	                     breaks = cut_points, 
 	                     labels = cut_points[1:(length(cut_points)-1)]) %>%
 	    dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
-	    `names<-`(gsub("^[NZ]{1}_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", names(.))) %>%
+	    `names<-`(gsub("^[NZ]{1}_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", 
+	                   names(.))) %>%
 	    tidyr::gather(key = Sample_ID, value = value, -col_cut) %>%
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
 	    dplyr::arrange(Sample_ID) %>%
@@ -212,22 +217,38 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 		facet_wrap(~ Sample_ID, ncol = ncol, scales = scales) + 
 	  theme
 
-	if (show_curves) p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable), 
-	                                    size = .2) +
-											scale_colour_manual(values = myPalette, name = "Gaussian",
-											                    breaks = c(nm_comps, paste(nm_comps, collapse = " + ")),
-											                    labels = nm_full)
+	if (show_curves) {
+	  p <- p + geom_line(data = fit, mapping = aes(x = x, y = value, colour = variable), 
+	                     size = .2) +
+	    scale_colour_manual(values = myPalette, name = "Gaussian",
+	                        breaks = c(nm_comps, paste(nm_comps, collapse = " + ")),
+	                        labels = nm_full)
+	}
 
-	if (show_vline) p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
+	if (show_vline) {
+	  p <- p + geom_vline(xintercept = 0, size = .25, linetype = "dashed")
+	}
 
-	gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), 
-	             width = width, height = height, limitsize = FALSE, dots)
-	do.call(ggsave, gg_args)
+	ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
+	
+	suppressWarnings(
+	  rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
+	                    plot = p, 
+	                    width = width, 
+	                    height = height, 
+	                    !!!ggsave_dots)) %>% 
+	    rlang::eval_tidy()
+	)
+
+	# gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), 
+	#              width = width, height = height, limitsize = FALSE, dots)
+	# do.call(ggsave, gg_args)
 	
 	readr::write_tsv(df_melt, file.path(filepath, gsub("\\.[^.]*$", "_raw.txt", filename)))
 	
-	if (!any(is.na(fit))) 
+	if (!any(is.na(fit))) {
 	  readr::write_tsv(fit, file.path(filepath, gsub("\\.[^.]*$", "_fitted.txt", filename)))
+	}
 
 	invisible(list(raw = df_melt, fitted = fit))
 }
@@ -247,7 +268,8 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
+            length(id) == 1)
 
   col_select <- rlang::enexpr(col_select)
   df <- rlang::enexpr(df)
@@ -262,12 +284,21 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 
   reload_expts()
   
-  info_anal(id = !!id, col_select = !!col_select, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
-            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "Histogram")(cut_points = cut_points, show_curves = show_curves,
-                                     show_vline = show_vline, scale_y = scale_y, 
-                                     theme = theme, !!!dots)
+  info_anal(id = !!id, 
+            col_select = !!col_select, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = FALSE,
+            df = !!df, 
+            df2 = NULL, 
+            filepath = !!filepath, 
+            filename = !!filename,
+            anal_type = "Histogram")(cut_points = cut_points, 
+                                     show_curves = show_curves,
+                                     show_vline = show_vline, 
+                                     scale_y = scale_y, 
+                                     theme = theme, 
+                                     !!!dots)
 }
 
 
@@ -412,7 +443,8 @@ prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+            length(id) == 1)
 
   col_select <- rlang::enexpr(col_select)
   df <- rlang::enexpr(df)
@@ -427,11 +459,20 @@ prnHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 
   reload_expts()
   
-  info_anal(id = !!id, col_select = !!col_select, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = FALSE,
-            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "Histogram")(cut_points = cut_points, show_curves = show_curves,
-                                     show_vline = show_vline, scale_y = scale_y, 
-                                     theme = theme, !!!dots)
+  info_anal(id = !!id, 
+            col_select = !!col_select, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = FALSE,
+            df = !!df, 
+            df2 = NULL, 
+            filepath = !!filepath, 
+            filename = !!filename,
+            anal_type = "Histogram")(cut_points = cut_points, 
+                                     show_curves = show_curves,
+                                     show_vline = show_vline, 
+                                     scale_y = scale_y, 
+                                     theme = theme, 
+                                     !!!dots)
 }
 

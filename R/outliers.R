@@ -593,12 +593,19 @@ Grubbs_outliers <- function(x, type = 10) {
     out <- grubbs.test(as.numeric(x, type))
     
     while(out$p.value < 0.05) {
-      if (grepl("^highest", out$alternative)) x[which.max(x)] <- NA else x[which.min(x)] <- NA
+      if (grepl("^highest", out$alternative)) {
+        x[which.max(x)] <- NA
+      } else {
+        x[which.min(x)] <- NA
+      }
       
       x2 <- x[!is.na(x)]
       
-      if (length(x2) > 2 && length(unique(x2)) > 1)
-        out <- grubbs.test(as.numeric(x), type = type) else out$p.value <- 1
+      if (length(x2) > 2 && length(unique(x2)) > 1) {
+        out <- grubbs.test(as.numeric(x), type = type)
+      } else {
+        out$p.value <- 1
+      }
     }
   }
   
@@ -612,7 +619,9 @@ Grubbs_outliers <- function(x, type = 10) {
 #' 
 #' @inheritParams dixon_test
 grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) {
-  if (sum(c(10, 11, 20) == type) == 0) stop("Incorrect type")
+  if (sum(c(10, 11, 20) == type) == 0) {
+    stop("Incorrect type", call. = FALSE)
+  }
   
   DNAME <- deparse(substitute(x))
   x <- sort(x[complete.cases(x)])
@@ -677,8 +686,8 @@ grubbs_test <- function (x, type = 10, opposite = FALSE, two.sided = FALSE) {
 q_grubbs <- function (p, n, type = 10, rev = FALSE) {
   if (type == 10) {
     if (!rev) {
-      return(((n - 1)/sqrt(n)) * sqrt(qt((1 - p)/n, n - 
-                                           2)^2/(n - 2 + qt((1 - p)/n, n - 2)^2)))
+      return(((n - 1)/sqrt(n)) * 
+               sqrt(qt((1 - p)/n, n - 2)^2/(n - 2 + qt((1 - p)/n, n - 2)^2)))
     }
     else {
       s <- (p^2 * n * (2 - n))/(p^2 * n - (n - 1)^2)

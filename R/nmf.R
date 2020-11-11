@@ -901,10 +901,10 @@ anal_pepNMF <- function (col_select = NULL, col_group = NULL,
                          rank = NULL, nrun = if (length(rank) > 1) 50 else 1, 
                          seed = NULL, ...) {
   on.exit(
-    mget(names(formals()), current_env()) %>% 
+    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
       c(enexprs(...)) %>% 
-      save_call(paste0("anal", "_pepNMF"))
-    , add = TRUE
+      save_call(paste0("anal", "_pepNMF")), 
+    add = TRUE
   )
   
   check_dots(c("id", "df2", "anal_type"), ...)
@@ -955,10 +955,10 @@ anal_prnNMF <- function (col_select = NULL, col_group = NULL,
                          rank = NULL, nrun = if (length(rank) > 1) 50 else 1, 
                          seed = NULL, ...) {
   on.exit(
-    mget(names(formals()), current_env()) %>% 
+    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
           c(enexprs(...)) %>% 
-          save_call(paste0("anal", "_prnNMF"))
-    , add = TRUE
+          save_call(paste0("anal", "_prnNMF")), 
+    add = TRUE
   )
   
   check_dots(c("id", "df2", "anal_type"), ...)

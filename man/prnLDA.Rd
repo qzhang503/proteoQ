@@ -18,6 +18,7 @@ pepLDA(
   size_manual = NULL,
   shape_manual = NULL,
   alpha_manual = NULL,
+  choice = c("lda"),
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -26,12 +27,22 @@ pepLDA(
   show_ids = TRUE,
   show_ellipses = FALSE,
   type = c("obs", "feats"),
+  method = c("moment", "mle", "mve"),
   dimension = 2,
   folds = 1,
   df = NULL,
   filepath = NULL,
   filename = NULL,
   theme = NULL,
+  formula = NULL,
+  data = NULL,
+  x = NULL,
+  grouping = NULL,
+  prior = NULL,
+  subset = NULL,
+  CV = NULL,
+  na.action = NULL,
+  nu = NULL,
   ...
 )
 
@@ -48,6 +59,7 @@ prnLDA(
   size_manual = NULL,
   shape_manual = NULL,
   alpha_manual = NULL,
+  choice = c("lda"),
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
@@ -56,12 +68,22 @@ prnLDA(
   show_ids = TRUE,
   show_ellipses = FALSE,
   type = c("obs", "feats"),
+  method = c("moment", "mle", "mve"),
   dimension = 2,
   folds = 1,
   df = NULL,
   filepath = NULL,
   filename = NULL,
   theme = NULL,
+  formula = NULL,
+  data = NULL,
+  x = NULL,
+  grouping = NULL,
+  prior = NULL,
+  subset = NULL,
+  CV = NULL,
+  na.action = NULL,
+  nu = NULL,
   ...
 )
 }
@@ -126,6 +148,9 @@ use in
  , i.e., \code{alpha_manual = c(.5, .9)}. At the NULL default, the setting
 in \code{ggplot2} will be used.}
 
+\item{choice}{Character string; the LDA method in one of \code{c("lda")}. The
+default is "lda".}
+
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
 
@@ -160,6 +185,9 @@ plotted by observations. Alternatively at \code{type = feats}, features
 (peptides or proteins) are in rows and observations (samples) are in
 columns. The principal components are then plotted by features.}
 
+\item{method}{Dummy argument to avoid incurring the corresponding argument in
+\link[stats]{dist} by partial argument matches.}
+
 \item{dimension}{Numeric; The desired dimension for pairwise visualization.
 The default is 2.}
 
@@ -190,6 +218,27 @@ image type will be determined by the extension of the file name.}
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
 theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
+
+\item{x}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{grouping}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{prior}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{subset}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{CV}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{na.action}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{nu}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

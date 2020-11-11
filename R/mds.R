@@ -367,7 +367,9 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 
 	} else {
 	  p <- ggplot() +
-	    rlang::eval_tidy(rlang::quo(geom_point(data = df, mapping = mapping_var, !!!fix_args))) +
+	    rlang::eval_tidy(rlang::quo(geom_point(data = df, 
+	                                           mapping = mapping_var, 
+	                                           !!!fix_args))) +
 	    coord_fixed()
 
 	  if (show_ellipses) {
@@ -415,8 +417,10 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   	}
 	}
 
+	ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot"))
 	rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, gg_imgname(filename)),
-	                                   plot = p, !!!dots)))
+	                                   plot = p, 
+	                                   !!!ggsave_dots)))
 
 	invisible(df)
 }
@@ -508,9 +512,6 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 	                             "annotation_colors", "breaks")
 	dots[nm_idx] <- NULL
 
-	# dat_dir <- get_gl_dat_dir()
-	# load(file = file.path(dat_dir, "label_scheme.rda"))
-	
 	n_TMT_sets <- n_TMT_sets(label_scheme_sub)
 	max_width <- 77
 
@@ -843,7 +844,6 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  choice <- rlang::as_string(rlang::enexpr(choice))
 
   reload_expts()
 
@@ -1101,7 +1101,6 @@ prnMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-  choice <- rlang::as_string(rlang::enexpr(choice))
 
   reload_expts()
 

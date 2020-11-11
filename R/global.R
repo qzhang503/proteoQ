@@ -19,19 +19,19 @@ set_dat_dir <- function(dat_dir = NULL) {
   
   nm <- names(formals())[1]
   
-  assign(nm, dat_dir, envir = .GlobalEnv)
-  # message(nm, "<- \"", dat_dir, "\"")
-  
+  assign(nm, dat_dir, envir = .GlobalEnv, inherits = FALSE)
+
   invisible(dat_dir)
 }
 
 
 #' Fetch global \code{dat_dir}
-get_gl_dat_dir <- function () {
-  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+get_gl_dat_dir <- function() {
+  dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv, inherits = FALSE), 
+                      error = function(e) 1)
   if (dat_dir == 1) {
-    stop("Unknown working directory; 
-         run `load_expts(\"my/fabulous/working/directory\")` first.", 
+    stop("Unknown working directory; ", 
+         "run `load_expts(\"my/fabulous/working/directory\")` first.", 
          call. = FALSE)
   }
   

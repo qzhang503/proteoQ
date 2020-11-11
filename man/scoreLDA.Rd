@@ -12,6 +12,8 @@ scoreLDA(
   scale_log2r,
   center_features,
   scale_features,
+  choice = "lda",
+  method = "moment",
   type,
   col_group,
   folds,
@@ -55,6 +57,13 @@ or \code{\link{standPep}} where log2FC are aligned by observations
 variance by features (protein or peptide entries). The default is TRUE. Note
 the difference to data scaling with \code{scale_log2r} where log2FC are
 scaled by observations (samples).}
+
+\item{choice}{Character string; the PCA method in \code{c("prcomp")}. The
+default is "prcomp".}
+
+\item{method}{Character string; the distance measure in one of c("euclidean",
+"maximum", "manhattan", "canberra", "binary") for \code{\link[stats]{dist}}.
+The default method is "euclidean".}
 
 \item{type}{Character string indicating the type of PCA by either
 \emph{observations} or \emph{features}. At the \code{type = obs} default,

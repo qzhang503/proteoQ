@@ -44,11 +44,13 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	fn_prefix <- gsub("\\.[^\\.]*$", "", filename)
 
 	if (fn_suffix %in% c("xls", "xlsx")) {
-		label_scheme_full <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Setup") %>% 
+		label_scheme_full <- 
+		  readxl::read_excel(file.path(dat_dir, filename), sheet = "Setup") %>% 
 		  dplyr::filter(rowSums(!is.na(.)) > 0)
 	} else if (fn_suffix == "csv") {
-		label_scheme_full <- read.csv(file.path(dat_dir, filename), check.names = TRUE, 
-		                              header = TRUE, comment.char = "#", na.strings = c("", "NA")) %>% 
+		label_scheme_full <- 
+		  read.csv(file.path(dat_dir, filename), check.names = TRUE, 
+		           header = TRUE, comment.char = "#", na.strings = c("", "NA")) %>% 
 		  dplyr::filter(rowSums(!is.na(.)) > 0)
 	} else {
 		stop(filename, " needs to be '.xls' or '.xlsx'.")
@@ -62,13 +64,15 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
   	
   	if (!purrr::is_empty(missing_cols)) {
   	  purrr::walk(missing_cols, 
-  	              ~ message(paste0("\'", ., "\' must be present in \'", filename, "\'\n")))
-  	  stop("Not all required columns are present in \'", filename, "\'", call. = FALSE)
+  	              ~ message(paste0("\'", ., "\' must be present in \'", 
+  	                               filename, "\'\n")))
+  	  stop("Not all required columns are present in \'", filename, "\'", 
+  	       call. = FALSE)
   	}
 	})
 
-	default_names <- c("Select", "Group", "Order", "Fill",  "Color", "Shape", 
-	                   "Size", "Alpha", "Peptide_Yield")
+	default_names <- c("Select", "Group", "Order", "Fill",  "Color", 
+	                   "Shape", "Size", "Alpha", "Peptide_Yield")
 
 	purrr::walk(as.list(default_names), ~ {
 		if (!.x %in% names(label_scheme_full)) {
@@ -78,7 +82,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	}, label_scheme_full)
 
 	label_scheme_full <- label_scheme_full %>% 
-	  dplyr::mutate(Sample_ID = ifelse(grepl("^Empty\\.[0-9]+", Sample_ID), NA, Sample_ID))
+	  dplyr::mutate(Sample_ID = ifelse(grepl("^Empty\\.[0-9]+", Sample_ID), 
+	                                   NA, Sample_ID))
 
 	local({
   	check_tmt126 <- label_scheme_full %>% 
@@ -86,8 +91,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
   	  dplyr::filter(is.na(TMT_Set) || is.na(LCMS_Injection))
   	
   	if (nrow(check_tmt126) > 0) {
-  	  stop("The indexes of `TMT_Set` and/or `LCMS_Injection`  
-  	       corresponding to the `TMT-126` rows in `expt_smry.xlsx` cannot be empty.", 
+  	  stop("The indexes of `TMT_Set` and/or `LCMS_Injection` corresponding to \n", 
+  	       "  the `TMT-126` rows in `expt_smry.xlsx` cannot be empty.", 
   	       call. = FALSE)
   	}
 	})
@@ -102,15 +107,16 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	    tmt131 = c("131", "131N"),
 	  )
 	  
-	  unique_tmt <- unique(label_scheme_full$TMT_Channel) %>% gsub("^TMT-", "", .)
+	  unique_tmt <- unique(label_scheme_full$TMT_Channel) %>% 
+	    gsub("^TMT-", "", .)
 	  
 	  for (tmt_pair in tmt_pairs) {
 	    tmt_pair <- unlist(tmt_pair)
 	    
 	    if (tmt_pair[1] %in% unique_tmt && tmt_pair[2] %in% unique_tmt) {
 	      label_scheme_full <- label_scheme_full %>% 
-	        dplyr::mutate(
-	          TMT_Channel = gsub(paste0(tmt_pair[1], "$"), tmt_pair[2], TMT_Channel))
+	        dplyr::mutate(TMT_Channel = 
+	                        gsub(paste0(tmt_pair[1], "$"), tmt_pair[2], TMT_Channel))
 	    }
 	  }
 	  
@@ -139,7 +145,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	
 	label_scheme_full <- label_scheme_full %>% 
 	  dplyr::filter(rowSums(is.na(.)) < ncol(.)) %>% 
-	  dplyr::mutate_at(vars(c("TMT_Channel")), ~ if (is.null(TMT_levels)) .x else my_channels(.x)) %>% 
+	  dplyr::mutate_at(vars(c("TMT_Channel")), 
+	                   ~ if (is.null(TMT_levels)) .x else my_channels(.x)) %>% 
 	  dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
 		dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File, ignore.case = TRUE)) %>% # Bruker
 	  dplyr::mutate_at(vars(c("Reference")), ~ not_trival(.x)) %>%
@@ -156,12 +163,14 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	  dplyr::arrange(TMT_Set, LCMS_Injection, TMT_Channel)
 	
 	if (!(is.null(TMT_levels) || rlang::is_integerish(label_scheme_full$TMT_Set))) {
-	  stop("Values under `expt_smry.xlsx::TMT_Set` need to be integers.", call. = FALSE)
+	  stop("Values under `expt_smry.xlsx::TMT_Set` need to be integers.", 
+	       call. = FALSE)
 	}
 	
 	if (!is.null(TMT_levels)) {
 	  if (!rlang::is_integerish(label_scheme_full$LCMS_Injection)) {
-	    stop("Values under `expt_smry.xlsx::LCMS_Injection` need to be integers.", call. = FALSE)
+	    stop("Values under `expt_smry.xlsx::LCMS_Injection` need to be integers.", 
+	         call. = FALSE)
 	  }
 	} else {
 	  if (all(is.na(label_scheme_full$LCMS_Injection))) {
@@ -176,7 +185,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
     	
   	  # the first pass - all possible Empty.1, Empty.2 ... Sample_IDs
   	  label_scheme_empty <- local({
-  	    label_scheme_empty <- label_scheme_full %>% dplyr::filter(is.na(Sample_ID))
+  	    label_scheme_empty <- label_scheme_full %>% 
+  	      dplyr::filter(is.na(Sample_ID))
   	    
   	    empty_smpls <- label_scheme_empty %>%
   	      tidyr::unite(key, TMT_Channel, TMT_Set, remove = FALSE) %>%
@@ -234,7 +244,9 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
       	  .[! . %in% c("TMT_Channel", "TMT_Set", "LCMS_Injection", 
       	               "RAW_File", "Sample_ID", "Reference")]
       	
-      	empty_rows <- label_scheme_full %>% dplyr::filter(grepl("^Empty\\.[0-9]+", Sample_ID))
+      	empty_rows <- label_scheme_full %>% 
+      	  dplyr::filter(grepl("^Empty\\.[0-9]+", Sample_ID))
+      	
       	if (nrow(empty_rows) > 0 ) {
         	empty_rows[, opt_nms] <- NA
         	empty_rows[, "Reference"] <- FALSE  	  
@@ -279,7 +291,9 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
     
     	if (nrow(check_fn) > 0) {
     		check_fn %>% print()
-    		stop("More than one RAW filename in the above combination of TMT sets and LCMS injections.")
+    		stop("More than one unique RAW filename in the above combination of ", 
+    		     "TMT sets and LCMS injections.", 
+    		     call. = FALSE)
     	}	  
   	})
   
@@ -293,12 +307,14 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
     
     	if (nrow(check_smpls) > 0 && TMT_plex > 0) {
     		check_smpls %>% print()
-    		stop(paste("Need", TMT_plex,
-    		           "unique samples in the above combination of TMT sets and LCMS injections." ))
+    	  stop("Need ", TMT_plex, " unique sample IDs ", 
+    	       "in the above combination of TMT sets and LCMS injections.", 
+    	       call. = FALSE)
     	}	  
   	})
   	
-  	# check the uniqueness of Sample_ID under the same TMT_Set but different LCMS_Injection
+  	# check the uniqueness of Sample_ID 
+  	# under the same TMT_Set but different LCMS_Injection; 
   	# OK one is `sample_1` and the other is `Empty.xxx`
   	local({
   	  dups <- label_scheme_full %>% 
@@ -316,7 +332,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
   	
   	if (!all(unique(label_scheme_full$TMT_Channel) %in% TMT_levels)) {
   	  stop("Not all `TMT_Channel` in `expt_smry.xlsx` in \n", 
-  	       purrr::reduce(TMT_levels, paste, sep = ", "), call. = FALSE)
+  	       purrr::reduce(TMT_levels, paste, sep = ", "), 
+  	       call. = FALSE)
   	}
   	
   	# Re-check TMT_Channel (after my_channels() for "126" to become "TMT-126" etc.)
@@ -350,7 +367,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	        dplyr::select(LCMS_Injection, Sample_ID) %>% 
 	        print()
 	      
-	      stop("Non-unique RAW_File in the above combination of LCMS_Injection and Sample_ID.", 
+	      stop("Non-unique RAW_File in the above combination of ", 
+	           "LCMS_Injection and Sample_ID.", 
 	           call. = FALSE)
 	    }
 	  })
@@ -359,7 +377,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
   	  label_scheme_full <- label_scheme_full%>% 
   	    dplyr::mutate(Sample_ID. = Sample_ID) %>% 
   	    tidyr::complete(LCMS_Injection, Sample_ID) %>% 
-  	    dplyr::mutate(Sample_ID = Sample_ID., Sample_ID = replace_na_smpls(Sample_ID, "Empty")) %>% 
+  	    dplyr::mutate(Sample_ID = Sample_ID., 
+  	                  Sample_ID = replace_na_smpls(Sample_ID, "Empty")) %>% 
   	    dplyr::select(-Sample_ID.) %>% 
   	    dplyr::arrange(LCMS_Injection) %>% 
   	    dplyr::group_by(LCMS_Injection) %>% 
@@ -471,28 +490,37 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 
 	if (file.exists(file.path(dat_dir, filename))) {
 		if (fn_suffix %in% c("xls", "xlsx")) {
-			fraction_scheme <- readxl::read_excel(file.path(dat_dir, filename), sheet = "Fractions") %>%
+			fraction_scheme <- readxl::read_excel(file.path(dat_dir, filename), 
+			                                      sheet = "Fractions") %>%
 			  dplyr::filter(rowSums(!is.na(.)) > 0)
 		} else if (fn_suffix == "csv") {
-			fraction_scheme <- read.csv(file.path(dat_dir, filename), check.names = TRUE, header = TRUE,
-			                            comment.char = "#", na.strings = c("", "NA"))  %>%
+			fraction_scheme <- read.csv(file.path(dat_dir, filename), check.names = TRUE, 
+			                            header = TRUE, comment.char = "#", 
+			                            na.strings = c("", "NA"))  %>%
 			  dplyr::filter(rowSums(!is.na(.)) > 0)
 		} else {
-			stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.")
+			stop(filename, " needs to be in a file format of '.xls' or '.xlsx'.", 
+			     call. = FALSE)
 		}
 	  
-	  if (all(is.na(fraction_scheme$LCMS_Injection))) fraction_scheme$LCMS_Injection <- 1
+	  if (all(is.na(fraction_scheme$LCMS_Injection))) {
+	    fraction_scheme$LCMS_Injection <- 1
+	  }
 	  
 	  fraction_scheme <- fraction_scheme %>% 
 	    dplyr::filter(!is.na(RAW_File)) %>% 
 	    dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File, ignore.case = TRUE)) %>% 
 	    dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File, ignore.case = TRUE))
 	  
-	  if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
+	  if (any(duplicated(fraction_scheme$RAW_File)) && 
+	      is.null(fraction_scheme[["PSM_File"]])) {
 	    stop("\nDuplicated `RAW_File` names in `", filename, "`:\n", 
-	         "This may occur when searching the same RAW files with different parameter sets.\n", 
+	         "This can occur with one RAW file corresponding to ", 
+	         "multiple PSM files \n", 
+	         "(e.g. searching the same RAW file with different parameter sets).\n", 
 	         "To distinguish, add PSM file names to column `PSM_File`:\n", 
-	         tbl_mascot, call. = FALSE)
+	         tbl_mascot, 
+	         call. = FALSE)
 	  }	
 	  
 	  if (!is.null(fraction_scheme[["PSM_File"]])) {
@@ -502,9 +530,10 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	      meta_psm_files <- unique(fraction_scheme$PSM_File) 
 	      
 	      if (!is.null(meta_psm_files)) {
-	        not_oks <- purrr::map(meta_psm_files, 
-	                              ~ list.files(dat_dir, 
-	                                           pattern = paste0(.x, "\\.csv$|\\.txt$|\\.ssv$|\\.tsv$"))) %>% 
+	        not_oks <- 
+	          purrr::map(meta_psm_files, 
+	                     ~ list.files(dat_dir, pattern = 
+	                                    paste0(.x, "\\.csv$|\\.txt$|\\.ssv$|\\.tsv$"))) %>% 
 	          purrr::map_lgl(purrr::is_empty)
 	        
 	        if (any(not_oks)) {
@@ -524,7 +553,8 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	        tidyr::unite(RAW_File, RAW_File, PSM_File, sep = "@") 
 	      
 	      if (any(duplicated(raw_psm$RAW_File))) {
-	        stop("The combination of `RAW_File` and `PSM_File` is not unique in `", filename, "`.",
+	        stop("The combination of `RAW_File` and `PSM_File` is not unique in `", 
+	             filename, "`.",
 	             call. = FALSE)
 	      }
 	    })
@@ -551,7 +581,8 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	      
 	      if (!purrr::is_empty(not_oks)) {
 	        stop(
-	          "Remove superfluous file(s) in `", filename, "` not in `expt_smry.xlsx`:\n", 
+	          "Remove superfluous file(s) in `", filename, 
+	          "` not in `expt_smry.xlsx`:\n", 
 	          purrr::reduce(not_oks, paste, sep = ", "), 
 	          call. = FALSE
 	        )
@@ -587,7 +618,8 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	  })
 
 	  if (!(is.null(TMT_levels) || rlang::is_integerish(fraction_scheme$TMT_Set))) {
-	    stop("Values under `frac_smry.xlsx::TMT_Set` need to be integers.", call. = FALSE)
+	    stop("Values under `frac_smry.xlsx::TMT_Set` need to be integers.", 
+	         call. = FALSE)
 	  }
 	  
 	  if (!is.null(TMT_levels)) {
@@ -603,7 +635,8 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	    # the use of `TMT_Set` may be counterintuitive and 
 	    # users may leave `TMT_Set` column blank. Therefore, column `Sample_ID` enforced.
 	    if (!"Sample_ID" %in% names(fraction_scheme)) {
-	      stop("Need column `Sample_ID` in `frac_smry.xlsx` for LFQ.\n", tbl_lfq, call. = FALSE)
+	      stop("Need column `Sample_ID` in `frac_smry.xlsx` for LFQ.\n", tbl_lfq, 
+	           call. = FALSE)
 	    }
 	    
 	    fraction_scheme <- fraction_scheme %>% 
@@ -623,11 +656,13 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	  }
 	  
 	  if (!rlang::is_integerish(fraction_scheme$LCMS_Injection)) {
-	    stop("Values under `frac_smry.xlsx::LCMS_Injection` need to be integers.", call. = FALSE)
+	    stop("Values under `frac_smry.xlsx::LCMS_Injection` need to be integers.", 
+	         call. = FALSE)
 	  }
 	  
 	  if (!rlang::is_integerish(fraction_scheme$Fraction)) {
-	    stop("Values under `frac_smry.xlsx::Fraction` need to be integers.", call. = FALSE)
+	    stop("Values under `frac_smry.xlsx::Fraction` need to be integers.", 
+	         call. = FALSE)
 	  }
 	  
 	  wb <- openxlsx::createWorkbook()
@@ -640,7 +675,8 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 
  	  # in case forget to enter RAW_File names
  	  if (anyNA(label_scheme_full$RAW_File)) 
- 	    stop("File name(s) of RAW MS data not found under the column `RAW_File` in `expt_smry.xlsx`.", 
+ 	    stop("File name(s) of RAW MS data not found under the column ", 
+ 	         "`RAW_File` in `expt_smry.xlsx`.", 
  	         call. = FALSE)
 
 		# the same RAW file can go into different searches
@@ -662,11 +698,16 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
  	      dplyr::mutate(Fraction = row_number())
  	  }
 		
-		if (any(duplicated(fraction_scheme$RAW_File)) && is.null(fraction_scheme[["PSM_File"]])) {
-		  stop("\nDuplicated `RAW_File` names detected during the auto-generation of `", filename, "`.\n",
-		       "(1) This may occur when searching the same RAW files with different parameter sets;\n", 
-		       "    to distinguish, create manually `frac_smry.xlsx` with column `PSM_File`:\n", 
-		       tbl_mascot, call. = FALSE)
+		if (any(duplicated(fraction_scheme$RAW_File)) && 
+		    is.null(fraction_scheme[["PSM_File"]])) {
+		  stop("\nDuplicated `RAW_File` names detected during the auto-generation of `", 
+		       filename, "`.\n",
+		       "This could occur with one RAW file corresponding to multiple PSM files \n", 
+		       "(e.g. searching the same RAW file with different parameter sets).\n", 
+		       
+		       "To distinguish, add PSM file names to column `PSM_File`:\n", 
+		       tbl_mascot, 
+		       call. = FALSE)
 		}	
 		
 		wb <- openxlsx::createWorkbook()
@@ -717,7 +758,8 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
       unlist()
 
     suppressWarnings(data(package = "proteoQ", list = filelist))
-    gsets <- purrr::map(filelist, ~ try(get(.x), silent = TRUE)) %>% do.call(`c`, .)
+    gsets <- purrr::map(filelist, ~ try(get(.x), silent = TRUE)) %>% 
+      do.call(`c`, .)
     suppressWarnings(rm(list = filelist, envir = .GlobalEnv))
     
     if (length(gsets) > 0) names(gsets) <- gsub("/", "-", names(gsets))      
@@ -964,8 +1006,10 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'   flatten_chr, splice, flatten, prepend, "%@%"))
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
-load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx") {
-  on.exit(mget(names(formals()), rlang::current_env()) %>% save_call("load_expts"))
+load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", 
+                        frac_smry = "frac_smry.xlsx") {
+  on.exit(mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+            save_call("load_expts"))
   
   expt_smry <- rlang::as_string(rlang::enexpr(expt_smry))
   frac_smry <- rlang::as_string(rlang::enexpr(frac_smry))
@@ -1025,7 +1069,8 @@ channelInfo <- function (dat_dir = NULL, set_idx = NULL, injn_idx = 1) {
     dplyr::filter(TMT_Set == set_idx, LCMS_Injection == injn_idx)
   
   if (nrow(label_scheme_sub) == 0) {
-    stop("No samples at TMT_Set ", set_idx, " and LCMS_Injection ", injn_idx, ".", call. = FALSE)
+    stop("No samples at TMT_Set ", set_idx, " and LCMS_Injection ", injn_idx, ".", 
+         call. = FALSE)
   }
 
 	ref <- label_scheme_sub$Reference
@@ -1220,13 +1265,15 @@ check_raws <- function(df) {
     extra_ls_tmt <- ls_tmtinj %>% .[! . %in% fs_tmtinj]
     
     if (!purrr::is_empty(extra_fs_tmt)) {
-      stop("The combination of TMT_Set & LCMS ", purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
+      stop("The combination of TMT_Set & LCMS ", 
+           purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
            " in fraction scheme not found in label scheme.", 
            call. = FALSE)
     }
     
     if (!purrr::is_empty(extra_ls_tmt)) {
-      stop("The combination of TMT_Set & LCMS ", purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
+      stop("The combination of TMT_Set & LCMS ", 
+           purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
            " in label scheme not found in fraction scheme.", 
            call. = FALSE)
     }
@@ -1247,17 +1294,19 @@ check_raws <- function(df) {
   # --- rm `missing_ms_raws` from `df`
   if (!purrr::is_empty(missing_ms_raws)) {
     df <- df %>% dplyr::filter(! RAW_File %in% missing_ms_raws)
-    warning("RAW file (names) not in metadata and corresponding entries removed from PSM data:\n", 
+    warning("RAW file (names) not in metadata and ", 
+            "corresponding entries removed from PSM data:\n", 
             purrr::reduce(missing_ms_raws, paste, sep = "\n"), 
             call. = FALSE)
   }
   
   if (!purrr::is_empty(wrong_label_scheme_raws)) {
-    stop("\n======================================================================================\n", 
-         "Following RAW file name(s) in metadata have no corresponding entries in PSM data:\n", 
-         "(Hint: also check the possibility that MS file(s) may have zero PSM contributions.)\n\n", 
+    stop("\n============================================================================\n", 
+         "RAW file name(s) in metadata have no corresponding entries in PSM data:\n", 
+         "(Hint: check the possibility that MS file(s) may have ", 
+         "no PSM contributions.)\n\n", 
          purrr::reduce(wrong_label_scheme_raws, paste, sep = "\n"), 
-         "\n======================================================================================\n", 
+         "\n============================================================================\n", 
          call. = FALSE)
   }
   
@@ -1272,11 +1321,14 @@ check_raws <- function(df) {
 #' @param pep_seq_rows The row(s) contain character string "pep_seq".
 find_masct_tmtplex <- function(df, pep_seq_rows = NULL) {
   if (is.null(pep_seq_rows)) pep_seq_rows <- grep("pep_seq", df)
-  if (purrr::is_empty(pep_seq_rows)) stop("The row of `pep_seq` not found.", call. = FALSE)
+  if (purrr::is_empty(pep_seq_rows)) {
+    stop("The row of `pep_seq` not found.", call. = FALSE)
+  }
   
   first_line <- df[pep_seq_rows[1] + 1]
   
-  if (grepl("\"134N\"", first_line, fixed = TRUE) || grepl("\"134\"", first_line, fixed = TRUE)) {
+  if (grepl("\"134N\"", first_line, fixed = TRUE) || 
+      grepl("\"134\"", first_line, fixed = TRUE)) {
     mascot_tmtplex <- 16
   } else if (grepl("\"131C\"", first_line, fixed = TRUE)) {
     mascot_tmtplex <- 11

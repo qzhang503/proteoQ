@@ -15,7 +15,8 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
   stopifnot(vapply(c(scale_log2r, complete_cases, impute_na, adjP, show_labels), 
                    rlang::is_logical, logical(1)))
   
-  stopifnot(vapply(c(gspval_cutoff, gslogFC_cutoff, topn), is.numeric, logical(1)))
+  stopifnot(vapply(c(gspval_cutoff, gslogFC_cutoff, topn), is.numeric, 
+                   logical(1)))
   
   id <- rlang::as_string(rlang::enexpr(id))
   
@@ -214,9 +215,15 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
 		         show_sig = "none", theme = theme, ...) {
 			rm(gspval_cutoff, gslogFC_cutoff, show_sig)
 
-			fullVolcano(df = df, id = !!id, contrast_groups = contrast_groups,
-				theme = theme, fml_nm = fml_nm, filepath = filepath, filename = filename,
-				adjP = adjP, show_labels = show_labels, ...)
+			fullVolcano(df = df, 
+			            id = !!id, 
+			            contrast_groups = contrast_groups,
+			            theme = theme, 
+			            fml_nm = fml_nm, 
+			            filepath = filepath, 
+			            filename = filename, 
+			            adjP = adjP, 
+			            show_labels = show_labels, ...)
 		}
 	} else if (anal_type == "mapGSPA")
 	  function(gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), topn = Inf, 
@@ -240,7 +247,8 @@ byfile_plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", fml_nm = NULL
   	    if (rlang::is_empty(in_names)) {
   	      stop("No inputs correspond to impute_na = ", impute_na, 
   	           ", scale_log2r = ", scale_log2r, 
-  	           " at fml_nms = ", fml_nm, call. = FALSE)
+  	           " at fml_nms = ", fml_nm, 
+  	           call. = FALSE)
   	    }
   	    
   	    df2 <- in_names
@@ -428,7 +436,8 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 		                   nudge_y = 0.05, 
 		                   na.rm = TRUE)
 		p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
-		p <- p + geom_table(data = dt, aes(table = !!rlang::sym(id)), x = -xmax*.85, y = ymax/2)
+		p <- p + geom_table(data = dt, aes(table = !!rlang::sym(id)), 
+		                    x = -xmax*.85, y = ymax/2)
 	} else {
 		p <- p + facet_wrap(~ Contrast, nrow = nrow, labeller = label_value)
 	}
@@ -446,7 +455,13 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 		height <- eval(dots$height)
 	}
 
-	ggsave(file.path(filepath, fml_nm, filename), p, width = width, height = height, units = "in")
+	ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height"))
+	
+	rlang::eval_tidy(rlang::quo(ggsave(filename = file.path(filepath, fml_nm, filename),
+	                                   plot = p, 
+	                                   width = width, 
+	                                   height = height, 
+	                                   !!!ggsave_dots)))
 
 	# Venn
 	summ_venn <- function(df, id, contrast_groups) {
@@ -831,9 +846,11 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
+            length(id) == 1)
   
-  scale_log2r <- match_pepSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  scale_log2r <- match_pepSig_scale_log2r(scale_log2r = scale_log2r, 
+                                          impute_na = impute_na)
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -841,8 +858,14 @@ pepVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
   
   reload_expts()
 
-  info_anal(df = !!df, df2 = NULL, id = !!id, filepath = !!filepath, filename = !!filename, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+  info_anal(df = !!df, 
+            df2 = NULL, 
+            id = !!id, 
+            filepath = !!filepath, 
+            filename = !!filename, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
             anal_type = "Volcano")(fml_nms = fml_nms, 
                                    adjP = adjP, 
                                    show_labels = show_labels, 
@@ -945,9 +968,11 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+            length(id) == 1)
   
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
+                                          impute_na = impute_na)
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -955,8 +980,14 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
   
   reload_expts()
 
-  info_anal(df = !!df, df2 = NULL, id = !!id, filepath = !!filepath, filename = !!filename, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+  info_anal(df = !!df, 
+            df2 = NULL, 
+            id = !!id, 
+            filepath = !!filepath, 
+            filename = !!filename, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
             anal_type = "Volcano")(fml_nms = fml_nms, 
                                    adjP = adjP, 
                                    show_labels = show_labels, 
@@ -1100,9 +1131,11 @@ gspaMap <- function (gset_nms = c("go_sets", "c2_msig"),
                               c("logFC_cutoff", "gslogFC_cutoff")), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+            length(id) == 1)
   
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
+                                          impute_na = impute_na)
   
   df <- rlang::enexpr(df)
   df2 <- rlang::enexpr(df2)
@@ -1110,14 +1143,21 @@ gspaMap <- function (gset_nms = c("go_sets", "c2_msig"),
   filename <- rlang::enexpr(filename)
   
   show_sig <- rlang::as_string(rlang::enexpr(show_sig))
-  stopifnot(show_sig %in% c("none", "pVal", "qVal"), length(show_sig) == 1)
+  stopifnot(show_sig %in% c("none", "pVal", "qVal"), 
+            length(show_sig) == 1)
 
   check_gset_nms(gset_nms)
 
   reload_expts()
 
-  info_anal(df = !!df, df2 = !!df2, id = !!id, filepath = !!filepath, filename = !!filename, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+  info_anal(df = !!df, 
+            df2 = !!df2, 
+            id = !!id, 
+            filepath = !!filepath, 
+            filename = !!filename, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
             anal_type = "mapGSPA")(fml_nms = fml_nms, 
                                    adjP = adjP, 
                                    show_labels = show_labels, 
@@ -1166,9 +1206,10 @@ GeomTable <- ggproto(
   	                     width = diff(x_rng), height = diff(y_rng), 
   	               just = c("center", "center"))
   	  
-  	grob <- gridExtra::tableGrob(table, rows = NULL, col = NULL,
+  	grob <- gridExtra::tableGrob(table, rows = NULL, cols = NULL,
   	                  theme = gridExtra::ttheme_minimal(core = list(fg_params=list(cex = .7)),
-  	                                         colhead = list(fg_params=list(cex = .7), parse=TRUE),
+  	                                         colhead = list(fg_params=list(cex = .7), 
+  	                                                        parse=TRUE),
   	                                         rowhead = list(fg_params=list(cex = .7))))
   	grob$heights <- grob$heights*.6
   
@@ -1207,8 +1248,14 @@ facet_id <- local({
 geom_table <- function(mapping = NULL, data = NULL, stat = "identity",
                        position = "identity", na.rm = FALSE, show.legend = NA,
                        inherit.aes = TRUE, ...) {
-  layer(geom = GeomTable, mapping = mapping, data = data, stat = stat, position = position,
-        show.legend = show.legend, inherit.aes = inherit.aes, params = list(na.rm = na.rm, ...)
+  layer(geom = GeomTable, 
+        mapping = mapping, 
+        data = data, 
+        stat = stat, 
+        position = position,
+        show.legend = show.legend, 
+        inherit.aes = inherit.aes, 
+        params = list(na.rm = na.rm, ...)
   )
 }
 

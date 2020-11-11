@@ -70,7 +70,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	col_shape <- ifelse(is.null(col_shape), rlang::expr(Shape), rlang::sym(col_shape))
 	col_size <- ifelse(is.null(col_size), rlang::expr(Size), rlang::sym(col_size))
 	col_alpha <- ifelse(is.null(col_alpha), rlang::expr(Alpha), rlang::sym(col_alpha))
-	col_benchmark <- ifelse(is.null(col_benchmark), rlang::expr(Benchmark), rlang::sym(col_benchmark))
+	col_benchmark <- ifelse(is.null(col_benchmark), 
+	                        rlang::expr(Benchmark), 
+	                        rlang::sym(col_benchmark))
 
 	if (col_select == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if (col_group == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
@@ -100,9 +102,11 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	load(file = file.path(dat_dir, "label_scheme.rda"))
 
 	if (is.null(label_scheme[[col_select]])) {
-		stop("Column \'", rlang::as_string(col_select), "\' not found.", call. = FALSE)
+		stop("Column \'", rlang::as_string(col_select), "\' not found.", 
+		     call. = FALSE)
 	} else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
-		stop("No samples under column \'", rlang::as_string(col_select), "\'.", call. = FALSE)
+		stop("No samples under column \'", rlang::as_string(col_select), "\'.", 
+		     call. = FALSE)
 	}
 
 	if (is.null(label_scheme[[col_group]])) {
@@ -195,7 +199,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		} else {
 		  filepath = file.path(dat_dir, data_type, anal_type)
 		}
-		dir.create(file.path(filepath, "log"), recursive = TRUE, showWarnings = FALSE)
+		dir.create(file.path(filepath, "log"), 
+		           recursive = TRUE, showWarnings = FALSE)
 	} else {
 	  stop("Use default `filepath`.", call. = FALSE)
 	}
@@ -208,13 +213,17 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		fn_suffix <- ifelse(anal_type == "Model", "txt", "png")
 	} else {
 	  if (length(filename) > 1) {
-	    stop("Do not provide multiple file names.", call. = FALSE)
+	    stop("Do not provide multiple file names.", 
+	         call. = FALSE)
 	  }
 	  
 	  fn_prefix <- gsub("\\.[^.]*$", "", filename)
 	  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
-		if (fn_prefix == fn_suffix) stop("No '.' in the file name.", call. = FALSE)
-
+	  
+		if (fn_prefix == fn_suffix) {
+		  stop("No '.' in the file name.", call. = FALSE)
+		}
+    
 	  if (anal_type %in% c("Trend", "NMF", "GSPA")) {
 	    fn_prefix <- paste(fn_prefix, data_type, anal_type, sep = "_")
 	    fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
@@ -222,10 +231,13 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	  }
 	}
 
-	use_pri_data <- c("MDS", "PCA", "EucDist", "Heatmap", "Histogram", "Corrplot",
-	                  "Model", "Volcano", "Trend", "NMF", "NMF_meta", "GSPA", "mapGSPA",
+	use_pri_data <- c("MDS", "PCA", "EucDist", "Heatmap", 
+	                  "Histogram", "Corrplot",
+	                  "Model", "Volcano", "Trend", "NMF", "NMF_meta", 
+	                  "GSPA", "mapGSPA",
 	                  "GSVA", "GSEA", "String", "LDA")
-	use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", "NMF_meta", "GSPA_hm", "mapGSPA")
+	use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", 
+	                  "NMF_meta", "GSPA_hm", "mapGSPA")
 
 	if (anal_type %in% use_pri_data) {
 	  df <- find_pri_df(anal_type = !!anal_type, id = !!id, impute_na = impute_na)
@@ -482,7 +494,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	  }
 	} else if (anal_type == "mapGSPA") {
 	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, gspval_cutoff = 0.05,
-	           gslogFC_cutoff = log2(1.2), topn = 100, show_sig = "none", gset_nms = "go_sets",
+	           gslogFC_cutoff = log2(1.2), topn = 100, show_sig = "none", 
+	           gset_nms = "go_sets",
 	           theme = NULL, ...) {
 	    plotVolcano(df = df,
 	                df2 = df2,
@@ -698,13 +711,27 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	               ...)
 	  }
 	} else if (anal_type == "LDA") {
-	  function(type = "obs", dimension = 2, folds = 1, show_ids = TRUE,
+	  function(choice = "lda", method = "moment", 
+	           type = "obs", dimension = 2, folds = 1, show_ids = TRUE,
 	           show_ellipses = FALsE, 
 	           center_features = TRUE, scale_features = TRUE,
-	           theme = NULL, ...) {
+	           theme = NULL, 
+	           
+	           formula = NULL, 
+	           data = NULL, 
+	           x = NULL, 
+	           grouping = NULL, 
+	           prior = NULL, 
+	           subset = NULL, 
+	           CV = NULL, 
+	           na.action = NULL, 
+	           nu = NULL, 
+	           ...) {
 	    plotLDA(df = df,
 	            id = !!id,
 	            label_scheme_sub = label_scheme_sub,
+	            choice = choice, 
+	            method = method,
 	            type = type,
 	            dimension = dimension,
 	            folds = folds,
@@ -730,6 +757,16 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	            scale_features = scale_features,
 	            theme = theme,
 	            anal_type = anal_type,
+	            
+	            formula = formula, 
+	            data = data, 
+	            x = x, 
+	            grouping = grouping, 
+	            prior = prior, 
+	            subset = subset, 
+	            CV = CV, 
+	            na.action = na.action, 
+	            nu = nu, 
 	            ...)
 	  }
 	}
@@ -742,11 +779,15 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 #'
 #' @param ... Not currently used.
 #' @inheritParams info_anal
-find_pri_df <- function (anal_type = "Model", df = NULL, id = "gene", impute_na = FALSE, ...) {
+find_pri_df <- function (anal_type = "Model", df = NULL, 
+                         id = "gene", impute_na = FALSE, ...) {
   dat_dir <- get_gl_dat_dir()
   
-  err_msg2 <- "not found. \n Run functions PSM, peptide and protein normalization first."
-  err_msg3 <- "not found. \nImpute NA values with `pepImp()` or `prnImp()` or set `impute_na = FALSE`."
+  err_msg2 <- paste0("not found. \n", 
+                     "Run functions PSM, peptide and protein normalization first.")
+  err_msg3 <- paste0("not found. \n", 
+                     "Impute NA values with ", 
+                     "`pepImp()` or `prnImp()` or set `impute_na = FALSE`.")
   err_msg4 <- "not found at impute_na = TRUE. \nRun `prnSig(impute_na = TRUE)` first."
   err_msg5 <- "not found at impute_na = FALSE. \nRun `prnSig(impute_na = FALSE)` first."
 

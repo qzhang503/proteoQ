@@ -164,15 +164,15 @@ prnGSEA <- function (gset_nms = "go_sets",
 
   on.exit(
     if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
-      mget(names(formals()), current_env()) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(dots) %>% 
         save_call("pepGSEA")
     } else if (rlang::as_string(id) %in% c("prot_acc", "gene")) {
-      mget(names(formals()), current_env()) %>% 
+      mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
         c(dots) %>% 
         save_call("prnGSEA")
-    }
-    , add = TRUE
+    }, 
+    add = TRUE
   )
   
   check_dots(c("id", "anal_type", "df2"), ...)
