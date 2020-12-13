@@ -10,13 +10,13 @@ splitPSM_mf(
   fasta = NULL,
   entrez = NULL,
   pep_unique_by = "group",
-  scale_ms2 = FALSE,
+  scale_rptr_int = FALSE,
   rm_craps = FALSE,
   rm_krts = FALSE,
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
-  rptr_intco = 1000,
+  rptr_intco = 0,
   use_lowercase_aa = TRUE,
   parallel = TRUE,
   ...
@@ -48,12 +48,11 @@ species, users need to provide the file path(s) and name(s) for the lookup
 table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 for preparing custom entrez files.}
 
-\item{scale_ms2}{Logical; if TRUE, scales (up) MS2 reporter-ion intensities by MS1
-precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}. \eqn{I_{MS1}}, MS1
-precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion intensity; \eqn{I_{x}},
-MS2 reporter-ion intensity under TMT channel \eqn{x}. Note that the scaling
-will not affect \code{log2FC}. The argument is currently available for
-MSFragger workflows.}
+\item{scale_rptr_int}{Logical; if TRUE, scales (up) MS2 reporter-ion
+intensities by MS1 precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}.
+\eqn{I_{MS1}}, MS1 precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion
+intensity; \eqn{I_{x}}, MS2 reporter-ion intensity under TMT channel
+\eqn{x}. Note that the scaling will not affect \code{log2FC}.}
 
 \item{rm_craps}{Logical; if TRUE,
 \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
@@ -73,9 +72,13 @@ will be annotated with their kinase attributes. The default is FALSE.}
 intensities will be plotted. The default is TRUE. The argument is also
 applicable to the precursor intensity with MaxQuant LFQ.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
-default is 0 without cut-offs. The filter is also applicable to the
-precursor intensity with MaxQuant LFQ.}
+\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity being
+considered non-trivial. The default is 0 without cut-offs. The filtration
+will not be applied synchronously to the precursor intensity under the same
+PSM query. To guard against odds such as higher MS2 reporter-ion
+intensities than their contributing MS1 precursor intensity, employs for
+example \code{filter_... = rlang::exprs(pep_tot_int >= your_ms1_cutoff)}
+during \link{PSM2Pep}.}
 
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the

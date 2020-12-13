@@ -8,7 +8,7 @@ normPSM(
   group_psm_by = c("pep_seq", "pep_seq_mod"),
   group_pep_by = c("prot_acc", "gene"),
   mc_psm_by = c("peptide", "protein", "psm"),
-  scale_ms2 = FALSE,
+  scale_rptr_int = FALSE,
   dat_dir = NULL,
   expt_smry = "expt_smry.xlsx",
   frac_smry = "frac_smry.xlsx",
@@ -55,12 +55,11 @@ description of PSMs (grouped by \code{prot_acc} or \code{gene} according to
 zero will be applied. At the \code{mc_psm_by = psm}, PSMs will be median
 centered without grouping.}
 
-\item{scale_ms2}{Logical; if TRUE, scales (up) MS2 reporter-ion intensities by MS1
-precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}. \eqn{I_{MS1}}, MS1
-precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion intensity; \eqn{I_{x}},
-MS2 reporter-ion intensity under TMT channel \eqn{x}. Note that the scaling
-will not affect \code{log2FC}. The argument is currently available for
-MSFragger workflows.}
+\item{scale_rptr_int}{Logical; if TRUE, scales (up) MS2 reporter-ion
+intensities by MS1 precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}.
+\eqn{I_{MS1}}, MS1 precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion
+intensity; \eqn{I_{x}}, MS2 reporter-ion intensity under TMT channel
+\eqn{x}. Note that the scaling will not affect \code{log2FC}.}
 
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
@@ -68,8 +67,8 @@ match the value under the global environment.}
 \item{expt_smry}{A character string to a \code{.xlsx} file containing the
 metadata of TMT or LFQ experiments. The default is \code{expt_smry.xlsx}.}
 
-\item{frac_smry}{A character string to a \code{.xlsx} file containing
-peptide fractionation summary. The default is \code{frac_smry.xlsx}.}
+\item{frac_smry}{A character string to a \code{.xlsx} file containing peptide
+fractionation summary. The default is \code{frac_smry.xlsx}.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
@@ -102,9 +101,13 @@ the TRUE default, values under columns "Reporter intensity corrected..." in
 \item{rm_reverses}{A logical argument for uses with \code{MaxQuant} data. At
 the TRUE default, \code{Reverse} entries will be removed.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
-default is 0 without cut-offs. The filter is also applicable to the
-precursor intensity with MaxQuant LFQ.}
+\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity being
+considered non-trivial. The default is 0 without cut-offs. The filtration
+will not be applied synchronously to the precursor intensity under the same
+PSM query. To guard against odds such as higher MS2 reporter-ion
+intensities than their contributing MS1 precursor intensity, employs for
+example \code{filter_... = rlang::exprs(pep_tot_int >= your_ms1_cutoff)}
+during \link{PSM2Pep}.}
 
 \item{rm_craps}{Logical; if TRUE,
 \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
@@ -148,10 +151,11 @@ exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove PSM
 entries with \code{pep_expect > 0.1}.}
 }
 \value{
-Outputs are under the directory of \code{PSM} sub to \code{dat_dir}.
- Primary results are in \code{TMTset1_LCMSinj1_PSM_N.txt,
- TMTset2_LCMSinj1_PSM_N.txt, ...} The indexes of TMT experiment and LC/MS
- injection are indicated in the file names.
+Outputs are interim and final PSM tables under the directory of
+ \code{PSM} sub to \code{dat_dir}. Primary results are in \emph{standardized}
+ PSM tables of \code{TMTset1_LCMSinj1_PSM_N.txt, TMTset2_LCMSinj1_PSM_N.txt,
+ etc.} The indexes of TMT experiment and LC/MS injection are indicated in the
+ file names.
 }
 \description{
 \code{normPSM} standardizes
@@ -174,45 +178,47 @@ denote peptide sequences with applicable variable modifications.
 \cr \strong{Nomenclature of \code{pep_seq_mod}}:
 
 \tabular{ll}{ \emph{Variable modification}   \tab \emph{Abbreviation}\cr
-Non-terminal \tab A letter from upper to lower case and the flanking residues
-on the N- or C-terminal side of the peptide separated by a dot, e.g.,
-\code{-.mtFPEADILLK.S} \cr N-term \tab A hat to the left of a peptide
-sequence, e.g., \code{K.^QDGTHVVEAVDATHIGK.L} \cr C-term \tab A hat to the
-right of a peptide sequence, e.g., \code{K.DAYYNLCLPQRPnMI^.-} \cr Acetyl
-(Protein N-term) \tab A underscore to the left of a peptide sequence, e.g.,
-\code{-._mAsGVAVSDGVIK.V}. \cr Amidated (Protein C-term) \tab A underscore to
-the right of a peptide sequence, e.g., \code{K.DAYYNLCLPQRPnMI_.-}. \cr Other
-(Protein N-term) \tab A tilde to the left of a peptide sequence, e.g.,
-\code{-.~mAsGVAVSDGVIK.V} \cr Other (Protein C-term) \tab An tilde to the
-right of a peptide sequence, e.g. \code{K.DAYYNLCLPQRPnMI~.-} \cr }
+Non-terminal \tab A letter from upper to lower case, e.g., \code{mtFPEADILLK}
+\cr N-term \tab A hat to the left of a peptide sequence, e.g.,
+\code{^QDGTHVVEAVDATHIGK} \cr C-term \tab A hat to the right of a peptide
+sequence, e.g., \code{DAYYNLCLPQRPnMI^} \cr Acetyl (Protein N-term) \tab A
+underscore to the left of a peptide sequence, e.g., \code{_mAsGVAVSDGVIK}. \cr
+Amidated (Protein C-term) \tab A underscore to the right of a peptide
+sequence, e.g., \code{DAYYNLCLPQRPnMI_}. \cr Other (Protein N-term) \tab A
+tilde to the left of a peptide sequence, e.g., \code{~mAsGVAVSDGVIK} \cr Other
+(Protein C-term) \tab An tilde to the right of a peptide sequence, e.g.
+\code{DAYYNLCLPQRPnMI~} \cr }
 }
 \section{\code{Mascot}}{
- End users will export \code{PSM} data from
- \href{https://http://www.matrixscience.com/}{Mascot} at a \code{.csv}
- format and store them under the file folder indicated by \code{dat_dir}. The
- header information should be included during the \code{.csv} export. The
- format of file name(s) should be defaulted by
- \href{https://http://www.matrixscience.com/}{Mascot}: starting with
- the letter \code{'F'}, followed by digits without space and ended with a
- \code{'.csv'} extension \code{(e.g., F004453.csv)}.
+ Users will export \code{PSM} data from
+ \href{https://http://www.matrixscience.com/}{Mascot} at a \code{.csv} format
+ and store them under the file folder indicated by \code{dat_dir}. The header
+ information should be included during the \code{.csv} export. The file
+ name(s) should start with the letter \code{'F'} and ended with a
+ \code{'.csv'} extension \code{(e.g., F004452.csv, F004453_this.csv etc.)}.
 }
 
 \section{\code{MaxQuant}}{
- End users will copy over \code{msms.txt} file(s)
- from \href{https://www.maxquant.org/}{MaxQuant} to the \code{dat_dir}
- directory. In the case of multiple \code{msms.txt} files for processing, the
- file names need to be compiled in that they all start with \code{'msms'} and
- end with a \code{'.txt'} extension.
+ Users will copy over \code{msms.txt} file(s) from
+ \href{https://www.maxquant.org/}{MaxQuant} to the \code{dat_dir} directory.
+ The file name(s) should start with \code{'msms'} and end with a
+ \code{'.txt'} extension \code{(e.g., msms.txt, msms_this.txt etc.)}.
+}
+
+\section{\code{MSFragger}}{
+ Users will copy over \code{psm.tsv} file(s)
+ from \href{http://msfragger.nesvilab.org/}{MSFragger} to the \code{dat_dir}
+ directory. The file name(s) should start with \code{'psm'} and end with a
+ \code{'.tsv'} extension \code{(e.g., psm.tsv, psm_this.tsv etc.)}.
 }
 
 \section{\code{Spectrum Mill}}{
- End users will copy over \code{PSMexport.1.ssv}
+ Users will copy over \code{PSMexport.1.ssv}
  file(s) from
- \href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum Mill} 
- to the \code{dat_dir} directory. In the case of multiple
- \code{PSMexport} files for processing, the file names need to be compiled in
- that they all start with \code{'PSMexport'} and end with a \code{'.ssv'}
- extension.
+ \href{https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill}{Spectrum
+  Mill} to the \code{dat_dir} directory. The file name(s) should start with
+ \code{'PSMexport'} and end with a \code{'.ssv'} extension \code{(e.g.,
+ PSMexport.ssv, PSMexport_this.ssv etc.)}.
 }
 
 \section{\code{Variable arguments and data files}}{
@@ -311,6 +317,17 @@ normPSM(
   filter_psms_at = exprs(PEP <= 0.1),
 )
 
+# MSFragger
+normPSM(
+  group_psm_by = pep_seq_mod,
+  group_pep_by = prot_acc,
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
+
+  # vararg statement(s)
+  filter_psms_at = exprs(Hyperscore >= 10),
+)
+
 # Spectrum Mill
 normPSM(
   group_psm_by = pep_seq_mod,
@@ -319,7 +336,7 @@ normPSM(
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   
   # vararg statement(s)
-  filter_psms = exprs(score >= 10),
+  filter_psms_at = exprs(score >= 10),
 )
 
 ###############################################
@@ -427,7 +444,7 @@ normPSM(
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 }

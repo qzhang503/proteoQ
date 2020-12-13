@@ -112,15 +112,19 @@ prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"),
   check_dots(c("id", "anal_type", "df2"), ...)
   check_gset_nms(gset_nms)
   
-  err_msg1 <- "Argument `expr`, `gset.idx.list` and `annotation` will be determined automatically.\n"
+  err_msg1 <- 
+    "Argument `expr`, `gset.idx.list` and `annotation` determined automatically.\n"
+  
   if (any(names(rlang::enexprs(...)) %in% c("expr", "gset.idx.list", "annotation"))) 
     stop(err_msg1, call. = FALSE)
 
   dat_dir <- get_gl_dat_dir()
-  dir.create(file.path(dat_dir, "Protein/GSVA/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/GSVA/log"), 
+             recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+            length(id) == 1)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
 
@@ -210,12 +214,21 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   fmls <- dots %>% .[grepl("^\\s*~", .)]
   dots <- dots %>% .[! names(.) %in% names(fmls)]
   
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
-  select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
-  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
+  filter_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  arrange_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange_", names(.))]
+  select_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^select_", names(.))]
+  dots <- dots %>% 
+    .[! . %in% c(filter_dots, arrange_dots, select_dots)]
   
-  if (purrr::is_empty(fmls)) stop("Formula(s) of contrasts not available.", call. = FALSE)  
+  if (purrr::is_empty(fmls)) {
+    stop("Formula(s) of contrasts not available.", call. = FALSE)
+  }
   
   # `complete_cases` depends on lm contrasts
   df <- df %>% 

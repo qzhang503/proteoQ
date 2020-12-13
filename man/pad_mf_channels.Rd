@@ -4,22 +4,12 @@
 \alias{pad_mf_channels}
 \title{Pad MSFragger TMT channels to the highest plex.}
 \usage{
-pad_mf_channels(file, fasta, entrez)
+pad_mf_channels(file, ...)
 }
 \arguments{
 \item{file}{A file name of PSM table from MaxQuant export}
 
-\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
-prepended directory path. The \code{fasta} database(s) need to match those
-used in MS/MS ion search. There is no default and users need to provide the
-correct file path(s) and name(s).}
-
-\item{entrez}{Character string(s) to the name(s) of entrez file(s) with
-prepended directory path. At the \code{NULL} default, a convenience lookup
-is available for species among \code{c("human", "mouse", "rat")}. For other
-species, users need to provide the file path(s) and name(s) for the lookup
-table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
-for preparing custom entrez files.}
+\item{...}{Not currently used.}
 }
 \description{
 Pad MSFragger TMT channels to the highest plex.

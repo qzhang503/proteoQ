@@ -33,7 +33,8 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
   check_gset_nms(gset_nms)
   
   dat_dir <- get_gl_dat_dir()
-  dir.create(file.path(dat_dir, "Peptide/GSPA/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Peptide/GSPA/log"), 
+             recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
@@ -59,8 +60,13 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
   
   reload_expts()
   
-  info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+  info_anal(df = !!df, 
+            id = !!id, 
+            filepath = !!filepath, 
+            filename = !!filename, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
             anal_type = "GSPA")(gset_nms = gset_nms, 
                                 var_cutoff = 1000, 
                                 pval_cutoff = pval_cutoff, 
@@ -264,7 +270,8 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
   check_gset_nms(gset_nms)
   
   dat_dir <- get_gl_dat_dir()
-  dir.create(file.path(dat_dir, "Protein/GSPA/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/GSPA/log"), 
+             recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
@@ -290,8 +297,13 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 
   reload_expts()
   
-  info_anal(df = !!df, id = !!id, filepath = !!filepath, filename = !!filename, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
+  info_anal(df = !!df, 
+            id = !!id, 
+            filepath = !!filepath, 
+            filename = !!filename, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
             anal_type = "GSPA")(gset_nms = gset_nms, 
                                 var_cutoff = 1000, 
                                 pval_cutoff = pval_cutoff, 
@@ -334,34 +346,61 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
                      method = "mean", anal_type = "GSPA", ...) {
 
   # `GSPA`: use `pVals` instead of `N_log2R` or `Z_log2R`; 
-  # currently Protein[_impNA]_pVals.txt does not contain `scale_log2_r` info in the file name
+  # Protein[_impNA]_pVals.txt does not contain `scale_log2_r` info in the file name, 
   #   and cannot tell `pVals` are from `N_log2R` or `Z_log2R`;  
   #   therefore, `scale_log2r` will be matched to those in `prnSig()` and indicated in 
-  #   the names of out files as `_N[_impNA].txt` or `_Z[_impNA].txt` to inform user the `scale_log_r` status
+  #   the names of out files as `_N[_impNA].txt` or `_Z[_impNA].txt` 
+  #     to inform user the `scale_log_r` status
   # `complete_cases` is for entrez IDs, pVals, log2FC
   # "id" for tibbling rownames
   
-  stopifnot(vapply(c(pval_cutoff, logFC_cutoff, min_size, max_size, min_delta, min_greedy_size), 
+  stopifnot(vapply(c(pval_cutoff, 
+                     logFC_cutoff, 
+                     min_size, 
+                     max_size, 
+                     min_delta,
+                     min_greedy_size), 
                    rlang::is_double, logical(1)))
-  stopifnot(nrow(label_scheme_sub) > 0)
+  
+  stopifnot(nrow(label_scheme_sub) > 0, 
+            "entrez" %in% names(df))
+  
+  if (all(is.na(df[["entrez"]]))) {
+    stop("All values are NA under the column `entrez` in the input data.", 
+         call. = FALSE)
+  }
   
   id <- rlang::as_string(rlang::enexpr(id))
   dots = rlang::enexprs(...)
   fmls <- dots %>% .[grepl("^\\s*~", .)]
   dots <- dots %>% .[! names(.) %in% names(fmls)]
 
-  filter_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter_", names(.))]
-  arrange_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange_", names(.))]
-  select_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select_", names(.))]
-  dots <- dots %>% .[! . %in% c(filter_dots, arrange_dots, select_dots)]
+  filter_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter_", names(.))]
+  
+  arrange_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange_", names(.))]
+  
+  select_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^select_", names(.))]
+  
+  dots <- dots %>% 
+    .[! . %in% c(filter_dots, arrange_dots, select_dots)]
 
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
   
-  if (nrow(df) == 0) stop("No data available after row filtration.", call. = FALSE)
+  if (nrow(df) == 0) {
+    stop("No data available after row filtration.", call. = FALSE)
+  }
   
-  if (purrr::is_empty(fmls)) stop("Formula(s) of contrasts not available.", call. = FALSE)
+  if (purrr::is_empty(fmls)) {
+    stop("Formula(s) of contrasts not available.", call. = FALSE)
+  }
 
   species <- df$species %>% unique() %>% .[!is.na(.)] %>% as.character()
   gsets <- load_dbs(gset_nms = gset_nms, species = species)
@@ -527,6 +566,10 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
 
     idx <- purrr::map_dbl(res, is.null)
     
+    if (all(idx == 1)) {
+      stop("No GSPA results available.", call. = FALSE)
+    }
+    
     res <- res[!idx] %>% 
       do.call(rbind, .) %>% 
       tibble::rownames_to_column("term") %>% 
@@ -536,7 +579,8 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
       dplyr::arrange(term) %>% 
       data.frame(check.names = FALSE) 
     
-    pass <- purrr::map(res[paste0("pVal (", contrast_groups, ")")], ~ .x <= gspval_cutoff) %>%
+    pass <- purrr::map(res[paste0("pVal (", contrast_groups, ")")], 
+                       ~ .x <= gspval_cutoff) %>%
       dplyr::bind_cols() %>%
       rowSums() %>%
       `>`(0)
@@ -683,9 +727,12 @@ ok_min_size <- function (df, min_delta, gspval_cutoff = 1, gslogFC_cutoff = 0) {
 #' @inheritParams prnGSPA
 gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4, 
                               gspval_cutoff = 0.05, gslogFC_cutoff = log2(1)) {
-  df <- df %>% dplyr::filter(.[["entrez"]] %in% gset)
+  df <- df %>% 
+    dplyr::filter(entrez %in% gset)
   
-  if (length(unique(df$entrez)) < min_size) return(NULL)
+  if (length(unique(df$entrez)) < min_size) {
+    return(NULL)
+  }
   
   df <- df %>% dplyr::group_by(contrast, valence)
 
@@ -728,10 +775,17 @@ gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4,
 #' @inheritParams gspa_summary_mean
 gspa_summary_limma <- function(gset, df, min_size = 10, min_delta = 4, 
                                gspval_cutoff = 0.05, gslogFC_cutoff = 1.2) {
-  df_sub <- df %>% dplyr::filter(.[["entrez"]] %in% gset) 
-  if (length(unique(df_sub$entrez)) < min_size) return(NULL)
+  df <- df %>% 
+    dplyr::filter(entrez %in% gset)
   
-  lm_gspa(df_sub, min_delta, gspval_cutoff, gslogFC_cutoff)
+  if (nrow(df) == 0) {
+    stop("No entrez IDs matched to the provided gene sets.", 
+         call. = FALSE)
+  }
+  
+  if (length(unique(df$entrez)) < min_size) return(NULL)
+  
+  lm_gspa(df, min_delta, gspval_cutoff, gslogFC_cutoff)
 }  
 
 
@@ -1030,6 +1084,10 @@ map_essential <- function (sig_sets) {
 prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, fml_nms = NULL, 
                        annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                        df2 = NULL, filename = NULL, ...) {
+  old_opts <- options()
+  on.exit(options(old_opts), add = TRUE)
+  options(warn = 1)
+  
   check_dots(c("id", "anal_type", "df", "filepath"), ...)
   
   dat_dir <- get_gl_dat_dir()

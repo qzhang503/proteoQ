@@ -7,7 +7,7 @@
 \usage{
 pepSig(
   scale_log2r = TRUE,
-  impute_na = TRUE,
+  impute_na = FALSE,
   complete_cases = FALSE,
   method = c("limma", "lm"),
   padj_method = "BH",
@@ -22,7 +22,7 @@ pepSig(
 
 prnSig(
   scale_log2r = TRUE,
-  impute_na = TRUE,
+  impute_na = FALSE,
   complete_cases = FALSE,
   method = c("limma", "lm"),
   padj_method = "BH",

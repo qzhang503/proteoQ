@@ -1,35 +1,39 @@
 \donttest{
+# ***********************************
+# ************    TMT    ************
+# ***********************************
+  
 # ===================================
 # Fasta and PSM files
 # ===================================
 # fasta (all platforms)
 library(proteoQDA)
 fasta_dir <- "~/proteoQ/dbs/fasta/refseq"
-dir.create(fasta_dir, recursive = TRUE, showWarnings = FALSE)
 copy_refseq_hs(fasta_dir)
 copy_refseq_mm(fasta_dir)
 
 # working directory (all platforms)
 dat_dir <- "~/proteoQ/examples"
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 # metadata (all platforms)
-copy_global_exptsmry(dat_dir)
-copy_global_fracsmry(dat_dir)
+copy_exptsmry_gtmt(dat_dir)
+copy_fracsmry_gtmt(dat_dir)
 
 # PSM (choose one of the platforms)
 choose_one <- TRUE
 if (!choose_one) {
-  # Mascot
-  copy_global_mascot(dat_dir)
+  ## Mascot
+  copy_mascot_gtmt(dat_dir)
   
-  # or MaxQuant
-  copy_global_maxquant(dat_dir)
+  ## or MaxQuant
+  # copy_maxquant_gtmt(dat_dir)
   
-  # or Spectrum Mill
-  copy_global_sm(dat_dir)
+  ## or MSFragger
+  # copy_msfragger_gtmt(dat_dir)
+  
+  ## or Spectrum Mill
+  # copy_specmill_gtmt(dat_dir)
 }
-
 
 # ===================================
 # PSM, peptide and protein processing
@@ -39,7 +43,6 @@ load_expts("~/proteoQ/examples")
 
 # PSM data standardization
 normPSM(
-  # alternative to default
   group_psm_by = pep_seq_mod, 
   group_pep_by = gene, 
   annot_kinases = TRUE, 
@@ -81,7 +84,6 @@ prnHist()
 # (no NA imputation)
 # ===================================
 pepSig(
-  impute_na = FALSE, 
   W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
                   "W2.JHU.TMT2-W2.JHU.TMT1", 
                   "W2.PNNL.TMT2-W2.PNNL.TMT1"],
@@ -91,7 +93,7 @@ pepSig(
   W16_vs_W2 = ~ Term_3["W16-W2"], 
 )
 
-prnSig(impute_na = FALSE)
+prnSig()
 
 # ===================================
 # optional NA imputation
@@ -115,7 +117,118 @@ pepSig(
 )
 
 prnSig(impute_na = TRUE)
+
+
+
+# ***********************************
+# ************    LFQ    ************
+# ***********************************
+
+# ===================================
+# Fasta and PSM files
+# ===================================
+# fasta (all platforms)
+library(proteoQDA)
+fasta_dir <- "~/proteoQ/dbs/fasta/uniprot"
+copy_uniprot_hsmm(fasta_dir)
+
+# working directory (all platforms)
+dat_dir <- "~/proteoQ/examples"
+
+# metadata (all platforms)
+copy_exptsmry_plfq(dat_dir)
+copy_fracsmry_plfq(dat_dir)
+
+# PSM (choose one of the platforms)
+choose_one <- TRUE
+if (!choose_one) {
+  ## Mascot
+  copy_mascot_plfq(dat_dir)
+  
+  ## or MaxQuant
+  # copy_maxquant_plfq(dat_dir)
+  
+  ## or MSFragger
+  # copy_msfragger_plfq(dat_dir)
+  
+  ## or Spectrum Mill
+  # copy_specmill_plfq(dat_dir)
 }
+
+
+# ===================================
+# PSM, peptide and protein processing
+# ===================================
+library(proteoQ)
+load_expts("~/proteoQ/examples")
+
+# PSM data standardization
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  group_pep_by = gene, 
+  annot_kinases = TRUE, 
+  fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hsmm_2020_03.fasta"),
+)
+
+# PSM purging not applicable with LFQ
+# purgePSM()
+
+# PSMs to peptides
+PSM2Pep()
+
+# peptide data merging
+mergePep()
+
+# peptide data standardization
+standPep()
+
+# peptide data histograms
+pepHist()
+
+# optional peptide purging
+purgePep()
+
+# peptides to proteins
+Pep2Prn(use_unique_pep = TRUE)
+
+# protein data standardization
+standPrn()
+
+# protein data histograms
+prnHist()
+
+# ===================================
+# Optional significance tests
+# (no NA imputation)
+# ===================================
+pepSig(
+  fml_1 = ~ Term["BI-JHU", 
+                 "JHU-PNNL", 
+                 "(BI+JHU)/2-PNNL"],
+)
+
+prnSig()
+
+# ===================================
+# optional NA imputation
+# ===================================
+pepImp(m = 2, maxit = 2)
+prnImp(m = 5, maxit = 5)
+
+# ===================================
+# Optional significance tests
+# (with NA imputation)
+# ===================================
+pepSig(
+  impute_na = TRUE, 
+  fml_1 = ~ Term["BI-JHU", 
+                 "JHU-PNNL", 
+                 "(BI+JHU)/2-PNNL"],
+)
+
+prnSig(impute_na = TRUE)
+}
+
 
 \dontrun{
 load_expts(dat_dir = "~/proteoQ/examples", expt_smry = "expt_smry.xlsx")
@@ -128,3 +241,6 @@ load_expts(dat_dir = "~/proteoQ/examples", expt_smry = my_expt)
 # see also: https://dplyr.tidyverse.org/articles/programming.html
 load_expts(dat_dir = "~/proteoQ/examples", expt_smry = !!my_expt)
 }
+
+
+

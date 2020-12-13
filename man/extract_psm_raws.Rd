@@ -4,14 +4,9 @@
 \alias{extract_psm_raws}
 \title{Extract the names of RAW MS files from PSM data}
 \usage{
-extract_psm_raws(
-  type = c("mascot", "maxquant", "spectrum_mill", "msfragger"),
-  dat_dir = NULL
-)
+extract_psm_raws(dat_dir = NULL)
 }
 \arguments{
-\item{type}{Character string indicating the type of PSM.}
-
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
 }
@@ -21,11 +16,7 @@ the working directory.
 }
 \examples{
 \donttest{
-extract_psm_raws(mascot)
-
-extract_psm_raws(maxquant)
-
-extract_psm_raws(spectrum_mill)
+extract_psm_raws()
 }
 
 }

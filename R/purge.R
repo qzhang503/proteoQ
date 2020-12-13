@@ -282,6 +282,7 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
 #'  height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
 #'  \code{y} axis.
 #'@import dplyr ggplot2
+#'@importFrom rlang exprs expr
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@example inst/extdata/examples/purgePSM_.R
 #'@seealso 
@@ -429,6 +430,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'@inheritParams purge_by_qt
 #'@inheritParams plot_prnTrend
 #'@import dplyr ggplot2
+#'@importFrom rlang exprs expr
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@example inst/extdata/examples/purgePep_.R
 #'@seealso 

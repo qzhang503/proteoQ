@@ -4,7 +4,7 @@
 \alias{parse_fasta}
 \title{Parse FASTA for accession lookups}
 \usage{
-parse_fasta(df, fasta, entrez)
+parse_fasta(df, fasta, entrez, warns = TRUE)
 }
 \arguments{
 \item{df}{An input data frame.}
@@ -20,9 +20,14 @@ is available for species among \code{c("human", "mouse", "rat")}. For other
 species, users need to provide the file path(s) and name(s) for the lookup
 table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 for preparing custom entrez files.}
+
+\item{warns}{Logical; if TRUE, show warning message(s).}
+}
+\value{
+A lookup table, \code{acc_lookup}.
 }
 \description{
-Parse FASTA for accession lookups
+NA genes are replaced with prot_acc
 }
 \seealso{
 \code{\link{read_fasta}} for the definition of fasta_name(s).

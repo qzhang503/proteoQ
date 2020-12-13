@@ -4,12 +4,14 @@
 \alias{add_entrez}
 \title{Add Entrez IDs}
 \usage{
-add_entrez(acc_lookup, acc_type)
+add_entrez(acc_lookup, acc_type, warns = TRUE)
 }
 \arguments{
 \item{acc_lookup}{A data frame of protein accession lookups}
 
 \item{acc_type}{The type of protein accessions}
+
+\item{warns}{Logical; if TRUE, show warning message(s).}
 }
 \description{
 Add Entrez IDs

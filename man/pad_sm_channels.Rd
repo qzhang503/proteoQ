@@ -4,7 +4,7 @@
 \alias{pad_sm_channels}
 \title{Pad Spectrum Mill TMT channels to the highest plex}
 \usage{
-pad_sm_channels(file)
+pad_sm_channels(file, ...)
 }
 \arguments{
 \item{file}{A file name of PSM table from MaxQuant export}

@@ -4,7 +4,7 @@
 \alias{pad_mq_channels}
 \title{Pad MaxQuant TMT channels to the highest plex.}
 \usage{
-pad_mq_channels(file, fasta, entrez)
+pad_mq_channels(file, fasta, entrez, corrected_int, ...)
 }
 \arguments{
 \item{file}{A file name of PSM table from MaxQuant export}
@@ -20,6 +20,8 @@ is available for species among \code{c("human", "mouse", "rat")}. For other
 species, users need to provide the file path(s) and name(s) for the lookup
 table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 for preparing custom entrez files.}
+
+\item{...}{Not currently used.}
 }
 \description{
 Pad MaxQuant TMT channels to the highest plex.

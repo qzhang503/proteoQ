@@ -324,6 +324,8 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	                                           mapping = mapping_var, 
 	                                           !!!fix_args))) +
 	    coord_fixed()
+	  
+	  check_ggplot_aes(p)
 
 	  if (show_ellipses) {
 	    if (anyNA(label_scheme_sub[[col_group]])) {

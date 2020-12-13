@@ -100,7 +100,7 @@ from different LCMS series. One exception is \code{pep_expect} where geometric
 mean is used.
 
 Description of the column keys in the inputs and outputs: \cr
-\code{system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ")}
+\code{system.file("extdata", "peptide_keys.txt", package = "proteoQ")}
 }
 \examples{
 \donttest{
@@ -466,7 +466,7 @@ signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}} for
 STRING-DB \cr
 
 \emph{Column keys in PSM, peptide and protein outputs} \cr 
-system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 }

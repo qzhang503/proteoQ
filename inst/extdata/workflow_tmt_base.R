@@ -11,29 +11,35 @@ devtools::install_github("qzhang503/proteoQ")
 # ==============================================
 library(proteoQDA)
 
-# FASTA (all platforms)
+# FASTAs (all platforms)
 copy_refseq_hs("~/proteoQ/dbs/fasta/refseq")
 copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 
+# Optional: UniProt and cRAP FASTAs
+copy_uniprot_hsmm("~/proteoQ/dbs/fasta/uniprot")
+copy_crap("~/proteoQ/dbs/fasta/crap")
+
 # PSM data (choose one of the platforms)
 dat_dir <- "~/proteoQ/examples"
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 choose_one <- TRUE
 if (choose_one) {
   ## Mascot
-  copy_global_mascot(dat_dir)
+  copy_mascot_gtmt(dat_dir)
   
   ## MaxQuant
-  copy_global_maxquant(dat_dir)
+  # copy_maxquant_gtmt(dat_dir)
+  
+  ## MSFragger
+  # copy_msfragger_gtmt(dat_dir)
   
   ## Spectrum Mill
-  copy_global_sm(dat_dir)
+  # copy_specmill_gtmt(dat_dir)
 }
 
 # metadata (all platforms)
-copy_global_exptsmry(dat_dir)
-copy_global_fracsmry(dat_dir)
+copy_exptsmry_gtmt(dat_dir)
+copy_fracsmry_gtmt(dat_dir)
 
 
 # ==============================================
@@ -42,6 +48,9 @@ copy_global_fracsmry(dat_dir)
 # metadata to workspace
 library(proteoQ)
 load_expts("~/proteoQ/examples")
+
+# optional: show available MS file names in PSM data
+extract_psm_raws()
 
 # PSM standardization
 normPSM(
@@ -143,7 +152,6 @@ scale_log2r <- TRUE
 ## no NA imputation
 # peptides
 pepSig(
-  impute_na = FALSE, 
   W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
                   "W2.JHU.TMT2-W2.JHU.TMT1", 
                   "W2.PNNL.TMT2-W2.PNNL.TMT1"],
@@ -154,11 +162,11 @@ pepSig(
 )
 
 # proteins
-prnSig(impute_na = FALSE)
+prnSig()
 
 # volcano plots
-pepVol(impute_na = FALSE)
-prnVol(impute_na = FALSE)
+pepVol()
+prnVol()
 
 ## DO NOT RUN
 dontrun <- TRUE
@@ -287,7 +295,7 @@ prnHM(
 	filename = hukin.png, 
 )
 
-### trend
+### clustering (cemans, kmeans etc.)
 # protein analysis, row filtration and sample-order supervision
 anal_prnTrend(
   col_order = Order,
