@@ -10,7 +10,8 @@ psm_to_pep(
   label_scheme_full,
   group_psm_by,
   group_pep_by,
-  method_psm_pep
+  method_psm_pep,
+  ...
 )
 }
 \arguments{

@@ -53,5 +53,5 @@ as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
 }
 \description{
-Argument \code{injn_idx} not currently used.
+Argument \code{injn_idx} does not currently used.
 }

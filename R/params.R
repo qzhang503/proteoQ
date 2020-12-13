@@ -586,23 +586,6 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	          purrr::reduce(not_oks, paste, sep = ", "), 
 	          call. = FALSE
 	        )
-	        
-	        run_scripts <- FALSE
-	        if (run_scripts) {
-  	        # assume automated frac_smry.xlsx if no prefractionation
-	          n_fracs <- fraction_scheme$Fraction %>% unique() 
-  	        if (n_fracs == 1) {
-  	          try(unlink(file.path(dat_dir, filename)))
-  	          try(unlink(file.path(dat_dir, "fraction_scheme.rda")))
-  	        }
-  	        
-  	        stop("`RAW_File` entries in `frac_smry.xlsx` not found in `expt_smry.xlsx`: \n", 
-  	             purrr::reduce(not_oks, paste, sep = ", "), 
-  	             "\nFile `frac_smry.xlsx` deleted.`", 
-  	             "!!!  Please RERUN `load_expts(...). !!!",
-  	             call. = FALSE)	          
-	        }
-
 	      }
 	      
 	      not_oks_2 <- expt_raws %>% .[! . %in% frac_raws]
@@ -645,6 +628,30 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 	      dplyr::mutate(Fraction = row_number()) %>% 
 	      dplyr::arrange(Sample_ID, LCMS_Injection, Fraction) %>% 
 	      dplyr::ungroup()
+	    
+	    # compare Sample_ID(s) before joining
+	    local({
+	      smpls_fracsmry <- unique(fraction_scheme$Sample_ID)
+	      smpls_exptsmry <- unique(label_scheme_full$Sample_ID)
+	      
+	      missings <- smpls_fracsmry %>% 
+	        .[! . %in% smpls_exptsmry]
+	      
+	      if (!purrr::is_empty(missings)) {
+	        stop("Sample IDs in `", filename, "` not found in `expt_smry.xlsx`: \n", 
+	             purrr::reduce(missings, paste, sep = ", "), 
+	             call. = FALSE)
+	      }
+	      
+	      missings2 <- smpls_exptsmry %>% 
+	        .[! . %in% smpls_fracsmry]
+	      
+	      if (!purrr::is_empty(missings2)) {
+	        stop("Sample IDs in `expt_smry.xlsx` not found in `", filename, "`: \n", 
+	             purrr::reduce(missings2, paste, sep = ", "), 
+	             call. = FALSE)
+	      }
+	    })
 	    
 	    fraction_scheme <- fraction_scheme %>% 
 	      dplyr::select(-TMT_Set) %>% 
@@ -803,8 +810,9 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 
 #'Load TMT or LFQ experiments
 #'
-#'\code{load_expts} processes \code{.xlsx} files containing the metadata of TMT
-#'or LFQ (MaxQuant) experiments
+#'\code{load_expts} processes \code{.xlsx} or \code{.csv} files containing the
+#'metadata of TMT or LFQ experiments. For simplicity, \code{.xlsx} will be
+#'assumed in the document.
 #'
 #'@section \code{expt_smry.xlsx}: The \code{expt_smry.xlsx} files should be
 #'  placed immediately under the file folder defined by \code{dat_dir}. The tab
@@ -835,13 +843,13 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  \href{https://proteoq.netlify.app/post/sample-exlusion-from-metadata}{sample
 #'  exclusion}.
 #'  
-#'  \code{RAW_File}: for analysis with off-line fractionation of peptides before
-#'  LC/MS, values under the \code{RAW_File} column should be left void. Instead,
-#'  the correspondence between the fraction numbers and \code{RAW_File} names
-#'  should be specified in a separate file, for example, \code{frac_smry.xlsx}.
-#'  For analysis without off-line fractionation, it is recommended as well to
-#'  leave the field under the \code{RAW_File} column blank and instead enter the
-#'  MS file names in \code{frac_smry.xlsx}.
+#'  \code{RAW_File}: (a) for analysis with off-line fractionation of peptides
+#'  before LC/MS, values under the \code{RAW_File} column should be left void.
+#'  Instead, the correspondence between the fraction numbers and \code{RAW_File}
+#'  names should be specified in a separate file, for example,
+#'  \code{frac_smry.xlsx}. (2) For analysis without off-line fractionation, it
+#'  is recommended as well to leave the field under the \code{RAW_File} column
+#'  blank and instead enter the MS file names in \code{frac_smry.xlsx}.
 #'
 #'  The set of \code{RAW_File} names in metadata needs to be identifiable in PSM
 #'  data. Impalpable mismatches might occur when \code{OS} file names were
@@ -849,7 +857,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  data for parsing by search engine(s). In the case, machine-generated MS file
 #'  names should be used. In addition, MS files may occasionally have no
 #'  contributions to PSM findings. In the case, users will be prompted to remove
-#'  these MS file names.
+#'  these MS file names. 
 #'
 #'  Utilities \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} may
 #'  aid matching MS file names between metadata and PSM data. Utility
@@ -876,13 +884,13 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'
 #'
 #'@section \code{frac_smry.xlsx}: \tabular{ll}{ \strong{Column}   \tab
-#'  \strong{Descrption}\cr Sample_ID \tab Unique sample IDs (with LFQ only) \cr
-#'  TMT_Set \tab TMT experiment indexes (auto-filled for LFQ) \cr LCMS_Injection
-#'  \tab LC/MS injection indexes \cr Fraction \tab Fraction indexes under a
-#'  \code{TMT_Set} \cr RAW_File \tab MS data file names \cr PSM_File \tab Names
-#'  of PSM files. Required only when the same \code{RAW_File} can be linked to
-#'  multiple PSM files (e.g. F012345.csv and F012346.csv both from ms_1.raw).
-#'  }
+#'  \strong{Descrption}\cr Sample_ID \tab Unique sample IDs (only required with
+#'  LFQ) \cr TMT_Set \tab TMT experiment indexes (auto-filled for LFQ) \cr
+#'  LCMS_Injection \tab LC/MS injection indexes \cr Fraction \tab Fraction
+#'  indexes under a \code{TMT_Set} \cr RAW_File \tab MS data file names \cr
+#'  PSM_File \tab Names of PSM files. Required only when one \code{RAW_File} can
+#'  be linked to multiple PSM files (e.g. F012345.csv and F012346.csv both from
+#'  ms_1.raw). }
 #'  
 #'@family normalization functions
 #'@seealso 
@@ -949,42 +957,43 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  system.file("extdata", "workflow_lfq_base.R", package = "proteoQ") \cr
 #'  
 #'  \emph{Metadata files} \cr 
-#'  # TMT, global, prefractionation \cr
-#'  # (no references) \cr 
-#'  system.file("extdata", "expt_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+#'  # TMT, no fractionation --- OK without `frac_smry.xlsx` \cr
+#'  # (a. no references) \cr 
+#'  system.file("extdata", "expt_smry_no_prefrac.xlsx", package = "proteoQDA") \cr
+#'  # (b. W2 and W16 references) \cr
+#'  system.file("extdata", "expt_smry_no_prefrac_ref_w2_w16.xlsx", package = "proteoQDA") \cr
 #'  
-#'  # (W2 references) \cr
+#'  # TMT, prefractionation \cr
+#'  # (a. no references) \cr 
+#'  system.file("extdata", "expt_smry_gtmt.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_gtmt.xlsx", package = "proteoQDA") \cr
+#'  
+#'  # (b. W2 references) \cr
 #'  system.file("extdata", "expt_smry_ref_w2.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_gtmt.xlsx", package = "proteoQDA") \cr
 #'  
-#'  # (W2 and W16 references) \cr
+#'  # (c. W2 and W16 references) \cr
 #'  system.file("extdata", "expt_smry_ref_w2_w16.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_cptac_gl.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_gtmt.xlsx", package = "proteoQDA") \cr
 #'  
-#'  # TMT, global + phospho, prefractionation \cr
-#'  system.file("extdata", "expt_smry_cptac_cmbn.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_cptac_cmbn.xlsx", package = "proteoQDA") \cr
+#'  # TMT, prefractionation (global + phospho) \cr
+#'  system.file("extdata", "expt_smry_tmt_cmbn.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_tmt_cmbn.xlsx", package = "proteoQDA") \cr
 #'  
-#'  # TMT, global, prefractionation, one MS to multiple PSM files \cr
+#'  # TMT, prefractionation, one MS to multiple PSM files \cr
 #'  system.file("extdata", "expt_smry_psmfiles.xlsx", package = "proteoQDA") \cr
 #'  system.file("extdata", "frac_smry_psmfiles.xlsx", package = "proteoQDA") \cr
 #'  
-#'  # TMT, global, prefractionation, mixed-plexes \cr
-#'  # (column PSM_file needed as with this example, \cr 
+#'  # TMT, prefractionation, mixed-plexes \cr
+#'  # (column PSM_File needed; as with this example, \cr 
 #'  #  mixed-plexes results are actually from the same MS files \cr
-#'  #  but searched separately at 6- and 10-plex settings) \cr 
+#'  #  but searched separately at 6- and 10-plex settings!) \cr 
 #'  system.file("extdata", "expt_smry_mixplexes.xlsx", package = "proteoQDA") \cr
 #'  system.file("extdata", "frac_smry_mixplexes.xlsx", package = "proteoQDA") \cr
 #'  
-#'  # TMT, global, no fractionation \cr
-#'  # (no need of `frac_smry.xlsx`) \cr 
-#'  system.file("extdata", "expt_smry_no_prefrac.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "expt_smry_no_prefrac_ref_w2_w16.xlsx", package = "proteoQDA") \cr
-#'  
-#'  # LFQ, global, prefractionation \cr
-#'  system.file("extdata", "expt_smry_lfq.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_lfq.xlsx", package = "proteoQDA") \cr
+#'  # LFQ, prefractionation \cr
+#'  system.file("extdata", "expt_smry_plfq.xlsx", package = "proteoQDA") \cr
+#'  system.file("extdata", "frac_smry_plfq.xlsx", package = "proteoQDA") \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
 #'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
@@ -995,8 +1004,8 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  match the value under the global environment.
 #'@param expt_smry A character string to a \code{.xlsx} file containing the
 #'  metadata of TMT or LFQ experiments. The default is \code{expt_smry.xlsx}.
-#'@param frac_smry A character string to a \code{.xlsx} file containing
-#'  peptide fractionation summary. The default is \code{frac_smry.xlsx}.
+#'@param frac_smry A character string to a \code{.xlsx} file containing peptide
+#'  fractionation summary. The default is \code{frac_smry.xlsx}.
 #'
 #'@example inst/extdata/examples/load_expts_.R
 #'

@@ -74,7 +74,7 @@ reporter-ion or LFQ intensity before normalization. Values under columns
 proteins from ascribing peptides.
 
 Description of the column keys in the output: \cr 
-\code{system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ")}
+\code{system.file("extdata", "peptide_keys.txt", package = "proteoQ")}
 
 The peptide counts in individual peptide tables,
 \code{TMTset1_LCMSinj1_Peptide_N.txt} etc., may be fewer than the entries
@@ -158,7 +158,7 @@ mergePep(cut_points = c(prot_icover = seq(0, 1, .25)))
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 }

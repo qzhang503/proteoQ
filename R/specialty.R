@@ -13,18 +13,24 @@
 #' )
 #' }
 #' @export
-labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by = c("prot_acc", "gene"), 
-                      dat_dir = NULL, expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx", 
+labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), 
+                      group_pep_by = c("prot_acc", "gene"), 
+                      dat_dir = NULL, expt_smry = "expt_smry.xlsx", 
+                      frac_smry = "frac_smry.xlsx", 
                       fasta = NULL, entrez = NULL, 
-                      pep_unique_by = "group", corrected_int = TRUE, rm_reverses = TRUE, 
-                      rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE, rm_outliers = FALSE, 
+                      pep_unique_by = "group", corrected_int = TRUE, 
+                      rm_reverses = TRUE, 
+                      rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE, 
+                      rm_outliers = FALSE, 
                       annot_kinases = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
                       use_lowercase_aa = TRUE, ...) {
   
   if (is.null(dat_dir)) {
     dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
     if (dat_dir == 1) 
-      stop("Variable `dat_dir` not found; assign the working directory to the variable first.", call. = FALSE)
+      stop("Variable `dat_dir` not found; ", 
+           "assign the working directory to the variable first.", 
+           call. = FALSE)
   } else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
     message("Variable `dat_dir` added to the Global Environment.")
@@ -48,18 +54,27 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
     stopifnot(group_pep_by %in% c("prot_acc", "gene"))
   }
   
-  dir.create(file.path(dat_dir, "PSM/cache"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "PSM/rprt_int/raw"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "PSM/rprt_int/mc"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "PSM/log2FC_cv/raw"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "PSM/log2FC_cv/purged"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(dat_dir, "PSM/individual_mods"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/cache"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/rprt_int/raw"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/rprt_int/mc"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/log2FC_cv/raw"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/log2FC_cv/purged"), 
+             recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "PSM/individual_mods"), 
+             recursive = TRUE, showWarnings = FALSE)
   
-  if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^F[0-9]+\\.csv$"))) {
+  if (!purrr::is_empty(list.files(path = file.path(dat_dir), 
+                                  pattern = "^F[0-9]+\\.csv$"))) {
     type <- "mascot"
-  } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^msms.*\\.txt$"))) {
+  } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), 
+                                         pattern = "^msms.*\\.txt$"))) {
     type <- "mq"
-  } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), pattern = "^PSMexport.*\\.ssv$"))) {
+  } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), 
+                                         pattern = "^PSMexport.*\\.ssv$"))) {
     type <- "sm"
   } else {
     stop("Unknow data type or missing data files.", call. = FALSE)
@@ -93,43 +108,53 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
   
   df <- purrr::map(filelist, ~ {
     df <- read.delim(file.path(dat_dir, "PSM/cache", .x), sep = ',', check.names = FALSE, 
-                     header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , skip = 0)
+                     header = TRUE, stringsAsFactors = FALSE, quote = "\"",fill = TRUE , 
+                     skip = 0)
+
     df$dat_file <- gsub("_hdr_rm\\.csv", "", .x)
     
-    r_start <- which(names(df) == "pep_scan_title") + 1
-    int_end <- ncol(df) - 1
-    if (int_end > r_start) df <- df[, -c(seq(r_start, int_end, 2))]
     
-    if (TMT_plex == 16) {
-      col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
-                     "R130N", "R130C", "R131N", "R131C", 
-                     "R132N", "R132C", "R133N", "R133C", "R134N")
-      col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
-                   "I130N", "I130C", "I131N", "I131C", 
-                   "I132N", "I132C", "I133N", "I133C", "I134N")
-    } else if (TMT_plex == 11) {
-      col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
-                     "R130N", "R130C", "R131N", "R131C")
-      col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
-                   "I130N", "I130C", "I131N", "I131C")
-    } else if (TMT_plex == 10) {
-      col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
-                     "R130N", "R130C", "R131")
-      col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
-                   "I130N", "I130C", "I131")
-    } else if(TMT_plex == 6) {
-      col_ratio <- c("R127", "R128", "R129", "R130", "R131")
-      col_int <- c("I126", "I127", "I128", "I129", "I130", "I131")
-    } else {
-      col_ratio <- NULL
-      col_int <- NULL
+    run_scripts <- FALSE
+    if (run_scripts) {
+      r_start <- which(names(df) == "pep_scan_title") + 1
+      int_end <- ncol(df) - 1
+      if (int_end > r_start) df <- df[, -c(seq(r_start, int_end, 2))]
+      
+      if (TMT_plex == 16) {
+        col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
+                       "R130N", "R130C", "R131N", "R131C", 
+                       "R132N", "R132C", "R133N", "R133C", "R134N")
+        col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
+                     "I130N", "I130C", "I131N", "I131C", 
+                     "I132N", "I132C", "I133N", "I133C", "I134N")
+      } else if (TMT_plex == 11) {
+        col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
+                       "R130N", "R130C", "R131N", "R131C")
+        col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
+                     "I130N", "I130C", "I131N", "I131C")
+      } else if (TMT_plex == 10) {
+        col_ratio <- c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
+                       "R130N", "R130C", "R131")
+        col_int <- c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
+                     "I130N", "I130C", "I131")
+      } else if(TMT_plex == 6) {
+        col_ratio <- c("R127", "R128", "R129", "R130", "R131")
+        col_int <- c("I126", "I127", "I128", "I129", "I130", "I131")
+      } else {
+        col_ratio <- NULL
+        col_int <- NULL
+      }
+      
+      if (TMT_plex > 0) {
+        colnames(df)[r_start:(r_start+TMT_plex-2)] <- col_ratio
+        colnames(df)[(r_start+TMT_plex-1):(r_start+TMT_plex+TMT_plex-2)] <- col_int
+        rm(r_start, int_end, col_ratio, col_int)
+      }
     }
 
-    if (TMT_plex > 0) {
-      colnames(df)[r_start:(r_start+TMT_plex-2)] <- col_ratio
-      colnames(df)[(r_start+TMT_plex-1):(r_start+TMT_plex+TMT_plex-2)] <- col_int
-      rm(r_start, int_end, col_ratio, col_int)
-    }
+    
+    
+    
     
     dat_id <- df$dat_file %>% unique()
     dat_file <- file.path(dat_dir, "PSM/cache", paste0(dat_id, "_header.txt"))
@@ -143,7 +168,8 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
     
     if (rlang::is_empty(tmt_line)) {
       tmt_type <- "neither"
-    } else if (grepl("TMT[0-9]{1}plex\\s\\(K\\)", tmt_line) & grepl("TMT[0-9]{1}plex\\s\\(N-term\\)", tmt_line)) {
+    } else if (grepl("TMT[0-9]{1}plex\\s\\(K\\)", tmt_line) & 
+               grepl("TMT[0-9]{1}plex\\s\\(N-term\\)", tmt_line)) {
       tmt_type <- "both"
     } else if (grepl("TMT[0-9]{1}plex\\s\\(K\\)", tmt_line)) {
       tmt_type <- "k_only"
@@ -160,8 +186,11 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
     
     return(df)
   }) %>% 
+    purrr::map(~ {
+      .x %>% dplyr::select(-grep("[RI]{1}[0-9]{3}[NC]{0,1}", names(.)))
+    }) %>% 
     do.call(rbind, .)
-  
+
   # convenience craps removals where their uniprot afasta names ended with "|"
   if (rm_craps) df <- df %>% dplyr::filter(!grepl("\\|.*\\|$", prot_acc))
   
@@ -263,7 +292,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), group_pep_by =
   }
   
   df_split <- df_split %>% split(., .$RAW_File, drop = TRUE)
-  
+
   dat_files <- df %>% 
     dplyr::select(dat_file, tmt_type) %>% 
     dplyr::filter(!duplicated(dat_file))
@@ -373,10 +402,17 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL,
   }
 
   dots <- rlang::enexprs(...)
-  filter2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter2_", names(.))]
-  arrange2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange2_", names(.))]
-  select2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select2_", names(.))]
-  dots <- dots %>% .[! . %in% c(filter2_dots, arrange2_dots, select2_dots)]
+  filter2_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter2_", names(.))]
+  arrange2_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange2_", names(.))]
+  select2_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^select2_", names(.))]
+  dots <- dots %>% 
+    .[! . %in% c(filter2_dots, arrange2_dots, select2_dots)]
   
   # needed defaults before calling `pheatmap`
   if (is.null(dots$cluster_rows)) {

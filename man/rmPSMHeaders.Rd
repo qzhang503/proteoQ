@@ -4,7 +4,7 @@
 \alias{rmPSMHeaders}
 \title{Removes PSM headers}
 \usage{
-rmPSMHeaders()
+rmPSMHeaders(parallel = TRUE)
 }
 \value{
 Intermediate PSM table(s).

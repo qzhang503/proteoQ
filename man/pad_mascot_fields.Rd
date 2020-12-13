@@ -10,5 +10,6 @@ pad_mascot_fields(df)
 \item{df}{An intermediate PSM table from Mascot export}
 }
 \description{
-Intensity or ratio columns are excluded
+Intensity or ratio columns are handled during channel padding and thus
+excluded.
 }

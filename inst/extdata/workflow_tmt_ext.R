@@ -19,25 +19,31 @@ library(proteoQDA)
 copy_refseq_hs("~/proteoQ/dbs/fasta/refseq")
 copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 
+# Optional: UniProt and cRAP FASTAs
+copy_uniprot_hsmm("~/proteoQ/dbs/fasta/uniprot")
+copy_crap("~/proteoQ/dbs/fasta/crap")
+
 # PSM data (choose one of the platforms)
 dat_dir <- "~/proteoQ/examples"
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 choose_one <- TRUE
 if (choose_one) {
   ## Mascot
-  copy_global_mascot(dat_dir)
+  copy_mascot_gtmt(dat_dir)
   
   ## MaxQuant
-  copy_global_maxquant(dat_dir)
+  # copy_maxquant_gtmt(dat_dir)
+  
+  ## MSFragger
+  # copy_msfragger_gtmt(dat_dir)
   
   ## Spectrum Mill
-  copy_global_sm(dat_dir)
+  # copy_specmill_gtmt(dat_dir)
 }
 
 # metadata (all platforms)
-copy_global_exptsmry(dat_dir)
-copy_global_fracsmry(dat_dir)
+copy_exptsmry_gtmt(dat_dir)
+copy_fracsmry_gtmt(dat_dir)
 
 
 # ==============================================
@@ -46,6 +52,9 @@ copy_global_fracsmry(dat_dir)
 # metadata to workspace
 library(proteoQ)
 load_expts("~/proteoQ/examples")
+
+# optional: show available MS file names in PSM data
+extract_psm_raws()
 
 # PSM standardization
 normPSM(
@@ -84,7 +93,8 @@ if (!dontrun) {
     filter_more_psms = exprs(pep_rank == 1),
   )
   
-	# peptide sequences with different side-chain modifications treated as the same species
+	# peptide sequences with different side-chain 
+  #   modifications treated as the same species
 	normPSM(
 		group_psm_by = pep_seq, 
 		group_pep_by = gene, 
@@ -102,13 +112,19 @@ if (!dontrun) {
 		filter_more_psms = exprs(pep_rank == 1),
 	)
 	
-	## MaxQuant (e.g. `PEP` is column key in MaxQuant)
+	## MaxQuant (e.g. `PEP` is column key)
 	normPSM(
 	  ...,
 	  filter_psms_by = exprs(PEP <= 0.1), 
 	)
 	
-	# Spectrum Mill (e.g. `score` is column key in SM)
+	# MSFragger (`Expectation` etc. are column keys)
+	normPSM(
+	  filter_psms_at = rlang::exprs(Expectation <= 0.1, Retention >= 50), 
+	  ..., 
+	)
+	
+	# Spectrum Mill (e.g. `score` is column key)
 	normPSM(
 	  ...,
 	  filter_psms_by = exprs(score >= 10), 
@@ -119,7 +135,14 @@ if (!dontrun) {
 	  ..., 
 	  fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_09.fasta", 
 	            "~/proteoQ/dbs/fasta/custom/my_accession.fasta",
-	            "~/proteoQ/dbs/fasta/crap/craps_116.fasta"), 
+	            "~/proteoQ/dbs/fasta/crap/crap.fasta"), 
+	)
+	
+	# ok to use fasta(s) at higher organism(s)
+	normPSM(
+	  ..., 
+	  fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_all_species.fasta", 
+	            "~/proteoQ/dbs/fasta/crap/crap.fasta"), 
 	)
 	
 	# custom entrez db (see also ?Uni2Entrez, ?Ref2Entrez)
@@ -142,7 +165,16 @@ if (!dontrun) {
 ## END of DO NOT RUN
 
 # PSMs to peptides
+# (reaches a set of common column keys)
 PSM2Pep()
+
+## DO NOT RUN
+dontrun <- TRUE
+if (!dontrun) {
+  # need `Raw peptide match data` when exporting Mascot PSMs
+  PSM2Pep(filter_ms1int = rlang::exprs(pep_tot_int >= 1E4))
+}
+## END of DO NOT RUN
 
 # peptide data merging
 mergePep()
@@ -150,20 +182,18 @@ mergePep()
 ## DO NOT RUN
 dontrun <- TRUE
 if (!dontrun) {
-  ## Mascot
-  # columns keys in TMTset1_LCMSinj1_Peptide_N.txt... suitable for varargs of `filter_`
+  # columns keys in TMTset1_LCMSinj1_Peptide_N.txt etc. 
+  #  suitable for varargs of `filter_`
   mergePep(filter_peps_at = exprs(pep_len <= 100))
   
-  ## MaxQuant (e.g. `Length` is a MaxQuant column key)
-  mergePep(filter_peps_at = exprs(Length <= 100))
-  
-  ## Splines
+  ## Splines at `cut_points`
   mergePep(cut_points = c(mean_lint = seq(4, 7, .5)))
 }
 ## END of DO NOT RUN
 
 # peptide data standardization by human subset
-# (column keys in Peptide.txt suitable for parameterization via varargs of `slice_`)
+# (column keys in Peptide.txt suitable for 
+#   parameterization via varargs of `slice_`)
 standPep(
   method_align = MGKernel, 
   range_log2r = c(5, 95), 
@@ -276,7 +306,7 @@ if (!dontrun) {
     filter_peps = exprs(pep_mod_sty == TRUE),
   )
   
-  # Spline
+  # Splines at `cut_points`
   Pep2Prn(cut_points = c(mean_lint = seq(4, 7, 0.5)))
 }
 ## END of DO NOT RUN
@@ -302,6 +332,7 @@ if (!dontrun) {
   
   # re-normalization against selected samples with human data
   standPrn(
+    col_select = Select_sub, 
     method_align = MGKernel, 
     range_log2r = c(5, 95), 
     range_int = c(5, 95), 
@@ -310,7 +341,6 @@ if (!dontrun) {
     maxit = 200, 
     epsilon = 1e-05, 
     slice_peps_by = exprs(species == "human"),
-    col_select = Select_sub,	
   )
 }
 ## END of DO NOT RUN
@@ -370,7 +400,6 @@ scale_log2r <- TRUE
 ## no NA imputation
 # peptides
 pepSig(
-  impute_na = FALSE, 
   W2_bat = ~ Term["W2.BI.TMT2-W2.BI.TMT1", 
                   "W2.JHU.TMT2-W2.JHU.TMT1", 
                   "W2.PNNL.TMT2-W2.PNNL.TMT1"],
@@ -381,11 +410,11 @@ pepSig(
 )
 
 # proteins
-prnSig(impute_na = FALSE)
+prnSig()
 
 # volcano plots
-pepVol(impute_na = FALSE)
-prnVol(impute_na = FALSE)
+pepVol()
+prnVol()
 
 ## DO NOT RUN
 dontrun <- TRUE
@@ -633,7 +662,7 @@ prnHM(
 	filename = hukin.png, 
 )
 
-### trend
+### clustering (cemans, kmeans etc.)
 # protein analysis, row filtration and sample-order supervision
 anal_prnTrend(
   col_order = Order,

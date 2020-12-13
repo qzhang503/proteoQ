@@ -34,12 +34,23 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
   pattern <- 
     "I[0-9]{3}\\(|log2_R[0-9]{3}\\(|pVal\\s+\\(|adjP\\s+\\(|log2Ratio\\s+\\(|\\.FC\\s+\\("
 
-  df <- df %>% 
-    dplyr::ungroup() %>% 
-    dplyr::filter(!duplicated(!!rlang::sym(id)),
-                  !is.na(!!rlang::sym(id)),
-                  rowSums(!is.na(.[, grep(NorZ_ratios, names(.))])) > 0) %>%
-    reorderCols(endColIndex = grep(pattern, names(.)), col_to_rn = id)
+  df <- local({
+    df <- df %>% 
+      dplyr::ungroup() %>% 
+      dplyr::filter(!duplicated(!!rlang::sym(id)),
+                    !is.na(!!rlang::sym(id)),) 
+    
+    if (nrow(df) == 0) {
+      stop("All values are NA under the column `", id, "` in the input data.", 
+           call. = FALSE)
+    }
+    
+    df <- df %>% 
+      dplyr::ungroup() %>% 
+      dplyr::filter(rowSums(!is.na(.[, grep(NorZ_ratios, names(.)), 
+                                     drop = FALSE])) > 0) %>%
+      reorderCols(endColIndex = grep(pattern, names(.)), col_to_rn = id)
+  })
 
   Levels <- sub_grp %>%
     as.character(.) %>%
@@ -483,6 +494,7 @@ not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
 
 
 #' Finds all-NaN column(s)
+#' 
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
 #' @param ... The same in \code{sum}.
 not_all_nan <- function(x, ...) {
@@ -525,6 +537,7 @@ is_trivial_dbl <- function (x) {
   
   all(is.na(x))
 }
+
 
 #' Replace a trivial vector with NA.
 #' 
@@ -860,6 +873,7 @@ prnImp <- function (...) {
 
 
 #' Species lookup
+#' 
 #' @inheritParams load_dbs
 sp_lookup <- function(species) {
   switch(species, 
@@ -898,6 +912,7 @@ taxid_lookup_rev <- function(species) {
 
 
 #' Species lookup UpperLower (Ul)
+#' 
 #' @inheritParams load_dbs
 sp_lookup_Ul <- function(species) {
   switch(species, 
@@ -963,9 +978,11 @@ add_refseq_gene <- function (acc_lookup, acc_type) {
 
 
 #' Add Entrez IDs
+#' 
 #' @param acc_lookup A data frame of protein accession lookups
 #' @param acc_type The type of protein accessions
-add_entrez <- function (acc_lookup, acc_type) {
+#' @inheritParams parse_fasta
+add_entrez <- function (acc_lookup, acc_type, warns = TRUE) {
   sp_map <- c(
     human = "hs",
     mouse = "mm",
@@ -978,48 +995,61 @@ add_entrez <- function (acc_lookup, acc_type) {
     refseq_acc = "refseq_"
   )
   
+  def_sps <- c("human", "mouse", "rat")
   species <- unique(acc_lookup$species) %>% .[!is.na(.)]
-  abbr_sp <- sp_map[species]
+  
+  if ((!all(species %in% def_sps))) {
+    if (warns) {
+      warning("No default `entrez` lookups for species other than: ", 
+              purrr::reduce(def_sps, paste, sep = ", "), ".\n",
+              "To annotate, provide the file path and name(s) via argument `entrez`.\n", 
+              "See also `?Uni2Entrez` and `?Ref2Entrez` for custom `entrez` lookups.", 
+              call. = FALSE)
+      
+      warning("At the `entrez = NULL` default, ignore non-default species: \n", 
+              purrr::reduce(species %>% .[! . %in% def_sps], paste, sep = ", "), 
+              call. = FALSE)
+    }
+
+    species <- species %>% .[. %in% def_sps]
+  }
+  
+  if (purrr::is_empty(species)) {
+    warning("No default species found for entrez annotation at ", 
+            acc_type, ".",  
+            call. = FALSE)
+    
+    acc_lookup <- acc_lookup %>% dplyr::mutate(entrez = NA_integer_)
+    
+    return(acc_lookup)
+  } 
+  
+  abbr_sp <- sp_map[species] %>% .[!is.na(.)]
   abbr_acc <- acc_map[acc_type]
   
   entrez_key <- switch(acc_type, 
-    uniprot_acc = "uniprot_acc", 
-    uniprot_id = "uniprot_acc", 
-    refseq_acc = "refseq_acc", 
-    other_acc = "other_acc", 
-    stop("Unknown `accession type`.", Call. = FALSE)
+                       uniprot_acc = "uniprot_acc", 
+                       uniprot_id = "uniprot_acc", 
+                       refseq_acc = "refseq_acc", 
+                       other_acc = "other_acc", 
+                       stop("Unknown `accession type`.", Call. = FALSE)
   )
   
-  ok_species <- all(species %in% c("human", "mouse", "rat"))
-
-  if (!ok_species) {
-    warning("No default `entrez` lookups for species other than `human`, `mouse` and `rat`.", 
-            "\nTo annotate, provide the file path and name(s) via argument `entrez`.", 
-            "\nSee also `?Uni2Entrez` and `?Ref2Entrez` for custom `entrez` lookups.", 
-            call. = FALSE)
-  }
-
   # multiple uniprot_acc(s) can share the same entrez id
-  if (ok_species) {
-    filelist <- paste0(abbr_acc, "entrez_", abbr_sp)
-    
-    # four columns: 
-    # 1. uniprot_acc/refseq_acc/other_acc  2. gene  3. entrez  4. species
-    data(package = "proteoQ", list = filelist)
-    
-    db <- purrr::map(filelist, ~ get(.x)) %>% 
-      dplyr::bind_rows() %>% 
-      dplyr::filter(!duplicated(.[[entrez_key]])) %>% 
-      dplyr::mutate(entrez = as.numeric(entrez),
-                    !!entrez_key := as.character(!!rlang::sym(entrez_key))) %>% 
-      dplyr::select(entrez_key, "entrez")
-
-    acc_lookup <- dplyr::left_join(acc_lookup, db, by = entrez_key)
-  } else {
-    acc_lookup <- acc_lookup %>% dplyr::mutate(entrez = NA_integer_)
-  }
-
-  invisible(acc_lookup)
+  filelist <- paste0(abbr_acc, "entrez_", abbr_sp)
+  
+  # four columns: 
+  # 1. uniprot_acc/refseq_acc/other_acc  2. gene  3. entrez  4. species
+  data(package = "proteoQ", list = filelist)
+  
+  db <- purrr::map(filelist, ~ get(.x)) %>% 
+    dplyr::bind_rows() %>% 
+    dplyr::filter(!duplicated(.[[entrez_key]])) %>% 
+    dplyr::mutate(entrez = as.numeric(entrez),
+                  !!entrez_key := as.character(!!rlang::sym(entrez_key))) %>% 
+    dplyr::select(entrez_key, "entrez")
+  
+  acc_lookup <- dplyr::left_join(acc_lookup, db, by = entrez_key)
 }
 
 
@@ -1121,11 +1151,15 @@ parse_acc <- function(df) {
 
 #' Parse FASTA for accession lookups
 #'
+#' NA genes are replaced with prot_acc
+#' 
 #' @param df An input data frame.
+#' @param warns Logical; if TRUE, show warning message(s).
 #' @inheritParams add_entrez
 #' @inheritParams normPSM
 #' @seealso \code{\link{read_fasta}} for the definition of fasta_name(s).
-parse_fasta <- function (df, fasta, entrez) {
+#' @return A lookup table, \code{acc_lookup}.
+parse_fasta <- function (df, fasta, entrez, warns = TRUE) {
   
   na_genes_by_acc <- function(acc_lookup) {
     if (nrow(acc_lookup) > 0 && 
@@ -1214,7 +1248,9 @@ parse_fasta <- function (df, fasta, entrez) {
     }
     
     if (!all(file.exists(fasta))) {
-      stop("Wrong FASTA file path(s) or name(s).", call. = FALSE)
+      stop("Missing FASTA file(s): \n", 
+           purrr::reduce(fasta %>% .[!file.exists(.)], paste, sep = "\n"), 
+           call. = FALSE)
     }
     
     purrr::map(fasta, ~ read_fasta(.x)) %>% 
@@ -1252,11 +1288,11 @@ parse_fasta <- function (df, fasta, entrez) {
         n_lookup <- nrow(acc_lookup)
         perc <- n_lookup/n_fasta 
 
-        if (perc < .1) {
+        if (perc < .1 && warns) {
           warning("The portion of uniprot accessions being annotated with \n", 
                   purrr::reduce(fasta, paste, sep = "\n"), " is ", 
                   format(round(perc, 3), nsmall = 3), 
-                  "\nInsepct the specification of fasta databases for probable mismatches", 
+                  "\nCheck the choice of fasta database(s) for probable mismatches.", 
                   call. = FALSE)
         }
       })
@@ -1279,7 +1315,7 @@ parse_fasta <- function (df, fasta, entrez) {
         n_lookup <- nrow(acc_lookup)
         perc <- n_lookup/n_fasta 
         
-        if (perc < .1) {
+        if (perc < .1 && warns) {
           warning("The portion of refseq accessions being annotated with \n", 
                   purrr::reduce(fasta, paste, sep = "\n"), " is ", 
                   format(round(perc, 3), nsmall = 3), 
@@ -1473,10 +1509,13 @@ parse_fasta <- function (df, fasta, entrez) {
       
       # column entrez
       if (is.null(entrez)) {
-        acc_lookup <- add_entrez(acc_lookup, acc_type)
+        acc_lookup <- add_entrez(acc_lookup, acc_type, warns)
       } else {
         acc_lookup <- add_custom_entrez(acc_lookup, entrez, acc_type)
       }
+      
+      # added on 12-01-2020
+      acc_lookup <- acc_lookup %>% dplyr::filter(!is.na(.[["uniprot_acc"]]))
     } else if (acc_type == "refseq_acc") {
       # columns organism and species
       acc_lookup <- acc_lookup %>% 
@@ -1487,13 +1526,16 @@ parse_fasta <- function (df, fasta, entrez) {
       
       # column entrez
       if (is.null(entrez)) {
-        acc_lookup <- add_entrez(acc_lookup, acc_type)
+        acc_lookup <- add_entrez(acc_lookup, acc_type, warns)
       } else {
         acc_lookup <- add_custom_entrez(acc_lookup, entrez, acc_type)
       }
       
       # separately column gene
       acc_lookup <- add_refseq_gene(acc_lookup, acc_type)
+      
+      # added on 12-01-2020
+      acc_lookup <- acc_lookup %>% dplyr::filter(!is.na(.[["refseq_acc"]]))
     } else {
       acc_lookup <- acc_lookup %>% 
         dplyr::filter(acc_type == "other_acc") %>% 
@@ -1522,7 +1564,7 @@ parse_fasta <- function (df, fasta, entrez) {
 #' Adds protein annotation
 #'
 #' \code{annotPrn} cross-referencing proteins among \code{uniprot_acc},
-#' \code{uniprot_id}, \code{refseq} and \code{entrez}.
+#' \code{uniprot_id}, \code{refseq} and \code{entrez}. 
 #' 
 #' @inheritParams info_anal
 #' @inheritParams normPSM
@@ -1583,7 +1625,8 @@ annotPrn <- function (df, fasta, entrez) {
 	  dplyr::filter(!duplicated(psm_index)) %>% 
 	  na_acc_type_to_other() %>% 
 	  # na_fasta_name_by_prot_acc() %>% 
-	  dplyr::select(-psm_index) 
+	  dplyr::select(-psm_index) %>% 
+	  reloc_col_after("prot_mass", "prot_acc")
 
 	return(df)
 }
@@ -2042,32 +2085,27 @@ annotPeppos <- function (df){
   # (K)	MENGQSTAAK	(L) NP_510965
   # (-)	MENGQSTAAK	(L) NP_001129505  
   
-  if (!"pep_seq_bare" %in% names(df)) {
-    df <- df %>% 
-      dplyr::mutate(pep_seq_bare = gsub("^.*\\.([^\\.]+)\\..*", "\\1", pep_seq))
-  }
-
   df <- df %>% 
-    dplyr::mutate(pep_prn = paste(pep_seq_bare, fasta_name, sep = "@"))
-
+    dplyr::mutate(pep_prn = paste(pep_seq, fasta_name, sep = "@"))
+  
   df_pep_prn <- df %>% 
     dplyr::filter(!duplicated(pep_prn)) %>% 
-    dplyr::select(c("pep_seq_bare", "fasta_name")) 
+    dplyr::select(c("pep_seq", "fasta_name")) 
   
   fasta_db_sub <- fasta_db %>% .[names(.) %in% unique(df_pep_prn$fasta_name)]
 
   pep_pos_all <- suppressWarnings(
     purrr::map2(as.list(df_pep_prn$fasta_name), 
-                as.list(df_pep_prn$pep_seq_bare), 
+                as.list(df_pep_prn$pep_seq), 
                 find_pep_pos, 
                 fasta_db_sub)
   ) %>% 
     do.call(rbind, .) %>% 
-    `colnames<-`(c("pep_seq_bare", "pep_res_before", "pep_start", 
+    `colnames<-`(c("pep_seq", "pep_res_before", "pep_start", 
                    "pep_end", "pep_res_after", 
                    "fasta_name", "is_tryptic")) %>% 
     data.frame(check.names = FALSE) %>% 
-    tidyr::unite(pep_prn, pep_seq_bare, fasta_name, sep = "@", remove = TRUE) %>% 
+    tidyr::unite(pep_prn, pep_seq, fasta_name, sep = "@", remove = TRUE) %>% 
     dplyr::mutate(pep_start = as.numeric(pep_start), pep_end = as.numeric(pep_end))
   
   df$pep_res_before <- NULL
@@ -2080,8 +2118,6 @@ annotPeppos <- function (df){
   if ("pep_start" %in% names(df)) pep_pos_all$pep_start <- NULL
   if ("pep_end" %in% names(df)) pep_pos_all$pep_end <- NULL
   
-  df$pep_seq_bare <- NULL
-
   df <- df %>% 
     dplyr::left_join(pep_pos_all, by = "pep_prn") %>% 
     dplyr::select(-pep_prn) %>% 
@@ -2127,8 +2163,8 @@ subset_fasta <- function (df, fasta, acc_type) {
 #' 
 #' @param max_len The maximum length of peptide sequence for consideration.
 #' @inheritParams info_anal
-#' @inheritParams find_literal_unique_peps
-add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq_bare", 
+#' @inheritParams find_shared_prots
+add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq", 
                              max_len = 50) {
   dat_dir <- get_gl_dat_dir()
   
@@ -2418,7 +2454,7 @@ filters_in_call <- function (df, ...) {
     
     if (!rlang::is_list(row_exprs)) row_exprs <- list(row_exprs)
     
-    row_exprs <- map(row_exprs, ~ {
+    row_exprs <- purrr::map(row_exprs, ~ {
       is_char <- is.character(.x)
       if (is_char) .x <- rlang::sym(.x)
       
@@ -2428,10 +2464,18 @@ filters_in_call <- function (df, ...) {
     row_vals <- row_exprs %>% 
       purrr::map(eval_tidy, df) %>% 
       purrr::reduce(`&`, .init = 1)
-    
+
     row_vals <- row_vals %>% ifelse(is.na(.), FALSE, .)
 
     stopifnot(is.logical(row_vals))
+    
+    if (sum(row_vals) == 0) {
+      stop("Zero row of data available after `filter_` vararg(s).\n", 
+           "Examine both (a) the values under the selected column(s) and ", 
+           "(b) the supplied logical condition(s).\n", 
+           "For example, values are not all NAs or FALSE under the column(s).", 
+           call. = FALSE)
+    }
     
     df <- df[row_vals, , drop = FALSE]
   }
@@ -2512,6 +2556,7 @@ calc_sd_fcts_psm <- function (df, range_log2r = c(5, 95), range_int = c(5, 95),
 
 
 #' Calculate CV per TMT_Set and LCMS_injection
+#' 
 #' @inheritParams info_anal
 #' @param type Character string; the type of data.
 calcSD_Splex <- function (df, id, type = "log2_R") {
@@ -2553,6 +2598,14 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
                       is_psm = FALSE, col_select = NULL, col_order = NULL, 
                       theme = NULL, ...) {
 
+  df <- df %>% 
+    dplyr::select(which(not_all_NA(.)))
+  
+  if (ncol(df) == 0) {
+    message("No SD columns available.")
+    return (NULL)
+  }
+  
   dat_dir <- get_gl_dat_dir()
   
   err_msg1 <- paste0("\'Sample_ID\' is reserved. Choose a different column key.")
@@ -2730,6 +2783,14 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
 #' @inheritParams info_anal
 #' @inheritParams sd_violin
 rptr_violin <- function(df, filepath, width, height) {
+  df <- df %>% 
+    dplyr::select(which(not_all_NA(.)))
+  
+  if (ncol(df) == 0) {
+    message("No intensity columns available.")
+    return (NULL)
+  }
+  
   df_int <- df %>% 
     `names<-`(gsub("^N_I|^I", "", names(.))) 
   
@@ -2775,6 +2836,7 @@ my_geomean <- function (x, ...) {
 
 
 #' phospho counts
+#' 
 count_phosphopeps <- function() {
   dat_dir <- get_gl_dat_dir()
   
@@ -2798,6 +2860,7 @@ count_phosphopeps <- function() {
 
 
 #' peptide mis-cleavage counts
+#' 
 count_pepmiss <- function() {
   dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "PSM/cache"), recursive = TRUE, showWarnings = FALSE)
@@ -3702,4 +3765,69 @@ set_ggsave_dots <- function(dots, dummies = c("filename", "plot", "device", "pat
     .[! names(.) %in% dummies]
 }
 
+
+#' Find the type of search engine
+#' 
+#' @inheritParams load_expts
+find_search_engine <- function(dat_dir = NULL) {
+  if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
+  
+  pat_mascot <- "^F[0-9]+.*\\.csv$"
+  pat_mq <- "^msms.*\\.txt$"
+  pat_mf <- "^psm.*\\.tsv$"
+  pat_sm <- "^PSMexport.*\\.ssv$"
+  
+  mascot <-list.files(path = file.path(dat_dir), pattern = pat_mascot) %>% 
+    purrr::is_empty() %>% `!`
+  mq <- list.files(path = file.path(dat_dir), pattern = pat_mq) %>% 
+    purrr::is_empty() %>% `!`
+  mf <- list.files(path = file.path(dat_dir), pattern = pat_mf) %>% 
+    purrr::is_empty() %>% `!`
+  sm <- list.files(path = file.path(dat_dir), pattern = pat_sm) %>% 
+    purrr::is_empty() %>% `!`
+
+  engines <- c(mascot = mascot, mq = mq, mf = mf, sm = sm)
+  engine <- engines %>% .[.] %>% names()
+  
+  if (purrr::is_empty(engine)) {
+    stop("No PSM files found.\n", 
+         "File name(s) need to be in the format of \n",
+         purrr::reduce(c(paste("Mascot", pat_mascot, sep = ": "), 
+                         paste("MaxQuant", pat_mq, sep = ": "), 
+                         paste("MSFragger", pat_mf, sep = ": "), 
+                         paste("Spectrum Mill", pat_sm, sep = ": ")), 
+                       paste, sep = " || "), 
+         call. = FALSE)
+  }
+  
+  if (length(engine) > 1) {
+    stop("More than one data type found: ", 
+         purrr::reduce(engine, paste, sep = ", "), ".", 
+         call. = FALSE)
+  }
+  
+  invisible(engine)
+}
+
+
+#' Check missing values in a ggplot2 object.
+#' 
+#' @param p A ggplot2 object.
+check_ggplot_aes <- function(p) {
+  q <- p %>% ggplot_build() %>% 
+    `[[`(1) %>% 
+    `[[`(1) %>% 
+    dplyr::select(which(not_all_NA(.))) 
+  
+  cols <- q %>% 
+    purrr::map_lgl(anyNA)
+  
+  if (any(cols)) {
+    warning("NA values detected in the aesthetics of `", 
+            purrr::reduce(names(which(cols)), paste, sep = ", "), "`.\n", 
+            "Fix the missing values in the corresponding columns in `expt_smry.xlsx`.\n", 
+            "Otherwise, may run into errors.\n", 
+            call. = FALSE)
+  }
+}
 

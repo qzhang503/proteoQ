@@ -25,11 +25,12 @@ LFQ) ions at the \code{PSMs} levels will be the weight when summarizing
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
 
-\item{...}{Not currently used.}
+\item{...}{\code{filter_}: Variable argument statements for the filtration of
+data rows. See also \code{\link{normPSM}}.}
 }
 \value{
-Tables under \code{PSM} folder for each TMT experiment and LC/MS
- series: \code{TMTset1_LCMSinj1_PSM_N.txt}, \code{TMTset1_LCMSinj2_PSM_N.txt} etc.
+Tables under \code{Peptide} folder for each TMT experiment and LC/MS
+ series: \code{TMTset1_LCMSinj1_Peptide_N.txt} etc.
 }
 \description{
 \code{PSM2Pep} summarizes
@@ -54,6 +55,12 @@ PSM2Pep()
 
 # mean statistics
 PSM2Pep(method_psm_pep = mean)  
+
+## Not run: 
+# cut-offs in precursor intensity
+# (error if `pep_tot_int` are all NAs)
+PSM2Pep(filter_ms1int = rlang::exprs(pep_tot_int >= 1E4)) 
+## End(Not run)
 }
 }
 \seealso{
@@ -109,8 +116,8 @@ PSM2Pep(method_psm_pep = mean)
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 }
 \concept{custom database preparation}

@@ -10,6 +10,7 @@ splitPSM(
   fasta = NULL,
   entrez = NULL,
   pep_unique_by = "group",
+  scale_rptr_int = FALSE,
   rm_craps = FALSE,
   rm_krts = FALSE,
   purge_phosphodata = TRUE,
@@ -65,9 +66,13 @@ will be annotated with their kinase attributes. The default is FALSE.}
 intensities will be plotted. The default is TRUE. The argument is also
 applicable to the precursor intensity with MaxQuant LFQ.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
-default is 0 without cut-offs. The filter is also applicable to the
-precursor intensity with MaxQuant LFQ.}
+\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity being
+considered non-trivial. The default is 0 without cut-offs. The filtration
+will not be applied synchronously to the precursor intensity under the same
+PSM query. To guard against odds such as higher MS2 reporter-ion
+intensities than their contributing MS1 precursor intensity, employs for
+example \code{filter_... = rlang::exprs(pep_tot_int >= your_ms1_cutoff)}
+during \link{PSM2Pep}.}
 
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the

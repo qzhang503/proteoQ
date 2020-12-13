@@ -46,8 +46,8 @@ match the value under the global environment.}
 \item{expt_smry}{A character string to a \code{.xlsx} file containing the
 metadata of TMT or LFQ experiments. The default is \code{expt_smry.xlsx}.}
 
-\item{frac_smry}{A character string to a \code{.xlsx} file containing
-peptide fractionation summary. The default is \code{frac_smry.xlsx}.}
+\item{frac_smry}{A character string to a \code{.xlsx} file containing peptide
+fractionation summary. The default is \code{frac_smry.xlsx}.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
@@ -80,9 +80,13 @@ the TRUE default, values under columns "Reporter intensity corrected..." in
 \item{rm_reverses}{A logical argument for uses with \code{MaxQuant} data. At
 the TRUE default, \code{Reverse} entries will be removed.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter ion intensity. The
-default is 0 without cut-offs. The filter is also applicable to the
-precursor intensity with MaxQuant LFQ.}
+\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity being
+considered non-trivial. The default is 0 without cut-offs. The filtration
+will not be applied synchronously to the precursor intensity under the same
+PSM query. To guard against odds such as higher MS2 reporter-ion
+intensities than their contributing MS1 precursor intensity, employs for
+example \code{filter_... = rlang::exprs(pep_tot_int >= your_ms1_cutoff)}
+during \link{PSM2Pep}.}
 
 \item{rm_craps}{Logical; if TRUE,
 \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.

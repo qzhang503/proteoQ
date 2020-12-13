@@ -4,7 +4,7 @@
 \alias{pad_mascot_channels}
 \title{Pad Mascot TMT channels to the highest plex}
 \usage{
-pad_mascot_channels(file)
+pad_mascot_channels(file, ...)
 }
 \arguments{
 \item{df}{An intermediate PSM table from Mascot export}

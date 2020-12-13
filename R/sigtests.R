@@ -520,7 +520,7 @@ sigTest <- function(df, id, label_scheme_sub,
 #'
 #'@import purrr
 #'@export
-pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, 
+pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
                     method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
@@ -554,7 +554,8 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
   
   if ((!impute_na) && (method != "limma")) {
     impute_na <- TRUE
-    warning("Coerce `impute_na = ", impute_na, "` at method = ", method, call. = FALSE)
+    warning("Coerce `impute_na = ", impute_na, "` at method = ", method, 
+            call. = FALSE)
   }
   
   info_anal(df = !!df, 
@@ -690,7 +691,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
-prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE, 
+prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
                     method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
@@ -725,7 +726,8 @@ prnSig <- function (scale_log2r = TRUE, impute_na = TRUE, complete_cases = FALSE
   
   if ((!impute_na) && (method != "limma")) {
     impute_na <- TRUE
-    warning("Coerce `impute_na = ", impute_na, "` at method = ", method, call. = FALSE)
+    warning("Coerce `impute_na = ", impute_na, "` at method = ", method, 
+            call. = FALSE)
   }
   
   info_anal(df = !!df, 

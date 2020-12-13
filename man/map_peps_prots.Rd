@@ -4,12 +4,7 @@
 \alias{map_peps_prots}
 \title{Helper: maps peptides to possible proteins}
 \usage{
-map_peps_prots(
-  df,
-  group_psm_by = "pep_seq",
-  group_pep_by = "prot_acc",
-  type = "mf"
-)
+map_peps_prots(df, group_psm_by = "pep_seq", group_pep_by = "prot_acc")
 }
 \arguments{
 \item{df}{A data frame.}

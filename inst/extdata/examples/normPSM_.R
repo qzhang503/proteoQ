@@ -31,6 +31,17 @@ normPSM(
   filter_psms_at = exprs(PEP <= 0.1),
 )
 
+# MSFragger
+normPSM(
+  group_psm_by = pep_seq_mod,
+  group_pep_by = prot_acc,
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta",
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
+
+  # vararg statement(s)
+  filter_psms_at = exprs(Hyperscore >= 10),
+)
+
 # Spectrum Mill
 normPSM(
   group_psm_by = pep_seq_mod,
@@ -39,7 +50,7 @@ normPSM(
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"),
   
   # vararg statement(s)
-  filter_psms = exprs(score >= 10),
+  filter_psms_at = exprs(score >= 10),
 )
 
 ###############################################

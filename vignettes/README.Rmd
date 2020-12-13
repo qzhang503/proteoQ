@@ -6,17 +6,6 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
-  github_document:
-    toc: yes
-  pdf_document:
-    toc: yes
-    number_sections: true
-  word_document:
-    toc: yes
-  md_document:
-    toc: yes
-    toc_depth: 4
-    variant: gfm
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -25,6 +14,17 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+  github_document:
+    toc: yes
+  word_document:
+    toc: yes
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: gfm
+  pdf_document:
+    toc: yes
+    number_sections: true
   html_vignette: 
   vignette: >
     %\VignetteIndexEntry{proteoQ}
@@ -81,9 +81,9 @@ knitr::opts_chunk$set(
 
 
 ## Introduction to proteoQ
-Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated and reproducible *mining* of proteomics data. It interacts with an `Excel` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates the operations against data rows and columns into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
+Chemical labeling using tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The `proteoQ` tool is designed for automated, flexible and reproducible *mining* of proteomics data. It interacts with an `Excel/csv` spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates operations, such as data normalization, against chosen rows and columns of data into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data preprocessing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.  
 
-The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of `proteoQ` consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/) or [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for 6-, 10- 11- or 16-plex TMT experiments using Thermo's Orbitrap mass analyzers. It is also capable of processing the LFQ data from [MaxQuant](https://www.maxquant.org/) or [MSFragger](http://msfragger.nesvilab.org/). Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags or Label-free Approaches. https://github.com/qzhang503/proteoQ.]  
+The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of `proteoQ` consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/) or [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) searches, for TMT experiments ($\le$ 16-plex) or LFQ using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.^[To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags or Label-free Approaches. https://github.com/qzhang503/proteoQ.]  
 
 (Click <strong>[Recent Posts](https://proteoq.netlify.com/#posts)</strong> for additional examples.)  
 
@@ -107,7 +107,7 @@ In this document, I (Qiang Zhang) first illustrate the following applications of
 * Mixed-bed normalization using full or partial data. 
 * Removal of low-quality entries from PSM, peptide and protein data.  
 
-The data set we will use in this section corresponds to the proteomics data from Mertins et al. [-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by LC/MS analysis. The MS data were analyzed against the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill). Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`.  
+The data set we will use in this section corresponds to the proteomics data from Mertins et al. [-@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, lysates from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by LC/MS analysis. The MS data were analyzed against the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/) and [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill). Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed whereas details of LFQ analysis can be found in the help document of `proteoQ::load_expts`.  
 
 ### 1.1 Experiment setup
 The data packages, `proteoQDA`, should have been made available through the `proteoQ` installation.^[If not, try `devtools::install_github("qzhang503/proteoQDA")`]  
@@ -122,11 +122,12 @@ copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 ```
 
 #### 1.1.2 PSM data
-The data processing begins with PSM table(s) from Mascot, MaxQuant or Spectrum Mill with the following compilation in file names:  
+The data processing begins with PSM table(s) from Mascot, MaxQuant MSFragger, or Spectrum Mill with the following compilation in file names:  
 
 
 * Mascot: begin with letter `F`, followed by digits and ends with `.csv`;
 * MaxQuant: start with `msms` and end with `.txt`;
+* MSFragger: start with `psm` and end with `.tsv`;
 * Spectrum Mill: start with `PSMexport` and end with `.ssv`.
 
 
@@ -134,21 +135,23 @@ The corresponding PSMs are available through one of the followings `copy_` utili
 
 ```{r copy_psm, include = TRUE, eval = FALSE}
 # Mascot
-copy_global_mascot()
+copy_mascot_gtmt()
 
 # or MaxQuant
-copy_global_maxquant()
+copy_maxquant_gtmt()
+
+# or MSFragger
+copy_msfragger_gtmt()
 
 # or Spectrum Mill
-copy_global_sm()
+copy_specmill_gtmt()
 ```
 
 To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:^[See Appendix for notes on the export of Mascot PSMs.]  
 
 ```{r copy_global_mascot, include = TRUE, eval = FALSE}
 dat_dir <- "~/proteoQ/examples"
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
-copy_global_mascot(dat_dir)
+copy_mascot_gtmt(dat_dir)
 ```
 
 #### 1.1.3 Metadata
@@ -164,8 +167,8 @@ knitr::include_graphics(c(str_expt_smry))
 We next copy over a pre-compiled `expt_smry.xlsx` and a `frac_smry.xlsx` to the working directory:  
 
 ```{r copy_expt_n_frac, include = TRUE, eval = FALSE}
-copy_global_exptsmry(dat_dir)
-copy_global_fracsmry(dat_dir)
+copy_exptsmry_gtmt(dat_dir)
+copy_fracsmry_gtmt(dat_dir)
 ```
 
 We now have all the pieces that are required by `proteoQ` in place. Let's have a quick glance at the `expt_smry.xlsx` file. We note that no reference channels were indicated under the column `Reference`. With `proteoQ`, the `log2FC` of each species in a given sample is calculated either (*a*) in relative to the reference(s) within each multiplex TMT experiment or (*b*) to the mean of all samples in the same plex if reference(s) are absent. Hence, the later approach will be employed to the exemplary data set that we are working with. In this special case, the `mean(log2FC)` for a given species in each TMT experiment is averaged from five `WHIM2` and five `WHIM16` aliquots, which are biologically equivalent across TMT experiments.  
@@ -199,20 +202,20 @@ normPSM(
   plot_rptr_int = TRUE, 
   plot_log2FC_cv = TRUE, 
   
-  filter_psms = exprs(pep_expect <= .1, pep_score >= 15), 
-  filter_more_psms = exprs(pep_rank == 1),
+  filter_psms = rlang::exprs(pep_expect <= .1, pep_score >= 15), 
+  filter_more_psms = rlang::exprs(pep_rank == 1),
 )
 ```
 
 At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence but different variable modifications will be grouped for analysis using descriptive statistics. In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively according to the unique combination of the primary sequences and the variable modifications of peptides. Analogously, `group_pep_by` specify the grouping of peptides by either protein accession names or gene names. The `fasta` argument points to the location of a copy of the RefSeq fasta files that were used in the corresponding MS/MS searches. Additional options include `rm_craps`, `rm_krts`, `annot_kinases` etc. More description of `normPSM` can be found by accessing its help document via `?normPSM`.  
 
-Every time the `normPSM` module is executed, it will process the PSM data from the ground up. In other words, it has no memory on prior happenings. For instance, after inspecting graphically the intensity distributions of reporter ions at `plot_rptr_int = TRUE`, we may consider a more inclusive cut-off at `rptr_intco = 100`. The downward in `rptr_intco` is *not* going to cause information loss in the range of 100 to 1,000. This is trivia but worth mentioning here. As we will find out in following sections, utilities in peptide and protein normalization, `standPep` and `standPrn`, do pass information onto successive iterations.  
+Every time the `normPSM` module is executed, it will process the PSM data from the ground up. In other words, it has no memory on prior happenings. For instance, after inspecting graphically the intensity distributions of reporter ions at `plot_rptr_int = TRUE`, we may consider a more inclusive cut-off at `rptr_intco = 100`. The downward in `rptr_intco` is *not* going to cause information loss in the range of 100 to 1,000. This is trivia but worth mentioning here. As we will find out in following sections, utilities in peptide and protein normalization, `standPep` and `standPrn`, do pass information onto successive iterations and lead to interesting features such as mixed-bed normalization of data etc.  
 
 #### 1.2.2 Outlier samples
 For experiments that are proximate in the quantities of input materials, there might still be unprecedented events that could have caused dipping in the ranges of reporter-ion intensity for certain samples. With proper justification, we might consider excluding the outlier samples from further analysis. The sample removal and PSM re-processing can be achieved by simply deleting the corresponding entries under the column `Sample_ID` in `expt_smry.xlsx`, followed by the re-execution of `normPSM()` (See additional notes on [data exclusion](https://proteoq.netlify.app/post/sample-exlusion-from-metadata/) and [metadata for LFQ](https://proteoq.netlify.app/post/metadata-files-for-lfq/)).  
 
 #### 1.2.3 Outlier data entries
-There is a subtle problem when we choose to remove PSM outliers at `rm_outliers = TRUE`. Note that PSM outliers will be assessed at a per-peptide-and-per-sample basis, which can be a slow process for large data sets. To circumvent repeated efforts in finding PSM outliers, we may initially set `rm_outliers = FALSE` and `plot_rptr_int = TRUE` when executing `normPSM()`. This will allow us to first decide on an ultimate threshold of reporter-ion intensity, before proceeding to the more time-consuming procedure in PSM outlier removals.  
+There is a subtle problem when we choose to remove PSM outliers at `rm_outliers = TRUE`. Note that PSM outliers will be assessed at a per-peptide-and-per-sample basis, which could be a slow process for large data sets. To circumvent repeated efforts in finding PSM outliers, we may initially set `rm_outliers = FALSE` and `plot_rptr_int = TRUE` when executing `normPSM()`. This will allow us to first decide on an ultimate threshold of reporter-ion intensity, before proceeding to the more time-consuming procedure in PSM outlier removals.  
 
 #### 1.2.4 Variable arguments
 The `normPSM` function can take additional, user-defined arguments of `dot-dot-dot` [see @hwickham2019advr, ch. 6] for the row filtration of data using logical conditions. In the above example, we have limited ourselves to PSM entries with `pep_expect <= 0.1` and `pep_score >= 15` by supplying the variable argument (vararg) of `filter_psms_at`. We further filtered the data at `pep_rank == 1` with another vararg of `filter_psms_more`. It makes no difference whether we put the conditions in one or multiple statements:  
@@ -220,28 +223,34 @@ The `normPSM` function can take additional, user-defined arguments of `dot-dot-d
 
 ```{r PSM summary one filter statement, eval = FALSE}
 normPSM(
-  filter_psms_at = exprs(pep_expect <= .1, pep_score >= 15, pep_rank == 1), 
+  filter_psms_at = rlang::exprs(pep_expect <= .1, pep_score >= 15, pep_rank == 1), 
   ..., 
 )
 ```
 
-The creation and assignment of varargs need to follow a format of `filter_blahblah = exprs(cdn1, cdn2, ..., cdn_last)`. Note that the names of varargs on the lhs start with the character string of `filter_` to indicate the task of data filtration. On the rhs, `pep_expect`, `pep_score` and `pep_rank` are column keys that can be found from the Mascot PSM data. Backticks will be needed for column keys containing white space(s) and/or special character(s): `` `key with space (sample id in parenthesis)` ``. Analogously, we can apply the `vararg` approach to MaxQuant and Spectrum Mill PSMs:  
+The creation and assignment of varargs need to follow a format of `filter_blahblah = exprs(cdn1, cdn2, ..., cdn_last)`. Note that the names of varargs on the lhs start with the character string of `filter_` to indicate the task of data filtration. On the rhs, `pep_expect`, `pep_score` and `pep_rank` are column keys that can be found from the Mascot PSM data. Backticks will be needed for column keys containing white space(s) and/or special character(s): `` `key with space (sample id in parenthesis)` ``. Analogously, we can apply the `vararg` approach to MaxQuant, MSFragger and Spectrum Mill PSMs:  
 
 ```{r PSM_vararg_2, eval = FALSE}
 # `PEP` and `Mass analyzer` are column keys in MaxQuant PSM tables
 normPSM(
-  filter_psms_at = exprs(PEP <= 0.1, `Mass analyzer` == "FTMS"), 
+  filter_psms_at = rlang::exprs(PEP <= 0.1, `Mass analyzer` == "FTMS"), 
+  ..., 
+)
+
+# `Expectation` and `Retention` are column keys in MSFragger PSM tables
+normPSM(
+  filter_psms_at = rlang::exprs(Expectation <= 0.1, Retention >= 50), 
   ..., 
 )
 
 # `score` is a column key in Spectrum Mill PSM tables
 normPSM(
-  filter_psms_at = exprs(score >= 10), 
+  filter_psms_at = rlang::exprs(score >= 10), 
   ..., 
 )
 ```
 
-I am new to `R`. It looks like that canonical `R` does not support the straight assignment of logical expressions to function arguments. To get around this, I took advantage of the facility of non-standard evaluation in `rlang` package in that the logical conditions are supplied within the round parenthesis after `exprs`. Next, the `proteoQ` program will obtain the expression(s) on the rhs of each vararg statement by performing a bare evaluation using `rlang::eval_bare`. Following that, a tidy evaluation by `rlang::eval_tidy` will be coupled to a local facility in `proteoQ` to do the real work of data filtrations ([see @hwickham2019advr, ch. 20]).  
+Direct assignments of logical conditions to arguments in `R` functions might be a little involved. To get around this, I took advantage of the facility of non-standard evaluation in `rlang` package in that the logical conditions are supplied within the round parenthesis after `exprs`. Next, the `proteoQ` program will obtain the expression(s) on the rhs of each vararg statement by performing a bare evaluation using `rlang::eval_bare`. Following that, a tidy evaluation by `rlang::eval_tidy` will be coupled to a local facility in `proteoQ` to do the real work of data filtrations ([see @hwickham2019advr, ch. 20]).  
 
 The approach of data filtration taken by `normPSM` might at first looks strange; however, it allows me to perform data filtration in a integrated way. As mentioned in the beginning, a central theme of `proteoQ` is to reduce or avoid direct data manipulations but utilizes metadata to control both data columns and rows. With the self-containedness in data filtration (and data ordering later), I can readily recall and reproduce what I had done when revisiting the system after an extended peroid. Otherwise, I would likely need *ad hoc* operations by mouse clicks or writing ephemeral R scripts, and soon forget what I have done.  
 
@@ -332,7 +341,7 @@ While multiple PSMs carry information about the precision in peptide measures, t
 *NB:* CV is sensitive to outliers and some large CV in peptide quantitations may be merely due to a small number of bad measures. Although the option of `rm_outliers` was set to `FALSE` during our earlier call to `normPSM`, I think it is generally a good idea to have `rm_outliers = TRUE`.  
 
 ### 1.3 PSMs to peptides
-In this section, we summarise the PSM results to peptides with `PSM2Pep`, `mergePep`, `standPep` and optional `purgePep`.  
+Up to this point, we should have arrived at a set of *common* column names in the PSM outputs of `PSM/TMTset1_LCMSinj1_PSM_N.txt` etc., across various search engines (for both TMT and LFQ). To continue, we will summarize the PSM results to peptides with `PSM2Pep`, `mergePep`, `standPep` and optional `purgePep`.  
 
 #### 1.3.1 PSM2Pep
 The utility for the summary of PSMs to peptides is `PSM2Pep`:  
@@ -341,18 +350,28 @@ The utility for the summary of PSMs to peptides is `PSM2Pep`:
 PSM2Pep()
 ```
 
-It loads the PSM tables from the preceding `normPSM` procedure and summarize them to peptide data using various descriptive statistics (see also Section 4). For `intensity` and `log2FC` data, the summarization method is specified by argument `method_psm_pep`, with `median` being the default.  
+It loads the above mentioned PSM tables from the preceding `normPSM` procedure, and summarize them to peptide data using various descriptive statistics (see also Section 4). For `intensity` and `log2FC` data, the summarization method may be specified by argument `method_psm_pep`, with `median` being the default.  
+
+Data filtration via varargs is also available with `PSM2Pep`. For instance, we might consider filter the data by the MS1 intensities of peptide matches, which are indicated under the column `pep_tot_int`. However, you probably don't want to try the following codes with the Mascot example that we are currently using:  
+
+```{r PSM2Pep_2, eval = FALSE}
+PSM2Pep(
+  filter_ms1int = rlang::exprs(pep_tot_int >= 1E4)
+)
+```
+
+To make it functionally valid, we would need to include the `Raw peptide match data` when exporting [Mascot PSMs](https://proteoq.netlify.app/post/exporting-mascot-psms/).   
 
 #### 1.3.2 mergePep
 Following the summarization of PSMs to peptides, the utility `mergePep` will assemble individual peptide tables, `Peptide\TMTset1_LCMSinj1_Peptide_N.txt`, `TMTset1_LCMSinj2_Peptide_N.txt` etc., into one larger piece, `Peptide.txt`.  
 
 ```{r mergePep, eval = FALSE}
 mergePep(
-  filter_peps_by = exprs(pep_len <= 100),
+  filter_peps_by = rlang::exprs(pep_len <= 100),
 )
 ```
 
-Similar to `normPSM`, we can filter data via column keys linked to the varargs of `filter_`. In the exemplary vararg statement of `filter_peps_by`, we exlcude longer peptide sequences with more than 100 amino acid residues. If we are interested in human, but not mouse, peptides from the pdx samples, we can specify similarly that `species == "human"`. Sometimes, it may remain unclear on proper data filtration at the early stage of analysis. In that case, we may need additional quality assessments that we will soon explore. Alternatively, we may keep as much information as possible and apply varargs in downstream analysis.  
+Similar to `normPSM` and `PSM2Pep`, we could again filter data via column keys linked to the varargs of `filter_`. In the exemplary vararg statement of `filter_peps_by`, we exlcude longer peptide sequences with more than 100 amino acid residues. If we are interested in human, but not mouse, peptides from the pdx samples, we can specify similarly that `species == "human"`. Sometimes, it may remain unclear on proper data filtration at the early stage of analysis. In that case, we may need additional quality assessments that we will soon explore. Alternatively, we may keep as much information as possible and apply varargs in downstream analysis.  
 
 #### 1.3.3 standPep
 The utility `standPep` standardizes peptide results from `mergePep` with additional choices in data alignment.  
@@ -459,7 +478,7 @@ pepHist(
   scale_log2r = TRUE, 
   col_select = BI_1,
   ncol = 5,
-  filter_by_sphu = exprs(species == "human"),
+  filter_by_sphu = rlang::exprs(species == "human"),
   filename = hs.png, 
 )
 
@@ -467,7 +486,7 @@ pepHist(
   scale_log2r = TRUE, 
   col_select = BI_1,
   ncol = 5,
-  filter_by_spmm = exprs(species == "mouse"),
+  filter_by_spmm = rlang::exprs(species == "mouse"),
   filename = mm.png, 
 )
 ```
@@ -517,7 +536,7 @@ The `standPep` utility accepts variable arguments of `slice_`. The vararg statem
 ## DO NOT RUN
 standPep(
   ...,
-  slice_peps_by = exprs(pep_len > 10, pep_len < 30),
+  slice_peps_by = rlang::exprs(pep_len > 10, pep_len < 30),
 )
 ## END of DO NOT RUN
 ```
@@ -535,7 +554,7 @@ standPep(
   range_log2r = c(10, 90), 
   range_int = c(5, 95), 
   col_select = Select_sub,
-  slice_hskp = exprs(gene %in% c("GAPDH")),
+  slice_hskp = rlang::exprs(gene %in% c("GAPDH")),
 )
 
 pepHist(
@@ -598,7 +617,7 @@ standPrn(
   seed = 749662, 
   maxit = 200, 
   epsilon = 1e-05, 
-  slice_prots_by = exprs(prot_n_pep >= 2),
+  slice_prots_by = rlang::exprs(prot_n_pep >= 2),
 )
 ```
 
@@ -645,7 +664,7 @@ prnHist(
   col_select = BI_1,
   ncol = 5,
   
-  filter_prots_by = exprs(prot_n_pep >= 10),
+  filter_prots_by = rlang::exprs(prot_n_pep >= 10),
   filename = bi1_n_npep10.png, 
 )
 
@@ -655,7 +674,7 @@ prnHist(
   col_select = BI_1,
   ncol = 5,
   
-  filter_prots_by = exprs(prot_n_pep >= 10),
+  filter_prots_by = rlang::exprs(prot_n_pep >= 10),
   filename = bi1_z_npep10.png, 
 )
 ```
@@ -688,7 +707,7 @@ system.file("extdata", "workflow_tmt_ext.R", package = "proteoQ")
 
 Another place to get help is via `?load_expts`.
 
-#### 1.5.2 LFQ (MaxQuant, MSFragger)
+#### 1.5.2 LFQ
 ```{r workflow_scripts_lfq, include = TRUE, eval = FALSE}
 system.file("extdata", "workflow_lfq_base.R", package = "proteoQ")
 ```
@@ -696,7 +715,7 @@ system.file("extdata", "workflow_lfq_base.R", package = "proteoQ")
 Additional notes available in <strong>[here](https://proteoq.netlify.app/post/metadata-files-for-lfq/)</strong>.  
 
 ### 1.6 Quick start
-For quick demonstrations, steps in data preprocessing can be bypassed:  
+For the purpose of quick demonstrations where steps in data preprocessing were bypassed:  
 
 ```{r quick_start, include = TRUE, eval = FALSE}
 unzip(system.file("extdata", "demo.zip", package = "proteoQDA"), 
@@ -728,8 +747,6 @@ Unless otherwise mentioned, the `in-function filtration` of data by varargs of `
 We first visualize MDS and Euclidean distance against the peptide data. We start with metric MDS for peptide data (`prnMDS` for proteins):  
 
 ```{r Peptide MDS, eval = FALSE}
-dat_dir <- "~/proteoQ/examples"
-
 # all data
 pepMDS(
   show_ids = FALSE,
@@ -853,7 +870,7 @@ We next performed another PCA with the removals of proteins that are far from me
 prnPCA(
   col_select = Select, 
   show_ids = FALSE, 
-  filter_prots_by = exprs(prot_mean_z >= -.25, prot_mean_z <= .3),
+  filter_prots_by = rlang::exprs(prot_mean_z >= -.25, prot_mean_z <= .3),
   filename = sub_cent.png,
 )
 ```
@@ -880,7 +897,7 @@ prnPCA(
   col_select = Select, 
   center = FALSE,
   show_ids = FALSE, 
-  filter_prots_by = exprs(prot_mean_z >= -.25, prot_mean_z <= .3),
+  filter_prots_by = rlang::exprs(prot_mean_z >= -.25, prot_mean_z <= .3),
   filename = sub_nocent.png,
 )
 ```
@@ -1015,7 +1032,7 @@ prnHM(
   show_colnames = TRUE, 
   fontsize_row = 3, 
   cellwidth = 14, 
-  filter_sp = exprs(species == "human"),
+  filter_sp = rlang::exprs(species == "human"),
 )
 ```
 
@@ -1042,8 +1059,8 @@ prnHM(
   fontsize_row = 2, 
   cellheight = 2, 
   cellwidth = 14, 
-  filter_kin = exprs(kin_attr == TRUE, species == "human"),
-  arrange_kin = exprs(kin_order, gene),
+  filter_kin = rlang::exprs(kin_attr == TRUE, species == "human"),
+  arrange_kin = rlang::exprs(kin_order, gene),
   filename = "hukin_by_class.png", 
 )
 ```
@@ -1274,8 +1291,8 @@ As expected, we saw zero overlap between human and mouse gene sets. Within each 
 
 ```{r prnPSPAHM_filtered, eval = FALSE}
 prnGSPAHM(
-  filter2_by = exprs(distance <= .33),
-  filter2_sp = exprs(start_with_str("hs", term)), 
+  filter2_by = rlang::exprs(distance <= .33),
+  filter2_sp = rlang::exprs(start_with_str("hs", term)), 
   annot_cols = "ess_idx",
   annot_colnames = "Eset index",
   annot_rows = "ess_size", 
@@ -1308,7 +1325,7 @@ The utility for the clustering of protein log2FC is `anal_prnTrend`. Note that t
 ```{r Protein trends, eval = FALSE}
 anal_prnTrend(
   n_clust = c(5:6), 
-  filter_by_npep = exprs(prot_n_pep >= 2),
+  filter_by_npep = rlang::exprs(prot_n_pep >= 2),
 )
 ```
 
@@ -1335,7 +1352,7 @@ We can subset the secondary input data by `filter2_` varargs. In the example sho
 ```{r Protein trends_plot_filter, eval = FALSE}
 plot_prnTrend(
   col_order = Order,
-  filter2_by = exprs(cluster == 4),
+  filter2_by = rlang::exprs(cluster == 4),
   width = 12, 
   height = 12,
   filename = cl4.png,
@@ -1407,7 +1424,7 @@ anal_prnNMF(
   r = c(5:6),
   nrun = 20, 
   seed = 123,
-  filter_by_npep = exprs(prot_n_pep >= 2),
+  filter_by_npep = rlang::exprs(prot_n_pep >= 2),
 )
 
 anal_prnNMF(
@@ -1417,7 +1434,7 @@ anal_prnNMF(
   r = c(5:6),
   nrun = 20, 
   seed = 123,
-  filter_by_npep = exprs(prot_n_pep >= 2),
+  filter_by_npep = rlang::exprs(prot_n_pep >= 2),
   filename = lee.txt,
 )
 ```
@@ -1497,7 +1514,7 @@ plot_metaNMF(
   # cellwidth = 6,
   # cellheight = 6,
   cluster_rows = FALSE,
-  arrange_by = exprs(gene),   
+  arrange_by = rlang::exprs(gene),   
   filename = bi_r5_rowordered.png,
 )
 ```
@@ -1529,23 +1546,28 @@ plot_metaNMF(
 
 
 ### 2.11 STRING Analysis
-The following performs the [`STRING`](http://www.string-db.org) analysis of protein-protein interactions. More details can be found from `?anal_prnString`.  
+The following performs the [`STRING`](http://www.string-db.org) analysis of protein-protein interactions. More details can be found from `?anal_prnString` and `?prepString`.  
 
 ```{r Protein StringDB, eval = FALSE}
 anal_prnString(
   db_path = "~/proteoQ/dbs/string",
+  db_nms = c("~/proteoQ/dbs/string/string_hs.rds",
+             "~/proteoQ/dbs/string/string_mm.rds"),
   score_cutoff = .9,
-  filter_by_sp = exprs(species %in% c("human", "mouse")), 
-  filter_prots_by = exprs(prot_n_pep >= 2),
+  filter_by_sp = rlang::exprs(species %in% c("human", "mouse")), 
+  filter_prots_by = rlang::exprs(prot_n_pep >= 2),
 )
 ```
 
 The results of protein-protein interaction is summarised in `Protein_String_[...]_ppi.tsv` and the expression data in `Protein_String_[...]_expr.tsv`. The files are formatted for direct applications with [`Cytoscape`](https://cytoscape.org). When calling `anal_prnString`, the corresponding databases will be downloaded automatically if not yet present locally. One can also choose to download separately the databases for a given `species`:  
 
 ```{r Protein String_download, eval = FALSE}
-dl_stringdbs(
-  species = rat,
-  db_path = "~/proteoQ/dbs/string", 
+prepString(
+  species = this_mouse,
+  links_url = "https://stringdb-static.org/download/protein.links.full.v11.0/10090.protein.links.full.v11.0.txt.gz",
+  aliases_url = "https://stringdb-static.org/download/protein.aliases.v11.0/10090.protein.aliases.v11.0.txt.gz",
+  info_url = "https://stringdb-static.org/download/protein.info.v11.0/10090.protein.info.v11.0.txt.gz", 
+  filename = my_mm.rds,
 )
 ```
 
@@ -1564,12 +1586,11 @@ We first copy data over to the file directory specified by `temp_dir`, followed 
 ```{r W2 reference, eval = FALSE}
 # exemplary data
 temp_dir <- "~/proteoQ/ref_w2"
-dir.create(temp_dir, recursive = TRUE, showWarnings = FALSE)
 
 library(proteoQDA)
-copy_global_mascot(temp_dir)
-copy_w2ref_exptsmry(temp_dir)
-copy_global_fracsmry(temp_dir)
+copy_mascot_gtmt(temp_dir)
+copy_exptsmry_w2ref(temp_dir)
+copy_fracsmry_gtmt(temp_dir)
 
 # analysis
 library(proteoQ)
@@ -1587,7 +1608,7 @@ normPSM(
   annot_kinases = TRUE,	
   plot_rptr_int = TRUE, 
   plot_log2FC_cv = TRUE, 
-  filter_peps = exprs(pep_expect <= .1), 
+  filter_peps = rlang::exprs(pep_expect <= .1), 
 )
 
 PSM2Pep()
@@ -1611,12 +1632,11 @@ We alternatively seek a "center-of-mass" representation for uses as references. 
 
 ```{r W2_and_W16 reference, eval = FALSE}
 temp_dir_w2w16 <- "~/proteoQ/ref_w2w16"
-dir.create(temp_dir_w2w16, recursive = TRUE, showWarnings = FALSE)
 
 library(proteoQDA)
-copy_global_mascot(temp_dir_w2w16)
-copy_w2w16ref_exptsmry(temp_dir_w2w16)
-copy_global_fracsmry(temp_dir_w2w16)
+copy_mascot_gtmt(temp_dir_w2w16)
+copy_exptsmry_w2w16ref(temp_dir_w2w16)
+copy_fracsmry_gtmt(temp_dir_w2w16)
 
 library(proteoQ)
 load_expts(temp_dir_w2w16, expt_smry_ref_w2_w16.xlsx)
@@ -1633,7 +1653,7 @@ normPSM(
   annot_kinases = TRUE,	
   plot_rptr_int = TRUE, 
   plot_log2FC_cv = TRUE, 
-  filter_peps = exprs(pep_expect <= .1), 
+  filter_peps = rlang::exprs(pep_expect <= .1), 
 )
 
 PSM2Pep()
@@ -1718,13 +1738,13 @@ The CPTAC publication contains both global and phosphopeptide data from the same
 ```{r phosphopeptide subsets reference, eval = FALSE}
 # exemplary data
 dat_dir <- "~/proteoQ/phospho_stoichiometry"
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
+# dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 library(proteoQDA)
-copy_global_mascot(dat_dir)
-copy_phospho_mascot(dat_dir)
-copy_global_exptsmry(dat_dir)
-copy_cmbn_fracsmry(dat_dir)
+copy_mascot_gtmt(dat_dir)
+copy_mascot_ptmt(dat_dir)
+copy_exptsmry_cmbn(dat_dir)
+copy_fracsmry_cmbn(dat_dir)
 
 # analysis
 library(proteoQ)
@@ -1736,7 +1756,7 @@ normPSM(
   group_pep_by = gene, 
   fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
-  filter_peps = exprs(pep_expect <= .1), 
+  filter_peps = rlang::exprs(pep_expect <= .1), 
 )
 
 PSM2Pep()
@@ -1755,7 +1775,7 @@ standPep(
 # (a) phospho subsets without y-scaling
 pepHist(
   col_select = BI_1, 
-  filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
+  filter_peps = rlang::exprs(contain_chars_in("sty", pep_seq_mod)), 
   scale_y = FALSE, 
   ncol = 5, 
   filename = pSTY_bi1_scaley_no.png,
@@ -1764,7 +1784,7 @@ pepHist(
 # (b) phospho subsets with y-scaling
 pepHist(
   col_select = BI_1, 
-  filter_peps = exprs(contain_chars_in("sty", pep_seq_mod)), 
+  filter_peps = rlang::exprs(contain_chars_in("sty", pep_seq_mod)), 
   scale_y = TRUE, 
   ncol = 5, 
   filename = pSTY_bi1_scaley_yes.png,
@@ -1788,7 +1808,7 @@ In addition to pseudonyms, convenience columns such as `pep_mod_protntac` and `p
 pepHist(
   col_select = BI_1, 
   scale_log2r = TRUE, 
-  filter_peps = exprs(pep_mod_protntac == TRUE), 
+  filter_peps = rlang::exprs(pep_mod_protntac == TRUE), 
   scale_y = FALSE, 
   ncol = 5, 
   filename = bi1_nac_scaley_no.png,
@@ -1798,7 +1818,7 @@ pepHist(
 pepHist(
   col_select = BI_1, 
   scale_log2r = TRUE, 
-  filter_peps = exprs(pep_mod_protntac), 
+  filter_peps = rlang::exprs(pep_mod_protntac), 
   scale_y = TRUE, 
   ncol = 5, 
   filename = bi1_nac_scaley_yes.png,
@@ -1815,7 +1835,7 @@ Pseudonyms and convenience columns can be used interexchangeably for simple cond
 
 ```{r Protein_subnorm_pseudonames, eval = FALSE}
 Pep2Prn(
-  filter_by_mn = exprs(not_contain_chars_in("mn", pep_seq_mod)),
+  filter_by_mn = rlang::exprs(not_contain_chars_in("mn", pep_seq_mod)),
 )
 
 standPrn(
@@ -1833,7 +1853,7 @@ prnHist(
   scale_log2r = TRUE, 
   scale_y = FALSE, 
   ncol = 5, 
-  filter_prns_by = exprs(species == "mouse"),
+  filter_prns_by = rlang::exprs(species == "mouse"),
   filename = "bi1_nac_scaley_no.png",
 )
 
@@ -1842,7 +1862,7 @@ prnHist(
   scale_log2r = TRUE, 
   scale_y = TRUE, 
   ncol = 5, 
-  filter_prns_by = exprs(species == "mouse"),
+  filter_prns_by = rlang::exprs(species == "mouse"),
   filename = "bi1_nac_scaley_yes.png",
 )
 ```
@@ -1851,7 +1871,7 @@ or use alternatively the convenience columns, `pep_mod_m` and `pep_mod_n`, for t
 
 ```{r Protein_subnorm_pseudonames_2, eval = FALSE}
 Pep2Prn(
-  filter_by_mn = exprs(pep_mod_m == FALSE, pep_mod_n == FALSE),
+  filter_by_mn = rlang::exprs(pep_mod_m == FALSE, pep_mod_n == FALSE),
 )
 
 standPrn(
@@ -1905,7 +1925,7 @@ prnHM(
   cellwidth = 14,
   width = 18,
   height = 12,
-  filter_prots_by_sp_npep = exprs(n_not_na <= 10),
+  filter_prots_by_sp_npep = rlang::exprs(n_not_na <= 10),
   filename = "mostly_na_vals.png",
 )
 ```
@@ -1948,7 +1968,7 @@ prnHM(
   cellwidth = 14,
   width = 18,
   height = 12,
-  filter_prots_by_sp_npep = exprs(n_not_na <= 10),
+  filter_prots_by_sp_npep = rlang::exprs(n_not_na <= 10),
   filename = "na30.png",
 )
 ```
@@ -1964,12 +1984,11 @@ We start off by (re)executing the reduced example shown in `?load_expts`:
 
 ```{r load_expts_example, eval = FALSE}
 dat_dir <- "~/proteoQ/randeffs/examples"
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 library(proteoQDA)
-copy_global_exptsmry(dat_dir)
-copy_global_fracsmry(dat_dir)
-copy_global_mascot(dat_dir)
+copy_exptsmry_gtmt(dat_dir)
+copy_fracsmry_gtmt(dat_dir)
+copy_mascot_gtmt(dat_dir)
 
 library(proteoQ)
 load_expts()

@@ -12,27 +12,32 @@ devtools::install_github("qzhang503/proteoQ")
 library(proteoQDA)
 
 # FASTA (all platforms)
-copy_refseq_hs("~/proteoQ/dbs/fasta/refseq")
-copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
+copy_uniprot_hsmm("~/proteoQ/dbs/fasta/uniprot")
+copy_crap("~/proteoQ/dbs/fasta/crap")
 
 # PSM data
 # (demo only: the same TMT from CPTAC searched with LFQ)
 # (some columns in msms.txt omitted)
 dat_dir <- "~/proteoQ/examples"
-dir.create(dat_dir, recursive = TRUE, showWarnings = FALSE)
 
 choose_one <- TRUE
 if (choose_one) {
+  ## Mascot
+  copy_mascot_plfq(dat_dir)
+  
   ## MaxQuant
-  copy_global_maxquant_lfq(dat_dir)
+  # copy_maxquant_plfq(dat_dir)
   
   ## MSFragger
-  copy_global_msfragger_lfq(dat_dir)
+  # copy_msfragger_plfq(dat_dir)
+  
+  ## Spectrum Mill
+  # copy_specmill_plfq(dat_dir)
 }
 
 # metadata
-copy_global_exptsmry_lfq(dat_dir)
-copy_global_fracsmry_lfq(dat_dir)
+copy_exptsmry_plfq(dat_dir)
+copy_fracsmry_plfq(dat_dir)
 
 
 # ==============================================
@@ -42,11 +47,14 @@ copy_global_fracsmry_lfq(dat_dir)
 library(proteoQ)
 load_expts("~/proteoQ/examples")
 
+# optional: show available MS file names in PSM data
+extract_psm_raws()
+
 normPSM(
-	group_psm_by = pep_seq, 
+	group_psm_by = pep_seq_mod, 
 	group_pep_by = gene, 
-	fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
-	          "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
+	fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hsmm_2020_03.fasta", 
+	          "~/proteoQ/dbs/fasta/crap/crap.fasta"),
 	rm_craps = TRUE,
 	rm_krts = FALSE,
 	annot_kinases = TRUE, 
@@ -94,7 +102,8 @@ pepHist(
   filename = aligned_by_hs.png,
 )
 
-# optional: cleanup of peptide groups under the same protein IDs by CV
+# optional: cleanup of peptide groups 
+#   under the same protein IDs by CV
 purgePep(pt_cv = .95, ymax = 4)
 
 # peptides to proteins
@@ -143,17 +152,16 @@ scale_log2r <- TRUE
 ## no NA imputation
 # peptides
 pepSig(
-  impute_na = FALSE, 
   fml_1 = ~ Term["BI-JHU", 
 							 "JHU-PNNL", 
 							 "(BI+JHU)/2-PNNL"],
 )
 
 # proteins
-prnSig(impute_na = FALSE)
+prnSig()
 
 # volcano plots
-pepVol(impute_na = FALSE)
+pepVol()
 prnVol()
 
 prnVol(
@@ -238,7 +246,7 @@ prnHM(
 	filename = hukin.png, 
 )
 
-### trend
+### clustering (cemans, kmeans etc.)
 # protein analysis, row filtration and sample-order supervision
 anal_prnTrend(
   col_order = Order,
