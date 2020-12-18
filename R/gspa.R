@@ -37,9 +37,11 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
              recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
+            length(id) == 1)
   
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
+                                          impute_na = impute_na)
   
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -54,9 +56,12 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
   stopifnot(all(method %in% c("mean", "limma")))
   
   dots <- rlang::enexprs(...)
-  fmls <- dots %>% .[grepl("^\\s*~", .)]
-  dots <- dots[!names(dots) %in% names(fmls)]
-  dots <- concat_fml_dots(fmls = fmls, fml_nms = fml_nms, dots = dots, anal_type = "GSPA")
+  dots <- concat_fml_dots(
+    fmls = dots %>% .[grepl("^\\s*~", .)], 
+    fml_nms = fml_nms, 
+    dots = dots %>% .[!grepl("^\\s*~", .)], 
+    anal_type = "GSPA"
+  )
   
   reload_expts()
   
@@ -239,9 +244,9 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean", 
@@ -274,9 +279,11 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
              recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+            length(id) == 1)
 
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
+                                          impute_na = impute_na)
 
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -291,9 +298,12 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
   stopifnot(all(method %in% c("mean", "limma")))
   
   dots <- rlang::enexprs(...)
-  fmls <- dots %>% .[grepl("^\\s*~", .)]
-  dots <- dots[!names(dots) %in% names(fmls)]
-  dots <- concat_fml_dots(fmls = fmls, fml_nms = fml_nms, dots = dots, anal_type = "GSPA")
+  dots <- concat_fml_dots(
+    fmls = dots %>% .[grepl("^\\s*~", .)], 
+    fml_nms = fml_nms, 
+    dots = dots %>% .[!grepl("^\\s*~", .)], 
+    anal_type = "GSPA"
+  )
 
   reload_expts()
   
@@ -419,11 +429,13 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
          ccall. = FALSE)
   }
 
+  # Note: wrong number of arguments to '>' at devtools building of a package
+  # (https://github.com/Mouse-Imaging-Centre/RMINC/issues/226)
   col_ind <- purrr::map(fml_nms, ~ grepl(.x, names(df))) %>%
     `names<-`(paste0("nm_", seq_along(.))) %>% 
     dplyr::bind_cols() %>%
     rowSums() %>%
-    `>`(0)
+    magrittr::is_greater_than(0)
   
   stopifnot(sum(col_ind) > 0)
 
@@ -491,13 +503,16 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 #' @inheritParams gsVolcano
 #' @import purrr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gslogFC_cutoff, 
+fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, 
+                      gspval_cutoff, gslogFC_cutoff, 
                       min_size, max_size, min_delta, min_greedy_size, method, 
-                      df, col_ind, id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
+                      df, col_ind, id, gsets, 
+                      label_scheme_sub, complete_cases, scale_log2r, 
                       filepath, filename, use_adjP = FALSE, ...) {
 
   on.exit(
-    pars <- mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+    pars <- mget(names(formals()), envir = rlang::current_env(), 
+                 inherits = FALSE) %>% 
       .[! names(.) %in% c("gsets", "df", "label_scheme_sub", "col_ind")] %>% 
       c(rlang::enexprs(...)) %>% 
       save_call(paste0(fn_prefix, "@", fml_nm))
@@ -507,13 +522,16 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
     stop("Zero entries in `gsets`.", call. = FALSE)
   }
   
-  dir.create(file.path(filepath, fml_nm), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(filepath, fml_nm), 
+             recursive = TRUE, showWarnings = FALSE)
+  
   id <- rlang::as_string(rlang::enexpr(id))
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
-  df <- df %>% prep_gspa(id = "entrez", fml_nm = fml_nm, col_ind = col_ind, 
-                         pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
-                         use_adjP = use_adjP) 
+  df <- df %>% 
+    prep_gspa(id = "entrez", fml_nm = fml_nm, col_ind = col_ind, 
+              pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, 
+              use_adjP = use_adjP) 
   
   if (complete_cases) {
     df <- df[complete.cases(df), ]
@@ -583,7 +601,7 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
                        ~ .x <= gspval_cutoff) %>%
       dplyr::bind_cols() %>%
       rowSums() %>%
-      `>`(0)
+      magrittr::is_greater_than(0)
     
     res_pass <- res[pass, ] %>% 
       dplyr::mutate_at(vars(grep("^pVal", names(.))), ~ replace(.x, .x < 1E-50, 1E-50))
@@ -592,9 +610,9 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
   if (nrow(res_pass) == 0) return(NULL)
   
   if (!requireNamespace("RcppGreedySetCover", quietly = TRUE)) {
-    stop("\n============================================================================", 
-         "\nNeed install package \"RcppGreedySetCover\" needed for this function to work.",
-         "\n============================================================================",
+    stop("\n======================================================================", 
+         "\nPackage \"RcppGreedySetCover\" needed for this function to work.",
+         "\n======================================================================",
          call. = FALSE)
   }
 
@@ -635,7 +653,8 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
     dplyr::select(c("term", "id")) %>% 
     dplyr::filter(term %in% res_pass$term)
   
-  out <- out %>% dplyr::mutate(term = as.character(term))
+  out <- out %>% 
+    dplyr::mutate(term = as.character(term))
   
   out <- sig_sets %>% 
     dplyr::group_by(term) %>% 
@@ -644,8 +663,9 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
 
   res_greedy <- sig_sets %>% 
     RcppGreedySetCover::greedySetCover(FALSE) %T>% 
-    write.table(file.path(filepath, fml_nm, paste0(fn_prefix, "_resgreedy.txt")), sep = "\t", 
-                col.names = TRUE, row.names = FALSE, quote = FALSE) %>% 
+    write.table(file.path(filepath, fml_nm, paste0(fn_prefix, "_resgreedy.txt")), 
+                sep = "\t", col.names = TRUE, 
+                row.names = FALSE, quote = FALSE) %>% 
     dplyr::group_by(term) %>% 
     dplyr::summarise(ess_size = n()) %>% 
     dplyr::filter(ess_size >= min_greedy_size)
@@ -653,20 +673,24 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff, gspval_cutoff, gsl
   sig_sets <- res_greedy %>% 
     dplyr::right_join(out, by = "term") %>% 
     dplyr::mutate(is_essential = ifelse(!is.na(ess_size), TRUE, FALSE)) %>% 
-    dplyr::select(term, is_essential, size, ess_size, contrast, p_val, q_val, log2fc) %T>% 
-    write.table(file.path(filepath, fml_nm, paste0(fn_prefix, ".txt")), sep = "\t", 
-                col.names = TRUE, row.names = FALSE, quote = FALSE) %>% 
+    dplyr::select(term, is_essential, size, ess_size, 
+                  contrast, p_val, q_val, log2fc) %T>% 
+    write.table(file.path(filepath, fml_nm, paste0(fn_prefix, ".txt")), 
+                sep = "\t", col.names = TRUE, 
+                row.names = FALSE, quote = FALSE) %>% 
     dplyr::filter(is_essential) %>% 
     dplyr::filter(!duplicated(term)) %>% 
     dplyr::select(-contrast, -p_val, -q_val, -log2fc) %T>% 
-    write.table(file.path(filepath, fml_nm, paste0(fn_prefix, "_essmeta.txt")), sep = "\t", 
-                col.names = TRUE, row.names = FALSE, quote = FALSE) %>% 
+    write.table(file.path(filepath, fml_nm, paste0(fn_prefix, "_essmeta.txt")), 
+                sep = "\t", col.names = TRUE, 
+                row.names = FALSE, quote = FALSE) %>% 
     dplyr::select(term, ess_size) %>% 
     dplyr::right_join(sig_sets, by = "term")
 
   map_essential(sig_sets) %>% 
-    write.table(file.path(filepath, fml_nm, paste0(fn_prefix, "_essmap.txt")), sep = "\t", 
-                col.names = TRUE, row.names = FALSE, quote = FALSE)	
+    write.table(file.path(filepath, fml_nm, paste0(fn_prefix, "_essmap.txt")), 
+                sep = "\t", col.names = TRUE, 
+                row.names = FALSE, quote = FALSE)	
 }
 
 
@@ -687,7 +711,11 @@ ok_min_size <- function (df, min_delta, gspval_cutoff = 1, gslogFC_cutoff = 0) {
     tidyr::spread(key = contrast, value = p_val) %>% 
     dplyr::select(-valence)
   delta_p[is.na(delta_p)] <- 0
-  if (nrow(delta_p) == 2) delta_p <- delta_p[2, ] - delta_p[1, ]
+  if (nrow(delta_p) == 2) {
+    delta_p <- delta_p[2, ] - delta_p[1, ]
+  } else {
+    # do nothing
+  }
 
   delta_fc <- data %>% 
     dplyr::summarise(log2Ratio = mean(log2Ratio, na.rm = TRUE)) %>% 
@@ -695,24 +723,39 @@ ok_min_size <- function (df, min_delta, gspval_cutoff = 1, gslogFC_cutoff = 0) {
     tidyr::spread(key = contrast, value = log2Ratio) %>% 
     dplyr::select(-valence)
   delta_fc[is.na(delta_fc)] <- 0
-  if (nrow(delta_fc) == 2) delta_fc <- delta_fc[2, ] + delta_fc[1, ]
+  if (nrow(delta_fc) == 2) {
+    delta_fc <- delta_fc[2, ] + delta_fc[1, ]
+  } else {
+    # do nothing
+  }
   
   delta_n <- data %>% 
     dplyr::summarise(n = mean(n, na.rm = TRUE)) %>% # empty levels will be kept
     tidyr::spread(key = contrast, value = n) %>% 
     dplyr::select(-valence)
   delta_n[is.na(delta_n)] <- 0
-  if (nrow(delta_n) == 2) delta_n <- delta_n[2, ] - delta_n[1, ]
+  if (nrow(delta_n) == 2) {
+    delta_n <- delta_n[2, ] - delta_n[1, ]
+  } else {
+    # do nothing
+  }
 
   oks <- sign(delta_p) == sign(delta_n) & 
     abs(delta_p) >= -log10(gspval_cutoff) & 
     abs(delta_n) >= min_delta & 
     abs(delta_fc) >= gslogFC_cutoff
   
+  # pad missing contrast(s)
   if (length(oks) < nlevels(df$contrast)) {
     levs <- levels(df$contrast)
     missing_nms <- levs[!levs %in% colnames(oks)]
-    oks <- dplyr::bind_cols(!!missing_nms := FALSE, oks)
+
+    if (!purrr::is_empty(missing_nms)) {
+      for (i in seq_along(missing_nms)) {
+        oks <- dplyr::bind_cols(!!missing_nms[i] := FALSE, oks)
+      }
+    }
+    
     oks <- oks[, levs, drop = FALSE]
   }
   
@@ -726,7 +769,8 @@ ok_min_size <- function (df, min_delta, gspval_cutoff = 1, gslogFC_cutoff = 0) {
 #' @inheritParams prnHist
 #' @inheritParams prnGSPA
 gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4, 
-                              gspval_cutoff = 0.05, gslogFC_cutoff = log2(1)) {
+                              gspval_cutoff = 0.05, 
+                              gslogFC_cutoff = log2(1)) {
   df <- df %>% 
     dplyr::filter(entrez %in% gset)
   
@@ -753,7 +797,8 @@ gspa_summary_mean <- function(gset, df, min_size = 10, min_delta = 4,
   if (nrow(delta_p) == 2) delta_p <- delta_p[2, ] - delta_p[1, ]
   delta_p <- abs(delta_p)
   delta_p <- 1/10^delta_p
-  delta_p[] <- purrr::map2(as.list(delta_p), as.list(ok_delta_n), ~ {if (.y) .x else 1}) 
+  delta_p[] <- purrr::map2(as.list(delta_p), as.list(ok_delta_n), 
+                           ~ {if (.y) .x else 1}) 
 
   delta_fc <- dfw %>% 
     dplyr::summarise(log2Ratio = mean(log2Ratio, na.rm = TRUE)) %>% 
@@ -815,10 +860,12 @@ lm_gspa <- function(df, min_delta, gspval_cutoff, gslogFC_cutoff) {
   data <- df %>% 
     dplyr::group_by(contrast, valence) %>% 
     dplyr::select(-log2Ratio) %>% 
-    tidyr::unite(sample, entrez, contrast, valence, sep = ".", remove = TRUE) %>% 
+    tidyr::unite(sample, entrez, contrast, valence, sep = ".", 
+                 remove = TRUE) %>% 
     tidyr::spread(key = sample, value = p_val) 
   
-  label_scheme_gspa <- tibble(Sample_ID = names(data), Group = Sample_ID) %>% 
+  label_scheme_gspa <- tibble(Sample_ID = names(data), 
+                              Group = Sample_ID) %>% 
     dplyr::mutate(Group = gsub("^\\d+\\.", "", Group)) %>% 
     dplyr::mutate(Group = factor(Group))
   
@@ -826,12 +873,14 @@ lm_gspa <- function(df, min_delta, gspval_cutoff, gslogFC_cutoff) {
     `colnames<-`(levels(label_scheme_gspa$Group)) %>% 
     data.frame(check.names = TRUE)
 
-  neg_cols <- colnames(design)[seq_along(design) %% 2 %>% as.logical()]
+  neg_cols <- colnames(design)[seq_along(design) %% 2 %>% 
+                                 as.logical()]
   pos_cols <- colnames(design)[!(seq_along(design) %% 2)]
   
   contrs <- paste(pos_cols, neg_cols, sep = "-")
   
-  contr_mat <- makeContrasts(contrasts = contrs, levels = data.frame(design)) %>% 
+  contr_mat <- makeContrasts(contrasts = contrs, 
+                             levels = data.frame(design)) %>% 
     `colnames<-`(contrs) %>% 
     `rownames<-`(colnames(design))
   
@@ -845,7 +894,8 @@ lm_gspa <- function(df, min_delta, gspval_cutoff, gslogFC_cutoff) {
     data.frame(check.names = FALSE) %>%
     `colnames<-`(paste0("pVal (", nms, ")"))
 
-  delta_p[] <- purrr::map2(as.list(delta_p), as.list(ok_delta_n), ~ {if (.y) .x else 1}) 
+  delta_p[] <- purrr::map2(as.list(delta_p), as.list(ok_delta_n), 
+                           ~ {if (.y) .x else 1}) 
 
   return(dplyr::bind_cols(delta_p, delta_fc))
 }
@@ -860,8 +910,8 @@ lm_gspa <- function(df, min_delta, gspval_cutoff, gslogFC_cutoff) {
 #' @import purrr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom readr read_tsv
-prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
-                      use_adjP = FALSE) {
+prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2, 
+                      logFC_cutoff = log2(1.2), use_adjP = FALSE) {
   id <- rlang::as_string(rlang::enexpr(id))
   
   df <- df %>%
@@ -918,7 +968,8 @@ map_essential <- function (sig_sets) {
     dplyr::select(term) %>% 
     unlist
 
-  sig_greedy_sets <- sig_sets %>% dplyr::filter(term %in% ess_terms)
+  sig_greedy_sets <- sig_sets %>% 
+    dplyr::filter(term %in% ess_terms)
 
   res <- purrr::map(unique(sig_sets$term), ~ {
     curr_sig_set <- sig_sets %>% 
@@ -1076,12 +1127,13 @@ map_essential <- function (sig_sets) {
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@export
-prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, fml_nms = NULL, 
+prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, 
+                       impute_na = FALSE, fml_nms = NULL, 
                        annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                        df2 = NULL, filename = NULL, ...) {
   old_opts <- options()
@@ -1091,12 +1143,15 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = F
   check_dots(c("id", "anal_type", "df", "filepath"), ...)
   
   dat_dir <- get_gl_dat_dir()
-  dir.create(file.path(dat_dir, "Protein/GSPA/log"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(dat_dir, "Protein/GSPA/log"), 
+             recursive = TRUE, showWarnings = FALSE)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
+            length(id) == 1)
   
-  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, impute_na = impute_na)
+  scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
+                                          impute_na = impute_na)
 
   df2 <- rlang::enexpr(df2)
   filename <- rlang::enexpr(filename)
@@ -1105,17 +1160,27 @@ prnGSPAHM <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = F
   annot_rows <- rlang::enexpr(annot_rows) 
   
   dots <- rlang::enexprs(...)
-  fmls <- dots %>% .[grepl("^\\s*~", .)]
-  dots <- dots[!names(dots) %in% names(fmls)]
-  dots <- concat_fml_dots(fmls = fmls, fml_nms = fml_nms, dots = dots, anal_type = "GSPA")
-  
+  dots <- concat_fml_dots(
+    fmls = dots %>% .[grepl("^\\s*~", .)], 
+    fml_nms = fml_nms, 
+    dots = dots %>% .[!grepl("^\\s*~", .)], 
+    anal_type = "GSPA"
+  )
+
   reload_expts()
 
   info_anal(id = !!id, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            df = NULL, df2 = !!df2, filepath = NULL, filename = !!filename, 
-            anal_type = "GSPA_hm")(annot_cols = !!annot_cols, annot_colnames = !!annot_colnames, 
-                                   annot_rows = !!annot_rows, !!!dots)
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
+            df = NULL, 
+            df2 = !!df2, 
+            filepath = NULL, 
+            filename = !!filename, 
+            anal_type = "GSPA_hm")(annot_cols = !!annot_cols, 
+                                   annot_colnames = !!annot_colnames, 
+                                   annot_rows = !!annot_rows, 
+                                   !!!dots)
 }
 
 
@@ -1134,7 +1199,8 @@ gspaHM <- function(scale_log2r, complete_cases, impute_na, df2, filepath, filena
   
   fml_nms <- names(fmls)
   if (length(fml_nms) > 0) {
-    purrr::walk(fml_nms, byfml_gspahm, df2, filepath, filename, scale_log2r, impute_na, !!!dots)
+    purrr::walk(fml_nms, byfml_gspahm, df2, filepath, filename, 
+                scale_log2r, impute_na, !!!dots)
   }
 }
 
@@ -1161,7 +1227,8 @@ byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r, impute_n
       {if (scale_log2r) .[grepl("_GSPA_Z", .)] else .[grepl("_GSPA_N", .)]}
   
     if (rlang::is_empty(ins)) {
-      stop("No GSPA inputs correspond to impute_na = ", impute_na, ", scale_log2r = ", scale_log2r, 
+      stop("No GSPA inputs correspond to impute_na = ", impute_na, 
+           ", scale_log2r = ", scale_log2r, 
            call. = FALSE)
     }
   } else {
@@ -1183,7 +1250,8 @@ byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r, impute_n
     meta_ins <- meta_ins %>% .[. %in% required]
   })
   
-  purrr::walk2(ins, meta_ins, byfile_gspahm, fml_nm, filepath, filename, scale_log2r, impute_na, ...)
+  purrr::walk2(ins, meta_ins, byfile_gspahm, fml_nm, filepath, 
+               filename, scale_log2r, impute_na, ...)
 }
 
 
@@ -1196,7 +1264,8 @@ byfml_gspahm <- function (fml_nm, df2, filepath, filename, scale_log2r, impute_n
 #' @inheritParams fml_gspa
 #' @import purrr dplyr pheatmap 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_log2r, impute_na, ...) {
+byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, 
+                           scale_log2r, impute_na, ...) {
   custom_prefix <- gsub("(.*_{0,1})Protein_GSPA.*", "\\1", ess_in)
   
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) # %>% .[1]
@@ -1209,10 +1278,17 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
       stop("Primary `filter_` depreciated; use secondary `filter2_`.")
     }      
   }
-  filter2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^filter2_", names(.))]
-  arrange2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^arrange2_", names(.))]
-  select2_dots <- dots %>% .[purrr::map_lgl(., is.language)] %>% .[grepl("^select2_", names(.))]
-  dots <- dots %>% .[! . %in% c(filter2_dots, arrange2_dots, select2_dots)]
+  filter2_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^filter2_", names(.))]
+  arrange2_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^arrange2_", names(.))]
+  select2_dots <- dots %>% 
+    .[purrr::map_lgl(., is.language)] %>% 
+    .[grepl("^select2_", names(.))]
+  dots <- dots %>% 
+    .[! . %in% c(filter2_dots, arrange2_dots, select2_dots)]
   
   all_by_greedy <- tryCatch(readr::read_tsv(file.path(filepath, fml_nm, ess_in), 
                                             col_types = cols(ess_term = col_factor(), 
@@ -1228,12 +1304,16 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
   
   rm(filter2_dots, arrange2_dots, select2_dots)
   
-  if (nrow(all_by_greedy) == 0) stop("No GSPA terms available after data filtration.")
+  if (nrow(all_by_greedy) == 0) {
+    stop("No GSPA terms available after data filtration.", 
+         call. = FALSE)
+  }
   
   if (max(all_by_greedy$distance) == 0) {
-    warning("Identical, all-zero distance detected; 
-         try lower the criteria in data filtrations or 
-         rerun `prnGSPA` at more relaxed `gspval_cutoff` threshold.")
+    warning("Identical, all-zero distance detected; ", 
+            "try lower the criteria in data filtrations or ", 
+            "rerun `prnGSPA` at more relaxed `gspval_cutoff` threshold.", 
+            call. = FALSE)
     
     return(NULL)
   }
@@ -1241,11 +1321,12 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
   if (!is.null(dim(all_by_greedy))) {
     message(paste("File loaded:", ess_in, "at", fml_nm))
   } else {
-    stop("Essential GSPA not found.")
+    stop("Essential GSPA not found.", call. = FALSE)
   }
   
   ess_vs_all <- all_by_greedy %>% 
-    dplyr::select(-which(names(.) %in% c("size", "ess_size", "idx", "ess_idx", "distance"))) %>% 
+    dplyr::select(-which(names(.) %in% c("size", "ess_size", 
+                                         "idx", "ess_idx", "distance"))) %>% 
     tidyr::spread(term, fraction) %>% 
     dplyr::mutate_at(vars(which(names(.) != "ess_term")), ~ {1 - .x}) %>% 
     tibble::column_to_rownames("ess_term")
@@ -1315,13 +1396,14 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
     
     annot_rows <- annot_rows %>% .[. %in% names(ess_meta)]
     
-    if (is_empty(annot_rows)) {
+    if (purrr::is_empty(annot_rows)) {
       annotation_row <- NA
     } else {
       annotation_row <- ess_meta %>% 
         dplyr::rename(ess_term = term) %>% 
         dplyr::select("ess_term", annot_rows) %>% 
-        dplyr::mutate(ess_term = factor(ess_term, levels = levels(all_by_greedy$ess_term))) %>% 
+        dplyr::mutate(ess_term = 
+                        factor(ess_term, levels = levels(all_by_greedy$ess_term))) %>% 
         tibble::column_to_rownames("ess_term")
     }
   }
@@ -1353,10 +1435,14 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
     }
   } else {
     width <- dots$width
-    if (is.null(dots$fontsize)) fontsize <- 1 else fontsize <- dots$fontsize
-    if (is.null(dots$fontsize_col)) fontsize_col <- 1 else fontsize_col <- dots$fontsize_col
-    if (is.null(dots$cellwidth)) cellwidth <- NA else cellwidth <- dots$cellwidth
-    if (is.null(dots$show_colnames)) show_colnames <- FALSE else show_colnames <- dots$show_colnames
+    if (is.null(dots$fontsize)) fontsize <- 1 else 
+      fontsize <- dots$fontsize
+    if (is.null(dots$fontsize_col)) fontsize_col <- 1 else 
+      fontsize_col <- dots$fontsize_col
+    if (is.null(dots$cellwidth)) cellwidth <- NA else 
+      cellwidth <- dots$cellwidth
+    if (is.null(dots$show_colnames)) show_colnames <- FALSE else 
+      show_colnames <- dots$show_colnames
   }
   
   if (is.null(dots$height)) {
@@ -1373,10 +1459,14 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
     }
   } else {
     height <- dots$height
-    if (is.null(dots$fontsize)) fontsize <- 1 else fontsize <- dots$fontsize
-    if (is.null(dots$fontsize_row)) fontsize_row <- 1 else fontsize_row <- dots$fontsize_row
-    if (is.null(dots$cellheight)) cellheight <- NA else cellheight <- dots$cellheight
-    if (is.null(dots$show_rownames)) show_rownames <- FALSE else show_rownames <- dots$show_rownames
+    if (is.null(dots$fontsize)) fontsize <- 1 else 
+      fontsize <- dots$fontsize
+    if (is.null(dots$fontsize_row)) fontsize_row <- 1 else 
+      fontsize_row <- dots$fontsize_row
+    if (is.null(dots$cellheight)) cellheight <- NA else 
+      cellheight <- dots$cellheight
+    if (is.null(dots$show_rownames)) show_rownames <- FALSE else 
+      show_rownames <- dots$show_rownames
   }
   
   if ((!is.na(width)) & (width > max_width)) {
@@ -1423,7 +1513,7 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
   # networks
   if (!requireNamespace("networkD3", quietly = TRUE)) {
     stop("\n====================================================================", 
-         "\nNeed install package \"networkD3\" needed for this function to work.",
+         "\nPackage \"networkD3\" needed for this function to work.",
          "\n====================================================================",
          call. = FALSE)
   }
@@ -1484,7 +1574,8 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename, scale_lo
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
   networkD3::forceNetwork(Links = my_links, Nodes = my_nodes, Source = "source",
-                          Target = "target", Value = "fraction", NodeID = "term", Nodesize = "size", 
+                          Target = "target", Value = "fraction", NodeID = "term", 
+                          Nodesize = "size", 
                           Group = "cluster", opacity = 0.8, zoom = TRUE) %>% 
     networkD3::saveNetwork(file = file.path(filepath, fml_nm, paste0(fn_prefix, ".html")))
 }

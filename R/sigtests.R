@@ -684,9 +684,9 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 

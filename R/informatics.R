@@ -471,16 +471,17 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	            ...)
 	  }
 	} else if (anal_type == "Volcano") {
-	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, theme = NULL, ...) {
+	  function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, 
+	           theme = NULL, ...) {
 	    plotVolcano(df = df,
 	                df2 = NULL,
 	                id = !!id,
 	                adjP = adjP,
-	                show_labels = show_labels,
+	                topn_labels = topn_labels, 
 	                anal_type = anal_type,
 	                gspval_cutoff = 1,
 	                gslogFC_cutoff = 0,
-	                topn = 0,
+	                topn_gsets = 0,
 	                show_sig = "none",
 	                fml_nms = fml_nms,
 	                gset_nms = NULL,
@@ -493,19 +494,20 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	                ...)
 	  }
 	} else if (anal_type == "mapGSPA") {
-	  function(fml_nms = NULL, adjP = FALSE, show_labels = TRUE, gspval_cutoff = 0.05,
-	           gslogFC_cutoff = log2(1.2), topn = 100, show_sig = "none", 
+	  function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, 
+	           gspval_cutoff = 0.05, gslogFC_cutoff = log2(1.2), 
+	           topn_gsets = Inf, show_sig = "none", 
 	           gset_nms = "go_sets",
 	           theme = NULL, ...) {
 	    plotVolcano(df = df,
 	                df2 = df2,
 	                id = !!id,
 	                adjP = adjP,
-	                show_labels = show_labels,
+	                topn_labels = topn_labels, 
 	                anal_type = anal_type,
 	                gspval_cutoff = gspval_cutoff,
 	                gslogFC_cutoff = gslogFC_cutoff,
-	                topn = topn,
+	                topn_gsets = topn_gsets,
 	                show_sig = show_sig,
 	                fml_nms = fml_nms,
 	                gset_nms = gset_nms,

@@ -10,7 +10,7 @@ pepVol(
   complete_cases = FALSE,
   impute_na = FALSE,
   adjP = FALSE,
-  show_labels = TRUE,
+  topn_labels = 20,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -24,7 +24,7 @@ prnVol(
   complete_cases = FALSE,
   impute_na = FALSE,
   adjP = FALSE,
-  show_labels = TRUE,
+  topn_labels = 20,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -46,8 +46,9 @@ will be used. The default is FALSE.}
 \item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals in volcano plots.
 The default is FALSE.}
 
-\item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.
-The default is TRUE.}
+\item{topn_labels}{A non-negative integer; the top-n species for labeling in a
+plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
+shown. The default is to label the top-20 species with the lowest p-values.}
 
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an
@@ -108,14 +109,12 @@ pepVol()
 
 # all proteins
 prnVol(
-  show_labels = TRUE,
   xco = 1.2,
   yco = 0.01,
 )
 
 # hide `xco` and/or `yco` lines
 prnVol(
-  show_labels = TRUE,
   xco = 0,
   yco = Inf,
   filename = no_xylines.png,
@@ -123,7 +122,6 @@ prnVol(
 
 # kinases and prot_n_pep >= 2
 prnVol(
-  show_labels = TRUE,
   xco = 1.2,
   yco = 0.01,
   filter_prots_by_kin = exprs(kin_attr, prot_n_pep >= 2),
@@ -153,7 +151,8 @@ my_theme <- theme_bw() +
     axis.text.y = element_text(angle = 0, vjust = 0.5, size = 24),
     axis.title.x = element_text(colour = "black", size = 24),
     axis.title.y = element_text(colour="black", size = 24),
-    plot.title = element_text(face = "bold", colour = "black", size = 14, hjust = .5, vjust = .5),
+    plot.title = element_text(face = "bold", colour = "black", size = 14, 
+                              hjust = .5, vjust = .5),
     
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank(),
@@ -174,6 +173,47 @@ my_theme <- theme_bw() +
 
 prnVol(theme = my_theme, filename = my_theme.png)
 
+# custom plot
+# ("W2_bat" etc. are contrast names in `pepSig`)
+prnVol(fml_nms = c("W2_bat", "W2_loc"), filename = foo.png)
+
+res <- readRDS(file.path(dat_dir, "Protein/Volcano/W2_bat/foo.rds"))
+# names(res)
+
+p <- ggplot() +
+  geom_point(data = res$data, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+             size = 3, colour = "#252525", shape = 20, alpha = .5) +
+  geom_point(data = res$greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+             size = 3, color = res$palette[2], shape = 20, alpha = .8) +
+  geom_point(data = res$less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
+             size = 3, color = res$palette[1], shape = 20, alpha = .8) +
+  geom_hline(yintercept = -log10(res$yco), linetype = "longdash", size = .5) +
+  geom_vline(xintercept = -log2(res$xco), linetype = "longdash", size = .5) +
+  geom_vline(xintercept = log2(res$xco), linetype = "longdash", size = .5) +
+  scale_x_continuous(limits = c(res$xmin, res$xmax)) +
+  scale_y_continuous(limits = c(res$ymin, res$ymax)) +
+  labs(title = res$title, x = res$x_label, y = res$y_label) +
+  res$theme
+
+p <- p + geom_text(data = res$topns, 
+                   mapping = aes(x = log2Ratio, 
+                                 y = -log10(pVal), 
+                                 label = Index, 
+                                 color = Index),
+                   size = 3, 
+                   alpha = .5, 
+                   hjust = 0, 
+                   nudge_x = 0.05, 
+                   vjust = 0, 
+                   nudge_y = 0.05, 
+                   na.rm = TRUE)
+
+p <- p + facet_wrap(~ Contrast, nrow = 1, labeller = label_value)
+
+p <- p + geom_table(data = res$topn_labels, aes(table = gene), 
+                    x = -res$xmax*.85, y = res$ymax/2)
+
+
 ## protein subgroups by gene sets
 # prerequisite analysis of GSPA
 prnGSPA(
@@ -191,16 +231,14 @@ prnGSPA(
 # (2) optional lines of `xco` and `yco` in grey
 gspaMap(
   impute_na = FALSE,
-  show_labels = TRUE, 
-  topn = 20, 
+  topn_gsets = 20, 
   show_sig = pVal, 
 )
 
 # disable the lines of `xco` and `yco`, 
 gspaMap(
   impute_na = FALSE,
-  show_labels = TRUE, 
-  topn = 20, 
+  topn_gsets = 20, 
   show_sig = pVal, 
   xco = 0, 
   yco = Inf, 
@@ -211,9 +249,9 @@ gspaMap(
   fml_nms = c("W2_bat", "W2_loc", "W16_vs_W2"),
   gspval_cutoff = c(5E-2, 5E-2, 1E-10),
   gslogFC_cutoff = log2(1.2),
-  topn = 20, 
+  topn_gsets = 20, 
+  topn_labels = 0,
   show_sig = pVal,
-  show_labels = FALSE,
   xco = 0, 
   yco = Inf, 
 )
@@ -278,7 +316,7 @@ gspaMap(
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 }

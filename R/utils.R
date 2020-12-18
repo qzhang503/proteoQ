@@ -169,7 +169,7 @@ reorder_files <- function(filelist) {
 #' @import dplyr 
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-reorderCols <- function (df, endColIndex, col_to_rn) {
+reorderCols <- function(df, endColIndex, col_to_rn) {
 	if (length(endColIndex) == 0) {
 	  endColIndex <- grep("I[0-9]{3}|log2_R[0-9]{3}", names(df))
 	}
@@ -203,7 +203,7 @@ reorderCols <- function (df, endColIndex, col_to_rn) {
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
-reorderCols2 <- function (df = NULL, pattern = NULL) {
+reorderCols2 <- function(df = NULL, pattern = NULL) {
   if (is.null(df)) stop("`df` cannot be `NULL`.", call. = FALSE)
   
   if (is.null(pattern)) {
@@ -232,7 +232,7 @@ reorderCols2 <- function (df = NULL, pattern = NULL) {
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
-ins_cols_after <- function (df = NULL, idx_bf = ncol(df), idx_ins = NULL) {
+ins_cols_after <- function(df = NULL, idx_bf = ncol(df), idx_ins = NULL) {
   if (is.null(df)) stop("`df` cannot be `NULL`.", call. = FALSE)
   if (is.null(idx_ins)) return(df)
   if (idx_bf >= ncol(df)) return(df)
@@ -277,7 +277,7 @@ sort_tmt_lcms <- function (nms) {
 #' @import dplyr
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-na_zeroIntensity <- function (df) {
+na_zeroIntensity <- function(df) {
 	ind <- grep("I[0-9]{3}|^LFQ\\sintensity\\s|^Intensity\\s", names(df))
 
 	temp <- df[, ind]
@@ -290,7 +290,7 @@ na_zeroIntensity <- function (df) {
 #' Find all zero rows
 #' 
 #' @param x A data frame.
-not_allzero_rows <- function (x) (rowSums(x != 0, na.rm = TRUE) > 0)
+not_allzero_rows <- function(x) (rowSums(x != 0, na.rm = TRUE) > 0)
 
 #' Summarizes numeric values
 #'
@@ -475,29 +475,40 @@ TMT_top_n <- function (x, id, ...) {
 }
 
 
-#' Finds all-zero column(s)
+#' Finds not-all-zero column(s)
 #'
 #' \code{not_all_zero} identifies the column indexes with all NA values.
 #'
-#' @param x A data frame of \code{log2FC} and \code{intensity}.
-not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
+#' @param df A data frame.
+#' @examples \donttest{not_all_zero(mtcars)}
+#' @return A logical vector
+not_all_zero <- function (df) {
+  stopifnot(is.data.frame(df))
+  colSums(df != 0, na.rm = TRUE) > 0
+}
 
 
-#' Finds all-NA column(s)
+#' Finds not-all-NA column(s)
 #'
 #' \code{not_all_NA} identifies the column indexes with all NA values.
 #'
-#' @param x A data frame of \code{log2FC} and \code{intensity}.
+#' @param df A data frame.
 #' @import dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
+#' @examples \donttest{not_all_NA(mtcars)}
+#' @return A logical vector
+not_all_NA <- function (df) {
+  stopifnot(is.data.frame(df))
+  colSums(!is.na(df), na.rm = TRUE) > 0
+}
 
 
-#' Finds all-NaN column(s)
-#' 
-#' @param x A data frame of \code{log2FC} and \code{intensity}.
-#' @param ... The same in \code{sum}.
+#' Finds non-all-NaN column(s)
+#'
+#' @param x A vector.
+#' @examples \donttest{purrr::map_lgl(mtcars, not_all_nan, na.rm = TRUE)}
 not_all_nan <- function(x, ...) {
+  stopifnot(is.vector(x))
   sum(is.nan(x), ...) != length(x)
 }
 
@@ -506,7 +517,9 @@ not_all_nan <- function(x, ...) {
 #' 
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
 #' @param ... The same in \code{sum}.
+#' @examples \donttest{purrr::map_lgl(mtcars, is_all_nan, na.rm = TRUE)}
 is_all_nan <- function(x, ...) {
+  stopifnot(is.vector(x))
   sum(is.nan(x), ...) == length(x)
 }
 
@@ -515,9 +528,11 @@ is_all_nan <- function(x, ...) {
 #' 
 #' @param df A data frame of \code{log2FC} and \code{intensity}.
 #' @param col The index of column.
+#' @examples \donttest{is_trivial_col(mtcars, 1)}
 is_trivial_col <- function (df, col) {
-  x <- df[, col] %>% 
-    purrr::flatten_dbl() 
+  stopifnot(length(col) == 1)
+  
+  x <- df[, col]
   
   x[x == 0] <- NA
   x[is.nan(x)] <- NA
@@ -530,6 +545,8 @@ is_trivial_col <- function (df, col) {
 #' 
 #' @param x A numeric vector
 is_trivial_dbl <- function (x) {
+  stopifnot(is.vector(x))
+  
   if (!is.numeric(x)) return(FALSE)
   
   x[x == 0] <- NA
@@ -539,9 +556,9 @@ is_trivial_dbl <- function (x) {
 }
 
 
-#' Replace a trivial vector with NA.
+#' Replace a trivial vector with NA values.
 #' 
-#' @param x A numeric vecotr
+#' @param x A numeric vector
 replace_trivial_with_na <- function (x) {
   if (is_trivial_dbl(x)) {
     x <- rep(NA, length(x))
@@ -566,7 +583,8 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 
 	if (sum(!exists) > 0) {
 		warning(paste0("Column '", annot_cols[!exists], "'",
-		               " not found in \'label_scheme\' and will be skipped."))
+		               " not found in \'label_scheme\' and will be skipped."), 
+		        call. = FALSE)
 		annot_cols <- annot_cols[exists]
 	}
 
@@ -587,7 +605,10 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 		data.frame(check.names = FALSE) %>%
 		`rownames<-`(.[["Sample_ID"]])
 
-	if (any(duplicated(x[["Sample_ID"]]))) stop("Duplicated sample IDs found\n")
+	if (any(duplicated(x[["Sample_ID"]]))) {
+	  stop("Duplicated sample IDs found.\n", 
+	       call. = FALSE)
+	}
 
 	if (!"Sample_ID" %in% annot_cols) x <- x %>% dplyr::select(-Sample_ID)
 
@@ -663,7 +684,7 @@ setHMlims <- function (x, xmin, xmax) {
 	x[x < xmin] <- xmin
 	x[x > xmax] <- xmax
 
-	x
+	invisible(x)
 }
 
 
@@ -747,9 +768,9 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 	dat_dir <- get_gl_dat_dir()
 	
 	if (!requireNamespace("mice", quietly = TRUE)) {
-	  stop("\n====================================================================", 
-	       "\nNeed install package \"mice\" needed for this function to work.",
-	       "\n====================================================================",
+	  stop("\n============================================================", 
+	       "\nNeed package \"mice\" for this function to work.",
+	       "\n============================================================",
 	       call. = FALSE)
 	}
 	
@@ -952,7 +973,8 @@ add_refseq_gene <- function (acc_lookup, acc_type) {
                        uniprot_id = "uniprot_acc", 
                        refseq_acc = "refseq_acc", 
                        other_acc = "other_acc", 
-                       stop("Unknown `accession type`.", Call. = FALSE)
+                       stop("Unknown `accession type`.", 
+                            Call. = FALSE)
   )
   
   if (all(species %in% c("human", "mouse", "rat"))) {
@@ -3033,7 +3055,7 @@ concat_fml_dots <- function(fmls = NULL, fml_nms = NULL,
                             dots = NULL, anal_type = "zzz") {
   dat_dir <- get_gl_dat_dir()
   
-  if ((!is_empty(fmls)) & (anal_type == "GSEA")) return(c(dots, fmls))
+  if ((!purrr::is_empty(fmls)) && (anal_type == "GSEA")) return(c(dots, fmls))
   
   if (purrr::is_empty(fmls)) {
     fml_file <-  file.path(dat_dir, "Calls/pepSig_formulas.rda")
@@ -3202,8 +3224,12 @@ check_dots <- function (blacklist = NULL, ...) {
 
 #' check depreciated arguments
 #' 
-#' @param ... A list of arguments for checking.
-#' @inheritParams check_dots
+#' @param blacklist A list of paired character vectors. In each pair, the first
+#'   element is the old argument name if incurred and the second is the new name
+#'   for reminding.
+#' @param ... A list of arguments for checking. The depreciated argument(s) are
+#'   no longer in the formalArgs of a function. If present, they will be in
+#'   \code{...}.
 check_depreciated_args <- function (blacklist = NULL, ...) {
   dots <- rlang::enexprs(...)
   old_args <- purrr::map_chr(blacklist, `[[`, 1)
@@ -3830,4 +3856,21 @@ check_ggplot_aes <- function(p) {
             call. = FALSE)
   }
 }
+
+
+#' Standardize range values.
+#' 
+#' @param from_to A numeric vector of length 2.
+prep_range <- function(from_to = c(0, 1)) {
+  stopifnot(length(from_to) == 2)
+  
+  stopifnot(from_to[2] > from_to[1], 
+            from_to[1] >= 0,
+            from_to[2] <= 100) 
+  
+  if (from_to[2] <= 1) from_to <- from_to * 100
+  
+  from_to
+}
+
 

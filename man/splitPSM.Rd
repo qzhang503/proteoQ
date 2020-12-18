@@ -17,6 +17,7 @@ splitPSM(
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
   rptr_intco = 0,
+  rptr_intrange = c(0, 100),
   use_lowercase_aa = TRUE,
   parallel = TRUE,
   ...
@@ -66,13 +67,23 @@ will be annotated with their kinase attributes. The default is FALSE.}
 intensities will be plotted. The default is TRUE. The argument is also
 applicable to the precursor intensity with MaxQuant LFQ.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity being
-considered non-trivial. The default is 0 without cut-offs. The filtration
-will not be applied synchronously to the precursor intensity under the same
-PSM query. To guard against odds such as higher MS2 reporter-ion
+\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity (TMT:
+\code{I126} etc.; LFQ: \code{I000}) being considered non-trivial. The
+default is 0 without cut-offs. The data nullification will not be applied
+synchronously to the precursor intensity (\code{pep_tot_int}) under the
+same PSM query. To guard against odds such as higher MS2 reporter-ion
 intensities than their contributing MS1 precursor intensity, employs for
 example \code{filter_... = rlang::exprs(pep_tot_int >= your_ms1_cutoff)}
 during \link{PSM2Pep}.}
+
+\item{rptr_intrange}{Numeric vector at length two. The argument specifies the
+range of reporter-ion intensities (TMT: \code{I126} etc.; LFQ: \code{I000})
+being considered non-trivial. The default is between 0 and 100 percentile
+without cut-offs. While argument \code{rptr_intco} employs a universal
+cut-off across samples by absolute values, \code{range_int} provides an
+alternative means of sample-specific thresholding of intensities by
+percentiles. The data nullification will not be applied synchronously to
+the precursor intensity under the same PSM query.}
 
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the

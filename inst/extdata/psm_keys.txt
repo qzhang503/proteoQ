@@ -56,7 +56,7 @@ pep_scan_title	Mascot scan title taken from peak list
 pep_scan_range	Mascot scan number range of a peptide match	
 pep_ret_range	Mascot retention time range of a peptide match	
 pep_ms2_sumint	Mascot sum of MS2 fragment-ion intensity of a peptide match	
-pep_n_ions	Mascot count of matched fragment ions of a peptide match	
+pep_n_ions	Mascot count of matched and unmatched fragment ions of a peptide query	
 pep_locprob	The highest probablity from site analysis of the variable modification sites	"The second highest probablity, `pep_locprob2` is made implicit through `pep_locdiff`. Cf. `pep_var_mod_conf` from Mascot."
 pep_locdiff	pep_locprob – pep_locprob2	
 pep_phospho_locprob	The highest probability in phosphorylation sites	
@@ -73,7 +73,7 @@ other_acc	Protein accession with formats other than UniProt or RefSeq
 entrez	Protein Entrez ID	
 species	The species of a protein entry	
 acc_type	The type of accession names	"One of `refseq_acc`, `uniprot_acc`, `uniprot_id` or `other_acc`."
-shared_prot_accs	List of protein accesssions under the same group	
+shared_prot_accs	List of protein accesssions under the same group	MSFragger at UniProt fasta(s): fasta_name(s) being used for non-primary protein(s). 
 shared_genes	List of genes under the same group	
 kin_attr	The attribute of proteins being kinases	
 kin_class	"The classes of kinases, e.g., TK, TKL..."	

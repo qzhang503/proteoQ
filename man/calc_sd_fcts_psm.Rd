@@ -29,9 +29,9 @@ deviation across samples. The default is between the 10th and the 90th
 quantiles.}
 
 \item{range_int}{Numeric vector at length two. The argument specifies the
-range of the \code{intensity} of reporter ions for use in the scaling
-normalization of standard deviation across samples. The default is between
-the 5th and the 95th quantiles.}
+range of the \code{intensity} of reporter ions (including \code{I000}) for
+use in the scaling normalization of standard deviation across samples. The
+default is between the 5th and the 95th quantiles.}
 
 \item{set_idx}{Numeric.  The index of a multiplex TMT experiment in metadata
 files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}

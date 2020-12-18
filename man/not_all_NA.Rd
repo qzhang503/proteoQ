@@ -2,13 +2,19 @@
 % Please edit documentation in R/utils.R
 \name{not_all_NA}
 \alias{not_all_NA}
-\title{Finds all-NA column(s)}
+\title{Finds not-all-NA column(s)}
 \usage{
-not_all_NA(x)
+not_all_NA(df)
 }
 \arguments{
-\item{x}{A data frame of \code{log2FC} and \code{intensity}.}
+\item{df}{A data frame.}
+}
+\value{
+A logical vector
 }
 \description{
 \code{not_all_NA} identifies the column indexes with all NA values.
+}
+\examples{
+\donttest{not_all_NA(mtcars)}
 }

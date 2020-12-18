@@ -1414,7 +1414,8 @@ add_shared_sm_genes <- function (df, key = "Proteins", sep = ";",
 #'
 #' @param df PSM data.
 #' @inheritParams normPSM
-proc_psms <- function (df = NULL, scale_rptr_int = FALSE, rptr_intco = 0, 
+proc_psms <- function (df = NULL, scale_rptr_int = FALSE, 
+                       rptr_intco = 0, rptr_intrange = c(0, 100), 
                        rm_craps = FALSE, rm_krts = FALSE, annot_kinases = FALSE, 
                        plot_rptr_int = TRUE, parallel = TRUE) {
   
@@ -1469,14 +1470,20 @@ proc_psms <- function (df = NULL, scale_rptr_int = FALSE, rptr_intco = 0,
   # (1) Shared peptides will be removed in this step by `rowSums` if 
   #   checked 'Unique peptide only' during Mascot PSM export;
   # (2) `> 1` to bypass non-quantitative or LFQ workflows;
-  # (3) MaxQuant Bruker no `Precusor Intensity` being filled;
+  # (3) MaxQuant Bruker no `Precursor Intensity` being filled;
   df <- df %>%
     dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), 
                      as.numeric) %>%
     dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
                      ~ ifelse(.x == -1, NA, .x)) %>%
+    # "-1" becomes NA
     dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
-                     ~ ifelse(.x <= rptr_intco, NA, .x)) %>%
+                     ~ ifelse(.x <= rptr_intco, NA, .x)) %>% 
+    dplyr::mutate_at(vars(grep("^I[0-9]{3}[NC]{0,1}", names(.))), ~ {
+      x <- .x
+      qts <- quantile(x, probs = rptr_intrange/100, na.rm = TRUE)
+      x <- ifelse((x < qts[1]) | (x > qts[2]), NA, .x)
+    }) %>% 
     dplyr::arrange(RAW_File, pep_seq, prot_acc) 
   
   if (length(grep("^I[0-9]{3}", names(df))) > 1) {
@@ -1587,13 +1594,27 @@ proc_psms <- function (df = NULL, scale_rptr_int = FALSE, rptr_intco = 0,
 #'   is FALSE.
 #' @param annot_kinases Logical; if TRUE, proteins of human or mouse origins
 #'   will be annotated with their kinase attributes. The default is FALSE.
-#' @param rptr_intco Numeric; the threshold of reporter-ion intensity being
-#'   considered non-trivial. The default is 0 without cut-offs. The filtration
-#'   will not be applied synchronously to the precursor intensity under the same
-#'   PSM query. To guard against odds such as higher MS2 reporter-ion
+#' @param rptr_intco Numeric; the threshold of reporter-ion intensity (TMT:
+#'   \code{I126} etc.; LFQ: \code{I000}) being considered non-trivial. The
+#'   default is 0 without cut-offs. The data nullification will not be applied
+#'   synchronously to the precursor intensity (\code{pep_tot_int}) under the
+#'   same PSM query. To guard against odds such as higher MS2 reporter-ion
 #'   intensities than their contributing MS1 precursor intensity, employs for
-#'   example \code{filter_... = rlang::exprs(pep_tot_int >= your_ms1_cutoff)}
-#'   during \link{PSM2Pep}.
+#'   example \code{filter_... = rlang::exprs(pep_tot_int >= my_ms1_cutoff)}
+#'   during \link{PSM2Pep}. The rule of thumb is that \code{pep_tot_int} is a
+#'   single column; thus the corresponding data filtration against it may be
+#'   readily achieved without introducing new arguments. By contrast,
+#'   \code{rptr_intco} applies to a set of columns, \code{I126} etc.; it might
+#'   be slightly more involved/laborious when applying suitable statements of
+#'   \code{filter_} varargs.
+#' @param rptr_intrange Numeric vector at length two. The argument specifies the
+#'   range of reporter-ion intensities (TMT: \code{I126} etc.; LFQ: \code{I000})
+#'   being considered non-trivial. The default is between 0 and 100 percentile
+#'   without cut-offs. While argument \code{rptr_intco} employs a universal
+#'   cut-off across samples by absolute values, \code{range_int} provides an
+#'   alternative means of sample-specific thresholding of intensities by
+#'   percentiles. The data nullification will not be applied synchronously to
+#'   the precursor intensity under the same PSM query.
 #' @param plot_rptr_int Logical; if TRUE, the distributions of reporter-ion
 #'   intensities will be plotted. The default is TRUE. The argument is also
 #'   applicable to the precursor intensity with MaxQuant LFQ.
@@ -1612,7 +1633,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                      fasta = NULL, entrez = NULL, pep_unique_by = "group", 
                      scale_rptr_int = FALSE, 
                      rm_craps = FALSE, rm_krts = FALSE, purge_phosphodata = TRUE, 
-                     annot_kinases = FALSE, plot_rptr_int = TRUE, rptr_intco = 0, 
+                     annot_kinases = FALSE, plot_rptr_int = TRUE, 
+                     rptr_intco = 0, rptr_intrange = c(0, 100), 
                      use_lowercase_aa = TRUE, parallel = TRUE, ...) {
   
   # --- Outlines ---
@@ -1871,7 +1893,9 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                                     stringr::str_count(pep_seq, "[KR]"))) %>% 
     add_prot_icover() %>% 
     { if (!("prot_cover" %in% names(.) && length(filelist) == 1)) 
-      calc_cover(., id = !!rlang::sym(group_pep_by)) else . } 
+      calc_cover(., id = !!rlang::sym(group_pep_by)) 
+      else 
+        dplyr::mutate(., prot_cover = prot_cover/100) } 
 
   # (2.7) apply parsimony
   df <- local({
@@ -1949,6 +1973,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   proc_psms(df = df, 
             scale_rptr_int = scale_rptr_int, 
             rptr_intco = rptr_intco, 
+            rptr_intrange = rptr_intrange, 
             rm_craps = rm_craps, 
             rm_krts = rm_krts, 
             annot_kinases = annot_kinases, 
@@ -2626,7 +2651,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         na_genes_by_acc() %>% 
         reloc_col_before("pep_seq", "pep_res_after") %>% 
         reloc_col_after("pep_seq_mod", "pep_seq")
-      
+
       df <- dplyr::bind_cols(
         df %>% dplyr::select(grep("^prot_", names(.))), 
         df %>% dplyr::select(grep("^pep_", names(.))), 
@@ -2870,20 +2895,21 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'@importFrom stringr str_split
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
-normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"), 
-                    group_pep_by = c("prot_acc", "gene"), 
-                    mc_psm_by = c("peptide", "protein", "psm"), 
-                    scale_rptr_int = FALSE, 
-                    dat_dir = NULL, 
+normPSM <- function(dat_dir = NULL, 
                     expt_smry = "expt_smry.xlsx", frac_smry = "frac_smry.xlsx", 
                     fasta = NULL, entrez = NULL, 
+                    group_psm_by = c("pep_seq", "pep_seq_mod"), 
+                    group_pep_by = c("prot_acc", "gene"), 
                     pep_unique_by = c("group", "protein", "none"), 
-                    corrected_int = TRUE, rm_reverses = TRUE, 
-                    rptr_intco = 0, rm_craps = FALSE, 
-                    rm_krts = FALSE, rm_outliers = FALSE, 
+                    mc_psm_by = c("peptide", "protein", "psm"), 
+                    scale_rptr_int = FALSE, 
+                    rptr_intco = 0, rptr_intrange = c(0, 100), 
+                    rm_craps = FALSE, rm_krts = FALSE, rm_outliers = FALSE, 
+                    purge_phosphodata = TRUE, 
                     annot_kinases = FALSE, 
                     plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
-                    use_lowercase_aa = TRUE, purge_phosphodata = TRUE, 
+                    use_lowercase_aa = TRUE, 
+                    corrected_int = TRUE, rm_reverses = TRUE, 
                     parallel = TRUE, ...) {
   
   old_opts <- options()
@@ -2992,6 +3018,7 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
              annot_kinases = annot_kinases, 
              plot_rptr_int = plot_rptr_int, 
              rptr_intco = rptr_intco, 
+             rptr_intrange = rptr_intrange, 
              use_lowercase_aa = use_lowercase_aa, 
              parallel = parallel, ...)
   } else if (type == "mq") {
@@ -3009,6 +3036,7 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
                 annot_kinases = annot_kinases, 
                 plot_rptr_int = plot_rptr_int, 
                 rptr_intco = rptr_intco, 
+                rptr_intrange = rptr_intrange, 
                 use_lowercase_aa = use_lowercase_aa, 
                 parallel = parallel, ...)
   } else if (type == "sm") {
@@ -3024,6 +3052,7 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
                 annot_kinases = annot_kinases, 
                 plot_rptr_int = plot_rptr_int, 
                 rptr_intco = rptr_intco, 
+                rptr_intrange = rptr_intrange, 
                 use_lowercase_aa = use_lowercase_aa, 
                 parallel = parallel, ...)
   } else if (type == "mf") {
@@ -3039,6 +3068,7 @@ normPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
                 annot_kinases = annot_kinases, 
                 plot_rptr_int = plot_rptr_int, 
                 rptr_intco = rptr_intco, 
+                rptr_intrange = rptr_intrange, 
                 use_lowercase_aa = use_lowercase_aa, 
                 parallel = parallel, ...)
   } 
@@ -3611,6 +3641,9 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
     
     parallel::clusterExport(cl, list("reloc_col_before"), 
                             envir = env_where("reloc_col_before"))
+    
+    parallel::clusterExport(cl, list("exprs"), 
+                            envir = environment(rlang::exprs))
     
     suppressWarnings(
       silent_out <- parallel::clusterApply(
@@ -4243,6 +4276,7 @@ pad_mq_channels <- function(file, fasta, entrez, corrected_int, ...) {
   TMT_plex <- TMT_plex(label_scheme_full)
   
   if (TMT_plex == 0) {
+    # no "Corrected" intensity for LFQ
     df <- df %>% 
       dplyr::mutate(dat_file = base_name, 
                     I000 = `Precursor Intensity`)
@@ -4387,14 +4421,14 @@ pad_mq_channels <- function(file, fasta, entrez, corrected_int, ...) {
 #'  extreme of choice \code{none}, all peptides are treated as unique. A new
 #'  column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
 #'  be added to the PSM reports. Note that the choice of \code{none} is only for
-#'  convenience, as the same can be achieved by setting \code{use_unique_pep =
+#'  convenience, as the same may be achieved by setting \code{use_unique_pep =
 #'  FALSE} in \link{Pep2Prn}.
-#'@param corrected_int A logical argument for uses with \code{MaxQuant} data. At
+#'@param corrected_int A logical argument for uses with \code{MaxQuant} TMT. At
 #'  the TRUE default, values under columns "Reporter intensity corrected..." in
 #'  \code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
 #'  "Reporter intensity" values without corrections will be used.
-#'@param rm_reverses A logical argument for uses with \code{MaxQuant} data. At
-#'  the TRUE default, \code{Reverse} entries will be removed.
+#'@param rm_reverses A logical argument for uses with \code{MaxQuant} TMT and
+#'  LFQ. At the TRUE default, \code{Reverse} entries will be removed.
 #'@inheritParams splitPSM
 #'@import dplyr tidyr stringr
 #'@importFrom magrittr %>% %T>% %$% %<>% equals
@@ -4405,7 +4439,8 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         rm_craps = FALSE, rm_krts = FALSE, 
                         rm_reverses = TRUE, purge_phosphodata = TRUE, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
-                        rptr_intco = 0, use_lowercase_aa = TRUE, 
+                        rptr_intco = 0, rptr_intrange = c(0, 100), 
+                        use_lowercase_aa = TRUE, 
                         parallel = TRUE, ...) {
 
   on.exit(message("Split PSMs by sample IDs and LCMS series --- Completed."), 
@@ -4741,8 +4776,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
             # THADA 9717;13107
             
             # perhaps in MQ, group IDs calculated based on invidual RAW files
-            # very ... 
-            
+
             x_u <- .x %>% 
               dplyr::select(gene, `Protein Group Ids`) %>% 
               dplyr::filter(!grepl(";", `Protein Group Ids`)) %>% 
@@ -4860,6 +4894,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   proc_psms(df = df, 
             scale_rptr_int = scale_rptr_int, 
             rptr_intco = rptr_intco, 
+            rptr_intrange = rptr_intrange, 
             rm_craps = rm_craps, 
             rm_krts = rm_krts, 
             annot_kinases = annot_kinases, 
@@ -5145,7 +5180,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         scale_rptr_int = FALSE, 
                         rm_craps = FALSE, rm_krts = FALSE, purge_phosphodata = TRUE, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
-                        rptr_intco = 0, 
+                        rptr_intco = 0, rptr_intrange = c(0, 100), 
                         use_lowercase_aa = TRUE, parallel = TRUE, ...) {
   
   on.exit(message("Split PSMs by sample IDs and LCMS series --- Completed."), 
@@ -5340,6 +5375,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   proc_psms(df = df, 
             scale_rptr_int = scale_rptr_int, 
             rptr_intco = rptr_intco, 
+            rptr_intrange = rptr_intrange, 
             rm_craps = rm_craps, 
             rm_krts = rm_krts, 
             annot_kinases = annot_kinases, 
@@ -5522,7 +5558,8 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         rm_craps = FALSE, rm_krts = FALSE,
                         purge_phosphodata = TRUE, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
-                        rptr_intco = 0, use_lowercase_aa = TRUE, 
+                        rptr_intco = 0, rptr_intrange = c(0, 100), 
+                        use_lowercase_aa = TRUE, 
                         parallel = TRUE, ...) {
   
   on.exit(message("Split PSMs by sample IDs and LCMS series --- Completed."), 
@@ -5746,6 +5783,7 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   proc_psms(df = df, 
             scale_rptr_int = scale_rptr_int, 
             rptr_intco = rptr_intco, 
+            rptr_intrange = rptr_intrange, 
             rm_craps = rm_craps, 
             rm_krts = rm_krts, 
             annot_kinases = annot_kinases, 

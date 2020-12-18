@@ -14,3 +14,6 @@ is_trivial_col(df, col)
 \description{
 Finds a trivial column
 }
+\examples{
+\donttest{is_trivial_col(mtcars, 1)}
+}

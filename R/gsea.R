@@ -151,9 +151,9 @@ make_cls <- function(df, nms, filepath, fn_prefix) {
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@export
 prnGSEA <- function (gset_nms = "go_sets", 
@@ -192,9 +192,12 @@ prnGSEA <- function (gset_nms = "go_sets",
   filename <- rlang::enexpr(filename)
   
   dots <- rlang::enexprs(...)
-  fmls <- dots %>% .[grepl("^\\s*~", .)]
-  dots <- dots[!names(dots) %in% names(fmls)]
-  dots <- concat_fml_dots(fmls = fmls, fml_nms = fml_nms, dots = dots, anal_type = "GSEA")
+  dots <- concat_fml_dots(
+    fmls = dots %>% .[grepl("^\\s*~", .)], 
+    fml_nms = fml_nms, 
+    dots = dots %>% .[!grepl("^\\s*~", .)], 
+    anal_type = "GSEA"
+  )
 
   reload_expts()
   
@@ -204,9 +207,14 @@ prnGSEA <- function (gset_nms = "go_sets",
   
   message("`prnGSEA` compiles data for online GSEA and argument `gset_nms` not currently used.")
   
-  info_anal(df = !!df, df2 = NULL, id = !!id, 
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na, 
-            filepath = !!filepath, filename = !!filename, 
+  info_anal(df = !!df, 
+            df2 = NULL, 
+            id = !!id, 
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na, 
+            filepath = !!filepath, 
+            filename = !!filename, 
             anal_type = "GSEA")(gset_nms = "go_sets", 
                                 var_cutoff = var_cutoff, 
                                 pval_cutoff = pval_cutoff, 
@@ -222,8 +230,10 @@ prnGSEA <- function (gset_nms = "go_sets",
 #' @inheritParams fml_gspa
 #' @inheritParams gsVolcano
 fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff, 
-                      logFC_cutoff, gspval_cutoff, gslogFC_cutoff, min_size, max_size, 
-                      df, col_ind, id, gsets, label_scheme_sub, complete_cases, scale_log2r, 
+                      logFC_cutoff, gspval_cutoff, gslogFC_cutoff, 
+                      min_size, max_size, 
+                      df, col_ind, id, gsets, label_scheme_sub, 
+                      complete_cases, scale_log2r, 
                       filepath, filename, ...) {
   
   dots <- rlang::enexprs(...)
@@ -233,8 +243,12 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
   
   df <- local({
     ids <- df %>% 
-      prep_gspa(id = !!id, fml_nm = fml_nm, col_ind = col_ind, 
-                pval_cutoff = pval_cutoff, logFC_cutoff = logFC_cutoff, use_adjP = FALSE) %>% 
+      prep_gspa(id = !!id, 
+                fml_nm = fml_nm, 
+                col_ind = col_ind, 
+                pval_cutoff = pval_cutoff, 
+                logFC_cutoff = logFC_cutoff, 
+                use_adjP = FALSE) %>% 
       dplyr::select(id) %>% 
       unlist() %>% 
       unique()
@@ -253,7 +267,9 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     df <- df %>% dplyr::filter(!!sym(id) %in% ids)
     
     # No `lm` so `complete_cases` applied to all samples in label_scheme_sub
-    if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+    if (complete_cases) {
+      df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+    }
 
     return(df)
   })
@@ -273,8 +289,13 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
   fn_prefix <- gsub("\\.[^.]*$", "", filename)
   
-  make_gct(df = df_log2r, filepath = filepath, fn_prefix = fn_prefix)
-  make_cls(df = df_log2r, nms = label_scheme_sub$Group, filepath = filepath, fn_prefix = fn_prefix)
+  make_gct(df = df_log2r, 
+           filepath = filepath, 
+           fn_prefix = fn_prefix)
+  make_cls(df = df_log2r, 
+           nms = label_scheme_sub$Group, 
+           filepath = filepath, 
+           fn_prefix = fn_prefix)
   
   fml_ops <- suppressMessages(prepFml(fml, label_scheme_sub, ...))
   contr_mat <- fml_ops$contr_mat
@@ -286,7 +307,8 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
   df <- df %>% 
     `rownames<-`(NULL) %>% 
     tibble::column_to_rownames(id) %>% 
-    `names<-`(gsub(paste0(NorZ_ratios, "[0-9]{3}[NC]*\\s+\\((.*)\\)$"), "\\1", names(.))) %>% 
+    `names<-`(gsub(paste0(NorZ_ratios, "[0-9]{3}[NC]*\\s+\\((.*)\\)$"), "\\1", 
+                   names(.))) %>% 
     dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
 
   nms <- purrr::map(1:ncol(contr_mat), ~ {
@@ -343,7 +365,10 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     nms_pos_i <- rep(nms$pos[i], ncol(pos[[i]])) %>% as.character()
     nms_neg_i <- rep(nms$neg[i], ncol(neg[[i]])) %>% as.character()
     nms_both <- c(nms_pos_i, nms_neg_i)
-    make_cls(df = df_i, nms = nms_both, filepath = filepath_i, fn_prefix = paste0(fn_prefix, "_", out_nm))
+    make_cls(df = df_i, 
+             nms = nms_both, 
+             filepath = filepath_i, 
+             fn_prefix = paste0(fn_prefix, "_", out_nm))
   }    
 }
 

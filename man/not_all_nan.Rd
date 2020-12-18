@@ -2,15 +2,16 @@
 % Please edit documentation in R/utils.R
 \name{not_all_nan}
 \alias{not_all_nan}
-\title{Finds all-NaN column(s)}
+\title{Finds non-all-NaN column(s)}
 \usage{
 not_all_nan(x, ...)
 }
 \arguments{
-\item{x}{A data frame of \code{log2FC} and \code{intensity}.}
-
-\item{...}{The same in \code{sum}.}
+\item{x}{A vector.}
 }
 \description{
-Finds all-NaN column(s)
+Finds non-all-NaN column(s)
+}
+\examples{
+\donttest{purrr::map_lgl(mtcars, not_all_nan, na.rm = TRUE)}
 }

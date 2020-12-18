@@ -2,18 +2,18 @@
 % Please edit documentation in R/volcanos.R
 \name{plotVolcano}
 \alias{plotVolcano}
-\title{Plot volcanos}
+\title{Volcano plots}
 \usage{
 plotVolcano(
   df = NULL,
   df2 = NULL,
   id = "gene",
   adjP = FALSE,
-  show_labels = TRUE,
+  topn_labels = 20,
   anal_type = "Volcano",
   gspval_cutoff = 0.05,
   gslogFC_cutoff = log2(1.2),
-  topn = Inf,
+  topn_gsets = Inf,
   show_sig = "none",
   fml_nms = NULL,
   gset_nms = "go_sets",
@@ -50,8 +50,9 @@ of \code{df} and \code{df2}.}
 \item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals in volcano plots.
 The default is FALSE.}
 
-\item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.
-The default is TRUE.}
+\item{topn_labels}{A non-negative integer; the top-n species for labeling in a
+plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
+shown. The default is to label the top-20 species with the lowest p-values.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
@@ -74,7 +75,7 @@ matched to or specified in argument \code{fml_nms}. Formula-specific
 threshold is allowed by supplying a vector of absolute values in
 \code{log2FC}.}
 
-\item{topn}{Numeric value or vector; top entries in gene sets ordered by
+\item{topn_gsets}{Numeric value or vector; top entries in gene sets ordered by
 increasing \code{pVal} for visualization. The default is to use all
 available entries.}
 
@@ -142,5 +143,5 @@ the maximum \code{y}. \cr \code{x_label}, the label on \code{x}. \cr
 \code{y_label}, the label on \code{y}.}
 }
 \description{
-Plot volcanos
+Volcano plots
 }

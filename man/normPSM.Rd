@@ -5,62 +5,33 @@
 \title{Standardization of PSM}
 \usage{
 normPSM(
-  group_psm_by = c("pep_seq", "pep_seq_mod"),
-  group_pep_by = c("prot_acc", "gene"),
-  mc_psm_by = c("peptide", "protein", "psm"),
-  scale_rptr_int = FALSE,
   dat_dir = NULL,
   expt_smry = "expt_smry.xlsx",
   frac_smry = "frac_smry.xlsx",
   fasta = NULL,
   entrez = NULL,
+  group_psm_by = c("pep_seq", "pep_seq_mod"),
+  group_pep_by = c("prot_acc", "gene"),
   pep_unique_by = c("group", "protein", "none"),
-  corrected_int = TRUE,
-  rm_reverses = TRUE,
+  mc_psm_by = c("peptide", "protein", "psm"),
+  scale_rptr_int = FALSE,
   rptr_intco = 0,
+  rptr_intrange = c(0, 100),
   rm_craps = FALSE,
   rm_krts = FALSE,
   rm_outliers = FALSE,
+  purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE,
   use_lowercase_aa = TRUE,
-  purge_phosphodata = TRUE,
+  corrected_int = TRUE,
+  rm_reverses = TRUE,
   parallel = TRUE,
   ...
 )
 }
 \arguments{
-\item{group_psm_by}{A character string specifying the method in PSM grouping.
-At the \code{pep_seq} default, descriptive statistics will be calculated
-based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
-alternative, peptides with different variable modifications will be treated
-as different species and descriptive statistics will be calculated based on
-the same \code{pep_seq_mod} groups.}
-
-\item{group_pep_by}{A character string specifying the method in peptide
-grouping. At the \code{prot_acc} default, descriptive statistics will be
-calculated based on the same \code{prot_acc} groups. At the \code{gene}
-alternative, proteins with the same gene name but different accession
-numbers will be treated as one group.}
-
-\item{mc_psm_by}{A character string specifying the method in the median
-centering of PSM \code{log2FC} across samples. At the \code{peptide}
-default, the median description of PSMs (grouped by \code{pep_seq} or
-\code{pep_seq_mod} according to \code{group_psm_by}) will be first
-calculated and the offsets to zero (of logarithmic 2) will be used for the
-centering of PSMs across samples. At \code{mc_psm_by = protein}, the median
-description of PSMs (grouped by \code{prot_acc} or \code{gene} according to
-\code{group_pep_by}) will be calculated and the corresponding offsets to
-zero will be applied. At the \code{mc_psm_by = psm}, PSMs will be median
-centered without grouping.}
-
-\item{scale_rptr_int}{Logical; if TRUE, scales (up) MS2 reporter-ion
-intensities by MS1 precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}.
-\eqn{I_{MS1}}, MS1 precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion
-intensity; \eqn{I_{x}}, MS2 reporter-ion intensity under TMT channel
-\eqn{x}. Note that the scaling will not affect \code{log2FC}.}
-
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
 
@@ -82,6 +53,19 @@ species, users need to provide the file path(s) and name(s) for the lookup
 table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 for preparing custom entrez files.}
 
+\item{group_psm_by}{A character string specifying the method in PSM grouping.
+At the \code{pep_seq} default, descriptive statistics will be calculated
+based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
+alternative, peptides with different variable modifications will be treated
+as different species and descriptive statistics will be calculated based on
+the same \code{pep_seq_mod} groups.}
+
+\item{group_pep_by}{A character string specifying the method in peptide
+grouping. At the \code{prot_acc} default, descriptive statistics will be
+calculated based on the same \code{prot_acc} groups. At the \code{gene}
+alternative, proteins with the same gene name but different accession
+numbers will be treated as one group.}
+
 \item{pep_unique_by}{A character string for annotating the uniqueness of
 peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
 uniqueness of peptides is by groups with the collapses of same-set or
@@ -90,24 +74,43 @@ uniqueness of peptides is by protein entries without grouping. On the other
 extreme of choice \code{none}, all peptides are treated as unique. A new
 column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
 be added to the PSM reports. Note that the choice of \code{none} is only for
-convenience, as the same can be achieved by setting \code{use_unique_pep =
+convenience, as the same may be achieved by setting \code{use_unique_pep =
 FALSE} in \link{Pep2Prn}.}
 
-\item{corrected_int}{A logical argument for uses with \code{MaxQuant} data. At
-the TRUE default, values under columns "Reporter intensity corrected..." in
-\code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
-"Reporter intensity" values without corrections will be used.}
+\item{mc_psm_by}{A character string specifying the method in the median
+centering of PSM \code{log2FC} across samples. At the \code{peptide}
+default, the median description of PSMs (grouped by \code{pep_seq} or
+\code{pep_seq_mod} according to \code{group_psm_by}) will be first
+calculated and the offsets to zero (of logarithmic 2) will be used for the
+centering of PSMs across samples. At \code{mc_psm_by = protein}, the median
+description of PSMs (grouped by \code{prot_acc} or \code{gene} according to
+\code{group_pep_by}) will be calculated and the corresponding offsets to
+zero will be applied. At the \code{mc_psm_by = psm}, PSMs will be median
+centered without grouping.}
 
-\item{rm_reverses}{A logical argument for uses with \code{MaxQuant} data. At
-the TRUE default, \code{Reverse} entries will be removed.}
+\item{scale_rptr_int}{Logical; if TRUE, scales (up) MS2 reporter-ion
+intensities by MS1 precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}.
+\eqn{I_{MS1}}, MS1 precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion
+intensity; \eqn{I_{x}}, MS2 reporter-ion intensity under TMT channel
+\eqn{x}. Note that the scaling will not affect \code{log2FC}.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity being
-considered non-trivial. The default is 0 without cut-offs. The filtration
-will not be applied synchronously to the precursor intensity under the same
-PSM query. To guard against odds such as higher MS2 reporter-ion
+\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity (TMT:
+\code{I126} etc.; LFQ: \code{I000}) being considered non-trivial. The
+default is 0 without cut-offs. The data nullification will not be applied
+synchronously to the precursor intensity (\code{pep_tot_int}) under the
+same PSM query. To guard against odds such as higher MS2 reporter-ion
 intensities than their contributing MS1 precursor intensity, employs for
 example \code{filter_... = rlang::exprs(pep_tot_int >= your_ms1_cutoff)}
 during \link{PSM2Pep}.}
+
+\item{rptr_intrange}{Numeric vector at length two. The argument specifies the
+range of reporter-ion intensities (TMT: \code{I126} etc.; LFQ: \code{I000})
+being considered non-trivial. The default is between 0 and 100 percentile
+without cut-offs. While argument \code{rptr_intco} employs a universal
+cut-off across samples by absolute values, \code{range_int} provides an
+alternative means of sample-specific thresholding of intensities by
+percentiles. The data nullification will not be applied synchronously to
+the precursor intensity under the same PSM query.}
 
 \item{rm_craps}{Logical; if TRUE,
 \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
@@ -120,6 +123,10 @@ is FALSE.}
 for peptides with more than two identifying PSMs. Dixon's method will be
 used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
 25}. The default is FALSE.}
+
+\item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
+variable modification(s), entries without phosphorylation will be removed.
+The default is TRUE.}
 
 \item{annot_kinases}{Logical; if TRUE, proteins of human or mouse origins
 will be annotated with their kinase attributes. The default is FALSE.}
@@ -135,9 +142,13 @@ applicable to the precursor intensity with MaxQuant LFQ.}
 residues will be abbreviated with lower-case and/or \code{^_~}. See the
 table below for details. The default is TRUE.}
 
-\item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
-variable modification(s), entries without phosphorylation will be removed.
-The default is TRUE.}
+\item{corrected_int}{A logical argument for uses with \code{MaxQuant} TMT. At
+the TRUE default, values under columns "Reporter intensity corrected..." in
+\code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
+"Reporter intensity" values without corrections will be used.}
+
+\item{rm_reverses}{A logical argument for uses with \code{MaxQuant} TMT and
+LFQ. At the TRUE default, \code{Reverse} entries will be removed.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}

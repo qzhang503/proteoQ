@@ -55,7 +55,7 @@ other_acc	Protein accession with formats other than UniProt or RefSeq
 entrez	Protein Entrez ID	
 species	The species of a protein entry	
 acc_type	The type of accession names	
-shared_prot_accs	List of protein accesssions under the same group	
+shared_prot_accs	List of protein accesssions under the same group	See also PSM keys.
 shared_genes	List of genes under the same group	
 kin_attr	The attribute of proteins being kinases	
 kin_class	"The classes of kinases, e.g., TK, TKL..."	

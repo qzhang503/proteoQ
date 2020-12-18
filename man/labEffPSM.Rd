@@ -69,21 +69,22 @@ uniqueness of peptides is by protein entries without grouping. On the other
 extreme of choice \code{none}, all peptides are treated as unique. A new
 column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
 be added to the PSM reports. Note that the choice of \code{none} is only for
-convenience, as the same can be achieved by setting \code{use_unique_pep =
+convenience, as the same may be achieved by setting \code{use_unique_pep =
 FALSE} in \link{Pep2Prn}.}
 
-\item{corrected_int}{A logical argument for uses with \code{MaxQuant} data. At
+\item{corrected_int}{A logical argument for uses with \code{MaxQuant} TMT. At
 the TRUE default, values under columns "Reporter intensity corrected..." in
 \code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
 "Reporter intensity" values without corrections will be used.}
 
-\item{rm_reverses}{A logical argument for uses with \code{MaxQuant} data. At
-the TRUE default, \code{Reverse} entries will be removed.}
+\item{rm_reverses}{A logical argument for uses with \code{MaxQuant} TMT and
+LFQ. At the TRUE default, \code{Reverse} entries will be removed.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity being
-considered non-trivial. The default is 0 without cut-offs. The filtration
-will not be applied synchronously to the precursor intensity under the same
-PSM query. To guard against odds such as higher MS2 reporter-ion
+\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity (TMT:
+\code{I126} etc.; LFQ: \code{I000}) being considered non-trivial. The
+default is 0 without cut-offs. The data nullification will not be applied
+synchronously to the precursor intensity (\code{pep_tot_int}) under the
+same PSM query. To guard against odds such as higher MS2 reporter-ion
 intensities than their contributing MS1 precursor intensity, employs for
 example \code{filter_... = rlang::exprs(pep_tot_int >= your_ms1_cutoff)}
 during \link{PSM2Pep}.}

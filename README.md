@@ -1,7 +1,7 @@
 proteoQ
 ================
 truetrue
-2020-12-11
+2020-12-15
 
 -   [Introduction to proteoQ](#introduction-to-proteoq)
 -   [Installation](#installation)
@@ -1836,10 +1836,8 @@ gene sets:
 
 ``` r
 gspaMap(
-  show_labels = TRUE,
   gspval_cutoff = 5E-3, 
   gslogFC_cutoff = log2(1.2), 
-  # topn = 100, 
   gset_nms = c("go_sets"),
   show_sig = pVal,
   xco = 1.2, # position of two vertical lines for FC
@@ -1939,7 +1937,7 @@ gspaMap(
                "~/proteoQ/dbs/msig/msig_hs.rds", 
                "~/proteoQ/dbs/msig/msig_mm.rds"),
   impute_na = FALSE,
-  show_labels = FALSE, 
+  topn_labels = 0, 
   gspval_cutoff = 5E-2, 
   gslogFC_cutoff = log2(1.2), 
   show_sig = pVal, 

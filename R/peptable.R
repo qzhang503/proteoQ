@@ -915,7 +915,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
       dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", 
                           names(.))) %>% 
       is.na() %>% 
-      `!`() %>% 
+      magrittr::not() %>% 
       rowSums()
     
     dplyr::bind_cols(count_nna = count_nna, df_num) %>% 
@@ -1513,9 +1513,9 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
 #'  deviation across samples. The default is between the 10th and the 90th
 #'  quantiles.
 #'@param range_int Numeric vector at length two. The argument specifies the
-#'  range of the \code{intensity} of reporter ions for use in the scaling
-#'  normalization of standard deviation across samples. The default is between
-#'  the 5th and the 95th quantiles.
+#'  range of the \code{intensity} of reporter ions (including \code{I000}) for
+#'  use in the scaling normalization of standard deviation across samples. The
+#'  default is between the 5th and the 95th quantiles.
 #'@param n_comp Integer; the number of Gaussian components to be used with
 #'  \code{method_align = MGKernel}. A typical value is 2 or 3. The variable
 #'  \code{n_comp} overwrites the argument \code{k} in
@@ -1666,19 +1666,9 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 			Use column \'Sample_ID\' instead.", call. = FALSE)
   }
   
-  local({
-    vars <- list(range_int, range_log2r)
-    stopifnot(vapply(vars, function (x) length(x) == 2, logical(1)))
-    
-    ranges <- vapply(vars, range, c(min = 0, max = 100))
-    stopifnot(ranges[2, ] > ranges[1, ], 
-              ranges[1, ] > 0,
-              ranges[2, ] < 100) 
-  })
+  range_log2r <- prep_range(range_log2r)
+  range_int <- prep_range(range_int)
 
-  if (range_log2r[2] <= 1) range_log2r <- range_log2r * 100
-  if (range_int[2] <= 1) range_int <- range_int * 100
-  
   stopifnot(vapply(c(plot_log2FC_cv), rlang::is_logical, logical(1)))
   
   dots <- rlang::enexprs(...)
@@ -2247,7 +2237,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
       dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", 
                           names(.))) %>% 
       is.na() %>% 
-      `!`() %>% 
+      magrittr::not() %>% 
       rowSums()
     
     df_num <- dplyr::bind_cols(count_nna = count_nna, df_num) %>% 
@@ -2372,7 +2362,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
         dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", 
                             names(.))) %>% 
         is.na() %>% 
-        `!`() %>% 
+        magrittr::not() %>% 
         rowSums() 
       
       dfa <- dplyr::bind_cols(count_nna = count_nna, dfa) %>% 
