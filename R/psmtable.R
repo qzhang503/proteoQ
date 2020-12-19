@@ -205,6 +205,7 @@ set_mascot_colnms <- function (TMT_plex) {
 #'   otherwise, skips them. Setting the value to FALSE allows bypassing
 #'   time-consuming steps.
 #' @param warns Logical; if TRUE, show warning message(s).
+#' @inheritParams load_expts
 #' @inheritParams TMT_levels
 batchPSMheader <- function(filename, dat_dir, TMT_plex, proc_extdata = TRUE, 
                            warns = TRUE) {
@@ -502,7 +503,8 @@ batchPSMheader <- function(filename, dat_dir, TMT_plex, proc_extdata = TRUE,
 #' \code{rmPSMHeaders} removes the header of PSM from
 #' \href{https://http://www.matrixscience.com/}{Mascot} outputs. It also
 #' removes the spacer columns in the fields of ratio and intensity values.
-#'
+#' 
+#' @inheritParams normPSM
 #' @return Intermediate PSM table(s).
 #'
 #' @import dplyr
@@ -785,9 +787,9 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa, purge_phosphodata) {
   df_header <- readLines(dat_file)
 
   fixed_mods <- local({
-    zero_out <- tibble(Mascot_abbr = character(),
-                       Description = character(), 
-                       Delta_mass = character()) 
+    zero_out <- tibble::tibble(Mascot_abbr = character(),
+                               Description = character(), 
+                               Delta_mass = character()) 
 
     spacer <- "\"\""
     rows_spacer <- which(df_header == spacer)
@@ -808,10 +810,10 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa, purge_phosphodata) {
   })
   
   var_mods <- local({
-    zero_out <- tibble(Mascot_abbr = character(),
-                       Description = character(), 
-                       Delta_mass = character(), 
-                       Filename = character()) 
+    zero_out <- tibble::tibble(Mascot_abbr = character(),
+                               Description = character(), 
+                               Delta_mass = character(), 
+                               Filename = character()) 
     
     spacer <- "\"\""
     rows_spacer <- which(df_header == spacer)
@@ -1139,7 +1141,7 @@ add_quality_cols <- function(df, group_psm_by, group_pep_by) {
 #' 
 #' @param df A list of data frames.
 #' @param nm Names of the \code{df}'s.
-#' 
+#' @param fn_lookup A lookup of file names.
 #' @inheritParams load_expts
 #' @inheritParams splitPSM
 #' @inheritParams TMT_levels
@@ -1223,6 +1225,7 @@ find_shared_prots <- function(df, pep_id = "pep_seq", prot_id = "prot_acc") {
 #' @param df PSM data.
 #' @param key the column key of mapped proteins.
 #' @param sep Character string; the separator of the mapped proteins.
+#' @inheritParams splitPSM
 add_shared_genes <- function (df, key = "Proteins", sep = ";", 
                                  fasta = NULL, entrez = NULL) {
   stopifnot(all(c("pep_seq", key) %in% names(df)))
@@ -1279,6 +1282,8 @@ add_shared_genes <- function (df, key = "Proteins", sep = ";",
 #' \code{prot_acc}; otherwise, \code{fasta_name} will be used. This allows quick
 #' distinction whether mapped proteins are same-set/sub-set to the primary
 #' entries or not.
+#' 
+#' @param df PSM data.
 add_shared_prot_accs <- function (df) {
   stopifnot("pep_seq" %in% names(df))
   stopifnot("prot_acc" %in% names(df))
@@ -1349,6 +1354,7 @@ add_shared_prot_accs <- function (df) {
 #' @param df PSM data.
 #' @param key the column key of mapped proteins.
 #' @param sep Character string; the separator of the mapped proteins.
+#' @inheritParams splitPSM
 add_shared_sm_genes <- function (df, key = "Proteins", sep = ";", 
                                  fasta = NULL, entrez = NULL) {
   stopifnot(all(c("pep_seq", key) %in% names(df)))
@@ -1587,6 +1593,21 @@ proc_psms <- function (df = NULL, scale_rptr_int = FALSE,
 #'   species, users need to provide the file path(s) and name(s) for the lookup
 #'   table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 #'   for preparing custom entrez files.
+#'@param pep_unique_by A character string for annotating the uniqueness of
+#'  peptides. At the \code{group} default, the uniqueness of peptides is by
+#'  groups with the collapses of same-set or sub-set proteins. At a more
+#'  stringent criterion of \code{protein}, the uniqueness of peptides is by
+#'  protein entries without grouping. On the other extreme of choice
+#'  \code{none}, all peptides are treated as unique. A new column of
+#'  \code{pep_isunique} with corresponding logical TRUE or FALSE will be added
+#'  to the PSM reports. Note that the choice of \code{none} is only for
+#'  convenience, as the same may be achieved by setting \code{use_unique_pep =
+#'  FALSE} in \link{Pep2Prn}.
+#' @param scale_rptr_int Logical; if TRUE, scales (up) MS2 reporter-ion
+#'  intensities by MS1 precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}.
+#'  \eqn{I_{MS1}}, MS1 precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion
+#'  intensity; \eqn{I_{x}}, MS2 reporter-ion intensity under TMT channel
+#'  \eqn{x}. Note that the scaling will not affect \code{log2FC}.
 #' @param rm_craps Logical; if TRUE,
 #'   \href{https://www.thegpm.org/crap/}{cRAP} proteins will be removed.
 #'   The default is FALSE.
@@ -1984,7 +2005,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 
 #' Pad Mascot TMT channels to the highest plex
 #' 
-#' @param df An intermediate PSM table from Mascot export
+#' @param file An intermediate PSM table.
+#' @param ... filter_dots.
 pad_mascot_channels <- function(file, ...) {
   find_mascot_plex <- function (df) {
     to_126 <- grep("/126", df[1, ], fixed = TRUE)
@@ -3424,7 +3446,9 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
 #' Helper of PSM2Pep
 #' 
 #' @param file The name of a PSM file.
+#' @inheritParams PSM2Pep
 #' @inheritParams load_expts
+#' @inheritParams n_TMT_sets
 #' @inheritParams calcPeptide
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 psm_to_pep <- function (file, dat_dir, label_scheme_full, 
@@ -4130,9 +4154,11 @@ find_preceding_colnm <- function(df, to_move) {
 
 
 #' Order PSM columns.
-#' 
+#'
 #' Only for certain columns.
 #' @param df A PSM data frame.
+#' @param cols A vector; the names of columns to be moved to the front of
+#'   \code{df}.
 order_psm_cols <- function(df, cols) {
   purrr::walk(cols, ~ {
     if (is.null(df[[.x]])) df[[.x]] <- NA
@@ -4215,8 +4241,9 @@ order_mascot_psm_cols <- function(df, psm_cols = NULL, rm_na_cols = FALSE) {
 
 #' Pad MaxQuant TMT channels to the highest plex. 
 #' 
-#' @param file A file name of PSM table from MaxQuant export
 #' @inheritParams splitPSM
+#' @inheritParams splitPSM_mq
+#' @inheritParams pad_mascot_channels
 pad_mq_channels <- function(file, fasta, entrez, corrected_int, ...) {
   filter_dots <- rlang::enexprs(...) %>% 
     .[purrr::map_lgl(., is.language)] %>% 
@@ -4413,16 +4440,6 @@ pad_mq_channels <- function(file, fasta, entrez, corrected_int, ...) {
 #'there is no columns like \code{prot_matches_sig} and \code{prot_sequences_sig}
 #'need to be updated after data merging in \code{splitPSM_mq}.
 #'
-#'@param pep_unique_by A character string for annotating the uniqueness of
-#'  peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
-#'  uniqueness of peptides is by groups with the collapses of same-set or
-#'  sub-set proteins. At a more stringent criterion of \code{protein}, the
-#'  uniqueness of peptides is by protein entries without grouping. On the other
-#'  extreme of choice \code{none}, all peptides are treated as unique. A new
-#'  column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
-#'  be added to the PSM reports. Note that the choice of \code{none} is only for
-#'  convenience, as the same may be achieved by setting \code{use_unique_pep =
-#'  FALSE} in \link{Pep2Prn}.
 #'@param corrected_int A logical argument for uses with \code{MaxQuant} TMT. At
 #'  the TRUE default, values under columns "Reporter intensity corrected..." in
 #'  \code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
@@ -4904,7 +4921,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 
 
 #' Pad Spectrum Mill TMT channels to the highest plex
-#' @param file A file name of PSM table from MaxQuant export
+#' @inheritParams pad_mascot_channels
 pad_sm_channels <- function(file, ...) {
   filter_dots <- rlang::enexprs(...) %>% 
     .[purrr::map_lgl(., is.language)] %>% 
@@ -5386,8 +5403,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 
 #' Pad MSFragger TMT channels to the highest plex. 
 #' 
-#' @param file A file name of PSM table from MaxQuant export
-#' @inheritParams splitPSM
+#' @inheritParams pad_mascot_channels
 pad_mf_channels <- function(file, ...) {
   filter_dots <- rlang::enexprs(...) %>% 
     .[purrr::map_lgl(., is.language)] %>% 
@@ -5543,11 +5559,6 @@ pad_mf_channels <- function(file, ...) {
 #'\code{splitPSM_mf} splits the PSM outputs by TMT experiment and LC/MS
 #'injection.
 #'@inheritParams splitPSM
-#'@param scale_rptr_int Logical; if TRUE, scales (up) MS2 reporter-ion
-#'  intensities by MS1 precursor intensity: \eqn{I_{MS1}*(I_{x}/\sum I_{MS2})}.
-#'  \eqn{I_{MS1}}, MS1 precursor intensity; \eqn{I_{MS2}}, MS2 reporter-ion
-#'  intensity; \eqn{I_{x}}, MS2 reporter-ion intensity under TMT channel
-#'  \eqn{x}. Note that the scaling will not affect \code{log2FC}.
 #'@import dplyr tidyr
 #'@importFrom stringr str_split
 #'@importFrom magrittr %>% %T>% %$% %<>% equals

@@ -8,6 +8,8 @@ check_mq_df(df, label_scheme)
 }
 \arguments{
 \item{df}{A data frame of MaxQuant peptides.txt or proteinGroups.txt.}
+
+\item{label_scheme}{Experiment summary}
 }
 \description{
 Compare sample IDS between MaxQuant results and expt_smry.xlsx

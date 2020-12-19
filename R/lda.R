@@ -1,5 +1,6 @@
 #' Plots LDA
-#'
+#' 
+#' @inheritParams prnLDA
 #' @inheritParams prnPCA
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
@@ -611,6 +612,10 @@ pepLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'@inheritParams prnHM
 #'@inheritParams anal_prnNMF
 #'@inheritParams prnPCA
+#'@param formula Dummy argument to avoid incurring the corresponding argument in
+#'  a pre-existed function by partial argument matches.
+#'@param data Dummy argument to avoid incurring the corresponding argument in
+#'  a pre-existed function by partial argument matches.
 #'@param x Dummy argument to avoid incurring the corresponding argument in
 #'  a pre-existed function by partial argument matches.
 #'@param grouping Dummy argument to avoid incurring the corresponding argument in

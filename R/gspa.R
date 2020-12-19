@@ -49,7 +49,7 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
   
   method <- rlang::enexpr(method)
   if (rlang::is_call(method)) {
-    method <- eval(method, env = caller_env())
+    method <- eval(method, envir = rlang::caller_env())
   } else {
     method <- rlang::as_string(method)
   }
@@ -291,7 +291,7 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 
   method <- rlang::enexpr(method)
   if (rlang::is_call(method)) {
-    method <- eval(method, env = caller_env())
+    method <- eval(method, envir = rlang::caller_env())
   } else {
     method <- rlang::as_string(method)
   }
@@ -344,7 +344,7 @@ prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 #' @param label_scheme_sub A data frame. Subset entries from \code{label_scheme}
 #'   for selected samples.
 #' @import limma stringr purrr tidyr dplyr 
-#' @importFrom magrittr %>% %T>% %$% %<>% 
+#' @importFrom magrittr %>% %T>% %$% %<>% is_greater_than not 
 gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL, 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE,
                      filepath = NULL, filename = NULL, 
@@ -559,9 +559,10 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff,
   res_pass <- local({
     contrast_groups <- unique(df$contrast) %>% as.character()
     
-    contrast_table <- tibble(contrast = rep(contrast_groups, 2), 
-                             valence = rep(c("neg", "pos"), length(contrast_groups)), 
-                             p_val = rep(-log10(0.05), 2 * length(contrast_groups))) %>% 
+    contrast_table <- tibble::tibble(
+      contrast = rep(contrast_groups, 2), 
+      valence = rep(c("neg", "pos"), length(contrast_groups)), 
+      p_val = rep(-log10(0.05), 2 * length(contrast_groups))) %>% 
       dplyr::mutate(contrast = factor(contrast, levels = levels(df$contrast)), 
                     valence = factor(valence, levels(df$valence)))
     
@@ -864,8 +865,8 @@ lm_gspa <- function(df, min_delta, gspval_cutoff, gslogFC_cutoff) {
                  remove = TRUE) %>% 
     tidyr::spread(key = sample, value = p_val) 
   
-  label_scheme_gspa <- tibble(Sample_ID = names(data), 
-                              Group = Sample_ID) %>% 
+  label_scheme_gspa <- tibble::tibble(Sample_ID = names(data), 
+                                      Group = Sample_ID) %>% 
     dplyr::mutate(Group = gsub("^\\d+\\.", "", Group)) %>% 
     dplyr::mutate(Group = factor(Group))
   
@@ -1354,25 +1355,25 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename,
   if (is.null(dots$color)) {
     mypalette <- colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
   } else {
-    mypalette <- eval(dots$color, env = caller_env())
+    mypalette <- eval(dots$color, envir = rlang::caller_env())
   }
   
   if (is.null(dots$annot_cols)) {
     annot_cols <- NULL
   } else {
-    annot_cols <- eval(dots$annot_cols, env = caller_env()) 
+    annot_cols <- eval(dots$annot_cols, envir = rlang::caller_env()) 
   }
   
   if (is.null(dots$annot_colnames)) {
     annot_colnames <- NULL
   } else {
-    annot_colnames <- eval(dots$annot_colnames, env = caller_env()) 
+    annot_colnames <- eval(dots$annot_colnames, envir = rlang::caller_env()) 
   }
   
   if (is.null(dots$annot_rows)) {
     annot_rows <- NULL
   } else {
-    annot_rows <- eval(dots$annot_rows, env = caller_env()) 
+    annot_rows <- eval(dots$annot_rows, envir = rlang::caller_env()) 
   }
   
   if (is.null(annot_cols)) {
@@ -1413,7 +1414,7 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename,
   } else if (is.na(dots$annotation_colors)) {
     annotation_colors <- NA
   } else {
-    annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+    annotation_colors <- eval(dots$annotation_colors, envir = rlang::caller_env())
   }
   
   nrow <- nrow(ess_vs_all)

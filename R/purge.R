@@ -241,8 +241,8 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
                   col.names = TRUE, row.names = FALSE)      
   }
   
-  width <- eval(dots$width, env = caller_env())
-  height <- eval(dots$height, env = caller_env())
+  width <- eval(dots$width, envir = rlang::caller_env())
+  height <- eval(dots$height, envir = rlang::caller_env())
   
   if (is.null(width)) width <- 8 
   if (is.null(height)) height <- 8
@@ -600,8 +600,8 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
       write.table(fn, sep = "\t", col.names = TRUE, row.names = FALSE)    
   }
   
-  width <- eval(dots$width, env = caller_env())
-  height <- eval(dots$height, env = caller_env())
+  width <- eval(dots$width, envir = rlang::caller_env())
+  height <- eval(dots$height, envir = rlang::caller_env())
   
   if (is.null(width)) width <- 8 * n_TMT_sets(label_scheme_full)
   if (is.null(height)) height <- 8

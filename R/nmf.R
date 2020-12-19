@@ -12,7 +12,7 @@ analNMF <- function(df, id, rank, nrun, seed, col_group, label_scheme_sub,
 
   if (!requireNamespace("NMF", quietly = TRUE)) {
     stop("\n====================================================================", 
-         "\nNeed install package \"NMF\" needed for this function to work.",
+         "\nNeed package \"NMF\" for this function to work.",
          "\n====================================================================",
          call. = FALSE)
   }

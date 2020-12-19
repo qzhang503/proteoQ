@@ -485,7 +485,7 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 	if (is.null(dots$color)) {
 	  mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
 	} else {
-	  mypalette <- eval(dots$color, env = caller_env())
+	  mypalette <- eval(dots$color, envir = rlang::caller_env())
 	}
 
 	if (is.null(annot_cols)) {
@@ -507,7 +507,7 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 	} else if (is.na(dots$annotation_colors)) {
 		annotation_colors <- NA
 	} else {
-		annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+		annotation_colors <- eval(dots$annotation_colors, envir = rlang::caller_env())
 	}
 
 	nm_idx <- names(dots) %in% c("mat", "filename", "annotation_col", "color",

@@ -28,10 +28,9 @@ Suggests:
     knitr,
     lmerTest,
     mice,
-    org.Ce.eg.db,
-		outliers,
     rmarkdown,
-		testthat
+		testthat, 
+		xml2
 VignetteBuilder: knitr
 Imports: 
     biomaRt,

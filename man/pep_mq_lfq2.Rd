@@ -6,6 +6,9 @@
 \usage{
 pep_mq_lfq2(label_scheme)
 }
+\arguments{
+\item{label_scheme}{Experiment summary.}
+}
 \description{
 Temporary handling using MaxQuant peptide.txt.
 }

@@ -9,6 +9,9 @@ batchPSMheader(filename, dat_dir, TMT_plex, proc_extdata = TRUE, warns = TRUE)
 \arguments{
 \item{filename}{The name of a PSM file.}
 
+\item{dat_dir}{A character string to the working directory. The default is to
+match the value under the global environment.}
+
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
 
 \item{proc_extdata}{Logical; if TRUE, processes extended PSM outputs;

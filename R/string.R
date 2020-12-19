@@ -257,7 +257,7 @@ prepString <- function(species = "human", # abbr_species = NULL,
   
   if (!requireNamespace("downloader", quietly = TRUE)) {
     stop("\n====================================================================", 
-         "\nNeed install package \"downloader\" needed for this function to work.",
+         "\nNeed package \"downloader\" for this function to work.",
          "\n====================================================================",
          call. = FALSE)
   }

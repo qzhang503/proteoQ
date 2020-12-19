@@ -219,6 +219,12 @@ image type will be determined by the extension of the file name.}
 theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
 
+\item{formula}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{data}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
 \item{x}{Dummy argument to avoid incurring the corresponding argument in
 a pre-existed function by partial argument matches.}
 

@@ -67,13 +67,13 @@ alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
 
 \item{pep_unique_by}{A character string for annotating the uniqueness of
-peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
-uniqueness of peptides is by groups with the collapses of same-set or
-sub-set proteins. At a more stringent criterion of \code{protein}, the
-uniqueness of peptides is by protein entries without grouping. On the other
-extreme of choice \code{none}, all peptides are treated as unique. A new
-column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
-be added to the PSM reports. Note that the choice of \code{none} is only for
+peptides. At the \code{group} default, the uniqueness of peptides is by
+groups with the collapses of same-set or sub-set proteins. At a more
+stringent criterion of \code{protein}, the uniqueness of peptides is by
+protein entries without grouping. On the other extreme of choice
+\code{none}, all peptides are treated as unique. A new column of
+\code{pep_isunique} with corresponding logical TRUE or FALSE will be added
+to the PSM reports. Note that the choice of \code{none} is only for
 convenience, as the same may be achieved by setting \code{use_unique_pep =
 FALSE} in \link{Pep2Prn}.}
 
@@ -100,8 +100,13 @@ default is 0 without cut-offs. The data nullification will not be applied
 synchronously to the precursor intensity (\code{pep_tot_int}) under the
 same PSM query. To guard against odds such as higher MS2 reporter-ion
 intensities than their contributing MS1 precursor intensity, employs for
-example \code{filter_... = rlang::exprs(pep_tot_int >= your_ms1_cutoff)}
-during \link{PSM2Pep}.}
+example \code{filter_... = rlang::exprs(pep_tot_int >= my_ms1_cutoff)}
+during \link{PSM2Pep}. The rule of thumb is that \code{pep_tot_int} is a
+single column; thus the corresponding data filtration against it may be
+readily achieved without introducing new arguments. By contrast,
+\code{rptr_intco} applies to a set of columns, \code{I126} etc.; it might
+be slightly more involved/laborious when applying suitable statements of
+\code{filter_} varargs.}
 
 \item{rptr_intrange}{Numeric vector at length two. The argument specifies the
 range of reporter-ion intensities (TMT: \code{I126} etc.; LFQ: \code{I000})

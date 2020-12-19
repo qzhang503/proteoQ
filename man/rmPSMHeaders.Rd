@@ -6,6 +6,10 @@
 \usage{
 rmPSMHeaders(parallel = TRUE)
 }
+\arguments{
+\item{parallel}{Logical; if TRUE, performs parallel computation. The default
+is TRUE.}
+}
 \value{
 Intermediate PSM table(s).
 }

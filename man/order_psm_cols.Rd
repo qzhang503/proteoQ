@@ -8,6 +8,9 @@ order_psm_cols(df, cols)
 }
 \arguments{
 \item{df}{A PSM data frame.}
+
+\item{cols}{A vector; the names of columns to be moved to the front of
+\code{df}.}
 }
 \description{
 Only for certain columns.

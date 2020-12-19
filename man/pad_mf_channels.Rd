@@ -7,9 +7,9 @@
 pad_mf_channels(file, ...)
 }
 \arguments{
-\item{file}{A file name of PSM table from MaxQuant export}
+\item{file}{An intermediate PSM table.}
 
-\item{...}{Not currently used.}
+\item{...}{filter_dots.}
 }
 \description{
 Pad MSFragger TMT channels to the highest plex.

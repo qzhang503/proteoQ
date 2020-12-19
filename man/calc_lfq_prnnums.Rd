@@ -16,6 +16,15 @@ calc_lfq_prnnums(
 \arguments{
 \item{df}{A data frame.}
 
+\item{use_unique_pep}{Logical. If TRUE, only entries that are \code{TRUE} or
+equal to \code{1} under the column \code{pep_isunique} in
+\code{Peptide.txt} will be used, for summarizing the \code{log2FC} and the
+\code{intensity} of peptides into protein values. The default is to use
+unique peptides only. For \code{MaxQuant} data, the levels of uniqueness
+are according to the \code{pep_unique_by} in \code{\link{normPSM}}. The
+argument currently do nothing to \code{Spectrum Mill} data where both
+unique and shared peptides will be kept.}
+
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
 At the \code{pep_seq} default, descriptive statistics will be calculated
 based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
@@ -29,8 +38,14 @@ calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
 
-\item{n}{Numeric; the top \code{n} entries to be used. The default is 3. All
-entries will be used at \eqn{n = Inf}.}
+\item{method_pep_prn}{Character string; the method to summarize the
+\code{log2FC} and the \code{intensity} of peptides by protein entries. The
+descriptive statistics includes \code{c("mean", "median", "weighted_mean",
+"top_3_mean", "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all")} with
+\code{median} being the default for TMT and \code{lfq_top_3_sum} for LFQ.
+The representative \code{log10-intensity} of reporter (or LFQ) ions at the
+peptide levels will be the weight when summarizing \code{log2FC} with
+various \code{"top_n"} statistics or \code{"weighted_mean"}.}
 }
 \description{
 Calculates the \code{total}, \code{razor} and \code{unique} intensities of

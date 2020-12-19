@@ -12,6 +12,18 @@ add_shared_genes(df, key = "Proteins", sep = ";", fasta = NULL, entrez = NULL)
 \item{key}{the column key of mapped proteins.}
 
 \item{sep}{Character string; the separator of the mapped proteins.}
+
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search. There is no default and users need to provide the
+correct file path(s) and name(s).}
+
+\item{entrez}{Character string(s) to the name(s) of entrez file(s) with
+prepended directory path. At the \code{NULL} default, a convenience lookup
+is available for species among \code{c("human", "mouse", "rat")}. For other
+species, users need to provide the file path(s) and name(s) for the lookup
+table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
+for preparing custom entrez files.}
 }
 \description{
 For MaxQuant and MSFragger.

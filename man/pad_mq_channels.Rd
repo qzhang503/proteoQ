@@ -7,7 +7,7 @@
 pad_mq_channels(file, fasta, entrez, corrected_int, ...)
 }
 \arguments{
-\item{file}{A file name of PSM table from MaxQuant export}
+\item{file}{An intermediate PSM table.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
@@ -20,6 +20,11 @@ is available for species among \code{c("human", "mouse", "rat")}. For other
 species, users need to provide the file path(s) and name(s) for the lookup
 table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 for preparing custom entrez files.}
+
+\item{corrected_int}{A logical argument for uses with \code{MaxQuant} TMT. At
+the TRUE default, values under columns "Reporter intensity corrected..." in
+\code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
+"Reporter intensity" values without corrections will be used.}
 
 \item{...}{Not currently used.}
 }

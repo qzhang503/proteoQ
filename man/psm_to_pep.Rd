@@ -20,6 +20,9 @@ psm_to_pep(
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
 
+\item{label_scheme_full}{The label_scheme with the probable inclusion of
+different LCMS_inj under the same TMT_Set.}
+
 \item{group_psm_by}{A character string specifying the method in PSM grouping.
 At the \code{pep_seq} default, descriptive statistics will be calculated
 based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
@@ -42,6 +45,9 @@ The descriptive statistics includes \code{c("mean", "median",
 LFQ) ions at the \code{PSMs} levels will be the weight when summarizing
 \code{log2FC} with various \code{"top_n"} statistics or
 \code{"weighted_mean"}.}
+
+\item{...}{\code{filter_}: Variable argument statements for the filtration of
+data rows. See also \code{\link{normPSM}}.}
 }
 \description{
 Helper of PSM2Pep

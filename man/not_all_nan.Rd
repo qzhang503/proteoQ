@@ -8,6 +8,8 @@ not_all_nan(x, ...)
 }
 \arguments{
 \item{x}{A vector.}
+
+\item{...}{Additional arguments for \code{sum}.}
 }
 \description{
 Finds non-all-NaN column(s)

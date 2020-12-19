@@ -7,7 +7,9 @@
 pad_mascot_channels(file, ...)
 }
 \arguments{
-\item{df}{An intermediate PSM table from Mascot export}
+\item{file}{An intermediate PSM table.}
+
+\item{...}{filter_dots.}
 }
 \description{
 Pad Mascot TMT channels to the highest plex

@@ -44,6 +44,9 @@ also \code{\link{prnHist}} for data binning in histogram visualization.}
 \item{omit_single_lfq}{Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
 with single measured values across all samples. The default is TRUE.}
 
+\item{use_mq_pep}{Logical; if TRUE, use the peptides.txt from MaxQuant. This
+is an interim solution for MaxQuant timsTOF.}
+
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
 

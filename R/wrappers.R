@@ -1,6 +1,7 @@
 #' A wrapper of \link[stats]{dist} with the handling of partial argument
 #' matches.
 #' 
+#' @param ... Arguments for \link[stats]{dist}
 my_dist <- function (...) {
   dots <- rlang::enexprs(...)
   
