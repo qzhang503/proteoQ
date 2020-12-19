@@ -169,7 +169,7 @@ reorder_files <- function(filelist) {
 #' @import dplyr 
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-reorderCols <- function (df, endColIndex, col_to_rn) {
+reorderCols <- function(df, endColIndex, col_to_rn) {
 	if (length(endColIndex) == 0) {
 	  endColIndex <- grep("I[0-9]{3}|log2_R[0-9]{3}", names(df))
 	}
@@ -203,7 +203,7 @@ reorderCols <- function (df, endColIndex, col_to_rn) {
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
-reorderCols2 <- function (df = NULL, pattern = NULL) {
+reorderCols2 <- function(df = NULL, pattern = NULL) {
   if (is.null(df)) stop("`df` cannot be `NULL`.", call. = FALSE)
   
   if (is.null(pattern)) {
@@ -232,7 +232,7 @@ reorderCols2 <- function (df = NULL, pattern = NULL) {
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
-ins_cols_after <- function (df = NULL, idx_bf = ncol(df), idx_ins = NULL) {
+ins_cols_after <- function(df = NULL, idx_bf = ncol(df), idx_ins = NULL) {
   if (is.null(df)) stop("`df` cannot be `NULL`.", call. = FALSE)
   if (is.null(idx_ins)) return(df)
   if (idx_bf >= ncol(df)) return(df)
@@ -277,7 +277,7 @@ sort_tmt_lcms <- function (nms) {
 #' @import dplyr
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-na_zeroIntensity <- function (df) {
+na_zeroIntensity <- function(df) {
 	ind <- grep("I[0-9]{3}|^LFQ\\sintensity\\s|^Intensity\\s", names(df))
 
 	temp <- df[, ind]
@@ -290,7 +290,7 @@ na_zeroIntensity <- function (df) {
 #' Find all zero rows
 #' 
 #' @param x A data frame.
-not_allzero_rows <- function (x) (rowSums(x != 0, na.rm = TRUE) > 0)
+not_allzero_rows <- function(x) (rowSums(x != 0, na.rm = TRUE) > 0)
 
 #' Summarizes numeric values
 #'
@@ -475,29 +475,41 @@ TMT_top_n <- function (x, id, ...) {
 }
 
 
-#' Finds all-zero column(s)
+#' Finds not-all-zero column(s)
 #'
 #' \code{not_all_zero} identifies the column indexes with all NA values.
 #'
-#' @param x A data frame of \code{log2FC} and \code{intensity}.
-not_all_zero <- function (x) (colSums(x != 0, na.rm = TRUE) > 0)
+#' @param df A data frame.
+#' @examples \donttest{not_all_zero(mtcars)}
+#' @return A logical vector
+not_all_zero <- function (df) {
+  stopifnot(is.data.frame(df))
+  colSums(df != 0, na.rm = TRUE) > 0
+}
 
 
-#' Finds all-NA column(s)
+#' Finds not-all-NA column(s)
 #'
 #' \code{not_all_NA} identifies the column indexes with all NA values.
 #'
-#' @param x A data frame of \code{log2FC} and \code{intensity}.
+#' @param df A data frame.
 #' @import dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-not_all_NA <- function (x) (colSums(!is.na(x), na.rm = TRUE) > 0)
+#' @examples \donttest{not_all_NA(mtcars)}
+#' @return A logical vector
+not_all_NA <- function (df) {
+  stopifnot(is.data.frame(df))
+  colSums(!is.na(df), na.rm = TRUE) > 0
+}
 
 
-#' Finds all-NaN column(s)
-#' 
-#' @param x A data frame of \code{log2FC} and \code{intensity}.
-#' @param ... The same in \code{sum}.
+#' Finds non-all-NaN column(s)
+#'
+#' @param x A vector.
+#' @param ... Additional arguments for \code{sum}.
+#' @examples \donttest{purrr::map_lgl(mtcars, not_all_nan, na.rm = TRUE)}
 not_all_nan <- function(x, ...) {
+  stopifnot(is.vector(x))
   sum(is.nan(x), ...) != length(x)
 }
 
@@ -506,7 +518,9 @@ not_all_nan <- function(x, ...) {
 #' 
 #' @param x A data frame of \code{log2FC} and \code{intensity}.
 #' @param ... The same in \code{sum}.
+#' @examples \donttest{purrr::map_lgl(mtcars, is_all_nan, na.rm = TRUE)}
 is_all_nan <- function(x, ...) {
+  stopifnot(is.vector(x))
   sum(is.nan(x), ...) == length(x)
 }
 
@@ -515,9 +529,11 @@ is_all_nan <- function(x, ...) {
 #' 
 #' @param df A data frame of \code{log2FC} and \code{intensity}.
 #' @param col The index of column.
+#' @examples \donttest{is_trivial_col(mtcars, 1)}
 is_trivial_col <- function (df, col) {
-  x <- df[, col] %>% 
-    purrr::flatten_dbl() 
+  stopifnot(length(col) == 1)
+  
+  x <- df[, col]
   
   x[x == 0] <- NA
   x[is.nan(x)] <- NA
@@ -530,6 +546,8 @@ is_trivial_col <- function (df, col) {
 #' 
 #' @param x A numeric vector
 is_trivial_dbl <- function (x) {
+  stopifnot(is.vector(x))
+  
   if (!is.numeric(x)) return(FALSE)
   
   x[x == 0] <- NA
@@ -539,9 +557,9 @@ is_trivial_dbl <- function (x) {
 }
 
 
-#' Replace a trivial vector with NA.
+#' Replace a trivial vector with NA values.
 #' 
-#' @param x A numeric vecotr
+#' @param x A numeric vector
 replace_trivial_with_na <- function (x) {
   if (is_trivial_dbl(x)) {
     x <- rep(NA, length(x))
@@ -566,7 +584,8 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 
 	if (sum(!exists) > 0) {
 		warning(paste0("Column '", annot_cols[!exists], "'",
-		               " not found in \'label_scheme\' and will be skipped."))
+		               " not found in \'label_scheme\' and will be skipped."), 
+		        call. = FALSE)
 		annot_cols <- annot_cols[exists]
 	}
 
@@ -587,7 +606,10 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 		data.frame(check.names = FALSE) %>%
 		`rownames<-`(.[["Sample_ID"]])
 
-	if (any(duplicated(x[["Sample_ID"]]))) stop("Duplicated sample IDs found\n")
+	if (any(duplicated(x[["Sample_ID"]]))) {
+	  stop("Duplicated sample IDs found.\n", 
+	       call. = FALSE)
+	}
 
 	if (!"Sample_ID" %in% annot_cols) x <- x %>% dplyr::select(-Sample_ID)
 
@@ -663,7 +685,7 @@ setHMlims <- function (x, xmin, xmax) {
 	x[x < xmin] <- xmin
 	x[x > xmax] <- xmax
 
-	x
+	invisible(x)
 }
 
 
@@ -747,9 +769,9 @@ imputeNA <- function (id, overwrite = FALSE, ...) {
 	dat_dir <- get_gl_dat_dir()
 	
 	if (!requireNamespace("mice", quietly = TRUE)) {
-	  stop("\n====================================================================", 
-	       "\nNeed install package \"mice\" needed for this function to work.",
-	       "\n====================================================================",
+	  stop("\n============================================================", 
+	       "\nNeed package \"mice\" for this function to work.",
+	       "\n============================================================",
 	       call. = FALSE)
 	}
 	
@@ -952,7 +974,8 @@ add_refseq_gene <- function (acc_lookup, acc_type) {
                        uniprot_id = "uniprot_acc", 
                        refseq_acc = "refseq_acc", 
                        other_acc = "other_acc", 
-                       stop("Unknown `accession type`.", Call. = FALSE)
+                       stop("Unknown `accession type`.", 
+                            Call. = FALSE)
   )
   
   if (all(species %in% c("human", "mouse", "rat"))) {
@@ -1997,7 +2020,6 @@ na_genes_by_acc <- function(df) {
 #' \code{find_pep_pos} finds the start and the end positions of peptides in
 #' ascribed proteins description based on the \code{fasta}.
 #' 
-#' @param prot_acc Protein accession
 #' @param fasta_name The fasta name
 #' @param pep_seq Peptide sequence
 #' @param fasta The database of fasta
@@ -2032,7 +2054,7 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta) {
     if (any(pep_res_before %in% c("K", "R", "-"))) { # the first match is tryptic
       pep_pos <- cbind(pep_seq, pep_res_before, pep_pos, 
                        pep_res_after, fasta_name, is_tryptic = TRUE)
-    } else if (pep_res_before == "M" && pep_pos[1] == 2) { # the first match is also tryptic
+    } else if (pep_res_before == "M" && pep_pos[1] == 2) { # the first match also tryptic
       pep_pos <- cbind(pep_seq, pep_res_before, pep_pos, 
                        pep_res_after, fasta_name, is_tryptic = TRUE)
     } else { # the first match is non-tryptic
@@ -2672,10 +2694,10 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
   if (rlang::is_missing(width)) width <- 8
   if (rlang::is_missing(height)) height <- 8
   
-  ymax <- eval(dots$ymax, env = caller_env())
-  ybreaks <- eval(dots$ybreaks, env = caller_env())
+  ymax <- eval(dots$ymax, envir = rlang::caller_env())
+  ybreaks <- eval(dots$ybreaks, envir = rlang::caller_env())
   
-  flip_coord <- eval(dots$flip_coord, env = caller_env())
+  flip_coord <- eval(dots$flip_coord, envir = rlang::caller_env())
   if (is.null(flip_coord)) flip_coord <- FALSE
   
   df <- df %>% dplyr::filter(!duplicated(.[[id]]))
@@ -2773,7 +2795,7 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
                                            limitsize = FALSE, 
                                            !!!ggsave_dots))
 
-    suppressWarnings(try(eval(my_call, caller_env())))
+    suppressWarnings(try(eval(my_call, rlang::caller_env())))
   }
 }
 
@@ -2804,7 +2826,7 @@ rptr_violin <- function(df, filepath, width, height) {
   mean_int <- df_int %>% 
     dplyr::group_by(Channel) %>% 
     dplyr::summarise(Intensity = mean(log10(Intensity), na.rm = TRUE)) %>% 
-    dplyr::mutate(Intensity = round(Intensity, digit = 1))
+    dplyr::mutate(Intensity = round(Intensity, digits = 1))
   
   p <- ggplot() +
     geom_violin(df_int, mapping = aes(x = Channel, y = log10(Intensity), fill = Channel), 
@@ -3033,7 +3055,7 @@ concat_fml_dots <- function(fmls = NULL, fml_nms = NULL,
                             dots = NULL, anal_type = "zzz") {
   dat_dir <- get_gl_dat_dir()
   
-  if ((!is_empty(fmls)) & (anal_type == "GSEA")) return(c(dots, fmls))
+  if ((!purrr::is_empty(fmls)) && (anal_type == "GSEA")) return(c(dots, fmls))
   
   if (purrr::is_empty(fmls)) {
     fml_file <-  file.path(dat_dir, "Calls/pepSig_formulas.rda")
@@ -3202,8 +3224,12 @@ check_dots <- function (blacklist = NULL, ...) {
 
 #' check depreciated arguments
 #' 
-#' @param ... A list of arguments for checking.
-#' @inheritParams check_dots
+#' @param blacklist A list of paired character vectors. In each pair, the first
+#'   element is the old argument name if incurred and the second is the new name
+#'   for reminding.
+#' @param ... A list of arguments for checking. The depreciated argument(s) are
+#'   no longer in the formalArgs of a function. If present, they will be in
+#'   \code{...}.
 check_depreciated_args <- function (blacklist = NULL, ...) {
   dots <- rlang::enexprs(...)
   old_args <- purrr::map_chr(blacklist, `[[`, 1)
@@ -3504,9 +3530,16 @@ find_ratio_cols <- function (TMT_plex) {
 #' @param mqpar The name of .xml file. The default is "mqpar.xml".
 #' @param filename The name of metadata file.
 #' @param out The name of output .xml file.
-#' @rawNamespace import(xml2, except = as_list)
 make_mq_meta <- function (dat_dir = proteoQ:::get_gl_dat_dir(), mqpar = "mqpar.xml", 
                           filename = "mq_meta.txt", out = "new_mqpar.xml") {
+  
+  if (!requireNamespace("xml2", quietly = TRUE)) {
+    stop("\n====================================================================", 
+         "\nNeed package \"xml2\" for this function to work.",
+         "\n====================================================================",
+         call. = FALSE)
+  }
+  
   lookup <- readr::read_tsv(file.path(dat_dir, filename)) %>% 
     dplyr::rename(RAW_File = Name, Sample_ID = Experiment) %>% 
     dplyr::filter(rowSums(!is.na(.)) > 0)
@@ -3514,44 +3547,48 @@ make_mq_meta <- function (dat_dir = proteoQ:::get_gl_dat_dir(), mqpar = "mqpar.x
   n_smpls <- nrow(lookup)
   
   parent <- xml2::read_xml(file.path(dat_dir, mqpar))
-  children <- xml_children(parent)
+  children <- xml2::xml_children(parent)
   contents <- parent %>% xml2::xml_contents() 
   
-  filePaths <- xml_children(children[[which(xml_name(contents) == "filePaths")]])
+  filePaths <- 
+    xml2::xml_children(children[[which(xml2::xml_name(contents) == "filePaths")]])
   len <- length(filePaths)
   if (len > n_smpls) {
-    xml_text(filePaths[(n_smpls + 1):len]) <- ""
+    xml2::xml_text(filePaths[(n_smpls + 1):len]) <- ""
     filePaths <- filePaths[1:n_smpls]
   }
-  pre <- filePaths %>% xml_text() %>% gsub("(.*\\\\|/).*", "\\1", .)
-  xml_text(filePaths) <- paste0(pre, lookup$RAW_File)
+  pre <- filePaths %>% xml2::xml_text() %>% gsub("(.*\\\\|/).*", "\\1", .)
+  xml2::xml_text(filePaths) <- paste0(pre, lookup$RAW_File)
   
-  experiments <- xml_children(children[[which(xml_name(contents) == "experiments")]])
+  experiments <- 
+    xml2::xml_children(children[[which(xml2::xml_name(contents) == "experiments")]])
   len <- length(experiments)
   if (len > n_smpls) {
-    xml_text(experiments[(n_smpls + 1):len]) <- ""
+    xml2::xml_text(experiments[(n_smpls + 1):len]) <- ""
     experiments <- experiments[1:n_smpls]
   }
-  xml_text(experiments) <- lookup$Sample_ID
+  xml2::xml_text(experiments) <- lookup$Sample_ID
   
-  fractions <- xml_children(children[[which(xml_name(contents) == "fractions")]])
+  fractions <- 
+    xml2::xml_children(children[[which(xml2::xml_name(contents) == "fractions")]])
   len <- length(fractions)
   if (len > n_smpls) {
-    xml_text(fractions[(n_smpls + 1):len]) <- ""
+    xml2::xml_text(fractions[(n_smpls + 1):len]) <- ""
     fractions <- fractions[1:n_smpls]
   }
   
-  ptms <- xml_children(children[[which(xml_name(contents) == "ptms")]])
+  ptms <- 
+    xml2::xml_children(children[[which(xml2::xml_name(contents) == "ptms")]])
   len <- length(ptms)
   if (len > n_smpls) {
-    xml_text(ptms[(n_smpls + 1):len]) <- ""
+    xml2::xml_text(ptms[(n_smpls + 1):len]) <- ""
     ptms <- ptms[1:n_smpls]
   }
   
   paramGroupIndices <- 
-    xml_children(children[[which(xml_name(contents) == "paramGroupIndices")]])
+    xml2::xml_children(children[[which(xml2::xml_name(contents) == "paramGroupIndices")]])
   referenceChannel <- 
-    xml_children(children[[which(xml_name(contents) == "referenceChannel")]])
+    xml2::xml_children(children[[which(xml2::xml_name(contents) == "referenceChannel")]])
   
   xml2::write_xml(parent, file.path(dat_dir, out), options = "format")
 }
@@ -3657,7 +3694,7 @@ add_entry_ids <- function (df, col_in = "pep_seq", col_out = "pep_index") {
   ids <- unique(df[[col_in]])
   
   seqs <- seq_along(ids) %>% `names<-`(ids)
-  seqs <- tibble(!!col_in := names(seqs), !!col_out := seqs) 
+  seqs <- tibble::tibble(!!col_in := names(seqs), !!col_out := seqs) 
   
   df %>% dplyr::left_join(seqs, by = col_in)
 }
@@ -3830,4 +3867,21 @@ check_ggplot_aes <- function(p) {
             call. = FALSE)
   }
 }
+
+
+#' Standardize range values.
+#' 
+#' @param from_to A numeric vector of length 2.
+prep_range <- function(from_to = c(0, 1)) {
+  stopifnot(length(from_to) == 2)
+  
+  stopifnot(from_to[2] > from_to[1], 
+            from_to[1] >= 0,
+            from_to[2] <= 100) 
+  
+  if (from_to[2] <= 1) from_to <- from_to * 100
+  
+  from_to
+}
+
 

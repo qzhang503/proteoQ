@@ -7,7 +7,9 @@
 pad_sm_channels(file, ...)
 }
 \arguments{
-\item{file}{A file name of PSM table from MaxQuant export}
+\item{file}{An intermediate PSM table.}
+
+\item{...}{filter_dots.}
 }
 \description{
 Pad Spectrum Mill TMT channels to the highest plex

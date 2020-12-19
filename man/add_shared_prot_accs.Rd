@@ -6,6 +6,9 @@
 \usage{
 add_shared_prot_accs(df)
 }
+\arguments{
+\item{df}{PSM data.}
+}
 \description{
 Protein accessions will be used if the mapped accessions are present under
 \code{prot_acc}; otherwise, \code{fasta_name} will be used. This allows quick

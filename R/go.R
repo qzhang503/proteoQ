@@ -263,7 +263,7 @@ dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msig
   
   if (!requireNamespace("downloader", quietly = TRUE)) {
     stop("\n====================================================================", 
-         "\nNeed install package \"downloader\" needed for this function to work.",
+         "\nNeed package \"downloader\" for this function to work.",
          "\n====================================================================",
          call. = FALSE)
   }
@@ -428,14 +428,14 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
   
   if (!requireNamespace("downloader", quietly = TRUE)) {
     stop("\n====================================================================", 
-         "\nNeed install package \"downloader\" needed for this function to work.",
+         "\nNeed package \"downloader\" for this function to work.",
          "\n====================================================================",
          call. = FALSE)
   }
   
   if (!requireNamespace("AnnotationDbi", quietly = TRUE)) {
     stop("\n====================================================================", 
-         "\nNeed install package \"AnnotationDbi\" needed for this function to work.\n",
+         "\nNeed package \"AnnotationDbi\" for this function to work.\n",
          "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
          "\n\tinstall.packages(\"BiocManager\")",
          "\nBiocManager::install(\"AnnotationDbi\")", 
@@ -633,7 +633,7 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
   
   if (!requireNamespace("biomaRt", quietly = TRUE)) {
     stop("\n====================================================================", 
-         "\nNeed install package \"biomaRt\" needed for this function to work.\n",
+         "\nNeed package \"biomaRt\" for this function to work.\n",
          "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
          "\n\tinstall.packages(\"BiocManager\")",
          "\nBiocManager::install(\"biomaRt\")", 

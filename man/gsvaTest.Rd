@@ -69,6 +69,10 @@ significance assessment of GSVA enrichment scores. The default is
 for models without random effects and the \code{\link[lmerTest]{lmer}} will
 be used for models with random effects.}
 
+\item{padj_method}{Character string; the method of multiple-test corrections
+for uses with \link[stats]{p.adjust}. The default is "BH". See
+?p.adjust.methods for additional choices.}
+
 \item{var_cutoff}{Numeric; the cut-off in the variances of protein log2FC.
 Entries with variances smaller than the threshold will be removed from GSVA.
 The default is 0.5.}

@@ -9,8 +9,6 @@ A data frame with 549 rows and 4 variables:
 \describe{
   \item{title}{Modification}
   \item{position}{Position of a modification}
-  \item{composition}{Composition of elements under a modification}
-  \item{mass}{Monoisotopic mass of a modification}
 }
 }
 \usage{

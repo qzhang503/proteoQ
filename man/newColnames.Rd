@@ -7,11 +7,13 @@
 newColnames(i, x, label_scheme, pattern = "[RI][0-9]{3}[NC]{0,1}")
 }
 \arguments{
-\item{i}{Integer; the index of TMT experiment}
+\item{i}{Integer; the index of TMT experiment.}
 
-\item{x}{Data frame; log2FC data}
+\item{x}{Data frame; log2FC data.}
 
-\item{label_scheme}{Experiment summary}
+\item{label_scheme}{Experiment summary.}
+
+\item{pattern}{Regex pattern for capturing intensity and ratio columns.}
 }
 \description{
 \code{newColnames} match names to Sample_ID in label_scheme

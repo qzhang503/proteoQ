@@ -2,13 +2,19 @@
 % Please edit documentation in R/utils.R
 \name{not_all_zero}
 \alias{not_all_zero}
-\title{Finds all-zero column(s)}
+\title{Finds not-all-zero column(s)}
 \usage{
-not_all_zero(x)
+not_all_zero(df)
 }
 \arguments{
-\item{x}{A data frame of \code{log2FC} and \code{intensity}.}
+\item{df}{A data frame.}
+}
+\value{
+A logical vector
 }
 \description{
 \code{not_all_zero} identifies the column indexes with all NA values.
+}
+\examples{
+\donttest{not_all_zero(mtcars)}
 }

@@ -16,7 +16,9 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
                    rlang::is_logical, logical(1)))
   stopifnot(nrow(label_scheme_sub) > 0)
 
-  if (complete_cases) df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  if (complete_cases) {
+    df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
+  }
   
   if (scale_log2r) {
     fn_par <- file.path(filepath, "MGKernel_params_Z.txt")
@@ -240,10 +242,6 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 	    rlang::eval_tidy()
 	)
 
-	# gg_args <- c(filename = file.path(filepath, gg_imgname(filename)), 
-	#              width = width, height = height, limitsize = FALSE, dots)
-	# do.call(ggsave, gg_args)
-	
 	readr::write_tsv(df_melt, file.path(filepath, gsub("\\.[^.]*$", "_raw.txt", filename)))
 	
 	if (!any(is.na(fit))) {
@@ -424,9 +422,9 @@ pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FAL
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%

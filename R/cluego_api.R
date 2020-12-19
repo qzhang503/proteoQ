@@ -38,14 +38,14 @@ cluego <- function (df2 = "Protein_Trend_Z_nclust5.txt", species = c("human" = "
   
   if (!requireNamespace("RJSONIO", quietly = TRUE)) {
     stop("\n====================================================================", 
-         "\nNeed install package \"RJSONIO\" needed for this function to work.",
+         "\nNeed package \"RJSONIO\" for this function to work.",
          "\n====================================================================",
          call. = FALSE)
   }
   
   if (!requireNamespace("httr", quietly = TRUE)) {
     stop("\n====================================================================", 
-         "\nNeed install package \"httr\" needed for this function to work.",
+         "\nNeed package \"httr\" for this function to work.",
          "\n====================================================================",
          call. = FALSE)
   }

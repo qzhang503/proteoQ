@@ -14,3 +14,6 @@ is_all_nan(x, ...)
 \description{
 Finds all-NaN column(s)
 }
+\examples{
+\donttest{purrr::map_lgl(mtcars, is_all_nan, na.rm = TRUE)}
+}

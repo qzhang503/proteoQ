@@ -7,6 +7,9 @@ matches.}
 \usage{
 my_dist(...)
 }
+\arguments{
+\item{...}{Arguments for \link[stats]{dist}}
+}
 \description{
 A wrapper of \link[stats]{dist} with the handling of partial argument
 matches.

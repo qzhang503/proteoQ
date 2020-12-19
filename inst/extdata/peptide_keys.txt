@@ -10,7 +10,7 @@ prot_seq	Protein sequence in 1 letter code
 prot_empai	Mascot empirical protein abundance index	
 prot_icover	Integerized protein sequence coverage by counts of tryptic peptides	See also PSM keys.
 prot_cover	Protein sequence coverage	v.s.
-prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Joint results from individual PSM tables; the counts exclude entries that are void in reporter-ion intensity or filtered by users.
+prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Joint results from individual PSM tables; the counts exclude entries that are void in reporter-ion intensity across all samples or filtered by users.
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	v.s.
 pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	v.s.
 pep_isunique	Peptide sequence is unique or not.	See also PSM keys.
@@ -34,7 +34,7 @@ pep_locprob	The highest probablity from site analysis of the variable modificati
 pep_locdiff	pep_locprob – pep_locprob2	See also PSM keys.
 pep_phospho_locprob	The highest probability in phosphorylation sites	
 pep_phospho_locdiff	The difference between the highest and the second highest probability of phosphorylation sites	
-pep_mod_protnt	Logical indicating if a sequence contains protein N-terminal modification	"Optional at ""normPSM(group_psm_by = pep_seq_mod, use_lowercase_aa = TRUE)"". See also. `?proteoQ::normPSM`."
+pep_mod_protnt	Logical indicating if a sequence contains protein N-terminal modification	"Optional at `normPSM(group_psm_by = pep_seq_mod, use_lowercase_aa = TRUE)`. See also. `?proteoQ::normPSM`."
 pep_mod_protntac	Logical indicating if a sequence contains protein N-terminal acetylation	v.s.
 pep_mod_pepnt	Logical indicating if a sequence contains N-terminal modification	v.s.
 pep_mod_m	Logical indicating if a sequence contains methionine oxidation	v.s.
@@ -55,7 +55,7 @@ other_acc	Protein accession with formats other than UniProt or RefSeq
 entrez	Protein Entrez ID	
 species	The species of a protein entry	
 acc_type	The type of accession names	
-shared_prot_accs	List of protein accesssions under the same group	
+shared_prot_accs	List of protein accesssions under the same group	See also PSM keys.
 shared_genes	List of genes under the same group	
 kin_attr	The attribute of proteins being kinases	
 kin_class	"The classes of kinases, e.g., TK, TKL..."	
@@ -65,7 +65,7 @@ mean_lint	Mean log10 intensity (N_I...) across samples	`Reference` and `Empty` s
 count_nna	Count of non-NA log2FC	v.s.
 ...	Additional column keys	
 I... (...)	Reporter-ion intensity; I000 in LFQ	Calculated from the descriptive statistics by `method_psm_pep` in `PSM2Pep()` for indicated samples.
-N_I... (...)	Normalized I... (...); N_I000 in LFQ	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity.
+N_I... (...)	Normalized I... (...); N_I000 in LFQ	The calibration factors for the alignment of log2FC are used to scale the reporter-ion intensity across samples.
 sd_log2_R... (...)	Standard deviation of protein log2FC; sd_log2_R000 in LFQ 	Calculated from contributing peptides under each sample.
 log2_R... (...)	log2FC relative to reference materials for indicated samples; log2_R000 in LFQ	Before normalization.
 N_log2_R... (...)	Aligned log2_R... (...) according to 'method_align' in 'standPep()' without scaling normalization; N_log2_R000 in LFQ	

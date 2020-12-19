@@ -135,18 +135,8 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
               length(method_align) == 1)
   }
   
-  local({
-    vars <- list(range_int, range_log2r)
-    stopifnot(vapply(vars, function (x) length(x) == 2, logical(1)))
-    
-    ranges <- vapply(vars, range, c(min = 0, max = 100))
-    stopifnot(ranges[2, ] > ranges[1, ], 
-              ranges[1, ] > 0,
-              ranges[2, ] < 100) 
-  })
-  
-  if (range_log2r[2] <= 1) range_log2r <- range_log2r * 100
-  if (range_int[2] <= 1) range_int <- range_int * 100
+  range_log2r <- prep_range(range_log2r)
+  range_int <- prep_range(range_int)
 
   id <- match_call_arg(normPSM, group_pep_by)
   pep_id <- match_call_arg(normPSM, group_psm_by)

@@ -7,9 +7,13 @@
 check_depreciated_args(blacklist = NULL, ...)
 }
 \arguments{
-\item{blacklist}{A character vector of variable names.}
+\item{blacklist}{A list of paired character vectors. In each pair, the first
+element is the old argument name if incurred and the second is the new name
+for reminding.}
 
-\item{...}{A list of arguments for checking.}
+\item{...}{A list of arguments for checking. The depreciated argument(s) are
+no longer in the formalArgs of a function. If present, they will be in
+\code{...}.}
 }
 \description{
 check depreciated arguments

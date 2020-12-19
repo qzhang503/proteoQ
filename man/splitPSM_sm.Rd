@@ -17,6 +17,7 @@ splitPSM_sm(
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
   rptr_intco = 0,
+  rptr_intrange = c(0, 100),
   use_lowercase_aa = TRUE,
   parallel = TRUE,
   ...
@@ -49,14 +50,14 @@ table(s). See also \code{\link{Uni2Entrez}} and \code{\link{Ref2Entrez}}
 for preparing custom entrez files.}
 
 \item{pep_unique_by}{A character string for annotating the uniqueness of
-peptides in \code{MaxQuant} PSMs. At the \code{group} default, the
-uniqueness of peptides is by groups with the collapses of same-set or
-sub-set proteins. At a more stringent criterion of \code{protein}, the
-uniqueness of peptides is by protein entries without grouping. On the other
-extreme of choice \code{none}, all peptides are treated as unique. A new
-column of \code{pep_isunique} with corresponding logical TRUE or FALSE will
-be added to the PSM reports. Note that the choice of \code{none} is only for
-convenience, as the same can be achieved by setting \code{use_unique_pep =
+peptides. At the \code{group} default, the uniqueness of peptides is by
+groups with the collapses of same-set or sub-set proteins. At a more
+stringent criterion of \code{protein}, the uniqueness of peptides is by
+protein entries without grouping. On the other extreme of choice
+\code{none}, all peptides are treated as unique. A new column of
+\code{pep_isunique} with corresponding logical TRUE or FALSE will be added
+to the PSM reports. Note that the choice of \code{none} is only for
+convenience, as the same may be achieved by setting \code{use_unique_pep =
 FALSE} in \link{Pep2Prn}.}
 
 \item{scale_rptr_int}{Logical; if TRUE, scales (up) MS2 reporter-ion
@@ -83,13 +84,28 @@ will be annotated with their kinase attributes. The default is FALSE.}
 intensities will be plotted. The default is TRUE. The argument is also
 applicable to the precursor intensity with MaxQuant LFQ.}
 
-\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity being
-considered non-trivial. The default is 0 without cut-offs. The filtration
-will not be applied synchronously to the precursor intensity under the same
-PSM query. To guard against odds such as higher MS2 reporter-ion
+\item{rptr_intco}{Numeric; the threshold of reporter-ion intensity (TMT:
+\code{I126} etc.; LFQ: \code{I000}) being considered non-trivial. The
+default is 0 without cut-offs. The data nullification will not be applied
+synchronously to the precursor intensity (\code{pep_tot_int}) under the
+same PSM query. To guard against odds such as higher MS2 reporter-ion
 intensities than their contributing MS1 precursor intensity, employs for
-example \code{filter_... = rlang::exprs(pep_tot_int >= your_ms1_cutoff)}
-during \link{PSM2Pep}.}
+example \code{filter_... = rlang::exprs(pep_tot_int >= my_ms1_cutoff)}
+during \link{PSM2Pep}. The rule of thumb is that \code{pep_tot_int} is a
+single column; thus the corresponding data filtration against it may be
+readily achieved without introducing new arguments. By contrast,
+\code{rptr_intco} applies to a set of columns, \code{I126} etc.; it might
+be slightly more involved/laborious when applying suitable statements of
+\code{filter_} varargs.}
+
+\item{rptr_intrange}{Numeric vector at length two. The argument specifies the
+range of reporter-ion intensities (TMT: \code{I126} etc.; LFQ: \code{I000})
+being considered non-trivial. The default is between 0 and 100 percentile
+without cut-offs. While argument \code{rptr_intco} employs a universal
+cut-off across samples by absolute values, \code{range_int} provides an
+alternative means of sample-specific thresholding of intensities by
+percentiles. The data nullification will not be applied synchronously to
+the precursor intensity under the same PSM query.}
 
 \item{use_lowercase_aa}{Logical; if TRUE, modifications in amino acid
 residues will be abbreviated with lower-case and/or \code{^_~}. See the

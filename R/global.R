@@ -25,7 +25,8 @@ set_dat_dir <- function(dat_dir = NULL) {
 }
 
 
-#' Fetch global \code{dat_dir}
+#' Fetch global \code{dat_dir}.
+#' 
 get_gl_dat_dir <- function() {
   dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv, inherits = FALSE), 
                       error = function(e) 1)

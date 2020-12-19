@@ -219,6 +219,12 @@ image type will be determined by the extension of the file name.}
 theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
 
+\item{formula}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{data}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
 \item{x}{Dummy argument to avoid incurring the corresponding argument in
 a pre-existed function by partial argument matches.}
 
@@ -557,12 +563,7 @@ prnLDA(
 
  \emph{Column keys in PSM, peptide and protein outputs} \cr
  # Mascot \cr
- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
-
- # MaxQuant \cr
- system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 }

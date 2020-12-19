@@ -134,7 +134,8 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
     }
     
     df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]*", names(df_sd_lgl))] <- 
-      purrr::map2(as.list(df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]*", names(df_sd_lgl))]), 
+      purrr::map2(as.list(df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]*", 
+                                            names(df_sd_lgl))]), 
                   as.list(qts), ~ {
                     .x[.x > .y] <- NA
                     return(.x)
@@ -199,7 +200,7 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
   dots <- rlang::enexprs(...)
 
   file.copy(file.path(dat_dir, "PSM", file), file.path(dat_dir, "PSM/Copy", file))
-  
+
   df <- read.csv(file.path(dat_dir, "PSM", file), check.names = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
     purge_by_qt(group_psm_by, pt_cv, keep_ohw) %>% 
@@ -240,8 +241,8 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
                   col.names = TRUE, row.names = FALSE)      
   }
   
-  width <- eval(dots$width, env = caller_env())
-  height <- eval(dots$height, env = caller_env())
+  width <- eval(dots$width, envir = rlang::caller_env())
+  height <- eval(dots$height, envir = rlang::caller_env())
   
   if (is.null(width)) width <- 8 
   if (is.null(height)) height <- 8
@@ -338,9 +339,9 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, 
@@ -486,9 +487,9 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@export
 purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, 
@@ -599,8 +600,8 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
       write.table(fn, sep = "\t", col.names = TRUE, row.names = FALSE)    
   }
   
-  width <- eval(dots$width, env = caller_env())
-  height <- eval(dots$height, env = caller_env())
+  width <- eval(dots$width, envir = rlang::caller_env())
+  height <- eval(dots$height, envir = rlang::caller_env())
   
   if (is.null(width)) width <- 8 * n_TMT_sets(label_scheme_full)
   if (is.null(height)) height <- 8

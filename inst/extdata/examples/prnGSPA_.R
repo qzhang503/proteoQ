@@ -40,8 +40,7 @@ prnGSPA(
 # more examples of aesthetics in `?gspaMap`
 gspaMap(
   impute_na = FALSE,
-  show_labels = TRUE, 
-  topn = 50, 
+  topn_gsets = 50, 
   show_sig = pVal, 
   xco = 1.2, # optional x-axis cut-off lines
   yco = 0.05, # a optional y-axis cut-off line 
@@ -63,8 +62,8 @@ prnGSPA(
 #   those in the corresponding `prnGSPA(...)`
 gspaMap(
   impute_na = FALSE,
-  show_labels = FALSE, 
-  topn = 50, 
+  topn_labels = 0, 
+  topn_gsets = 50, 
   show_sig = pVal, 
 )
 
@@ -72,8 +71,7 @@ gspaMap(
 gspaMap(
   df2 = "row_filters_Protein_GSPA_Z.txt", 
   impute_na = FALSE,
-  topn = 10, 
-  show_labels = TRUE, 
+  topn_gsets = 10, 
   show_sig = pVal, 
 )
 
@@ -82,8 +80,8 @@ gspaMap(
   df2 = "row_filters_Protein_GSPA_Z.txt", 
   filter2_ess_size = exprs(ess_size >= 1),   
   impute_na = FALSE,
-  topn = 10, 
-  show_labels = FALSE, 
+  topn_gsets = 10, 
+  topn_labels = 0, 
   show_sig = pVal, 
 )
 
@@ -94,8 +92,7 @@ gspaMap(
   df2 = "row_filters_Protein_GSPA_Z.txt", 
   filter2_ess_size = exprs(ess_size >= 1),   
   impute_na = FALSE,
-  topn = 20, 
-  show_labels = TRUE, 
+  topn_gsets = 20, 
   show_sig = pVal, 
 )
 
@@ -120,8 +117,8 @@ prnGSPA(
 gspaMap(
   df2 = "thresholds_Protein_GSPA_Z.txt", 
   impute_na = FALSE,
-  topn = 10, 
-  show_labels = FALSE, 
+  topn_gsets = 10, 
+  topn_labels = 0, 
   show_sig = pVal, 
 )
 
@@ -142,8 +139,8 @@ prnGSPA(
 gspaMap(
   df2 = "methods_Protein_GSPA_Z.txt", 
   impute_na = FALSE,
-  topn = 25, 
-  show_labels = FALSE, 
+  topn_gsets = 25, 
+  topn_labels = 0, 
   show_sig = pVal, 
 )
 
@@ -254,7 +251,7 @@ gspaMap(
   gset_nms = c("~/proteoQ/dbs/go/go_hs.rds",
                "~/proteoQ/dbs/go/go_mm.rds"),
   impute_na = FALSE,
-  topn = 20, 
+  topn_gsets = 20, 
   show_sig = pVal, 
 )
 
@@ -285,7 +282,7 @@ gspaMap(
   gset_nms = c("~/proteoQ/dbs/msig/msig_hs.rds",
                "~/proteoQ/dbs/msig/msig_mm.rds"),
   impute_na = FALSE,
-  topn = 20, 
+  topn_gsets = 20, 
   show_sig = pVal, 
 )
 
@@ -308,8 +305,8 @@ prnGSPA(
     # gset_nms = ., 
     df2 = "cmbn_Protein_GSPA_Z.txt", 
     impute_na = FALSE,
-    topn = 20, 
-    show_labels = FALSE, 
+    topn_gsets = 20, 
+    topn_labels = 0, 
     show_sig = pVal, 
   )
 }

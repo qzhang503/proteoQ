@@ -11,6 +11,8 @@ psm_msplit(df, nm, fn_lookup, dat_dir, plot_rptr_int, TMT_plex)
 
 \item{nm}{Names of the \code{df}'s.}
 
+\item{fn_lookup}{A lookup of file names.}
+
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
 

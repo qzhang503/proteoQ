@@ -310,7 +310,6 @@ prnGSPA(
 # volcano plot visualization, protein
 gspaMap(
   impute_na = FALSE,
-	show_labels = TRUE, 
 	gspval_cutoff = 5E-2, # gene set threshold
 	gslogFC_cutoff = log2(1.2), # gene set log2FC threshold
 	topn = 100, 

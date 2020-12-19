@@ -72,6 +72,10 @@ significance assessment of GSVA enrichment scores. The default is
 for models without random effects and the \code{\link[lmerTest]{lmer}} will
 be used for models with random effects.}
 
+\item{padj_method}{Character string; the method of multiple-test corrections
+for uses with \link[stats]{p.adjust}. The default is "BH". See
+?p.adjust.methods for additional choices.}
+
 \item{...}{\code{filter_}: Logical expression(s) for the row filtration
 against data in a primary file of \code{/Model/Protein[_impNA]_pVals.txt}.
 See also \code{\link{normPSM}} for the format of \code{filter_} statements.
@@ -246,7 +250,7 @@ prnGSVA(
  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
  
  \emph{Column keys in PSM, peptide and protein outputs} \cr 
- system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+ system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 }

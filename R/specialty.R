@@ -451,7 +451,7 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL,
   } else if (is.na(dots$breaks)) {
     color_breaks <- NA
   } else {
-    color_breaks <- eval(dots$breaks, env = caller_env())
+    color_breaks <- eval(dots$breaks, envir = rlang::caller_env())
   }
   
   if (is.null(dots$color)) {
@@ -459,7 +459,7 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL,
   } else if (is.na(dots$color)) {
     mypalette <- colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
   } else {
-    mypalette <- eval(dots$color, env = caller_env())
+    mypalette <- eval(dots$color, envir = rlang::caller_env())
   }
   
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
@@ -507,7 +507,7 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL,
   } else if (is.na(dots$annotation_colors)) {
     annotation_colors <- NA
   } else {
-    annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+    annotation_colors <- eval(dots$annotation_colors, envir = rlang::caller_env())
   }
   
   if (complete_cases) {

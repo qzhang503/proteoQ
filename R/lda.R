@@ -1,5 +1,6 @@
 #' Plots LDA
-#'
+#' 
+#' @inheritParams prnLDA
 #' @inheritParams prnPCA
 #' @inheritParams info_anal
 #' @inheritParams gspaTest
@@ -611,6 +612,10 @@ pepLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'@inheritParams prnHM
 #'@inheritParams anal_prnNMF
 #'@inheritParams prnPCA
+#'@param formula Dummy argument to avoid incurring the corresponding argument in
+#'  a pre-existed function by partial argument matches.
+#'@param data Dummy argument to avoid incurring the corresponding argument in
+#'  a pre-existed function by partial argument matches.
 #'@param x Dummy argument to avoid incurring the corresponding argument in
 #'  a pre-existed function by partial argument matches.
 #'@param grouping Dummy argument to avoid incurring the corresponding argument in
@@ -687,14 +692,9 @@ pepLDA <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr
 #'  # Mascot \cr
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
-#'
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@example inst/extdata/examples/prnLDA_.R
 #'

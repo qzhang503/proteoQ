@@ -15,11 +15,11 @@ gsVolcano(
   filepath = NULL,
   filename = NULL,
   adjP = FALSE,
-  show_labels = TRUE,
+  topn_labels = 20,
   show_sig = "none",
   gspval_cutoff = 1e-06,
   gslogFC_cutoff = log2(1.2),
-  topn = Inf,
+  topn_gsets = Inf,
   ...
 )
 }
@@ -67,8 +67,9 @@ image type will be determined by the extension of the file name.}
 \item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals in volcano plots.
 The default is FALSE.}
 
-\item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.
-The default is TRUE.}
+\item{topn_labels}{A non-negative integer; the top-n species for labeling in a
+plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
+shown. The default is to label the top-20 species with the lowest p-values.}
 
 \item{show_sig}{Character string indicating the type of significance values to
 be shown with \code{\link{gspaMap}}. The default is \code{"none"}.
@@ -90,7 +91,7 @@ matched to or specified in argument \code{fml_nms}. Formula-specific
 threshold is allowed by supplying a vector of absolute values in
 \code{log2FC}.}
 
-\item{topn}{Numeric value or vector; top entries in gene sets ordered by
+\item{topn_gsets}{Numeric value or vector; top entries in gene sets ordered by
 increasing \code{pVal} for visualization. The default is to use all
 available entries.}
 

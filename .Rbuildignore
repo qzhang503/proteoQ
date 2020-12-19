@@ -1,5 +1,7 @@
 ^LICENSE\.md$
+^CODE_OF_CONDUCT\.md$
 ^README\.Rmd$
+^README\.html$
 ^\.Rproj$
 ^\.Rproj\.user$
 ^cran-comments\.md$
@@ -7,3 +9,7 @@
 ^data-raw$
 ^\.github$
 ^images$
+^R/New folder$
+^R/temp$
+^R/Copy$
+^R/Others$

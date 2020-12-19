@@ -64,8 +64,8 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{label_scheme_sub}{A data frame. Subset entries from \code{label_scheme}
 for selected samples.}
 
-\item{choice}{Character string; the PCA method in \code{c("prcomp")}. The
-default is "prcomp".}
+\item{choice}{Character string; the LDA method in one of \code{c("lda")}. The
+default is "lda".}
 
 \item{method}{Dummy argument to avoid incurring the corresponding argument in
 \link[stats]{dist} by partial argument matches.}
@@ -146,7 +146,8 @@ in \code{ggplot2} will be used.}
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}
 
-\item{complete_cases}{Logical; always TRUE for PCA.}
+\item{complete_cases}{Logical; if TRUE, only cases that are complete with no
+missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
@@ -183,17 +184,41 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", "LDA", ...)}.}
 
+\item{formula}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{data}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{x}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{grouping}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{prior}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{subset}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{CV}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{na.action}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
+\item{nu}{Dummy argument to avoid incurring the corresponding argument in
+a pre-existed function by partial argument matches.}
+
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-Arguments passed to \code{\link[stats]{prcomp}}: \code{rank.}, \code{tol}
-etc. At \code{type = obs}, argument \code{scale} becomes
-\code{scale_features} and \code{center} matches \code{center_features}. At
-\code{type = feats}, the setting of \code{scale_log2r} will be applied for
-data scaling and data centering be automated by
-\code{\link{standPep}} or \code{\link{standPrn}}. \cr \cr
-Additional arguments for \code{ggsave}: \cr \code{width}, the width of plot;
-\cr \code{height}, the height of plot \cr \code{...}}
+\code{arrange_}: Variable argument statements for the row ordering against
+data in a primary file linked to \code{df}. See also \code{\link{prnHM}} for
+the format of \code{arrange_} statements. \cr \cr Additional parameters for
+\code{ggsave}: \cr \code{width}, the width of plot; \cr \code{height}, the
+height of plot \cr \code{...}}
 }
 \description{
 Plots LDA

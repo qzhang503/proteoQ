@@ -5,11 +5,11 @@ prot_acc	Protein accession string	"MaxQuant, the leading entry in `Proteins`."
 prot_desc	Protein description taken from Fasta title line	
 prot_score	Mascot protein score	
 prot_mass	Protein mass	
-prot_matches	Mascot count of PSMs	No data joining taken into account etc.
+prot_matches	Mascot count of PSMs	No data joining taken into account.
 prot_matches_sig	Mascot count of PSMs that have significant scores under a proposed protein	v.s.
 prot_sequences	Mascot count of distinct sequences	v.s.
 prot_sequences_sig	Mascot count of distinct sequences that have significant scores under a proposed protein	v.s.
-prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity or filtered by users.
+prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	By each TMT experiment and LC/MS series; the counts exclude entries that are void in reporter-ion intensity across all channels or filtered by users.
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	"v.s.; at `group_pep_by = pep_seq_mod`, the same peptide with different variable modifications will be counted as different sequences."
 prot_len	The number of amino acid residues under a proposed protein	
 prot_pi	Mascot calculation of protein isoelectric point	
@@ -17,7 +17,7 @@ prot_tax_str	Protein taxonomy as string
 prot_tax_id	Protein taxonomy as Tax ID	
 prot_seq	Protein sequence in 1 letter code	
 prot_empai	Mascot empirical protein abundance index	
-prot_icover	Integerized protein sequence coverage by counts of tryptic peptides	Number of observed divided by number of possible
+prot_icover	Integerized protein sequence coverage by counts of tryptic peptides	Number of observed divided by number of possibles.
 prot_cover	Protein sequence coverage by amino acid residues	Calculated from the union of individual data sources.
 pep_query	Mascot ordinal number of query after sorting by Mr	
 pep_rank	Mascot peptide sequence match (PSM) rank. If two PSMs have same score they have the same rank.	
@@ -40,7 +40,7 @@ pep_ident	Mascot identity threshold score for PSM
 pep_expect	Expectation value or posterior error probability of PSM	"MaxQuant, `PEP`. MSFragger, `Expectation`. Spectrum Mill, NA."
 pep_res_before	Flanking residue on N-term side of peptide	
 pep_seq	One-letter representation of peptide sequences without variable modifications	
-pep_seq_mod	`pep_seq` with variable modifications	"E.g. ""_mAsGVAVSDGVIK"" with a methionine oxidation and a serine phosphorylation. The acetylation of a protein N-terminal is indicated by '_'."
+pep_seq_mod	`pep_seq` with variable modifications	E.g.`_mAsGVAVSDGVIK` with a methionine oxidation and a serine phosphorylation. The acetylation of a protein N-terminal is indicated by `_`.
 pep_res_after	Flanking residue on C-term side of peptide	
 pep_start	Ordinal position of first peptide residue in protein sequence	
 pep_end	Ordinal position of last peptide residue in protein sequence	
@@ -56,16 +56,16 @@ pep_scan_title	Mascot scan title taken from peak list
 pep_scan_range	Mascot scan number range of a peptide match	
 pep_ret_range	Mascot retention time range of a peptide match	
 pep_ms2_sumint	Mascot sum of MS2 fragment-ion intensity of a peptide match	
-pep_n_ions	Mascot count of matched fragment ions of a peptide match	
+pep_n_ions	Mascot count of matched and unmatched fragment ions of a peptide query	
 pep_locprob	The highest probablity from site analysis of the variable modification sites	"The second highest probablity, `pep_locprob2` is made implicit through `pep_locdiff`. Cf. `pep_var_mod_conf` from Mascot."
 pep_locdiff	pep_locprob – pep_locprob2	
 pep_phospho_locprob	The highest probability in phosphorylation sites	
 pep_phospho_locdiff	The difference between the highest and the second highest probability of phosphorylation sites	
-pep_ions_first	Mascot: the first series of ions being matched under a PSM query	Need enabled MS/MS peak lists during PSM exports
+pep_ions_first	Mascot: the first series of ions being matched under a PSM query	Need enabled `MS/MS peak lists` during PSM exports
 pep_ions_second	Mascot: the second series of ions being matched under a PSM query	v.s.
 pep_ions_third	Mascot: the third series of ions being matched under a PSM query	v.s.
 gene	Protein gene name	
-fasta_name	Protein name taken from Fasta title line	"By default, the character string before the first white space. See also ?read_fasta for additional options."
+fasta_name	Protein name taken from Fasta title line	"By default, the character string before the first white space. See also `?read_fasta` for additional options."
 uniprot_acc	Protein UniProt accession	
 uniprot_id	Protein UniProt entry name	
 refseq_acc	Protein RefSeq accession	
@@ -73,7 +73,7 @@ other_acc	Protein accession with formats other than UniProt or RefSeq
 entrez	Protein Entrez ID	
 species	The species of a protein entry	
 acc_type	The type of accession names	"One of `refseq_acc`, `uniprot_acc`, `uniprot_id` or `other_acc`."
-shared_prot_accs	List of protein accesssions under the same group	
+shared_prot_accs	List of protein accesssions under the same group	MSFragger at UniProt fasta(s): fasta_name(s) being used for non-primary protein(s). 
 shared_genes	List of genes under the same group	
 kin_attr	The attribute of proteins being kinases	
 kin_class	"The classes of kinases, e.g., TK, TKL..."	
@@ -83,7 +83,7 @@ dat_file	File name(s) of PSM results
 ...	Additional column keys	
 raw_file	MS file name(s) where peptides or proteins are identified	
 I126 etc.	Reporter-ion intensity from MS/MS ion search; I000 in LFQ	
-N_I126 etc.	Normalized I126 etc.; N_I000 in LFQ	The calibration factors for the alignment of `log2R...` are used to scale the reporter-ion intensity.
+N_I126 etc.	Normalized I126 etc.; N_I000 in LFQ	The calibration factors for the alignment of `log2R...` are used to scale the reporter-ion intensity across samples.
 R126 etc.	Linear FC relative to TMT-126; R000 in LFQ	
 sd_log2_R126 etc.	Standard deviation of peptide log2FC; sd_log2_R000 in LFQ	Calculated from contributing PSMs under each TMT channel.
 log2_R126 etc.	log2FC in relative to the average intensity of reference(s) under each multiplex TMT; log2_R000 in LFQ	Relative to the row-mean intensity within each multiplex TMT if no reference(s) are present.

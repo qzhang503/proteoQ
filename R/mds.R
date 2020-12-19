@@ -485,7 +485,7 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 	if (is.null(dots$color)) {
 	  mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
 	} else {
-	  mypalette <- eval(dots$color, env = caller_env())
+	  mypalette <- eval(dots$color, envir = rlang::caller_env())
 	}
 
 	if (is.null(annot_cols)) {
@@ -507,7 +507,7 @@ plotEucDist <- function (df = NULL, id = NULL, label_scheme_sub = NULL, adjEucDi
 	} else if (is.na(dots$annotation_colors)) {
 		annotation_colors <- NA
 	} else {
-		annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+		annotation_colors <- eval(dots$annotation_colors, envir = rlang::caller_env())
 	}
 
 	nm_idx <- names(dots) %in% c("mat", "filename", "annotation_col", "color",
@@ -1029,9 +1029,9 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@example inst/extdata/examples/prnMDS_.R
 #'
@@ -1278,14 +1278,9 @@ pepEucDist <- function (col_select = NULL,
 #'
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr
 #'  # Mascot \cr
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
-#'
-#'  # MaxQuant \cr
-#'  system.file("extdata", "maxquant_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "maxquant_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@example inst/extdata/examples/prnEucDist_.R
 #'@return Heat map visualization of distance matrices.

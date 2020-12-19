@@ -331,14 +331,14 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 		if (!purrr::is_empty(random_vars)) {
 		  if (!requireNamespace("broom.mixed", quietly = TRUE)) {
 		    stop("\n====================================================================", 
-		         "\nNeed install package \"broom.mixed\" needed for this function to work.",
+		         "\nNeed package \"broom.mixed\" for this function to work.",
 		         "\n====================================================================",
 		         call. = FALSE)
 		  }
 		  
 		  if (!requireNamespace("lmerTest", quietly = TRUE)) {
 		    stop("\n====================================================================", 
-		         "\nNeed install package \"lmerTest\" needed for this function to work.",
+		         "\nNeed package \"lmerTest\" for this function to work.",
 		         "\n====================================================================",
 		         call. = FALSE)
 		  }
@@ -362,7 +362,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 		} else {
 		  if (!requireNamespace("broom", quietly = TRUE)) {
 		    stop("\n====================================================================", 
-		         "\nNeed install package \"broom\" needed for this function to work.",
+		         "\nNeed package \"broom\" for this function to work.",
 		         "\n====================================================================",
 		         call. = FALSE)
 		  }
@@ -684,9 +684,9 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>% 

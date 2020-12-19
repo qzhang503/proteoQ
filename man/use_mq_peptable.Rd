@@ -9,6 +9,9 @@ use_mq_peptable(dat_dir, label_scheme_full)
 \arguments{
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
+
+\item{label_scheme_full}{The label_scheme with the probable inclusion of
+different LCMS_inj under the same TMT_Set.}
 }
 \description{
 Check the single presence of MaxQuant peptides[...].txt.

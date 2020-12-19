@@ -12,8 +12,6 @@ find_pep_pos(fasta_name, pep_seq, fasta)
 \item{pep_seq}{Peptide sequence}
 
 \item{fasta}{The database of fasta}
-
-\item{prot_acc}{Protein accession}
 }
 \description{
 \code{find_pep_pos} finds the start and the end positions of peptides in

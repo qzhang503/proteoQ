@@ -99,7 +99,7 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 
 	# --- standardize TMT channel names
 	label_scheme_full <- local({
-	  tmt_pairs <- tibble(
+	  tmt_pairs <- tibble::tibble(
 	    tmt127 = c("127", "127N"), 
 	    tmt128 = c("128", "128N"), 
 	    tmt129 = c("129", "129N"),

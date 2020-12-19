@@ -1,11 +1,10 @@
 ---
 title: "proteoQ"
-author:
-- name: Qiang Zhang
-- name: R. Reid Townsend
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
+  github_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -14,8 +13,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  github_document:
-    toc: yes
   word_document:
     toc: yes
   md_document:
@@ -1149,10 +1146,8 @@ We next visualize the distribution of protein `log2FC` and `pVal` within gene se
 
 ```{r gspaMap, eval = FALSE}
 gspaMap(
-  show_labels = TRUE,
   gspval_cutoff = 5E-3, 
   gslogFC_cutoff = log2(1.2), 
-  # topn = 100, 
   gset_nms = c("go_sets"),
   show_sig = pVal,
   xco = 1.2, # position of two vertical lines for FC
@@ -1237,7 +1232,7 @@ gspaMap(
                "~/proteoQ/dbs/msig/msig_hs.rds", 
                "~/proteoQ/dbs/msig/msig_mm.rds"),
   impute_na = FALSE,
-  show_labels = FALSE, 
+  topn_labels = 0, 
   gspval_cutoff = 5E-2, 
   gslogFC_cutoff = log2(1.2), 
   show_sig = pVal, 
@@ -2082,7 +2077,7 @@ knitr::include_graphics(c(img_prn_mix_effs))
 The results are reported at the levels of PSMs, peptides and proteins. The order of column keys may vary slightly provided differences in databases, accession types, and/or function parameters.  
 
 ### 4.1 PSMs
-PSMs are reported at the basis of per TMT experiment per series of LC/MS data acquisition. The names of the result files are `TMTset1_LCMSinj1_PSM_N.txt`, `TMTset2_LCMSinj1_PSM_N.txt` etc. with the indexes of TMT experiment and LC/MS injection index being indicated . The column keys are described in [`Matrix Science`](http://www.matrixscience.com/help/csv_headers.html), [`MaxQuant`](http://www.coxdocs.org/doku.php?id=maxquant:table:evidencetable), or the users' manual of Spectrum Mill, with the following additions or modifications:  
+PSMs are reported at the basis of per TMT experiment per series of LC/MS data acquisition. The names of the result files are `TMTset1_LCMSinj1_PSM_N.txt`, `TMTset2_LCMSinj1_PSM_N.txt` etc. with the indexes of TMT experiment and LC/MS injection index being indicated . The column keys are described in [`Matrix Science`](http://www.matrixscience.com/help/csv_headers.html), [`MaxQuant`](http://www.coxdocs.org/doku.php?id=maxquant:table:evidencetable), [`MSFragger`](http://msfragger.nesvilab.org/) or the users' manual of Spectrum Mill, with the following additions or modifications:  
 
 ```{r psm_keys, echo=FALSE, results="asis"}
 file <- system.file("extdata", "psm_keys.txt", package = "proteoQ")

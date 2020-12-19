@@ -2,11 +2,12 @@
 #'
 #' \code{newColnames} match names to Sample_ID in label_scheme
 #'
-#' @param i Integer; the index of TMT experiment 
-#' @param x Data frame; log2FC data
-#' @param label_scheme Experiment summary
+#' @param i Integer; the index of TMT experiment.
+#' @param x Data frame; log2FC data.
+#' @param label_scheme Experiment summary.
+#' @param pattern Regex pattern for capturing intensity and ratio columns.
 #' @import dplyr purrr forcats
-#' @importFrom magrittr %>% %T>% %$% %<>% 
+#' @importFrom magrittr %>% %T>% %$% %<>% not 
 newColnames <- function(i, x, label_scheme, pattern = "[RI][0-9]{3}[NC]{0,1}") {
   label_scheme_sub <- label_scheme %>%
     dplyr::filter(TMT_Set == i) 
@@ -28,6 +29,7 @@ newColnames <- function(i, x, label_scheme, pattern = "[RI][0-9]{3}[NC]{0,1}") {
 #' Check the single presence of MaxQuant peptides[...].txt.
 #' 
 #' @inheritParams load_expts
+#' @inheritParams n_TMT_sets
 use_mq_peptable <- function (dat_dir, label_scheme_full) {
   filelist <- list.files(path = file.path(dat_dir), pattern = "^peptides.*\\.txt$")
   
@@ -74,7 +76,7 @@ single_mq_prntable <- function (dat_dir) {
 #' Compare sample IDS between MaxQuant results and expt_smry.xlsx 
 #' 
 #' @param df A data frame of MaxQuant peptides.txt or proteinGroups.txt.
-#' @inheritParams n_TMT_sets
+#' @param label_scheme Experiment summary
 check_mq_df <- function (df, label_scheme) {
   mq_nms <- names(df) %>% 
     .[grepl("^LFQ intensity ", .)] %>% 
@@ -188,6 +190,8 @@ extract_mq_ints <- function (df) {
 #'
 #' Fill back temporarily intensity values that are not filled in LFQ msms.txt.
 #' @inheritParams n_TMT_sets
+#' @inheritParams mergePep
+#' @inheritParams prn_mq_lfq
 pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
   dat_dir <- get_gl_dat_dir()
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
@@ -408,7 +412,8 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
 #' Total, razor and unique intensity of peptides 
 #' 
 #' Temporary handling using MaxQuant peptide.txt.
-#' @inheritParams n_TMT_sets
+#' 
+#' @param label_scheme Experiment summary.
 pep_mq_lfq2 <- function(label_scheme) {
   dat_dir <- get_gl_dat_dir()
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
@@ -660,6 +665,7 @@ na_single_lfq <- function (df, pattern = "^I000 ") {
 #' calculates the ratio using the values of LFQ intensity.
 #' 
 #' @param df A data frame.
+#' @inheritParams mergePep
 calc_lfq_pepnums <- function (df, omit_single_lfq) {
   load(file.path(dat_dir, "label_scheme.rda"))
   
@@ -702,6 +708,8 @@ calc_lfq_pepnums <- function (df, omit_single_lfq) {
 #' \code{pep_unique_int} in LFQ
 #'
 #' @param df A data frame.
+#' @param filelist A list of individual peptide tables.
+#' @inheritParams normPSM 
 calc_lfq_pepnums2 <- function (df, filelist, group_psm_by) {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -836,7 +844,9 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) {
 #' no Z_log2_R yet available
 #'   use \code{col_select = expr(Sample_ID)} not \code{col_select} to get all Z_log2_R
 #'   why: users may specify \code{col_select} only partial to Sample_ID entries
-#'
+#' 
+#' @param use_mq_pep Logical; if TRUE, use the peptides.txt from MaxQuant. This
+#'   is an interim solution for MaxQuant timsTOF.
 #' @inheritParams info_anal
 #' @inheritParams normPSM
 #' @inheritParams splitPSM
@@ -915,7 +925,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
       dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", 
                           names(.))) %>% 
       is.na() %>% 
-      `!`() %>% 
+      magrittr::not() %>% 
       rowSums()
     
     dplyr::bind_cols(count_nna = count_nna, df_num) %>% 
@@ -1513,9 +1523,9 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
 #'  deviation across samples. The default is between the 10th and the 90th
 #'  quantiles.
 #'@param range_int Numeric vector at length two. The argument specifies the
-#'  range of the \code{intensity} of reporter ions for use in the scaling
-#'  normalization of standard deviation across samples. The default is between
-#'  the 5th and the 95th quantiles.
+#'  range of the \code{intensity} of reporter ions (including \code{I000}) for
+#'  use in the scaling normalization of standard deviation across samples. The
+#'  default is between the 5th and the 95th quantiles.
 #'@param n_comp Integer; the number of Gaussian components to be used with
 #'  \code{method_align = MGKernel}. A typical value is 2 or 3. The variable
 #'  \code{n_comp} overwrites the argument \code{k} in
@@ -1666,19 +1676,9 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 			Use column \'Sample_ID\' instead.", call. = FALSE)
   }
   
-  local({
-    vars <- list(range_int, range_log2r)
-    stopifnot(vapply(vars, function (x) length(x) == 2, logical(1)))
-    
-    ranges <- vapply(vars, range, c(min = 0, max = 100))
-    stopifnot(ranges[2, ] > ranges[1, ], 
-              ranges[1, ] > 0,
-              ranges[2, ] < 100) 
-  })
+  range_log2r <- prep_range(range_log2r)
+  range_int <- prep_range(range_int)
 
-  if (range_log2r[2] <= 1) range_log2r <- range_log2r * 100
-  if (range_int[2] <= 1) range_int <- range_int * 100
-  
   stopifnot(vapply(c(plot_log2FC_cv), rlang::is_logical, logical(1)))
   
   dots <- rlang::enexprs(...)
@@ -1975,11 +1975,11 @@ find_prot_family_rows <- function (df, group_psm_by, group_pep_by) {
 #' proteins
 #' 
 #' @param df A data frame.
-#' @param n Numeric; the top \code{n} entries to be used. The default is 3. All
-#'   entries will be used at \eqn{n = Inf}.
 #' @inheritParams normPSM
+#' @inheritParams Pep2Prn
 calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, group_pep_by, 
                               method_pep_prn) {
+  
   my_sum_n <- function (x, n = 3, ...) {
     if (n < 1) stop("`n` need to be a positive integer.", call. = FALSE)
     if (is.infinite(n)) n <- length(x)
@@ -2247,7 +2247,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
       dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", 
                           names(.))) %>% 
       is.na() %>% 
-      `!`() %>% 
+      magrittr::not() %>% 
       rowSums()
     
     df_num <- dplyr::bind_cols(count_nna = count_nna, df_num) %>% 
@@ -2372,7 +2372,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
         dplyr::select(-grep("^N_log2_R[0-9]{3}[NC]{0,1}\\s\\(Empty\\.[0-9]+\\)$", 
                             names(.))) %>% 
         is.na() %>% 
-        `!`() %>% 
+        magrittr::not() %>% 
         rowSums() 
       
       dfa <- dplyr::bind_cols(count_nna = count_nna, dfa) %>% 

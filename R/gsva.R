@@ -8,6 +8,7 @@
 #'
 #'
 #'@inheritParams prnGSPA
+#'@inheritParams prnSig
 #'@param lm_method Character string indicating the linear modeling method for
 #'  significance assessment of GSVA enrichment scores. The default is
 #'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
@@ -83,9 +84,9 @@
 #'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
 #'  
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "mascot_psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "mascot_protein_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
@@ -193,7 +194,7 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   
   if (!requireNamespace("GSVA", quietly = TRUE)) {
     stop("\n====================================================================", 
-         "\nNeed install package \"GSVA\" needed for this function to work.\n",
+         "\nNeed package \"GSVA\" for this function to work.\n",
          "\nif (!requireNamespace(\"BiocManager\", quietly = TRUE)) ", 
          "\n\tinstall.packages(\"BiocManager\")",
          "\nBiocManager::install(\"GSVA\")", 

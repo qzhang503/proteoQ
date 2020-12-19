@@ -12,7 +12,7 @@ byfile_plotVolcano(
   filepath = NULL,
   filename = NULL,
   adjP = FALSE,
-  show_labels = TRUE,
+  topn_labels = 20,
   anal_type = "Volcano",
   gset_nms = "go_sets",
   scale_log2r,
@@ -57,8 +57,9 @@ image type will be determined by the extension of the file name.}
 \item{adjP}{Logical; if TRUE, use Benjamini-Hochberg pVals in volcano plots.
 The default is FALSE.}
 
-\item{show_labels}{Logical; if TRUE, shows the labels of top twenty entries.
-The default is TRUE.}
+\item{topn_labels}{A non-negative integer; the top-n species for labeling in a
+plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
+shown. The default is to label the top-20 species with the lowest p-values.}
 
 \item{anal_type}{Character string; the type of analysis that are preset for
 method dispatch in function factories. The value will be determined
