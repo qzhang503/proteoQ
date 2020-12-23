@@ -1305,6 +1305,7 @@ facet_id <- local({
 #' @param show.legend same as ggplot2.
 #' @param inherit.aes The same as ggplot2.
 #' @param ... same as ggplot2.
+#' @export
 geom_table <- function(mapping = NULL, data = NULL, stat = "identity",
                        position = "identity", na.rm = FALSE, show.legend = NA,
                        inherit.aes = TRUE, ...) {
