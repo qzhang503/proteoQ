@@ -5449,36 +5449,33 @@ pad_mf_channels <- function(file, ...) {
   
   # TMT only
   if (!"PSM_File" %in% names(fraction_scheme)) {
-    label_scheme_sub <- local({
-      raw_files <- unique(df$RAW_File) %>% 
-        gsub("\\.raw$", "", .) %>% 
-        gsub("\\.d$", "", .)
-      
-      tmt_sets <- fraction_scheme %>% 
-        dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File), 
-                      RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
-        dplyr::filter(RAW_File %in% raw_files, !duplicated(TMT_Set)) %>% 
-        dplyr::ungroup() %>% 
-        dplyr::select(TMT_Set) %>% 
-        unlist()
-      
-      label_scheme_sub <- label_scheme_full %>% 
-        dplyr::filter(TMT_Set %in% tmt_sets)
-    })
+    # raw_files and tmt_sets would be later used for error messages
+    raw_files <- unique(df$RAW_File) %>% 
+      gsub("\\.raw$", "", .) %>% 
+      gsub("\\.d$", "", .)
+    
+    tmt_sets <- fraction_scheme %>% 
+      dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File), 
+                    RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
+      dplyr::filter(RAW_File %in% raw_files, !duplicated(TMT_Set)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(TMT_Set) %>% 
+      unlist()
+    
+    label_scheme_sub <- label_scheme_full %>% 
+      dplyr::filter(TMT_Set %in% tmt_sets)
   } else {
-    label_scheme_sub <- local({
-      raw_files <- NULL
-      
-      tmt_sets <- fraction_scheme %>% 
-        dplyr::mutate(PSM_File = gsub("\\.tsv$", "", PSM_File)) %>% 
-        dplyr::filter(PSM_File == base_name, !duplicated(TMT_Set)) %>% 
-        dplyr::ungroup() %>% 
-        dplyr::select(TMT_Set) %>% 
-        unlist()
-      
-      label_scheme_sub <- label_scheme_full %>% 
-        dplyr::filter(TMT_Set %in% tmt_sets)
-    })
+    raw_files <- NULL
+    
+    tmt_sets <- fraction_scheme %>% 
+      dplyr::mutate(PSM_File = gsub("\\.tsv$", "", PSM_File)) %>% 
+      dplyr::filter(PSM_File == base_name, !duplicated(TMT_Set)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(TMT_Set) %>% 
+      unlist()
+    
+    label_scheme_sub <- label_scheme_full %>% 
+      dplyr::filter(TMT_Set %in% tmt_sets)
   }
   
   sample_ids <- as.character(label_scheme_sub$Sample_ID)
@@ -5522,16 +5519,30 @@ pad_mf_channels <- function(file, ...) {
   }
   
   # new column names
-  n_ints <- ncol(df_int)
-  n_samples <- length(sample_ids)
-  
-  if (n_ints == n_samples) {
+  df <- local({
+    n_ints <- ncol(df_int)
+    n_samples <- length(sample_ids)
+    
+    if (n_ints < n_samples) {
+      if (!((n_samples %% n_ints) == 0)) {
+        stop("Number of intensity columns: ", n_ints, 
+             " is not a multiple of number of samples: ", n_samples, "\n",
+             call. = FALSE)
+      } else {
+        warning("In TMT plex(es) ", purrr::reduce(tmt_sets, paste, sep = ", "), ": \n", 
+                "number of intensity columns: ", n_ints, "\n",
+                "number of samples: ", n_samples, ".\n",
+                "Assume a merged search at folds: ", n_samples/n_ints, ".", 
+                call. = FALSE)
+      }
+    }
+    
     nms_old <- names(df_int)
     names(df_int) <- find_int_cols(TMT_plex)
     
     # sample IDs from MSFragger may be named differently to 
     # those in label_scheme
-
+    
     # OK but may be less safe
     # df <- replace_cols_at(df, df_int, which(names(df) %in% nms_old))
     
@@ -5539,13 +5550,8 @@ pad_mf_channels <- function(file, ...) {
       dplyr::select(-which(names(.) %in% nms_old), 
                     -which(names(.) %in% names(df_int))) %>% 
       dplyr::bind_cols(df_int)
-  } else {
-    stop("In TMT plex(es) ", purrr::reduce(tmt_sets, paste, sep = ", "), ": \n", 
-         "number of intensity columns: ", n_ints, "\n",
-         "number of samples: ", n_samples, "\n",
-         call. = FALSE)
-  }
-  
+  })
+
   # the same `raw_file` may be at different `dat_file`s
   df$dat_file <- base_name
   
