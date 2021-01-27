@@ -255,7 +255,10 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 
   quietly_log <- 
     purrr::map(fmls, ~ purrr::quietly(model_onechannel)(
-      res_es %>% tibble::column_to_rownames("term"), id = !!id,
+      res_es %>% 
+        `rownames<-`(NULL) %>% 
+        tibble::column_to_rownames("term"), 
+      id = !!id,
       .x, label_scheme_sub, complete_cases, method = lm_method,
       padj_method = padj_method, var_cutoff, pval_cutoff, logFC_cutoff
     )) 
@@ -277,6 +280,7 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
   rm(quietly_log)
   
   kept_rows <- res %>%
+    `rownames<-`(NULL) %>% 
     tibble::column_to_rownames("term") %>%
     dplyr::select(grep("pVal", names(.))) %>%
     dplyr::mutate(Kept = rowSums(!is.na (.)) > 0) %>%
@@ -290,11 +294,14 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     tibble::rownames_to_column("term")
   
   res <- res %>%
+    `rownames<-`(NULL) %>% 
     tibble::column_to_rownames("term") %>%
     dplyr::select(-which(names(.) %in% names(qvals))) %>%
     tibble::rownames_to_column("term") %>%
     dplyr::right_join(qvals, by = "term") %T>% 
-    write.table(file.path(filepath, paste0(gsub("\\..*$", "", gsub("\\..*$", "", filename)), "_pVals.txt")), 
+    write.table(file.path(filepath, 
+                          paste0(gsub("\\..*$", "", 
+                                      gsub("\\..*$", "", filename)), "_pVals.txt")), 
                 sep = "\t", col.names = TRUE, row.names = FALSE)
 }
 

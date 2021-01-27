@@ -1946,6 +1946,11 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     # 2  2::HBE_MOUSE 137000 38330 1115000
     
     # remove subset proteins
+    ## one example: I <-> L
+    # (No prot_family_member)
+    # prot_hit_num	prot_family_member	prot_acc	pep_rank	pep_isbold	pep_isunique	pep_seq
+    # 1	            1	                  2::P04114	1	        1	          1	            AAIQALR
+    # 1		                              2::Q9BY43	1	        0	          1	            AALQALR
     if ("prot_family_member" %in% names(df)) {
       df <- df %>% dplyr::filter(!is.na(prot_family_member))
     }
@@ -4260,6 +4265,26 @@ pad_mq_channels <- function(file, fasta, entrez, corrected_int, ...) {
   load(file.path(dat_dir, "label_scheme_full.rda"))
   load(file.path(dat_dir, "fraction_scheme.rda"))
   
+  # interim solution; wait till the column keys become consistent with MQ
+  df <- df %>% 
+    { if ("Precursor intensity" %in% names(.)) 
+      dplyr::rename(., `Precursor Intensity` = `Precursor intensity`) else . } %>% 
+    { if ("Precursor apex fraction" %in% names(.)) 
+      dplyr::rename(., `Precursor Apex Fraction` = `Precursor apex fraction`) else . }
+  
+  if (! "Precursor Intensity" %in% names(df)) {
+    stop("Column `Precursor Intensity` not found.\n", 
+         "May need to change the case: `Precursor intensity -> Precursor Intensity`.",
+         call. = FALSE)
+  } else if (! "Precursor Apex Fraction" %in% names(df)) {
+    stop("Column `Precursor Apex Fraction` not found.\n", 
+         "May need to change the case: `Precursor apex fraction -> Precursor Apex Fraction`.",
+         call. = FALSE)
+  } else {
+    df <- df %>% 
+      dplyr::mutate(`Precursor Intensity` = `Precursor Intensity`/`Precursor Apex Fraction`)
+  }
+
   # --- A patch for inconsistency in MaxQuant msms.txt columns ---
   # TMT: no `Gene Names` and `Protein Names` columns for RefSeq etc.
   # LFQ: 
@@ -4311,34 +4336,35 @@ pad_mq_channels <- function(file, fasta, entrez, corrected_int, ...) {
     return(df)
   }
   
-  # TMT only
+  ## TMT only (no LFQ) from this point on
   if (! "PSM_File" %in% names(fraction_scheme)) {
-    label_scheme_sub <- local({
-      raw_files <- unique(df$`Raw file`) %>% 
-        gsub("\\.raw$", "", .) %>% 
-        gsub("\\.d$", "", .)
-      
-      tmt_sets <- fraction_scheme %>% 
-        dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File), 
-                      RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
-        dplyr::filter(RAW_File %in% raw_files, !duplicated(TMT_Set)) %>% 
-        dplyr::ungroup() %>% 
-        dplyr::select(TMT_Set) %>% 
-        unlist()
-  
-      label_scheme_full %>% dplyr::filter(TMT_Set %in% tmt_sets)
-    })
-  } else {
-    label_scheme_sub <- local({
-      tmt_sets <- fraction_scheme %>% 
-          dplyr::mutate(PSM_File = gsub("\\.txt$", "", PSM_File)) %>% 
-          dplyr::filter(PSM_File == base_name, !duplicated(TMT_Set)) %>% 
-        dplyr::ungroup() %>% 
-        dplyr::select(TMT_Set) %>% 
-        unlist()
+    # raw_files and tmt_sets may be later used for error messages
+    raw_files <- unique(df$`Raw file`) %>% 
+      gsub("\\.raw$", "", .) %>% 
+      gsub("\\.d$", "", .)
     
-      label_scheme_full %>% dplyr::filter(TMT_Set %in% tmt_sets)
-    })
+    tmt_sets <- fraction_scheme %>% 
+      dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File), 
+                    RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
+      dplyr::filter(RAW_File %in% raw_files, !duplicated(TMT_Set)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(TMT_Set) %>% 
+      unlist()
+    
+    label_scheme_sub <- label_scheme_full %>% 
+      dplyr::filter(TMT_Set %in% tmt_sets)
+  } else {
+    raw_files <- NULL
+    
+    tmt_sets <- fraction_scheme %>% 
+      dplyr::mutate(PSM_File = gsub("\\.txt$", "", PSM_File)) %>% 
+      dplyr::filter(PSM_File == base_name, !duplicated(TMT_Set)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(TMT_Set) %>% 
+      unlist()
+    
+    label_scheme_sub <- label_scheme_full %>% 
+      dplyr::filter(TMT_Set %in% tmt_sets)
   }
 
   nas <- data.frame(rep(NA, nrow(df)))
@@ -4951,34 +4977,34 @@ pad_sm_channels <- function(file, ...) {
   }
   
   if (! "PSM_File" %in% names(fraction_scheme)) {
-    label_scheme_sub <- local({
-      raw_files <- df$filename %>% 
-        gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", .) %>% 
-        unique() %>% 
-        gsub("\\.raw$", "", .) %>% 
-        gsub("\\.d$", "", .)
-      
-      tmt_sets <- fraction_scheme %>% 
-        dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File), 
-                      RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
-        dplyr::filter(RAW_File %in% raw_files, !duplicated(TMT_Set)) %>% 
-        dplyr::ungroup() %>% 
-        dplyr::select(TMT_Set) %>% 
-        unlist()
-      
-      label_scheme_full %>% dplyr::filter(TMT_Set %in% tmt_sets)
-    })
+    raw_files <- df$filename %>% 
+      gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", .) %>% 
+      unique() %>% 
+      gsub("\\.raw$", "", .) %>% 
+      gsub("\\.d$", "", .)
+    
+    tmt_sets <- fraction_scheme %>% 
+      dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File), 
+                    RAW_File = gsub("\\.d$", "", RAW_File)) %>% 
+      dplyr::filter(RAW_File %in% raw_files, !duplicated(TMT_Set)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(TMT_Set) %>% 
+      unlist()
+    
+    label_scheme_sub <- label_scheme_full %>% 
+      dplyr::filter(TMT_Set %in% tmt_sets)
   } else {
-    label_scheme_sub <- local({
-      tmt_sets <- fraction_scheme %>% 
-        dplyr::mutate(PSM_File = gsub("\\.ssv$", "", PSM_File)) %>% 
-        dplyr::filter(PSM_File == base_name, !duplicated(TMT_Set)) %>% 
-        dplyr::ungroup() %>% 
-        dplyr::select(TMT_Set) %>% 
-        unlist()
-      
-      label_scheme_full %>% dplyr::filter(TMT_Set %in% tmt_sets)
-    })
+    raw_files <- NULL
+    
+    tmt_sets <- fraction_scheme %>% 
+      dplyr::mutate(PSM_File = gsub("\\.ssv$", "", PSM_File)) %>% 
+      dplyr::filter(PSM_File == base_name, !duplicated(TMT_Set)) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::select(TMT_Set) %>% 
+      unlist()
+    
+    label_scheme_sub <- label_scheme_full %>% 
+      dplyr::filter(TMT_Set %in% tmt_sets)
   }
 
   nas <- data.frame(rep(NA, nrow(df)))
@@ -5447,9 +5473,9 @@ pad_mf_channels <- function(file, ...) {
          call. = FALSE)
   }
   
-  # TMT only
+  ## TMT only (no LFQ) from this point on
   if (!"PSM_File" %in% names(fraction_scheme)) {
-    # raw_files and tmt_sets would be later used for error messages
+    # raw_files and tmt_sets may be later used for error messages
     raw_files <- unique(df$RAW_File) %>% 
       gsub("\\.raw$", "", .) %>% 
       gsub("\\.d$", "", .)
@@ -5523,6 +5549,8 @@ pad_mf_channels <- function(file, ...) {
     n_ints <- ncol(df_int)
     n_samples <- length(sample_ids)
     
+    stopifnot(n_ints >= 1, n_samples >= n_ints)
+    
     if (n_ints < n_samples) {
       if (!((n_samples %% n_ints) == 0)) {
         stop("Number of intensity columns: ", n_ints, 
@@ -5540,12 +5568,9 @@ pad_mf_channels <- function(file, ...) {
     nms_old <- names(df_int)
     names(df_int) <- find_int_cols(TMT_plex)
     
-    # sample IDs from MSFragger may be named differently to 
+    # OK that sample IDs from MSFragger may be named differently to 
     # those in label_scheme
-    
-    # OK but may be less safe
-    # df <- replace_cols_at(df, df_int, which(names(df) %in% nms_old))
-    
+
     df <- df %>% 
       dplyr::select(-which(names(.) %in% nms_old), 
                     -which(names(.) %in% names(df_int))) %>% 

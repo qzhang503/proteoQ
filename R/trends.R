@@ -105,6 +105,7 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 		`colnames<-`(df_mean$Group) %>%
 		tibble::rownames_to_column(id) %>%
 		dplyr::filter(complete.cases(.[, !grepl(id, names(.))])) %>%
+	  `rownames<-`(NULL) %>% 
 		tibble::column_to_rownames(id)
 	
 	if (is.null(n_clust)) {

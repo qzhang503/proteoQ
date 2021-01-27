@@ -349,6 +349,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
                   row.names = FALSE)
 
       Cluster <- Cluster %>%
+        `rownames<-`(NULL) %>% 
         tibble::column_to_rownames(var = id)
       
       for (cluster_id in unique(Cluster$Cluster)) {
@@ -358,6 +359,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
           df_sub <- df_sub %>%
             tibble::rownames_to_column(id) %>%
             dplyr::filter(complete.cases(.[, names(.) %in% sample_ids])) %>%
+            `rownames<-`(NULL) %>% 
             tibble::column_to_rownames(id)
         }
 

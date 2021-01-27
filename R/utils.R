@@ -619,6 +619,7 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 		x <- x %>%
 			tibble::rownames_to_column() %>%
 			dplyr::mutate(TMT_Set, as.factor(TMT_Set)) %>%
+		  `rownames<-`(NULL) %>% 
 			tibble::column_to_rownames(var = "rowname")
 	}
 

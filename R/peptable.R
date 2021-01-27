@@ -631,7 +631,7 @@ calc_lfq_log2r <- function (df, type, refChannels) {
     col_refs <- col_smpls
   }
   
-  sweep(df[, col_smpls], 1,
+  sweep(df[, col_smpls, drop = FALSE], 1,
         rowMeans(df[, col_refs, drop = FALSE], na.rm = TRUE), "/") %>%
     log2(.)  %>% 
     dplyr::mutate_all(~ replace(.x, is.infinite(.), NA)) %>% 
@@ -913,7 +913,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   df_num <- local({
     df_num <- df_num %>% 
       dplyr::mutate(mean_lint = 
-                      log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.))], 
+                      log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.)), drop = FALSE], 
                                      na.rm = TRUE)), 
                     mean_lint = round(mean_lint, digits = 2))
     
@@ -1055,8 +1055,9 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
 
   df <- df %>%
     dplyr::filter(!duplicated(.[[group_psm_by]])) %>% 
-    dplyr::filter(rowSums(!is.na(.[, grepl("N_log2_R", names(.)), 
-                                   drop = FALSE])) > 0) %>% 
+    { if (TMT_plex == 0) . else 
+      dplyr::filter(., rowSums(!is.na(.[, grepl("N_log2_R", names(.)), 
+                                        drop = FALSE])) > 0) } %>% 
     dplyr::arrange(!!rlang::sym(group_psm_by))
   
   # a placeholder so no need to handle the exception of 
@@ -2169,8 +2170,9 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   df <- read.csv(file.path(dat_dir, "Peptide/Peptide.txt"), check.names = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
     filters_in_call(!!!filter_dots) %>% 
-    dplyr::filter(rowSums(!is.na( .[, grep("^log2_R[0-9]{3}", names(.)), 
-                                    drop = FALSE] )) > 0)
+    { if (TMT_plex == 0) . else 
+      dplyr::filter(., rowSums(!is.na( .[, grep("^log2_R[0-9]{3}", names(.)), 
+                                      drop = FALSE] )) > 0) } 
 
   if (! "pep_isunique" %in% names(df)) {
     df$pep_isunique <- TRUE
@@ -2236,7 +2238,7 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
   df_num <- local({
     df_num <- df_num %>% 
       dplyr::mutate(mean_lint = 
-                      log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.))], 
+                      log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.)), drop = FALSE], 
                                               na.rm = TRUE)), 
                     mean_lint = round(mean_lint, digits = 2))
     
@@ -2343,9 +2345,10 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, ...) {
     df[, grep("^N_log2_R[0-9]{3}", names(df)), drop = FALSE], 
     df[, grep("^Z_log2_R[0-9]{3}", names(df)), drop = FALSE])
   
-  df <- df %>% 
-    .[rowSums(!is.na(.[, grepl("N_log2_R", names(.))])) > 0, ]
   
+  df <- df %>% 
+    .[rowSums(!is.na(.[, grepl("N_log2_R", names(.)), drop = FALSE])) > 0, ]
+
   if (gn_rollup) {
     nms <- names(df)
     
