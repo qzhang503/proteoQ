@@ -24,19 +24,21 @@ filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
   if (length(cols) > 1) {
     df <- df %>% 
       dplyr::select(cols) %>% 
-      dplyr::mutate(Variance = rowVars(.)) %>%
-      dplyr::mutate(rowname = rownames(df))
+      dplyr::mutate(Variance = rowVars(.), 
+                    rowname = rownames(.)) 
     
     Quantile <- quantile(df$Variance, probs = var_cutoff, na.rm = TRUE)
     
     df <- df %>%
       dplyr::filter(Variance >= pmax(Quantile, 1E-3)) %>%
-      dplyr::select(-Variance) %>%
-      tibble::column_to_rownames()
+      tibble::remove_rownames() %>% 
+      tibble::column_to_rownames() %>% 
+      dplyr::select(-Variance)
   }
   
   return(df)
 }
+
 
 #' Prepare formulas
 #' 
@@ -182,8 +184,9 @@ my_padj <- function(df_pval, pval_cutoff) {
     dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
                      scientific = TRUE, digits = 2) %>%
     dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, 
-                     scientific = TRUE, digits = 2) %>%
-		tibble::column_to_rownames()
+                     scientific = TRUE, digits = 2) %>% 
+    tibble::remove_rownames() %>% 
+    tibble::column_to_rownames()
 }
 
 
@@ -207,13 +210,14 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff, padj_method = "
 		data.frame(check.names = FALSE) %>%
 		`names<-`(gsub("pVal", "adjP", colnames(.))) %>%
 		`rownames<-`(nms) %>%
-		tibble::rownames_to_column() %>%
+	  tibble::rownames_to_column() %>% 
 		dplyr::bind_cols(pvals, .) %>%
 	  dplyr::mutate_at(.vars = grep("pVal\\s+", names(.)), format, 
 	                   scientific = TRUE, digits = 2) %>%
 	  dplyr::mutate_at(.vars = grep("adjP\\s+", names(.)), format, 
-	                   scientific = TRUE, digits = 2) %>%
-		tibble::column_to_rownames()
+	                   scientific = TRUE, digits = 2) %>% 
+	  tibble::remove_rownames() %>% 
+	  tibble::column_to_rownames()
 
 	log2rs <- log2rs %>%
 		to_linfc() %>%
@@ -356,6 +360,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 			  dplyr::select(-data, -model) %>% 
 				dplyr::mutate(term = factor(term, levels = contr_levels)) %>%
 				tidyr::spread(term , p.value) %>%
+		    `rownames<-`(NULL) %>% 
 				tibble::column_to_rownames(id) %>%
 				`names<-`(paste0("pVal (", names(.), ")")) %>%
 				lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
@@ -378,6 +383,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 			  dplyr::select(-data, -model) %>% 
 				dplyr::mutate(term = factor(term, levels = contr_levels))	%>% 
 				tidyr::spread(term , p.value)	%>% 
+		    `rownames<-`(NULL) %>% 
 				tibble::column_to_rownames(id) %>%
 				`names<-`(paste0("pVal (", names(.), ")"))  %>% 
 			  lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
@@ -387,6 +393,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
   df_op <- res_lm %>% 
     tibble::rownames_to_column(id) %>%
     dplyr::right_join(df_nms, by = id) %>%
+    `rownames<-`(NULL) %>% 
     tibble::column_to_rownames(var = id)	
 }
 

@@ -671,6 +671,7 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 	  `colnames<-`(paste("Coordinate", 1:k, sep = ".")) %>%
 	  tibble::rownames_to_column("Sample_ID") %>%
 	  dplyr::select(which(not_all_zero(.))) %>%
+	  `rownames<-`(NULL) %>% 
 	  tibble::column_to_rownames(var = "Sample_ID") %>%
 	  cmbn_meta(ls_sub) %T>%
 	  readr::write_tsv(out_file)

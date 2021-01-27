@@ -128,7 +128,16 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	})
 	
 	TMT_plex <- TMT_plex(label_scheme_full)
-	stopifnot(TMT_plex %in% c(0, 6, 10, 11, 16))
+	
+	if (!TMT_plex %in% c(0, 6, 10, 11, 16)) {
+	  stop("Apparent `TMT_plex = ", TMT_plex, 
+	       "` is not one of c(0, 6, 10, 11, 16).\n", 
+	       "For non-TMT experiments (LFQ or simple qualitative processsing), \n", 
+	       "  leave the fields under `TMT_Channel` blank.\n", 
+	       "For other TMT-plexes, pad the `TMT_Channel` upstream to an available multiplicity: \n", 
+	       "  e.g. 1 -> 6, 8 -> 10 (regular TMT) or 9 -> 16, 15 -> 16 (TMTpro).", 
+	       call. = FALSE)
+	}
 
 	if (TMT_plex == 10) {
 	  label_scheme_full <- label_scheme_full %>% 

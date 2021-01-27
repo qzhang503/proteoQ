@@ -1330,6 +1330,7 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename,
                                          "idx", "ess_idx", "distance"))) %>% 
     tidyr::spread(term, fraction) %>% 
     dplyr::mutate_at(vars(which(names(.) != "ess_term")), ~ {1 - .x}) %>% 
+    `rownames<-`(NULL) %>% 
     tibble::column_to_rownames("ess_term")
   
   d_row <- dist(ess_vs_all)
@@ -1405,6 +1406,7 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename,
         dplyr::select("ess_term", annot_rows) %>% 
         dplyr::mutate(ess_term = 
                         factor(ess_term, levels = levels(all_by_greedy$ess_term))) %>% 
+        `rownames<-`(NULL) %>% 
         tibble::column_to_rownames("ess_term")
     }
   }

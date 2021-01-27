@@ -369,7 +369,6 @@ gspaMap(
   impute_na = FALSE,
 	gspval_cutoff = 5E-2, # gene set threshold
 	gslogFC_cutoff = log2(1.2), # gene set log2FC threshold
-	topn = 100, 
 	show_sig = pVal, 
 	yco = 0.05, 
 )

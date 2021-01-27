@@ -75,6 +75,7 @@ analNMF <- function(df, id, rank, nrun, seed, col_group, label_scheme_sub,
     dplyr::filter(!is.na(!!col_group)) %>%
     dplyr::select(Sample_ID, !!col_group) %>%
     dplyr::rename(Group := !!col_group) %>%
+    tibble::remove_rownames() %>% 
     tibble::column_to_rownames("Sample_ID")
   
   metadata <- data.frame(labelDescription = c("Case/control status"), 
@@ -229,6 +230,7 @@ plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, 
       dplyr::select(which(names(.) %in% sample_ids)) %>% 
       tibble::rownames_to_column() %>% 
       dplyr::filter(rowname %in% sample_ids) %>% 
+      tibble::remove_rownames() %>% 
       tibble::column_to_rownames() 
 
     n_color <- 50
@@ -332,6 +334,7 @@ plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, 
         dplyr::select(- which(names(.) %in% c("neighbor", "sil_width"))) %>% 
         dplyr::rename(silhouette = cluster) %>% 
         dplyr::mutate(silhouette = factor(silhouette)) %>% 
+        tibble::remove_rownames() %>% 
         tibble::column_to_rownames()
     }
 
@@ -552,6 +555,7 @@ plotNMFCoef <- function(id, rank, label_scheme_sub,
           dplyr::select(- which(names(.) %in% c("neighbor", "sil_width"))) %>% 
           dplyr::rename(silhouette = cluster) %>% 
           dplyr::mutate(silhouette = factor(silhouette)) %>% 
+          tibble::remove_rownames() %>% 
           tibble::column_to_rownames())
     }
 
