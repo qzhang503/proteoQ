@@ -682,7 +682,7 @@ library(NMF)
 anal_prnNMF(
   impute_na = FALSE,
   col_group = Group,
-  r = c(5:6),
+  rank = c(5:6),
   nrun = 20, 
 )
 
@@ -693,7 +693,7 @@ if (!dontrun) {
   anal_prnNMF(
     impute_na = FALSE,
     col_group = Group,
-    r = c(5:6),
+    rank = c(5:6),
     nrun = 20, 
     filter_prots = exprs(prot_n_pep >= 2),
   )

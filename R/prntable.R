@@ -169,6 +169,13 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
                  header = TRUE, comment.char = "#") %>% 
     dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0)
 
+  local({
+    if (sum(grepl("^log2_R[0-9]+ ", names(df))) <= 1) {
+      stop("Need more than one sample for `standPep` or `standPrn`.", 
+           call. = FALSE)
+    }
+  })
+  
   message("Primary column keys in `Protein/Protein.txt` for `slice_` varargs.")
   
   df <- normMulGau(

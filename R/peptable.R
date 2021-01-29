@@ -129,7 +129,7 @@ extract_mq_ints <- function (df) {
            call. = FALSE)
     }
     
-    sweep(df[, col_smpls], 1,
+    sweep(df[, col_smpls, drop = FALSE], 1,
           rowMeans(df[, col_refs, drop = FALSE], na.rm = TRUE), "/") %>%
       log2(.)  %>% 
       dplyr::mutate_all(~ replace(.x, is.infinite(.), NA)) %>% 
@@ -647,7 +647,7 @@ calc_lfq_log2r <- function (df, type, refChannels) {
 #' @param df A data frame.
 #' @param pattern The pattern of intensity fields.
 na_single_lfq <- function (df, pattern = "^I000 ") {
-  df_lfq <- df[, grep(pattern, names(df))]
+  df_lfq <- df[, grep(pattern, names(df)), drop = FALSE]
   not_single_zero <- (rowSums(df_lfq > 0, na.rm = TRUE) > 1) 
   not_single_zero[!not_single_zero] <- NA
   
@@ -1686,7 +1686,16 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
   
   message("Primary column keys in `Peptide/Peptide.txt` for `slice_` varargs.")
 
-  df <- load_prior(filename, group_psm_by) %>% 
+  df <- load_prior(filename, group_psm_by) 
+  
+  local({
+    if (sum(grepl("^log2_R[0-9]+ ", names(df))) <= 1) {
+      stop("Need more than one sample for `standPep` or `standPrn`.", 
+           call. = FALSE)
+    }
+  })
+  
+  df %>% 
     normMulGau(
       df = .,
       method_align = method_align,
