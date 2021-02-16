@@ -168,7 +168,91 @@ make_kin_lookup <- function (include_mouse = FALSE) {
 }
 
 	
-	
+#' PSP kinase-substrate
+#'
+#' @param db_nms  Character string(s) to the name(s) of PSP database(s) with
+#'   prepended directory path(s). Users need to download the kinase-substrate
+#'   table, e.g. \code{Kinase_Substrate_Dataset.txt} directly from the PSP
+#'   website and supply the corresponding file path(s) and name(s). Currently
+#'   assume single database file.
+#' @param match_orgs Logical; if TRUE, matches the organism between kinases and
+#'   their acting substrates. The default is TRUE.
+#' @param type A character string for pathway IDs. The default is \code{gene}.
+KinSub <- function (db_nms = "~/proteoQ/dbs/psp/Kinase_Substrate_Dataset.txt", 
+                    type = c("gene", "entrez"), match_orgs = TRUE) {
+
+  dbs <- readr::read_tsv(file.path(db_nms), 
+                         col_types = cols(GENE = col_character(), 
+                                          KIN_ORGANISM = col_character(),
+                                          SUB_GENE_ID = col_character(), 
+                                          SUB_GENE = col_character(),
+                                          SUB_ORGANISM = col_character())) %>% 
+    { if (match_orgs) dplyr::filter(., KIN_ORGANISM == SUB_ORGANISM) else . } 
+  
+  type <- rlang::enexpr(type)
+  if (length(type) > 1) {
+    type <- "gene"
+  } else {
+    type <- rlang::as_string(type)
+    stopifnot(type %in% c("gene", "entrez"), 
+              length(type) == 1)
+  }
+  
+  if (type == "entrez") {
+    filelist <- c("uniprot_entrez_hs", "uniprot_entrez_mm", "uniprot_entrez_rn")
+    suppressWarnings(data(package = "proteoQ", list = filelist))
+    
+    up_en <- purrr::map(filelist, ~ try(get(.x), silent = TRUE)) %>% 
+      dplyr::bind_rows() %>% 
+      dplyr::select(c("uniprot_acc", "entrez")) # %>% 
+      # dplyr::filter(!duplicated(uniprot_acc)) # ok: one uniprot_acc, multiple entrez ids
+    
+    suppressWarnings(rm(list = filelist, envir = .GlobalEnv))
+    
+    dbs <- dbs %>% 
+      dplyr::left_join(up_en, by = c("KIN_ACC_ID" = "uniprot_acc")) %>% 
+      dplyr::filter(!is.na(entrez)) %>% # Non c("human", "mouse", "rat") has no entrez
+      dplyr::rename(GENE_ID = entrez) %>% 
+      reloc_col_before("GENE_ID", "KIN_ACC_ID") 
+    
+    # some redundancy of the same GENE different GENE_ID
+    # A tibble: 3 x 6
+    # GENE  KINASE   GENE_ID KIN_ACC_ID KIN_ORGANISM SUBSTRATE
+    #   1 Dyrk2 DYRK2      69181 Q5U4C9     mouse        NDEL1    
+    #   2 Pak2  PAK2   100910732 Q64303     rat          MEK1     
+    #   3 Pak2  PAK2       29432 Q64303     rat          MEK1  
+    
+    # list by GENE_ID (entrez)
+    out <- dbs %>% 
+      split(.$KIN_ORGANISM, drop = TRUE) %>% 
+      purrr::map(~ split(.x, .$GENE_ID, drop = TRUE)) %>% 
+      purrr::map(~ .x %>% purrr::map(`[[`, "SUB_GENE_ID")) %>% 
+      `names<-`(gsub("human", "hs", names(.))) %>% 
+      `names<-`(gsub("mouse", "mm", names(.))) %>% 
+      `names<-`(gsub("rat", "rn", names(.))) %>% 
+      purrr::iwalk(~ {
+        fn <- paste0("kinsub_", .y)
+        assign(fn, .x)
+        save(list = fn, file = file.path(dat_dir, paste0(fn, ".rda")), compress = "xz")
+      })
+  } else {
+    # list by GENE
+    out <- dbs %>% 
+      split(.$KIN_ORGANISM, drop = TRUE) %>% 
+      purrr::map(~ split(.x, .$GENE, drop = TRUE)) %>% 
+      purrr::map(~ .x %>% purrr::map(`[[`, "SUB_GENE_ID")) %>% 
+      `names<-`(gsub("human", "hs", names(.))) %>% 
+      `names<-`(gsub("mouse", "mm", names(.))) %>% 
+      `names<-`(gsub("rat", "rn", names(.))) %>% 
+      purrr::iwalk(~ {
+        fn <- paste0("kinsub_", .y)
+        assign(fn, .x)
+        save(list = fn, file = file.path(dat_dir, paste0(fn, ".rda")), compress = "xz")
+      })
+  }
+}
+
+
 	
 
 

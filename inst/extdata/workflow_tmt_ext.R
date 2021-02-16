@@ -416,6 +416,16 @@ prnSig()
 pepVol()
 prnVol()
 
+dontrun <- TRUE
+if (!dontrun) {
+  pepVol(
+    filter_cdk1 = exprs(gene == "CDK1"), 
+    fml_nms = "W16_vs_W2", 
+    filename = CDK1.png,
+  )
+}
+## END of DO NOT RUN
+
 ## DO NOT RUN
 dontrun <- TRUE
 if (!dontrun) {

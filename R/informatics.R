@@ -210,7 +210,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
 		fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
 
-		fn_suffix <- ifelse(anal_type == "Model", "txt", "png")
+		if (anal_type %in% c("Model", "KinSub")) {
+		  fn_suffix <- "txt"
+		} else {
+		  fn_suffix <- "png"
+		}
+		
 	} else {
 	  if (length(filename) > 1) {
 	    stop("Do not provide multiple file names.", 
@@ -235,7 +240,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	                  "Histogram", "Corrplot",
 	                  "Model", "Volcano", "Trend", "NMF", "NMF_meta", 
 	                  "GSPA", "mapGSPA",
-	                  "GSVA", "GSEA", "String", "LDA")
+	                  "GSVA", "GSEA", "String", "LDA", 
+	                  "KinSub")
 	use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", 
 	                  "NMF_meta", "GSPA_hm", "mapGSPA")
 
@@ -276,8 +282,9 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	#   (`Model` and `GSVA`: `complete_cases` further subjects to lm formulae)
 
 	## Secondary analysis
-	# `scale_log2r` for matching '_N' or '_Z' in input filenames from the corresponding primary function
-	#   (special case of `GSPA`: match to the value in `prnSig`)
+	# `scale_log2r` for matching '_N' or '_Z' in input filenames from 
+	#    the corresponding primary function
+	#  (special case of `GSPA`: match to the value in `prnSig`)
 	# `impute_na` for matching '[_NZ]_impNA' or '[_NZ]' in input filenames
 	# `complete_cases` subsets data rows in primary outputs
 
@@ -699,13 +706,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	            ...)
 	  }
 	} else if (anal_type == "String") {
-	  function(db_nms = NULL, score_cutoff = .7, adjP = FALSE, ...) {
+	  function(db_nms = NULL, score_cutoff = .7, ...) {
 	    stringTest(df = df,
 	               id = !!id,
 	               label_scheme_sub = label_scheme_sub,
 	               db_nms = db_nms,
 	               score_cutoff = score_cutoff,
-	               adjP = adjP,
 	               scale_log2r = scale_log2r,
 	               complete_cases = complete_cases,
 	               filepath = filepath,
@@ -771,6 +777,19 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	            nu = nu, 
 	            ...)
 	  }
+	} else if (anal_type == "KinSub") {
+	  function(db_nms = NULL, match_orgs = TRUE, ...) {
+	    KinSubTest(df = df,
+	               id = !!id,
+	               label_scheme_sub = label_scheme_sub,
+	               db_nms = db_nms,
+	               match_orgs = match_orgs, 
+	               scale_log2r = scale_log2r,
+	               complete_cases = complete_cases,
+	               filepath = filepath,
+	               filename = paste(fn_prefix, fn_suffix, sep = "."),
+	               ...)
+	  }
 	}
 
 }
@@ -813,7 +832,7 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
       stop("Unknown `id`.", call. = FALSE)
     }
 
-    if (anal_type %in% c("Histogram", "MA")) { # never impute_na and no pVals
+    if (anal_type %in% c("Histogram")) { # never impute_na and no pVals
       if (file.exists(fn_raw)) {
         src_path <- fn_raw
       } else {
@@ -873,8 +892,8 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
       }
     } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", 
                                 "NMF", "NMF_meta",
-                                "GSVA", "Corrplot", "String",
-                                "LDA")) { # optional impute_na and possible pVals
+                                "GSVA", "Corrplot", "String", "LDA", 
+                                "KinSub")) { # optional impute_na and possible pVals
       if (impute_na) {
         if (file.exists(fn_imp_p)) {
           src_path <- fn_imp_p

@@ -1,5 +1,7 @@
 ---
 title: "proteoQ"
+author:
+- name: John Doe
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
@@ -11,7 +13,22 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-bibliography: references.bib
+  github_document:
+    toc: yes
+  word_document:
+    toc: yes
+  md_document:
+    toc: yes
+    toc_depth: 4
+    variant: gfm
+  pdf_document:
+    toc: yes
+    number_sections: true
+  html_vignette: 
+  vignette: >
+    %\VignetteIndexEntry{proteoQ}
+    %\VignetteEncoding{UTF-8}`
+    %\VignetteEngine{knitr::rmarkdown}
 ---
 
 ---
@@ -1177,6 +1194,7 @@ In addition to the fixed effects shown above, significance tests with additive r
 
 There are a handful of `R` tools for gene set enrichment analysis, such as GSEA, GSVA, gage, to name a few. It may be intuitive as well if we can analyze and visualize the enrichment of gene sets under the context of volcano plots at given contrasts. Provided the richness of `R` utilities in linear modelings, proteoQ takes a naive approach thereafter to assess the *asymmetricity* of the distributions of protein probability $p$ values (pVals) under volcano plots.
 
+#### 2.7.1 GSPA
 In the analysis of Gene Set Probability Asymmetricity (`GSPA`), individual protein pVals from linear modeling are first taken and *separated* into the groups of up ($u$) or down ($d$) expressed proteins within a gene set ($s$). Taking proteins from a $u$ group as an example, the default is to calculate the geometric mean of pVals under $s$ with a penalty-like term:
 
 $$-log_{10}P_u=(-\sum_{i=1}^{n_u}log_{10}p_i-\sum_{j=1}^{m_u}log_{10}p_j)/(n_u+m_u)$$
@@ -1199,11 +1217,12 @@ $$-log_{10}P_{s,d}=(-\sum_{i=1}^{n_{s,d}}log_{10}p_i+m_{s,d})/(n_{s,d}+m_{s,d})$
 
 Next, the two $P$ values are ordered in that $P_{(1)} \le P_{(2)}$. The quotient, $P_{\{1\}}/P_{(2)}$ is then taken to represent the bias in enrichment for a given gene set. Obviously the ordering between $P_{s,u}$ and $P_{s,d}$ is immaterial. It is just a means to ensue ratios ranging between zero and one with smaller values indicating greater asymmetricity, in accordance to the conventional notation of smaller pVals being more significant.
 
-Alternatively, the asymmetricity in the population of pVals can be assessed via moderated t-test between the $u$ and the $d$ groups (t-test of $-log_{10}p$ between the two groups). With either method, the corresponding mean(log2FC) are each calculated for the ups and the downs where the difference is used as the fold change of enrichment.
+Alternatively, the asymmetricity in the population of pVals maybe assessed via conventional significance test, i.e. moderated t-test, between the $u$ and the $d$ groups (test statistic against $-log_{10}p$ values of proteins between the two groups). With either method, the corresponding mean(log2FC) are each calculated for the ups and the downs where the difference is used as the fold change of enrichment.
 
 At the input levels, the arguments `pval_cutoff` and `logFC_cutoff` allow us to set aside low impact genes, for instance, (re)distributing them between the $n$-entry significance group and the $m$-entry insignificance group. On the output levels, argument `gspval_cutoff` sets a threshold in gene set significance for reporting. More details can be found from the help document via `?prnGSPA`.
 
-We began with the analysis of `GSPA` against enrichment terms defined in [`gene ontology (GO)`](http://current.geneontology.org/products/pages/downloads.html) and [`molecular signatures (MSig)`](https://www.gsea-msigdb.org/gsea/index.jsp) data sets:
+#### 2.7.2 Examples
+We began with the analysis of `GSPA` against enrichment terms defined in [`gene ontology (GO)`](http://current.geneontology.org/products/pages/downloads.html), [`molecular signatures (MSig)`](https://www.gsea-msigdb.org/gsea/index.jsp) and [`PhosphoSitePlus (PSP)`](https://www.phosphosite.org/):
 
 ```{r prnGSPA, eval = FALSE}
 prnGSPA(
@@ -1212,11 +1231,11 @@ prnGSPA(
   logFC_cutoff = log2(1.2), # protein log2FC threshold
   gspval_cutoff = 5E-2, # gene-set threshold
   gslogFC_cutoff = log2(1.2), # gene-set log2FC threshold
-  gset_nms = c("go_sets", "c2_msig"), 
+  gset_nms = c("go_sets", "c2_msig", "kinsub"), 
 )
 ```
 
-The formulas of contrasts will by default match to the those used in `pepSig`. The species will be determined automatically from input data and the corresponding databases will be loaded. In the above example of pdx, databases of `GO` and `MSig` will be loaded for both human and mouse. If we choose to focus on human proteins, we can add a vararg statement such as `filter_sp = exprs(species == "human")`.
+The formulas of contrasts will by default match to the those used in `pepSig`. The species will be determined automatically from input data and the corresponding databases will be loaded. In the above example of pdx, databases of `GO`, `MSig` and `KinSub` will be loaded for both human and mouse. If we choose to focus on human proteins, we can add a vararg statement such as `filter_sp = exprs(species == "human")`.
 
 We next visualize the distribution of protein log2FC and pVal within gene sets:
 
@@ -1224,7 +1243,7 @@ We next visualize the distribution of protein log2FC and pVal within gene sets:
 gspaMap(
   gspval_cutoff = 5E-3, 
   gslogFC_cutoff = log2(1.2), 
-  gset_nms = c("go_sets"),
+  # gset_nms = c("go_sets"),
   show_sig = pVal,
   xco = 1.2, # position of two vertical lines for FC
   yco = 0.05, # position of a horizental line for pVal
@@ -1239,7 +1258,10 @@ img_volcplot_gspa_limma <- "images/protein/volcplot/gspa_batch_limma.png"
 knitr::include_graphics(c(img_volcplot_gspa_geomean, img_volcplot_gspa_limma))
 ```
 
-The gene sets of `GO` and `MSig` are availble for species human, mouse and rat in proteoQ. For custom gene sets and/or additional species, the utility `prepGO` will download and prepare `GO` data according to custom-supplied URLs. In the follow examples, we prepare the `GO` data of `go_hs.rds` and `go_mm.rds` for `human` and `mouse`, respectively, under the file folder `~\\proteoQ\\dbs\\go`:
+#### 2.7.3 Custom data bases
+In general, any data bases for any species finished at a format similar to the `go_hs.rds` shown below are applicable for `prnGSPA` analysis and subsequent `gspaMap` visualization. I will deliberate the examples of custom `GO` and `MSig`.  
+
+The gene sets of `GO` and `MSig` are available for species human, mouse and rat in proteoQ. For custom gene sets and/or additional species, the utility `prepGO` will download and prepare `GO` data according to custom-supplied URLs. In the follow examples, we prepare the `GO` data of `go_hs.rds` and `go_mm.rds` for `human` and `mouse`, respectively, under the file folder `~\\proteoQ\\dbs\\go`:
 
 ```{r prepGO, eval = FALSE}
 prepGO(
@@ -1284,7 +1306,7 @@ prepMSig(
 # head(readRDS(file.path("~/proteoQ/dbs/msig", "msig_mm.rds")))
 ```
 
-We need to provide the list name of `ortho_mart` for species other than human, mouse and rat. The value will be used for ortholog lookups via [`biomaRt`](https://bioconductor.org/packages/release/bioc/html/biomaRt.html). More details are available in the help document via `?prepMSig`. Note that the data bases will be stored as `.rds` files, which can be used with `prnGSPA` and `gspaMap` for analysis and visualization:
+We need to provide the list name of `ortho_mart` for species other than human, mouse and rat. The value will be used for ortholog lookups via [`biomaRt`](https://bioconductor.org/packages/release/bioc/html/biomaRt.html). More details are available in the help document via `?prepMSig`. Note that the data bases will be stored as `.rds` files:
 
 ```{r prnGSPA_custom_go, eval = FALSE}
 # start over
@@ -1326,16 +1348,16 @@ img_volcplot_gspa_lumup <- "images/protein/volcplot/hs_SMID_BREAST_CANCER_LUMINA
 knitr::include_graphics(c(img_volcplot_gspa_basdn, img_volcplot_gspa_lumdn, img_volcplot_gspa_lumup))
 ```
 
-Currently, proteoQ does not keep track of the values of `gset_nms` in the various calls to `prnGSPA`. When mapping the findings from `prnGSPA` to `gspaMap`, we need to be responsible for the completeness of the gene-set *space*. If we were to leave out the setting of `gset_nms`, the default of `gset_nms = c("go_sets", "c2_msig")` will be applied when executing `gspaMap`. We might thus encounter some discrepancies in the volcano plots of GO terms due to probable differences between the default and the custom data bases.
+Currently, proteoQ does not keep track of the values of `gset_nms` in the various calls to `prnGSPA`. When mapping the findings from `prnGSPA` to `gspaMap`, we need to be responsible for the completeness of the gene-set *space*. If we were to leave out the setting of `gset_nms`, the default of `gset_nms = c("go_sets", "c2_msig", "kinsub")` will be applied when executing `gspaMap`. We might thus encounter some discrepancies in the volcano plots of GO terms due to probable differences between the default and the custom data bases.
 
-For simplicity, it is generally applicable to include all the data bases that have been applied to `prnGSPA` in a custom workflow and, in that way, no terms will be missed for visualization with `gspaMap`. This is also suitable in that `gspaMap` merely perform volcano plot visualization by gene sets and no multiple-test correlations are involved. In other words, there is no penalty for including more gene sets than necessary, other than negligible costs of computer memory and time.
+For simplicity, it is generally applicable to include all the data bases that have been applied to `prnGSPA` in a custom workflow and, in that way, no terms will be missed for visualization with `gspaMap`. This is also suitable in that `gspaMap` merely perform volcano plot visualization by gene sets and no [`multiple-test`](https://proteoq.netlify.app/post/bh-procedure/) correlations are involved. In other words, there is no penalty for including more gene sets than necessary, other than some negligible costs of computer memory and time.
 
-In addition to finding gene sets with that are biased in pVal distributions, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondance between essential and all of the gene sets are stored in `_essmap.txt` files under the `Protein/GSPA` folder.
+#### 2.7.4 More outputs and analogous analysis
+In addition to finding gene sets that are biased in pVal distributions, `prnGSPA` reports the essential gene sets using a greedy set cover algorithm by [`RcppGreedySetCover`](cran.r-project.org/web/packages/RcppGreedySetCover/RcppGreedySetCover.pdf). The correspondence between essential and all of the gene sets are stored in `_essmap.txt` files under the `Protein/GSPA` folder.
 
 The utility in proteoQ for conventional GSEA analysis is `prnGSEA()`. Gene set variance analysis (GSVA) is available through `prnGSVA`. Details can be found via `?prnGSEA` and `?prnGSVA`, respectively, from an `R` console.
 
 ### 2.8 Gene set networks
-
 In the above section, we have plotted the enrichment of gene sets by individual GO or KEGG terms. Depending on how much the sample groups contrast to each other, we could have produced more plots where many of them might never get viewed. Besides, gene sets can be redundant with overlaps to one another to varying degrees. A means to communicate the gene set results at high levels is to present them as hierarchical trees or grouped networks.
 
 In this section, we will visualize the connectivity of significant gene sets by both distance heat maps and networks. For simplicity, the heat maps or networks will be constructed only between gene sets and essential gene sets. As mentioned in section `Gene sets under volcano plots`, the essential gene sets were approximated with greedy set cover. This will reduce the dimensionality of data from $n \times n$ to $n \times m$ ($m \le n$).

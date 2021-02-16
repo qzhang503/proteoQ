@@ -1083,14 +1083,6 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'@param topn_gsets Numeric value or vector; top entries in gene sets ordered by
 #'  increasing \code{pVal} for visualization. The default is to use all
 #'  available entries.
-#'@param gset_nms Character string or vector containing the shorthanded name(s),
-#'  full file path(s) or both to gene sets for enrichment analysis. For species
-#'  among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
-#'  "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
-#'  molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
-#'  curated \code{MSig}, and/or additional species are also supported. See also
-#'  \code{\link{prepGO}} for the preparation of custom \code{GO} and
-#'  \code{\link{prepMSig}} for the preparation of custom \code{MSig}.
 #'
 #'  Note that it is users' responsibility to ensure that the custom gene sets
 #'  contain terms that can be found from the one or multiple preceding analyses
@@ -1176,7 +1168,7 @@ prnVol <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALS
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'  
 #'@export
-gspaMap <- function (gset_nms = c("go_sets", "c2_msig"), 
+gspaMap <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      df = NULL, df2 = NULL, 
                      filepath = NULL, filename = NULL, fml_nms = NULL, 

@@ -92,8 +92,16 @@ threshold is allowed by supplying a vector of absolute values in
 \code{log2FC}.}
 
 \item{topn_gsets}{Numeric value or vector; top entries in gene sets ordered by
-increasing \code{pVal} for visualization. The default is to use all
-available entries.}
+ increasing \code{pVal} for visualization. The default is to use all
+ available entries.
+
+ Note that it is users' responsibility to ensure that the custom gene sets
+ contain terms that can be found from the one or multiple preceding analyses
+ of \code{\link{prnGSPA}}. For simplicity, it is generally applicable to
+ include \emph{all} of the data bases that have been applied to
+ \code{\link{prnGSPA}} and in that way no terms will be missed for
+ visualization. See also \code{\link{prnGSPA}} for examples of custom data
+ bases.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

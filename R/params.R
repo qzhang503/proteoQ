@@ -759,7 +759,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
   if (is.null(gset_nms)) stop("`gset_nms` cannot be NULL.", call. = FALSE)
   if (is.null(species)) stop("`species` cannot be NULL.", call. = FALSE)
   
-  defaults <- c("go_sets", "kegg_sets", "c2_msig")
+  defaults <- c("go_sets", "kegg_sets", "c2_msig", "kinsub")
   sys_defs <- gset_nms %>% .[. %in% defaults]
   not_sys_defs <- gset_nms %>% .[! . %in% defaults]
 

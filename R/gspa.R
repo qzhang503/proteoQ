@@ -7,7 +7,7 @@
 #'
 #'@import purrr dplyr
 #'@export
-pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean", 
+pepGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mean", 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                      gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
@@ -42,7 +42,7 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
   
   scale_log2r <- match_prnSig_scale_log2r(scale_log2r = scale_log2r, 
                                           impute_na = impute_na)
-  
+
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
@@ -116,13 +116,16 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 #'@param impute_na Logical; if TRUE, data with the imputation of missing values
 #'  will be used. The default is FALSE.
 #'@param gset_nms Character string or vector containing the shorthanded name(s),
-#'  full file path(s) or both to gene sets for enrichment analysis. For species
-#'  among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
-#'  "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
-#'  molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
-#'  curated \code{MSig}, and/or additional species are also supported. See also
-#'  \code{\link{prepGO}} for the preparation of custom \code{GO} and
-#'  \code{\link{prepMSig}} for the preparation of custom \code{MSig}.
+#'  full file path(s), or both, to gene sets for enrichment analysis. For
+#'  species among \code{"human", "mouse", "rat"}, the default of
+#'  \code{c("go_sets", "c2_msig", "kinsub")} will utilize terms from gene
+#'  ontology (\code{GO}), molecular signatures (\code{MSig}) and
+#'  kinase-substrate network (\code{PSP Kinase-Substrate}). Custom \code{GO},
+#'  \code{MSig} and other data bases at given species are also supported. See
+#'  also: \code{\link{prepGO}} for the preparation of custom \code{GO};
+#'  \code{\link{prepMSig}} for the preparation of custom \code{MSig}. For other
+#'  custom data bases, follow the same format of list as \code{GO} or
+#'  \code{MSig}.
 #'@param method Character string or vector; the method to assess the p-values of
 #'  GSPA. The default is \code{mean} and the alternative is \code{limma}. See
 #'  also section \code{Details} for the calculations.
@@ -249,7 +252,7 @@ pepGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean",
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
-prnGSPA <- function (gset_nms = c("go_sets", "c2_msig"), method = "mean", 
+prnGSPA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), method = "mean", 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      pval_cutoff = 5E-2, logFC_cutoff = log2(1.2), 
                      gspval_cutoff = 5E-2, gslogFC_cutoff = log2(1.2), 
@@ -1586,7 +1589,7 @@ byfile_gspahm <- function (ess_in, meta_in, fml_nm, filepath, filename,
 
 #' Sets up the column annotation in heat maps
 #' 
-#' @param sample_ids A character vecotr containing the sample IDs for an ascribing analysis. 
+#' @param sample_ids A character vector containing the sample IDs for an ascribing analysis. 
 #' @inheritParams prnEucDist
 #' @import dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
@@ -1597,7 +1600,8 @@ gspa_colAnnot <- function (annot_cols = NULL, df, sample_ids, annot_colnames = N
   
   if (sum(!exists) > 0) {
     warning(paste0("Column '", annot_cols[!exists], "'",
-                   " not found in GSPA inputs and will be skipped."))
+                   " not found in GSPA inputs and will be skipped."), 
+            call. = FALSE)
     annot_cols <- annot_cols[exists]
   }
   
@@ -1610,7 +1614,7 @@ gspa_colAnnot <- function (annot_cols = NULL, df, sample_ids, annot_colnames = N
     data.frame(check.names = FALSE) %>%
     `rownames<-`(.[["term"]])
   
-  if (any(duplicated(x[["term"]]))) stop("Duplicated terms found\n")
+  if (any(duplicated(x[["term"]]))) stop("Duplicated terms found\n", call. = FALSE)
   
   if (!"term" %in% annot_cols) x <- x %>% dplyr::select(-term)
   

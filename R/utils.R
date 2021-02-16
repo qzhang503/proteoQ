@@ -2404,6 +2404,14 @@ rm_sglval_cols <- function (x) {
     purrr::map(~ .x == 1) %>% 
     purrr::flatten_lgl()
   
+  cols <- names(x[sgl_val])
+  
+  if (!purrr::is_empty(cols)) {
+    warning("Columns at a single-factor level for aesthetics excluded: \n", 
+            purrr::reduce(cols, paste, sep = ", "), ".\n",
+            call. = FALSE)
+  }
+  
   x[, !sgl_val, drop = FALSE]
 }
 
@@ -2415,15 +2423,25 @@ rm_sglval_cols <- function (x) {
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 cmbn_meta <- function(data, metadata) {
-  suppressWarnings(
-    data %>% 
-      tibble::rownames_to_column("Sample_ID") %>%
-      dplyr::left_join(metadata, by = "Sample_ID") %>%
-      dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), 
-                       ~ as.factor(.)) %>%
-      dplyr::select(which(not_all_NA(.))) %>% 
-      rm_sglval_cols()    
-  )
+  data <- data %>% 
+    tibble::rownames_to_column("Sample_ID") %>%
+    dplyr::left_join(metadata, by = "Sample_ID") %>%
+    dplyr::mutate_at(vars(one_of("Color", "Fill", "Shape", "Size", "Alpha")), 
+                     ~ as.factor(.)) 
+  
+  col_nms <- data %>% 
+    .[!not_all_NA(.)] %>% 
+    names()
+  
+  if (!purrr::is_empty(col_nms)) {
+    warning("columns with all-NA values for aesthetics excluded: \n", 
+            purrr::reduce(col_nms, paste, sep = ", "), ".\n", 
+            call. = FALSE)
+  }
+  
+  data %>%
+    dplyr::select(which(not_all_NA(.))) %>% 
+    rm_sglval_cols()
 }
 
 
@@ -3270,11 +3288,11 @@ to_complete_cases <- function (complete_cases = FALSE, impute_na = FALSE) {
 
 #' check 'gset_nms'
 #'
-#' It is OK that `gset_nms` not in `c("go_sets", "c2_msig", "kegg_sets")` as
+#' It is OK that `gset_nms` not in `c("go_sets", "c2_msig", "kegg_sets", "kinsub)` as
 #' custom gene sets may be applied.
 #' @inheritParams prnGSPA
 check_gset_nms <- function (gset_nms) {
-  customs <- gset_nms %>% .[! . %in% c("go_sets", "c2_msig", "kegg_sets")]
+  customs <- gset_nms %>% .[! . %in% c("go_sets", "c2_msig", "kegg_sets", "kinsub")]
   if (!purrr::is_empty(customs)) {
     message("Apply custom database(s): ", 
             purrr::reduce(customs, paste, sep = ", ", .init = ""))
@@ -3886,3 +3904,22 @@ prep_range <- function(from_to = c(0, 1)) {
 }
 
 
+#' Find the deliminator of a file.
+#' 
+#' @param filename A file name.
+find_delim <- function (filename) {
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
+  
+  if (fn_suffix %in% c("txt", "tsv")) {
+    delim <- "\t"
+  } else if (fn_suffix == "csv") {
+    delim <- ","
+  } else if (fn_suffix == "ssv") {
+    delim <- ";"
+  } else {
+    stop("File extension needs to be one of 'txt', 'tsv', 'csv' or 'ssv'.", 
+         call. = FALSE)
+  }
+  
+  invisible(delim)
+}

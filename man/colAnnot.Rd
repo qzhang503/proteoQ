@@ -12,7 +12,7 @@ The values under the selected keys will be used to color-code sample IDs on
 the top of the indicated plot. The default is NULL without column
 annotation.}
 
-\item{sample_ids}{A character vecotr containing the sample IDs for an ascribing analysis.}
+\item{sample_ids}{A character vector containing the sample IDs for an ascribing analysis.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}. The default is NULL without name replacement.}

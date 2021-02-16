@@ -237,8 +237,8 @@ plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, 
     xmin <- 0
     xmax <- ceiling(max(D_matrix))
     xmargin <- (xmax - xmin)/2
-    color_breaks <- c(seq(xmin, xmargin, length = n_color/2)[1 : (n_color/2-1)],
-                      seq(xmargin, xmax, length = n_color/2)[2 : (n_color/2)])
+    color_breaks <- c(seq(xmin, xmargin, length.out = n_color/2)[1 : (n_color/2-1)],
+                      seq(xmargin, xmax, length.out = n_color/2)[2 : (n_color/2)])
       
     if (is.null(dots$units)) {
       units <- "in"
@@ -277,19 +277,19 @@ plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, 
     if (is.null(dots$color)) {
       mypalette <- colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(n_color)
     } else {
-      mypalette <- eval(dots$color, env = caller_env())
+      mypalette <- eval(dots$color, envir = caller_env())
     }
     
     if (is.null(dots$annot_cols)) {
       annot_cols <- NULL
     } else {
-      annot_cols <- eval(dots$annot_cols, env = caller_env())
+      annot_cols <- eval(dots$annot_cols, envir = caller_env())
     }
     
     if (is.null(dots$annot_colnames)) {
       annot_colnames <- NULL
     } else {
-      annot_colnames <- eval(dots$annot_colnames, env = caller_env())
+      annot_colnames <- eval(dots$annot_colnames, envir = caller_env())
     }
     
     if (is.null(annot_cols)) annotation_col <- NA else
@@ -305,7 +305,7 @@ plotNMFCon <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases, 
     } else if (is.na(dots$annotation_colors)) {
       annotation_colors <- NA
     } else {
-      annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+      annotation_colors <- eval(dots$annotation_colors, envir = caller_env())
     }
     
     clus <- cluster::silhouette(res_nmf)
@@ -482,8 +482,8 @@ plotNMFCoef <- function(id, rank, label_scheme_sub,
     xmin <- 0
     xmax <- max(D_matrix)
     xmargin <- xmax/2
-    color_breaks <- c(seq(xmin, xmargin, length = n_color/2)[1 : (n_color/2-1)],
-                      seq(xmargin, xmax, length = n_color/2)[2 : (n_color/2)])
+    color_breaks <- c(seq(xmin, xmargin, length.out = n_color/2)[1 : (n_color/2-1)],
+                      seq(xmargin, xmax, length.out = n_color/2)[2 : (n_color/2)])
     
     if (is.null(dots$width)) {
       width <- 1.35 * ncol(D_matrix)
@@ -500,19 +500,19 @@ plotNMFCoef <- function(id, rank, label_scheme_sub,
     if (is.null(dots$color)) {
       mypalette <- colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(n_color)
     } else {
-      mypalette <- eval(dots$color, env = caller_env())
+      mypalette <- eval(dots$color, envir = caller_env())
     }
     
     if (is.null(dots$annot_cols)) {
       annot_cols <- NULL
     } else {
-      annot_cols <- eval(dots$annot_cols, env = caller_env())
+      annot_cols <- eval(dots$annot_cols, envir = caller_env())
     }
     
     if (is.null(dots$annot_colnames)) {
       annot_colnames <- NULL
     } else {
-      annot_colnames <- eval(dots$annot_colnames, env = caller_env())
+      annot_colnames <- eval(dots$annot_colnames, envir = caller_env())
     }
     
     annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = colnames(D_matrix))
@@ -526,7 +526,7 @@ plotNMFCoef <- function(id, rank, label_scheme_sub,
     } else if (is.na(dots$annotation_colors)) {
       annotation_colors <- NA
     } else {
-      annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+      annotation_colors <- eval(dots$annotation_colors, envir = caller_env())
     }
     
     clus <- cluster::silhouette(res_nmf)
@@ -698,41 +698,41 @@ plotNMFmeta <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
     if (is.null(dots$xmin)) {
       xmin <- -1
     } else {
-      xmin <- eval(dots$xmin, env = caller_env())
+      xmin <- eval(dots$xmin, envir = caller_env())
     }
     
     if (is.null(dots$xmax)) {
       xmax <- 1
     } else {
-      xmax <- eval(dots$xmax, env = caller_env())
+      xmax <- eval(dots$xmax, envir = caller_env())
     }
     
     if (is.null(dots$xmargin)) {
       xmargin <- .1
     } else {
-      xmargin <- eval(dots$xmargin, env = caller_env())
+      xmargin <- eval(dots$xmargin, envir = caller_env())
     }
     
     n_color <- 500
-    color_breaks <- c(seq(xmin, xmargin, length = n_color/2)[1 : (n_color/2-1)],
-                      seq(xmargin, xmax, length = n_color/2)[2 : (n_color/2)])
+    color_breaks <- c(seq(xmin, xmargin, length.out = n_color/2)[1 : (n_color/2-1)],
+                      seq(xmargin, xmax, length.out = n_color/2)[2 : (n_color/2)])
     
     if (is.null(dots$color)) {
       mypalette <- colorRampPalette(c("blue", "white", "red"))(n_color)
     } else {
-      mypalette <- eval(dots$color, env = caller_env())
+      mypalette <- eval(dots$color, envir = caller_env())
     }
     
     if (is.null(dots$annot_cols)) {
       annot_cols <- NULL
     } else {
-      annot_cols <- eval(dots$annot_cols, env = caller_env())
+      annot_cols <- eval(dots$annot_cols, envir = caller_env())
     }
     
     if (is.null(dots$annot_colnames)) {
       annot_colnames <- NULL
     } else {
-      annot_colnames <- eval(dots$annot_colnames, env = caller_env())
+      annot_colnames <- eval(dots$annot_colnames, envir = caller_env())
     }
     
     annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = colnames(df))
@@ -746,7 +746,7 @@ plotNMFmeta <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
     } else if (is.na(dots$annotation_colors)) {
       annotation_colors <- NA
     } else {
-      annotation_colors <- eval(dots$annotation_colors, env = caller_env())
+      annotation_colors <- eval(dots$annotation_colors, envir = caller_env())
     }
     
     for (i in seq_len(rank)) {

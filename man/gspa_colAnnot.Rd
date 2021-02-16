@@ -22,7 +22,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \code{c("Peptide_pVal.txt", "Peptide_impNA_pVal.txt", "Protein_pVal.txt",
 "protein_impNA_pVal.txt")}.}
 
-\item{sample_ids}{A character vecotr containing the sample IDs for an ascribing analysis.}
+\item{sample_ids}{A character vector containing the sample IDs for an ascribing analysis.}
 
 \item{annot_colnames}{A character vector of replacement name(s) to
 \code{annot_cols}. The default is NULL without name replacement.}

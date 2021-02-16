@@ -100,10 +100,49 @@
 #'
 #' @format A list at a length of 225 
 #' \describe{
-#'   \item{mmu...}{rat entries}
+#'   \item{rno...}{rat entries}
 #' }
 #' @source \url{https://www.genome.jp/kegg/pathway.html}
 "kegg_sets_rn"
+
+
+#' Kinase (in gene name) and the the entrez IDs of substrates 
+#'
+#' A dataset containing human entrez IDs by the gene sets of kinase-substrate
+#' networks.
+#'
+#' @format A list at a length of 385 
+#' \describe{
+#'   \item{hu...}{human entries}
+#' }
+#' @source \url{https://www.phosphosite.org/}
+"kinsub_hs"
+
+
+#' Kinase (in gene name) and the the entrez IDs of substrates 
+#'
+#' A dataset containing mouse entrez IDs by the gene sets of kinase-substrate
+#' networks.
+#'
+#' @format A list at a length of 217 
+#' \describe{
+#'   \item{mm...}{mouse entries}
+#' }
+#' @source \url{https://www.phosphosite.org/}
+"kinsub_mm"
+
+
+#' Kinase (in gene name) and the the entrez IDs of substrates 
+#'
+#' A dataset containing rat entrez IDs by the gene sets of kinase-substrate
+#' networks.
+#'
+#' @format A list at a length of 100 
+#' \describe{
+#'   \item{rn...}{rat entries}
+#' }
+#' @source \url{https://www.phosphosite.org/}
+"kinsub_rn"
 
 
 #' Lookups of human or mouse kinases.
