@@ -37,7 +37,7 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{df_meta}{A file name of meta data.}
 
-\item{sample_ids}{A character vecotr containing the sample IDs for an ascribing analysis.}
+\item{sample_ids}{A character vector containing the sample IDs for an ascribing analysis.}
 
 \item{filepath}{A file path to output results. By default, it will be
 determined automatically by the name of the calling function and the value

@@ -68,21 +68,16 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 "NMF", "Purge", "Trend", "LDA", ...)}.}
 
 \item{gset_nms}{Character string or vector containing the shorthanded name(s),
- full file path(s) or both to gene sets for enrichment analysis. For species
- among \code{"human", "mouse", "rat"}, the default of \code{c("go_sets",
- "c2_msig")} will utilize terms from both gene ontology (\code{GO}) and
- molecular signatures (\code{MSig}). Custom data bases of \code{GO} and
- curated \code{MSig}, and/or additional species are also supported. See also
- \code{\link{prepGO}} for the preparation of custom \code{GO} and
- \code{\link{prepMSig}} for the preparation of custom \code{MSig}.
-
- Note that it is users' responsibility to ensure that the custom gene sets
- contain terms that can be found from the one or multiple preceding analyses
- of \code{\link{prnGSPA}}. For simplicity, it is generally applicable to
- include \emph{all} of the data bases that have been applied to
- \code{\link{prnGSPA}} and in that way no terms will be missed for
- visualization. See also \code{\link{prnGSPA}} for examples of custom data
- bases.}
+full file path(s), or both, to gene sets for enrichment analysis. For
+species among \code{"human", "mouse", "rat"}, the default of
+\code{c("go_sets", "c2_msig", "kinsub")} will utilize terms from gene
+ontology (\code{GO}), molecular signatures (\code{MSig}) and
+kinase-substrate network (\code{PSP Kinase-Substrate}). Custom \code{GO},
+\code{MSig} and other data bases at given species are also supported. See
+also: \code{\link{prepGO}} for the preparation of custom \code{GO};
+\code{\link{prepMSig}} for the preparation of custom \code{MSig}. For other
+custom data bases, follow the same format of list as \code{GO} or
+\code{MSig}.}
 
 \item{scale_log2r}{Logical; if TRUE, adjusts \code{log2FC} to the same scale
 of standard deviation across all samples. The default is TRUE.}

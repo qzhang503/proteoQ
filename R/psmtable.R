@@ -1783,6 +1783,15 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   stopifnot(any(grepl("^I[0-9]{3}[NC]{0,1}", names(df))))
   
+  # (1.4.2) phospho
+  if (all(c("pep_var_mod", "pep_locprob", "pep_locdiff") %in% names(df))) {
+    df <- df %>% 
+      dplyr::mutate(pep_phospho_locprob = 
+                      ifelse(grepl("Phospho", pep_var_mod), pep_locprob, NA_real_)) %>% 
+      dplyr::mutate(pep_phospho_locdiff = 
+                      ifelse(grepl("Phospho", pep_var_mod), pep_locdiff, NA_real_))
+  }
+  
   # (2.1) annotate proteins
   df <- df %>% 
     annotPrn(fasta, entrez) %>%  

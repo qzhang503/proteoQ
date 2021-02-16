@@ -344,10 +344,9 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
       Cluster <- data.frame(Cluster = cutree(p$tree_row, k = cutree_rows)) %>%
         dplyr::mutate(!!id := rownames(.)) %>%
         dplyr::left_join(df, by = id) %T>% 
-        write.csv(file.path(filepath, "Subtrees", fn_prefix, 
-                            paste0(fn_prefix, " n-", cutree_rows, "_subtrees.csv")), 
-                  row.names = FALSE)
-
+        readr::write_tsv(file.path(filepath, "Subtrees", fn_prefix, 
+                                   paste0(fn_prefix, " n-", cutree_rows, "_subtrees.txt")))
+      
       Cluster <- Cluster %>%
         `rownames<-`(NULL) %>% 
         tibble::column_to_rownames(var = id)

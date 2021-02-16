@@ -7,7 +7,7 @@
 \format{
 A list at a length of 225 
 \describe{
-  \item{mmu...}{rat entries}
+  \item{rno...}{rat entries}
 }
 }
 \source{

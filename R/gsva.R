@@ -91,7 +91,7 @@
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
-prnGSVA <- function (gset_nms = c("go_sets", "c2_msig"), 
+prnGSVA <- function (gset_nms = c("go_sets", "c2_msig", "kinsub"), 
                      scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                      df = NULL, filepath = NULL, filename = NULL, 
                      var_cutoff = .5, pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), 

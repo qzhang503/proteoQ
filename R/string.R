@@ -188,10 +188,19 @@ anal_prnString <- function (scale_log2r = TRUE, complete_cases = FALSE, impute_n
   
   reload_expts()
   
-  info_anal(id = !!id, col_select = NULL, col_group = NULL, col_order = NULL,
-            scale_log2r = scale_log2r, complete_cases = complete_cases, impute_na = impute_na,
-            df = !!df, df2 = NULL, filepath = !!filepath, filename = !!filename,
-            anal_type = "String")(db_nms = db_nms, score_cutoff = score_cutoff, adjP = adjP, 
+  info_anal(id = !!id, 
+            col_select = NULL, 
+            col_group = NULL, 
+            col_order = NULL,
+            scale_log2r = scale_log2r, 
+            complete_cases = complete_cases, 
+            impute_na = impute_na,
+            df = !!df, 
+            df2 = NULL, 
+            filepath = !!filepath, 
+            filename = !!filename,
+            anal_type = "String")(db_nms = db_nms, 
+                                  score_cutoff = score_cutoff, 
                                   ...)
 }
 
@@ -324,7 +333,9 @@ prepString <- function(species = "human", # abbr_species = NULL,
                                    "https://stringdb-static.org/download/protein.info.v11.0/10090.protein.info.v11.0.txt.gz"), 
                        rat = c("10116.protein.info.v11.0.txt.gz" = 
                                  "https://stringdb-static.org/download/protein.info.v11.0/10116.protein.info.v11.0.txt.gz"), 
-                       stop("`species` need to be one of `human`, `mouse` or `rat` for an auto lookup of `info` files.", call. = FALSE))
+                       stop("`species` need to be one of `human`, `mouse` or `rat` ", 
+                            "for an auto lookup of `info` files.", 
+                            call. = FALSE))
     fn_info <- names(info_url)
   } else {
     fn_info <- info_url %>% gsub("^.*/(.*)$", "\\1", .)
@@ -332,23 +343,30 @@ prepString <- function(species = "human", # abbr_species = NULL,
   taxid_info <- fn_info %>% gsub("^([0-9]+)\\..*", "\\1", .)
   
   if (length(unique(c(taxid_links, taxid_aliases, taxid_info))) > 1) 
-    stop("Different `taxid` detected among `links_url`, `aliases_url` and `info_url`", call. = FALSE)
+    stop("Different `taxid` detected among `links_url`, `aliases_url` and `info_url`", 
+         call. = FALSE)
   
   if (length(unique(c(links_url, aliases_url, info_url))) != 3) 
-    stop("Duplicated `urls` detected.", call. = FALSE)
+    stop("Duplicated `urls` detected.", 
+         call. = FALSE)
   
   if (!grepl("links", links_url)) 
-    warning("The `", links_url, "` does not contain character string `links`.", call. = FALSE)
+    warning("The `", links_url, "` does not contain character string `links`.", 
+            call. = FALSE)
   
   if (!grepl("aliases", aliases_url)) 
-    warning("The `", aliases_url, "` does not contain character string `aliases`.", call. = FALSE)
+    warning("The `", aliases_url, "` does not contain character string `aliases`.", 
+            call. = FALSE)
   
   if (!grepl("info", info_url)) 
-    warning("The `", info_url, "` does not contain character string `info`.", call. = FALSE)
+    warning("The `", info_url, "` does not contain character string `info`.", 
+            call. = FALSE)
 
   df_links <- local({
     filepath <- file.path(db_path, fn_links)
-    if ((!file.exists(filepath)) || overwrite) downloader::download(links_url, filepath, mode = "wb")
+    if ((!file.exists(filepath)) || overwrite) {
+      downloader::download(links_url, filepath, mode = "wb")
+    }
     
     con <- gzfile(path.expand(filepath))
     read.csv(con, sep = " ", check.names = FALSE, header = TRUE, comment.char = "#")
@@ -356,7 +374,9 @@ prepString <- function(species = "human", # abbr_species = NULL,
   
   df_aliases <- local({
     filepath <- file.path(db_path, fn_aliases)
-    if ((!file.exists(filepath)) || overwrite) downloader::download(aliases_url, filepath, mode = "wb")
+    if ((!file.exists(filepath)) || overwrite) {
+      downloader::download(aliases_url, filepath, mode = "wb")
+    }
     
     con <- gzfile(path.expand(filepath))
     temp <- read.csv(con, sep = "\t", check.names = FALSE, header = TRUE, comment.char = "#")
@@ -377,7 +397,9 @@ prepString <- function(species = "human", # abbr_species = NULL,
     filepath <- file.path(db_path, fn_info)
     filepath2 <- file.path(db_path, gsub("\\.gz$", "", fn_info))
     
-    if ((!file.exists(filepath)) || overwrite) downloader::download(info_url, filepath, mode = "wb")
+    if ((!file.exists(filepath)) || overwrite) {
+      downloader::download(info_url, filepath, mode = "wb")
+    }
     
     con <- gzfile(path.expand(filepath))
     temp <- readLines(con)
@@ -433,13 +455,15 @@ load_stringdbs <- function (db_nms = NULL) {
   if (is.null(db_nms)) stop("`db_nms` cannot be NULL.", call. = FALSE)
   
   if (!all(grepl("\\.rds$", db_nms))) {
-    stop("Custom gene set files indicated by `db_nms` must end with the `.rds` extension.", call. = FALSE)
+    stop("Custom gene set files indicated by `db_nms` must end with the `.rds` extension.", 
+         call. = FALSE)
   }
   
   local({
     not_oks <- db_nms %>% .[!file.exists(db_nms)]
     if (!purrr::is_empty(not_oks)) {
-      stop("File(s) not found: \n", purrr::reduce(not_oks, paste, sep = ", \n"), call. = FALSE)
+      stop("File(s) not found: \n", purrr::reduce(not_oks, paste, sep = ", \n"), 
+           call. = FALSE)
     }    
   })
 
@@ -451,7 +475,8 @@ load_stringdbs <- function (db_nms = NULL) {
     
     if (!purrr::is_empty(not_oks)) {
       stop("File(s) not containing all three pieces of `links`, `alias` and `info`: \n", 
-           purrr::reduce(db_nms[not_oks], paste, sep = ", \n"), call. = FALSE)
+           purrr::reduce(db_nms[not_oks], paste, sep = ", \n"), 
+           call. = FALSE)
     }
   })
 
