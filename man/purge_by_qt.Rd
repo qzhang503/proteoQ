@@ -4,7 +4,7 @@
 \alias{purge_by_qt}
 \title{Filter data groups by quantiles of CV}
 \usage{
-purge_by_qt(df, id, pt_cv = NULL, keep_ohw = TRUE)
+purge_by_qt(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -25,7 +25,9 @@ percentile threshold will be replaced with NA. The default is NULL with no
 data trimming by CV percentile.}
 
 \item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
-default is TRUE.}
+default is TRUE. The argument is softly depreciated; instead use
+\code{min_n}. Equivalency: \code{keep_ohw = TRUE <=> min_n == 1; keep_ohw =
+FALSE <=> min_n == 2}.}
 }
 \description{
 \code{purge_by_qt} replaces the data entries at \code{CV > quantile} with NA.

@@ -3245,6 +3245,13 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
   if (TMT_plex > 0) {
     df <- df[rowSums(!is.na(df[, grepl("^N_log2_R[0-9]{3}", names(df)), 
                                drop = FALSE])) > 0, ]
+    
+    if (nrow(df) == 0) {
+      stop("Fields 'N_log2_R' are all NA at TMT_plex = ", TMT_plex, ".\n", 
+           "Is this an error-tolerant search without intensity/ratio values in the psm table?", 
+           "May consider replacing 'NA' with '1' to proceed.", 
+           call. = FALSE)
+    }
   } 
   
   df <- df %>%

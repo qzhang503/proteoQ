@@ -9,6 +9,7 @@ Pep2Prn(
     "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all"),
   use_unique_pep = TRUE,
   cut_points = Inf,
+  rm_outliers = FALSE,
   ...
 )
 }

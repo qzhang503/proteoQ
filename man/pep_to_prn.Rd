@@ -4,7 +4,7 @@
 \alias{pep_to_prn}
 \title{Helper of Pep2Prn}
 \usage{
-pep_to_prn(id, method_pep_prn, use_unique_pep, gn_rollup, ...)
+pep_to_prn(id, method_pep_prn, use_unique_pep, gn_rollup, rm_outliers, ...)
 }
 \arguments{
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},

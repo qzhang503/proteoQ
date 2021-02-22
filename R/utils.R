@@ -328,7 +328,6 @@ aggrTopn <- function(f) {
     id <- rlang::as_string(rlang::enexpr(id))
     dots <- rlang::enexprs(...)
     
-    # OK for LFQ: rowSums against single column
     df %>%
       dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
       dplyr::mutate(sum_Intensity = rowSums(.[grep("^I[0-9]{3}", names(.))], 
@@ -3923,3 +3922,51 @@ find_delim <- function (filename) {
   
   invisible(delim)
 }
+
+
+#' Add the MS file name to timsTOF mgf files.
+#'
+#' @param path The file path to mgf files.
+#' @param n Integer; the first \code{n} lines for quick checks of the MS file
+#'   name.
+#' @export
+proc_mgf_timstof <- function (path, n = 1000) {
+  filelist <- list.files(path = file.path(path), 
+                         pattern = "^.*\\.mgf$")
+  
+  if (purrr::is_empty(filelist)) {
+    stop("No mgf files under ", path, 
+         call. = FALSE)
+  }
+  
+  purrr::walk(filelist, ~ {
+    lines <- readLines(file.path(path, .x))
+    
+    hdr <- lines[1:n]
+
+    fn <- hdr %>% 
+      .[grepl("^COM\\=.*\\.d$", .)] %>% 
+      gsub("^COM\\=(.*)$", "\\1", .) %>% 
+      paste0("File:~", ., "~,")
+    
+    stopifnot(length(fn) == 1)
+    
+    lntit <- hdr %>% 
+      .[grepl("^TITLE", .)] %>% 
+      `[`(1)
+    
+    if (grepl("File:~", lntit)) {
+      warning("MS file names already in ", .x, 
+              call. = FALSE)
+    } else {
+      rows <- grepl("^TITLE", lines)
+      
+      lines[rows] <- lines[rows]  %>% 
+        gsub("(Cmpd \\d+,)", paste("\\1", fn, sep =" "), .)
+
+      writeLines(lines, file.path(path, .x))
+    }
+  })
+}
+
+

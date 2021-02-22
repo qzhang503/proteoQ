@@ -12,6 +12,7 @@ psm_mpurge(
   pt_cv,
   max_cv,
   keep_ohw,
+  min_n,
   theme,
   ...
 )
@@ -44,7 +45,15 @@ will be replaced with NA. The default is NULL with no data trimming by max
 CV.}
 
 \item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
-default is TRUE.}
+default is TRUE. The argument is softly depreciated; instead use
+\code{min_n}. Equivalency: \code{keep_ohw = TRUE <=> min_n == 1; keep_ohw =
+FALSE <=> min_n == 2}.}
+
+\item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
+entries in PSM tables with the number of identifying PSMs smaller than
+\code{min_n} will be replaced with NA. When calling from \code{purgePep},
+protein entries in peptide tables with the number of identifying peptides
+smaller than \code{min_n} will be replaced with NA.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
