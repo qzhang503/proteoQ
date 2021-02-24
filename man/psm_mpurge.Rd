@@ -12,6 +12,8 @@ psm_mpurge(
   pt_cv,
   max_cv,
   keep_ohw,
+  min_n,
+  rm_allna = FALSE,
   theme,
   ...
 )
@@ -37,14 +39,27 @@ numbers will be treated as one group.}
 
 \item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
 percentile threshold will be replaced with NA. The default is NULL with no
-data trimming by CV percentile.}
+data trimming by CV percentile. The precedence in data purging is
+\code{pt_cv} \eqn{\ge} \code{max_v} \eqn{\ge} \code{min_n}.}
 
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
 will be replaced with NA. The default is NULL with no data trimming by max
 CV.}
 
 \item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
-default is TRUE.}
+default is TRUE. The argument is softly depreciated; instead use
+\code{min_n}. Equivalency: \code{keep_ohw = TRUE <=> min_n == 1; keep_ohw =
+FALSE <=> min_n == 2}.}
+
+\item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
+entries in PSM tables with the number of identifying PSMs smaller than
+\code{min_n} will be replaced with NA. When calling from \code{purgePep},
+protein entries in peptide tables with the number of identifying peptides
+smaller than \code{min_n} will be replaced with NA.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}

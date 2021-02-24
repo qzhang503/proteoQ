@@ -4,7 +4,7 @@
 \alias{psm_mcleanup}
 \title{Parallel PSM cleanup}
 \usage{
-psm_mcleanup(file, rm_outliers, group_psm_by, dat_dir, TMT_plex)
+psm_mcleanup(file, rm_outliers, group_psm_by, dat_dir, TMT_plex, rm_allna)
 }
 \arguments{
 \item{file}{A PSM file (name).}

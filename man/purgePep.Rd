@@ -10,6 +10,8 @@ purgePep(
   max_cv = NULL,
   adjSD = FALSE,
   keep_ohw = TRUE,
+  min_n = 1,
+  rm_allna = FALSE,
   col_select = NULL,
   col_order = NULL,
   filename = NULL,
@@ -23,17 +25,30 @@ match the value under the global environment.}
 
 \item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
 percentile threshold will be replaced with NA. The default is NULL with no
-data trimming by CV percentile.}
+data trimming by CV percentile. The precedence in data purging is
+\code{pt_cv} \eqn{\ge} \code{max_v} \eqn{\ge} \code{min_n}.}
 
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
 will be replaced with NA. The default is NULL with no data trimming by max
 CV.}
 
-\item{adjSD}{Not currently used. If TRUE, adjust the standard
-deviation in relative to the width of ratio profiles.}
+\item{adjSD}{Not currently used. If TRUE, adjust the standard deviation in
+relative to the width of ratio profiles.}
 
 \item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
-default is TRUE.}
+default is TRUE. The argument is softly depreciated; instead use
+\code{min_n}. Equivalency: \code{keep_ohw = TRUE <=> min_n == 1; keep_ohw =
+FALSE <=> min_n == 2}.}
+
+\item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
+entries in PSM tables with the number of identifying PSMs smaller than
+\code{min_n} will be replaced with NA. When calling from \code{purgePep},
+protein entries in peptide tables with the number of identifying peptides
+smaller than \code{min_n} will be replaced with NA.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in
@@ -67,7 +82,8 @@ height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
 }
 \description{
 \code{purgePep} removes \code{protein} entries from \code{Peptide.txt} by
-selection criteria. It further plots the distributions of \code{log2FC}.
+quality criteria. It further plots the distributions of the CV of
+\code{log2FC}.
 }
 \details{
 The CV of proteins under each sample are first calculated from contributing
@@ -75,8 +91,10 @@ peptides. In the event of multiple series of LC/MS injections, the CV of the
 same protein from different LC/MS will be summarized by median statistics.
 
 The data nullification will be applied column-wisely for all available
-samples. Argument \code{col_select} is merely used to subsetting samples for
-the visualization of \code{log2FC} distributions.
+samples. Argument \code{col_select} is merely used to subset samples for the
+visualization of \code{log2FC} distributions.
+
+Rows of with all NA values in \code{log2FC} will be removed too.
 }
 \examples{
 \donttest{
@@ -118,59 +136,62 @@ purgePep(dpi = 300, theme = ggplot2::theme_get(), filename = my_theme.png)
 
 }
 \seealso{
-\emph{Metadata} \cr 
- \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+\emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+and a reduced working example in data normalization \cr
 
- \emph{Data normalization} \cr 
- \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \emph{Variable arguments of `filter_...`} \cr 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \emph{Missing values} \cr 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- 
- \emph{Informatics} \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
- \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
- \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
- \code{\link{prnGSVA}} for gene set variance analysis \cr 
- \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
- \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
- \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
- \code{\link{prnCorr_logInt}}  for correlation plots \cr 
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
- \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
- 
- \emph{Custom databases} \cr 
- \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
- \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
- \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
- ontology}} \cr 
- \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
- signatures} \cr 
- \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
- 
- \emph{Column keys in PSM, peptide and protein outputs} \cr 
- system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
- system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
+to peptide summarization \cr \code{\link{mergePep}} for extended examples in
+peptide data merging \cr \code{\link{standPep}} for extended examples in
+peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
+peptide to protein summarization \cr \code{\link{standPrn}} for extended
+examples in protein data normalization. \cr \code{\link{purgePSM}} and
+\code{\link{purgePep}} for extended examples in data purging \cr
+\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
+histogram visualization. \cr \code{\link{extract_raws}} and
+\code{\link{extract_psm_raws}} for extracting MS file names \cr
+
+\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+
+\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+missing value imputation \cr
+
+\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
+plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
+trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
+and visualization \cr
+
+\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+among RefSeq accessions, gene names and Entrez IDs \cr \code{\link{prepGO}}
+for
+\code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+ontology}} \cr \code{\link{prepMSig}} for
+\href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}} for
+STRING-DB \cr
+
+\emph{Column keys in PSM, peptide and protein outputs} \cr
+system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 }

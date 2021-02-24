@@ -563,7 +563,8 @@ scoreMDS <- function (df, id, label_scheme_sub, anal_type, scale_log2r,
 
 	df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r,
 	             sub_grp = label_scheme_sub$Sample_ID, 
-	             anal_type = anal_type) %>%
+	             anal_type = anal_type, 
+	             rm_allna = TRUE) %>%
 	  .$log2R
 
 	nms <- names(df)
@@ -748,7 +749,8 @@ scoreEucDist <- function (df, id, label_scheme_sub, anal_type,
   stopifnot(nrow(df) > 50)
 
   df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r,
-               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>%
+               sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type, 
+               rm_allna = TRUE) %>%
     .$log2R
 
   D <- dist(t(df), method = "euclidean", diag = TRUE, upper = TRUE)

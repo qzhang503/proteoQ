@@ -2,8 +2,9 @@
 #'
 #'\code{prepDM} prepares a minimal adequate data frame for subsequent analysis.
 #'
-#'@inheritParams  prnEucDist
-#'@inheritParams  info_anal
+#'@inheritParams prnEucDist
+#'@inheritParams info_anal
+#'@inheritParams normPSM
 #'@param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
 #'  analysis.
 #'@param type The type of data, for example ratio or intensity.
@@ -13,7 +14,8 @@
 #' \donttest{tempData <- prepDM(df, entrez, scale_log2r, label_scheme_sub$Sample_ID)}
 #'@import dplyr
 #'@importFrom magrittr %>% %T>% %$% %<>% 
-prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
+prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type, 
+                   rm_allna = FALSE) {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
@@ -47,8 +49,8 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
     
     df <- df %>% 
       dplyr::ungroup() %>% 
-      dplyr::filter(rowSums(!is.na(.[, grep(NorZ_ratios, names(.)), 
-                                     drop = FALSE])) > 0) %>%
+      { if (rm_allna) dplyr::filter(., rowSums(!is.na(.[grep(NorZ_ratios, names(.))])) > 0) 
+        else . } %>% 
       reorderCols(endColIndex = grep(pattern, names(.)), col_to_rn = id)
   })
 
@@ -328,7 +330,6 @@ aggrTopn <- function(f) {
     id <- rlang::as_string(rlang::enexpr(id))
     dots <- rlang::enexprs(...)
     
-    # OK for LFQ: rowSums against single column
     df %>%
       dplyr::select(id, grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>%
       dplyr::mutate(sum_Intensity = rowSums(.[grep("^I[0-9]{3}", names(.))], 
@@ -2876,8 +2877,9 @@ my_geomean <- function (x, ...) {
 }
 
 
-#' phospho counts
+#' Counts phospho.
 #' 
+#' Not currently used.
 count_phosphopeps <- function() {
   dat_dir <- get_gl_dat_dir()
   
@@ -3923,3 +3925,51 @@ find_delim <- function (filename) {
   
   invisible(delim)
 }
+
+
+#' Add the MS file name to timsTOF mgf files.
+#'
+#' @param path The file path to mgf files.
+#' @param n Integer; the first \code{n} lines for quick checks of the MS file
+#'   name.
+#' @export
+proc_mgf_timstof <- function (path, n = 1000) {
+  filelist <- list.files(path = file.path(path), 
+                         pattern = "^.*\\.mgf$")
+  
+  if (purrr::is_empty(filelist)) {
+    stop("No mgf files under ", path, 
+         call. = FALSE)
+  }
+  
+  purrr::walk(filelist, ~ {
+    lines <- readLines(file.path(path, .x))
+    
+    hdr <- lines[1:n]
+
+    fn <- hdr %>% 
+      .[grepl("^COM\\=.*\\.d$", .)] %>% 
+      gsub("^COM\\=(.*)$", "\\1", .) %>% 
+      paste0("File:~", ., "~,")
+    
+    stopifnot(length(fn) == 1)
+    
+    lntit <- hdr %>% 
+      .[grepl("^TITLE", .)] %>% 
+      `[`(1)
+    
+    if (grepl("File:~", lntit)) {
+      warning("MS file names already in ", .x, 
+              call. = FALSE)
+    } else {
+      rows <- grepl("^TITLE", lines)
+      
+      lines[rows] <- lines[rows]  %>% 
+        gsub("(Cmpd \\d+,)", paste("\\1", fn, sep =" "), .)
+
+      writeLines(lines, file.path(path, .x))
+    }
+  })
+}
+
+

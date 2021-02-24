@@ -1420,10 +1420,11 @@ add_shared_sm_genes <- function (df, key = "Proteins", sep = ";",
 #'
 #' @param df PSM data.
 #' @inheritParams normPSM
-proc_psms <- function (df = NULL, scale_rptr_int = FALSE, 
-                       rptr_intco = 0, rptr_intrange = c(0, 100), 
-                       rm_craps = FALSE, rm_krts = FALSE, annot_kinases = FALSE, 
-                       plot_rptr_int = TRUE, parallel = TRUE) {
+procPSMs <- function (df = NULL, scale_rptr_int = FALSE, 
+                      rptr_intco = 0, rptr_intrange = c(0, 100), 
+                      rm_craps = FALSE, rm_krts = FALSE, rm_allna = FALSE, 
+                      annot_kinases = FALSE, 
+                      plot_rptr_int = TRUE, parallel = TRUE) {
   
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -1438,8 +1439,7 @@ proc_psms <- function (df = NULL, scale_rptr_int = FALSE,
       df <- df %>% 
         dplyr::mutate_at(.vars = grep(pattern, names(.)), 
                          ~ ifelse(.x == -1L, NA, .x)) %>% 
-        dplyr::mutate(.sumint = rowSums(.[, grepl(pattern, names(.)), drop = FALSE], 
-                                        na.rm = TRUE)) %>% 
+        dplyr::mutate(.sumint = rowSums(.[grepl(pattern, names(.))], na.rm = TRUE)) %>% 
         dplyr::mutate(.pep_tot_int = ifelse(is.na(pep_tot_int), 
                                             .sumint, pep_tot_int)) %>% 
         dplyr::mutate_at(.vars = grep(pattern, names(.)), 
@@ -1473,8 +1473,8 @@ proc_psms <- function (df = NULL, scale_rptr_int = FALSE,
   
   df <- df %>% order_mascot_psm_cols()
   
-  # (1) Shared peptides will be removed in this step by `rowSums` if 
-  #   checked 'Unique peptide only' during Mascot PSM export;
+  # (1) Shared peptides will be removed in this step if 
+  #   checked 'Unique peptide only' during Mascot PSM export and rm_allNA = TRUE;
   # (2) `> 1` to bypass non-quantitative or LFQ workflows;
   # (3) MaxQuant Bruker no `Precursor Intensity` being filled;
   df <- df %>%
@@ -1492,10 +1492,10 @@ proc_psms <- function (df = NULL, scale_rptr_int = FALSE,
     }) %>% 
     dplyr::arrange(RAW_File, pep_seq, prot_acc) 
   
-  if (length(grep("^I[0-9]{3}", names(df))) > 1) {
+  if (length(grep("^I[0-9]{3}", names(df))) > 1 && rm_allna) {
     df <- df %>% 
-      dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
-      dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) 
+      dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}[NC]{0,1}", names(.))])) > 0) %>%
+      dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}[NC]{0,1}", names(.))])) > 0) 
   }
   
   if (nrow(df) == 0) {
@@ -1653,7 +1653,8 @@ proc_psms <- function (df = NULL, scale_rptr_int = FALSE,
 splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
                      fasta = NULL, entrez = NULL, pep_unique_by = "group", 
                      scale_rptr_int = FALSE, 
-                     rm_craps = FALSE, rm_krts = FALSE, purge_phosphodata = TRUE, 
+                     rm_craps = FALSE, rm_krts = FALSE, rm_allna = FALSE, 
+                     purge_phosphodata = TRUE, 
                      annot_kinases = FALSE, plot_rptr_int = TRUE, 
                      rptr_intco = 0, rptr_intrange = c(0, 100), 
                      use_lowercase_aa = TRUE, parallel = TRUE, ...) {
@@ -1795,7 +1796,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (2.1) annotate proteins
   df <- df %>% 
     annotPrn(fasta, entrez) %>%  
-    { if (!"gene" %in% names(.)) dplyr::mutate(., gene = prot_acc) else .} 
+    { if (!"gene" %in% names(.)) dplyr::mutate(., gene = prot_acc) else . } 
 
   # (2.2) compile "preferred" columns
   df <- local({
@@ -1969,51 +1970,9 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # (2.8) update original Mascot fields
   # (e.g. updated counts after data merging)
-  run_scripts <- FALSE
-  if (run_scripts) {
-    df <- local({
-      ok_1 <- (sum(!is.na(df$prot_matches_sig)) > 0)
-      ok_2 <- (sum(!is.na(df$prot_sequences_sig)) > 0)
-      
-      if (ok_1 && ok_2) {
-        prot_matches_sig <- df %>%
-          # dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
-          # dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-          dplyr::select(pep_seq, prot_acc) %>%
-          dplyr::group_by(prot_acc) %>%
-          dplyr::summarise(prot_matches_sig_new = n())
-        
-        prot_sequences_sig <- df %>%
-          # dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
-          # dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
-          # dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-          dplyr::select(pep_seq, prot_acc) %>%
-          dplyr::filter(!duplicated(pep_seq)) %>% 
-          dplyr::group_by(prot_acc) %>%
-          dplyr::summarise(prot_sequences_sig_new = n())
-        
-        df <- list(df, prot_matches_sig, prot_sequences_sig) %>% 
-          # purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
-          purrr::reduce(dplyr::left_join, by = "prot_acc") %>% 
-          dplyr::mutate(prot_matches_sig = prot_matches_sig_new, 
-                        prot_sequences_sig = prot_sequences_sig_new) %>%
-          dplyr::select(-prot_matches_sig_new, -prot_sequences_sig_new)
-      } else {
-        df
-      }
-    })
-  }
 
   # (3) data processing
-  proc_psms(df = df, 
-            scale_rptr_int = scale_rptr_int, 
-            rptr_intco = rptr_intco, 
-            rptr_intrange = rptr_intrange, 
-            rm_craps = rm_craps, 
-            rm_krts = rm_krts, 
-            annot_kinases = annot_kinases, 
-            plot_rptr_int = plot_rptr_int, 
-            parallel = parallel)
+  
 }
 
 
@@ -2296,7 +2255,7 @@ pad_mascot_fields <- function(df) {
 #' @inheritParams load_expts
 #' @inheritParams cleanupPSM
 #' @inheritParams TMT_levels
-psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
+psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex, rm_allna) {
   df <- read.csv(file.path(dat_dir, "PSM/cache", file), 
                  check.names = FALSE, header = TRUE, comment.char = "#")
   
@@ -2317,12 +2276,11 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
   df <- local({
     N <- sum(grepl("^R[0-9]{3}", names(df)))
     df <- df %>%
-      dplyr::mutate(n = rowSums(.[, grep("^R[0-9]{3}", names(.))] == -1, 
-                                na.rm = TRUE)) %>%
-      dplyr::filter(n != N) %>%
-      dplyr::select(-n)
+      dplyr::mutate(.n = rowSums(.[grep("^R[0-9]{3}", names(.))] == -1, na.rm = TRUE)) %>% 
+      { if (rm_allna) dplyr::filter(., .n != N) else . } %>% 
+      dplyr::select(-.n)
   })
-  
+
   set_idx <- file %>% 
     gsub("TMTset(\\d+)_.*", "\\1", .) %>% 
     as.integer()
@@ -2339,18 +2297,21 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
   df <- local({
     pos_af <- min(grep("^R[0-9]{3}", names(df)))
     df$R126 <- 1
+    
     df <- cbind.data.frame(df[, 1:(pos_af-1)], 
                            R126 = df$R126, 
                            df[, (pos_af):(ncol(df)-1)]) %>%
       dplyr::mutate_at(.vars = which(names(.)=="I126")-1+channelInfo$emptyChannels, 
-                       ~ replace(.x, , NA)) %>%
-      dplyr::filter(rowSums(!is.na(.[, grep("^I[0-9]{3}", names(.) )])) > 0) %>%
+                       ~ replace(.x, , NA)) %>% 
+      { if (rm_allna) dplyr::filter(., rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) 
+        else . } %>% 
       dplyr::mutate_at(.vars = which(names(.)=="I126")-1+channelInfo$emptyChannels, 
                        ~ replace(.x, , 0)) %>%
       dplyr::mutate_at(.vars = which(names(.)=="R126")-1+channelInfo$emptyChannels, 
                        ~ replace(.x, , NA)) %>%
-      # "> 1" not "0"    
-      dplyr::filter(rowSums(!is.na(.[, grep("^R[0-9]{3}", names(.) )])) > 1) 
+      # "> 1" not "0" 
+      { if (rm_allna) dplyr::filter(., rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 1) 
+        else . }
   })
 
   if (rm_outliers) {
@@ -2396,12 +2357,13 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
       purrr::map2(as.list(df[, grepl("^R[0-9]{3}", names(df))]),
                   as.list(df[, grepl("^X[0-9]{3}", names(df))]), `*`) %>%
       dplyr::bind_rows()
-
+    
     df <- dplyr::bind_cols(
       df[, !grepl("^R[0-9]{3}|^I[0-9]{3}|^X[0-9]{3}", names(df)), drop = FALSE],
       df[, grepl("^R[0-9]{3}|^I[0-9]{3}", names(df)), drop = FALSE], 
     ) %>% # "> 1" as "R126 == 1"
-      dplyr::filter(rowSums(!is.na(.[, grep("^R[0-9]{3}", names(.) )])) > 1) %>% 
+      { if (rm_allna) dplyr::filter(., rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 1) 
+        else . } %>% 
       dplyr::mutate_at(.vars = which(names(.) == "I126") - 1 + channelInfo$emptyChannels, 
                        ~ replace(.x, , 0))
   } else {
@@ -2415,10 +2377,11 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
                          channelInfo$emptyChannels, ~ replace(.x, , 0)) %>%
       dplyr::mutate_at(.vars = which(names(.)=="R126") - 1 +
                          channelInfo$emptyChannels, ~ replace(.x, , NA)) %>%
-      dplyr::filter(rowSums(!is.na(.[, grep("^R[0-9]{3}", names(.) )])) > 1)
+      { if (rm_allna) dplyr::filter(., rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 1) 
+        else . }
   }
   
-  fn <- paste0(gsub(".csv", "", file), "_Clean.txt")
+  fn <- paste0(gsub("\\.csv$", "", file), "_Clean.txt")
   write.table(df, file.path(dat_dir, "PSM/cache", fn), 
               sep = "\t", col.names = TRUE, row.names = FALSE)
   message(file, " processed.")
@@ -2444,7 +2407,8 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex) {
 #'
 #' @import dplyr tidyr
 #' @importFrom stringr str_split
-cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq", parallel = TRUE) {
+cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq", rm_allna = FALSE, 
+                       parallel = TRUE) {
   dat_dir <- get_gl_dat_dir()
 
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -2465,13 +2429,13 @@ cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq", parallel =
 	  
 	  suppressWarnings(
 	    silent_out <- parallel::clusterApply(
-	      cl, filelist, psm_mcleanup, rm_outliers, group_psm_by, dat_dir, TMT_plex)
+	      cl, filelist, psm_mcleanup, rm_outliers, group_psm_by, dat_dir, TMT_plex, rm_allna)
 	  )
 	  rm(silent_out)
 
   	parallel::stopCluster(cl)	  
 	} else {
-	  purrr::walk(filelist, psm_mcleanup, rm_outliers, group_psm_by, dat_dir, TMT_plex)
+	  purrr::walk(filelist, psm_mcleanup, rm_outliers, group_psm_by, dat_dir, TMT_plex, rm_allna)
 	}
 }
 
@@ -2486,7 +2450,8 @@ cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq", parallel =
 #'@inheritParams calcPeptide
 #'@import dplyr tidyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>%
-mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by) {
+mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by, 
+                  rm_allna = FALSE) {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   
@@ -2496,13 +2461,14 @@ mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by) 
   
   label_scheme_sub <- label_scheme_full %>% 
     dplyr::filter(TMT_Set == set_idx, LCMS_Injection == injn_idx) 
-
-  dfw <- df[rowSums(!is.na(df[, grepl("^R[0-9]{3}", names(df)), 
-                              drop = FALSE])) > 1, ] %>%
+  
+  dfw <- df %>% 
+    { if (rm_allna) .[rowSums(!is.na(.[grepl("^R[0-9]{3}", names(.))])) > 1, ] 
+      else . } %>%
     dplyr::arrange(pep_seq, prot_acc) %>%
     dplyr::mutate_at(.vars = which(names(.) == "I126") - 1 +
                        channelInfo$emptyChannels, ~ replace(.x, , NaN))
-  
+
   col_sample <- grep("^I[0-9]{3}", names(dfw))
   
   if (length(channelInfo$refChannels) > 0) {
@@ -2512,8 +2478,7 @@ mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by) 
   }
   
   dfw <- sweep(dfw[, col_sample], 1,
-               rowMeans(dfw[, col_sample[ref_index], drop = FALSE], 
-                        na.rm = TRUE), "/") %>%
+               rowMeans(dfw[col_sample[ref_index]], na.rm = TRUE), "/") %>%
     log2(.) %>% 
     dplyr::mutate_all(~ replace(.x, is.infinite(.), NA)) %>% 
     `colnames<-`(gsub("I", "log2_R", names(.)))	%>%
@@ -2624,7 +2589,8 @@ mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by) 
 annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
                      mc_psm_by = "peptide", 
                      fasta = NULL, expt_smry = "expt_smry.xlsx", 
-                     plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, ...) {
+                     plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
+                     rm_allna = FALSE, ...) {
 
   dat_dir <- get_gl_dat_dir()
   
@@ -2664,7 +2630,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
             gsub("^TMTset\\d+_LCMSinj(\\d+)_Clean.txt$", "\\1", .) %>% 
             as.integer()
           
-          df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
+          df <- mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by, rm_allna)
         })
       } else {
         df <- df %>% 
@@ -2791,6 +2757,9 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #'  \code{'PSMexport'} and end with a \code{'.ssv'} extension \code{(e.g.,
 #'  PSMexport.ssv, PSMexport_this.ssv etc.)}.
 #'
+#'@param rm_allna Logical; if TRUE, removes data rows that are exclusively NA
+#'   across ratio columns of \code{log2_R126} etc. The setting also applies to
+#'   \code{log2_R000} in LFQ.
 #'@param ... \code{filter_}: Variable argument statements for the filtration of
 #'  data rows. Each statement contains to a list of logical expression(s). The
 #'  \code{lhs} needs to start with \code{filter_}. The logical condition(s) at
@@ -2941,6 +2910,7 @@ normPSM <- function(dat_dir = NULL,
                     scale_rptr_int = FALSE, 
                     rptr_intco = 0, rptr_intrange = c(0, 100), 
                     rm_craps = FALSE, rm_krts = FALSE, rm_outliers = FALSE, 
+                    rm_allna = FALSE, 
                     purge_phosphodata = TRUE, 
                     annot_kinases = FALSE, 
                     plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
@@ -3030,6 +3000,7 @@ normPSM <- function(dat_dir = NULL,
                      rm_craps, 
                      rm_krts, 
                      rm_outliers, 
+                     rm_allna, 
                      annot_kinases, 
                      plot_rptr_int, 
                      plot_log2FC_cv, 
@@ -3042,75 +3013,91 @@ normPSM <- function(dat_dir = NULL,
 
   if (type == "mascot") {
     rmPSMHeaders(parallel = parallel)
-    splitPSM(group_psm_by = group_psm_by, 
-             group_pep_by = group_pep_by, 
-             fasta = fasta, 
-             entrez = entrez, 
-             pep_unique_by = pep_unique_by, 
-             scale_rptr_int = scale_rptr_int, 
-             rm_craps = rm_craps, 
-             rm_krts = rm_krts, 
-             purge_phosphodata = purge_phosphodata, 
-             annot_kinases = annot_kinases, 
-             plot_rptr_int = plot_rptr_int, 
-             rptr_intco = rptr_intco, 
-             rptr_intrange = rptr_intrange, 
-             use_lowercase_aa = use_lowercase_aa, 
-             parallel = parallel, ...)
+    df <- splitPSM(group_psm_by = group_psm_by, 
+                   group_pep_by = group_pep_by, 
+                   fasta = fasta, 
+                   entrez = entrez, 
+                   pep_unique_by = pep_unique_by, 
+                   scale_rptr_int = scale_rptr_int, 
+                   rm_craps = rm_craps, 
+                   rm_krts = rm_krts, 
+                   rm_allna = rm_allna, 
+                   purge_phosphodata = purge_phosphodata, 
+                   annot_kinases = annot_kinases, 
+                   plot_rptr_int = plot_rptr_int, 
+                   rptr_intco = rptr_intco, 
+                   rptr_intrange = rptr_intrange, 
+                   use_lowercase_aa = use_lowercase_aa, 
+                   parallel = parallel, ...)
   } else if (type == "mq") {
-    splitPSM_mq(group_psm_by = group_psm_by, 
-                group_pep_by = group_pep_by, 
-                fasta = fasta, 
-                entrez = entrez, 
-                pep_unique_by = pep_unique_by, 
-                scale_rptr_int = scale_rptr_int, 
-                corrected_int = corrected_int, 
-                rm_craps = rm_craps, 
-                rm_krts = rm_krts, 
-                rm_reverses = rm_reverses, 
-                purge_phosphodata = purge_phosphodata, 
-                annot_kinases = annot_kinases, 
-                plot_rptr_int = plot_rptr_int, 
-                rptr_intco = rptr_intco, 
-                rptr_intrange = rptr_intrange, 
-                use_lowercase_aa = use_lowercase_aa, 
-                parallel = parallel, ...)
+    df <- splitPSM_mq(group_psm_by = group_psm_by, 
+                      group_pep_by = group_pep_by, 
+                      fasta = fasta, 
+                      entrez = entrez, 
+                      pep_unique_by = pep_unique_by, 
+                      scale_rptr_int = scale_rptr_int, 
+                      corrected_int = corrected_int, 
+                      rm_craps = rm_craps, 
+                      rm_krts = rm_krts, 
+                      rm_allna = rm_allna, 
+                      rm_reverses = rm_reverses, 
+                      purge_phosphodata = purge_phosphodata, 
+                      annot_kinases = annot_kinases, 
+                      plot_rptr_int = plot_rptr_int, 
+                      rptr_intco = rptr_intco, 
+                      rptr_intrange = rptr_intrange, 
+                      use_lowercase_aa = use_lowercase_aa, 
+                      parallel = parallel, ...)
   } else if (type == "sm") {
-    splitPSM_sm(group_psm_by = group_psm_by, 
-                group_pep_by = group_pep_by, 
-                fasta = fasta, 
-                entrez = entrez, 
-                pep_unique_by = pep_unique_by, 
-                scale_rptr_int = scale_rptr_int, 
-                rm_craps = rm_craps, 
-                rm_krts = rm_krts, 
-                purge_phosphodata = purge_phosphodata, 
-                annot_kinases = annot_kinases, 
-                plot_rptr_int = plot_rptr_int, 
-                rptr_intco = rptr_intco, 
-                rptr_intrange = rptr_intrange, 
-                use_lowercase_aa = use_lowercase_aa, 
-                parallel = parallel, ...)
+    df <- splitPSM_sm(group_psm_by = group_psm_by, 
+                      group_pep_by = group_pep_by, 
+                      fasta = fasta, 
+                      entrez = entrez, 
+                      pep_unique_by = pep_unique_by, 
+                      scale_rptr_int = scale_rptr_int, 
+                      rm_craps = rm_craps, 
+                      rm_krts = rm_krts, 
+                      rm_allna = rm_allna, 
+                      purge_phosphodata = purge_phosphodata, 
+                      annot_kinases = annot_kinases, 
+                      plot_rptr_int = plot_rptr_int, 
+                      rptr_intco = rptr_intco, 
+                      rptr_intrange = rptr_intrange, 
+                      use_lowercase_aa = use_lowercase_aa, 
+                      parallel = parallel, ...)
   } else if (type == "mf") {
-    splitPSM_mf(group_psm_by = group_psm_by, 
-                group_pep_by = group_pep_by, 
-                fasta = fasta, 
-                entrez = entrez, 
-                pep_unique_by = pep_unique_by, 
-                scale_rptr_int = scale_rptr_int, 
-                rm_craps = rm_craps, 
-                rm_krts = rm_krts,
-                purge_phosphodata = purge_phosphodata, 
-                annot_kinases = annot_kinases, 
-                plot_rptr_int = plot_rptr_int, 
-                rptr_intco = rptr_intco, 
-                rptr_intrange = rptr_intrange, 
-                use_lowercase_aa = use_lowercase_aa, 
-                parallel = parallel, ...)
+    df <- splitPSM_mf(group_psm_by = group_psm_by, 
+                      group_pep_by = group_pep_by, 
+                      fasta = fasta, 
+                      entrez = entrez, 
+                      pep_unique_by = pep_unique_by, 
+                      scale_rptr_int = scale_rptr_int, 
+                      rm_craps = rm_craps, 
+                      rm_krts = rm_krts, 
+                      rm_allna = rm_allna, 
+                      purge_phosphodata = purge_phosphodata, 
+                      annot_kinases = annot_kinases, 
+                      plot_rptr_int = plot_rptr_int, 
+                      rptr_intco = rptr_intco, 
+                      rptr_intrange = rptr_intrange, 
+                      use_lowercase_aa = use_lowercase_aa, 
+                      parallel = parallel, ...)
   } 
+  
+  procPSMs(df = df, 
+            scale_rptr_int = scale_rptr_int, 
+            rptr_intco = rptr_intco, 
+            rptr_intrange = rptr_intrange, 
+            rm_craps = rm_craps, 
+            rm_krts = rm_krts, 
+            rm_allna = rm_allna, 
+            annot_kinases = annot_kinases, 
+            plot_rptr_int = plot_rptr_int, 
+            parallel = parallel)
   
   cleanupPSM(rm_outliers = rm_outliers, 
              group_psm_by = group_psm_by, 
+             rm_allna = rm_allna, 
              parallel = parallel)
   
   annotPSM(group_psm_by = group_psm_by, 
@@ -3120,6 +3107,7 @@ normPSM <- function(dat_dir = NULL,
            expt_smry = expt_smry, 
            plot_rptr_int = plot_rptr_int, 
            plot_log2FC_cv = plot_log2FC_cv, 
+           rm_allna = rm_allna, 
            ...)
 }
 
@@ -3234,7 +3222,8 @@ rm_cols_mqpsm <- function(df, group_psm_by, set_idx) {
 #' @inheritParams locate_outliers
 #' @inheritParams TMT_levels
 calcPeptide <- function(df, group_psm_by, method_psm_pep, 
-                       group_pep_by, dat_dir, set_idx, injn_idx, TMT_plex) {
+                       group_pep_by, dat_dir, set_idx, injn_idx, TMT_plex, 
+                       rm_allna = FALSE) {
   
   stopifnot("prot_acc" %in% names(df))
 
@@ -3243,8 +3232,18 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
                              injn_idx = injn_idx)
   
   if (TMT_plex > 0) {
-    df <- df[rowSums(!is.na(df[, grepl("^N_log2_R[0-9]{3}", names(df)), 
-                               drop = FALSE])) > 0, ]
+    df <- df %>% 
+      { if (rm_allna) 
+        dplyr::filter(., rowSums(!is.na(.[grepl("^N_log2_R[0-9]{3}", names(.))])) > 0) 
+        else 
+          . }
+
+    if (nrow(df) == 0) {
+      stop("Fields 'N_log2_R' are all NA at TMT_plex = ", TMT_plex, ".\n", 
+           "Is this an error-tolerant search without intensity/ratio values in the psm table?", 
+           "May consider replacing 'NA' with '1' to proceed.", 
+           call. = FALSE)
+    }
   } 
   
   df <- df %>%
@@ -3467,7 +3466,7 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 psm_to_pep <- function (file, dat_dir, label_scheme_full, 
                         group_psm_by, group_pep_by, method_psm_pep, 
-                        ...) {
+                        rm_allna = FALSE, ...) {
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
@@ -3499,7 +3498,7 @@ psm_to_pep <- function (file, dat_dir, label_scheme_full,
   } else {
     df <- df %>% 
         calcPeptide(group_psm_by, method_psm_pep, group_pep_by, dat_dir, 
-                    set_idx, injn_idx, TMT_plex)
+                    set_idx, injn_idx, TMT_plex, rm_allna)
   }
   
   df <- dplyr::bind_cols(
@@ -3540,7 +3539,7 @@ psm_to_pep <- function (file, dat_dir, label_scheme_full,
 #'  LFQ) ions at the \code{PSMs} levels will be the weight when summarizing
 #'  \code{log2FC} with various \code{"top_n"} statistics or
 #'  \code{"weighted_mean"}.
-#'@inheritParams splitPSM
+#'@inheritParams normPSM
 #'@param ... \code{filter_}: Variable argument statements for the filtration of
 #'  data rows. See also \code{\link{normPSM}}.
 #'@seealso 
@@ -3612,8 +3611,8 @@ psm_to_pep <- function (file, dat_dir, label_scheme_full,
 PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3_mean", 
                                         "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", 
                                         "lfq_all"), 
-                     parallel = TRUE, ...) {
-  
+                    rm_allna = FALSE, parallel = TRUE, ...) {
+
   dat_dir <- get_gl_dat_dir()
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -3660,6 +3659,8 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
                                   "lfq_all"), 
             length(method_psm_pep) == 1)
   
+  stopifnot(vapply(c(rm_allna, parallel), rlang::is_logical, logical(1)))
+  
   dir.create(file.path(dat_dir, "Peptide/cache"), 
              recursive = TRUE, showWarnings = FALSE)
   
@@ -3686,14 +3687,14 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
     suppressWarnings(
       silent_out <- parallel::clusterApply(
         cl, filelist, psm_to_pep, dat_dir, label_scheme_full, 
-        group_psm_by, group_pep_by, method_psm_pep, ...)
+        group_psm_by, group_pep_by, method_psm_pep, rm_allna, ...)
     )
     
     parallel::stopCluster(cl)
   } else {
     purrr::walk(as.list(filelist), psm_to_pep, 
                 dat_dir, label_scheme_full, 
-                group_psm_by, group_pep_by, method_psm_pep, ...)
+                group_psm_by, group_pep_by, method_psm_pep, rm_allna, ...)
   }
 }
 
@@ -4488,7 +4489,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         fasta = NULL, entrez = NULL, 
                         pep_unique_by = "group", 
                         scale_rptr_int = FALSE, corrected_int = TRUE, 
-                        rm_craps = FALSE, rm_krts = FALSE, 
+                        rm_craps = FALSE, rm_krts = FALSE, rm_allna = FALSE, 
                         rm_reverses = TRUE, purge_phosphodata = TRUE, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
                         rptr_intco = 0, rptr_intrange = c(0, 100), 
@@ -4941,17 +4942,6 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     { if (!("prot_cover" %in% names(.) && length(filelist) == 1)) 
       calc_cover(., id = !!rlang::sym(group_pep_by)) else . } %>% 
     dplyr::select(-which(names(.) %in% c("Length", "Missed cleavages", "Missed Clevages"))) 
-
-  # (3) data processing
-  proc_psms(df = df, 
-            scale_rptr_int = scale_rptr_int, 
-            rptr_intco = rptr_intco, 
-            rptr_intrange = rptr_intrange, 
-            rm_craps = rm_craps, 
-            rm_krts = rm_krts, 
-            annot_kinases = annot_kinases, 
-            plot_rptr_int = plot_rptr_int, 
-            parallel = parallel)
 }
 
 
@@ -5230,7 +5220,8 @@ add_sm_pepseqmod <- function(df, use_lowercase_aa) {
 splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
                         fasta = NULL, entrez = NULL, pep_unique_by = "group", 
                         scale_rptr_int = FALSE, 
-                        rm_craps = FALSE, rm_krts = FALSE, purge_phosphodata = TRUE, 
+                        rm_craps = FALSE, rm_krts = FALSE, rm_allna = FALSE, 
+                        purge_phosphodata = TRUE, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
                         rptr_intco = 0, rptr_intrange = c(0, 100), 
                         use_lowercase_aa = TRUE, parallel = TRUE, ...) {
@@ -5422,17 +5413,6 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     add_prot_icover() %>% 
     { if (!("prot_cover" %in% names(.) && length(filelist) == 1)) 
       calc_cover(., id = !!rlang::sym(group_pep_by)) else . }
-
-  # (3) data processing
-  proc_psms(df = df, 
-            scale_rptr_int = scale_rptr_int, 
-            rptr_intco = rptr_intco, 
-            rptr_intrange = rptr_intrange, 
-            rm_craps = rm_craps, 
-            rm_krts = rm_krts, 
-            annot_kinases = annot_kinases, 
-            plot_rptr_int = plot_rptr_int, 
-            parallel = parallel)
 }
 
 
@@ -5606,7 +5586,7 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         fasta = NULL, entrez = NULL, 
                         pep_unique_by = "group", 
                         scale_rptr_int = FALSE, 
-                        rm_craps = FALSE, rm_krts = FALSE,
+                        rm_craps = FALSE, rm_krts = FALSE, rm_allna = FALSE, 
                         purge_phosphodata = TRUE, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
                         rptr_intco = 0, rptr_intrange = c(0, 100), 
@@ -5829,17 +5809,6 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # placeholder: no yet localization probability 
   # ...
-
-  # (3) data processing
-  proc_psms(df = df, 
-            scale_rptr_int = scale_rptr_int, 
-            rptr_intco = rptr_intco, 
-            rptr_intrange = rptr_intrange, 
-            rm_craps = rm_craps, 
-            rm_krts = rm_krts, 
-            annot_kinases = annot_kinases, 
-            plot_rptr_int = plot_rptr_int, 
-            parallel = parallel)
 }
 
 

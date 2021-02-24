@@ -43,8 +43,8 @@ of \code{id} in the \code{call}.}
 
 \item{type}{Character string; the type of data.}
 
-\item{adjSD}{Not currently used. If TRUE, adjust the standard
-deviation in relative to the width of ratio profiles.}
+\item{adjSD}{Not currently used. If TRUE, adjust the standard deviation in
+relative to the width of ratio profiles.}
 
 \item{is_psm}{Logical; indicator if the data belong to a PSM table .}
 

@@ -4,7 +4,15 @@
 \alias{prepDM}
 \title{Prepares data for analysis}
 \usage{
-prepDM(df, id, scale_log2r, sub_grp, type = "ratio", anal_type)
+prepDM(
+  df,
+  id,
+  scale_log2r,
+  sub_grp,
+  type = "ratio",
+  anal_type,
+  rm_allna = FALSE
+)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -33,6 +41,10 @@ method dispatch in function factories. The value will be determined
 automatically. Exemplary values include \code{anal_type = c("PCA",
 "Corrplot", "EucDist", "GSPA", "Heatmap", "Histogram", "MDS", "Model",
 "NMF", "Purge", "Trend", "LDA", ...)}.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 }
 \value{
 A data frame tailored for subsequent analysis.

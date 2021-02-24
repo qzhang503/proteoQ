@@ -1,40 +1,45 @@
-#' Update data groups of `log2_R` etc. by logical matrix `lgl_log2_sd`
-#' 
+#' Update data groups of `log2_R_` and `I_` etc. by logical matrix
+#' `lgl_log2_...`.
+#'
 #' @inheritParams info_anal
-sd_lgl_cleanup <- function (df) {
+#' @param type Type of logical matrix.
+lgl_cleanup <- function (df, type = "sd", rm_allna = FALSE) {
+  fields <- paste0("^lgl_log2_", type, "[0-9]{3}[NC]{0,1}")
+  
   df[, grepl("^log2_R[0-9]{3}", names(df))] <-
     purrr::map2(as.list(df[, grepl("^log2_R[0-9]{3}", names(df))]),
-                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+                as.list(df[, grepl(fields, names(df))]), `*`) %>%
     dplyr::bind_cols()
   
   df[, grepl("^N_log2_R[0-9]{3}", names(df))] <-
     purrr::map2(as.list(df[, grepl("^N_log2_R[0-9]{3}", names(df))]),
-                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+                as.list(df[, grepl(fields, names(df))]), `*`) %>%
     dplyr::bind_cols()
   
   df[, grepl("^Z_log2_R[0-9]{3}", names(df))] <-
     purrr::map2(as.list(df[, grepl("^Z_log2_R[0-9]{3}", names(df))]),
-                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+                as.list(df[, grepl(fields, names(df))]), `*`) %>%
     dplyr::bind_cols()
   
   df[, grepl("^I[0-9]{3}", names(df))] <-
     purrr::map2(as.list(df[, grepl("^I[0-9]{3}", names(df))]),
-                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+                as.list(df[, grepl(fields, names(df))]), `*`) %>%
     dplyr::bind_cols()
   
   df[, grepl("^N_I[0-9]{3}", names(df))] <-
     purrr::map2(as.list(df[, grepl("^N_I[0-9]{3}", names(df))]),
-                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+                as.list(df[, grepl(fields, names(df))]), `*`) %>%
     dplyr::bind_cols()
   
   df[, grepl("^sd_log2_R[0-9]{3}", names(df))] <-
     purrr::map2(as.list(df[, grepl("^sd_log2_R[0-9]{3}", names(df))]),
-                as.list(df[, grepl("^lgl_log2_sd[0-9]{3}", names(df))]), `*`) %>%
+                as.list(df[, grepl(fields, names(df))]), `*`) %>%
     dplyr::bind_cols()
   
   df <- df %>% 
-    dplyr::select(-grep("^lgl_log2_sd", names(.))) %>% 
-    dplyr::filter(rowSums(!is.na(.[, grep("^log2_R[0-9]{3}", names(.) )])) > 0)
+    dplyr::select(-grep(fields, names(.))) %>% 
+    { if (rm_allna) .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+      else .} 
 }
 
 
@@ -51,12 +56,16 @@ sd_lgl_cleanup <- function (df) {
 #'   CV.
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
+purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE) {
+  if ((!keep_ohw) && is.null(max_cv)) {
+    max_cv <- 100
+  }
+  
   if (!is.null(max_cv)) {
     stopifnot(is.numeric(max_cv))
 
     df_sd_lgl <- df %>% 
-      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.)))
+      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.)))
     
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       # remove duplicated PSMs under the same id
@@ -65,29 +74,31 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
     } else if (id %in% c("prot_acc", "gene")) {
       # no duplicated id, but protein `sd` under each channel can be 
       #   a mix of non-NA (one value) and NA
-      # this is due to the `wide` joinining of data when forming `Peptide.txt`
+      # this is due to the `wide` joining of data when forming `Peptide.txt`
       df_sd_lgl <- df_sd_lgl %>% 
         dplyr::group_by(!!rlang::sym(id)) %>% 
         dplyr::summarise_all(~ dplyr::first(na.omit(.x)))
     }
     
+    # SD is NA <=> single PSM
+    # remove later
     if (keep_ohw) {
       df_sd_lgl <- df_sd_lgl %>% 
-        dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), 
+        dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
                          ~ replace(.x, is.na(.x), -1E-3))
     }
     
     df_sd_lgl <- df_sd_lgl %>% 
-      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), 
+      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
                        ~ replace(.x, .x > max_cv, NA)) %>% 
-      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), 
+      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
                        ~ replace(.x, !is.na(.x), 1)) %>% 
       `names<-`(gsub("^sd_log2_R", "lgl_log2_sd", names(.)))
 
     df <- df %>% 
       dplyr::arrange(!!rlang::sym(id)) %>% 
       dplyr::left_join(df_sd_lgl, by = id) %>% 
-      sd_lgl_cleanup()
+      lgl_cleanup(rm_allna = rm_allna)
   }
   
   return(df)
@@ -103,16 +114,21 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE) {
 #' @inheritParams purgePSM
 #' @param pt_cv Numeric between 0 and 1; the percentile of CV. Values above the
 #'   percentile threshold will be replaced with NA. The default is NULL with no
-#'   data trimming by CV percentile.
+#'   data trimming by CV percentile. The precedence in data purging is
+#'   \code{pt_cv} \eqn{\ge} \code{max_v} \eqn{\ge} \code{min_n}.
 #' @import dplyr purrr
-#' @importFrom magrittr %>% %T>% %$% %<>% 
-purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
+#' @importFrom magrittr %>% %T>% %$% %<>%
+purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE) {
+  if ((!keep_ohw) && is.null(pt_cv)) {
+    pt_cv <- 100
+  }
+  
   if (!is.null(pt_cv)) {
     stopifnot(is.numeric(pt_cv))
     if (pt_cv > 1) pt_cv <- pt_cv / 100
     
     df_sd_lgl <- df %>% 
-      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.)))
+      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.)))
     
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       df_sd_lgl <- df_sd_lgl %>% 
@@ -124,17 +140,19 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
     }
     
     qts <- df_sd_lgl %>% 
-      .[, grepl("^sd_log2_R[0-9]{3}", names(.))] %>% 
+      .[, grepl("^sd_log2_R[0-9]{3}{0,1}", names(.))] %>% 
       purrr::map_dbl(~ quantile(.x, probs = pt_cv, na.rm = TRUE))
     
+    # SD is NA <-> single PSM
+    # remove later
     if (keep_ohw) {
       df_sd_lgl <- df_sd_lgl %>% 
-        dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), 
+        dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
                          ~ replace(.x, is.na(.x), -1E-3))
     }
     
-    df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]*", names(df_sd_lgl))] <- 
-      purrr::map2(as.list(df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]*", 
+    df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]{0,1}", names(df_sd_lgl))] <- 
+      purrr::map2(as.list(df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]{0,1}", 
                                             names(df_sd_lgl))]), 
                   as.list(qts), ~ {
                     .x[.x > .y] <- NA
@@ -143,14 +161,14 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
       dplyr::bind_cols()
     
     df_sd_lgl <- df_sd_lgl %>% 
-      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]*", names(.))), 
+      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
                        ~ replace(.x, !is.na(.x), 1)) %>% 
       `names<-`(gsub("^sd_log2_R", "lgl_log2_sd", names(.)))
     
     df <- df %>% 
       dplyr::arrange(!!rlang::sym(id)) %>% 
       dplyr::left_join(df_sd_lgl, by = id) %>% 
-      sd_lgl_cleanup()
+      lgl_cleanup(rm_allna = rm_allna)
   }
   
   return(df)
@@ -160,7 +178,7 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
 #' Filter data groups by a minimal number of observations (n_obs)
 #'
 #' \code{purge_by_n} replaces the data entries at \code{group n_obs < min_n} to
-#' NA. 
+#' NA.
 #'
 #' @inheritParams prnHist
 #' @inheritParams info_anal
@@ -168,21 +186,36 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE) {
 #'   entries in PSM tables with the number of identifying PSMs smaller than
 #'   \code{min_n} will be replaced with NA. When calling from \code{purgePep},
 #'   protein entries in peptide tables with the number of identifying peptides
-#'   smaller than \code{min_n} will be replaced with NA.
+#'   smaller than \code{min_n} will be replaced with NA. 
 #' @import dplyr purrr
-#' @importFrom magrittr %>% %T>% %$% %<>% 
-purge_by_n <- function (df, id, min_n) {
-  kept <- df %>%
-    dplyr::select(!!rlang::sym(id)) %>%
-    dplyr::group_by(!!rlang::sym(id)) %>%
-    dplyr::summarise(n = n()) %>% 
-    dplyr::filter(n >= min_n) %>% 
-    dplyr::select(id) %>% 
-    unlist() %>% 
-    as.character()
+#' @importFrom magrittr %>% %T>% %$% %<>%
+purge_by_n <- function (df, id, min_n = 1, rm_allna = FALSE) {
+  stopifnot(is.numeric(min_n))
 
-  df %>% 
-    dplyr::filter(.[[id]] %in% kept) 
+  if (min_n == 1) return(df)
+  
+  df_lgl <- df %>% 
+    dplyr::select(id, grep("^log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
+    dplyr::group_by(!!rlang::sym(id)) %>% 
+    dplyr::summarise_all(~ sum(!is.na(.x))) %>% 
+    `names<-`(gsub("^log2_R", "lgl_log2_R", names(.)))
+  
+  df_lgl[, grepl("^lgl_log2_R[0-9]{3}[NC]{0,1}", names(df_lgl))] <- 
+    purrr::map(as.list(df_lgl[, grepl("^lgl_log2_R[0-9]{3}[NC]{0,1}", names(df_lgl))]), 
+               ~ {
+                 .x[.x < min_n] <- NA
+                 return(.x)
+               }, min_n) %>% 
+    dplyr::bind_cols() %>% 
+    dplyr::mutate_at(vars(grep("^lgl_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
+                     ~ replace(.x, !is.na(.x), 1))
+  
+  df <- df %>% 
+    dplyr::arrange(!!rlang::sym(id)) %>% 
+    dplyr::left_join(df_lgl, by = id) %>% 
+    lgl_cleanup(type = "R", rm_allna = rm_allna)
+
+  invisible(df)
 }
 
 
@@ -195,7 +228,7 @@ purge_by_n <- function (df, id, min_n) {
 #' @inheritParams annotPSM
 #' @inheritParams prnHist
 psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by, 
-                        pt_cv, max_cv, keep_ohw, 
+                        pt_cv, max_cv, keep_ohw, min_n, rm_allna = FALSE, 
                         theme, ...) {
   dots <- rlang::enexprs(...)
 
@@ -203,44 +236,44 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
 
   df <- read.csv(file.path(dat_dir, "PSM", file), check.names = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
-    purge_by_qt(group_psm_by, pt_cv, keep_ohw) %>% 
-    purge_by_cv(group_psm_by, max_cv, keep_ohw) %>% 
-    dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
+    purge_by_qt(group_psm_by, pt_cv, keep_ohw, min_n, rm_allna) %>% 
+    purge_by_cv(group_psm_by, max_cv, keep_ohw, min_n, rm_allna) %>% 
+    purge_by_n(group_psm_by, min_n, rm_allna) %>% 
+    { if (rm_allna) .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+      else . }
+
+  # update
+  pep_n_psm <- df %>%
+    dplyr::select(!!rlang::sym(group_psm_by)) %>%
+    dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+    dplyr::summarise(pep_n_psm = n())
   
-  cdns_changed <- any(!is.null(pt_cv), !is.null(max_cv))
+  prot_n_psm <- df %>%
+    dplyr::select(!!rlang::sym(group_pep_by)) %>%
+    dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+    dplyr::summarise(prot_n_psm = n())
   
-  if (cdns_changed) {
-    pep_n_psm <- df %>%
-      dplyr::select(!!rlang::sym(group_psm_by)) %>%
-      dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
-      dplyr::summarise(pep_n_psm = n())
-    
-    prot_n_psm <- df %>%
-      dplyr::select(!!rlang::sym(group_pep_by)) %>%
-      dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-      dplyr::summarise(prot_n_psm = n())
-    
-    prot_n_pep <- df %>%
-      dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
-      dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
-      dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-      dplyr::summarise(prot_n_pep = n())
-    
-    df <- df %>% 
-      dplyr::left_join(pep_n_psm, by = group_psm_by) %>% 
-      dplyr::mutate(pep_n_psm.x = pep_n_psm.y) %>% 
-      dplyr::rename("pep_n_psm" = "pep_n_psm.x") %>% 
-      dplyr::select(-pep_n_psm.y)
-    
-    df <- list(df, prot_n_psm, prot_n_pep) %>%
-      purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
-      dplyr::mutate(prot_n_psm.x = prot_n_psm.y, prot_n_pep.x = prot_n_pep.y) %>% 
-      dplyr::rename(prot_n_psm = prot_n_psm.x, prot_n_pep = prot_n_pep.x) %>% 
-      dplyr::select(-prot_n_psm.y, -prot_n_pep.y) %T>% 
-      write.table(file.path(dat_dir, "PSM", file), sep = "\t", 
-                  col.names = TRUE, row.names = FALSE)      
-  }
+  prot_n_pep <- df %>%
+    dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+    dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
+    dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+    dplyr::summarise(prot_n_pep = n())
   
+  df <- df %>% 
+    dplyr::left_join(pep_n_psm, by = group_psm_by) %>% 
+    dplyr::mutate(pep_n_psm.x = pep_n_psm.y) %>% 
+    dplyr::rename("pep_n_psm" = "pep_n_psm.x") %>% 
+    dplyr::select(-pep_n_psm.y)
+  
+  df <- list(df, prot_n_psm, prot_n_pep) %>%
+    purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
+    dplyr::mutate(prot_n_psm.x = prot_n_psm.y, prot_n_pep.x = prot_n_pep.y) %>% 
+    dplyr::rename(prot_n_psm = prot_n_psm.x, prot_n_pep = prot_n_pep.x) %>% 
+    dplyr::select(-prot_n_psm.y, -prot_n_pep.y) %T>% 
+    write.table(file.path(dat_dir, "PSM", file), sep = "\t", 
+                col.names = TRUE, row.names = FALSE)
+
+  # plot
   width <- eval(dots$width, envir = rlang::caller_env())
   height <- eval(dots$height, envir = rlang::caller_env())
   
@@ -259,8 +292,8 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
 
 #'Purge PSM data
 #'
-#'\code{purgePSM} removes \code{peptide} entries from PSM tables by selection
-#'criteria. It further plots the distributions of \code{log2FC} by TMT
+#'\code{purgePSM} removes \code{peptide} entries from PSM tables by quality
+#'criteria. It further plots the distributions of the CV of \code{log2FC} by TMT
 #'experiments and LC/MS series. The utility will have no effect against LFQ data
 #'using MS1 peak area/intensity.
 #'
@@ -268,15 +301,19 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
 #'TMT experiment per series of LC/MS. Note that greater CV may be encountered
 #'for samples that are more different to reference material(s).
 #'
+#'Rows of with all NA values in \code{log2FC} will be removed as well.
+#'
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv
 #'@inheritParams purge_by_n
 #'@inheritParams purge_by_qt
 #'@inheritParams plot_prnTrend
-#'@param adjSD Not currently used. If TRUE, adjust the standard
-#'  deviation in relative to the width of ratio profiles.
+#'@param adjSD Not currently used. If TRUE, adjust the standard deviation in
+#'  relative to the width of ratio profiles.
 #'@param keep_ohw Logical; if TRUE, keep one-hit-wonders with unknown CV. The
-#'  default is TRUE.
+#'  default is TRUE. The argument is softly depreciated; instead use
+#'  \code{min_n}. Equivalency: \code{keep_ohw = TRUE <=> min_n == 1; keep_ohw =
+#'  FALSE <=> min_n == 2}.
 #'@param ... Additional parameters for plotting: \cr \code{ymax}, the maximum
 #'  \eqn{y} at a log2 scale. \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a
 #'  log2 scale. \cr \code{width}, the width of plot. \cr \code{height}, the
@@ -284,68 +321,72 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
 #'  \code{y} axis.
 #'@import dplyr ggplot2
 #'@importFrom rlang exprs expr
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@example inst/extdata/examples/purgePSM_.R
-#'@seealso 
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'  and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'  \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'  PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in
+#'  PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+#'  examples in peptide data merging \cr \code{\link{standPep}} for extended
+#'  examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+#'  extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'  in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'  extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+#'  and \code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
+#'  \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'  \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings
+#'  \cr
+#'
+#'  \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'  missing value imputation \cr
+#'
+#'  \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'  significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'  volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'  analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'  GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'  and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'  set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'  online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'  visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'  visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'  visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'  visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr \code{\link{anal_prnTrend}} and
+#'  \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'  \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'  \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+#'
+#'  \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'  UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'  among RefSeq accessions, gene names and Entrez IDs \cr \code{\link{prepGO}}
+#'  for
+#'  \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'   ontology}} \cr \code{\link{prepMSig}} for
+#'  \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'   signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}}
+#'  for STRING-DB \cr
+#'
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr
 #'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@export
 purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, 
-                      keep_ohw = TRUE, theme= NULL, ...) {
+                      keep_ohw = TRUE, min_n = 1, rm_allna = FALSE, 
+                      theme= NULL, ...) {
   on.exit(
     mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
       c(rlang::enexprs(...)) %>% 
@@ -389,6 +430,12 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     length(keep_ohw) == 1
   )
   
+  if (!keep_ohw) {
+    warning("`keep_ohw` softly depreciated; \n", 
+            "use `min_n` to specify a minimal count of psms.", 
+            call. = FALSE)
+  }
+  
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   TMT_plex <- TMT_plex(label_scheme_full)
   
@@ -405,7 +452,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
              recursive = TRUE, showWarnings = FALSE)
   
   purrr::walk(filelist, psm_mpurge, 
-              dat_dir, group_psm_by, group_pep_by, pt_cv, max_cv, keep_ohw, 
+              dat_dir, group_psm_by, group_pep_by, pt_cv, max_cv, keep_ohw, min_n, rm_allna, 
               theme, !!!dots)
 }
 
@@ -413,15 +460,18 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'Purge peptide data
 #'
 #'\code{purgePep} removes \code{protein} entries from \code{Peptide.txt} by
-#'selection criteria. It further plots the distributions of \code{log2FC}.
+#'quality criteria. It further plots the distributions of the CV of
+#'\code{log2FC}.
 #'
 #'The CV of proteins under each sample are first calculated from contributing
 #'peptides. In the event of multiple series of LC/MS injections, the CV of the
 #'same protein from different LC/MS will be summarized by median statistics.
 #'
 #'The data nullification will be applied column-wisely for all available
-#'samples. Argument \code{col_select} is merely used to subsetting samples for
-#'the visualization of \code{log2FC} distributions.
+#'samples. Argument \code{col_select} is merely used to subset samples for the
+#'visualization of \code{log2FC} distributions.
+#'
+#'Rows of with all NA values in \code{log2FC} will be removed too.
 #'
 #'@inheritParams purgePSM
 #'@inheritParams prnHist
@@ -432,68 +482,70 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'@inheritParams plot_prnTrend
 #'@import dplyr ggplot2
 #'@importFrom rlang exprs expr
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@example inst/extdata/examples/purgePep_.R
-#'@seealso 
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
-#'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
-#'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
-#'  
+#'\emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in PSM
+#'to peptide summarization \cr \code{\link{mergePep}} for extended examples in
+#'peptide data merging \cr \code{\link{standPep}} for extended examples in
+#'peptide data normalization \cr \code{\link{Pep2Prn}} for extended examples in
+#'peptide to protein summarization \cr \code{\link{standPrn}} for extended
+#'examples in protein data normalization. \cr \code{\link{purgePSM}} and
+#'\code{\link{purgePep}} for extended examples in data purging \cr
+#'\code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in
+#'histogram visualization. \cr \code{\link{extract_raws}} and
+#'\code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
+#'\emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'\code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'\code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'\code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'\code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+#'
+#'\emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'missing value imputation \cr
+#'
+#'\emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'\code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for correlation
+#'plots \cr \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for
+#'trend analysis and visualization \cr \code{\link{anal_pepNMF}},
+#'\code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
+#'\code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}},
+#'\code{\link{plot_prnNMFCoef}} and \code{\link{plot_metaNMF}} for NMF analysis
+#'and visualization \cr
+#'
+#'\emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'among RefSeq accessions, gene names and Entrez IDs \cr \code{\link{prepGO}}
+#'for
+#'\code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'ontology}} \cr \code{\link{prepMSig}} for
+#'\href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}} for
+#'STRING-DB \cr
+#'
+#'\emph{Column keys in PSM, peptide and protein outputs} \cr
+#'system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
+#'system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
+#'system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
+#'
 #'@export
 purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, 
-                      adjSD = FALSE, keep_ohw = TRUE, 
+                      adjSD = FALSE, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE, 
                       col_select = NULL, col_order = NULL, 
                       filename = NULL, theme= NULL, ...) {
   on.exit(
@@ -552,6 +604,12 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
     length(keep_ohw) == 1
   )
 
+  if (!keep_ohw) {
+    warning("`keep_ohw` softly depreciated; \n", 
+            "use `min_n` to specify a minimal count of peptides.", 
+            call. = FALSE)
+  }
+  
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
 
   dir.create(file.path(dat_dir, "Peptide/Copy"), 
@@ -562,44 +620,44 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   fn <- file.path(dat_dir, "Peptide", "Peptide.txt")
   df <- read.csv(fn, check.names = FALSE, header = TRUE, 
                  sep = "\t", comment.char = "#") %>% 
-    purge_by_qt(group_pep_by, pt_cv, keep_ohw) %>% 
-    purge_by_cv(group_pep_by, max_cv, keep_ohw) %>% 
-    dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) 
+    purge_by_qt(group_pep_by, pt_cv, keep_ohw, min_n, rm_allna) %>% 
+    purge_by_cv(group_pep_by, max_cv, keep_ohw, min_n, rm_allna) %>% 
+    purge_by_n(group_pep_by, min_n, rm_allna) %>% 
+    { if (rm_allna) .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+      else . }
 
-  cdns_changed <- any(!is.null(pt_cv), !is.null(max_cv))
+  # update
+  pep_n_psm <- df %>%
+    dplyr::select(!!rlang::sym(group_psm_by), pep_n_psm) %>%
+    dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+    dplyr::summarise(pep_n_psm = sum(pep_n_psm)) %>% 
+    dplyr::arrange(!!rlang::sym(group_psm_by))
   
-  if (cdns_changed) {
-    pep_n_psm <- df %>%
-      dplyr::select(!!rlang::sym(group_psm_by), pep_n_psm) %>%
-      dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
-      dplyr::summarise(pep_n_psm = sum(pep_n_psm)) %>% 
-      dplyr::arrange(!!rlang::sym(group_psm_by))
-    
-    prot_n_psm <- df %>% 
-      dplyr::select(pep_n_psm, !!rlang::sym(group_pep_by)) %>% 
-      dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-      dplyr::summarise(prot_n_psm = sum(pep_n_psm))
-    
-    prot_n_pep <- df %>% 
-      dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>% 
-      dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
-      dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
-      dplyr::summarise(prot_n_pep = n())
+  prot_n_psm <- df %>% 
+    dplyr::select(pep_n_psm, !!rlang::sym(group_pep_by)) %>% 
+    dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+    dplyr::summarise(prot_n_psm = sum(pep_n_psm))
   
-    df <- df %>% 
-      dplyr::left_join(pep_n_psm, by = group_psm_by) %>% 
-      dplyr::mutate(pep_n_psm.x = pep_n_psm.y) %>% 
-      dplyr::rename("pep_n_psm" = "pep_n_psm.x") %>% 
-      dplyr::select(-pep_n_psm.y)
-    
-    df <- list(df, prot_n_psm, prot_n_pep) %>%
-      purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
-      dplyr::mutate(prot_n_psm.x = prot_n_psm.y, prot_n_pep.x = prot_n_pep.y) %>% 
-      dplyr::rename(prot_n_psm = prot_n_psm.x, prot_n_pep = prot_n_pep.x) %>% 
-      dplyr::select(-prot_n_psm.y, -prot_n_pep.y) %T>% 
-      write.table(fn, sep = "\t", col.names = TRUE, row.names = FALSE)    
-  }
+  prot_n_pep <- df %>% 
+    dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>% 
+    dplyr::filter(!duplicated(!!rlang::sym(group_psm_by))) %>% 
+    dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
+    dplyr::summarise(prot_n_pep = n())
+
+  df <- df %>% 
+    dplyr::left_join(pep_n_psm, by = group_psm_by) %>% 
+    dplyr::mutate(pep_n_psm.x = pep_n_psm.y) %>% 
+    dplyr::rename("pep_n_psm" = "pep_n_psm.x") %>% 
+    dplyr::select(-pep_n_psm.y)
   
+  df <- list(df, prot_n_psm, prot_n_pep) %>%
+    purrr::reduce(dplyr::left_join, by = group_pep_by) %>% 
+    dplyr::mutate(prot_n_psm.x = prot_n_psm.y, prot_n_pep.x = prot_n_pep.y) %>% 
+    dplyr::rename(prot_n_psm = prot_n_psm.x, prot_n_pep = prot_n_pep.x) %>% 
+    dplyr::select(-prot_n_psm.y, -prot_n_pep.y) %T>% 
+    write.table(fn, sep = "\t", col.names = TRUE, row.names = FALSE)
+
+  # plot
   width <- eval(dots$width, envir = rlang::caller_env())
   height <- eval(dots$height, envir = rlang::caller_env())
   
@@ -614,8 +672,5 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
                                          col_select = !!col_select, col_order = !!col_order, 
                                          theme = theme, !!!dots)
 }
-
-
-
 
 

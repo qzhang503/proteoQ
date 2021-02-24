@@ -12,6 +12,7 @@ annotPSM(
   expt_smry = "expt_smry.xlsx",
   plot_rptr_int = TRUE,
   plot_log2FC_cv = TRUE,
+  rm_allna = FALSE,
   ...
 )
 }

@@ -459,13 +459,15 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		}
 	} else if (anal_type == "Model") {
 	  function(method = "limma", padj_method = "BH", 
-	           var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), ...) {
+	           var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), 
+	           rm_allna = FALSE, ...) {
 	    sigTest(df = df,
 	            id = !!id,
 	            label_scheme_sub = label_scheme_sub,
 	            scale_log2r = scale_log2r,
 	            complete_cases = complete_cases,
 	            impute_na = impute_na,
+	            rm_allna = rm_allna, 
 	            filepath = filepath,
 	            filename = paste0(fn_prefix, ".", fn_suffix),
 	            method = !!method,

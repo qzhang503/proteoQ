@@ -112,6 +112,25 @@ if (!dontrun) {
 		filter_more_psms = exprs(pep_rank == 1),
 	)
 	
+	# results containing error tolerant (open) findings, if applicable
+	# (a. keep only error tolerant results)
+	normPSM(
+	  group_psm_by = pep_seq, 
+	  group_pep_by = gene, 
+	  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
+	            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
+	  filter_open_mods = exprs(grepl("X", pep_var_mod_pos)), 
+	)
+	
+	# (b. or exclude error tolerant results)
+	normPSM(
+	  group_psm_by = pep_seq, 
+	  group_pep_by = gene, 
+	  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
+	            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
+	  filter_open_mods = exprs(!grepl("X", pep_var_mod_pos)), 
+	)
+	
 	## MaxQuant (e.g. `PEP` is column key)
 	normPSM(
 	  ...,
@@ -740,16 +759,13 @@ plot_metaNMF(
 ### GSPA
 # analysis, protein
 prnGSPA(
-  impute_na = FALSE,
 	pval_cutoff = 5E-2, # protein pVal threshold
 	logFC_cutoff = log2(1.2), # protein log2FC threshold
 	gspval_cutoff = 5E-2, # gene-set threshold
-	gset_nms = c("go_sets", "kegg_sets"),
 )
 
 # volcano plot visualization, protein
 gspaMap(
-  impute_na = FALSE,
 	gspval_cutoff = 5E-2, # gene set threshold
 	gslogFC_cutoff = log2(1.2), # gene set log2FC threshold
 	show_sig = pVal, 
@@ -805,12 +821,10 @@ prnGSPAHM(
 
 ### GSVA
 prnGSVA(
-  impute_na = FALSE,
   min.sz = 10,
   verbose = FALSE,
   parallel.sz = 0,
   mx.diff = TRUE,
-  gset_nms = "go_sets",
 )
 
 ## DO NOT RUN
@@ -818,12 +832,10 @@ dontrun <- TRUE
 if (!dontrun) {
   # row filtration
   prnGSVA(
-    impute_na = FALSE,
     min.sz = 10,
     verbose = FALSE,
     parallel.sz = 0,
     mx.diff = TRUE,
-    gset_nms = c("go_sets", "kegg_sets"),
     filter_prots = exprs(prot_n_pep >= 3), 
   )
 }

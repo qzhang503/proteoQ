@@ -8,6 +8,7 @@ mergePep(
   plot_log2FC_cv = TRUE,
   use_duppeps = TRUE,
   cut_points = Inf,
+  rm_allna = FALSE,
   omit_single_lfq = TRUE,
   parallel = TRUE,
   ...
@@ -28,6 +29,10 @@ column \code{mean_lint} (mean log10 intensity) in the input data. The
 default is \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
 \code{log2FC} under each sample will be median-centered as one piece. See
 also \code{\link{prnHist}} for data binning in histogram visualization.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{omit_single_lfq}{Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
 with single measured values across all samples. The default is TRUE.}

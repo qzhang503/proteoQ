@@ -5,6 +5,8 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
+  github_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -13,8 +15,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  github_document:
-    toc: yes
   word_document:
     toc: yes
   md_document:
@@ -111,6 +111,12 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("qzhang503/proteoQ")
 ```
 
+or to use a daily version: 
+```{r daily, include = TRUE, eval = FALSE}
+devtools::install_github("qzhang503/proteoQ@QZ_20190930")
+```
+
+
 ## 1 Data normalization
 
 In this document, I (Qiang Zhang) first illustrate the following applications of proteoQ:
@@ -133,7 +139,7 @@ The data packages, proteoQDA, should have been made available through the proteo
 
 RefSeq databases of human and mouse were used in the MS/MS searches against the WHIM data sets. To properly annotate protein entries with proteoQ, we would need the fasta file(s) that were used in the database searches.[^3] In the example below, we copy over the corresponding fasta files from the proteoqDA to a database folder:
 
-[^3]: See <https://www.uniprot.org/proteomes/>
+[^3]: See <https://www.uniprot.org/proteomes/>.
 
 ```{r copy_fasta, include = TRUE, eval = FALSE}
 library(proteoQDA)
@@ -143,7 +149,7 @@ copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 
 #### 1.1.2 PSM data
 
-The data processing begins with PSM table(s) from Mascot, MaxQuant, MSFragger or Spectrum Mill with the following compilation in file names:
+The data processing begins with PSM table(s) from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/), [MaxQuant, MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/) or Spectrum Mill with the following compilation in file names:
 
 -   Mascot: begin with letter `F`, followed by digits and ends with `.csv`;
 -   MaxQuant: start with `msms` and end with `.txt`;
@@ -166,9 +172,7 @@ copy_msfragger_gtmt()
 copy_specmill_gtmt()
 ```
 
-To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:[^4]
-
-[^4]: See Appendix for specifications on the export of Mascot PSMs.
+To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:
 
 ```{r copy_global_mascot, include = TRUE, eval = FALSE}
 dat_dir <- "~/proteoQ/examples"
@@ -177,11 +181,11 @@ copy_mascot_gtmt(dat_dir)
 
 #### 1.1.3 Metadata
 
-The workflow involves an Excel template containing the metadata of multiplex experiments, including experiment numbers, TMT channels, LC/MS injection indices, sample IDs, reference channels, RAW MS data file names and additional fields from users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to LC/MS, a second Excel template will also be filled out to link multiple RAW MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`.[^5] Unless otherwise mentioned, we will assume these default file names throughout the document.
+The workflow involves an Excel template containing the metadata of multiplex experiments, including experiment numbers, TMT channels, LC/MS injection indexes, sample IDs, reference channels, RAW MS data file names and additional fields from users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to LC/MS, a second Excel template will also be filled out to link multiple RAW MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`.[^4] Unless otherwise mentioned, we will assume these default file names throughout the document.
 
-[^5]: To extract the names of RAW MS files under a \`raw_dir\` folder: \`extract_raws(raw_dir)\`. Very occasionally, there may be RAW MS files without PSM contributions. In this case, the file names will be shown as missing by the program and need to be removed from \`expt_smry.xlsx\` or \`frac_smry.xlsx\`. The function \`extract_psm_raws()\` was developed to extract the list of RAW files that are actually present in PSM files.
+[^4]: To extract the names of RAW MS files under a \`raw_dir\` folder: \`extract_raws(raw_dir)\`. Very occasionally, there may be RAW MS files without PSM contributions. In this case, the file names will be shown as missing by the program and need to be removed from \`expt_smry.xlsx\` or \`frac_smry.xlsx\`. The function \`extract_psm_raws()\` was developed to extract the list of RAW files that are actually present in PSM files.
 
-Columns in the expt_smry.xlsx are approximately divided into the following three tiers: (1) `essential`, (2) `optional default` and (3) `optional open`. We supply the required information of the TMT experiments under the essential columns. The optional default columns serve as the fields for convenient lookups in sample selection, grouping, ordering, aesthetics etc. For instance, the program will by default look for values under the `Color` column if no instruction was given in the color coding of a PCA plot. The optional open fields on the other hand allow us to define our own analysis and aesthetics. For instance, we may openly define multiple columns of contrasts at different levels of granularity for uses in statistical modelings. Description of the column keys can be found from the help document by entering `?proteoQ::load_expts` from a `R` console.
+Columns in the expt_smry.xlsx are approximately divided into the following three tiers: (1) `essential`, (2) `optional default` and (3) `optional open`. We supply the required information of the TMT experiments under the essential columns. The optional default columns serve as the fields for convenient lookups in sample selection, grouping, ordering, aesthetics etc. For instance, the program will by default look for values under the `Color` column if no instruction was given in the color coding of a PCA plot. The optional open fields on the other hand allow us to define our own analysis and aesthetics. For instance, we may openly define multiple columns of contrasts at different levels of granularity for uses in statistical modelings. For details, see the help via `?proteoQ::load_expts()`.  
 
 ```{r str_expt_smry, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 str_expt_smry <- "images/installation/three_tier_expt_smry.png"
@@ -234,9 +238,9 @@ normPSM(
 )
 ```
 
-At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence but different variable modifications will be grouped for analysis using descriptive statistics. In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively according to the unique combination of the primary sequences and the variable modifications of peptides. Analogously, `group_pep_by` specify the grouping of peptides by either protein accession names or gene names. The `fasta` argument points to the location of a copy of the RefSeq fasta files that were used in the corresponding MS/MS searches. Additional options include `rm_craps`, `rm_krts`, `annot_kinases` etc. More description of `normPSM` can be found by accessing its help document via `?normPSM`.
+At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence but different variable modifications will be grouped for analysis using descriptive statistics. In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively according to the unique combination of the primary sequences and the variable modifications of peptides. Analogously, `group_pep_by` specify the grouping of peptides by either protein accession names or gene names. The `fasta` argument points to the location of a copy of the RefSeq fasta files that were used in the corresponding MS/MS searches. More description of `normPSM` can be found by accessing its help document via `?normPSM`.
 
-Every time the `normPSM` module is executed, it will process the PSM data from the ground up. In other words, it has no memory on prior happenings. For instance, after inspecting graphically the intensity distributions of reporter ions at `plot_rptr_int = TRUE`, we may consider a more inclusive cut-off at `rptr_intco = 100`. The downward in `rptr_intco` is *not* going to cause information loss in the range of 100 to 1,000. This is trivia but worth mentioning here. As we will find out in following sections, utilities in peptide and protein normalization, `standPep` and `standPrn`, do pass information onto successive iterations and can lead to interesting features such as mixed-bed normalization of data etc.
+Every time the `normPSM` module is executed, it will process the PSM data from the ground up. In other words, it has no memory on prior happenings. For instance, after inspecting graphically the intensity distributions of reporter ions at `plot_rptr_int = TRUE`, we may reconsider a more inclusive cut-off at `rptr_intco = 100`. The downward in `rptr_intco` (from 1,000 to 100) is *not* going to cause information loss. In words, there is no data loss in the range of 100 to 1,000 in reporter-ion intensities. This is trivia but worth mentioning here. As we will find out in following sections, utilities in peptide and protein normalization, `standPep` and `standPrn`, do pass information onto successive iterations and can lead to interesting features such as mixed-bed normalization of data etc.
 
 #### 1.2.2 Outlier samples
 
@@ -281,7 +285,7 @@ normPSM(
 
 Direct assignments of logical conditions to arguments in `R` functions might be a little involved. To get around this, I took advantage of the facility of non-standard evaluation in `rlang` package in that the logical conditions are supplied within the round parenthesis after `exprs`. Next, the proteoQ program will obtain the expression(s) on the rhs of each vararg statement by performing a bare evaluation using `rlang::eval_bare`. Following that, a tidy evaluation by `rlang::eval_tidy` will be coupled to a local facility in proteoQ to do the real work of data filtrations ([see @hwickham2019advr, ch. 20]).
 
-The approach of data filtration taken by `normPSM` might at first looks strange; however, it allows me to perform data filtration in an integrated way. As mentioned in the beginning, a central theme of proteoQ is to reduce or avoid direct data manipulations but utilizes metadata to control both data columns and rows. With the self-containedness in data filtration (and data ordering later), I can readily recall and reproduce what I had done when revisiting the system after an extended peroid. Otherwise, I would likely need *ad hoc* operations by mouse clicks or writing ephemeral R scripts, and soon forget what I have done.
+The approach of data filtration taken by `normPSM` might at first looks strange; however, it allows me to perform data filtration in an integrated way. As mentioned in the beginning, one of the key themes of proteoQ is to reduce or avoid direct data manipulations but utilizes metadata to control both data columns and rows. With the self-containedness in data filtration (and data ordering later), I can readily recall and reproduce what I had done when revisiting the system after an extended period. Otherwise, I would likely need *ad hoc* operations by mouse clicks or writing ephemeral R scripts, and soon forget what I have done.
 
 Moreover, the build-in approach can serve as building blocks for more complex data processing. As shown in the help documents via `?standPep` and `?standPrn`, we can readily perform mixed-bed normalization by sample groups, against either full or partial data.
 
@@ -291,11 +295,11 @@ With `normPSM`, we can pretty much `filter_` data under any PSM columns we like.
 
 Let's first consider a different column `pep_len`. The values underneath are unique to both PSMs and peptides. As you might courteously agree, *its time has not yet come* in terms of tentative data filtration by peptide length. In other words, we can delay the filtration of peptide entries by their sequence lengths when we are actually working with peptide data. The summarization of PSMs to peptides is not going to change the number of amino acid residues in peptides. By contrast, the data under `pep_expect` are unique to PSMs, but not necessary to peptides. This is obvious in that each of the PSM events of the same peptide is likely to have its own confidence expectation in peptide identification. Therefore, if we were to filter data by their `pep_expect` values at a later stage of analysis, we would have lost the authentic information in `pep_expect` for peptides with multiple PSM identifications. More specifically, the values under `pep_expect` in peptide tables are the geometric-mean representation of PSM results (see also section 4).
 
-For this reason, I named the varargs `filter_psms_at` and `filter_psms_more` in the above `normPSM` examples. This allows me to readily recall that I was filtering data based on criteria that are specific to PSMs.
+For this reason, I named the varargs `filter_psms_at` and `filter_psms_more` in the above `normPSM` examples. This allows me to quickly grasp the action that I was filtering data based on criteria that are specific to PSMs.
 
 #### 1.2.6 Varargs and data files
 
-Vararg statements of `filter_` and `arrange_` are available in proteoQ for flexible filtration and ordering of data rows. To take advantage of the feature, we need to be aware of the column keys in input files. As indicated by their names, `filter_` and `filter2_` perform row filtration against column keys from a primary data file, `df`, and secondary data file(s), `df2`, respectively (`df` and `df2` defined [here](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)). The same correspondence is applicable for `arrange_` and `arrange2_` varargs.
+Vararg statements of `filter_` and `arrange_` are available in proteoQ for flexible filtration and ordering of data rows. In addition, there are `filter2_` and `arrange2_`. As indicated by their names, `filter_` and `filter2_` perform row filtration against column keys from a primary data file, `df`, and secondary data file(s), `df2`, respectively (`df` and `df2` defined [here](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)). The same correspondence is applicable for `arrange_` and `arrange2_` varargs.
 
 Users will typically employ either primary or secondary vararg statements, but not both. In the more extreme case of `gspaMap(...)`, it links `prnGSPA(...)` findings in `df2` to the significance p-values and abundance fold changes in `df` for volcano plot visualization by gene sets.
 
@@ -303,9 +307,11 @@ Users will typically employ either primary or secondary vararg statements, but n
 
 To finish our discussion of PSM processing, let us consider having one more bash in data cleanup. The corresponding utility is `purgePSM`. It performs data purging by the CV of peptides, measured from contributing PSMs within the same sample. Namely, quantitations that have yielded peptide CV greater than a user-supplied cut-off will be replaced with NA.
 
-The `purgePSM` utility reads files `/PSM/TMTset1_LCMSinj1_PSM_N.txt`, `TMTset1_LCMSinj2_PSM_N.txt` etc. from a preceding step of `normPSM`. To revert programmatically the changes made by `purgePSM`, we would need to start over with `normPSM`. Alternatively, we may make a temporary copy of these files for a probable undo.
+The `purgePSM` utility reads files `/PSM/TMTset1_LCMSinj1_PSM_N.txt` etc. from a preceding step of `normPSM` and updates the files accordingly.[^5] To revert programmatically the data nullification made by `purgePSM` (should there be any), we would need to start over with `normPSM`. Alternatively, we may make a temporary copy of these files for a probable undo.
 
-This process takes place sample (column)-wisely while holding the places for data points that have been nullified. It is different to the above row filtration processes by `filter_` in that there is no *row removals* with purging, not until all-NA rows are encountered.
+[^5]: The separation of `purgePSM` from `normPSM` is more administrative than technical: the purge operates against CV columns which are not originally present in the PSM tables from search engines.   
+
+This process takes place sample (column)-wisely while holding the places for data points that have been nullified. It is different to the above row filtration processes by `filter_` in that there is no *row removals* with purging.
 
 Earlier in section 1.2.1, we have set `plot_log2FC_cv = TRUE` by default when calling `normPSM`. This will plot the distributions of the CV of peptide log2FC. In the event of `plot_log2FC_cv = FALSE`, we can have a second chance in visualizing the distributions of peptide CV before any permanent data nullification:
 
@@ -640,7 +646,7 @@ purgePep (
 )
 ```
 
-*NB:* The above single-sample CVs of proteins are based on ascribing peptides, which thus do not inform the uncertainty in sample handling prior to the parting of protein entities, for example, the enzymatic breakdown of proteins in a typical MS-based proteomic workflow. On the other hand, the peptide log2FC have been previously summarized by the median statistics from contributing PSMs. Putting these two together, the CV by `purgePep` describes approximately the uncertainty in sample handling from the breakdown of proteins to the off-line fractionation of peptides.
+*NB:* The above single-sample CVs of proteins are based on ascribing peptides, which thus do not inform the uncertainty in sample handling prior to the parting of protein entities, for example, the enzymatic breakdown of proteins in a typical MS-based proteomic workflow. On the other hand, the peptide log2FC have been previously summarized by the median statistics from contributing PSMs. Putting these two together, the CV by `purgePep` describes approximately the uncertainty in sample handling from the breakdown of proteins to the off-line fractionation of peptides. [see also @casella2002si ch. 7.3.3 for the technical details of conditional variance.]
 
 ### 1.4 Peptides to proteins
 
@@ -1186,7 +1192,7 @@ prnSig(
 )
 ```
 
-Contrast fits require the coefficients of members under each contrast being summed to zero (see the help of limma). Taking the above as an example, the coefficients are $+1$ and $-1$ for the two conditions in the contrast of "$<\mathbf{A}+\mathbf{B}>-\mathbf{C}$", and $+1/2$, $+1/2$ and $-1$ for the three conditions in "$(\mathbf{A}+\mathbf{B})/2-\mathbf{C}$". Moreover, we need to be aware of the difference between `prnSig(fml = ~ Term["A - C"]` and `prnSig(fml = ~ Term["A - C", "B - C"]` for the same pair of contrast "$\mathbf{A}-\mathbf{C}$". The sample spaces are defined by groups $\{\mathbf{A, C}\}$ in the former and $\{\mathbf{A, B, C}\}$ in the latter. Such difference might affect the underlying *sample variance* and subsequently p-values [see also @casella2002si ch 11 for technical details].
+Contrast fits require the coefficients of members under each contrast being summed to zero (see the help of limma). Taking the above as an example, the coefficients are $+1$ and $-1$ for the two conditions in the contrast of "$<\mathbf{A}+\mathbf{B}>-\mathbf{C}$", and $+1/2$, $+1/2$ and $-1$ for the three conditions in "$(\mathbf{A}+\mathbf{B})/2-\mathbf{C}$". Moreover, we need to be aware of the difference between `prnSig(fml = ~ Term["A - C"]` and `prnSig(fml = ~ Term["A - C", "B - C"]` for the same pair of contrast "$\mathbf{A}-\mathbf{C}$". The sample spaces are defined by groups $\{\mathbf{A, C}\}$ in the former and $\{\mathbf{A, B, C}\}$ in the latter. Such difference might affect the underlying *sample variance* and subsequently p-values [see also @casella2002si ch. 11 for technical details].
 
 In addition to the fixed effects shown above, significance tests with additive random effects are also supported. More examples can be found via `?prnSig` and [Lab 3.3](###%203.3%20Random%20effects) in the document.
 
@@ -1729,7 +1735,7 @@ img_pep_ref_w2 <- "images/peptide/histogram/peptide_refw2.png"
 knitr::include_graphics(c(img_pep_ref_w2))
 ```
 
-We may alternatively seek a "center-of-mass" representation for uses as references where each sample may be regarded as a weighted particle in the center construction [see @casella2002si ch 5.2 & ch 11.3.5 for some quantitative descriptions about data centers]. We select one `WHIM2` and one `WHIM16` from each 10-plex TMT. The proteoQ tool will average the signals from designated references. Therefore, the derived reference can be viewed as a mid point of the `WHIM2` and the `WHIM16` proteomes.
+We may alternatively seek a "center-of-mass" representation for uses as references where each sample may be regarded as a weighted particle in the center construction [see @casella2002si ch. 5.2 & ch 11.3.5 for some quantitative descriptions about data centers]. We select one `WHIM2` and one `WHIM16` from each 10-plex TMT. The proteoQ tool will average the signals from designated references. Therefore, the derived reference can be viewed as a mid point of the `WHIM2` and the `WHIM16` proteomes.
 
 We next perform analogously the data summary and histogram visualization.
 
@@ -2225,9 +2231,9 @@ Analogous to the peptide tables, the primary protein outputs with and without th
 
 ## 5 Appendix
 
-### 5.1 Mascot PSM exports
+### 5.1 PSM exports
 
-See notes [here](https://proteoq.netlify.app/post/exporting-mascot-psms).
+See notes for exporting PSMs from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms) or [MaxQuant/MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/).
 
 ### 5.2 Vararg table
 

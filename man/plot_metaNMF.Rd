@@ -106,7 +106,7 @@ library(NMF)
 anal_prnNMF(
   impute_na = FALSE,
   col_group = Group,
-  r = c(3:4),
+  rank = c(3:4),
   nrun = 20, 
 )
 
@@ -115,7 +115,7 @@ anal_prnNMF(
   impute_na = FALSE,
   col_group = Group,
   method = "lee",
-  r = c(3:4),
+  rank = c(3:4),
   nrun = 20, 
   filename = lee.txt,
 )
@@ -125,7 +125,7 @@ anal_prnNMF(
   impute_na = FALSE,
   col_select = BI,
   col_group = Group,
-  r = c(3:4),
+  rank = c(3:4),
   nrun = 20, 
   filter_prots = exprs(prot_n_pep >= 3),
   filename = bi_npep3.txt,
@@ -150,7 +150,7 @@ prnSig(impute_na = FALSE)
 anal_prnNMF(
   impute_na = FALSE,
   col_group = Group,
-  r = c(3:4),
+  rank = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
@@ -179,7 +179,7 @@ prnSig(impute_na = TRUE)
 anal_prnNMF(
   impute_na = TRUE,
   col_group = Group,
-  r = c(3:4),
+  rank = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
@@ -190,7 +190,7 @@ anal_prnNMF(
 anal_pepNMF(
   impute_na = TRUE,
   col_group = Group,
-  r = c(3:4),
+  rank = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 
@@ -199,7 +199,7 @@ anal_pepNMF(
 anal_pepNMF(
   impute_na = FALSE,
   col_group = Group,
-  r = c(3:4),
+  rank = c(3:4),
   nrun = 20, 
   filter_prots_by_npep = exprs(prot_n_pep >= 3), 
   filter_prots_by_pval = exprs(`W16_vs_W2.pVal (W16-W2)` <= 1e-6), 

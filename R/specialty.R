@@ -152,10 +152,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
       }
     }
 
-    
-    
-    
-    
+
     dat_id <- df$dat_file %>% unique()
     dat_file <- file.path(dat_dir, "PSM/cache", paste0(dat_id, "_header.txt"))
     stopifnot(length(dat_id)== 1, file.exists(dat_file))
@@ -277,8 +274,6 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
                        ~ ifelse(.x == -1, NA, .x)) %>%
       dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
                        ~ ifelse(.x <= rptr_intco, NA, .x)) %>%
-      # dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}", names(.))])) > 0) %>%
-      # dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}", names(.))])) > 0) %>%
       dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', .$pep_scan_title)) %>%
       dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% # Bruker
       dplyr::mutate(prot_acc = gsub("\\d::", "", .$prot_acc)) %>%

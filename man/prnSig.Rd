@@ -3,12 +3,13 @@
 \name{pepSig}
 \alias{pepSig}
 \alias{prnSig}
-\title{Significance tests of peptide \code{log2FC}}
+\title{Significance tests of peptide/protein log2FC}
 \usage{
 pepSig(
   scale_log2r = TRUE,
   impute_na = FALSE,
   complete_cases = FALSE,
+  rm_allna = FALSE,
   method = c("limma", "lm"),
   padj_method = "BH",
   var_cutoff = 0.001,
@@ -24,6 +25,7 @@ prnSig(
   scale_log2r = TRUE,
   impute_na = FALSE,
   complete_cases = FALSE,
+  rm_allna = FALSE,
   method = c("limma", "lm"),
   padj_method = "BH",
   var_cutoff = 0.001,
@@ -44,6 +46,10 @@ will be used. The default is FALSE.}
 
 \item{complete_cases}{Logical; if TRUE, only cases that are complete with no
 missing values will be used. The default is FALSE.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{method}{Character string; the method of linear modeling. The default is
 \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
@@ -82,32 +88,32 @@ determined automatically by the name of the calling function and the value
 of \code{id} in the \code{call}.}
 
 \item{filename}{A file name to output results. The default is
-\code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.}
+\code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for
+proteins.}
 
-\item{...}{User-defined formulas for linear modeling. The syntax starts with a
-tilde, followed by the name of an available column key in
+\item{...}{User-defined formulas for linear modeling. The syntax starts with
+a tilde, followed by the name of an available column key in
 \code{expt_smry.xlsx} and square brackets. The contrast groups are then
-quoted with one to multiple contrast groups separated by commas. The default
-column key is \code{Term} in `expt_smry.xlsx`: \cr \code{~ Term["A - C", "B
-- C"]}. \cr Additive random effects are indicated by \code{+ (1|col_key_1) +
-(1|col_key_2)}... Currently only a syntax of single contrast are supported
-for uses with random effects: \cr \code{~ Term["A - C"] + (1|col_key_1) +
-(1|col_key_2)} \cr \cr \code{filter_}: Logical expression(s) for the row
-filtration against data in a primary file of \code{Peptide[_impNA].txt} or
-\code{Protein[_impNA].txt}. See also \code{\link{normPSM}} for the format of
-\code{filter_} statements.}
+quoted with one to multiple contrast groups separated by commas. The
+default column key is \code{Term} in \code{expt_smry.xlsx}: \cr \code{~
+Term["A - C", "B - C"]}. \cr \cr Additive random effects are indicated by
+\code{+ (1|col_key_1) + (1|col_key_2)}... Currently only a syntax of single
+contrast are supported for uses with random effects: \cr \code{~ Term["A -
+C"] + (1|col_key_1) + (1|col_key_2)} \cr \cr \code{filter_}: Logical
+expression(s) for the row filtration against data in a primary file of
+\code{Peptide[_impNA].txt} or \code{Protein[_impNA].txt}. See also
+\code{\link{normPSM}} for the format of \code{filter_} statements.}
 }
 \value{
-The primary output is
- \code{.../Peptide/Model/Peptide_pVals.txt} for peptide data or
- \code{.../Protein/Model/Protein_pVals.txt} for protein data. At
- \code{impute_na = TRUE}, the corresponding outputs are
- \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
+The primary output is \code{.../Peptide/Model/Peptide_pVals.txt} for
+  peptide data or \code{.../Protein/Model/Protein_pVals.txt} for protein
+  data. At \code{impute_na = TRUE}, the corresponding outputs are
+  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 }
 \description{
-\code{pepSig} performs significance tests peptide \code{log2FC}.
+\code{pepSig} performs significance tests against peptide log2FC.
 
-\code{prnSig} performs significance tests protein \code{log2FC}.
+\code{prnSig} performs significance tests against protein log2FC.
 }
 \details{
 In general, special characters of \code{+} or \code{-} should be avoided from

@@ -13,6 +13,7 @@ splitPSM(
   scale_rptr_int = FALSE,
   rm_craps = FALSE,
   rm_krts = FALSE,
+  rm_allna = FALSE,
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,

@@ -407,7 +407,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 #' @import limma stringr purrr tidyr dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 sigTest <- function(df, id, label_scheme_sub, 
-                    scale_log2r, complete_cases, impute_na, 
+                    scale_log2r, complete_cases, impute_na, rm_allna, 
                     filepath, filename, 
 										method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
 										data_type, anal_type, ...) {
@@ -458,7 +458,8 @@ sigTest <- function(df, id, label_scheme_sub,
   	  prepDM(id = !!id, 
   	         scale_log2r = scale_log2r, 
   	         sub_grp = label_scheme_sub$Sample_ID, 
-  	         anal_type = anal_type) %>% 
+  	         anal_type = anal_type, 
+  	         rm_allna = rm_allna) %>% 
   	  .$log2R
   	
   	# `complete_cases` depends on lm contrasts
@@ -519,16 +520,16 @@ sigTest <- function(df, id, label_scheme_sub,
 }
 
 
-#'Significance tests of peptide \code{log2FC}
+#'Significance tests of peptide/protein log2FC
 #'
-#'\code{pepSig} performs significance tests peptide \code{log2FC}. 
+#'\code{pepSig} performs significance tests against peptide log2FC. 
 #'
 #'@rdname prnSig
 #'
 #'@import purrr
 #'@export
 pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
-                    method = c("limma", "lm"), padj_method = "BH", 
+                    rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit({
@@ -565,6 +566,12 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
             call. = FALSE)
   }
   
+  stopifnot(vapply(c(scale_log2r, impute_na, complete_cases, rm_allna), 
+                   rlang::is_logical, logical(1)))
+  
+  stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), 
+                   is.numeric, logical(1)))
+  
   info_anal(df = !!df, 
             df2 = NULL, 
             id = !!id, 
@@ -577,13 +584,15 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
                                  padj_method = padj_method, 
                                  var_cutoff = var_cutoff, 
                                  pval_cutoff = pval_cutoff, 
-                                 logFC_cutoff = logFC_cutoff, ...)
+                                 logFC_cutoff = logFC_cutoff, 
+                                 rm_allna = rm_allna, 
+                                 ...)
 }
 
 
-#'Significance tests
+#'Significance tests of peptide/protein log2FC.
 #'
-#'\code{prnSig} performs significance tests protein \code{log2FC}.
+#'\code{prnSig} performs significance tests against protein log2FC.
 #'
 #'In general, special characters of \code{+} or \code{-} should be avoided from
 #'contrast terms. Occasionally, such as in biological studies, it may be
@@ -598,47 +607,48 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
 #'Note that \code{<A + B>} stands for one sample and \code{(A + B)} has two
 #'samples in it.
 #'
-#'@inheritParams  prnHist
-#'@inheritParams  prnHM
-#'@param filename A file name to output results. The default is
-#'  \code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for proteins.
-#'@param method Character string; the method of linear modeling. The default is
-#'  \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
-#'  for models without random effects and the \code{\link[lmerTest]{lmer}} will
-#'  be used for models with random effects.
-#'@param padj_method Character string; the method of multiple-test corrections
-#'  for uses with \link[stats]{p.adjust}. The default is "BH". See
-#'  ?p.adjust.methods for additional choices.
-#'@param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
-#'  Entries with variances smaller than the threshold will be excluded from
-#'  linear modeling. The default is 1E-3.
-#'@param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
-#'  with \code{pVals} smaller than the threshold will be excluded from multiple
-#'  test corrections. The default is at \code{1} to include all entries.
-#'@param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
-#'  absolute \code{log2FC} smaller than the threshold will be removed from
-#'  multiple test corrections. The default is at \code{log2(1)} to include all
-#'  entries.
-#'@param ... User-defined formulas for linear modeling. The syntax starts with a
-#'  tilde, followed by the name of an available column key in
-#'  \code{expt_smry.xlsx} and square brackets. The contrast groups are then
-#'  quoted with one to multiple contrast groups separated by commas. The default
-#'  column key is \code{Term} in `expt_smry.xlsx`: \cr \code{~ Term["A - C", "B
-#'  - C"]}. \cr Additive random effects are indicated by \code{+ (1|col_key_1) +
-#'  (1|col_key_2)}... Currently only a syntax of single contrast are supported
-#'  for uses with random effects: \cr \code{~ Term["A - C"] + (1|col_key_1) +
-#'  (1|col_key_2)} \cr \cr \code{filter_}: Logical expression(s) for the row
-#'  filtration against data in a primary file of \code{Peptide[_impNA].txt} or
-#'  \code{Protein[_impNA].txt}. See also \code{\link{normPSM}} for the format of
-#'  \code{filter_} statements.
-#'@return The primary output is
-#'  \code{.../Peptide/Model/Peptide_pVals.txt} for peptide data or
-#'  \code{.../Protein/Model/Protein_pVals.txt} for protein data. At
-#'  \code{impute_na = TRUE}, the corresponding outputs are
-#'  \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
+#'@inheritParams prnHist
+#'@inheritParams prnHM
+#'@inheritParams normPSM
+#' @param filename A file name to output results. The default is
+#'   \code{Peptide_pVals.txt} for peptides and \code{Protein_pVals} for
+#'   proteins.
+#' @param method Character string; the method of linear modeling. The default is
+#'   \code{limma}. At \code{method = lm}, the \code{lm()} in base R will be used
+#'   for models without random effects and the \code{\link[lmerTest]{lmer}} will
+#'   be used for models with random effects.
+#' @param padj_method Character string; the method of multiple-test corrections
+#'   for uses with \link[stats]{p.adjust}. The default is "BH". See
+#'   ?p.adjust.methods for additional choices.
+#' @param var_cutoff Numeric; the cut-off in the variances of \code{log2FC}.
+#'   Entries with variances smaller than the threshold will be excluded from
+#'   linear modeling. The default is 1E-3.
+#' @param pval_cutoff Numeric; the cut-off in significance \code{pVal}. Entries
+#'   with \code{pVals} smaller than the threshold will be excluded from multiple
+#'   test corrections. The default is at \code{1} to include all entries.
+#' @param logFC_cutoff Numeric; the cut-off in \code{log2FC}. Entries with
+#'   absolute \code{log2FC} smaller than the threshold will be removed from
+#'   multiple test corrections. The default is at \code{log2(1)} to include all
+#'   entries.
+#' @param ... User-defined formulas for linear modeling. The syntax starts with
+#'   a tilde, followed by the name of an available column key in
+#'   \code{expt_smry.xlsx} and square brackets. The contrast groups are then
+#'   quoted with one to multiple contrast groups separated by commas. The
+#'   default column key is \code{Term} in \code{expt_smry.xlsx}: \cr \code{~
+#'   Term["A - C", "B - C"]}. \cr \cr Additive random effects are indicated by
+#'   \code{+ (1|col_key_1) + (1|col_key_2)}... Currently only a syntax of single
+#'   contrast are supported for uses with random effects: \cr \code{~ Term["A -
+#'   C"] + (1|col_key_1) + (1|col_key_2)} \cr \cr \code{filter_}: Logical
+#'   expression(s) for the row filtration against data in a primary file of
+#'   \code{Peptide[_impNA].txt} or \code{Protein[_impNA].txt}. See also
+#'   \code{\link{normPSM}} for the format of \code{filter_} statements.
+#' @return The primary output is \code{.../Peptide/Model/Peptide_pVals.txt} for
+#'   peptide data or \code{.../Protein/Model/Protein_pVals.txt} for protein
+#'   data. At \code{impute_na = TRUE}, the corresponding outputs are
+#'   \code{Peptide_impNA_pvals.txt} or \code{Protein_impNA_pvals.txt}.
 #'
-#'@example inst/extdata/examples/prnSig_.R
-#'@seealso 
+#' @example inst/extdata/examples/prnSig_.R
+#' @seealso 
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
 #'
@@ -695,11 +705,12 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
 #'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
-#'@import dplyr ggplot2
-#'@importFrom magrittr %>% %T>% %$% %<>% 
-#'@export
+#' @import dplyr ggplot2
+#' @importFrom magrittr %>% %T>% %$% %<>% 
+#'
+#' @export
 prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
-                    method = c("limma", "lm"), padj_method = "BH", 
+                    rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
   on.exit({
@@ -711,12 +722,12 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   }, add = TRUE)
   
   check_dots(c("id", "anal_type", "df2"), ...)
-
+  
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
-
+  
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
-
+  
   method <- rlang::enexpr(method)
   if (method == rlang::expr(c("limma", "lm"))) {
     method <- "limma"
@@ -724,11 +735,11 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
     method <- rlang::as_string(method)
     stopifnot(method %in% c("limma", "lm"), length(method) == 1)
   }
-
+  
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
-
+  
   reload_expts()
   
   if ((!impute_na) && (method != "limma")) {
@@ -736,6 +747,12 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
     warning("Coerce `impute_na = ", impute_na, "` at method = ", method, 
             call. = FALSE)
   }
+  
+  stopifnot(vapply(c(scale_log2r, impute_na, complete_cases, rm_allna), 
+                   rlang::is_logical, logical(1)))
+  
+  stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), 
+                   is.numeric, logical(1)))
   
   info_anal(df = !!df, 
             df2 = NULL, 
@@ -749,6 +766,9 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
                                  padj_method = padj_method, 
                                  var_cutoff = var_cutoff, 
                                  pval_cutoff = pval_cutoff, 
-                                 logFC_cutoff = logFC_cutoff, ...)
+                                 logFC_cutoff = logFC_cutoff, 
+                                 rm_allna = rm_allna, 
+                                 ...)
 }
+
 

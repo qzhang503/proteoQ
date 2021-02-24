@@ -300,16 +300,13 @@ plot_metaNMF(
 ### GSPA
 # analysis, protein
 prnGSPA(
-  impute_na = FALSE,
 	pval_cutoff = 5E-2, # protein pVal threshold
 	logFC_cutoff = log2(1.2), # protein log2FC threshold
 	gspval_cutoff = 5E-2, # gene-set threshold
-	gset_nms = c("go_sets", "c2_msig"),
 )
 
 # volcano plot visualization, protein
 gspaMap(
-  impute_na = FALSE,
 	gspval_cutoff = 5E-2, # gene set threshold
 	gslogFC_cutoff = log2(1.2), # gene set log2FC threshold
 	show_sig = pVal, 
@@ -328,12 +325,10 @@ prnGSPAHM(
 
 ### GSVA
 prnGSVA(
-  impute_na = FALSE,
   min.sz = 10,
   verbose = FALSE,
   parallel.sz = 0,
   mx.diff = TRUE,
-	gset_nms = c("go_sets", "c2_msig"),
 )
 
 ### GSEA

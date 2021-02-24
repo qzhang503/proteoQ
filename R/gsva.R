@@ -238,7 +238,8 @@ gsvaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
     prepDM(id = id, 
            scale_log2r = scale_log2r, 
            sub_grp = label_scheme_sub$Sample_ID, 
-           anal_type = anal_type) %>% 
+           anal_type = anal_type, 
+           rm_allna = TRUE) %>% 
     .$log2R 
 
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
