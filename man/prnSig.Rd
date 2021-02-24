@@ -95,9 +95,9 @@ proteins.}
 a tilde, followed by the name of an available column key in
 \code{expt_smry.xlsx} and square brackets. The contrast groups are then
 quoted with one to multiple contrast groups separated by commas. The
-default column key is \code{Term} in `expt_smry.xlsx`: \cr \code{~ Term["A
-- C", "B - C"]}. \cr Additive random effects are indicated by \code{+
-(1|col_key_1) + (1|col_key_2)}... Currently only a syntax of single
+default column key is \code{Term} in \code{expt_smry.xlsx}: \cr \code{~
+Term["A - C", "B - C"]}. \cr \cr Additive random effects are indicated by
+\code{+ (1|col_key_1) + (1|col_key_2)}... Currently only a syntax of single
 contrast are supported for uses with random effects: \cr \code{~ Term["A -
 C"] + (1|col_key_1) + (1|col_key_2)} \cr \cr \code{filter_}: Logical
 expression(s) for the row filtration against data in a primary file of

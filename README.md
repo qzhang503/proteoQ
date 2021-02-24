@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2021-02-23
+2021-02-24
 
 -   [Introduction to proteoQ](#introduction-to-proteoq)
 -   [Installation](#installation)
@@ -85,6 +85,12 @@ To install this package, start R (version “4.0”) and enter:
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
 devtools::install_github("qzhang503/proteoQ")
+```
+
+or to use a daily version:
+
+``` r
+devtools::install_github("qzhang503/proteoQ@QZ_20190930")
 ```
 
 ## 1 Data normalization
@@ -178,7 +184,7 @@ copy_mascot_gtmt(dat_dir)
 
 The workflow involves an Excel template containing the metadata of
 multiplex experiments, including experiment numbers, TMT channels, LC/MS
-injection indices, sample IDs, reference channels, RAW MS data file
+injection indexes, sample IDs, reference channels, RAW MS data file
 names and additional fields from users. The default file name for the
 experimental summary is `expt_smry.xlsx`. If samples were fractionated
 off-line prior to LC/MS, a second Excel template will also be filled out
@@ -197,7 +203,8 @@ default look for values under the `Color` column if no instruction was
 given in the color coding of a PCA plot. The optional open fields on the
 other hand allow us to define our own analysis and aesthetics. For
 instance, we may openly define multiple columns of contrasts at
-different levels of granularity for uses in statistical modelings.
+different levels of granularity for uses in statistical modelings. For
+details, see the help via `?proteoQ::load_expts()`.
 
 <img src="images/installation/three_tier_expt_smry.png" width="80%" style="display: block; margin: auto;" />
 
@@ -279,10 +286,11 @@ Every time the `normPSM` module is executed, it will process the PSM
 data from the ground up. In other words, it has no memory on prior
 happenings. For instance, after inspecting graphically the intensity
 distributions of reporter ions at `plot_rptr_int = TRUE`, we may
-consider a more inclusive cut-off at `rptr_intco = 100`. The downward in
-`rptr_intco` is *not* going to cause information loss in the range of
-100 to 1,000. This is trivia but worth mentioning here. As we will find
-out in following sections, utilities in peptide and protein
+reconsider a more inclusive cut-off at `rptr_intco = 100`. The downward
+in `rptr_intco` (from 1,000 to 100) is *not* going to cause information
+loss. In words, there is no data loss in the range of 100 to 1,000 in
+reporter-ion intensities. This is trivia but worth mentioning here. As
+we will find out in following sections, utilities in peptide and protein
 normalization, `standPep` and `standPrn`, do pass information onto
 successive iterations and can lead to interesting features such as
 mixed-bed normalization of data etc.
@@ -378,7 +386,7 @@ proteoQ is to reduce or avoid direct data manipulations but utilizes
 metadata to control both data columns and rows. With the
 self-containedness in data filtration (and data ordering later), I can
 readily recall and reproduce what I had done when revisiting the system
-after an extended peroid. Otherwise, I would likely need *ad hoc*
+after an extended period. Otherwise, I would likely need *ad hoc*
 operations by mouse clicks or writing ephemeral R scripts, and soon
 forget what I have done.
 
@@ -413,17 +421,17 @@ also section 4).
 
 For this reason, I named the varargs `filter_psms_at` and
 `filter_psms_more` in the above `normPSM` examples. This allows me to
-readily recall that I was filtering data based on criteria that are
-specific to PSMs.
+quickly grasp the action that I was filtering data based on criteria
+that are specific to PSMs.
 
 #### 1.2.6 Varargs and data files
 
 Vararg statements of `filter_` and `arrange_` are available in proteoQ
-for flexible filtration and ordering of data rows. To take advantage of
-the feature, we need to be aware of the column keys in input files. As
-indicated by their names, `filter_` and `filter2_` perform row
-filtration against column keys from a primary data file, `df`, and
-secondary data file(s), `df2`, respectively (`df` and `df2` defined
+for flexible filtration and ordering of data rows. In addition, there
+are `filter2_` and `arrange2_`. As indicated by their names, `filter_`
+and `filter2_` perform row filtration against column keys from a primary
+data file, `df`, and secondary data file(s), `df2`, respectively (`df`
+and `df2` defined
 [here](https://proteoq.netlify.app/post/how-do-i-run-proteoq/)). The
 same correspondence is applicable for `arrange_` and `arrange2_`
 varargs.
@@ -443,11 +451,12 @@ PSMs within the same sample. Namely, quantitations that have yielded
 peptide CV greater than a user-supplied cut-off will be replaced with
 NA.
 
-The `purgePSM` utility reads files `/PSM/TMTset1_LCMSinj1_PSM_N.txt`,
-`TMTset1_LCMSinj2_PSM_N.txt` etc. from a preceding step of `normPSM`. To
-revert programmatically the changes made by `purgePSM`, we would need to
-start over with `normPSM`. Alternatively, we may make a temporary copy
-of these files for a probable undo.
+The `purgePSM` utility reads files `/PSM/TMTset1_LCMSinj1_PSM_N.txt`
+etc. from a preceding step of `normPSM` and updates the files
+accordingly.[5] To revert programmatically the data nullification made
+by `purgePSM` (should there be any), we would need to start over with
+`normPSM`. Alternatively, we may make a temporary copy of these files
+for a probable undo.
 
 This process takes place sample (column)-wisely while holding the places
 for data points that have been nullified. It is different to the above
@@ -480,7 +489,7 @@ percentile.
 </div>
 
 Quantitative differences greater than 0.5 at a log2 scale is relatively
-large in TMT experiments,[5] which can be in part ascribed to a
+large in TMT experiments,[6] which can be in part ascribed to a
 phenomenon called peptide co-isolation and co-fragmentation in reporter
 ion-based MS experiments. We might, for instance, perform an additional
 cleanup by removing column-wisely data points with CV greater than 0.5
@@ -639,7 +648,7 @@ peptide `log2FC` and reporter-ion intensity, respectively, for use in
 defining the CV and scaling the log2FC across samples. The log2FC of
 peptide data will be aligned by `median centering` across samples by
 default. If `method_align = MGKernel` is chosen, log2FC will be aligned
-under the assumption of multiple Gaussian kernels.[6] The companion
+under the assumption of multiple Gaussian kernels.[7] The companion
 parameter `n_comp` defines the number of Gaussian kernels and `seed` set
 a seed for reproducible fittings. Additional parameters, such as,
 `maxit` and `epsilon`, are defined in and for use with
@@ -657,7 +666,7 @@ some helps from the `pepHist` utility in the immediately following.
 The `pepHist` utility plots the histograms of peptide log2FC. It further
 bins the data by their contributing reporter-ion or LFQ intensity. In
 the examples shown below, we compare the `log2FC` profiles of peptides
-with and without scaling normalization:[7]
+with and without scaling normalization:[8]
 
 ``` r
 # without scaling
@@ -731,7 +740,7 @@ adjustment may cause artifacts when the standard deviation across
 samples are genuinely different. I typically test `scale_log2r` at both
 `TRUE` and `FALSE`, then make a choice in data scaling together with my
 a priori knowledge of the characteristics of both samples and
-references.[8] We will use the same data set to illustrate the impacts
+references.[9] We will use the same data set to illustrate the impacts
 of reference selections in scaling normalization in [Lab
 3.1](###%203.1%20Reference%20choices).
 
@@ -968,7 +977,8 @@ other hand, the peptide log2FC have been previously summarized by the
 median statistics from contributing PSMs. Putting these two together,
 the CV by `purgePep` describes approximately the uncertainty in sample
 handling from the breakdown of proteins to the off-line fractionation of
-peptides.
+peptides. (see also George Casella and Roger L Berger 2002 ch. 7.3.3 for
+the technical details of conditional variance.)
 
 ### 1.4 Peptides to proteins
 
@@ -1770,7 +1780,7 @@ Moreover, we need to be aware of the difference between
 {**A****,** **C**} in the former and {**A****,** **B****,** **C**} in
 the latter. Such difference might affect the underlying *sample
 variance* and subsequently p-values (see also George Casella and Roger L
-Berger 2002 ch 11 for technical details).
+Berger 2002 ch. 11 for technical details).
 
 In addition to the fixed effects shown above, significance tests with
 additive random effects are also supported. More examples can be found
@@ -2111,7 +2121,7 @@ Note that there is a second `vararg` expression,
 `exprs(start_with_str("hs", term))`. In this expression, we have used a
 pseudonym approach to subset terms starting with character string `hs`
 under the column `term` in `GSPA` result files, which corresponds to
-human gene sets for both GO and KEGG.[9] More examples of the pseudonym
+human gene sets for both GO and KEGG.[10] More examples of the pseudonym
 approach can be found from [Lab 3.2](###%203.2%20Data%20subsets) in this
 document. More examples of the utility can be found via `?prnGSPAHM`.
 
@@ -2557,10 +2567,10 @@ thus bias, the quantitative difference in proteomes between `WHIM2` and
 
 We may alternatively seek a “center-of-mass” representation for uses as
 references where each sample may be regarded as a weighted particle in
-the center construction (see George Casella and Roger L Berger 2002 ch
-5.2 & ch 11.3.5 for some quantitative descriptions about data centers).
-We select one `WHIM2` and one `WHIM16` from each 10-plex TMT. The
-proteoQ tool will average the signals from designated references.
+the center construction (see George Casella and Roger L Berger 2002
+ch. 5.2 & ch 11.3.5 for some quantitative descriptions about data
+centers). We select one `WHIM2` and one `WHIM16` from each 10-plex TMT.
+The proteoQ tool will average the signals from designated references.
 Therefore, the derived reference can be viewed as a mid point of the
 `WHIM2` and the `WHIM16` proteomes.
 
@@ -2774,7 +2784,7 @@ Note that we have applied the new grammar of
 `contain_chars_in("sty", pep_seq_mod)` to extract character strings
 containing lower-case letters ‘s,’ ‘t’ or ‘y’ under the `pep_seq_mod`
 column in `Peptide.txt`. This corresponds to the subsettting of peptides
-with phosphorylation(s) in serine, thereonine or tyrosine.[10]
+with phosphorylation(s) in serine, thereonine or tyrosine.[11]
 
 <div class="figure" style="text-align: left">
 
@@ -3446,7 +3456,7 @@ Proteomics Using Tandem Mass Tags or Label-free Approaches.
 
 [2] If not, try \`devtools::install\_github(“qzhang503/proteoQDA”)\`.
 
-[3] See <https://www.uniprot.org/proteomes/>
+[3] See <https://www.uniprot.org/proteomes/>.
 
 [4] To extract the names of RAW MS files under a \`raw\_dir\` folder:
 \`extract\_raws(raw\_dir)\`. Very occasionally, there may be RAW MS
@@ -3456,27 +3466,31 @@ shown as missing by the program and need to be removed from
 \`extract\_psm\_raws()\` was developed to extract the list of RAW files
 that are actually present in PSM files.
 
-[5] On top of technical variabilities, the ranges of CV may be further
+[5] The separation of `purgePSM` from `normPSM` is more administrative
+than technical: the purge operates against CV columns which are not
+originally present in the PSM tables from search engines.
+
+[6] On top of technical variabilities, the ranges of CV may be further
 subject to the choice of reference materials. Examples are available in
 Lab 3.1.
 
-[6] Density kernel estimates can occasionally capture spikes in the
+[7] Density kernel estimates can occasionally capture spikes in the
 profiles of log2FC during data alignment. Researchers will need to
 inspect the alignment of ratio histograms and may optimize the data
 normalization in full with different combinations of tuning parameters
 or in part against a subset of samples, before proceeding to the next
 steps.
 
-[7] \`standPep()\` will report log2FC results both before and after the
+[8] \`standPep()\` will report log2FC results both before and after the
 scaling of standard deviations.
 
-[8] The default is \`scale\_log2r = TRUE\` throughout the package. When
+[9] The default is \`scale\_log2r = TRUE\` throughout the package. When
 calling functions involved parameter \`scale\_log2r\`, we may specify
 explicitly \`scale\_log2r = FALSE\` if needed, or more preferably define
 its value under the global environment.
 
-[9] This will work as GO terms of human start with \`hs\_\` and KEGG
+[10] This will work as GO terms of human start with \`hs\_\` and KEGG
 terms with \`hsa\`.
 
-[10] Details on the notation of peptide modifications can be found via
+[11] Details on the notation of peptide modifications can be found via
 \`?normPSM\`.

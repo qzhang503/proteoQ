@@ -10,7 +10,7 @@ prot_seq	Protein sequence in 1 letter code
 prot_empai	Mascot empirical protein abundance index	
 prot_icover	Integerized protein sequence coverage by counts of tryptic peptides	See also PSM keys.
 prot_cover	Protein sequence coverage	v.s.
-prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Joint results from individual PSM tables; the counts exclude entries that are void in reporter-ion intensity across all samples or filtered by users.
+prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Joint results from individual PSM tables; the counts exclude entries that are filtered by users.
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	v.s.
 pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	v.s.
 pep_isunique	Peptide sequence is unique or not.	See also PSM keys.
