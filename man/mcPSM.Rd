@@ -4,7 +4,15 @@
 \alias{mcPSM}
 \title{Median-centering normalization of PSM data}
 \usage{
-mcPSM(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by)
+mcPSM(
+  df,
+  set_idx,
+  injn_idx,
+  mc_psm_by,
+  group_psm_by,
+  group_pep_by,
+  rm_allna = FALSE
+)
 }
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}
@@ -38,6 +46,10 @@ grouping. At the \code{prot_acc} default, descriptive statistics will be
 calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 }
 \description{
 \code{mcPSM} adds fields of \code{log2_R, N_log2_R and N_I} to PSM tables.

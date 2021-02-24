@@ -5,7 +5,7 @@
 \title{Update data groups of `log2_R_` and `I_` etc. by logical matrix
 `lgl_log2_...`.}
 \usage{
-lgl_cleanup(df, type = "sd")
+lgl_cleanup(df, type = "sd", rm_allna = FALSE)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined

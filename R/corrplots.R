@@ -51,7 +51,8 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
 
 	df <- prepDM(df = df, id = !!id, scale_log2r = scale_log2r, 
 	             sub_grp = label_scheme_sub$Sample_ID, 
-	             anal_type = anal_type) 
+	             anal_type = anal_type, 
+	             rm_allna = TRUE) 
 	
 	if (data_select == "logFC") {
 	  df <- df %>% .$log2R

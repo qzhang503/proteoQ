@@ -3,7 +3,7 @@
 #'
 #' @inheritParams info_anal
 #' @param type Type of logical matrix.
-lgl_cleanup <- function (df, type = "sd") {
+lgl_cleanup <- function (df, type = "sd", rm_allna = FALSE) {
   fields <- paste0("^lgl_log2_", type, "[0-9]{3}[NC]{0,1}")
   
   df[, grepl("^log2_R[0-9]{3}", names(df))] <-
@@ -38,8 +38,8 @@ lgl_cleanup <- function (df, type = "sd") {
   
   df <- df %>% 
     dplyr::select(-grep(fields, names(.))) %>% 
-    dplyr::filter(rowSums(!is.na(.[, grep("^log2_R[0-9]{3}[NC]{0,1}", names(.) ), 
-                                   drop = FALSE])) > 0)
+    { if (rm_allna) .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+      else .} 
 }
 
 
@@ -56,7 +56,7 @@ lgl_cleanup <- function (df, type = "sd") {
 #'   CV.
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1) {
+purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE) {
   if ((!keep_ohw) && is.null(max_cv)) {
     max_cv <- 100
   }
@@ -98,7 +98,7 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1) {
     df <- df %>% 
       dplyr::arrange(!!rlang::sym(id)) %>% 
       dplyr::left_join(df_sd_lgl, by = id) %>% 
-      lgl_cleanup()
+      lgl_cleanup(rm_allna = rm_allna)
   }
   
   return(df)
@@ -114,10 +114,11 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1) {
 #' @inheritParams purgePSM
 #' @param pt_cv Numeric between 0 and 1; the percentile of CV. Values above the
 #'   percentile threshold will be replaced with NA. The default is NULL with no
-#'   data trimming by CV percentile.
+#'   data trimming by CV percentile. The precedence in data purging is
+#'   \code{pt_cv} \eqn{\ge} \code{max_v} \eqn{\ge} \code{min_n}.
 #' @import dplyr purrr
-#' @importFrom magrittr %>% %T>% %$% %<>% 
-purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1) {
+#' @importFrom magrittr %>% %T>% %$% %<>%
+purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE) {
   if ((!keep_ohw) && is.null(pt_cv)) {
     pt_cv <- 100
   }
@@ -167,7 +168,7 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1) {
     df <- df %>% 
       dplyr::arrange(!!rlang::sym(id)) %>% 
       dplyr::left_join(df_sd_lgl, by = id) %>% 
-      lgl_cleanup()
+      lgl_cleanup(rm_allna = rm_allna)
   }
   
   return(df)
@@ -188,7 +189,7 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1) {
 #'   smaller than \code{min_n} will be replaced with NA. 
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>%
-purge_by_n <- function (df, id, min_n = 1) {
+purge_by_n <- function (df, id, min_n = 1, rm_allna = FALSE) {
   stopifnot(is.numeric(min_n))
 
   if (min_n == 1) return(df)
@@ -212,7 +213,7 @@ purge_by_n <- function (df, id, min_n = 1) {
   df <- df %>% 
     dplyr::arrange(!!rlang::sym(id)) %>% 
     dplyr::left_join(df_lgl, by = id) %>% 
-    lgl_cleanup(type = "R")
+    lgl_cleanup(type = "R", rm_allna = rm_allna)
 
   invisible(df)
 }
@@ -227,7 +228,7 @@ purge_by_n <- function (df, id, min_n = 1) {
 #' @inheritParams annotPSM
 #' @inheritParams prnHist
 psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by, 
-                        pt_cv, max_cv, keep_ohw, min_n, 
+                        pt_cv, max_cv, keep_ohw, min_n, rm_allna = FALSE, 
                         theme, ...) {
   dots <- rlang::enexprs(...)
 
@@ -235,11 +236,12 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
 
   df <- read.csv(file.path(dat_dir, "PSM", file), check.names = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
-    purge_by_qt(group_psm_by, pt_cv, keep_ohw, min_n) %>% 
-    purge_by_cv(group_psm_by, max_cv, keep_ohw, min_n) %>% 
-    purge_by_n(group_psm_by, min_n) %>% 
-    dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0)
-  
+    purge_by_qt(group_psm_by, pt_cv, keep_ohw, min_n, rm_allna) %>% 
+    purge_by_cv(group_psm_by, max_cv, keep_ohw, min_n, rm_allna) %>% 
+    purge_by_n(group_psm_by, min_n, rm_allna) %>% 
+    { if (rm_allna) .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+      else . }
+
   # update
   pep_n_psm <- df %>%
     dplyr::select(!!rlang::sym(group_psm_by)) %>%
@@ -383,7 +385,7 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
 #'
 #'@export
 purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, 
-                      keep_ohw = TRUE, min_n = 1, 
+                      keep_ohw = TRUE, min_n = 1, rm_allna = FALSE, 
                       theme= NULL, ...) {
   on.exit(
     mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
@@ -450,7 +452,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
              recursive = TRUE, showWarnings = FALSE)
   
   purrr::walk(filelist, psm_mpurge, 
-              dat_dir, group_psm_by, group_pep_by, pt_cv, max_cv, keep_ohw, min_n, 
+              dat_dir, group_psm_by, group_pep_by, pt_cv, max_cv, keep_ohw, min_n, rm_allna, 
               theme, !!!dots)
 }
 
@@ -543,7 +545,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'
 #'@export
 purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, 
-                      adjSD = FALSE, keep_ohw = TRUE, min_n = 1, 
+                      adjSD = FALSE, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE, 
                       col_select = NULL, col_order = NULL, 
                       filename = NULL, theme= NULL, ...) {
   on.exit(
@@ -618,10 +620,11 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   fn <- file.path(dat_dir, "Peptide", "Peptide.txt")
   df <- read.csv(fn, check.names = FALSE, header = TRUE, 
                  sep = "\t", comment.char = "#") %>% 
-    purge_by_qt(group_pep_by, pt_cv, keep_ohw, min_n) %>% 
-    purge_by_cv(group_pep_by, max_cv, keep_ohw, min_n) %>% 
-    purge_by_n(group_pep_by, min_n) %>% 
-    dplyr::filter(rowSums(!is.na(.[grep("^log2_R[0-9]{3}", names(.))])) > 0) 
+    purge_by_qt(group_pep_by, pt_cv, keep_ohw, min_n, rm_allna) %>% 
+    purge_by_cv(group_pep_by, max_cv, keep_ohw, min_n, rm_allna) %>% 
+    purge_by_n(group_pep_by, min_n, rm_allna) %>% 
+    { if (rm_allna) .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+      else . }
 
   # update
   pep_n_psm <- df %>%

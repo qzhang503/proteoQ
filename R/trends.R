@@ -70,7 +70,8 @@ analTrend <- function (df, id, col_group, col_order, label_scheme_sub,
 	  arrangers_in_call(!!!arrange_dots) %>% 
 	  prepDM(id = !!id, scale_log2r = scale_log2r, 
 	         sub_grp = label_scheme_sub$Sample_ID, 
-	         anal_type = anal_type) %>% 
+	         anal_type = anal_type, 
+	         rm_allna = TRUE) %>% 
 	  .$log2R
 	
 	label_scheme_sub <- label_scheme_sub %>% 

@@ -10,6 +10,7 @@ Pep2Prn(
   use_unique_pep = TRUE,
   cut_points = Inf,
   rm_outliers = FALSE,
+  rm_allna = FALSE,
   ...
 )
 }
@@ -40,6 +41,15 @@ column \code{mean_lint} (mean log10 intensity) in the input data. The
 default is \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
 \code{log2FC} under each sample will be median-centered as one piece. See
 also \code{\link{prnHist}} for data binning in histogram visualization.}
+
+\item{rm_outliers}{Logical; if TRUE, PSM outlier removals will be performed
+for peptides with more than two identifying PSMs. Dixon's method will be
+used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
+25}. The default is FALSE.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains a list of logical expression(s). The

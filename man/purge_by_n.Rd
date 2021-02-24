@@ -4,7 +4,7 @@
 \alias{purge_by_n}
 \title{Filter data groups by a minimal number of observations (n_obs)}
 \usage{
-purge_by_n(df, id, min_n = 1)
+purge_by_n(df, id, min_n = 1, rm_allna = FALSE)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined

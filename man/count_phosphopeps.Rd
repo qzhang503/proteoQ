@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils.R
 \name{count_phosphopeps}
 \alias{count_phosphopeps}
-\title{phospho counts}
+\title{Counts phospho.}
 \usage{
 count_phosphopeps()
 }
 \description{
-phospho counts
+Not currently used.
 }

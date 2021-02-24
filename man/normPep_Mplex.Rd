@@ -11,6 +11,7 @@ normPep_Mplex(
   cut_points = Inf,
   omit_single_lfq = TRUE,
   use_mq_pep = FALSE,
+  rm_allna = FALSE,
   parallel = TRUE,
   ...
 )
@@ -46,6 +47,10 @@ with single measured values across all samples. The default is TRUE.}
 
 \item{use_mq_pep}{Logical; if TRUE, use the peptides.txt from MaxQuant. This
 is an interim solution for MaxQuant timsTOF.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}

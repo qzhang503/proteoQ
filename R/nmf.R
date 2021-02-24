@@ -47,7 +47,8 @@ analNMF <- function(df, id, rank, nrun, seed, col_group, label_scheme_sub,
     prepDM(id = !!id, 
            scale_log2r = scale_log2r, 
            sub_grp = label_scheme_sub$Sample_ID, 
-           anal_type = anal_type) %>% 
+           anal_type = anal_type, 
+           rm_allna = TRUE) %>% 
     .$log2R
   
   label_scheme_sub <- label_scheme_sub %>% 
@@ -608,7 +609,8 @@ plotNMFmeta <- function(id, rank, label_scheme_sub, scale_log2r, complete_cases,
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots) %>% 
     prepDM(id = !!id, scale_log2r = scale_log2r, 
-           sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type) %>% 
+           sub_grp = label_scheme_sub$Sample_ID, anal_type = anal_type, 
+           rm_allna = TRUE) %>% 
     .$log2R
   
   # find input df2 ---------------------------
@@ -912,8 +914,8 @@ anal_pepNMF <- function (col_select = NULL, col_group = NULL,
   )
   
   check_dots(c("id", "df2", "anal_type"), ...)
-  check_formalArgs(anal_pepNMF, NMF::nmf, "rank")
-  
+  check_formalArgs2(anal_pepNMF, NMF::nmf, "rank")
+
   dir.create(file.path(get_gl_dat_dir(), "Peptide/NMF/log"), 
              recursive = TRUE, showWarnings = FALSE)
 

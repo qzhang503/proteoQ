@@ -13,6 +13,7 @@ splitPSM_sm(
   scale_rptr_int = FALSE,
   rm_craps = FALSE,
   rm_krts = FALSE,
+  rm_allna = FALSE,
   purge_phosphodata = TRUE,
   annot_kinases = FALSE,
   plot_rptr_int = TRUE,
@@ -72,6 +73,10 @@ The default is FALSE.}
 
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
 is FALSE.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
 variable modification(s), entries without phosphorylation will be removed.

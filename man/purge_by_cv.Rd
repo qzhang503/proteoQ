@@ -4,7 +4,7 @@
 \alias{purge_by_cv}
 \title{Filter data groups by a CV cut-off}
 \usage{
-purge_by_cv(df, id, max_cv, keep_ohw = TRUE, min_n = 1)
+purge_by_cv(df, id, max_cv, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -34,6 +34,10 @@ entries in PSM tables with the number of identifying PSMs smaller than
 \code{min_n} will be replaced with NA. When calling from \code{purgePep},
 protein entries in peptide tables with the number of identifying peptides
 smaller than \code{min_n} will be replaced with NA.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 }
 \description{
 \code{purge_by_cv} replaces the data entries at \code{group CV > max_cv} to

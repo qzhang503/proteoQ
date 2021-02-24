@@ -2,8 +2,9 @@
 #'
 #'\code{prepDM} prepares a minimal adequate data frame for subsequent analysis.
 #'
-#'@inheritParams  prnEucDist
-#'@inheritParams  info_anal
+#'@inheritParams prnEucDist
+#'@inheritParams info_anal
+#'@inheritParams normPSM
 #'@param sub_grp Numeric.  A list of sample IDs that will be used in subsequent
 #'  analysis.
 #'@param type The type of data, for example ratio or intensity.
@@ -13,7 +14,8 @@
 #' \donttest{tempData <- prepDM(df, entrez, scale_log2r, label_scheme_sub$Sample_ID)}
 #'@import dplyr
 #'@importFrom magrittr %>% %T>% %$% %<>% 
-prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
+prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type, 
+                   rm_allna = FALSE) {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
@@ -47,8 +49,8 @@ prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type) {
     
     df <- df %>% 
       dplyr::ungroup() %>% 
-      dplyr::filter(rowSums(!is.na(.[, grep(NorZ_ratios, names(.)), 
-                                     drop = FALSE])) > 0) %>%
+      { if (rm_allna) dplyr::filter(., rowSums(!is.na(.[grep(NorZ_ratios, names(.))])) > 0) 
+        else . } %>% 
       reorderCols(endColIndex = grep(pattern, names(.)), col_to_rn = id)
   })
 
@@ -2875,8 +2877,9 @@ my_geomean <- function (x, ...) {
 }
 
 
-#' phospho counts
+#' Counts phospho.
 #' 
+#' Not currently used.
 count_phosphopeps <- function() {
   dat_dir <- get_gl_dat_dir()
   

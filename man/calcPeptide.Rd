@@ -12,7 +12,8 @@ calcPeptide(
   dat_dir,
   set_idx,
   injn_idx,
-  TMT_plex
+  TMT_plex,
+  rm_allna = FALSE
 )
 }
 \arguments{
@@ -51,6 +52,10 @@ files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 }
 \description{
 Argument \code{injn_idx} does not currently used.

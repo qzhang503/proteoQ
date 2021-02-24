@@ -853,7 +853,7 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) {
 #' @inheritParams mergePep
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
                            use_duppeps = TRUE, cut_points = Inf, 
-                           omit_single_lfq = TRUE, use_mq_pep = FALSE, 
+                           omit_single_lfq = TRUE, use_mq_pep = FALSE, rm_allna = FALSE, 
                            parallel = TRUE, ...) {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -1055,9 +1055,9 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
 
   df <- df %>%
     dplyr::filter(!duplicated(.[[group_psm_by]])) %>% 
-    { if (TMT_plex == 0) . else 
-      dplyr::filter(., rowSums(!is.na(.[, grepl("N_log2_R", names(.)), 
-                                        drop = FALSE])) > 0) } %>% 
+    { if (TMT_plex > 0 && rm_allna) 
+      .[rowSums(!is.na(.[grepl("^N_log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+      else . } %>% 
     dplyr::arrange(!!rlang::sym(group_psm_by))
   
   # a placeholder so no need to handle the exception of 
@@ -1245,9 +1245,8 @@ load_prior <- function(filename, id) {
   stopifnot(file.exists(filename))
   
   df <- read.csv(filename, check.names = FALSE, 
-                 header = TRUE, sep = "\t", comment.char = "#") %>% 
-    dplyr::filter(rowSums(!is.na( .[grep("^log2_R[0-9]{3}", names(.))] )) > 0) 
-  
+                 header = TRUE, sep = "\t", comment.char = "#") 
+
   if (! id %in% names(df)) {
     try(unlink(file.path(dat_dir, "Peptide/Peptide.txt")))
     try(unlink(file.path(dat_dir, "Protein/Protein.txt")))
@@ -1412,7 +1411,7 @@ fmt_num_cols <- function (df) {
 #'@importFrom plyr ddply
 #'@export
 mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = Inf, 
-                      omit_single_lfq = TRUE, parallel = TRUE, ...) {
+                      rm_allna = FALSE, omit_single_lfq = TRUE, parallel = TRUE, ...) {
   dat_dir <- get_gl_dat_dir()  
   
   old_opts <- options()
@@ -1459,6 +1458,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
                       omit_single_lfq = omit_single_lfq,
                       parallel = parallel, 
                       use_mq_pep = use_mq_pep, 
+                      rm_allna = rm_allna, 
                       !!!filter_dots) 
   
   if (plot_log2FC_cv) {
@@ -1754,6 +1754,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 #'   statement of \code{filter_peps_at = exprs(pep_len <= 50)} will remove
 #'   peptide entries with \code{pep_len > 50}.
 #' @inheritParams mergePep
+#' @inheritParams normPSM
 #'@seealso 
 #'  \emph{Metadata} \cr 
 #'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
@@ -1820,7 +1821,8 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_3_mean", 
                                         "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", 
                                         "lfq_all"), 
-                     use_unique_pep = TRUE, cut_points = Inf, rm_outliers = FALSE, ...) {
+                     use_unique_pep = TRUE, cut_points = Inf, rm_outliers = FALSE, 
+                     rm_allna = FALSE, ...) {
   
   dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/Histogram"), 
@@ -1896,6 +1898,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_
                    use_unique_pep, 
                    gn_rollup, 
                    rm_outliers, 
+                   rm_allna = rm_allna, 
                    !!!filter_dots) 
   
   df <- normMulGau(
@@ -2164,7 +2167,8 @@ calc_tmt_prnnums <- function (df, use_unique_pep, id = "prot_acc", method_pep_pr
 #' @param gn_rollup Logical; if TRUE, rolls up protein accessions to gene names.
 #' @inheritParams info_anal
 #' @inheritParams Pep2Prn
-pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, rm_outliers, ...) {
+pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, rm_outliers, 
+                       rm_allna = FALSE, ...) {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   TMT_plex <- TMT_plex(label_scheme)
@@ -2180,9 +2184,8 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, rm_outlier
   df <- read.csv(file.path(dat_dir, "Peptide/Peptide.txt"), check.names = FALSE, 
                  header = TRUE, sep = "\t", comment.char = "#") %>% 
     filters_in_call(!!!filter_dots) %>% 
-    { if (TMT_plex == 0) . else 
-      dplyr::filter(., rowSums(!is.na( .[, grep("^log2_R[0-9]{3}", names(.)), 
-                                      drop = FALSE] )) > 0) } 
+    { if (TMT_plex > 0 && rm_allna) 
+      .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] else . } 
   
   if (rm_outliers) {
     df <- local({
@@ -2244,7 +2247,8 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, rm_outlier
       dplyr::bind_rows()
     
     df <- df %>% 
-      dplyr::filter(rowSums(!is.na(.[, grep("^log2_R[0-9]{3}", names(.) )])) > 0) %>% 
+      { if (rm_allna) 
+        .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] else . } %>% 
       dplyr::select(-grep("^X[0-9]{3}[NC]{0,1}", names(.)))
   } 
 
@@ -2419,9 +2423,12 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, rm_outlier
     df[, grep("^N_log2_R[0-9]{3}", names(df)), drop = FALSE], 
     df[, grep("^Z_log2_R[0-9]{3}", names(df)), drop = FALSE])
   
-  
-  df <- df %>% 
-    .[rowSums(!is.na(.[, grepl("N_log2_R", names(.)), drop = FALSE])) > 0, ]
+  if (rm_allna) {
+    df <- df %>% 
+      .[rowSums(!is.na(.[grepl("^N_log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ]
+  } else {
+    df <- df
+  }
 
   if (gn_rollup) {
     nms <- names(df)

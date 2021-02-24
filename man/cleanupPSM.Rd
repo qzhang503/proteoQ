@@ -4,7 +4,12 @@
 \alias{cleanupPSM}
 \title{Cleans Up PSM results}
 \usage{
-cleanupPSM(rm_outliers = FALSE, group_psm_by = "pep_seq", parallel = TRUE)
+cleanupPSM(
+  rm_outliers = FALSE,
+  group_psm_by = "pep_seq",
+  rm_allna = FALSE,
+  parallel = TRUE
+)
 }
 \arguments{
 \item{rm_outliers}{Logical; if TRUE, PSM outlier removals will be performed

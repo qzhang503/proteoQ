@@ -5,6 +5,8 @@ author:
 date: "`r Sys.Date()`"
 always_allow_html: true
 output:
+  github_document:
+    toc: yes
   html_document:
     fig_caption: yes
     highlight: haddock
@@ -13,8 +15,6 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
-  github_document:
-    toc: yes
   word_document:
     toc: yes
   md_document:
@@ -143,7 +143,7 @@ copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 
 #### 1.1.2 PSM data
 
-The data processing begins with PSM table(s) from Mascot, MaxQuant, MSFragger or Spectrum Mill with the following compilation in file names:
+The data processing begins with PSM table(s) from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/), [MaxQuant, MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/) or Spectrum Mill with the following compilation in file names:
 
 -   Mascot: begin with letter `F`, followed by digits and ends with `.csv`;
 -   MaxQuant: start with `msms` and end with `.txt`;
@@ -166,9 +166,7 @@ copy_msfragger_gtmt()
 copy_specmill_gtmt()
 ```
 
-To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:[^4]
-
-[^4]: See Appendix for specifications on the export of Mascot PSMs.
+To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:
 
 ```{r copy_global_mascot, include = TRUE, eval = FALSE}
 dat_dir <- "~/proteoQ/examples"
@@ -177,11 +175,11 @@ copy_mascot_gtmt(dat_dir)
 
 #### 1.1.3 Metadata
 
-The workflow involves an Excel template containing the metadata of multiplex experiments, including experiment numbers, TMT channels, LC/MS injection indices, sample IDs, reference channels, RAW MS data file names and additional fields from users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to LC/MS, a second Excel template will also be filled out to link multiple RAW MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`.[^5] Unless otherwise mentioned, we will assume these default file names throughout the document.
+The workflow involves an Excel template containing the metadata of multiplex experiments, including experiment numbers, TMT channels, LC/MS injection indices, sample IDs, reference channels, RAW MS data file names and additional fields from users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to LC/MS, a second Excel template will also be filled out to link multiple RAW MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`.[^4] Unless otherwise mentioned, we will assume these default file names throughout the document.
 
-[^5]: To extract the names of RAW MS files under a \`raw_dir\` folder: \`extract_raws(raw_dir)\`. Very occasionally, there may be RAW MS files without PSM contributions. In this case, the file names will be shown as missing by the program and need to be removed from \`expt_smry.xlsx\` or \`frac_smry.xlsx\`. The function \`extract_psm_raws()\` was developed to extract the list of RAW files that are actually present in PSM files.
+[^4]: To extract the names of RAW MS files under a \`raw_dir\` folder: \`extract_raws(raw_dir)\`. Very occasionally, there may be RAW MS files without PSM contributions. In this case, the file names will be shown as missing by the program and need to be removed from \`expt_smry.xlsx\` or \`frac_smry.xlsx\`. The function \`extract_psm_raws()\` was developed to extract the list of RAW files that are actually present in PSM files.
 
-Columns in the expt_smry.xlsx are approximately divided into the following three tiers: (1) `essential`, (2) `optional default` and (3) `optional open`. We supply the required information of the TMT experiments under the essential columns. The optional default columns serve as the fields for convenient lookups in sample selection, grouping, ordering, aesthetics etc. For instance, the program will by default look for values under the `Color` column if no instruction was given in the color coding of a PCA plot. The optional open fields on the other hand allow us to define our own analysis and aesthetics. For instance, we may openly define multiple columns of contrasts at different levels of granularity for uses in statistical modelings. Description of the column keys can be found from the help document by entering `?proteoQ::load_expts` from a `R` console.
+Columns in the expt_smry.xlsx are approximately divided into the following three tiers: (1) `essential`, (2) `optional default` and (3) `optional open`. We supply the required information of the TMT experiments under the essential columns. The optional default columns serve as the fields for convenient lookups in sample selection, grouping, ordering, aesthetics etc. For instance, the program will by default look for values under the `Color` column if no instruction was given in the color coding of a PCA plot. The optional open fields on the other hand allow us to define our own analysis and aesthetics. For instance, we may openly define multiple columns of contrasts at different levels of granularity for uses in statistical modelings.  
 
 ```{r str_expt_smry, echo=FALSE, fig.align='center', fig.show='hold', message=FALSE, warning=FALSE, out.width='80%'}
 str_expt_smry <- "images/installation/three_tier_expt_smry.png"
@@ -234,7 +232,7 @@ normPSM(
 )
 ```
 
-At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence but different variable modifications will be grouped for analysis using descriptive statistics. In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively according to the unique combination of the primary sequences and the variable modifications of peptides. Analogously, `group_pep_by` specify the grouping of peptides by either protein accession names or gene names. The `fasta` argument points to the location of a copy of the RefSeq fasta files that were used in the corresponding MS/MS searches. Additional options include `rm_craps`, `rm_krts`, `annot_kinases` etc. More description of `normPSM` can be found by accessing its help document via `?normPSM`.
+At `group_psm_by = pep_seq`, PSM entries with the same primary peptide sequence but different variable modifications will be grouped for analysis using descriptive statistics. In case `group_psm_by = pep_seq_mod`, PSMs will be grouped alternatively according to the unique combination of the primary sequences and the variable modifications of peptides. Analogously, `group_pep_by` specify the grouping of peptides by either protein accession names or gene names. The `fasta` argument points to the location of a copy of the RefSeq fasta files that were used in the corresponding MS/MS searches. More description of `normPSM` can be found by accessing its help document via `?normPSM`.
 
 Every time the `normPSM` module is executed, it will process the PSM data from the ground up. In other words, it has no memory on prior happenings. For instance, after inspecting graphically the intensity distributions of reporter ions at `plot_rptr_int = TRUE`, we may consider a more inclusive cut-off at `rptr_intco = 100`. The downward in `rptr_intco` is *not* going to cause information loss in the range of 100 to 1,000. This is trivia but worth mentioning here. As we will find out in following sections, utilities in peptide and protein normalization, `standPep` and `standPrn`, do pass information onto successive iterations and can lead to interesting features such as mixed-bed normalization of data etc.
 
@@ -281,7 +279,7 @@ normPSM(
 
 Direct assignments of logical conditions to arguments in `R` functions might be a little involved. To get around this, I took advantage of the facility of non-standard evaluation in `rlang` package in that the logical conditions are supplied within the round parenthesis after `exprs`. Next, the proteoQ program will obtain the expression(s) on the rhs of each vararg statement by performing a bare evaluation using `rlang::eval_bare`. Following that, a tidy evaluation by `rlang::eval_tidy` will be coupled to a local facility in proteoQ to do the real work of data filtrations ([see @hwickham2019advr, ch. 20]).
 
-The approach of data filtration taken by `normPSM` might at first looks strange; however, it allows me to perform data filtration in an integrated way. As mentioned in the beginning, a central theme of proteoQ is to reduce or avoid direct data manipulations but utilizes metadata to control both data columns and rows. With the self-containedness in data filtration (and data ordering later), I can readily recall and reproduce what I had done when revisiting the system after an extended peroid. Otherwise, I would likely need *ad hoc* operations by mouse clicks or writing ephemeral R scripts, and soon forget what I have done.
+The approach of data filtration taken by `normPSM` might at first looks strange; however, it allows me to perform data filtration in an integrated way. As mentioned in the beginning, one of the key themes of proteoQ is to reduce or avoid direct data manipulations but utilizes metadata to control both data columns and rows. With the self-containedness in data filtration (and data ordering later), I can readily recall and reproduce what I had done when revisiting the system after an extended peroid. Otherwise, I would likely need *ad hoc* operations by mouse clicks or writing ephemeral R scripts, and soon forget what I have done.
 
 Moreover, the build-in approach can serve as building blocks for more complex data processing. As shown in the help documents via `?standPep` and `?standPrn`, we can readily perform mixed-bed normalization by sample groups, against either full or partial data.
 
@@ -305,7 +303,7 @@ To finish our discussion of PSM processing, let us consider having one more bash
 
 The `purgePSM` utility reads files `/PSM/TMTset1_LCMSinj1_PSM_N.txt`, `TMTset1_LCMSinj2_PSM_N.txt` etc. from a preceding step of `normPSM`. To revert programmatically the changes made by `purgePSM`, we would need to start over with `normPSM`. Alternatively, we may make a temporary copy of these files for a probable undo.
 
-This process takes place sample (column)-wisely while holding the places for data points that have been nullified. It is different to the above row filtration processes by `filter_` in that there is no *row removals* with purging, not until all-NA rows are encountered.
+This process takes place sample (column)-wisely while holding the places for data points that have been nullified. It is different to the above row filtration processes by `filter_` in that there is no *row removals* with purging.
 
 Earlier in section 1.2.1, we have set `plot_log2FC_cv = TRUE` by default when calling `normPSM`. This will plot the distributions of the CV of peptide log2FC. In the event of `plot_log2FC_cv = FALSE`, we can have a second chance in visualizing the distributions of peptide CV before any permanent data nullification:
 
@@ -2225,9 +2223,9 @@ Analogous to the peptide tables, the primary protein outputs with and without th
 
 ## 5 Appendix
 
-### 5.1 Mascot PSM exports
+### 5.1 PSM exports
 
-See notes [here](https://proteoq.netlify.app/post/exporting-mascot-psms).
+See notes for exporting PSMs from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms) or [MaxQuant/MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/).
 
 ### 5.2 Vararg table
 

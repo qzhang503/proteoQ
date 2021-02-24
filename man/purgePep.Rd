@@ -11,6 +11,7 @@ purgePep(
   adjSD = FALSE,
   keep_ohw = TRUE,
   min_n = 1,
+  rm_allna = FALSE,
   col_select = NULL,
   col_order = NULL,
   filename = NULL,
@@ -24,7 +25,8 @@ match the value under the global environment.}
 
 \item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
 percentile threshold will be replaced with NA. The default is NULL with no
-data trimming by CV percentile.}
+data trimming by CV percentile. The precedence in data purging is
+\code{pt_cv} \eqn{\ge} \code{max_v} \eqn{\ge} \code{min_n}.}
 
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
 will be replaced with NA. The default is NULL with no data trimming by max
@@ -43,6 +45,10 @@ entries in PSM tables with the number of identifying PSMs smaller than
 \code{min_n} will be replaced with NA. When calling from \code{purgePep},
 protein entries in peptide tables with the number of identifying peptides
 smaller than \code{min_n} will be replaced with NA.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{col_select}{Character string to a column key in \code{expt_smry.xlsx}.
 At the \code{NULL} default, the column key of \code{Select} in

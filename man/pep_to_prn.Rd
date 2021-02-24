@@ -4,7 +4,15 @@
 \alias{pep_to_prn}
 \title{Helper of Pep2Prn}
 \usage{
-pep_to_prn(id, method_pep_prn, use_unique_pep, gn_rollup, rm_outliers, ...)
+pep_to_prn(
+  id,
+  method_pep_prn,
+  use_unique_pep,
+  gn_rollup,
+  rm_outliers,
+  rm_allna = FALSE,
+  ...
+)
 }
 \arguments{
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
@@ -29,6 +37,15 @@ argument currently do nothing to \code{Spectrum Mill} data where both
 unique and shared peptides will be kept.}
 
 \item{gn_rollup}{Logical; if TRUE, rolls up protein accessions to gene names.}
+
+\item{rm_outliers}{Logical; if TRUE, PSM outlier removals will be performed
+for peptides with more than two identifying PSMs. Dixon's method will be
+used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
+25}. The default is FALSE.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains a list of logical expression(s). The

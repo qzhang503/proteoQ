@@ -283,7 +283,8 @@ fml_gsea <- function (fml, fml_nm, var_cutoff, pval_cutoff,
     prepDM(id = !!id, 
            scale_log2r = scale_log2r, 
            sub_grp = label_scheme_sub$Sample_ID, 
-           anal_type = "GSEA") %>% 
+           anal_type = "GSEA", 
+           rm_allna = TRUE) %>% 
     .$log2R
   
   fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename) %>% .[1]
