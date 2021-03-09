@@ -7,17 +7,16 @@
 calc_avgpep(aa_seq, digits = 4)
 }
 \arguments{
-\item{aa_seq}{Character string; the sequence of a peptide with one-letter
+\item{aa_seq}{Character string; a peptide sequences with one-letter
 representation of amino acids.}
 
-\item{digits}{Integer; the number of decimal places to be used. Not currently
-used.}
+\item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
 Calculates the average molecular weight of a polypeptide (neutral species).
 }
 \examples{
-\dontrun{
+\donttest{
 calc_avgpep("AAIDWFDGKEFSGNPIK")
 }
 

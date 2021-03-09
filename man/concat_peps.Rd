@@ -2,22 +2,38 @@
 % Please edit documentation in R/dbs.R
 \name{concat_peps}
 \alias{concat_peps}
-\title{Concatenates two adjacent peptides in a list.}
+\title{Concatenates adjacent peptides in a list.}
 \usage{
-concat_peps(peps, n = 1)
+concat_peps(peps, n = 2, include_cts = TRUE)
 }
 \arguments{
 \item{peps}{A list of peptide sequences with a one-letter representation of
 amino acid residues.}
 
-\item{n}{The number of miss cleavages.}
+\item{n}{The number of mis-cleavages for consideration.}
+
+\item{include_cts}{Logical; the list, \code{peps}, includes the protein
+C-terminal sequence or not. At the default of TRUE, mis-cleaved peptides at
+the end of the protein C-terms will be added as they should. The arguments
+would be typically at FALSE, for example, when used for generating
+mis-cleaved peptides from the N-terminal of peptides with the removal of a
+starting residue \code{M}.}
 }
 \description{
-Concatenates two adjacent peptides in a list.
+Concatenates adjacent peptides, for example, to form peptides with
+mis-cleavages.
 }
 \examples{
-\dontrun{
+\donttest{
 peps <- c("MESNHK", "SGDGLSGTQK", "EAALR", "ALVQR", "TGYSLVQENGQR")
-concat_peps(peps)
+res <- concat_peps(peps, 2)
+
+peps2 <- gsub("^M", "", peps[1:(2+1)])
+res2 <- concat_peps(peps2, 2, FALSE)
+
+c(res2, res)
+
+# a short protein
+concat_peps(c(TRDD1_HUMAN = "EI"))
 }
 }

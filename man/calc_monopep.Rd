@@ -2,22 +2,46 @@
 % Please edit documentation in R/dbs.R
 \name{calc_monopep}
 \alias{calc_monopep}
-\title{Calculates molecular weight of a polypeptide ([MH]+).}
+\title{Helper: calculates the mono-isotopic mass of a peptide sequence.}
 \usage{
-calc_monopep(aa_seq, digits = 5)
+calc_monopep(aa_seq, aa_masses, aa_masses_ref = aa_masses, digits = 5)
 }
 \arguments{
-\item{aa_seq}{Character string; the sequence of a peptide with one-letter
+\item{aa_seq}{Character string; a peptide sequences with one-letter
 representation of amino acids.}
 
-\item{digits}{Integer; the number of decimal places to be used. Not currently
-used.}
+\item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
+acid residues.}
+
+\item{aa_masses_ref}{A named list containing the reference (mono-isotopic)
+masses of amino acid residues.}
+
+\item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Calculates molecular weight of a polypeptide ([MH]+).
+Helper: calculates the mono-isotopic mass of a peptide sequence.
 }
 \examples{
 \dontrun{
-x <- calc_monopep("AAIDWFDGKEFSGNPIK")
+data(package = "proteoQ", aa_residues)
+aa_masses <- aa_residues \%>\%
+  dplyr::select(c("one_letter", "monoisotopic_da"))
+aa_masses <- aa_masses$monoisotopic_da \%>\% `names<-`(aa_masses$one_letter)
+aa_masses["-"] <- 0
+
+library(purrr)
+
+x <- calc_monopep("AAIDWFDGKEFSGNPIK", aa_masses)
+x <- calc_monopep("-AAAAAAAGDSDSWDADAFSVEDPVR", aa_masses)
+
+
+aa_masses_all <- ext_aa_masses()
+calc_monopep("GFGFVSFER", aa_masses_all[[1]])
+
+calc_monopep("GFGFVTFSSMAEVDAAMAAR", aa_masses_all[[11]], aa_masses_all[[1]])
+map(aa_masses_all, ~ calc_monopep("GFGFVTFSSMAEVDAAMAAR", .x, aa_masses_all[[1]]))
+
+calc_monopep("GFGFNNTFSSMAEVDAMMANAR", aa_masses_all[[11]], aa_masses_all[[1]])
+map(aa_masses_all, ~ calc_monopep("GFGFNNTFSSMAEVDAMMANAR", .x, aa_masses_all[[1]]))
 }
 }

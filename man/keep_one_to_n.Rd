@@ -2,15 +2,17 @@
 % Please edit documentation in R/dbs.R
 \name{keep_one_to_n}
 \alias{keep_one_to_n}
-\title{Find the first n elements in a vector}
+\title{Find the first \eqn{n + 1} elements in a vector.}
 \usage{
 keep_one_to_n(x, n)
 }
 \arguments{
-\item{x}{A vectot of data.}
+\item{x}{A vector of data.}
 
-\item{n}{Integer. The first n elements by index in \code{x} to be kept.}
+\item{n}{Integer. The number of mis-cleavages.}
 }
 \description{
-Find the first n elements in a vector
+A convenience utility may be used to extract the first \code{n} peptides with
+mis-cleavages, plus the one without mis-clevages (a total of \code{n + 1}).
+Assumed the data were already sorted in a desirable way.
 }

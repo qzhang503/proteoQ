@@ -16,7 +16,7 @@ correct file path(s) and name(s).}
 Loads fasta
 }
 \examples{
-\dontrun{
+\donttest{
 fasta_db <- load_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta")
 }
 }

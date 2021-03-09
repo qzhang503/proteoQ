@@ -2,14 +2,19 @@
 % Please edit documentation in R/dbs.R
 \name{calc_pepmasses}
 \alias{calc_pepmasses}
-\title{Calculates the masses of tryptic peptides from a fasta database.}
+\title{Generates and Calculates the masses of tryptic peptides from a fasta
+database.}
 \usage{
 calc_pepmasses(
   fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
-  out_path = "~/proteoQ/dbs/fasta/uniprot/pepmasses/pepmasses.rds",
+  fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (C)"),
+  varmods = c(c("Acetyl (N-term)", "Oxidation (M)", "Deamidated (N)")),
+  max_ncomb_mods = 64,
   min_len = 7,
   max_len = 100,
-  max_miss = 2
+  max_miss = 2,
+  digits = 5,
+  out_path = "~/proteoQ/dbs/fasta/uniprot/pepmasses/pepmasses.rds"
 )
 }
 \arguments{
@@ -18,7 +23,13 @@ prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search. There is no default and users need to provide the
 correct file path(s) and name(s).}
 
-\item{out_path}{The file path to outputs.}
+\item{fixedmods}{A character vector of fixed modifications. See also
+\link{parse_unimod} for grammars.}
+
+\item{varmods}{A character vector of variable modifications.}
+
+\item{max_ncomb_mods}{Integer; the maximum number of combinatorial
+variable modifications allowed per peptide sequence.}
 
 \item{min_len}{The minimum length of peptides. Shorter peptides will be
 excluded.}
@@ -26,13 +37,37 @@ excluded.}
 \item{max_miss}{The maximum length of peptides. Longer peptides will be
 excluded.}
 
-\item{out_name}{The file name of outputs.}
+\item{digits}{Integer; the number of decimal places to be used.}
+
+\item{out_path}{The file path for outputs.}
+
+\item{out_name}{The file name for outputs.}
 }
 \description{
-Calculates the masses of tryptic peptides from a fasta database.
+Generates and Calculates the masses of tryptic peptides from a fasta
+database.
 }
 \examples{
-\dontrun{
+\donttest{
 res <- calc_pepmasses()
+
+library(purrr)
+library(magrittr)
+
+res_attrs <- map(res, attributes)
+map(res_attrs, names)
+res_attrs \%>\% map(`[[`, "vmods")
+res_mods <- map(res_attrs, `[`, c("fmods", "fmods_ps", "fmods_neuloss", "vmods", "vmods_ps", "vmods_neuloss"))
+
+res_data <- map(res_attrs, `[[`, "data")
+peps_combi_1 <- res_data[[1]]
+
+# base: fixedmods without neulosses
+map(res_data[[1]], length) \%>\% reduce(sum)
+
+# fixedmods, fixedmods + fixedmods_neulosses, varmods, varmods_neulosses
+map(res_data, ~ map(.x, length) \%>\% reduce(sum)) \%>\% reduce(sum)
+
 }
+
 }
