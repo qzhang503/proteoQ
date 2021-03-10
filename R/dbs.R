@@ -339,6 +339,7 @@ add_fixvar_masses <- function (mods, mod_type, aa_masses) {
   masses <- res %>% purrr::map(`[[`, 1)
   positions_sites <- res %>% purrr::map(`[[`, 2)
   neulosses <- res %>% purrr::map(`[[`, 3)
+  rm(res)
   
   local({
     if (mod_type == "fmods" && length(positions_sites) > 1) {
@@ -359,8 +360,15 @@ add_fixvar_masses <- function (mods, mod_type, aa_masses) {
 
   # add masses of (a) fixed or (b) variable mods
   purrr::walk2(positions_sites, masses, ~ {
-    m <- aa_masses %>% .[names(.) == .x]
-    aa_masses[names(aa_masses) == .x] <<- m + .y
+    if (grepl("[NC]{1}-term", names(.x))) {
+      site <- names(.x) %>% 
+        gsub("(Protein|Any) ([NC]{1}-term)", "\\2", .)
+    } else {
+      site <- .x
+    }
+    
+    m <- aa_masses %>% .[names(.) == site]
+    aa_masses[names(aa_masses) == site] <<- m + .y
   })
   
   attr(aa_masses, mod_type) <- all_mods
@@ -384,7 +392,9 @@ add_fixvar_masses <- function (mods, mod_type, aa_masses) {
     `colnames<-`(paste0("nl_", 1:ncol(.)))
 
   aa_masses_nl <- purrr::imap(nl_combi, ~ {
-    m <- aa_masses %>% .[names(.) %in% unlist(positions_sites)]
+    m <- aa_masses %>% 
+      .[names(.) %in% unlist(positions_sites)]
+    
     aa_masses[names(m)] <- m - .x
     
     attr(aa_masses, paste0(mod_type, "_neuloss")) <- .y
