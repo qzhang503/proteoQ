@@ -2,7 +2,7 @@
 % Please edit documentation in R/dbs.R
 \name{sub_modmasses}
 \alias{sub_modmasses}
-\title{Calculates of the mono-isotopic masses for \code{Anywhere} variable
+\title{Calculates of the laddered, mono-isotopic masses for \code{Anywhere} variable
 modifications.}
 \usage{
 sub_modmasses(aa_seq, monomasses, site, mass_delta, digits = 5)

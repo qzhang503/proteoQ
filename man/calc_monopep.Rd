@@ -23,25 +23,30 @@ Helper: calculates the mono-isotopic mass of a peptide sequence.
 }
 \examples{
 \dontrun{
+## No modifications
 data(package = "proteoQ", aa_residues)
 aa_masses <- aa_residues \%>\%
   dplyr::select(c("one_letter", "monoisotopic_da"))
 aa_masses <- aa_masses$monoisotopic_da \%>\% `names<-`(aa_masses$one_letter)
 aa_masses["-"] <- 0
 
-library(purrr)
-
 x <- calc_monopep("AAIDWFDGKEFSGNPIK", aa_masses)
 x <- calc_monopep("-AAAAAAAGDSDSWDADAFSVEDPVR", aa_masses)
 
+## With possible modifications
+library(purrr)
 
 aa_masses_all <- ext_aa_masses()
-calc_monopep("GFGFVSFER", aa_masses_all[[1]])
+aa_masses_ref <- aa_masses_all[[1]]
 
-calc_monopep("GFGFVTFSSMAEVDAAMAAR", aa_masses_all[[11]], aa_masses_all[[1]])
-map(aa_masses_all, ~ calc_monopep("GFGFVTFSSMAEVDAAMAAR", .x, aa_masses_all[[1]]))
+calc_monopep("GFGFVSFER", aa_masses_all[[1]], aa_masses_ref)
+calc_monopep("GFGMFVSFER", aa_masses_all[[1]], aa_masses_ref)
+calc_monopep("GFGMFVSMFER", aa_masses_all[[1]], aa_masses_ref)
+calc_monopep("GFGMFVSMFER", aa_masses_all[[11]], aa_masses_ref)
 
-calc_monopep("GFGFNNTFSSMAEVDAMMANAR", aa_masses_all[[11]], aa_masses_all[[1]])
-map(aa_masses_all, ~ calc_monopep("GFGFNNTFSSMAEVDAMMANAR", .x, aa_masses_all[[1]]))
+map(aa_masses_all, ~ calc_monopep("GFGFVTFSSMAEVDAAMAAR", .x, aa_masses_ref))
+
+calc_monopep("GFGFNNTFSSMAEVDAMMANAR", aa_masses_all[[11]], aa_masses_ref)
+map(aa_masses_all, ~ calc_monopep("GFGFNNTFSSMAEVDAMMANAR", .x, aa_masses_ref))
 }
 }

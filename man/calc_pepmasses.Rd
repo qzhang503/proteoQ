@@ -7,14 +7,17 @@ database.}
 \usage{
 calc_pepmasses(
   fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
-  fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (C)"),
-  varmods = c(c("Acetyl (N-term)", "Oxidation (M)", "Deamidated (N)")),
+  fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"),
+  varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
+    "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
+  enzyme = c("trypsin"),
   max_ncomb_mods = 64,
   min_len = 7,
   max_len = 100,
   max_miss = 2,
+  compatible_mods = TRUE,
   digits = 5,
-  out_path = "~/proteoQ/dbs/fasta/uniprot/pepmasses/pepmasses.rds"
+  out_path = "~/proteoQ/dbs/fasta/uniprot/pepmass/pepmasses.rds"
 )
 }
 \arguments{
@@ -28,6 +31,10 @@ correct file path(s) and name(s).}
 
 \item{varmods}{A character vector of variable modifications.}
 
+\item{enzyme}{A character string; the proteolytic specificity of the assumed
+enzyme will be used to generate peptide sequences from proteins. The enzyme
+is currently \code{trypsin}.}
+
 \item{max_ncomb_mods}{Integer; the maximum number of combinatorial
 variable modifications allowed per peptide sequence.}
 
@@ -37,11 +44,19 @@ excluded.}
 \item{max_miss}{The maximum length of peptides. Longer peptides will be
 excluded.}
 
+\item{compatible_mods}{Logical. At the TRUE default, the combinations of
+  multiple variable modifications to the same site of a peptide sequence will
+  be excluded. In addition, fixed modifications will be coerced to the
+  corresponding variable modifications, should there be other variable
+  modifications to the same sites.
+
+  In general, the argument will be at TRUE. In the case that a joint
+  modification to the same site is desirable, the construction of a new entry
+  in Unimod may be suitable.}
+
 \item{digits}{Integer; the number of decimal places to be used.}
 
-\item{out_path}{The file path for outputs.}
-
-\item{out_name}{The file name for outputs.}
+\item{out_path}{The file name with prepending path for outputs.}
 }
 \description{
 Generates and Calculates the masses of tryptic peptides from a fasta

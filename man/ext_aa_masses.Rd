@@ -8,7 +8,8 @@ ext_aa_masses(
   fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = C)"),
   varmods = c("Acetyl (Protein N-term)", "Oxidation (M)", "Deamidated (N)",
     "Gln->pyro-Glu (N-term = Q)"),
-  max_ncomb_mods = 64
+  max_ncomb_mods = 64,
+  compatible_mods = TRUE
 )
 }
 \arguments{
@@ -25,7 +26,7 @@ Calculates molecular weight of a polypeptide ([MH]+).
 library(purrr)
 
 x <- ext_aa_masses()
-x_att <- map(aa_masses_all, attributes)
+x_att <- map(x, attributes)
 names(x_att[[1]])
 x_vmods <- map(x_att, `[`, c("vmods"))
 
@@ -35,16 +36,16 @@ x <- ext_aa_masses(fixedmods = NULL)
 x <- ext_aa_masses(fixedmods = NULL, varmods = NULL)
 
 # Fixed mod, no NL
-x <- ext_aa_masses(fixedmods = c("TMT6plex (N-term)", "Carbamidomethyl (. = C)"), varmods = NULL)
+x <- ext_aa_masses(fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = C)"), varmods = NULL)
 
 # Fixed mod + NL
-x <- ext_aa_masses(fixedmods = c("TMT6plex (N-term)", "Carbamidomethyl (. = M)"), varmods = NULL)
+x <- ext_aa_masses(fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = M)"), varmods = NULL)
 
 # Fixed mod, no NL; var mod, no NL
-x <- ext_aa_masses(fixedmods = c("TMT6plex (N-term)", "Carbamidomethyl (. = C)"), varmods = c("Acetyl (N-term)", "Gln->pyro-Glu (N-term = Q)"))
+x <- ext_aa_masses(fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = C)"), varmods = c("Acetyl (N-term)", "Gln->pyro-Glu (N-term = Q)"))
 
 # Fixed mod + NL; var mod + NL
-x <- ext_aa_masses(c("TMT6plex (N-term)", "Carbamidomethyl (. = M)",
+x <- ext_aa_masses(c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = M)",
 "Deamidated (. = R)"), c("Acetyl (N-term)", "Gln->pyro-Glu (N-term = Q)",
 "Hex(5)HexNAc(2) (N)"))
 }
