@@ -131,7 +131,7 @@ load_fasta <- function (fasta = NULL) {
 #'                         protein_b = c("AAIDWFDGKEFSGNPIK")), 
 #'                    aa_masses)
 #'                    
-#' aa_masses_all <- ext_aa_masses()
+#' aa_masses_all <- ext_aamasses()
 #' aa_masses_ref <- aa_masses_all[[1]]
 #' 
 #' x <- mcalc_monopep(list(protein_a = c("AAIMDWFDMGKEFSGNPIK", "MAAIDWFDGKEFSGNPIK"), 
@@ -171,7 +171,7 @@ mcalc_monopep <- function (aa_seqs, aa_masses, aa_masses_ref, digits = 5) {
 #' ## With possible modifications
 #' library(purrr)
 #' 
-#' aa_masses_all <- ext_aa_masses()
+#' aa_masses_all <- ext_aamasses()
 #' aa_masses_ref <- aa_masses_all[[1]]
 #' 
 #' calc_monopep("GFGFVSFER", aa_masses_all[[1]], aa_masses_ref)
@@ -401,18 +401,27 @@ add_fixvar_masses <- function (mods, mod_type, aa_masses) {
     `colnames<-`(paste0("nl_", 1:ncol(.)))
 
   aa_masses_nl <- purrr::imap(nl_combi, ~ {
-    # allowed duplicated `sites`
+    # allowed duplicated `sites` at `compatible_mods = TRUE`
     #     N-term          M     N-term 
     # 272.181322 147.035400 272.181322 
-    # m <- aa_masses %>% .[names(.) %in% unlist(positions_sites)]
-    m <- aa_masses[unlist(positions_sites)]
+
+    # 'N-term' not 'Q' for Gln-> pyro-Glu (N-term = Q)
+    sites <- purrr::map_chr(positions_sites, ~ {
+      if (grepl("[NC]{1}-term", names(.x))) {
+        site <- names(.x) %>% 
+          gsub("(Protein|Any) ([NC]{1}-term)", "\\2", .)
+      } else {
+        site <- .x
+      }
+    }) 
     
+    m <- aa_masses[sites]
     aa_masses[names(m)] <- m - .x
     
     attr(aa_masses, paste0(mod_type, "_neuloss")) <- .y
     
     aa_masses
-  }, aa_masses) 
+  }, aa_masses, positions_sites) 
 
   aa_masses <- list(aa_masses)
   
@@ -422,49 +431,60 @@ add_fixvar_masses <- function (mods, mod_type, aa_masses) {
 
 #' Calculates molecular weight of a polypeptide ([MH]+).
 #'
-#' @param max_ncomb_mods Integer; the maximum number of combinatorial
-#'   variable modifications allowed per peptide sequence.
-#' @param digits Integer; the number of decimal places to be used.
+#' @param fixedmods A character vector of fixed modifications. See also
+#'   \link{parse_unimod} for grammars.
+#' @param varmods A character vector of variable modifications.
+#' @param max_ncomb_mods Integer; the maximum number of combinatorial variable
+#'   modifications allowed per peptide sequence.
+#' @param compatible_mods Logical. At the TRUE default, the combinations with
+#'   more than one variable modification to the same site of a peptide sequence
+#'   will be excluded. In addition, fixed modifications will be coerced to the
+#'   corresponding variable modifications, should there be other variable
+#'   modifications to the same sites.
+#'
+#'   In general, the argument will be at TRUE. In the case that a joint
+#'   modification to the same site is desirable, the construction of a new entry
+#'   in Unimod may be suitable.
 #' @examples
 #' \donttest{
 #' library(purrr)
-#' 
-#' x <- ext_aa_masses()
+#'
+#' x <- ext_aamasses()
 #' x_att <- map(x, attributes)
 #' names(x_att[[1]])
 #' x_vmods <- map(x_att, `[`, c("vmods"))
-#' 
-#' x <- ext_aa_masses(c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (C)"), c("Acetyl (N-term)", "Gln->pyro-Glu (N-term = Q)", "Oxidation (M)"))
-#' 
-#' x <- ext_aa_masses(fixedmods = NULL)
-#' x <- ext_aa_masses(fixedmods = NULL, varmods = NULL)
+#'
+#' x <- ext_aamasses(c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (C)"), c("Acetyl (N-term)", "Gln->pyro-Glu (N-term = Q)", "Oxidation (M)"))
+#'
+#' x <- ext_aamasses(fixedmods = NULL)
+#' x <- ext_aamasses(fixedmods = NULL, varmods = NULL)
 #'
 #' # Fixed mod, no NL
-#' x <- ext_aa_masses(fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = C)"), varmods = NULL)
+#' x <- ext_aamasses(fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = C)"), varmods = NULL)
 #'
 #' # Fixed mod + NL
-#' x <- ext_aa_masses(fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = M)"), varmods = NULL)
+#' x <- ext_aamasses(fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = M)"), varmods = NULL)
 #'
 #' # Fixed mod, no NL; var mod, no NL
-#' x <- ext_aa_masses(fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = C)"), varmods = c("Acetyl (N-term)", "Gln->pyro-Glu (N-term = Q)"))
-#' 
+#' x <- ext_aamasses(fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = C)"), varmods = c("Acetyl (N-term)", "Gln->pyro-Glu (N-term = Q)"))
+#'
 #' # Fixed mod + NL; var mod + NL
-#' x <- ext_aa_masses(c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = M)",
+#' x <- ext_aamasses(c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = M)",
 #' "Deamidated (. = R)"), c("Acetyl (N-term)", "Gln->pyro-Glu (N-term = Q)",
 #' "Hex(5)HexNAc(2) (N)"))
 #' }
 #' \dontrun{
 #' # conflicts
-#' x <- ext_aa_masses(c("Carbamidomethyl (N-term)", "TMT2plex (N-term)"), NULL)
+#' x <- ext_aamasses(c("Carbamidomethyl (N-term)", "TMT2plex (N-term)"), NULL)
 #' }
-ext_aa_masses <- function (fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", 
+ext_aamasses <- function (fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", 
                                          "Carbamidomethyl (. = C)"), 
-                           varmods = c("Acetyl (Protein N-term)", 
-                                       "Oxidation (M)", 
-                                       "Deamidated (N)", 
-                                       "Gln->pyro-Glu (N-term = Q)"), 
-                           max_ncomb_mods = 64, 
-                           compatible_mods = TRUE) {
+                          varmods = c("Acetyl (Protein N-term)", 
+                                      "Oxidation (M)", 
+                                      "Deamidated (N)", 
+                                      "Gln->pyro-Glu (N-term = Q)"), 
+                          max_ncomb_mods = 64, 
+                          compatible_mods = TRUE) {
 
   # title (position = site); 
   # . stands for (a) anywhere in position or (b) any residue in site or both
@@ -578,7 +598,7 @@ ext_aa_masses <- function (fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)",
   ## (2) add variable mods + NL
   varmods_comb <- local({
     # (c) Among varmods; keep is 'one_of'
-    varmods_comb <- seq_len(pmin(max_ncomb_mods, length(varmods))) %>% 
+    varmods_comb <- seq_along(varmods) %>% 
       purrr::map(~ combn(varmods, .x, simplify = FALSE)) %>% 
       purrr::flatten()
     
@@ -657,6 +677,12 @@ ext_aa_masses <- function (fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)",
       
       .x
     })
+  
+  if (length(aa_masses_var2) >= max_ncomb_mods) {
+    stop("The ways of combinatorial fixed and variable modifications is greater than ", 
+         max_ncomb_mods, 
+         call. = FALSE)
+  }
   
   c(aa_masses_fi2, aa_masses_var2)
 }
@@ -1014,29 +1040,18 @@ exclude_n_misses <- function (x, n) {
 #' Generates and Calculates the masses of tryptic peptides from a fasta
 #' database.
 #'
-#' @param fixedmods A character vector of fixed modifications. See also
-#'   \link{parse_unimod} for grammars.
-#' @param varmods A character vector of variable modifications.
 #' @param enzyme A character string; the proteolytic specificity of the assumed
 #'   enzyme will be used to generate peptide sequences from proteins. The enzyme
 #'   is currently \code{trypsin}.
 #' @param min_len The minimum length of peptides. Shorter peptides will be
 #'   excluded.
-#' @param max_miss The maximum length of peptides. Longer peptides will be
+#' @param max_len The maximum length of peptides. Longer peptides will be
 #'   excluded.
-#' @param compatible_mods Logical. At the TRUE default, the combinations of
-#'   multiple variable modifications to the same site of a peptide sequence will
-#'   be excluded. In addition, fixed modifications will be coerced to the
-#'   corresponding variable modifications, should there be other variable
-#'   modifications to the same sites.
-#'
-#'   In general, the argument will be at TRUE. In the case that a joint
-#'   modification to the same site is desirable, the construction of a new entry
-#'   in Unimod may be suitable.
-#' @param digits Integer; the number of decimal places to be used.
+#' @param max_miss The maximum number of mis-cleavages per peptide sequence.
 #' @param out_path The file name with prepending path for outputs.
+#' @param digits Integer; the number of decimal places to be used.
 #' @inheritParams splitPSM
-#' @inheritParams ext_aa_masses
+#' @inheritParams ext_aamasses
 #' @examples
 #' \donttest{
 #' res <- calc_pepmasses()
@@ -1080,7 +1095,7 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
   
   stopifnot(min_len >= 0, max_len >= min_len, max_miss <= 100)
   
-  aa_masses <- ext_aa_masses(fixedmods, varmods, max_ncomb_mods, compatible_mods)
+  aa_masses <- ext_aamasses(fixedmods, varmods, max_ncomb_mods, compatible_mods)
   
   fasta_db <- fasta %>% 
     load_fasta() 

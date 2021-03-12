@@ -29,7 +29,7 @@ x <- mcalc_monopep(list(protein_a = c("AAIDWFDGKEFSGNPIK", "MAAIDWFDGKEFSGNPIK")
                         protein_b = c("AAIDWFDGKEFSGNPIK")), 
                    aa_masses)
                    
-aa_masses_all <- ext_aa_masses()
+aa_masses_all <- ext_aamasses()
 aa_masses_ref <- aa_masses_all[[1]]
 
 x <- mcalc_monopep(list(protein_a = c("AAIMDWFDMGKEFSGNPIK", "MAAIDWFDGKEFSGNPIK"), 

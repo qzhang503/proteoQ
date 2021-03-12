@@ -35,18 +35,20 @@ correct file path(s) and name(s).}
 enzyme will be used to generate peptide sequences from proteins. The enzyme
 is currently \code{trypsin}.}
 
-\item{max_ncomb_mods}{Integer; the maximum number of combinatorial
-variable modifications allowed per peptide sequence.}
+\item{max_ncomb_mods}{Integer; the maximum number of combinatorial variable
+modifications allowed per peptide sequence.}
 
 \item{min_len}{The minimum length of peptides. Shorter peptides will be
 excluded.}
 
-\item{max_miss}{The maximum length of peptides. Longer peptides will be
+\item{max_len}{The maximum length of peptides. Longer peptides will be
 excluded.}
 
-\item{compatible_mods}{Logical. At the TRUE default, the combinations of
-  multiple variable modifications to the same site of a peptide sequence will
-  be excluded. In addition, fixed modifications will be coerced to the
+\item{max_miss}{The maximum number of mis-cleavages per peptide sequence.}
+
+\item{compatible_mods}{Logical. At the TRUE default, the combinations with
+  more than one variable modification to the same site of a peptide sequence
+  will be excluded. In addition, fixed modifications will be coerced to the
   corresponding variable modifications, should there be other variable
   modifications to the same sites.
 

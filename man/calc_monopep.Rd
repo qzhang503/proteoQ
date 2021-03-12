@@ -36,7 +36,7 @@ x <- calc_monopep("-AAAAAAAGDSDSWDADAFSVEDPVR", aa_masses)
 ## With possible modifications
 library(purrr)
 
-aa_masses_all <- ext_aa_masses()
+aa_masses_all <- ext_aamasses()
 aa_masses_ref <- aa_masses_all[[1]]
 
 calc_monopep("GFGFVSFER", aa_masses_all[[1]], aa_masses_ref)
