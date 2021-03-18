@@ -4,7 +4,14 @@
 \alias{calc_monopep}
 \title{Helper: calculates the mono-isotopic mass of a peptide sequence.}
 \usage{
-calc_monopep(aa_seq, aa_masses, aa_masses_ref = aa_masses, digits = 5)
+calc_monopep(
+  aa_seq,
+  aa_masses,
+  mod_indexes = NULL,
+  max_nvmods_per_site = 3,
+  max_ncombvmods_per_pep = 64,
+  digits = 5
+)
 }
 \arguments{
 \item{aa_seq}{Character string; a peptide sequences with one-letter
@@ -13,8 +20,14 @@ representation of amino acids.}
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{aa_masses_ref}{A named list containing the reference (mono-isotopic)
-masses of amino acid residues.}
+\item{mod_indexes}{Integer; the indexes of fixed and/or variable
+modifications.}
+
+\item{max_nvmods_per_site}{Integer; the maximum number of combinatorial
+variable modifications per site in a per peptide sequence.}
+
+\item{max_ncombvmods_per_pep}{Integer; the maximum number of combinatorial
+variable modifications per peptide sequence.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }
@@ -36,17 +49,19 @@ x <- calc_monopep("-AAAAAAAGDSDSWDADAFSVEDPVR", aa_masses)
 ## With possible modifications
 library(purrr)
 
-aa_masses_all <- ext_aamasses()
-aa_masses_ref <- aa_masses_all[[1]]
+aa_masses_all <- calc_aamasses()
 
-calc_monopep("GFGFVSFER", aa_masses_all[[1]], aa_masses_ref)
-calc_monopep("GFGMFVSFER", aa_masses_all[[1]], aa_masses_ref)
-calc_monopep("GFGMFVSMFER", aa_masses_all[[1]], aa_masses_ref)
-calc_monopep("GFGMFVSMFER", aa_masses_all[[11]], aa_masses_ref)
+calc_monopep("GFGFVSNFER", aa_masses_all[[1]])
+calc_monopep("GFGMFVSNFER", aa_masses_all[[1]])
+calc_monopep("GFGMFVSNMFER", aa_masses_all[[1]])
+calc_monopep("GFGMFVSNMFER", aa_masses_all[[11]])
 
-map(aa_masses_all, ~ calc_monopep("GFGFVTFSSMAEVDAAMAAR", .x, aa_masses_ref))
+# Error if modifications not in 'aa_masses_all'
+# (`subpeps_by_vmods()` subsets peptides by 
+#  variable modifications in an 'aa_masses')
+map(aa_masses_all, ~ calc_monopep("GFGFVTFSNSMAEVDAAMAAR", .x))
 
-calc_monopep("GFGFNNTFSSMAEVDAMMANAR", aa_masses_all[[11]], aa_masses_ref)
-map(aa_masses_all, ~ calc_monopep("GFGFNNTFSSMAEVDAMMANAR", .x, aa_masses_ref))
+calc_monopep("GFGFNNTFSSMAEVDAMMANAR", aa_masses_all[[11]])
+map(aa_masses_all, ~ calc_monopep("GFGFNNTFSSMAEVDAMMANAR", .x))
 }
 }

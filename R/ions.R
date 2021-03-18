@@ -37,7 +37,9 @@ find_pos_site <- function (pos) {
 #' @seealso contain_protntany
 #' @examples
 #' # `Protein N-term = P`
-#' sites <- list(`Dimethyl (Protein N-term = P)` = "P", `Oxidation (M)` = "M", `Deamidated (N)` = "N")
+#' sites <- list(`Dimethyl (Protein N-term = P)` = "P", 
+#'               `Oxidation (M)` = "M", 
+#'               `Deamidated (N)` = "N")
 #' positions <- c("Protein N-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_protntsite(vmods)
@@ -54,7 +56,10 @@ find_protntsite <- find_pos_site("Protein N-term")
 #' @rdname  find_protntsite
 #' @examples 
 #' # Gln->pyro Glu (N-term = Q)
-#' sites <- list(`Gln->pyro Glu (N-term = Q)` = "Q", `Acetyl (N-term)` = "N-term", `Oxidation (M)` = "M", `Deamidated (N)` = "N")
+#' sites <- list(`Gln->pyro Glu (N-term = Q)` = "Q", 
+#'               `Acetyl (N-term)` = "N-term", 
+#'               `Oxidation (M)` = "M", 
+#'               `Deamidated (N)` = "N")
 #' positions <- c("Any N-term", "Any N-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_anyntsite(vmods)
@@ -71,7 +76,9 @@ find_anyntsite <- find_pos_site("Any N-term")
 #' 
 #' @examples 
 #' # `Oxidation (M)` and `Deamidated (N)`
-#' sites <- list(`Acetyl (N-term)` = "N-term", `Oxidation (M)` = "M", `Deamidated (N)` = "N")
+#' sites <- list(`Acetyl (N-term)` = "N-term", 
+#'               `Oxidation (M)` = "M", 
+#'               `Deamidated (N)` = "N")
 #' positions <- c("Any N-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_anysite(vmods)
@@ -88,7 +95,10 @@ find_anysite <- find_pos_site("Anywhere")
 #' 
 #' @examples 
 #' # `Dehydrated (Protein C-term = N)`
-#' sites <- list(`Dehydrated (Protein C-term = N)` = "N", `Acetyl (N-term)` = "N-term", `Oxidation (M)` = "M", `Deamidated (N)` = "N")
+#' sites <- list(`Dehydrated (Protein C-term = N)` = "N", 
+#'               `Acetyl (N-term)` = "N-term", 
+#'               `Oxidation (M)` = "M", 
+#'               `Deamidated (N)` = "N")
 #' positions <- c("Protein C-term", "Any N-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_protctsite(vmods)
@@ -105,7 +115,10 @@ find_protctsite <- find_pos_site("Protein C-term")
 #' 
 #' @examples 
 #' # `Oxidation (C-term = G)`
-#' sites <- list(`Oxidation (C-term = G)` = "G", `Acetyl (N-term)` = "N-term", `Oxidation (M)` = "M", `Deamidated (N)` = "N")
+#' sites <- list(`Oxidation (C-term = G)` = "G", 
+#'               `Acetyl (N-term)` = "N-term", 
+#'               `Oxidation (M)` = "M", 
+#'               `Deamidated (N)` = "N")
 #' positions <- c("Any C-term", "Any N-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_anyctsite(vmods)
@@ -235,7 +248,9 @@ contain_protntany <- contain_termpos_any("Protein N-term")
 #' @rdname contain_protntany
 #' @examples
 #' # `Acetyl (N-term)`
-#' sites <- list(`Acetyl (N-term)` = "N-term", `Oxidation (M)` = "M", `Deamidated (N)` = "N")
+#' sites <- list(`Acetyl (N-term)` = "N-term", 
+#'               `Oxidation (M)` = "M", 
+#'               `Deamidated (N)` = "N")
 #' positions <- c("Any N-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_anyntany(vmods)
@@ -250,7 +265,9 @@ contain_anyntany <- contain_termpos_any("Any N-term")
 #' @rdname contain_protntany
 #' @examples
 #' # `Amidated (Protein C-term)`
-#' sites <- list(`Amidated (Protein C-term)` = "C-term", `Oxidation (M)` = "M", `Deamidated (N)` = "N")
+#' sites <- list(`Amidated (Protein C-term)` = "C-term", 
+#'               `Oxidation (M)` = "M", 
+#'               `Deamidated (N)` = "N")
 #' positions <- c("Protein C-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_protctany(vmods)
@@ -265,7 +282,9 @@ contain_protctany <- contain_termpos_any("Protein C-term")
 #' @rdname contain_protntany
 #' @examples
 #' # `Amidated (C-term)`
-#' sites <- list(`Amidated (C-term)` = "C-term", `Oxidation (M)` = "M", `Deamidated (N)` = "N")
+#' sites <- list(`Amidated (C-term)` = "C-term", 
+#'               `Oxidation (M)` = "M", 
+#'               `Deamidated (N)` = "N")
 #' positions <- c("Any C-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_anyctany(vmods)
@@ -539,10 +558,4 @@ subpeps_by_vmods <- function(aa_masses, peps) {
     find_nmodtree(vmods) %>% 
     find_cmodtree(vmods) 
 }
-
-
-
-
-
-
 

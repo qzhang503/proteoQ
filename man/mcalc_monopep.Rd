@@ -4,7 +4,7 @@
 \alias{mcalc_monopep}
 \title{Calculates multiply the molecular weight of a polypeptides ([MH]+).}
 \usage{
-mcalc_monopep(aa_seqs, aa_masses, aa_masses_ref, digits = 5)
+mcalc_monopep(aa_seqs, aa_masses, mod_indexes, max_nvmods_per_site, digits = 5)
 }
 \arguments{
 \item{aa_seqs}{Character string; a vector of peptide sequences with
@@ -12,6 +12,12 @@ one-letter representation of amino acids.}
 
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
+
+\item{mod_indexes}{Integer; the indexes of fixed and/or variable
+modifications.}
+
+\item{max_nvmods_per_site}{Integer; the maximum number of combinatorial
+variable modifications per site in a per peptide sequence.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }
@@ -25,15 +31,15 @@ aa_masses <- aa_residues \%>\%
   dplyr::select(c("one_letter", "monoisotopic_da"))
 aa_masses <- aa_masses$monoisotopic_da \%>\% `names<-`(aa_masses$one_letter)
 
-x <- mcalc_monopep(list(protein_a = c("AAIDWFDGKEFSGNPIK", "MAAIDWFDGKEFSGNPIK"), 
-                        protein_b = c("AAIDWFDGKEFSGNPIK")), 
+x <- mcalc_monopep(list(protein_a = c("AAIDWFDGKEFSGNPIK", "MAAIDWFDGKEFSGNPIK"),
+                        protein_b = c("AAIDWFDGKEFSGNPIK")),
                    aa_masses)
-                   
-aa_masses_all <- ext_aamasses()
-aa_masses_ref <- aa_masses_all[[1]]
 
-x <- mcalc_monopep(list(protein_a = c("AAIMDWFDMGKEFSGNPIK", "MAAIDWFDGKEFSGNPIK"), 
-                        protein_b = c("AAIDWFDGKEFSGNPIK")), 
-                   aa_masses_all[[11]], aa_masses_ref)
+aa_masses_all <- calc_aamasses()
+
+# Error if peptide sequences not 'compatible' with the given 'aa_masses'
+x <- mcalc_monopep(list(protein_a = c("AAIMDWFDMGKEFSGNPNIK", "MAAIDWFDGKEFSGNPNIK"),
+                        protein_b = c("AAIDWFDGKEMFSGNPNIK")),
+                   aa_masses_all[[11]])
 }
 }

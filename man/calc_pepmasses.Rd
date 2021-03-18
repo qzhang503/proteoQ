@@ -11,11 +11,13 @@ calc_pepmasses(
   varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
   enzyme = c("trypsin"),
-  max_ncomb_mods = 64,
+  max_nseqs = 50000,
+  max_ncomb_vmods = 64,
+  max_nvmods_per_site = 3,
+  max_ncombvmods_per_pep = 64,
   min_len = 7,
   max_len = 100,
   max_miss = 2,
-  compatible_mods = TRUE,
   digits = 5,
   out_path = "~/proteoQ/dbs/fasta/uniprot/pepmass/pepmasses.rds"
 )
@@ -35,26 +37,25 @@ correct file path(s) and name(s).}
 enzyme will be used to generate peptide sequences from proteins. The enzyme
 is currently \code{trypsin}.}
 
-\item{max_ncomb_mods}{Integer; the maximum number of combinatorial variable
-modifications allowed per peptide sequence.}
+\item{max_nseqs}{Integer; the maximum number of protein sequences in fasta
+files.}
 
-\item{min_len}{The minimum length of peptides. Shorter peptides will be
-excluded.}
+\item{max_ncomb_vmods}{Integer; the maximum number of combinatorial variable
+modifications and neutral losses.}
 
-\item{max_len}{The maximum length of peptides. Longer peptides will be
-excluded.}
+\item{max_nvmods_per_site}{Integer; the maximum number of combinatorial
+variable modifications per site in a per peptide sequence.}
+
+\item{max_ncombvmods_per_pep}{Integer; the maximum number of combinatorial
+variable modifications per peptide sequence.}
+
+\item{min_len}{Integer; the minimum length of peptides. Shorter peptides will
+be excluded.}
+
+\item{max_len}{Integer; the maximum length of peptides. Longer peptides will
+be excluded.}
 
 \item{max_miss}{The maximum number of mis-cleavages per peptide sequence.}
-
-\item{compatible_mods}{Logical. At the TRUE default, the combinations with
-  more than one variable modification to the same site of a peptide sequence
-  will be excluded. In addition, fixed modifications will be coerced to the
-  corresponding variable modifications, should there be other variable
-  modifications to the same sites.
-
-  In general, the argument will be at TRUE. In the case that a joint
-  modification to the same site is desirable, the construction of a new entry
-  in Unimod may be suitable.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 
@@ -74,7 +75,9 @@ library(magrittr)
 res_attrs <- map(res, attributes)
 map(res_attrs, names)
 res_attrs \%>\% map(`[[`, "vmods")
-res_mods <- map(res_attrs, `[`, c("fmods", "fmods_ps", "fmods_neuloss", "vmods", "vmods_ps", "vmods_neuloss"))
+res_mods <- map(res_attrs, `[`, 
+                c("fmods", "fmods_ps", "fmods_neuloss", 
+                  "vmods", "vmods_ps", "vmods_neuloss"))
 
 res_data <- map(res_attrs, `[[`, "data")
 peps_combi_1 <- res_data[[1]]
