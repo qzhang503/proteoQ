@@ -1149,7 +1149,7 @@ parse_acc <- function(df) {
     unique()
   
   pat_uni_acc <- 
-    "^[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}"
+    "^[OPQ][0-9][A-Z0-9]{3}[0-9]|^[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}"
   pat_uni_id <- 
     "^[[:alnum:]]+_[A-Z]{1,10}$"
   pat_ref_acc <- 
