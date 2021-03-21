@@ -8,7 +8,7 @@ calc_aamasses(
   fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = C)"),
   varmods = c("Acetyl (Protein N-term)", "Oxidation (M)", "Deamidated (N)",
     "Gln->pyro-Glu (N-term = Q)"),
-  max_ncomb_vmods = 64
+  maxn_vmods_setscombi = 64
 )
 }
 \arguments{
@@ -17,7 +17,7 @@ calc_aamasses(
 
 \item{varmods}{A character vector of variable modifications.}
 
-\item{max_ncomb_vmods}{Integer; the maximum number of combinatorial variable
+\item{maxn_vmods_setscombi}{Integer; the maximum number of combinatorial variable
 modifications and neutral losses.}
 }
 \description{

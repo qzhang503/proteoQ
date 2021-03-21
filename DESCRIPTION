@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.3.1.3
+Version: 1.3.1.5
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -43,6 +43,7 @@ Imports:
     grid,
     gridExtra,
 		gtable,
+		gtools,
 		networkD3,
     purrr,
     readxl,

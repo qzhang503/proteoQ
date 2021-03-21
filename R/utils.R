@@ -3959,3 +3959,32 @@ proc_mgf_timstof <- function (path, n = 1000) {
 }
 
 
+#' Flatten lists recursively
+#' 
+#' @param x Lists
+recur_flatten <- function (x) {
+  if (!inherits(x, "list")) {
+    list(x)
+  } else {
+    unlist(c(purrr::map(x, recur_flatten)), recursive = FALSE)
+  }
+}
+
+
+#' Subsets elements with attributes kept.
+#'
+#' @param data The data vector.
+#' @param nm The names of elements in the vector for removals.
+subset_keepattr <- function (data, nm = c("M", "N")) {
+  attrs <- attributes(data)
+  
+  for (i in seq_along(nm)) {
+    data <- data %>% .[! names(.) == nm[i]]
+  }
+  
+  attrs$names <- names(data)
+  attributes(data) <- attrs
+  
+  data
+}
+

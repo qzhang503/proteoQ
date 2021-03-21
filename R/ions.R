@@ -8,6 +8,7 @@
 #' @return A function for finding the residue at the position specified by the
 #'   argument \code{pos}. For each function, it takes a list of variable
 #'   modifications specified by argument \code{vmods} as inputs.
+#' @export
 find_pos_site <- function (pos) {
   force(pos)
   
@@ -44,7 +45,7 @@ find_pos_site <- function (pos) {
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_protntsite(vmods)
 #' find_protntsite(vmods)
-#' 
+#' @export
 find_protntsite <- find_pos_site("Protein N-term")
 
 
@@ -64,7 +65,7 @@ find_protntsite <- find_pos_site("Protein N-term")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_anyntsite(vmods)
 #' find_anyntsite(vmods)
-#' 
+#' @export
 find_anyntsite <- find_pos_site("Any N-term")
 
 
@@ -83,7 +84,7 @@ find_anyntsite <- find_pos_site("Any N-term")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_anysite(vmods)
 #' find_anysite(vmods)
-#' 
+#' @export
 find_anysite <- find_pos_site("Anywhere")
 
 
@@ -103,7 +104,7 @@ find_anysite <- find_pos_site("Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_protctsite(vmods)
 #' find_protctsite(vmods)
-#' 
+#' @export
 find_protctsite <- find_pos_site("Protein C-term")
 
 
@@ -123,7 +124,7 @@ find_protctsite <- find_pos_site("Protein C-term")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_anyctsite(vmods)
 #' find_anyctsite(vmods)
-#' 
+#' @export
 find_anyctsite <- find_pos_site("Any C-term")
 
 
@@ -237,7 +238,7 @@ contain_termpos_any <- function (pos) {
 #' positions <- c("Protein N-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_protntany(vmods)
-#' 
+#' @export
 contain_protntany <- contain_termpos_any("Protein N-term")
 
 
@@ -254,7 +255,7 @@ contain_protntany <- contain_termpos_any("Protein N-term")
 #' positions <- c("Any N-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_anyntany(vmods)
-#' 
+#' @export
 contain_anyntany <- contain_termpos_any("Any N-term")
 
 
@@ -271,7 +272,7 @@ contain_anyntany <- contain_termpos_any("Any N-term")
 #' positions <- c("Protein C-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_protctany(vmods)
-#' 
+#' @export
 contain_protctany <- contain_termpos_any("Protein C-term")
 
 
@@ -288,7 +289,7 @@ contain_protctany <- contain_termpos_any("Protein C-term")
 #' positions <- c("Any C-term", "Anywhere", "Anywhere")
 #' vmods <- purrr::map2(sites, positions, ~ setNames(.x, .y))
 #' contain_anyctany(vmods)
-#' 
+#' @export
 contain_anyctany <- contain_termpos_any("Any C-term")
 
 

@@ -11,10 +11,10 @@ calc_pepmasses(
   varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
   enzyme = c("trypsin"),
-  max_nseqs = 50000,
-  max_ncomb_vmods = 64,
-  max_nvmods_per_site = 3,
-  max_ncombvmods_per_pep = 64,
+  maxn_fasta_seqs = 50000,
+  maxn_vmods_setscombi = 64,
+  maxn_vmods_per_pep = 5,
+  maxn_sites_per_vmod = 3,
   min_len = 7,
   max_len = 100,
   max_miss = 2,
@@ -37,17 +37,17 @@ correct file path(s) and name(s).}
 enzyme will be used to generate peptide sequences from proteins. The enzyme
 is currently \code{trypsin}.}
 
-\item{max_nseqs}{Integer; the maximum number of protein sequences in fasta
-files.}
+\item{maxn_fasta_seqs}{Integer; the maximum number of protein sequences in
+fasta files.}
 
-\item{max_ncomb_vmods}{Integer; the maximum number of combinatorial variable
+\item{maxn_vmods_setscombi}{Integer; the maximum number of combinatorial variable
 modifications and neutral losses.}
 
-\item{max_nvmods_per_site}{Integer; the maximum number of combinatorial
-variable modifications per site in a per peptide sequence.}
+\item{maxn_vmods_per_pep}{The maximum number of variable modifications per
+peptide.}
 
-\item{max_ncombvmods_per_pep}{Integer; the maximum number of combinatorial
-variable modifications per peptide sequence.}
+\item{maxn_sites_per_vmod}{Integer; the maximum number of combinatorial
+variable modifications per site in a per peptide sequence.}
 
 \item{min_len}{Integer; the minimum length of peptides. Shorter peptides will
 be excluded.}
@@ -75,8 +75,8 @@ library(magrittr)
 res_attrs <- map(res, attributes)
 map(res_attrs, names)
 res_attrs \%>\% map(`[[`, "vmods")
-res_mods <- map(res_attrs, `[`, 
-                c("fmods", "fmods_ps", "fmods_neuloss", 
+res_mods <- map(res_attrs, `[`,
+                c("fmods", "fmods_ps", "fmods_neuloss",
                   "vmods", "vmods_ps", "vmods_neuloss"))
 
 res_data <- map(res_attrs, `[[`, "data")
