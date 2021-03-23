@@ -110,8 +110,8 @@ import(readr)
 import(readxl)
 import(reshape2)
 import(rlang, except = c(list_along, invoke, flatten_raw,
-  modify, as_function, flatten_dbl, flatten_lgl, flatten_int,
-  flatten_chr, splice, flatten, prepend, "%@%"))
+ modify, as_function, flatten_dbl, flatten_lgl, flatten_int, flatten_chr,
+ splice, flatten, prepend, "%@%"))
 import(stringr)
 import(tidyr)
 importFrom(Biobase,ExpressionSet)

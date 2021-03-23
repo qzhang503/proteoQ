@@ -7,9 +7,9 @@
 mcalc_monopep(
   aa_seqs,
   aa_masses,
-  mod_indexes,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
+  parallel = TRUE,
   n_cores = parallel::detectCores(),
   cl = parallel::makeCluster(getOption("cl.cores", n_cores)),
   digits = 5
@@ -22,16 +22,19 @@ one-letter representation of amino acids.}
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{mod_indexes}{Integer; the indexes of fixed and/or variable
-modifications.}
-
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
 
 \item{maxn_sites_per_vmod}{Integer; the maximum number of combinatorial
 variable modifications per site in a per peptide sequence.}
 
+\item{parallel}{Logical; if TRUE, performs parallel computation. The default
+is TRUE.}
+
 \item{digits}{Integer; the number of decimal places to be used.}
+
+\item{mod_indexes}{Integer; the indexes of fixed and/or variable
+modifications.}
 }
 \description{
 The calculations iterate through protein accessions and peptide sequences.

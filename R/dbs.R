@@ -180,9 +180,10 @@ calc_avgpep <- function (aa_seq, digits = 4) {
 #'                         protein_b = c("AAIDWFDGKEMFSGNPNIK")),
 #'                    aa_masses_all[[11]])
 #' }
-mcalc_monopep <- function (aa_seqs, aa_masses, mod_indexes, 
+mcalc_monopep <- function (aa_seqs, aa_masses, 
                            maxn_vmods_per_pep = 5, 
                            maxn_sites_per_vmod = 3, 
+                           parallel = TRUE, 
                            n_cores = parallel::detectCores(), 
                            cl = parallel::makeCluster(getOption("cl.cores", n_cores)), 
                            digits = 5) {
@@ -199,7 +200,7 @@ mcalc_monopep <- function (aa_seqs, aa_masses, mod_indexes,
     empties <- sites %>% purrr::map_lgl(purrr::is_empty)
     
     sites <- sites[!empties] 
-    # names(sites) <- mod_indexes[names(sites)]
+    
     sites
   })
   
@@ -213,8 +214,6 @@ mcalc_monopep <- function (aa_seqs, aa_masses, mod_indexes,
   ntmod <- tmod %>% .[. == "N-term"]
   ctmod <- tmod %>% .[. == "C-term"]
   
-  parallel <- TRUE
-  # parallel <- FALSE
   if (parallel) {
     aa_seqs <- suppressWarnings(split(aa_seqs, seq_len(n_cores)))
     
@@ -222,7 +221,6 @@ mcalc_monopep <- function (aa_seqs, aa_masses, mod_indexes,
       parallel::clusterMap(cl, calc_prots_pepmasses, aa_seqs, 
                            MoreArgs = list(aa_masses, vmods_ps, 
                                            amods, tmod, ntmod, ctmod, 
-                                           mod_indexes = NULL, 
                                            maxn_vmods_per_pep, 
                                            maxn_sites_per_vmod, 
                                            digits)) %>% 
@@ -233,7 +231,6 @@ mcalc_monopep <- function (aa_seqs, aa_masses, mod_indexes,
         x <- .x %>% 
           purrr::map(calc_monopep, 
                      aa_masses, vmods_ps, amods, tmod, ntmod, ctmod, 
-                     mod_indexes, 
                      maxn_vmods_per_pep, 
                      maxn_sites_per_vmod, 
                      digits) %>% # by peptides
@@ -252,14 +249,13 @@ mcalc_monopep <- function (aa_seqs, aa_masses, mod_indexes,
 #' @param prot_peps Lists of peptides under a proteins.
 #' @inheritParams calc_monopep
 calc_prots_pepmasses <- function (aa_seqs, aa_masses, vmods_ps, 
-                                  amods, tmod, ntmod, ctmod, mod_indexes, 
+                                  amods, tmod, ntmod, ctmod, 
                                   maxn_vmods_per_pep, maxn_sites_per_vmod, digits) {
   purrr::map(aa_seqs, ~ {
     prot_peps <- .x
     
     calc_prot_pepmasses(prot_peps, aa_masses, 
                         vmods_ps, amods, tmod, ntmod, ctmod, 
-                        mod_indexes, 
                         maxn_vmods_per_pep, 
                         maxn_sites_per_vmod, 
                         digits)
@@ -274,7 +270,6 @@ calc_prots_pepmasses <- function (aa_seqs, aa_masses, vmods_ps,
 #' @inheritParams calc_monopep
 calc_prot_pepmasses <- function (prot_peps, aa_masses, 
                                  vmods_ps, amods, tmod, ntmod, ctmod, 
-                                 mod_indexes, 
                                  maxn_vmods_per_pep, 
                                  maxn_sites_per_vmod, 
                                  digits) {
@@ -282,7 +277,6 @@ calc_prot_pepmasses <- function (prot_peps, aa_masses,
   prot_peps %>% 
     purrr::map(calc_monopep, 
                aa_masses, vmods_ps, amods, tmod, ntmod, ctmod, 
-               mod_indexes, 
                maxn_vmods_per_pep, 
                maxn_sites_per_vmod, 
                digits) %>% # by peptides
@@ -301,8 +295,8 @@ calc_prot_pepmasses <- function (prot_peps, aa_masses,
 #' @param ntmod A N-term modification subset from \code{tmod}.
 #' @param ctmod A C-term modification subset from \code{tmod}.
 #' @inheritParams mcalc_monopep
+#' @import purrr
 calc_monopep <- function (aa_seq, aa_masses, vmods_ps, amods, tmod, ntmod, ctmod, 
-                          mod_indexes = NULL, 
                           maxn_vmods_per_pep = 5, 
                           maxn_sites_per_vmod = 3, 
                           digits = 5) {
@@ -313,11 +307,10 @@ calc_monopep <- function (aa_seq, aa_masses, vmods_ps, amods, tmod, ntmod, ctmod
     return(NULL)
   }
   
-  # no "-" in `aa_seq`
   aas <- aa_seq %>% 
     stringr::str_split("", simplify = TRUE)
 
-  if (purrr::is_empty(amods) && purrr::is_empty(tmod)) {
+  if (is_empty(amods) && is_empty(tmod)) {
     return(
       aas %>% 
         aa_masses[.] %>% 
@@ -343,29 +336,36 @@ calc_monopep <- function (aa_seq, aa_masses, vmods_ps, amods, tmod, ntmod, ctmod
                                   maxn_sites_per_vmod = maxn_sites_per_vmod, 
                                   digits = digits)
     
-    if (length(intra_combis) > 1L) {
+    # multiple residues (each residue one to multiple modifications)
+    if (any(map_lgl(intra_combis, is_empty))) {
+      v_out <- list()
+    } else if (length(intra_combis) > 1L) {
       inter_combi <- intra_combis %>% 
-        purrr::reduce(expand.grid, KEEP.OUT.ATTRS = FALSE)
+        reduce(expand.grid, KEEP.OUT.ATTRS = FALSE)
       
       nrow <- nrow(inter_combi)
       v_out <- vector("list", nrow)
       
       for (i in 1:nrow) {
-        v_out[[i]] <- purrr::reduce(inter_combi[i, ], `c`) %>% 
+        v_out[[i]] <- reduce(inter_combi[i, ], `c`) %>% 
           unlist()
       }
     } else {
-      v_out <- purrr::flatten(intra_combis)
+      v_out <- flatten(intra_combis)
     }
-    
+
     invisible(v_out)
   })
 
-  out <- vmods_combi %>% 
-    purrr::map(calc_mvmods_masses, amods, ntmod, ctmod, aa_seq, aas, 
-               aa_masses, digits) %>% 
-    `names<-`(NULL)
-  
+  if (!is_empty(vmods_combi)) {
+    out <- vmods_combi %>% 
+      map(calc_mvmods_masses, amods, ntmod, ctmod, aa_seq, aas, 
+                 aa_masses, digits) %>% 
+      `names<-`(NULL)
+  } else {
+    out <- vmods_combi
+  }
+
   out
 }
 
@@ -381,16 +381,17 @@ calc_monopep <- function (aa_seq, aa_masses, vmods_ps, amods, tmod, ntmod, ctmod
 #' @param ctmod The \code{C-term} modification.
 #' @param aas \code{aa_seq} split in a sequence of LETTERS.
 #' @inheritParams calc_monopep
+#' @import purrr
 calc_mvmods_masses <- function (vmods, amods, ntmod, ctmod, 
                                 aa_seq, aas, aa_masses, digits) {
-  if (!purrr::is_empty(amods)) {
-    nms <- purrr::imap(amods, ~ {
+  if (!is_empty(amods)) {
+    nms <- imap(amods, ~ {
       names(.x) <- .y
       .x
-    }) %>% purrr::flatten() %>% 
+    }) %>% flatten() %>% 
       unlist()
     
-    n_per_site <- purrr::map(names(nms), ~ sum(vmods == .x)) %>% 
+    n_per_site <- map(names(nms), ~ sum(vmods == .x)) %>% 
       `names<-`(names(nms)) %>% 
       unlist()
     
@@ -409,19 +410,19 @@ calc_mvmods_masses <- function (vmods, amods, ntmod, ctmod,
     aa_masses[.] %>% 
     sum() 
   
-  if (purrr::is_empty(ntmod) && purrr::is_empty(ctmod)) {
+  if (is_empty(ntmod) && is_empty(ctmod)) {
     out <- out %>% 
       `+`(aa_masses["N-term"]) %>% 
       `+`(aa_masses["C-term"]) 
-  } else if (!(purrr::is_empty(ntmod) || purrr::is_empty(ctmod))) {
+  } else if (!(is_empty(ntmod) || is_empty(ctmod))) {
     out <- out %>% 
       `+`(aa_masses[names(ntmod)]) %>% 
       `+`(aa_masses[names(ctmod)])
-  } else if (!purrr::is_empty(ntmod)) {
+  } else if (!is_empty(ntmod)) {
     out <- out %>% 
       `+`(aa_masses[names(ntmod)]) %>% 
       `+`(aa_masses["C-term"]) 
-  } else if (!purrr::is_empty(ctmod)) {
+  } else if (!is_empty(ctmod)) {
     out <- out %>% 
       `+`(aa_masses["N-term"]) %>% 
       `+`(aa_masses[names(ctmod)])
@@ -441,6 +442,7 @@ calc_mvmods_masses <- function (vmods, amods, ntmod, ctmod,
 #' @inheritParams calc_monopep
 #' @inheritParams mcalc_monopep
 #' @inheritParams calc_mvmods_masses
+#' @import purrr
 #' @return Lists by residues in \code{amods}.
 unique_mvmods <- function (amods, ntmod, ctmod, aas, aa_masses, 
                            maxn_vmods_per_pep = 5, 
@@ -450,7 +452,7 @@ unique_mvmods <- function (amods, ntmod, ctmod, aas, aa_masses,
     `names<-`(names(amods)) %>% 
     split(., .)
   
-  purrr::map(residue_mods, 
+  map(residue_mods, 
              ~ vmods_elements(aas, .x, ntmod, ctmod, 
                               aa_masses, 
                               maxn_vmods_per_pep, 
@@ -468,6 +470,7 @@ unique_mvmods <- function (amods, ntmod, ctmod, aas, aa_masses,
 #'   rownames of \code{Carbamidomethyl (M)} and \code{Oxidation (M)} and a
 #'   column residues of \code{M, M}.
 #' @inheritParams unique_mvmods
+#' @import purrr
 vmods_elements <- function (aas, 
                             residue_mods, 
                             ntmod, 
@@ -488,7 +491,7 @@ vmods_elements <- function (aas,
   
   # i.e., btw Anywhere "M" and "Acetyl N-term" where "M" on the "N-term"
   # MFGMFNVSMR cannot have three `Oxidation (M)` and `Acetyl (N-term)`
-  if (!(purrr::is_empty(ntmod) || purrr::is_empty(ctmod))) {
+  if (!(is_empty(ntmod) || is_empty(ctmod))) {
     len_aas <- length(aas)
     
     if (aas[1] == residue && aas[len_aas] == residue) {
@@ -496,35 +499,39 @@ vmods_elements <- function (aas,
     } else if ((aas[1] == residue) || (aas[len_aas] == residue)) {
       len_p <- len_p - 1
     }
-  } else if (!purrr::is_empty(ntmod)) {
+  } else if (!is_empty(ntmod)) {
     if (aas[1] == residue) {
       len_p <- len_p - 1
     }
-  } else if (!purrr::is_empty(ctmod)) {
+  } else if (!is_empty(ctmod)) {
     if (aas[length(aas)] == residue) {
       len_p <- len_p - 1
     }
   }
 
+  if (len_p <= 0) return(list())
+
   if (len_p > len_n) {
     x <- 
-      # purrr::map((len_n + 1):len_p, ~ fnd_unique_sets(ps[seq_len(.x)], ns)) %>%
-      purrr::map((len_n + 1):len_p, ~ fnd_unique_sets(seq_len(.x), ns)) %>% 
+      # map((len_n + 1):len_p, ~ find_unique_sets(ps[seq_len(.x)], ns)) %>%
+      map((len_n + 1):len_p, ~ find_unique_sets(seq_len(.x), ns)) %>% 
       recur_flatten() %>% 
       `c`(list(ns), .)
   } else {
     x <- list(ns)
   }
 
-  len_x <- purrr::map(x, length)
-  rows <- purrr::map_lgl(x, ~ length(.x) > maxn_vmods_per_pep)
+  len_x <- map(x, length)
+  rows <- map_lgl(x, ~ length(.x) > maxn_vmods_per_pep)
   x <- x[!rows]
   
   maxn_vmod <- x %>% 
-    purrr::map(table) %>% 
-    purrr::map(max)
+    map(table) %>% 
+    map(max)
   rows <- maxn_vmod > maxn_sites_per_vmod
   x <- x[!rows]
+  
+  invisible(x)
 }
 
 
@@ -535,21 +542,22 @@ vmods_elements <- function (aas,
 #' @param ps A vector of positions.
 #' @param ns The names to be filled into \code{p}.
 #' @importFrom gtools combinations
-fnd_unique_sets <- function (ps = c(1:5), ns = c("A", "B", "C")) {
+find_unique_sets <- function (ps = c(1:5), ns = c("A", "B", "C")) {
   len_p <- length(ps)
   len_n <- length(ns)
   
-  x <- gtools::combinations(len_n, len_p - len_n, ns, repeats = TRUE)
+  x <- combinations(len_n, len_p - len_n, ns, repeats = TRUE)
   
   n_row <- nrow(x)
   out <- vector("list", n_row)
+  
   for (i in 1:n_row) {
     out[[i]] <- c(ns, x[i, ])
   }
   
   out
-  # purrr::map(1:nrow(x), ~ c(ns, x[.x, ]))
-  # rep(list(ns), nrow(x)) %>% purrr::map2(x, `c`) # slower
+  # map(1:nrow(x), ~ c(ns, x[.x, ]))
+  # rep(list(ns), nrow(x)) %>% map2(x, `c`) # slower
 }
 
 
@@ -760,6 +768,9 @@ add_fixvar_masses <- function (mods, mod_type, aa_masses) {
 #' \dontrun{
 #' # conflicts
 #' x <- calc_aamasses(c("Carbamidomethyl (N-term)", "TMT2plex (N-term)"), NULL)
+#' 
+#' # need separate S and T
+#' x <- calc_aamasses(NULL, "Phospho (ST)")
 #' }
 #' @export
 calc_aamasses <- function (fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", 
@@ -768,7 +779,8 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)",
                                        "Oxidation (M)", 
                                        "Deamidated (N)", 
                                        "Gln->pyro-Glu (N-term = Q)"), 
-                           maxn_vmods_setscombi = 64) {
+                           maxn_vmods_setscombi = 64, 
+                           mod_indexes = NULL) {
 
   # title (position = site); 
   # . stands for (a) anywhere in position or (b) any residue in site or both
@@ -869,7 +881,7 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)",
   fixedmods <- new_mods$fixedmods
   varmods <- new_mods$varmods
   rm(new_mods)
-
+  
   aa_masses <- c(
     A = 71.037114, R = 156.101111, N = 114.042927, D = 115.026943, 
     C = 103.009185, E = 129.042593, Q = 128.058578, G = 57.021464, 
@@ -1012,6 +1024,40 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)",
     aa_masses_var2 <- aa_masses_var2[1:maxn_vmods_setscombi]
   }
   
+  if (!is.null(mod_indexes)) {
+    aa_masses_var2 <- aa_masses_var2 %>% 
+      purrr::map(~ {
+        nms <- mod_indexes %>% 
+          .[names(.) %in% names(.x)]
+        
+        idxes <- which(names(.x) %in% names(nms))
+        names(.x)[idxes] <- nms
+        
+        .x
+      }, mod_indexes)
+    
+    aa_masses_fi2 <- aa_masses_fi2 %>% 
+      purrr::map(~ {
+        names(attr(.x, "fmods_ps")) <- mod_indexes[fixedmods]
+        names(attr(.x, "fmods_mass")) <- mod_indexes[fixedmods]
+        
+        .x
+      })
+    
+    aa_masses_var2 <- aa_masses_var2 %>% 
+      purrr::map(~ {
+        v_nms <- names(attr(.x, "vmods_ps"))
+        names(attr(.x, "vmods_ps")) <- mod_indexes[v_nms]
+        names(attr(.x, "vmods_mass")) <- mod_indexes[v_nms]
+        
+        f_nms <- names(attr(.x, "fmods_ps"))
+        names(attr(.x, "fmods_ps")) <- mod_indexes[f_nms]
+        names(attr(.x, "fmods_mass")) <- mod_indexes[f_nms]
+        
+        .x
+      })
+  }
+
   c(aa_masses_fi2, aa_masses_var2)
 }
 
@@ -1441,7 +1487,7 @@ rm_char_in_nlast <- function (x, char = "-$", n = (max_miss + 1) * 2) {
 #' }
 #' @export
 calc_monopeptide <- function (aa_seq, aa_masses, 
-                              mod_indexes = NULL, maxn_vmods_per_pep = 5, 
+                              maxn_vmods_per_pep = 5, 
                               maxn_sites_per_vmod = 3, digits = 5) {
   
   options(digits = 9)
@@ -1458,7 +1504,7 @@ calc_monopeptide <- function (aa_seq, aa_masses,
     empties <- sites %>% purrr::map_lgl(purrr::is_empty)
     
     sites <- sites[!empties] 
-    # names(sites) <- mod_indexes[names(sites)]
+    
     sites
   })
   
@@ -1479,7 +1525,6 @@ calc_monopeptide <- function (aa_seq, aa_masses,
                tmod = tmod, 
                ntmod = ntmod, 
                ctmod = ctmod, 
-               mod_indexes = mod_indexes, 
                maxn_vmods_per_pep = maxn_vmods_per_pep, 
                maxn_sites_per_vmod = maxn_sites_per_vmod, 
                digits = digits)
@@ -1489,6 +1534,8 @@ calc_monopeptide <- function (aa_seq, aa_masses,
 #' Generates and Calculates the masses of tryptic peptides from a fasta
 #' database.
 #'
+#' @param index_mods Logical; if TRUE, converts the names of modifications to
+#'   indexes. Not currently used.
 #' @param enzyme A character string; the proteolytic specificity of the assumed
 #'   enzyme will be used to generate peptide sequences from proteins. The enzyme
 #'   is currently \code{trypsin}.
@@ -1539,6 +1586,7 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
                                         "Oxidation (M)", 
                                         "Deamidated (N)", 
                                         "Gln->pyro-Glu (N-term = Q)"), 
+                            index_mods = FALSE, 
                             enzyme = c("trypsin"), 
                             maxn_fasta_seqs = 50000,
                             maxn_vmods_setscombi = 64, 
@@ -1546,6 +1594,7 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
                             maxn_sites_per_vmod = 3, 
                             min_len = 7, max_len = 100, max_miss = 2, 
                             digits = 5, 
+                            parallel = TRUE, 
                             out_path = "~/proteoQ/dbs/fasta/uniprot/pepmass/pepmasses.rds") {
 
   old_opts <- options()
@@ -1557,16 +1606,20 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
   
   stopifnot(min_len >= 0, max_len >= min_len, max_miss <= 100)
   
-  mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
-    as.hexmode() %>% 
-    `names<-`(c(fixedmods, varmods))
-  
+  if (index_mods) {
+    mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
+      as.hexmode() %>% 
+      `names<-`(c(fixedmods, varmods))
+  } else {
+    mod_indexes <- NULL
+  }
+
   message("Computing the combinations of fixed and variable modifications.")
-  aa_masses <- calc_aamasses(fixedmods, varmods, maxn_vmods_setscombi)
+  aa_masses <- calc_aamasses(fixedmods, varmods, maxn_vmods_setscombi, mod_indexes)
   
   message("Loading fasta databases.")
   fasta_db <- fasta %>% load_fasta() 
-  
+
   if (length(fasta_db) > maxn_fasta_seqs) {
     stop("More than `", maxn_fasta_seqs, "` sequences in fasta files.", 
          call. = FALSE)
@@ -1625,7 +1678,8 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
     })
   
   # --- calculates peptide masses ---
-  message("Calculating peptide masses. May take a while...")
+  message("Calculating peptide masses. ", 
+          "May take a while.")
   
   n_cores <- parallel::detectCores()
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
@@ -1642,10 +1696,9 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
   pep_masses <- purrr::map2(pep_masses, 
                             aa_masses, 
                             mcalc_monopep, 
-                            mod_indexes, 
                             maxn_vmods_per_pep, 
                             maxn_sites_per_vmod, 
-                            n_cores, cl, 
+                            parallel, n_cores, cl, 
                             digits)
 
   parallel::stopCluster(cl)

@@ -7,7 +7,6 @@
 calc_monopeptide(
   aa_seq,
   aa_masses,
-  mod_indexes = NULL,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
   digits = 5
@@ -19,9 +18,6 @@ representation of amino acids.}
 
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
-
-\item{mod_indexes}{Integer; the indexes of fixed and/or variable
-modifications.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}

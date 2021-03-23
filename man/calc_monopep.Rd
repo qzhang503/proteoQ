@@ -12,7 +12,6 @@ calc_monopep(
   tmod,
   ntmod,
   ctmod,
-  mod_indexes = NULL,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
   digits = 5
@@ -35,9 +34,6 @@ and sites being values.}
 \item{ntmod}{A N-term modification subset from \code{tmod}.}
 
 \item{ctmod}{A C-term modification subset from \code{tmod}.}
-
-\item{mod_indexes}{Integer; the indexes of fixed and/or variable
-modifications.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}

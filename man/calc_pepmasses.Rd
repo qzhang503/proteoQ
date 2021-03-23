@@ -10,6 +10,7 @@ calc_pepmasses(
   fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"),
   varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
+  index_mods = FALSE,
   enzyme = c("trypsin"),
   maxn_fasta_seqs = 50000,
   maxn_vmods_setscombi = 64,
@@ -19,6 +20,7 @@ calc_pepmasses(
   max_len = 100,
   max_miss = 2,
   digits = 5,
+  parallel = TRUE,
   out_path = "~/proteoQ/dbs/fasta/uniprot/pepmass/pepmasses.rds"
 )
 }
@@ -32,6 +34,9 @@ correct file path(s) and name(s).}
 \link{parse_unimod} for grammars.}
 
 \item{varmods}{A character vector of variable modifications.}
+
+\item{index_mods}{Logical; if TRUE, converts the names of modifications to
+indexes. Not currently used.}
 
 \item{enzyme}{A character string; the proteolytic specificity of the assumed
 enzyme will be used to generate peptide sequences from proteins. The enzyme
@@ -58,6 +63,9 @@ be excluded.}
 \item{max_miss}{The maximum number of mis-cleavages per peptide sequence.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
+
+\item{parallel}{Logical; if TRUE, performs parallel computation. The default
+is TRUE.}
 
 \item{out_path}{The file name with prepending path for outputs.}
 }

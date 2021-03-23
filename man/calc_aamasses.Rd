@@ -8,7 +8,8 @@ calc_aamasses(
   fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = C)"),
   varmods = c("Acetyl (Protein N-term)", "Oxidation (M)", "Deamidated (N)",
     "Gln->pyro-Glu (N-term = Q)"),
-  maxn_vmods_setscombi = 64
+  maxn_vmods_setscombi = 64,
+  mod_indexes = NULL
 )
 }
 \arguments{
@@ -67,5 +68,8 @@ x <- calc_aamasses(c("TMT6plex (N-term)", "TMT6plex (K)",
 \dontrun{
 # conflicts
 x <- calc_aamasses(c("Carbamidomethyl (N-term)", "TMT2plex (N-term)"), NULL)
+
+# need separate S and T
+x <- calc_aamasses(NULL, "Phospho (ST)")
 }
 }

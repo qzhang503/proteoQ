@@ -851,7 +851,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  allowed. See also posts for
 #'  \href{https://proteoq.netlify.app/post/sample-exlusion-from-metadata}{sample
 #'  exclusion}.
-#'  
+#'
 #'  \code{RAW_File}: (a) for analysis with off-line fractionation of peptides
 #'  before LC/MS, values under the \code{RAW_File} column should be left void.
 #'  Instead, the correspondence between the fraction numbers and \code{RAW_File}
@@ -866,7 +866,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  data for parsing by search engine(s). In the case, machine-generated MS file
 #'  names should be used. In addition, MS files may occasionally have no
 #'  contributions to PSM findings. In the case, users will be prompted to remove
-#'  these MS file names. 
+#'  these MS file names.
 #'
 #'  Utilities \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} may
 #'  aid matching MS file names between metadata and PSM data. Utility
@@ -874,7 +874,8 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  folder. Utility \code{\link{extract_psm_raws}} extracts the names of MS
 #'  files that are available in PSM data.
 #'
-#'  \code{Reference}: reference entry(entries) are indicated with non-void string(s).
+#'  \code{Reference}: reference entry(entries) are indicated with non-void
+#'  string(s).
 #'
 #'  \tabular{ll}{ \strong{Optional default column}   \tab \strong{Descrption}\cr
 #'  Select \tab Samples to be selected for indicated analysis \cr Group \tab
@@ -900,115 +901,123 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  PSM_File \tab Names of PSM files. Required only when one \code{RAW_File} can
 #'  be linked to multiple PSM files (e.g. F012345.csv and F012346.csv both from
 #'  ms_1.raw). }
-#'  
+#'
 #'@family normalization functions
-#'@seealso 
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
+#'@seealso \emph{Data normalization} \cr \code{\link{normPSM}} for extended
+#'  examples in PSM data normalization \cr \code{\link{PSM2Pep}} for extended
+#'  examples in PSM to peptide summarization \cr \code{\link{mergePep}} for
+#'  extended examples in peptide data merging \cr \code{\link{standPep}} for
+#'  extended examples in peptide data normalization \cr \code{\link{Pep2Prn}}
+#'  for extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'  in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'  extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+#'  and \code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
 #'@family data row filtration
-#'@seealso 
-#'  \emph{User-friendly utilities for variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
+#'@seealso \emph{User-friendly utilities for variable arguments of `filter_...`}
+#'  \cr \code{\link{contain_str}}, \code{\link{contain_chars_in}},
+#'  \code{\link{not_contain_str}}, \code{\link{not_contain_chars_in}},
+#'  \code{\link{start_with_str}}, \code{\link{end_with_str}},
+#'  \code{\link{start_with_chars_in}} and \code{\link{ends_with_chars_in}} for
+#'  data subsetting by character strings \cr
+#'
 #'@family missing value imputation
-#'@seealso 
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
+#'@seealso \emph{Missing values} \cr \code{\link{pepImp}} and
+#'  \code{\link{prnImp}} for missing value imputation \cr
+#'
 #'@family basic informatics
-#'@seealso 
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Workflow scripts} \cr 
-#'  # TMT \cr 
-#'  system.file("extdata", "workflow_tmt_base.R", package = "proteoQ") \cr
-#'  system.file("extdata", "workflow_tmt_ext.R", package = "proteoQ") \cr
-#'  
-#'  # LFQ \cr 
-#'  system.file("extdata", "workflow_lfq_base.R", package = "proteoQ") \cr
-#'  
-#'  \emph{Metadata files} \cr 
-#'  # TMT, no fractionation --- OK without `frac_smry.xlsx` \cr
-#'  # (a. no references) \cr 
-#'  system.file("extdata", "expt_smry_no_prefrac.xlsx", package = "proteoQDA") \cr
-#'  # (b. W2 and W16 references) \cr
-#'  system.file("extdata", "expt_smry_no_prefrac_ref_w2_w16.xlsx", package = "proteoQDA") \cr
-#'  
-#'  # TMT, prefractionation \cr
-#'  # (a. no references) \cr 
-#'  system.file("extdata", "expt_smry_gtmt.xlsx", package = "proteoQDA") \cr
+#'@seealso \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}}
+#'  for significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'  volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'  analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'  GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'  and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'  set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'  online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'  visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'  visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'  visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'  visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr \code{\link{anal_prnTrend}} and
+#'  \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'  \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'  \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+#'
+#'  \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'  UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'  among RefSeq accessions, gene names and Entrez IDs \cr \code{\link{prepGO}}
+#'  for
+#'  \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'   ontology}} \cr \code{\link{prepMSig}} for
+#'  \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'   signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}}
+#'  for STRING-DB \cr
+#'
+#'  \emph{Workflow scripts} \cr # TMT \cr system.file("extdata",
+#'  "workflow_tmt_base.R", package = "proteoQ") \cr system.file("extdata",
+#'  "workflow_tmt_ext.R", package = "proteoQ") \cr
+#'
+#'  # LFQ \cr system.file("extdata", "workflow_lfq_base.R", package = "proteoQ")
+#'  \cr
+#'
+#'  \emph{Metadata files} \cr # TMT, no fractionation --- OK without
+#'  `frac_smry.xlsx` \cr # (a. no references) \cr system.file("extdata",
+#'  "expt_smry_no_prefrac.xlsx", package = "proteoQDA") \cr # (b. W2 and W16
+#'  references) \cr system.file("extdata",
+#'  "expt_smry_no_prefrac_ref_w2_w16.xlsx", package = "proteoQDA") \cr
+#'
+#'  # TMT, prefractionation \cr # (a. no references) \cr system.file("extdata",
+#'  "expt_smry_gtmt.xlsx", package = "proteoQDA") \cr system.file("extdata",
+#'  "frac_smry_gtmt.xlsx", package = "proteoQDA") \cr
+#'
+#'  # (b. W2 references) \cr system.file("extdata", "expt_smry_ref_w2.xlsx",
+#'  package = "proteoQDA") \cr system.file("extdata", "frac_smry_gtmt.xlsx",
+#'  package = "proteoQDA") \cr
+#'
+#'  # (c. W2 and W16 references) \cr system.file("extdata",
+#'  "expt_smry_ref_w2_w16.xlsx", package = "proteoQDA") \cr
 #'  system.file("extdata", "frac_smry_gtmt.xlsx", package = "proteoQDA") \cr
-#'  
-#'  # (b. W2 references) \cr
-#'  system.file("extdata", "expt_smry_ref_w2.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_gtmt.xlsx", package = "proteoQDA") \cr
-#'  
-#'  # (c. W2 and W16 references) \cr
-#'  system.file("extdata", "expt_smry_ref_w2_w16.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_gtmt.xlsx", package = "proteoQDA") \cr
-#'  
-#'  # TMT, prefractionation (global + phospho) \cr
-#'  system.file("extdata", "expt_smry_tmt_cmbn.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_tmt_cmbn.xlsx", package = "proteoQDA") \cr
-#'  
+#'
+#'  # TMT, prefractionation (global + phospho) \cr system.file("extdata",
+#'  "expt_smry_tmt_cmbn.xlsx", package = "proteoQDA") \cr system.file("extdata",
+#'  "frac_smry_tmt_cmbn.xlsx", package = "proteoQDA") \cr
+#'
 #'  # TMT, prefractionation, one MS to multiple PSM files \cr
 #'  system.file("extdata", "expt_smry_psmfiles.xlsx", package = "proteoQDA") \cr
 #'  system.file("extdata", "frac_smry_psmfiles.xlsx", package = "proteoQDA") \cr
-#'  
-#'  # TMT, prefractionation, mixed-plexes \cr
-#'  # (column PSM_File needed; as with this example, \cr 
-#'  #  mixed-plexes results are actually from the same MS files \cr
-#'  #  but searched separately at 6- and 10-plex settings!) \cr 
-#'  system.file("extdata", "expt_smry_mixplexes.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_mixplexes.xlsx", package = "proteoQDA") \cr
-#'  
-#'  # LFQ, prefractionation \cr
-#'  system.file("extdata", "expt_smry_plfq.xlsx", package = "proteoQDA") \cr
-#'  system.file("extdata", "frac_smry_plfq.xlsx", package = "proteoQDA") \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'
+#'  # TMT, prefractionation, mixed-plexes \cr # (column PSM_File needed; as with
+#'  this example, \cr #  mixed-plexes results are actually from the same MS
+#'  files \cr #  but searched separately at 6- and 10-plex settings!) \cr
+#'  system.file("extdata", "expt_smry_mixplexes.xlsx", package = "proteoQDA")
+#'  \cr system.file("extdata", "frac_smry_mixplexes.xlsx", package =
+#'  "proteoQDA") \cr
+#'
+#'  # LFQ, prefractionation \cr system.file("extdata", "expt_smry_plfq.xlsx",
+#'  package = "proteoQDA") \cr system.file("extdata", "frac_smry_plfq.xlsx",
+#'  package = "proteoQDA") \cr
+#'
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr
 #'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
-#'  
+#'
+#'@family Monoisotopic masses of peptides
+#'@seealso \emph{MS1 peptide masses} \cr \code{\link{calc_pepmasses}} for
+#'  mono-isotopic masses of peptides from fasta databases \cr
+#'  \code{\link{calc_monopeptide}} for mono-isotopic masses of peptides from
+#'  individual sequences \cr \code{\link{parse_unimod}} for parsing
+#'  \href{https://www.unimod.org/}{Unimod} fixed modifications,  variable
+#'  modifications and neutral losses. \cr \code{\link{find_unimod}} for finding
+#'  a Unimod
+#'
+#'
+#'
 #'@param dat_dir A character string to the working directory. The default is to
 #'  match the value under the global environment.
 #'@param expt_smry A character string to a \code{.xlsx} file containing the
@@ -1019,10 +1028,10 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'@example inst/extdata/examples/load_expts_.R
 #'
 #'@import dplyr fs
-#' @rawNamespace import(rlang, except = c(list_along, invoke, flatten_raw,
-#'   modify, as_function, flatten_dbl, flatten_lgl, flatten_int,
-#'   flatten_chr, splice, flatten, prepend, "%@%"))
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#'@rawNamespace import(rlang, except = c(list_along, invoke, flatten_raw,
+#'  modify, as_function, flatten_dbl, flatten_lgl, flatten_int, flatten_chr,
+#'  splice, flatten, prepend, "%@%"))
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", 
                         frac_smry = "frac_smry.xlsx") {

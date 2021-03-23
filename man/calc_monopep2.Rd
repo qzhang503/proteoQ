@@ -36,9 +36,6 @@ and sites being values.}
 
 \item{ctmod}{A C-term modification subset from \code{tmod}.}
 
-\item{mod_indexes}{Integer; the indexes of fixed and/or variable
-modifications.}
-
 \item{maxn_vmods_sitescombi_per_pep}{Integer; the maximum number of
 combinatorial variable modifications per peptide sequence.}
 
