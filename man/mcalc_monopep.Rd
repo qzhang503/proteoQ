@@ -10,6 +10,8 @@ mcalc_monopep(
   mod_indexes,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
+  n_cores = parallel::detectCores(),
+  cl = parallel::makeCluster(getOption("cl.cores", n_cores)),
   digits = 5
 )
 }

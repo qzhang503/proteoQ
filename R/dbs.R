@@ -183,7 +183,10 @@ calc_avgpep <- function (aa_seq, digits = 4) {
 mcalc_monopep <- function (aa_seqs, aa_masses, mod_indexes, 
                            maxn_vmods_per_pep = 5, 
                            maxn_sites_per_vmod = 3, 
+                           n_cores = parallel::detectCores(), 
+                           cl = parallel::makeCluster(getOption("cl.cores", n_cores)), 
                            digits = 5) {
+
   vmods_ps <- aa_masses %>% 
     attributes() %>% 
     `[[`("vmods_ps")
@@ -210,17 +213,80 @@ mcalc_monopep <- function (aa_seqs, aa_masses, mod_indexes,
   ntmod <- tmod %>% .[. == "N-term"]
   ctmod <- tmod %>% .[. == "C-term"]
   
-  attr(aa_masses, "data") <- aa_seqs %>% 
-    purrr::map(~ { # by prot_acc
-      .x %>% 
-        purrr::map(calc_monopep, 
-                   aa_masses, vmods_ps, amods, tmod, ntmod, ctmod, 
-                   mod_indexes, 
-                   maxn_vmods_per_pep, 
-                   maxn_sites_per_vmod, 
-                   digits) %>% # by peptides
-        unlist() 
-    })
+  parallel <- TRUE
+  # parallel <- FALSE
+  if (parallel) {
+    aa_seqs <- suppressWarnings(split(aa_seqs, seq_len(n_cores)))
+    
+    out <- 
+      parallel::clusterMap(cl, calc_prots_pepmasses, aa_seqs, 
+                           MoreArgs = list(aa_masses, vmods_ps, 
+                                           amods, tmod, ntmod, ctmod, 
+                                           mod_indexes = NULL, 
+                                           maxn_vmods_per_pep, 
+                                           maxn_sites_per_vmod, 
+                                           digits)) %>% 
+      purrr::flatten()
+  } else {
+    out <- aa_seqs %>% 
+      purrr::map(~ { # by prot_acc
+        x <- .x %>% 
+          purrr::map(calc_monopep, 
+                     aa_masses, vmods_ps, amods, tmod, ntmod, ctmod, 
+                     mod_indexes, 
+                     maxn_vmods_per_pep, 
+                     maxn_sites_per_vmod, 
+                     digits) %>% # by peptides
+          unlist(use.names = TRUE)
+      })
+  }
+  
+  invisible(out)
+}
+
+
+#' Helper function for parallel calculations peptide masses by proteins.
+#' 
+#' For each split of multiple proteins.
+#' 
+#' @param prot_peps Lists of peptides under a proteins.
+#' @inheritParams calc_monopep
+calc_prots_pepmasses <- function (aa_seqs, aa_masses, vmods_ps, 
+                                  amods, tmod, ntmod, ctmod, mod_indexes, 
+                                  maxn_vmods_per_pep, maxn_sites_per_vmod, digits) {
+  purrr::map(aa_seqs, ~ {
+    prot_peps <- .x
+    
+    calc_prot_pepmasses(prot_peps, aa_masses, 
+                        vmods_ps, amods, tmod, ntmod, ctmod, 
+                        mod_indexes, 
+                        maxn_vmods_per_pep, 
+                        maxn_sites_per_vmod, 
+                        digits)
+  })
+}
+
+#' Helper function for parallel calculations peptide masses by proteins.
+#' 
+#' For single protein.
+#' 
+#' @param prot_peps Lists of peptides under a proteins.
+#' @inheritParams calc_monopep
+calc_prot_pepmasses <- function (prot_peps, aa_masses, 
+                                 vmods_ps, amods, tmod, ntmod, ctmod, 
+                                 mod_indexes, 
+                                 maxn_vmods_per_pep, 
+                                 maxn_sites_per_vmod, 
+                                 digits) {
+  
+  prot_peps %>% 
+    purrr::map(calc_monopep, 
+               aa_masses, vmods_ps, amods, tmod, ntmod, ctmod, 
+               mod_indexes, 
+               maxn_vmods_per_pep, 
+               maxn_sites_per_vmod, 
+               digits) %>% # by peptides
+    unlist(use.names = TRUE)
 }
 
 
@@ -271,7 +337,8 @@ calc_monopep <- function (aa_seq, aa_masses, vmods_ps, amods, tmod, ntmod, ctmod
 
   # amods and/or tmods
   vmods_combi <- local({
-    intra_combis <- unique_mvmods(amods = amods, aas = aas, aa_masses = aa_masses, 
+    intra_combis <- unique_mvmods(amods = amods, ntmod = ntmod, ctmod = ctmod, 
+                                  aas = aas, aa_masses = aa_masses, 
                                   maxn_vmods_per_pep = maxn_vmods_per_pep, 
                                   maxn_sites_per_vmod = maxn_sites_per_vmod, 
                                   digits = digits)
@@ -293,14 +360,13 @@ calc_monopep <- function (aa_seq, aa_masses, vmods_ps, amods, tmod, ntmod, ctmod
     
     invisible(v_out)
   })
-  
-  # allows some 'conflicting' combinations for speed
-  # i.e., btw Anywhere "M" and "Acetyl N-term" where "M" on the "N-term"
-  # otherwise need to count the number of M's to decide the availability of Acetyl N-term
 
-  vmods_combi %>% 
+  out <- vmods_combi %>% 
     purrr::map(calc_mvmods_masses, amods, ntmod, ctmod, aa_seq, aas, 
-               aa_masses, digits)
+               aa_masses, digits) %>% 
+    `names<-`(NULL)
+  
+  out
 }
 
 
@@ -376,16 +442,17 @@ calc_mvmods_masses <- function (vmods, amods, ntmod, ctmod,
 #' @inheritParams mcalc_monopep
 #' @inheritParams calc_mvmods_masses
 #' @return Lists by residues in \code{amods}.
-unique_mvmods <- function (amods, aas, aa_masses, 
+unique_mvmods <- function (amods, ntmod, ctmod, aas, aa_masses, 
                            maxn_vmods_per_pep = 5, 
                            maxn_sites_per_vmod = 3, 
                            digits = 5) {
-  residue_mods <- do.call(rbind, amods) %>% 
-    data.frame() %>% 
-    split(., .[["Anywhere"]])
+  residue_mods <- unlist(amods, use.names = FALSE) %>% 
+    `names<-`(names(amods)) %>% 
+    split(., .)
   
   purrr::map(residue_mods, 
-             ~ vmods_elements(aas, .x, aa_masses, 
+             ~ vmods_elements(aas, .x, ntmod, ctmod, 
+                              aa_masses, 
                               maxn_vmods_per_pep, 
                               maxn_sites_per_vmod, 
                               digits)) 
@@ -394,7 +461,7 @@ unique_mvmods <- function (amods, aas, aa_masses,
 
 #' Find the sets of variable modifications.
 #'
-#' Excluding position differernces, i.e., \code{A, B} and \code{B, A} is the
+#' Excluding position differences, i.e., \code{A, B} and \code{B, A} is the
 #' same set.
 #'
 #' @param residue_mods Amino-acid residues with Unimod names. For example
@@ -402,21 +469,47 @@ unique_mvmods <- function (amods, aas, aa_masses,
 #'   column residues of \code{M, M}.
 #' @inheritParams unique_mvmods
 vmods_elements <- function (aas, 
-                            residue_mods, aa_masses, 
+                            residue_mods, 
+                            ntmod, 
+                            ctmod, 
+                            aa_masses, 
                             maxn_vmods_per_pep = 5, 
                             maxn_sites_per_vmod = 3, 
                             digits = 5) {
-  residue <- residue_mods[1, 1]
+  residue <- residue_mods[[1]]
   
-  ns <- rownames(residue_mods)
-  ps <- which(aas == residue)
-  
+  ns <- names(residue_mods)
   len_n <- length(ns)
-  len_p <- length(ps)
+  
+  # no need of ps[seq_len(.x)] as the exact positions not needed
+  # ps <- which(aas == residue)
+  # len_p <- length(ps)
+  len_p <- sum(aas == residue)
+  
+  # i.e., btw Anywhere "M" and "Acetyl N-term" where "M" on the "N-term"
+  # MFGMFNVSMR cannot have three `Oxidation (M)` and `Acetyl (N-term)`
+  if (!(purrr::is_empty(ntmod) || purrr::is_empty(ctmod))) {
+    len_aas <- length(aas)
+    
+    if (aas[1] == residue && aas[len_aas] == residue) {
+      len_p <- len_p - 2
+    } else if ((aas[1] == residue) || (aas[len_aas] == residue)) {
+      len_p <- len_p - 1
+    }
+  } else if (!purrr::is_empty(ntmod)) {
+    if (aas[1] == residue) {
+      len_p <- len_p - 1
+    }
+  } else if (!purrr::is_empty(ctmod)) {
+    if (aas[length(aas)] == residue) {
+      len_p <- len_p - 1
+    }
+  }
 
   if (len_p > len_n) {
-    x <- purrr::map((length(ns) + 1):length(ps), 
-                    ~ fnd_unique_sets(ps[seq_len(.x)], ns)) %>% 
+    x <- 
+      # purrr::map((len_n + 1):len_p, ~ fnd_unique_sets(ps[seq_len(.x)], ns)) %>%
+      purrr::map((len_n + 1):len_p, ~ fnd_unique_sets(seq_len(.x), ns)) %>% 
       recur_flatten() %>% 
       `c`(list(ns), .)
   } else {
@@ -448,7 +541,15 @@ fnd_unique_sets <- function (ps = c(1:5), ns = c("A", "B", "C")) {
   
   x <- gtools::combinations(len_n, len_p - len_n, ns, repeats = TRUE)
   
-  purrr::map(1:nrow(x), ~ c(ns, x[.x, ]))
+  n_row <- nrow(x)
+  out <- vector("list", n_row)
+  for (i in 1:n_row) {
+    out[[i]] <- c(ns, x[i, ])
+  }
+  
+  out
+  # purrr::map(1:nrow(x), ~ c(ns, x[.x, ]))
+  # rep(list(ns), nrow(x)) %>% purrr::map2(x, `c`) # slower
 }
 
 
@@ -1249,7 +1350,7 @@ keep_n_misses <- function (x, n) {
   
   stopifnot(n >= 0L, len >= 1L)
   
-  x[1:pmin(n + 1, len)]
+  x[1:min(n + 1, len)]
 } 
 
 
@@ -1262,7 +1363,7 @@ exclude_n_misses <- function (x, n) {
   
   stopifnot(n >= 0L, len >= 1L)
 
-  x[-(1:pmin(n + 1, len))]
+  x[-(1:min(n + 1, len))]
 }
 
 
@@ -1282,7 +1383,7 @@ str_exclude_count <- function (x, char = "-") {
 #' @param char A starting character to be removed.
 #' @param n The number of beginning entries to be considered.
 rm_char_in_nfirst <- function (x, char = "^-", n = (max_miss + 1) * 2) {
-  n <- pmin(length(x), n)
+  n <- min(length(x), n)
   x[seq_len(n)] <- gsub(char, "", x[seq_len(n)])
   
   x
@@ -1295,7 +1396,7 @@ rm_char_in_nfirst <- function (x, char = "^-", n = (max_miss + 1) * 2) {
 #' @inheritParams rm_char_in_nfirst
 rm_char_in_nlast <- function (x, char = "-$", n = (max_miss + 1) * 2) {
   len <- length(x)
-  n <- pmin(len, n)
+  n <- min(len, n)
   x[(len-n+1):len] <- gsub(char, "", x[(len-n+1):len])
   
   x
@@ -1422,10 +1523,10 @@ calc_monopeptide <- function (aa_seq, aa_masses,
 #' peps_combi_1 <- res_data[[1]]
 #'
 #' # base: fixedmods without neulosses
-#' map(res_data[[1]], length) %>% reduce(sum)
+#' unlist(res_data[[1]], use.names = FALSE) %>% length()
 #'
 #' # fixedmods, fixedmods + fixedmods_neulosses, varmods, varmods_neulosses
-#' map(res_data, ~ map(.x, length) %>% reduce(sum)) %>% reduce(sum)
+#' unlist(res_data, use.names = FALSE) %>% length()
 #'
 #' }
 #'
@@ -1447,6 +1548,10 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
                             digits = 5, 
                             out_path = "~/proteoQ/dbs/fasta/uniprot/pepmass/pepmasses.rds") {
 
+  old_opts <- options()
+  options(warn = 1)
+  on.exit(options(old_opts), add = TRUE)
+  
   stopifnot(vapply(c(min_len, max_len, max_miss), is.numeric, 
                    logical(1)))
   
@@ -1456,14 +1561,18 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
     as.hexmode() %>% 
     `names<-`(c(fixedmods, varmods))
   
+  message("Computing the combinations of fixed and variable modifications.")
   aa_masses <- calc_aamasses(fixedmods, varmods, maxn_vmods_setscombi)
   
+  message("Loading fasta databases.")
   fasta_db <- fasta %>% load_fasta() 
-
+  
   if (length(fasta_db) > maxn_fasta_seqs) {
     stop("More than `", maxn_fasta_seqs, "` sequences in fasta files.", 
          call. = FALSE)
   }
+  
+  message("Generating peptide sequences.")
   
   inds_m <- grep("^M", fasta_db)
   
@@ -1515,20 +1624,41 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
         purrr::map(rm_char_in_nlast, char = "-$", n = (max_miss + 1) * 2)
     })
   
-  pep_masses <- pep_masses %>% 
-    purrr::map2(aa_masses, mcalc_monopep, mod_indexes, 
-                maxn_vmods_per_pep, 
-                maxn_sites_per_vmod, 
-                digits)
+  # --- calculates peptide masses ---
+  message("Calculating peptide masses. May take a while...")
   
-  out <- purrr::map2(aa_masses, pep_masses, ~ {
+  n_cores <- parallel::detectCores()
+  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+  
+  parallel::clusterExport(cl, list("%>%"), 
+                          envir = environment(magrittr::`%>%`))
+  parallel::clusterExport(cl, list("calc_monopep"), 
+                          envir = env_where("calc_monopep"))
+  parallel::clusterExport(cl, list("calc_prot_pepmasses"), 
+                          envir = env_where("calc_prot_pepmasses"))
+  parallel::clusterExport(cl, list("calc_prots_pepmasses"), 
+                          envir = env_where("calc_prots_pepmasses"))
+
+  pep_masses <- purrr::map2(pep_masses, 
+                            aa_masses, 
+                            mcalc_monopep, 
+                            mod_indexes, 
+                            maxn_vmods_per_pep, 
+                            maxn_sites_per_vmod, 
+                            n_cores, cl, 
+                            digits)
+
+  parallel::stopCluster(cl)
+  
+  pep_masses <- purrr::map2(aa_masses, pep_masses, ~ {
     attr(.x, "data") <- .y
     return(.x)
   })
 
-  dir.create(gsub("(^.*/).*$", "\\1", out_path), showWarnings = FALSE, recursive = TRUE)
-  saveRDS(out, file.path(out_path))
+  dir.create(gsub("(^.*/).*$", "\\1", out_path), 
+             showWarnings = FALSE, recursive = TRUE)
+  saveRDS(pep_masses, file.path(out_path))
   
-  invisible(out)
+  invisible(pep_masses)
 }
 

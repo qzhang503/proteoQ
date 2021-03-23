@@ -83,10 +83,10 @@ res_data <- map(res_attrs, `[[`, "data")
 peps_combi_1 <- res_data[[1]]
 
 # base: fixedmods without neulosses
-map(res_data[[1]], length) \%>\% reduce(sum)
+unlist(res_data[[1]], use.names = FALSE) \%>\% length()
 
 # fixedmods, fixedmods + fixedmods_neulosses, varmods, varmods_neulosses
-map(res_data, ~ map(.x, length) \%>\% reduce(sum)) \%>\% reduce(sum)
+unlist(res_data, use.names = FALSE) \%>\% length()
 
 }
 

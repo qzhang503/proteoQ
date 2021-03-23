@@ -7,6 +7,8 @@
 vmods_elements(
   aas,
   residue_mods,
+  ntmod,
+  ctmod,
   aa_masses,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
@@ -20,6 +22,10 @@ vmods_elements(
 rownames of \code{Carbamidomethyl (M)} and \code{Oxidation (M)} and a
 column residues of \code{M, M}.}
 
+\item{ntmod}{A N-term modification subset from \code{tmod}.}
+
+\item{ctmod}{A C-term modification subset from \code{tmod}.}
+
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
@@ -32,6 +38,6 @@ variable modifications per site in a per peptide sequence.}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Excluding position differernces, i.e., \code{A, B} and \code{B, A} is the
+Excluding position differences, i.e., \code{A, B} and \code{B, A} is the
 same set.
 }

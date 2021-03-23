@@ -6,6 +6,8 @@
 \usage{
 unique_mvmods(
   amods,
+  ntmod,
+  ctmod,
   aas,
   aa_masses,
   maxn_vmods_per_pep = 5,
@@ -15,6 +17,10 @@ unique_mvmods(
 }
 \arguments{
 \item{amods}{Anywhere modifications.}
+
+\item{ntmod}{A N-term modification subset from \code{tmod}.}
+
+\item{ctmod}{A C-term modification subset from \code{tmod}.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
 
