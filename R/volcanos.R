@@ -25,7 +25,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
   
   df <- df %>%
     `rownames<-`(.[, id]) %>%
-    dplyr::select(-grep("I[0-9]{3}|log2_R[0-9]{3}|^FC", names(.)))
+    dplyr::select(-grep("I[0-9]{3}|log2_R[0-9]{3}|^.*\\.FC \\(.*\\)$", names(.)))
   
   dots <- rlang::enexprs(...)
   dots <- concat_fml_dots(
@@ -83,7 +83,8 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene",
   purrr::walk(file.path(filepath, fml_nms), 
               ~ dir.create(.x, recursive = TRUE, showWarnings = FALSE))
   
-  col_ind <- purrr::map(fml_nms, ~ grepl(.x, names(df))) %>%
+  col_ind <- fml_nms %>% 
+    purrr::map(~ grepl(paste0("^", .x, "\\."), names(df))) %>%
     `names<-`(paste0("nm_", seq_along(.))) %>% 
     dplyr::bind_cols() %>%
     rowSums() %>%
@@ -177,8 +178,8 @@ byfml_volcano <- function (fml_nm, gspval_cutoff, gslogFC_cutoff, topn_gsets, df
   id <- rlang::as_string(rlang::enexpr(id))
   
   df <- df %>%
-    dplyr::select(grep(fml_nm, names(.), fixed = TRUE)) %>%
-    `colnames<-`(gsub(paste0(fml_nm, "."), "", names(.))) %>%
+    dplyr::select(grep(paste0("^", fml_nm, "\\."), names(.))) %>%
+    `colnames<-`(gsub(paste0("^", fml_nm, "\\."), "", names(.))) %>%
     dplyr::bind_cols(df[, !col_ind, drop = FALSE], .) 
   
   if (complete_cases) df <- df %>% pval_complete_cases()
@@ -344,6 +345,7 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 				dplyr::bind_cols(df[, !grepl("^pVal\\s+|^adjP\\s+|^log2Ratio\\s+", names(df)), 
 				                    drop = FALSE], .)
 		} )) %>% 
+	  # dplyr::filter(rowSums(!is.na(.[, grepl("\\.log2Ratio \\(", names(.))])) > 0) %>% 
 	  dplyr::mutate(
 	    Contrast = factor(Contrast, levels = contrast_groups),
 	    # pVal = as.numeric(as.character(.$pVal)), 

@@ -1690,7 +1690,8 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
   
   local({
     if (sum(grepl("^log2_R[0-9]+ ", names(df))) <= 1) {
-      stop("Need more than one sample for `standPep` or `standPrn`.", 
+      stop("Need more than one sample for `standPep` or `standPrn`.\n", 
+           "Skip this module for qualitative analysis.", 
            call. = FALSE)
     }
   })

@@ -1149,7 +1149,7 @@ parse_acc <- function(df) {
     unique()
   
   pat_uni_acc <- 
-    "^[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}"
+    "^[OPQ][0-9][A-Z0-9]{3}[0-9]|^[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}"
   pat_uni_id <- 
     "^[[:alnum:]]+_[A-Z]{1,10}$"
   pat_ref_acc <- 
@@ -1267,23 +1267,8 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE) {
     dplyr::filter(nchar(prot_acc) > 0)
 
   # load fasta_db
-  fasta_db <- local({
-    if (is.null(fasta)) {
-      stop("FASTA file(s) are required.", call. = FALSE)
-    }
-    
-    if (!all(file.exists(fasta))) {
-      stop("Missing FASTA file(s): \n", 
-           purrr::reduce(fasta %>% .[!file.exists(.)], paste, sep = "\n"), 
-           call. = FALSE)
-    }
-    
-    purrr::map(fasta, ~ read_fasta(.x)) %>% 
-      do.call(`c`, .) %>% 
-      `names<-`(gsub(">", "", names(.))) %>% 
-      .[!duplicated(names(.))]
-  })
-
+  fasta_db <- load_fasta(fasta)
+  
   # accession lookups by acc_type's
   df_splits <- df %>% split(., .$acc_type, drop = TRUE)
   
@@ -1483,7 +1468,7 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE) {
     fasta_smry <- dplyr::bind_cols(
       prot_acc = purrr::map_chr(fasta_db, attr, "prot_acc"), 
       prot_desc = purrr::map_chr(fasta_db, attr, "prot_desc"), 
-      prot_mass = purrr::map_dbl(fasta_db, ~ calc_avg_pep(.x)), 
+      prot_mass = purrr::map_dbl(fasta_db, ~ calc_avgpep(.x)), 
       prot_len = nchar(fasta_db)
     ) %>% 
       dplyr::filter(!duplicated(prot_acc)) %>% 
@@ -3881,7 +3866,8 @@ check_ggplot_aes <- function(p) {
     purrr::map_lgl(anyNA)
   
   if (any(cols)) {
-    warning("NA values detected in the aesthetics of `", 
+    warning("\n\nMismatches in the lengths of vectors ", 
+            "between selected samples and the aesthetics of `", 
             purrr::reduce(names(which(cols)), paste, sep = ", "), "`.\n", 
             "Fix the missing values in the corresponding columns in `expt_smry.xlsx`.\n", 
             "Otherwise, may run into errors.\n", 
@@ -3972,4 +3958,33 @@ proc_mgf_timstof <- function (path, n = 1000) {
   })
 }
 
+
+#' Flatten lists recursively
+#' 
+#' @param x Lists
+recur_flatten <- function (x) {
+  if (!inherits(x, "list")) {
+    list(x)
+  } else {
+    unlist(c(purrr::map(x, recur_flatten)), recursive = FALSE)
+  }
+}
+
+
+#' Subsets elements with attributes kept.
+#'
+#' @param data The data vector.
+#' @param nm The names of elements in the vector for removals.
+subset_keepattr <- function (data, nm = c("M", "N")) {
+  attrs <- attributes(data)
+  
+  for (i in seq_along(nm)) {
+    data <- data %>% .[! names(.) == nm[i]]
+  }
+  
+  attrs$names <- names(data)
+  attributes(data) <- attrs
+  
+  data
+}
 

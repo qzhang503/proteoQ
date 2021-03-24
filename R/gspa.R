@@ -434,7 +434,8 @@ gspaTest <- function(df = NULL, id = "entrez", label_scheme_sub = NULL,
 
   # Note: wrong number of arguments to '>' at devtools building of a package
   # (https://github.com/Mouse-Imaging-Centre/RMINC/issues/226)
-  col_ind <- purrr::map(fml_nms, ~ grepl(.x, names(df))) %>%
+  col_ind <- fml_nms %>% 
+    purrr::map(~ grepl(paste0("^", .x, "\\."), names(df))) %>%
     `names<-`(paste0("nm_", seq_along(.))) %>% 
     dplyr::bind_cols() %>%
     rowSums() %>%
@@ -919,8 +920,8 @@ prep_gspa <- function(df, id, fml_nm, col_ind, pval_cutoff = 5E-2,
   id <- rlang::as_string(rlang::enexpr(id))
   
   df <- df %>%
-    dplyr::select(grep(fml_nm, names(.), fixed = TRUE)) %>%
-    `colnames<-`(gsub(paste0(fml_nm, "."), "", names(.))) %>%
+    dplyr::select(grep(paste0("^", fml_nm, "\\."), names(.))) %>%
+    `colnames<-`(gsub(paste0("^", fml_nm, "\\."), "", names(.))) %>%
     dplyr::bind_cols(df[, !col_ind, drop = FALSE], .) %>% 
     rm_pval_whitespace() %>% 
     dplyr::select(id, grep("^pVal|^adjP|^log2Ratio", names(.))) %>% 
