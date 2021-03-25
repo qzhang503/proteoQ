@@ -2,18 +2,40 @@
 % Please edit documentation in R/sitecombi.R
 \name{combi_mvmods}
 \alias{combi_mvmods}
-\title{The combinations of variable modifications (multiple sites)}
+\title{Finds the combinations of variable modifications (multiple sites)}
 \usage{
-combi_mvmods(amods, aa_seq, aa_masses, maxn_vmods_per_resid, digits)
+combi_mvmods(
+  amods,
+  ntmod,
+  ctmod,
+  aas,
+  aa_masses,
+  maxn_vmods_per_pep = 5,
+  maxn_sites_per_vmod = 3,
+  maxn_vmods_sitescombi_per_pep = 32,
+  digits
+)
 }
 \arguments{
 \item{amods}{\code{Anywhere} modifications.}
 
-\item{aa_seq}{Character string; a peptide sequences with one-letter
-representation of amino acids.}
+\item{ntmod}{A N-term modification subset from \code{tmod}.}
+
+\item{ctmod}{A C-term modification subset from \code{tmod}.}
+
+\item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
 
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
+
+\item{maxn_vmods_per_pep}{The maximum number of variable modifications per
+peptide.}
+
+\item{maxn_sites_per_vmod}{Integer; the maximum number of combinatorial
+variable modifications per site in a per peptide sequence.}
+
+\item{maxn_vmods_sitescombi_per_pep}{Integer; the maximum number of
+combinatorial variable modifications per peptide sequence.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }

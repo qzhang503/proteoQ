@@ -296,6 +296,7 @@ calc_prot_pepmasses <- function (prot_peps, aa_masses,
 #' @param ctmod A C-term modification subset from \code{tmod}.
 #' @inheritParams mcalc_monopep
 #' @import purrr
+#' @importFrom stringr str_split
 calc_monopep <- function (aa_seq, aa_masses, vmods_ps, amods, tmod, ntmod, ctmod, 
                           maxn_vmods_per_pep = 5, 
                           maxn_sites_per_vmod = 3, 
@@ -308,7 +309,7 @@ calc_monopep <- function (aa_seq, aa_masses, vmods_ps, amods, tmod, ntmod, ctmod
   }
   
   aas <- aa_seq %>% 
-    stringr::str_split("", simplify = TRUE)
+    str_split("", simplify = TRUE)
 
   if (is_empty(amods) && is_empty(tmod)) {
     return(
@@ -521,7 +522,7 @@ vmods_elements <- function (aas,
     x <- list(ns)
   }
 
-  len_x <- map(x, length)
+  # len_x <- map(x, length)
   rows <- map_lgl(x, ~ length(.x) > maxn_vmods_per_pep)
   x <- x[!rows]
   
