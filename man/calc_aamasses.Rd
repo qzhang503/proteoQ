@@ -5,9 +5,9 @@
 \title{Calculates molecular weight of a polypeptide ([MH]+).}
 \usage{
 calc_aamasses(
-  fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", "Carbamidomethyl (. = C)"),
-  varmods = c("Acetyl (Protein N-term)", "Oxidation (M)", "Deamidated (N)",
-    "Gln->pyro-Glu (N-term = Q)"),
+  fixedmods = c("TMT6plex (K)", "Carbamidomethyl (. = C)"),
+  varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
+    "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
   maxn_vmods_setscombi = 64,
   mod_indexes = NULL
 )

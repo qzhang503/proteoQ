@@ -21,6 +21,7 @@ calc_pepmasses(
   max_miss = 2,
   digits = 5,
   parallel = TRUE,
+  add_masses = TRUE,
   out_path = "~/proteoQ/dbs/fasta/uniprot/pepmass/pepmasses.rds"
 )
 }
@@ -66,6 +67,10 @@ be excluded.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
+
+\item{add_masses}{Logical; if TRUE, calculates the mono-isotopic masses of
+peptides. At the FALSE alternative, generates lists of peptides without
+masses. The default is TRUE.}
 
 \item{out_path}{The file name with prepending path for outputs.}
 }

@@ -6,8 +6,8 @@
 \usage{
 calc_ms2ions(
   aa_seq,
-  type,
   aa_masses,
+  type = "by",
   vmods_ps,
   amods,
   tmod,
@@ -16,7 +16,6 @@ calc_ms2ions(
   maxn_vmods_per_pep = 3,
   maxn_sites_per_vmod = 5,
   maxn_vmods_sitescombi_per_pep = 32,
-  z = 1,
   digits = 5
 )
 }
@@ -24,10 +23,12 @@ calc_ms2ions(
 \item{aa_seq}{Character string; a peptide sequences with one-letter
 representation of amino acids.}
 
-\item{type}{Character; the type of fragment ions.}
-
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
+
+\item{type}{Character; the type of
+\href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
+ions}.}
 
 \item{vmods_ps}{A named list of positions and sites with positions being names
 and sites being values.}
@@ -48,9 +49,6 @@ variable modifications per site in a per peptide sequence.}
 
 \item{maxn_vmods_sitescombi_per_pep}{Integer; the maximum number of
 combinatorial variable modifications per peptide sequence.}
-
-\item{z}{Integer; the charge state of an MS1 ion. Currently only for postive
-charges.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }

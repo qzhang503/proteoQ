@@ -774,9 +774,10 @@ add_fixvar_masses <- function (mods, mod_type, aa_masses) {
 #' x <- calc_aamasses(NULL, "Phospho (ST)")
 #' }
 #' @export
-calc_aamasses <- function (fixedmods = c("TMT6plex (N-term)", "TMT6plex (K)", 
+calc_aamasses <- function (fixedmods = c("TMT6plex (K)", 
                                         "Carbamidomethyl (. = C)"), 
-                           varmods = c("Acetyl (Protein N-term)", 
+                           varmods = c("TMT6plex (N-term)", 
+                                       "Acetyl (Protein N-term)", 
                                        "Oxidation (M)", 
                                        "Deamidated (N)", 
                                        "Gln->pyro-Glu (N-term = Q)"), 
@@ -1547,6 +1548,9 @@ calc_monopeptide <- function (aa_seq, aa_masses,
 #' @param max_len Integer; the maximum length of peptides. Longer peptides will
 #'   be excluded.
 #' @param max_miss The maximum number of mis-cleavages per peptide sequence.
+#' @param add_masses Logical; if TRUE, calculates the mono-isotopic masses of
+#'   peptides. At the FALSE alternative, generates lists of peptides without
+#'   masses. The default is TRUE.
 #' @param out_path The file name with prepending path for outputs.
 #' @param digits Integer; the number of decimal places to be used.
 #' @inheritParams splitPSM
@@ -1596,6 +1600,7 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
                             min_len = 7, max_len = 100, max_miss = 2, 
                             digits = 5, 
                             parallel = TRUE, 
+                            add_masses = TRUE, 
                             out_path = "~/proteoQ/dbs/fasta/uniprot/pepmass/pepmasses.rds") {
 
   old_opts <- options()
@@ -1679,31 +1684,33 @@ calc_pepmasses <- function (fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020
     })
   
   # --- calculates peptide masses ---
-  message("Calculating peptide masses. ", 
-          "May take a while.")
-  
-  n_cores <- parallel::detectCores()
-  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-  
-  parallel::clusterExport(cl, list("%>%"), 
-                          envir = environment(magrittr::`%>%`))
-  parallel::clusterExport(cl, list("calc_monopep"), 
-                          envir = env_where("calc_monopep"))
-  parallel::clusterExport(cl, list("calc_prot_pepmasses"), 
-                          envir = env_where("calc_prot_pepmasses"))
-  parallel::clusterExport(cl, list("calc_prots_pepmasses"), 
-                          envir = env_where("calc_prots_pepmasses"))
+  if (add_masses) {
+    message("Calculating peptide masses. ", 
+            "May take a while.")
+    
+    n_cores <- parallel::detectCores()
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    
+    parallel::clusterExport(cl, list("%>%"), 
+                            envir = environment(magrittr::`%>%`))
+    parallel::clusterExport(cl, list("calc_monopep"), 
+                            envir = env_where("calc_monopep"))
+    parallel::clusterExport(cl, list("calc_prot_pepmasses"), 
+                            envir = env_where("calc_prot_pepmasses"))
+    parallel::clusterExport(cl, list("calc_prots_pepmasses"), 
+                            envir = env_where("calc_prots_pepmasses"))
+    
+    pep_masses <- purrr::map2(pep_masses, 
+                              aa_masses, 
+                              mcalc_monopep, 
+                              maxn_vmods_per_pep, 
+                              maxn_sites_per_vmod, 
+                              parallel, n_cores, cl, 
+                              digits)
+    
+    parallel::stopCluster(cl)
+  }
 
-  pep_masses <- purrr::map2(pep_masses, 
-                            aa_masses, 
-                            mcalc_monopep, 
-                            maxn_vmods_per_pep, 
-                            maxn_sites_per_vmod, 
-                            parallel, n_cores, cl, 
-                            digits)
-
-  parallel::stopCluster(cl)
-  
   pep_masses <- purrr::map2(aa_masses, pep_masses, ~ {
     attr(.x, "data") <- .y
     return(.x)

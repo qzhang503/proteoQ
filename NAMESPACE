@@ -112,6 +112,7 @@ import(reshape2)
 import(rlang, except = c(list_along, invoke, flatten_raw,
  modify, as_function, flatten_dbl, flatten_lgl, flatten_int, flatten_chr,
  splice, flatten, prepend, "%@%"))
+import(stringi)
 import(stringr)
 import(tidyr)
 importFrom(Biobase,ExpressionSet)

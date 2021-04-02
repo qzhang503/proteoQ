@@ -13,7 +13,7 @@ combi_mvmods(
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
   maxn_vmods_sitescombi_per_pep = 32,
-  digits
+  digits = 5
 )
 }
 \arguments{

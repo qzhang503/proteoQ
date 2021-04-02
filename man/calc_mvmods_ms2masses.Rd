@@ -2,7 +2,7 @@
 % Please edit documentation in R/sitecombi.R
 \name{calc_mvmods_ms2masses}
 \alias{calc_mvmods_ms2masses}
-\title{Masses of a series of MS2 ions.}
+\title{Helper: masses of a series of MS2 ions.}
 \usage{
 calc_mvmods_ms2masses(
   vmods,
@@ -11,9 +11,8 @@ calc_mvmods_ms2masses(
   aa_seq,
   aas,
   aa_masses,
-  type,
-  z = 1,
-  digits
+  type = "by",
+  digits = 5
 )
 }
 \arguments{
@@ -32,13 +31,12 @@ representation of amino acids.}
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{type}{Character; the type of fragment ions.}
-
-\item{z}{Integer; the charge state of an MS1 ion. Currently only for postive
-charges.}
+\item{type}{Character; the type of
+\href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
+ions}.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Singly charged for now.
+Helper: masses of a series of MS2 ions.
 }

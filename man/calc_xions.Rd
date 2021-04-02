@@ -2,9 +2,9 @@
 % Please edit documentation in R/sitecombi.R
 \name{calc_xions}
 \alias{calc_xions}
-\title{Masses of x-ions}
+\title{Masses of singly-charged x-ions.}
 \usage{
-calc_xions(ntmod, ctmod, aas, aa_masses, z, digits)
+calc_xions(ntmod, ctmod, aas, aa_masses, digits = 5)
 }
 \arguments{
 \item{ntmod}{The \code{N-term} modification.}
@@ -15,9 +15,6 @@ calc_xions(ntmod, ctmod, aas, aa_masses, z, digits)
 
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
-
-\item{z}{Integer; the charge state of an MS1 ion. Currently only for postive
-charges.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }

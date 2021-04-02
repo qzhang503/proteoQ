@@ -7,11 +7,10 @@
 calc_ms2ionseries(
   aa_seq = NA,
   aa_masses = NA,
-  type = "b",
+  type = "by",
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
   maxn_vmods_sitescombi_per_pep = 32,
-  z = 1,
   digits = 5
 )
 }
@@ -22,7 +21,9 @@ representation of amino acids.}
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{type}{Character; the type of fragment ions.}
+\item{type}{Character; the type of
+\href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
+ions}.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
@@ -33,10 +34,10 @@ variable modifications per site in a per peptide sequence.}
 \item{maxn_vmods_sitescombi_per_pep}{Integer; the maximum number of
 combinatorial variable modifications per peptide sequence.}
 
-\item{z}{Integer; the charge state of an MS1 ion. Currently only for postive
-charges.}
-
 \item{digits}{Integer; the number of decimal places to be used.}
+
+\item{z}{Integer; the charge state of an MS1 ion. Currently only for positive
+charges (not currently used).}
 }
 \description{
 For a given type of fragmentation. Minimal error handling for speeds.
