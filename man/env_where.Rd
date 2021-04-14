@@ -12,5 +12,5 @@ env_where(name, env = rlang::caller_env())
 \item{env}{The environment.}
 }
 \description{
-This is from Hadley's Advanced R.
+Find the environment of a function
 }

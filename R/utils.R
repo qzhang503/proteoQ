@@ -3335,9 +3335,9 @@ ok_existing_params <- function (filepath) {
 
 #' Find the environment of a function
 #' 
-#' This is from Hadley's Advanced R.
 #' @param name The name of a function.
 #' @param env The environment.
+#' @export
 env_where <- function(name, env = rlang::caller_env()) {
   if (identical(env, rlang::empty_env())) {
     stop("Can't find ", name, call. = FALSE)

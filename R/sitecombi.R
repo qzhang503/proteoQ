@@ -4,7 +4,7 @@
 #'
 #' @param maxn_vmods_sitescombi_per_pep Integer; the maximum number of
 #'   combinatorial variable modifications per peptide sequence.
-#' @param type Character; the type of
+#' @param type_ms2ions Character; the type of
 #'   \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
 #'   ions}.
 #' @param z Integer; the charge state of an MS1 ion. Currently only for positive
@@ -12,8 +12,10 @@
 #' @inheritParams calc_monopep
 #' @import purrr
 calc_ms2ionseries <- function (aa_seq = NA, 
+                               mass = NA, 
                                aa_masses = NA, 
-                               type = "by", 
+                               mod_indexes = NULL, 
+                               type_ms2ions = "by", 
                                maxn_vmods_per_pep = 5, 
                                maxn_sites_per_vmod = 3, 
                                maxn_vmods_sitescombi_per_pep = 32, 
@@ -48,7 +50,9 @@ calc_ms2ionseries <- function (aa_seq = NA,
   ctmod <- tmod %>% .[. == "C-term"]
   
   calc_ms2ions(aa_seq = aa_seq, 
+               mass = mass, 
                aa_masses = aa_masses, 
+               mod_indexes = mod_indexes, 
                vmods_ps = vmods_ps, 
                amods = amods, 
                tmod = tmod, 
@@ -56,7 +60,7 @@ calc_ms2ionseries <- function (aa_seq = NA,
                ctmod = ctmod, 
                maxn_vmods_per_pep = maxn_vmods_per_pep, 
                maxn_sites_per_vmod = maxn_sites_per_vmod, 
-               type = type, 
+               type_ms2ions = type_ms2ions, 
                digits = digits)
 }
 
@@ -68,7 +72,7 @@ calc_ms2ionseries <- function (aa_seq = NA,
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @importFrom stringr str_split
-calc_ms2ions <- function (aa_seq, aa_masses, type = "by", 
+calc_ms2ions <- function (aa_seq, mass, aa_masses, mod_indexes, type_ms2ions = "by", 
                           vmods_ps, amods, tmod, ntmod, ctmod, 
                           maxn_vmods_per_pep = 3, 
                           maxn_sites_per_vmod = 5, 
@@ -100,15 +104,15 @@ calc_ms2ions <- function (aa_seq, aa_masses, type = "by",
   if (is_empty(amods) && is_empty(tmod)) {
     return(
       calc_mvmods_ms2masses(vmods = NULL, ntmod = NULL, ctmod = NULL, 
-                            aa_seq = aa_seq, aas = aas, aa_masses = aa_masses, 
-                            type = type, digits = digits)
+                            aas = aas, mass = mass, aa_masses = aa_masses, 
+                            type_ms2ions = type_ms2ions, digits = digits)
     )
   } else if (is_empty(amods)) { 
     # tmod only
     return(
       calc_mvmods_ms2masses(vmods = NULL, ntmod = ntmod, ctmod = ctmod, 
-                            aa_seq = aa_seq, aas = aas, aa_masses = aa_masses, 
-                            type = type, digits = digits)
+                            aas = aas, mass = mass, aa_masses = aa_masses, 
+                            type_ms2ions = type_ms2ions, digits = digits)
     )
   }
   
@@ -177,8 +181,22 @@ calc_ms2ions <- function (aa_seq, aa_masses, type = "by",
     v_out
   })
   
-  vmods_combi %>% 
-    map(calc_mvmods_ms2masses, ntmod, ctmod, aa_seq, aas, aa_masses, type, digits)
+  out <- vmods_combi %>% 
+    map(calc_mvmods_ms2masses, ntmod, ctmod, aas, mass = mass, aa_masses, type_ms2ions, digits)
+  
+  # assign indexes to mods
+  hex_mods = rep("0", length(aas))
+  rows <- map_lgl(out, ~ !is.null(.x))
+  
+  hex_mods <- map(vmods_combi[rows], ~ {
+    hex_mods[as.numeric(names(.x))] <- mod_indexes[unlist(.x)]
+    hex_mods <- paste0(hex_mods, collapse = "")
+    hex_mods
+  }, hex_mods)
+  
+  names(out)[rows] <- hex_mods
+
+  invisible(out[rows])
 }
 
 
@@ -335,13 +353,18 @@ combi_vmods <- function (aas,
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 calc_mvmods_ms2masses <- function (vmods, ntmod, ctmod, 
-                                   aa_seq, aas, aa_masses, type = "by", 
+                                   aas, mass, aa_masses, type_ms2ions = "by", 
                                    digits = 5) {
   if (!is.null(vmods)) {
     aas[as.numeric(names(vmods))] <- unlist(vmods)
+
+    if (!isTRUE(all.equal(unname(calcpepmass(aas, aa_masses, ntmod, ctmod)), 
+                          mass, use.names = FALSE))) {
+      return(NULL)
+    }
   }
 
-  switch(type, 
+  switch(type_ms2ions, 
          # b- and y-ions
          by = calc_byions(ntmod, ctmod, aas, aa_masses, digits), 
          by2 = calc_by2ions(ntmod, ctmod, aas, aa_masses, digits),

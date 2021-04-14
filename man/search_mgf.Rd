@@ -13,7 +13,7 @@ search_mgf(
   theos_bf_ms2,
   theos_cr_ms2,
   theos_af_ms2,
-  minn_ms2 = 3,
+  minn_ms2 = 7,
   ppm_ms1 = 20,
   ppm_ms2 = 25
 )
@@ -47,6 +47,9 @@ a hit.}
 \item{ppm_ms1}{The mass tolerance of MS1 species.}
 
 \item{ppm_ms2}{The mass tolerance of MS2 species.}
+}
+\value{
+Lists of tibbles.
 }
 \description{
 Searches a single MGF.

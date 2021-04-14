@@ -6,8 +6,10 @@
 \usage{
 calc_ms2ionseries(
   aa_seq = NA,
+  mass = NA,
   aa_masses = NA,
-  type = "by",
+  mod_indexes = NULL,
+  type_ms2ions = "by",
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
   maxn_vmods_sitescombi_per_pep = 32,
@@ -21,7 +23,7 @@ representation of amino acids.}
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{type}{Character; the type of
+\item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
 ions}.}
 

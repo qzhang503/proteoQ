@@ -15,5 +15,5 @@ find_mass_error_range(x = 500, ppm = 20)
 The lower and the upper bound to \eqn{x} by \eqn{ppm}.
 }
 \description{
-Assumes \eqn{x} is position.
+Assumes \eqn{x} is positive without checking.
 }

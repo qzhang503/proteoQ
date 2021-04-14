@@ -8,10 +8,10 @@ calc_mvmods_ms2masses(
   vmods,
   ntmod,
   ctmod,
-  aa_seq,
   aas,
+  mass,
   aa_masses,
-  type = "by",
+  type_ms2ions = "by",
   digits = 5
 )
 }
@@ -23,15 +23,12 @@ modifications in values.}
 
 \item{ctmod}{The \code{C-term} modification.}
 
-\item{aa_seq}{Character string; a peptide sequences with one-letter
-representation of amino acids.}
-
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
 
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{type}{Character; the type of
+\item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
 ions}.}
 

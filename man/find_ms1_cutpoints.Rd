@@ -2,7 +2,7 @@
 % Please edit documentation in R/msmsmatches.R
 \name{find_ms1_cutpoints}
 \alias{find_ms1_cutpoints}
-\title{Find the cut-points of MS1 masses for binning.}
+\title{Finds the cut-points of MS1 masses for binning.}
 \usage{
 find_ms1_cutpoints(from = 350, to = 1700, ppm = 20)
 }
@@ -14,6 +14,6 @@ find_ms1_cutpoints(from = 350, to = 1700, ppm = 20)
 \item{ppm}{Numeric; the ppm for data binning.}
 }
 \description{
-The cut-points will be used as the boundary for data binning. Note that the
+The cut-points will be used as the boundary in data binning. Note that the
 upper bound is open.
 }

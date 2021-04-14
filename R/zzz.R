@@ -2,7 +2,8 @@
 .onAttach <- function(libname, pkgname) {
   packageStartupMessage("Welcome to proteoQ!\n\n",
                         "======================================================================\n",
-                        "NEW features in MS1 peptide masses:\n",
-                        "See ?calc_pepmasses and ?calc_monopeptide.\n",
+                        "NEW features:\n",
+                        "See ?calc_pepmasses and ?calc_monopeptide for peptide masses.\n",
+                        # "See ?matchMS for ion matches.\n", 
                         "======================================================================\n")
 }

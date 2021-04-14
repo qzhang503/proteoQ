@@ -2,14 +2,14 @@
 % Please edit documentation in R/msmsmatches.R
 \name{find_ms1_interval}
 \alias{find_ms1_interval}
-\title{Calculates the frame number for an experimental mass by intervals.}
+\title{Calculates the frame number for an experimental MS1 mass by intervals.}
 \usage{
-find_ms1_interval(from = 350, mass = 1714.81876, ppm = 20)
+find_ms1_interval(mass = 1714.81876, from = 350, ppm = 20)
 }
 \arguments{
-\item{from}{Numeric; the starting MS1 mass.}
+\item{mass}{Numeric; a list of MS1 masses.}
 
-\item{mass}{Numeric; an MS1 mass.}
+\item{from}{Numeric; the starting MS1 mass.}
 
 \item{ppm}{Numeric; the ppm for data binning.}
 }
