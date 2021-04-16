@@ -1178,6 +1178,8 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
   
   # out <- out %>% dplyr::bind_rows()
 
+  saveRDS(out, file.path(out_path, "ion_matches.rds"))
+  
   invisible(out)
 }
 
