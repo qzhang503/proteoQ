@@ -22,7 +22,7 @@ calc_pepmasses(
   digits = 5,
   parallel = TRUE,
   add_masses = TRUE,
-  out_path = "~/proteoQ/dbs/fasta/uniprot/pepmasses/pepmasses.rds"
+  out_path = "~/proteoQ/outs/pepmasses/pepmasses.rds"
 )
 }
 \arguments{

@@ -1188,6 +1188,10 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
 #' 
 #' @inheritParams search_mgf_frames_d
 subset_theoframes <- function (mgf_frames, theopeps) {
+  if (purrr::is_empty(mgf_frames) || purrr::is_empty(theopeps)) {
+    return(NULL)
+  }
+  
   frames <- as.integer(names(mgf_frames))
   breaks <- which(diff(frames) != 1) + 1
   grps <- findInterval(frames, frames[breaks])
@@ -1309,8 +1313,14 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
       #   preceding and following frames: (o)|range of mgf_frames[[1]]|(o)
       theopeps <- local({
         frames <- purrr::map(mgf_frames, ~ as.integer(names(.x)))
-        mins <- purrr::map_dbl(frames, min, na.rm = TRUE)
-        maxs <- purrr::map_dbl(frames, max, na.rm = TRUE)
+        
+        mins <- purrr::map_dbl(frames, ~ {
+          if (length(.x) == 0) x <- 0 else x <- min(.x, na.rm = TRUE)
+        })
+        
+        maxs <- purrr::map_dbl(frames, ~ {
+          if (length(.x) == 0) x <- 0 else x <- max(.x, na.rm = TRUE)
+        })
         
         nms <- as.integer(names(theopeps))
         
@@ -1321,6 +1331,15 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
       
       # (3) removes unused frames of `theopeps`
       theopeps <- purrr::map2(mgf_frames, theopeps, subset_theoframes)
+      
+      # (4) removes empties (zeor overlap between mgf_frams and theopeps)
+      oks <- purrr::map_lgl(mgf_frames, ~ !purrr::is_empty(.x)) | 
+        purrr::map_lgl(theopeps, ~ !purrr::is_empty(.x))
+      
+      mgf_frames <- mgf_frames[oks]
+      theopeps <- theopeps[oks]
+      
+      rm(oks)
       
       cl <- makeCluster(getOption("cl.cores", n_cores))
       

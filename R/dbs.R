@@ -1130,6 +1130,8 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (K)",
 concat_peps <- function (peps, n = 2, include_cts = TRUE) {
   len <- length(peps)
   
+  if (len == 0) return(NULL)
+  
   if (n >= len) n <- len - 1
 
   res <- purrr::map(seq_len((len - n)), ~ {
@@ -1152,6 +1154,54 @@ concat_peps <- function (peps, n = 2, include_cts = TRUE) {
   # res_cts_b <- res_cts %>% .[grepl("-$", .)]
   
   # c(res[-length(res)], res_cts_a, res[length(res)], res_cts_b)
+  c(res, res_cts)
+}
+
+
+#' Concatenates adjacent peptides in a list (with mass).
+#' 
+#' @inheritParams concat_peps
+#' @examples
+#' \donttest{
+#' peps <- c(a = 1, b = 2, c = 3)
+#' res <- roll_sum(peps, 2)
+#' }
+roll_sum <- function (peps, n = 2, include_cts = TRUE) {
+  len <- length(peps)
+  
+  if (len == 0) return(NULL)
+  
+  if (n >= len) n <- len - 1
+  
+  res <- purrr::map(seq_len((len - n)), ~ {
+    ranges <- .x:(.x + n)
+    
+    nms <- names(peps)[ranges] %>% 
+      purrr::accumulate(paste0) 
+    
+    vals <- cumsum(peps[ranges]) %>% 
+      `names<-`(nms)
+  }) %>% 
+    unlist()
+  
+  if (include_cts && n >= 1) {
+    res_cts <- local({
+      cts <- peps[(len - n + 1):len]
+      
+      purrr::map(n:1, ~ {
+        x <- tail(cts, .x)
+        
+        nms <- names(x) %>% 
+          purrr::accumulate(paste0)
+        
+        vals <- cumsum(x) %>% 
+          `names<-`(nms)
+      }) %>% unlist()
+    })
+  } else {
+    res_cts <- NULL
+  }
+  
   c(res, res_cts)
 }
 
@@ -1572,7 +1622,9 @@ calc_monopeptide <- function (aa_seq, aa_masses,
 #' 
 #' @param fasta_db Fasta database.
 #' @inheritParams calc_pepmasses
-make_fastapeps <- function (fasta_db, max_miss, min_len, max_len) {
+make_fastapeps <- function (fasta_db, max_miss = 2, min_len = 1, 
+                            max_len = 100) {
+  
   inds_m <- grep("^M", fasta_db)
   
   fasta_db <- fasta_db %>% 
@@ -1598,18 +1650,26 @@ make_fastapeps <- function (fasta_db, max_miss, min_len, max_len) {
   # --- Protein N-term initiator methionine kept ---
   peps <- fasta_db %>% 
     purrr::map(~ .x %>% stringr::str_split("@", simplify = TRUE)) %>% 
-    purrr::map(concat_peps, max_miss) %>% 
-    purrr::map(
-      ~ .x %>% .[str_exclude_count(.) >= min_len & str_exclude_count(.) <= max_len]) 
+    purrr::map(concat_peps, max_miss) 
+  
+  if (min_len > 1 && !is.infinite(max_len)) {
+    peps <- peps %>% 
+      purrr::map(
+        ~ .x %>% .[str_exclude_count(.) >= min_len & str_exclude_count(.) <= max_len]) 
+  }
   
   # --- Protein N-term initiator methionine removed ---
   peps_m <- fasta_dbm %>% 
     purrr::map(~ .x %>% 
                  stringr::str_split("@", simplify = TRUE) %>% 
                  keep_n_misses(max_miss)) %>% 
-    purrr::map(~ concat_peps(.x, max_miss, include_cts = FALSE)) %>% 
-    purrr::map(
-      ~ .x %>% .[str_exclude_count(.) >= min_len & str_exclude_count(.) <= max_len]) 
+    purrr::map(~ concat_peps(.x, max_miss, include_cts = FALSE)) 
+  
+  if (min_len > 1 && !is.infinite(max_len)) {
+    peps_m <- peps_m %>% 
+      purrr::map(
+        ~ .x %>% .[str_exclude_count(.) >= min_len & str_exclude_count(.) <= max_len]) 
+  }
   
   peps[inds_m] <- purrr::map2(peps_m, peps[inds_m], `c`)
   
@@ -1689,8 +1749,8 @@ calc_pepmasses <- function (
   digits = 5, 
   parallel = TRUE, 
   add_masses = TRUE, 
-  out_path = "~/proteoQ/dbs/fasta/uniprot/pepmasses/pepmasses.rds") {
-
+  out_path = "~/proteoQ/outs/pepmasses/pepmasses.rds") {
+  
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
@@ -1700,37 +1760,50 @@ calc_pepmasses <- function (
   
   stopifnot(min_len >= 0, max_len >= min_len, max_miss <= 100)
   
-  # ---
-  message("Computing the combinations of fixed and variable modifications.")
-  
-  if (index_mods) {
-    mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
-      as.hexmode() %>% 
-      `names<-`(c(fixedmods, varmods))
-  } else {
-    mod_indexes <- NULL
-  }
-
-  aa_masses <- calc_aamasses(fixedmods = fixedmods, 
-                             varmods = varmods, 
-                             maxn_vmods_setscombi = maxn_vmods_setscombi, 
-                             mod_indexes = mod_indexes)
+  out_path <- gsub("\\\\", "/", out_path)
+  out_dir <- gsub("(^.*/).*$", "\\1", out_path)
+  out_nm <- gsub("^.*/(.*)\\.[^\\.].*$", "\\1", out_path)
+  nm_fwdbare <- paste0(out_nm, "_fwdbare.rds")
+  nm_revbare <- paste0(out_nm, "_revbare.rds")
+  dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
   
   # ---
-  message("Loading fasta databases.")
-  
-  fasta_db <- fasta %>% load_fasta() 
-
-  if (length(fasta_db) > maxn_fasta_seqs) {
-    stop("More than `", maxn_fasta_seqs, "` sequences in fasta files.", 
-         call. = FALSE)
-  }
+  aa_masses <- local({
+    message("Computing the combinations of fixed and variable modifications.")
+    
+    if (index_mods) {
+      mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
+        as.hexmode() %>% 
+        `names<-`(c(fixedmods, varmods))
+    } else {
+      mod_indexes <- NULL
+    }
+    
+    aa_masses <- calc_aamasses(fixedmods = fixedmods, 
+                               varmods = varmods, 
+                               maxn_vmods_setscombi = maxn_vmods_setscombi, 
+                               mod_indexes = mod_indexes)
+  })
   
   # ---
-  message("Generating peptide sequences.")
+  fasta_db <- local({
+    message("Loading fasta databases.")
+    
+    fasta_db <- fasta %>% load_fasta() 
+    
+    if (length(fasta_db) > maxn_fasta_seqs) {
+      stop("More than `", maxn_fasta_seqs, "` sequences in fasta files.", 
+           call. = FALSE)
+    }
+    
+    invisible(fasta_db)
+  })
+  
+  # ---
+  message("Generating peptide sequences (target and decoy).")
   
   n_cores <- parallel::detectCores()
-  fasta_db <- suppressWarnings(split(fasta_db, seq_len(n_cores)))
+  fasta_db <- chunksplit(fasta_db, n_cores)
   
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   
@@ -1758,7 +1831,7 @@ calc_pepmasses <- function (
   
   # ---
   message("Distributing peptides by fixed and variable modifications.")
-
+  
   pep_masses <- aa_masses %>% 
     purrr::map(subpeps_by_vmods, peps) %>% 
     purrr::map(~ {
@@ -1767,7 +1840,8 @@ calc_pepmasses <- function (
       xs %>% 
         purrr::map(rm_char_in_nfirst, char = "^-", n = (max_miss + 1) * 2) %>% 
         purrr::map(rm_char_in_nlast, char = "-$", n = (max_miss + 1) * 2)
-    })
+    }) %T>% 
+    saveRDS(file.path(out_dir, nm_fwdbare))
   
   rev_pep_masses <- aa_masses[1] %>% 
     purrr::map(subpeps_by_vmods, rev_peps) %>% 
@@ -1777,10 +1851,11 @@ calc_pepmasses <- function (
       xs %>% 
         purrr::map(rm_char_in_nfirst, char = "^-", n = (max_miss + 1) * 2) %>% 
         purrr::map(rm_char_in_nlast, char = "-$", n = (max_miss + 1) * 2)
-    })
+    }) %T>% 
+    saveRDS(file.path(out_dir, nm_revbare))
   
-  rm(peps, rev_peps)
-
+  rm(peps, rev_peps, nm_fwdbare, nm_revbare)
+  
   # --- 
   if (add_masses) {
     message("Calculating peptide masses...")
@@ -1801,18 +1876,10 @@ calc_pepmasses <- function (
                                   parallel, n_cores, cl, 
                                   digits)
   }
-
-  local({
-    out_dir <- gsub("(^.*/).*$", "\\1", out_path)
-    out_nm <- gsub("^.*/(.*)\\.[^\\.].*$", "\\1", out_path)
-    
-    dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
-    
-    saveRDS(pep_masses, file.path(out_path))
-    saveRDS(rev_pep_masses, file.path(out_dir, paste0(out_nm, "_rev.rds")))
-  })
   
-  rm(mod_indexes, aa_masses)
+  # --- 
+  saveRDS(pep_masses, file.path(out_path))
+  saveRDS(rev_pep_masses, file.path(out_dir, paste0(out_nm, "_rev.rds")))
   
   invisible(pep_masses)
 }
