@@ -9,7 +9,7 @@ calc_ms2ions(
   mass,
   aa_masses,
   mod_indexes,
-  type_ms2ions = "by",
+  type_ms2ions = "byall",
   vmods_ps,
   amods,
   tmod,

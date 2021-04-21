@@ -341,7 +341,7 @@ foo_spec_lib <- function () {
 
 # combine all .R files into one
 # foo_combine_codes(filepath = file.path("C:/Results/R/proteoQ/inst/extdata/examples"))
-foo_combine_codes <- function (filepath = file.path("C:/Results/R/proteoQ/R")) {
+foo_combine_codes <- function (filepath = file.path("E:/R/proteoQ/R")) {
   filenames <- dir(filepath, pattern = ".R$")
   
   dir.create(file.path(filepath, "temp"))

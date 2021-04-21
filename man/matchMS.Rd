@@ -29,6 +29,8 @@ matchMS(
 )
 }
 \arguments{
+\item{mgf_path}{The file path to a list of MGF files.}
+
 \item{out_path}{The file name with prepending path for outputs.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
@@ -57,6 +59,9 @@ peptide.}
 \item{maxn_sites_per_vmod}{Integer; the maximum number of combinatorial
 variable modifications per site in a per peptide sequence.}
 
+\item{maxn_vmods_sitescombi_per_pep}{Integer; the maximum number of
+combinatorial variable modifications per peptide sequence.}
+
 \item{min_len}{Integer; the minimum length of peptides. Shorter peptides will
 be excluded.}
 
@@ -65,8 +70,19 @@ be excluded.}
 
 \item{max_miss}{The maximum number of mis-cleavages per peptide sequence.}
 
+\item{type_ms2ions}{Character; the type of
+\href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
+ions}.}
+
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
 MS2 ion searches.}
+
+\item{minn_ms2}{Integer; the minimum number of MS2 ions for consideration as
+a hit.}
+
+\item{ppm_ms1}{The mass tolerance of MS1 species.}
+
+\item{ppm_ms2}{The mass tolerance of MS2 species.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }

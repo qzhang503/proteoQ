@@ -1858,7 +1858,7 @@ calc_pepmasses <- function (
   
   # --- 
   if (add_masses) {
-    message("Calculating peptide masses...")
+    message("Calculating peptide masses (target) ...")
     
     pep_masses <- purrr::map2(pep_masses, 
                               aa_masses, 
@@ -1867,6 +1867,8 @@ calc_pepmasses <- function (
                               maxn_sites_per_vmod, 
                               parallel, n_cores, cl, 
                               digits)
+    
+    message("Calculating peptide masses (decoy) ...")
     
     rev_pep_masses <- purrr::map2(rev_pep_masses, 
                                   aa_masses[1], 

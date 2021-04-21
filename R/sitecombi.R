@@ -72,7 +72,8 @@ calc_ms2ionseries <- function (aa_seq = NA,
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @importFrom stringr str_split
-calc_ms2ions <- function (aa_seq, mass, aa_masses, mod_indexes, type_ms2ions = "by", 
+calc_ms2ions <- function (aa_seq, mass, aa_masses, mod_indexes, 
+                          type_ms2ions = "by", 
                           vmods_ps, amods, tmod, ntmod, ctmod, 
                           maxn_vmods_per_pep = 3, 
                           maxn_sites_per_vmod = 5, 
@@ -102,18 +103,24 @@ calc_ms2ions <- function (aa_seq, mass, aa_masses, mod_indexes, type_ms2ions = "
     str_split("", simplify = TRUE)
   
   if (is_empty(amods) && is_empty(tmod)) {
-    return(
-      calc_mvmods_ms2masses(vmods = NULL, ntmod = NULL, ctmod = NULL, 
-                            aas = aas, mass = mass, aa_masses = aa_masses, 
-                            type_ms2ions = type_ms2ions, digits = digits)
-    )
+    out <- calc_mvmods_ms2masses(vmods = NULL, ntmod = NULL, ctmod = NULL, 
+                                 aas = aas, mass = mass, aa_masses = aa_masses, 
+                                 type_ms2ions = type_ms2ions, digits = digits) 
+    
+    nm <- rep(0, length(aas)) %>% paste0(collapse = "")
+    out <- list(out) %>% `names<-`(nm)
+
+    return(out)
   } else if (is_empty(amods)) { 
     # tmod only
-    return(
-      calc_mvmods_ms2masses(vmods = NULL, ntmod = ntmod, ctmod = ctmod, 
-                            aas = aas, mass = mass, aa_masses = aa_masses, 
-                            type_ms2ions = type_ms2ions, digits = digits)
-    )
+    out <- calc_mvmods_ms2masses(vmods = NULL, ntmod = ntmod, ctmod = ctmod, 
+                                 aas = aas, mass = mass, aa_masses = aa_masses, 
+                                 type_ms2ions = type_ms2ions, digits = digits) 
+    
+    nm <- rep(0, length(aas)) %>% paste0(collapse = "")
+    out <- list(out) %>% `names<-`(nm)
+
+    return(out)
   }
   
   # amods and/or tmods
@@ -171,20 +178,17 @@ calc_ms2ions <- function (aa_seq, mass, aa_masses, mod_indexes, type_ms2ions = "
         names(v_out[[i]]) <- p_out[[i]]
         v_out[[i]] <- v_out[[i]][order(as.numeric(names(v_out[[i]])))]
       }
-      
-      # v_out <- map2(p_combis[[1]], v_combis[[1]], ~ {
-      #   names(.y) <- .x
-      #   .y
-      # })
     }
 
     v_out
   })
   
   out <- vmods_combi %>% 
-    map(calc_mvmods_ms2masses, ntmod, ctmod, aas, mass = mass, aa_masses, type_ms2ions, digits)
+    map(calc_mvmods_ms2masses, ntmod, ctmod, aas, mass = mass, aa_masses, 
+        type_ms2ions, digits)
   
   # assign indexes to mods
+  # (no need for terminal mods: non additive and unambiguously from aa_masses)
   hex_mods = rep("0", length(aas))
   rows <- map_lgl(out, ~ !is.null(.x))
   
@@ -367,21 +371,26 @@ calc_mvmods_ms2masses <- function (vmods, ntmod, ctmod,
   switch(type_ms2ions, 
          # b- and y-ions
          by = calc_byions(ntmod, ctmod, aas, aa_masses, digits), 
+         by0 = calc_by0ions(ntmod, ctmod, aas, aa_masses, digits), 
+         "by*" = calc_bystarions(ntmod, ctmod, aas, aa_masses, digits), 
          by2 = calc_by2ions(ntmod, ctmod, aas, aa_masses, digits),
-         
+         by02 = calc_by02ions(ntmod, ctmod, aas, aa_masses, digits),
+         "by*2" = calc_bystar2ions(ntmod, ctmod, aas, aa_masses, digits), 
          b = calc_bions(ntmod, ctmod, aas, aa_masses, digits), 
          b2 = calc_b2ions(ntmod, ctmod, aas, aa_masses, digits), 
          "b*" = calc_bstarions(ntmod, ctmod, aas, aa_masses, digits), 
          "b*2" = calc_bstar2ions(ntmod, ctmod, aas, aa_masses, digits), 
          b0 = calc_b0ions(ntmod, ctmod, aas, aa_masses, digits), 
          b02 = calc_b02ions(ntmod, ctmod, aas, aa_masses, digits), 
-         
+
          y = calc_yions(ntmod, ctmod, aas, aa_masses, digits),
          y2 = calc_y2ions(ntmod, ctmod, aas, aa_masses, digits),
          "y*" = calc_ystarions(ntmod, ctmod, aas, aa_masses, digits), 
          "y*2" = calc_ystar2ions(ntmod, ctmod, aas, aa_masses, digits), 
          y0 = calc_y0ions(ntmod, ctmod, aas, aa_masses, digits), 
          y02 = calc_y02ions(ntmod, ctmod, aas, aa_masses, digits), 
+         
+         byall = calc_allbyions(ntmod, ctmod, aas, aa_masses, digits), 
          
          # c- and z-ions
          cz = calc_czions(ntmod, ctmod, aas, aa_masses, digits), 
@@ -394,6 +403,8 @@ calc_mvmods_ms2masses <- function (vmods, ntmod, ctmod,
          z = calc_zions(ntmod, ctmod, aas, aa_masses, digits), 
          z2 = calc_z2ions(ntmod, ctmod, aas, aa_masses, digits), 
          # no z*, z*2, z0, z02
+         
+         czall = calc_allczions(ntmod, ctmod, aas, aa_masses, digits), 
 
          # a- and x-ions
          ax = calc_axions(ntmod, ctmod, aas, aa_masses, digits), 
@@ -409,10 +420,144 @@ calc_mvmods_ms2masses <- function (vmods, ntmod, ctmod,
          x = calc_xions(ntmod, ctmod, aas, aa_masses, digits), 
          x2 = calc_x2ions(ntmod, ctmod, aas, aa_masses, digits), 
          # no x*, x*2, x0, x02
+         axall = calc_allaxions(ntmod, ctmod, aas, aa_masses, digits), 
 
          stop("Unknown type.", call. = FALSE))
-
 }
+
+
+
+#' Masses of all b- and y-ions.
+#' 
+#' b, b2, b*, b*2, b0, b*2; y, y2, y*, y*2, y0, y*2
+#' 
+#' @inheritParams calc_bions
+#' @import purrr
+calc_allbyions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
+  # aa_masses["N-term"] is H (1.007825 ), not H+ (1.00727647)
+  electron <- 0.000549
+  proton <- 1.00727647
+  h2o <- 18.010565
+  nh3 <- 17.026549
+  
+  if (is_empty(ntmod) && is_empty(ctmod)) {
+    # Anywhere mods, no [NC]-term mods
+    bs <- c(proton, aa_masses[aas])
+    ys <- c(19.0178415, aa_masses[rev(aas)])
+  } else if (!(is_empty(ntmod) || is_empty(ctmod))) {
+    # Anywhere, both N- and C-term mods
+    bs <- c(aa_masses[names(ntmod)] - electron, aa_masses[aas])
+    ys <- c(aa_masses[names(ctmod)] + 2.01510147, aa_masses[rev(aas)])
+  } else if (!is_empty(ntmod)) {
+    # Anywhere, N-term
+    bs <- c(aa_masses[names(ntmod)] - electron, aa_masses[aas])
+    ys <- c(19.0178415, aa_masses[rev(aas)])
+  } else if (!is_empty(ctmod)) {
+    # Anywhere C-term
+    bs <- c(proton, aa_masses[aas])
+    ys <- c(aa_masses[names(ctmod)] + 2.01510147, aa_masses[rev(aas)])
+  }
+  
+  bs <- bs %>% cumsum()
+  b2s <- (bs + proton)/2
+  bstars <- bs - nh3
+  bstar2s <- (bstars + proton)/2
+  b0s <- bs - h2o
+  b02s <- (b0s + proton)/2
+  
+  ys <- ys %>% cumsum()
+  y2s <- (ys + proton)/2
+  ystars <- ys - nh3
+  ystar2s <- (ystars + proton)/2
+  y0s <- ys - h2o
+  y02s <- (y0s + proton)/2
+  
+  c(bs, b2s, bstars, bstar2s, b0s, b02s, 
+    ys, y2s, ystars, ystar2s, y0s, y02s) %>% 
+    round(digits = digits)
+}
+
+
+#' Masses of all c- and z-ions.
+#' 
+#' c, c2; z, z2
+#' 
+#' @inheritParams calc_bions
+calc_allczions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
+  # aa_masses["N-term"] is H (1.007825 ), not H+ (1.00727647)
+  # H+ + NH3: 18.0338255 == 1.00727647 + 17.026549
+  # NH3 - e: 17.026 == 17.026549 - 0.000549
+  # (1) [H3O+ - NH3], 1.9912925 == 19.0178415 - 17.026549
+  
+  ammonium <- 18.0338255
+  proton <- 1.00727647
+  
+  if (is_empty(ntmod) && is_empty(ctmod)) {
+    cs <- c(ammonium, aa_masses[aas])
+    zs <- c(1.9912925, aa_masses[rev(aas)])
+  } else if (!(is_empty(ntmod) || is_empty(ctmod))) {
+    cs <- c(aa_masses[names(ntmod)] + 17.026, aa_masses[aas])
+    zs <- c(aa_masses[names(ctmod)] - 15.0114475, aa_masses[rev(aas)])
+  } else if (!is_empty(ntmod)) {
+    cs <- c(aa_masses[names(ntmod)] + 17.026, aa_masses[aas])
+    zs <- c(1.9912925, aa_masses[rev(aas)])
+  } else if (!is_empty(ctmod)) {
+    cs <- c(ammonium, aa_masses[aas])
+    zs <- c(aa_masses[names(ctmod)] - 15.0114475, aa_masses[rev(aas)])
+  }
+  
+  cs <- cs %>% cumsum()
+  c2s <- (cs + proton)/2
+  
+  zs <- zs %>% cumsum()
+  z2s <- (zs + proton)/2
+  
+  c(cs, c2s, zs, z2s) %>% round(digits = digits)
+}
+
+
+#' Masses of all a- and x-ions.
+#' 
+#' a, a2, a*, a*2, a0, a*2; x, x2
+#' 
+#' @inheritParams calc_bions
+calc_allaxions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
+  proton <- 1.00727647
+  h2o <- 18.010565
+  nh3 <- 17.026549
+  
+  if (is_empty(ntmod) && is_empty(ctmod)) {
+    # Anywhere mods, no [NC]-term mods
+    as <- c(-26.9876381, aa_masses[aas])
+    xs <- c(44.9971061, aa_masses[rev(aas)])
+  } else if (!(is_empty(ntmod) || is_empty(ctmod))) {
+    # Anywhere, both N- and C-term mods
+    as <- c(aa_masses[names(ntmod)] - 27.9943656, aa_masses[aas])
+    xs <- c(aa_masses[names(ctmod)] + 27.9943661, aa_masses[rev(aas)])
+  } else if (!is_empty(ntmod)) {
+    # Anywhere, N-term
+    as <- c(aa_masses[names(ntmod)] - 27.9943656, aa_masses[aas])
+    xs <- c(44.9971061, aa_masses[rev(aas)])
+  } else if (!is_empty(ctmod)) {
+    # Anywhere C-term
+    as <- c(-26.9876381, aa_masses[aas])
+    xs <- c(aa_masses[names(ctmod)] + 27.9943661, aa_masses[rev(aas)])
+  }
+  
+  as <- as %>% cumsum()
+  a2s <- (as + proton)/2
+  astars <- as - nh3
+  astar2s <- (astars + proton)/2
+  a0s <- as - h2o
+  a02s <- (a0s + proton)/2
+  
+  xs <- xs %>% cumsum()
+  x2s <- (xs + proton)/2
+  
+  c(as, a2s, astars, astar2s, a0s, a02s, xs, x2s) %>% round(digits = digits)
+}
+
+
 
 
 #' Masses of singly-charged b- and y-ions.
@@ -425,12 +570,53 @@ calc_byions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 }
 
 
+#' Masses of singly-charged b0- and y0-ions.
+#' 
+#' @inheritParams calc_bions
+calc_by0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
+  bs <- calc_b0ions(ntmod, ctmod, aas, aa_masses, digits)
+  ys <- calc_y0ions(ntmod, ctmod, aas, aa_masses, digits)
+  c(bs, ys)
+}
+
+
+#' Masses of singly-charged b0- and y0-ions.
+#' 
+#' @inheritParams calc_bions
+calc_bystarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
+  bs <- calc_bstarions(ntmod, ctmod, aas, aa_masses, digits)
+  ys <- calc_ystarions(ntmod, ctmod, aas, aa_masses, digits)
+  c(bs, ys)
+}
+
+
+
 #' Masses of doubly-charged b- and y-ions.
 #' 
 #' @inheritParams calc_bions
 calc_by2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   bs <- calc_b2ions(ntmod, ctmod, aas, aa_masses, digits)
   ys <- calc_y2ions(ntmod, ctmod, aas, aa_masses, digits)
+  c(bs, ys)
+}
+
+
+#' Masses of doubly-charged b0- and y0-ions.
+#' 
+#' @inheritParams calc_bions
+calc_by02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
+  bs <- calc_b02ions(ntmod, ctmod, aas, aa_masses, digits)
+  ys <- calc_y02ions(ntmod, ctmod, aas, aa_masses, digits)
+  c(bs, ys)
+}
+
+
+#' Masses of doubly-charged b*- and y*-ions.
+#' 
+#' @inheritParams calc_bions
+calc_bystar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
+  bs <- calc_bstar2ions(ntmod, ctmod, aas, aa_masses, digits)
+  ys <- calc_ystar2ions(ntmod, ctmod, aas, aa_masses, digits)
   c(bs, ys)
 }
 
@@ -705,9 +891,9 @@ calc_cions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   if (is_empty(ntmod) && is_empty(ctmod)) {
     ions <- c(18.0338255, aa_masses[aas])
   } else if (!(is_empty(ntmod) || is_empty(ctmod))) {
-    ions <- c(aa_masses[names(ntmod)] + 17.026 - electron, aa_masses[aas])
+    ions <- c(aa_masses[names(ntmod)] + 17.026, aa_masses[aas])
   } else if (!is_empty(ntmod)) {
-    ions <- c(aa_masses[names(ntmod)] + 17.026 - electron, aa_masses[aas])
+    ions <- c(aa_masses[names(ntmod)] + 17.026, aa_masses[aas])
   } else if (!is_empty(ctmod)) {
     ions <- c(18.0338255, aa_masses[aas])
   }

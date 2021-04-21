@@ -115,8 +115,6 @@ bin_theopeps <- function (peps, min_mass = 350, max_mass = 1700, ppm = 20) {
 #' @param max_mass Numeric; the maximum MS1 mass.
 #' @param ppm Numeric; the eror tolerance of MS1 mass in ppm.
 #' @param out_path The output path.
-#' @param para_by Parallel by individual aa_masses table or by peptides under an
-#'   aa_masses table.
 #' @examples
 #' \donttest{
 #' res <- readRDS("~/proteoQ/dbs/fasta/uniprot/pepmass/uniprot_hs_2020_05_2miss.rds")
@@ -127,9 +125,8 @@ bin_theopeps <- function (peps, min_mass = 350, max_mass = 1700, ppm = 20) {
 #' @import parallel
 #' @export
 binTheoPeps <- function (res, min_mass = 516.24046, max_mass = 10000, ppm = 20, 
-                         out_path = file.path("E:/proteoQ/outs", 
-                                              "pepmasses/binned_theopeps.rds"), 
-                         para_by = "peptides") {
+                         out_path = file.path("~/proteoQ/outs", 
+                                              "pepmasses/binned_theopeps.rds")) {
   res <- res %>% 
     purrr::map(attributes) %>% 
     purrr::map(`[[`, "data")
@@ -141,8 +138,7 @@ binTheoPeps <- function (res, min_mass = 516.24046, max_mass = 10000, ppm = 20,
   
   parallel::clusterExport(cl, list("find_ms1_cutpoints"), 
                           envir = environment(proteoQ:::find_ms1_cutpoints))
-  
-  
+
   parallel::clusterExport(cl, list("min_mass", "max_mass", "ppm"), 
                           envir = environment())
   
@@ -219,6 +215,8 @@ proc_mgfs <- function (lines, topn_ms2ions = 100, ret_range = c(0, Inf)) {
   ms2_ints <- ms2s %>% 
     purrr::map(~ .x[, 2] %>% as.numeric()) 
   
+  lens <- purrr::map(ms2_moverzs, length)
+  
   if (topn_ms2ions < Inf) {
     rows <- purrr::map(ms2_ints, which_topx, topn_ms2ions)
     ms2_ints <- purrr::map2(ms2_ints, rows, ~ .x[.y])
@@ -290,7 +288,8 @@ proc_mgfs <- function (lines, topn_ms2ions = 100, ret_range = c(0, Inf)) {
                         ret_time = ret_times, 
                         scan_num = scan_nums,
                         ms2_moverz = ms2_moverzs, 
-                        ms2_int = ms2_ints)
+                        ms2_int = ms2_ints, 
+                        ms2_n = lens)
 }
 
 
@@ -693,8 +692,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
   ## --- iteration ---
   for (i in seq_len(len)) {
     exptmasses_ms1 <- mgfs_cr[["ms1_mass"]]
-    exptmoverzs_ms2 <- mgfs_cr[["ms2_moverz"]] #  higher charge states later
-    
+    exptmoverzs_ms2 <- mgfs_cr[["ms2_moverz"]]
+
     theos_af_ms1 <- theopeps[[as.character(frame+1)]]
     theomasses_af_ms1 <- theos_af_ms1$mass
     
@@ -920,9 +919,6 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
   #   5  868.  868.
   #   6 1297. 1297.
   
-  
-  # keep top-3?
-  
   invisible(x)
 }
 
@@ -936,11 +932,11 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
 #' @importFrom purrr map
 #' @inheritParams search_mgf_frames
 find_ppm_outer_bypep <- function (theos, expts, ppm_ms2) {
-  if (is.list(theos)) {
-    map(theos, find_ppm_outer_bycombi, expts, ppm_ms2)
-  } else {
-    find_ppm_outer_bycombi(theos, expts, ppm_ms2)
+  if (!is.list(theos)) {
+    theos <- list(theos)
   }
+  
+  map(theos, find_ppm_outer_bycombi, expts, ppm_ms2)
 }
 
 
@@ -1034,8 +1030,12 @@ find_ppm_outer_bycombi <- function (theos, expts, ppm_ms2) {
 
 #' Searches MS ions.
 #'
+#' @inheritParams calc_ms2ionseries
 #' @inheritParams calc_pepmasses
+#' @inheritParams search_mgf_frames
 #' @inheritParams readMGF
+#' @inheritParams normPSM
+#' @param mgf_path The file path to a list of MGF files.
 #' @export
 matchMS <- function (mgf_path = "~/proteoQ/mgfs", 
                      out_path = "~/proteoQ/outs", 
@@ -1106,8 +1106,7 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
   ## Bin theoretical peptides
   binTheoPeps(res = res, min_mass = min_mass, max_mass = max_mass, 
               ppm = ppm_ms1, 
-              out_path = file.path(out_path, "pepmasses/binned_theopeps.rds"), 
-              para_by = "peptides")
+              out_path = file.path(out_path, "pepmasses/binned_theopeps.rds"))
   
   rm(res)
   
@@ -1126,60 +1125,23 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
   if (n_cores <= 1 || length(mgf_frames) < n_cores) n_cores <- 1
 
   ## Ion searches
-  par_method = 1
-  if (par_method == 1) {
-    # parallel by_mgf and theopeps
-    out <- pmatch_bymgfs(mgf_frames = mgf_frames, 
-                         aa_masses_all = aa_masses_all, 
-                         n_cores = n_cores, 
-                         out_path = out_path, 
-                         mod_indexes = mod_indexes, 
-                         type_ms2ions = type_ms2ions, 
-                         maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                         maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                         maxn_vmods_sitescombi_per_pep = 
-                           maxn_vmods_sitescombi_per_pep, 
-                         minn_ms2 = minn_ms2, 
-                         ppm_ms1 = ppm_ms1, 
-                         ppm_ms2 = ppm_ms2, 
-                         digits = digits) 
-  } else if (par_method == 2) {
-    # parallel by aa_masses
-    out <- pmatch_byaamasses(mgf_frames = mgf_frames, 
-                             aa_masses_all = aa_masses_all, 
-                             n_cores = n_cores, 
-                             out_path = out_path, 
-                             mod_indexes = mod_indexes, 
-                             type_ms2ions = type_ms2ions, 
-                             maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                             maxn_sites_per_vmod = maxn_sites_per_vmod,  
-                             maxn_vmods_sitescombi_per_pep = 
-                               maxn_vmods_sitescombi_per_pep, 
-                             minn_ms2 = minn_ms2, 
-                             ppm_ms1 = ppm_ms1, 
-                             ppm_ms2 = ppm_ms2, 
-                             digits = digits)
-  } else if (par_method == 3) {
-    out <- pmatch_bymgfsL(mgf_frames = mgf_frames, 
-                          aa_masses_all = aa_masses_all, 
-                          n_cores = n_cores, 
-                          out_path = out_path, 
-                          mod_indexes = mod_indexes, 
-                          type_ms2ions = type_ms2ions, 
-                          maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                          maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                          maxn_vmods_sitescombi_per_pep = 
-                            maxn_vmods_sitescombi_per_pep, 
-                          minn_ms2 = minn_ms2, 
-                          ppm_ms1 = ppm_ms1, 
-                          ppm_ms2 = ppm_ms2, 
-                          digits = digits) 
-  }
-  
-  # out <- out %>% dplyr::bind_rows()
+  out <- pmatch_bymgfs(mgf_frames = mgf_frames, 
+                       aa_masses_all = aa_masses_all, 
+                       n_cores = n_cores, 
+                       out_path = out_path, 
+                       mod_indexes = mod_indexes, 
+                       type_ms2ions = type_ms2ions, 
+                       maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                       maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                       maxn_vmods_sitescombi_per_pep = 
+                         maxn_vmods_sitescombi_per_pep, 
+                       minn_ms2 = minn_ms2, 
+                       ppm_ms1 = ppm_ms1, 
+                       ppm_ms2 = ppm_ms2, 
+                       digits = digits) %T>%
+    saveRDS(file.path(out_path, "ion_matches.rds")) %>% 
+    calc_pepscores(topn_ms2ions, out_path)
 
-  saveRDS(out, file.path(out_path, "ion_matches.rds"))
-  
   invisible(out)
 }
 
@@ -1288,13 +1250,25 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
     aa_masses <- aa_masses_all[[i]]
     
     message("Matching against: ", 
-            paste(attributes(aa_masses)$fmods, 
-                  attributes(aa_masses)$vmods, 
-                  attributes(aa_masses)$vmods_neuloss, 
-                  collapse = ", "))
+            paste0(attributes(aa_masses)$fmods, 
+                   attributes(aa_masses)$vmods %>% 
+                     { if (nchar(.) > 0) paste0(" + ", .) else . }, 
+                   attributes(aa_masses)$vmods_neuloss %>% 
+                     { if (nchar(.) > 0) paste0(" + ", .) else . }))
     
     theopeps <- readRDS(file.path(out_path, "pepmasses/", 
                                   paste0("binned_theopeps_", i, ".rds")))
+    
+    # ---
+    # temporarily remove `prot_acc` and duplicated `pep_seq` 
+    # (frame numbers remain available for quick rejoin later)
+    if (ppm_ms1 < 1000) {
+      theopeps <- theopeps %>% 
+        purrr::map(~ {
+          rows <- !duplicated(.x$pep_seq)
+          .x[rows, c("pep_seq", "mass")]
+        })
+    }
     
     if (balance_split) {
       # (1) for a given aa_masses_all[[i]], some mgf_frames[[i]] 
@@ -1332,7 +1306,7 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
       # (3) removes unused frames of `theopeps`
       theopeps <- purrr::map2(mgf_frames, theopeps, subset_theoframes)
       
-      # (4) removes empties (zeor overlap between mgf_frams and theopeps)
+      # (4) removes empties (zero overlap between mgf_frames and theopeps)
       oks <- purrr::map_lgl(mgf_frames, ~ !purrr::is_empty(.x)) | 
         purrr::map_lgl(theopeps, ~ !purrr::is_empty(.x))
       
@@ -1340,7 +1314,7 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
       theopeps <- theopeps[oks]
       
       rm(oks)
-      
+
       cl <- makeCluster(getOption("cl.cores", n_cores))
       
       clusterExport(cl, list("%>%"), 
@@ -1366,8 +1340,10 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
                                              ppm_ms2 = ppm_ms2, 
                                              digits = digits), 
                              .scheduling = "dynamic") %>% 
-        dplyr::bind_rows() # across clusters
+        dplyr::bind_rows() # across nodes
       
+      # saveRDS(out[[i]], file.path(out_path, paste0("ion_matches_", i, ".rds")))
+
       stopCluster(cl)
     } else {
       theopeps <- local({
