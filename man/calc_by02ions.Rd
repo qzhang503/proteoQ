@@ -21,3 +21,6 @@ acid residues.}
 \description{
 Masses of doubly-charged b0- and y0-ions.
 }
+\seealso{
+\link{add_complement_ions}
+}

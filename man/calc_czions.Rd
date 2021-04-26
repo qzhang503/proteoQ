@@ -21,3 +21,6 @@ acid residues.}
 \description{
 Masses of singly-charged c- and z-ions.
 }
+\seealso{
+\link{add_complement_ions}
+}

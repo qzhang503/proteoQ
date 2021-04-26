@@ -4,14 +4,28 @@
 \alias{scalc_pepscores}
 \title{Calculates peptide scores by single MGF entries (scan numbers).}
 \usage{
-scalc_pepscores(entry, topn_ms2ions = 100)
+scalc_pepscores(
+  entry,
+  topn_ms2ions = 100,
+  type_ms2ions = "by",
+  ppm_ms2 = 25,
+  digits
+)
 }
 \arguments{
 \item{entry}{A row of data from \link{pmatch_bymgfs}.}
 
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
 MS2 ion searches.}
+
+\item{type_ms2ions}{Character; the type of
+\href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
+ions}. Values are in one of "by", "ax" and "cz".}
+
+\item{ppm_ms2}{The mass tolerance of MS2 species.}
+
+\item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Each entry corresponds to a row.
+Each entry corresponds to a row in \code{ion_matches.rds}.
 }

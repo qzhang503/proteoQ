@@ -21,3 +21,6 @@ acid residues.}
 \description{
 Masses of singly-charged a0-ions.
 }
+\seealso{
+\link{add_complement_ions}
+}

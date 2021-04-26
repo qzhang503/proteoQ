@@ -25,12 +25,14 @@ modifications in values.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
 
+\item{mass}{The mass of a theoretical MS1.}
+
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}.}
+ions}. Values are in one of "by", "ax" and "cz".}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }

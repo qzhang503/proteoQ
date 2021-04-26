@@ -4,15 +4,34 @@
 \alias{calc_pepscores_i}
 \title{Calculates the scores of peptides at an \code{aa_masses}.}
 \usage{
-calc_pepscores_i(res, topn_ms2ions = 100, out_path = "~/proteoQ/outs")
+calc_pepscores_i(
+  res,
+  i,
+  topn_ms2ions = 100,
+  type_ms2ions = "by",
+  ppm_ms2 = 25,
+  out_path = "~/proteoQ/outs",
+  digits = 5
+)
 }
 \arguments{
-\item{res}{The result from \link{pmatch_bymgfs}.}
+\item{res}{The result from \link{pmatch_bymgfs}. At the \code{NULL} default,
+the file \code{ion_matches.rds} will be used.}
+
+\item{i}{Integer; the index of the i-th \code{aa_masses} table.}
 
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
 MS2 ion searches.}
 
+\item{type_ms2ions}{Character; the type of
+\href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
+ions}. Values are in one of "by", "ax" and "cz".}
+
+\item{ppm_ms2}{The mass tolerance of MS2 species.}
+
 \item{out_path}{The file name with prepending path for outputs.}
+
+\item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
 Calculates the scores of peptides at an \code{aa_masses}.

@@ -21,3 +21,6 @@ acid residues.}
 \description{
 Masses of singly-charged b- and y-ions.
 }
+\seealso{
+\link{add_complement_ions}
+}

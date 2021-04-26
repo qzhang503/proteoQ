@@ -36,7 +36,7 @@ modifications.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}.}
+ions}. Values are in one of "by", "ax" and "cz".}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}

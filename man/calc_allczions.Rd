@@ -19,5 +19,10 @@ acid residues.}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-c, c2; z, z2
+Calculates the masses of c, c2; z, z2 ions. In general, the utility should
+not be called but use \link{calc_cions} and derive the remaining (with MS1
+precursor mass being known).
+}
+\seealso{
+\link{add_complement_ions}
 }

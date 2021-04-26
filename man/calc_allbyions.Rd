@@ -19,5 +19,10 @@ acid residues.}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-b, b2, b*, b*2, b0, b*2; y, y2, y*, y*2, y0, y*2
+Calculates the masses of b, b2, b*, b*2, b0, b*2; y, y2, y*, y*2, y0, y*2
+ions. In general, the utility should not be called but use \link{calc_byions}
+and derive the remaining (with MS1 precursor mass being known).
+}
+\seealso{
+\link{add_complement_ions}
 }

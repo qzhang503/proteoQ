@@ -1,12 +1,13 @@
 #' Calculates the masses of MS2 ion series.
 #'
 #' For a given type of fragmentation. Minimal error handling for speeds.
-#'
+#' 
+#' @param mass The mass of a theoretical MS1.
 #' @param maxn_vmods_sitescombi_per_pep Integer; the maximum number of
 #'   combinatorial variable modifications per peptide sequence.
 #' @param type_ms2ions Character; the type of
 #'   \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-#'   ions}.
+#'   ions}. Values are in one of "by", "ax" and "cz".
 #' @param z Integer; the charge state of an MS1 ion. Currently only for positive
 #'   charges (not currently used).
 #' @inheritParams calc_monopep
@@ -369,58 +370,9 @@ calc_mvmods_ms2masses <- function (vmods, ntmod, ctmod,
   }
 
   switch(type_ms2ions, 
-         # b- and y-ions
          by = calc_byions(ntmod, ctmod, aas, aa_masses, digits), 
-         by0 = calc_by0ions(ntmod, ctmod, aas, aa_masses, digits), 
-         "by*" = calc_bystarions(ntmod, ctmod, aas, aa_masses, digits), 
-         by2 = calc_by2ions(ntmod, ctmod, aas, aa_masses, digits),
-         by02 = calc_by02ions(ntmod, ctmod, aas, aa_masses, digits),
-         "by*2" = calc_bystar2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         b = calc_bions(ntmod, ctmod, aas, aa_masses, digits), 
-         b2 = calc_b2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         "b*" = calc_bstarions(ntmod, ctmod, aas, aa_masses, digits), 
-         "b*2" = calc_bstar2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         b0 = calc_b0ions(ntmod, ctmod, aas, aa_masses, digits), 
-         b02 = calc_b02ions(ntmod, ctmod, aas, aa_masses, digits), 
-
-         y = calc_yions(ntmod, ctmod, aas, aa_masses, digits),
-         y2 = calc_y2ions(ntmod, ctmod, aas, aa_masses, digits),
-         "y*" = calc_ystarions(ntmod, ctmod, aas, aa_masses, digits), 
-         "y*2" = calc_ystar2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         y0 = calc_y0ions(ntmod, ctmod, aas, aa_masses, digits), 
-         y02 = calc_y02ions(ntmod, ctmod, aas, aa_masses, digits), 
-         
-         byall = calc_allbyions(ntmod, ctmod, aas, aa_masses, digits), 
-         
-         # c- and z-ions
          cz = calc_czions(ntmod, ctmod, aas, aa_masses, digits), 
-         cz2 = calc_cz2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         
-         c = calc_cions(ntmod, ctmod, aas, aa_masses, digits), 
-         c2 = calc_c2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         # no c*, c*2, c0, c02
-         
-         z = calc_zions(ntmod, ctmod, aas, aa_masses, digits), 
-         z2 = calc_z2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         # no z*, z*2, z0, z02
-         
-         czall = calc_allczions(ntmod, ctmod, aas, aa_masses, digits), 
-
-         # a- and x-ions
          ax = calc_axions(ntmod, ctmod, aas, aa_masses, digits), 
-         ax2 = calc_ax2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         
-         a = calc_aions(ntmod, ctmod, aas, aa_masses, digits), 
-         a2 = calc_a2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         "a*" = calc_astarions(ntmod, ctmod, aas, aa_masses, digits), 
-         "a*2" = calc_astar2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         a0 = calc_a0ions(ntmod, ctmod, aas, aa_masses, digits), 
-         a02 = calc_a02ions(ntmod, ctmod, aas, aa_masses, digits), 
-         
-         x = calc_xions(ntmod, ctmod, aas, aa_masses, digits), 
-         x2 = calc_x2ions(ntmod, ctmod, aas, aa_masses, digits), 
-         # no x*, x*2, x0, x02
-         axall = calc_allaxions(ntmod, ctmod, aas, aa_masses, digits), 
 
          stop("Unknown type.", call. = FALSE))
 }
@@ -428,11 +380,14 @@ calc_mvmods_ms2masses <- function (vmods, ntmod, ctmod,
 
 
 #' Masses of all b- and y-ions.
-#' 
-#' b, b2, b*, b*2, b0, b*2; y, y2, y*, y*2, y0, y*2
-#' 
+#'
+#' Calculates the masses of b, b2, b*, b*2, b0, b*2; y, y2, y*, y*2, y0, y*2
+#' ions. In general, the utility should not be called but use \link{calc_byions}
+#' and derive the remaining (with MS1 precursor mass being known).
+#'
 #' @inheritParams calc_bions
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_allbyions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # aa_masses["N-term"] is H (1.007825 ), not H+ (1.00727647)
   electron <- 0.000549
@@ -472,17 +427,27 @@ calc_allbyions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   y0s <- ys - h2o
   y02s <- (y0s + proton)/2
   
-  c(bs, b2s, bstars, bstar2s, b0s, b02s, 
-    ys, y2s, ystars, ystar2s, y0s, y02s) %>% 
-    round(digits = digits)
+  # c(bs, b2s, bstars, bstar2s, b0s, b02s, 
+  #   ys, y2s, ystars, ystar2s, y0s, y02s) %>% 
+  #   round(digits = digits)
+  
+  out <- list(bs = bs, b2s = b2s, bstars = bstars, bstar2s = bstar2s, 
+              b0s = b0s, b02s = b02s, ys = ys, y2s = y2s, 
+              ystars = ystars, ystar2s = ystar2s, y0s = y0s, y02s = y02s)
+
+  # out <- out %>% map(round, digits = digits)
+  
 }
 
 
 #' Masses of all c- and z-ions.
-#' 
-#' c, c2; z, z2
-#' 
+#'
+#' Calculates the masses of c, c2; z, z2 ions. In general, the utility should
+#' not be called but use \link{calc_cions} and derive the remaining (with MS1
+#' precursor mass being known).
+#'
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_allczions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # aa_masses["N-term"] is H (1.007825 ), not H+ (1.00727647)
   # H+ + NH3: 18.0338255 == 1.00727647 + 17.026549
@@ -517,10 +482,13 @@ calc_allczions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 
 #' Masses of all a- and x-ions.
-#' 
-#' a, a2, a*, a*2, a0, a*2; x, x2
-#' 
+#'
+#' Calculates the masses of a, a2, a*, a*2, a0, a*2; x, x2 ions. In general, the
+#' utility should not be called but use \link{calc_aions} and derive the
+#' remaining (with MS1 precursor mass being known).
+#'
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_allaxions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   proton <- 1.00727647
   h2o <- 18.010565
@@ -561,11 +529,14 @@ calc_allaxions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 
 #' Masses of singly-charged b- and y-ions.
-#' 
+#'
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_byions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   bs <- calc_bions(ntmod, ctmod, aas, aa_masses, digits)
   ys <- calc_yions(ntmod, ctmod, aas, aa_masses, digits)
+  
+  # list(bs = bs, ys = ys)
   c(bs, ys)
 }
 
@@ -573,6 +544,7 @@ calc_byions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' Masses of singly-charged b0- and y0-ions.
 #' 
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_by0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   bs <- calc_b0ions(ntmod, ctmod, aas, aa_masses, digits)
   ys <- calc_y0ions(ntmod, ctmod, aas, aa_masses, digits)
@@ -583,6 +555,7 @@ calc_by0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' Masses of singly-charged b0- and y0-ions.
 #' 
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_bystarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   bs <- calc_bstarions(ntmod, ctmod, aas, aa_masses, digits)
   ys <- calc_ystarions(ntmod, ctmod, aas, aa_masses, digits)
@@ -594,6 +567,7 @@ calc_bystarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' Masses of doubly-charged b- and y-ions.
 #' 
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_by2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   bs <- calc_b2ions(ntmod, ctmod, aas, aa_masses, digits)
   ys <- calc_y2ions(ntmod, ctmod, aas, aa_masses, digits)
@@ -604,6 +578,7 @@ calc_by2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' Masses of doubly-charged b0- and y0-ions.
 #' 
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_by02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   bs <- calc_b02ions(ntmod, ctmod, aas, aa_masses, digits)
   ys <- calc_y02ions(ntmod, ctmod, aas, aa_masses, digits)
@@ -614,6 +589,7 @@ calc_by02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' Masses of doubly-charged b*- and y*-ions.
 #' 
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_bystar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   bs <- calc_bstar2ions(ntmod, ctmod, aas, aa_masses, digits)
   ys <- calc_ystar2ions(ntmod, ctmod, aas, aa_masses, digits)
@@ -626,6 +602,7 @@ calc_bystar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_bions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # aa_masses["N-term"] is H (1.007825 ), not H+ (1.00727647)
   electron <- 0.000549
@@ -646,6 +623,7 @@ calc_bions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   
   ions %>% 
     cumsum() %>% 
+    `[`(-1) %>% 
     round(digits = digits)
 }
 
@@ -654,6 +632,7 @@ calc_bions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
+#' @seealso \link{add_complement_ions}
 calc_b2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_bions(ntmod, ctmod, aas, aa_masses, digits)
   (ions + 1.00727647)/2
@@ -665,6 +644,7 @@ calc_b2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_bstarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   
   # electron <- 0.000549
@@ -695,6 +675,7 @@ calc_bstarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
+#' @seealso \link{add_complement_ions}
 calc_bstar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_bstarions(ntmod, ctmod, aas, aa_masses, digits)
   (ions + 1.00727647)/2
@@ -706,6 +687,7 @@ calc_bstar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_b0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   
   # -H2O 18.010565
@@ -747,6 +729,7 @@ calc_b02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_yions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   
   # (1) OH (C-term), + H (N-term) + H+
@@ -764,6 +747,7 @@ calc_yions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   
   ions %>% 
     cumsum() %>% 
+    `[`(-1) %>% 
     round(digits = digits)
 }
 
@@ -772,6 +756,7 @@ calc_yions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
+#' @seealso \link{add_complement_ions}
 calc_y2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_yions(ntmod, ctmod, aas, aa_masses, digits)
   (ions + 1.00727647)/2
@@ -783,6 +768,7 @@ calc_y2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_ystarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # (1) OH (C-term), + H (N-term) + H+
   # (2) Other C-term + H + H+: X + 1.007825 + 1.00727647
@@ -822,6 +808,7 @@ calc_ystar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_y0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # (1) OH (C-term), + H (N-term) + H+
   # (2) Other C-term + H + H+: X + 1.007825 + 1.00727647
@@ -850,6 +837,7 @@ calc_y0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
+#' @seealso \link{add_complement_ions}
 calc_y02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_y0ions(ntmod, ctmod, aas, aa_masses, digits)
   (ions + 1.00727647)/2
@@ -861,6 +849,7 @@ calc_y02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' Masses of singly-charged c- and z-ions.
 #' 
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_czions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   cs <- calc_cions(ntmod, ctmod, aas, aa_masses, digits)
   zs <- calc_zions(ntmod, ctmod, aas, aa_masses, digits)
@@ -871,6 +860,7 @@ calc_czions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' Masses of doubly-charged c- and z-ions.
 #' 
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_cz2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   cs <- calc_c2ions(ntmod, ctmod, aas, aa_masses, digits)
   zs <- calc_z2ions(ntmod, ctmod, aas, aa_masses, digits)
@@ -883,6 +873,7 @@ calc_cz2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_cions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # aa_masses["N-term"] is H (1.007825 ), not H+ (1.00727647)
   # H+ + NH3: 18.0338255 == 1.00727647 + 17.026549
@@ -900,6 +891,7 @@ calc_cions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   
   ions %>% 
     cumsum() %>% 
+    `[`(-1) %>% 
     round(digits = digits)
 }
 
@@ -908,6 +900,7 @@ calc_cions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
+#' @seealso \link{add_complement_ions}
 calc_c2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_cions(ntmod, ctmod, aas, aa_masses, digits)
   (ions + 1.00727647)/2
@@ -921,6 +914,7 @@ calc_c2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_zions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # (1) [H3O+ - NH3], 1.9912925 == 19.0178415 - 17.026549
   # (2) Other C-term (other than OH) + H + H+ - NH3
@@ -938,6 +932,7 @@ calc_zions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   
   ions %>% 
     cumsum() %>% 
+    `[`(-1) %>% 
     round(digits = digits)
 }
 
@@ -946,6 +941,7 @@ calc_zions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
+#' @seealso \link{add_complement_ions}
 calc_z2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_zions(ntmod, ctmod, aas, aa_masses, digits)
   (ions + 1.00727647)/2
@@ -957,6 +953,7 @@ calc_z2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' Masses of singly-charged a- and x-ions.
 #' 
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_axions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   as <- calc_aions(ntmod, ctmod, aas, aa_masses, digits)
   xs <- calc_xions(ntmod, ctmod, aas, aa_masses, digits)
@@ -967,6 +964,7 @@ calc_axions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' Masses of doubly-charged a- and x-ions.
 #' 
 #' @inheritParams calc_bions
+#' @seealso \link{add_complement_ions}
 calc_ax2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   as <- calc_a2ions(ntmod, ctmod, aas, aa_masses, digits)
   xs <- calc_x2ions(ntmod, ctmod, aas, aa_masses, digits)
@@ -979,6 +977,7 @@ calc_ax2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_aions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # aa_masses["N-term"] is H (1.007825 ), not H+ (1.00727647)
   # H+ - CO:  26.9876381 == 1.00727647 - 27.9949146
@@ -996,6 +995,7 @@ calc_aions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   
   ions %>% 
     cumsum() %>% 
+    `[`(-1) %>% 
     round(digits = digits)
 }
 
@@ -1004,6 +1004,7 @@ calc_aions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
+#' @seealso \link{add_complement_ions}
 calc_a2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_aions(ntmod, ctmod, aas, aa_masses, digits)
   (ions + 1.00727647)/2
@@ -1015,6 +1016,7 @@ calc_a2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_astarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # H+ - CO - NH3:  -44.0141871 == 1.00727647 - 27.9949146 - 17.026549
   # CO -NH3 - e: -45.0220126 == -27.9949146 - 17.026549 - 0.000549
@@ -1039,6 +1041,7 @@ calc_astarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
+#' @seealso \link{add_complement_ions}
 calc_astar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_astarions(ntmod, ctmod, aas, aa_masses, digits)
   (ions + 1.00727647)/2
@@ -1050,6 +1053,7 @@ calc_astar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_a0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # H+ - CO - H2O:  -44.9982031 == 1.00727647 - 27.9949146 - 18.010565
   # CO -H2O - e: -46.0060286 == -27.9949146 - 18.010565 - 0.000549
@@ -1074,6 +1078,7 @@ calc_a0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
+#' @seealso \link{add_complement_ions}
 calc_a02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_a0ions(ntmod, ctmod, aas, aa_masses, digits)
   (ions + 1.00727647)/2
@@ -1089,6 +1094,7 @@ calc_a02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
+#' @seealso \link{add_complement_ions}
 calc_xions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   # (1) [H3O+ + CO - H2], 44.9971061 == 19.0178415 + 27.9949146 - 2 * 1.007825
   # (2) Other C-term (other than OH) + H + H+ + CO - 2H
@@ -1106,6 +1112,7 @@ calc_xions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   
   ions %>% 
     cumsum() %>% 
+    `[`(-1) %>% 
     round(digits = digits)
 }
 
@@ -1114,8 +1121,28 @@ calc_xions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' @inheritParams calc_mvmods_masses
 #' @inheritParams calc_ms2ionseries
+#' @seealso \link{add_complement_ions}
 calc_x2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_xions(ntmod, ctmod, aas, aa_masses, digits)
   (ions + 1.00727647)/2
+}
+
+
+#' Adds the complimentary series of ions.
+#' 
+#' @param ms1 The MS1 mass of precursor (neutral from \link{calc_pepmasses}).
+#' @param ms2 The series of MS2 product ions in one of a-, b- or c-ions.
+#' @importFrom purrr map map2 map_dbl
+add_complement_ions <- function (ms1, ms2) {
+  # + 2 protons
+  # (the first to offset the H+ in `ms2`)
+  # (the second for carrying charge)
+  
+  ms2c <- map_dbl(ms2, ~ ms1 + 2.01455294 - .x)
+  
+  len <- length(ms2c)
+  names(ms2c)[1:(len-1)] <- names(ms2c)[2:len]
+  
+  c(ms2[-1], ms2c[-len])
 }
 

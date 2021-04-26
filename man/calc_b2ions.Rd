@@ -21,3 +21,6 @@ acid residues.}
 \description{
 Masses of doubly-charged b-ions.
 }
+\seealso{
+\link{add_complement_ions}
+}

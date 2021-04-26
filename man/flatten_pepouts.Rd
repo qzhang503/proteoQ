@@ -7,7 +7,8 @@
 flatten_pepouts(data, outcol = "matches")
 }
 \arguments{
-\item{data}{The data from ion matches.}
+\item{data}{Nested list of table from ion matches. Each table contains
+columns \code{theo} and \code{expt}.}
 
 \item{outcol}{The output column name.}
 }

@@ -9,7 +9,7 @@ binTheoPeps(
   min_mass = 516.24046,
   max_mass = 10000,
   ppm = 20,
-  out_path = file.path("E:/proteoQ/outs", "pepmasses/binned_theopeps.rds")
+  out_path = file.path("~/proteoQ/outs", "pepmasses/binned_theopeps.rds")
 )
 }
 \arguments{

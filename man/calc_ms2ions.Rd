@@ -9,7 +9,7 @@ calc_ms2ions(
   mass,
   aa_masses,
   mod_indexes,
-  type_ms2ions = "byall",
+  type_ms2ions = "by",
   vmods_ps,
   amods,
   tmod,
@@ -25,12 +25,14 @@ calc_ms2ions(
 \item{aa_seq}{Character string; a peptide sequences with one-letter
 representation of amino acids.}
 
+\item{mass}{The mass of a theoretical MS1.}
+
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}.}
+ions}. Values are in one of "by", "ax" and "cz".}
 
 \item{vmods_ps}{A named list of positions and sites with positions being names
 and sites being values.}

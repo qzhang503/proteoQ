@@ -19,5 +19,10 @@ acid residues.}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-a, a2, a*, a*2, a0, a*2; x, x2
+Calculates the masses of a, a2, a*, a*2, a0, a*2; x, x2 ions. In general, the
+utility should not be called but use \link{calc_aions} and derive the
+remaining (with MS1 precursor mass being known).
+}
+\seealso{
+\link{add_complement_ions}
 }

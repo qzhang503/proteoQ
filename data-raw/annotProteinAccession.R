@@ -523,5 +523,6 @@ foo_fc_tables <- function () {
     write_tsv(file.path(dat_dir, "Protein/protein_logFC_to_nbm.txt")) %>% 
     dplyr::mutate_if(is.numeric, ~ ifelse(.x > 0, 2^.x, -1/(2^.x)) %>% round(digits = 2)) %T>% 
     write_tsv(file.path(dat_dir, "Protein/protein_FC_to_nbm.txt")) 
-  
 }
+
+

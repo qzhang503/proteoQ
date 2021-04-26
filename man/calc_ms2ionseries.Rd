@@ -20,12 +20,14 @@ calc_ms2ionseries(
 \item{aa_seq}{Character string; a peptide sequences with one-letter
 representation of amino acids.}
 
+\item{mass}{The mass of a theoretical MS1.}
+
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}.}
+ions}. Values are in one of "by", "ax" and "cz".}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}

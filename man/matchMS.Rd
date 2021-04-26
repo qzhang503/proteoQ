@@ -72,7 +72,7 @@ be excluded.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}.}
+ions}. Values are in one of "by", "ax" and "cz".}
 
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
 MS2 ion searches.}
