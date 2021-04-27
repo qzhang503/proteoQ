@@ -1,12 +1,13 @@
-#' Extracts the lists of theoretical m-over-z's.
+#' Extracts the lists of theoretical or experimental m-over-z's.
 #'
 #' @param data Nested list of table from ion matches. Each table contains
 #'   columns \code{theo} and \code{expt}.
+#' @param col The name of a column where data will be extracted.
 #' @import purrr
-extract_theos <- function (data) {
+extract_matches_col <- function (data, col = "theo") {
   purrr::map(data, ~ {
     x <- .x %>% # by sequence
-      purrr::map(`[[`, "theo") # by varmod positions
+      purrr::map(`[[`, col) # by varmod positions
     
     x <- map(x, ~ {
       names(.x) <- NULL
@@ -29,7 +30,7 @@ mdhyper <- function (x, m, n, k) {
 #' Flattens the outputs of ion matches.
 #' 
 #' @param outcol The output column name.
-#' @inheritParams extract_theos
+#' @inheritParams extract_matches_col
 #' @examples
 #' \donttest{
 #' x <- flatten_pepouts(res$matches, "matches")
@@ -51,6 +52,17 @@ flatten_pepouts <- function (data, outcol = "matches") {
     }) %>% 
       dplyr::bind_rows()
   }) 
+}
+
+
+#' Combines peptide scores to table.
+#' 
+#' @inheritParams flatten_pepouts
+combine_pepvecs <- function (data, outcol = "pep_score") {
+  purrr::imap(data, ~ {
+    tibble(pep_seq = .y, pep_mod = names(.x), !!outcol := .x)
+  }) %>% 
+    dplyr::bind_rows()
 }
 
 
@@ -147,7 +159,7 @@ scalc_pepscores <- function (entry, topn_ms2ions = 100, type_ms2ions = "by",
   ## only one experimental and thus `[[1]]`
   expts <- entry$ms2_moverz[[1]] 
   
-  ## matches btw. theoretical ands experimentals
+  ## matches btw. theoreticals and experimentals
   
   # [[1]] --- `entry$matches` (always at level-one and can be unlisted)
   # [[1]]$AMMASIGR --- `entry$matches[[1]]` (1:i peptides)
@@ -180,24 +192,13 @@ scalc_pepscores <- function (entry, topn_ms2ions = 100, type_ms2ions = "by",
   mts <- entry$matches[[1]]
   
   # lists of theoretical values (primary only)
-  theos <- extract_theos(mts)
-  
-  # $AMMASIGR
-  # $AMMASIGR$`00500000`
-  # [1]  175.11895  230.17021  301.20732 ...
-  
-  # $TNLAMMR
-  # $TNLAMMR$`0000500`
-  # [1]  175.11895  230.17021  331.21789 ...
-  
-  # $TNLAMMR$`0000050`
-  # [1]  175.11895  230.17021  331.21789 ...
+  theos <- extract_matches_col(mts, "theo")
   
   # matches additionally against secondary ions
   mts2 <- match_secions(theos, expts, type_ms2ions, ppm_ms2, digits)
   
   # the number of secondary matches
-  ms2 <- map(mts2, ~ {
+  xs2 <- map(mts2, ~ {
     mts2_i <- .x
     map(mts2_i, ~ sum(!is.na(.x$expt))) 
   })
@@ -219,21 +220,17 @@ scalc_pepscores <- function (entry, topn_ms2ions = 100, type_ms2ions = "by",
   ms <- map(mts, ~ {
     mts_i <- .x
     map(mts_i, ~ {
-      # x <- nrow(.x) - 2
-      x <- nrow(.x) # terminal removed
+      x <- nrow(.x) 
       x[x > N] <- N
       x
     })
   })
   
   # subtracts the counts of secondary b0, y0 matches etc. from noise
-  ns <- map2(ms, ms2, ~ {
+  ns <- map2(ms, xs2, ~ {
     ms_i <- .x
-    ms2_i <- .y
-    
-    map2(ms_i, ms2_i, ~ {
-      x <- N - .x - .y
-    })
+    xs2_i <- .y
+    map2(ms_i, xs2_i, ~ N - .x - .y)
   })
   
   scores <- mapply(mdhyper, x = xs, m = ms, n = ns, k  = k, SIMPLIFY = FALSE) %>% 
@@ -245,70 +242,57 @@ scalc_pepscores <- function (entry, topn_ms2ions = 100, type_ms2ions = "by",
       .x
     })
   
-  invisible(list(sec_matches = mts2, scores = scores))
+  scores <- scores %>%
+    combine_pepvecs("pep_score") %>% 
+    dplyr::mutate(scan_num = unlist(entry$scan_num))
+  
+  dplyr::bind_cols(
+    scores, 
+    tibble(pri_matches = purrr::flatten(mts)), 
+    tibble(sec_matches = purrr::flatten(mts2)))
 }
 
 
 #' Calculates the scores of peptides at an \code{aa_masses}.
 #' 
-#' @param i Integer; the index of the i-th \code{aa_masses} table.
 #' @inheritParams calc_pepscores
-calc_pepscores_i <- function (res, i, topn_ms2ions = 100, type_ms2ions = "by", 
+calc_pepscores_i <- function (res, topn_ms2ions = 100, type_ms2ions = "by", 
                               ppm_ms2 = 25, out_path = "~/proteoQ/outs", 
                               digits = 5) {
 
-  # res <- res[62:64, ]
-  
-  # add scores and secondary matches
-  sc_mt2s <- res %>% 
-    split(., seq_len(nrow(.))) %>% 
-    purrr::map(scalc_pepscores, topn_ms2ions, type_ms2ions, ppm_ms2, digits)
-
-  sec_matches <- sc_mt2s %>% 
-    purrr::map(`[[`, "sec_matches") %>% 
-    flatten_pepouts("sec_matches")
-  
-  scores <- sc_mt2s %>% 
-    purrr::map(`[[`, "scores") %>% 
-    flatten_pepouts("pep_score")
-  
-  rm(sc_mt2s)
-
-  # outputs with list columns
-  res <- res %>% 
-    dplyr::mutate(sec_matches = sec_matches, pep_score = scores) %T>% 
-    saveRDS(file.path(out_path, paste0("score_", i, ".rds"))) %>% 
-    dplyr::select(-c("ms2_moverz", "ms2_int", "matches", 
-                     "sec_matches", "pep_score"))
-
-  scores <- scores %>% 
-    purrr::map2(res$scan_num, ~ {
-      dplyr::bind_cols(scan_num = .y, .x)
-    }) %>% 
-    dplyr::bind_rows() 
-  
-  if (nrow(scores) > 0) {
-    scores <- scores %>% 
-      dplyr::group_by(scan_num) %>% 
-      dplyr::arrange(-pep_score) %>% 
-      dplyr::mutate(pep_rank = row_number()) %>% 
-      dplyr::mutate(pep_score = round(pep_score, digits = 1)) %>% 
-      dplyr::ungroup() 
-    
-    res <- res %>% 
-      purrr::map(unlist, use.names = FALSE) %>% 
-      dplyr::bind_cols() %>% 
-      dplyr::left_join(scores, by = "scan_num") 
+  if (nrow(res) == 0) {
+    scores <- tibble::tibble(
+      pep_seq = as.character(), 
+      pep_mod = as.character(), 
+      pep_score = as.numeric(), 
+      scan_num = as.integer(),
+      pri_matches = list(), 
+      sec_matches = list())
   } else {
-    scores <- tibble(pep_mod = character(), 
-                     pep_score = numeric(), 
-                     pep_seq = character(), 
-                     pep_rank = integer())
-    
-    res <- res %>% dplyr::bind_cols(scores)
+    scores <- res %>% 
+      split(., seq_len(nrow(.))) %>% 
+      purrr::map(scalc_pepscores, topn_ms2ions, type_ms2ions, ppm_ms2, digits) %>% 
+      dplyr::bind_rows()
   }
+
+  res <- res %>% 
+    dplyr::select(-c("matches")) %>% 
+    dplyr::mutate(scan_num = as.numeric(scan_num)) %>% 
+    dplyr::mutate(scan_title = as.character(scan_title), 
+                  ms1_moverz = as.numeric(ms1_moverz), 
+                  ms1_mass = as.numeric(ms1_mass), 
+                  ms1_int = as.numeric(ms1_int), 
+                  ms1_charge = as.character(ms1_charge), 
+                  ret_time = as.integer(ret_time), 
+                  ms2_n = as.integer(ms2_n)) %>% 
+    dplyr::left_join(scores, by = "scan_num")
   
-  invisible(res)
+  res <- res %>% 
+    dplyr::group_by(scan_num) %>% 
+    dplyr::arrange(-pep_score) %>% 
+    dplyr::mutate(pep_rank = row_number()) %>% 
+    dplyr::mutate(pep_score = round(pep_score, digits = 1)) %>% 
+    dplyr::ungroup() 
 }
 
 
@@ -330,7 +314,7 @@ calc_pepscores <- function (res = NULL, topn_ms2ions = 100, type_ms2ions = "by",
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   
   out <- parallel::clusterMap(cl, calc_pepscores_i, 
-                              res = res, seq_along(res), 
+                              res = res, 
                               MoreArgs = list(topn_ms2ions = topn_ms2ions, 
                                               type_ms2ions = type_ms2ions, 
                                               ppm_ms2 = ppm_ms2, 
@@ -343,8 +327,8 @@ calc_pepscores <- function (res = NULL, topn_ms2ions = 100, type_ms2ions = "by",
   oks <- purrr::map_lgl(out, ~ nrow(.x) > 0)
   out <- out[oks] %>% dplyr::bind_rows()
   
-  saveRDS(out, file.path(out_path, "scores_simple.rds"))
-  
+  saveRDS(out, file.path(out_path, "scores.rds"))
+
   invisible(out)
 }
 

@@ -692,9 +692,10 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                        ppm_ms1 = ppm_ms1, 
                        ppm_ms2 = ppm_ms2, 
                        digits = digits) %T>%
-    saveRDS(file.path(out_path, "ion_matches.rds")) %>% 
-    calc_pepscores(topn_ms2ions, out_path)
-
+    saveRDS(file.path(out_path, "ion_matches.rds")) %T>% 
+    calc_pepscores(topn_ms2ions, type_ms2ions, ppm_ms2, 
+                   out_path, digits)
+  
   invisible(out)
 }
 
@@ -854,8 +855,7 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
     out[[i]] <- out[[i]] %>% 
       dplyr::bind_rows() # across nodes
     
-    # --- temporarily save
-    saveRDS(out[[i]], file.path(out_path, paste0("ion_matches_", i, ".rds")))
+    # saveRDS(out[[i]], file.path(out_path, paste0("ion_matches_", i, ".rds")))
     
     stopCluster(cl)
     
@@ -1153,12 +1153,9 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
   theos_af_ms2 <- theos_af_ms2[af_allowed]
 
   # --- find MS2 matches ---
-  # (the complimentary in ion series does not hold with NL...)
-  
   if (is_empty(theos_bf_ms2)) {
     x_bf <- theos_bf_ms2
   } else {
-    # theos_bf_ms2 <- map2(theomasses_bf_ms1, theos_bf_ms2, add_comple_ions)
     x_bf <- purrr::map(theos_bf_ms2, find_ppm_outer_bypep, 
                        expt_moverz_ms2, ppm_ms2)
   }
@@ -1166,7 +1163,6 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
   if (is_empty(theos_cr_ms2)) {
     x_cr <- theos_cr_ms2
   } else {
-    # theos_cr_ms2 <- map2(theomasses_cr_ms1, theos_cr_ms2, add_comple_ions)
     x_cr <- purrr::map(theos_cr_ms2, find_ppm_outer_bypep, 
                        expt_moverz_ms2, ppm_ms2)
   }
@@ -1174,37 +1170,16 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
   if (is_empty(theos_af_ms2)) {
     x_af <- theos_af_ms2
   } else {
-    # theos_af_ms2 <- map2(theomasses_af_ms1, theos_af_ms2, add_comple_ions)
     x_af <- purrr::map(theos_af_ms2, find_ppm_outer_bypep, 
                        expt_moverz_ms2, ppm_ms2)
   }
   
-  # matches btw. theos and expts
-  # x_bf <- purrr::map(theos_bf_ms2, find_ppm_outer_bypep, expt_moverz_ms2, ppm_ms2)
-  # x_cr <- purrr::map(theos_cr_ms2, find_ppm_outer_bypep, expt_moverz_ms2, ppm_ms2)
-  # x_af <- purrr::map(theos_af_ms2, find_ppm_outer_bypep, expt_moverz_ms2, ppm_ms2)
-
   x <- c(x_bf, x_cr, x_af)
   
   # cleans up
   rows <- map(x, ~ {
     this <- .x
-    
-    # if (class(this)[1] == "tbl_df") {
-    #   message("This is a tibble:", 
-    #           theomasses_bf_ms1, theomasses_cr_ms1, theomasses_af_ms1, 
-    #           theos_bf_ms2, theos_cr_ms2, theos_af_ms2)
-    #   
-    #   this <- list(this)
-    # }
-    
     map_lgl (this, ~ sum(!is.na(.x[["expt"]])) >= minn_ms2)
-    
-    # if (class(this)[1] == "tbl_df") {
-    #   sum(!is.na(this[["expt"]])) >= minn_ms2
-    # } else {
-    #   map_lgl (this, ~ sum(!is.na(.x[["expt"]])) >= minn_ms2)
-    # }
   })
   x <- map2(x, rows, ~ .x[.y])
   
@@ -1298,12 +1273,6 @@ find_ppm_outer_bycombi <- function (theos, expts, ppm_ms2) {
   
   # the first half are b-ions and the second half are y-ions
   bind_cols(theo = theos, expt = es)
-  
-  # ib <- 1:(len/2)
-  # iy <- (len/2+1):len
-  # bind_cols(theo = theos[ib], expt = es[ib])
-  # bind_cols(theo = theos[iy], expt = es[iy])
-  
 }
 
 

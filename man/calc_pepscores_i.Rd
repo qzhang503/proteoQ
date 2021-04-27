@@ -6,7 +6,6 @@
 \usage{
 calc_pepscores_i(
   res,
-  i,
   topn_ms2ions = 100,
   type_ms2ions = "by",
   ppm_ms2 = 25,
@@ -17,8 +16,6 @@ calc_pepscores_i(
 \arguments{
 \item{res}{The result from \link{pmatch_bymgfs}. At the \code{NULL} default,
 the file \code{ion_matches.rds} will be used.}
-
-\item{i}{Integer; the index of the i-th \code{aa_masses} table.}
 
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
 MS2 ion searches.}
