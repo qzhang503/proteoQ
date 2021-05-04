@@ -212,7 +212,7 @@ calc_ms2ions <- function (aa_seq, mass, aa_masses, mod_indexes,
 #' @param amods \code{Anywhere} modifications.
 #' @inheritParams calc_monopep
 #' @inheritParams mcalc_monopep
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @return Lists by residues in \code{amods}.
@@ -355,7 +355,7 @@ combi_vmods <- function (aas,
 
 #' Helper: masses of a series of MS2 ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 calc_mvmods_ms2masses <- function (vmods, ntmod, ctmod, 
                                    aas, mass, aa_masses, type_ms2ions = "by", 
@@ -599,7 +599,7 @@ calc_bystar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of singly-charged b-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -630,7 +630,7 @@ calc_bions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged b-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @seealso \link{add_complement_ions}
 calc_b2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
@@ -641,7 +641,7 @@ calc_b2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of singly-charged b*-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -673,7 +673,7 @@ calc_bstarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged b*-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @seealso \link{add_complement_ions}
 calc_bstar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
@@ -684,7 +684,7 @@ calc_bstar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of singly-charged b^0-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -716,7 +716,7 @@ calc_b0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged b0-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 calc_b02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_b0ions(ntmod, ctmod, aas, aa_masses, digits)
@@ -726,7 +726,7 @@ calc_b02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of singly-charged y-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -754,7 +754,7 @@ calc_yions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged y-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @seealso \link{add_complement_ions}
 calc_y2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
@@ -765,7 +765,7 @@ calc_y2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of singly-charged y*-ions 
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -795,7 +795,7 @@ calc_ystarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged y*-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 calc_ystar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
   ions <- calc_ystarions(ntmod, ctmod, aas, aa_masses, digits)
@@ -805,7 +805,7 @@ calc_ystar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of singly-charged y0-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -835,7 +835,7 @@ calc_y0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged y0-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @seealso \link{add_complement_ions}
 calc_y02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
@@ -870,7 +870,7 @@ calc_cz2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of singly-charged c-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -898,7 +898,7 @@ calc_cions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged c-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @seealso \link{add_complement_ions}
 calc_c2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
@@ -911,7 +911,7 @@ calc_c2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' Singly charged.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -939,7 +939,7 @@ calc_zions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged z-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @seealso \link{add_complement_ions}
 calc_z2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
@@ -974,7 +974,7 @@ calc_ax2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of singly-charged a-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -1002,7 +1002,7 @@ calc_aions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged a-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @seealso \link{add_complement_ions}
 calc_a2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
@@ -1013,7 +1013,7 @@ calc_a2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of singly-charged a*-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -1039,7 +1039,7 @@ calc_astarions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged a*-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @seealso \link{add_complement_ions}
 calc_astar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
@@ -1050,7 +1050,7 @@ calc_astar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of singly-charged a0-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -1076,7 +1076,7 @@ calc_a0ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged a0-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @seealso \link{add_complement_ions}
 calc_a02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
@@ -1091,7 +1091,7 @@ calc_a02ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' 
 #' Singly charged.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @import purrr
 #' @seealso \link{add_complement_ions}
@@ -1119,7 +1119,7 @@ calc_xions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 
 #' Masses of doubly-charged x-ions.
 #' 
-#' @inheritParams calc_mvmods_masses
+#' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ionseries
 #' @seealso \link{add_complement_ions}
 calc_x2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {

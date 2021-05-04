@@ -2,16 +2,11 @@
 % Please edit documentation in R/dbs.R
 \name{calc_monopep}
 \alias{calc_monopep}
-\title{Helper: calculates the mono-isotopic mass of a peptide sequence.}
+\title{Calculates the mono-isotopic mass of a peptide sequence.}
 \usage{
 calc_monopep(
   aa_seq,
   aa_masses,
-  vmods_ps,
-  amods,
-  tmod,
-  ntmod,
-  ctmod,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
   digits = 5
@@ -24,17 +19,6 @@ representation of amino acids.}
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{vmods_ps}{A named list of positions and sites with positions being names
-and sites being values.}
-
-\item{amods}{Anywhere modifications subset from \code{vmods_ps}.}
-
-\item{tmod}{A terminal modification subset from \code{vmod_ps}.}
-
-\item{ntmod}{A N-term modification subset from \code{tmod}.}
-
-\item{ctmod}{A C-term modification subset from \code{tmod}.}
-
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
 
@@ -44,5 +28,31 @@ variable modifications per site in a per peptide sequence.}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Helper: calculates the mono-isotopic mass of a peptide sequence.
+Typically coupled to \link{subpeps_by_vmods} for automatic dispatching of
+peptide sequences by sets of fixed and variable modifications.
+}
+\examples{
+\dontrun{
+
+## No modifications
+library(purrr)
+
+aa_masses <- calc_aamasses(fixedmods = NULL, varmods = NULL)
+
+x1 <- calc_monopep("AAIDWFDGKEFSGNPIK", aa_masses[[1]])
+x2 <- map(aa_masses, ~ calc_monopep("AAIDWFDGKEFSGNPIK", .x))
+
+## With modifications
+library(purrr)
+
+aa_masses_all <- calc_aamasses()
+
+x1 <- calc_monopep("AAIDWFDGKEFSGNPIK", aa_masses_all[[1]])
+
+# some sets of modifications violate the sequence of peptide 
+x2 <- map(aa_masses_all, ~ calc_monopep("AAIDWFDGKEFSGNPIK", .x))
+
+# the sets of modifications
+vmods <- map(aa_masses_all, attr, "vmods_ps")
+}
 }

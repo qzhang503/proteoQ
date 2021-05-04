@@ -18,9 +18,11 @@ unique_mvmods(
 \arguments{
 \item{amods}{Anywhere modifications.}
 
-\item{ntmod}{A N-term modification subset from \code{tmod}.}
+\item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
+\code{aa_masses}.}
 
-\item{ctmod}{A C-term modification subset from \code{tmod}.}
+\item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
+\code{aa_masses}.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
 

@@ -215,3 +215,37 @@ foo_byions <- function () {
   add_complement_ions(mass, bs)
 }
 
+
+foo_neulosses <- function () {
+  neulosses <- list(`Oxidation (M)` = c(0, 63.998285), 
+                    `Carbamidomethyl (M)` = c(0, 105.024835))
+  
+  neulosses <- list(`TMT6plex (K)` = c(0, 50, 100), 
+                    `Acetyl (Protein N-term)` = c(0, 80))
+  
+  fmods_nl <- list(`N-term` = c(0, 50, 100))
+  vmods_nl <- list(`Oxidation (M)` = c(0, 63.998285), 
+                   `Carbamidomethyl (M)` = c(0, 105.024835))
+}
+
+foo_combis <- function () {
+  # HQGVMNMVGMGQK
+  
+  # Browse[2]> intra_combis
+  # $M
+  # $M[[1]]
+  # [1] "Oxidation (M)"       "Carbamidomethyl (M)"
+  # 
+  # $M[[2]]
+  # [1] "Oxidation (M)"       "Carbamidomethyl (M)" "Carbamidomethyl (M)"
+  # 
+  # $M[[3]]
+  # [1] "Oxidation (M)"       "Carbamidomethyl (M)" "Oxidation (M)"      
+  # 
+  # 
+  # $N
+  # $N[[1]]
+  # [1] "Deamidated (N)"
+  
+  
+}

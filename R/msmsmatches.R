@@ -436,6 +436,7 @@ read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs",
 #' @param topn_ms2ions A non-negative integer; the top-n species for uses in
 #'   MS2 ion searches.
 #' @param ret_range The range of retention time in seconds.
+#' @inheritParams matchMS
 #' @import stringi
 #' @examples
 #' \donttest{
@@ -645,8 +646,8 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
     purrr::map(attributes) %>% 
     purrr::map(`[[`, "data") %>% 
     unlist(use.names = FALSE)
-  min_mass <- min(tempdata)
-  max_mass <- max(tempdata)
+  min_mass <- min(tempdata, na.rm = TRUE)
+  max_mass <- max(tempdata, na.rm = TRUE)
   rm(tempdata)
   
   ## AA masses
@@ -692,10 +693,14 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                        ppm_ms1 = ppm_ms1, 
                        ppm_ms2 = ppm_ms2, 
                        digits = digits) %T>%
-    saveRDS(file.path(out_path, "ion_matches.rds")) %T>% 
-    calc_pepscores(topn_ms2ions, type_ms2ions, ppm_ms2, 
-                   out_path, digits)
+    saveRDS(file.path(out_path, "ion_matches.rds")) 
   
+  ## Peptide scores
+  message("Calculating peptide scores.")
+  
+  out <- out %>% 
+    calc_pepscores(topn_ms2ions, type_ms2ions, ppm_ms2, out_path, digits)
+
   invisible(out)
 }
 
@@ -727,6 +732,8 @@ subset_theoframes <- function (mgf_frames, theopeps) {
 #' @param aa_masses_all A list of amino acid lookups for all the combination of
 #'   fixed and variable modifications.
 #' @param n_cores Integer; the number of computer cores.
+#' @param mod_indexes Integer; the indexes of fixed and/or variable
+#'   modifications.
 #' @inheritParams matchMS
 #' @inheritParams search_mgf_frames_d
 #' @import parallel
@@ -753,13 +760,15 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
   for (i in seq_along(out)) {
     aa_masses <- aa_masses_all[[i]]
     
-    message("Matching against: ", 
-            paste0(attributes(aa_masses)$fmods, 
-                   attributes(aa_masses)$vmods %>% 
-                     { if (nchar(.) > 0) paste0(" + ", .) else . }, 
-                   attributes(aa_masses)$vmods_neuloss %>% 
-                     { if (nchar(.) > 0) paste0(" + ", .) else . }))
+    nm_fmods <- attributes(aa_masses)$fmods
+    nm_vmods <- attributes(aa_masses)$vmods
+    nm_nls <- attributes(aa_masses)$vmods_neuloss
     
+    message("Matching against: ", 
+            paste0(nm_fmods, 
+                   nm_vmods %>% { if (nchar(.) > 0) paste0(" + ", .) else . }, 
+                   nm_nls %>% { if (nchar(.) > 0) paste0(" + ", .) else . }))
+
     theopeps <- readRDS(file.path(out_path, "pepmasses/", 
                                   paste0("binned_theopeps_", i, ".rds")))
     
@@ -850,11 +859,12 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
                                            ppm_ms1 = ppm_ms1, 
                                            ppm_ms2 = ppm_ms2, 
                                            digits = digits), 
-                           .scheduling = "dynamic") 
-    
-    out[[i]] <- out[[i]] %>% 
-      dplyr::bind_rows() # across nodes
-    
+                           .scheduling = "dynamic") %>% 
+      dplyr::bind_rows() %>% # across nodes
+      dplyr::mutate(pep_fmod = nm_fmods, 
+                    pep_vmod = nm_vmods, 
+                    pep_nl = nm_nls)
+
     # saveRDS(out[[i]], file.path(out_path, paste0("ion_matches_", i, ".rds")))
     
     stopCluster(cl)

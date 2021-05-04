@@ -21,9 +21,11 @@ combi_vmods(
 
 \item{residue_mods}{A residue with \code{Anywhere} modification(s).}
 
-\item{ntmod}{A N-term modification subset from \code{tmod}.}
+\item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
+\code{aa_masses}.}
 
-\item{ctmod}{A C-term modification subset from \code{tmod}.}
+\item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
+\code{aa_masses}.}
 
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}

@@ -31,10 +31,11 @@ variable modifications per site in a per peptide sequence.}
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
 
-\item{digits}{Integer; the number of decimal places to be used.}
+\item{n_cores}{Integer; the number of computer cores for uses.}
 
-\item{mod_indexes}{Integer; the indexes of fixed and/or variable
-modifications.}
+\item{cl}{The cluster nodes from \link[parallel]{makeCluster}.}
+
+\item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
 The calculations iterate through protein accessions and peptide sequences.

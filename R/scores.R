@@ -41,7 +41,7 @@ flatten_pepouts <- function (data, outcol = "matches") {
     tib <- .x
     
     tib <- purrr::map(tib, ~ {
-      tibble(pep_mod = names(.x), !!outcol := .x)
+      tibble(pep_ivmod = names(.x), !!outcol := .x)
     }) 
     
     nm <- names(tib)
@@ -60,7 +60,7 @@ flatten_pepouts <- function (data, outcol = "matches") {
 #' @inheritParams flatten_pepouts
 combine_pepvecs <- function (data, outcol = "pep_score") {
   purrr::imap(data, ~ {
-    tibble(pep_seq = .y, pep_mod = names(.x), !!outcol := .x)
+    tibble(pep_seq = .y, pep_ivmod = names(.x), !!outcol := .x)
   }) %>% 
     dplyr::bind_rows()
 }
@@ -263,7 +263,7 @@ calc_pepscores_i <- function (res, topn_ms2ions = 100, type_ms2ions = "by",
   if (nrow(res) == 0) {
     scores <- tibble::tibble(
       pep_seq = as.character(), 
-      pep_mod = as.character(), 
+      pep_ivmod = as.character(), 
       pep_score = as.numeric(), 
       scan_num = as.integer(),
       pri_matches = list(), 
@@ -274,7 +274,7 @@ calc_pepscores_i <- function (res, topn_ms2ions = 100, type_ms2ions = "by",
       purrr::map(scalc_pepscores, topn_ms2ions, type_ms2ions, ppm_ms2, digits) %>% 
       dplyr::bind_rows()
   }
-
+  
   res <- res %>% 
     dplyr::select(-c("matches")) %>% 
     dplyr::mutate(scan_num = as.numeric(scan_num)) %>% 
@@ -284,7 +284,10 @@ calc_pepscores_i <- function (res, topn_ms2ions = 100, type_ms2ions = "by",
                   ms1_int = as.numeric(ms1_int), 
                   ms1_charge = as.character(ms1_charge), 
                   ret_time = as.integer(ret_time), 
-                  ms2_n = as.integer(ms2_n)) %>% 
+                  ms2_n = as.integer(ms2_n), 
+                  pep_fmod = as.character(pep_fmod), 
+                  pep_vmod = as.character(pep_vmod), 
+                  pep_nl = as.character(pep_nl)) %>% 
     dplyr::left_join(scores, by = "scan_num")
   
   res <- res %>% 

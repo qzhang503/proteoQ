@@ -7,11 +7,6 @@
 calc_prots_pepmasses(
   aa_seqs,
   aa_masses,
-  vmods_ps,
-  amods,
-  tmod,
-  ntmod,
-  ctmod,
   maxn_vmods_per_pep,
   maxn_sites_per_vmod,
   digits
@@ -20,17 +15,6 @@ calc_prots_pepmasses(
 \arguments{
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
-
-\item{vmods_ps}{A named list of positions and sites with positions being names
-and sites being values.}
-
-\item{amods}{Anywhere modifications subset from \code{vmods_ps}.}
-
-\item{tmod}{A terminal modification subset from \code{vmod_ps}.}
-
-\item{ntmod}{A N-term modification subset from \code{tmod}.}
-
-\item{ctmod}{A C-term modification subset from \code{tmod}.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}

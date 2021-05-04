@@ -20,6 +20,9 @@ calc_aamasses(
 
 \item{maxn_vmods_setscombi}{Integer; the maximum number of combinatorial variable
 modifications and neutral losses.}
+
+\item{mod_indexes}{Integer; the indexes of fixed and/or variable
+modifications.}
 }
 \description{
 Calculates molecular weight of a polypeptide ([MH]+).

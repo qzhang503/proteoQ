@@ -34,17 +34,6 @@ acid residues.}
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
 ions}. Values are in one of "by", "ax" and "cz".}
 
-\item{vmods_ps}{A named list of positions and sites with positions being names
-and sites being values.}
-
-\item{amods}{Anywhere modifications subset from \code{vmods_ps}.}
-
-\item{tmod}{A terminal modification subset from \code{vmod_ps}.}
-
-\item{ntmod}{A N-term modification subset from \code{tmod}.}
-
-\item{ctmod}{A C-term modification subset from \code{tmod}.}
-
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
 

@@ -29,9 +29,6 @@ whose MS1 masses are in the same interval.}
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{mod_indexes}{Integer; the indexes of fixed and/or variable
-modifications.}
-
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
 ions}. Values are in one of "by", "ax" and "cz".}
