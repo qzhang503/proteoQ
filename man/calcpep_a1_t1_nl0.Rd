@@ -48,5 +48,5 @@ acid residues.}
 (8) "amods+ tmod+ vnl- fnl-".
 }
 \details{
-Identical to "(7) amods+ tmod- vnl- fnl-" as `ntmod` and `ctmod` not used.
+Identical to "(7) amods+ tmod- vnl- fnl-" other than `ntmod` and `ctmod`.
 }

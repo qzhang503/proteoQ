@@ -45,7 +45,7 @@ acid residues.}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-(12) "amods+ tmod+ vnl+ fnl-".
+(12) "amods+ tmod+ vnl- fnl+"
 }
 \details{
 Identical to (11) only differed by `ntmod` and `ctmod`.

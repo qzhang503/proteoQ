@@ -29,5 +29,6 @@ variable modifications per site in a per peptide sequence.}
 }
 \description{
 Typically coupled to \link{subpeps_by_vmods} for automatic dispatching of
-peptide sequences by sets of fixed and variable modifications.
+peptide sequences by sets of fixed and variable modifications. For manual
+calculations, uses \link{calc_monopeptide}.
 }

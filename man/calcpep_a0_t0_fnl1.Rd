@@ -39,3 +39,6 @@ acid residues.}
 \description{
 (6) "amods- tmod- vnl- fnl+".
 }
+\details{
+Identical to (5) "amods- tmod+ vnl- fnl+" other than `ntmod` and `ctmod`.
+}

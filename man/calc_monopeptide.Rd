@@ -41,14 +41,14 @@ For direct uses from an R console (with trade-offs in speed).
 \donttest{
 ## No variable modifications
 # (1)
-x <- calc_monopeptide("MAKEMASSPEC", 
+x <- calc_monopeptide("MAKEMASSPECFUN", 
                       fixedmods = NULL, 
                       varmods = NULL)
 
 x$mass
 
 # (2)
-x <- calc_monopeptide("MAKEMASSPEC", 
+x <- calc_monopeptide("MAKEMASSPECFUN", 
                       fixedmods = "Oxidation (M)", 
                       varmods = NULL)
 
@@ -56,7 +56,7 @@ x$mass
 
 ## With variable modifications
 # (3)
-x <- calc_monopeptide("MAKEMASSPEC", 
+x <- calc_monopeptide("MAKEMASSPECFUN", 
                       fixedmods = NULL, 
                       varmods = "Oxidation (M)")
 
@@ -64,7 +64,7 @@ x$mass
 # x$vmods_ps
 
 # (4)
-x <- calc_monopeptide("MAKEMASSPEC",
+x <- calc_monopeptide("MAKEMASSPECFUN",
                       c("TMT6plex (N-term)", 
                         "TMT6plex (K)", 
                         "Carbamidomethyl (C)"),
@@ -73,6 +73,9 @@ x <- calc_monopeptide("MAKEMASSPEC",
                         "Oxidation (M)"))
                       
 x$mass
-# x$vmods_ps
+
+# The N-term M realizes with acetylation
+x$vmods_ps[[5]]
+
 }
 }

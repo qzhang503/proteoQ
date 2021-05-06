@@ -42,15 +42,6 @@ The calculations iterate through protein accessions and peptide sequences.
 }
 \examples{
 \dontrun{
-data(package = "proteoQ", aa_residues)
-aa_masses <- aa_residues \%>\%
-  dplyr::select(c("one_letter", "monoisotopic_da"))
-aa_masses <- aa_masses$monoisotopic_da \%>\% `names<-`(aa_masses$one_letter)
-
-x <- mcalc_monopep(list(protein_a = c("AAIDWFDGKEFSGNPIK", "MAAIDWFDGKEFSGNPIK"),
-                        protein_b = c("AAIDWFDGKEFSGNPIK")),
-                   aa_masses)
-
 aa_masses_all <- calc_aamasses()
 
 # Error if peptide sequences not 'compatible' with the given 'aa_masses'

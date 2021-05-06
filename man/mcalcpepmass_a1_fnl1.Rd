@@ -41,7 +41,7 @@ acid residues.}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Specific to "amods+" and "vnl+" or "fnl+".
+Specific to "amods+" and "fnl+" (and vnl-).
 }
 \details{
 \code{amods} is not empty; either \code{vnl} or \code{fnl} is not empty.

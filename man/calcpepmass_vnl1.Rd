@@ -27,7 +27,7 @@ acid residues.}
 A numeric vector
 }
 \description{
-With NLs: "fnl+" or "vnl+".
+With NLs: "vnl+".
 }
 \details{
 The calculation goes through the columns in \code{nl_combi}.
