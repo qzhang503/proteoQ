@@ -5,7 +5,7 @@
 \title{Helper: masses of a series of MS2 ions.}
 \usage{
 calc_mvmods_ms2masses(
-  vmods,
+  vmods_combi,
   ntmod,
   ctmod,
   aas,
@@ -16,6 +16,8 @@ calc_mvmods_ms2masses(
 )
 }
 \arguments{
+\item{vmods_combi}{Lists of variable modifications.}
+
 \item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
 \code{aa_masses}.}
 

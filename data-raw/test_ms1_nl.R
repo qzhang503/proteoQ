@@ -1,10 +1,10 @@
 foo_test_ms1_nls <- function () {
    # (1) "amods- tmod- vnl- fnl-"
-   foonl(fixedmods = NULL, varmods = NULL)
+   aa_masses_all <- calc_aamasses(fixedmods = NULL, varmods = NULL)
    out <- calc_monopep("HQGVMNVGMGQKMN", aa_masses_all[[1]])
    stopifnot(out == 1529.69012)
    
-   foonl(fixedmods = c("Deamidated (N)"), varmods = c("Acetyl (N-term)"))
+   aa_masses_all <- calc_aamasses(fixedmods = c("Deamidated (N)"), varmods = c("Acetyl (N-term)"))
    # (1) "amods- tmod- vnl- fnl-"
    out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[1]])
    # (2) "amods- tmod+ vnl- fnl-"
@@ -12,16 +12,16 @@ foo_test_ms1_nls <- function () {
    
    # (3) "amods- tmod+ vnl+ fnl-"
    # not existed, if amods- -> vnl+ is NULL
-   foonl(fixedmods = c("TMT6plex (K)"), varmods = c("Fake-Oxidation (N-term)"))
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (K)"), varmods = c("Fake-Oxidation (N-term)"))
    out <- calc_monopep("MHQGVMNVGMGQKMNS", aa_masses_all[[2]])
-   # foonl(fixedmods = c("TMT6plex (K)"), varmods = c("Acetyl (N-term)", "Met-loss (Protein N-term = M)"))
+   # aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (K)"), varmods = c("Acetyl (N-term)", "Met-loss (Protein N-term = M)"))
    # out <- calc_monopep("MHQGVMNVGMGQKMNS", aa_masses_all[[3]])
    
    # (4) "amods- tmod- vnl+ fnl-"
    # not existed, if amods- -> vnl+ is NULL
    
    # (5) "amods- tmod+ vnl- fnl+"
-   foonl(fixedmods = c("Oxidation (M)", "dHex (S)"), varmods = "Acetyl (Protein N-term)")
+   aa_masses_all <- calc_aamasses(fixedmods = c("Oxidation (M)", "dHex (S)"), varmods = "Acetyl (Protein N-term)")
    out <- map(aa_masses_all, ~ calc_monopep("MHQGVMNVGMGQKMNS", .x))
    # bare = 1747.76264
    # [[1]] 16*4+(233-87);  -64*4; -146; -64*4 - 146
@@ -32,7 +32,7 @@ foo_test_ms1_nls <- function () {
    # 1999.81077       1743.81763       1853.75286       1597.75972 
    
    # (6) "amods- tmod- vnl- fnl+"
-   foonl(fixedmods = c("TMT6plex (N-term)", "Oxidation (M)", "dHex (S)"), varmods = NULL)
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (N-term)", "Oxidation (M)", "dHex (S)"), varmods = NULL)
    out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[1]])
    # HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS 
    # 2039.92774      1847.93288 (-64*3) 1893.86983 (-146) 1701.87497 (-64*3-146)
@@ -41,18 +41,18 @@ foo_test_ms1_nls <- function () {
    # calc_monopep("MHQGVNVGGQKNS", aa_masses_all[[1]])
    
    # (7) "amods+ tmod- vnl- fnl-"
-   foonl(fixedmods = c("TMT6plex (N-term)"), varmods = c("Deamidated (N)", "Carbamidomethyl (C)"))
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (N-term)"), varmods = c("Deamidated (N)", "Carbamidomethyl (C)"))
    out <- calc_monopep("HQGVMCNVGMGQKMNSC", aa_masses_all[[4]])
    # HQGVMCNVGMGQKMNSC HQGVMCNVGMGQKMNSC HQGVMCNVGMGQKMNSC HQGVMCNVGMGQKMNSC 
    # 2109.909          2166.930          2110.893          2167.914 
    
-   foonl(fixedmods = c("TMT6plex (N-term)"), varmods = c("Deamidated (N)", "Carbamidomethyl (S)"))
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (N-term)"), varmods = c("Deamidated (N)", "Carbamidomethyl (S)"))
    out <- calc_monopep("HQGVMNVGMGQKSMNS", aa_masses_all[[4]])
    # HQGVMNVGMGQKSMNS HQGVMNVGMGQKSMNS HQGVMNVGMGQKSMNS HQGVMNVGMGQKSMNS 
    # 1990.92259       1991.90661       2047.94406       2048.92807 
    
    # (8) "amods+ tmod+ vnl- fnl-"
-   foonl(fixedmods = c("TMT6plex (K)"), 
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (K)"), 
          varmods = c("Deamidated (N)", "Carbamidomethyl (S)", "Acetyl (Protein N-term)"))
    out <- map(aa_masses_all, ~ calc_monopep("HQGVMNVGMGQKSMNS", .x))
    out <- calc_monopep("HQGVMNVGMGQKSMNS", aa_masses_all[[8]])
@@ -61,14 +61,14 @@ foo_test_ms1_nls <- function () {
    
    
    # (9) "amods+ tmod- vnl+ fnl-"
-   foonl(fixedmods = c("TMT6plex (N-term)"), varmods = c("dHex (S)", "Deamidated (N)"))
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (N-term)"), varmods = c("dHex (S)", "Deamidated (N)"))
    out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[4]])
    # HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS 
    # 1992.927        1846.869        1993.911        1847.853 
    
    
    # (10) "amods+ tmod+ vnl+ fnl-"
-   foonl(fixedmods = c("TMT6plex (K)"), 
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (K)"), 
          varmods = c("dHex (S)", "Oxidation (M)", "Deamidated (N)", "Acetyl (Protein N-term)"))
    out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[16]])
    # HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS 
@@ -78,14 +78,14 @@ foo_test_ms1_nls <- function () {
    
    
    # (11) "amods+ tmod- vnl- fnl+"
-   foonl(fixedmods = c("TMT6plex (N-term)", "dHex (S)", "Oxidation (M)"), varmods = c("Deamidated (N)"))
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (N-term)", "dHex (S)", "Oxidation (M)"), varmods = c("Deamidated (N)"))
    out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[2]])
    # HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS 
    # 2040.912        1894.854        1848.917        1702.859        2041.896        1895.838        1849.901 
    # HQGVMNVGMGQKMNS 
    # 1703.843 
    
-   foonl(fixedmods = c("TMT6plex (K)", "dHex (S)", "Oxidation (M)"), 
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (K)", "dHex (S)", "Oxidation (M)"), 
          varmods = c("Deamidated (N)", "Acetyl (Protein N-term)"))
    out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[4]])
    # HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS 
@@ -95,7 +95,7 @@ foo_test_ms1_nls <- function () {
    
    
    # (12) "amods+ tmod+ vnl- fnl+"
-   foonl(fixedmods = c("TMT6plex (K)", "Oxidation (M)", "dHex (S)"), 
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (K)", "Oxidation (M)", "dHex (S)"), 
          varmods = c("Deamidated (N)", "Acetyl (Protein N-term)"))
    out <- calc_monopep("HQGVMNVGMGQKMNSC", aa_masses_all[[4]])
    # HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC 
@@ -103,7 +103,7 @@ foo_test_ms1_nls <- function () {
    # HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC 
    # 2040.858         1848.863 
    
-   foonl(fixedmods = c("TMT6plex (K)", "Oxidation (M)", "dHex (S)"), 
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (K)", "Oxidation (M)", "dHex (S)"), 
          varmods = c("Deamidated (N)", "Carbamidomethyl (C)", "Acetyl (Protein N-term)"))
    out <- calc_monopep("HQGVMNVGMGQKMNSC", aa_masses_all[[8]])
    # HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC HQGVMNVGMGQKMNSC 
@@ -113,7 +113,7 @@ foo_test_ms1_nls <- function () {
    
    
    # (13-16) ignored
-   foonl(fixedmods = c("TMT6plex (N-term)", "Oxidation (M)", "Deamidated (N)"), 
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (N-term)", "Oxidation (M)", "Deamidated (N)"), 
          varmods = c("dHex (S)"))
    out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[2]])
 }

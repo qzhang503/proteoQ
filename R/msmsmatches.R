@@ -758,11 +758,15 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
   out <- vector("list", length(aa_masses_all))
   
   for (i in seq_along(out)) {
+    # i = 4
     aa_masses <- aa_masses_all[[i]]
     
-    nm_fmods <- attributes(aa_masses)$fmods
-    nm_vmods <- attributes(aa_masses)$vmods
-    nm_nls <- attributes(aa_masses)$vmods_neuloss
+    # nm_fmods <- attributes(aa_masses)$fmods
+    # nm_vmods <- attributes(aa_masses)$vmods
+    # nm_nls <- attributes(aa_masses)$vmods_neuloss
+    nm_fmods <- attr(aa_masses, "fmods", exact = TRUE)
+    nm_vmods <- attr(aa_masses, "vmods", exact = TRUE)
+    nm_nls <- attr(aa_masses, "vmods_neuloss", exact = TRUE)
     
     message("Matching against: ", 
             paste0(nm_fmods, 
@@ -775,8 +779,7 @@ pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path,
     # ---
     # temporarily remove `prot_acc` and duplicated `pep_seq` 
     # (frame numbers remain available for quick rejoin later)
-    # frame number off by one when moving from next to current???
-    # (ok; frame number will be removed at then end)
+    # frame number may be off by +/-1 in three-frame searches
     if (ppm_ms1 < 1000) {
       theopeps <- theopeps %>% 
         purrr::map(~ {
@@ -916,7 +919,7 @@ search_mgf_frames_d <- function (mgf_frames, theopeps, aa_masses,
   
   empties <- purrr::map_lgl(res, purrr::is_empty)
   
-  # !!!dplyr::bind_rows() temporarily not working!!!
+  # !!!dplyr::bind_rows() temporarily not working for list-columns!!!
   res <- do.call(rbind, mgf_frames) %>% 
     dplyr::mutate(matches = res) 
   

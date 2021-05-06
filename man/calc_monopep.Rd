@@ -31,28 +31,3 @@ variable modifications per site in a per peptide sequence.}
 Typically coupled to \link{subpeps_by_vmods} for automatic dispatching of
 peptide sequences by sets of fixed and variable modifications.
 }
-\examples{
-\dontrun{
-
-## No modifications
-library(purrr)
-
-aa_masses <- calc_aamasses(fixedmods = NULL, varmods = NULL)
-
-x1 <- calc_monopep("AAIDWFDGKEFSGNPIK", aa_masses[[1]])
-x2 <- map(aa_masses, ~ calc_monopep("AAIDWFDGKEFSGNPIK", .x))
-
-## With modifications
-library(purrr)
-
-aa_masses_all <- calc_aamasses()
-
-x1 <- calc_monopep("AAIDWFDGKEFSGNPIK", aa_masses_all[[1]])
-
-# some sets of modifications violate the sequence of peptide 
-x2 <- map(aa_masses_all, ~ calc_monopep("AAIDWFDGKEFSGNPIK", .x))
-
-# the sets of modifications
-vmods <- map(aa_masses_all, attr, "vmods_ps")
-}
-}
