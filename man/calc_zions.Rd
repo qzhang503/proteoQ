@@ -4,12 +4,9 @@
 \alias{calc_zions}
 \title{Masses of singly-charged z-ions}
 \usage{
-calc_zions(ntmod, ctmod, aas, aa_masses, digits = 5)
+calc_zions(ctmod, aas, aa_masses, digits = 5)
 }
 \arguments{
-\item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
-\code{aa_masses}.}
-
 \item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
 \code{aa_masses}.}
 

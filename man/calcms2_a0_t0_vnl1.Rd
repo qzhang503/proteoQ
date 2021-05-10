@@ -2,7 +2,7 @@
 % Please edit documentation in R/sitecombi.R
 \name{calcms2_a0_t0_vnl1}
 \alias{calcms2_a0_t0_vnl1}
-\title{(4) "amods- tmod- vnl+ fnl-".}
+\title{Helper in calculating MS2 masses.}
 \usage{
 calcms2_a0_t0_vnl1()
 }

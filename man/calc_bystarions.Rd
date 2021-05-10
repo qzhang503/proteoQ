@@ -2,15 +2,12 @@
 % Please edit documentation in R/sitecombi.R
 \name{calc_bystarions}
 \alias{calc_bystarions}
-\title{Masses of singly-charged b0- and y0-ions.}
+\title{Masses of singly-charged b*- and y*-ions.}
 \usage{
 calc_bystarions(ntmod, ctmod, aas, aa_masses, digits = 5)
 }
 \arguments{
 \item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
-\code{aa_masses}.}
-
-\item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
 \code{aa_masses}.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
@@ -21,7 +18,7 @@ acid residues.}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Masses of singly-charged b0- and y0-ions.
+Masses of singly-charged b*- and y*-ions.
 }
 \seealso{
 \link{add_complement_ions}

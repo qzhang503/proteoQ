@@ -4,12 +4,9 @@
 \alias{calc_y02ions}
 \title{Masses of doubly-charged y0-ions.}
 \usage{
-calc_y02ions(ntmod, ctmod, aas, aa_masses, digits = 5)
+calc_y02ions(ctmod, aas, aa_masses, digits = 5)
 }
 \arguments{
-\item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
-\code{aa_masses}.}
-
 \item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
 \code{aa_masses}.}
 

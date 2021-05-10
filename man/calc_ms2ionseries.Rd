@@ -2,16 +2,16 @@
 % Please edit documentation in R/sitecombi.R
 \name{calc_ms2ionseries}
 \alias{calc_ms2ionseries}
-\title{Calculates the masses of MS2 ion series.}
+\title{Calculates the mono-isotopic mass of a MS2 ions.}
 \usage{
 calc_ms2ionseries(
-  aa_seq = NA,
-  mass = NA,
-  aa_masses = NA,
-  mod_indexes = NULL,
+  aa_seq,
+  fixedmods,
+  varmods,
   type_ms2ions = "by",
-  maxn_vmods_per_pep = 5,
-  maxn_sites_per_vmod = 3,
+  maxn_vmods_setscombi = 64,
+  maxn_vmods_per_pep = Inf,
+  maxn_sites_per_vmod = Inf,
   maxn_vmods_sitescombi_per_pep = 32,
   digits = 5
 )
@@ -20,14 +20,18 @@ calc_ms2ionseries(
 \item{aa_seq}{Character string; a peptide sequences with one-letter
 representation of amino acids.}
 
-\item{mass}{The mass of a theoretical MS1.}
+\item{fixedmods}{A character vector of fixed modifications. See also
+\link{parse_unimod} for grammars.}
 
-\item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
-acid residues.}
+\item{varmods}{A character vector of variable modifications.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".}
+ions}. Values are in one of "by", "ax" and "cz".
+charges (not currently used).}
+
+\item{maxn_vmods_setscombi}{Integer; the maximum number of combinatorial variable
+modifications and neutral losses.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
@@ -39,10 +43,49 @@ variable modifications per site in a per peptide sequence.}
 combinatorial variable modifications per peptide sequence.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
-
-\item{z}{Integer; the charge state of an MS1 ion. Currently only for positive
-charges (not currently used).}
 }
 \description{
-For a given type of fragmentation. Minimal error handling for speeds.
+For direct uses from an R console (with trade-offs in speed).
+}
+\examples{
+\donttest{
+## No variable modifications
+# (1)
+x <- calc_ms2ionseries("MAKEMASSPECFUN", 
+                       fixedmods = NULL, 
+                       varmods = NULL)
+
+x$mass
+
+# (2)
+x <- calc_ms2ionseries("MAKEMASSPECFUN", 
+                       fixedmods = "Oxidation (M)", 
+                       varmods = NULL)
+
+x$mass
+
+## With variable modifications
+# (3)
+x <- calc_ms2ionseries("MAKEMASSPECFUN", 
+                       fixedmods = NULL, 
+                       varmods = "Oxidation (M)")
+
+x$mass
+# x$vmods_ps
+
+# (4)
+x <- calc_ms2ionseries("MAKEMASSPECFUN",
+                       c("TMT6plex (N-term)", 
+                         "TMT6plex (K)", 
+                         "Carbamidomethyl (C)"),
+                       c("Acetyl (N-term)", 
+                         "Gln->pyro-Glu (N-term = Q)", 
+                         "Oxidation (M)"))
+                      
+x$mass
+
+# The N-term M realizes with acetylation
+x$vmods_ps[[5]]
+
+}
 }

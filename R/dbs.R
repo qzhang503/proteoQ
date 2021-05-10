@@ -47,7 +47,8 @@ read_fasta <- function (file, pattern = ">([^ ]+?) .*", comment_char = "") {
   begins <- headers + 1
   ends <- (headers[-1] - 1) %>% `c`(length(lines))
   
-  seqs <- purrr::map2(begins, ends, ~ lines[.x : .y] %>% purrr::reduce(paste0), lines)
+  seqs <- purrr::map2(begins, ends, ~ lines[.x : .y] %>% 
+                        purrr::reduce(paste0), lines)
   hdrs <- lines[headers]
   
   db <- purrr::map2(seqs, hdrs, ~ {
@@ -323,10 +324,12 @@ calc_monopep <- function (aa_seq, aa_masses, maxn_vmods_per_pep = 5,
   
   # (1) if called manually (without automatic sequences dispatching): 
   #   zero-intersect between an `aa_seq` and a given `aa_masses`.
+  # 
   # (2) "MAEEQGR" - vmods_combi is NULL even with dispatching: 
   #   cannot be simultaneous `Oxidation (M)` and `Acetyl (Protein N-term)`
-  #   or `TMT6plex (N-term)`
-  
+  #   (the following only handles early for (10) "amods+ tmod+ vnl+"; 
+  #    additional handling of "(8) amods+ tmod+ vnl-" and 
+  #    (12) "amods+ tmod+ vnl-" by corresponding functions)
   if (is_empty(vmods_combi) && !is_empty(vmods_nl)) return(NULL)
   
   if (is_empty(vmods_nl)) {
@@ -577,7 +580,7 @@ calcpep_a1_t1_nl0 <- function (vmods_combi, nl_combi = NULL, amods,
                                ntmod, ctmod, aa_seq, aas, aa_masses, 
                                digits) {
   # A case of NULL `out` (and cannot setNames)
-  # conflicts btw. amods+ and tmod+
+  # conflicts between `amods+` and `tmod+`
   # NLTLALEALVQLR: the only N or the N-term
   # if (is_empty(vmods_combi)) return(NULL)
   
@@ -590,6 +593,7 @@ calcpep_a1_t1_nl0 <- function (vmods_combi, nl_combi = NULL, amods,
   
   out <- out %>% unique() 
 
+  # No conflict between `amods+` and `tmod+`
   if (!is_empty(out)) {
     out <- out %>% 
       setNames(rep(aa_seq, length(.))) %>% 
@@ -1055,6 +1059,8 @@ find_unique_sets <- function (ps = c(1:5), ns = c("A", "B", "C")) {
 #' 
 #' @param intra_combis The results from \link{unique_mvmods}.
 find_intercombi <- function (intra_combis) {
+  # add argument `maxn_vmods_sitescombi_per_pep`???
+
   if (is_empty(intra_combis)) { # scalar
     v_out <- list()
   } else if (any(map_lgl(intra_combis, is_empty))) { # list

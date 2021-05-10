@@ -2,9 +2,22 @@
 % Please edit documentation in R/sitecombi.R
 \name{calcms2_0}
 \alias{calcms2_0}
-\title{(1) "amods- tmod- vnl- fnl-".}
+\title{Helper in calculating MS2 masses.}
 \usage{
 calcms2_0(aas, aa_masses, type_ms2ions, digits)
+}
+\arguments{
+\item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
+
+\item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
+acid residues.}
+
+\item{type_ms2ions}{Character; the type of
+\href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
+ions}. Values are in one of "by", "ax" and "cz".
+charges (not currently used).}
+
+\item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
 (1) "amods- tmod- vnl- fnl-".

@@ -4,13 +4,10 @@
 \alias{calc_astarions}
 \title{Masses of singly-charged a*-ions.}
 \usage{
-calc_astarions(ntmod, ctmod, aas, aa_masses, digits = 5)
+calc_astarions(ntmod, aas, aa_masses, digits = 5)
 }
 \arguments{
 \item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
-\code{aa_masses}.}
-
-\item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
 \code{aa_masses}.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}

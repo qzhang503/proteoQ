@@ -4,13 +4,10 @@
 \alias{calc_bions}
 \title{Masses of singly-charged b-ions.}
 \usage{
-calc_bions(ntmod, ctmod, aas, aa_masses, digits = 5)
+calc_bions(ntmod, aas, aa_masses, digits = 5)
 }
 \arguments{
 \item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
-\code{aa_masses}.}
-
-\item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
 \code{aa_masses}.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}

@@ -70,7 +70,7 @@ combine_pepvecs <- function (data, outcol = "pep_score") {
 #' 
 #' @param theos A list of theoretical values.
 #' @param expts A list of experimental values
-#' @inheritParams calc_ms2ionseries
+#' @inheritParams calc_ms2ions
 #' @inheritParams matchMS
 match_secions <- function (theos, expts, type_ms2ions = "by", ppm_ms2 = 25, 
                            digits = 5) {

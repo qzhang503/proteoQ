@@ -29,9 +29,13 @@ and variable.}
 \item{aa_masses}{Amino-acid lookup at a given combination of fixed and
 variable.}
 
+\item{mod_indexes}{Integer; the indexes of fixed and/or variable
+modifications.}
+
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".}
+ions}. Values are in one of "by", "ax" and "cz".
+charges (not currently used).}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}

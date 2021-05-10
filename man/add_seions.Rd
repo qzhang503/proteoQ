@@ -11,7 +11,8 @@ add_seions(ms2s, type_ms2ions = "by", digits = 5)
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".}
+ions}. Values are in one of "by", "ax" and "cz".
+charges (not currently used).}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }

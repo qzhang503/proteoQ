@@ -2,16 +2,15 @@
 % Please edit documentation in R/sitecombi.R
 \name{calc_ms2ions}
 \alias{calc_ms2ions}
-\title{Helper With position combinations}
+\title{Calculates the masses of MS2 ion series.}
 \usage{
 calc_ms2ions(
   aa_seq,
-  mass,
   aa_masses,
-  mod_indexes,
+  mod_indexes = NULL,
   type_ms2ions = "by",
-  maxn_vmods_per_pep = 3,
-  maxn_sites_per_vmod = 5,
+  maxn_vmods_per_pep = 5,
+  maxn_sites_per_vmod = 3,
   maxn_vmods_sitescombi_per_pep = 32,
   digits = 5
 )
@@ -20,14 +19,16 @@ calc_ms2ions(
 \item{aa_seq}{Character string; a peptide sequences with one-letter
 representation of amino acids.}
 
-\item{mass}{The mass of a theoretical MS1.}
-
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
+\item{mod_indexes}{Integer; the indexes of fixed and/or variable
+modifications.}
+
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".}
+ions}. Values are in one of "by", "ax" and "cz".
+charges (not currently used).}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
@@ -41,5 +42,23 @@ combinatorial variable modifications per peptide sequence.}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Helper With position combinations
+For a given type of fragmentation. Minimal error handling for speeds.
+}
+\examples{
+\donttest{
+## No variable modifications
+# (1)
+library(magrittr)
+
+fixedmods = NULL
+varmods = NULL
+
+mod_indexes <- seq_along(c(fixedmods, varmods)) \%>\% 
+  as.hexmode() \%>\% 
+  `names<-`(c(fixedmods, varmods))
+aa_masses_all <- calc_aamasses(fixedmods, varmods)
+
+x <- calc_ms2ions("MAKEMASSPECFUN", aa_masses_all[[1]], mod_indexes)
+
+}
 }
