@@ -33,8 +33,7 @@ acid residues.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".
-charges (not currently used).}
+ions}. Values are in one of "by", "ax" and "cz".}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }

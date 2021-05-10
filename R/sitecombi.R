@@ -9,8 +9,18 @@ calcms2_by_iontype <- function (aas2, aa_masses, ntmod, ctmod, type_ms2ions,
                                 digits) {
   switch(type_ms2ions, 
          by = calc_byions(ntmod, ctmod, aas2, aa_masses, digits), 
+         # by2 = calc_by2ions(ntmod, ctmod, aas2, aa_masses, digits), 
+         # bystar = calc_bystarions(ntmod, ctmod, aas2, aa_masses, digits), 
+         # bystar2 = calc_bystar2ions(ntmod, ctmod, aas2, aa_masses, digits), 
+         # by0 = calc_by0ions(ntmod, ctmod, aas2, aa_masses, digits), 
+         # by02 = calc_by02ions(ntmod, ctmod, aas2, aa_masses, digits), 
+         
          cz = calc_czions(ntmod, ctmod, aas2, aa_masses, digits), 
+         # cz2 = calc_cz2ions(ntmod, ctmod, aas2, aa_masses, digits), 
+         
          ax = calc_axions(ntmod, ctmod, aas2, aa_masses, digits), 
+         # ax2 = calc_ax2ions(ntmod, ctmod, aas2, aa_masses, digits), 
+
          stop("Unknown type.", call. = FALSE))
 }
 
@@ -188,9 +198,7 @@ calcms2_a0_t1_fnl1 <- function (nl_combi, aas, aa_masses, ntmod, ctmod,
                            ntmod, ctmod, type_ms2ions, digits) 
 
   nm <- rep(0, length(aas)) %>% paste0(collapse = "")
-
-  # names(out) <- rep(nm, length(out))
-  names(out) <- paste0(nm, " (", seq_len(ncol(nl_combi)), ")")
+  names(out) <- paste0(nm, " [", seq_len(ncol(nl_combi)), "]")
 
   invisible(out)
 }
@@ -213,8 +221,7 @@ calcms2_a0_t0_fnl1 <- function (nl_combi, aas, aa_masses, ntmod, ctmod,
                            ntmod = NULL, ctmod = NULL, type_ms2ions, digits)
   
   nm <- rep(0, length(aas)) %>% paste0(collapse = "")
-  # names(out) <- rep(nm, length(out))
-  names(out) <- paste0(nm, " (", seq_len(ncol(nl_combi)), ")")
+  names(out) <- paste0(nm, " [", seq_len(ncol(nl_combi)), "]")
   
   invisible(out)
 }
@@ -284,7 +291,7 @@ calcms2_a1_t0_nl1 <- function (vmods_combi, nl_combi, ntmod = NULL,
               ntmod = NULL, ctmod = NULL, aas, aa_masses, 
               type_ms2ions, digits)
 
-  out <- map2(out, vmods_combi, add_hexcodes_nl, length(aas), mod_indexes)
+  out <- map2(out, vmods_combi, add_hexcodes_vnl, length(aas), mod_indexes)
 
   out <- out %>% flatten()
 }
@@ -314,7 +321,7 @@ calcms2_a1_t1_nl1 <- function (vmods_combi, nl_combi, ntmod,
               ntmod, ctmod, aas, aa_masses, 
               type_ms2ions, digits)
 
-  out <- map2(out, vmods_combi, add_hexcodes_nl, length(aas), mod_indexes)
+  out <- map2(out, vmods_combi, add_hexcodes_vnl, length(aas), mod_indexes)
   
   out <- out %>% flatten()
 }
@@ -337,7 +344,7 @@ calcms2_a1_t0_fnl1 <- function (vmods_combi, nl_combi, ntmod = NULL,
              nl_combi, ntmod = NULL, ctmod = NULL, 
              aas, aa_masses, type_ms2ions, digits)
 
-  out <- map2(out, vmods_combi, add_hexcodes_nl, length(aas), mod_indexes)
+  out <- map2(out, vmods_combi, add_hexcodes_fnl, length(aas), mod_indexes)
   
   out <- flatten(out)
 }
@@ -366,7 +373,7 @@ calcms2_a1_t1_fnl1 <- function (vmods_combi, nl_combi, ntmod,
              nl_combi, ntmod, ctmod, 
              aas, aa_masses, type_ms2ions, digits)
 
-  out <- map2(out, vmods_combi, add_hexcodes_nl, length(aas), mod_indexes)
+  out <- map2(out, vmods_combi, add_hexcodes_fnl, length(aas), mod_indexes)
   
   out <- flatten(out)
 }
@@ -381,7 +388,6 @@ calcms2_a1_t1_fnl1 <- function (vmods_combi, nl_combi, ntmod,
 #' @param type_ms2ions Character; the type of
 #'   \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
 #'   ions}. Values are in one of "by", "ax" and "cz".
-#'   charges (not currently used).
 #' @inheritParams calc_monopep
 #' @inheritParams calc_aamasses
 #' @import purrr
@@ -541,15 +547,31 @@ add_hexcodes <- function (ms2ions, vmods_combi, len, mod_indexes = NULL) {
 }
 
 
-#' Adds hex codes (with NLs).
+#' Adds hex codes (with fixed NLs).
+#'
+#' To indicate the variable modifications of an amino acid sequence. The only
+#' difference to \link{add_hexcodes_vnl} is square brackets (for fixed NLs) or
+#' round parenthesis (for variable NLs).
+#'
+#' @inheritParams add_hexcodes
+add_hexcodes_fnl <- function (ms2ions, vmods_combi, len, mod_indexes = NULL) {
+  hex_mods = rep("0", len)
+  hex_mods[as.numeric(names(vmods_combi))] <- mod_indexes[unlist(vmods_combi)]
+  hex_mods <- paste0(hex_mods, collapse = "")
+  
+  names(ms2ions) <- paste0(hex_mods, " [", seq_along(ms2ions), "]")
+  
+  invisible(ms2ions)
+}
+
+
+#' Adds hex codes (with variable NLs).
 #' 
 #' To indicate the variable modifications of an amino acid sequence.
 #' 
 #' @inheritParams add_hexcodes
-add_hexcodes_nl <- function (ms2ions, vmods_combi, len, mod_indexes = NULL) {
+add_hexcodes_vnl <- function (ms2ions, vmods_combi, len, mod_indexes = NULL) {
   hex_mods = rep("0", len)
-  # rows <- map_lgl(ms2ions, ~ !is.null(.x))
-  # ms2ions <- ms2ions[rows]
   hex_mods[as.numeric(names(vmods_combi))] <- mod_indexes[unlist(vmods_combi)]
   hex_mods <- paste0(hex_mods, collapse = "")
   
@@ -747,13 +769,11 @@ find_intercombi_p <- function (intra_combis, maxn_vmods_sitescombi_per_pep) {
     # p_combis <- map2(p_combis, max_combi, ~ .x[seq_len(.y)])
     # v_combis <- map2(v_combis, max_combi, ~ .x[seq_len(.y)])
     
-    p_combis <- p_combis %>% 
-      reduce(expand.grid, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
+    # p_combis <- p_combis %>% reduce(expand.grid, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
+    p_combis <- expand.grid(p_combis, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
     
-    # use the findings from p_combis for speed...
-    
-    v_combis <- v_combis %>% 
-      reduce(expand.grid, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
+    # v_combis <- v_combis %>% reduce(expand.grid, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
+    v_combis <- expand.grid(v_combis, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
     
     nrow <- min(nrow(v_combis), maxn_vmods_sitescombi_per_pep)
     
@@ -770,7 +790,8 @@ find_intercombi_p <- function (intra_combis, maxn_vmods_sitescombi_per_pep) {
     }
   }
   
-  v_out <- map(v_out, unlist, use.names = FALSE)
+  # use names (positions)
+  v_out <- map(v_out, unlist, use.names = TRUE)
 }
 
 
@@ -1397,6 +1418,24 @@ add_complement_ions <- function (ms1, ms2) {
 #' # The N-term M realizes with acetylation
 #' x$vmods_ps[[5]]
 #' 
+#' ## (5) Neutral losses with both fixed and variable modifications ignored
+#' x <- calc_ms2ionseries("MAKEMASSPECFUN",
+#'                        c("TMT6plex (N-term)", 
+#'                          "Oxidation (M)", 
+#'                          "Deamidated (N)"), 
+#'                        c("dHex (S)"))
+#'                       
+#' x$mass[[2]]
+#' 
+#' # Change from fixed to variable
+#' x <- calc_ms2ionseries("MAKEMASSPECFUN",
+#'                        c("TMT6plex (N-term)", 
+#'                          "Deamidated (N)"), 
+#'                        c("Oxidation (M)", 
+#'                          "dHex (S)"))
+#'                       
+#' x$mass[[4]]
+#' x$vmods_ps[[4]]
 #' }
 #' @export
 calc_ms2ionseries <- function (aa_seq, fixedmods, varmods, 
@@ -1423,13 +1462,19 @@ calc_ms2ionseries <- function (aa_seq, fixedmods, varmods,
     `names<-`(c(fixedmods, varmods))
   
   ms <- purrr::map2(peps, aa_masses_all, ~ {
-    calc_ms2ions(.x, .y, mod_indexes, type_ms2ions, maxn_vmods_per_pep, 
-                 maxn_sites_per_vmod, maxn_vmods_sitescombi_per_pep, digits)
+    pri <- calc_ms2ions(.x, .y, mod_indexes, type_ms2ions, maxn_vmods_per_pep, 
+                        maxn_sites_per_vmod, maxn_vmods_sitescombi_per_pep, digits)
+    
+    sec <- map(pri, add_seions, type_ms2ions, digits)
+    
+    list(pri = pri, sec = sec)
   })
   
   attrs <- purrr::map(aa_masses_all, attributes)
   vmods_ps <- map(attrs, `[[`, "vmods_ps")
   
-  list(mass = ms, vmods_ps = vmods_ps)
+  list(mass = map(ms, `[[`, "pri"), 
+       sec_mass = map(ms, `[[`, "sec"), 
+       vmods_ps = vmods_ps)
 }
 

@@ -27,8 +27,7 @@ representation of amino acids.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".
-charges (not currently used).}
+ions}. Values are in one of "by", "ax" and "cz".}
 
 \item{maxn_vmods_setscombi}{Integer; the maximum number of combinatorial variable
 modifications and neutral losses.}
@@ -87,5 +86,23 @@ x$mass
 # The N-term M realizes with acetylation
 x$vmods_ps[[5]]
 
+## (5) Neutral losses with both fixed and variable modifications ignored
+x <- calc_ms2ionseries("MAKEMASSPECFUN",
+                       c("TMT6plex (N-term)", 
+                         "Oxidation (M)", 
+                         "Deamidated (N)"), 
+                       c("dHex (S)"))
+                      
+x$mass[[2]]
+
+# Change from fixed to variable
+x <- calc_ms2ionseries("MAKEMASSPECFUN",
+                       c("TMT6plex (N-term)", 
+                         "Deamidated (N)"), 
+                       c("Oxidation (M)", 
+                         "dHex (S)"))
+                      
+x$mass[[4]]
+x$vmods_ps[[4]]
 }
 }
