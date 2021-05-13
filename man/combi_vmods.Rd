@@ -9,6 +9,8 @@ combi_vmods(
   residue_mods,
   ntmod,
   ctmod,
+  fntmod,
+  fctmod,
   aa_masses,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
@@ -25,6 +27,12 @@ combi_vmods(
 \code{aa_masses}.}
 
 \item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
+\code{aa_masses}.}
+
+\item{fntmod}{The parsed \emph{fixed} \code{N-term} modifications from
+\code{aa_masses}.}
+
+\item{fctmod}{The parsed \emph{fixed} \code{C-term} modifications from
 \code{aa_masses}.}
 
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino

@@ -172,6 +172,7 @@ calc_avgpep <- function (aa_seq, digits = 4) {
 #'                    aa_masses_all[[11]])
 #' }
 mcalc_monopep <- function (aa_seqs, aa_masses, 
+                           include_insource_nl = FALSE, 
                            maxn_vmods_per_pep = 5, 
                            maxn_sites_per_vmod = 3, 
                            parallel = TRUE, 
@@ -195,10 +196,11 @@ mcalc_monopep <- function (aa_seqs, aa_masses,
                             envir = environment(proteoQ:::calc_prots_pepmasses))
     
     out <- parallel::clusterApply(cl, aa_seqs, calc_prots_pepmasses, 
-                                  aa_masses, 
-                                  maxn_vmods_per_pep, 
-                                  maxn_sites_per_vmod, 
-                                  digits) %>% 
+                                  aa_masses = aa_masses, 
+                                  include_insource_nl = include_insource_nl, 
+                                  maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                                  maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                                  digits = digits) %>% 
       purrr::flatten()
     
     parallel::stopCluster(cl)
@@ -207,10 +209,11 @@ mcalc_monopep <- function (aa_seqs, aa_masses,
       purrr::map(~ { # by prot_acc
         x <- .x %>% 
           purrr::map(calc_monopep, 
-                     aa_masses, 
-                     maxn_vmods_per_pep, 
-                     maxn_sites_per_vmod, 
-                     digits) %>% # by peptides
+                     aa_masses = aa_masses, 
+                     include_insource_nl = include_insource_nl,
+                     maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                     maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                     digits = digits) %>% # by peptides
           unlist(use.names = TRUE)
       })
   }
@@ -236,15 +239,17 @@ mcalc_monopep <- function (aa_seqs, aa_masses,
 #' 
 #' @param prot_peps Lists of peptides under a proteins.
 #' @inheritParams calc_monopep
-calc_prots_pepmasses <- function (aa_seqs, aa_masses, 
+calc_prots_pepmasses <- function (aa_seqs, aa_masses, include_insource_nl = FALSE, 
                                   maxn_vmods_per_pep, maxn_sites_per_vmod, digits) {
   purrr::map(aa_seqs, ~ {
     prot_peps <- .x
     
-    calc_prot_pepmasses(prot_peps, aa_masses, 
-                        maxn_vmods_per_pep, 
-                        maxn_sites_per_vmod, 
-                        digits)
+    calc_prot_pepmasses(prot_peps = prot_peps, 
+                        aa_masses = aa_masses, 
+                        include_insource_nl = include_insource_nl, 
+                        maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                        maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                        digits = digits)
   })
 }
 
@@ -255,15 +260,17 @@ calc_prots_pepmasses <- function (aa_seqs, aa_masses,
 #' @param prot_peps Lists of peptides under a proteins.
 #' @inheritParams calc_monopep
 calc_prot_pepmasses <- function (prot_peps, aa_masses, 
+                                 include_insource_nl, 
                                  maxn_vmods_per_pep, 
                                  maxn_sites_per_vmod, 
                                  digits) {
   prot_peps %>% 
     purrr::map(calc_monopep, 
-               aa_masses, 
-               maxn_vmods_per_pep, 
-               maxn_sites_per_vmod, 
-               digits) %>% # by peptides
+               aa_masses = aa_masses, 
+               include_insource_nl = include_insource_nl, 
+               maxn_vmods_per_pep = maxn_vmods_per_pep, 
+               maxn_sites_per_vmod = maxn_sites_per_vmod, 
+               digits = digits) %>% # by peptides
     unlist(use.names = TRUE)
 }
 
@@ -276,11 +283,21 @@ calc_prot_pepmasses <- function (prot_peps, aa_masses,
 #'
 #' @param aa_seq Character string; a peptide sequences with one-letter
 #'   representation of amino acids.
+#' @param include_insource_nl Logical Logical; if TRUE, includes MS1 precursor
+#'   masses with the losses of neutral species prior to MS2 fragmentation. The
+#'   default is FALSE.
+#'
+#'   Note that there is no combination of neutral losses for fixed modifications
+#'   at the precursor levels. Changes from fixed to variable modifications for
+#'   complete combinations. 
 #' @inheritParams mcalc_monopep
 #' @import purrr
 #' @importFrom stringr str_split
-calc_monopep <- function (aa_seq, aa_masses, maxn_vmods_per_pep = 5, 
-                          maxn_sites_per_vmod = 3, digits = 5) {
+calc_monopep <- function (aa_seq, aa_masses, 
+                          include_insource_nl = FALSE, 
+                          maxn_vmods_per_pep = 5, 
+                          maxn_sites_per_vmod = 3, 
+                          digits = 5) {
   
   if (is.na(aa_seq)) return(NULL)
   
@@ -332,7 +349,7 @@ calc_monopep <- function (aa_seq, aa_masses, maxn_vmods_per_pep = 5,
   #    (12) "amods+ tmod+ vnl-" by corresponding functions)
   if (is_empty(vmods_combi) && !is_empty(vmods_nl)) return(NULL)
   
-  if (is_empty(vmods_nl)) {
+  if (is_empty(vmods_nl) || !include_insource_nl) {
     vnl_combi <- NULL
   } else {
     vnl_combi <- map(vmods_combi, ~ expand.grid(vmods_nl[.x]) %>% t())
@@ -342,12 +359,17 @@ calc_monopep <- function (aa_seq, aa_masses, maxn_vmods_per_pep = 5,
   # Thus unlike length(vmods_combi) == length(vnl_combi), 
   #   length(fnl_combi) == 1 table (with n columns); 
   # nrow(fnl_combi) == length(fmods_nl) == number of sites with fixed mods
+  # 
+  # For Anywhere fmods -> make it vmods for complete neutral losses; otherwise 
+  #       [,1]      [,2]
+  #    M 147.0354 83.037115
+  # no combination of 147 and 83 (uniformly 147 or 83)
   
   # The difference also affect the mapping of peptides in mass calculations: 
   # (a) vnl+: mcalcpepmass_a1_vnl1 -> calcpepmass_vnl1
   # (b) fnl+: mcalcpepmass_a1_fnl1 -> calcpepmass_fnl1
   
-  if (is_empty(fmods_nl)) {
+  if (is_empty(fmods_nl) || !include_insource_nl) {
     fnl_combi <- NULL
   } else {
     fnl_combi <- expand.grid(fmods_nl) %>% t()
@@ -397,15 +419,24 @@ calc_monopep <- function (aa_seq, aa_masses, maxn_vmods_per_pep = 5,
 #' 
 #' x$mass
 #' 
-#' # (2)
+#' # (2-a) 
 #' x <- calc_monopeptide("MAKEMASSPECFUN", 
 #'                       fixedmods = "Oxidation (M)", 
 #'                       varmods = NULL)
 #' 
 #' x$mass
 #' 
+#' # (2-b) no combinatorial NL for fixed modifications
+#' # (see 3-b) for full combinations
+#' x <- calc_monopeptide("MAKEMASSPECFUN", 
+#'                       fixedmods = "Oxidation (M)", 
+#'                       varmods = NULL, 
+#'                       include_insource_nl = TRUE)
+#' 
+#' x$mass
+#' 
 #' ## With variable modifications
-#' # (3)
+#' # (3-a)
 #' x <- calc_monopeptide("MAKEMASSPECFUN", 
 #'                       fixedmods = NULL, 
 #'                       varmods = "Oxidation (M)")
@@ -413,7 +444,15 @@ calc_monopep <- function (aa_seq, aa_masses, maxn_vmods_per_pep = 5,
 #' x$mass
 #' # x$vmods_ps
 #' 
-#' # (4)
+#' # (3-b)
+#' x <- calc_monopeptide("MAKEMASSPECFUN", 
+#'                       fixedmods = NULL, 
+#'                       varmods = "Oxidation (M)", 
+#'                       include_insource_nl = TRUE)
+#' 
+#' x$mass
+#' 
+#' # (4-a)
 #' x <- calc_monopeptide("MAKEMASSPECFUN",
 #'                       c("TMT6plex (N-term)", 
 #'                         "TMT6plex (K)", 
@@ -427,9 +466,25 @@ calc_monopep <- function (aa_seq, aa_masses, maxn_vmods_per_pep = 5,
 #' # The N-term M realizes with acetylation
 #' x$vmods_ps[[5]]
 #' 
+#' # The N-term M realizes with TMT
+#' x$vmods_ps[[6]]
+#' 
+#' 
+#' # (4-b)
+#' x <- calc_monopeptide("MAKEMASSPECFUN",
+#'                       c("TMT6plex (N-term)", 
+#'                         "TMT6plex (K)", 
+#'                         "Carbamidomethyl (C)"),
+#'                       c("Acetyl (N-term)", 
+#'                         "Gln->pyro-Glu (N-term = Q)", 
+#'                         "Oxidation (M)"), 
+#'                         include_insource_nl = TRUE)
+#'                       
+#' x$mass
 #' }
 #' @export
 calc_monopeptide <- function (aa_seq, fixedmods, varmods, 
+                              include_insource_nl = FALSE, 
                               maxn_vmods_setscombi = 64,
                               maxn_vmods_per_pep = Inf, 
                               maxn_sites_per_vmod = Inf, 
@@ -446,7 +501,11 @@ calc_monopeptide <- function (aa_seq, fixedmods, varmods,
   aa_masses_all <- aa_masses_all[oks]
 
   ms <- purrr::map2(peps, aa_masses_all, ~ {
-    calc_monopep(.x, .y, maxn_vmods_per_pep, maxn_sites_per_vmod, digits)
+    calc_monopep(.x, .y, 
+                 include_insource_nl = include_insource_nl, 
+                 maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                 maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                 digits = digits)
   })
   
   attrs <- purrr::map(aa_masses_all, attributes)
@@ -522,11 +581,16 @@ calcpep_a0_t1_fnl1 <- function (nl_combi, aa_seq, aas, aa_masses, ntmod, ctmod,
   
   # `nl_combi` is `fnl_combi`
   # go by columns in `nl_combi`
-  out <- calcpepmass_fnl1(aas, nl_combi, aa_masses, ntmod, ctmod) 
   
-  out %>% 
-    setNames(rep(aa_seq, length(.))) %>% 
-    round(digits = digits)
+  if (is.null(nl_combi)) {
+    out <- calcpep_a0_t1_nl0(aa_seq, aas, aa_masses, ntmod, ctmod, digits)
+  } else {
+    out <- calcpepmass_fnl1(aas, nl_combi, aa_masses, ntmod, ctmod) %>% 
+      setNames(rep(aa_seq, length(.))) %>% 
+      round(digits = digits)
+  }
+  
+  invisible(out)
 }
 
 
@@ -539,11 +603,17 @@ calcpep_a0_t1_fnl1 <- function (nl_combi, aa_seq, aas, aa_masses, ntmod, ctmod,
 #' @inheritParams calcpep_a1_t1_nl1
 calcpep_a0_t0_fnl1 <- function (nl_combi, aa_seq, aas, aa_masses, 
                                 ntmod = NULL, ctmod = NULL, digits) {
-  out <- calcpepmass_fnl1(aas, nl_combi, aa_masses, ntmod = NULL, ctmod = NULL) 
   
-  out %>% 
-    setNames(rep(aa_seq, length(.))) %>% 
-    round(digits = digits)
+  if (is.null(nl_combi)) {
+    out <- calcpep_0(aa_seq, aas, aa_masses, digits)
+  } else {
+    out <- calcpepmass_fnl1(aas, nl_combi, aa_masses, 
+                            ntmod = NULL, ctmod = NULL) %>% 
+      setNames(rep(aa_seq, length(.))) %>% 
+      round(digits = digits)
+  }
+  
+  invisible(out)
 }
 
 
@@ -612,23 +682,31 @@ calcpep_a1_t1_nl0 <- function (vmods_combi, nl_combi = NULL, amods,
 calcpep_a1_t0_nl1 <- function (vmods_combi, nl_combi, amods, ntmod = NULL, 
                                ctmod = NULL, aa_seq, aas, aa_masses, 
                                digits) {
-  out <- map2(vmods_combi, nl_combi, mcalcpepmass_a1_vnl1, 
-              amods, ntmod = NULL, ctmod = NULL, aas, aa_masses, digits) %>% 
-    unlist(use.names = FALSE) # no map2_dbl
+  if (is.null(nl_combi)) {
+    out <- calcpep_a1_t0_nl0(vmods_combi, nl_combi = NULL, amods, 
+                             ntmod = NULL, ctmod = NULL, aa_seq, aas, 
+                             aa_masses, digits)
+  } else {
+    out <- map2(vmods_combi, nl_combi, mcalcpepmass_a1_vnl1, 
+                amods, ntmod = NULL, ctmod = NULL, aas, aa_masses, digits) %>% 
+      unlist(use.names = FALSE) # no map2_dbl
+    
+    # out <- map2(vmods_combi, nl_combi, ~ {
+    #   # since `amods+`
+    #   aas <- update_aas_anywhere(.x, aas, amods)
+    #   
+    #   # no `map` since by the columns of nl_combi
+    #   calcpepmass_vnl1(aas, .y, aa_masses, ntmod, ctmod)
+    # }, amods, ntmod = NULL, ctmod = NULL, aas, aa_masses, digits) %>% 
+    #   unlist(use.names = FALSE) # no map2_dbl
+    
+    out <- out %>% 
+      unique() %>% 
+      setNames(rep(aa_seq, length(.))) %>% 
+      round(digits = digits)
+  }
   
-  # out <- map2(vmods_combi, nl_combi, ~ {
-  #   # since `amods+`
-  #   aas <- update_aas_anywhere(.x, aas, amods)
-  #   
-  #   # no `map` since by the columns of nl_combi
-  #   calcpepmass_vnl1(aas, .y, aa_masses, ntmod, ctmod)
-  # }, amods, ntmod = NULL, ctmod = NULL, aas, aa_masses, digits) %>% 
-  #   unlist(use.names = FALSE) # no map2_dbl
-  
-  out <- out %>% 
-    unique() %>% 
-    setNames(rep(aa_seq, length(.))) %>% 
-    round(digits = digits)
+  invisible(out)
 }
 
 
@@ -656,33 +734,39 @@ calcpep_a1_t0_nl1 <- function (vmods_combi, nl_combi, amods, ntmod = NULL,
 calcpep_a1_t1_nl1 <- function (vmods_combi, nl_combi, amods, 
                                ntmod, ctmod, aa_seq, aas, aa_masses, 
                                digits) {
-  out <- map2(vmods_combi, nl_combi, mcalcpepmass_a1_vnl1, 
-             amods, ntmod, ctmod, aas, aa_masses, digits) %>% 
-   unlist(use.names = FALSE) # no map2_dbl
-  
-  ## A case of NULL `out`
-  # conflicts btw. amods+ and tmod+
-  #   i.e. NLTLALEALVQLR: the only N on the N-term
-  #   cannot be both `Deamidated (N)` and `Acetyl (N-term)`
-  # if (is_empty(vmods_combi)) return(NULL)
-  
-  # out <- map2(vmods_combi, nl_combi, ~ {
-   #   # since `amods+`
-  #   aas <- update_aas_anywhere(.x, aas, amods)
-  #   
-  #   # no `map` since by the columns of nl_combi
-  #   calcpepmass_vnl1(aas, .y, aa_masses, ntmod, ctmod)
-  # }, amods, ntmod, ctmod, aas, aa_masses, digits) %>% 
-  #   unlist(use.names = FALSE) # no map2_dbl
-  
-  out <- out %>% unique() 
-
-  if (!is_empty(out)) {
-    out <- out %>% 
-      setNames(rep(aa_seq, length(.))) %>% 
-      round(digits = digits)
+  if (is.null(nl_combi)) {
+    out <- calcpep_a1_t1_nl0(vmods_combi, nl_combi = NULL, amods, 
+                             ntmod, ctmod, aa_seq, aas, 
+                             aa_masses, digits)
+  } else {
+    out <- map2(vmods_combi, nl_combi, mcalcpepmass_a1_vnl1, 
+                amods, ntmod, ctmod, aas, aa_masses, digits) %>% 
+      unlist(use.names = FALSE) # no map2_dbl
+    
+    ## A case of NULL `out`
+    # conflicts btw. amods+ and tmod+
+    #   i.e. NLTLALEALVQLR: the only N on the N-term
+    #   cannot be both `Deamidated (N)` and `Acetyl (N-term)`
+    # if (is_empty(vmods_combi)) return(NULL)
+    
+    # out <- map2(vmods_combi, nl_combi, ~ {
+    #   # since `amods+`
+    #   aas <- update_aas_anywhere(.x, aas, amods)
+    #   
+    #   # no `map` since by the columns of nl_combi
+    #   calcpepmass_vnl1(aas, .y, aa_masses, ntmod, ctmod)
+    # }, amods, ntmod, ctmod, aas, aa_masses, digits) %>% 
+    #   unlist(use.names = FALSE) # no map2_dbl
+    
+    out <- out %>% unique() 
+    
+    if (!is_empty(out)) {
+      out <- out %>% 
+        setNames(rep(aa_seq, length(.))) %>% 
+        round(digits = digits)
+    }
   }
-  
+
   invisible(out)
 }
 
@@ -699,14 +783,22 @@ calcpep_a1_t0_fnl1 <- function (vmods_combi, nl_combi, amods, ntmod = NULL,
   # `nl_combi` is `fnl_combi` and is a length(1) table
   # (length(vmods_combi) >= 1; length(fnl_combi) == 1 table of n columns)
   
-  out <- map(vmods_combi, mcalcpepmass_a1_fnl1, nl_combi, 
-             amods, ntmod = NULL, ctmod = NULL, aas, aa_masses, digits) %>% 
-    unlist(use.names = FALSE)
+  if (is.null(nl_combi)) {
+    out <- calcpep_a1_t0_nl0(vmods_combi, nl_combi = NULL, amods, 
+                             ntmod = NULL, ctmod = NULL, aa_seq, aas, 
+                             aa_masses, digits)
+  } else {
+    out <- map(vmods_combi, mcalcpepmass_a1_fnl1, nl_combi, 
+               amods, ntmod = NULL, ctmod = NULL, aas, aa_masses, digits) %>% 
+      unlist(use.names = FALSE)
+    
+    out <- out %>% 
+      unique() %>% 
+      setNames(rep(aa_seq, length(.))) %>% 
+      round(digits = digits)
+  }
 
-  out <- out %>% 
-    unique() %>% 
-    setNames(rep(aa_seq, length(.))) %>% 
-    round(digits = digits)
+  invisible(out)
 }
 
 
@@ -720,19 +812,26 @@ calcpep_a1_t0_fnl1 <- function (vmods_combi, nl_combi, amods, ntmod = NULL,
 calcpep_a1_t1_fnl1 <- function (vmods_combi, nl_combi, amods, 
                                 ntmod, ctmod, aa_seq, aas, aa_masses, 
                                 digits) {
-  # Again can be NULL `out` at `amods+` and `tmod+`
-  out <- map(vmods_combi, mcalcpepmass_a1_fnl1, nl_combi, 
-             amods, ntmod, ctmod, aas, aa_masses, digits) %>% 
-    unlist(use.names = FALSE)
   
-  out <- out %>% unique() 
-
-  if (!is_empty(out)) {
-    out <- out %>% 
-      setNames(rep(aa_seq, length(.))) %>% 
-      round(digits = digits)
+  if (is.null(nl_combi)) {
+    out <- calcpep_a1_t1_nl0(vmods_combi, nl_combi = NULL, amods, 
+                             ntmod, ctmod, aa_seq, aas, aa_masses, 
+                             digits)
+  } else {
+    # Again can be NULL `out` at `amods+` and `tmod+`
+    out <- map(vmods_combi, mcalcpepmass_a1_fnl1, nl_combi, 
+               amods, ntmod, ctmod, aas, aa_masses, digits) %>% 
+      unlist(use.names = FALSE)
+    
+    out <- out %>% unique() 
+    
+    if (!is_empty(out)) {
+      out <- out %>% 
+        setNames(rep(aa_seq, length(.))) %>% 
+        round(digits = digits)
+    }
   }
-  
+
   invisible(out)
 }
 
@@ -862,8 +961,11 @@ calcpepmass_fnl1 <- function (aas, nl_combi, aa_masses, ntmod, ctmod) {
   len <- ncol(nl_combi)
   out <- vector("numeric", len)
   nms <- rownames(nl_combi)
-  
+
   for (i in 1:len) {
+    # no combination of 147 for some "M" and 83 for others;
+    # uniformly either 147 or 83 
+    
     aa_masses[nms] <- nl_combi[, i]
     out[[i]] <- aas %>% aa_masses[.] %>% sum() 
     
@@ -978,10 +1080,12 @@ vmods_elements <- function (aas,
   # no need of ps[seq_len(.x)] as the exact positions not needed
   # ps <- which(aas == residue)
   # len_p <- length(ps)
+  
   len_p <- sum(aas == residue)
   
   # i.e., btw Anywhere "M" and "Acetyl N-term" where "M" on the "N-term"
   # MFGMFNVSMR cannot have three `Oxidation (M)` and `Acetyl (N-term)`
+  
   if (!(is_empty(ntmod) || is_empty(ctmod))) {
     len_aas <- length(aas)
     
@@ -1006,6 +1110,7 @@ vmods_elements <- function (aas,
     x <- 
       # will confuse gtools::combinations...
       # map((len_n + 1):len_p, ~ find_unique_sets(ps[seq_len(.x)], ns)) %>% 
+      
       map((len_n + 1):len_p, ~ find_unique_sets(seq_len(.x), ns)) %>% 
       recur_flatten() %>% 
       `c`(list(ns), .)
@@ -1074,6 +1179,7 @@ find_intercombi <- function (intra_combis) {
     
     for (i in 1:nrow) {
       # v_out[[i]] <- reduce(inter_combi[i, ], `c`) %>% unlist(use.names = FALSE, recursive = FALSE)
+      
       v_out[[i]] <- unlist(inter_combi[i, ], use.names = FALSE)
     }
   } else {
@@ -1089,6 +1195,7 @@ find_intercombi <- function (intra_combis) {
 #' @param pos_site A named value. Position in name and site in value.
 find_aa_site <- function (pos_site) {
   # 'N-term' not 'Q' for Gln-> pyro-Glu (N-term = Q)
+  
   if (grepl("[NC]{1}-term", names(pos_site))) {
     site <- names(pos_site) %>% 
       gsub("(Protein|Any) ([NC]{1}-term)", "\\2", .)
@@ -1469,6 +1576,7 @@ parse_aamasses <- function (aa_masses) {
     
     ## In fixedmods: `M` instead of `Oxidation (M)`
     # fmods_ps <- fmods_ps[idx]
+    
     names(neulosses) <- fmods_ps
     
     resids <- as.list(aa_masses)
@@ -1501,6 +1609,7 @@ parse_aamasses <- function (aa_masses) {
     })
   })
   
+  ## variable mods
   # multiple mods to [NC]-term already excluded from aa_masses
   amods <- local({
     sites <- vmods_ps %>% 
@@ -1523,6 +1632,30 @@ parse_aamasses <- function (aa_masses) {
   # variable N-term, C-term
   ntmod <- tmod %>% .[. == "N-term"]
   ctmod <- tmod %>% .[. == "C-term"]
+  
+  ## fixed mods
+  famods <- local({
+    sites <- fmods_ps %>% 
+      purrr::map(~ .x[grepl("Anywhere", names(.x))]) 
+    
+    empties <- sites %>% purrr::map_lgl(purrr::is_empty)
+    
+    sites <- sites[!empties] 
+    
+    sites
+  })
+  
+  ftmod <- fmods_ps %>% .[! . %in% famods]
+  if (purrr::is_empty(ftmod)) {
+    ftmod <- NULL
+  } else if (ftmod == "") {
+    ftmod <- NULL
+  }
+  
+  # fixed N-term, C-term
+  fntmod <- ftmod %>% .[. == "N-term"]
+  fctmod <- ftmod %>% .[. == "C-term"]
+  
   
   # "amods- tmod- vnl- fnl-"
   if (is_empty(fmods_nl)) {
@@ -1605,7 +1738,13 @@ parse_aamasses <- function (aa_masses) {
   }
   
   attr(aa_masses, "type") <- type
+  
   attr(aa_masses, "fmods_nl") <- fmods_nl
+  attr(aa_masses, "famods") <- famods
+  attr(aa_masses, "ftmod") <- ftmod
+  attr(aa_masses, "fntmod") <- fntmod
+  attr(aa_masses, "fctmod") <- fctmod
+  
   attr(aa_masses, "vmods_nl") <- vmods_nl
   attr(aa_masses, "amods") <- amods
   attr(aa_masses, "tmod") <- tmod
@@ -2178,6 +2317,7 @@ calc_pepmasses <- function (
               "Oxidation (M)", 
               "Deamidated (N)", 
               "Gln->pyro-Glu (N-term = Q)"), 
+  include_insource_nl = FALSE, 
   index_mods = FALSE, 
   enzyme = c("trypsin"), 
   maxn_fasta_seqs = 50000,
@@ -2302,20 +2442,26 @@ calc_pepmasses <- function (
     pep_masses <- purrr::map2(pep_masses, 
                               aa_masses, 
                               mcalc_monopep, 
-                              maxn_vmods_per_pep, 
-                              maxn_sites_per_vmod, 
-                              parallel, n_cores, cl, 
-                              digits)
+                              include_insource_nl = include_insource_nl, 
+                              maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                              maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                              parallel = parallel, 
+                              n_cores = n_cores, 
+                              cl = cl, 
+                              digits = digits)
     
     message("Calculating peptide masses (decoy) ...")
     
     rev_pep_masses <- purrr::map2(rev_pep_masses, 
                                   aa_masses[1], 
                                   mcalc_monopep, 
-                                  maxn_vmods_per_pep, 
-                                  maxn_sites_per_vmod, 
-                                  parallel, n_cores, cl, 
-                                  digits)
+                                  include_insource_nl = include_insource_nl, 
+                                  maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                                  maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                                  parallel = parallel, 
+                                  n_cores = n_cores, 
+                                  cl = cl, 
+                                  digits = digits)
   }
   
   # --- 

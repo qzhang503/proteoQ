@@ -287,7 +287,8 @@ calc_pepscores_i <- function (res, topn_ms2ions = 100, type_ms2ions = "by",
                   ms2_n = as.integer(ms2_n), 
                   pep_fmod = as.character(pep_fmod), 
                   pep_vmod = as.character(pep_vmod), 
-                  pep_nl = as.character(pep_nl)) %>% 
+                  # pep_nl = as.character(pep_nl), 
+                  ) %>% 
     dplyr::left_join(scores, by = "scan_num")
   
   res <- res %>% 

@@ -10,6 +10,7 @@ calc_pepmasses(
   fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"),
   varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
+  include_insource_nl = FALSE,
   index_mods = FALSE,
   enzyme = c("trypsin"),
   maxn_fasta_seqs = 50000,
@@ -35,6 +36,14 @@ correct file path(s) and name(s).}
 \link{parse_unimod} for grammars.}
 
 \item{varmods}{A character vector of variable modifications.}
+
+\item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
+  masses with the losses of neutral species prior to MS2 fragmentation. The
+  default is FALSE.
+
+  Note that there is no combination of neutral losses for fixed modifications
+  at the precursor levels. Changes from fixed to variable modifications for
+  complete combinations.}
 
 \item{index_mods}{Logical; if TRUE, converts the names of modifications to
 indexes. Not currently used.}

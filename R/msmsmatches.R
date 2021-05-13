@@ -598,6 +598,7 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                      varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", 
                                  "Oxidation (M)", "Deamidated (N)", 
                                  "Gln->pyro-Glu (N-term = Q)"), 
+                     include_insource_nl = FALSE, 
                      enzyme = c("trypsin"), 
                      maxn_fasta_seqs = 50000,
                      maxn_vmods_setscombi = 64, 
@@ -629,7 +630,9 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
   ## Theoretical MS1 masses
   res <- calc_pepmasses(
     fasta = fasta, fixedmods = fixedmods, varmods = varmods, 
-    index_mods = FALSE, enzyme = enzyme, 
+    include_insource_nl = include_insource_nl, 
+    index_mods = FALSE, 
+    enzyme = enzyme, 
     maxn_fasta_seqs = maxn_fasta_seqs, 
     maxn_vmods_setscombi = maxn_vmods_setscombi, 
     maxn_vmods_per_pep = maxn_vmods_per_pep, 
@@ -641,6 +644,13 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
     out_path = file.path(out_path, "pepmasses/pepmasses.rds")
   )
 
+  ## AA masses
+  aa_masses_all <- res %>% 
+    purrr::map(~ {
+      attr(.x, "data") <- NULL
+      .x
+    })
+  
   ## Mass range
   tempdata <- res %>% 
     purrr::map(attributes) %>% 
@@ -649,14 +659,7 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
   min_mass <- min(tempdata, na.rm = TRUE)
   max_mass <- max(tempdata, na.rm = TRUE)
   rm(tempdata)
-  
-  ## AA masses
-  aa_masses_all <- res %>% 
-    purrr::map(~ {
-      attr(.x, "data") <- NULL
-      .x
-    })
-  
+
   ## Bin theoretical peptides
   binTheoPeps(res = res, min_mass = min_mass, max_mass = max_mass, 
               ppm = ppm_ms1, 
@@ -670,16 +673,12 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
   mgf_frames <- readMGF(filepath = mgf_path, min_mass = min_mass, 
                         topn_ms2ions = topn_ms2ions, ret_range = c(0, Inf), 
                         ppm_ms1 = ppm_ms1, 
-                        out_path = file.path(mgf_path, "mgf_queries.rds")) %>% 
-    dplyr::group_by(frame) %>% 
-    dplyr::group_split() %>% 
-    setNames(purrr::map_dbl(., ~ .x$frame[1]))
-
+                        out_path = file.path(mgf_path, "mgf_queries.rds")) 
+  
   n_cores <- parallel::detectCores()
-  if (n_cores <= 1 || length(mgf_frames) < n_cores) n_cores <- 1
 
   ## Ion searches
-  out <- pmatch_bymgfs(mgf_frames = mgf_frames, 
+  out <- pmatch_bymgfs(mgf_path = mgf_path, 
                        aa_masses_all = aa_masses_all, 
                        n_cores = n_cores, 
                        out_path = out_path, 
@@ -735,40 +734,47 @@ subset_theoframes <- function (mgf_frames, theopeps) {
 #' @param mod_indexes Integer; the indexes of fixed and/or variable
 #'   modifications.
 #' @inheritParams matchMS
+#' @inheritParams readMGF
 #' @inheritParams search_mgf_frames_d
 #' @import parallel
-pmatch_bymgfs <- function (mgf_frames, aa_masses_all, n_cores, out_path, 
+pmatch_bymgfs <- function (mgf_path, 
+                           aa_masses_all, n_cores, out_path, 
                            mod_indexes, type_ms2ions, maxn_vmods_per_pep, 
                            maxn_sites_per_vmod, 
                            maxn_vmods_sitescombi_per_pep, 
                            minn_ms2, ppm_ms1, ppm_ms2, 
                            digits) {
 
-  mgf_frames <- local({
-    labs <- levels(cut(1:length(mgf_frames), n_cores^2))
-    
-    x <- cbind(
-      lower = floor(as.numeric( sub("\\((.+),.*", "\\1", labs))),
-      upper = ceiling(as.numeric( sub("[^,]*,([^]]*)\\]", "\\1", labs))))
-    
-    grps <- findInterval(1:length(mgf_frames), x[, 1])
-    mgf_frames <- split(mgf_frames, grps)
-  })
-  
   out <- vector("list", length(aa_masses_all))
   
   for (i in seq_along(out)) {
+    # loads freshly mgfs (as will be modified)
+    mgf_frames <- readRDS(file.path(mgf_path, "mgf_queries.rds")) %>% 
+      dplyr::group_by(frame) %>% 
+      dplyr::group_split() %>% 
+      setNames(purrr::map_dbl(., ~ .x$frame[1]))
+    
+    mgf_frames <- local({
+      labs <- levels(cut(1:length(mgf_frames), n_cores^2))
+      
+      x <- cbind(
+        lower = floor(as.numeric( sub("\\((.+),.*", "\\1", labs))),
+        upper = ceiling(as.numeric( sub("[^,]*,([^]]*)\\]", "\\1", labs))))
+      
+      grps <- findInterval(1:length(mgf_frames), x[, 1])
+      mgf_frames <- split(mgf_frames, grps)
+    })
+    
+    # parses aa_masses
     aa_masses <- aa_masses_all[[i]]
     
     nm_fmods <- attr(aa_masses, "fmods", exact = TRUE)
     nm_vmods <- attr(aa_masses, "vmods", exact = TRUE)
-    nm_nls <- attr(aa_masses, "vmods_neuloss", exact = TRUE)
-    
     message("Matching against: ", 
             paste0(nm_fmods, 
-                   nm_vmods %>% { if (nchar(.) > 0) paste0(" + ", .) else . }, 
-                   nm_nls %>% { if (nchar(.) > 0) paste0(" + ", .) else . }))
+                   nm_vmods %>% { if (nchar(.) > 0) paste0(" + ", .) else . } ))
 
+    # reads theoretical peptide data
     theopeps <- readRDS(file.path(out_path, "pepmasses/", 
                                   paste0("binned_theopeps_", i, ".rds")))
     
@@ -966,35 +972,37 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
   frame <- mgfs_cr[["frame"]][[1]]
   
   theos_bf_ms1 <- theopeps[[as.character(frame-1)]]
-  theos_cr_ms1 <- theopeps[[as.character(frame)]]
-  
-  theomasses_bf_ms1 <- theos_bf_ms1$mass
-  theomasses_cr_ms1 <- theos_cr_ms1$mass
   theopeps_bf_ms1 <- theos_bf_ms1$pep_seq
+  theomasses_bf_ms1 <- theos_bf_ms1$mass
+
+  theos_cr_ms1 <- theopeps[[as.character(frame)]]
   theopeps_cr_ms1 <- theos_cr_ms1$pep_seq
-  
-  theos_bf_ms2 <- purrr::map(theopeps_bf_ms1,  
-                             calc_ms2ions, 
-                             aa_masses = aa_masses, 
-                             mod_indexes = mod_indexes, 
-                             type_ms2ions = type_ms2ions, 
-                             maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                             maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                             maxn_vmods_sitescombi_per_pep = 
-                               maxn_vmods_sitescombi_per_pep, 
-                             digits = digits) %>% 
+  theomasses_cr_ms1 <- theos_cr_ms1$mass
+
+  theos_bf_ms2 <- purrr::map2(theopeps_bf_ms1, 
+                              theomasses_bf_ms1, 
+                              calc_ms2ions, 
+                              aa_masses = aa_masses, 
+                              mod_indexes = mod_indexes, 
+                              type_ms2ions = type_ms2ions, 
+                              maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                              maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                              maxn_vmods_sitescombi_per_pep = 
+                                maxn_vmods_sitescombi_per_pep, 
+                              digits = digits) %>% 
     `names<-`(theopeps_bf_ms1)
   
-  theos_cr_ms2 <- purrr::map(theopeps_cr_ms1, 
-                             calc_ms2ions, 
-                             aa_masses = aa_masses, 
-                             mod_indexes = mod_indexes, 
-                             type_ms2ions = type_ms2ions, 
-                             maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                             maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                             maxn_vmods_sitescombi_per_pep = 
-                               maxn_vmods_sitescombi_per_pep, 
-                             digits = digits) %>% 
+  theos_cr_ms2 <- purrr::map2(theopeps_cr_ms1, 
+                              theomasses_cr_ms1, 
+                              calc_ms2ions, 
+                              aa_masses = aa_masses, 
+                              mod_indexes = mod_indexes, 
+                              type_ms2ions = type_ms2ions, 
+                              maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                              maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                              maxn_vmods_sitescombi_per_pep = 
+                                maxn_vmods_sitescombi_per_pep, 
+                              digits = digits) %>% 
     `names<-`(theopeps_cr_ms1)
   
   ## --- iteration ---
@@ -1003,19 +1011,20 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
     exptmoverzs_ms2 <- mgfs_cr[["ms2_moverz"]]
     
     theos_af_ms1 <- theopeps[[as.character(frame+1)]]
-    theomasses_af_ms1 <- theos_af_ms1$mass
     theopeps_af_ms1 <- theos_af_ms1$pep_seq
+    theomasses_af_ms1 <- theos_af_ms1$mass
 
-    theos_af_ms2 <- purrr::map(theopeps_af_ms1, 
-                               calc_ms2ions, 
-                               aa_masses = aa_masses, 
-                               mod_indexes = mod_indexes, 
-                               type_ms2ions = type_ms2ions, 
-                               maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                               maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                               maxn_vmods_sitescombi_per_pep = 
-                                 maxn_vmods_sitescombi_per_pep, 
-                               digits = digits) %>% 
+    theos_af_ms2 <- purrr::map2(theopeps_af_ms1, 
+                                theomasses_af_ms1, 
+                                calc_ms2ions, 
+                                aa_masses = aa_masses, 
+                                mod_indexes = mod_indexes, 
+                                type_ms2ions = type_ms2ions, 
+                                maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                                maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                                maxn_vmods_sitescombi_per_pep = 
+                                  maxn_vmods_sitescombi_per_pep, 
+                                digits = digits) %>% 
       `names<-`(theopeps_af_ms1)
     
     # each `out` for the results of multiple mgfs in one frame
@@ -1052,66 +1061,69 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
     
     if (isTRUE(new_frame == (frame+1))) {
       theos_bf_ms1 <- theos_cr_ms1
-      theos_cr_ms1 <- theos_af_ms1
-      
+      # theopeps_bf_ms1 <- theopeps_cr_ms1 
       theomasses_bf_ms1 <- theomasses_cr_ms1
-      theomasses_cr_ms1 <- theomasses_af_ms1
-      
       theos_bf_ms2 <- theos_cr_ms2
+
+      theos_cr_ms1 <- theos_af_ms1
+      # theopeps_cr_ms1 <- theopeps_af_ms1 
+      theomasses_cr_ms1 <- theomasses_af_ms1
       theos_cr_ms2 <- theos_af_ms2
     } else if (isTRUE(new_frame == (frame+2))) {
       theos_bf_ms1 <- theos_af_ms1
-      theos_cr_ms1 <- theopeps[[as.character(new_frame)]]
-      
+      # theopeps_bf_ms1 <- theopeps_af_ms1 
       theomasses_bf_ms1 <- theomasses_af_ms1
-      theomasses_cr_ms1 <- theos_cr_ms1$mass
-      theopeps_cr_ms1 <- theos_cr_ms1$pep_seq
-      
       theos_bf_ms2 <- theos_af_ms2
-      
-      theos_cr_ms2 <- purrr::map(theopeps_cr_ms1, 
-                                 calc_ms2ions, 
-                                 aa_masses = aa_masses, 
-                                 mod_indexes = mod_indexes, 
-                                 type_ms2ions = type_ms2ions, 
-                                 maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                                 maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                                 maxn_vmods_sitescombi_per_pep = 
-                                   maxn_vmods_sitescombi_per_pep, 
-                                 digits = digits) %>% 
+
+      theos_cr_ms1 <- theopeps[[as.character(new_frame)]]
+      theopeps_cr_ms1 <- theos_cr_ms1$pep_seq
+      theomasses_cr_ms1 <- theos_cr_ms1$mass
+
+      theos_cr_ms2 <- purrr::map2(theopeps_cr_ms1, 
+                                  theomasses_cr_ms1, 
+                                  calc_ms2ions, 
+                                  aa_masses = aa_masses, 
+                                  mod_indexes = mod_indexes, 
+                                  type_ms2ions = type_ms2ions, 
+                                  maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                                  maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                                  maxn_vmods_sitescombi_per_pep = 
+                                    maxn_vmods_sitescombi_per_pep, 
+                                  digits = digits) %>% 
         `names<-`(theopeps_cr_ms1)
     } else {
       theos_bf_ms1 <- theopeps[[as.character(new_frame-1)]]
-      theos_cr_ms1 <- theopeps[[as.character(new_frame)]]
-      
+      theopeps_bf_ms1 <- theos_bf_ms1$pep_seq
       theomasses_bf_ms1 <- theos_bf_ms1$mass
+
+      theos_cr_ms1 <- theopeps[[as.character(new_frame)]]
+      theopeps_cr_ms1 <- theos_cr_ms1$pep_seq
       theomasses_cr_ms1 <- theos_cr_ms1$mass
 
-      theopeps_bf_ms1 <- theos_bf_ms1$pep_seq
-      theopeps_cr_ms1 <- theos_cr_ms1$pep_seq
-      
-      theos_bf_ms2 <- purrr::map(theopeps_bf_ms1, 
-                                 calc_ms2ions, 
-                                 aa_masses = aa_masses, 
-                                 mod_indexes = mod_indexes, 
-                                 type_ms2ions = type_ms2ions, 
-                                 maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                                 maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                                 maxn_vmods_sitescombi_per_pep = 
-                                   maxn_vmods_sitescombi_per_pep, 
-                                 digits = digits) %>% 
+      theos_bf_ms2 <- purrr::map2(theopeps_bf_ms1, 
+                                  theomasses_bf_ms1, 
+                                  calc_ms2ions, 
+                                  aa_masses = aa_masses, 
+                                  mod_indexes = mod_indexes, 
+                                  type_ms2ions = type_ms2ions, 
+                                  maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                                  maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                                  maxn_vmods_sitescombi_per_pep = 
+                                    maxn_vmods_sitescombi_per_pep, 
+                                  digits = digits) %>% 
         `names<-`(theopeps_bf_ms1)
       
-      theos_cr_ms2 <- purrr::map(theopeps_cr_ms1, 
-                                 calc_ms2ions, 
-                                 aa_masses = aa_masses, 
-                                 mod_indexes = mod_indexes, 
-                                 type_ms2ions = type_ms2ions, 
-                                 maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                                 maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                                 maxn_vmods_sitescombi_per_pep = 
-                                   maxn_vmods_sitescombi_per_pep, 
-                                 digits = digits) %>% 
+      theos_cr_ms2 <- purrr::map2(theopeps_cr_ms1, 
+                                  theomasses_cr_ms1, 
+                                  calc_ms2ions, 
+                                  aa_masses = aa_masses, 
+                                  mod_indexes = mod_indexes, 
+                                  type_ms2ions = type_ms2ions, 
+                                  maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                                  maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                                  maxn_vmods_sitescombi_per_pep = 
+                                    maxn_vmods_sitescombi_per_pep, 
+                                  digits = digits) %>% 
         `names<-`(theopeps_cr_ms1)
     }
     

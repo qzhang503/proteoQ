@@ -4,10 +4,12 @@
 \alias{calcms2_0}
 \title{Helper in calculating MS2 masses.}
 \usage{
-calcms2_0(aas, aa_masses, type_ms2ions, digits)
+calcms2_0(aas, ms1_mass = NULL, aa_masses, type_ms2ions, digits)
 }
 \arguments{
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
+
+\item{ms1_mass}{The mass of a theoretical MS1 (for subsetting).}
 
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}

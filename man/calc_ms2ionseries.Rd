@@ -9,6 +9,7 @@ calc_ms2ionseries(
   fixedmods,
   varmods,
   type_ms2ions = "by",
+  ms1_mass = NULL,
   maxn_vmods_setscombi = 64,
   maxn_vmods_per_pep = Inf,
   maxn_sites_per_vmod = Inf,
@@ -28,6 +29,8 @@ representation of amino acids.}
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
 ions}. Values are in one of "by", "ax" and "cz".}
+
+\item{ms1_mass}{The mass of a theoretical MS1 (for subsetting).}
 
 \item{maxn_vmods_setscombi}{Integer; the maximum number of combinatorial variable
 modifications and neutral losses.}
@@ -56,15 +59,15 @@ x <- calc_ms2ionseries("MAKEMASSPECFUN",
 
 x$mass
 
-# (2)
+# (2) no combinatorial NL for fixed modifications
 x <- calc_ms2ionseries("MAKEMASSPECFUN", 
                        fixedmods = "Oxidation (M)", 
                        varmods = NULL)
-
+                       
 x$mass
 
 ## With variable modifications
-# (3)
+# (3) combinatorial sites and NL available
 x <- calc_ms2ionseries("MAKEMASSPECFUN", 
                        fixedmods = NULL, 
                        varmods = "Oxidation (M)")
@@ -86,7 +89,8 @@ x$mass
 # The N-term M realizes with acetylation
 x$vmods_ps[[5]]
 
-## (5) Neutral losses with both fixed and variable modifications ignored
+# (5) Neutral losses for occurrences of both fixed 
+#     and variable modifications ignored
 x <- calc_ms2ionseries("MAKEMASSPECFUN",
                        c("TMT6plex (N-term)", 
                          "Oxidation (M)", 
@@ -95,7 +99,7 @@ x <- calc_ms2ionseries("MAKEMASSPECFUN",
                       
 x$mass[[2]]
 
-# Change from fixed to variable
+# Change from fixed to variable for full combinatorials
 x <- calc_ms2ionseries("MAKEMASSPECFUN",
                        c("TMT6plex (N-term)", 
                          "Deamidated (N)"), 

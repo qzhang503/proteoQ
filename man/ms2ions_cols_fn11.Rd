@@ -4,17 +4,11 @@
 \alias{ms2ions_cols_fn11}
 \title{Helper in calculating MS2 masses with "fnl+".}
 \usage{
-ms2ions_cols_fn11(
-  aas2,
-  nl_combi,
-  aa_masses,
-  ntmod,
-  ctmod,
-  type_ms2ions,
-  digits
-)
+ms2ions_cols_fn11(aas, nl_combi, aa_masses, ntmod, ctmod, type_ms2ions, digits)
 }
 \arguments{
+\item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
+
 \item{nl_combi}{Lists of combinations of neutral losses for corresponding
 \code{vmods_combi}. Each list contains a table where each column
 corresponds to a set of neutral loss. The first column corresponds to the

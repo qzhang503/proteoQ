@@ -6,6 +6,7 @@
 \usage{
 calc_ms2ions(
   aa_seq,
+  ms1_mass = NULL,
   aa_masses,
   mod_indexes = NULL,
   type_ms2ions = "by",
@@ -18,6 +19,8 @@ calc_ms2ions(
 \arguments{
 \item{aa_seq}{Character string; a peptide sequences with one-letter
 representation of amino acids.}
+
+\item{ms1_mass}{The mass of a theoretical MS1 (for subsetting).}
 
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
@@ -57,7 +60,7 @@ mod_indexes <- seq_along(c(fixedmods, varmods)) \%>\%
   `names<-`(c(fixedmods, varmods))
 aa_masses_all <- calc_aamasses(fixedmods, varmods)
 
-x <- calc_ms2ions("MAKEMASSPECFUN", aa_masses_all[[1]], mod_indexes)
+x <- calc_ms2ions("MAKEMASSPECFUN", NULL, aa_masses_all[[1]], mod_indexes)
 
 }
 }

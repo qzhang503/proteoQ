@@ -8,6 +8,9 @@ combi_mvmods(
   amods,
   ntmod,
   ctmod,
+  famods,
+  fntmod,
+  fctmod,
   aas,
   aa_masses,
   maxn_vmods_per_pep = 5,
@@ -17,12 +20,20 @@ combi_mvmods(
 )
 }
 \arguments{
-\item{amods}{\code{Anywhere} modifications.}
+\item{amods}{\code{Anywhere} variable modifications.}
 
 \item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
 \code{aa_masses}.}
 
 \item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
+\code{aa_masses}.}
+
+\item{famods}{\code{Anywhere} fixed modifications.}
+
+\item{fntmod}{The parsed \emph{fixed} \code{N-term} modifications from
+\code{aa_masses}.}
+
+\item{fctmod}{The parsed \emph{fixed} \code{C-term} modifications from
 \code{aa_masses}.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}

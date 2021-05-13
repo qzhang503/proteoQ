@@ -8,6 +8,7 @@ calc_monopeptide(
   aa_seq,
   fixedmods,
   varmods,
+  include_insource_nl = FALSE,
   maxn_vmods_setscombi = 64,
   maxn_vmods_per_pep = Inf,
   maxn_sites_per_vmod = Inf,
@@ -22,6 +23,14 @@ representation of amino acids.}
 \link{parse_unimod} for grammars.}
 
 \item{varmods}{A character vector of variable modifications.}
+
+\item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
+  masses with the losses of neutral species prior to MS2 fragmentation. The
+  default is FALSE.
+
+  Note that there is no combination of neutral losses for fixed modifications
+  at the precursor levels. Changes from fixed to variable modifications for
+  complete combinations.}
 
 \item{maxn_vmods_setscombi}{Integer; the maximum number of combinatorial variable
 modifications and neutral losses.}
@@ -47,15 +56,24 @@ x <- calc_monopeptide("MAKEMASSPECFUN",
 
 x$mass
 
-# (2)
+# (2-a) 
 x <- calc_monopeptide("MAKEMASSPECFUN", 
                       fixedmods = "Oxidation (M)", 
                       varmods = NULL)
 
 x$mass
 
+# (2-b) no combinatorial NL for fixed modifications
+# (see 3-b) for full combinations
+x <- calc_monopeptide("MAKEMASSPECFUN", 
+                      fixedmods = "Oxidation (M)", 
+                      varmods = NULL, 
+                      include_insource_nl = TRUE)
+
+x$mass
+
 ## With variable modifications
-# (3)
+# (3-a)
 x <- calc_monopeptide("MAKEMASSPECFUN", 
                       fixedmods = NULL, 
                       varmods = "Oxidation (M)")
@@ -63,7 +81,15 @@ x <- calc_monopeptide("MAKEMASSPECFUN",
 x$mass
 # x$vmods_ps
 
-# (4)
+# (3-b)
+x <- calc_monopeptide("MAKEMASSPECFUN", 
+                      fixedmods = NULL, 
+                      varmods = "Oxidation (M)", 
+                      include_insource_nl = TRUE)
+
+x$mass
+
+# (4-a)
 x <- calc_monopeptide("MAKEMASSPECFUN",
                       c("TMT6plex (N-term)", 
                         "TMT6plex (K)", 
@@ -77,5 +103,20 @@ x$mass
 # The N-term M realizes with acetylation
 x$vmods_ps[[5]]
 
+# The N-term M realizes with TMT
+x$vmods_ps[[6]]
+
+
+# (4-b)
+x <- calc_monopeptide("MAKEMASSPECFUN",
+                      c("TMT6plex (N-term)", 
+                        "TMT6plex (K)", 
+                        "Carbamidomethyl (C)"),
+                      c("Acetyl (N-term)", 
+                        "Gln->pyro-Glu (N-term = Q)", 
+                        "Oxidation (M)"), 
+                        include_insource_nl = TRUE)
+                      
+x$mass
 }
 }

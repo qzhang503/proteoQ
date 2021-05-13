@@ -9,19 +9,30 @@ calcms2_by_iontype <- function (aas2, aa_masses, ntmod, ctmod, type_ms2ions,
                                 digits) {
   switch(type_ms2ions, 
          by = calc_byions(ntmod, ctmod, aas2, aa_masses, digits), 
+         cz = calc_czions(ntmod, ctmod, aas2, aa_masses, digits), 
+         ax = calc_axions(ntmod, ctmod, aas2, aa_masses, digits), 
          # by2 = calc_by2ions(ntmod, ctmod, aas2, aa_masses, digits), 
          # bystar = calc_bystarions(ntmod, ctmod, aas2, aa_masses, digits), 
          # bystar2 = calc_bystar2ions(ntmod, ctmod, aas2, aa_masses, digits), 
          # by0 = calc_by0ions(ntmod, ctmod, aas2, aa_masses, digits), 
          # by02 = calc_by02ions(ntmod, ctmod, aas2, aa_masses, digits), 
-         
-         cz = calc_czions(ntmod, ctmod, aas2, aa_masses, digits), 
          # cz2 = calc_cz2ions(ntmod, ctmod, aas2, aa_masses, digits), 
-         
-         ax = calc_axions(ntmod, ctmod, aas2, aa_masses, digits), 
          # ax2 = calc_ax2ions(ntmod, ctmod, aas2, aa_masses, digits), 
-
          stop("Unknown type.", call. = FALSE))
+}
+
+
+#' Check the MS1 mass for proceeding with MS2 matches.
+#' 
+#' @param tol The tolerance in mass.
+#' @inheritParams calcpep_a1_t1_nl1
+#' @inheritParams calc_ms2ions
+check_ms1_mass_vmods <- function (vmods_combi, aas, aa_masses, ntmod, ctmod, ms1_mass, 
+                            tol = 2e-5) {
+  aas[as.numeric(names(vmods_combi))] <- vmods_combi
+  ok_mass <- calcpepmass_nl0(aas, aa_masses, ntmod, ctmod)
+  
+  abs(ms1_mass - ok_mass) <= tol
 }
 
 
@@ -99,8 +110,8 @@ mcalcms2_a1_fnl1 <- function (vmods_combi, nl_combi, ntmod = NULL, ctmod = NULL,
   if (!is.null(vmods_combi)) {
     aas[as.numeric(names(vmods_combi))] <- unlist(vmods_combi)
   }
-  
-  ms2ions_cols_fn11(aa_masses[aas], nl_combi, aa_masses, ntmod, ctmod, 
+
+  ms2ions_cols_fn11(aas, nl_combi, aa_masses, ntmod, ctmod, 
                     type_ms2ions, digits) 
 }
 
@@ -115,7 +126,7 @@ mcalcms2_a1_fnl1 <- function (vmods_combi, nl_combi, ntmod = NULL, ctmod = NULL,
 #'
 #' @inheritParams calcpep_a1_t1_nl1
 #' @return A numeric vector
-ms2ions_cols_fn11 <- function (aas2, nl_combi, aa_masses, ntmod, ctmod, 
+ms2ions_cols_fn11 <- function (aas, nl_combi, aa_masses, ntmod, ctmod, 
                                type_ms2ions, digits) {
   len <- ncol(nl_combi)
   out <- vector("list", len)
@@ -123,7 +134,7 @@ ms2ions_cols_fn11 <- function (aas2, nl_combi, aa_masses, ntmod, ctmod,
   
   for (i in 1:len) {
     aa_masses[nms] <- nl_combi[, i]
-    
+    aas2 <- aa_masses[aas]
     out[[i]] <- calcms2_by_iontype(aas2, aa_masses, ntmod, ctmod, 
                                    type_ms2ions, digits)
   }
@@ -138,7 +149,7 @@ ms2ions_cols_fn11 <- function (aas2, nl_combi, aa_masses, ntmod, ctmod,
 #' 
 #' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ions
-calcms2_0 <- function (aas, aa_masses, type_ms2ions, digits) {
+calcms2_0 <- function (aas, ms1_mass = NULL, aa_masses, type_ms2ions, digits) {
   
   out <- calcms2_by_iontype(aa_masses[aas], aa_masses, 
                             ntmod = NULL, ctmod = NULL, type_ms2ions, digits)
@@ -154,7 +165,7 @@ calcms2_0 <- function (aas, aa_masses, type_ms2ions, digits) {
 #' 
 #' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ions
-calcms2_a0_t1_nl0 <- function (aas, aa_masses, ntmod, ctmod, 
+calcms2_a0_t1_nl0 <- function (aas, ms1_mass = NULL, aa_masses, ntmod, ctmod, 
                                type_ms2ions, digits) {
   
   out <- calcms2_by_iontype(aa_masses[aas], aa_masses, 
@@ -194,7 +205,7 @@ calcms2_a0_t0_vnl1 <- function () {
 calcms2_a0_t1_fnl1 <- function (nl_combi, aas, aa_masses, ntmod, ctmod, 
                                 type_ms2ions, digits) {
 
-  out <- ms2ions_cols_fn11(aa_masses[aas], nl_combi, aa_masses, 
+  out <- ms2ions_cols_fn11(aas, nl_combi, aa_masses, 
                            ntmod, ctmod, type_ms2ions, digits) 
 
   nm <- rep(0, length(aas)) %>% paste0(collapse = "")
@@ -217,7 +228,7 @@ calcms2_a0_t1_fnl1 <- function (nl_combi, aas, aa_masses, ntmod, ctmod,
 calcms2_a0_t0_fnl1 <- function (nl_combi, aas, aa_masses, ntmod, ctmod, 
                                 type_ms2ions, digits) {
   
-  out <- ms2ions_cols_fn11(aa_masses[aas], nl_combi, aa_masses, 
+  out <- ms2ions_cols_fn11(aas, nl_combi, aa_masses, 
                            ntmod = NULL, ctmod = NULL, type_ms2ions, digits)
   
   nm <- rep(0, length(aas)) %>% paste0(collapse = "")
@@ -383,6 +394,7 @@ calcms2_a1_t1_fnl1 <- function (vmods_combi, nl_combi, ntmod,
 #'
 #' For a given type of fragmentation. Minimal error handling for speeds.
 #' 
+#' @param ms1_mass The mass of a theoretical MS1 (for subsetting).
 #' @param maxn_vmods_sitescombi_per_pep Integer; the maximum number of
 #'   combinatorial variable modifications per peptide sequence.
 #' @param type_ms2ions Character; the type of
@@ -406,10 +418,10 @@ calcms2_a1_t1_fnl1 <- function (vmods_combi, nl_combi, ntmod,
 #'   `names<-`(c(fixedmods, varmods))
 #' aa_masses_all <- calc_aamasses(fixedmods, varmods)
 #' 
-#' x <- calc_ms2ions("MAKEMASSPECFUN", aa_masses_all[[1]], mod_indexes)
+#' x <- calc_ms2ions("MAKEMASSPECFUN", NULL, aa_masses_all[[1]], mod_indexes)
 #' 
 #' }
-calc_ms2ions <- function (aa_seq, aa_masses, mod_indexes = NULL, 
+calc_ms2ions <- function (aa_seq, ms1_mass = NULL, aa_masses, mod_indexes = NULL, 
                           type_ms2ions = "by", maxn_vmods_per_pep = 5, 
                           maxn_sites_per_vmod = 3, 
                           maxn_vmods_sitescombi_per_pep = 32, digits = 5) {
@@ -434,14 +446,17 @@ calc_ms2ions <- function (aa_seq, aa_masses, mod_indexes = NULL,
   type <- attr(aa_masses, "type", exact = TRUE)
   
   if (type == "amods- tmod- vnl- fnl-") {
-    return(calcms2_0(aas, aa_masses, type_ms2ions, digits))
+    return(calcms2_0(aas, ms1_mass = NULL, aa_masses, type_ms2ions, digits))
   }
   
+  fntmod <- attr(aa_masses, "fntmod", exact = TRUE)
+  fctmod <- attr(aa_masses, "fctmod", exact = TRUE)
   ntmod <- attr(aa_masses, "ntmod", exact = TRUE)
   ctmod <- attr(aa_masses, "ctmod", exact = TRUE)
   
   if (type == "amods- tmod+ vnl- fnl-") {
-    return(calcms2_a0_t1_nl0(aas, aa_masses, ntmod, ctmod, type_ms2ions, digits))
+    return(calcms2_a0_t1_nl0(aas, ms1_mass = NULL, aa_masses, ntmod, ctmod, 
+                             type_ms2ions, digits))
   } 
   
   # --- combinatorial ---
@@ -449,11 +464,17 @@ calc_ms2ions <- function (aa_seq, aa_masses, mod_indexes = NULL,
   vmods_ps <- attr(aa_masses, "vmods_ps", exact = TRUE)
   fmods_nl <- attr(aa_masses, "fmods_nl", exact = TRUE)
   vmods_nl <- attr(aa_masses, "vmods_nl", exact = TRUE)
+  famods <- attr(aa_masses, "famods", exact = TRUE)
+  ftmod <- attr(aa_masses, "ftmod", exact = TRUE)
   amods <- attr(aa_masses, "amods", exact = TRUE)
   tmod <- attr(aa_masses, "tmod", exact = TRUE)
   
+  # need ftmod in aa_masses
+  # fixed TMT6plex (N-term) can still conflict with Oxidation (M) on N-term
+  
   # at least one of `vmods_combi`, `fnl_combi`, `vnl_combi`
   vmods_combi <- combi_mvmods(amods = amods, ntmod = ntmod, ctmod = ctmod, 
+                              famods = famods, fntmod = fntmod, fctmod = fctmod, 
                               aas = aas, 
                               aa_masses = aa_masses, 
                               maxn_vmods_per_pep = maxn_vmods_per_pep, 
@@ -462,6 +483,15 @@ calc_ms2ions <- function (aa_seq, aa_masses, mod_indexes = NULL,
                                 maxn_vmods_sitescombi_per_pep, 
                               digits = digits) %>% 
     find_intercombi_p(maxn_vmods_sitescombi_per_pep) 
+  
+  # excludes the combination of variable mods with incorrect MS1 masses
+  if (!(is_empty(vmods_combi) || is.null(ms1_mass))) {
+    idxes <- map_lgl(vmods_combi, check_ms1_mass_vmods, aas, aa_masses, 
+                     ntmod, ctmod, ms1_mass)
+    
+    vmods_combi <- vmods_combi[idxes]
+    rm(idxes)
+  }
 
   # Conflicts between `amod+` and `tmods+` (only for "amods+ tmod+ vnl+")
   # "MAEEQGR" - vmods_combi can be NULL: 
@@ -478,15 +508,23 @@ calc_ms2ions <- function (aa_seq, aa_masses, mod_indexes = NULL,
     vnl_combi <- map(vmods_combi, ~ expand.grid(vmods_nl[.x]) %>% t())
   }
   
+  # not yet subset vnl_combi by ms1_mass...
+  # no need if `include_insource_nl = FALSE`
+
   if (is_empty(fmods_nl)) {
     fnl_combi <- NULL
   } else {
+    # no full combinatorial NL for fixed mods
+    # (e.g., `Oxidation (M)` either 147 or 83 for every M)
     fnl_combi <- expand.grid(fmods_nl) %>% t()
   }
   
+  # not yet subset fnl_combi by ms1_mass...
+  # no need if `include_insource_nl = FALSE`
+
   out <- switch(type, 
-                # "amods- tmod- vnl- fnl-" = calcms2_0(aas, aa_masses, type_ms2ions, digits), 
-                # "amods- tmod+ vnl- fnl-" = calcms2_a0_t1_nl0(aas, aa_masses, ntmod, ctmod, type_ms2ions, digits), 
+                # "amods- tmod- vnl- fnl-" = calcms2_0(aas, ms1_mass = NULL, aa_masses, type_ms2ions, digits), 
+                # "amods- tmod+ vnl- fnl-" = calcms2_a0_t1_nl0(aas, ms1_mass = NULL, aa_masses, ntmod, ctmod, type_ms2ions, digits), 
                 # "amods- tmod+ vnl+ fnl-" = calcms2_a0_t1_vnl1(), 
                 # "amods- tmod- vnl+ fnl-" = calcms2_a0_t0_vnl1(),
                 
@@ -585,7 +623,12 @@ add_hexcodes_vnl <- function (ms2ions, vmods_combi, len, mod_indexes = NULL) {
 #'
 #' For all the \code{Anywhere} modifications specified in \code{amods}.
 #'
-#' @param amods \code{Anywhere} modifications.
+#' @param amods \code{Anywhere} variable modifications.
+#' @param famods \code{Anywhere} fixed modifications.
+#' @param fntmod The parsed \emph{fixed} \code{N-term} modifications from
+#'   \code{aa_masses}.
+#' @param fctmod The parsed \emph{fixed} \code{C-term} modifications from
+#'   \code{aa_masses}.
 #' @inheritParams calc_monopep
 #' @inheritParams mcalc_monopep
 #' @inheritParams calcpep_a1_t1_nl1
@@ -593,6 +636,7 @@ add_hexcodes_vnl <- function (ms2ions, vmods_combi, len, mod_indexes = NULL) {
 #' @import purrr
 #' @return Lists by residues in \code{amods}.
 combi_mvmods <- function (amods, ntmod, ctmod, 
+                          famods, fntmod, fctmod, 
                           aas, 
                           aa_masses, 
                           maxn_vmods_per_pep = 5, 
@@ -606,8 +650,17 @@ combi_mvmods <- function (amods, ntmod, ctmod,
     `names<-`(names(amods)) %>% 
     split(., .)
   
+  # Oxidation (M) Carbamidomethyl (M) 
+  # "M"                 "M" 
+  # 
+  # $S
+  # dHex (S) 
+  # "S" 
+  
   map(residue_mods, ~ combi_vmods(
-    aas, .x, ntmod, ctmod, 
+    aas, .x, 
+    ntmod, ctmod, 
+    fntmod, fctmod, 
     aa_masses, 
     maxn_vmods_per_pep, 
     maxn_sites_per_vmod, 
@@ -625,8 +678,8 @@ combi_mvmods <- function (amods, ntmod, ctmod,
 #' @importFrom stringr str_locate_all
 combi_vmods <- function (aas, 
                          residue_mods, 
-                         ntmod, 
-                         ctmod, 
+                         ntmod, ctmod, 
+                         fntmod, fctmod, 
                          aa_masses, 
                          maxn_vmods_per_pep = 5, 
                          maxn_sites_per_vmod = 3, 
@@ -655,61 +708,51 @@ combi_vmods <- function (aas,
   n <- names(residue_mods)
   p <- which(aas == residue)
   
-  # i.e., btw Anywhere "M" and "Acetyl N-term" where "M" on the "N-term"
+  # (1) btw Anywhere "M" and "Acetyl N-term" where "M" on the "N-term"
   # MFGMFNVSMR cannot have three `Oxidation (M)` and `Acetyl (N-term)`
-  if (!(is_empty(ntmod) || is_empty(ctmod))) {
-    len_aas <- length(aas)
-    
-    if (aas[1] == residue && aas[len_aas] == residue) {
-      p <- p[-length(p)]
-      p <- p[-1]
-    } else if (aas[1] == residue) {
-      p <- p[-1]
-    } else if (aas[len_aas] == residue) {
-      p <- p[-length(p)]
-    }
-  } else if (!is_empty(ntmod)) {
-    if (aas[1] == residue) {
-      p <- p[-1]
-    }
-  } else if (!is_empty(ctmod)) {
-    if (aas[length(aas)] == residue) {
-      p <- p[-length(p)]
-    }
-  }
+  # (2) the same for fixed terminal mod: `TMT6plex (N-term)` 
+
+  p <- check_tmod_p(aas, residue, p, ntmod, ctmod)
+  p <- check_tmod_p(aas, residue, p, fntmod, fctmod)
   
   if (length(p) == 1) {
     names(n) <- p
     return(n)
   }
 
-  ns <- map(seq_along(p), ~ {
-    expand.grid(rep(list(n), length(p[1:.x])), KEEP.OUT.ATTRS = FALSE, 
-                stringsAsFactors = FALSE)
-  }, n, p) 
-  
-  ps <- map(seq_along(p), ~ {
-    combn(p, .x)
-  }, p)
-  
-  out <- map2(ns, ps, ~ {
-    lns <- nrow(.x)
-    lps <- ncol(.y)
-    np <- vector("list", lns * lps)
+  # --- combinations ---
+  if (length(n) == 1) { # "Oxidation (M)"
+    len <- length(p)
+    out <- vector("list", len)
     
-    k <- 1
-    for (i in seq_len(lns)) {
-      for (j in seq_len(lps)) {
-        x <- .x[i, ] 
-        names(x) <- .y[, j]
-        np[[k]] <- x
-        
-        k <- k + 1
+    for (m in seq_along(p)) {
+      ns <- rep(n, m)
+      ps <- combn(p, m)
+      
+      ncol <- ncol(ps)
+      ns <- rep(list(ns), ncol)
+      
+      for (i in 1:ncol) {
+        names(ns[[i]]) <- ps[, i]
       }
+      
+      out[[m]] <- ns
     }
+  } else { # "Oxidation (M)" and "Carbamidomethyl (M)"
+    ns <- map(seq_along(p), ~ {
+      expand.grid(rep(list(n), length(p[1:.x])), KEEP.OUT.ATTRS = FALSE, 
+                  stringsAsFactors = FALSE) %>% t()
+    }, n, p) 
     
-    np
-  }) %>% 
+    ps <- map(seq_along(p), ~ {
+      combn(as.character(p), .x)
+    }, p)
+    
+    out <- mvmcombC(ns, ps)
+  }
+  
+  # ---
+  out <- out %>% 
     flatten() 
   
   rows <- map_lgl(out, ~ length(.x) > maxn_vmods_per_pep)
@@ -731,6 +774,45 @@ combi_vmods <- function (aas,
 }
 
 
+#' Checks the compatibility between terminal and anywhere modifications.
+#' 
+#' For both fixed and variable terminal modifications
+#' 
+#' @param residue The residue (e.g. "M").
+#' @param p The position indexes of \code{residue}.
+#' @param ntmod The parsed fixed or variable \code{N-term} modifications from
+#'   \code{aa_masses}.
+#' @param ctmod The parsed fixed or variable \code{C-term} modifications from
+#'   \code{aa_masses}.
+#' @inheritParams combi_vmods
+#'   
+#' @return Updated position \code{p}.
+check_tmod_p <- function (aas, residue, p, ntmod, ctmod) {
+  if (!(is_empty(ntmod) || is_empty(ctmod))) {
+    len_aas <- length(aas)
+    
+    if (aas[1] == residue && aas[len_aas] == residue) {
+      p <- p[-length(p)]
+      p <- p[-1]
+    } else if (aas[1] == residue) {
+      p <- p[-1]
+    } else if (aas[len_aas] == residue) {
+      p <- p[-length(p)]
+    }
+  } else if (!is_empty(ntmod)) {
+    if (aas[1] == residue) {
+      p <- p[-1]
+    }
+  } else if (!is_empty(ctmod)) {
+    if (aas[length(aas)] == residue) {
+      p <- p[-length(p)]
+    }
+  }
+  
+  invisible(p)
+}
+
+
 #' Finds the combinations of positions and sites across residues.
 #' 
 #' For multiple residues (each residue one to multiple modifications).
@@ -741,12 +823,12 @@ combi_vmods <- function (aas,
 find_intercombi_p <- function (intra_combis, maxn_vmods_sitescombi_per_pep) {
   # i.e. conflicting M, N-term where the only M vmod on N-term
 
-  if (is_empty(intra_combis) || any(map_lgl(intra_combis, is_empty))) { # sclar or list
+  if (is_empty(intra_combis) || any(map_lgl(intra_combis, is_empty))) { # scalar or list
     v_out <- list() 
-  } else if (length(intra_combis) == 1L) { # M, one to multiple positions
+  } else if (length(intra_combis) == 1L) { # M, one to multiple positions; Oxidation and/or Carbamidomethyl
     if (length(intra_combis[[1]]) == 1L) { # 2: "Oxidation (M)"
       v_out <- intra_combis
-    } else { # 2: "Oxidation (M)"; 3: "Oxidation (M)"; 2: "Oxidation (M)", 3: "Oxidation (M)"
+    } else { # 2: "Oxidation (M)"; 3: "Oxidation (M)"; 2: "Oxidation (M)", 3: "Oxidation (M)"; ... Carbamidomethyl
       v_out <- flatten(intra_combis)
     }
   } else { # M, N
@@ -770,10 +852,12 @@ find_intercombi_p <- function (intra_combis, maxn_vmods_sitescombi_per_pep) {
     # v_combis <- map2(v_combis, max_combi, ~ .x[seq_len(.y)])
     
     # p_combis <- p_combis %>% reduce(expand.grid, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
-    p_combis <- expand.grid(p_combis, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
-    
     # v_combis <- v_combis %>% reduce(expand.grid, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
-    v_combis <- expand.grid(v_combis, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
+    
+    p_combis <- expand.grid(p_combis, KEEP.OUT.ATTRS = FALSE, 
+                            stringsAsFactors = FALSE)
+    v_combis <- expand.grid(v_combis, KEEP.OUT.ATTRS = FALSE, 
+                            stringsAsFactors = FALSE)
     
     nrow <- min(nrow(v_combis), maxn_vmods_sitescombi_per_pep)
     
@@ -782,16 +866,22 @@ find_intercombi_p <- function (intra_combis, maxn_vmods_sitescombi_per_pep) {
     for (i in seq_len(nrow)) {
       # p_out[[i]] <- reduce(p_combis[i, ], `c`) %>% unlist()
       # v_out[[i]] <- reduce(v_combis[i, ], `c`) %>% unlist()
+      
       p_out[[i]] <- unlist(p_combis[i, ], use.names = FALSE)
       v_out[[i]] <- unlist(v_combis[i, ], use.names = FALSE)
       
       names(v_out[[i]]) <- p_out[[i]]
       v_out[[i]] <- v_out[[i]][order(as.numeric(names(v_out[[i]])))]
     }
+    
+    # use names (positions) -> TRUE
+    # v_out <- map(v_out, unlist, use.names = TRUE)
   }
   
-  # use names (positions)
-  v_out <- map(v_out, unlist, use.names = TRUE)
+  ## use names (positions)
+  # v_out <- map(v_out, unlist, use.names = TRUE)
+  
+  invisible(v_out)
 }
 
 
@@ -871,13 +961,13 @@ calc_bystar2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @import purrr
 #' @seealso \link{add_complement_ions}
 calc_bions <- function (ntmod, aas, aa_masses, digits = 5) {
-  # aa_masses["N-term"] is H (1.007825 ), not H+ (1.00727647)
+  # aa_masses["N-term"] is neutral, e.g. H (1.007825 ), not H+ (1.00727647)
   electron <- 0.000549
 
   if (is_empty(ntmod)) {
-    ions <- c(1.00727647, aas)
+    ions <- c(aa_masses["N-term"] - electron, aas)
   } else {
-    ions <- c(aa_masses[names(ntmod)] - electron, aas)
+    ions <- c(aa_masses[names(ntmod)] - electron, aas) 
   }
   
   ions %>% 
@@ -979,11 +1069,11 @@ calc_yions <- function (ctmod, aas, aa_masses, digits = 5) {
   
   # (1) OH (C-term), + H (N-term) + H+
   # (2) Other C-term (other than OH) + H + H+: X + 1.007825 + 1.00727647
-  
+
   aas <- rev(aas)
   
   if (is_empty(ctmod)) { 
-    ions <- c(19.0178415, aas)
+    ions <- c(aa_masses["C-term"] + 2.01510147, aas)
   } else { 
     ions <- c(aa_masses[names(ctmod)] + 2.01510147, aas)
   }
@@ -1119,9 +1209,9 @@ calc_cions <- function (ntmod, aas, aa_masses, digits = 5) {
   # aa_masses["N-term"] is H (1.007825 ), not H+ (1.00727647)
   # H+ + NH3: 18.0338255 == 1.00727647 + 17.026549
   # NH3 - e: 17.026 == 17.026549 - 0.000549
-  
+
   if (is_empty(ntmod)) {
-    ions <- c(18.0338255, aas)
+    ions <- c(aa_masses["N-term"] + 17.026, aas)
   } else {
     ions <- c(aa_masses[names(ntmod)] + 17.026, aas)
   }
@@ -1160,7 +1250,7 @@ calc_zions <- function (ctmod, aas, aa_masses, digits = 5) {
   aas <- rev(aas)
   
   if (is_empty(ctmod)) {
-    ions <- c(1.9912925, aas)
+    ions <- c(aa_masses["C-term"] - 15.0114475, aas)
   } else {
     ions <- c(aa_masses[names(ctmod)] - 15.0114475, aas)
   }
@@ -1216,12 +1306,13 @@ calc_ax2ions <- function (ntmod, ctmod, aas, aa_masses, digits = 5) {
 #' @import purrr
 #' @seealso \link{add_complement_ions}
 calc_aions <- function (ntmod, aas, aa_masses, digits = 5) {
-  # aa_masses["N-term"] is H (1.007825 ), not H+ (1.00727647)
+  # aa_masses["N-term"] is H (1.007825), not H+ (1.00727647)
   # H+ - CO:  26.9876381 == 1.00727647 - 27.9949146
   # CO - e: 27.9943656 == 27.9949146 - 0.000549
+  # e + CO = 27.9954636
 
   if (is_empty(ntmod)) {
-    ions <- c(-26.9876381, aas)
+    ions <- c(aa_masses["N-term"] - 27.9954636, aas)
   } else {
     ions <- c(aa_masses[names(ntmod)] - 27.9943656, aas)
   }
@@ -1324,11 +1415,12 @@ calc_xions <- function (ctmod, aas, aa_masses, digits = 5) {
   # (1) [H3O+ + CO - H2], 44.9971061 == 19.0178415 + 27.9949146 - 2 * 1.007825
   # (2) Other C-term (other than OH) + H + H+ + CO - 2H
   # 27.9943661 == 1.007825 + 1.00727647 + 27.9949146 - 2 * 1.007825
-
+  #            == CO - e
+  
   aas <- rev(aas)
   
   if (is_empty(ctmod)) {
-    ions <- c(44.9971061, aas)
+    ions <- c(aa_masses["C-term"] + 27.9943661, aas)
   } else {
     ions <- c(aa_masses[names(ctmod)] + 27.9943661, aas)
   } 
@@ -1388,15 +1480,15 @@ add_complement_ions <- function (ms1, ms2) {
 #' 
 #' x$mass
 #' 
-#' # (2)
+#' # (2) no combinatorial NL for fixed modifications
 #' x <- calc_ms2ionseries("MAKEMASSPECFUN", 
 #'                        fixedmods = "Oxidation (M)", 
 #'                        varmods = NULL)
-#' 
+#'                        
 #' x$mass
 #' 
 #' ## With variable modifications
-#' # (3)
+#' # (3) combinatorial sites and NL available
 #' x <- calc_ms2ionseries("MAKEMASSPECFUN", 
 #'                        fixedmods = NULL, 
 #'                        varmods = "Oxidation (M)")
@@ -1418,7 +1510,8 @@ add_complement_ions <- function (ms1, ms2) {
 #' # The N-term M realizes with acetylation
 #' x$vmods_ps[[5]]
 #' 
-#' ## (5) Neutral losses with both fixed and variable modifications ignored
+#' # (5) Neutral losses for occurrences of both fixed 
+#' #     and variable modifications ignored
 #' x <- calc_ms2ionseries("MAKEMASSPECFUN",
 #'                        c("TMT6plex (N-term)", 
 #'                          "Oxidation (M)", 
@@ -1427,7 +1520,7 @@ add_complement_ions <- function (ms1, ms2) {
 #'                       
 #' x$mass[[2]]
 #' 
-#' # Change from fixed to variable
+#' # Change from fixed to variable for full combinatorials
 #' x <- calc_ms2ionseries("MAKEMASSPECFUN",
 #'                        c("TMT6plex (N-term)", 
 #'                          "Deamidated (N)"), 
@@ -1439,7 +1532,7 @@ add_complement_ions <- function (ms1, ms2) {
 #' }
 #' @export
 calc_ms2ionseries <- function (aa_seq, fixedmods, varmods, 
-                               type_ms2ions = "by", 
+                               type_ms2ions = "by", ms1_mass = NULL, 
                                maxn_vmods_setscombi = 64,
                                maxn_vmods_per_pep = Inf, 
                                maxn_sites_per_vmod = Inf, 
@@ -1462,8 +1555,9 @@ calc_ms2ionseries <- function (aa_seq, fixedmods, varmods,
     `names<-`(c(fixedmods, varmods))
   
   ms <- purrr::map2(peps, aa_masses_all, ~ {
-    pri <- calc_ms2ions(.x, .y, mod_indexes, type_ms2ions, maxn_vmods_per_pep, 
-                        maxn_sites_per_vmod, maxn_vmods_sitescombi_per_pep, digits)
+    pri <- calc_ms2ions(.x, ms1_mass, .y, mod_indexes, type_ms2ions, 
+                        maxn_vmods_per_pep, maxn_sites_per_vmod, 
+                        maxn_vmods_sitescombi_per_pep, digits)
     
     sec <- map(pri, add_seions, type_ms2ions, digits)
     
@@ -1477,4 +1571,6 @@ calc_ms2ionseries <- function (aa_seq, fixedmods, varmods,
        sec_mass = map(ms, `[[`, "sec"), 
        vmods_ps = vmods_ps)
 }
+
+
 
