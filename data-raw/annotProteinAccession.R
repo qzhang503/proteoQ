@@ -341,7 +341,7 @@ foo_spec_lib <- function () {
 
 # combine all .R files into one
 # foo_combine_codes(filepath = file.path("C:/Results/R/proteoQ/inst/extdata/examples"))
-foo_combine_codes <- function (filepath = file.path("C:/Results/R/proteoQ/R")) {
+foo_combine_codes <- function (filepath = file.path("E:/R/proteoQ/R")) {
   filenames <- dir(filepath, pattern = ".R$")
   
   dir.create(file.path(filepath, "temp"))
@@ -523,5 +523,6 @@ foo_fc_tables <- function () {
     write_tsv(file.path(dat_dir, "Protein/protein_logFC_to_nbm.txt")) %>% 
     dplyr::mutate_if(is.numeric, ~ ifelse(.x > 0, 2^.x, -1/(2^.x)) %>% round(digits = 2)) %T>% 
     write_tsv(file.path(dat_dir, "Protein/protein_FC_to_nbm.txt")) 
-  
 }
+
+

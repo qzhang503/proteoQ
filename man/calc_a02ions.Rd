@@ -4,12 +4,11 @@
 \alias{calc_a02ions}
 \title{Masses of doubly-charged a0-ions.}
 \usage{
-calc_a02ions(ntmod, ctmod, aas, aa_masses, digits = 5)
+calc_a02ions(ntmod, aas, aa_masses, digits = 5)
 }
 \arguments{
-\item{ntmod}{The \code{N-term} modification.}
-
-\item{ctmod}{The \code{C-term} modification.}
+\item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
+\code{aa_masses}.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
 
@@ -20,4 +19,7 @@ acid residues.}
 }
 \description{
 Masses of doubly-charged a0-ions.
+}
+\seealso{
+\link{add_complement_ions}
 }

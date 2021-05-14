@@ -41,6 +41,9 @@ identical(x1, x2)
 
 # ok with parenthesis in the 'title' 
 x <- parse_unimod("Hex(5)HexNAc(2) (N)")
+
+# ok with spaces in the 'title' 
+x <- parse_unimod("Met-loss (Protein N-term = M)")
 }
 
 \dontrun{

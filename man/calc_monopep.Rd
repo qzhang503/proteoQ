@@ -2,16 +2,12 @@
 % Please edit documentation in R/dbs.R
 \name{calc_monopep}
 \alias{calc_monopep}
-\title{Helper: calculates the mono-isotopic mass of a peptide sequence.}
+\title{Calculates the mono-isotopic mass of a peptide sequence.}
 \usage{
 calc_monopep(
   aa_seq,
   aa_masses,
-  vmods_ps,
-  amods,
-  tmod,
-  ntmod,
-  ctmod,
+  include_insource_nl = FALSE,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
   digits = 5
@@ -24,16 +20,13 @@ representation of amino acids.}
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{vmods_ps}{A named list of positions and sites with positions being names
-and sites being values.}
+\item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
+  masses with the losses of neutral species prior to MS2 fragmentation. The
+  default is FALSE.
 
-\item{amods}{Anywhere modifications subset from \code{vmods_ps}.}
-
-\item{tmod}{A terminal modification subset from \code{vmod_ps}.}
-
-\item{ntmod}{A N-term modification subset from \code{tmod}.}
-
-\item{ctmod}{A C-term modification subset from \code{tmod}.}
+  Note that there is no combination of neutral losses for fixed modifications
+  at the precursor levels. Changes from fixed to variable modifications for
+  complete combinations.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
@@ -44,5 +37,7 @@ variable modifications per site in a per peptide sequence.}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Helper: calculates the mono-isotopic mass of a peptide sequence.
+Typically coupled to \link{subpeps_by_vmods} for automatic dispatching of
+peptide sequences by sets of fixed and variable modifications. For manual
+calculations, uses \link{calc_monopeptide}.
 }

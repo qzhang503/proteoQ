@@ -7,6 +7,7 @@
 mcalc_monopep(
   aa_seqs,
   aa_masses,
+  include_insource_nl = FALSE,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
   parallel = TRUE,
@@ -22,6 +23,14 @@ one-letter representation of amino acids.}
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
+\item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
+  masses with the losses of neutral species prior to MS2 fragmentation. The
+  default is FALSE.
+
+  Note that there is no combination of neutral losses for fixed modifications
+  at the precursor levels. Changes from fixed to variable modifications for
+  complete combinations.}
+
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
 
@@ -31,25 +40,17 @@ variable modifications per site in a per peptide sequence.}
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
 
-\item{digits}{Integer; the number of decimal places to be used.}
+\item{n_cores}{Integer; the number of computer cores for uses.}
 
-\item{mod_indexes}{Integer; the indexes of fixed and/or variable
-modifications.}
+\item{cl}{The cluster nodes from \link[parallel]{makeCluster}.}
+
+\item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
 The calculations iterate through protein accessions and peptide sequences.
 }
 \examples{
 \dontrun{
-data(package = "proteoQ", aa_residues)
-aa_masses <- aa_residues \%>\%
-  dplyr::select(c("one_letter", "monoisotopic_da"))
-aa_masses <- aa_masses$monoisotopic_da \%>\% `names<-`(aa_masses$one_letter)
-
-x <- mcalc_monopep(list(protein_a = c("AAIDWFDGKEFSGNPIK", "MAAIDWFDGKEFSGNPIK"),
-                        protein_b = c("AAIDWFDGKEFSGNPIK")),
-                   aa_masses)
-
 aa_masses_all <- calc_aamasses()
 
 # Error if peptide sequences not 'compatible' with the given 'aa_masses'

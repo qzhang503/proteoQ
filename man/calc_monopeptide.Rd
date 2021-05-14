@@ -6,9 +6,12 @@
 \usage{
 calc_monopeptide(
   aa_seq,
-  aa_masses,
-  maxn_vmods_per_pep = 5,
-  maxn_sites_per_vmod = 3,
+  fixedmods,
+  varmods,
+  include_insource_nl = FALSE,
+  maxn_vmods_setscombi = 64,
+  maxn_vmods_per_pep = Inf,
+  maxn_sites_per_vmod = Inf,
   digits = 5
 )
 }
@@ -16,8 +19,21 @@ calc_monopeptide(
 \item{aa_seq}{Character string; a peptide sequences with one-letter
 representation of amino acids.}
 
-\item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
-acid residues.}
+\item{fixedmods}{A character vector of fixed modifications. See also
+\link{parse_unimod} for grammars.}
+
+\item{varmods}{A character vector of variable modifications.}
+
+\item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
+  masses with the losses of neutral species prior to MS2 fragmentation. The
+  default is FALSE.
+
+  Note that there is no combination of neutral losses for fixed modifications
+  at the precursor levels. Changes from fixed to variable modifications for
+  complete combinations.}
+
+\item{maxn_vmods_setscombi}{Integer; the maximum number of combinatorial variable
+modifications and neutral losses.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
@@ -31,33 +47,76 @@ variable modifications per site in a per peptide sequence.}
 For direct uses from an R console (with trade-offs in speed).
 }
 \examples{
-\dontrun{
-## No modifications
-data(package = "proteoQ", aa_residues)
-aa_masses <- aa_residues \%>\%
-  dplyr::select(c("one_letter", "monoisotopic_da"))
-aa_masses <- aa_masses$monoisotopic_da \%>\% `names<-`(aa_masses$one_letter)
-aa_masses["-"] <- 0
+\donttest{
+## No variable modifications
+# (1)
+x <- calc_monopeptide("MAKEMASSPECFUN", 
+                      fixedmods = NULL, 
+                      varmods = NULL)
 
-x <- calc_monopeptide("AAIDWFDGKEFSGNPIK", aa_masses)
-x <- calc_monopeptide("-AAAAAAAGDSDSWDADAFSVEDPVR", aa_masses)
+x$mass
 
-## With possible modifications
-library(purrr)
+# (2-a) 
+x <- calc_monopeptide("MAKEMASSPECFUN", 
+                      fixedmods = "Oxidation (M)", 
+                      varmods = NULL)
 
-aa_masses_all <- calc_aamasses()
+x$mass
 
-calc_monopeptide("GFGFVSNFER", aa_masses_all[[1]])
-calc_monopeptide("GFGMFVSNFER", aa_masses_all[[1]])
-calc_monopeptide("GFGMFVSNMFER", aa_masses_all[[1]])
-calc_monopeptide("GFGMFVSNMFER", aa_masses_all[[11]])
+# (2-b) no combinatorial NL for fixed modifications
+# (see 3-b) for full combinations
+x <- calc_monopeptide("MAKEMASSPECFUN", 
+                      fixedmods = "Oxidation (M)", 
+                      varmods = NULL, 
+                      include_insource_nl = TRUE)
 
-# Error if modifications not in 'aa_masses_all'
-# (`subpeps_by_vmods()` subsets peptides by 
-#  variable modifications in an 'aa_masses')
-map(aa_masses_all, ~ calc_monopeptide("GFGFVTFSNSMAEVDAAMAAR", .x))
+x$mass
 
-calc_monopeptide("GFGFNNTFSSMAEVDAMMANAR", aa_masses_all[[11]])
-map(aa_masses_all, ~ calc_monopeptide("GFGFNNTFSSMAEVDAMMANAR", .x))
+## With variable modifications
+# (3-a)
+x <- calc_monopeptide("MAKEMASSPECFUN", 
+                      fixedmods = NULL, 
+                      varmods = "Oxidation (M)")
+
+x$mass
+# x$vmods_ps
+
+# (3-b)
+x <- calc_monopeptide("MAKEMASSPECFUN", 
+                      fixedmods = NULL, 
+                      varmods = "Oxidation (M)", 
+                      include_insource_nl = TRUE)
+
+x$mass
+
+# (4-a)
+x <- calc_monopeptide("MAKEMASSPECFUN",
+                      c("TMT6plex (N-term)", 
+                        "TMT6plex (K)", 
+                        "Carbamidomethyl (C)"),
+                      c("Acetyl (N-term)", 
+                        "Gln->pyro-Glu (N-term = Q)", 
+                        "Oxidation (M)"))
+                      
+x$mass
+
+# The N-term M realizes with acetylation
+x$vmods_ps[[5]]
+
+# The N-term M realizes with TMT
+x$vmods_ps[[6]]
+
+
+# (4-b)
+x <- calc_monopeptide("MAKEMASSPECFUN",
+                      c("TMT6plex (N-term)", 
+                        "TMT6plex (K)", 
+                        "Carbamidomethyl (C)"),
+                      c("Acetyl (N-term)", 
+                        "Gln->pyro-Glu (N-term = Q)", 
+                        "Oxidation (M)"), 
+                        include_insource_nl = TRUE)
+                      
+x$mass
 }
 }

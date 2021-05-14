@@ -4,12 +4,11 @@
 \alias{calc_z2ions}
 \title{Masses of doubly-charged z-ions.}
 \usage{
-calc_z2ions(ntmod, ctmod, aas, aa_masses, digits = 5)
+calc_z2ions(ctmod, aas, aa_masses, digits = 5)
 }
 \arguments{
-\item{ntmod}{The \code{N-term} modification.}
-
-\item{ctmod}{The \code{C-term} modification.}
+\item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
+\code{aa_masses}.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
 
@@ -20,4 +19,7 @@ acid residues.}
 }
 \description{
 Masses of doubly-charged z-ions.
+}
+\seealso{
+\link{add_complement_ions}
 }

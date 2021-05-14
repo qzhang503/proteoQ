@@ -5,7 +5,7 @@
 \title{Matches theoretical peptides (parallel by mgf chunks).}
 \usage{
 pmatch_bymgfs(
-  mgf_frames,
+  mgf_path,
   aa_masses_all,
   n_cores,
   out_path,
@@ -21,8 +21,7 @@ pmatch_bymgfs(
 )
 }
 \arguments{
-\item{mgf_frames}{MGFs in frames. Each frame contains one to multiple MGFs
-whose MS1 masses are in the same interval.}
+\item{mgf_path}{The file path to a list of MGF files.}
 
 \item{aa_masses_all}{A list of amino acid lookups for all the combination of
 fixed and variable modifications.}
@@ -36,7 +35,7 @@ modifications.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}.}
+ions}. Values are in one of "by", "ax" and "cz".}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}

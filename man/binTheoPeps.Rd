@@ -9,8 +9,7 @@ binTheoPeps(
   min_mass = 516.24046,
   max_mass = 10000,
   ppm = 20,
-  out_path = file.path("E:/proteoQ/outs", "pepmasses/binned_theopeps.rds"),
-  para_by = "peptides"
+  out_path = file.path("~/proteoQ/outs", "pepmasses/binned_theopeps.rds")
 )
 }
 \arguments{
@@ -24,9 +23,6 @@ binTheoPeps(
 \item{ppm}{Numeric; the eror tolerance of MS1 mass in ppm.}
 
 \item{out_path}{The output path.}
-
-\item{para_by}{Parallel by individual aa_masses table or by peptides under an
-aa_masses table.}
 }
 \value{
 Lists of theoretical peptides binned by MS1 masses. The lists

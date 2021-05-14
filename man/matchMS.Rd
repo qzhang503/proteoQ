@@ -11,6 +11,7 @@ matchMS(
   fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"),
   varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
+  include_insource_nl = FALSE,
   enzyme = c("trypsin"),
   maxn_fasta_seqs = 50000,
   maxn_vmods_setscombi = 64,
@@ -29,6 +30,8 @@ matchMS(
 )
 }
 \arguments{
+\item{mgf_path}{The file path to a list of MGF files.}
+
 \item{out_path}{The file name with prepending path for outputs.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
@@ -40,6 +43,14 @@ correct file path(s) and name(s).}
 \link{parse_unimod} for grammars.}
 
 \item{varmods}{A character vector of variable modifications.}
+
+\item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
+  masses with the losses of neutral species prior to MS2 fragmentation. The
+  default is FALSE.
+
+  Note that there is no combination of neutral losses for fixed modifications
+  at the precursor levels. Changes from fixed to variable modifications for
+  complete combinations.}
 
 \item{enzyme}{A character string; the proteolytic specificity of the assumed
 enzyme will be used to generate peptide sequences from proteins. The enzyme
@@ -57,6 +68,9 @@ peptide.}
 \item{maxn_sites_per_vmod}{Integer; the maximum number of combinatorial
 variable modifications per site in a per peptide sequence.}
 
+\item{maxn_vmods_sitescombi_per_pep}{Integer; the maximum number of
+combinatorial variable modifications per peptide sequence.}
+
 \item{min_len}{Integer; the minimum length of peptides. Shorter peptides will
 be excluded.}
 
@@ -65,8 +79,19 @@ be excluded.}
 
 \item{max_miss}{The maximum number of mis-cleavages per peptide sequence.}
 
+\item{type_ms2ions}{Character; the type of
+\href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
+ions}. Values are in one of "by", "ax" and "cz".}
+
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
 MS2 ion searches.}
+
+\item{minn_ms2}{Integer; the minimum number of MS2 ions for consideration as
+a hit.}
+
+\item{ppm_ms1}{The mass tolerance of MS1 species.}
+
+\item{ppm_ms2}{The mass tolerance of MS2 species.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }

@@ -4,12 +4,11 @@
 \alias{calc_zions}
 \title{Masses of singly-charged z-ions}
 \usage{
-calc_zions(ntmod, ctmod, aas, aa_masses, digits = 5)
+calc_zions(ctmod, aas, aa_masses, digits = 5)
 }
 \arguments{
-\item{ntmod}{The \code{N-term} modification.}
-
-\item{ctmod}{The \code{C-term} modification.}
+\item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
+\code{aa_masses}.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
 
@@ -20,4 +19,7 @@ acid residues.}
 }
 \description{
 Singly charged.
+}
+\seealso{
+\link{add_complement_ions}
 }

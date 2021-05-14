@@ -464,7 +464,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL,
 	  }
 
 	  x_vals <- df %>% 
-	    purrr::map(spline_coefs, label_scheme, label_scheme_fit, slice_dots)
+	    purrr::map(spline_coefs, label_scheme, label_scheme_fit, !!!slice_dots)
 	  
 	  df <- purrr::map2(df, x_vals, ~ update_df(.x, label_scheme, .y, sd_coefs)) %>% 
 	    dplyr::bind_rows()

@@ -7,9 +7,11 @@
 calc_byions(ntmod, ctmod, aas, aa_masses, digits = 5)
 }
 \arguments{
-\item{ntmod}{The \code{N-term} modification.}
+\item{ntmod}{The parsed \emph{variable} \code{N-term} modifications from
+\code{aa_masses}.}
 
-\item{ctmod}{The \code{C-term} modification.}
+\item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
+\code{aa_masses}.}
 
 \item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
 
@@ -20,4 +22,7 @@ acid residues.}
 }
 \description{
 Masses of singly-charged b- and y-ions.
+}
+\seealso{
+\link{add_complement_ions}
 }

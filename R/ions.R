@@ -550,6 +550,7 @@ find_cmodtree <- function (peps, vmods) {
 #' 
 #' @inheritParams concat_peps
 #' @inheritParams add_fixvar_masses
+#' @export
 subpeps_by_vmods <- function(aa_masses, peps) {
   vmods <- attr(aa_masses, "vmods_ps") 
   

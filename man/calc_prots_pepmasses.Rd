@@ -7,11 +7,7 @@
 calc_prots_pepmasses(
   aa_seqs,
   aa_masses,
-  vmods_ps,
-  amods,
-  tmod,
-  ntmod,
-  ctmod,
+  include_insource_nl = FALSE,
   maxn_vmods_per_pep,
   maxn_sites_per_vmod,
   digits
@@ -21,16 +17,13 @@ calc_prots_pepmasses(
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{vmods_ps}{A named list of positions and sites with positions being names
-and sites being values.}
+\item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
+  masses with the losses of neutral species prior to MS2 fragmentation. The
+  default is FALSE.
 
-\item{amods}{Anywhere modifications subset from \code{vmods_ps}.}
-
-\item{tmod}{A terminal modification subset from \code{vmod_ps}.}
-
-\item{ntmod}{A N-term modification subset from \code{tmod}.}
-
-\item{ctmod}{A C-term modification subset from \code{tmod}.}
+  Note that there is no combination of neutral losses for fixed modifications
+  at the precursor levels. Changes from fixed to variable modifications for
+  complete combinations.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}

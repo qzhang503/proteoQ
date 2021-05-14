@@ -2,7 +2,7 @@
 % Please edit documentation in R/msmsmatches.R
 \name{find_ppm_outer_bycombi}
 \alias{find_ppm_outer_bycombi}
-\title{Helper: finds the the outer products for a vector of MS2 ions.}
+\title{Finds the the outer products for a vector of MS2 ions at a given ion series.}
 \usage{
 find_ppm_outer_bycombi(theos, expts, ppm_ms2)
 }
