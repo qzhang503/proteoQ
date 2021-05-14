@@ -716,6 +716,10 @@ combi_vmods <- function (aas,
   p <- check_tmod_p(aas, residue, p, fntmod, fctmod)
   
   if (length(p) == 1) {
+    if (length(n) > 1) { # one `p` but multiple sites: "Oxidation (M)", "Carbamidomethyl (M)"
+      return(NULL)
+    }
+    
     names(n) <- p
     return(n)
   }
@@ -748,7 +752,28 @@ combi_vmods <- function (aas,
       combn(as.character(p), .x)
     }, p)
     
-    out <- mvmcombC(ns, ps)
+    # out <- mvmcombC(ns, ps)
+    
+    out <- map2(ns, ps, ~ {
+      lns <- ncol(.x)
+      lps <- ncol(.y)
+      np <- vector("list", lns * lps)
+      
+      k <- 1
+      for (i in seq_len(lns)) {
+        for (j in seq_len(lps)) {
+          x <- .x[, i] 
+          names(x) <- .y[, j]
+          np[[k]] <- x
+          
+          k <- k + 1
+        }
+      }
+      
+      # otherwise is data.frame
+      # use names (positions) -> TRUE
+      np <- map(np, unlist, use.names = TRUE)
+    }) 
   }
   
   # ---
@@ -1571,6 +1596,5 @@ calc_ms2ionseries <- function (aa_seq, fixedmods, varmods,
        sec_mass = map(ms, `[[`, "sec"), 
        vmods_ps = vmods_ps)
 }
-
 
 
