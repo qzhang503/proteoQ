@@ -23,9 +23,10 @@ matchMS(
   max_miss = 2,
   type_ms2ions = "by",
   topn_ms2ions = 100,
-  minn_ms2 = 7,
+  minn_ms2 = 6,
   ppm_ms1 = 20,
   ppm_ms2 = 25,
+  pep_fdr = 0.01,
   digits = 5
 )
 }
@@ -92,6 +93,8 @@ a hit.}
 \item{ppm_ms1}{The mass tolerance of MS1 species.}
 
 \item{ppm_ms2}{The mass tolerance of MS2 species.}
+
+\item{pep_fdr}{Numeric; the levels of peptide FDR.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }

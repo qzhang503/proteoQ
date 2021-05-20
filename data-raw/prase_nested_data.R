@@ -1,7 +1,8 @@
 #' Finds an entry from the results of ion matches with multiple peptides and
 #' nested varmod positions.
 foo_find_peps <- function () {
-  res <- readRDS(file.path("~/proteoQ/outs", "ion_matches_8.rds"))
+  # res <- readRDS(file.path("~/proteoQ/outs", "ion_matches_8.rds"))
+  res <- readRDS(file.path("~/proteoQ/outs", "ion_matches_7.rds"))
   
   # find the nested case
   mts = res$matches
@@ -14,6 +15,9 @@ foo_find_peps <- function () {
   rows <- which(lens > 1)
   pep <- names(x[rows[1]])
   # TNLAMMR
+  
+  pep <- names(x[rows[2]])
+  # IILQMMR
   
   # ---
   mts = res$matches

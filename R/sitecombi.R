@@ -715,17 +715,20 @@ combi_vmods <- function (aas,
   p <- check_tmod_p(aas, residue, p, ntmod, ctmod)
   p <- check_tmod_p(aas, residue, p, fntmod, fctmod)
   
-  if (length(p) == 1) {
-    if (length(n) > 1) { # one `p` but multiple sites: "Oxidation (M)", "Carbamidomethyl (M)"
-      return(NULL)
-    }
-    
+  len_n <- length(n)
+  len_p <- length(p)
+  
+  if (len_n > len_p) {
+    return(NULL)
+  }
+  
+  if (len_p == 1) {
     names(n) <- p
     return(n)
   }
 
   # --- combinations ---
-  if (length(n) == 1) { # "Oxidation (M)"
+  if (len_n == 1) { # "Oxidation (M)"
     len <- length(p)
     out <- vector("list", len)
     
