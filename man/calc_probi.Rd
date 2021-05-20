@@ -6,7 +6,8 @@
 \usage{
 calc_probi(
   mts,
-  expts,
+  expt_moverzs,
+  expt_ints,
   N,
   type_ms2ions = "by",
   topn_ms2ions = 100,
@@ -18,9 +19,9 @@ calc_probi(
 \arguments{
 \item{mts}{Nested data frame of \code{theo} and matched \code{expt} m-over-z.}
 
-\item{expts}{Nested data frames of \code{expt}, match and unmatched
-experimental m-over-z, and \code{int}, the corresponding experimental
-intensity.}
+\item{expt_moverzs}{Nested list of match and unmatched experimental m-over-z.}
+
+\item{expt_ints}{Nested list of match and unmatched experimental intensity.}
 
 \item{N}{Numeric; the number of MS2 features in an MGF query.}
 

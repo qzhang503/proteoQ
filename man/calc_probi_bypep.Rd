@@ -7,7 +7,8 @@
 calc_probi_bypep(
   mts,
   nms,
-  expts,
+  expt_moverzs,
+  expt_ints,
   N,
   type_ms2ions,
   topn_ms2ions,
@@ -21,9 +22,9 @@ calc_probi_bypep(
 
 \item{nms}{The names (of peptides).}
 
-\item{expts}{Nested data frames of \code{expt}, match and unmatched
-experimental m-over-z, and \code{int}, the corresponding experimental
-intensity.}
+\item{expt_moverzs}{Nested list of match and unmatched experimental m-over-z.}
+
+\item{expt_ints}{Nested list of match and unmatched experimental intensity.}
 
 \item{N}{Numeric; the number of MS2 features in an MGF query.}
 

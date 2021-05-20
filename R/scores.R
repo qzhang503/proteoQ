@@ -146,44 +146,74 @@ add_seions <- function (ms2s, type_ms2ions = "by", digits = 5) {
 }
 
 
+#' Matches two lists.
+#' 
+#' Without making a data frame.
+#' 
+#' @param a The left vector.
+#' @param b The right vector.
+#' @examples
+#' \donttest{
+#' a <- c(3, 4, 1, 2, 5)
+#' b <- 2
+#' 
+#' list_leftmatch(a, b)
+#' }
+list_leftmatch <- function (a, b) {
+  ord <- order(a, decreasing = TRUE)
+  a <- a[ord]
+  
+  oks <- a %in% b
+  
+  b2 <- rep(NA, length(a))
+  b2[oks] <- b
+  
+  b2
+}
+
+
 #' Helper for score calculations
 #'
 #' By the positions of variable modifications.
 #' 
-#' @param df A data frame of \code{theo} and matched \code{expt} m-over-z.
+#' @param df Two lists of \code{theo} and matched \code{expt} m-over-z.
 #' @param nms The names (character strings indicating the names and position of
 #'   variable modifications).
 #' @inheritParams calc_probi
 #' @import dplyr
 #' @importFrom purrr map
 #' @importFrom tibble tibble
-calc_probi_byvmods <- function (df, nms, expts, N, type_ms2ions, topn_ms2ions, 
+calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints, 
+                                N, type_ms2ions, topn_ms2ions, 
                                 penalize_sions, ppm_ms2, digits) {
   
-  m <- nrow(df)
+  m <- length(df[["theo"]])
   m[m > N] <- N
   
   # matches additionally against secondary ions
-  df2 <- add_seions(df$theo, type_ms2ions, digits) %>% 
-    find_ppm_outer_bycombi(expts$expt, ppm_ms2)
-  
+  df2 <- add_seions(df[["theo"]], type_ms2ions, digits) %>% 
+    find_ppm_outer_bycombi(expt_moverzs, ppm_ms2)
+
   # subtracts `m` and the counts of secondary b0, y0 matches etc. from noise
   n <- N - m - sum(!is.na(df2$expt))
+  
+  expts <- bind_cols(expt = expt_moverzs, int = expt_ints)
+  df <- bind_cols(theo = df$theo, expt = df$expt)
+  df2 <- bind_cols(theo = df2$theo, expt = df2$expt)
   
   if (penalize_sions) {
     y1 <- right_join(df, expts, by = "expt") %>% 
       arrange(-int)
-    
+
     y2 <- df2 %>% 
       filter(!is.na(expt)) %>% 
       mutate(int = 0)
     
-    y <- y1 %>% 
-      bind_rows(y2) %>% 
+    y <- bind_rows(y1, y2) %>% 
       mutate(k = row_number(), 
              x = k - cumsum(is.na(theo))) %>% 
       filter(!is.na(theo))
-    
+
     rm(y1, y2)
   } else {
     y <- left_join(expts, bind_rows(df, df2), by = "expt") %>% 
@@ -220,11 +250,13 @@ calc_probi_byvmods <- function (df, nms, expts, N, type_ms2ions, topn_ms2ions,
 #' @import dplyr
 #' @importFrom purrr map2
 #' @importFrom tibble tibble
-calc_probi_bypep <- function (mts, nms, expts, N, type_ms2ions, topn_ms2ions, 
+calc_probi_bypep <- function (mts, nms, expt_moverzs, expt_ints, 
+                              N, type_ms2ions, topn_ms2ions, 
                               penalize_sions, ppm_ms2, digits) {
   
   out <- map2(mts, names(mts), calc_probi_byvmods, 
-              expts = expts, 
+              expt_moverzs = expt_moverzs, 
+              expt_ints = expt_ints, 
               N = N, 
               type_ms2ions = type_ms2ions, 
               topn_ms2ions = topn_ms2ions, 
@@ -240,19 +272,20 @@ calc_probi_bypep <- function (mts, nms, expts, N, type_ms2ions, topn_ms2ions,
 #' Helper for score calculations
 #'
 #' @param mts Nested data frame of \code{theo} and matched \code{expt} m-over-z.
-#' @param expts Nested data frames of \code{expt}, match and unmatched
-#'   experimental m-over-z, and \code{int}, the corresponding experimental
-#'   intensity.
+#' @param expt_moverzs Nested list of match and unmatched experimental m-over-z.
+#' @param expt_ints Nested list of match and unmatched experimental intensity.
 #' @param N Numeric; the number of MS2 features in an MGF query.
 #' @inheritParams matchMS
 #' @inheritParams calc_pepscores
 #' @import dplyr
 #' @importFrom purrr map
-calc_probi <- function (mts, expts, N, type_ms2ions = "by", topn_ms2ions = 100, 
+calc_probi <- function (mts, expt_moverzs, expt_ints, 
+                        N, type_ms2ions = "by", topn_ms2ions = 100, 
                         penalize_sions = FALSE, ppm_ms2 = 25, digits = 5) {
   
   out <- map2(mts, names(mts), calc_probi_bypep, 
-              expts = expts, 
+              expt_moverzs = expt_moverzs, 
+              expt_ints = expt_ints, 
               N = N, 
               type_ms2ions = type_ms2ions, 
               topn_ms2ions = topn_ms2ions, 
@@ -276,7 +309,8 @@ scalc_pepprobs <- function (entry, topn_ms2ions = 100, type_ms2ions = "by",
   # only one experimental set of values and thus `[[1]]`
   expt_moverzs <- entry$ms2_moverz[[1]]
   expt_ints <- entry[["ms2_int"]][[1]]
-  expts <- tibble(expt = expt_moverzs, int = expt_ints)
+  
+  # expts <- tibble(expt = expt_moverzs, int = expt_ints)
   
   ## matches between theoreticals and experimentals
   
@@ -312,7 +346,10 @@ scalc_pepprobs <- function (entry, topn_ms2ions = 100, type_ms2ions = "by",
   
   N <- entry$ms2_n[[1]]
   
-  out <- calc_probi(mts = mts, expts = expts, N = N, 
+  out <- calc_probi(mts = mts, 
+                    expt_moverzs = expt_moverzs, 
+                    expt_ints = expt_ints, 
+                    N = N, 
                     type_ms2ions = type_ms2ions, 
                     topn_ms2ions = topn_ms2ions, 
                     penalize_sions = penalize_sions, 
