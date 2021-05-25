@@ -526,3 +526,18 @@ foo_fc_tables <- function () {
 }
 
 
+foo_make_fasta_peps <- function () {
+  run_scripts <- FALSE
+  if (run_scripts) {
+    peptide <- paste0("-WASQVSENR@PVCK@AIIQGK@QFEGLVDTGADVSIIALNQWPK@NWPK@QK@", 
+                      "AVTGLVGIGTASEVYQSTEILHCLGPDNQESTVQPMITSIPLNLWGR@", 
+                      "DLLQQWGAEITMPAPLYSPTSQK@IMTK@MGYIPGK@GLGK@NEDGIK@", 
+                      "IPFEAK@INQK@R@EGIGYPF-")
+    
+    gsub(paste0("^(", 
+                rep("[^@]*?@{1}", max_miss+1) %>% purrr::reduce(paste0), ")", 
+                "([^@]*?@{1}).*$"), 
+         "\\1", peptide)
+  }
+  
+}
