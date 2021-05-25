@@ -29,8 +29,6 @@ theoretical peptides.}
 
 \item{n_cores}{Integer; the number of computer cores.}
 
-\item{out_path}{The file name with prepending path for outputs.}
-
 \item{mod_indexes}{Integer; the indexes of fixed and/or variable
 modifications.}
 

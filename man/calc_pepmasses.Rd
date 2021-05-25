@@ -21,9 +21,7 @@ calc_pepmasses(
   max_len = 100,
   max_miss = 2,
   digits = 5,
-  parallel = TRUE,
-  add_masses = TRUE,
-  out_path = "~/proteoQ/outs/pepmasses/pepmasses.rds"
+  parallel = TRUE
 )
 }
 \arguments{
@@ -76,12 +74,6 @@ be excluded.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
-
-\item{add_masses}{Logical; if TRUE, calculates the mono-isotopic masses of
-peptides. At the FALSE alternative, generates lists of peptides without
-masses. The default is TRUE.}
-
-\item{out_path}{The file name with prepending path for outputs.}
 }
 \description{
 Generates and Calculates the masses of tryptic peptides from a fasta

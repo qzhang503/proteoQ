@@ -155,8 +155,6 @@ calc_avgpep <- function (aa_seq, digits = 4) {
 #'   variable modifications per site in a per peptide sequence.
 #' @param maxn_vmods_per_pep The maximum number of variable modifications per
 #'   peptide.
-#' @param n_cores Integer; the number of computer cores for uses.
-#' @param cl The cluster nodes from \link[parallel]{makeCluster}.
 #' @inheritParams add_fixvar_masses
 #' @inheritParams calc_pepmasses
 #' @examples
@@ -173,12 +171,12 @@ mcalc_monopep <- function (aa_seqs, aa_masses,
                            maxn_vmods_per_pep = 5, 
                            maxn_sites_per_vmod = 3, 
                            parallel = TRUE, 
-                           n_cores = parallel::detectCores(), 
-                           cl = parallel::makeCluster(getOption("cl.cores", n_cores)), 
                            digits = 5) {
   options(digits = 9)
   
   if (parallel) {
+    n_cores <- detectCores()
+    
     aa_seqs <- suppressWarnings(split(aa_seqs, seq_len(n_cores)))
     
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
@@ -217,7 +215,7 @@ mcalc_monopep <- function (aa_seqs, aa_masses,
   
   attr(aa_masses, "data") <- out
   
-  message("Completed peptide masses: ", 
+  message("\tCompleted peptide masses: ", 
           paste(attributes(aa_masses)$fmods, 
                 attributes(aa_masses)$vmods, 
                 collapse = ", "))
@@ -2237,16 +2235,13 @@ make_fastapeps <- function (fasta_db, max_miss = 2, min_len = 1,
 #' @param max_len Integer; the maximum length of peptides. Longer peptides will
 #'   be excluded.
 #' @param max_miss The maximum number of mis-cleavages per peptide sequence.
-#' @param add_masses Logical; if TRUE, calculates the mono-isotopic masses of
-#'   peptides. At the FALSE alternative, generates lists of peptides without
-#'   masses. The default is TRUE.
-#' @param out_path The file name with prepending path for outputs.
 #' @param digits Integer; the number of decimal places to be used.
 #' @inheritParams splitPSM
 #' @inheritParams calc_aamasses
 #' @inheritParams mcalc_monopep
 #' @inheritParams calc_monopep
 #' @import parallel
+#' @importFrom rlang current_env
 #' @examples
 #' \donttest{
 #' res <- calc_pepmasses()
@@ -2291,92 +2286,171 @@ calc_pepmasses <- function (
   maxn_sites_per_vmod = 3, 
   min_len = 7, max_len = 100, max_miss = 2, 
   digits = 5, 
-  parallel = TRUE, 
-  add_masses = TRUE, 
-  out_path = "~/proteoQ/outs/pepmasses/pepmasses.rds") {
-  
+  parallel = TRUE) {
+
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
+  
+  on.exit(
+    if (exists(".savecall", envir = current_env())) {
+      if (.savecall) {
+        save_call2(path = file.path(.path_cache), fun = "calc_pepmasses", 
+                   time = .time_stamp)
+      }
+    } else {
+      # warning("terminated abnormally.", call. = TRUE)
+    }, 
+    add = TRUE
+  )
   
   stopifnot(vapply(c(min_len, max_len, max_miss), is.numeric, 
                    logical(1)))
   
   stopifnot(min_len >= 0, max_len >= min_len, max_miss <= 100)
   
-  out_path <- gsub("\\\\", "/", out_path)
-  out_dir <- gsub("(^.*/).*$", "\\1", out_path)
-  out_nm <- gsub("^.*/(.*)\\.[^\\.].*$", "\\1", out_path)
-  nm_fwdbare <- paste0(out_nm, "_fwdbare.rds")
-  nm_revbare <- paste0(out_nm, "_revbare.rds")
-  dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+  # ---
+  .path_cache <- create_dir("~/proteoQ/.MSearch/Cache/Calls")
+  .time_stamp <- match_calltime(path = .path_cache, fun = "calc_pepmasses", 
+                                excludes = c("parallel", "out_path"))
+  
+  .path_fasta <- fasta %>% 
+    gsub("\\\\", "/", .) %>% 
+    gsub("(.*/)[^/]*", "\\1", .) %>% 
+    map_chr(find_dir) %>% 
+    `[[`(1)
   
   # ---
-  aa_masses <- local({
-    message("Computing the combinations of fixed and variable modifications.")
+  if (!is_empty(.time_stamp)) {
+    message("Loading peptide masses from cache.")
     
-    if (index_mods) {
-      mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
-        as.hexmode() %>% 
-        `names<-`(c(fixedmods, varmods))
-    } else {
-      mod_indexes <- NULL
-    }
+    pep_masses <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
+                                    "pepmasses.rds"))
+
+    .savecall <- FALSE
+  } else {
+    .time_stamp <- format(Sys.time(), ".%Y-%m-%d_%H%M%S")
     
-    aa_masses <- calc_aamasses(fixedmods = fixedmods, 
-                               varmods = varmods, 
-                               maxn_vmods_setscombi = maxn_vmods_setscombi, 
-                               mod_indexes = mod_indexes)
-  })
+    # ---
+    aa_masses <- local({
+      message("Computing the combinations of fixed and variable modifications.")
+      
+      if (index_mods) {
+        mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
+          as.hexmode() %>% 
+          `names<-`(c(fixedmods, varmods))
+      } else {
+        mod_indexes <- NULL
+      }
+      
+      aa_masses <- calc_aamasses(fixedmods = fixedmods, 
+                                 varmods = varmods, 
+                                 maxn_vmods_setscombi = maxn_vmods_setscombi, 
+                                 mod_indexes = mod_indexes)
+    })
+
+    # ---
+    message("Preparing peptide sequences.")
+    
+    pre_masses <- pre_pepmasses(fasta = fasta, 
+                                maxn_fasta_seqs = maxn_fasta_seqs, 
+                                aa_masses = aa_masses, 
+                                max_miss = max_miss, 
+                                min_len = min_len, 
+                                max_len = max_len)
+
+    # ---
+    message("Calculating peptide masses (target) ...")
+    
+    pep_masses <- purrr::map2(pre_masses$fwds, 
+                              aa_masses, 
+                              mcalc_monopep, 
+                              include_insource_nl = include_insource_nl, 
+                              maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                              maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                              parallel = parallel, 
+                              digits = digits)
+    
+    message("Calculating peptide masses (decoy) ...")
+    
+    rev_masses <- purrr::map2(pre_masses$revs, 
+                              aa_masses, 
+                              mcalc_monopep, 
+                              include_insource_nl = include_insource_nl, 
+                              maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                              maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                              parallel = parallel, 
+                              digits = digits)
+    
+    rm(pre_masses)
+    
+    # ---
+    out_path <- create_dir(file.path(.path_fasta, "pepmasses", .time_stamp))
+    saveRDS(pep_masses, file.path(out_path, "pepmasses.rds"))
+    saveRDS(rev_masses, file.path(out_path, "pepmasses_rev.rds"))
+
+    # ---
+    .savecall <- TRUE
+  }
   
+  assign(".path_cache", .path_cache, envir = .GlobalEnv)
+  assign(".time_stamp", .time_stamp, envir = .GlobalEnv)
+  assign(".path_fasta", .path_fasta, envir = .GlobalEnv)
+
+  invisible(pep_masses)
+}
+
+
+#' Helper of \link{calc_pepmasses}.
+#' 
+#' Prior to the calculation of peptide masses.
+#' 
+#' @inheritParams calc_pepmasses
+#' @inheritParams mcalc_monopep
+pre_pepmasses <- function (fasta, maxn_fasta_seqs, aa_masses, 
+                           max_miss, min_len, max_len) {
   # ---
-  fasta_db <- local({
-    message("Loading fasta databases.")
-    
-    fasta_db <- fasta %>% load_fasta() 
-    
-    if (length(fasta_db) > maxn_fasta_seqs) {
-      stop("More than `", maxn_fasta_seqs, "` sequences in fasta files.", 
-           call. = FALSE)
-    }
-    
-    invisible(fasta_db)
-  })
+  message("Loading fasta.")
   
-  # ---
-  message("Generating peptide sequences (target and decoy).")
+  fasta_db <- load_fasta(fasta) 
   
-  n_cores <- parallel::detectCores()
+  if (length(fasta_db) > maxn_fasta_seqs) {
+    stop("More than `", maxn_fasta_seqs, "` sequences in fasta files.", 
+         call. = FALSE)
+  }
+
+  n_cores <- detectCores()
+  cl <- makeCluster(getOption("cl.cores", n_cores))
+  
+  clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
+  clusterExport(cl, list("concat_peps"), envir = environment(proteoQ:::concat_peps))
+  
   fasta_db <- chunksplit(fasta_db, n_cores)
-  
-  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-  
-  parallel::clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
-  
-  rev_fasta_db <- parallel::clusterApply(cl, fasta_db, stringi::stri_reverse) %>% 
+
+  rev_fasta_db <- clusterApply(cl, fasta_db, stringi::stri_reverse) %>% 
     purrr::map2(., fasta_db, ~ {
       names(.x) <- paste0("-", names(.y))
       .x
     })
   
-  peps <- 
-    parallel::clusterApply(cl, fasta_db,  make_fastapeps, 
+  # ---
+  message("Generating peptide sequences (target and decoy).")
+  
+  peps <- clusterApply(cl, fasta_db,  make_fastapeps, 
+                       max_miss, min_len, max_len) %>% 
+    purrr::flatten()
+  
+  rev_peps <- clusterApply(cl, rev_fasta_db, make_fastapeps, 
                            max_miss, min_len, max_len) %>% 
     purrr::flatten()
   
-  rev_peps <- 
-    parallel::clusterApply(cl, rev_fasta_db, make_fastapeps, 
-                           max_miss, min_len, max_len) %>% 
-    purrr::flatten()
-  
-  parallel::stopCluster(cl)
   rm(fasta_db, rev_fasta_db)
-  gc()
-  
+  stopCluster(cl)
+
   # ---
   message("Distributing peptides by fixed and variable modifications.")
   
-  pep_masses <- aa_masses %>% 
+  fwds <- aa_masses %>% 
     purrr::map(subpeps_by_vmods, peps) %>% 
     purrr::map(~ {
       xs <- .x
@@ -2384,10 +2458,9 @@ calc_pepmasses <- function (
       xs %>% 
         purrr::map(rm_char_in_nfirst, char = "^-", n = (max_miss + 1) * 2) %>% 
         purrr::map(rm_char_in_nlast, char = "-$", n = (max_miss + 1) * 2)
-    }) %T>% 
-    saveRDS(file.path(out_dir, nm_fwdbare))
+    })
   
-  rev_masses <- aa_masses %>% 
+  revs <- aa_masses %>% 
     purrr::map(subpeps_by_vmods, rev_peps) %>% 
     purrr::map(~ {
       xs <- .x
@@ -2395,46 +2468,13 @@ calc_pepmasses <- function (
       xs %>% 
         purrr::map(rm_char_in_nfirst, char = "^-", n = (max_miss + 1) * 2) %>% 
         purrr::map(rm_char_in_nlast, char = "-$", n = (max_miss + 1) * 2)
-    }) %T>% 
-    saveRDS(file.path(out_dir, nm_revbare))
+    })
   
-  rm(peps, rev_peps, nm_fwdbare, nm_revbare)
+  rm(peps, rev_peps)
   
-  # --- 
-  if (add_masses) {
-    message("Calculating peptide masses (target) ...")
-    
-    pep_masses <- purrr::map2(pep_masses, 
-                              aa_masses, 
-                              mcalc_monopep, 
-                              include_insource_nl = include_insource_nl, 
-                              maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                              maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                              parallel = parallel, 
-                              n_cores = n_cores, 
-                              cl = cl, 
-                              digits = digits)
-    
-    message("Calculating peptide masses (decoy) ...")
-    
-    rev_masses <- purrr::map2(rev_masses, 
-                              aa_masses, 
-                              mcalc_monopep, 
-                              include_insource_nl = include_insource_nl, 
-                              maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                              maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                              parallel = parallel, 
-                              n_cores = n_cores, 
-                              cl = cl, 
-                              digits = digits)
-  }
-  
-  # --- 
-  saveRDS(pep_masses, file.path(out_path))
-  saveRDS(rev_masses, file.path(out_dir, paste0(out_nm, "_rev.rds")))
-  
-  invisible(pep_masses)
+  invisible(list(fwds = fwds, revs = revs))
 }
+
 
 
 #' Helper to add modification masses to amino-acid residues.

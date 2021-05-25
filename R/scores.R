@@ -487,9 +487,14 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
                   pep_score = -log10(pep_adjp) * 10, 
                   pep_score = ifelse(pep_score > 250, 250, pep_score), 
                   pep_score = round(pep_score, 1)) %>% 
-    dplyr::select(-c("pep_prob", "pep_adjp"))
+    dplyr::select(-c("pep_prob", "pep_adjp")) %T>% 
+    saveRDS(file.path(out_path, "scores.rds"))
 
-  saveRDS(out, file.path(out_path, "scores.rds"))
+  out %>% 
+    dplyr::select(-c("pri_matches", "sec_matches", "ms2_moverz", "ms2_int")) %>% 
+    dplyr::filter(pep_issig, !pep_isdecoy) %>% 
+    dplyr::arrange(pep_seq) %>% 
+    readr::write_tsv(file.path(out_path, "peptides.txt"))
 
   invisible(out)
 }

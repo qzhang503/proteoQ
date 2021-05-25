@@ -95,17 +95,50 @@ find_ms1_interval <- function (mass = 1714.81876, from = 350, ppm = 20) {
 bin_theopeps <- function (peps, min_mass = 350, max_mass = 1700, ppm = 20) {
   ps <- find_ms1_cutpoints(min_mass, max_mass, ppm)
   
-  purrr::imap(peps, ~ {
+  out <- purrr::imap(peps, ~ {
     prot_peps <- .x
     
-    prot_peps %>% 
-      findInterval(ps) %>% 
-      dplyr::bind_cols(pep_seq = names(prot_peps), 
-                       mass = prot_peps, frame = .) %>% 
-      dplyr::mutate(prot_acc = .y)
+    frames <- findInterval(prot_peps, ps)
+    
+    list(pep_seq = names(prot_peps), 
+         mass = prot_peps, 
+         frames = frames, 
+         prot_acc = .y)
   })
 }
 
+
+#' Combine theoretical peptides after binning.
+#' 
+#' @param out A list of binned theoretical peptides.
+#' @param out_nm The output file path and name.
+cbind_theopepes <- function (out, out_nm) {
+  prot_acc <- imap(out, ~ rep(.y, length(.x$pep_seq))) %>% 
+    do.call(`c`, .) %>% 
+    unname()
+  
+  pep_seq <- map(out, `[[`, "pep_seq") %>% 
+    do.call(`c`, .) %>% 
+    unname()
+  
+  mass <- map(out, `[[`, "mass") %>% 
+    do.call(`c`, .) %>% 
+    unname()
+  
+  frame <- map(out, `[[`, "frames") %>% 
+    do.call(`c`, .) %>% 
+    unname()
+  
+  out <- data.frame(pep_seq = pep_seq, 
+                    mass = mass, 
+                    frame = frame, 
+                    prot_acc = prot_acc) %>% 
+    dplyr::arrange(frame, pep_seq, prot_acc) %>% 
+    split(., .$frame, drop = FALSE) %T>% 
+    saveRDS(., out_nm)
+
+  invisible(out)
+}
 
 #' Separates theoretical peptides into mass groups.
 #'
@@ -127,6 +160,15 @@ bin_theopeps <- function (peps, min_mass = 350, max_mass = 1700, ppm = 20) {
 binTheoPeps <- function (res, min_mass = 516.24046, max_mass = 10000, ppm = 20, 
                          out_path = file.path("~/proteoQ/outs", 
                                               "pepmasses/binned_theopeps.rds")) {
+  
+  # out_path <- gsub("\\\\", "/", out_path)
+  # out_dir <- gsub("(^.*/).*$", "\\1", out_path)
+  # dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+  out_dir <- create_dir(gsub("(^.*/).*$", "\\1", out_path))
+  out_nms <- gsub("^.*/(.*)\\.[^\\.].*$", "\\1", out_path) %>% 
+    paste(seq_along(res), sep = "_") %>% 
+    paste0(".rds")
+
   res <- res %>% 
     purrr::map(attributes) %>% 
     purrr::map(`[[`, "data")
@@ -136,63 +178,19 @@ binTheoPeps <- function (res, min_mass = 516.24046, max_mass = 10000, ppm = 20,
   n_cores <- parallel::detectCores()
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   
-  parallel::clusterExport(cl, list("find_ms1_cutpoints"), 
-                          envir = environment(proteoQ:::find_ms1_cutpoints))
-
-  parallel::clusterExport(cl, list("min_mass", "max_mass", "ppm"), 
-                          envir = environment())
-  
-  out <- vector("list", length(res))
-  
-  for (i in seq_along(out)) {
-    res[[i]] <- chunksplit(res[[i]], n_cores)
+  out <- map(res, ~ {
+    .x <- chunksplit(.x, n_cores)
     
-    out[[i]] <- parallel::clusterApplyLB(cl, res[[i]], bin_theopeps, 
-                                         min_mass, max_mass, ppm) %>% 
+    parallel::clusterApplyLB(cl, .x, bin_theopeps, min_mass, max_mass, ppm) %>% 
       purrr::flatten()
-    
-    out[[i]] <- out[[i]] %>% 
-      dplyr::bind_rows() %>% 
-      dplyr::arrange(frame, pep_seq, prot_acc) %>% 
-      split(., .$frame, drop = FALSE)
-  }
-  
+  }) %>% 
+    parallel::clusterMap(cl, cbind_theopepes, ., file.path(out_dir, out_nms))
+
   rm(res)
-  
-  local({
-    out_dir <- gsub("(^.*/).*$", "\\1", out_path)
-    out_nms <- gsub("^.*/(.*)\\.[^\\.].*$", "\\1", out_path) %>% 
-      paste(seq_along(out), sep = "_") %>% 
-      paste0(".rds")
-    
-    dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
-    
-    purrr::walk2(out, out_nms, 
-                 ~ saveRDS(.x, file.path(out_dir, .y)))
-  })
 
   parallel::stopCluster(cl)
 
   invisible(out)
-}
-
-
-#' Finds directory.
-#' 
-#' @param dir A file path.
-find_dir <- function (dir) {
-  dir_1 <- fs::path_expand_r(dir)
-  dir_2 <- fs::path_expand(dir)
-  
-  if (fs::dir_exists(dir_1)) {
-    dir <- dir_1
-  } else if (fs::dir_exists(dir_2)) {
-    dir <- dir_2
-  } else {
-    dir <- NULL
-  }
-  
-  dir
 }
 
 
@@ -348,6 +346,21 @@ proc_mgf_chunks <- function (lines, topn_ms2ions = 100, ret_range = c(0, Inf),
 }
 
 
+#' Helper of \link{proc_mgf_chunks}.
+#' 
+#' @param file A mgf chunk (chunk_1.mgf etc.) with prepending file path.
+#' @inheritParams read_mgf_chunks
+#' @import stringi
+proc_mgf_chunks_i <- function (file, topn_ms2ions = 100, ret_range = c(0, Inf)) {
+  message("Parsing '", file, "'.")
+  
+  x <- stri_read_lines(file) %>% 
+    proc_mgf_chunks(topn_ms2ions = topn_ms2ions, 
+                    ret_range = ret_range, 
+                    filepath = file)
+}
+
+
 #' Reads mgfs in chunks.
 #' 
 #' @inheritParams readMGF
@@ -362,17 +375,15 @@ read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs",
          call. = FALSE)
   }
   
-  out <- purrr::map(filelist, ~ {
-    message("Parsing '", .x, "'.")
-    
-    filepath <- file.path(filepath, .x)
-    
-    stri_read_lines(filepath) %>% 
-      proc_mgf_chunks(topn_ms2ions = topn_ms2ions, 
-                      ret_range = ret_range, 
-                      filepath = filepath)
-  }) %>% 
-    dplyr::bind_rows()
+  n_cores <- parallel::detectCores()
+  cl <- makeCluster(getOption("cl.cores", n_cores))
+  
+  out <- parallel::clusterApply(cl, file.path(filepath, filelist), 
+                                proc_mgf_chunks_i, 
+                                topn_ms2ions, ret_range) %>% 
+    bind_rows()
+  
+  parallel::stopCluster(cl)
   
   # adds back broken mgf entries
   afs <- local({
@@ -613,7 +624,7 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                      pep_fdr = 0.01, 
                      digits = 5) {
   
-  dir.create(out_path, showWarnings = FALSE, recursive = TRUE)
+  out_path <- create_dir(out_path)
   
   local({
     filelist <- list.files(path = file.path(mgf_path), pattern = "\\.mgf$")
@@ -641,9 +652,7 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
     maxn_sites_per_vmod = maxn_sites_per_vmod, 
     min_len = min_len, max_len = max_len, max_miss = max_miss, 
     digits = digits, 
-    parallel = TRUE, 
-    add_masses = TRUE, 
-    out_path = file.path(out_path, "pepmasses/pepmasses.rds")
+    parallel = TRUE
   )
 
   ## AA masses
@@ -665,19 +674,39 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
   ## Bin theoretical peptides
   message("Binning MS1 peptide masses (theoretical target).")
   
-  binTheoPeps(res = res, min_mass = min_mass, max_mass = max_mass, 
-              ppm = ppm_ms1, 
-              out_path = file.path(out_path, "pepmasses/binned_theopeps.rds"))
+  local({
+    .path_cache <- get(".path_cache", envir = .GlobalEnv)
+    .path_fasta <- get(".path_fasta", envir = .GlobalEnv)
+    .time_stamp <- get(".time_stamp", envir = .GlobalEnv)
+    
+    bins <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
+                       pattern = "binned_theopeps_\\d+\\.rds$")
+    
+    if (is_empty(bins)) {
+      binTheoPeps(res = res, min_mass = min_mass, max_mass = max_mass, 
+                  ppm = ppm_ms1, 
+                  out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
+                                       "binned_theopeps.rds"))
+    }
+    
+    # decoy
+    bins2 <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
+                        pattern = "binned_theopeps_rev_\\d+\\.rds$")
+    
+    if (is_empty(bins2)) {
+      rev_res <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
+                                   "pepmasses_rev.rds"))
+      
+      message("Binning MS1 peptide masses (theoretical decoy).")
+      
+      binTheoPeps(res = rev_res, min_mass = min_mass, max_mass = max_mass, 
+                  ppm = ppm_ms1, 
+                  out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
+                                       "binned_theopeps_rev.rds"))
+    }
+  }) 
   
-  rev_res <- readRDS(file.path(out_path, "pepmasses/pepmasses_rev.rds"))
-  
-  message("Binning MS1 peptide masses (theoretical decoy).")
-  
-  binTheoPeps(res = rev_res, min_mass = min_mass, max_mass = max_mass, 
-              ppm = ppm_ms1, 
-              out_path = file.path(out_path, "pepmasses/binned_theopeps_rev.rds"))
-  
-  rm(res, rev_res)
+  rm(res)
   
   ## MGFs
   message("Splitting MGFs.")
@@ -715,6 +744,8 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                         ppm_ms2 = ppm_ms2, 
                         out_path = out_path, 
                         digits = digits)
+  
+  rm(.path_cache, .path_fasta, .time_stamp, envir = .GlobalEnv)
   
   invisible(out)
 }
@@ -781,9 +812,7 @@ pmatch_bymgfs <- function (mgf_path,
     saveRDS(file.path(out_path, "ion_matches.rds")) 
 
   # decoys
-  # assign names to out, seq_along(out)
   maxs <- map_dbl(out, object.size) %>% which_topx(1)
-  # if (! 1 %in% maxs) maxs <- c(1, maxs)
   maxs2 <- maxs %>% paste0("rev_", .)
 
   rev  <- map2(maxs2, aa_masses_all[maxs], 
@@ -849,7 +878,10 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
                  msg_end))
 
   # reads theoretical peptide data
-  theopeps <- readRDS(file.path(out_path, "pepmasses/", 
+  .path_fasta <- get(".path_fasta", envir = .GlobalEnv)
+  .time_stamp <- get(".time_stamp", envir = .GlobalEnv)
+  
+  theopeps <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
                                 paste0("binned_theopeps_", i, ".rds")))
   
   # ---
@@ -946,7 +978,7 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
     { if (msg_end == ".") dplyr::mutate(., pep_isdecoy = FALSE) else 
       dplyr::mutate(., pep_isdecoy = TRUE) }
   
-  saveRDS(out, file.path(out_path, paste0("ion_matches_", i, ".rds")))
+  # saveRDS(out, file.path(out_path, paste0("ion_matches_", i, ".rds")))
 
   stopCluster(cl)
   
@@ -1416,5 +1448,6 @@ find_ppm_outer_bycombi <- function (theos, expts, ppm_ms2 = 25) {
   # bind_cols(theo = theos, expt = es)
   list(theo = theos, expt = es)
 }
+
 
 

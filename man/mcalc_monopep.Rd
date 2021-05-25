@@ -11,8 +11,6 @@ mcalc_monopep(
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
   parallel = TRUE,
-  n_cores = parallel::detectCores(),
-  cl = parallel::makeCluster(getOption("cl.cores", n_cores)),
   digits = 5
 )
 }
@@ -39,10 +37,6 @@ variable modifications per site in a per peptide sequence.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
-
-\item{n_cores}{Integer; the number of computer cores for uses.}
-
-\item{cl}{The cluster nodes from \link[parallel]{makeCluster}.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }

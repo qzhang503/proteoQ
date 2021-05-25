@@ -25,8 +25,6 @@ MS2 ion searches.}
 \item{ret_range}{The range of retention time in seconds.}
 
 \item{ppm_ms1}{The mass tolerance of MS1 species.}
-
-\item{out_path}{The file name with prepending path for outputs.}
 }
 \description{
 Reads MGF files in chunks.

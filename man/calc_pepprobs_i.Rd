@@ -30,8 +30,6 @@ etc. with lower weights in peptide scoring.}
 
 \item{ppm_ms2}{The mass tolerance of MS2 species.}
 
-\item{out_path}{The file name with prepending path for outputs.}
-
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
