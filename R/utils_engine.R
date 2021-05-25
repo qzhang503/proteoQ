@@ -47,7 +47,7 @@ save_call2 <- function(path, fun, time) {
   
   stopifnot(length(path) == 1L, 
             length(fun) == 1L, 
-            length(time) = 1L)
+            length(time) == 1L)
   
   p2 <- create_dir(file.path(path, fun))
   
@@ -91,7 +91,7 @@ find_callarg_vals <- function (time = ".2021-05-21_211227.rda",
   
   stopifnot(length(path) == 1L, 
             length(fun) == 1L, 
-            length(time) = 1L)
+            length(time) == 1L)
   
   file <- file.path(path, fun, time)
   
