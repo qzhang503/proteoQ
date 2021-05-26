@@ -26,6 +26,7 @@ matchMS(
   minn_ms2 = 6,
   ppm_ms1 = 20,
   ppm_ms2 = 25,
+  quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"),
   pep_fdr = 0.01,
   digits = 5
 )

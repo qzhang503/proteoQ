@@ -2311,8 +2311,14 @@ calc_pepmasses <- function (
   
   # ---
   .path_cache <- create_dir("~/proteoQ/.MSearch/Cache/Calls")
-  .time_stamp <- match_calltime(path = .path_cache, fun = "calc_pepmasses", 
-                                excludes = c("parallel", "out_path"))
+  .time_stamp <- match_calltime(path = .path_cache, 
+                                fun = "calc_pepmasses", 
+                                nms = c("fasta", "fixedmods", "varmods", 
+                                        "include_insource_nl", "enzyme", 
+                                        "maxn_fasta_seqs", "maxn_vmods_setscombi", 
+                                        "maxn_vmods_per_pep", "maxn_sites_per_vmod", 
+                                        "maxn_vmods_sitescombi_per_pep", 
+                                        "min_len", "max_len", "max_miss"))
   
   .path_fasta <- fasta %>% 
     gsub("\\\\", "/", .) %>% 

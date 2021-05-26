@@ -621,6 +621,7 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                      type_ms2ions = "by", 
                      topn_ms2ions = 100, 
                      minn_ms2 = 6, ppm_ms1 = 20, ppm_ms2 = 25, 
+                     quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"), 
                      pep_fdr = 0.01, 
                      digits = 5) {
   
@@ -744,6 +745,14 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                         ppm_ms2 = ppm_ms2, 
                         out_path = out_path, 
                         digits = digits)
+  
+  out <- calc_tmtint(out, quant = quant, ppm_ms2 = ppm_ms2, out_path = out_path)
+  
+  out %>% 
+    dplyr::select(-c("pri_matches", "sec_matches", "ms2_moverz", "ms2_int")) %>% 
+    dplyr::filter(pep_issig, !pep_isdecoy) %>% 
+    dplyr::arrange(pep_seq) %>% 
+    readr::write_tsv(file.path(out_path, "peptides.txt"))
   
   rm(.path_cache, .path_fasta, .time_stamp, envir = .GlobalEnv)
   
