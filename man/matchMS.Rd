@@ -7,7 +7,8 @@
 matchMS(
   mgf_path = "~/proteoQ/mgfs",
   out_path = "~/proteoQ/outs",
-  fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+  fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+    "~/proteoQ/dbs/fasta/crap/crap.fasta"),
   fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"),
   varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
@@ -26,6 +27,7 @@ matchMS(
   minn_ms2 = 6,
   ppm_ms1 = 20,
   ppm_ms2 = 25,
+  ppm_reporters = 10,
   quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"),
   pep_fdr = 0.01,
   digits = 5
@@ -92,6 +94,10 @@ a hit.}
 \item{ppm_ms1}{The mass tolerance of MS1 species.}
 
 \item{ppm_ms2}{The mass tolerance of MS2 species.}
+
+\item{ppm_reporters}{The mass tolerance of MS2 reporter ions.}
+
+\item{quant}{A quantitation method. The default is "none".}
 
 \item{pep_fdr}{Numeric; the levels of peptide FDR.}
 

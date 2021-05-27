@@ -1,24 +1,18 @@
 #' Reporter-ion quantitation.
 #' 
-#' @param scores The results from \link{calc_pepscores}.
+#' @param data An upstream result from \link{matchMS}.
 #' @param quant A quantitation method. The default is "none". 
-#' @param out_path The output path.
-#' @inheritParams matchMS
-calc_tmtint <- function (scores, 
+#' @param ppm_reporters The mass tolerance of MS2 reporter ions.
+calc_tmtint <- function (data = NULL, 
                          quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"), 
-                         ppm_ms2 = 25, 
-                         out_path = "~/proteoQ/outs") {
-  
-  # file <- file.path(out_path, "scores.rds")
-  # if (!file.exists(file)) stop("File not found: ", file, call. = FALSE)
-  # scores <- readRDS(file)
+                         ppm_reporters = 10) {
   
   val <- rlang::enexpr(quant)
   f <- match.call()[[1]]
   val <- match_valexpr(f = !!f, arg = "quant", val = !!val)
   
   if (val == "none") {
-    out <- scores
+    out <- data
   } else {
     nms_tmt6 <- c("126", "127N", "128N", "129N", "130N", "131N")
     
@@ -54,19 +48,18 @@ calc_tmtint <- function (scores,
                  tmt16 = c(126.1, 134.2), 
                  stop("Unknown TMt type.", call. = FALSE))
     
-    out <- map2(scores$ms2_moverz, scores$ms2_int, 
+    out <- map2(data$ms2_moverz, data$ms2_int, 
                 find_reporter_ints, 
                 theos = theos, 
                 ul = ul, 
-                ppm_ms2 = ppm_ms2, 
+                ppm_reporters = ppm_reporters, 
                 len = length(theos), 
                 nms = names(theos)) %>% 
       bind_rows() %>% 
-      bind_cols(scores, .)
+      bind_cols(data, .)
   }
 
-   out <- out %T>% 
-    saveRDS(file.path(out_path, "peptides.rds"))
+   invisible(out)
 }
 
 
@@ -81,15 +74,62 @@ calc_tmtint <- function (scores,
 #' @param len The length of reporter-ion plexes.
 #' @param nms The names of reporter-ion channels.
 #' @inheritParams matchMS
-find_reporter_ints <- function (ms2_moverzs, ms2_ints, theos, ul, ppm_ms2, 
-                                len, nms) {
-  
+#' @examples 
+#' \donttest{
+#' ms2_moverzs <- c(112.0873, 126.1280, 127.1251, 127.1313, 128.1250, 
+#'                  128.1284, 128.1347, 129.1317, 129.1380, 130.0654, 
+#'                  130.1351, 130.1413, 131.1384)
+#'                  
+#' ms2_ints <- c(5113.79, 135569.00, 120048.00, 122599.00, 3397.98, 
+#'               140551.00, 144712.00, 103166.00, 145452.00, 3851.82, 
+#'               148218.00, 135393.00, 131215.00)
+#'               
+#' theos <- c(126.1277, 127.1248, 127.1311, 128.1281, 128.1344, 
+#'            129.1315, 129.1378, 130.1348, 130.1411, 131.1382)
+#' names(theos) <- c("126", "127N", "127C", "128N", "128C", 
+#'                   "129N", "129C", "130N", "130C", "131N")
+#' 
+#' ppm_reporters <- 10
+#' ul <- c(126.1, 131.2)
+#' len <- 10
+#' nms <- names(theos)
+#' 
+#' x <- find_reporter_ints(ms2_moverzs, ms2_ints, theos, ul, ppm_reporters = 10, 
+#'                         len , nms)
+#'                         
+#' x <- find_reporter_ints(ms2_moverzs, ms2_ints, theos, ul, ppm_reporters = 25, 
+#'                         len , nms)
+#' }
+find_reporter_ints <- function (ms2_moverzs, ms2_ints, theos, ul, 
+                                ppm_reporters = 10, len, nms) {
+
   range <- findInterval(ul, ms2_moverzs)
 
   ms <-ms2_moverzs[range[1]:range[2]]
   is <-ms2_ints[range[1]:range[2]]
+
+  idxes <- find_reporters_ppm(theos, ms, ppm_reporters, len, nms)
   
-  idxes <- find_reporters_ppm(theos, ms, ppm_ms2, len, nms)
+  if (is_empty(idxes)) {
+    return(rep(NA, len) %>% `names<-`(nms))
+  }
+  
+  # 126      127N      127C      128N      128N      128C      
+  # 135569.00 120048.00 122599.00   3397.98 140551.00 144712.00 
+  
+  if (anyDuplicated(names(idxes))) {
+    idxes <- idxes %>% 
+      split(., names(.)) %>% 
+      imap_int(~ {
+        if (length(.x) > 1L) {
+          p <- which.min(abs(ms[.x] - theos[.y]))
+          .x <- .x[p]
+        } 
+        
+        .x
+      }) %>% 
+      .[names(theos)]
+  }
   
   rptr_ints <- is[idxes] %>% 
     `names<-`(names(idxes))
@@ -99,6 +139,8 @@ find_reporter_ints <- function (ms2_moverzs, ms2_ints, theos, ul, ppm_ms2,
       `names<-`(nms)
     
     es[names(rptr_ints)] <- rptr_ints
+  } else {
+    es <- rptr_ints
   }
   
   es
@@ -110,12 +152,46 @@ find_reporter_ints <- function (ms2_moverzs, ms2_ints, theos, ul, ppm_ms2,
 #'   reporter ions).
 #' @inheritParams find_reporter_ints
 #' @return A vector of indexes
-find_reporters_ppm <- function (theos, expts, ppm_ms2 = 25, len, nms) {
+find_reporters_ppm <- function (theos, expts, ppm_reporters = 10, len, nms) {
   d <- outer(theos, expts, "find_ppm_error")
-  row_cols <- which(abs(d) <= ppm_ms2, arr.ind = TRUE)
+  row_cols <- which(abs(d) <= ppm_reporters, arr.ind = TRUE)
 
-  idxes <- row_cols[, 2]
+  row_cols[, 2]
 }
 
+
+#' Adds prot_acc to a peptide table
+#' 
+#' @param out_path An output path.
+#' @param df The results after scoring.
+add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
+  # theoretical
+  bins <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
+                     pattern = "binned_theopeps_\\d+\\.rds$", 
+                     full.names = TRUE)
+  
+  theopeps <- purrr::map(bins, ~ {
+    x <- readRDS(.x) %>% 
+      dplyr::bind_rows() %>% 
+      dplyr::select(c("prot_acc", "pep_seq"))
+  }) %>% 
+    dplyr::bind_rows()
+  
+  theopeps <- theopeps %>% 
+    tidyr::unite(pep_prot., pep_seq, prot_acc, sep = "@", remove = FALSE) %>% 
+    dplyr::filter(!duplicated(pep_prot.)) %>% 
+    dplyr::select(-pep_prot.) %>% 
+    dplyr::select(c("prot_acc", "pep_seq"))
+  
+  # adds `prot_acc`
+  # df <- readr::read_tsv(file.path(out_path, "peptides.txt"))
+  
+  pep_seqs <- unique(df$pep_seq)
+  
+  # decoys kept
+  theopeps %>% 
+    dplyr::filter(.data$pep_seq %in% .env$pep_seqs) %>% 
+    dplyr::right_join(df, by = "pep_seq")
+}
 
 

@@ -487,8 +487,8 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
                   pep_score = -log10(pep_adjp) * 10, 
                   pep_score = ifelse(pep_score > 250, 250, pep_score), 
                   pep_score = round(pep_score, 1)) %>% 
-    dplyr::select(-c("pep_prob", "pep_adjp")) %T>% 
-    saveRDS(file.path(out_path, "scores.rds"))
+    dplyr::select(-c("pep_prob", "pep_adjp")) # %T>% 
+    # saveRDS(file.path(out_path, "scores.rds"))
   
   invisible(out)
 }

@@ -601,11 +601,13 @@ chunksplitLB <- function (data, n_chunks = 5, nx = 100) {
 #' @inheritParams readMGF
 #' @inheritParams normPSM
 #' @inheritParams calc_pepfdr
+#' @inheritParams calc_tmtint
 #' @param mgf_path The file path to a list of MGF files.
 #' @export
 matchMS <- function (mgf_path = "~/proteoQ/mgfs", 
                      out_path = "~/proteoQ/outs", 
-                     fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
+                     fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
+                               "~/proteoQ/dbs/fasta/crap/crap.fasta"), 
                      fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"), 
                      varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", 
                                  "Oxidation (M)", "Deamidated (N)", 
@@ -621,6 +623,7 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                      type_ms2ions = "by", 
                      topn_ms2ions = 100, 
                      minn_ms2 = 6, ppm_ms1 = 20, ppm_ms2 = 25, 
+                     ppm_reporters = 10, 
                      quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"), 
                      pep_fdr = 0.01, 
                      digits = 5) {
@@ -746,13 +749,17 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                         out_path = out_path, 
                         digits = digits)
   
-  out <- calc_tmtint(out, quant = quant, ppm_ms2 = ppm_ms2, out_path = out_path)
+  out <- add_prot_acc(out)
+  
+  out <- calc_tmtint(out, quant = !!quant, ppm_reporters = ppm_reporters)
+
+  saveRDS(out, file.path(out_path, "scores.rds"))
   
   out %>% 
     dplyr::select(-c("pri_matches", "sec_matches", "ms2_moverz", "ms2_int")) %>% 
     dplyr::filter(pep_issig, !pep_isdecoy) %>% 
     dplyr::arrange(pep_seq) %>% 
-    readr::write_tsv(file.path(out_path, "peptides.txt"))
+    readr::write_tsv(file.path(out_path, "psm.txt"))
   
   rm(.path_cache, .path_fasta, .time_stamp, envir = .GlobalEnv)
   

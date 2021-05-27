@@ -5,20 +5,17 @@
 \title{Reporter-ion quantitation.}
 \usage{
 calc_tmtint(
-  scores,
+  data = NULL,
   quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"),
-  ppm_ms2 = 25,
-  out_path = "~/proteoQ/outs"
+  ppm_reporters = 10
 )
 }
 \arguments{
-\item{scores}{The results from \link{calc_pepscores}.}
+\item{data}{An upstream result from \link{matchMS}.}
 
 \item{quant}{A quantitation method. The default is "none".}
 
-\item{ppm_ms2}{The mass tolerance of MS2 species.}
-
-\item{out_path}{The output path.}
+\item{ppm_reporters}{The mass tolerance of MS2 reporter ions.}
 }
 \description{
 Reporter-ion quantitation.

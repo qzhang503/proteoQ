@@ -4,7 +4,7 @@
 \alias{find_reporters_ppm}
 \title{Finds the indexes of reporter ions.}
 \usage{
-find_reporters_ppm(theos, expts, ppm_ms2 = 25, len, nms)
+find_reporters_ppm(theos, expts, ppm_reporters = 10, len, nms)
 }
 \arguments{
 \item{theos}{The theoretical m-over-z of reporter ions.}
@@ -12,7 +12,7 @@ find_reporters_ppm(theos, expts, ppm_ms2 = 25, len, nms)
 \item{expts}{Numeric vector; a series of experimental MS2s (in the region of
 reporter ions).}
 
-\item{ppm_ms2}{The mass tolerance of MS2 species.}
+\item{ppm_reporters}{The mass tolerance of MS2 reporter ions.}
 
 \item{len}{The length of reporter-ion plexes.}
 

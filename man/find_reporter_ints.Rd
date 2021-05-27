@@ -4,7 +4,15 @@
 \alias{find_reporter_ints}
 \title{Finds the intensities of reporter-ions.}
 \usage{
-find_reporter_ints(ms2_moverzs, ms2_ints, theos, ul, ppm_ms2, len, nms)
+find_reporter_ints(
+  ms2_moverzs,
+  ms2_ints,
+  theos,
+  ul,
+  ppm_reporters = 10,
+  len,
+  nms
+)
 }
 \arguments{
 \item{ms2_moverzs}{Numeric vector; a series of experimental MS2 m-over-z's
@@ -17,7 +25,7 @@ the region of reporter ions).}
 
 \item{ul}{The upper and lower bound for reporter-ion m-over-z's.}
 
-\item{ppm_ms2}{The mass tolerance of MS2 species.}
+\item{ppm_reporters}{The mass tolerance of MS2 reporter ions.}
 
 \item{len}{The length of reporter-ion plexes.}
 
@@ -25,4 +33,31 @@ the region of reporter ions).}
 }
 \description{
 Finds the intensities of reporter-ions.
+}
+\examples{
+\donttest{
+ms2_moverzs <- c(112.0873, 126.1280, 127.1251, 127.1313, 128.1250, 
+                 128.1284, 128.1347, 129.1317, 129.1380, 130.0654, 
+                 130.1351, 130.1413, 131.1384)
+                 
+ms2_ints <- c(5113.79, 135569.00, 120048.00, 122599.00, 3397.98, 
+              140551.00, 144712.00, 103166.00, 145452.00, 3851.82, 
+              148218.00, 135393.00, 131215.00)
+              
+theos <- c(126.1277, 127.1248, 127.1311, 128.1281, 128.1344, 
+           129.1315, 129.1378, 130.1348, 130.1411, 131.1382)
+names(theos) <- c("126", "127N", "127C", "128N", "128C", 
+                  "129N", "129C", "130N", "130C", "131N")
+
+ppm_reporters <- 10
+ul <- c(126.1, 131.2)
+len <- 10
+nms <- names(theos)
+
+x <- find_reporter_ints(ms2_moverzs, ms2_ints, theos, ul, ppm_reporters = 10, 
+                        len , nms)
+                        
+x <- find_reporter_ints(ms2_moverzs, ms2_ints, theos, ul, ppm_reporters = 25, 
+                        len , nms)
+}
 }
