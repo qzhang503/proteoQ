@@ -44,18 +44,21 @@ create_dir <- function (path) {
 #' @param fun The name of function being saved.
 #' @param time The time stamp.
 #' @importFrom rlang caller_env
-save_call2 <- function(path, fun, time) {
+save_call2 <- function(path, fun, time = NULL) {
   
-  stopifnot(length(path) == 1L, 
-            length(fun) == 1L, 
-            length(time) == 1L)
-  
-  p2 <- create_dir(file.path(path, fun))
-  
+  stopifnot(length(path) == 1L, length(fun) == 1L)
+
   call_pars <- mget(names(formals(fun)), envir = caller_env(), inherits = FALSE)
   call_pars[names(call_pars) == "..."] <- NULL
-
-  save(call_pars, file = file.path(p2, paste0(time, ".rda")))
+  
+  if (is.null(time)) {
+    p2 <- create_dir(path)
+    save(call_pars, file = file.path(p2, paste0(fun, ".rda")))
+  } else {
+    stopifnot(length(time) == 1L)
+    p2 <- create_dir(file.path(path, fun))
+    save(call_pars, file = file.path(p2, paste0(time, ".rda")))
+  }
 }
 
 
@@ -85,18 +88,22 @@ find_callarg_val <- function (time = ".2021-05-21_211227",
 #' @import dplyr purrr 
 #' @importFrom magrittr %>% %T>% %$%
 #' @return The time stamp of a matched cache results.
-find_callarg_vals <- function (time = ".2021-05-21_211227.rda", 
-                               path = "~/proteoQ/.MSearch/Cache/Calls", 
-                               fun = "calc_pepmasses", 
-                               args = c("fasta", "max_miss")) {
+find_callarg_vals <- function (time = NULL, path = NULL, fun = NULL, 
+                               args = NULL) {
+
+  stopifnot(length(path) == 1L, length(fun) == 1L)
+
+  if (is.null(time)) {
+    file <- file.path(path, fun)
+  } else {
+    stopifnot(length(time) == 1L)
+    file <- file.path(path, fun, time)
+  }
   
-  stopifnot(length(path) == 1L, 
-            length(fun) == 1L, 
-            length(time) == 1L)
-  
-  file <- file.path(path, fun, time)
-  
-  if (!file.exists(file)) stop(file, " not found.", call. = FALSE)
+  if (!file.exists(file)) {
+    # waring(file, " not found.", call. = FALSE)
+    return(NULL)
+  }
   
   load(file = file)
   

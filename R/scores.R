@@ -421,6 +421,8 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
                             pep_fdr = 0.01, penalize_sions = FALSE, 
                             ppm_ms2 = 25, out_path = "~/proteoQ/outs", 
                             digits = 5) {
+  
+  message("Calculating peptide scores.")
 
   target <- file.path(out_path, "ion_matches.rds")
   decoy <- file.path(out_path, "ion_matches_rev.rds")
@@ -487,8 +489,7 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
                   pep_score = -log10(pep_adjp) * 10, 
                   pep_score = ifelse(pep_score > 250, 250, pep_score), 
                   pep_score = round(pep_score, 1)) %>% 
-    dplyr::select(-c("pep_prob", "pep_adjp")) # %T>% 
-    # saveRDS(file.path(out_path, "scores.rds"))
+    dplyr::select(-c("pep_prob", "pep_adjp"))
   
   invisible(out)
 }
@@ -527,9 +528,10 @@ calc_pepfdr <- function (out, nms, pep_fdr = .01) {
 
 
 #' Calculates peptide scores by single MGF entries (scan numbers).
-#' 
-#' Each entry corresponds to a row in \code{ion_matches.rds}.
-#' 
+#'
+#' Not currently used. Each entry corresponds to a row in
+#' \code{ion_matches.rds}.
+#'
 #' @param entry A row of data from \link{pmatch_bymgfs}.
 #' @inheritParams matchMS
 #' @import purrr

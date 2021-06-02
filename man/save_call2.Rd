@@ -4,7 +4,7 @@
 \alias{save_call2}
 \title{Saves the arguments in a function call}
 \usage{
-save_call2(path, fun, time)
+save_call2(path, fun, time = NULL)
 }
 \arguments{
 \item{path}{A (system) file path.}

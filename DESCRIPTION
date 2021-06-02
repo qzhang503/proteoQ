@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.4.1.5
+Version: 1.5
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -11,7 +11,7 @@ Description: Data Processing and Informatic Analysis of Mass Spectrometrirc Data
     It reads and processes data from multiplex TMT experiments in mass spectrometry. 
 		It further provides basic informatic analysis.
 biocViews: 
-Depends: R (>= 4.0)
+Depends: R (>= 4.1)
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

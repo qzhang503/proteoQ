@@ -10,10 +10,12 @@ calc_tmtint <- function (data = NULL,
   val <- rlang::enexpr(quant)
   f <- match.call()[[1]]
   val <- match_valexpr(f = !!f, arg = "quant", val = !!val)
-  
+
   if (val == "none") {
     out <- data
   } else {
+    message("Calculating reporter-ion intensities.")
+    
     nms_tmt6 <- c("126", "127N", "128N", "129N", "130N", "131N")
     
     nms_tmt10 <- c("126", "127N", "127C", "128N", "128C", "129N", "129C", 
@@ -183,15 +185,180 @@ add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
     dplyr::select(-pep_prot.) %>% 
     dplyr::select(c("prot_acc", "pep_seq"))
   
-  # adds `prot_acc`
-  # df <- readr::read_tsv(file.path(out_path, "peptides.txt"))
-  
-  pep_seqs <- unique(df$pep_seq)
-  
-  # decoys kept
+  # adds `prot_acc` (with decoys being kept)
   theopeps %>% 
-    dplyr::filter(.data$pep_seq %in% .env$pep_seqs) %>% 
+    dplyr::filter(pep_seq %in% unique(df$pep_seq)) %>% 
     dplyr::right_join(df, by = "pep_seq")
 }
 
+
+#' Groups proteins by shared peptides.
+#'
+#' Adds columns \code{prot_hit_num} and \code{prot_family_member} to
+#' \code{psm.txt}.
+#'
+#' @param df Interim results from \link{matchMS}.
+#' @param out_path The output path.
+groupProts <- function (df, out_path = "~/proteoQ/outs") {
+  message("Grouping proteins by families.")
+  
+  # --- protein ~ peptide map ---
+  mat <- local({
+    prp <- df[, c("prot_acc", "pep_seq")] %>% 
+      tidyr::unite(pep_prot., pep_seq, prot_acc, sep = "@", remove = FALSE) %>% 
+      dplyr::filter(!duplicated(pep_prot.)) %>% 
+      dplyr::select(-pep_prot.)
+    
+    mat <- model.matrix(~ 0 + prot_acc, prp)
+    colnames(mat) <- gsub("prot_acc", "", colnames(mat))
+    rownames(mat) <- prp$pep_seq
+    
+    # collapse rows of the same pep_seq; may use `sum`
+    # 
+    #      pep_seq prot_acc
+    # 1       A        X
+    # 2       A        Y
+    # 3       B        X
+    # 4       C        Y
+    # 
+    #   X Y
+    # 1 1 0
+    # 2 0 1
+    # 3 1 0
+    # 4 0 1
+    # 
+    # A tibble: 3 x 3
+    # pep_seq X     Y    
+    # <chr>   <lgl> <lgl>
+    # 1 A       TRUE  TRUE 
+    # 2 B       TRUE  FALSE
+    # 3 C       FALSE TRUE 
+    
+    mat <- mat %>% 
+      data.frame(check.names = FALSE) %>% 
+      dplyr::mutate_all(as.logical) %>% 
+      dplyr::mutate(pep_seq = prp$pep_seq) %>% 
+      dplyr::arrange(pep_seq) %>% 
+      dplyr::group_by(pep_seq) %>% 
+      dplyr::summarise_all(any) %>% 
+      tibble::column_to_rownames("pep_seq")
+    
+    saveRDS(mat, file.path(out_path, "prot_pep_map.rds"))
+    
+    invisible(mat)
+  })
+
+  # --- set aside df0 ---
+  sets <- purrr::quietly(RcppGreedySetCover::greedySetCover)(
+    df[, c("prot_acc", "pep_seq")], FALSE)$result
+  
+  df <- df %>% dplyr::mutate(prot_isess = prot_acc %in% sets$prot_acc) 
+  df0 <- df %>% filter(!prot_isess)
+  df1 <- df %>% filter(prot_isess)
+
+  mat_ess <- mat[colnames(mat) %in% df1$prot_acc]
+  
+  peps_uniq <- local({
+    rsums <- rowSums(mat)
+    rsums2 <- rowSums(mat_ess)
+    
+    peps <- data.frame(pep_seq = rownames(mat)) %>% 
+      dplyr::mutate(pep_literal_unique = (rsums == 1L)) %>% 
+      dplyr::mutate(pep_razor_unique = (rsums2 == 1L)) 
+  })
+  
+  # --- protein ~ protein distance map
+  pep_seqs <- rownames(mat_ess)
+  mat_ess <- as.list(mat_ess)
+  len <- length(mat_ess)
+  
+  if (len <= 200) {
+    out <- vector("list", len)
+    
+    for (i in seq_len(len)) {
+      out[[i]] <- map_dbl(mat_ess[i:len], ~ sum(.x & mat_ess[[i]]))
+      out[[i]] <- c(out[seq_len(i-1)] %>% map_dbl(`[[`, i), out[[i]])
+    }
+  } else {
+    out <- parDist(mat_ess)
+  }
+  
+  out <- do.call(rbind, out) 
+  rownames(out) <- colnames(out)
+  
+  stopifnot(identical(out, t(out)))
+  
+  saveRDS(out, file.path(out_path, "prot_dist.rds"))
+  
+  # --- finds protein groups
+  out[out == 0L] <- 1000000
+  out[out < 1000000] <- 0
+  out <- out %>% as.dist(diag = TRUE, upper = TRUE)
+  
+  hc <- hclust(out, method = "single")
+  
+  grps <- data.frame(prot_hit_num = cutree(hc, h = 1)) %>% 
+    tibble::rownames_to_column("prot_acc") %>% 
+    dplyr::group_by(prot_hit_num) %>% 
+    dplyr::mutate(prot_family_member = row_number()) %>% 
+    dplyr::ungroup()
+
+  # --- put together
+  df0 <- df0 %>% 
+    dplyr::mutate(prot_hit_num = NA, prot_family_member = NA)
+
+  df1 <- df1 %>% 
+    dplyr::left_join(grps, by = "prot_acc") %>% 
+    dplyr::bind_rows(df0) %>% 
+    dplyr::left_join(peps_uniq, by = "pep_seq")
+
+  invisible(df1)
+}
+
+
+#' Helper of \link{parDist}.
+#' 
+#' @param cols The column indexes of \code{mat}.
+#' @inheritParams parDist
+par_dist <- function (cols, mat) {
+  len_m <- length(mat)
+  len_c <- length(cols)
+  
+  stopifnot(len_c >= 1L)
+  
+  out <- vector("list", len_c)
+  
+  for (i in 1:len_c) {
+    col <- cols[i]
+    out[[i]] <- purrr::map_dbl(mat[col:len_m], ~ sum(.x & mat[[col]]))
+  }
+  
+  invisible(out)
+}
+
+
+#' Parallel distance calculations.
+#' 
+#' @param mat A bool matrix.
+parDist <- function (mat) {
+  n_cores <- detectCores()
+  idxes <- chunksplit(seq_along(mat), 2 * n_cores)
+  
+  cl <- makeCluster(getOption("cl.cores", n_cores))
+  clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
+  out <- clusterApply(cl, idxes, par_dist, mat) 
+  stopCluster(cl)
+  
+  out <- out %>% purrr::flatten()
+  
+  len <- length(mat)
+  
+  if (len > 1L) {
+    for (i in 2:len) {
+      out[[i]] <- c(out[1:(i-1)] %>% map_dbl(`[[`, i), out[[i]])
+    }
+  }
+
+  invisible(out)
+}
 
