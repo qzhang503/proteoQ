@@ -217,3 +217,23 @@ match_valexpr <- function (f = NULL, arg = NULL, val = NULL, default = NULL) {
 }
 
 
+#' Deletes files under a directory.
+#' 
+#' The directory will be kept. 
+#' @param path A file path.
+delete_files <- function (path, ...) {
+  dots <- rlang::enexprs(...)
+  recursive <- dots[["recursive"]]
+  
+  if (is.null(recursive)) recursive <- TRUE
+  
+  stopifnot(is.logical(recursive))
+  
+  nms <- list.files(path = file.path(path), recursive = recursive, ...)
+  
+  if (!purrr::is_empty(nms)) {
+    suppressMessages(file.remove(file.path(path, nms)))
+  }
+  
+  invisible(NULL)
+}

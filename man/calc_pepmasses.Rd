@@ -7,6 +7,8 @@ database.}
 \usage{
 calc_pepmasses(
   fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+  acc_type = "uniprot_acc",
+  acc_pattern = NULL,
   fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"),
   varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
@@ -20,6 +22,7 @@ calc_pepmasses(
   min_len = 7,
   max_len = 100,
   max_miss = 2,
+  out_path = "~/proteoQ/outs",
   digits = 5,
   parallel = TRUE
 )
@@ -29,6 +32,16 @@ calc_pepmasses(
 prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search. There is no default and users need to provide the
 correct file path(s) and name(s).}
+
+\item{acc_type}{Character string(s); the types of protein accessions in one
+of c("uniprot_acc", "uniprot_id", "refseq_acc", "other"). For custom names,
+the corresponding regular expressions need to be supplied via argument
+\code{acc_pattern}.}
+
+\item{acc_pattern}{Regular expression(s) describing the patterns to separate
+the header lines of fasta entries. At the \code{NULL} default, the pattern
+will be automated when \code{acc_type} are among c("uniprot_acc",
+"uniprot_id", "refseq_acc", "other").}
 
 \item{fixedmods}{A character vector of fixed modifications. See also
 \link{parse_unimod} for grammars.}
@@ -69,6 +82,8 @@ be excluded.}
 be excluded.}
 
 \item{max_miss}{The maximum number of mis-cleavages per peptide sequence.}
+
+\item{out_path}{The output path.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 

@@ -27,5 +27,6 @@ ions}. Values are in one of "by", "ax" and "cz".}
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Each entry corresponds to a row in \code{ion_matches.rds}.
+Not currently used. Each entry corresponds to a row in
+\code{ion_matches.rds}.
 }

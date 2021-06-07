@@ -4,14 +4,17 @@
 \alias{calc_pepfdr}
 \title{Calculates the cut-off score at a peptide FDR.}
 \usage{
-calc_pepfdr(out, nms, pep_fdr = 0.01)
+calc_pepfdr(out, nms, target_fdr = 0.01, fdr_type = "psm")
 }
 \arguments{
 \item{out}{The output from \link{calc_pepscores}.}
 
 \item{nms}{The name(s) of \code{out} that correspond(s) to decoy results.}
 
-\item{pep_fdr}{Numeric; the levels of peptide FDR.}
+\item{target_fdr}{Numeric; the levels of false-discovery rate.}
+
+\item{fdr_type}{Character string; the type of FDR controlling. The value is
+in one of c("psm", "peptide", "protein").}
 }
 \description{
 Calculates the cut-off score at a peptide FDR.

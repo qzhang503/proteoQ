@@ -1235,7 +1235,7 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE) {
   # =======================================================================================
   # Normally handled `acc_type`s: 
   # (1) at `acc_type` %in% c("uniprot_acc", "uniprot_id", "refseq_acc")
-  #   read_fasta(pattern = ">([^ ]+?) .*", ...) 
+  #   read_fasta(">([^ ]+?) .*", ...) 
   #     -> fasta_name = "sp|Q9H553|ALG2_HUMAN" 
   #       -> "Q9H553" at acc_type == uniprot_acc
   #       -> "ALG2_HUMAN" at acc_type == uniprot_id

@@ -7,7 +7,8 @@
 calc_pepscores(
   topn_ms2ions = 100,
   type_ms2ions = "by",
-  pep_fdr = 0.01,
+  target_fdr = 0.01,
+  fdr_type = "psm",
   penalize_sions = FALSE,
   ppm_ms2 = 25,
   out_path = "~/proteoQ/outs",
@@ -22,12 +23,17 @@ MS2 ion searches.}
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
 ions}. Values are in one of "by", "ax" and "cz".}
 
-\item{pep_fdr}{Numeric; the levels of peptide FDR.}
+\item{target_fdr}{Numeric; the levels of false-discovery rate.}
+
+\item{fdr_type}{Character string; the type of FDR controlling. The value is
+in one of c("psm", "peptide", "protein").}
 
 \item{penalize_sions}{Logical; if TRUE, penalizes secondary ions of b0, y0
 etc. with lower weights in peptide scoring.}
 
 \item{ppm_ms2}{The mass tolerance of MS2 species.}
+
+\item{out_path}{The output path.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 

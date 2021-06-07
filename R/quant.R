@@ -7,11 +7,11 @@ calc_tmtint <- function (data = NULL,
                          quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"), 
                          ppm_reporters = 10) {
   
-  val <- rlang::enexpr(quant)
-  f <- match.call()[[1]]
-  val <- match_valexpr(f = !!f, arg = "quant", val = !!val)
+  # val <- rlang::enexpr(quant)
+  # f <- match.call()[[1]]
+  # val <- match_valexpr(f = !!f, arg = "quant", val = !!val)
 
-  if (val == "none") {
+  if (quant == "none") {
     out <- data
   } else {
     message("Calculating reporter-ion intensities.")
@@ -36,19 +36,21 @@ calc_tmtint <- function (data = NULL,
       `132C` = 132.147855, `133N` = 133.14489, `133C` = 133.15121, 
       `134N` = 134.148245)
     
-    theos <- switch(val, 
+    theos <- switch(quant, 
                     tmt6 = tmts %>% .[names(.) %in% nms_tmt6], 
                     tmt10 = tmts %>% .[names(.) %in% nms_tmt10], 
                     tmt11 = tmts %>% .[names(.) %in% nms_tmt11], 
                     tmt16 = tmts %>% .[names(.) %in% nms_tmt16], 
                     stop("Unknown TMt type.", call. = FALSE))
     
-    ul <- switch(val, 
+    ul <- switch(quant, 
                  tmt6 = c(126.1, 131.2), 
                  tmt10 = c(126.1, 131.2), 
                  tmt11 = c(126.1, 131.2), 
                  tmt16 = c(126.1, 134.2), 
                  stop("Unknown TMt type.", call. = FALSE))
+    
+    stopifnot(all(c("ms2_moverz", "ms2_int") %in% names(data)))
     
     out <- map2(data$ms2_moverz, data$ms2_int, 
                 find_reporter_ints, 
@@ -167,7 +169,7 @@ find_reporters_ppm <- function (theos, expts, ppm_reporters = 10, len, nms) {
 #' @param out_path An output path.
 #' @param df The results after scoring.
 add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
-  # theoretical
+  # Targets, theoretical
   bins <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
                      pattern = "binned_theopeps_\\d+\\.rds$", 
                      full.names = TRUE)
@@ -177,18 +179,50 @@ add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
       dplyr::bind_rows() %>% 
       dplyr::select(c("prot_acc", "pep_seq"))
   }) %>% 
-    dplyr::bind_rows()
-  
-  theopeps <- theopeps %>% 
+    dplyr::bind_rows() %>% 
     tidyr::unite(pep_prot., pep_seq, prot_acc, sep = "@", remove = FALSE) %>% 
     dplyr::filter(!duplicated(pep_prot.)) %>% 
     dplyr::select(-pep_prot.) %>% 
-    dplyr::select(c("prot_acc", "pep_seq"))
+    dplyr::select(c("prot_acc", "pep_seq")) %>% 
+    dplyr::filter(pep_seq %in% unique(df$pep_seq)) 
+  
+  # Decoys, theoretical
+  bins_rev <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
+                         pattern = "binned_theopeps_rev_\\d+\\.rds$", 
+                         full.names = TRUE)
+  
+  theopeps_rev <- purrr::map(bins_rev, ~ {
+    x <- readRDS(.x) %>% 
+      dplyr::bind_rows() %>% 
+      dplyr::select(c("prot_acc", "pep_seq"))
+  }) %>% 
+    dplyr::bind_rows() %>% 
+    tidyr::unite(pep_prot., pep_seq, prot_acc, sep = "@", remove = FALSE) %>% 
+    dplyr::filter(!duplicated(pep_prot.)) %>% 
+    dplyr::select(-pep_prot.) %>% 
+    dplyr::select(c("prot_acc", "pep_seq")) %>% 
+    dplyr::filter(pep_seq %in% unique(df$pep_seq)) 
   
   # adds `prot_acc` (with decoys being kept)
-  theopeps %>% 
-    dplyr::filter(pep_seq %in% unique(df$pep_seq)) %>% 
+  out <- bind_rows(theopeps, theopeps_rev) %>% 
     dplyr::right_join(df, by = "pep_seq")
+  
+  # adds prot_n_psm, prot_n_pep for protein FDR
+  prot_n_psm <- out %>%
+    dplyr::select(prot_acc) %>%
+    dplyr::group_by(prot_acc) %>%
+    dplyr::summarise(prot_n_psm = n())
+  
+  # keep duplicated pep_seq; otherwise, some NA prot_acc after joining
+  prot_n_pep <- out %>%
+    dplyr::select(pep_seq, prot_acc) %>%
+    # dplyr::filter(!duplicated(pep_seq)) %>% 
+    dplyr::group_by(prot_acc) %>%
+    dplyr::summarise(prot_n_pep = n())
+  
+  out <- list(out, prot_n_psm, prot_n_pep) %>%
+    purrr::reduce(dplyr::left_join, by = "prot_acc") %>% 
+    dplyr::arrange(-prot_n_pep, -prot_n_psm)
 }
 
 
@@ -342,7 +376,8 @@ par_dist <- function (cols, mat) {
 #' @param mat A bool matrix.
 parDist <- function (mat) {
   n_cores <- detectCores()
-  idxes <- chunksplit(seq_along(mat), 2 * n_cores)
+  
+  idxes <- chunksplit(seq_along(mat), 2 * n_cores, "list")
   
   cl <- makeCluster(getOption("cl.cores", n_cores))
   clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))

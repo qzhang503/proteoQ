@@ -9,6 +9,8 @@ matchMS(
   out_path = "~/proteoQ/outs",
   fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
     "~/proteoQ/dbs/fasta/crap/crap.fasta"),
+  acc_type = c("uniprot_acc", "other"),
+  acc_pattern = NULL,
   fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"),
   varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
@@ -29,17 +31,30 @@ matchMS(
   ppm_ms2 = 25,
   ppm_reporters = 10,
   quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"),
-  pep_fdr = 0.01,
+  target_fdr = 0.01,
+  fdr_type = c("psm", "peptide", "protein"),
   digits = 5
 )
 }
 \arguments{
 \item{mgf_path}{The file path to a list of MGF files.}
 
+\item{out_path}{The output path.}
+
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search. There is no default and users need to provide the
 correct file path(s) and name(s).}
+
+\item{acc_type}{Character string(s); the types of protein accessions in one
+of c("uniprot_acc", "uniprot_id", "refseq_acc", "other"). For custom names,
+the corresponding regular expressions need to be supplied via argument
+\code{acc_pattern}.}
+
+\item{acc_pattern}{Regular expression(s) describing the patterns to separate
+the header lines of fasta entries. At the \code{NULL} default, the pattern
+will be automated when \code{acc_type} are among c("uniprot_acc",
+"uniprot_id", "refseq_acc", "other").}
 
 \item{fixedmods}{A character vector of fixed modifications. See also
 \link{parse_unimod} for grammars.}
@@ -99,10 +114,17 @@ a hit.}
 
 \item{quant}{A quantitation method. The default is "none".}
 
-\item{pep_fdr}{Numeric; the levels of peptide FDR.}
+\item{target_fdr}{Numeric; the levels of false-discovery rate.}
+
+\item{fdr_type}{Character string; the type of FDR controlling. The value is
+in one of c("psm", "peptide", "protein").}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
 Searches MS ions.
+}
+\seealso{
+\link{load_fasta2} for setting the values of \code{acc_type} and
+  \code{acc_pattern}.
 }
