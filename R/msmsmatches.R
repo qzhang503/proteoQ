@@ -861,26 +861,8 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
     calc_tmtint(quant = quant, ppm_reporters = ppm_reporters)
 
   # Protein groups
-  out <- local({
-    out <- out %>% 
-      dplyr::arrange(pep_seq) %>% 
-      dplyr::mutate(psm_index = row_number())
-    
-    rows <- (out$pep_issig & !out$pep_isdecoy)
-    
-    df <- out[rows, ]
-    
-    if (nrow(df) > 1L) {
-      df <- df %>% groupProts(out_path)
-    }
-
-    df2 <- out[!rows, ] %>% 
-      dplyr::mutate(prot_isess = FALSE, prot_hit_num = NA)
-    
-    out <- dplyr::bind_rows(df, df2) %>% 
-      dplyr::select(-which(names(.) %in% c("prot_n_psm", "prot_n_pep"))) 
-  })
-
+  out <- grp_prots(out, out_path)
+  
   # Clean-ups
   out <- out %>% 
     dplyr::rename(pep_scan_title = scan_title, 
@@ -905,7 +887,7 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
     dplyr::select(-which(names(.) %in% c("pri_matches", "sec_matches", 
                                          "ms2_moverz", "ms2_int"))) %T>% 
     readr::write_tsv(file.path(out_path, "psmC.txt")) %>% 
-    dplyr::filter(pep_issig, !pep_isdecoy, pep_rank <= 3L) %>% 
+    dplyr::filter(prot_isess, pep_issig, !pep_isdecoy, pep_rank <= 3L) %>% 
     { if (fdr_type == "protein") dplyr::filter(., prot_issig) else . } %>% 
     dplyr::select(-which(names(.) %in% c("prot_score"))) %T>% 
     readr::write_tsv(file.path(out_path, "psmQ.txt"))

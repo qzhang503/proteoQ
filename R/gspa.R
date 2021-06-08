@@ -614,12 +614,7 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff,
   
   if (nrow(res_pass) == 0) return(NULL)
   
-  if (!requireNamespace("RcppGreedySetCover", quietly = TRUE)) {
-    stop("\n======================================================================", 
-         "\nPackage \"RcppGreedySetCover\" needed for this function to work.",
-         "\n======================================================================",
-         call. = FALSE)
-  }
+
 
   out <- local({
     adjp <- res_pass %>% 
@@ -667,7 +662,7 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff,
     dplyr::right_join(out, by = "term")
 
   res_greedy <- sig_sets %>% 
-    RcppGreedySetCover::greedySetCover(FALSE) %T>% 
+    greedysetcover() %T>% 
     write.table(file.path(filepath, fml_nm, paste0(fn_prefix, "_resgreedy.txt")), 
                 sep = "\t", col.names = TRUE, 
                 row.names = FALSE, quote = FALSE) %>% 

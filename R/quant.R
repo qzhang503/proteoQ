@@ -226,6 +226,47 @@ add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
 }
 
 
+#' Helper of \link{groupProts}.
+#' 
+#' @param out The data frame from upstream steps.
+#' @param out_path The output path.
+grp_prots <- function (out, out_path) {
+  out <- out %>% 
+    dplyr::arrange(pep_seq)
+  
+  # essentials
+  # (not to add filter `prot_issig`)
+  rows <- (out$pep_issig & (!out$pep_isdecoy) & (!grepl("^-", out$prot_acc)))
+  
+  df <- out[rows, ]
+  
+  if (nrow(df) > 1L) {
+    df <- df %>% groupProts(out_path)
+  }
+  
+  # non-essentials
+  prot_accs <- df %>% 
+    dplyr::filter(!duplicated(prot_acc), prot_isess) %>% 
+    `[[`("prot_acc")
+  
+  df2 <- out[!rows, ] %>% 
+    dplyr::filter(!duplicated(prot_acc)) %>% 
+    dplyr::select(prot_acc) %>% 
+    dplyr::mutate(prot_isess = ifelse(prot_acc %in% prot_accs, TRUE, FALSE)) %>% 
+    dplyr::left_join(df[, c("prot_acc", "prot_hit_num", "prot_family_member")] %>% 
+                       dplyr::filter(!duplicated(prot_acc)), 
+                     by = "prot_acc") %>% 
+    dplyr::right_join(out[!rows, ], by = "prot_acc") %>% 
+    dplyr::mutate(pep_literal_unique = NA, pep_razor_unique = NA) %>% 
+    dplyr::select(names(df))
+  
+  rm(prot_accs)
+  
+  out <- dplyr::bind_rows(df, df2) %>% 
+    dplyr::select(-which(names(.) %in% c("prot_n_psm", "prot_n_pep"))) 
+}
+
+
 #' Groups proteins by shared peptides.
 #'
 #' Adds columns \code{prot_hit_num} and \code{prot_family_member} to
@@ -236,6 +277,14 @@ add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
 groupProts <- function (df, out_path = "~/proteoQ/outs") {
   message("Grouping proteins by families.")
   
+  # pep_seq in df are all from target and significant; 
+  # yet target pep_seq can be assigned to both target and decoy proteins
+  # 
+  #    prot_acc     pep_seq
+  #  1 -GOG8C_HUMAN EEQERLR
+  #  2 -GOG8D_HUMAN EEQERLR
+  # 11 MNT_HUMAN    EEQERLR
+
   # --- protein ~ peptide map ---
   mat <- local({
     prp <- df[, c("prot_acc", "pep_seq")] %>% 
@@ -283,12 +332,17 @@ groupProts <- function (df, out_path = "~/proteoQ/outs") {
   })
 
   # --- set aside df0 ---
-  sets <- purrr::quietly(RcppGreedySetCover::greedySetCover)(
-    df[, c("prot_acc", "pep_seq")], FALSE)$result
+  sets <- df %>% 
+    dplyr::select(c("prot_acc", "pep_seq")) %>% 
+    tidyr::unite(pep_prot., pep_seq, prot_acc, sep = "@", remove = FALSE) %>% 
+    dplyr::filter(!duplicated(pep_prot.)) %>% 
+    dplyr::select(-pep_prot.) %>% 
+    greedysetcover()
   
-  df <- df %>% dplyr::mutate(prot_isess = prot_acc %in% sets$prot_acc) 
+  df <- df %>% dplyr::mutate(prot_isess = prot_acc %in% sets) 
   df0 <- df %>% filter(!prot_isess)
   df1 <- df %>% filter(prot_isess)
+  rm(df)
 
   mat_ess <- mat[colnames(mat) %in% df1$prot_acc]
   
@@ -336,7 +390,7 @@ groupProts <- function (df, out_path = "~/proteoQ/outs") {
     dplyr::group_by(prot_hit_num) %>% 
     dplyr::mutate(prot_family_member = row_number()) %>% 
     dplyr::ungroup()
-
+  
   # --- put together
   df0 <- df0 %>% 
     dplyr::mutate(prot_hit_num = NA, prot_family_member = NA)
@@ -396,4 +450,46 @@ parDist <- function (mat) {
 
   invisible(out)
 }
+
+
+#' Greedy set cover.
+#' 
+#' @param df A two-column data frame.
+greedysetcover <- function (df) {
+
+  stopifnot(ncol(df) == 2L)
+  
+  colnames(df) <- c("s", "a")
+  
+  df <- df %>% 
+    tidyr::unite(sa, s, a, sep = "@", remove = FALSE) %>% 
+    dplyr::filter(!duplicated(sa)) %>% 
+    dplyr::select(-sa)
+
+  cts <- df %>% 
+    group_by(s) %>% 
+    summarise(n = n()) %>% 
+    dplyr::arrange(-n)
+  
+  df <- left_join(cts, df, by = "s")
+  
+  sets <- NULL
+  
+  while(nrow(df) > 0L) {
+    x <- df[[1, "s"]]
+    sets <- c(sets, x)
+    
+    as <- df %>% 
+      filter(s == x) %>% 
+      `[[`("a")
+
+    df <- df %>% 
+      filter(! a %in% as) %>% 
+      group_by(s) %>% 
+      mutate(n = row_number())
+  }
+  
+  invisible(sets)
+}
+
 
