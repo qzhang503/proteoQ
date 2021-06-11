@@ -2198,7 +2198,7 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
   max_len2 <- max_len - 1
   
   zero_npeps <- df %>%
-    dplyr::filter(pep_len <= max_len, pep_miss == 0) %>% 
+    dplyr::filter(pep_len <= max_len, pep_miss == 0L) %>% 
     dplyr::select(c(pep_id, "fasta_name")) %>%
     dplyr::filter(!duplicated(!!rlang::sym(pep_id))) %>% 
     dplyr::group_by(fasta_name) %>%
@@ -2218,6 +2218,7 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
       prot_n_pepi = .,
     ) %>% 
     dplyr::left_join(zero_npeps, by = "fasta_name") %>% 
+    dplyr::mutate(prot_n_pep0 = ifelse(is.na(prot_n_pep0), 1L, prot_n_pep0)) %>% 
     dplyr::mutate(prot_icover = prot_n_pep0/prot_n_pepi, 
                   prot_icover = round(prot_icover, digits = 3)) %>% 
     dplyr::select(-c("prot_n_pepi", "prot_n_pep0"))
@@ -3819,6 +3820,7 @@ find_search_engine <- function(dat_dir = NULL) {
   pat_mq <- "^msms.*\\.txt$"
   pat_mf <- "^psm.*\\.tsv$"
   pat_sm <- "^PSMexport.*\\.ssv$"
+  pat_pq <- "^psm[QC]{1}.*\\.txt$"
   
   mascot <-list.files(path = file.path(dat_dir), pattern = pat_mascot) %>% 
     purrr::is_empty() %>% `!`
@@ -3828,18 +3830,21 @@ find_search_engine <- function(dat_dir = NULL) {
     purrr::is_empty() %>% `!`
   sm <- list.files(path = file.path(dat_dir), pattern = pat_sm) %>% 
     purrr::is_empty() %>% `!`
+  pq <- list.files(path = file.path(dat_dir), pattern = pat_pq) %>% 
+    purrr::is_empty() %>% `!`
 
-  engines <- c(mascot = mascot, mq = mq, mf = mf, sm = sm)
+  engines <- c(mascot = mascot, mq = mq, mf = mf, sm = sm, pq = pq)
   engine <- engines %>% .[.] %>% names()
   
   if (purrr::is_empty(engine)) {
     stop("No PSM files found.\n", 
          "File name(s) need to be in the format of \n",
-         purrr::reduce(c(paste("Mascot", pat_mascot, sep = ": "), 
-                         paste("MaxQuant", pat_mq, sep = ": "), 
-                         paste("MSFragger", pat_mf, sep = ": "), 
-                         paste("Spectrum Mill", pat_sm, sep = ": ")), 
-                       paste, sep = " || "), 
+         paste(c(paste("  Mascot", pat_mascot, sep = ": "), 
+                 paste("  MaxQuant", pat_mq, sep = ": "), 
+                 paste("  MSFragger", pat_mf, sep = ": "), 
+                 paste("  proteoQ", pat_pq, sep = ": "), 
+                 paste("  Spectrum Mill", pat_sm, sep = ": ")), 
+               collapse = "\n"), 
          call. = FALSE)
   }
   

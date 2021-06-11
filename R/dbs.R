@@ -1692,7 +1692,7 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (K)",
   
   aa_masses_all <- c(aa_masses_fi2, aa_masses_var2)
   
-  map(aa_masses_all, parse_aamasses)
+  aa_masses_all <- map(aa_masses_all, parse_aamasses)
 }
 
 
@@ -2598,7 +2598,8 @@ pre_pepmasses <- function (fasta, acc_type, acc_pattern, maxn_fasta_seqs, aa_mas
   fasta_db <- load_fasta2(fasta, acc_type, acc_pattern) 
   
   if (length(fasta_db) > maxn_fasta_seqs) {
-    stop("More than `", maxn_fasta_seqs, "` sequences in fasta files.", 
+    stop("More than `", maxn_fasta_seqs, "` sequences in fasta files.\n",
+         "  May consider a higher `maxn_fasta_seqs`.", 
          call. = FALSE)
   }
 

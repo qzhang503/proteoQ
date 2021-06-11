@@ -74,6 +74,10 @@ The default is FALSE.}
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
 is FALSE.}
 
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
+
 \item{purge_phosphodata}{Logical; if TRUE and phosphorylation present as
 variable modification(s), entries without phosphorylation will be removed.
 The default is TRUE.}

@@ -640,7 +640,7 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                                  "Gln->pyro-Glu (N-term = Q)"), 
                      include_insource_nl = FALSE, 
                      enzyme = c("trypsin"), 
-                     maxn_fasta_seqs = 50000,
+                     maxn_fasta_seqs = 200000,
                      maxn_vmods_setscombi = 64, 
                      maxn_vmods_per_pep = 5,
                      maxn_sites_per_vmod = 3, 
@@ -854,7 +854,7 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
     quant <- rlang::as_string(quant)
   }
   
-  stopifnot(quant %in% oks)
+  stopifnot(quant %in% oks, length(quant) == 1L)
   rm(oks)
   
   out <- out %>% 
@@ -864,12 +864,21 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
   out <- grp_prots(out, out_path)
   
   # Clean-ups
+  message("Saving outputs.")
+  
+  data.frame(Abbr = as.character(mod_indexes), Desc = names(mod_indexes)) %>% 
+    readr::write_tsv(file.path(out_path, "mod_indexes.txt"))
+  
   out <- out %>% 
+    dplyr::mutate(pep_ms1_delta = ms1_mass - theo_ms1) %>% 
     dplyr::rename(pep_scan_title = scan_title, 
-                  pep_ms1_moverz = ms1_moverz, 
-                  pep_ms1_mass = ms1_mass, 
-                  pep_ms1_int = ms1_int, 
-                  pep_ms1_charge = ms1_charge, 
+                  pep_exp_mz = ms1_moverz, 
+                  pep_exp_mr = ms1_mass, 
+                  pep_exp_z = ms1_charge, 
+                  pep_calc_mr = theo_ms1, 
+                  pep_delta = pep_ms1_delta, 
+                  
+                  pep_tot_int = ms1_int, 
                   pep_ret_time = ret_time, 
                   pep_scan_num = scan_num, 
                   pep_ms2_n = ms2_n, 
@@ -880,7 +889,10 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
     out %>% .[grepl("^pep_", names(.))], 
     out %>% .[grepl("^psm_", names(.))], 
     out %>% .[!grepl("^prot_|^pep_|^psm_", names(.))], 
-  ) %T>% 
+  ) %>% 
+    reloc_col_after("pep_exp_z", "pep_exp_mr") %>% 
+    reloc_col_after("pep_calc_mr", "pep_exp_z") %>% 
+    reloc_col_after("pep_delta", "pep_calc_mr") %T>% 
     saveRDS(file.path(out_path, "psmC.rds"))
 
   out <- out %>% 
@@ -897,6 +909,56 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
   .savecall <- TRUE
   
   invisible(out)
+}
+
+
+#' Recalculates the MS1 precursor masses.
+#' 
+#' Incorrect without permutation.
+#' 
+#' @param df A data frame.
+#' @inheritParams calc_aamasses
+#' @inheritParams mcalc_monopep
+recalc_ms1mass <- function (df, maxn_vmods_setscombi = 64, mod_indexes = NULL, 
+                            include_insource_nl = FALSE, maxn_vmods_per_pep = 5, 
+                            maxn_sites_per_vmod = 3, parallel = TRUE, 
+                            digits = 5) {
+  df <- df %>% 
+    dplyr::mutate(pep_fmod2 = ifelse(is.na(pep_fmod), "", pep_fmod), 
+                  pep_vmod2 = ifelse(is.na(pep_vmod), "", pep_vmod)) %>% 
+    tidyr::unite(pep_fvmod, c(pep_fmod2, pep_vmod2), sep = ", ", remove = FALSE) %>% 
+    tidyr::unite(uniq., c(pep_seq, pep_fvmod), sep = ", ", remove = FALSE) 
+  
+  data <- df %>% 
+    dplyr::filter(!duplicated(uniq.)) %>% 
+    dplyr::select(-uniq.) %>% 
+    dplyr::select(pep_seq, pep_fvmod) %>% 
+    split(.$pep_fvmod) %>% 
+    map(`[[`, "pep_seq")
+  
+  fvmods <- str_split(names(data), ", ") %>% 
+    purrr::map(~ .x[.x != ""])
+  
+  aam <- purrr::map(fvmods, calc_aamasses, 
+                    NULL, maxn_vmods_setscombi, mod_indexes) %>% 
+    flatten()
+  
+  masses <- purrr::map2(data, aam, mcalc_monopep, include_insource_nl, 
+                        maxn_vmods_per_pep, maxn_sites_per_vmod, 
+                        parallel, digits)
+  
+  masses <- purrr::imap(masses, ~ {
+    data <- attr(.x, "data") %>% unlist()
+    tibble(pep_seq = names(data), pep_calc_mr = data, pep_fvmod = .y)
+  }) %>% 
+    dplyr::bind_rows()
+  
+  masses <- masses %>% 
+    tidyr::unite(uniq., c(pep_seq, pep_fvmod), sep = ", ", remove = TRUE) %>% 
+    dplyr::right_join(df, by = "uniq.") %>% 
+    dplyr::select(-c("uniq.", "pep_fvmod", "pep_fmod2", "pep_vmod2"))
+  
+  # mass delta
 }
 
 
@@ -1240,6 +1302,7 @@ search_mgf_frames_d <- function (mgf_frames, theopeps, aa_masses,
   empties <- purrr::map_lgl(res, purrr::is_empty)
   
   # !!!dplyr::bind_rows() temporarily not working for list-columns!!!
+  # (contains attr(,"theo_ms1") for theoretical MS1 mass)
   res <- do.call(rbind, mgf_frames) %>% 
     dplyr::mutate(matches = res) 
   
@@ -1533,6 +1596,15 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
   empties <- map_lgl(x, is_empty)
   x <- x[!empties]
   
+  # ---
+  theomasses_ms1 <- c(theomasses_bf_ms1, theomasses_cr_ms1, theomasses_af_ms1)
+  theomasses_ms1 <- theomasses_ms1[!empties]
+  x <- map2(x, theomasses_ms1, ~ {
+    attr(.x, "theo_ms1") <- .y
+    .x
+  })
+  
+  # ---
   # length(x) == N(theos_peps) within the ppm window
   # 
   # ATIPIFFDMMLCEYQR

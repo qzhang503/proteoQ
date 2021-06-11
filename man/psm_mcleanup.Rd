@@ -25,6 +25,10 @@ the same \code{pep_seq_mod} groups.}
 match the value under the global environment.}
 
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 }
 \description{
 Parallel PSM cleanup

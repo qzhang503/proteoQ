@@ -62,8 +62,11 @@ calc_tmtint <- function (data = NULL,
       bind_rows() %>% 
       bind_cols(data, .)
   }
-
-   invisible(out)
+  
+  names(out)[grep("^([0-9]{3}[NC]{0,1})", names(out))] <- 
+    find_int_cols(length(theos))
+  
+  invisible(out)
 }
 
 
@@ -242,6 +245,11 @@ grp_prots <- function (out, out_path) {
   
   if (nrow(df) > 1L) {
     df <- df %>% groupProts(out_path)
+  } else {
+    df <- df %>% 
+      dplyr::mutate(prot_isess = TRUE, 
+                    prot_hit_num = 1L, 
+                    prot_family_member = 1L)
   }
   
   # non-essentials
@@ -453,19 +461,25 @@ parDist <- function (mat) {
 
 
 #' Greedy set cover.
-#' 
+#'
 #' @param df A two-column data frame.
-greedysetcover <- function (df) {
-
+#' @param both Logical; if TRUE, outputs both the \code{sets} and the
+#'   comprising elements.
+greedysetcover <- function (df, both = FALSE) {
+  
   stopifnot(ncol(df) == 2L)
   
+  nms <- colnames(df)
   colnames(df) <- c("s", "a")
   
   df <- df %>% 
     tidyr::unite(sa, s, a, sep = "@", remove = FALSE) %>% 
     dplyr::filter(!duplicated(sa)) %>% 
     dplyr::select(-sa)
-
+  
+  dfx <- df
+  
+  # ---
   cts <- df %>% 
     group_by(s) %>% 
     summarise(n = n()) %>% 
@@ -482,11 +496,18 @@ greedysetcover <- function (df) {
     as <- df %>% 
       filter(s == x) %>% 
       `[[`("a")
-
+    
     df <- df %>% 
       filter(! a %in% as) %>% 
       group_by(s) %>% 
       mutate(n = row_number())
+  }
+  
+  if (both) {
+    sets <- data.frame(s = sets) %>% 
+      dplyr::left_join(dfx, by = "s") %>% 
+      dplyr::filter(!duplicated(a)) %>% 
+      `colnames<-`(nms)
   }
   
   invisible(sets)

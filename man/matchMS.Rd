@@ -16,7 +16,7 @@ matchMS(
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
   include_insource_nl = FALSE,
   enzyme = c("trypsin"),
-  maxn_fasta_seqs = 50000,
+  maxn_fasta_seqs = 2e+05,
   maxn_vmods_setscombi = 64,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,

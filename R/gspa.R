@@ -614,8 +614,6 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff,
   
   if (nrow(res_pass) == 0) return(NULL)
   
-
-
   out <- local({
     adjp <- res_pass %>% 
       dplyr::select(grep("^pVal\\s+\\(", names(.))) %>% 
@@ -662,14 +660,15 @@ fml_gspa <- function (fml, fml_nm, pval_cutoff, logFC_cutoff,
     dplyr::right_join(out, by = "term")
 
   res_greedy <- sig_sets %>% 
-    greedysetcover() %T>% 
+    greedysetcover(both = TRUE) %>% 
+    RcppGreedySetCover::greedySetCover(FALSE) %T>% 
     write.table(file.path(filepath, fml_nm, paste0(fn_prefix, "_resgreedy.txt")), 
                 sep = "\t", col.names = TRUE, 
                 row.names = FALSE, quote = FALSE) %>% 
     dplyr::group_by(term) %>% 
     dplyr::summarise(ess_size = n()) %>% 
     dplyr::filter(ess_size >= min_greedy_size)
-  
+
   sig_sets <- res_greedy %>% 
     dplyr::right_join(out, by = "term") %>% 
     dplyr::mutate(is_essential = ifelse(!is.na(ess_size), TRUE, FALSE)) %>% 

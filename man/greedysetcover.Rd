@@ -4,10 +4,13 @@
 \alias{greedysetcover}
 \title{Greedy set cover.}
 \usage{
-greedysetcover(df)
+greedysetcover(df, both = FALSE)
 }
 \arguments{
 \item{df}{A two-column data frame.}
+
+\item{both}{Logical; if TRUE, outputs both the \code{sets} and the
+comprising elements.}
 }
 \description{
 Greedy set cover.

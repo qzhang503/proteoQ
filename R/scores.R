@@ -267,7 +267,7 @@ calc_probi_bypep <- function (mts, nms, expt_moverzs, expt_ints,
               digits = digits) %>% 
     bind_rows()
   
-  tibble(pep_seq = nms, out) 
+  tibble(pep_seq = nms, theo_ms1 = attr(mts, "theo_ms1"), out)
 }
 
 
@@ -537,7 +537,8 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
     dplyr::bind_rows() %>% 
     dplyr::mutate(pep_issig = ifelse(pep_prob <= prob_co, TRUE, FALSE), 
                   pep_adjp = p.adjust(pep_prob, "BH"), 
-                  pep_score = -log10(pep_adjp) * 10, 
+                  # pep_score = -log10(pep_adjp) * 10, 
+                  pep_score = -log10(pep_adjp) * 5, 
                   pep_score = ifelse(pep_score > 250, 250, pep_score), 
                   pep_score = round(pep_score, 1)) %>% 
     dplyr::select(-c("pep_prob", "pep_adjp"))
@@ -682,6 +683,11 @@ calc_protfdr_i <- function (td, target_fdr = .01) {
 #' @param max_n_pep Integer; the maximum value of \code{prot_n_pep} for
 #'   prediction.
 fit_protfdr <- function (vec, max_n_pep = 1000L) {
+  if (length(vec) <= 10L) {
+    return(data.frame(prot_n_pep = as.numeric(names(vec)), 
+                      prot_score_co = vec))
+  }
+
   rv <- rev(vec)
   df <- data.frame(x = as.numeric(names(rv)), y = rv)
   elbow <- min(df[which(df$y == min(df$y)), "x"])

@@ -2,8 +2,8 @@
 #' nested varmod positions.
 foo_find_peps <- function () {
   # res <- readRDS(file.path("~/proteoQ/outs", "ion_matches_8.rds"))
-  res <- readRDS(file.path("~/proteoQ/outs", "ion_matches_7.rds"))
-  
+  res <- readRDS(file.path("~/proteoQ/outs", "ion_matches.rds"))[[7]]
+
   # find the nested case
   mts = res$matches
   lens <- map(mts, length)
