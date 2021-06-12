@@ -515,8 +515,14 @@ rmPSMHeaders <- function(parallel = TRUE) {
 	options(warn = 1)
 	on.exit(options(old_opts), add = TRUE)
 	
-	on.exit(message("Remove PSM headers --- Completed."), 
-	        add = TRUE)
+	on.exit(
+	  if (exists(".savecall", envir = rlang::current_env())) {
+	    if (.savecall) {
+	      message("Remove PSM headers --- Completed.")
+	    }
+	  }, 
+	  add = TRUE
+	)
 
 	dat_dir <- get_gl_dat_dir()
 	
@@ -542,6 +548,10 @@ rmPSMHeaders <- function(parallel = TRUE) {
 	} else {
 	  purrr::walk(filelist, batchPSMheader, dat_dir, TMT_plex)
 	}
+	
+	.saveCall <- TRUE
+	
+	invisible(NULL)
 }
 
 
@@ -3689,9 +3699,15 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
   on.exit(options(old_opts), add = TRUE)
   options(warn = 1)
   
-  on.exit(mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-            c(dots) %>% save_call("PSM2Pep"), 
-          add = TRUE)
+  on.exit(
+    if (exists(".savecall", envir = rlang::current_env())) {
+      if (.savecall) {
+        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+          c(dots) %>% save_call("PSM2Pep")
+      }
+    }, 
+    add = TRUE
+  )
   
   dots <- rlang::enexprs(...)
   
@@ -3763,6 +3779,10 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
                 dat_dir, label_scheme_full, 
                 group_psm_by, group_pep_by, method_psm_pep, rm_allna, ...)
   }
+  
+  .saveCall <- TRUE
+  
+  invisible(NULL)
 }
 
 

@@ -628,8 +628,8 @@ chunksplitLB <- function (data, n_chunks = 5, nx = 100, type = "list") {
 #' @seealso \link{load_fasta2} for setting the values of \code{acc_type} and
 #'   \code{acc_pattern}.
 #' @export
-matchMS <- function (mgf_path = "~/proteoQ/mgfs", 
-                     out_path = "~/proteoQ/outs", 
+matchMS <- function (out_path = "~/proteoQ/outs", 
+                     mgf_path = file.path(out_path, "mgf"), 
                      fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
                                "~/proteoQ/dbs/fasta/crap/crap.fasta"), 
                      acc_type = c("uniprot_acc", "other"),
@@ -1056,8 +1056,11 @@ pmatch_bymgfs <- function (mgf_path, aa_masses_all, n_cores, out_path,
   }
   
   rm(fun, args_except, cache_pars, call_pars)
-  delete_files(out_path)
   
+  delete_files(out_path, ignores = c("\\.[Rr]$", "\\.(mgf|MGF)$", "\\.xlsx$", 
+                                     "\\.xls$", "\\.csv$", "\\.txt$", 
+                                     "^mgf$", "^mgfs$"))
+
   # Targets 
   out <- vector("list", length(aa_masses_all))
   

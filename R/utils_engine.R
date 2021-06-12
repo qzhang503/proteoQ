@@ -221,7 +221,8 @@ match_valexpr <- function (f = NULL, arg = NULL, val = NULL, default = NULL) {
 #' 
 #' The directory will be kept. 
 #' @param path A file path.
-delete_files <- function (path, ...) {
+#' @param ignores The file extensions to be ignored.
+delete_files <- function (path, ignores = NULL, ...) {
   dots <- rlang::enexprs(...)
   recursive <- dots[["recursive"]]
   
@@ -229,10 +230,32 @@ delete_files <- function (path, ...) {
   
   stopifnot(is.logical(recursive))
   
-  nms <- list.files(path = file.path(path), recursive = recursive, ...)
+  nms <- list.files(path = file.path(path), recursive = recursive, 
+                    full.names = TRUE, ...)
+
+  if (!is.null(ignores)) {
+    nms <- local({
+      dirs <- list.dirs(path, full.names = FALSE, recursive = recursive) %>% 
+        .[! . == ""]
+      
+      idxes_kept <- dirs %>% map_lgl(~ any(grepl(.x, ignores)))
+      
+      nms_kept <- list.files(path = file.path(path, dirs[idxes_kept]), 
+                             recursive = TRUE, full.names = TRUE)
+      
+      nms %>% .[! . %in% nms_kept]
+    })
+
+    nms <- local({
+      exts <- nms %>% gsub("^.*(\\.[^.]*)$", "\\1", .)
+      idxes_kept <- map_lgl(exts, ~ any(grepl(.x, ignores)))
+      
+      nms[!idxes_kept]
+    })
+  }
   
   if (!purrr::is_empty(nms)) {
-    suppressMessages(file.remove(file.path(path, nms)))
+    suppressMessages(file.remove(file.path(nms)))
   }
   
   invisible(NULL)

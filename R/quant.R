@@ -345,7 +345,10 @@ groupProts <- function (df, out_path = "~/proteoQ/outs") {
     tidyr::unite(pep_prot., pep_seq, prot_acc, sep = "@", remove = FALSE) %>% 
     dplyr::filter(!duplicated(pep_prot.)) %>% 
     dplyr::select(-pep_prot.) %>% 
-    greedysetcover()
+    greedysetcover() %T>% 
+    saveRDS(file.path(out_path, "prot_sets.rds")) %>% 
+    `[[`("prot_acc") %>% 
+    unique()
   
   df <- df %>% dplyr::mutate(prot_isess = prot_acc %in% sets) 
   df0 <- df %>% filter(!prot_isess)
@@ -463,9 +466,7 @@ parDist <- function (mat) {
 #' Greedy set cover.
 #'
 #' @param df A two-column data frame.
-#' @param both Logical; if TRUE, outputs both the \code{sets} and the
-#'   comprising elements.
-greedysetcover <- function (df, both = FALSE) {
+greedysetcover <- function (df) {
   
   stopifnot(ncol(df) == 2L)
   
@@ -476,8 +477,6 @@ greedysetcover <- function (df, both = FALSE) {
     tidyr::unite(sa, s, a, sep = "@", remove = FALSE) %>% 
     dplyr::filter(!duplicated(sa)) %>% 
     dplyr::select(-sa)
-  
-  dfx <- df
   
   # ---
   cts <- df %>% 
@@ -490,27 +489,20 @@ greedysetcover <- function (df, both = FALSE) {
   sets <- NULL
   
   while(nrow(df) > 0L) {
-    x <- df[[1, "s"]]
-    sets <- c(sets, x)
+    s <- df[[1, "s"]]
+    sa <- df[df$s == s, c("s", "a")]
     
-    as <- df %>% 
-      filter(s == x) %>% 
-      `[[`("a")
-    
+    sets <- rbind(sets, sa)
+
     df <- df %>% 
-      filter(! a %in% as) %>% 
+      filter(! a %in% sa[["a"]]) %>% 
       group_by(s) %>% 
-      mutate(n = row_number())
+      mutate(n = n()) %>% 
+      dplyr::arrange(-n)
   }
   
-  if (both) {
-    sets <- data.frame(s = sets) %>% 
-      dplyr::left_join(dfx, by = "s") %>% 
-      dplyr::filter(!duplicated(a)) %>% 
-      `colnames<-`(nms)
-  }
+  colnames(sets) <- nms
   
   invisible(sets)
 }
-
 

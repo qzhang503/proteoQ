@@ -4,10 +4,12 @@
 \alias{delete_files}
 \title{Deletes files under a directory.}
 \usage{
-delete_files(path, ...)
+delete_files(path, ignores = NULL, ...)
 }
 \arguments{
 \item{path}{A file path.}
+
+\item{ignores}{The file extensions to be ignored.}
 }
 \description{
 The directory will be kept.

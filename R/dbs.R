@@ -2508,8 +2508,10 @@ calc_pepmasses <- function (
 
     .savecall <- FALSE
   } else {
-    delete_files(out_path)
-    
+    delete_files(out_path, ignores = c("\\.[Rr]$", "\\.(mgf|MGF)$", "\\.xlsx$", 
+                                       "\\.xls$", "\\.csv$", "\\.txt$", 
+                                       "^mgf$", "^mgfs$"))
+
     .time_stamp <- format(Sys.time(), ".%Y-%m-%d_%H%M%S")
     
     # ---

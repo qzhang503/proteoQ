@@ -119,10 +119,17 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   on.exit(options(old_opts), add = TRUE)
   options(warn = 1)
   
-  on.exit(mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-            c(dots) %>% 
-            save_call("standPrn"), 
-          add = TRUE)
+  on.exit(
+    if (exists(".savecall", envir = rlang::current_env())) {
+      if (.savecall) {
+        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+          c(dots) %>% 
+          save_call("standPrn")
+      }
+    }, 
+    add = TRUE
+  )
+  
   
   reload_expts()
   
@@ -198,5 +205,9 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %T>% 
     write.table(file.path(dat_dir, "Protein", "Protein.txt"), 
                 sep = "\t", col.names = TRUE, row.names = FALSE)
+  
+  .saveCall <- TRUE
+  
+  invisible(df)
 }
 

@@ -5,8 +5,8 @@
 \title{Searches MS ions.}
 \usage{
 matchMS(
-  mgf_path = "~/proteoQ/mgfs",
   out_path = "~/proteoQ/outs",
+  mgf_path = file.path(out_path, "mgf"),
   fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
     "~/proteoQ/dbs/fasta/crap/crap.fasta"),
   acc_type = c("uniprot_acc", "other"),
@@ -37,9 +37,9 @@ matchMS(
 )
 }
 \arguments{
-\item{mgf_path}{The file path to a list of MGF files.}
-
 \item{out_path}{The output path.}
+
+\item{mgf_path}{The file path to a list of MGF files.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
