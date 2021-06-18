@@ -183,9 +183,68 @@ list_leftmatch <- function (a, b) {
 #' @import dplyr
 #' @importFrom purrr map
 #' @importFrom tibble tibble
+#' @examples
+#' \donttest{
+#' df <- list(theo = c(390.2009, 550.2315, 710.2622, 809.3306, 880.3677, 
+#'                     995.3946, 1151.4957, 175.1190, 290.1459, 361.1830, 
+#'                     460.2514, 620.2821, 780.3127, 940.3434), 
+#'            expt = c(390.2008, 550.2323, 710.2624, 809.3301, 880.3662, 
+#'                     995.3970, NA, 175.1191, 290.1458, 361.1832, 
+#'                     460.2517, 620.2880, 780.3126, 940.3438))
+#' 
+#' expt_moverzs <- c(110.0717, 112.0509, 112.0873, 113.0713, 115.0869, 
+#'                   116.0167, 116.0709, 126.1280, 127.1250, 127.1313, 
+#'                   128.1284, 128.1346, 129.1317, 129.1380, 130.0978, 
+#'                   130.1350, 130.1413, 131.1384, 133.0432, 136.0619, 
+#'                   139.0504, 157.1083, 158.0563, 158.0925, 159.0763, 
+#'                   173.1498, 175.1191, 176.1223, 176.1600, 178.0646, 
+#'                   186.1531, 188.1597, 212.1031, 230.1144, 230.1702, 
+#'                   232.1115, 248.1808, 255.1082, 261.6220, 264.6251, 
+#'                   273.1193, 275.6198, 284.1326, 284.6348, 290.1458, 
+#'                   310.1302, 321.0684, 329.1280, 344.1566, 359.6652, 
+#'                   361.1832, 362.2062, 390.2008, 407.2268, 420.1369, 
+#'                   459.2220, 460.2517, 481.0993, 491.1726, 522.2371, 
+#'                   539.7526, 540.2550, 550.2323, 551.2338, 567.2598, 
+#'                   576.7457, 584.7561, 585.2570, 585.7582, 586.2587, 
+#'                   619.2524, 620.2880, 682.2661, 683.2708, 710.2624, 
+#'                   711.2637, 718.3199, 780.3126, 781.3342, 782.3379, 
+#'                   809.3301, 810.3351, 880.3662, 881.3693, 921.3688, 
+#'                   922.3726, 923.3927, 924.3849, 940.3438, 941.3491, 
+#'                   995.3970, 996.3967, 997.3690, 998.3657, 1011.3803, 
+#'                   1012.3803, 1013.3842, 1014.3911, 1015.3893, 1016.3904)
+#' 
+#' expt_ints <- c(12810.80, 14142.40, 58754.70, 12451.00, 29055.70, 
+#'                45291.00, 63865.00, 250674.00, 261949.00, 179089.00, 
+#'                253049.00, 190448.00, 240766.00, 275813.00, 28354.30, 
+#'                219360.00, 189991.00, 229268.00, 60450.10, 12415.10, 
+#'                11351.30, 17766.50, 29119.50, 105925.00, 10832.10, 
+#'                15792.60, 707208.00, 29073.60, 12632.30, 18499.40, 
+#'                18826.60, 33715.50, 12418.70, 18046.80, 164112.00, 
+#'                15920.80, 13090.70, 24475.10, 14995.90, 49102.20, 
+#'                56960.70, 17143.40, 93462.60, 15536.50, 23416.20, 
+#'                15584.90, 30465.80, 12715.50, 31551.40, 12031.20, 
+#'                22367.40, 55729.80, 77277.60, 19092.70, 29280.50, 
+#'                17574.20, 21419.20, 10681.80, 8850.03, 27071.20, 
+#'                25317.90, 13518.70, 55593.70, 14856.20, 30853.00, 
+#'                11551.30, 22966.50, 515863.00, 243235.00, 11709.10, 
+#'                47070.90, 19336.10, 57334.40, 11747.80, 147943.00, 
+#'                42007.30, 18287.80, 51689.70, 62069.30, 13403.00, 
+#'                84499.10, 24180.00, 47260.80, 13985.00, 14132.90, 
+#'                10097.10, 12578.40, 13326.10, 49003.80, 12951.10, 
+#'                98873.10, 38704.30, 12971.00, 8924.51, 89986.00, 
+#'                162963.00, 119860.00, 114223.00, 125885.00, 32305.60)
+#' 
+#' calc_probi_byvmods(df, nms = "0000000", expt_moverzs, expt_ints, N = 190)
+#' 
+#' # 
+#' df2 <- df
+#' df2$expt[8] <- NA
+#' calc_probi_byvmods(df2, nms = "0000000", expt_moverzs, expt_ints, N = 190)
+#' }
 calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints, 
-                                N, type_ms2ions, topn_ms2ions, 
-                                penalize_sions, ppm_ms2, digits) {
+                                N, type_ms2ions = "by", topn_ms2ions = 100, 
+                                penalize_sions = FALSE, ppm_ms2 = 25, 
+                                digits = 5) {
   
   m <- length(df[["theo"]])
   m[m > N] <- N
@@ -198,7 +257,8 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
 
   # subtracts `m` and the counts of secondary b0, y0 matches etc. from noise
   n <- N - m - sum(!is.na(df2$expt))
-  
+
+  # ---
   expts <- bind_cols(expt = expt_moverzs, int = expt_ints)
   df <- bind_cols(theo = df$theo, expt = df$expt)
   df2 <- bind_cols(theo = df2$theo, expt = df2$expt)
@@ -218,7 +278,7 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
 
     rm(y1, y2)
   } else {
-    y <- left_join(expts, bind_rows(df, df2), by = "expt") %>% 
+    y <- left_join(expts, df, by = "expt") %>% 
       arrange(-int) %>% 
       mutate(k = row_number(), 
              x = k - cumsum(is.na(theo))) %>% 
@@ -233,9 +293,10 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
   # n <- max(n, 2 * k[length(k)])
   n <- max(n, topn_ms2ions + k[length(k)])
   
-  pr <- mapply(dhyper, x, m, n, k) %>% 
-    min(na.rm = TRUE) 
-  
+  pr <- mapply(dhyper, x[-c(1:2)], m, n, k[-c(1:2)]) %>% min(na.rm = TRUE) 
+  # pr <- min(dhyper(x[-c(1:3)], m, n, k[-c(1:3)]), na.rm = TRUE)
+  # pr <- 1 - max(phyper(x[-c(1:3)], m, n, k[-c(1:3)]), na.rm = TRUE)
+
   tibble(pep_ivmod = nms, 
          pep_prob = pr, 
          pri_matches = list(df), 
@@ -407,7 +468,8 @@ calc_pepprobs_i <- function (res, topn_ms2ions = 100, type_ms2ions = "by",
     dplyr::group_by(scan_num) %>% 
     dplyr::arrange(pep_prob) %>% 
     dplyr::mutate(pep_rank = row_number()) %>% 
-    dplyr::ungroup() 
+    dplyr::ungroup() %>% 
+    dplyr::mutate(pep_len = stringr::str_length(pep_seq))
 }
 
 
@@ -422,6 +484,7 @@ calc_pepprobs_i <- function (res, topn_ms2ions = 100, type_ms2ions = "by",
 #' @export
 calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by", 
                             target_fdr = 0.01, fdr_type = "psm", 
+                            min_len = 7L, max_len = 100L, 
                             penalize_sions = FALSE, ppm_ms2 = 25, 
                             out_path = "~/proteoQ/outs", digits = 5) {
 
@@ -524,71 +587,229 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
   stopCluster(cl)
   
   # --- FDR --- 
-  prob_co <- calc_pepfdr(out, nms = nms_d, target_fdr = target_fdr, 
-                         fdr_type = fdr_type)
-
-  oks <- purrr::map_lgl(out, ~ nrow(.x) > 0)
+  prob_cos <- calc_pepfdr(out, nms = nms_d, target_fdr = target_fdr, 
+                          fdr_type = fdr_type, min_len = min_len, 
+                          max_len = max_len) 
   
+  best_prob_co <- prob_cos %>% .[length(.)]
+  
+  prob_cos <- prob_cos%>% 
+    data.frame(pep_len = as.numeric(names(.)), prob_co = .) 
+
+  fct_score <- 10
+  
+  # score_homol <- -log10(prob_co2$prob_co_homol) * fct_score
+  # score_ident <- -log10(prob_co2$prob_co_ident) * fct_score
+  
+  # ---
+  oks <- purrr::map_lgl(out, ~ nrow(.x) > 0)
+
   out <- out[oks] %>% 
     imap( ~ {
       .x[["pep_mod_group"]] <- .y
       .x
     }) %>% 
-    dplyr::bind_rows() %>% 
-    dplyr::mutate(pep_issig = ifelse(pep_prob <= prob_co, TRUE, FALSE), 
+    dplyr::bind_rows()
+  
+  # ---
+  out <- out %>% 
+    left_join(prob_cos, by = "pep_len") %>% 
+    dplyr::mutate(best_prob_co = .env$best_prob_co, 
+                  pep_issig = ifelse(pep_prob <= best_prob_co, TRUE, FALSE), 
+                  pep_islsig = ifelse(pep_prob <= prob_co, TRUE, FALSE), 
                   pep_adjp = p.adjust(pep_prob, "BH"), 
-                  # pep_score = -log10(pep_adjp) * 10, 
-                  pep_score = -log10(pep_adjp) * 5, 
+                  pep_score = -log10(pep_adjp) * fct_score, 
                   pep_score = ifelse(pep_score > 250, 250, pep_score), 
                   pep_score = round(pep_score, 1)) %>% 
-    dplyr::select(-c("pep_prob", "pep_adjp"))
-
+    dplyr::select(-c("pep_prob", "pep_adjp", "prob_co", "best_prob_co"))
+  
   invisible(out)
 }
 
 
+#' Helper of \link{calc_pepfdr}.
+#'
+#' Calculates the probability cut-off for target-decoy pairs at a given peptide
+#' length.
+#' 
+#' @param td A target-decoy pair.
+#' @param len Numeric; the length of peptides.
+#' @inheritParams matchMS
+probco_bypeplen <- function (len, td, fdr_type, target_fdr) {
+  td <- td %>% filter(pep_len == len)
+  
+  if (fdr_type %in% c("peptide", "protein")) {
+    td <- td %>% 
+      dplyr::arrange(pep_seq, pep_prob) %>% 
+      dplyr::group_by(pep_seq) %>% 
+      dplyr::filter(row_number() == 1) %>% 
+      dplyr::ungroup()
+  }
+  
+  td <- td %>% 
+    dplyr::select(pep_prob, pep_isdecoy) %>% 
+    # dplyr::filter(!(pep_isdecoy & pep_prob == 0)) %>% 
+    dplyr::arrange(pep_prob) %>% 
+    dplyr::mutate(total = row_number()) %>% 
+    dplyr::mutate(decoy = cumsum(pep_isdecoy)) %>% 
+    dplyr::mutate(fdr = decoy/total)
+  
+  # ---
+  count <- nrow(td)
+  if (count <= 200L) return(NA)
+  
+  row <- which(td$fdr <= target_fdr) 
+  
+  if (!is_empty(row)) {
+    row <- max(row)
+    
+    prob_co <- td[row, "pep_prob"] %>% 
+      unlist(use.names = FALSE)
+  } else {
+    prob_co <- NA
+  }
+  
+  names(prob_co) <- count
+  
+  invisible(prob_co)
+}
+
 
 #' Calculates the cut-off score at a peptide FDR.
+#'
+#' Needs \code{min_len} and \code{max_len} since the target-decoy pair may not
+#' cover all \code{pep_len} values.
 #'
 #' @param out The output from \link{calc_pepscores}.
 #' @param nms The name(s) of \code{out} that correspond(s) to decoy results.
 #' @param target_fdr Numeric; the levels of false-discovery rate.
 #' @param fdr_type Character string; the type of FDR controlling. The value is
 #'   in one of c("psm", "peptide", "protein").
-calc_pepfdr <- function (out, nms, target_fdr = .01, 
-                         fdr_type = "psm") {
+#' @inheritParams matchMS
+calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm", 
+                         min_len = 7L, max_len = 100L) {
 
-  if (!is.null(nms)) {
-    td <- out[c(nms %>% 
-                  gsub("^rev_", "", .) %>% 
-                  as.numeric(), 
-                nms)] %>% 
-      dplyr::bind_rows()
+  find_optlens <- function (all_lens, counts, min_count = 2000L) {
+    idxes <- which(counts >= min_count)
     
-    if (fdr_type %in% c("peptide", "protein")) {
-      td <- td %>% 
-        dplyr::arrange(pep_seq, pep_prob) %>% 
-        dplyr::group_by(pep_seq) %>% 
-        dplyr::filter(row_number() == 1) %>% 
-        dplyr::ungroup()
+    if (length(idxes) > 0L) {
+      return(all_lens[idxes])
+    } else {
+      find_optlens(all_lens, min_count/2)
     }
-    
-    td <- td %>% 
-      dplyr::select(pep_prob, pep_isdecoy) %>% 
-      dplyr::filter(!(pep_isdecoy & pep_prob == 0)) %>% 
-      dplyr::arrange(pep_prob) %>% 
-      dplyr::mutate(total = row_number()) %>% 
-      dplyr::mutate(decoy = cumsum(pep_isdecoy)) %>% 
-      dplyr::mutate(fdr = decoy/total)
-    
-    row <- which(td$fdr <= target_fdr) %>% max()
-    prob_co <- td[row, "pep_prob"] %>% unlist(use.names = FALSE)
-  } else {
-    prob_co <- NULL
   }
   
-  invisible(prob_co)
+  
+  if (!is.null(nms)) {
+    nms_t <- nms %>% 
+      gsub("^rev_", "", .)
+    
+    td <- local({
+      td <- out[c(nms_t, nms)]
+      
+      dpeps <- td[[nms]] %>% 
+        .$pep_seq %>% 
+        unique()
+      
+      tpeps <- td[[nms_t]] %>% 
+        .$pep_seq %>% 
+        unique()
+      
+      dpeps <- dpeps %>% 
+        .[! . %in% tpeps]
+      
+      td[[nms]] <- td[[nms]] %>% 
+        filter(pep_seq %in% dpeps)
+      
+      invisible(td)
+    })
+    
+    run_scripts <- FALSE
+    if (run_scripts) {
+      prob_co_homol <- map_dbl(seq(0, .1, by = .01), ~ {
+        co <- .x
+        
+        qt <- quantile(td[[nms_t]]$pep_prob, co)
+        qd <- quantile(td[[nms]]$pep_prob, co)
+        
+        td[[nms_t]] <- td[[nms_t]] %>% 
+          mutate(pep_prob = ifelse(pep_prob < qt, qt, pep_prob))
+        td[[nms]] <- td[[nms]] %>% 
+          mutate(pep_prob = ifelse(pep_prob < qd, qd, pep_prob))
+        
+        td <- td %>% 
+          bind_rows() %>% 
+          dplyr::filter(pep_rank == 1)
+        
+        if (fdr_type %in% c("peptide", "protein")) {
+          td <- td %>% 
+            dplyr::arrange(pep_seq, pep_prob) %>% 
+            dplyr::group_by(pep_seq) %>% 
+            dplyr::filter(row_number() == 1) %>% 
+            dplyr::ungroup()
+        }
+        
+        td <- td %>% 
+          dplyr::select(pep_prob, pep_isdecoy) %>% 
+          # dplyr::filter(!(pep_isdecoy & pep_prob == 0)) %>% 
+          dplyr::arrange(pep_prob) %>% 
+          dplyr::mutate(total = row_number()) %>% 
+          dplyr::mutate(decoy = cumsum(pep_isdecoy)) %>% 
+          dplyr::mutate(fdr = decoy/total)
+        
+        row <- which(td$fdr <= target_fdr) %>% max()
+        prob_co <- td[row, "pep_prob"] %>% unlist(use.names = FALSE)
+      }) %>% 
+        max(na.rm = TRUE)
+    }
+    
+    prob_cos <- local({
+      td <- td %>% 
+        bind_rows() %>% 
+        dplyr::filter(pep_rank == 1)
+      
+      all_lens <- unique(td$pep_len)
+      # lens <- all_lens %>% .[. <= 18]
+
+      prob_cos <- all_lens %>% 
+        map(probco_bypeplen, td, fdr_type, target_fdr) %>% 
+        unlist()
+      counts <- as.numeric(names(prob_cos))
+      names(counts) <- all_lens
+      names(prob_cos) <- all_lens
+      
+      lens <- find_optlens(all_lens, counts, 2000L)
+      prob_cos <- prob_cos %>% .[names(.) %in% lens]
+      counts <- counts %>% .[names(.) %in% lens]
+      # plot(-log10(prob_cos) ~ names(prob_cos))
+      # plot(counts ~ names(prob_cos))
+
+      best_score_co <- prob_cos %>% 
+        .[which_topx(., n = 1)] %>% 
+        log10() %>% `-`
+      elbow <- as.numeric(names(best_score_co))
+
+      # ---
+      df <- data.frame(x = as.numeric(names(prob_cos)), y = -log10(prob_cos))
+      fit <- lm(y ~ splines::ns(x, 4), df)
+      newx <- min_len : max_len
+      newy <- predict(fit, data.frame(x = newx)) %>% 
+        `names<-`(newx)
+      newy[which(names(newy) == elbow):length(newy)] <- best_score_co
+      # plot(newy ~ names(newy))
+
+      prob_cos <- 10^-newy
+    })
+  } else {
+    seqs <- min_len : max_len
+    prob_cos <- rep(.05, length(seqs))
+    names(prob_cos) <- seqs
+  }
+  
+  invisible(prob_cos)
 }
+
+
 
 
 #' Calculates the cut-offs of protein scores.
@@ -860,5 +1081,11 @@ scalc_pepscores_static <- function (entry, topn_ms2ions = 100, type_ms2ions = "b
     tibble(pri_matches = purrr::flatten(mts)), 
     tibble(sec_matches = purrr::flatten(mts2)))
 }
+
+
+
+
+
+
 
 

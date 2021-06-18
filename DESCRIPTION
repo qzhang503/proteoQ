@@ -42,6 +42,7 @@ Imports:
     gridExtra,
 	gtable,
 	gtools,
+	multidplyr,
 	networkD3,
     purrr,
     readxl,

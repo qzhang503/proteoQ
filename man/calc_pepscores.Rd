@@ -9,6 +9,8 @@ calc_pepscores(
   type_ms2ions = "by",
   target_fdr = 0.01,
   fdr_type = "psm",
+  min_len = 7L,
+  max_len = 100L,
   penalize_sions = FALSE,
   ppm_ms2 = 25,
   out_path = "~/proteoQ/outs",
@@ -27,6 +29,12 @@ ions}. Values are in one of "by", "ax" and "cz".}
 
 \item{fdr_type}{Character string; the type of FDR controlling. The value is
 in one of c("psm", "peptide", "protein").}
+
+\item{min_len}{Integer; the minimum length of peptides. Shorter peptides will
+be excluded.}
+
+\item{max_len}{Integer; the maximum length of peptides. Longer peptides will
+be excluded.}
 
 \item{penalize_sions}{Logical; if TRUE, penalizes secondary ions of b0, y0
 etc. with lower weights in peptide scoring.}

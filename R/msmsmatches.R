@@ -711,13 +711,13 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     })
   
   ## Mass range
-  tempdata <- res %>% 
+  min_mass <- 500
+  
+  max_mass <- res %>% 
     purrr::map(attributes) %>% 
     purrr::map(`[[`, "data") %>% 
-    unlist(use.names = FALSE)
-  min_mass <- min(tempdata, na.rm = TRUE)
-  max_mass <- max(tempdata, na.rm = TRUE)
-  rm(tempdata)
+    unlist(use.names = FALSE) %>% 
+    max(na.rm = TRUE)
 
   ## Bin theoretical peptides
   local({
@@ -834,6 +834,8 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                         type_ms2ions = type_ms2ions, 
                         target_fdr = target_fdr, 
                         fdr_type = fdr_type, 
+                        min_len = min_len, 
+                        max_len = max_len, 
                         penalize_sions = FALSE, 
                         ppm_ms2 = ppm_ms2, 
                         out_path = out_path, 
@@ -1126,6 +1128,9 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
     dplyr::group_by(frame) %>% 
     dplyr::group_split() %>% 
     setNames(purrr::map_dbl(., ~ .x$frame[1]))
+  
+  # x = mgf_frames %>% .[names() == 80964]
+  # which(names(x)) == 56090
   
   mgf_frames <- local({
     labs <- levels(cut(1:length(mgf_frames), n_cores^2))
