@@ -5,15 +5,18 @@
 \title{Searches MS ions.}
 \usage{
 matchMS(
-  mgf_path = "~/proteoQ/mgfs",
   out_path = "~/proteoQ/outs",
-  fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+  mgf_path = file.path(out_path, "mgf"),
+  fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+    "~/proteoQ/dbs/fasta/crap/crap.fasta"),
+  acc_type = c("uniprot_acc", "other"),
+  acc_pattern = NULL,
   fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"),
   varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
   include_insource_nl = FALSE,
   enzyme = c("trypsin"),
-  maxn_fasta_seqs = 50000,
+  maxn_fasta_seqs = 2e+05,
   maxn_vmods_setscombi = 64,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
@@ -26,17 +29,32 @@ matchMS(
   minn_ms2 = 6,
   ppm_ms1 = 20,
   ppm_ms2 = 25,
-  pep_fdr = 0.01,
+  ppm_reporters = 10,
+  quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"),
+  target_fdr = 0.01,
+  fdr_type = c("psm", "peptide", "protein"),
   digits = 5
 )
 }
 \arguments{
+\item{out_path}{The output path.}
+
 \item{mgf_path}{The file path to a list of MGF files.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search. There is no default and users need to provide the
 correct file path(s) and name(s).}
+
+\item{acc_type}{Character string(s); the types of protein accessions in one
+of c("uniprot_acc", "uniprot_id", "refseq_acc", "other"). For custom names,
+the corresponding regular expressions need to be supplied via argument
+\code{acc_pattern}.}
+
+\item{acc_pattern}{Regular expression(s) describing the patterns to separate
+the header lines of fasta entries. At the \code{NULL} default, the pattern
+will be automated when \code{acc_type} are among c("uniprot_acc",
+"uniprot_id", "refseq_acc", "other").}
 
 \item{fixedmods}{A character vector of fixed modifications. See also
 \link{parse_unimod} for grammars.}
@@ -92,10 +110,21 @@ a hit.}
 
 \item{ppm_ms2}{The mass tolerance of MS2 species.}
 
-\item{pep_fdr}{Numeric; the levels of peptide FDR.}
+\item{ppm_reporters}{The mass tolerance of MS2 reporter ions.}
+
+\item{quant}{A quantitation method. The default is "none".}
+
+\item{target_fdr}{Numeric; the levels of false-discovery rate.}
+
+\item{fdr_type}{Character string; the type of FDR controlling. The value is
+in one of c("psm", "peptide", "protein").}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
 Searches MS ions.
+}
+\seealso{
+\link{load_fasta2} for setting the values of \code{acc_type} and
+  \code{acc_pattern}.
 }

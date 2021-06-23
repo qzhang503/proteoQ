@@ -1,17 +1,15 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.4.1.5
+Version: 1.5
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
            role = c("aut", "cre"),
            email = "qzhang503@gmail.com", 
 					 comment = c(ORCID = "0000-0001-7046-4378"))
-Description: Data Processing and Informatic Analysis of Mass Spectrometrirc Data.  
-    It reads and processes data from multiplex TMT experiments in mass spectrometry. 
-		It further provides basic informatic analysis.
+Description: Searches and Analysis of Mass Spectrometrirc Data.  
 biocViews: 
-Depends: R (>= 4.0)
+Depends: R (>= 4.1)
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -34,45 +32,50 @@ Suggests:
 VignetteBuilder: knitr
 Imports: 
     biomaRt,
-    boot,		
-	cluster,
-	dplyr,
-    e1071,		
-	forcats,
+    boot,
+    cluster,
+    dplyr,
+    e1071,
+    forcats,
     ggplot2,
     grid,
     gridExtra,
-	gtable,
-	gtools,
-	networkD3,
+    gtable,
+    gtools,
+    multidplyr,
+    networkD3,
     purrr,
     readxl,
     readr,
-	stringi,
+    stringi,
     stringr,
     tidyr,
     fs,
     magrittr,
-	limma,
+    limma,
     mixtools,
-	org.Hs.eg.db,
-	org.Mm.eg.db, 
-	org.Rn.eg.db,
+    org.Hs.eg.db,
+    org.Mm.eg.db,
+    org.Rn.eg.db,
     openxlsx,
-	parallel,
+    parallel,
     pheatmap,
     plyr,
-	proteoQDA,
-	reshape2,
+	proteoCpp,
+    proteoQDA,
+    reshape2,
     rlang,
-	Biobase,
-	BiocManager,
-	EnvStats,
+    Biobase,
+    BiocManager,
+    EnvStats,
     GGally,
-	MASS,
+    MASS,
     RColorBrewer,
-	RcppGreedySetCover,
-    RCurl
+    RCurl,
+    Rcpp
 RoxygenNote: 7.1.1
 Remotes:
+	qzhang503/proteoCpp, 
 	qzhang503/proteoQDA
+LinkingTo: 
+    Rcpp

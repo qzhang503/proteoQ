@@ -161,9 +161,6 @@ binTheoPeps <- function (res, min_mass = 516.24046, max_mass = 10000, ppm = 20,
                          out_path = file.path("~/proteoQ/outs", 
                                               "pepmasses/binned_theopeps.rds")) {
   
-  # out_path <- gsub("\\\\", "/", out_path)
-  # out_dir <- gsub("(^.*/).*$", "\\1", out_path)
-  # dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
   out_dir <- create_dir(gsub("(^.*/).*$", "\\1", out_path))
   out_nms <- gsub("^.*/(.*)\\.[^\\.].*$", "\\1", out_path) %>% 
     paste(seq_along(res), sep = "_") %>% 
@@ -173,8 +170,6 @@ binTheoPeps <- function (res, min_mass = 516.24046, max_mass = 10000, ppm = 20,
     purrr::map(attributes) %>% 
     purrr::map(`[[`, "data")
   
-  # message("Binning MS1 peptide masses (theoretical).")
-
   n_cores <- parallel::detectCores()
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   
@@ -186,7 +181,7 @@ binTheoPeps <- function (res, min_mass = 516.24046, max_mass = 10000, ppm = 20,
   }) %>% 
     parallel::clusterMap(cl, cbind_theopepes, ., file.path(out_dir, out_nms))
 
-  rm(res)
+  rm(list = c("res"))
 
   parallel::stopCluster(cl)
 
@@ -219,7 +214,7 @@ proc_mgfs <- function (lines, topn_ms2ions = 100, ret_range = c(0, Inf)) {
     rows <- purrr::map(ms2_ints, which_topx, topn_ms2ions)
     ms2_ints <- purrr::map2(ms2_ints, rows, ~ .x[.y])
     ms2_moverzs <- purrr::map2(ms2_moverzs, rows, ~ .x[.y])
-    rm(rows, ms2s)
+    rm(list = c("rows", "ms2s"))
   }
   
   # MS1 ions
@@ -233,7 +228,7 @@ proc_mgfs <- function (lines, topn_ms2ions = 100, ret_range = c(0, Inf)) {
   ms1_ints <- ms1s %>% 
     purrr::map(~ .x[, 2] %>% as.numeric())
   
-  rm(ms1s)
+  rm(list = c("ms1s"))
   
   # Others
   scan_titles <- lines[begins+1] %>% 
@@ -264,6 +259,10 @@ proc_mgfs <- function (lines, topn_ms2ions = 100, ret_range = c(0, Inf)) {
   ms1_masses <- purrr::map2(ms1_moverzs, charges, ~ {
     .x * .y - .y * proton 
   })
+  
+  # Rounding
+  # ms1_ints <- ms1_ints %>% map(as.integer)
+  # ms2_ints <- ms2_ints %>% map(as.integer)
   
   # Subsetting
   rows <- (ret_times >= ret_range[1] & ret_times <= ret_range[2])
@@ -524,11 +523,23 @@ readMGF <- function (filepath = "~/proteoQ/mgfs", min_mass = 516.2405,
 #' 
 #' @param data Input data.
 #' @param n_chunks The number of chunks.
+#' @param type The type of data for splitting.
 #' @export
-chunksplit <- function (data, n_chunks = 5) {
+chunksplit <- function (data, n_chunks = 5, type = "list") {
+  stopifnot(type %in% c("list", "row"))
+  
   if (n_chunks <= 1) return(data)
   
-  len <- length(data)
+  if (type == "list") {
+    len <- length(data)
+  } else if (type == "row") {
+    len <- nrow(data)
+  } else {
+    stop("Unknown type.", call. = TRUE)
+  }
+  
+  if (len == 0L) return(data)
+  
   labs <- levels(cut(1:len, n_chunks))
   
   x <- cbind(lower = floor(as.numeric( sub("\\((.+),.*", "\\1", labs))),
@@ -548,10 +559,20 @@ chunksplit <- function (data, n_chunks = 5) {
 #'   into for estimating the cumulative sizes.
 #' @inheritParams chunksplit
 #' @export
-chunksplitLB <- function (data, n_chunks = 5, nx = 100) {
+chunksplitLB <- function (data, n_chunks = 5, nx = 100, type = "list") {
+  stopifnot(type %in% c("list", "row"))
+  
   if (n_chunks <= 1) return(data)
   
-  len <- length(data)
+  if (type == "list") {
+    len <- length(data)
+  } else if (type == "row") {
+    len <- nrow(data)
+  } else {
+    stop("Unknown type.", call. = TRUE)
+  }
+  
+  if (len == 0L) return(data)
   
   # The finer groups by 'nx'
   grps_nx <- local({
@@ -601,18 +622,25 @@ chunksplitLB <- function (data, n_chunks = 5, nx = 100) {
 #' @inheritParams readMGF
 #' @inheritParams normPSM
 #' @inheritParams calc_pepfdr
+#' @inheritParams calc_tmtint
+#' @inheritParams load_fasta2
 #' @param mgf_path The file path to a list of MGF files.
+#' @seealso \link{load_fasta2} for setting the values of \code{acc_type} and
+#'   \code{acc_pattern}.
 #' @export
-matchMS <- function (mgf_path = "~/proteoQ/mgfs", 
-                     out_path = "~/proteoQ/outs", 
-                     fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
+matchMS <- function (out_path = "~/proteoQ/outs", 
+                     mgf_path = file.path(out_path, "mgf"), 
+                     fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
+                               "~/proteoQ/dbs/fasta/crap/crap.fasta"), 
+                     acc_type = c("uniprot_acc", "other"),
+                     acc_pattern = NULL, 
                      fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"), 
                      varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", 
                                  "Oxidation (M)", "Deamidated (N)", 
                                  "Gln->pyro-Glu (N-term = Q)"), 
                      include_insource_nl = FALSE, 
                      enzyme = c("trypsin"), 
-                     maxn_fasta_seqs = 50000,
+                     maxn_fasta_seqs = 200000,
                      maxn_vmods_setscombi = 64, 
                      maxn_vmods_per_pep = 5,
                      maxn_sites_per_vmod = 3, 
@@ -621,8 +649,21 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                      type_ms2ions = "by", 
                      topn_ms2ions = 100, 
                      minn_ms2 = 6, ppm_ms1 = 20, ppm_ms2 = 25, 
-                     pep_fdr = 0.01, 
+                     ppm_reporters = 10, 
+                     quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"), 
+                     target_fdr = 0.01, 
+                     fdr_type = c("psm", "peptide", "protein"), 
                      digits = 5) {
+  
+  on.exit(
+    if (exists(".savecall", envir = rlang::current_env())) {
+      if (.savecall) {
+        save_call2(path = file.path(out_path, "Calls"), 
+                   fun = as.character(match.call()[[1]]))
+      }
+    }, 
+    add = TRUE
+  )
   
   out_path <- create_dir(out_path)
   
@@ -642,7 +683,11 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
   
   ## Theoretical MS1 masses
   res <- calc_pepmasses(
-    fasta = fasta, fixedmods = fixedmods, varmods = varmods, 
+    fasta = fasta, 
+    acc_type = acc_type,
+    acc_pattern = acc_pattern, 
+    fixedmods = fixedmods, 
+    varmods = varmods, 
     include_insource_nl = include_insource_nl, 
     index_mods = FALSE, 
     enzyme = enzyme, 
@@ -650,11 +695,14 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
     maxn_vmods_setscombi = maxn_vmods_setscombi, 
     maxn_vmods_per_pep = maxn_vmods_per_pep, 
     maxn_sites_per_vmod = maxn_sites_per_vmod, 
-    min_len = min_len, max_len = max_len, max_miss = max_miss, 
+    min_len = min_len, 
+    max_len = max_len, 
+    max_miss = max_miss, 
+    out_path = out_path, 
     digits = digits, 
     parallel = TRUE
   )
-
+  
   ## AA masses
   aa_masses_all <- res %>% 
     purrr::map(~ {
@@ -663,33 +711,36 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
     })
   
   ## Mass range
-  tempdata <- res %>% 
+  min_mass <- 500
+  
+  max_mass <- res %>% 
     purrr::map(attributes) %>% 
     purrr::map(`[[`, "data") %>% 
-    unlist(use.names = FALSE)
-  min_mass <- min(tempdata, na.rm = TRUE)
-  max_mass <- max(tempdata, na.rm = TRUE)
-  rm(tempdata)
+    unlist(use.names = FALSE) %>% 
+    max(na.rm = TRUE)
 
   ## Bin theoretical peptides
-  message("Binning MS1 peptide masses (theoretical target).")
-  
   local({
     .path_cache <- get(".path_cache", envir = .GlobalEnv)
     .path_fasta <- get(".path_fasta", envir = .GlobalEnv)
     .time_stamp <- get(".time_stamp", envir = .GlobalEnv)
     
+    # Targets
     bins <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
                        pattern = "binned_theopeps_\\d+\\.rds$")
     
     if (is_empty(bins)) {
+      message("Binning MS1 masses (theoretical target).")
+      
       binTheoPeps(res = res, min_mass = min_mass, max_mass = max_mass, 
                   ppm = ppm_ms1, 
                   out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
                                        "binned_theopeps.rds"))
+    } else {
+      message("Loading bins of MS1 masses from cache (theoretical target).")
     }
     
-    # decoy
+    # Decoys
     bins2 <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
                         pattern = "binned_theopeps_rev_\\d+\\.rds$")
     
@@ -697,28 +748,42 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
       rev_res <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
                                    "pepmasses_rev.rds"))
       
-      message("Binning MS1 peptide masses (theoretical decoy).")
+      message("Binning MS1 masses (theoretical decoy).")
       
       binTheoPeps(res = rev_res, min_mass = min_mass, max_mass = max_mass, 
                   ppm = ppm_ms1, 
                   out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
                                        "binned_theopeps_rev.rds"))
+    } else {
+      message("Loading bins of MS1 masses from cache (theoretical decoy).")
     }
   }) 
   
-  rm(res)
+  rm(list = c("res"))
   
   ## MGFs
-  message("Splitting MGFs.")
+  mgf_frames <- local({
+    rds <- file.path(mgf_path, "mgf_queries.rds")
+    
+    if (file.exists(rds)) {
+      message("Loading cached MGFs: `", rds, "`.")
+      mgf_frames <- readRDS(rds)
+    } else {
+      message("Processing raw MGFs.")
+      mgf_frames <- readMGF(filepath = mgf_path, 
+                            min_mass = min_mass, 
+                            topn_ms2ions = topn_ms2ions, 
+                            ret_range = c(0, Inf), 
+                            ppm_ms1 = ppm_ms1, 
+                            out_path = rds) 
+    }
+  })
   
-  mgf_frames <- readMGF(filepath = mgf_path, min_mass = min_mass, 
-                        topn_ms2ions = topn_ms2ions, ret_range = c(0, Inf), 
-                        ppm_ms1 = ppm_ms1, 
-                        out_path = file.path(mgf_path, "mgf_queries.rds")) 
+  gc()
   
+  ## MSMS matches
   n_cores <- parallel::detectCores()
   
-  ## Ion searches
   out <- pmatch_bymgfs(mgf_path = mgf_path, 
                        aa_masses_all = aa_masses_all, 
                        n_cores = n_cores, 
@@ -732,22 +797,193 @@ matchMS <- function (mgf_path = "~/proteoQ/mgfs",
                        minn_ms2 = minn_ms2, 
                        ppm_ms1 = ppm_ms1, 
                        ppm_ms2 = ppm_ms2, 
+                       
+                       # dummy for argument matching
+                       fasta = fasta, 
+                       acc_type = acc_type, 
+                       acc_pattern = acc_pattern,
+                       topn_ms2ions = topn_ms2ions,
+                       fixedmods = fixedmods, 
+                       varmods = varmods, 
+                       include_insource_nl = include_insource_nl, 
+                       enzyme = enzyme,
+                       maxn_fasta_seqs = maxn_fasta_seqs,
+                       maxn_vmods_setscombi = maxn_vmods_setscombi, 
+                       min_len = min_len, 
+                       max_len = max_len, 
+                       max_miss = max_miss, 
+                       # target_fdr = target_fdr, 
+                       # fdr_type = fdr_type, 
+                       # quant = !!enexpr(quant), 
+                       # ppm_reporters = ppm_reporters, 
+                       
                        digits = digits) 
   
-  ## Peptide scores
-  message("Calculating peptide scores.")
+  # Peptide scores
+  fdr_type <- rlang::enexpr(fdr_type)
+  oks <- eval(formals()[["fdr_type"]])
   
+  if (length(fdr_type) > 1L) {
+    fdr_type <- oks[[1]]
+  } else {
+    fdr_type <- rlang::as_string(fdr_type)
+  }
+  
+  stopifnot(fdr_type %in% oks)
+  rm(list = c("oks"))
+  
+  # TMT intensities
+  quant <- rlang::enexpr(quant)
+  oks <- eval(formals()[["quant"]])
+  
+  if (length(quant) > 1L) {
+    quant <- oks[[1]]
+  } else {
+    quant <- rlang::as_string(quant)
+  }
+  
+  stopifnot(quant %in% oks, length(quant) == 1L)
+  rm(list = c("oks"))
+  
+  reporters <- out %>% 
+    imap( ~ {
+      .x %>% 
+        calc_tmtint(quant = quant, ppm_reporters = ppm_reporters) %>% 
+        tidyr::unite(uniq_id, RAW_File, pep_mod_group, scan_num, sep = ".", 
+                     remove = TRUE) %>% 
+        dplyr::select(uniq_id, grep("^I[0-9]{3}[NC]{0,1}$", names(.))) 
+    }) %>% 
+    dplyr::bind_rows()
+
+  # ---
   out <- calc_pepscores(topn_ms2ions = topn_ms2ions, 
                         type_ms2ions = type_ms2ions, 
-                        pep_fdr = pep_fdr, 
+                        target_fdr = target_fdr, 
+                        fdr_type = fdr_type, 
+                        min_len = min_len, 
+                        max_len = max_len, 
                         penalize_sions = FALSE, 
                         ppm_ms2 = ppm_ms2, 
                         out_path = out_path, 
                         digits = digits)
   
-  rm(.path_cache, .path_fasta, .time_stamp, envir = .GlobalEnv)
+  gc()
+
+  # Protein accessions, score cut-offs
+  out <- out %>% 
+    add_prot_acc() %>% 
+    calc_protfdr(target_fdr)
+
+  gc()
+  
+  # Protein groups
+  out <- grp_prots(out, out_path)
+  
+  # Clean-ups
+  message("Saving outputs.")
+  
+  data.frame(Abbr = as.character(mod_indexes), Desc = names(mod_indexes)) %>% 
+    readr::write_tsv(file.path(out_path, "mod_indexes.txt"))
+  
+  # adds back reporter intensities
+  if (quant != "none") {
+    out <- out %>% 
+      tidyr::unite(uniq_id, RAW_File, pep_mod_group, scan_num, sep = ".", 
+                   remove = FALSE) %>% 
+      dplyr::left_join(reporters, by = "uniq_id") %>% 
+      dplyr::select(-uniq_id)
+  }
+
+  out <- out %>% 
+    dplyr::mutate(pep_ms1_delta = ms1_mass - theo_ms1) %>% 
+    dplyr::rename(pep_scan_title = scan_title, 
+                  pep_exp_mz = ms1_moverz, 
+                  pep_exp_mr = ms1_mass, 
+                  pep_exp_z = ms1_charge, 
+                  pep_calc_mr = theo_ms1, 
+                  pep_delta = pep_ms1_delta, 
+                  
+                  pep_tot_int = ms1_int, 
+                  pep_ret_time = ret_time, 
+                  pep_scan_num = scan_num, 
+                  pep_ms2_n = ms2_n, 
+                  pep_frame = frame)
+
+  out <- dplyr::bind_cols(
+    out %>% .[grepl("^prot_", names(.))], 
+    out %>% .[grepl("^pep_", names(.))], 
+    out %>% .[grepl("^psm_", names(.))], 
+    out %>% .[!grepl("^prot_|^pep_|^psm_", names(.))], 
+  ) %>% 
+    reloc_col_after("pep_exp_z", "pep_exp_mr") %>% 
+    reloc_col_after("pep_calc_mr", "pep_exp_z") %>% 
+    reloc_col_after("pep_delta", "pep_calc_mr") %T>% 
+    saveRDS(file.path(out_path, "psmC.rds"))
+
+  out <- out %>% 
+    dplyr::select(-which(names(.) %in% c("pri_matches", "sec_matches", 
+                                         "ms2_moverz", "ms2_int"))) %T>% 
+    readr::write_tsv(file.path(out_path, "psmC.txt")) %>% 
+    dplyr::filter(prot_isess, pep_issig, !pep_isdecoy, pep_rank <= 3L) %>% 
+    { if (fdr_type == "protein") dplyr::filter(., prot_issig) else . } %>% 
+    dplyr::select(-which(names(.) %in% c("prot_score"))) %T>% 
+    readr::write_tsv(file.path(out_path, "psmQ.txt"))
+
+  rm(list = c(".path_cache", ".path_fasta", ".time_stamp"), envir = .GlobalEnv)
+  
+  .savecall <- TRUE
   
   invisible(out)
+}
+
+
+#' Recalculates the MS1 precursor masses.
+#' 
+#' Incorrect without permutation.
+#' 
+#' @param df A data frame.
+#' @inheritParams calc_aamasses
+#' @inheritParams mcalc_monopep
+recalc_ms1mass <- function (df, maxn_vmods_setscombi = 64, mod_indexes = NULL, 
+                            include_insource_nl = FALSE, maxn_vmods_per_pep = 5, 
+                            maxn_sites_per_vmod = 3, parallel = TRUE, 
+                            digits = 5) {
+  df <- df %>% 
+    dplyr::mutate(pep_fmod2 = ifelse(is.na(pep_fmod), "", pep_fmod), 
+                  pep_vmod2 = ifelse(is.na(pep_vmod), "", pep_vmod)) %>% 
+    tidyr::unite(pep_fvmod, c(pep_fmod2, pep_vmod2), sep = ", ", remove = FALSE) %>% 
+    tidyr::unite(uniq., c(pep_seq, pep_fvmod), sep = ", ", remove = FALSE) 
+  
+  data <- df %>% 
+    dplyr::filter(!duplicated(uniq.)) %>% 
+    dplyr::select(-uniq.) %>% 
+    dplyr::select(pep_seq, pep_fvmod) %>% 
+    split(.$pep_fvmod) %>% 
+    map(`[[`, "pep_seq")
+  
+  fvmods <- str_split(names(data), ", ") %>% 
+    purrr::map(~ .x[.x != ""])
+  
+  aam <- purrr::map(fvmods, calc_aamasses, 
+                    NULL, maxn_vmods_setscombi, mod_indexes) %>% 
+    flatten()
+  
+  masses <- purrr::map2(data, aam, mcalc_monopep, include_insource_nl, 
+                        maxn_vmods_per_pep, maxn_sites_per_vmod, 
+                        parallel, digits)
+  
+  masses <- purrr::imap(masses, ~ {
+    data <- attr(.x, "data") %>% unlist()
+    tibble(pep_seq = names(data), pep_calc_mr = data, pep_fvmod = .y)
+  }) %>% 
+    dplyr::bind_rows()
+  
+  masses <- masses %>% 
+    tidyr::unite(uniq., c(pep_seq, pep_fvmod), sep = ", ", remove = TRUE) %>% 
+    dplyr::right_join(df, by = "uniq.") %>% 
+    dplyr::select(-c("uniq.", "pep_fvmod", "pep_fmod2", "pep_vmod2"))
+  
+  # mass delta
 }
 
 
@@ -774,7 +1010,10 @@ subset_theoframes <- function (mgf_frames, theopeps) {
 
 
 #' Matches theoretical peptides (parallel by mgf chunks).
-#' 
+#'
+#' All files under `out_path` are removed if incur \code{calc_pepmasses} in the
+#' upstream.
+#'
 #' @param aa_masses_all A list of amino acid lookups for all the combination of
 #'   fixed and variable modifications.
 #' @param n_cores Integer; the number of computer cores.
@@ -784,14 +1023,70 @@ subset_theoframes <- function (mgf_frames, theopeps) {
 #' @inheritParams readMGF
 #' @inheritParams search_mgf_frames_d
 #' @import parallel
-pmatch_bymgfs <- function (mgf_path, 
-                           aa_masses_all, n_cores, out_path, 
+pmatch_bymgfs <- function (mgf_path, aa_masses_all, n_cores, out_path, 
                            mod_indexes, type_ms2ions, maxn_vmods_per_pep, 
-                           maxn_sites_per_vmod, 
-                           maxn_vmods_sitescombi_per_pep, 
+                           maxn_sites_per_vmod, maxn_vmods_sitescombi_per_pep, 
                            minn_ms2, ppm_ms1, ppm_ms2, 
+                           
+                           # dummy
+                           fasta, acc_type, acc_pattern,
+                           topn_ms2ions, fixedmods, varmods, 
+                           include_insource_nl, enzyme, 
+                           maxn_fasta_seqs, maxn_vmods_setscombi, 
+                           min_len, max_len, max_miss, 
+                           # topn_ms2ions, target_fdr, fdr_type, quant, ppm_reporters, 
+                           
                            digits) {
 
+  on.exit(
+    if (exists(".savecall", envir = current_env())) {
+      if (.savecall) {
+        save_call2(path = file.path(out_path, "Calls"), fun = "pmatch_bymgfs")
+      }
+    }, 
+    add = TRUE
+  )
+  
+  # Check cached 
+  fun <- as.character(match.call()[[1]])
+  args_except <- c("n_cores")
+  
+  cache_pars <- find_callarg_vals(time = NULL, 
+                                  path = file.path(out_path, "Calls"), 
+                                  fun = paste0(fun, ".rda"), 
+                                  arg = names(formals(fun))) %>% 
+    .[! . %in% args_except] %>% 
+    .[sort(names(.))]
+  
+  call_pars <- mget(names(formals()), envir = rlang::current_env(), 
+                    inherits = FALSE) %>% 
+    .[! . %in% args_except] %>% 
+    .[sort(names(.))]
+
+  if (identical(cache_pars, call_pars)) {
+    files <- c(
+      file.path(out_path, "ion_matches.rds"), 
+      file.path(out_path, "ion_matches_rev.rds")
+    )
+    
+    if (all(file.exists(files))) {
+      message("Loading ion matches from cache.")
+      
+      out <- readRDS(file.path(out_path, "ion_matches.rds"))
+      
+      .savecall <- FALSE
+      
+      return(out)
+    }
+  }
+  
+  rm(list = c("fun", "args_except", "cache_pars", "call_pars"))
+  
+  delete_files(out_path, ignores = c("\\.[Rr]$", "\\.(mgf|MGF)$", "\\.xlsx$", 
+                                     "\\.xls$", "\\.csv$", "\\.txt$", 
+                                     "^mgf$", "^mgfs$"))
+
+  # Targets 
   out <- vector("list", length(aa_masses_all))
   
   out <- map2(seq_along(aa_masses_all), aa_masses_all, 
@@ -811,7 +1106,7 @@ pmatch_bymgfs <- function (mgf_path,
     `names<-`(seq_along(.)) %T>% 
     saveRDS(file.path(out_path, "ion_matches.rds")) 
 
-  # decoys
+  # Decoys
   maxs <- map_dbl(out, object.size) %>% which_topx(1)
   maxs2 <- maxs %>% paste0("rev_", .)
 
@@ -831,6 +1126,8 @@ pmatch_bymgfs <- function (mgf_path,
                digits = digits) %>% 
     `names<-`(maxs2) %T>% 
     saveRDS(file.path(out_path, "ion_matches_rev.rds")) 
+  
+  .savecall <- TRUE
 
   invisible(out)
 }
@@ -854,6 +1151,9 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
     dplyr::group_by(frame) %>% 
     dplyr::group_split() %>% 
     setNames(purrr::map_dbl(., ~ .x$frame[1]))
+  
+  # x = mgf_frames %>% .[names() == 80964]
+  # which(names(x)) == 56090
   
   mgf_frames <- local({
     labs <- levels(cut(1:length(mgf_frames), n_cores^2))
@@ -883,11 +1183,6 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
   
   theopeps <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
                                 paste0("binned_theopeps_", i, ".rds")))
-  
-  # ---
-  # temporarily remove `prot_acc` and duplicated `pep_seq` 
-  # (frame numbers remain available for quick rejoin later)
-  # frame number may be off by +/-1 in three-frame searches
   
   if (ppm_ms1 < 1000) {
     theopeps <- theopeps %>% 
@@ -927,6 +1222,10 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
     theopeps <- purrr::map2(mins, maxs, ~ {
       theopeps[which(nms >= (.x - 1) & nms <= (.y + 1))]
     })
+    
+    # --- may cause uneven length between `mgf_frames` and `theopeps`
+    # empties <- map_lgl(theopeps, is_empty)
+    # theopeps[!empties]
   })
   
   # (3) removes unused frames of `theopeps`
@@ -939,7 +1238,11 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
   mgf_frames <- mgf_frames[oks]
   theopeps <- theopeps[oks]
   
-  rm(oks)
+  rm(list = "oks")
+  
+  if (is_empty(mgf_frames) || is_empty(theopeps)) {
+    return(NULL)
+  }
   
   cl <- makeCluster(getOption("cl.cores", n_cores))
   
@@ -974,11 +1277,22 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
                     .scheduling = "dynamic") %>% 
     dplyr::bind_rows() %>% # across nodes
     dplyr::mutate(pep_fmod = nm_fmods, 
-                  pep_vmod = nm_vmods, ) %>% 
+                  pep_vmod = nm_vmods, 
+                  pep_mod_group = as.character(i)) %>% 
     { if (msg_end == ".") dplyr::mutate(., pep_isdecoy = FALSE) else 
       dplyr::mutate(., pep_isdecoy = TRUE) }
   
-  # saveRDS(out, file.path(out_path, paste0("ion_matches_", i, ".rds")))
+  out <- out %>%
+    dplyr::mutate(RAW_File = gsub("\\\\", "/", scan_title)) %>% 
+    dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.(raw|RAW)[\\\"]{0,1}; .*", "\\1", 
+                                  RAW_File)) %>% 
+    dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.d[\\\"]{0,1}; .*", "\\1", 
+                                  RAW_File)) %>% 
+    reloc_col_after("RAW_File", "scan_num") %>% 
+    reloc_col_after("pep_mod_group", "RAW_File")
+
+  dir.create(file.path(out_path, "temp"), recursive = TRUE, showWarnings = FALSE)
+  saveRDS(out, file.path(out_path, "temp", paste0("ion_matches_", i, ".rds")))
 
   stopCluster(cl)
   
@@ -1030,6 +1344,7 @@ search_mgf_frames_d <- function (mgf_frames, theopeps, aa_masses,
   empties <- purrr::map_lgl(res, purrr::is_empty)
   
   # !!!dplyr::bind_rows() temporarily not working for list-columns!!!
+  # (contains attr(,"theo_ms1") for theoretical MS1 mass)
   res <- do.call(rbind, mgf_frames) %>% 
     dplyr::mutate(matches = res) 
   
@@ -1039,7 +1354,7 @@ search_mgf_frames_d <- function (mgf_frames, theopeps, aa_masses,
   
   res <- res[!empties, ]
   
-  rm(mgf_frames, theopeps)
+  rm(list = "mgf_frames", "theopeps")
   
   invisible(res)
 }
@@ -1237,15 +1552,12 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
     frame <- new_frame
   }
   
-  rm(
-    mgf_frames, theopeps, 
-    theos_bf_ms1, theos_cr_ms1, theos_af_ms1, 
-    theomasses_bf_ms1, theomasses_cr_ms1, theomasses_af_ms1, 
-    theopeps_bf_ms1, theopeps_cr_ms1, theopeps_af_ms1, 
-    theos_bf_ms2, theos_cr_ms2, theos_af_ms2,
-    exptmasses_ms1, exptmoverzs_ms2, 
-    mgfs_cr, new_frame, frame
-  )
+  rm(list = c("mgf_frames", "theopeps", "theos_bf_ms1", "theos_cr_ms1", 
+              "theos_af_ms1", "theomasses_bf_ms1", "theomasses_cr_ms1", 
+              "theomasses_af_ms1", "theopeps_bf_ms1", "theopeps_cr_ms1", 
+              "theopeps_af_ms1", "theos_bf_ms2", "theos_cr_ms2", 
+              "theos_af_ms2", "exptmasses_ms1", "exptmoverzs_ms2", 
+              "mgfs_cr", "new_frame", "frame"))
   
   invisible(out)
 }
@@ -1323,6 +1635,15 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
   empties <- map_lgl(x, is_empty)
   x <- x[!empties]
   
+  # ---
+  theomasses_ms1 <- c(theomasses_bf_ms1, theomasses_cr_ms1, theomasses_af_ms1)
+  theomasses_ms1 <- theomasses_ms1[!empties]
+  x <- map2(x, theomasses_ms1, ~ {
+    attr(.x, "theo_ms1") <- .y
+    .x
+  })
+  
+  # ---
   # length(x) == N(theos_peps) within the ppm window
   # 
   # ATIPIFFDMMLCEYQR

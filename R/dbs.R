@@ -3,11 +3,11 @@
 #' Reads a file in fasta format by line.
 #'
 #' @param file A character string to the name of a protein fasta file.
-#' @param pattern A regular expression describing the pattern to separate the
-#'   header lines of fasta entries. The default is to separate a header and keep
-#'   the character string before the first space where the so kept will be used
-#'   as the name of an entry. The character ">" at the beginning of the header
-#'   will also be removed.
+#' @param acc_pattern A regular expression describing the pattern to separate
+#'   the header lines of fasta entries. The default is to separate a header and
+#'   keep the character string before the first space where the so kept will be
+#'   used as the name of an entry. The character ">" at the beginning of the
+#'   header will also be removed.
 #' @param comment_char Character: a character or an empty string. Use "" to turn
 #'   off the interpretation of comment lines.
 #' @examples
@@ -15,20 +15,20 @@
 #' # assume the file and location of "uniprot_hs_2020_05.fasta"
 #' fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta")
 #' head(names(fasta))
-#' 
+#'
 #' # use the first fifty characters
-#' fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
-#'                     pattern = ">(.{50}).*")
+#' fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+#'                     ">(.{50}).*")
 #' head(names(fasta))
-#' 
+#'
 #' # uniprot_acc
-#' fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
-#'                     pattern = ">..\\|([^\\|]+)\\|.*")
+#' fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+#'                     ">..\\|([^\\|]+)\\|.*")
 #' head(names(fasta))
-#' 
+#'
 #' # use every in the header
-#' fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
-#'                     pattern = ">(.*)")
+#' fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+#'                     ">(.*)")
 #' head(names(fasta))
 #' }
 #'
@@ -36,7 +36,7 @@
 #' @importFrom magrittr %>% %T>% %$% %<>%
 #' @seealso \code{\link{write_fasta}}
 #' @export
-read_fasta <- function (file, pattern = ">([^ ]+?) .*", comment_char = "") {
+read_fasta <- function (file, acc_pattern = ">([^ ]+?) .*", comment_char = "") {
   lines <- readLines(file)
   
   if (nchar(comment_char) > 0) {
@@ -56,7 +56,7 @@ read_fasta <- function (file, pattern = ">([^ ]+?) .*", comment_char = "") {
     return(.x)
   })
   
-  names(db) <- hdrs %>% gsub(pattern, "\\1", .)
+  names(db) <- hdrs %>% gsub(acc_pattern, "\\1", .)
 
   return(db)
 }
@@ -111,6 +111,173 @@ load_fasta <- function (fasta = NULL) {
     .[!duplicated(names(.))]
 }
 
+
+#' Loads fasta (with parsing rule).
+#'
+#' The length of \code{acc_type} needs to match the length of \code{fasta};
+#' otherwise, the first value will be used for all \code{fasta} files.
+#'
+#' @param acc_type Character string(s); the types of protein accessions in one
+#'   of c("uniprot_acc", "uniprot_id", "refseq_acc", "other"). For custom names,
+#'   the corresponding regular expressions need to be supplied via argument
+#'   \code{acc_pattern}.
+#' @param acc_pattern Regular expression(s) describing the patterns to separate
+#'   the header lines of fasta entries. At the \code{NULL} default, the pattern
+#'   will be automated when \code{acc_type} are among c("uniprot_acc",
+#'   "uniprot_id", "refseq_acc", "other").
+#' @inheritParams read_fasta
+#' @inheritParams splitPSM
+#' @examples
+#' \donttest{
+#' fasta_db <- load_fasta2(
+#'               c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+#'                 "~/proteoQ/dbs/fasta/crap/crap.fasta"),
+#'               c("uniprot_acc", "other")
+#' )
+#'
+#' # Need `acc_pattern` as "crap" is not one of the default acc_type
+#' load_fasta2(
+#'    c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+#'      "~/proteoQ/dbs/fasta/crap/crap.fasta"),
+#'    c("uniprot_acc", "crap")
+#' )
+#'
+#' # ok
+#' fasta_db2 <- load_fasta2(
+#'                c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+#'                         "~/proteoQ/dbs/fasta/crap/crap.fasta"),
+#'                c("uniprot_acc", "crap"),
+#'                c("^>..\\|([^\\|]+)\\|[^\\|]+", "(.*)")
+#' )
+#'
+#' fasta_db3 <- load_fasta2(
+#'                c("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+#'                         "~/proteoQ/dbs/fasta/crap/crap.fasta"),
+#'                c("my_acc", "crap"),
+#'                c("^>..\\|([^\\|]+)\\|[^\\|]+", "(.*)")
+#' )
+#'
+#' stopifnot(identical(fasta_db, fasta_db2),
+#'           identical(fasta_db, fasta_db3))
+#' }
+#' @export
+load_fasta2 <- function (fasta = NULL, acc_type = NULL, acc_pattern = NULL) {
+  if (is.null(fasta)) {
+    stop("FASTA file(s) are required.", call. = FALSE)
+  }
+  
+  if (!all(file.exists(fasta))) {
+    stop("Missing FASTA file(s): \n", 
+         paste(fasta %>% .[!file.exists(.)], collapse = "\n"), 
+         call. = FALSE)
+  }
+  
+  len_f <- length(fasta)
+  len_a <- length(acc_type)
+  len_p <- length(acc_pattern)
+  
+  if (len_f < len_a) {
+    stop("More accession types than fasta files.", 
+         call. = FALSE)
+  }
+  
+  if (len_f < len_p) {
+    stop("More acc_pattern types than fasta files.", 
+         call. = FALSE)
+  }
+  
+  if (len_a > 0L && len_a < len_f) {
+    warning("More fasta files than accession types; ", 
+            "the first accession type will be used for all fastas.", 
+            call. = FALSE)
+    acc_type <- rep(acc_type[1], len_f)
+  }
+  
+  if (len_p > 0L && len_p < len_f) {
+    warning("More fasta files than acc_pattern expressions; ", 
+            "the first acc_pattern expression will be used for all fastas.", 
+            call. = FALSE)
+    acc_pattern <- rep(acc_pattern[1], len_f)
+  }
+  
+  if (! (is.null(acc_type) || is.null(acc_pattern))) {
+    acc_type <- acc_type
+    acc_pattern <- acc_pattern
+  } else if (is.null(acc_type) && is.null(acc_pattern)) {
+    acc_type <- rep("other", len_f)
+    acc_pattern <- rep("(.*)", len_f)
+  } else if (!is.null(acc_type)) {
+    acc_pattern <- map_chr(acc_type, find_acc_pattern)
+  } else {
+    acc_type <- map_chr(acc_pattern, find_acc_type)
+  }
+  
+  stopifnot(length(acc_pattern) == len_f)
+
+  purrr::map2(fasta, acc_pattern, ~ read_fasta(.x, .y)) %>% 
+    do.call(`c`, .) %>% 
+    `names<-`(gsub(">", "", names(.))) %>% 
+    .[!duplicated(names(.))]
+}
+
+
+#' Helper for \link{load_fasta2}.
+#' 
+#' Not used for custom acc_type, i.e. acc_type = "my_acctype".
+#' 
+#' @inheritParams load_fasta2
+find_acc_pattern <- function (acc_type) {
+  stopifnot(length(acc_type) == 1L)
+  stopifnot(acc_type %in% c("uniprot_acc", "uniprot_id", "refseq_acc", "other"))
+  
+  if (acc_type == "uniprot_acc") {
+    acc_pattern <- "^>..\\|([^\\|]+)\\|[^\\|]+"
+  } else if (acc_type == "uniprot_id") {
+    acc_pattern <- "^>..\\|[^\\|]+\\|([^ ]+) .*"
+  } else if (acc_type == "refseq_acc") {
+    acc_pattern <- "^>([^ ]+?) .*"
+  } else if (acc_type == "other") {
+    acc_type <- "other"
+    acc_pattern <- "(.*)"
+  } else {
+    stop("Unknown `acc_type`.", 
+         call. = FALSE)
+  }
+  
+  invisible(acc_pattern)
+}
+
+
+#' Helper for \link{load_fasta2}.
+#' 
+#' Not used for custom acc_pattern, i.e. acc_pattern = "...".
+#' 
+#' @inheritParams load_fasta2
+find_acc_type <- function (acc_pattern) {
+  stopifnot(length(acc_pattern) == 1L)
+  
+  pat_upacc <- "^>..\\|([^\\|]+)\\|[^ ]+?"
+  pat_upid <- "^>..\\|[^\\|]+\\|([^ ]+?)"
+  pat_rsacc <- "^>([^ ]+?) "
+  pat_other <- "(.*)"
+  
+  stopifnot(acc_pattern %in% c("pat_upacc", "pat_upid", "pat_rsacc", "pat_other"))
+  
+  if (acc_pattern == pat_upacc) {
+    acc_type <- "uniprot_acc"
+  } else if (acc_pattern == pat_upid) {
+    acc_type <- "uniprot_id"
+  } else if (acc_pattern == pat_rsacc) {
+    acc_type <- "refseq_acc"
+  } else if (acc_pattern == pat_other) {
+    acc_type <- "other"
+  } else {
+    stop("Unknown `acc_pattern`.", 
+         call. = FALSE)
+  }
+  
+  invisible(acc_type)
+}
 
 #' Averaged peptide molecular weight (for proteins)
 #'
@@ -1525,7 +1692,7 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (K)",
   
   aa_masses_all <- c(aa_masses_fi2, aa_masses_var2)
   
-  map(aa_masses_all, parse_aamasses)
+  aa_masses_all <- map(aa_masses_all, parse_aamasses)
 }
 
 
@@ -2237,9 +2404,11 @@ make_fastapeps <- function (fasta_db, max_miss = 2, min_len = 1,
 #' @param max_miss The maximum number of mis-cleavages per peptide sequence.
 #' @param digits Integer; the number of decimal places to be used.
 #' @inheritParams splitPSM
+#' @inheritParams binTheoPeps
 #' @inheritParams calc_aamasses
 #' @inheritParams mcalc_monopep
 #' @inheritParams calc_monopep
+#' @inheritParams load_fasta2
 #' @import parallel
 #' @importFrom rlang current_env
 #' @examples
@@ -2270,6 +2439,8 @@ make_fastapeps <- function (fasta_db, max_miss = 2, min_len = 1,
 #' @export
 calc_pepmasses <- function (
   fasta = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
+  acc_type = "uniprot_acc", 
+  acc_pattern = NULL, 
   fixedmods = c("TMT6plex (K)", 
                 "Carbamidomethyl (C)"), 
   varmods = c("TMT6plex (N-term)", 
@@ -2285,6 +2456,7 @@ calc_pepmasses <- function (
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3, 
   min_len = 7, max_len = 100, max_miss = 2, 
+  out_path = "~/proteoQ/outs", 
   digits = 5, 
   parallel = TRUE) {
 
@@ -2311,8 +2483,15 @@ calc_pepmasses <- function (
   
   # ---
   .path_cache <- create_dir("~/proteoQ/.MSearch/Cache/Calls")
-  .time_stamp <- match_calltime(path = .path_cache, fun = "calc_pepmasses", 
-                                excludes = c("parallel", "out_path"))
+  .time_stamp <- match_calltime(path = .path_cache, 
+                                fun = "calc_pepmasses", 
+                                nms = c("fasta", "acc_type", "acc_pattern", 
+                                        "fixedmods", "varmods", 
+                                        "include_insource_nl", "enzyme", 
+                                        "maxn_fasta_seqs", "maxn_vmods_setscombi", 
+                                        "maxn_vmods_per_pep", "maxn_sites_per_vmod", 
+                                        # "maxn_vmods_sitescombi_per_pep", 
+                                        "min_len", "max_len", "max_miss"))
   
   .path_fasta <- fasta %>% 
     gsub("\\\\", "/", .) %>% 
@@ -2329,6 +2508,10 @@ calc_pepmasses <- function (
 
     .savecall <- FALSE
   } else {
+    delete_files(out_path, ignores = c("\\.[Rr]$", "\\.(mgf|MGF)$", "\\.xlsx$", 
+                                       "\\.xls$", "\\.csv$", "\\.txt$", 
+                                       "^mgf$", "^mgfs$"))
+
     .time_stamp <- format(Sys.time(), ".%Y-%m-%d_%H%M%S")
     
     # ---
@@ -2348,11 +2531,15 @@ calc_pepmasses <- function (
                                  maxn_vmods_setscombi = maxn_vmods_setscombi, 
                                  mod_indexes = mod_indexes)
     })
+    
+    gc()
 
     # ---
     message("Preparing peptide sequences.")
     
     pre_masses <- pre_pepmasses(fasta = fasta, 
+                                acc_type = acc_type,
+                                acc_pattern = acc_pattern, 
                                 maxn_fasta_seqs = maxn_fasta_seqs, 
                                 aa_masses = aa_masses, 
                                 max_miss = max_miss, 
@@ -2407,15 +2594,16 @@ calc_pepmasses <- function (
 #' 
 #' @inheritParams calc_pepmasses
 #' @inheritParams mcalc_monopep
-pre_pepmasses <- function (fasta, maxn_fasta_seqs, aa_masses, 
+pre_pepmasses <- function (fasta, acc_type, acc_pattern, maxn_fasta_seqs, aa_masses, 
                            max_miss, min_len, max_len) {
   # ---
   message("Loading fasta.")
   
-  fasta_db <- load_fasta(fasta) 
+  fasta_db <- load_fasta2(fasta, acc_type, acc_pattern) 
   
   if (length(fasta_db) > maxn_fasta_seqs) {
-    stop("More than `", maxn_fasta_seqs, "` sequences in fasta files.", 
+    stop("More than `", maxn_fasta_seqs, "` sequences in fasta files.\n",
+         "  May consider a higher `maxn_fasta_seqs`.", 
          call. = FALSE)
   }
 

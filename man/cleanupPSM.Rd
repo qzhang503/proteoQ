@@ -24,6 +24,10 @@ alternative, peptides with different variable modifications will be treated
 as different species and descriptive statistics will be calculated based on
 the same \code{pep_seq_mod} groups.}
 
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
+
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
 }

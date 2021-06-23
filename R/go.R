@@ -432,7 +432,7 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
          "\n====================================================================",
          call. = FALSE)
   }
-  
+
   if (!requireNamespace("AnnotationDbi", quietly = TRUE)) {
     stop("\n====================================================================", 
          "\nNeed package \"AnnotationDbi\" for this function to work.\n",
@@ -484,10 +484,12 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
 
   if ((!file.exists(file.path(db_path, "cache", fn_gaf))) || overwrite)  {
     downloader::download(gaf_url, file.path(db_path, "cache", fn_gaf), mode = "wb")
+    # download.file(gaf_url, file.path(db_path, "cache", fn_gaf), mode = "w")
   }
   
   if ((!file.exists(file.path(db_path, "cache", fn_obo))) | overwrite) {
     downloader::download(obo_url, file.path(db_path, "cache", fn_obo), mode = "wb")
+    # download.file(obo_url, file.path(db_path, "cache", fn_obo), mode = "w")
   }
   
   abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))

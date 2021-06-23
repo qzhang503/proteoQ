@@ -17,6 +17,19 @@ pmatch_bymgfs(
   minn_ms2,
   ppm_ms1,
   ppm_ms2,
+  fasta,
+  acc_type,
+  acc_pattern,
+  topn_ms2ions,
+  fixedmods,
+  varmods,
+  include_insource_nl,
+  enzyme,
+  maxn_fasta_seqs,
+  maxn_vmods_setscombi,
+  min_len,
+  max_len,
+  max_miss,
   digits
 )
 }
@@ -27,6 +40,8 @@ pmatch_bymgfs(
 fixed and variable modifications.}
 
 \item{n_cores}{Integer; the number of computer cores.}
+
+\item{out_path}{The output path.}
 
 \item{mod_indexes}{Integer; the indexes of fixed and/or variable
 modifications.}
@@ -51,8 +66,58 @@ a hit.}
 
 \item{ppm_ms2}{The mass tolerance of MS2 species.}
 
+\item{fasta}{Character string(s) to the name(s) of fasta file(s) with
+prepended directory path. The \code{fasta} database(s) need to match those
+used in MS/MS ion search. There is no default and users need to provide the
+correct file path(s) and name(s).}
+
+\item{acc_type}{Character string(s); the types of protein accessions in one
+of c("uniprot_acc", "uniprot_id", "refseq_acc", "other"). For custom names,
+the corresponding regular expressions need to be supplied via argument
+\code{acc_pattern}.}
+
+\item{acc_pattern}{Regular expression(s) describing the patterns to separate
+the header lines of fasta entries. At the \code{NULL} default, the pattern
+will be automated when \code{acc_type} are among c("uniprot_acc",
+"uniprot_id", "refseq_acc", "other").}
+
+\item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
+MS2 ion searches.}
+
+\item{fixedmods}{A character vector of fixed modifications. See also
+\link{parse_unimod} for grammars.}
+
+\item{varmods}{A character vector of variable modifications.}
+
+\item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
+  masses with the losses of neutral species prior to MS2 fragmentation. The
+  default is FALSE.
+
+  Note that there is no combination of neutral losses for fixed modifications
+  at the precursor levels. Changes from fixed to variable modifications for
+  complete combinations.}
+
+\item{enzyme}{A character string; the proteolytic specificity of the assumed
+enzyme will be used to generate peptide sequences from proteins. The enzyme
+is currently \code{trypsin}.}
+
+\item{maxn_fasta_seqs}{Integer; the maximum number of protein sequences in
+fasta files.}
+
+\item{maxn_vmods_setscombi}{Integer; the maximum number of combinatorial variable
+modifications and neutral losses.}
+
+\item{min_len}{Integer; the minimum length of peptides. Shorter peptides will
+be excluded.}
+
+\item{max_len}{Integer; the maximum length of peptides. Longer peptides will
+be excluded.}
+
+\item{max_miss}{The maximum number of mis-cleavages per peptide sequence.}
+
 \item{digits}{Integer; the number of decimal places to be used.}
 }
 \description{
-Matches theoretical peptides (parallel by mgf chunks).
+All files under `out_path` are removed if incur \code{calc_pepmasses} in the
+upstream.
 }

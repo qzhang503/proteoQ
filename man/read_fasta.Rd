@@ -4,16 +4,16 @@
 \alias{read_fasta}
 \title{Reads a file in fasta format}
 \usage{
-read_fasta(file, pattern = ">([^ ]+?) .*", comment_char = "")
+read_fasta(file, acc_pattern = ">([^ ]+?) .*", comment_char = "")
 }
 \arguments{
 \item{file}{A character string to the name of a protein fasta file.}
 
-\item{pattern}{A regular expression describing the pattern to separate the
-header lines of fasta entries. The default is to separate a header and keep
-the character string before the first space where the so kept will be used
-as the name of an entry. The character ">" at the beginning of the header
-will also be removed.}
+\item{acc_pattern}{A regular expression describing the pattern to separate
+the header lines of fasta entries. The default is to separate a header and
+keep the character string before the first space where the so kept will be
+used as the name of an entry. The character ">" at the beginning of the
+header will also be removed.}
 
 \item{comment_char}{Character: a character or an empty string. Use "" to turn
 off the interpretation of comment lines.}
@@ -28,18 +28,18 @@ fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta")
 head(names(fasta))
 
 # use the first fifty characters
-fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
-                    pattern = ">(.{50}).*")
+fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+                    ">(.{50}).*")
 head(names(fasta))
 
 # uniprot_acc
-fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
-                    pattern = ">..\\\\|([^\\\\|]+)\\\\|.*")
+fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+                    ">..\\\\|([^\\\\|]+)\\\\|.*")
 head(names(fasta))
 
 # use every in the header
-fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta", 
-                    pattern = ">(.*)")
+fasta <- read_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta",
+                    ">(.*)")
 head(names(fasta))
 }
 

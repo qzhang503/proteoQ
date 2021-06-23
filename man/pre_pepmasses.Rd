@@ -4,13 +4,32 @@
 \alias{pre_pepmasses}
 \title{Helper of \link{calc_pepmasses}.}
 \usage{
-pre_pepmasses(fasta, maxn_fasta_seqs, aa_masses, max_miss, min_len, max_len)
+pre_pepmasses(
+  fasta,
+  acc_type,
+  acc_pattern,
+  maxn_fasta_seqs,
+  aa_masses,
+  max_miss,
+  min_len,
+  max_len
+)
 }
 \arguments{
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search. There is no default and users need to provide the
 correct file path(s) and name(s).}
+
+\item{acc_type}{Character string(s); the types of protein accessions in one
+of c("uniprot_acc", "uniprot_id", "refseq_acc", "other"). For custom names,
+the corresponding regular expressions need to be supplied via argument
+\code{acc_pattern}.}
+
+\item{acc_pattern}{Regular expression(s) describing the patterns to separate
+the header lines of fasta entries. At the \code{NULL} default, the pattern
+will be automated when \code{acc_type} are among c("uniprot_acc",
+"uniprot_id", "refseq_acc", "other").}
 
 \item{maxn_fasta_seqs}{Integer; the maximum number of protein sequences in
 fasta files.}

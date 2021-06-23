@@ -4,12 +4,7 @@
 \alias{find_callarg_vals}
 \title{Finds the values of a list of arguments.}
 \usage{
-find_callarg_vals(
-  time = ".2021-05-21_211227.rda",
-  path = "~/proteoQ/.MSearch/Cache/Calls",
-  fun = "calc_pepmasses",
-  args = c("fasta", "max_miss")
-)
+find_callarg_vals(time = NULL, path = NULL, fun = NULL, args = NULL)
 }
 \arguments{
 \item{time}{The time stamp.}

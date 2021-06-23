@@ -4,12 +4,14 @@
 \alias{chunksplit}
 \title{Splits data into chunks by length.}
 \usage{
-chunksplit(data, n_chunks = 5)
+chunksplit(data, n_chunks = 5, type = "list")
 }
 \arguments{
 \item{data}{Input data.}
 
 \item{n_chunks}{The number of chunks.}
+
+\item{type}{The type of data for splitting.}
 }
 \description{
 Splits data into chunks by length.

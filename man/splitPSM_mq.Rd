@@ -81,6 +81,10 @@ The default is FALSE.}
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
 is FALSE.}
 
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
+
 \item{rm_reverses}{A logical argument for uses with \code{MaxQuant} TMT and
 LFQ. At the TRUE default, \code{Reverse} entries will be removed.}
 

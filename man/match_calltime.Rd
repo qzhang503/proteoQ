@@ -7,7 +7,8 @@
 match_calltime(
   path = "~/proteoQ/.MSearch/Cache/Calls",
   fun = "calc_pepmasses",
-  excludes = c("parallel", "out_path")
+  nms = c("parallel", "out_path"),
+  type = c(TRUE, FALSE)
 )
 }
 \arguments{
@@ -15,7 +16,10 @@ match_calltime(
 
 \item{fun}{The name of function being saved.}
 
-\item{excludes}{Arguments excluded from matches.}
+\item{nms}{Names of arguments to be included in or excluded from matching.}
+
+\item{type}{Logical; if TRUE, includes all arguments in \code{nms}. At FALSE,
+excludes all \code{nms}.}
 }
 \value{
 An empty object if no matches.

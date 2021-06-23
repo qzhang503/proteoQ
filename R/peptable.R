@@ -1418,10 +1418,16 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
   
-  on.exit(mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-            c(dots) %>% 
-            save_call("mergePep"), 
-          add = TRUE)
+  on.exit(
+    if (exists(".savecall", envir = rlang::current_env())) {
+      if (.savecall) {
+        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+          c(dots) %>% 
+          save_call("mergePep")
+      }
+    }, 
+    add = TRUE
+  )
   
   stopifnot(vapply(c(plot_log2FC_cv), rlang::is_logical, logical(1)))
 
@@ -1474,6 +1480,10 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
       ...
     )
   }
+  
+  .saveCall <- TRUE
+  
+  invisible(NULL)
 }
 
 
@@ -1630,12 +1640,18 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
   
-  on.exit(mget(names(formals()), envir = rlang::current_env(), 
-               inherits = FALSE) %>% 
-            c(dots) %>% 
-            save_call("standPep"), 
-          add = TRUE)
-
+  on.exit(
+    if (exists(".savecall", envir = rlang::current_env())) {
+      if (.savecall) {
+        mget(names(formals()), envir = rlang::current_env(), 
+             inherits = FALSE) %>% 
+          c(dots) %>% 
+          save_call("standPep")
+      }
+    }, 
+    add = TRUE
+  )
+  
   reload_expts()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -1719,6 +1735,10 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
               width = 8 * n_TMT_sets(label_scheme), height = 8, 
               type = "log2_R", adjSD = FALSE, is_psm = FALSE)
   }
+  
+  .saveCall <- TRUE
+  
+  invisible(NULL)
 }
 
 
@@ -1836,10 +1856,18 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
-  on.exit(mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
-            c(dots) %>% 
-            save_call("Pep2Prn"), 
-          add = TRUE)
+  
+  on.exit(
+    if (exists(".savecall", envir = rlang::current_env())) {
+      if (.savecall) {
+        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+          c(dots) %>% 
+          save_call("Pep2Prn")
+      }
+    }, 
+    add = TRUE
+  )
+  
   
   reload_expts()
   
@@ -1925,6 +1953,10 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_
                      ~ round(.x, digits = 3)) %T>% 
     write.table(file.path(dat_dir, "Protein/Protein.txt"), 
                 sep = "\t", col.names = TRUE, row.names = FALSE)
+  
+  .saveCall <- TRUE
+  
+  invisible(df)
 }
 
 

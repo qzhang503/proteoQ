@@ -4,7 +4,7 @@
 \alias{chunksplitLB}
 \title{Splits data into chunks with approximately equal sizes.}
 \usage{
-chunksplitLB(data, n_chunks = 5, nx = 100)
+chunksplitLB(data, n_chunks = 5, nx = 100, type = "list")
 }
 \arguments{
 \item{data}{Input data.}
@@ -13,6 +13,8 @@ chunksplitLB(data, n_chunks = 5, nx = 100)
 
 \item{nx}{Positive integer; an arbitrarily large number for data to be split
 into for estimating the cumulative sizes.}
+
+\item{type}{The type of data for splitting.}
 }
 \description{
 Splits data into chunks with approximately equal sizes.
