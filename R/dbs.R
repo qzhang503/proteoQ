@@ -2531,6 +2531,8 @@ calc_pepmasses <- function (
                                  maxn_vmods_setscombi = maxn_vmods_setscombi, 
                                  mod_indexes = mod_indexes)
     })
+    
+    gc()
 
     # ---
     message("Preparing peptide sequences.")

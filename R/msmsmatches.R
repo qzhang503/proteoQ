@@ -181,7 +181,7 @@ binTheoPeps <- function (res, min_mass = 516.24046, max_mass = 10000, ppm = 20,
   }) %>% 
     parallel::clusterMap(cl, cbind_theopepes, ., file.path(out_dir, out_nms))
 
-  rm(res)
+  rm(list = c("res"))
 
   parallel::stopCluster(cl)
 
@@ -214,7 +214,7 @@ proc_mgfs <- function (lines, topn_ms2ions = 100, ret_range = c(0, Inf)) {
     rows <- purrr::map(ms2_ints, which_topx, topn_ms2ions)
     ms2_ints <- purrr::map2(ms2_ints, rows, ~ .x[.y])
     ms2_moverzs <- purrr::map2(ms2_moverzs, rows, ~ .x[.y])
-    rm(rows, ms2s)
+    rm(list = c("rows", "ms2s"))
   }
   
   # MS1 ions
@@ -228,7 +228,7 @@ proc_mgfs <- function (lines, topn_ms2ions = 100, ret_range = c(0, Inf)) {
   ms1_ints <- ms1s %>% 
     purrr::map(~ .x[, 2] %>% as.numeric())
   
-  rm(ms1s)
+  rm(list = c("ms1s"))
   
   # Others
   scan_titles <- lines[begins+1] %>% 
@@ -759,7 +759,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     }
   }) 
   
-  rm(res)
+  rm(list = c("res"))
   
   ## MGFs
   mgf_frames <- local({
@@ -778,7 +778,9 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                             out_path = rds) 
     }
   })
-
+  
+  gc()
+  
   ## MSMS matches
   n_cores <- parallel::detectCores()
   
@@ -828,24 +830,8 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   }
   
   stopifnot(fdr_type %in% oks)
-  rm(oks)
+  rm(list = c("oks"))
   
-  out <- calc_pepscores(topn_ms2ions = topn_ms2ions, 
-                        type_ms2ions = type_ms2ions, 
-                        target_fdr = target_fdr, 
-                        fdr_type = fdr_type, 
-                        min_len = min_len, 
-                        max_len = max_len, 
-                        penalize_sions = FALSE, 
-                        ppm_ms2 = ppm_ms2, 
-                        out_path = out_path, 
-                        digits = digits) 
-  
-  # Protein accessions, score cut-offs
-  out <- out %>% 
-    add_prot_acc() %>% 
-    calc_protfdr(target_fdr)
-
   # TMT intensities
   quant <- rlang::enexpr(quant)
   oks <- eval(formals()[["quant"]])
@@ -857,11 +843,39 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   }
   
   stopifnot(quant %in% oks, length(quant) == 1L)
-  rm(oks)
+  rm(list = c("oks"))
   
-  out <- out %>% 
-    calc_tmtint(quant = quant, ppm_reporters = ppm_reporters)
+  reporters <- out %>% 
+    imap( ~ {
+      .x %>% 
+        calc_tmtint(quant = quant, ppm_reporters = ppm_reporters) %>% 
+        tidyr::unite(uniq_id, RAW_File, pep_mod_group, scan_num, sep = ".", 
+                     remove = TRUE) %>% 
+        dplyr::select(uniq_id, grep("^I[0-9]{3}[NC]{0,1}$", names(.))) 
+    }) %>% 
+    dplyr::bind_rows()
 
+  # ---
+  out <- calc_pepscores(topn_ms2ions = topn_ms2ions, 
+                        type_ms2ions = type_ms2ions, 
+                        target_fdr = target_fdr, 
+                        fdr_type = fdr_type, 
+                        min_len = min_len, 
+                        max_len = max_len, 
+                        penalize_sions = FALSE, 
+                        ppm_ms2 = ppm_ms2, 
+                        out_path = out_path, 
+                        digits = digits)
+  
+  gc()
+
+  # Protein accessions, score cut-offs
+  out <- out %>% 
+    add_prot_acc() %>% 
+    calc_protfdr(target_fdr)
+
+  gc()
+  
   # Protein groups
   out <- grp_prots(out, out_path)
   
@@ -871,6 +885,15 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   data.frame(Abbr = as.character(mod_indexes), Desc = names(mod_indexes)) %>% 
     readr::write_tsv(file.path(out_path, "mod_indexes.txt"))
   
+  # adds back reporter intensities
+  if (quant != "none") {
+    out <- out %>% 
+      tidyr::unite(uniq_id, RAW_File, pep_mod_group, scan_num, sep = ".", 
+                   remove = FALSE) %>% 
+      dplyr::left_join(reporters, by = "uniq_id") %>% 
+      dplyr::select(-uniq_id)
+  }
+
   out <- out %>% 
     dplyr::mutate(pep_ms1_delta = ms1_mass - theo_ms1) %>% 
     dplyr::rename(pep_scan_title = scan_title, 
@@ -906,7 +929,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     dplyr::select(-which(names(.) %in% c("prot_score"))) %T>% 
     readr::write_tsv(file.path(out_path, "psmQ.txt"))
 
-  rm(.path_cache, .path_fasta, .time_stamp, envir = .GlobalEnv)
+  rm(list = c(".path_cache", ".path_fasta", ".time_stamp"), envir = .GlobalEnv)
   
   .savecall <- TRUE
   
@@ -1057,7 +1080,7 @@ pmatch_bymgfs <- function (mgf_path, aa_masses_all, n_cores, out_path,
     }
   }
   
-  rm(fun, args_except, cache_pars, call_pars)
+  rm(list = c("fun", "args_except", "cache_pars", "call_pars"))
   
   delete_files(out_path, ignores = c("\\.[Rr]$", "\\.(mgf|MGF)$", "\\.xlsx$", 
                                      "\\.xls$", "\\.csv$", "\\.txt$", 
@@ -1215,7 +1238,7 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
   mgf_frames <- mgf_frames[oks]
   theopeps <- theopeps[oks]
   
-  rm(oks)
+  rm(list = "oks")
   
   if (is_empty(mgf_frames) || is_empty(theopeps)) {
     return(NULL)
@@ -1254,11 +1277,22 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
                     .scheduling = "dynamic") %>% 
     dplyr::bind_rows() %>% # across nodes
     dplyr::mutate(pep_fmod = nm_fmods, 
-                  pep_vmod = nm_vmods, ) %>% 
+                  pep_vmod = nm_vmods, 
+                  pep_mod_group = as.character(i)) %>% 
     { if (msg_end == ".") dplyr::mutate(., pep_isdecoy = FALSE) else 
       dplyr::mutate(., pep_isdecoy = TRUE) }
   
-  # saveRDS(out, file.path(out_path, paste0("ion_matches_", i, ".rds")))
+  out <- out %>%
+    dplyr::mutate(RAW_File = gsub("\\\\", "/", scan_title)) %>% 
+    dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.(raw|RAW)[\\\"]{0,1}; .*", "\\1", 
+                                  RAW_File)) %>% 
+    dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.d[\\\"]{0,1}; .*", "\\1", 
+                                  RAW_File)) %>% 
+    reloc_col_after("RAW_File", "scan_num") %>% 
+    reloc_col_after("pep_mod_group", "RAW_File")
+
+  dir.create(file.path(out_path, "temp"), recursive = TRUE, showWarnings = FALSE)
+  saveRDS(out, file.path(out_path, "temp", paste0("ion_matches_", i, ".rds")))
 
   stopCluster(cl)
   
@@ -1320,7 +1354,7 @@ search_mgf_frames_d <- function (mgf_frames, theopeps, aa_masses,
   
   res <- res[!empties, ]
   
-  rm(mgf_frames, theopeps)
+  rm(list = "mgf_frames", "theopeps")
   
   invisible(res)
 }
@@ -1518,15 +1552,12 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
     frame <- new_frame
   }
   
-  rm(
-    mgf_frames, theopeps, 
-    theos_bf_ms1, theos_cr_ms1, theos_af_ms1, 
-    theomasses_bf_ms1, theomasses_cr_ms1, theomasses_af_ms1, 
-    theopeps_bf_ms1, theopeps_cr_ms1, theopeps_af_ms1, 
-    theos_bf_ms2, theos_cr_ms2, theos_af_ms2,
-    exptmasses_ms1, exptmoverzs_ms2, 
-    mgfs_cr, new_frame, frame
-  )
+  rm(list = c("mgf_frames", "theopeps", "theos_bf_ms1", "theos_cr_ms1", 
+              "theos_af_ms1", "theomasses_bf_ms1", "theomasses_cr_ms1", 
+              "theomasses_af_ms1", "theopeps_bf_ms1", "theopeps_cr_ms1", 
+              "theopeps_af_ms1", "theos_bf_ms2", "theos_cr_ms2", 
+              "theos_af_ms2", "exptmasses_ms1", "exptmoverzs_ms2", 
+              "mgfs_cr", "new_frame", "frame"))
   
   invisible(out)
 }

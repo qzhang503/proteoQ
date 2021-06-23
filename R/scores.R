@@ -489,16 +489,88 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
                             out_path = "~/proteoQ/outs", digits = 5) {
 
   message("Calculating peptide scores.")
-
-  target <- file.path(out_path, "ion_matches.rds")
-  decoy <- file.path(out_path, "ion_matches_rev.rds")
   
-  if (file.exists(target)) {
-    res <- readRDS(target)
-  } else {
-    stop("Target matches not found: '", target, "'.")
-  }
-  nms_t <- names(res)
+  # --- Target ---
+  list_t <- local({
+    list_t <- list.files(path = file.path(out_path, "temp"), 
+                        pattern = "^ion_matches_\\d+\\.rds$")
+    
+    if (length(list_t) == 0L) {
+      stop("Target matches not found.", call. = FALSE)
+    }
+    
+    ord <- list_t %>% 
+      gsub("^ion_matches_(\\d+)\\.rds$", "\\1", .) %>% 
+      as.integer() %>% 
+      order()
+    
+    list_t <- list_t[ord]
+  })
+
+  len <- length(list_t)
+  
+  # ---
+  nms_t <- list_t %>% 
+    gsub("^ion_matches_(\\d+)\\.rds$", "\\1", .) %>% 
+    as.character()
+  
+  n_cores <- detectCores()
+  n_cores2 <- n_cores^2
+  
+  cl <- makeCluster(getOption("cl.cores", n_cores))
+  clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
+  
+  out <- map(list_t, ~ {
+    res_i <- readRDS(file.path(out_path, "temp", .x))
+    
+    # otherwise, chunksplit return NULL
+    #   -> res[[i]] <- NULL 
+    #   -> length(res) shorten by 1
+    
+    if (!is.null(res_i)) 
+      res_i <- suppressWarnings(chunksplit(res_i, n_cores2, "row"))
+    
+    if (length(res_i) >= n_cores2) {
+      out <- clusterApplyLB(cl, res_i, 
+                            calc_pepprobs_i, 
+                            topn_ms2ions = topn_ms2ions, 
+                            type_ms2ions = type_ms2ions, 
+                            penalize_sions = penalize_sions, 
+                            ppm_ms2 = ppm_ms2,
+                            out_path = out_path, 
+                            digits = digits) %>% 
+        dplyr::bind_rows()
+    } else {
+      if (is.data.frame(res_i)) res_i <- list(res_i)
+      
+      out <- map(res_i, calc_pepprobs_i, 
+                 topn_ms2ions = topn_ms2ions, 
+                 type_ms2ions = type_ms2ions, 
+                 penalize_sions = penalize_sions, 
+                 ppm_ms2 = ppm_ms2,
+                 out_path = out_path, 
+                 digits = digits) %>% 
+        dplyr::bind_rows() 
+    }
+    
+    # ---
+    idx <- gsub("^ion_matches_(\\d+)\\.rds$", "\\1", .x)
+    
+    dir.create(file.path(out_path, "temp"), recursive = TRUE, showWarnings = FALSE)
+    
+    out <- out %>% 
+      dplyr::select(-which(names(.) %in% c("ms2_moverz", "ms2_int", 
+                                           "pri_matches", "sec_matches"))) %T>% 
+      saveRDS(file.path(out_path, "temp", paste0("scores_", idx, ".rds")))
+    
+    rm(list = c("res_i", "idx"))
+    gc()
+    
+    out
+  })
+  
+  # --- Decoy ---
+  decoy <- file.path(out_path, "ion_matches_rev.rds")
   
   if (file.exists(decoy)) {
     res_rev <- readRDS(decoy)
@@ -506,85 +578,49 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
     warning("Decoy matches not found: '", decoy, "'.")
     res_rev <- NULL
   }
+  
   nms_d <- names(res_rev)
+  res_rev <- res_rev[[1]]
   
-  n_cores <- detectCores()
-  n_cores2 <- n_cores^2
-  
-  cl <- makeCluster(getOption("cl.cores", n_cores))
-  
-  # --- Targets
-  out <- vector("list", length(res))
-
-  for (i in seq_along(out)) {
-    
-    # otherwise, chunksplit return NULL
-    #   -> res[[i]] <- NULL 
-    #   -> length(res) shorten by 1
-    
-    if (!is.null(res[[i]])) {
-      res[[i]] <- suppressWarnings(chunksplit(res[[i]], n_cores2, "row"))
-    }
-
-    if (length(res[[i]]) >= n_cores2) {
-      out[[i]] <- clusterApplyLB(cl, res[[i]], 
-                                 calc_pepprobs_i, 
-                                 topn_ms2ions = topn_ms2ions, 
-                                 type_ms2ions = type_ms2ions, 
-                                 penalize_sions = penalize_sions, 
-                                 ppm_ms2 = ppm_ms2,
-                                 out_path = out_path, 
-                                 digits = digits) %>% 
-        dplyr::bind_rows()
-    } else {
-      if (is.data.frame(res[[i]])) {
-        res[[i]] <- list(res[[i]])
-      }
-      
-      out[[i]] <- map(res[[i]], calc_pepprobs_i, 
-                      topn_ms2ions = topn_ms2ions, 
-                      type_ms2ions = type_ms2ions, 
-                      penalize_sions = penalize_sions, 
-                      ppm_ms2 = ppm_ms2,
-                      out_path = out_path, 
-                      digits = digits) %>% 
-        dplyr::bind_rows()
-    }
+  if (!is.null(res_rev)) {
+    res_rev <- suppressWarnings(chunksplit(res_rev, n_cores^2, "row"))
   }
   
-  # --- Decoys
-  if (!is.null(res_rev[[1]])) {
-    res_rev[[1]] <- suppressWarnings(chunksplit(res_rev[[1]], n_cores^2, "row"))
-  }
-
-  if (length(res_rev[[1]]) >= n_cores2) {
-    out[[length(out)+1]] <- clusterApplyLB(cl, res_rev[[1]], 
-                                           calc_pepprobs_i, 
-                                           topn_ms2ions = topn_ms2ions, 
-                                           type_ms2ions = type_ms2ions, 
-                                           penalize_sions = penalize_sions, 
-                                           ppm_ms2 = ppm_ms2, 
-                                           out_path = out_path, 
-                                           digits = digits) %>% 
+  if (length(res_rev) >= n_cores2) {
+    out_rev <- clusterApplyLB(cl, res_rev, 
+                              calc_pepprobs_i, 
+                              topn_ms2ions = topn_ms2ions, 
+                              type_ms2ions = type_ms2ions, 
+                              penalize_sions = penalize_sions, 
+                              ppm_ms2 = ppm_ms2, 
+                              out_path = out_path, 
+                              digits = digits) %>% 
       dplyr::bind_rows()
   } else {
-    if (is.data.frame(res_rev[[1]])) {
-      res_rev[[1]] <- list(res_rev[[1]])
-    }
+    if (is.data.frame(res_rev)) res_rev <- list(res_rev)
     
-    out[[length(out)+1]] <- map(res_rev[[1]], calc_pepprobs_i, 
-                                topn_ms2ions = topn_ms2ions, 
-                                type_ms2ions = type_ms2ions, 
-                                penalize_sions = penalize_sions, 
-                                ppm_ms2 = ppm_ms2, 
-                                out_path = out_path, 
-                                digits = digits) %>% 
+    out_rev <- map(res_rev, calc_pepprobs_i, 
+                   topn_ms2ions = topn_ms2ions, 
+                   type_ms2ions = type_ms2ions, 
+                   penalize_sions = penalize_sions, 
+                   ppm_ms2 = ppm_ms2, 
+                   out_path = out_path, 
+                   digits = digits) %>% 
       dplyr::bind_rows()
   }
-
+  
+  out_rev <- out_rev %>% 
+    dplyr::select(-which(names(.) %in% c("ms2_moverz", "ms2_int", 
+                                         "pri_matches", "sec_matches"))) %T>% 
+    saveRDS(file.path(out_path, "temp", paste0("scores_", nms_d, ".rds")))
+  
+  out <- c(out, list(out_rev))
   names(out) <- c(nms_t, nms_d)
   
   stopCluster(cl)
+  
+  rm(list = c("res_rev", "out_rev"))
+  gc()
   
   # --- FDR --- 
   prob_cos <- calc_pepfdr(out, nms = nms_d, target_fdr = target_fdr, 
@@ -598,17 +634,9 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
 
   fct_score <- 10
   
-  # score_homol <- -log10(prob_co2$prob_co_homol) * fct_score
-  # score_ident <- -log10(prob_co2$prob_co_ident) * fct_score
-  
-  # ---
-  oks <- purrr::map_lgl(out, ~ nrow(.x) > 0)
+  oks <- purrr::map_lgl(out, ~ nrow(.x) > 0L)
 
   out <- out[oks] %>% 
-    imap( ~ {
-      .x[["pep_mod_group"]] <- .y
-      .x
-    }) %>% 
     dplyr::bind_rows()
   
   # ---
@@ -769,7 +797,6 @@ calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm",
         dplyr::filter(pep_rank == 1)
       
       all_lens <- unique(td$pep_len)
-      # lens <- all_lens %>% .[. <= 18]
 
       prob_cos <- all_lens %>% 
         map(probco_bypeplen, td, fdr_type, target_fdr) %>% 
@@ -781,8 +808,6 @@ calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm",
       lens <- find_optlens(all_lens, counts, 2000L)
       prob_cos <- prob_cos %>% .[names(.) %in% lens]
       counts <- counts %>% .[names(.) %in% lens]
-      # plot(-log10(prob_cos) ~ names(prob_cos))
-      # plot(counts ~ names(prob_cos))
 
       best_score_co <- prob_cos %>% 
         .[which_topx(., n = 1)] %>% 
@@ -796,7 +821,6 @@ calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm",
       newy <- predict(fit, data.frame(x = newx)) %>% 
         `names<-`(newx)
       newy[which(names(newy) == elbow):length(newy)] <- best_score_co
-      # plot(newy ~ names(newy))
 
       prob_cos <- 10^-newy
     })
@@ -821,7 +845,9 @@ calc_protfdr <- function (out, target_fdr = .01) {
   message("Calculating peptide-protein FDR.")
   
   # target-decoy pair
-  nms_d <- unique(out$pep_mod_group) %>% .[grepl("^rev_\\d+", .)]
+  nms_d <- unique(out$pep_mod_group) %>% 
+    .[grepl("^rev_\\d+", .)]
+  
   nms_t <- gsub("^rev_", "", nms_d)
   
   out2 <- out %>% 
