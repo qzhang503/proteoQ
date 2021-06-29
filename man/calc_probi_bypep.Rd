@@ -30,10 +30,11 @@ calc_probi_bypep(
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".}
+ions}. Values are in one of "by", "ax" and "cz". The default is "by" for b-
+and y-ions.}
 
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
-MS2 ion searches.}
+MS2 ion searches. The default is to use the top-100 ions in an MS2 event.}
 
 \item{penalize_sions}{Logical; if TRUE, penalizes secondary ions of b0, y0
 etc. with lower weights in peptide scoring.}

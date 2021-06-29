@@ -9,7 +9,7 @@ calc_protfdr_i(td, target_fdr = 0.01)
 \arguments{
 \item{td}{A data frame with paired target-decoys.}
 
-\item{target_fdr}{Numeric; the levels of false-discovery rate.}
+\item{target_fdr}{Numeric; the levels of false-discovery rate (FDR).}
 }
 \description{
 Helper of \link{calc_protfdr}.

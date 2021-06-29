@@ -12,7 +12,8 @@ par_dist1(cols, mat)
 \item{mat}{A bool matrix.}
 }
 \description{
-Helper of \link{parDist}.
+R version of parallel distance. Uses a subset of mat for memory efficiency.
+Not currently used.
 }
 \examples{
 \donttest{

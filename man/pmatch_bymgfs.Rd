@@ -34,7 +34,8 @@ pmatch_bymgfs(
 )
 }
 \arguments{
-\item{mgf_path}{The file path to a list of MGF files.}
+\item{mgf_path}{The file path to a list of MGF files. There is no default and
+the experimenters need to supply the files.}
 
 \item{aa_masses_all}{A list of amino acid lookups for all the combination of
 fixed and variable modifications.}
@@ -48,7 +49,8 @@ modifications.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".}
+ions}. Values are in one of "by", "ax" and "cz". The default is "by" for b-
+and y-ions.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
@@ -67,9 +69,8 @@ a hit.}
 \item{ppm_ms2}{The mass tolerance of MS2 species.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
-prepended directory path. The \code{fasta} database(s) need to match those
-used in MS/MS ion search. There is no default and users need to provide the
-correct file path(s) and name(s).}
+prepended directory path. There is no default and the experimenters need to
+supply the files.}
 
 \item{acc_type}{Character string(s); the types of protein accessions in one
 of c("uniprot_acc", "uniprot_id", "refseq_acc", "other"). For custom names,
@@ -79,10 +80,11 @@ the corresponding regular expressions need to be supplied via argument
 \item{acc_pattern}{Regular expression(s) describing the patterns to separate
 the header lines of fasta entries. At the \code{NULL} default, the pattern
 will be automated when \code{acc_type} are among c("uniprot_acc",
-"uniprot_id", "refseq_acc", "other").}
+"uniprot_id", "refseq_acc", "other"). See also \link{load_fasta2} for
+custom examples.}
 
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
-MS2 ion searches.}
+MS2 ion searches. The default is to use the top-100 ions in an MS2 event.}
 
 \item{fixedmods}{A character vector of fixed modifications. See also
 \link{parse_unimod} for grammars.}

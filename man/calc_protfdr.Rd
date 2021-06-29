@@ -9,7 +9,7 @@ calc_protfdr(out, target_fdr = 0.01)
 \arguments{
 \item{out}{An output from upstream steps.}
 
-\item{target_fdr}{Numeric; the levels of false-discovery rate.}
+\item{target_fdr}{Numeric; the levels of false-discovery rate (FDR).}
 }
 \description{
 Calculates the cut-offs of protein scores.
