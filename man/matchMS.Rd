@@ -120,9 +120,10 @@ compatible higher plexes, for example, \code{tmt16} for \code{tmt12} etc.
 and \code{tmt10} for \code{tmt8} etc.}
 
 \item{target_fdr}{Numeric; the levels of false-discovery rate (FDR) at the
-levels of PSMs or peptides. The same level applies further to protein FDR.
-This results in FDR controls of either PSM <-> protein or peptide <->
-protein at a given \code{target_fdr}.}
+levels of PSMs or peptides. The same level applies further to protein FDR
+and indicated under the column \code{prot_issig} in outputs. This results
+in FDR controls of either PSM <-> protein or peptide <-> protein at a given
+\code{target_fdr}.}
 
 \item{fdr_type}{Character string; the type of FDR controlling. The value is
 in one of c("psm", "peptide"). Note that protein FDR is in conjunction with

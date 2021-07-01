@@ -635,9 +635,10 @@ chunksplitLB <- function (data, n_chunks = 5, nx = 100, type = "list") {
 #'   "uniprot_id", "refseq_acc", "other"). See also \link{load_fasta2} for
 #'   custom examples.
 #' @param target_fdr Numeric; the levels of false-discovery rate (FDR) at the
-#'   levels of PSMs or peptides. The same level applies further to protein FDR.
-#'   This results in FDR controls of either PSM <-> protein or peptide <->
-#'   protein at a given \code{target_fdr}.
+#'   levels of PSMs or peptides. The same level applies further to protein FDR
+#'   and indicated under the column \code{prot_issig} in outputs. This results
+#'   in FDR controls of either PSM <-> protein or peptide <-> protein at a given
+#'   \code{target_fdr}.
 #' @param fdr_type Character string; the type of FDR controlling. The value is
 #'   in one of c("psm", "peptide"). Note that protein FDR is in conjunction with
 #'   "psm" or "peptide". Separate protein FDR may be available in the future.
@@ -892,8 +893,6 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   gc()
   
   # Clean-ups
-  message("Saving outputs.")
-  
   data.frame(Abbr = as.character(mod_indexes), Desc = names(mod_indexes)) %>% 
     readr::write_tsv(file.path(out_path, "mod_indexes.txt"))
   
@@ -932,21 +931,58 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     reloc_col_after("pep_delta", "pep_calc_mr") 
   
   # ---
-  out <- out %>% 
-    dplyr::mutate(pep_issig = ifelse(pep_issig & prot_issig, TRUE, FALSE)) %T>% 
+  out <- out %T>% 
     readr::write_tsv(file.path(out_path, "psmC.txt")) %>% 
     dplyr::filter(pep_issig, !pep_isdecoy, pep_rank <= 3L, 
                   !grepl("^-", prot_acc))
   
+  # set aside one-hit wonders
+  out0 <- out %>% 
+    dplyr::filter(!prot_issig, prot_n_pep == 1L)
+  
+  out <- dplyr::bind_rows(
+    out %>% dplyr::filter(prot_issig), 
+    out %>% filter(!prot_issig, prot_n_pep >= 2L)
+  )
+  
   gc()
   
   # Protein groups
-  # (Interplay: `prot_issig` based on and fitted against best `pep_seq`s -> 
-  #   further filter out "significant" pep_seq(s) that fail on the `prot_issig`)
   out <- out %>% 
     grp_prots(out_path) %>% 
-    filter(prot_issig) %T>% 
-    readr::write_tsv(file.path(out_path, "psmQ.txt"))
+    dplyr::mutate(prot_tier = ifelse(prot_issig, 1L, 2L))
+  
+  out <- dplyr::bind_cols(
+    out %>% .[grepl("^prot_", names(.))], 
+    out %>% .[grepl("^pep_", names(.))], 
+    out %>% .[grepl("^psm_", names(.))], 
+    out %>% .[!grepl("^prot_|^pep_|^psm_", names(.))], 
+  ) %>% 
+    reloc_col_after("prot_es", "prot_family_member") %>% 
+    reloc_col_after("prot_es_co", "prot_family_member") %>% 
+    reloc_col_after("prot_tier", "prot_isess")
+  
+  out <- local({
+    message("Proteins at `prot_tier` 3 are at low confidence",  
+            "and mostly for reference purposes.")
+
+    cols <- setdiff(names(out), names(out0))
+    
+    for (i in cols) {
+      out0[[i]] <- NA
+    }
+    
+    out0[["prot_tier"]] <- 3L
+    out0 <- out0[names(out)]
+
+    out <- out %>% 
+      dplyr::bind_rows(out0) %>% 
+      dplyr::arrange(prot_acc, pep_seq)
+  })
+  
+  readr::write_tsv(out, file.path(out_path, "psmQ.txt"))
+
+  message("Search completed.")
   
   # ---
   rm(list = c(".path_cache", ".path_fasta", ".time_stamp"), envir = .GlobalEnv)

@@ -242,12 +242,15 @@ add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
   gc()
 
   # adds prot_n_psm, prot_n_pep for protein FDR
-  prot_n_psm <- out %>%
+  x <- out %>% 
+    dplyr::filter(pep_issig)
+  
+  prot_n_psm <- x %>%
     dplyr::select(prot_acc) %>%
     dplyr::group_by(prot_acc) %>%
     dplyr::summarise(prot_n_psm = n())
-
-  prot_n_pep <- out %>%
+  
+  prot_n_pep <- x %>%
     dplyr::select(pep_seq, prot_acc) %>% 
     tidyr::unite(pep_prot, c("pep_seq", "prot_acc"), sep = ".", remove = FALSE) %>% 
     dplyr::filter(!duplicated(pep_prot)) %>%
@@ -257,6 +260,11 @@ add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
   out <- list(out, prot_n_psm, prot_n_pep) %>%
     purrr::reduce(dplyr::left_join, by = "prot_acc") %>%
     dplyr::arrange(-prot_n_pep, -prot_n_psm)
+  
+  rm(list = c("x", "prot_n_psm", "prot_n_pep"))
+  gc()
+  
+  invisible(out)
 }
 
 

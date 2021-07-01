@@ -269,3 +269,4 @@ delete_files <- function (path, ignores = NULL, ...) {
 #' @param x A numeric value.
 #' @param y A numeric value.
 `%+%` <- function(x, y)  mapply(sum, x, y, MoreArgs = list(na.rm = TRUE))
+
