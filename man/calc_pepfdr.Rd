@@ -18,10 +18,9 @@ calc_pepfdr(
 
 \item{nms}{The name(s) of \code{out} that correspond(s) to decoy results.}
 
-\item{target_fdr}{Numeric; the levels of false-discovery rate.}
+\item{target_fdr}{Numeric; the levels of false-discovery rate (FDR).}
 
-\item{fdr_type}{Character string; the type of FDR controlling. The value is
-in one of c("psm", "peptide", "protein").}
+\item{fdr_type}{Character string; the type of FDR for controlling.}
 }
 \description{
 Needs \code{min_len} and \code{max_len} since the target-decoy pair may not

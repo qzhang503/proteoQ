@@ -16,11 +16,12 @@ scalc_pepscores_static(
 \item{entry}{A row of data from \link{pmatch_bymgfs}.}
 
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
-MS2 ion searches.}
+MS2 ion searches. The default is to use the top-100 ions in an MS2 event.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".}
+ions}. Values are in one of "by", "ax" and "cz". The default is "by" for b-
+and y-ions.}
 
 \item{ppm_ms2}{The mass tolerance of MS2 species.}
 

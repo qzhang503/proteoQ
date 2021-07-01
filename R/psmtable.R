@@ -5988,13 +5988,17 @@ pad_tmt_channels <- function(file, ...) {
                  sep = "\t", comment.char = "#") %>% 
     filters_in_call(!!!filter_dots)
   
-  df <- df %>%
-    dplyr::mutate(RAW_File = gsub("\\\\", "/", pep_scan_title)) %>% 
-    dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.(raw|RAW)[\\\"]{0,1}; .*", "\\1", 
-                                  RAW_File)) %>% 
-    dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.d[\\\"]{0,1}; .*", "\\1", 
-                                  RAW_File))
-  
+  if ("raw_file" %in% names(df)) {
+    df <- df %>% dplyr::rename(RAW_File = raw_file)
+  } else {
+    df <- df %>%
+      dplyr::mutate(RAW_File = gsub("\\\\", "/", pep_scan_title)) %>% 
+      dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.(raw|RAW)[\\\"]{0,1}; .*", "\\1", 
+                                    RAW_File)) %>% 
+      dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.d[\\\"]{0,1}; .*", "\\1", 
+                                    RAW_File))
+  }
+
   this_plex <- sum(grepl("^I[0-9]{3}[NC]{0,1}$", names(df)))
   TMT_plex <- TMT_plex(label_scheme_full)
   stopifnot(this_plex >= 0L)

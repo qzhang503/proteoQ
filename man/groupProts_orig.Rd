@@ -13,5 +13,5 @@ groupProts_orig(df, out_path = "~/proteoQ/outs")
 }
 \description{
 Adds columns \code{prot_hit_num} and \code{prot_family_member} to
-\code{psm.txt}.
+\code{psmQ.txt}.
 }

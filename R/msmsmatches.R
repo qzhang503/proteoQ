@@ -444,7 +444,7 @@ read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs",
 #' @param min_mass Numeric; the minimum mass of MS1 species. The value needs to
 #'   match the one in  \link{binTheoPeps}.
 #' @param topn_ms2ions A non-negative integer; the top-n species for uses in
-#'   MS2 ion searches.
+#'   MS2 ion searches. The default is to use the top-100 ions in an MS2 event.
 #' @param ret_range The range of retention time in seconds.
 #' @inheritParams matchMS
 #' @import stringi
@@ -624,9 +624,26 @@ chunksplitLB <- function (data, n_chunks = 5, nx = 100, type = "list") {
 #' @inheritParams calc_pepfdr
 #' @inheritParams calc_tmtint
 #' @inheritParams load_fasta2
-#' @param mgf_path The file path to a list of MGF files.
+#' @param mgf_path The file path to a list of MGF files. There is no default and
+#'   the experimenters need to supply the files.
+#' @param fasta Character string(s) to the name(s) of fasta file(s) with
+#'   prepended directory path. There is no default and the experimenters need to
+#'   supply the files.
+#' @param acc_pattern Regular expression(s) describing the patterns to separate
+#'   the header lines of fasta entries. At the \code{NULL} default, the pattern
+#'   will be automated when \code{acc_type} are among c("uniprot_acc",
+#'   "uniprot_id", "refseq_acc", "other"). See also \link{load_fasta2} for
+#'   custom examples.
+#' @param target_fdr Numeric; the levels of false-discovery rate (FDR) at the
+#'   levels of PSMs or peptides. The same level applies further to protein FDR
+#'   and indicated under the column \code{prot_issig} in outputs. This results
+#'   in FDR controls of either PSM <-> protein or peptide <-> protein at a given
+#'   \code{target_fdr}.
+#' @param fdr_type Character string; the type of FDR controlling. The value is
+#'   in one of c("psm", "peptide"). Note that protein FDR is in conjunction with
+#'   "psm" or "peptide". Separate protein FDR may be available in the future.
 #' @seealso \link{load_fasta2} for setting the values of \code{acc_type} and
-#'   \code{acc_pattern}.
+#'   \code{acc_pattern}. \link{parse_unimod} for the grammar of Unimod.
 #' @export
 matchMS <- function (out_path = "~/proteoQ/outs", 
                      mgf_path = file.path(out_path, "mgf"), 
@@ -849,7 +866,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     imap( ~ {
       .x %>% 
         calc_tmtint(quant = quant, ppm_reporters = ppm_reporters) %>% 
-        tidyr::unite(uniq_id, RAW_File, pep_mod_group, scan_num, sep = ".", 
+        tidyr::unite(uniq_id, raw_file, pep_mod_group, scan_num, sep = ".", 
                      remove = TRUE) %>% 
         dplyr::select(uniq_id, grep("^I[0-9]{3}[NC]{0,1}$", names(.))) 
     }) %>% 
@@ -862,7 +879,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                         fdr_type = fdr_type, 
                         min_len = min_len, 
                         max_len = max_len, 
-                        penalize_sions = FALSE, 
+                        penalize_sions = TRUE, 
                         ppm_ms2 = ppm_ms2, 
                         out_path = out_path, 
                         digits = digits)
@@ -870,30 +887,24 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   gc()
 
   # Protein accessions, score cut-offs
-  out <- out %>% 
-    add_prot_acc() %>% 
-    calc_protfdr(target_fdr)
+  out <- out %>% add_prot_acc() 
+  out <- out %>% calc_protfdr(target_fdr)
 
   gc()
   
-  # Protein groups
-  out <- grp_prots(out, out_path)
-  
   # Clean-ups
-  message("Saving outputs.")
-  
   data.frame(Abbr = as.character(mod_indexes), Desc = names(mod_indexes)) %>% 
     readr::write_tsv(file.path(out_path, "mod_indexes.txt"))
   
-  # adds back reporter intensities
+  # Brings back reporter intensities
   if (quant != "none") {
     out <- out %>% 
-      tidyr::unite(uniq_id, RAW_File, pep_mod_group, scan_num, sep = ".", 
+      tidyr::unite(uniq_id, raw_file, pep_mod_group, scan_num, sep = ".", 
                    remove = FALSE) %>% 
       dplyr::left_join(reporters, by = "uniq_id") %>% 
       dplyr::select(-uniq_id)
   }
-
+  
   out <- out %>% 
     dplyr::mutate(pep_ms1_delta = ms1_mass - theo_ms1) %>% 
     dplyr::rename(pep_scan_title = scan_title, 
@@ -908,7 +919,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                   pep_scan_num = scan_num, 
                   pep_ms2_n = ms2_n, 
                   pep_frame = frame)
-
+  
   out <- dplyr::bind_cols(
     out %>% .[grepl("^prot_", names(.))], 
     out %>% .[grepl("^pep_", names(.))], 
@@ -917,18 +928,63 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   ) %>% 
     reloc_col_after("pep_exp_z", "pep_exp_mr") %>% 
     reloc_col_after("pep_calc_mr", "pep_exp_z") %>% 
-    reloc_col_after("pep_delta", "pep_calc_mr") %T>% 
-    saveRDS(file.path(out_path, "psmC.rds"))
-
-  out <- out %>% 
-    dplyr::select(-which(names(.) %in% c("pri_matches", "sec_matches", 
-                                         "ms2_moverz", "ms2_int"))) %T>% 
+    reloc_col_after("pep_delta", "pep_calc_mr") 
+  
+  # ---
+  out <- out %T>% 
     readr::write_tsv(file.path(out_path, "psmC.txt")) %>% 
-    dplyr::filter(prot_isess, pep_issig, !pep_isdecoy, pep_rank <= 3L) %>% 
-    { if (fdr_type == "protein") dplyr::filter(., prot_issig) else . } %>% 
-    dplyr::select(-which(names(.) %in% c("prot_score"))) %T>% 
-    readr::write_tsv(file.path(out_path, "psmQ.txt"))
+    dplyr::filter(pep_issig, !pep_isdecoy, pep_rank <= 3L, 
+                  !grepl("^-", prot_acc))
+  
+  # set aside one-hit wonders
+  out0 <- out %>% 
+    dplyr::filter(!prot_issig, prot_n_pep == 1L)
+  
+  out <- dplyr::bind_rows(
+    out %>% dplyr::filter(prot_issig), 
+    out %>% filter(!prot_issig, prot_n_pep >= 2L)
+  )
+  
+  gc()
+  
+  # Protein groups
+  out <- out %>% 
+    grp_prots(out_path) %>% 
+    dplyr::mutate(prot_tier = ifelse(prot_issig, 1L, 2L))
+  
+  out <- dplyr::bind_cols(
+    out %>% .[grepl("^prot_", names(.))], 
+    out %>% .[grepl("^pep_", names(.))], 
+    out %>% .[grepl("^psm_", names(.))], 
+    out %>% .[!grepl("^prot_|^pep_|^psm_", names(.))], 
+  ) %>% 
+    reloc_col_after("prot_es", "prot_family_member") %>% 
+    reloc_col_after("prot_es_co", "prot_family_member") %>% 
+    reloc_col_after("prot_tier", "prot_isess")
+  
+  out <- local({
+    message("Proteins at `prot_tier` 3 are at low confidence",  
+            "and mostly for reference purposes.")
 
+    cols <- setdiff(names(out), names(out0))
+    
+    for (i in cols) {
+      out0[[i]] <- NA
+    }
+    
+    out0[["prot_tier"]] <- 3L
+    out0 <- out0[names(out)]
+
+    out <- out %>% 
+      dplyr::bind_rows(out0) %>% 
+      dplyr::arrange(prot_acc, pep_seq)
+  })
+  
+  readr::write_tsv(out, file.path(out_path, "psmQ.txt"))
+
+  message("Search completed.")
+  
+  # ---
   rm(list = c(".path_cache", ".path_fasta", ".time_stamp"), envir = .GlobalEnv)
   
   .savecall <- TRUE
@@ -1283,13 +1339,13 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
       dplyr::mutate(., pep_isdecoy = TRUE) }
   
   out <- out %>%
-    dplyr::mutate(RAW_File = gsub("\\\\", "/", scan_title)) %>% 
-    dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.(raw|RAW)[\\\"]{0,1}; .*", "\\1", 
-                                  RAW_File)) %>% 
-    dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.d[\\\"]{0,1}; .*", "\\1", 
-                                  RAW_File)) %>% 
-    reloc_col_after("RAW_File", "scan_num") %>% 
-    reloc_col_after("pep_mod_group", "RAW_File")
+    dplyr::mutate(raw_file = gsub("\\\\", "/", scan_title)) %>% 
+    dplyr::mutate(raw_file = gsub("^.*/(.*)\\.(raw|RAW)[\\\"]{0,1}; .*", "\\1", 
+                                  raw_file)) %>% 
+    dplyr::mutate(raw_file = gsub("^.*/(.*)\\.d[\\\"]{0,1}; .*", "\\1", 
+                                  raw_file)) %>% 
+    reloc_col_after("raw_file", "scan_num") %>% 
+    reloc_col_after("pep_mod_group", "raw_file")
 
   dir.create(file.path(out_path, "temp"), recursive = TRUE, showWarnings = FALSE)
   saveRDS(out, file.path(out_path, "temp", paste0("ion_matches_", i, ".rds")))

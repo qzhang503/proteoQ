@@ -10,7 +10,7 @@ proc_mgf_chunks_i(file, topn_ms2ions = 100, ret_range = c(0, Inf))
 \item{file}{A mgf chunk (chunk_1.mgf etc.) with prepending file path.}
 
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
-MS2 ion searches.}
+MS2 ion searches. The default is to use the top-100 ions in an MS2 event.}
 
 \item{ret_range}{The range of retention time in seconds.}
 }

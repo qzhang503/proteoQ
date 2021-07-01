@@ -12,5 +12,5 @@ par_dist2(cols, mat)
 \item{mat}{A bool matrix.}
 }
 \description{
-Helper of \link{parDist}.
+For coupling to par_distC; not currently used.
 }

@@ -39,12 +39,12 @@ matchMS(
 \arguments{
 \item{out_path}{The output path.}
 
-\item{mgf_path}{The file path to a list of MGF files.}
+\item{mgf_path}{The file path to a list of MGF files. There is no default and
+the experimenters need to supply the files.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
-prepended directory path. The \code{fasta} database(s) need to match those
-used in MS/MS ion search. There is no default and users need to provide the
-correct file path(s) and name(s).}
+prepended directory path. There is no default and the experimenters need to
+supply the files.}
 
 \item{acc_type}{Character string(s); the types of protein accessions in one
 of c("uniprot_acc", "uniprot_id", "refseq_acc", "other"). For custom names,
@@ -54,7 +54,8 @@ the corresponding regular expressions need to be supplied via argument
 \item{acc_pattern}{Regular expression(s) describing the patterns to separate
 the header lines of fasta entries. At the \code{NULL} default, the pattern
 will be automated when \code{acc_type} are among c("uniprot_acc",
-"uniprot_id", "refseq_acc", "other").}
+"uniprot_id", "refseq_acc", "other"). See also \link{load_fasta2} for
+custom examples.}
 
 \item{fixedmods}{A character vector of fixed modifications. See also
 \link{parse_unimod} for grammars.}
@@ -98,10 +99,11 @@ be excluded.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".}
+ions}. Values are in one of "by", "ax" and "cz". The default is "by" for b-
+and y-ions.}
 
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
-MS2 ion searches.}
+MS2 ion searches. The default is to use the top-100 ions in an MS2 event.}
 
 \item{minn_ms2}{Integer; the minimum number of MS2 ions for consideration as
 a hit.}
@@ -112,12 +114,20 @@ a hit.}
 
 \item{ppm_reporters}{The mass tolerance of MS2 reporter ions.}
 
-\item{quant}{A quantitation method. The default is "none".}
+\item{quant}{A quantitation method. The default is "none". Additional choices
+include \code{tmt6} etc. For other multiplicities of \code{tmt}, use the
+compatible higher plexes, for example, \code{tmt16} for \code{tmt12} etc.
+and \code{tmt10} for \code{tmt8} etc.}
 
-\item{target_fdr}{Numeric; the levels of false-discovery rate.}
+\item{target_fdr}{Numeric; the levels of false-discovery rate (FDR) at the
+levels of PSMs or peptides. The same level applies further to protein FDR
+and indicated under the column \code{prot_issig} in outputs. This results
+in FDR controls of either PSM <-> protein or peptide <-> protein at a given
+\code{target_fdr}.}
 
 \item{fdr_type}{Character string; the type of FDR controlling. The value is
-in one of c("psm", "peptide", "protein").}
+in one of c("psm", "peptide"). Note that protein FDR is in conjunction with
+"psm" or "peptide". Separate protein FDR may be available in the future.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }
@@ -126,5 +136,5 @@ Searches MS ions.
 }
 \seealso{
 \link{load_fasta2} for setting the values of \code{acc_type} and
-  \code{acc_pattern}.
+  \code{acc_pattern}. \link{parse_unimod} for the grammar of Unimod.
 }

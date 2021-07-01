@@ -25,7 +25,8 @@ pmatch_bymgfs_i(
 \item{i}{Integer; the index for a set of corresponding aa_masses and
 theoretical peptides.}
 
-\item{mgf_path}{The file path to a list of MGF files.}
+\item{mgf_path}{The file path to a list of MGF files. There is no default and
+the experimenters need to supply the files.}
 
 \item{n_cores}{Integer; the number of computer cores.}
 
@@ -36,7 +37,8 @@ modifications.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".}
+ions}. Values are in one of "by", "ax" and "cz". The default is "by" for b-
+and y-ions.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}

@@ -260,3 +260,13 @@ delete_files <- function (path, ignores = NULL, ...) {
   
   invisible(NULL)
 }
+
+
+#' Sums elements across lists.
+#' 
+#' Each list has the same length. NA values are removed.
+#' 
+#' @param x A numeric value.
+#' @param y A numeric value.
+`%+%` <- function(x, y)  mapply(sum, x, y, MoreArgs = list(na.rm = TRUE))
+

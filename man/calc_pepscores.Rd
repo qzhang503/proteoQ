@@ -19,16 +19,22 @@ calc_pepscores(
 }
 \arguments{
 \item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
-MS2 ion searches.}
+MS2 ion searches. The default is to use the top-100 ions in an MS2 event.}
 
 \item{type_ms2ions}{Character; the type of
 \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-ions}. Values are in one of "by", "ax" and "cz".}
+ions}. Values are in one of "by", "ax" and "cz". The default is "by" for b-
+and y-ions.}
 
-\item{target_fdr}{Numeric; the levels of false-discovery rate.}
+\item{target_fdr}{Numeric; the levels of false-discovery rate (FDR) at the
+levels of PSMs or peptides. The same level applies further to protein FDR
+and indicated under the column \code{prot_issig} in outputs. This results
+in FDR controls of either PSM <-> protein or peptide <-> protein at a given
+\code{target_fdr}.}
 
 \item{fdr_type}{Character string; the type of FDR controlling. The value is
-in one of c("psm", "peptide", "protein").}
+in one of c("psm", "peptide"). Note that protein FDR is in conjunction with
+"psm" or "peptide". Separate protein FDR may be available in the future.}
 
 \item{min_len}{Integer; the minimum length of peptides. Shorter peptides will
 be excluded.}

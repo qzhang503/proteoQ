@@ -243,11 +243,19 @@ list_leftmatch <- function (a, b) {
 #' }
 calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints, 
                                 N, type_ms2ions = "by", topn_ms2ions = 100, 
-                                penalize_sions = FALSE, ppm_ms2 = 25, 
+                                penalize_sions = TRUE, ppm_ms2 = 25, 
                                 digits = 5) {
   
+  # N - the total number of features (white and black balls)
+  # k - the number of sampled features
+  # m - the numbers of theoretical features (white balls)
+  # n - the number of noise (black balls)
+  
   m <- length(df[["theo"]])
-  m[m > N] <- N
+  # m[m > N] <- N
+  
+  # OK: (N < m) -> (n < 0L)
+  # if (N < m) N <- m
   
   # matches additionally against secondary ions
   df2 <- add_seions(df[["theo"]], type_ms2ions = type_ms2ions, digits = digits) %>% 
@@ -256,6 +264,7 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
   df2[["theo"]] <- df2[["theo"]] %>% round(digits = 4)
 
   # subtracts `m` and the counts of secondary b0, y0 matches etc. from noise
+  # (OK n < 0L)
   n <- N - m - sum(!is.na(df2$expt))
 
   # ---
@@ -263,20 +272,31 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
   df <- bind_cols(theo = df$theo, expt = df$expt)
   df2 <- bind_cols(theo = df2$theo, expt = df2$expt)
   
+  # ---
   if (penalize_sions) {
-    y1 <- right_join(df, expts, by = "expt") %>% 
-      arrange(-int)
-
-    y2 <- df2 %>% 
-      filter(!is.na(expt)) %>% 
-      mutate(int = 0)
+    # add secondary intensities
+    m2 <- nrow(df2)
     
-    y <- bind_rows(y1, y2) %>% 
+    y2 <- df2 %>% 
+      left_join(expts, by = "expt") %>% 
+      `[[`("int") %>% 
+      split(rep(seq_len(m2/m), each = m)) %>% 
+      Reduce(`%+%`, .) %>% 
+      data.frame(idx = seq_len(m), int2 = .)
+    
+    # no contributions from `int2` if the corresponding `int` not found; 
+    # thus no need to check `is.na(int2)`
+    y <- left_join(expts, df %>% mutate(idx = row_number()), by = "expt") %>% 
+      dplyr::left_join(y2, by = "idx") %>% 
+      mutate(int = ifelse(is.na(int2), int, int + int2)) %>% 
+      select(-c("int2", "idx")) %>% 
+      arrange(-int) %>% 
       mutate(k = row_number(), 
              x = k - cumsum(is.na(theo))) %>% 
       filter(!is.na(theo))
 
-    rm(y1, y2)
+    rm(list = c("m2", "y2"))
+
   } else {
     y <- left_join(expts, df, by = "expt") %>% 
       arrange(-int) %>% 
@@ -290,13 +310,11 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
   k <- y$k
   
   # (to have sufficient counts of noise)
-  # n <- max(n, 2 * k[length(k)])
+  # (also guaranteed n > 0L)
   n <- max(n, topn_ms2ions + k[length(k)])
   
-  pr <- mapply(dhyper, x[-c(1:2)], m, n, k[-c(1:2)]) %>% min(na.rm = TRUE) 
-  # pr <- min(dhyper(x[-c(1:3)], m, n, k[-c(1:3)]), na.rm = TRUE)
-  # pr <- 1 - max(phyper(x[-c(1:3)], m, n, k[-c(1:3)]), na.rm = TRUE)
-
+  pr <- min(mapply(dhyper, x[-c(1:2)], m, n, k[-c(1:2)]), na.rm = TRUE)
+  
   tibble(pep_ivmod = nms, 
          pep_prob = pr, 
          pri_matches = list(df), 
@@ -344,7 +362,7 @@ calc_probi_bypep <- function (mts, nms, expt_moverzs, expt_ints,
 #' @importFrom purrr map
 calc_probi <- function (mts, expt_moverzs, expt_ints, 
                         N, type_ms2ions = "by", topn_ms2ions = 100, 
-                        penalize_sions = FALSE, ppm_ms2 = 25, digits = 5) {
+                        penalize_sions = TRUE, ppm_ms2 = 25, digits = 5) {
   
   out <- map2(mts, names(mts), calc_probi_bypep, 
               expt_moverzs = expt_moverzs, 
@@ -404,7 +422,7 @@ scalc_pepprobs <- function (entry, topn_ms2ions = 100, type_ms2ions = "by",
   #   2  230.   230.
   #   3  331.   331.
   
-  # (flattens by one level as is list-columns)
+  # (flattens by one level as is a list-column)
   mts <- entry$matches[[1]]
   
   N <- entry$ms2_n[[1]]
@@ -515,7 +533,7 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
     as.character()
   
   n_cores <- detectCores()
-  n_cores2 <- n_cores^2
+  n_cores2 <- n_cores^2L
   
   cl <- makeCluster(getOption("cl.cores", n_cores))
   clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
@@ -525,11 +543,12 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
     
     # otherwise, chunksplit return NULL
     #   -> res[[i]] <- NULL 
-    #   -> length(res) shorten by 1
+    #   -> length(res) shortened by 1
     
-    if (!is.null(res_i)) 
+    if (!is.null(res_i)) {
       res_i <- suppressWarnings(chunksplit(res_i, n_cores2, "row"))
-    
+    }
+      
     if (length(res_i) >= n_cores2) {
       out <- clusterApplyLB(cl, res_i, 
                             calc_pepprobs_i, 
@@ -553,16 +572,22 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
         dplyr::bind_rows() 
     }
     
+    out <- out %>% 
+      dplyr::filter(pep_rank <= 3L)
+    
     # ---
     idx <- gsub("^ion_matches_(\\d+)\\.rds$", "\\1", .x)
     
     dir.create(file.path(out_path, "temp"), recursive = TRUE, showWarnings = FALSE)
+
+    cols_a <- c("raw_file", "pep_mod_group", "scan_num")
+    cols_b <- c("ms2_moverz", "ms2_int", "pri_matches", "sec_matches")
     
-    out <- out %>% 
-      dplyr::select(-which(names(.) %in% c("ms2_moverz", "ms2_int", 
-                                           "pri_matches", "sec_matches"))) %T>% 
-      saveRDS(file.path(out_path, "temp", paste0("scores_", idx, ".rds")))
-    
+    saveRDS(out[, c(cols_a, cols_b)], 
+            file.path(out_path, "temp", paste0("list_table_", idx, ".rds")))
+
+    out <- out %>% dplyr::select(-which(names(.) %in% cols_b)) 
+
     rm(list = c("res_i", "idx"))
     gc()
     
@@ -610,10 +635,18 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
   }
   
   out_rev <- out_rev %>% 
-    dplyr::select(-which(names(.) %in% c("ms2_moverz", "ms2_int", 
-                                         "pri_matches", "sec_matches"))) %T>% 
-    saveRDS(file.path(out_path, "temp", paste0("scores_", nms_d, ".rds")))
+    dplyr::filter(pep_rank <= 3L)
   
+  # ---
+  cols_a <- c("raw_file", "pep_mod_group", "scan_num")
+  cols_b <- c("ms2_moverz", "ms2_int", "pri_matches", "sec_matches")
+  
+  saveRDS(out_rev[, c(cols_a, cols_b)], 
+          file.path(out_path, "temp", paste0("list_table_", nms_d, ".rds")))
+  
+  out_rev <- out_rev %>% dplyr::select(-which(names(.) %in% cols_b)) 
+
+  # ---
   out <- c(out, list(out_rev))
   names(out) <- c(nms_t, nms_d)
   
@@ -625,13 +658,25 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
   # --- FDR --- 
   prob_cos <- calc_pepfdr(out, nms = nms_d, target_fdr = target_fdr, 
                           fdr_type = fdr_type, min_len = min_len, 
-                          max_len = max_len) 
+                          max_len = max_len)
   
-  best_prob_co <- prob_cos %>% .[length(.)]
+  # homolog co
+  prob_cos <- local({
+    idxes <- prob_cos %>% .[. <= target_fdr]
+    
+    if (length(idxes) > 0L) {
+      fct_homol <- target_fdr/max(idxes, na.rm = TRUE)
+    } else {
+      fct_homol <- 1L
+    }
+    
+    prob_cos <- prob_cos * fct_homol
+  })
   
+  # --- outputs ---
   prob_cos <- prob_cos%>% 
-    data.frame(pep_len = as.numeric(names(.)), prob_co = .) 
-
+    data.frame(pep_len = as.numeric(names(.)), pep_prob_co = .) 
+  
   fct_score <- 10
   
   oks <- purrr::map_lgl(out, ~ nrow(.x) > 0L)
@@ -639,18 +684,26 @@ calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by",
   out <- out[oks] %>% 
     dplyr::bind_rows()
   
-  # ---
+  # adjusted p-values
   out <- out %>% 
     left_join(prob_cos, by = "pep_len") %>% 
-    dplyr::mutate(best_prob_co = .env$best_prob_co, 
-                  pep_issig = ifelse(pep_prob <= best_prob_co, TRUE, FALSE), 
-                  pep_islsig = ifelse(pep_prob <= prob_co, TRUE, FALSE), 
-                  pep_adjp = p.adjust(pep_prob, "BH"), 
-                  pep_score = -log10(pep_adjp) * fct_score, 
-                  pep_score = ifelse(pep_score > 250, 250, pep_score), 
-                  pep_score = round(pep_score, 1)) %>% 
-    dplyr::select(-c("pep_prob", "pep_adjp", "prob_co", "best_prob_co"))
+    dplyr::mutate(pep_issig = ifelse(pep_prob <= pep_prob_co, TRUE, FALSE), 
+                  pep_adjp = p.adjust(pep_prob, "BH"))
   
+  prob_cos <- map_dbl(prob_cos$pep_prob_co, ~ {
+    row <- abs(log10(out$pep_prob/.x)) %>% which.min() 
+    out[row, ]$pep_adjp
+  }) %>% 
+    dplyr::bind_cols(prob_cos, pep_adjp_co = .) %T>% 
+    saveRDS(file.path(out_path, "temp", "pep_prob_cos.rds"))
+  
+  out <- out %>% 
+    left_join(prob_cos[, c("pep_len", "pep_adjp_co")], by = "pep_len") %>% 
+    dplyr::mutate(pep_score = -log10(pep_adjp) * fct_score, 
+                  pep_score = ifelse(pep_score > 250, 250, pep_score), 
+                  pep_score_co = -log10(pep_adjp_co) * fct_score) %>% 
+    dplyr::select(-c("pep_prob", "pep_adjp", "pep_prob_co", "pep_adjp_co"))
+
   invisible(out)
 }
 
@@ -670,29 +723,64 @@ probco_bypeplen <- function (len, td, fdr_type, target_fdr) {
     td <- td %>% 
       dplyr::arrange(pep_seq, pep_prob) %>% 
       dplyr::group_by(pep_seq) %>% 
-      dplyr::filter(row_number() == 1) %>% 
+      dplyr::filter(row_number() == 1L) %>% 
       dplyr::ungroup()
   }
   
   td <- td %>% 
     dplyr::select(pep_prob, pep_isdecoy) %>% 
-    # dplyr::filter(!(pep_isdecoy & pep_prob == 0)) %>% 
     dplyr::arrange(pep_prob) %>% 
     dplyr::mutate(total = row_number()) %>% 
     dplyr::mutate(decoy = cumsum(pep_isdecoy)) %>% 
-    dplyr::mutate(fdr = decoy/total)
+    dplyr::mutate(fdr = decoy/total) %>% 
+    dplyr::mutate(pep_score = -log10(pep_prob) * 10)
   
   # ---
   count <- nrow(td)
-  if (count <= 200L) return(NA)
+  
+  if (count <= 200L) {
+    return(NA)
+  }
   
   row <- which(td$fdr <= target_fdr) 
   
   if (!is_empty(row)) {
-    row <- max(row)
-    
-    prob_co <- td[row, "pep_prob"] %>% 
-      unlist(use.names = FALSE)
+    row <- max(row, na.rm = TRUE)
+    # prob_co <- td[row, "pep_prob"] %>% unlist(use.names = FALSE)
+
+    prob_co <- local({
+      score_co <- td[row, "pep_score"] %>% unlist(use.names = FALSE)
+      
+      df <- data.frame(x = td[["pep_score"]], y = td[["fdr"]])
+      
+      fit <- suppressWarnings(
+        tryCatch(
+          nls(y ~ SSlogis(x, Asym, xmid, scal), data = df, 
+              control = list(tol = 1e-03, warnOnly = TRUE), 
+              algorithm = "port"), 
+          error = function (e) NA)
+      )
+      
+      # ggplot(df, aes(x = x, y = y)) + geom_point() + 
+      #   stat_smooth(method = "nls", formula = y ~ SSlogis(x, Asym, xmid, scal), 
+      #               se = FALSE)
+      
+      if (!all(is.na(fit))) {
+        newx <- min(df$x, na.rm = TRUE) : max(df$x, na.rm = TRUE)
+        newy <- predict(fit, data.frame(x = newx)) %>% `names<-`(newx)
+        
+        # NA if not existed
+        score_co2 <- which(newy <= target_fdr)[1] %>% names() %>% as.numeric()
+        score_co <- min(score_co, score_co2, na.rm = TRUE)
+        
+        rm(list = c("newx", "newy", "score_co2"))
+      }
+      
+      rm(list = c("df", "fit"))
+      
+      prob_co <- 10^(-score_co/10)
+    })
+
   } else {
     prob_co <- NA
   }
@@ -710,9 +798,8 @@ probco_bypeplen <- function (len, td, fdr_type, target_fdr) {
 #'
 #' @param out The output from \link{calc_pepscores}.
 #' @param nms The name(s) of \code{out} that correspond(s) to decoy results.
-#' @param target_fdr Numeric; the levels of false-discovery rate.
-#' @param fdr_type Character string; the type of FDR controlling. The value is
-#'   in one of c("psm", "peptide", "protein").
+#' @param target_fdr Numeric; the levels of false-discovery rate (FDR).
+#' @param fdr_type Character string; the type of FDR for controlling.
 #' @inheritParams matchMS
 calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm", 
                          min_len = 7L, max_len = 100L) {
@@ -723,7 +810,7 @@ calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm",
     if (length(idxes) > 0L) {
       return(all_lens[idxes])
     } else {
-      find_optlens(all_lens, min_count/2)
+      find_optlens(all_lens, min_count/2L)
     }
   }
   
@@ -752,55 +839,17 @@ calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm",
       invisible(td)
     })
     
-    run_scripts <- FALSE
-    if (run_scripts) {
-      prob_co_homol <- map_dbl(seq(0, .1, by = .01), ~ {
-        co <- .x
-        
-        qt <- quantile(td[[nms_t]]$pep_prob, co)
-        qd <- quantile(td[[nms]]$pep_prob, co)
-        
-        td[[nms_t]] <- td[[nms_t]] %>% 
-          mutate(pep_prob = ifelse(pep_prob < qt, qt, pep_prob))
-        td[[nms]] <- td[[nms]] %>% 
-          mutate(pep_prob = ifelse(pep_prob < qd, qd, pep_prob))
-        
-        td <- td %>% 
-          bind_rows() %>% 
-          dplyr::filter(pep_rank == 1)
-        
-        if (fdr_type %in% c("peptide", "protein")) {
-          td <- td %>% 
-            dplyr::arrange(pep_seq, pep_prob) %>% 
-            dplyr::group_by(pep_seq) %>% 
-            dplyr::filter(row_number() == 1) %>% 
-            dplyr::ungroup()
-        }
-        
-        td <- td %>% 
-          dplyr::select(pep_prob, pep_isdecoy) %>% 
-          # dplyr::filter(!(pep_isdecoy & pep_prob == 0)) %>% 
-          dplyr::arrange(pep_prob) %>% 
-          dplyr::mutate(total = row_number()) %>% 
-          dplyr::mutate(decoy = cumsum(pep_isdecoy)) %>% 
-          dplyr::mutate(fdr = decoy/total)
-        
-        row <- which(td$fdr <= target_fdr) %>% max()
-        prob_co <- td[row, "pep_prob"] %>% unlist(use.names = FALSE)
-      }) %>% 
-        max(na.rm = TRUE)
-    }
-    
     prob_cos <- local({
       td <- td %>% 
         bind_rows() %>% 
-        dplyr::filter(pep_rank == 1)
+        dplyr::filter(pep_rank == 1L)
       
       all_lens <- unique(td$pep_len)
 
       prob_cos <- all_lens %>% 
         map(probco_bypeplen, td, fdr_type, target_fdr) %>% 
         unlist()
+      
       counts <- as.numeric(names(prob_cos))
       names(counts) <- all_lens
       names(prob_cos) <- all_lens
@@ -809,21 +858,28 @@ calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm",
       prob_cos <- prob_cos %>% .[names(.) %in% lens]
       counts <- counts %>% .[names(.) %in% lens]
 
+      # ---
       best_score_co <- prob_cos %>% 
-        .[which_topx(., n = 1)] %>% 
+        .[which_topx(., n = 1L)] %>% 
         log10() %>% `-`
-      elbow <- as.numeric(names(best_score_co))
+      
+      valley <- as.numeric(names(best_score_co))
 
       # ---
       df <- data.frame(x = as.numeric(names(prob_cos)), y = -log10(prob_cos))
       fit <- lm(y ~ splines::ns(x, 4), df)
+      
+      # ggplot(df, aes(x = x, y = y)) + geom_point() +
+      #   stat_smooth(method = "lm", formula = y ~ splines::ns(x, 4), se = FALSE)
+      
       newx <- min_len : max_len
       newy <- predict(fit, data.frame(x = newx)) %>% 
         `names<-`(newx)
-      newy[which(names(newy) == elbow):length(newy)] <- best_score_co
+      newy[which(names(newy) == valley):length(newy)] <- best_score_co
 
       prob_cos <- 10^-newy
     })
+    
   } else {
     seqs <- min_len : max_len
     prob_cos <- rep(.05, length(seqs))
@@ -834,10 +890,8 @@ calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm",
 }
 
 
-
-
 #' Calculates the cut-offs of protein scores.
-#' 
+#'
 #' @param out An output from upstream steps.
 #' @inheritParams calc_pepfdr
 calc_protfdr <- function (out, target_fdr = .01) {
@@ -851,25 +905,44 @@ calc_protfdr <- function (out, target_fdr = .01) {
   nms_t <- gsub("^rev_", "", nms_d)
   
   out2 <- out %>% 
-    dplyr::filter(pep_mod_group %in% c(nms_t, nms_d), pep_issig)
+    dplyr::filter(pep_mod_group %in% c(nms_t, nms_d), pep_issig, pep_rank == 1L)
   
   # score cut-offs as a function of prot_n_pep
   max_n_pep <- max(out$prot_n_pep, na.rm = TRUE)
   all_n_peps <- unique(out$prot_n_pep)
-  
+
+  # protein enrichment score cut-offs
   score_co <- out2 %>% 
     split(.$prot_n_pep) %>% 
     map_dbl(calc_protfdr_i, target_fdr) %>% 
     fit_protfdr(max_n_pep) %>% 
-    dplyr::filter(prot_n_pep %in% all_n_peps)
+    dplyr::filter(prot_n_pep %in% all_n_peps) %>% 
+    dplyr::rename(prot_es_co = prot_score_co)
   
-  # ---
+  # add protein enrichment score
+  prot_es <- out %>% 
+    dplyr::group_by(prot_acc, pep_seq) %>% 
+    dplyr::arrange(-pep_score) %>% 
+    dplyr::filter(row_number() == 1L) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::filter(pep_issig) %>% 
+    dplyr::mutate(pep_es = pep_score - pep_score_co) %>% 
+    dplyr::group_by(prot_acc) %>% 
+    dplyr::summarise(prot_es = max(pep_es, na.rm = TRUE))
+  
+  out <- out %>% 
+    dplyr::left_join(prot_es, by = "prot_acc")
+
   out <- out %>% 
     dplyr::left_join(score_co, by = "prot_n_pep") %>% 
-    split(.$prot_n_pep) %>% 
-    map(calc_protscore_i) %>% 
-    do.call(rbind, .) %>% 
-    dplyr::select(-c("prot_score_co"))
+    dplyr::mutate(prot_issig = ifelse(prot_es >= prot_es_co, TRUE, FALSE)) %>% 
+    dplyr::mutate(pep_score = round(pep_score, digits = 1), 
+                  pep_score_co = round(pep_score_co, digits = 1), 
+                  prot_es = round(prot_es, digits = 1), 
+                  prot_es_co = round(prot_es_co, digits = 1))
+  
+  rm(list = c("out2", "prot_es"))
+  gc()
 
   invisible(out)
 }
@@ -877,17 +950,25 @@ calc_protfdr <- function (out, target_fdr = .01) {
 
 #' Helper of \link{calc_protfdr}.
 #' 
+#' The \code{prot_score} are only for a pair of target-decoy and thus not
+#' exported. The offset of \code{base_score} not applied either.
+#' 
 #' @param td A data frame with paired target-decoys.
 #' @inheritParams calc_pepfdr
 calc_protfdr_i <- function (td, target_fdr = .01) {
-  
+
   td <- td %>% 
-    dplyr::filter(!duplicated(prot_acc)) 
-  
+    dplyr::group_by(prot_acc, pep_seq) %>% 
+    dplyr::arrange(-pep_score) %>% 
+    dplyr::filter(row_number() == 1L) %>% 
+    dplyr::ungroup()
+
+  # no decoys
   if (sum(td$pep_isdecoy) == 0L) {
     return(0L)
   }
   
+  # all decoys
   if (sum(!td$pep_isdecoy) == 0L) {
     if (nrow(td) <= 5L) {
       return(0L)
@@ -896,27 +977,66 @@ calc_protfdr_i <- function (td, target_fdr = .01) {
     }
   }
   
+  # both targets and decoys
   if (nrow(td) <= 20L) {
     return(1L)
   }
   
+  prot_scores <- td %>% 
+    dplyr::mutate(prot_es = pep_score - pep_score_co) %>% 
+    dplyr::group_by(prot_acc) %>% 
+    dplyr::summarise(prot_es = max(prot_es, na.rm = TRUE)) 
+  
   td <- td %>% 
-    dplyr::select(pep_score, pep_isdecoy) %>% 
-    dplyr::filter(!(pep_isdecoy & pep_score == 250)) %>% 
-    dplyr::arrange(-pep_score) %>% 
+    dplyr::left_join(prot_scores, by = "prot_acc") %>% 
+    # dplyr::filter(!(pep_isdecoy & prot_es == 250L)) %>% 
+    dplyr::arrange(-prot_es) %>% 
     dplyr::mutate(total = row_number()) %>% 
     dplyr::mutate(decoy = cumsum(pep_isdecoy)) %>% 
     dplyr::mutate(fdr = decoy/total)
-  
+
+  rm(list = "prot_scores")
+
   row <- which(td$fdr <= target_fdr) %>% max(na.rm = TRUE)
+  # row <- which.max(td$fdr >= target_fdr) # the first TRUE
   
   if (row == -Inf) {
     score_co <- 0L
   } else {
-    score_co <- td[row, "pep_score"] %>% unlist(use.names = FALSE)
+    score_co <- td[row, ]$prot_es
+
+    score_co2 <- local({
+      df <- data.frame(x = td[["prot_es"]], y = td[["fdr"]])
+      
+      fit <- suppressWarnings(
+        tryCatch(
+          nls(y ~ SSlogis(x, Asym, xmid, scal), data = df, 
+              control = list(tol = 1e-03, warnOnly = TRUE), 
+              algorithm = "port"), 
+          error = function (e) NA)
+      )
+      
+      # ggplot(df, aes(x = x, y = y)) + geom_point() + 
+      #  stat_smooth(method = "nls", formula = y ~ SSlogis(x, Asym, xmid, scal), 
+      #  se = FALSE)
+
+      if (all(is.na(fit))) {
+        score_co2 <- score_co
+      } else {
+        min_score <- min(df$x, na.rm = TRUE)
+        max_score <- max(df$x, na.rm = TRUE)
+        newx <- min_score : max_score
+        newy <- predict(fit, data.frame(x = newx)) %>% `names<-`(newx)
+        
+        # NA if not existed
+        score_co2 <- which(newy <= target_fdr)[1] %>% names() %>% as.numeric()
+      }
+
+      invisible(score_co2)
+    })
   }
   
-  invisible(score_co)
+  invisible(min(score_co, score_co2, na.rm = TRUE))
 }
 
 
@@ -937,13 +1057,12 @@ fit_protfdr <- function (vec, max_n_pep = 1000L) {
 
   rv <- rev(vec)
   df <- data.frame(x = as.numeric(names(rv)), y = rv)
-  elbow <- min(df[which(df$y == min(df$y)), "x"])
-  amp <- max(df$y) * .8
+  elbow <- min(df[which(df$y == min(df$y, na.rm = TRUE)), "x"], na.rm = TRUE)
+  amp <- max(df$y, na.rm = TRUE) * .8
   sca <- 0.5
   
   f <- function (x, m = 0, s = 1, a = 1) { a - a / (1 + exp(-(x-m)/s)) }
   
-  # (SSlogis not as good)
   fit <- suppressWarnings(
     tryCatch(
       nls(y ~ f(x, m, s, a), data = df, 
@@ -952,7 +1071,8 @@ fit_protfdr <- function (vec, max_n_pep = 1000L) {
           algorithm = "port"), 
       error = function (e) NA)
   )
-
+  
+  # should not occur
   if (all(is.na(fit))) {
     fits <- suppressWarnings(
       map(seq_len(elbow-1), ~ {
@@ -972,12 +1092,14 @@ fit_protfdr <- function (vec, max_n_pep = 1000L) {
         .[[length(.)]]
     }
   }
-
+  
+  # ---
   newx <- seq(1, max_n_pep, by = 1)
   
   out <- data.frame(
     prot_n_pep = newx, 
-    prot_score_co = predict(fit, data.frame(x = newx))) 
+    prot_score_co = predict(fit, data.frame(x = newx))) # %>% 
+    # dplyr::mutate(prot_score_co = ifelse(prot_n_pep >= 10L, 0L, prot_score_co))
 
   invisible(out)
 }
@@ -990,7 +1112,7 @@ calc_protscore_i <- function (df) {
   df %>% 
     dplyr::group_by(prot_acc, pep_seq) %>% 
     dplyr::arrange(-pep_score) %>% 
-    dplyr::filter(row_number() == 1) %>% 
+    dplyr::filter(row_number() == 1L) %>% 
     dplyr::ungroup() %>% 
     dplyr::group_by(prot_acc) %>% 
     dplyr::summarise(prot_score = max(pep_score)) %>% 
@@ -1107,11 +1229,4 @@ scalc_pepscores_static <- function (entry, topn_ms2ions = 100, type_ms2ions = "b
     tibble(pri_matches = purrr::flatten(mts)), 
     tibble(sec_matches = purrr::flatten(mts2)))
 }
-
-
-
-
-
-
-
 

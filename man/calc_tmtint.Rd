@@ -13,7 +13,10 @@ calc_tmtint(
 \arguments{
 \item{data}{An upstream result from \link{matchMS}.}
 
-\item{quant}{A quantitation method. The default is "none".}
+\item{quant}{A quantitation method. The default is "none". Additional choices
+include \code{tmt6} etc. For other multiplicities of \code{tmt}, use the
+compatible higher plexes, for example, \code{tmt16} for \code{tmt12} etc.
+and \code{tmt10} for \code{tmt8} etc.}
 
 \item{ppm_reporters}{The mass tolerance of MS2 reporter ions.}
 }

@@ -393,33 +393,34 @@ calcms2_a1_t1_fnl1 <- function (vmods_combi, nl_combi, ntmod,
 #' Calculates the masses of MS2 ion series.
 #'
 #' For a given type of fragmentation. Minimal error handling for speeds.
-#' 
+#'
 #' @param ms1_mass The mass of a theoretical MS1 (for subsetting).
 #' @param maxn_vmods_sitescombi_per_pep Integer; the maximum number of
 #'   combinatorial variable modifications per peptide sequence.
 #' @param type_ms2ions Character; the type of
 #'   \href{http://www.matrixscience.com/help/fragmentation_help.html}{ MS2
-#'   ions}. Values are in one of "by", "ax" and "cz".
+#'   ions}. Values are in one of "by", "ax" and "cz". The default is "by" for b-
+#'   and y-ions.
 #' @inheritParams calc_monopep
 #' @inheritParams calc_aamasses
 #' @import purrr
-#' 
+#'
 #' @examples
 #' \donttest{
 #' ## No variable modifications
 #' # (1)
 #' library(magrittr)
-#' 
+#'
 #' fixedmods = NULL
 #' varmods = NULL
-#' 
-#' mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
-#'   as.hexmode() %>% 
+#'
+#' mod_indexes <- seq_along(c(fixedmods, varmods)) %>%
+#'   as.hexmode() %>%
 #'   `names<-`(c(fixedmods, varmods))
 #' aa_masses_all <- calc_aamasses(fixedmods, varmods)
-#' 
+#'
 #' x <- calc_ms2ions("MAKEMASSPECFUN", NULL, aa_masses_all[[1]], mod_indexes)
-#' 
+#'
 #' }
 calc_ms2ions <- function (aa_seq, ms1_mass = NULL, aa_masses, mod_indexes = NULL, 
                           type_ms2ions = "by", maxn_vmods_per_pep = 5, 
