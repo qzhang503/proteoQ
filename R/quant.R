@@ -288,14 +288,96 @@ add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
 map_pepprot <- function (df, out_path = NULL) {
   message("Building protein-peptide maps.")
   
-  prp <- df[, c("prot_acc", "pep_seq")] %>%
+  df <- df[, c("prot_acc", "pep_seq")] %>%
     tidyr::unite(pep_prot., pep_seq, prot_acc, sep = "@", remove = FALSE) %>%
     dplyr::filter(!duplicated(pep_prot.)) %>%
     dplyr::select(-pep_prot.)
+  gc()
   
-  mat <- model.matrix(~ 0 + prot_acc, prp)
-  colnames(mat) <- gsub("prot_acc", "", colnames(mat))
-  rownames(mat) <- prp$pep_seq
+  # ---
+  nrow <- nrow(df)
+  max_rows <- 30720L
+  n_cores <- detectCores()
+
+  if (nrow > max_rows) {
+    prots <- data.frame(prot_acc = unique(df$prot_acc))
+    
+    n_chunks <- ceiling(nrow/max_rows)
+    df <- chunk_groupsplit(df, df$prot_acc, n_chunks)
+    out <- vector("list", n_chunks)
+    gc()
+    
+    for (i in seq_along(df)) {
+      x <- df[[i]]
+      x <- suppressMessages(x %>% dplyr::right_join(prots))
+      gc()
+      
+      mat <- model.matrix(~ 0 + prot_acc, x)
+      colnames(mat) <- gsub("prot_acc", "", colnames(mat))
+      gc()
+      
+      peps <- x$pep_seq
+      rows <- !is.na(peps)
+      peps <- peps[rows]
+      mat <- mat[rows, ]
+      rownames(mat) <- peps
+      gc()
+      
+      mat <- mat == 1L
+      rm(list = "x")
+      gc()
+      
+      mat <- mat %>%
+        data.frame(check.names = FALSE) %>%
+        dplyr::mutate(pep_seq = peps) %>%
+        dplyr::group_by(pep_seq)
+      gc()
+      
+      cl <- multidplyr::new_cluster(n_cores)
+      
+      out[[i]] <- mat %>%
+        multidplyr::partition(cl) %>%
+        dplyr::summarise_all(any) %>%
+        dplyr::collect() 
+      gc()
+      
+      out[[i]] <- out[[i]] %>%
+        tibble::column_to_rownames("pep_seq")
+      rm(list = c("cl", "mat"))
+      gc()
+    }
+    
+    out <- out %>% 
+      dplyr::bind_rows() %>% 
+      .[order(rownames(.)), ]
+    
+  } else {
+    mat <- model.matrix(~ 0 + prot_acc, df)
+    colnames(mat) <- gsub("prot_acc", "", colnames(mat))
+    rownames(mat) <- df$pep_seq
+    mat <- mat == 1L
+
+    mat <- mat %>%
+      data.frame(check.names = FALSE) %>%
+      dplyr::mutate(pep_seq = df$pep_seq) %>%
+      dplyr::group_by(pep_seq)
+    
+    n_cores <- detectCores()
+    cl <- multidplyr::new_cluster(n_cores)
+    
+    mat <- mat %>%
+      multidplyr::partition(cl) %>%
+      dplyr::summarise_all(any) %>%
+      dplyr::collect() %>%
+      tibble::column_to_rownames("pep_seq") %>%
+      .[order(rownames(.)), ]
+    
+    rm(list = c("cl"))
+    gc()
+    
+    out <- mat
+  }
+  
   
   # collapse rows of the same pep_seq; may use `sum`
   #
@@ -317,32 +399,12 @@ map_pepprot <- function (df, out_path = NULL) {
   # 1 A       TRUE  TRUE
   # 2 B       TRUE  FALSE
   # 3 C       FALSE TRUE
-  
-  mat <- mat %>%
-    data.frame(check.names = FALSE) %>%
-    dplyr::mutate_all(as.logical) %>%
-    dplyr::mutate(pep_seq = prp$pep_seq) %>%
-    dplyr::arrange(pep_seq) %>%
-    dplyr::group_by(pep_seq)
-  
-  n_cores <- detectCores()
-  cl <- multidplyr::new_cluster(n_cores)
-  
-  mat <- mat %>%
-    multidplyr::partition(cl) %>%
-    dplyr::summarise_all(any) %>%
-    dplyr::collect() %>%
-    tibble::column_to_rownames("pep_seq") %>%
-    .[order(rownames(.)), ]
-  
-  rm(list = c("cl"))
-  gc()
-  
+
   if (!is.null(out_path)) {
-    saveRDS(mat, file.path(out_path, "prot_pep_map.rds"))
+    saveRDS(out, file.path(out_path, "prot_pep_map.rds"))
   }
 
-  invisible(mat)
+  invisible(out)
 }
 
 
@@ -350,17 +412,19 @@ map_pepprot <- function (df, out_path = NULL) {
 #'
 #' @param out The data frame from upstream steps.
 #' @param out_path The output path.
-grp_prots <- function (out, out_path) {
-  out <- out %>%
-    dplyr::arrange(pep_seq)
+grp_prots <- function (out, out_path = NULL) {
+  
+  dir.create(file.path(out_path), recursive = TRUE, showWarnings = FALSE)
+
+  out <- out %>% dplyr::arrange(pep_seq)
 
   # essential entries
   rows <- (out$pep_issig & (!out$pep_isdecoy) & (out$pep_rank <= 3L))
-
+  
   df <- out[rows, ]
 
   if (nrow(df) > 1L) {
-    df <- df %>% groupProts(out_path)
+    df <- df %>% groupProts2(out_path)
   } else {
     df <- df %>%
       dplyr::mutate(prot_isess = TRUE,
@@ -398,7 +462,7 @@ grp_prots <- function (out, out_path) {
 #'
 #' @param df Interim results from \link{matchMS}.
 #' @param out_path The output path.
-groupProts <- function (df, out_path = "~/proteoQ/outs") {
+groupProts <- function (df, out_path = NULL) {
 
   # `pep_seq` in `df` are all from target and significant;
   # yet target `pep_seq` can be assigned to both target and decoy proteins
@@ -409,15 +473,19 @@ groupProts <- function (df, out_path = "~/proteoQ/outs") {
   # 11 MNT_HUMAN    EEQERLR
 
   # --- (1) protein ~ peptide map ---
-  mat <- map_pepprot(df, out_path)
+  mat <- map_pepprot(df[, c("prot_acc", "pep_seq")], out_path)
+  gc()
 
   # --- (2) protein ~ protein groups by distance map ---
   grps <- cut_protgrps(mat, out_path)
 
   # --- (3) lists of protein ~ peptide maps (by the same hit number) ---
   mats <- split.default(mat, grps$prot_hit_num) %>%
-    map(~ .x %>% .[rowSums(.) > 0L, , drop = FALSE]) %T>%
-    saveRDS(file.path(out_path, "prot_pep_famimaps.rds"))
+    map(~ .x %>% .[rowSums(.) > 0L, , drop = FALSE]) 
+  
+  if (!is.null(out_path)) {
+    saveRDS(mats, file.path(out_path, "prot_pep_famimaps.rds"))
+  }
 
   # --- (4) set covers by groups ---
   message("Grouping proteins by families.")
@@ -442,8 +510,13 @@ groupProts <- function (df, out_path = "~/proteoQ/outs") {
   }
 
   sets <- sets %>%
-    bind_rows() %T>%
-    saveRDS(file.path(out_path, "prot_sets.rds")) %>%
+    bind_rows() 
+  
+  if (!is.null(out_path)) {
+    saveRDS(sets, file.path(out_path, "prot_sets.rds")) 
+  }
+  
+  sets <- sets %>% 
     `[[`("prot_acc") %>%
     unique()
 
@@ -483,7 +556,7 @@ groupProts <- function (df, out_path = "~/proteoQ/outs") {
 #'
 #' @param mat A logical matrix; peptides in rows and proteins in columns.
 #' @param out_path A file pth to outputs.
-cut_protgrps <- function (mat, out_path) {
+cut_protgrps <- function (mat, out_path = NULL) {
 
   cns <- colnames(mat)
 
@@ -506,7 +579,9 @@ cut_protgrps <- function (mat, out_path) {
 
   stopifnot(identical(out, t(out)))
 
-  saveRDS(out, file.path(out_path, "prot_dist.rds"))
+  if (!is.null(out_path)) {
+    # saveRDS(out, file.path(out_path, "prot_dist.rds"))
+  }
 
   # --- finds protein groups
   out[out == 0L] <- 1000000
@@ -519,8 +594,11 @@ cut_protgrps <- function (mat, out_path) {
     tibble::rownames_to_column("prot_acc") %>%
     dplyr::group_by(prot_hit_num) %>%
     dplyr::mutate(prot_family_member = row_number()) %>%
-    dplyr::ungroup() %T>%
-    saveRDS(file.path(out_path, "prot_grps.rds"))
+    dplyr::ungroup() 
+  
+  if (!is.null(out_path)) {
+    # saveRDS(grps, file.path(out_path, "prot_grps.rds"))
+  }
 
   stopifnot(identical(grps$prot_acc, cns))
 
@@ -643,7 +721,6 @@ parDist <- function (mat) {
   cl <- makeCluster(getOption("cl.cores", n_cores))
   clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
 
-
   out <- clusterApplyLB(cl, idxes, proteoCpp::par_distC, mat) %>%
     purrr::flatten()
 
@@ -753,33 +830,33 @@ greedysetcover2 <- function (mat) {
 #' @return A two-column data frame of prot_acc and pep_seq. 
 greedysetcover3 <- function (mat) {
   
-  Mat <- Matrix::Matrix(as.matrix(mat), sparse = TRUE)
-  
-  rm(list = c("mat"))
-  gc()
-  
+  if (is.matrix(mat)) {
+    mat <- Matrix::Matrix(as.matrix(mat), sparse = TRUE)
+    gc()
+  }
+
   prot_acc <- NULL
   pep_seq <- NULL
   
-  while(nrow(Mat)) {
-    max <- which.max(Matrix::colSums(Mat, na.rm = TRUE))
+  while(nrow(mat)) {
+    max <- which.max(Matrix::colSums(mat, na.rm = TRUE))
     
     if (max == 0L) {
       break
     }
     
     prot <- names(max)
-    rows <- which(Mat[, max])
+    rows <- which(mat[, max] == 1L)
     # peps <- names(rows) # name dropped if only one row
-    peps <- rownames(Mat)[rows]
+    peps <- rownames(mat)[rows]
     
     prot_acc <- c(prot_acc, rep(prot, length(peps)))
     pep_seq <- c(pep_seq, peps)
     
-    Mat <- Mat[-rows, -max, drop = FALSE]
+    mat <- mat[-rows, -max, drop = FALSE]
   }
   
-  rm(list = c("Mat"))
+  rm(list = c("mat"))
   gc()
   
   dplyr::bind_cols(prot_acc = prot_acc, pep_seq = pep_seq)
@@ -868,64 +945,4 @@ find_ess_prots <- function (mat) {
     greedysetcover()
 }
 
-
-#' Groups proteins by shared peptides.
-#'
-#' Adds columns \code{prot_hit_num} and \code{prot_family_member} to
-#' \code{psmQ.txt}.
-#'
-#' @param df Interim results from \link{matchMS}.
-#' @param out_path The output path.
-groupProts_orig <- function (df, out_path = "~/proteoQ/outs") {
-
-  # pep_seq in df are all from target and significant;
-  # yet target pep_seq can be assigned to both target and decoy proteins
-  #
-  #    prot_acc     pep_seq
-  #  1 -GOG8C_HUMAN EEQERLR
-  #  2 -GOG8D_HUMAN EEQERLR
-  # 11 MNT_HUMAN    EEQERLR
-
-  # --- protein ~ peptide map ---
-  mat <- map_pepprot(df, out_path) 
-  
-  # --- set aside df0 ---
-  message("Grouping proteins by families.")
-
-  sets <- mat %>% 
-    greedysetcover3() %T>%
-    saveRDS(file.path(out_path, "prot_sets.rds")) %>%
-    `[[`("prot_acc") %>%
-    unique()
-  
-  df <- df %>% dplyr::mutate(prot_isess = prot_acc %in% sets)
-  df0 <- df %>% filter(!prot_isess)
-  df1 <- df %>% filter(prot_isess)
-  rm(list = c("df"))
-
-  mat_ess <- mat[colnames(mat) %in% df1$prot_acc]
-
-  peps_uniq <- local({
-    rsums <- rowSums(mat)
-    rsums2 <- rowSums(mat_ess)
-
-    peps <- data.frame(pep_seq = rownames(mat)) %>%
-      dplyr::mutate(pep_literal_unique = (rsums == 1L)) %>%
-      dplyr::mutate(pep_razor_unique = (rsums2 == 1L))
-  })
-
-  # --- protein ~ protein distance map
-  grps <- cut_protgrps(mat_ess, out_path)
-
-  # --- put together
-  df0 <- df0 %>%
-    dplyr::mutate(prot_hit_num = NA, prot_family_member = NA)
-
-  df1 <- df1 %>%
-    dplyr::left_join(grps, by = "prot_acc") %>%
-    dplyr::bind_rows(df0) %>%
-    dplyr::left_join(peps_uniq, by = "pep_seq")
-
-  invisible(df1)
-}
 

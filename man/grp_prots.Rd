@@ -4,7 +4,7 @@
 \alias{grp_prots}
 \title{Helper of \link{groupProts}.}
 \usage{
-grp_prots(out, out_path)
+grp_prots(out, out_path = NULL)
 }
 \arguments{
 \item{out}{The data frame from upstream steps.}

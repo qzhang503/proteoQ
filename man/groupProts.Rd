@@ -4,7 +4,7 @@
 \alias{groupProts}
 \title{Groups proteins by shared peptides.}
 \usage{
-groupProts(df, out_path = "~/proteoQ/outs")
+groupProts(df, out_path = NULL)
 }
 \arguments{
 \item{df}{Interim results from \link{matchMS}.}

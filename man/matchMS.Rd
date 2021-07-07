@@ -33,6 +33,7 @@ matchMS(
   quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"),
   target_fdr = 0.01,
   fdr_type = c("psm", "peptide", "protein"),
+  combine_tier_three = FALSE,
   digits = 5
 )
 }
@@ -128,6 +129,10 @@ in FDR controls of either PSM <-> protein or peptide <-> protein at a given
 \item{fdr_type}{Character string; the type of FDR controlling. The value is
 in one of c("psm", "peptide"). Note that protein FDR is in conjunction with
 "psm" or "peptide". Separate protein FDR may be available in the future.}
+
+\item{combine_tier_three}{Logical; if TRUE, combines tier-3 proteins in the
+output of \code{psmQ.txt}. If FALSE, saves tier-3 proteins separately in
+\code{psmT3.txt}.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
 }
