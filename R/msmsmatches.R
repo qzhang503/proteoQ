@@ -489,7 +489,7 @@ readMGF <- function (filepath = "~/proteoQ/mgfs", min_mass = 516.2405,
     
     readr::read_lines_chunked(file.path(filepath, filelist[i]), 
                               SideEffectChunkCallback$new(f), 
-                              chunk_size = 10000000)
+                              chunk_size = 5000000)
     
     out[[i]] <- read_mgf_chunks(temp_dir, 
                                 topn_ms2ions = topn_ms2ions, 
@@ -519,6 +519,30 @@ readMGF <- function (filepath = "~/proteoQ/mgfs", min_mass = 516.2405,
 }
 
 
+#' Splits data by groups then into chunks.
+#' 
+#' @inheritParams chunksplit
+#' @param f A factor; see also base \code{split}.
+chunk_groupsplit <- function (data, f, n_chunks) {
+  if (n_chunks <= 1L) return(data)
+
+  data <- split(data, f)
+  len <- length(data)
+
+  labs <- levels(cut(1:len, n_chunks))
+  
+  x <- cbind(
+    lower = floor(as.numeric( sub("\\((.+),.*", "\\1", labs))),
+    upper = ceiling(as.numeric( sub("[^,]*,([^]]*)\\]", "\\1", labs))))
+  
+  grps <- findInterval(1:len, x[, 1])
+  
+  data <- split(data, grps)
+  
+  map(data, ~ do.call(rbind, .x))
+}
+
+
 #' Splits data into chunks by length.
 #' 
 #' @param data Input data.
@@ -528,7 +552,7 @@ readMGF <- function (filepath = "~/proteoQ/mgfs", min_mass = 516.2405,
 chunksplit <- function (data, n_chunks = 5, type = "list") {
   stopifnot(type %in% c("list", "row"))
   
-  if (n_chunks <= 1) return(data)
+  if (n_chunks <= 1L) return(data)
   
   if (type == "list") {
     len <- length(data)
@@ -642,6 +666,9 @@ chunksplitLB <- function (data, n_chunks = 5, nx = 100, type = "list") {
 #' @param fdr_type Character string; the type of FDR controlling. The value is
 #'   in one of c("psm", "peptide"). Note that protein FDR is in conjunction with
 #'   "psm" or "peptide". Separate protein FDR may be available in the future.
+#' @param combine_tier_three Logical; if TRUE, combines tier-3 proteins in the
+#'   output of \code{psmQ.txt}. If FALSE, saves tier-3 proteins separately in
+#'   \code{psmT3.txt}.
 #' @seealso \link{load_fasta2} for setting the values of \code{acc_type} and
 #'   \code{acc_pattern}. \link{parse_unimod} for the grammar of Unimod.
 #' @export
@@ -670,6 +697,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                      quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"), 
                      target_fdr = 0.01, 
                      fdr_type = c("psm", "peptide", "protein"), 
+                     combine_tier_three = FALSE, 
                      digits = 5) {
   
   on.exit(
@@ -938,19 +966,20 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   
   # set aside one-hit wonders
   out0 <- out %>% 
-    dplyr::filter(!prot_issig, prot_n_pep == 1L)
+    dplyr::filter(!prot_issig, prot_n_pep == 1L) %>% 
+    dplyr::mutate(prot_tier = 3L)
   
   out <- dplyr::bind_rows(
     out %>% dplyr::filter(prot_issig), 
     out %>% filter(!prot_issig, prot_n_pep >= 2L)
-  )
+  ) %>% 
+    dplyr::mutate(prot_tier = ifelse(prot_issig, 1L, 2L))
   
   gc()
   
   # Protein groups
-  out <- out %>% 
-    grp_prots(out_path) %>% 
-    dplyr::mutate(prot_tier = ifelse(prot_issig, 1L, 2L))
+  out <- out %>% grp_prots(file.path(out_path, "temp1")) 
+  out0 <- out0 %>% grp_prots(file.path(out_path, "temp0")) 
   
   out <- dplyr::bind_cols(
     out %>% .[grepl("^prot_", names(.))], 
@@ -959,29 +988,34 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     out %>% .[!grepl("^prot_|^pep_|^psm_", names(.))], 
   ) %>% 
     reloc_col_after("prot_es", "prot_family_member") %>% 
-    reloc_col_after("prot_es_co", "prot_family_member") %>% 
+    reloc_col_after("prot_es_co", "prot_es") %>% 
     reloc_col_after("prot_tier", "prot_isess")
   
   out <- local({
-    message("Proteins at `prot_tier` 3 are at low confidence",  
-            "and mostly for reference purposes.")
-
-    cols <- setdiff(names(out), names(out0))
+    message("Tier-3 proteins are low-confidence identifications.")
     
-    for (i in cols) {
-      out0[[i]] <- NA
+    max <- max(out$prot_hit_num, na.rm = TRUE)
+    
+    if (combine_tier_three) {
+      out <- out %>% 
+        dplyr::bind_rows(out0) %>% 
+        dplyr::arrange(prot_acc, pep_seq) %T>% 
+        readr::write_tsv(file.path(out_path, "psmQ.txt"))
+    } else {
+      message("Tier-3 proteins saved separately in `psmT3.txt`.")
+      
+      out0 <- out0[names(out)] %>% 
+        dplyr::mutate(prot_hit_num = prot_hit_num + max)  %T>% 
+        readr::write_tsv(file.path(out_path, "psmT3.txt"))
+      
+      out <- out %>% 
+        dplyr::arrange(prot_acc, pep_seq) %T>% 
+        readr::write_tsv(file.path(out_path, "psmQ.txt"))
     }
     
-    out0[["prot_tier"]] <- 3L
-    out0 <- out0[names(out)]
-
-    out <- out %>% 
-      dplyr::bind_rows(out0) %>% 
-      dplyr::arrange(prot_acc, pep_seq)
+    invisible(out)
   })
   
-  readr::write_tsv(out, file.path(out_path, "psmQ.txt"))
-
   message("Search completed.")
   
   # ---

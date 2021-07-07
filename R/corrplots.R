@@ -197,6 +197,9 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
                             sizeRange = c(1, 4), ...) {
     x <- GGally::eval_data_col(data, mapping$x)
     y <- GGally::eval_data_col(data, mapping$y)
+    
+    x[is.infinite(x)] <- NA
+    y[is.infinite(y)] <- NA
 
     ct <- cor.test(x, y)
     sig <- symnum(
@@ -272,6 +275,8 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
   dots <- rlang::enexprs(...)
 
   ncol <- ncol(df)
+  
+  df <- df %>% dplyr::mutate_all(~ replace(.x, is.infinite(.), NA))
   
   p1 <- ggpairs(df, columnLabels = as.character(names(df)), 
                 labeller = label_wrap_gen(10),

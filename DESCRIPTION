@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.5.2.0
+Version: 1.5.2.1
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -63,6 +63,7 @@ Imports:
     plyr,
 	proteoCpp,
     proteoQDA,
+	proxyC,
     reshape2,
     rlang,
     Biobase,
@@ -70,6 +71,7 @@ Imports:
     EnvStats,
     GGally,
     MASS,
+	Matrix,
     RColorBrewer,
     RCurl,
     Rcpp
