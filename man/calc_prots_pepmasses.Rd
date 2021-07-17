@@ -18,12 +18,12 @@ calc_prots_pepmasses(
 acid residues.}
 
 \item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
-  masses with the losses of neutral species prior to MS2 fragmentation. The
-  default is FALSE.
-
-  Note that there is no combination of neutral losses for fixed modifications
-  at the precursor levels. Changes from fixed to variable modifications for
-  complete combinations.}
+masses with the losses of neutral species prior to MS2 fragmentation. The
+default is FALSE. The setting at TRUE remains experimenting by allowing
+additional masses in the universe of MS1 precursors. The offsets in NLs (by
+adding back precursor masses) have not yet taken into account in MS2 ion
+searches. A more systemically approach such as \code{open} MS1 masses might
+be developed in the future.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}

@@ -4,7 +4,7 @@
 \alias{add_fixvar_masses}
 \title{Helper to add modification masses to amino-acid residues.}
 \usage{
-add_fixvar_masses(mods, mod_type, aa_masses)
+add_fixvar_masses(mods, mod_type, aa_masses, add_varmasses = TRUE)
 }
 \arguments{
 \item{mods}{A list of modifications.}
@@ -15,6 +15,9 @@ modifications.}
 
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
+
+\item{add_varmasses}{Logical; if TRUE, add mass delta to the corresponding
+base mass for variable modifications.}
 }
 \value{
 Lists of of amino-acid residues with modified mono-isotopic masses

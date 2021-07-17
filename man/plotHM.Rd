@@ -31,6 +31,7 @@ plotHM(
   annotation_col = NULL,
   annotation_row = NULL,
   clustering_method = NULL,
+  rm_allna = TRUE,
   ...
 )
 }
@@ -123,6 +124,10 @@ argument in \link[pheatmap]{pheatmap}.}
 
 \item{clustering_method}{Dummy argument to avoid incurring the corresponding
 argument in \link[pheatmap]{pheatmap}.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. Each statement contains

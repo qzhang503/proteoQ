@@ -4,11 +4,14 @@
 \alias{parse_aamasses}
 \title{Parses \code{aa_masses}.}
 \usage{
-parse_aamasses(aa_masses)
+parse_aamasses(aa_masses, add_nlmasses = TRUE)
 }
 \arguments{
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
+
+\item{add_nlmasses}{Logical; if TRUE, add an original mass to the
+corresponding (negative) neutral-loss mass.}
 }
 \description{
 Parses \code{aa_masses}.

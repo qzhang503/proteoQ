@@ -4,7 +4,7 @@
 \alias{make_fastapeps}
 \title{Make peptide sequences from fastas.}
 \usage{
-make_fastapeps(fasta_db, max_miss = 2, min_len = 1, max_len = 100)
+make_fastapeps(fasta_db, max_miss = 2L, min_len = 1L, max_len = 100L)
 }
 \arguments{
 \item{fasta_db}{Fasta database.}

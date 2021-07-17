@@ -4,7 +4,7 @@
 \alias{concat_peps}
 \title{Concatenates adjacent peptides in a list.}
 \usage{
-concat_peps(peps, n = 2, include_cts = TRUE)
+concat_peps(peps, n = 2L, include_cts = TRUE)
 }
 \arguments{
 \item{peps}{A list of peptide sequences with a one-letter representation of

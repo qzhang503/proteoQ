@@ -446,11 +446,12 @@ calc_prot_pepmasses <- function (prot_peps, aa_masses,
 #'   representation of amino acids.
 #' @param include_insource_nl Logical Logical; if TRUE, includes MS1 precursor
 #'   masses with the losses of neutral species prior to MS2 fragmentation. The
-#'   default is FALSE.
+#'   default is FALSE. The setting at TRUE remains experimenting by allowing
+#'   additional masses in the universe of MS1 precursors. The offsets in NLs (by
+#'   adding back precursor masses) have not yet taken into account in MS2 ion
+#'   searches. A more systemically approach such as \code{open} MS1 masses might
+#'   be developed in the future.
 #'
-#'   Note that there is no combination of neutral losses for fixed modifications
-#'   at the precursor levels. Changes from fixed to variable modifications for
-#'   complete combinations. 
 #' @inheritParams mcalc_monopep
 #' @import purrr
 #' @importFrom stringr str_split
@@ -494,7 +495,7 @@ calc_monopep <- function (aa_seq, aa_masses,
   
   # at least one of `vmods_combi`, `fnl_combi`, `vnl_combi`
   vmods_combi <- unique_mvmods(amods = amods, ntmod = ntmod, ctmod = ctmod, 
-                               aas = aas, aa_masses = aa_masses, 
+                               aa_masses = aa_masses, aas = aas, 
                                maxn_vmods_per_pep = maxn_vmods_per_pep, 
                                maxn_sites_per_vmod = maxn_sites_per_vmod, 
                                digits = digits) %>% 
@@ -508,6 +509,7 @@ calc_monopep <- function (aa_seq, aa_masses,
   #   (the following only handles early for (10) "amods+ tmod+ vnl+"; 
   #    additional handling of "(8) amods+ tmod+ vnl-" and 
   #    (12) "amods+ tmod+ vnl-" by corresponding functions)
+  
   if (is_empty(vmods_combi) && !is_empty(vmods_nl)) return(NULL)
   
   if (is_empty(vmods_nl) || !include_insource_nl) {
@@ -535,6 +537,12 @@ calc_monopep <- function (aa_seq, aa_masses,
   } else {
     fnl_combi <- expand.grid(fmods_nl) %>% t()
   }
+  
+  # if (is_empty(fmods_nl)) {
+  #   fnl_combi <- NULL
+  # } else {
+  #   fnl_combi <- expand.grid(fmods_nl) %>% t()
+  # }
   
   out <- switch(type, 
             # "amods- tmod- vnl- fnl-" = calcpep_0(aa_seq, aas, aa_masses, digits), 
@@ -586,23 +594,27 @@ calc_monopep <- function (aa_seq, aa_masses,
 #'                       fixedmods = NULL, 
 #'                       varmods = NULL)
 #' 
-#' x$mass
+#' stopifnot((unlist(x$mass) - 1594.5369) < 1e-4)
 #' 
 #' # (2-a) 
 #' x <- calc_monopeptide("MAKEMASSPECFUN", 
 #'                       fixedmods = "Oxidation (M)", 
 #'                       varmods = NULL)
 #' 
-#' x$mass
+#' m <- unlist(x$mass)
 #' 
-#' # (2-b) no combinatorial NL for fixed modifications
-#' # (see 3-b) for full combinations
+#' stopifnot((m[1] - 1626.5267) < 1e-4)
+#' 
+#' # (2-b) combinatorial NL for fixed modifications
 #' x <- calc_monopeptide("MAKEMASSPECFUN", 
 #'                       fixedmods = "Oxidation (M)", 
 #'                       varmods = NULL, 
 #'                       include_insource_nl = TRUE)
+#'                       
+#' m <- unlist(x$mass)
 #' 
-#' x$mass
+#' stopifnot(length(m) == 2L)
+#' stopifnot((m[1] - m[2] - 127.9965) < 1e-4)
 #' 
 #' ## With variable modifications
 #' # (3-a)
@@ -610,7 +622,11 @@ calc_monopep <- function (aa_seq, aa_masses,
 #'                       fixedmods = NULL, 
 #'                       varmods = "Oxidation (M)")
 #' 
-#' x$mass
+#' m <- unlist(x$mass)
+#' 
+#' stopifnot((m[1] - 1594.5369) < 1e-4)
+#' stopifnot((m[2] - m[1]) == (m[3] - m[2]))
+#' 
 #' # x$vmods_ps
 #' 
 #' # (3-b)
@@ -657,7 +673,7 @@ calc_monopeptide <- function (aa_seq, fixedmods, varmods,
                               maxn_vmods_setscombi = 64,
                               maxn_vmods_per_pep = Inf, 
                               maxn_sites_per_vmod = Inf, 
-                              digits = 5) {
+                              digits = 4) {
   options(digits = 9)
   
   aa_masses_all <- calc_aamasses(fixedmods, varmods, maxn_vmods_setscombi)
@@ -1188,7 +1204,7 @@ update_aas_anywhere <- function (vmods_combi, aas, amods) {
 #' @inheritParams calcpep_a1_t1_nl1
 #' @import purrr
 #' @return Lists by residues in \code{amods}.
-unique_mvmods <- function (amods, ntmod, ctmod, aas, aa_masses, 
+unique_mvmods <- function (amods, ntmod, ctmod, aa_masses, aas, 
                            maxn_vmods_per_pep = 5, 
                            maxn_sites_per_vmod = 3, 
                            digits = 5) {
@@ -1366,6 +1382,8 @@ find_aa_site <- function (pos_site) {
 #'   modifications and neutral losses.
 #' @param mod_indexes Integer; the indexes of fixed and/or variable
 #'   modifications.
+#' @inheritParams parse_aamasses
+#' @inheritParams add_fixvar_masses
 #' @examples
 #' \donttest{
 #' library(purrr)
@@ -1423,7 +1441,9 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (K)",
                                        "Deamidated (N)", 
                                        "Gln->pyro-Glu (N-term = Q)"), 
                            maxn_vmods_setscombi = 64, 
-                           mod_indexes = NULL) {
+                           mod_indexes = NULL, 
+                           add_varmasses = TRUE, 
+                           add_nlmasses = TRUE) {
   
   # title (position = site); 
   # . stands for (a) anywhere in position or (b) any residue in site or both
@@ -1536,7 +1556,10 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (K)",
     "-" = 0)
   
   ## (1) add fixed mods + NL
-  aa_masses_fi2 <- add_fixvar_masses(fixedmods, "fmods", aa_masses) 
+  aa_masses_fi2 <- add_fixvar_masses(mods = fixedmods, 
+                                     mod_type = "fmods", 
+                                     aa_masses = aa_masses, 
+                                     add_varmasses = add_varmasses) 
   
   aa_masses_fi2 <- aa_masses_fi2 %>% 
     purrr::map(~ {
@@ -1604,7 +1627,10 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (K)",
     varmods_i <- .x
     
     aa_masses_fi2 %>% 
-      purrr::map(~ add_fixvar_masses(varmods_i, "vmods", .x)) %>% 
+      purrr::map(~ add_fixvar_masses(mods = varmods_i, 
+                                     mod_type = "vmods", 
+                                     aa_masses = .x, 
+                                     add_varmasses = add_varmasses)) %>% 
       purrr::flatten()
   }, aa_masses_fi2) %>% 
     purrr::flatten()
@@ -1692,14 +1718,16 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (K)",
   
   aa_masses_all <- c(aa_masses_fi2, aa_masses_var2)
   
-  aa_masses_all <- map(aa_masses_all, parse_aamasses)
+  aa_masses_all <- map(aa_masses_all, parse_aamasses, add_nlmasses)
 }
 
 
 #' Parses \code{aa_masses}.
-#' 
+#'
 #' @inheritParams add_fixvar_masses
-parse_aamasses <- function (aa_masses) {
+#' @param add_nlmasses Logical; if TRUE, add an original mass to the
+#'   corresponding (negative) neutral-loss mass.
+parse_aamasses <- function (aa_masses, add_nlmasses = TRUE) {
   fmods_ps <- attr(aa_masses, "fmods_ps", exact = TRUE)
   vmods_ps <- attr(aa_masses, "vmods_ps", exact = TRUE)
   
@@ -1726,11 +1754,17 @@ parse_aamasses <- function (aa_masses) {
     
     names(neulosses) <- fmods_ps
     
-    resids <- as.list(aa_masses)
+    if (add_nlmasses) {
+      resids <- as.list(aa_masses)
+      
+      fmods_nl <- purrr::imap(neulosses, ~ {
+        resids[[.y]] - .x
+      })
+    } else {
+      fmods_nl <- neulosses
+    }
     
-    purrr::imap(neulosses, ~ {
-      resids[[.y]] - .x
-    })
+    invisible(fmods_nl)
   })
   
   vmods_nl <- local({
@@ -1749,11 +1783,17 @@ parse_aamasses <- function (aa_masses) {
     # idx <- map_lgl(neulosses, ~ length(.x) > 1)
     # neulosses <- neulosses[idx]
     
-    resids <- as.list(aa_masses)
+    if (add_nlmasses) {
+      resids <- as.list(aa_masses)
+      
+      vmods_nl <- purrr::imap(neulosses, ~ {
+        resids[[.y]] - .x
+      })
+    } else {
+      vmods_nl <- neulosses
+    }
     
-    purrr::imap(neulosses, ~ {
-      resids[[.y]] - .x
-    })
+    invisible(vmods_nl)
   })
   
   ## variable mods
@@ -1777,9 +1817,17 @@ parse_aamasses <- function (aa_masses) {
   }
   
   # variable N-term, C-term
-  ntmod <- tmod %>% .[. == "N-term"]
-  ctmod <- tmod %>% .[. == "C-term"]
+  # 
+  # $`Gln->pyro-Glu (N-term = Q)`
+  # Any N-term 
+  # "Q" 
+  # 
+  # `tmod` is a length(1) list; R `==` and `grepl` works too
+  # (OK to use either tmod or tmod[[1]])
   
+  ntmod <- tmod %>% .[. == "N-term" || grepl("N-term", names(.))]
+  ctmod <- tmod %>% .[. == "C-term" || grepl("C-term", names(.))]
+
   ## fixed mods
   famods <- local({
     sites <- fmods_ps %>% 
@@ -1800,8 +1848,8 @@ parse_aamasses <- function (aa_masses) {
   }
   
   # fixed N-term, C-term
-  fntmod <- ftmod %>% .[. == "N-term"]
-  fctmod <- ftmod %>% .[. == "C-term"]
+  fntmod <- ftmod %>% .[. == "N-term" || grepl("N-term", names(.))]
+  fctmod <- ftmod %>% .[. == "C-term" || grepl("C-term", names(.))]
   
   
   # "amods- tmod- vnl- fnl-"
@@ -1930,23 +1978,29 @@ parse_aamasses <- function (aa_masses) {
 #' # a short protein
 #' concat_peps(c(TRDD1_HUMAN = "EI"))
 #' }
-concat_peps <- function (peps, n = 2, include_cts = TRUE) {
+concat_peps <- function (peps, n = 2L, include_cts = TRUE) {
   len <- length(peps)
   
-  if (len == 0) return(NULL)
+  if (len == 0L) return(NULL)
   
-  if (n >= len) n <- len - 1
+  if (n >= len) n <- len - 1L
 
-  res <- purrr::map(seq_len((len - n)), ~ {
-    peps[.x:(.x + n)] %>% purrr::accumulate(paste0) 
+  len2 <- len - n
+  
+  res <- purrr::map(seq_len(len2), ~ {
+    peps[.x:(.x + n)] %>% 
+      purrr::accumulate(paste0) %>% 
+      `names<-`(0:n)
   }) %>% unlist()
   
-  if (include_cts && n >= 1) {
+  if (include_cts && n >= 1L) {
     res_cts <- local({
-      cts <- peps[(len - n + 1):len]
+      cts <- peps[(len - n + 1L):len]
       
-      purrr::map(n:1, ~ {
-        tail(cts, .x) %>% purrr::accumulate(paste0) 
+      purrr::map(n:1L, ~ {
+        tail(cts, .x) %>% 
+          purrr::accumulate(paste0) %>% 
+          `names<-`(0:(.x-1L))
       }) %>% unlist()
     })
   } else {
@@ -1965,12 +2019,12 @@ concat_peps <- function (peps, n = 2, include_cts = TRUE) {
 #' peps <- c(a = 1, b = 2, c = 3)
 #' res <- roll_sum(peps, 2)
 #' }
-roll_sum <- function (peps, n = 2, include_cts = TRUE) {
+roll_sum <- function (peps, n = 2L, include_cts = TRUE) {
   len <- length(peps)
   
-  if (len == 0) return(NULL)
+  if (len == 0L) return(NULL)
   
-  if (n >= len) n <- len - 1
+  if (n >= len) n <- len - 1L
   
   res <- purrr::map(seq_len((len - n)), ~ {
     ranges <- .x:(.x + n)
@@ -1983,11 +2037,11 @@ roll_sum <- function (peps, n = 2, include_cts = TRUE) {
   }) %>% 
     unlist()
   
-  if (include_cts && n >= 1) {
+  if (include_cts && n >= 1L) {
     res_cts <- local({
-      cts <- peps[(len - n + 1):len]
+      cts <- peps[(len - n + 1L):len]
       
-      purrr::map(n:1, ~ {
+      purrr::map(n:1L, ~ {
         x <- tail(cts, .x)
         
         nms <- names(x) %>% 
@@ -2343,8 +2397,8 @@ rm_char_in_nlast <- function (x, char = "-$", n = (max_miss + 1) * 2) {
 #' 
 #' @param fasta_db Fasta database.
 #' @inheritParams calc_pepmasses
-make_fastapeps <- function (fasta_db, max_miss = 2, min_len = 1, 
-                            max_len = 100) {
+make_fastapeps <- function (fasta_db, max_miss = 2L, min_len = 1L, 
+                            max_len = 100L) {
   
   inds_m <- grep("^M", fasta_db)
   
@@ -2360,12 +2414,12 @@ make_fastapeps <- function (fasta_db, max_miss = 2, min_len = 1,
     purrr::map(~ .x %>% stringr::str_split("@", simplify = TRUE)) %>% 
     purrr::map(concat_peps, max_miss) 
   
-  if (min_len > 1 && !is.infinite(max_len)) {
+  if (min_len > 1L && !is.infinite(max_len)) {
     peps <- peps %>% 
       purrr::map(
         ~ .x %>% .[str_exclude_count(.) >= min_len & str_exclude_count(.) <= max_len]) 
   }
-  
+
   # --- Protein N-term initiator methionine removed ---
   peps_m <- fasta_dbm %>% 
     purrr::map(~ .x %>% 
@@ -2373,12 +2427,12 @@ make_fastapeps <- function (fasta_db, max_miss = 2, min_len = 1,
                  keep_n_misses(max_miss)) %>% 
     purrr::map(~ concat_peps(.x, max_miss, include_cts = FALSE)) 
   
-  if (min_len > 1 && !is.infinite(max_len)) {
+  if (min_len > 1L && !is.infinite(max_len)) {
     peps_m <- peps_m %>% 
       purrr::map(
         ~ .x %>% .[str_exclude_count(.) >= min_len & str_exclude_count(.) <= max_len]) 
   }
-  
+
   peps[inds_m] <- purrr::map2(peps_m, peps[inds_m], `c`)
   
   rm(inds_m, fasta_db, fasta_dbm, peps_m)
@@ -2459,7 +2513,7 @@ calc_pepmasses <- function (
   out_path = "~/proteoQ/outs", 
   digits = 5, 
   parallel = TRUE) {
-
+  
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
@@ -2505,13 +2559,13 @@ calc_pepmasses <- function (
     
     pep_masses <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
                                     "pepmasses.rds"))
-
+    
     .savecall <- FALSE
   } else {
     delete_files(out_path, ignores = c("\\.[Rr]$", "\\.(mgf|MGF)$", "\\.xlsx$", 
                                        "\\.xls$", "\\.csv$", "\\.txt$", 
                                        "^mgf$", "^mgfs$"))
-
+    
     .time_stamp <- format(Sys.time(), ".%Y-%m-%d_%H%M%S")
     
     # ---
@@ -2527,13 +2581,13 @@ calc_pepmasses <- function (
       }
       
       aa_masses <- calc_aamasses(fixedmods = fixedmods, 
-                                 varmods = varmods, 
-                                 maxn_vmods_setscombi = maxn_vmods_setscombi, 
-                                 mod_indexes = mod_indexes)
+                                  varmods = varmods, 
+                                  maxn_vmods_setscombi = maxn_vmods_setscombi, 
+                                  mod_indexes = mod_indexes)
     })
     
     gc()
-
+    
     # ---
     message("Preparing peptide sequences.")
     
@@ -2545,7 +2599,7 @@ calc_pepmasses <- function (
                                 max_miss = max_miss, 
                                 min_len = min_len, 
                                 max_len = max_len)
-
+    
     # ---
     message("Calculating peptide masses (target) ...")
     
@@ -2575,7 +2629,7 @@ calc_pepmasses <- function (
     out_path <- create_dir(file.path(.path_fasta, "pepmasses", .time_stamp))
     saveRDS(pep_masses, file.path(out_path, "pepmasses.rds"))
     saveRDS(rev_masses, file.path(out_path, "pepmasses_rev.rds"))
-
+    
     # ---
     .savecall <- TRUE
   }
@@ -2583,7 +2637,7 @@ calc_pepmasses <- function (
   assign(".path_cache", .path_cache, envir = .GlobalEnv)
   assign(".time_stamp", .time_stamp, envir = .GlobalEnv)
   assign(".path_fasta", .path_fasta, envir = .GlobalEnv)
-
+  
   invisible(pep_masses)
 }
 
@@ -2676,11 +2730,14 @@ pre_pepmasses <- function (fasta, acc_type, acc_pattern, maxn_fasta_seqs, aa_mas
 #'   modifications.
 #' @param aa_masses A named list containing the (mono-isotopic) masses of amino
 #'   acid residues.
+#' @param add_varmasses Logical; if TRUE, add mass delta to the corresponding
+#'   base mass for variable modifications.
 #' @return Lists of of amino-acid residues with modified mono-isotopic masses
 #'   being incorporated.
-add_fixvar_masses <- function (mods, mod_type, aa_masses) {
+add_fixvar_masses <- function (mods, mod_type, aa_masses, add_varmasses = TRUE) {
+  
   stopifnot(mod_type %in% c("fmods", "vmods"), 
-            length(mod_type) == 1)
+            length(mod_type) == 1L)
   
   if (!purrr::is_empty(mods)) {
     all_mods <- paste(mods, collapse = ", ")
@@ -2699,7 +2756,7 @@ add_fixvar_masses <- function (mods, mod_type, aa_masses) {
   
   # the same `site` with different fixedmods
   local({
-    if (mod_type == "fmods" && length(positions_sites) > 1) {
+    if (mod_type == "fmods" && length(positions_sites) > 1L) {
       dups <- purrr::reduce(positions_sites, `c`) %>% 
         .[duplicated(.)]
       
@@ -2727,13 +2784,20 @@ add_fixvar_masses <- function (mods, mod_type, aa_masses) {
     #  Add mod_masses of variable mods (multiple lists)
     aas <- purrr::map2(positions_sites, mod_masses, ~ {
       site <- find_aa_site(.x)
-      aa_masses[site] <- aa_masses[site] + .y
+      
+      if (add_varmasses) {
+        aa_masses[site] <- aa_masses[site] + .y
+      } else {
+        aa_masses[site] <- .y
+      }
+
       aa_masses
     }, aa_masses)
     
     # Flatten the lists (with attributes being kept)
     aa_masses <- local({
-      masses <- purrr::map2_dbl(positions_sites, aas, ~ .y[.x])
+      # masses <- purrr::map2_dbl(positions_sites, aas, ~ .y[.x])
+      masses <- purrr::map2_dbl(positions_sites, aas, ~ .y[find_aa_site(.x)])
       attrs <- attributes(aa_masses)
       aa_masses <- c(aa_masses, masses)
       attrs$names <- names(aa_masses)
@@ -2742,7 +2806,7 @@ add_fixvar_masses <- function (mods, mod_type, aa_masses) {
       aa_masses
     })
     
-    rm(aas)
+    rm(list = c("aas"))
   }
   
   attr(aa_masses, mod_type) <- all_mods

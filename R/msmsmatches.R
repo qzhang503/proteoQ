@@ -727,7 +727,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     `names<-`(c(fixedmods, varmods))
   
   ## Theoretical MS1 masses
-  res <- calc_pepmasses(
+  res <- calc_pepmasses2(
     fasta = fasta, 
     acc_type = acc_type,
     acc_pattern = acc_pattern, 
@@ -748,8 +748,13 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     parallel = TRUE
   )
   
+  ## Hash tables
+  
+  
+  
+  
   ## AA masses
-  aa_masses_all <- res %>% 
+  aa_masses_all <- res$fwd %>% 
     purrr::map(~ {
       attr(.x, "data") <- NULL
       .x
@@ -758,9 +763,8 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   ## Mass range
   min_mass <- 500
   
-  max_mass <- res %>% 
-    purrr::map(attributes) %>% 
-    purrr::map(`[[`, "data") %>% 
+  max_mass <- res$fwd %>% 
+    purrr::map(attr, "data") %>% 
     unlist(use.names = FALSE) %>% 
     max(na.rm = TRUE)
 
@@ -777,7 +781,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     if (is_empty(bins)) {
       message("Binning MS1 masses (theoretical target).")
       
-      binTheoPeps(res = res, min_mass = min_mass, max_mass = max_mass, 
+      binTheoPeps(res = res$fwd, min_mass = min_mass, max_mass = max_mass, 
                   ppm = ppm_ms1, 
                   out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
                                        "binned_theopeps.rds"))
@@ -790,12 +794,9 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                         pattern = "binned_theopeps_rev_\\d+\\.rds$")
     
     if (is_empty(bins2)) {
-      rev_res <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
-                                   "pepmasses_rev.rds"))
-      
       message("Binning MS1 masses (theoretical decoy).")
       
-      binTheoPeps(res = rev_res, min_mass = min_mass, max_mass = max_mass, 
+      binTheoPeps(res = res$rev, min_mass = min_mass, max_mass = max_mass, 
                   ppm = ppm_ms1, 
                   out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
                                        "binned_theopeps_rev.rds"))

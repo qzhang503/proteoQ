@@ -22,7 +22,7 @@ foo_test_ms1_nls <- function () {
    
    # (5) "amods- tmod+ vnl- fnl+"
    aa_masses_all <- calc_aamasses(fixedmods = c("Oxidation (M)", "dHex (S)"), varmods = "Acetyl (Protein N-term)")
-   out <- map(aa_masses_all, ~ calc_monopep("MHQGVMNVGMGQKMNS", .x))
+   out <- map(aa_masses_all, ~ calc_monopep("MHQGVMNVGMGQKMNS", .x, include_insource_nl = TRUE))
    # bare = 1747.76264
    # [[1]] 16*4+(233-87);  -64*4; -146; -64*4 - 146
    # MHQGVMNVGMGQKMNS MHQGVMNVGMGQKMNS MHQGVMNVGMGQKMNS MHQGVMNVGMGQKMNS 
@@ -33,7 +33,7 @@ foo_test_ms1_nls <- function () {
    
    # (6) "amods- tmod- vnl- fnl+"
    aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (N-term)", "Oxidation (M)", "dHex (S)"), varmods = NULL)
-   out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[1]])
+   out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[1]], include_insource_nl = TRUE)
    # HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS 
    # 2039.92774      1847.93288 (-64*3) 1893.86983 (-146) 1701.87497 (-64*3-146)
    
@@ -61,8 +61,9 @@ foo_test_ms1_nls <- function () {
    
    
    # (9) "amods+ tmod- vnl+ fnl-"
-   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (N-term)"), varmods = c("dHex (S)", "Deamidated (N)"))
-   out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[4]])
+   aa_masses_all <- calc_aamasses(fixedmods = c("TMT6plex (N-term)"), 
+                                  varmods = c("dHex (S)", "Deamidated (N)"))
+   out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[4]], include_insource_nl = TRUE)
    # HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS HQGVMNVGMGQKMNS 
    # 1992.927        1846.869        1993.911        1847.853 
    

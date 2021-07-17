@@ -61,6 +61,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
                    annotation_col = NULL, 
                    annotation_row = NULL, 
                    clustering_method = NULL, 
+                   rm_allna = TRUE, 
                    ...) {
   
   # (1) `x`, `p` etc. defined as NULL @param
@@ -272,8 +273,14 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
 
   df_hm <- df_hm %>%
     `rownames<-`(.[[id]])	%>%
-    dplyr::select(which(names(.) %in% sample_ids))
+    dplyr::select(which(names(.) %in% sample_ids)) %>% 
+    { if (rm_allna) .[rowSums(!is.na(.)) > 0L, ] else . } 
   
+  if (nrow(df_hm) == 0) {
+    stop("Zero data rows after removing all-NA rows.", 
+         call. = FALSE)
+  }
+
   if (cluster_rows) {
     d <- stats::dist(df_hm, method = clustering_distance_rows, p = p_dist_rows)
     d[is.na(d)] <- .5 * max(d, na.rm = TRUE)
@@ -478,6 +485,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
 #'@export
 pepHM <- function (col_select = NULL, col_benchmark = NULL,
                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                   rm_allna = TRUE, 
                    df = NULL, filepath = NULL, filename = NULL,
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                    xmin = -1, xmax = 1, xmargin = 0.1, 
@@ -534,6 +542,7 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
                                    annotation_col = annotation_col, 
                                    annotation_row = annotation_row, 
                                    clustering_method = clustering_method, 
+                                   rm_allna = rm_allna, 
                                    ...)
 }
 
@@ -561,6 +570,7 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'
 #'
 #'@inheritParams  prnEucDist
+#'@inheritParams normPSM
 #'@param hc_method_rows A character string; the same agglomeration method for 
 #'\code{\link[stats]{hclust}} of data rows. The default is \code{complete}. 
 #'@param hc_method_cols A character string; similar to \code{hc_method_rows} 
@@ -686,6 +696,7 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'@export
 prnHM <- function (col_select = NULL, col_benchmark = NULL,
                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
+                   rm_allna = TRUE, 
                    df = NULL, filepath = NULL, filename = NULL, 
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL, 
                    xmin = -1, xmax = 1, xmargin = 0.1, 
@@ -752,6 +763,7 @@ prnHM <- function (col_select = NULL, col_benchmark = NULL,
                                    annotation_col = annotation_col, 
                                    annotation_row = annotation_row, 
                                    clustering_method = clustering_method, 
+                                   rm_allna = rm_allna, 
                                    ...)
 }
 
