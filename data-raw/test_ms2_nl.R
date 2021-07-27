@@ -6,7 +6,7 @@ foo_test_ms2_nls <- function () {
       as.hexmode() %>% 
       `names<-`(c(fixedmods, varmods))
    aa_masses_all <- calc_aamasses(fixedmods, varmods)
-   out <- calc_monopep("HQGVMNVGMGQKMN", aa_masses_all[[1]], exclude_nl_insource = TRUE)
+   out <- calc_monopep("HQGVMNVGMGQKMN", aa_masses_all[[1]])
    stopifnot(out == 1529.69012)
    out2 <- calc_ms2ions(names(out), ms1_mass = NULL, aa_masses_all[[1]], mod_indexes)
    out3 <- calc_ms2ions(names(out), ms1_mass = out, aa_masses_all[[1]], mod_indexes)
@@ -17,7 +17,7 @@ foo_test_ms2_nls <- function () {
    varmods = c("Acetyl (N-term)")
    mod_indexes <- seq_along(c(fixedmods, varmods)) %>% as.hexmode() %>% `names<-`(c(fixedmods, varmods))
    aa_masses_all <- calc_aamasses(fixedmods, varmods)
-   out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[2]], exclude_nl_insource = TRUE)
+   out <- calc_monopep("HQGVMNVGMGQKMNS", aa_masses_all[[2]])
    # HQGVMNVGMGQKMNS 
    # 1660.70075 
    out2 <- calc_ms2ions(names(out), ms1_mass = NULL, aa_masses_all[[2]], mod_indexes)
@@ -34,7 +34,7 @@ foo_test_ms2_nls <- function () {
    varmods = c("Acetyl (Protein N-term)")
    mod_indexes <- seq_along(c(fixedmods, varmods)) %>% as.hexmode() %>% `names<-`(c(fixedmods, varmods))
    aa_masses_all <- calc_aamasses(fixedmods, varmods)
-   out <- calc_monopep("MHQGVMNVGMGQKMNS", aa_masses_all[[2]], exclude_nl_insource = TRUE)
+   out <- calc_monopep("MHQGVMNVGMGQKMNS", aa_masses_all[[2]])
    # out <- map(aa_masses_all, ~ calc_monopep("MHQGVMNVGMGQKMNS", .x))
    out2 <- calc_ms2ions(names(out[1]), out, aa_masses_all[[2]], mod_indexes)
    duplicated(out2)

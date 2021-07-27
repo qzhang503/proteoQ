@@ -850,6 +850,10 @@ calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm",
         map(probco_bypeplen, td, fdr_type, target_fdr) %>% 
         unlist()
       
+      if (all(is.na(prob_cos))) {
+        stop("Cannot calculate peptide FDR; contact the developer.")
+      }
+      
       counts <- as.numeric(names(prob_cos))
       names(counts) <- all_lens
       names(prob_cos) <- all_lens

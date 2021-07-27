@@ -23,10 +23,6 @@ match the one in  \link{binTheoPeps}.}
 MS2 ion searches. The default is to use the top-100 ions in an MS2 event.}
 
 \item{ret_range}{The range of retention time in seconds.}
-
-\item{ppm_ms1}{The mass tolerance of MS1 species.}
-
-\item{out_path}{The output path.}
 }
 \description{
 Reads MGF files in chunks.

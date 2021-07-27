@@ -684,21 +684,21 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                                  "Gln->pyro-Glu (N-term = Q)"), 
                      include_insource_nl = FALSE, 
                      enzyme = c("trypsin"), 
-                     maxn_fasta_seqs = 200000,
-                     maxn_vmods_setscombi = 64, 
-                     maxn_vmods_per_pep = 5,
-                     maxn_sites_per_vmod = 3, 
-                     maxn_vmods_sitescombi_per_pep = 32, 
-                     min_len = 7, max_len = 100, max_miss = 2, 
+                     maxn_fasta_seqs = 200000L,
+                     maxn_vmods_setscombi = 64L, 
+                     maxn_vmods_per_pep = 5L,
+                     maxn_sites_per_vmod = 3L, 
+                     maxn_vmods_sitescombi_per_pep = 64L, 
+                     min_len = 7L, max_len = 100L, max_miss = 2L, 
                      type_ms2ions = "by", 
-                     topn_ms2ions = 100, 
-                     minn_ms2 = 6, ppm_ms1 = 20, ppm_ms2 = 25, 
-                     ppm_reporters = 10, 
+                     topn_ms2ions = 100L, 
+                     minn_ms2 = 6L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
+                     ppm_reporters = 10L, 
                      quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"), 
                      target_fdr = 0.01, 
                      fdr_type = c("psm", "peptide", "protein"), 
                      combine_tier_three = FALSE, 
-                     digits = 5) {
+                     digits = 4L) {
   
   on.exit(
     if (exists(".savecall", envir = rlang::current_env())) {
@@ -769,101 +769,52 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     max(na.rm = TRUE)
 
   ## Bin theoretical peptides
-  local({
-    .path_cache <- get(".path_cache", envir = .GlobalEnv)
-    .path_fasta <- get(".path_fasta", envir = .GlobalEnv)
-    .time_stamp <- get(".time_stamp", envir = .GlobalEnv)
-    
-    # Targets
-    bins <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
-                       pattern = "binned_theopeps_\\d+\\.rds$")
-    
-    if (is_empty(bins)) {
-      message("Binning MS1 masses (theoretical target).")
-      
-      binTheoPeps(res = res$fwd, min_mass = min_mass, max_mass = max_mass, 
-                  ppm = ppm_ms1, 
-                  out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
-                                       "binned_theopeps.rds"))
-    } else {
-      message("Loading bins of MS1 masses from cache (theoretical target).")
-    }
-    
-    # Decoys
-    bins2 <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
-                        pattern = "binned_theopeps_rev_\\d+\\.rds$")
-    
-    if (is_empty(bins2)) {
-      message("Binning MS1 masses (theoretical decoy).")
-      
-      binTheoPeps(res = res$rev, min_mass = min_mass, max_mass = max_mass, 
-                  ppm = ppm_ms1, 
-                  out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
-                                       "binned_theopeps_rev.rds"))
-    } else {
-      message("Loading bins of MS1 masses from cache (theoretical decoy).")
-    }
-  }) 
-  
+  bin_ms1masses(res, min_mass, max_mass, ppm_ms1, out_path)
   rm(list = c("res"))
   
   ## MGFs
-  mgf_frames <- local({
-    rds <- file.path(mgf_path, "mgf_queries.rds")
-    
-    if (file.exists(rds)) {
-      message("Loading cached MGFs: `", rds, "`.")
-      mgf_frames <- readRDS(rds)
-    } else {
-      message("Processing raw MGFs.")
-      mgf_frames <- readMGF(filepath = mgf_path, 
-                            min_mass = min_mass, 
-                            topn_ms2ions = topn_ms2ions, 
-                            ret_range = c(0, Inf), 
-                            ppm_ms1 = ppm_ms1, 
-                            out_path = rds) 
-    }
-  })
-  
+  mgf_frames <- load_mgfs(mgf_path, min_mass, topn_ms2ions, ppm_ms1)
   gc()
   
   ## MSMS matches
-  n_cores <- parallel::detectCores()
+  # n_cores <- parallel::detectCores()
+
+  out <- ms2match(mgf_path = mgf_path, 
+                  aa_masses_all = aa_masses_all, 
+                  out_path = out_path, 
+                  mod_indexes = mod_indexes, 
+                  type_ms2ions = type_ms2ions, 
+                  maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                  maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                  maxn_vmods_sitescombi_per_pep = 
+                    maxn_vmods_sitescombi_per_pep, 
+                  minn_ms2 = minn_ms2, 
+                  ppm_ms1 = ppm_ms1, 
+                  ppm_ms2 = ppm_ms2, 
+                  
+                  # dummy for argument matching
+                  fasta = fasta, 
+                  acc_type = acc_type, 
+                  acc_pattern = acc_pattern,
+                  topn_ms2ions = topn_ms2ions,
+                  fixedmods = fixedmods, 
+                  varmods = varmods, 
+                  include_insource_nl = include_insource_nl, 
+                  enzyme = enzyme,
+                  maxn_fasta_seqs = maxn_fasta_seqs,
+                  maxn_vmods_setscombi = maxn_vmods_setscombi, 
+                  min_len = min_len, 
+                  max_len = max_len, 
+                  max_miss = max_miss, 
+                  # target_fdr = target_fdr, 
+                  # fdr_type = fdr_type, 
+                  # quant = !!enexpr(quant), 
+                  # ppm_reporters = ppm_reporters, 
+                  
+                  digits = digits)
   
-  out <- pmatch_bymgfs(mgf_path = mgf_path, 
-                       aa_masses_all = aa_masses_all, 
-                       n_cores = n_cores, 
-                       out_path = out_path, 
-                       mod_indexes = mod_indexes, 
-                       type_ms2ions = type_ms2ions, 
-                       maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                       maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                       maxn_vmods_sitescombi_per_pep = 
-                         maxn_vmods_sitescombi_per_pep, 
-                       minn_ms2 = minn_ms2, 
-                       ppm_ms1 = ppm_ms1, 
-                       ppm_ms2 = ppm_ms2, 
-                       
-                       # dummy for argument matching
-                       fasta = fasta, 
-                       acc_type = acc_type, 
-                       acc_pattern = acc_pattern,
-                       topn_ms2ions = topn_ms2ions,
-                       fixedmods = fixedmods, 
-                       varmods = varmods, 
-                       include_insource_nl = include_insource_nl, 
-                       enzyme = enzyme,
-                       maxn_fasta_seqs = maxn_fasta_seqs,
-                       maxn_vmods_setscombi = maxn_vmods_setscombi, 
-                       min_len = min_len, 
-                       max_len = max_len, 
-                       max_miss = max_miss, 
-                       # target_fdr = target_fdr, 
-                       # fdr_type = fdr_type, 
-                       # quant = !!enexpr(quant), 
-                       # ppm_reporters = ppm_reporters, 
-                       
-                       digits = digits) 
+  
+
   
   # Peptide scores
   fdr_type <- rlang::enexpr(fdr_type)
@@ -1026,6 +977,73 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   
   invisible(out)
 }
+
+
+
+#' Helper in binning precursor masses
+#' 
+#' @param res The results from \link{calc_pepmasses2}.
+#' @param min_mass A minimum mass of precursors.
+#' @param max_mass A maximum mass of precursors.
+#' @inheritParams matchMS
+bin_ms1masses <- function (res, min_mass, max_mass, ppm_ms1, out_path) {
+  .path_cache <- get(".path_cache", envir = .GlobalEnv)
+  .path_fasta <- get(".path_fasta", envir = .GlobalEnv)
+  .time_stamp <- get(".time_stamp", envir = .GlobalEnv)
+  
+  # Targets
+  bins <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
+                     pattern = "binned_theopeps_\\d+\\.rds$")
+  
+  if (is_empty(bins)) {
+    message("Binning MS1 masses (theoretical target).")
+    
+    binTheoPeps(res = res$fwd, min_mass = min_mass, max_mass = max_mass, 
+                ppm = ppm_ms1, 
+                out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
+                                     "binned_theopeps.rds"))
+  } else {
+    message("Loading bins of MS1 masses from cache (theoretical target).")
+  }
+  
+  # Decoys
+  bins2 <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
+                      pattern = "binned_theopeps_rev_\\d+\\.rds$")
+  
+  if (is_empty(bins2)) {
+    message("Binning MS1 masses (theoretical decoy).")
+    
+    binTheoPeps(res = res$rev, min_mass = min_mass, max_mass = max_mass, 
+                ppm = ppm_ms1, 
+                out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
+                                     "binned_theopeps_rev.rds"))
+  } else {
+    message("Loading bins of MS1 masses from cache (theoretical decoy).")
+  }
+}
+
+
+#' Helper in loading MGFs.
+#' 
+#' @param min_mass A minimum mass of precursors.
+#' @inheritParams matchMS
+load_mgfs <- function (mgf_path, min_mass, topn_ms2ions, ppm_ms1) {
+  rds <- file.path(mgf_path, "mgf_queries.rds")
+  
+  if (file.exists(rds)) {
+    message("Loading cached MGFs: `", rds, "`.")
+    mgf_frames <- readRDS(rds)
+  } else {
+    message("Processing raw MGFs.")
+    mgf_frames <- readMGF(filepath = mgf_path, 
+                          min_mass = min_mass, 
+                          topn_ms2ions = topn_ms2ions, 
+                          ret_range = c(0, Inf), 
+                          ppm_ms1 = ppm_ms1, 
+                          out_path = rds) 
+  }
+}
+
 
 
 #' Recalculates the MS1 precursor masses.
@@ -1335,6 +1353,11 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
     return(NULL)
   }
   
+  # --- new ---
+  # type <- attr(aa_masses, "type", exact = TRUE)
+  
+  
+
   cl <- makeCluster(getOption("cl.cores", n_cores))
   
   clusterExport(cl, list("%>%"), 
@@ -1494,7 +1517,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
 
   theos_bf_ms2 <- purrr::map2(theopeps_bf_ms1, 
                               theomasses_bf_ms1, 
-                              calc_ms2ions, 
+                              # calc_ms2ions, 
+                              calc_ms2ions2, 
                               aa_masses = aa_masses, 
                               mod_indexes = mod_indexes, 
                               type_ms2ions = type_ms2ions, 
@@ -1507,7 +1531,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
   
   theos_cr_ms2 <- purrr::map2(theopeps_cr_ms1, 
                               theomasses_cr_ms1, 
-                              calc_ms2ions, 
+                              # calc_ms2ions, 
+                              calc_ms2ions2, 
                               aa_masses = aa_masses, 
                               mod_indexes = mod_indexes, 
                               type_ms2ions = type_ms2ions, 
@@ -1529,7 +1554,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
 
     theos_af_ms2 <- purrr::map2(theopeps_af_ms1, 
                                 theomasses_af_ms1, 
-                                calc_ms2ions, 
+                                # calc_ms2ions, 
+                                calc_ms2ions2, 
                                 aa_masses = aa_masses, 
                                 mod_indexes = mod_indexes, 
                                 type_ms2ions = type_ms2ions, 
@@ -1594,7 +1620,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
 
       theos_cr_ms2 <- purrr::map2(theopeps_cr_ms1, 
                                   theomasses_cr_ms1, 
-                                  calc_ms2ions, 
+                                  # calc_ms2ions, 
+                                  calc_ms2ions2, 
                                   aa_masses = aa_masses, 
                                   mod_indexes = mod_indexes, 
                                   type_ms2ions = type_ms2ions, 
@@ -1615,7 +1642,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
 
       theos_bf_ms2 <- purrr::map2(theopeps_bf_ms1, 
                                   theomasses_bf_ms1, 
-                                  calc_ms2ions, 
+                                  # calc_ms2ions, 
+                                  calc_ms2ions2, 
                                   aa_masses = aa_masses, 
                                   mod_indexes = mod_indexes, 
                                   type_ms2ions = type_ms2ions, 
@@ -1628,7 +1656,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
       
       theos_cr_ms2 <- purrr::map2(theopeps_cr_ms1, 
                                   theomasses_cr_ms1, 
-                                  calc_ms2ions, 
+                                  # calc_ms2ions, 
+                                  calc_ms2ions2, 
                                   aa_masses = aa_masses, 
                                   mod_indexes = mod_indexes, 
                                   type_ms2ions = type_ms2ions, 

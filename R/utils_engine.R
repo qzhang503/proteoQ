@@ -270,3 +270,220 @@ delete_files <- function (path, ignores = NULL, ...) {
 #' @param y A numeric value.
 `%+%` <- function(x, y)  mapply(sum, x, y, MoreArgs = list(na.rm = TRUE))
 
+
+#' Post processing after ms2match.
+#' 
+#' @param aa_masses A named list containing the (mono-isotopic) masses of amino
+#'   acid residues.
+#' @param out An output from various ms2match(es).
+#' @inheritParams ms2match_base
+post_ms2match <- function (out, i, aa_masses, out_path) {
+  
+  dir.create(file.path(out_path, "temp"), recursive = TRUE, showWarnings = FALSE)
+  
+  nm_fmods <- attr(aa_masses, "fmods", exact = TRUE)
+  nm_vmods <- attr(aa_masses, "vmods", exact = TRUE)
+  if (grepl("^rev", i)) {
+    is_decoy <- TRUE
+  } else {
+    is_decoy <- FALSE
+  }
+  
+  out <- out %>% 
+    dplyr::mutate(pep_fmod = nm_fmods, 
+                  pep_vmod = nm_vmods, 
+                  pep_mod_group = as.character(i)) %>% 
+    { if (is_decoy) dplyr::mutate(., pep_isdecoy = TRUE) else 
+      dplyr::mutate(., pep_isdecoy = FALSE) }
+  
+  out <- out %>%
+    dplyr::mutate(raw_file = gsub("\\\\", "/", scan_title)) %>% 
+    dplyr::mutate(raw_file = gsub("^.*/(.*)\\.(raw|RAW)[\\\"]{0,1}; .*", "\\1", 
+                                  raw_file)) %>% 
+    dplyr::mutate(raw_file = gsub("^.*/(.*)\\.d[\\\"]{0,1}; .*", "\\1", 
+                                  raw_file)) %>% 
+    reloc_col_after("raw_file", "scan_num") %>% 
+    reloc_col_after("pep_mod_group", "raw_file") %T>% 
+    saveRDS(file.path(out_path, "temp", paste0("ion_matches_", i, ".rds")))
+}
+
+
+#' Post frame advancing.
+#' 
+#' @param res Results from frame-advanced searches.
+#' @param mgf_frames Data of MGF frames.
+post_frame_adv <- function (res, mgf_frames) {
+  
+  # flatten mgfs within each frame
+  # (the number of entries equals to the number of mgfs)
+  
+  res <- res %>% unlist(recursive = FALSE)
+  
+  empties <- purrr::map_lgl(res, purrr::is_empty)
+  
+  res <- do.call(rbind, mgf_frames) %>% 
+    dplyr::mutate(matches = res) 
+  
+  res[!empties, ]
+}
+
+
+#' Subset the search space.
+#' 
+#' @inheritParams ms2match_base
+#' @inheritParams post_ms2match
+purge_search_space <- function (i, aa_masses, mgf_path, n_cores, ppm_ms1, 
+                                fmods_nl = NULL) {
+  
+  # loads freshly mgfs (as will be modified)
+  mgf_frames <- readRDS(file.path(mgf_path, "mgf_queries.rds")) %>% 
+    dplyr::group_by(frame) %>% 
+    dplyr::group_split() %>% 
+    setNames(purrr::map_dbl(., ~ .x$frame[1]))
+  
+  mgf_frames <- local({
+    labs <- levels(cut(1:length(mgf_frames), n_cores^2))
+    
+    x <- cbind(
+      lower = floor(as.numeric( sub("\\((.+),.*", "\\1", labs))),
+      upper = ceiling(as.numeric( sub("[^,]*,([^]]*)\\]", "\\1", labs))))
+    
+    grps <- findInterval(1:length(mgf_frames), x[, 1])
+    
+    split(mgf_frames, grps)
+  })
+  
+  # parses aa_masses
+  nm_fmods <- attr(aa_masses, "fmods", exact = TRUE)
+  nm_vmods <- attr(aa_masses, "vmods", exact = TRUE)
+  msg_end <- if (grepl("^rev_", i)) " (decoy)." else "." 
+  
+  message("Matching against: ", 
+          paste0(nm_fmods, 
+                 nm_vmods %>% { if (nchar(.) > 0) paste0(" + ", .) else . }, 
+                 msg_end))
+  
+  # reads theoretical peptide data
+  .path_fasta <- get(".path_fasta", envir = .GlobalEnv)
+  .time_stamp <- get(".time_stamp", envir = .GlobalEnv)
+  
+  theopeps <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
+                                paste0("binned_theopeps_", i, ".rds")))
+  
+  if (ppm_ms1 < 1000L) {
+    theopeps <- theopeps %>% 
+      purrr::map(~ {
+        rows <- !duplicated(.x$pep_seq)
+        .x[rows, c("pep_seq", "mass")]
+      })
+  }
+  
+  # purged by neuloss residues
+  # (not used)
+  if (!is.null(fmods_nl)) {
+    sites <- names(fmods_nl)
+    pattern <- paste(sites, collapse = "|")
+    theopeps <- sub_neuloss_peps(pattern, theopeps)
+    
+    rm(list = c("sites", "pattern"))
+  }
+  
+  # (1) for a given aa_masses_all[[i]], some mgf_frames[[i]] 
+  #     may not be found in theopeps[[i]] 
+  mgf_frames <- purrr::map(mgf_frames, ~ {
+    x <- .x
+    
+    oks <- names(x) %in% names(theopeps)
+    x <- x[oks]
+    
+    empties <- purrr::map_lgl(x, purrr::is_empty)
+    x[!empties]
+  })
+  
+  # (2) splits `theopeps` in accordance to `mgf_frames` with 
+  #     preceding and following frames: (o)|range of mgf_frames[[1]]|(o)
+  theopeps <- local({
+    frames <- purrr::map(mgf_frames, ~ as.integer(names(.x)))
+    
+    mins <- purrr::map_dbl(frames, ~ {
+      if (length(.x) == 0) x <- 0 else x <- min(.x, na.rm = TRUE)
+    })
+    
+    maxs <- purrr::map_dbl(frames, ~ {
+      if (length(.x) == 0) x <- 0 else x <- max(.x, na.rm = TRUE)
+    })
+    
+    nms <- as.integer(names(theopeps))
+    
+    theopeps <- purrr::map2(mins, maxs, ~ {
+      theopeps[which(nms >= (.x - 1) & nms <= (.y + 1))]
+    })
+    
+    # --- may cause uneven length between `mgf_frames` and `theopeps`
+    # empties <- map_lgl(theopeps, is_empty)
+    # theopeps[!empties]
+  })
+  
+  # (3) removes unused frames of `theopeps`
+  theopeps <- purrr::map2(mgf_frames, theopeps, subset_theoframes)
+  
+  # (4) removes empties (zero overlap between mgf_frames and theopeps)
+  oks <- purrr::map_lgl(mgf_frames, ~ !purrr::is_empty(.x)) | 
+    purrr::map_lgl(theopeps, ~ !purrr::is_empty(.x))
+  
+  mgf_frames <- mgf_frames[oks]
+  theopeps <- theopeps[oks]
+  
+  return(list(mgf_frames = mgf_frames, theopeps = theopeps))
+}
+
+
+#' Subsets theoretical peptides.
+#'
+#' Only entries containing the site of neuloss will be kept.
+#'
+#' @param pattern A regex of amino-acid residue(s).
+#' @param theopeps Lists of theoretical peptides. A column of \code{pep_seq} is
+#'   assumed.
+sub_neuloss_peps <- function (pattern, theopeps) {
+  rows <- purrr::map(theopeps, ~ grepl(pattern, .x$pep_seq))
+  purrr::map2(theopeps, rows, ~ .x[.y, ])
+}
+
+
+#' Finds N-terminal mass.
+#' 
+#' Not yet used.
+#' 
+#' @inheritParams hms2_base
+find_nterm_mass <- function (aa_masses) {
+  ntmod <- attr(aa_masses, "ntmod", exact = TRUE)
+  
+  if (is_empty(ntmod)) {
+    ntmass <- aa_masses["N-term"] - 0.000549 # - electron
+  } else {
+    ntmass <- aa_masses[names(ntmod)] - 0.000549
+  }
+  
+  ntmass
+}
+
+
+#' Finds C-terminal mass.
+#' 
+#' Not yet used.
+#' 
+#' @inheritParams hms2_base
+find_cterm_mass <- function (aa_masses) {
+  ctmod <- attr(aa_masses, "ctmod", exact = TRUE)
+  
+  if (is_empty(ctmod)) {
+    ctmass <- aa_masses["C-term"] + 2.01510147 # + (H) + (H+)
+  } else {
+    ctmass <- aa_masses[names(ctmod)] + 2.01510147
+  }
+  
+  ctmass
+}
+
+

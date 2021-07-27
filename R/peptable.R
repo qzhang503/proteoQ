@@ -1705,7 +1705,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
   df <- load_prior(filename, group_psm_by) 
   
   local({
-    if (sum(grepl("^log2_R[0-9]+ ", names(df))) <= 1) {
+    if (sum(grepl("^log2_R[0-9]{3}[NC]{0,1}", names(df))) <= 1) {
       stop("Need more than one sample for `standPep` or `standPrn`.\n", 
            "Skip this module for qualitative analysis.", 
            call. = FALSE)

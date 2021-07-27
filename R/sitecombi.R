@@ -27,8 +27,9 @@ calcms2_by_iontype <- function (aas2, aa_masses, ntmod, ctmod, type_ms2ions,
 #' @param tol The tolerance in mass.
 #' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ions
-check_ms1_mass_vmods <- function (vmods_combi, aas, aa_masses, ntmod, ctmod, ms1_mass, 
-                            tol = 2e-5) {
+check_ms1_mass_vmods <- function (vmods_combi, aas, aa_masses, ntmod, ctmod, 
+                                  ms1_mass, tol = 2e-5) {
+  
   aas[as.numeric(names(vmods_combi))] <- vmods_combi
   ok_mass <- calcpepmass_nl0(aas, aa_masses, ntmod, ctmod)
   
@@ -279,7 +280,7 @@ calcms2_a1_t1_nl0 <- function (vmods_combi, nl_combi, ntmod, ctmod,
   
   out <- map(vmods_combi, mcalcms2_a1_vnl0, 
              ntmod, ctmod, aas, aa_masses, 
-             type_ms2ions, digits = 5)
+             type_ms2ions, digits = digits)
 
   out <- add_hexcodes(out, vmods_combi, length(aas), mod_indexes)
 }
