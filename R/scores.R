@@ -261,7 +261,7 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
   df2 <- add_seions(df[["theo"]], type_ms2ions = type_ms2ions, digits = digits) %>% 
     find_ppm_outer_bycombi(expt_moverzs, ppm_ms2) 
   
-  df2[["theo"]] <- df2[["theo"]] %>% round(digits = 4)
+  df2[["theo"]] <- df2[["theo"]] %>% round(digits = digits)
 
   # subtracts `m` and the counts of secondary b0, y0 matches etc. from noise
   # (OK n < 0L)

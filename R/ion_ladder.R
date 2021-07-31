@@ -9,15 +9,8 @@ ms2ions_by_type <- function (aas2, ntmass, ctmass, type_ms2ions, digits) {
   
   switch(type_ms2ions, 
          by = byions(ntmass, ctmass, aas2, digits), 
-         cz = czions(ntmod, ctmod, aas2, aa_masses, digits), 
-         ax = axions(ntmod, ctmod, aas2, aa_masses, digits), 
-         # by2 = calc_by2ions(ntmod, ctmod, aas2, aa_masses, digits), 
-         # bystar = calc_bystarions(ntmod, ctmod, aas2, aa_masses, digits), 
-         # bystar2 = calc_bystar2ions(ntmod, ctmod, aas2, aa_masses, digits), 
-         # by0 = calc_by0ions(ntmod, ctmod, aas2, aa_masses, digits), 
-         # by02 = calc_by02ions(ntmod, ctmod, aas2, aa_masses, digits), 
-         # cz2 = calc_cz2ions(ntmod, ctmod, aas2, aa_masses, digits), 
-         # ax2 = calc_ax2ions(ntmod, ctmod, aas2, aa_masses, digits), 
+         cz = czions(ntmod, ctmod, aas2, digits), 
+         ax = axions(ntmod, ctmod, aas2, digits), 
          stop("Unknown type.", call. = FALSE))
 }
 

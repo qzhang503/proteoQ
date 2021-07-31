@@ -11,7 +11,7 @@ check_ms1_mass_vmods2(
   ntmod,
   ctmod,
   ms1_mass,
-  tol = 1e-04
+  tol = 0.001
 )
 }
 \arguments{
@@ -31,5 +31,5 @@ acid residues.}
 \item{tol}{The tolerance in mass.}
 }
 \description{
-OK.
+Maybe missed if the "matched" occurred after `maxn_vmods_sitescombi_per_pep`.
 }

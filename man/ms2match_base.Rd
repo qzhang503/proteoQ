@@ -27,6 +27,7 @@ ms2match_a0_vnl0_fnl1(
   minn_ms2 = 6L,
   ppm_ms1 = 20L,
   ppm_ms2 = 25L,
+  min_ms2mass = 110L,
   digits = 4L
 )
 
@@ -50,6 +51,7 @@ ms2match_a1_vnl0_fnl0(
   minn_ms2 = 6L,
   ppm_ms1 = 20L,
   ppm_ms2 = 25L,
+  min_ms2mass = 110L,
   digits = 4L
 )
 
@@ -74,6 +76,7 @@ ms2match_a1_vnl0_fnl1(
   minn_ms2 = 6L,
   ppm_ms1 = 20L,
   ppm_ms2 = 25L,
+  min_ms2mass = 110L,
   digits = 4L
 )
 
@@ -98,6 +101,7 @@ ms2match_a1_vnl1_fnl0(
   minn_ms2 = 6L,
   ppm_ms1 = 20L,
   ppm_ms2 = 25L,
+  min_ms2mass = 110L,
   digits = 4L
 )
 
@@ -118,6 +122,7 @@ ms2match_base(
   minn_ms2 = 6L,
   ppm_ms1 = 20L,
   ppm_ms2 = 25L,
+  min_ms2mass = 110L,
   digits = 4L
 )
 }

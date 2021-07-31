@@ -1,5 +1,26 @@
 ## matchMS
 # 
+# bin_masses.R
+#   - bin_ms1masses
+#    - binTheoPeps
+#     - bin_theopeps
+#       - find_ms1_cutpoints
+#    - cbind_theopepes
+# 
+# mgf.R
+#   - readMGF
+#    - read_mgf_chunks
+#     - proc_mgf_chunks_i
+#      - proc_mgf_chunks
+#       - proc_mgfs
+#     - proc_mgfs
+#    - find_ms1_interval
+
+
+
+
+
+
 # ms1_precursors.R: 
 #   - calc_pepmasses2
 #     - calc_aamasses
@@ -43,6 +64,8 @@
 #         gen_ms2ions_base (for specific pep_seq)
 #           ms2ions_by_type (ion_ladder.R)
 #             byions, czions, axions
+#         search_mgf2
+#           find_ms2_bypep
 # 
 # ms2_a0_vnl0_fnl1.R: (5, 6) "amods- tmod+ vnl- fnl+", "amods- tmod- vnl- fnl+"
 #   ms2match_a0_vnl0_fnl1 

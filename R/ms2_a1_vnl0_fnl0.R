@@ -14,7 +14,7 @@ ms2match_a1_vnl0_fnl0 <- function (i, aa_masses, ntmod = NULL, ctmod = NULL,
                                    maxn_sites_per_vmod = 3L, 
                                    maxn_vmods_sitescombi_per_pep = 32L, 
                                    minn_ms2 = 6L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
-                                   digits = 4L) {
+                                   min_ms2mass = 110L, digits = 4L) {
   
   tempdata <- purge_search_space(i, aa_masses, mgf_path, n_cores, ppm_ms1)
   mgf_frames <- tempdata$mgf_frames
@@ -42,6 +42,7 @@ ms2match_a1_vnl0_fnl0 <- function (i, aa_masses, ntmod = NULL, ctmod = NULL,
                                     minn_ms2 = minn_ms2, 
                                     ppm_ms1 = ppm_ms1, 
                                     ppm_ms2 = ppm_ms2, 
+                                    min_ms2mass = min_ms2mass, 
                                     digits = digits), 
                     .scheduling = "dynamic") %>% 
     bind_rows() %>% # across nodes
@@ -68,7 +69,7 @@ hms2_a1_vnl0_fnl0 <- function (mgf_frames, theopeps, aa_masses,
                                maxn_sites_per_vmod = 3L, 
                                maxn_vmods_sitescombi_per_pep = 32L, 
                                minn_ms2 = 7L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
-                               digits = 4L) {
+                               min_ms2mass = 110L, digits = 4L) {
   
   # `res[[i]]` contains results for multiple mgfs within a frame
   # (the number of entries equals to the number of mgf frames)
@@ -88,7 +89,9 @@ hms2_a1_vnl0_fnl0 <- function (mgf_frames, theopeps, aa_masses,
                                  maxn_vmods_sitescombi_per_pep = 
                                    maxn_vmods_sitescombi_per_pep, 
                                  minn_ms2 = minn_ms2, 
-                                 ppm_ms1 = ppm_ms1, ppm_ms2 = ppm_ms2, 
+                                 ppm_ms1 = ppm_ms1, 
+                                 ppm_ms2 = ppm_ms2, 
+                                 min_ms2mass = min_ms2mass, 
                                  digits = digits) %>% 
     post_frame_adv(mgf_frames)
   
@@ -112,7 +115,7 @@ frames_adv_a1_vnl0_fnl0 <- function (mgf_frames, theopeps, aa_masses,
                                      maxn_sites_per_vmod = 3L, 
                                      maxn_vmods_sitescombi_per_pep = 32L, 
                                      minn_ms2 = 7L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
-                                     digits = 4L) {
+                                     min_ms2mass = 110L, digits = 4L) {
   
   len <- length(mgf_frames)
   out <- vector("list", len) 
@@ -208,13 +211,17 @@ frames_adv_a1_vnl0_fnl0 <- function (mgf_frames, theopeps, aa_masses,
     # [[2]]
     # named list()
     
+    ## `theos_xx_ms2` may contain empty entries and handled in `find_ms2_bypep`: 
+    #   e.g. the matched one is after `maxn_vmods_sitescombi_per_pep` 
+    #   and never get matched.
+    
     out[[i]] <- map2(exptmasses_ms1, exptmoverzs_ms2, 
-                     search_mgf, 
+                     search_mgf2, 
                      theomasses_bf_ms1, 
                      theomasses_cr_ms1, 
                      theomasses_af_ms1, 
                      theos_bf_ms2, theos_cr_ms2, theos_af_ms2, 
-                     minn_ms2, ppm_ms1, ppm_ms2)
+                     minn_ms2, ppm_ms1, ppm_ms2, min_ms2mass)
     
     # advance to the next frame
     if (i == len) {
@@ -440,16 +447,16 @@ calc_ms2ions_a1_vnl0_fnl0 <- function (vmods_combi, aas2, aa_masses,
 
 
 #' Check the MS1 mass for proceeding with MS2 matches.
-#' 
-#' OK.
-#' 
+#'
+#' Maybe missed if the "matched" occurred after `maxn_vmods_sitescombi_per_pep`.
+#'
 #' @param ms1_mass The mass of a theoretical MS1 (for subsetting).
 #' @param tol The tolerance in mass.
 #' @inheritParams calcpep_a1_t1_nl1
 #' @inheritParams calc_ms2ions
 #' @importFrom purrr is_empty
 check_ms1_mass_vmods2 <- function (vmods_combi, aas2, aa_masses, ntmod, ctmod, 
-                                   ms1_mass, tol = 1e-4) {
+                                   ms1_mass, tol = 1e-3) {
 
   # bare + 18.010565 + terminals + anywhere
   

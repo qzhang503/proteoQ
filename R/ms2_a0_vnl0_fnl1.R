@@ -10,7 +10,7 @@ ms2match_a0_vnl0_fnl1 <- function (i, aa_masses, ntmass, ctmass, fmods_nl,
                                    maxn_sites_per_vmod = 3L, 
                                    maxn_vmods_sitescombi_per_pep = 32L, 
                                    minn_ms2 = 6L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
-                                   digits = 4L) {
+                                   min_ms2mass = 110L, digits = 4L) {
   
   tempdata <- purge_search_space(i, aa_masses, mgf_path, n_cores, ppm_ms1)
   mgf_frames <- tempdata$mgf_frames
@@ -36,6 +36,7 @@ ms2match_a0_vnl0_fnl1 <- function (i, aa_masses, ntmass, ctmass, fmods_nl,
                            minn_ms2 = minn_ms2, 
                            ppm_ms1 = ppm_ms1, 
                            ppm_ms2 = ppm_ms2, 
+                           min_ms2mass = min_ms2mass, 
                            digits = digits)
 
   # ---
@@ -56,6 +57,7 @@ ms2match_a0_vnl0_fnl1 <- function (i, aa_masses, ntmass, ctmass, fmods_nl,
                                     minn_ms2 = minn_ms2, 
                                     ppm_ms1 = ppm_ms1, 
                                     ppm_ms2 = ppm_ms2, 
+                                    min_ms2mass = min_ms2mass, 
                                     digits = digits), 
                     .scheduling = "dynamic") %>% 
     dplyr::bind_rows() %>% # across nodes
@@ -80,7 +82,7 @@ hms2_a0_vnl0_fnl1 <- function (mgf_frames, theopeps, aa_masses, ntmass, ctmass,
                                maxn_sites_per_vmod = 3L, 
                                maxn_vmods_sitescombi_per_pep = 32L, 
                                minn_ms2 = 7L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
-                               digits = 4L) {
+                               min_ms2mass = 110L, digits = 4L) {
   
   # `res[[i]]` contains results for multiple mgfs within a frame
   # (the number of entries equals to the number of mgf frames)
@@ -97,7 +99,9 @@ hms2_a0_vnl0_fnl1 <- function (mgf_frames, theopeps, aa_masses, ntmass, ctmass,
                                  maxn_vmods_sitescombi_per_pep = 
                                    maxn_vmods_sitescombi_per_pep, 
                                  minn_ms2 = minn_ms2, 
-                                 ppm_ms1 = ppm_ms1, ppm_ms2 = ppm_ms2, 
+                                 ppm_ms1 = ppm_ms1, 
+                                 ppm_ms2 = ppm_ms2, 
+                                 min_ms2mass = min_ms2mass, 
                                  digits = digits) %>% 
     post_frame_adv(mgf_frames)
   
@@ -119,7 +123,7 @@ frames_adv_a0_vnl0_fnl1 <- function (mgf_frames, theopeps, aa_masses,
                                      maxn_sites_per_vmod = 3L, 
                                      maxn_vmods_sitescombi_per_pep = 32L, 
                                      minn_ms2 = 7L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
-                                     digits = 4L) {
+                                     min_ms2mass = 110L, digits = 4L) {
   
   len <- length(mgf_frames)
   out <- vector("list", len) 
@@ -210,13 +214,13 @@ frames_adv_a0_vnl0_fnl1 <- function (mgf_frames, theopeps, aa_masses,
     # named list()
     
     out[[i]] <- purrr::map2(exptmasses_ms1, exptmoverzs_ms2, 
-                            search_mgf, 
+                            search_mgf2, 
                             theomasses_bf_ms1, 
                             theomasses_cr_ms1, 
                             theomasses_af_ms1, 
                             theos_bf_ms2, theos_cr_ms2, theos_af_ms2, 
-                            minn_ms2, ppm_ms1, ppm_ms2) 
-    
+                            minn_ms2, ppm_ms1, ppm_ms2, min_ms2mass) 
+
     # advance to the next frame
     if (i == len) {
       break

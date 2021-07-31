@@ -15,7 +15,7 @@
 ms2match <- function (mgf_path, aa_masses_all, out_path, 
                       mod_indexes, type_ms2ions, maxn_vmods_per_pep, 
                       maxn_sites_per_vmod, maxn_vmods_sitescombi_per_pep, 
-                      minn_ms2, ppm_ms1, ppm_ms2, 
+                      minn_ms2, ppm_ms1, ppm_ms2, min_ms2mass, 
                       
                       # dummies
                       fasta, acc_type, acc_pattern,
@@ -27,8 +27,10 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
                       
                       digits) {
   
+  options(digits = 9L)
+  
   on.exit(
-    if (exists(".savecall", envir = current_env())) {
+    if (exists(".savecall", envir = rlang::current_env())) {
       if (.savecall) {
         save_call2(path = file.path(out_path, "Calls"), fun = "ms2match")
       }
@@ -79,11 +81,8 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
   n_cores <- parallel::detectCores()
   cl <- makeCluster(getOption("cl.cores", n_cores))
   clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
-                
-  # clusterExport(cl, list("hms2_base"), envir = environment(proteoQ:::hms2_base))
-  # clusterExport(cl, list("frames_adv_base"), envir = environment(proteoQ:::frames_adv_base))
-  # clusterExport(cl, list("gen_ms2ions_base"), envir = environment(proteoQ:::gen_ms2ions_base))
-  # clusterExport(cl, list("gen_ms2ions_a0_vnl0_fnl1"), envir = environment(proteoQ:::gen_ms2ions_a0_vnl0_fnl1))
+  clusterExport(cl, list("%fin%"), envir = environment(fastmatch::`%fin%`))
+  clusterExport(cl, list("fmatch"), envir = environment(fastmatch::fmatch))
   
   # Targets 
   out <- vector("list", length(aa_masses_all))
@@ -97,13 +96,12 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
     for (i in inds) {
       aa_masses <- aa_masses_all[[i]]
       
-      # need ntmod and ctmod for `a1_...` for 
+      # need ntmod and ctmod for `amod+_...` for 
       #   excluding additive terminal mod and anywhere mod
-      # OK to use find_ntmass and find_ctmass here
       
       # aa_masses["N-term"] not necessary H; 
-      # e.g., can be `Acetyl + hydrogen` in case of FIXED Protein N-term 
-      # or fixed N-term `TMT + hydrogen`
+      #   e.g., `Acetyl + hydrogen` in case of FIXED Protein N-term 
+      #   or fixed N-term `TMT + hydrogen`
       
       ntmod <- attr(aa_masses, "ntmod", exact = TRUE)
       if (is_empty(ntmod)) {
@@ -137,6 +135,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         minn_ms2 = minn_ms2, 
         ppm_ms1 = ppm_ms1, 
         ppm_ms2 = ppm_ms2, 
+        min_ms2mass = min_ms2mass, 
         digits = digits)
     }
   }
@@ -145,7 +144,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
   #        (mutual exclusive btw. (1, 2) and (5, 6)
   #         "ANY" fmod has neuloss -> 5, 6;
   #         "ALL" fmods have no neuloss -> 1, 2)
-  #         
+  
   inds <- which(types %in% c("amods- tmod- vnl- fnl+", 
                              "amods- tmod+ vnl- fnl+"))
   
@@ -188,12 +187,14 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         minn_ms2 = minn_ms2, 
         ppm_ms1 = ppm_ms1, 
         ppm_ms2 = ppm_ms2, 
+        min_ms2mass = min_ms2mass, 
         digits = digits)
     }
   }
   
   # (7, 8) "amods+ tmod- vnl- fnl-", "amods+ tmod+ vnl- fnl-"
   #        (ALL amods are vnl-)
+  
   inds <- which(types %in% c("amods+ tmod- vnl- fnl-", 
                              "amods+ tmod+ vnl- fnl-"))
   
@@ -238,12 +239,14 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         minn_ms2 = minn_ms2, 
         ppm_ms1 = ppm_ms1, 
         ppm_ms2 = ppm_ms2, 
+        min_ms2mass = min_ms2mass, 
         digits = digits)
     }
   }
   
   # (9, 10) "amods+ tmod- vnl+ fnl-", "amods+ tmod+ vnl+ fnl-"
   #         (ANY amod is vnl+)
+  
   inds <- which(types %in% c("amods+ tmod- vnl+ fnl-", 
                              "amods+ tmod+ vnl+ fnl-"))
   
@@ -265,7 +268,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         ctmass <- aa_masses[names(ctmod)] + 2.01510147
       }
       
-      # famods <- attr(aa_masses, "famods", exact = TRUE) # fixed anywhere
       amods <- attr(aa_masses, "amods", exact = TRUE) # variable anywhere
       vmods_nl <- attr(aa_masses, "vmods_nl", exact = TRUE)
       
@@ -291,6 +293,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         minn_ms2 = minn_ms2, 
         ppm_ms1 = ppm_ms1, 
         ppm_ms2 = ppm_ms2, 
+        min_ms2mass = min_ms2mass, 
         digits = digits)
     }
   }
@@ -298,6 +301,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
   # (11, 12) "amods+ tmod- vnl- fnl+", "amods+ tmod+ vnl- fnl+"
   #          (mutual exclusive btw. (11, 12) and (7, 8);
   #           logicial ANY versus ALL)
+  
   inds <- which(types %in% c("amods+ tmod- vnl- fnl+", 
                              "amods+ tmod+ vnl- fnl+"))
   
@@ -319,7 +323,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         ctmass <- aa_masses[names(ctmod)] + 2.01510147
       }
       
-      # famods <- attr(aa_masses, "famods", exact = TRUE) # fixed anywhere
       amods <- attr(aa_masses, "amods", exact = TRUE) # variable anywhere
       fmods_nl <- attr(aa_masses, "fmods_nl", exact = TRUE)
       
@@ -345,6 +348,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         minn_ms2 = minn_ms2, 
         ppm_ms1 = ppm_ms1, 
         ppm_ms2 = ppm_ms2, 
+        min_ms2mass = min_ms2mass, 
         digits = digits)
     }
   }
@@ -393,6 +397,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       minn_ms2 = minn_ms2, 
       ppm_ms1 = ppm_ms1, 
       ppm_ms2 = ppm_ms2, 
+      min_ms2mass = min_ms2mass, 
       digits = digits)
   } else { # (7, 8)
     rev <- ms2match_a1_vnl0_fnl0(
@@ -415,6 +420,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       minn_ms2 = minn_ms2, 
       ppm_ms1 = ppm_ms1, 
       ppm_ms2 = ppm_ms2, 
+      min_ms2mass = min_ms2mass, 
       digits = digits)
   }
   
@@ -429,6 +435,5 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
   
   invisible(out)
 }
-
 
 

@@ -4,7 +4,14 @@
 \alias{purge_search_space}
 \title{Subset the search space.}
 \usage{
-purge_search_space(i, aa_masses, mgf_path, n_cores, ppm_ms1, fmods_nl = NULL)
+purge_search_space(
+  i,
+  aa_masses,
+  mgf_path,
+  n_cores,
+  ppm_ms1 = 20L,
+  fmods_nl = NULL
+)
 }
 \arguments{
 \item{i}{Integer; the index for a set of corresponding aa_masses and

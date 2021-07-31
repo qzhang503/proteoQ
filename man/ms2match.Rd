@@ -16,6 +16,7 @@ ms2match(
   minn_ms2,
   ppm_ms1,
   ppm_ms2,
+  min_ms2mass,
   fasta,
   acc_type,
   acc_pattern,

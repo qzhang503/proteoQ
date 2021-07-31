@@ -4,7 +4,7 @@
 \alias{which_topx}
 \title{Finds the indexes of top-n entries without re-ordering.}
 \usage{
-which_topx(x, n = 50, ...)
+which_topx(x, n = 50L, ...)
 }
 \arguments{
 \item{x}{A numeric vector.}
