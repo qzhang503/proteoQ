@@ -11,6 +11,7 @@ pepHM(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
+  rm_allna = TRUE,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -41,6 +42,7 @@ prnHM(
   scale_log2r = TRUE,
   complete_cases = FALSE,
   impute_na = FALSE,
+  rm_allna = TRUE,
   df = NULL,
   filepath = NULL,
   filename = NULL,
@@ -83,6 +85,10 @@ missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{df}{The name of a primary data file. By default, it will be determined
 automatically after matching the types of data and analysis with an

@@ -56,10 +56,6 @@ applicable to the precursor intensity with MaxQuant LFQ.}
 \item{plot_log2FC_cv}{Logical; if TRUE, the distributions of the CV of peptide
 \code{log2FC} will be plotted. The default is TRUE.}
 
-\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
-across ratio columns of \code{log2_R126} etc. The setting also applies to
-\code{log2_R000} in LFQ.}
-
 \item{...}{Not currently used.}
 }
 \description{

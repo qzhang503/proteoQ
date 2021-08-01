@@ -12,7 +12,7 @@ calc_monopeptide(
   maxn_vmods_setscombi = 64,
   maxn_vmods_per_pep = Inf,
   maxn_sites_per_vmod = Inf,
-  digits = 5
+  digits = 4
 )
 }
 \arguments{
@@ -25,12 +25,12 @@ representation of amino acids.}
 \item{varmods}{A character vector of variable modifications.}
 
 \item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
-  masses with the losses of neutral species prior to MS2 fragmentation. The
-  default is FALSE.
-
-  Note that there is no combination of neutral losses for fixed modifications
-  at the precursor levels. Changes from fixed to variable modifications for
-  complete combinations.}
+masses with the losses of neutral species prior to MS2 fragmentation. The
+default is FALSE. The setting at TRUE remains experimenting by allowing
+additional masses in the universe of MS1 precursors. The offsets in NLs (by
+adding back precursor masses) have not yet taken into account in MS2 ion
+searches. A more systemically approach such as \code{open} MS1 masses might
+be developed in the future.}
 
 \item{maxn_vmods_setscombi}{Integer; the maximum number of combinatorial variable
 modifications and neutral losses.}
@@ -54,23 +54,27 @@ x <- calc_monopeptide("MAKEMASSPECFUN",
                       fixedmods = NULL, 
                       varmods = NULL)
 
-x$mass
+stopifnot((unlist(x$mass) - 1594.5369) < 1e-4)
 
 # (2-a) 
 x <- calc_monopeptide("MAKEMASSPECFUN", 
                       fixedmods = "Oxidation (M)", 
                       varmods = NULL)
 
-x$mass
+m <- unlist(x$mass)
 
-# (2-b) no combinatorial NL for fixed modifications
-# (see 3-b) for full combinations
+stopifnot((m[1] - 1626.5267) < 1e-4)
+
+# (2-b) combinatorial NL for fixed modifications
 x <- calc_monopeptide("MAKEMASSPECFUN", 
                       fixedmods = "Oxidation (M)", 
                       varmods = NULL, 
                       include_insource_nl = TRUE)
+                      
+m <- unlist(x$mass)
 
-x$mass
+stopifnot(length(m) == 2L)
+stopifnot((m[1] - m[2] - 127.9965) < 1e-4)
 
 ## With variable modifications
 # (3-a)
@@ -78,7 +82,11 @@ x <- calc_monopeptide("MAKEMASSPECFUN",
                       fixedmods = NULL, 
                       varmods = "Oxidation (M)")
 
-x$mass
+m <- unlist(x$mass)
+
+stopifnot((m[1] - 1594.5369) < 1e-4)
+stopifnot((m[2] - m[1]) == (m[3] - m[2]))
+
 # x$vmods_ps
 
 # (3-b)

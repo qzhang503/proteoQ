@@ -395,6 +395,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		         annotation_col = NULL, 
 		         annotation_row = NULL, 
 		         clustering_method = NULL, 
+		         rm_allna = TRUE, 
 		         ...) {
 		  plotHM(df = df,
 		         id = !!id,
@@ -423,6 +424,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 			       annotation_col = annotation_col, 
 			       annotation_row = annotation_row, 
 			       clustering_method = clustering_method, 
+			       rm_allna = rm_allna, 
 			       ...)
 		}
 	} else if (anal_type == "Histogram") {

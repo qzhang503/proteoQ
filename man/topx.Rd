@@ -4,7 +4,7 @@
 \alias{topx}
 \title{Finds the top-n entries without re-ordering.}
 \usage{
-topx(x, n = 50, ...)
+topx(x, n = 50L, ...)
 }
 \arguments{
 \item{x}{A numeric vector.}

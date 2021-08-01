@@ -4,7 +4,7 @@
 \alias{roll_sum}
 \title{Concatenates adjacent peptides in a list (with mass).}
 \usage{
-roll_sum(peps, n = 2, include_cts = TRUE)
+roll_sum(peps, n = 2L, include_cts = TRUE)
 }
 \arguments{
 \item{peps}{A list of peptide sequences with a one-letter representation of

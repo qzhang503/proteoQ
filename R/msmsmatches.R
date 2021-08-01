@@ -3,11 +3,11 @@
 #' @param x A numeric vector.
 #' @param n The number of top entries to keep.
 #' @return The indexes of the top-n entries.
-which_topx <- function(x, n = 50, ...) {
+which_topx <- function(x, n = 50L, ...) {
   len <- length(x)
   p <- len - n
   
-  if (p  <= 0) return(seq_along(x))
+  if (p  <= 0L) return(seq_along(x))
   
   xp <- sort(x, partial = p, ...)[p]
   
@@ -19,11 +19,11 @@ which_topx <- function(x, n = 50, ...) {
 #' 
 #' @inheritParams which_topx
 #' @return The top-n entries.
-topx <- function(x, n = 50, ...) {
+topx <- function(x, n = 50L, ...) {
   len <- length(x)
   p <- len - n
   
-  if (p  <= 0) return(x)
+  if (p  <= 0L) return(x)
   
   xp <- sort(x, partial = p, ...)[p]
   
@@ -50,472 +50,7 @@ find_ppm_error <- function (x = 1000, y = 1000.01) {
 #' @return The lower and the upper bound to \eqn{x} by \eqn{ppm}.
 find_mass_error_range <- function (x = 500, ppm = 20) {
   d <- x * ppm/1E6
-  range(x-d, x+d)
-}
-
-
-#' Finds the cut-points of MS1 masses for binning.
-#'
-#' The cut-points will be used as the boundary in data binning. Note that the
-#' upper bound is open.
-#'
-#' @param from Numeric; the starting MS1 mass.
-#' @param to Numeric; the ending MS1 mass.
-#' @param ppm Numeric; the ppm for data binning.
-find_ms1_cutpoints <- function (from = 350, to = 1700, ppm = 20) {
-  d <- ppm/1e6
-  n <- ceiling(log(to/from)/log(1+d))
-  
-  x <- vector("numeric", n)
-  x[1] <- from
-  
-  for (i in seq_len(n-1)) {
-    x[i+1] <- x[i] * (1 + d)
-  }
-  
-  x
-}
-
-
-#' Calculates the frame number for an experimental MS1 mass by intervals.
-#' 
-#' Needs correct \code{from}.
-#' @param mass Numeric; a list of MS1 masses.
-#' @inheritParams find_ms1_cutpoints
-find_ms1_interval <- function (mass = 1714.81876, from = 350, ppm = 20) {
-  d <- ppm/1e6
-  ceiling(log(unlist(mass, recursive = FALSE, use.names = FALSE)/from)/log(1+d))
-}
-
-
-#' Helper: separates theoretical peptides into mass groups.
-#' 
-#' @param peps A list of theoretical peptides with masses.
-#' @inheritParams binTheoPeps
-bin_theopeps <- function (peps, min_mass = 350, max_mass = 1700, ppm = 20) {
-  ps <- find_ms1_cutpoints(min_mass, max_mass, ppm)
-  
-  out <- purrr::imap(peps, ~ {
-    prot_peps <- .x
-    
-    frames <- findInterval(prot_peps, ps)
-    
-    list(pep_seq = names(prot_peps), 
-         mass = prot_peps, 
-         frames = frames, 
-         prot_acc = .y)
-  })
-}
-
-
-#' Combine theoretical peptides after binning.
-#' 
-#' @param out A list of binned theoretical peptides.
-#' @param out_nm The output file path and name.
-cbind_theopepes <- function (out, out_nm) {
-  prot_acc <- imap(out, ~ rep(.y, length(.x$pep_seq))) %>% 
-    do.call(`c`, .) %>% 
-    unname()
-  
-  pep_seq <- map(out, `[[`, "pep_seq") %>% 
-    do.call(`c`, .) %>% 
-    unname()
-  
-  mass <- map(out, `[[`, "mass") %>% 
-    do.call(`c`, .) %>% 
-    unname()
-  
-  frame <- map(out, `[[`, "frames") %>% 
-    do.call(`c`, .) %>% 
-    unname()
-  
-  out <- data.frame(pep_seq = pep_seq, 
-                    mass = mass, 
-                    frame = frame, 
-                    prot_acc = prot_acc) %>% 
-    dplyr::arrange(frame, pep_seq, prot_acc) %>% 
-    split(., .$frame, drop = FALSE) %T>% 
-    saveRDS(., out_nm)
-
-  invisible(out)
-}
-
-#' Separates theoretical peptides into mass groups.
-#'
-#' @param res Lists of data containing theoretical peptides and masses from
-#'   \link{readRDS}.
-#' @param min_mass Numeric; the minimum MS1 mass.
-#' @param max_mass Numeric; the maximum MS1 mass.
-#' @param ppm Numeric; the eror tolerance of MS1 mass in ppm.
-#' @param out_path The output path.
-#' @examples
-#' \donttest{
-#' res <- readRDS("~/proteoQ/dbs/fasta/uniprot/pepmass/uniprot_hs_2020_05_2miss.rds")
-#' theopeps <- binTheoPeps(res)
-#' }
-#' @return Lists of theoretical peptides binned by MS1 masses. The lists
-#'   correspond to the lists of \code{res}.
-#' @import parallel
-#' @export
-binTheoPeps <- function (res, min_mass = 516.24046, max_mass = 10000, ppm = 20, 
-                         out_path = file.path("~/proteoQ/outs", 
-                                              "pepmasses/binned_theopeps.rds")) {
-  
-  out_dir <- create_dir(gsub("(^.*/).*$", "\\1", out_path))
-  out_nms <- gsub("^.*/(.*)\\.[^\\.].*$", "\\1", out_path) %>% 
-    paste(seq_along(res), sep = "_") %>% 
-    paste0(".rds")
-
-  res <- res %>% 
-    purrr::map(attributes) %>% 
-    purrr::map(`[[`, "data")
-  
-  n_cores <- parallel::detectCores()
-  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-  
-  out <- map(res, ~ {
-    .x <- chunksplit(.x, n_cores)
-    
-    parallel::clusterApplyLB(cl, .x, bin_theopeps, min_mass, max_mass, ppm) %>% 
-      purrr::flatten()
-  }) %>% 
-    parallel::clusterMap(cl, cbind_theopepes, ., file.path(out_dir, out_nms))
-
-  rm(list = c("res"))
-
-  parallel::stopCluster(cl)
-
-  invisible(out)
-}
-
-
-#' Helper in processing MGF entries in chunks.
-#' 
-#' @inheritParams proc_mgf_chunks
-#' @import stringi
-proc_mgfs <- function (lines, topn_ms2ions = 100, ret_range = c(0, Inf)) {
-  
-  # MS2 ions
-  begins <- which(stri_startswith_fixed(lines, "BEGIN IONS"))
-  ends <- which(stri_endswith_fixed(lines, "END IONS"))
-  
-  ms2s <- purrr::map2(begins, ends, ~ lines[(.x + 6) : (.y - 1)]) %>% 
-    purrr::map(stri_split_fixed, " ", n = 2, simplify = TRUE) 
-  
-  ms2_moverzs <- ms2s %>% 
-    purrr::map(~ .x[, 1] %>% as.numeric()) 
-  
-  ms2_ints <- ms2s %>% 
-    purrr::map(~ .x[, 2] %>% as.numeric()) 
-  
-  lens <- purrr::map(ms2_moverzs, length)
-  
-  if (topn_ms2ions < Inf) {
-    rows <- purrr::map(ms2_ints, which_topx, topn_ms2ions)
-    ms2_ints <- purrr::map2(ms2_ints, rows, ~ .x[.y])
-    ms2_moverzs <- purrr::map2(ms2_moverzs, rows, ~ .x[.y])
-    rm(list = c("rows", "ms2s"))
-  }
-  
-  # MS1 ions
-  ms1s <- lines[begins+2] %>% 
-    stri_replace_first_fixed("PEPMASS=", "") %>% 
-    purrr::map(stri_split_fixed, " ", n = 2, simplify = TRUE)
-  
-  ms1_moverzs <- ms1s %>% 
-    purrr::map(~ .x[, 1] %>% as.numeric())
-  
-  ms1_ints <- ms1s %>% 
-    purrr::map(~ .x[, 2] %>% as.numeric())
-  
-  rm(list = c("ms1s"))
-  
-  # Others
-  scan_titles <- lines[begins+1] %>% 
-    stri_replace_first_fixed("TITLE=", "") %>% 
-    as.list()
-  
-  scan_nums <- lines[begins+5] %>% 
-    stri_replace_first_fixed("SCANS=", "") %>% 
-    as.numeric() %>% 
-    as.list()
-  
-  ret_times  <- lines[begins+4] %>% 
-    stri_replace_first_fixed("RTINSECONDS=", "") %>% 
-    as.numeric() %>% 
-    as.list()
-  
-  ms1_charges <- lines[begins+3] %>% 
-    stri_replace_first_fixed("CHARGE=", "") %>% 
-    as.list()
-  
-  # MS1 neutral masses
-  proton <- 1.00727647
-  
-  charges <- ms1_charges %>% 
-    purrr::map(stri_reverse) %>% 
-    purrr::map(as.numeric)
-  
-  ms1_masses <- purrr::map2(ms1_moverzs, charges, ~ {
-    .x * .y - .y * proton 
-  })
-  
-  # Rounding
-  # ms1_ints <- ms1_ints %>% map(as.integer)
-  # ms2_ints <- ms2_ints %>% map(as.integer)
-  
-  # Subsetting
-  rows <- (ret_times >= ret_range[1] & ret_times <= ret_range[2])
-  
-  scan_titles <- scan_titles[rows]
-  ms1_moverzs <- ms1_moverzs[rows]
-  ms1_masses <- ms1_masses[rows]
-  ms1_ints <- ms1_ints[rows]
-  ms1_charges <- ms1_charges[rows]
-  ret_times <- ret_times[rows]
-  scan_nums <- scan_nums[rows]
-  ms2_moverzs <- ms2_moverzs[rows]
-  ms2_ints <- ms2_ints[rows]
-  
-  out <- tibble::tibble(scan_title = scan_titles, 
-                        ms1_moverz = ms1_moverzs, 
-                        ms1_mass = ms1_masses, 
-                        ms1_int = ms1_ints, 
-                        ms1_charge = ms1_charges,
-                        ret_time = ret_times, 
-                        scan_num = scan_nums,
-                        ms2_moverz = ms2_moverzs, 
-                        ms2_int = ms2_ints, 
-                        ms2_n = lens)
-}
-
-
-#' Processes MGF entries in chunks.
-#' 
-#' @param lines MGF lines.
-#' @inheritParams readMGF
-#' @import stringi
-proc_mgf_chunks <- function (lines, topn_ms2ions = 100, ret_range = c(0, Inf), 
-                             filepath = file.path("~/proteoQ/mgfs/temp")) {
-
-  basename <- gsub("\\.[^.]*$", "", filepath)
-  
-  begins <- which(stri_startswith_fixed(lines, "BEGIN IONS"))
-  ends <- which(stri_endswith_fixed(lines, "END IONS"))
-  
-  af <- local({
-    le <- ends[length(ends)]
-    lb <- begins[length(begins)]
-    
-    if (lb > le) {
-      af <- lines[(le+2):length(lines)]
-    } else {
-      af <- NULL
-    }
-    
-    write(af, file.path(paste0(basename, "_af.mgf")))
-    
-    af
-  })
-  
-  bf <- local({
-    le <- ends[1]
-    lb <- begins[1]
-    
-    if (lb > le) {
-      bf <- lines[1:(le+1)]
-    } else {
-      bf <- NULL
-    }
-    
-    write(bf, file.path(paste0(basename, "_bf.mgf")))
-    
-    bf
-  })
-  
-  if (!is.null(af)) {
-    lines <- lines[1:(begins[length(begins)]-1)]
-  }
-  
-  if (!is.null(bf)) {
-    lines <- lines[-c(1:(ends[1]+1))]
-  }
-  
-  out <- proc_mgfs(lines, topn_ms2ions = topn_ms2ions, ret_range = ret_range)
-}
-
-
-#' Helper of \link{proc_mgf_chunks}.
-#' 
-#' @param file A mgf chunk (chunk_1.mgf etc.) with prepending file path.
-#' @inheritParams read_mgf_chunks
-#' @import stringi
-proc_mgf_chunks_i <- function (file, topn_ms2ions = 100, ret_range = c(0, Inf)) {
-  message("Parsing '", file, "'.")
-  
-  x <- stri_read_lines(file) %>% 
-    proc_mgf_chunks(topn_ms2ions = topn_ms2ions, 
-                    ret_range = ret_range, 
-                    filepath = file)
-}
-
-
-#' Reads mgfs in chunks.
-#' 
-#' @inheritParams readMGF
-#' @import stringi
-read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs", 
-                             topn_ms2ions = 100, ret_range = c(0, Inf)) {
-  
-  filelist <- list.files(path = file.path(filepath), pattern = "^.*\\.mgf$")
-  
-  if (purrr::is_empty(filelist)) {
-    stop("No mgf files under ", filepath, 
-         call. = FALSE)
-  }
-  
-  n_cores <- parallel::detectCores()
-  cl <- makeCluster(getOption("cl.cores", n_cores))
-  
-  out <- parallel::clusterApply(cl, file.path(filepath, filelist), 
-                                proc_mgf_chunks_i, 
-                                topn_ms2ions, ret_range) %>% 
-    bind_rows()
-  
-  parallel::stopCluster(cl)
-  
-  # adds back broken mgf entries
-  afs <- local({
-    afs <- list.files(path = file.path(filepath), pattern = "^.*\\_af.mgf$")
-    
-    idxes <- afs %>% 
-      gsub("^chunk_(\\d+)_af\\.mgf", "\\1", .) %>% 
-      as.integer() %>% 
-      sort()
-    
-    paste0("chunk_", idxes, "_af.mgf") %>% 
-      .[-length(.)]
-  })
-  
-  bfs <- local({
-    bfs <- list.files(path = file.path(filepath), pattern = "^.*\\_bf.mgf$")
-    
-    idxes <- bfs %>% 
-      gsub("^chunk_(\\d+)_bf\\.mgf", "\\1", .) %>% 
-      as.integer() %>% 
-      sort()
-    
-    paste0("chunk_", idxes, "_bf.mgf") %>% 
-      .[-1]
-  })
-  
-  stopifnot(length(afs) == length(bfs))
-  
-  gaps <- purrr::map2(afs, bfs, ~ {
-    af <- stri_read_lines(file.path(filepath, .x))
-    bf <- stri_read_lines(file.path(filepath, .y))
-    append(af, bf)
-  }) %>% 
-    unlist(use.names = FALSE) %T>% 
-    write(file.path(filepath, "gaps.mgf"))
-  
-  local({
-    nms <- list.files(path = file.path(filepath), pattern = "^.*\\_[ab]f.mgf$")
-    
-    if (!purrr::is_empty(nms)) {
-      suppressMessages(file.remove(file.path(filepath, nms)))
-    }
-  })
-  
-  if (!is.null(gaps)) {
-    out <- dplyr::bind_rows(
-      out, 
-      proc_mgfs(gaps, topn_ms2ions = topn_ms2ions, ret_range = ret_range)
-    )
-  }
-
-  invisible(out)
-}
-
-
-#' Reads MGF files in chunks.
-#'
-#' @param filepath The file path to a list of mgf files.
-#' @param min_mass Numeric; the minimum mass of MS1 species. The value needs to
-#'   match the one in  \link{binTheoPeps}.
-#' @param topn_ms2ions A non-negative integer; the top-n species for uses in
-#'   MS2 ion searches. The default is to use the top-100 ions in an MS2 event.
-#' @param ret_range The range of retention time in seconds.
-#' @inheritParams matchMS
-#' @import stringi
-#' @examples
-#' \donttest{
-#' mgf_queries <- readMGF()
-#' }
-#' @export
-readMGF <- function (filepath = "~/proteoQ/mgfs", min_mass = 516.2405, 
-                     topn_ms2ions = 100, ret_range = c(0, Inf), ppm_ms1 = 20, 
-                     out_path = file.path(filepath, "mgf_queries.rds")) {
-
-  f <- function(x, pos) {
-    nm <- file.path(filepath, "temp", paste0("chunk", "_", pos, ".mgf"))
-    writeLines(x, nm)
-  }
-  
-  
-  filelist <- list.files(path = file.path(filepath), pattern = "^.*\\.mgf$")
-
-  if (purrr::is_empty(filelist)) {
-    stop("No '.mgf' files under ", filepath, 
-         call. = FALSE)
-  }
-  
-  # by mgf files
-  out <- vector("list", length(filelist))
-  
-  for (i in seq_along(filelist)) {
-    temp_dir <- local({
-      temp_dir <- find_dir(file.path(filepath, "temp"))
-      
-      if (!is.null(temp_dir)) {
-        fs::file_delete(temp_dir)
-      }
-      
-      dir.create(file.path(filepath, "temp"), showWarnings = FALSE)
-      temp_dir <- find_dir(file.path(filepath, "temp"))
-    })
-
-    message("Loading '", filelist[i], "'.")
-    
-    readr::read_lines_chunked(file.path(filepath, filelist[i]), 
-                              SideEffectChunkCallback$new(f), 
-                              chunk_size = 5000000)
-    
-    out[[i]] <- read_mgf_chunks(temp_dir, 
-                                topn_ms2ions = topn_ms2ions, 
-                                ret_range = ret_range)
-
-    local({
-      temp_dir2 <- file.path(filepath, gsub("\\.[^.]*$", "", filelist[i]))
-      dir.create(temp_dir2, showWarnings = FALSE)
-      temp_dir2 <- find_dir(temp_dir2)
-      
-      if (file_exists(temp_dir2)) {
-        fs::file_delete(temp_dir2)
-      }
-      
-      fs::file_move(temp_dir, temp_dir2)
-    })
-  }
-
-  out <- out %>% 
-    dplyr::bind_rows() %>% 
-    dplyr::arrange(ms1_mass) %>% 
-    dplyr::mutate(frame = find_ms1_interval(ms1_mass, from = min_mass, 
-                                            ppm = ppm_ms1)) %T>% 
-    saveRDS(., out_path)
-
-  invisible(out)
+  c(x-d, x+d)
 }
 
 
@@ -524,6 +59,7 @@ readMGF <- function (filepath = "~/proteoQ/mgfs", min_mass = 516.2405,
 #' @inheritParams chunksplit
 #' @param f A factor; see also base \code{split}.
 chunk_groupsplit <- function (data, f, n_chunks) {
+  
   if (n_chunks <= 1L) return(data)
 
   data <- split(data, f)
@@ -549,7 +85,8 @@ chunk_groupsplit <- function (data, f, n_chunks) {
 #' @param n_chunks The number of chunks.
 #' @param type The type of data for splitting.
 #' @export
-chunksplit <- function (data, n_chunks = 5, type = "list") {
+chunksplit <- function (data, n_chunks = 5L, type = "list") {
+  
   stopifnot(type %in% c("list", "row"))
   
   if (n_chunks <= 1L) return(data)
@@ -583,7 +120,7 @@ chunksplit <- function (data, n_chunks = 5, type = "list") {
 #'   into for estimating the cumulative sizes.
 #' @inheritParams chunksplit
 #' @export
-chunksplitLB <- function (data, n_chunks = 5, nx = 100, type = "list") {
+chunksplitLB <- function (data, n_chunks = 5L, nx = 100L, type = "list") {
   stopifnot(type %in% c("list", "row"))
   
   if (n_chunks <= 1) return(data)
@@ -684,21 +221,23 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                                  "Gln->pyro-Glu (N-term = Q)"), 
                      include_insource_nl = FALSE, 
                      enzyme = c("trypsin"), 
-                     maxn_fasta_seqs = 200000,
-                     maxn_vmods_setscombi = 64, 
-                     maxn_vmods_per_pep = 5,
-                     maxn_sites_per_vmod = 3, 
-                     maxn_vmods_sitescombi_per_pep = 32, 
-                     min_len = 7, max_len = 100, max_miss = 2, 
+                     maxn_fasta_seqs = 200000L,
+                     maxn_vmods_setscombi = 64L, 
+                     maxn_vmods_per_pep = 5L,
+                     maxn_sites_per_vmod = 3L, 
+                     maxn_vmods_sitescombi_per_pep = 64L, 
+                     min_len = 7L, max_len = 100L, max_miss = 2L, 
                      type_ms2ions = "by", 
-                     topn_ms2ions = 100, 
-                     minn_ms2 = 6, ppm_ms1 = 20, ppm_ms2 = 25, 
-                     ppm_reporters = 10, 
+                     topn_ms2ions = 100L, 
+                     minn_ms2 = 6L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
+                     ppm_reporters = 10L, 
                      quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"), 
                      target_fdr = 0.01, 
                      fdr_type = c("psm", "peptide", "protein"), 
                      combine_tier_three = FALSE, 
-                     digits = 5) {
+                     digits = 4L) {
+  
+  options(digits = 9L)
   
   on.exit(
     if (exists(".savecall", envir = rlang::current_env())) {
@@ -727,7 +266,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     `names<-`(c(fixedmods, varmods))
   
   ## Theoretical MS1 masses
-  res <- calc_pepmasses(
+  res <- calc_pepmasses2(
     fasta = fasta, 
     acc_type = acc_type,
     acc_pattern = acc_pattern, 
@@ -748,121 +287,76 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     parallel = TRUE
   )
   
+  ## Hash tables
+  
+  
+  
+  
   ## AA masses
-  aa_masses_all <- res %>% 
+  aa_masses_all <- res$fwd %>% 
     purrr::map(~ {
       attr(.x, "data") <- NULL
       .x
     })
   
   ## Mass range
-  min_mass <- 500
+  min_mass <- 500L
   
-  max_mass <- res %>% 
-    purrr::map(attributes) %>% 
-    purrr::map(`[[`, "data") %>% 
+  max_mass <- res$fwd %>% 
+    purrr::map(attr, "data") %>% 
     unlist(use.names = FALSE) %>% 
     max(na.rm = TRUE)
 
   ## Bin theoretical peptides
-  local({
-    .path_cache <- get(".path_cache", envir = .GlobalEnv)
-    .path_fasta <- get(".path_fasta", envir = .GlobalEnv)
-    .time_stamp <- get(".time_stamp", envir = .GlobalEnv)
-    
-    # Targets
-    bins <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
-                       pattern = "binned_theopeps_\\d+\\.rds$")
-    
-    if (is_empty(bins)) {
-      message("Binning MS1 masses (theoretical target).")
-      
-      binTheoPeps(res = res, min_mass = min_mass, max_mass = max_mass, 
-                  ppm = ppm_ms1, 
-                  out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
-                                       "binned_theopeps.rds"))
-    } else {
-      message("Loading bins of MS1 masses from cache (theoretical target).")
-    }
-    
-    # Decoys
-    bins2 <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp), 
-                        pattern = "binned_theopeps_rev_\\d+\\.rds$")
-    
-    if (is_empty(bins2)) {
-      rev_res <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
-                                   "pepmasses_rev.rds"))
-      
-      message("Binning MS1 masses (theoretical decoy).")
-      
-      binTheoPeps(res = rev_res, min_mass = min_mass, max_mass = max_mass, 
-                  ppm = ppm_ms1, 
-                  out_path = file.path(.path_fasta, "pepmasses", .time_stamp, 
-                                       "binned_theopeps_rev.rds"))
-    } else {
-      message("Loading bins of MS1 masses from cache (theoretical decoy).")
-    }
-  }) 
-  
+  bin_ms1masses(res, min_mass, max_mass, ppm_ms1, out_path)
   rm(list = c("res"))
   
   ## MGFs
-  mgf_frames <- local({
-    rds <- file.path(mgf_path, "mgf_queries.rds")
-    
-    if (file.exists(rds)) {
-      message("Loading cached MGFs: `", rds, "`.")
-      mgf_frames <- readRDS(rds)
-    } else {
-      message("Processing raw MGFs.")
-      mgf_frames <- readMGF(filepath = mgf_path, 
-                            min_mass = min_mass, 
-                            topn_ms2ions = topn_ms2ions, 
-                            ret_range = c(0, Inf), 
-                            ppm_ms1 = ppm_ms1, 
-                            out_path = rds) 
-    }
-  })
+  mgf_frames <- load_mgfs(mgf_path = mgf_path, 
+                          min_mass = min_mass, 
+                          min_ms2mass = 110L, 
+                          topn_ms2ions = topn_ms2ions, 
+                          ppm_ms1 = ppm_ms1, 
+                          ppm_ms2 = ppm_ms2, 
+                          index_ms2 = FALSE)
   
   gc()
   
   ## MSMS matches
-  n_cores <- parallel::detectCores()
-  
-  out <- pmatch_bymgfs(mgf_path = mgf_path, 
-                       aa_masses_all = aa_masses_all, 
-                       n_cores = n_cores, 
-                       out_path = out_path, 
-                       mod_indexes = mod_indexes, 
-                       type_ms2ions = type_ms2ions, 
-                       maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                       maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                       maxn_vmods_sitescombi_per_pep = 
-                         maxn_vmods_sitescombi_per_pep, 
-                       minn_ms2 = minn_ms2, 
-                       ppm_ms1 = ppm_ms1, 
-                       ppm_ms2 = ppm_ms2, 
-                       
-                       # dummy for argument matching
-                       fasta = fasta, 
-                       acc_type = acc_type, 
-                       acc_pattern = acc_pattern,
-                       topn_ms2ions = topn_ms2ions,
-                       fixedmods = fixedmods, 
-                       varmods = varmods, 
-                       include_insource_nl = include_insource_nl, 
-                       enzyme = enzyme,
-                       maxn_fasta_seqs = maxn_fasta_seqs,
-                       maxn_vmods_setscombi = maxn_vmods_setscombi, 
-                       min_len = min_len, 
-                       max_len = max_len, 
-                       max_miss = max_miss, 
-                       # target_fdr = target_fdr, 
-                       # fdr_type = fdr_type, 
-                       # quant = !!enexpr(quant), 
-                       # ppm_reporters = ppm_reporters, 
-                       
-                       digits = digits) 
+  out <- ms2match(mgf_path = mgf_path, 
+                  aa_masses_all = aa_masses_all, 
+                  out_path = out_path, 
+                  mod_indexes = mod_indexes, 
+                  type_ms2ions = type_ms2ions, 
+                  maxn_vmods_per_pep = maxn_vmods_per_pep, 
+                  maxn_sites_per_vmod = maxn_sites_per_vmod, 
+                  maxn_vmods_sitescombi_per_pep = 
+                    maxn_vmods_sitescombi_per_pep, 
+                  minn_ms2 = minn_ms2, 
+                  ppm_ms1 = ppm_ms1, 
+                  ppm_ms2 = ppm_ms2, 
+                  min_ms2mass = 110L, 
+                  
+                  # dummy for argument matching
+                  fasta = fasta, 
+                  acc_type = acc_type, 
+                  acc_pattern = acc_pattern,
+                  topn_ms2ions = topn_ms2ions,
+                  fixedmods = fixedmods, 
+                  varmods = varmods, 
+                  include_insource_nl = include_insource_nl, 
+                  enzyme = enzyme,
+                  maxn_fasta_seqs = maxn_fasta_seqs,
+                  maxn_vmods_setscombi = maxn_vmods_setscombi, 
+                  min_len = min_len, 
+                  max_len = max_len, 
+                  max_miss = max_miss, 
+                  # target_fdr = target_fdr, 
+                  # fdr_type = fdr_type, 
+                  # quant = !!enexpr(quant), 
+                  # ppm_reporters = ppm_reporters, 
+                  
+                  digits = digits)
   
   # Peptide scores
   fdr_type <- rlang::enexpr(fdr_type)
@@ -1027,60 +521,12 @@ matchMS <- function (out_path = "~/proteoQ/outs",
 }
 
 
-#' Recalculates the MS1 precursor masses.
-#' 
-#' Incorrect without permutation.
-#' 
-#' @param df A data frame.
-#' @inheritParams calc_aamasses
-#' @inheritParams mcalc_monopep
-recalc_ms1mass <- function (df, maxn_vmods_setscombi = 64, mod_indexes = NULL, 
-                            include_insource_nl = FALSE, maxn_vmods_per_pep = 5, 
-                            maxn_sites_per_vmod = 3, parallel = TRUE, 
-                            digits = 5) {
-  df <- df %>% 
-    dplyr::mutate(pep_fmod2 = ifelse(is.na(pep_fmod), "", pep_fmod), 
-                  pep_vmod2 = ifelse(is.na(pep_vmod), "", pep_vmod)) %>% 
-    tidyr::unite(pep_fvmod, c(pep_fmod2, pep_vmod2), sep = ", ", remove = FALSE) %>% 
-    tidyr::unite(uniq., c(pep_seq, pep_fvmod), sep = ", ", remove = FALSE) 
-  
-  data <- df %>% 
-    dplyr::filter(!duplicated(uniq.)) %>% 
-    dplyr::select(-uniq.) %>% 
-    dplyr::select(pep_seq, pep_fvmod) %>% 
-    split(.$pep_fvmod) %>% 
-    map(`[[`, "pep_seq")
-  
-  fvmods <- str_split(names(data), ", ") %>% 
-    purrr::map(~ .x[.x != ""])
-  
-  aam <- purrr::map(fvmods, calc_aamasses, 
-                    NULL, maxn_vmods_setscombi, mod_indexes) %>% 
-    flatten()
-  
-  masses <- purrr::map2(data, aam, mcalc_monopep, include_insource_nl, 
-                        maxn_vmods_per_pep, maxn_sites_per_vmod, 
-                        parallel, digits)
-  
-  masses <- purrr::imap(masses, ~ {
-    data <- attr(.x, "data") %>% unlist()
-    tibble(pep_seq = names(data), pep_calc_mr = data, pep_fvmod = .y)
-  }) %>% 
-    dplyr::bind_rows()
-  
-  masses <- masses %>% 
-    tidyr::unite(uniq., c(pep_seq, pep_fvmod), sep = ", ", remove = TRUE) %>% 
-    dplyr::right_join(df, by = "uniq.") %>% 
-    dplyr::select(-c("uniq.", "pep_fvmod", "pep_fmod2", "pep_vmod2"))
-  
-  # mass delta
-}
-
 
 #' Subsets the frames of theoretical peptides.
 #' 
 #' @inheritParams search_mgf_frames_d
 subset_theoframes <- function (mgf_frames, theopeps) {
+  
   if (purrr::is_empty(mgf_frames) || purrr::is_empty(theopeps)) {
     return(NULL)
   }
@@ -1412,6 +858,7 @@ search_mgf_frames_d <- function (mgf_frames, theopeps, aa_masses,
                                  maxn_vmods_sitescombi_per_pep = 32, 
                                  minn_ms2 = 7, 
                                  ppm_ms1 = 20, ppm_ms2 = 25, digits = 5) {
+  
   # `res[[i]]` contains results for multiple mgfs within a frame
   # (the number of entries equals to the number of mgf frames)
   res <- search_mgf_frames(mgf_frames = mgf_frames, 
@@ -1493,7 +940,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
 
   theos_bf_ms2 <- purrr::map2(theopeps_bf_ms1, 
                               theomasses_bf_ms1, 
-                              calc_ms2ions, 
+                              # calc_ms2ions, 
+                              calc_ms2ions2, 
                               aa_masses = aa_masses, 
                               mod_indexes = mod_indexes, 
                               type_ms2ions = type_ms2ions, 
@@ -1506,7 +954,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
   
   theos_cr_ms2 <- purrr::map2(theopeps_cr_ms1, 
                               theomasses_cr_ms1, 
-                              calc_ms2ions, 
+                              # calc_ms2ions, 
+                              calc_ms2ions2, 
                               aa_masses = aa_masses, 
                               mod_indexes = mod_indexes, 
                               type_ms2ions = type_ms2ions, 
@@ -1528,7 +977,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
 
     theos_af_ms2 <- purrr::map2(theopeps_af_ms1, 
                                 theomasses_af_ms1, 
-                                calc_ms2ions, 
+                                # calc_ms2ions, 
+                                calc_ms2ions2, 
                                 aa_masses = aa_masses, 
                                 mod_indexes = mod_indexes, 
                                 type_ms2ions = type_ms2ions, 
@@ -1593,7 +1043,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
 
       theos_cr_ms2 <- purrr::map2(theopeps_cr_ms1, 
                                   theomasses_cr_ms1, 
-                                  calc_ms2ions, 
+                                  # calc_ms2ions, 
+                                  calc_ms2ions2, 
                                   aa_masses = aa_masses, 
                                   mod_indexes = mod_indexes, 
                                   type_ms2ions = type_ms2ions, 
@@ -1614,7 +1065,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
 
       theos_bf_ms2 <- purrr::map2(theopeps_bf_ms1, 
                                   theomasses_bf_ms1, 
-                                  calc_ms2ions, 
+                                  # calc_ms2ions, 
+                                  calc_ms2ions2, 
                                   aa_masses = aa_masses, 
                                   mod_indexes = mod_indexes, 
                                   type_ms2ions = type_ms2ions, 
@@ -1627,7 +1079,8 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
       
       theos_cr_ms2 <- purrr::map2(theopeps_cr_ms1, 
                                   theomasses_cr_ms1, 
-                                  calc_ms2ions, 
+                                  # calc_ms2ions, 
+                                  calc_ms2ions2, 
                                   aa_masses = aa_masses, 
                                   mod_indexes = mod_indexes, 
                                   type_ms2ions = type_ms2ions, 
@@ -1790,6 +1243,7 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
 #' @importFrom purrr map
 #' @inheritParams search_mgf_frames
 find_ppm_outer_bypep <- function (theos, expts, ppm_ms2) {
+  
   if (!is.list(theos)) {
     theos <- list(theos)
   }
@@ -1843,6 +1297,7 @@ find_ppm_outer_bypep <- function (theos, expts, ppm_ms2) {
 #' 
 #' 
 find_ppm_outer_bycombi <- function (theos, expts, ppm_ms2 = 25) {
+  
   d <- outer(theos, expts, "find_ppm_error")
   row_cols <- which(abs(d) <= ppm_ms2, arr.ind = TRUE)
   
@@ -1856,7 +1311,6 @@ find_ppm_outer_bycombi <- function (theos, expts, ppm_ms2 = 25) {
   es[names(e1)] <- e1
   
   # the first half are b-ions and the second half are y-ions
-  # bind_cols(theo = theos, expt = es)
   list(theo = theos, expt = es)
 }
 

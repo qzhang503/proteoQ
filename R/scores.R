@@ -261,7 +261,7 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
   df2 <- add_seions(df[["theo"]], type_ms2ions = type_ms2ions, digits = digits) %>% 
     find_ppm_outer_bycombi(expt_moverzs, ppm_ms2) 
   
-  df2[["theo"]] <- df2[["theo"]] %>% round(digits = 4)
+  df2[["theo"]] <- df2[["theo"]] %>% round(digits = digits)
 
   # subtracts `m` and the counts of secondary b0, y0 matches etc. from noise
   # (OK n < 0L)
@@ -849,6 +849,10 @@ calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm",
       prob_cos <- all_lens %>% 
         map(probco_bypeplen, td, fdr_type, target_fdr) %>% 
         unlist()
+      
+      if (all(is.na(prob_cos))) {
+        stop("Cannot calculate peptide FDR; contact the developer.")
+      }
       
       counts <- as.numeric(names(prob_cos))
       names(counts) <- all_lens

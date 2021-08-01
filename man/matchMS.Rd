@@ -16,25 +16,25 @@ matchMS(
     "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
   include_insource_nl = FALSE,
   enzyme = c("trypsin"),
-  maxn_fasta_seqs = 2e+05,
-  maxn_vmods_setscombi = 64,
-  maxn_vmods_per_pep = 5,
-  maxn_sites_per_vmod = 3,
-  maxn_vmods_sitescombi_per_pep = 32,
-  min_len = 7,
-  max_len = 100,
-  max_miss = 2,
+  maxn_fasta_seqs = 200000L,
+  maxn_vmods_setscombi = 64L,
+  maxn_vmods_per_pep = 5L,
+  maxn_sites_per_vmod = 3L,
+  maxn_vmods_sitescombi_per_pep = 64L,
+  min_len = 7L,
+  max_len = 100L,
+  max_miss = 2L,
   type_ms2ions = "by",
-  topn_ms2ions = 100,
-  minn_ms2 = 6,
-  ppm_ms1 = 20,
-  ppm_ms2 = 25,
-  ppm_reporters = 10,
+  topn_ms2ions = 100L,
+  minn_ms2 = 6L,
+  ppm_ms1 = 20L,
+  ppm_ms2 = 25L,
+  ppm_reporters = 10L,
   quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"),
   target_fdr = 0.01,
   fdr_type = c("psm", "peptide", "protein"),
   combine_tier_three = FALSE,
-  digits = 5
+  digits = 4L
 )
 }
 \arguments{
@@ -64,12 +64,12 @@ custom examples.}
 \item{varmods}{A character vector of variable modifications.}
 
 \item{include_insource_nl}{Logical Logical; if TRUE, includes MS1 precursor
-  masses with the losses of neutral species prior to MS2 fragmentation. The
-  default is FALSE.
-
-  Note that there is no combination of neutral losses for fixed modifications
-  at the precursor levels. Changes from fixed to variable modifications for
-  complete combinations.}
+masses with the losses of neutral species prior to MS2 fragmentation. The
+default is FALSE. The setting at TRUE remains experimenting by allowing
+additional masses in the universe of MS1 precursors. The offsets in NLs (by
+adding back precursor masses) have not yet taken into account in MS2 ion
+searches. A more systemically approach such as \code{open} MS1 masses might
+be developed in the future.}
 
 \item{enzyme}{A character string; the proteolytic specificity of the assumed
 enzyme will be used to generate peptide sequences from proteins. The enzyme

@@ -58,3 +58,53 @@ groupProts_orig <- function (df, out_path = "~/proteoQ/outs") {
   invisible(df1)
 }
 
+
+#' Recalculates the MS1 precursor masses.
+#' 
+#' Incorrect without permutation.
+#' 
+#' @param df A data frame.
+#' @inheritParams calc_aamasses
+#' @inheritParams mcalc_monopep
+recalc_ms1mass <- function (df, maxn_vmods_setscombi = 64, mod_indexes = NULL, 
+                            include_insource_nl = FALSE, maxn_vmods_per_pep = 5, 
+                            maxn_sites_per_vmod = 3, parallel = TRUE, 
+                            digits = 5) {
+  
+  df <- df %>% 
+    dplyr::mutate(pep_fmod2 = ifelse(is.na(pep_fmod), "", pep_fmod), 
+                  pep_vmod2 = ifelse(is.na(pep_vmod), "", pep_vmod)) %>% 
+    tidyr::unite(pep_fvmod, c(pep_fmod2, pep_vmod2), sep = ", ", remove = FALSE) %>% 
+    tidyr::unite(uniq., c(pep_seq, pep_fvmod), sep = ", ", remove = FALSE) 
+  
+  data <- df %>% 
+    dplyr::filter(!duplicated(uniq.)) %>% 
+    dplyr::select(-uniq.) %>% 
+    dplyr::select(pep_seq, pep_fvmod) %>% 
+    split(.$pep_fvmod) %>% 
+    map(`[[`, "pep_seq")
+  
+  fvmods <- str_split(names(data), ", ") %>% 
+    purrr::map(~ .x[.x != ""])
+  
+  aam <- purrr::map(fvmods, calc_aamasses, 
+                    NULL, maxn_vmods_setscombi, mod_indexes) %>% 
+    flatten()
+  
+  masses <- purrr::map2(data, aam, mcalc_monopep, include_insource_nl, 
+                        maxn_vmods_per_pep, maxn_sites_per_vmod, 
+                        parallel, digits)
+  
+  masses <- purrr::imap(masses, ~ {
+    data <- attr(.x, "data") %>% unlist()
+    tibble(pep_seq = names(data), pep_calc_mr = data, pep_fvmod = .y)
+  }) %>% 
+    dplyr::bind_rows()
+  
+  masses <- masses %>% 
+    tidyr::unite(uniq., c(pep_seq, pep_fvmod), sep = ", ", remove = TRUE) %>% 
+    dplyr::right_join(df, by = "uniq.") %>% 
+    dplyr::select(-c("uniq.", "pep_fvmod", "pep_fmod2", "pep_vmod2"))
+}
+
+

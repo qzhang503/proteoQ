@@ -176,7 +176,7 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
                  header = TRUE, comment.char = "#") 
 
   local({
-    if (sum(grepl("^log2_R[0-9]+ ", names(df))) <= 1) {
+    if (sum(grepl("^log2_R[0-9]{3}[NC]{0,1}", names(df))) <= 1) {
       stop("Need more than one sample for `standPep` or `standPrn`.", 
            call. = FALSE)
     }

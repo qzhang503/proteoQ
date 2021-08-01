@@ -824,9 +824,10 @@ greedysetcover2 <- function (mat) {
 
 #' Greedy set cover.
 #' 
-#' A matrix input. Output both essential sets and elements.
+#' A bool matrix input. Output both essential sets and elements.
 #' 
-#' @param mat A matrix of protein (cols)-peptide (rows) map. 
+#' @param mat A bool matrix of protein (cols)-peptide (rows) map. 
+#' 
 #' @return A two-column data frame of prot_acc and pep_seq. 
 greedysetcover3 <- function (mat) {
   
@@ -846,7 +847,7 @@ greedysetcover3 <- function (mat) {
     }
     
     prot <- names(max)
-    rows <- which(mat[, max] == 1L)
+    rows <- which(mat[, max])
     # peps <- names(rows) # name dropped if only one row
     peps <- rownames(mat)[rows]
     

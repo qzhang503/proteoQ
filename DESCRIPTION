@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.5.2.1
+Version: 1.6.0.1
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -36,6 +36,7 @@ Imports:
     cluster,
     dplyr,
     e1071,
+	fastmatch,
     forcats,
     ggplot2,
     grid,
@@ -61,7 +62,6 @@ Imports:
     parallel,
     pheatmap,
     plyr,
-	proteoCpp,
     proteoQDA,
 	proxyC,
     reshape2,
@@ -77,7 +77,6 @@ Imports:
     Rcpp
 RoxygenNote: 7.1.1
 Remotes:
-	qzhang503/proteoCpp, 
 	qzhang503/proteoQDA
 LinkingTo: 
     Rcpp

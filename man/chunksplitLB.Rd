@@ -4,7 +4,7 @@
 \alias{chunksplitLB}
 \title{Splits data into chunks with approximately equal sizes.}
 \usage{
-chunksplitLB(data, n_chunks = 5, nx = 100, type = "list")
+chunksplitLB(data, n_chunks = 5L, nx = 100L, type = "list")
 }
 \arguments{
 \item{data}{Input data.}

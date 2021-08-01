@@ -837,14 +837,14 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) {
 }
 
 
-#' combined peptide reports across multiple TMT experiments
-#' 
-#' median summarization of data from the same TMT experiment at different LCMS injections
-#' summed \code{pep_n_psm}, \code{prot_n_psm}, and \code{prot_n_pep} after data merging
-#' no Z_log2_R yet available
-#'   use \code{col_select = expr(Sample_ID)} not \code{col_select} to get all Z_log2_R
-#'   why: users may specify \code{col_select} only partial to Sample_ID entries
-#' 
+#' Combined peptide reports across multiple TMT experiments.
+#'
+#' Median summarization of data from the same TMT experiment at different LCMS
+#' injections summed \code{pep_n_psm}, \code{prot_n_psm}, and \code{prot_n_pep}
+#' after data merging no Z_log2_R yet available use \code{col_select =
+#' expr(Sample_ID)} not \code{col_select} to get all Z_log2_R why: users may
+#' specify \code{col_select} only partial to Sample_ID entries.
+#'
 #' @param use_mq_pep Logical; if TRUE, use the peptides.txt from MaxQuant. This
 #'   is an interim solution for MaxQuant timsTOF.
 #' @inheritParams info_anal
@@ -853,8 +853,9 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) {
 #' @inheritParams mergePep
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
                            use_duppeps = TRUE, cut_points = Inf, 
-                           omit_single_lfq = TRUE, use_mq_pep = FALSE, rm_allna = FALSE, 
-                           parallel = TRUE, ...) {
+                           omit_single_lfq = TRUE, use_mq_pep = FALSE, 
+                           rm_allna = FALSE, parallel = TRUE, ...) {
+  
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -1705,7 +1706,7 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
   df <- load_prior(filename, group_psm_by) 
   
   local({
-    if (sum(grepl("^log2_R[0-9]+ ", names(df))) <= 1) {
+    if (sum(grepl("^log2_R[0-9]{3}[NC]{0,1}", names(df))) <= 1) {
       stop("Need more than one sample for `standPep` or `standPrn`.\n", 
            "Skip this module for qualitative analysis.", 
            call. = FALSE)

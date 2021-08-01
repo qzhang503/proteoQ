@@ -28,7 +28,7 @@ groupProts2 <- function (df, out_path = NULL) {
   gc()
   
   if (!is.null(out_path)) {
-    saveRDS(sets, file.path(out_path, "prot_sets.rds")) 
+    saveRDS(sets, file.path(out_path, "prot_pep_setcover.rds")) 
   }
   
   sets <- sets %>% 
@@ -39,9 +39,9 @@ groupProts2 <- function (df, out_path = NULL) {
   # --- set aside df0 ---
   df <- df %>% dplyr::mutate(prot_isess = prot_acc %in% sets)
   df0 <- df %>% filter(!prot_isess)
-  df1 <- df %>% filter(prot_isess)
+  df <- df %>% filter(prot_isess)
 
-  mat_ess <- mat[, colnames(mat) %in% unique(df1$prot_acc)]
+  mat_ess <- mat[, colnames(mat) %in% unique(df$prot_acc)]
   
   peps_uniq <- local({
     rsums <- Matrix::rowSums(mat)
@@ -56,14 +56,14 @@ groupProts2 <- function (df, out_path = NULL) {
   df0 <- df0 %>%
     dplyr::mutate(prot_hit_num = NA, prot_family_member = NA)
   
-  df1 <- df1 %>%
+  df <- df %>%
     dplyr::left_join(grps, by = "prot_acc") %>%
     dplyr::bind_rows(df0) %>%
     dplyr::left_join(peps_uniq, by = "pep_seq")
   
   gc()
   
-  invisible(df1)
+  invisible(df)
 }
 
 
@@ -109,8 +109,8 @@ map_pepprot2 <- function (df, out_path = NULL) {
   
   # ---
   mpeps <- unique(rownames(mat))
-  len <- length(mpeps)
   
+  len <- length(mpeps)
   ncol <- ncol(mat)
   out <- rep(0, len * ncol)
   
@@ -137,11 +137,12 @@ map_pepprot2 <- function (df, out_path = NULL) {
   rownames(out) <- mpeps
   gc()
   
+  out <- out == 1L
+  gc()
+  
   out <- rbind2(out, mat0)
   gc()
   
-  # ---
-
   # collapse rows of the same pep_seq; may use `sum`
   #
   #      pep_seq prot_acc
@@ -164,7 +165,9 @@ map_pepprot2 <- function (df, out_path = NULL) {
   # 3 C       FALSE TRUE
   
   if (!is.null(out_path)) {
-    Matrix::writeMM(out, file.path(out_path, "prot_pep_map.mtx"))
+    Matrix::writeMM(out, file = file.path(out_path, "prot_pep_map.mtx"))
+    saveRDS(colnames(out), file.path(out_path, "prot_pep_map_col.rds"))
+    saveRDS(rownames(out), file.path(out_path, "prot_pep_map_row.rds"))
   }
   
   invisible(out)
@@ -194,8 +197,8 @@ cut_protgrps2 <- function (mat, out_path = NULL) {
   cns <- colnames(mat)
   
   # --- finds protein groups
-  out[out == 0] <- 2
-  out[out < 2] <- 0
+  out[out == 0] <- 2L
+  out[out < 2L] <- 0
   gc()
   
   out <- out %>% as.dist(diag = TRUE, upper = TRUE)

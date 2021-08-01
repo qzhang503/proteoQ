@@ -8,8 +8,8 @@ unique_mvmods(
   amods,
   ntmod,
   ctmod,
-  aas,
   aa_masses,
+  aas,
   maxn_vmods_per_pep = 5,
   maxn_sites_per_vmod = 3,
   digits = 5
@@ -24,10 +24,10 @@ unique_mvmods(
 \item{ctmod}{The parsed \emph{variable} \code{C-term} modifications from
 \code{aa_masses}.}
 
-\item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
-
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
+
+\item{aas}{\code{aa_seq} split in a sequence of LETTERS.}
 
 \item{maxn_vmods_per_pep}{The maximum number of variable modifications per
 peptide.}
