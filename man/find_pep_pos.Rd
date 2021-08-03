@@ -17,3 +17,14 @@ find_pep_pos(fasta_name, pep_seq, fasta)
 \code{find_pep_pos} finds the start and the end positions of peptides in
 ascribed proteins description based on the \code{fasta}.
 }
+\examples{
+\donttest{
+fasta_name <- "NP_612429"
+pep_seq <- "ADVSLPSMQGDLK"
+fasta <- read_fasta("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta")
+x <- find_pep_pos(fasta_name, pep_seq, fasta)
+
+pep_seq <- "ADVSLPSMQGDL"
+x <- find_pep_pos(fasta_name, pep_seq, fasta)
+}
+}

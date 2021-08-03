@@ -22,9 +22,9 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
                       rm_reverses = TRUE, 
                       rptr_intco = 1000, rm_craps = FALSE, rm_krts = FALSE, 
                       rm_outliers = FALSE, 
-                      annot_kinases = FALSE, plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
-                      use_lowercase_aa = TRUE, ...) {
-  
+                      annot_kinases = FALSE, plot_rptr_int = TRUE, 
+                      plot_log2FC_cv = TRUE, use_lowercase_aa = TRUE, ...) {
+
   if (is.null(dat_dir)) {
     dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
     if (dat_dir == 1) 
@@ -512,7 +512,7 @@ proteo_hm <- function(df = NULL, id = NULL, df_meta = NULL, sample_ids = NULL,
     df_hm <- df
   }
   
-  df_hm <- df_hm %>%
+  df_hm <- data.frame(df_hm, check.names = FALSE) %>%  
     `rownames<-`(.[[id]])	%>%
     dplyr::select(which(names(.) %in% sample_ids))
   

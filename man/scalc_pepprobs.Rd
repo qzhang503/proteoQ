@@ -6,11 +6,11 @@
 \usage{
 scalc_pepprobs(
   entry,
-  topn_ms2ions = 100,
+  topn_ms2ions = 100L,
   type_ms2ions = "by",
   penalize_sions = FALSE,
-  ppm_ms2 = 25,
-  digits
+  ppm_ms2 = 25L,
+  digits = 4L
 )
 }
 \arguments{

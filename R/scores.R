@@ -90,7 +90,7 @@ match_secions <- function (theos, expts, type_ms2ions = "by", ppm_ms2 = 25,
 #' 
 #' @param ms2s A vector of theoretical MS2 m-over-z values. 
 #' @inheritParams match_secions
-add_seions <- function (ms2s, type_ms2ions = "by", digits = 5) {
+add_seions <- function (ms2s, type_ms2ions = "by", digits = 5L) {
   len <- length(ms2s)
   
   if (type_ms2ions == "by") {
@@ -242,9 +242,9 @@ list_leftmatch <- function (a, b) {
 #' calc_probi_byvmods(df2, nms = "0000000", expt_moverzs, expt_ints, N = 190)
 #' }
 calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints, 
-                                N, type_ms2ions = "by", topn_ms2ions = 100, 
-                                penalize_sions = TRUE, ppm_ms2 = 25, 
-                                digits = 5) {
+                                N, type_ms2ions = "by", topn_ms2ions = 100L, 
+                                penalize_sions = TRUE, ppm_ms2 = 25L, 
+                                digits = 5L) {
   
   # N - the total number of features (white and black balls)
   # k - the number of sampled features
@@ -361,8 +361,8 @@ calc_probi_bypep <- function (mts, nms, expt_moverzs, expt_ints,
 #' @import dplyr
 #' @importFrom purrr map
 calc_probi <- function (mts, expt_moverzs, expt_ints, 
-                        N, type_ms2ions = "by", topn_ms2ions = 100, 
-                        penalize_sions = TRUE, ppm_ms2 = 25, digits = 5) {
+                        N, type_ms2ions = "by", topn_ms2ions = 100L, 
+                        penalize_sions = TRUE, ppm_ms2 = 25L, digits = 5L) {
   
   out <- map2(mts, names(mts), calc_probi_bypep, 
               expt_moverzs = expt_moverzs, 
@@ -384,8 +384,8 @@ calc_probi <- function (mts, expt_moverzs, expt_ints,
 #' @param entry A row of data from \link{pmatch_bymgfs}.
 #' @inheritParams matchMS
 #' @import purrr
-scalc_pepprobs <- function (entry, topn_ms2ions = 100, type_ms2ions = "by", 
-                            penalize_sions = FALSE, ppm_ms2 = 25, digits) {
+scalc_pepprobs <- function (entry, topn_ms2ions = 100L, type_ms2ions = "by", 
+                            penalize_sions = FALSE, ppm_ms2 = 25L, digits = 4L) {
 
   # only one experimental set of values and thus `[[1]]`
   expt_moverzs <- entry$ms2_moverz[[1]]
@@ -443,11 +443,11 @@ scalc_pepprobs <- function (entry, topn_ms2ions = 100, type_ms2ions = "by",
 #' Calculates the scores of peptides at an \code{aa_masses}.
 #' 
 #' @inheritParams calc_pepscores
-calc_pepprobs_i <- function (res, topn_ms2ions = 100, type_ms2ions = "by", 
-                             penalize_sions = FALSE, ppm_ms2 = 25, 
-                             out_path = "~/proteoQ/outs", digits = 5) {
+calc_pepprobs_i <- function (res, topn_ms2ions = 100L, type_ms2ions = "by", 
+                             penalize_sions = FALSE, ppm_ms2 = 25L, 
+                             out_path = "~/proteoQ/outs", digits = 5L) {
 
-  if (nrow(res) == 0) {
+  if (nrow(res) == 0L) {
     probs <- tibble::tibble(
       pep_seq = as.character(), 
       pep_ivmod = as.character(), 
@@ -500,11 +500,11 @@ calc_pepprobs_i <- function (res, topn_ms2ions = 100, type_ms2ions = "by",
 #' @inheritParams matchMS
 #' @import parallel
 #' @export
-calc_pepscores <- function (topn_ms2ions = 100, type_ms2ions = "by", 
+calc_pepscores <- function (topn_ms2ions = 100L, type_ms2ions = "by", 
                             target_fdr = 0.01, fdr_type = "psm", 
                             min_len = 7L, max_len = 100L, 
-                            penalize_sions = FALSE, ppm_ms2 = 25, 
-                            out_path = "~/proteoQ/outs", digits = 5) {
+                            penalize_sions = FALSE, ppm_ms2 = 25L, 
+                            out_path = "~/proteoQ/outs", digits = 5L) {
 
   message("Calculating peptide scores.")
   

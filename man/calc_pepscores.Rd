@@ -5,16 +5,16 @@
 \title{Calculates the scores of peptides.}
 \usage{
 calc_pepscores(
-  topn_ms2ions = 100,
+  topn_ms2ions = 100L,
   type_ms2ions = "by",
   target_fdr = 0.01,
   fdr_type = "psm",
   min_len = 7L,
   max_len = 100L,
   penalize_sions = FALSE,
-  ppm_ms2 = 25,
+  ppm_ms2 = 25L,
   out_path = "~/proteoQ/outs",
-  digits = 5
+  digits = 5L
 )
 }
 \arguments{

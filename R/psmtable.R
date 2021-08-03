@@ -1260,6 +1260,8 @@ add_shared_genes <- function (df, key = "Proteins", sep = ";",
     dplyr::bind_cols(
       df %>% dplyr::select(pep_seq), 
     ) %>% 
+    # dplyr::mutate_at(.vars = which(names(.) != "pep_seq"), 
+    #                  ~ gsub("\\.[0-9]*$", "", .x)) %>% 
     tidyr::gather("id.", "prot_acc", -pep_seq) %>% 
     dplyr::select(-id.) %>% 
     dplyr::filter(!is.na(prot_acc)) %>% 
@@ -2116,7 +2118,8 @@ pad_mascot_channels <- function(file, ...) {
     dplyr::mutate(RAW_File = gsub('^.*\\\\(.*)\\.RAW~.*', '\\1', RAW_File)) %>% 
     dplyr::mutate(RAW_File = gsub('^.*\\/(.*)\\.raw~.*', '\\1', RAW_File)) %>% 
     dplyr::mutate(RAW_File = gsub('^.*\\/(.*)\\.RAW~.*', '\\1', RAW_File)) %>% 
-    dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File))
+    dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% 
+    dplyr::mutate(prot_acc = gsub("\\.[0-9]*$", "", prot_acc)) # for some refseq_acc
   
   this_plex <- find_mascot_plex(df)
   TMT_plex <- TMT_plex(label_scheme_full)
@@ -4395,6 +4398,7 @@ pad_mq_channels <- function(file, fasta, entrez, corrected_int, ...) {
 
     df <- local({
       df <- df %>% 
+        dplyr::mutate(Proteins = gsub("\\.[0-9]*", "", Proteins)) %>% 
         dplyr::mutate(prot_acc = gsub(";.*$", "", Proteins))
       
       tempdata <- suppressWarnings(
@@ -4764,6 +4768,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # (2.1a) annotate proteins
   df <- df %>% 
+    dplyr::mutate(prot_acc = gsub("\\.[0-9]*$", "", prot_acc)) %>% 
     annotPrn(fasta, entrez) %>%  
     { if (!"gene" %in% names(.)) dplyr::mutate(., gene = prot_acc) else .} %>% 
     dplyr::select(-which(names(.) %in% c("Gene Names", "Gene names", 
@@ -4814,6 +4819,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # (2.4) find the shared prot_accs and genes for each peptide
   df <- df %>% 
+    dplyr::mutate(Proteins = gsub("\\.[0-9]*", "", Proteins)) %>% 
     add_shared_genes(key = "Proteins", sep = ";", fasta, entrez)
 
   # (2.5) find the uniqueness of peptides
@@ -5058,7 +5064,10 @@ pad_sm_channels <- function(file, ...) {
     readr::read_delim(file.path(dat_dir, file), delim = ";", 
                       col_types = cols(filename = col_character()))
   ) %>% 
-    filters_in_call(!!!filter_dots)
+    filters_in_call(!!!filter_dots) %>% 
+    dplyr::mutate_at(.vars = which(names(.) %in% c("accession_number", 
+                                                   "accession_numbers")), 
+                     ~ gsub("\\.[0-9]$", "", .x))
   
   load(file.path(dat_dir, "label_scheme_full.rda"))
   load(file.path(dat_dir, "fraction_scheme.rda"))
@@ -5543,8 +5552,12 @@ pad_mf_channels <- function(file, ...) {
     readr::read_tsv(file.path(dat_dir, file), 
                     col_types = cols(`Is Unique` = col_logical()))
   ) %>% 
-    filters_in_call(!!!filter_dots)
-  
+    filters_in_call(!!!filter_dots) %>% 
+    dplyr::mutate_at(.vars = which(names(.) %in% c("Protein", "Protein ID",	
+                                                   "Entry Name", "Mapped Genes", 
+                                                   "Mapped Proteins")), 
+                     ~ gsub("\\.[0-9]$", "", .x))
+
   stopifnot("Spectrum" %in% names(df))
   
   df <- df %>% 

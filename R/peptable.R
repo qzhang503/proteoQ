@@ -209,6 +209,13 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
   df <- local({
     df <- read.csv(file.path(dat_dir, filelist), check.names = FALSE, 
                    header = TRUE, sep = "\t", comment.char = "#")
+    
+    # Leading razor protein
+    
+    df <- df %>% 
+      dplyr::mutate(Proteins = gsub("\\.[0-9]*", "", Proteins), 
+                    `Leading razor protein` = 
+                      gsub("\\.[0-9]*", "", `Leading razor protein`))
 
     df <- local({
       if (purrr::is_empty(grep("^LFQ intensity |^Intensity ", names(df)))) {

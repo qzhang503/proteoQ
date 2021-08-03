@@ -120,7 +120,8 @@ readMGF <- function (filepath = "~/proteoQ/mgfs",
 #' @import stringi
 read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs", 
                              topn_ms2ions = 100L, ret_range = c(0L, Inf), 
-                             ppm_ms2 = 25L, min_ms2mass = 110L, index_ms2 = FALSE) {
+                             ppm_ms2 = 25L, min_ms2mass = 110L, 
+                             index_ms2 = FALSE) {
 
   filelist <- list.files(path = file.path(filepath), pattern = "^.*\\.mgf$")
   
@@ -207,7 +208,8 @@ read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs",
 #' @inheritParams read_mgf_chunks
 #' @import stringi
 proc_mgf_chunks_i <- function (file, topn_ms2ions = 100L, ret_range = c(0L, Inf), 
-                               ppm_ms2 = 25L, min_ms2mass = 110L, index_ms2 = FALSE) {
+                               ppm_ms2 = 25L, min_ms2mass = 110L, 
+                               index_ms2 = FALSE) {
 
   message("Parsing '", file, "'.")
   

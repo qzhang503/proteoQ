@@ -23,8 +23,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
                       include_insource_nl, enzyme, 
                       maxn_fasta_seqs, maxn_vmods_setscombi, 
                       min_len, max_len, max_miss, 
-                      # topn_ms2ions, target_fdr, fdr_type, quant, ppm_reporters, 
-                      
+
                       digits) {
   
   options(digits = 9L)
@@ -168,7 +167,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       
       fmods_nl <- attr(aa_masses, "fmods_nl", exact = TRUE)
       
-      # (`map` against groups of frames)
       out[[i]] <- ms2match_a0_vnl0_fnl1(
         i = i, 
         aa_masses = aa_masses, 
@@ -218,7 +216,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       
       amods <- attr(aa_masses, "amods", exact = TRUE) # variable anywhere
       
-      # (`map` against groups of frames)
       out[[i]] <- ms2match_a1_vnl0_fnl0(
         i = i, 
         aa_masses = aa_masses, 
@@ -271,7 +268,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       amods <- attr(aa_masses, "amods", exact = TRUE) # variable anywhere
       vmods_nl <- attr(aa_masses, "vmods_nl", exact = TRUE)
       
-      # (`map` against groups of frames)
       out[[i]] <- ms2match_a1_vnl1_fnl0(
         i = i, 
         aa_masses = aa_masses, 
@@ -326,7 +322,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       amods <- attr(aa_masses, "amods", exact = TRUE) # variable anywhere
       fmods_nl <- attr(aa_masses, "fmods_nl", exact = TRUE)
       
-      # (`map` against groups of frames)
       out[[i]] <- ms2match_a1_vnl0_fnl1(
         i = i, 
         aa_masses = aa_masses, 

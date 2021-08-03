@@ -1267,8 +1267,9 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE) {
     dplyr::filter(nchar(prot_acc) > 0)
 
   # load fasta_db
-  fasta_db <- load_fasta(fasta)
-  
+  fasta_db <- load_fasta(fasta) %>% 
+    `names<-`(gsub("\\.[0-9]*$", "", names(.)))
+
   # accession lookups by acc_type's
   df_splits <- df %>% split(., .$acc_type, drop = TRUE)
   
@@ -2012,67 +2013,95 @@ na_genes_by_acc <- function(df) {
 #' @param fasta The database of fasta
 #' @import dplyr purrr stringr tidyr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
+#' 
+#' @examples
+#' \donttest{
+#' fasta_name <- "NP_612429"
+#' pep_seq <- "ADVSLPSMQGDLK"
+#' fasta <- read_fasta("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta")
+#' x <- find_pep_pos(fasta_name, pep_seq, fasta)
+#' 
+#' pep_seq <- "ADVSLPSMQGDL"
+#' x <- find_pep_pos(fasta_name, pep_seq, fasta)
+#' }
 find_pep_pos <- function (fasta_name, pep_seq, fasta) {
+  
+  # entry not found 
+  # when fasta is different to the one used in database searches
+  
+  if (is.na(fasta_name)) {
+    return(
+      cbind(pep_seq, pep_res_before = NA_character_, 
+            start = NA_integer_, end = NA_integer_, 
+            pep_res_after = NA_character_, fasta_name = fasta_name, 
+            is_tryptic = NA)
+    )
+  }
+  
   this_fasta <- fasta %>% .[names(.) == fasta_name]
   pep_seq <- as.character(pep_seq)
   
   if (!rlang::is_empty(this_fasta)) {
-    pep_pos <- stringr::str_locate(this_fasta, pattern = pep_seq)
+    pep_pos_all <- stringr::str_locate_all(this_fasta, pattern = pep_seq)
+    pep_pos_all <- pep_pos_all[[1]]
     
-    pos_bf <- pep_pos[1] - 1
-    pos_af <- pep_pos[2] + 1
-    
-    pep_res_before <- stringr::str_sub(this_fasta, pos_bf, pos_bf)
-    pep_res_after <- stringr::str_sub(this_fasta, pos_af, pos_af)
+    for (i in 1:nrow(pep_pos_all)) {
+      pep_pos_i <- pep_pos_all[i, ]
+      
+      pos_bf <- pep_pos_i[1] - 1
+      pos_af <- pep_pos_i[2] + 1
+      
+      pep_res_before <- stringr::str_sub(this_fasta, pos_bf, pos_bf)
+      pep_res_after <- stringr::str_sub(this_fasta, pos_af, pos_af)
+      
+      # Mascot specialty of "X" residues (see also aa_residues.rda)
+      # prot_acc: "XP_003960355", original "QERFCQXK" becomes "QERFCQVK"
+      
+      # `any` because `c`
+      if (any(is.na(c(pep_res_before, pep_res_after)))) {
+        return(
+          cbind(pep_seq, pep_res_before = NA_character_, 
+                start = NA_integer_, end = NA_integer_, 
+                pep_res_after = NA_character_, fasta_name = fasta_name, 
+                is_tryptic = NA)
+        )
+      }
+      
+      if (nchar(pep_res_before) == 0L) pep_res_before <- "-"
+      if (nchar(pep_res_after) == 0L) pep_res_after <- "-"
 
-    # Mascot specialty of "X" residues (see also aa_residues.rda)
-    # prot_acc: "XP_003960355", original "QERFCQXK" becomes "QERFCQVK"
-    if (any(is.na(c(pep_res_before, pep_res_after)))) {
-      pep_pos <- cbind(pep_seq, pep_res_before = NA, start = NA, end = NA, 
-                       pep_res_after = NA, fasta_name = fasta_name, is_tryptic = NA)
+      # N-term M: 
+      #   pep_res_before == "M" && pep_pos_i[1] == 2L
+      # Not N-term M: 
+      #   pep_res_before != "M" || pep_pos_i[1] != 2L
       
-      return(pep_pos)
-    }
-    
-    if (any(nchar(pep_res_before) == 0)) pep_res_before <- "-"
-    if (any(nchar(pep_res_after) == 0)) pep_res_after <- "-"
-    
-    # ADVSLPSMQGDLK|NP_612429: not "E.ADVSLPSMQGDLK.T" but "K.ADVSLPSMQGDLK.T"
-    if (any(pep_res_before %in% c("K", "R", "-"))) { # the first match is tryptic
-      pep_pos <- cbind(pep_seq, pep_res_before, pep_pos, 
-                       pep_res_after, fasta_name, is_tryptic = TRUE)
-    } else if (pep_res_before == "M" && pep_pos[1] == 2) { # the first match also tryptic
-      pep_pos <- cbind(pep_seq, pep_res_before, pep_pos, 
-                       pep_res_after, fasta_name, is_tryptic = TRUE)
-    } else { # the first match is non-tryptic
-      pep_seq_new <- paste0(c("K", "R"), pep_seq)
-      pep_pos_new_all <- purrr::map(pep_seq_new, ~ stringr::str_locate(this_fasta, .x))
-      ok_pos <- purrr::map_lgl(pep_pos_new_all, ~ !is.na(.x[[1]]))
-      
-      if (sum(ok_pos) > 0) { # tryptic match existed
-        pep_pos_new <- pep_pos_new_all[[which(ok_pos)[1]]]
-        
-        pos_bf_new <- pep_pos_new[1]
-        pos_af_new <- pep_pos_new[2] + 1
-        
-        pep_res_before_new <- stringr::str_sub(this_fasta, pos_bf_new, pos_bf_new)
-        pep_res_after_new <- stringr::str_sub(this_fasta, pos_af_new, pos_af_new)
-        
-        pep_pos_new[1] <- pep_pos_new[1] + 1
-        
-        pep_pos <- cbind(pep_seq, pep_res_before_new, pep_pos_new, 
-                         pep_res_after_new, fasta_name, is_tryptic = TRUE)        
-      } else { # no tryptic matches
-        pep_pos <- cbind(pep_seq, pep_res_before, pep_pos, 
-                         pep_res_after, fasta_name, is_tryptic = FALSE)
+      if ( !(grepl("[KR]$", pep_seq) || pep_res_after == "-") || 
+           (!pep_res_before %in% c("K", "R", "-")) && (pep_res_before != "M" || pep_pos_i[1] != 2L)
+      ) {
+        next
+      } else {
+        return(
+          cbind(pep_seq, pep_res_before, 
+                start = pep_pos_i[[1]], end = pep_pos_i[[2]],  
+                pep_res_after, fasta_name, is_tryptic = TRUE)
+        )
       }
     }
+    
+    # no matches
+    pep_pos_i <- pep_pos_all[1, ]
+    
+    out <- cbind(pep_seq, pep_res_before, start = pep_pos_i[[1]], 
+                 end = pep_pos_i[[2]], pep_res_after, fasta_name, 
+                 is_tryptic = FALSE)
   } else { # no fasta matches
-    pep_pos <- cbind(pep_seq, pep_res_before = NA_character_, 
-                     start = NA_integer_, end = NA_integer_, 
-                     pep_res_after = NA_character_, fasta_name = fasta_name, 
-                     is_tryptic = FALSE)
+    out <- cbind(pep_seq, pep_res_before = NA_character_, 
+                 start = NA_integer_, end = NA_integer_, 
+                 pep_res_after = NA_character_, fasta_name = fasta_name, 
+                 is_tryptic = FALSE)
   }
+  
+  invisible(out)
 }
 
 

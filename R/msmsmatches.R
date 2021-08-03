@@ -48,7 +48,7 @@ find_ppm_error <- function (x = 1000, y = 1000.01) {
 #' @param x A numeric value.
 #' @param ppm Numeric; the ppm allowed from \code{x}.
 #' @return The lower and the upper bound to \eqn{x} by \eqn{ppm}.
-find_mass_error_range <- function (x = 500, ppm = 20) {
+find_mass_error_range <- function (x = 500L, ppm = 20L) {
   d <- x * ppm/1E6
   c(x-d, x+d)
 }
@@ -121,9 +121,10 @@ chunksplit <- function (data, n_chunks = 5L, type = "list") {
 #' @inheritParams chunksplit
 #' @export
 chunksplitLB <- function (data, n_chunks = 5L, nx = 100L, type = "list") {
+  
   stopifnot(type %in% c("list", "row"))
   
-  if (n_chunks <= 1) return(data)
+  if (n_chunks <= 1L) return(data)
   
   if (type == "list") {
     len <- length(data)
@@ -351,11 +352,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                   min_len = min_len, 
                   max_len = max_len, 
                   max_miss = max_miss, 
-                  # target_fdr = target_fdr, 
-                  # fdr_type = fdr_type, 
-                  # quant = !!enexpr(quant), 
-                  # ppm_reporters = ppm_reporters, 
-                  
+
                   digits = digits)
   
   # Peptide scores
@@ -404,6 +401,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                         penalize_sions = TRUE, 
                         ppm_ms2 = ppm_ms2, 
                         out_path = out_path, 
+                        # min_ms2mass = 110L, 
                         digits = digits)
   
   gc()
@@ -532,12 +530,12 @@ subset_theoframes <- function (mgf_frames, theopeps) {
   }
   
   frames <- as.integer(names(mgf_frames))
-  breaks <- which(diff(frames) != 1) + 1
+  breaks <- which(diff(frames) != 1L) + 1L
   grps <- findInterval(frames, frames[breaks])
   frames <- split(frames, grps)
   
   frames <- frames %>% 
-    purrr::map(~ c(.x[1]-1, .x, .x[length(.x)]+1)) %>% 
+    purrr::map(~ c(.x[1] - 1, .x, .x[length(.x)] + 1)) %>% 
     unlist(use.names = FALSE) %>% 
     .[!duplicated(.)]
   
@@ -570,8 +568,7 @@ pmatch_bymgfs <- function (mgf_path, aa_masses_all, n_cores, out_path,
                            include_insource_nl, enzyme, 
                            maxn_fasta_seqs, maxn_vmods_setscombi, 
                            min_len, max_len, max_miss, 
-                           # topn_ms2ions, target_fdr, fdr_type, quant, ppm_reporters, 
-                           
+
                            digits) {
 
   on.exit(
@@ -687,10 +684,7 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
     dplyr::group_by(frame) %>% 
     dplyr::group_split() %>% 
     setNames(purrr::map_dbl(., ~ .x$frame[1]))
-  
-  # x = mgf_frames %>% .[names() == 80964]
-  # which(names(x)) == 56090
-  
+
   mgf_frames <- local({
     labs <- levels(cut(1:length(mgf_frames), n_cores^2))
     
@@ -758,10 +752,6 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
     theopeps <- purrr::map2(mins, maxs, ~ {
       theopeps[which(nms >= (.x - 1) & nms <= (.y + 1))]
     })
-    
-    # --- may cause uneven length between `mgf_frames` and `theopeps`
-    # empties <- map_lgl(theopeps, is_empty)
-    # theopeps[!empties]
   })
   
   # (3) removes unused frames of `theopeps`
@@ -1130,7 +1120,7 @@ search_mgf_frames <- function (mgf_frames, theopeps, aa_masses, mod_indexes,
 search_mgf <- function (expt_mass_ms1, expt_moverz_ms2, 
                         theomasses_bf_ms1, theomasses_cr_ms1, theomasses_af_ms1, 
                         theos_bf_ms2, theos_cr_ms2, theos_af_ms2, 
-                        minn_ms2 = 7, ppm_ms1 = 20, ppm_ms2 = 25) {
+                        minn_ms2 = 7L, ppm_ms1 = 20L, ppm_ms2 = 25L) {
 
   # --- subsets from the `before` and the `after` by MS1 mass tolerance 
   mass_ranges <- find_mass_error_range(expt_mass_ms1, ppm_ms1)
@@ -1296,7 +1286,7 @@ find_ppm_outer_bypep <- function (theos, expts, ppm_ms2) {
 #' }
 #' 
 #' 
-find_ppm_outer_bycombi <- function (theos, expts, ppm_ms2 = 25) {
+find_ppm_outer_bycombi <- function (theos, expts, ppm_ms2 = 25L) {
   
   d <- outer(theos, expts, "find_ppm_error")
   row_cols <- which(abs(d) <= ppm_ms2, arr.ind = TRUE)

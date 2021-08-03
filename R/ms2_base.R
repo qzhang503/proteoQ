@@ -451,7 +451,7 @@ gen_ms2ions_base <- function (aa_seq, ms1_mass = NULL, aa_masses,
 search_mgf2 <- function (expt_mass_ms1, expt_moverz_ms2, 
                          theomasses_bf_ms1, theomasses_cr_ms1, theomasses_af_ms1, 
                          theos_bf_ms2, theos_cr_ms2, theos_af_ms2, 
-                         minn_ms2 = 7, ppm_ms1 = 20, ppm_ms2 = 25, 
+                         minn_ms2 = 7L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
                          min_ms2mass = 110L) {
   
   # --- subsets from the `before` and the `after` by MS1 mass tolerance 
@@ -658,12 +658,13 @@ find_ms2_bypep <- function (theos, expts, ppm_ms2 = 25L, min_ms2mass = 110L) {
 }
 
 
-#' Fuzzy matches with +/-1 offsets.
+#' Fuzzy matches with a +/-1 window.
 #' 
 #' @param x A vector to be matched.
 #' @param y A vector to be matched against.
 #' @importFrom fastmatch fmatch %fin% 
 fuzzy_match_one <- function (x, y) {
+  
   mi <- x %fin% y # 1.1 us
   bf <- (x - 1L) %fin% y # 1.7 us
   af <- (x + 1L) %fin% y # 1.6 us

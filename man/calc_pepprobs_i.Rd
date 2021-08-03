@@ -6,12 +6,12 @@
 \usage{
 calc_pepprobs_i(
   res,
-  topn_ms2ions = 100,
+  topn_ms2ions = 100L,
   type_ms2ions = "by",
   penalize_sions = FALSE,
-  ppm_ms2 = 25,
+  ppm_ms2 = 25L,
   out_path = "~/proteoQ/outs",
-  digits = 5
+  digits = 5L
 )
 }
 \arguments{

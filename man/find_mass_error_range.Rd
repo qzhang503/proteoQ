@@ -4,7 +4,7 @@
 \alias{find_mass_error_range}
 \title{Finds the error range of a number.}
 \usage{
-find_mass_error_range(x = 500, ppm = 20)
+find_mass_error_range(x = 500L, ppm = 20L)
 }
 \arguments{
 \item{x}{A numeric value.}

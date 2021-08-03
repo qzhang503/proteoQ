@@ -6,7 +6,7 @@
 \usage{
 binTheoPeps(
   res,
-  min_mass = 516.2405,
+  min_mass = 500L,
   max_mass = 10000L,
   ppm = 20L,
   out_path = file.path("~/proteoQ/outs", "pepmasses/binned_theopeps.rds")
