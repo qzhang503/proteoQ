@@ -16,6 +16,7 @@
 #' @importFrom tools md5sum
 #' @export
 extract_raws <- function(raw_dir = NULL, dat_dir = NULL) {
+  
   if (is.null(raw_dir)) stop("`raw_dir` cannot be `NULL`.", 
                              call. = FALSE)
   if (is.null(dat_dir)) dat_dir <- get_gl_dat_dir()
@@ -50,6 +51,7 @@ extract_raws <- function(raw_dir = NULL, dat_dir = NULL) {
 extract_psm_raws <- function(dat_dir = NULL) {
 
   find_mascot_psmraws <-function(filelist) {
+    
     dir.create(file.path(dat_dir, "PSM/cache"), 
                recursive = TRUE, showWarnings = FALSE)
     
@@ -83,6 +85,7 @@ extract_psm_raws <- function(dat_dir = NULL) {
   } 
   
   find_mq_psmraws <- function(filelist) {
+    
     purrr::walk(filelist, ~ {
       df <- suppressWarnings(
         readr::read_tsv(file.path(dat_dir, .x), 
@@ -101,6 +104,7 @@ extract_psm_raws <- function(dat_dir = NULL) {
   }
   
   find_sm_psmraws <- function(filelist) {
+    
     purrr::walk(filelist, ~ {
       df <- suppressWarnings(
         readr::read_delim(file.path(dat_dir, .x), delim = ";", 
@@ -119,6 +123,7 @@ extract_psm_raws <- function(dat_dir = NULL) {
   }
   
   find_mf_psmraws <- function(filelist) {
+    
     purrr::walk(filelist, ~ {
       df <- suppressWarnings(
         readr::read_delim(file.path(dat_dir, .x), delim = "\t", 
@@ -137,6 +142,27 @@ extract_psm_raws <- function(dat_dir = NULL) {
     })
   }
   
+  find_pq_psmraws <- function(filelist) {
+    
+    purrr::walk(filelist, ~ {
+      df <- suppressWarnings(
+        readr::read_tsv(file.path(dat_dir, .x), 
+                        col_types = cols(prot_acc = col_character())) 
+      )
+      
+      raws <- unique(df$raw_file)
+      
+      if (!purrr::is_empty(raws)) {
+        out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
+        data.frame(RAW_File = raws) %>% 
+          write.table(file.path(dat_dir, out_nm), sep = "\t", col.names = TRUE, 
+                      row.names = FALSE, quote = FALSE)
+        message("MS file names stored in ", file.path(dat_dir, out_nm))
+      }
+    })
+  }
+  
+  
 
   if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()
@@ -151,21 +177,34 @@ extract_psm_raws <- function(dat_dir = NULL) {
     mq = "^msms.*\\.txt$",
     sm = "^PSMexport.*\\.ssv$", 
     mf = "^psm.*\\.tsv$", 
+    pq = "^psm[QC]{1}.*\\.txt$", 
     stop("Data type needs to be one of `mascot`, `maxquant`,", 
-         " `spectrum_mill` or `msfragger`.", 
+         " `spectrum_mill`, `msfragger` or `proteoQ`.", 
          call. = FALSE)
   )
   
   filelist <- list.files(path = file.path(dat_dir), pattern = pattern)
-  if (purrr::is_empty(filelist)) 
+  
+  if (purrr::is_empty(filelist)) {
     stop("No ", toupper(type), " files(s) under ", dat_dir, 
          call. = FALSE)
+  }
+  
+  if (type == "pq") {
+    fileQ <- filelist %>% .[grepl("^psmQ.*\\.txt$", .)]
+
+    if (length(fileQ) > 0L) {
+      filelist <- fileQ
+    }
+  }
 
   switch (type,
     mascot = find_mascot_psmraws(filelist),
     mq = find_mq_psmraws(filelist),
     sm = find_sm_psmraws(filelist),
     mf = find_mf_psmraws(filelist),
+    pq = find_pq_psmraws(filelist), 
+    stop("Unknown `type`.", call. = FALSE)
   )
 }
 
