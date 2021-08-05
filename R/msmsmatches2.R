@@ -44,7 +44,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
   cache_pars <- find_callarg_vals(time = NULL, 
                                   path = file.path(out_path, "Calls"), 
                                   fun = paste0(fun, ".rda"), 
-                                  arg = names(formals(fun))) %>% 
+                                  args = names(formals(fun))) %>% 
     .[! . %in% args_except] %>% 
     .[sort(names(.))]
   

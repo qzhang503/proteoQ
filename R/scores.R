@@ -5,6 +5,7 @@
 #' @param col The name of a column where data will be extracted.
 #' @import purrr
 extract_matches_col <- function (data, col = "theo") {
+  
   purrr::map(data, ~ {
     x <- .x %>% # by sequence
       purrr::map(`[[`, col) # by varmod positions
@@ -37,6 +38,7 @@ mdhyper <- function (x, m, n, k) {
 #' scores <- flatten_pepouts(scores, "pep_score")
 #' }
 flatten_pepouts <- function (data, outcol = "matches") {
+  
   purrr::map(data, ~ {
     tib <- .x
     
@@ -59,6 +61,7 @@ flatten_pepouts <- function (data, outcol = "matches") {
 #' 
 #' @inheritParams flatten_pepouts
 combine_pepvecs <- function (data, outcol = "pep_score") {
+  
   purrr::imap(data, ~ {
     tibble(pep_seq = .y, pep_ivmod = names(.x), !!outcol := .x)
   }) %>% 
@@ -74,6 +77,7 @@ combine_pepvecs <- function (data, outcol = "pep_score") {
 #' @inheritParams matchMS
 match_secions <- function (theos, expts, type_ms2ions = "by", ppm_ms2 = 25, 
                            digits = 5) {
+  
   purrr::map(theos, ~ {
     theos_i <- .x # by peptide
     
@@ -91,6 +95,7 @@ match_secions <- function (theos, expts, type_ms2ions = "by", ppm_ms2 = 25,
 #' @param ms2s A vector of theoretical MS2 m-over-z values. 
 #' @inheritParams match_secions
 add_seions <- function (ms2s, type_ms2ions = "by", digits = 5L) {
+  
   len <- length(ms2s)
   
   if (type_ms2ions == "by") {
@@ -160,6 +165,7 @@ add_seions <- function (ms2s, type_ms2ions = "by", digits = 5L) {
 #' list_leftmatch(a, b)
 #' }
 list_leftmatch <- function (a, b) {
+  
   ord <- order(a, decreasing = TRUE)
   a <- a[ord]
   
@@ -257,46 +263,127 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
   # OK: (N < m) -> (n < 0L)
   # if (N < m) N <- m
   
-  # matches additionally against secondary ions
-  df2 <- add_seions(df[["theo"]], type_ms2ions = type_ms2ions, digits = digits) %>% 
-    find_ppm_outer_bycombi(expt_moverzs, ppm_ms2) 
+  ## matches additionally against secondary ions
   
-  df2[["theo"]] <- df2[["theo"]] %>% round(digits = digits)
-
+  df2 <- add_seions(df[["theo"]], type_ms2ions = type_ms2ions, digits = digits) %>% 
+    find_ppm_outer_bycombi(expt_moverzs, ppm_ms2) # 132 us
+  
+  df2[["theo"]] <- round(df2[["theo"]], digits = digits) # 4.4 us
+  
   # subtracts `m` and the counts of secondary b0, y0 matches etc. from noise
   # (OK n < 0L)
+  
   n <- N - m - sum(!is.na(df2$expt))
 
-  # ---
-  expts <- bind_cols(expt = expt_moverzs, int = expt_ints)
-  df <- bind_cols(theo = df$theo, expt = df$expt)
-  df2 <- bind_cols(theo = df2$theo, expt = df2$expt)
-  
-  # ---
   if (penalize_sions) {
-    # add secondary intensities
-    m2 <- nrow(df2)
     
-    y2 <- df2 %>% 
-      left_join(expts, by = "expt") %>% 
-      `[[`("int") %>% 
-      split(rep(seq_len(m2/m), each = m)) %>% 
-      Reduce(`%+%`, .) %>% 
-      data.frame(idx = seq_len(m), int2 = .)
+    ## step 0: the original tidyverse approach
     
-    # no contributions from `int2` if the corresponding `int` not found; 
-    # thus no need to check `is.na(int2)`
-    y <- left_join(expts, df %>% mutate(idx = row_number()), by = "expt") %>% 
-      dplyr::left_join(y2, by = "idx") %>% 
-      mutate(int = ifelse(is.na(int2), int, int + int2)) %>% 
-      select(-c("int2", "idx")) %>% 
-      arrange(-int) %>% 
-      mutate(k = row_number(), 
-             x = k - cumsum(is.na(theo))) %>% 
-      filter(!is.na(theo))
+    # m2 <- nrow(df2)
+    
+    # y2 <- df2 %>% 
+    #   left_join(expts, by = "expt") %>% 
+    #   `[[`("int") %>% 
+    #   split(rep(seq_len(m2/m), each = m)) %>% 
+    #   Reduce(`%+%`, .) %>% 
+    #   data.frame(idx = seq_len(m), int2 = .)
+    
+    # y <- left_join(expts, df %>% mutate(idx = row_number()), by = "expt") %>% 
+    #   dplyr::left_join(y2, by = "idx") %>% 
+    #   mutate(int = ifelse(is.na(int2), int, int + int2)) %>% 
+    #   select(-c("int2", "idx")) %>% 
+    #   arrange(-int) %>% 
+    #   mutate(k = row_number(), x = k - cumsum(is.na(theo))) %>% 
+    #   filter(!is.na(theo))
 
-    rm(list = c("m2", "y2"))
+    
+    ## step 1: compiles secondary intensities
+    
+    # (1.1)
+    len <- length(df2$expt) # .6 us
+    
+    i_se <- match(df2$expt, expt_moverzs) # secondary ions (df2) in expts; 4 us
+    i_s <- which(!is.na(i_se)) # indexes in df2; 1.7 us
+    i_e <- i_se[i_s] # indexes of the matches in expts; .4 us
+    
+    df2$int <- rep(NA, len) # matched intensities; .7 us
+    df2$int[i_s] <- expt_ints[i_e] # the corresponding intensities from expts; 1.4 us
+    
+    # (1.2) collapse b0, b*, b2 etc.
+    int2 <- df2$int %>% 
+      split(rep(seq_len(len/m), each = m)) %>% 
+      Reduce(`%+%`, .)
+    
+    y2 <- list(idx = 1:m, int2 = int2)
+    
+    ## step 2 (join expts and "theo", "idx" from the primary df): 
+    # (y <- left_join(expts, df %>% mutate(idx = row_number()), by = "expt"))
+    # 
+    #   expts: "expt" (expt_moverzs), "int" (expt_ints)
+    #   df: "theo" (m/z), "expt" (m/z), "idx" (indexes)
+    #   -> y: "theo", "expt", "int" "idx"
+    
+    # (2.1)
+    df$idx <- 1:m
+    
+    i_ep <- match(expt_moverzs, df$expt) # expts in primary ions (df); 4 us
+    i_e <- which(!is.na(i_ep)) # indexes in expts; 1.7 us
+    i_p <- i_ep[i_e] # indexes of matches in primary df; .4 us
+    
+    # (2.2)
+    nu <- rep(NA, topn_ms2ions)
+    y <- list(expt = expt_moverzs, int = expt_ints)
+    
+    y$theo <- nu
+    y$idx <- nu
+    
+    y$theo[i_e] <- df$theo[i_p] # .5 us
+    y$idx[i_e] <- df$idx[i_p]
+    
+    ## step 3: add `int2` from `y2`
+    #  (dplyr::left_join(y, y2, by = "idx"))
 
+    i_yy2 <- match(y$idx, y2$idx)
+    i_y <- which(!is.na(i_yy2))
+    i_y2 <- i_yy2[i_y]
+    
+    y$int2 <- nu
+    y$int2[i_y] <- y2$int2[i_y2]
+    
+    ## step 4: collapses `int2` to `int`
+    #  (mutate(y, int = ifelse(is.na(int2), int, int + int2)))
+    #  (`int2` not used if the corresponding `int` not available)
+    
+    int <- y[["int"]]
+    int2 <- y[["int2"]]
+    y[["int"]] <- ifelse(is.na(int2), int, int + int2)
+    y[["int2"]] <- NULL
+    y[["idx"]] <- NULL
+    
+    ## step 5: arrange(-int)
+    
+    idx <- order(y[["int"]], decreasing = TRUE, method = "radix", na.last = TRUE) # 16.4 us
+    y[["expt"]] <- y[["expt"]][idx]
+    y[["int"]] <- y[["int"]][idx]
+    y[["theo"]] <- y[["theo"]][idx]
+    
+    ## step 6: mutate(k = row_number(), x = k - cumsum(is.na(theo)))
+    
+    k <- 1:topn_ms2ions
+    x <- k - cumsum(is.na(y[["theo"]]))
+    
+    y$k <- k
+    y$x <- x
+    
+    ## step 7: filter(!is.na(theo))
+    
+    idx <- !is.na(y[["theo"]])
+    
+    y[["expt"]] <- y[["expt"]][idx]
+    y[["int"]] <- y[["int"]][idx]
+    y[["theo"]] <- y[["theo"]][idx]
+    y[["k"]] <- y[["k"]][idx]
+    y[["x"]] <- y[["x"]][idx]
   } else {
     y <- left_join(expts, df, by = "expt") %>% 
       arrange(-int) %>% 
@@ -306,19 +393,21 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
   }
   
   # note: x <= k <= x + n
+  
   x <- y$x
   k <- y$k
   
   # (to have sufficient counts of noise)
   # (also guaranteed n > 0L)
+  
   n <- max(n, topn_ms2ions + k[length(k)])
   
   pr <- min(mapply(dhyper, x[-c(1:2)], m, n, k[-c(1:2)]), na.rm = TRUE)
   
-  tibble(pep_ivmod = nms, 
-         pep_prob = pr, 
-         pri_matches = list(df), 
-         sec_matches = list(df2))
+  list(pep_ivmod = nms, 
+       pep_prob = pr, 
+       pri_matches = list(df), 
+       sec_matches = list(df2))
 }
 
 
@@ -335,7 +424,11 @@ calc_probi_bypep <- function (mts, nms, expt_moverzs, expt_ints,
                               N, type_ms2ions, topn_ms2ions, 
                               penalize_sions, ppm_ms2, digits) {
   
-  out <- map2(mts, names(mts), calc_probi_byvmods, 
+  ## for different positions: $TNLAMMR$`0000500`, $TNLAMMR$`0000050`
+  #    the same `pep_seq`, `theo_ms1` for different mod positions
+  #    different `pep_ivmod`, `pep_prob`, `pri_matches`, `sec_matches`
+  
+  res <- map2(mts, names(mts), calc_probi_byvmods, 
               expt_moverzs = expt_moverzs, 
               expt_ints = expt_ints, 
               N = N, 
@@ -343,10 +436,27 @@ calc_probi_bypep <- function (mts, nms, expt_moverzs, expt_ints,
               topn_ms2ions = topn_ms2ions, 
               penalize_sions = penalize_sions, 
               ppm_ms2 = ppm_ms2, 
-              digits = digits) %>% 
-    bind_rows()
+              digits = digits)
   
-  tibble(pep_seq = nms, theo_ms1 = attr(mts, "theo_ms1"), out)
+  theo_ms1 <- attr(mts, "theo_ms1")
+  
+  len <- length(res)
+  out <- vector("list", len)
+  
+  for (i in 1:len) {
+    res_i <- res[[i]]
+    
+    out[[i]] <- list(
+      pep_seq = nms,
+      theo_ms1 = theo_ms1, 
+      pep_ivmod = res_i$pep_ivmod, 
+      pep_prob = res_i$pep_prob, 
+      pri_matches = res_i["pri_matches"], 
+      sec_matches = res_i["sec_matches"]
+    )
+  }
+  
+  out
 }
 
 
@@ -372,8 +482,9 @@ calc_probi <- function (mts, expt_moverzs, expt_ints,
               topn_ms2ions = topn_ms2ions, 
               penalize_sions = penalize_sions, 
               ppm_ms2 = ppm_ms2, 
-              digits = digits) %>% 
-    bind_rows()
+              digits = digits)
+  
+  out <- unlist(out, recursive = FALSE, use.names = FALSE)
 }
 
 
@@ -435,8 +546,12 @@ scalc_pepprobs <- function (entry, topn_ms2ions = 100L, type_ms2ions = "by",
                     topn_ms2ions = topn_ms2ions, 
                     penalize_sions = penalize_sions, 
                     ppm_ms2 = ppm_ms2, 
-                    digits = digits) %>% 
-    dplyr::mutate(scan_num = unlist(entry$scan_num))
+                    digits = digits)
+
+  scan_num <- unlist(entry$scan_num) # 2.3 us
+  out <- map(out, ~ {.x$scan_num <- scan_num; .x}) # 23.5 us
+
+  invisible(out)
 }
 
 
@@ -463,8 +578,10 @@ calc_pepprobs_i <- function (res, topn_ms2ions = 100L, type_ms2ions = "by",
                  type_ms2ions = type_ms2ions, 
                  penalize_sions = penalize_sions, 
                  ppm_ms2 = ppm_ms2, 
-                 digits = digits) %>% 
-      dplyr::bind_rows()
+                 digits = digits) 
+    
+    probs <- unlist(probs, recursive = FALSE, use.names = FALSE)
+    probs <- dplyr::bind_rows(probs)
   }
   
   res <- res %>% 
@@ -717,6 +834,7 @@ calc_pepscores <- function (topn_ms2ions = 100L, type_ms2ions = "by",
 #' @param len Numeric; the length of peptides.
 #' @inheritParams matchMS
 probco_bypeplen <- function (len, td, fdr_type, target_fdr) {
+  
   td <- td %>% filter(pep_len == len)
   
   if (fdr_type %in% c("peptide", "protein")) {
@@ -1054,6 +1172,7 @@ calc_protfdr_i <- function (td, target_fdr = .01) {
 #' @param max_n_pep Integer; the maximum value of \code{prot_n_pep} for
 #'   prediction.
 fit_protfdr <- function (vec, max_n_pep = 1000L) {
+  
   if (length(vec) <= 10L) {
     return(data.frame(prot_n_pep = as.numeric(names(vec)), 
                       prot_score_co = vec))
@@ -1113,6 +1232,7 @@ fit_protfdr <- function (vec, max_n_pep = 1000L) {
 #' 
 #' @param df A data subset at a given \code{prot_n_pep}.
 calc_protscore_i <- function (df) {
+  
   df %>% 
     dplyr::group_by(prot_acc, pep_seq) %>% 
     dplyr::arrange(-pep_score) %>% 
@@ -1233,4 +1353,5 @@ scalc_pepscores_static <- function (entry, topn_ms2ions = 100, type_ms2ions = "b
     tibble(pri_matches = purrr::flatten(mts)), 
     tibble(sec_matches = purrr::flatten(mts2)))
 }
+
 
