@@ -7,6 +7,7 @@
 \usage{
 pepHM(
   col_select = NULL,
+  col_order = NULL,
   col_benchmark = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -38,6 +39,7 @@ pepHM(
 
 prnHM(
   col_select = NULL,
+  col_order = NULL,
   col_benchmark = NULL,
   scale_log2r = TRUE,
   complete_cases = FALSE,
@@ -74,6 +76,12 @@ At the \code{NULL} default, the column key of \code{Select} in
 specified under \code{Select}, the column key of \code{Sample_ID} will be
 used. The non-empty entries under the ascribing column will be used in
 indicated analysis.}
+
+\item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
+Numeric values under which will be used for the left-to-right arrangement of
+samples in graphic outputs or top-to-bottom arrangement in text outputs. At
+the NULL default, the column key \code{Order} will be used. If values under
+column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{col_benchmark}{Not used.}
 

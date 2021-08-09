@@ -354,9 +354,10 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
     #  (mutate(y, int = ifelse(is.na(int2), int, int + int2)))
     #  (`int2` not used if the corresponding `int` not available)
     
-    int <- y[["int"]]
-    int2 <- y[["int2"]]
-    y[["int"]] <- ifelse(is.na(int2), int, int + int2)
+    # int <- y[["int"]]
+    # int2 <- y[["int2"]]
+    # y[["int"]] <- ifelse(is.na(int2), int, int + int2)
+    y[["int"]] <- y[["int"]] %+% y[["int2"]]
     y[["int2"]] <- NULL
     y[["idx"]] <- NULL
     
@@ -653,8 +654,10 @@ calc_pepscores <- function (topn_ms2ions = 100L, type_ms2ions = "by",
   n_cores2 <- n_cores^2L
   
   cl <- makeCluster(getOption("cl.cores", n_cores))
-  clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
-  
+  parallel::clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
+  parallel::clusterExport(cl, list("scalc_pepprobs"), 
+                          envir = environment(proteoQ:::scalc_pepprobs))
+
   out <- map(list_t, ~ {
     res_i <- readRDS(file.path(out_path, "temp", .x))
     
@@ -932,7 +935,7 @@ calc_pepfdr <- function (out, nms, target_fdr = .01, fdr_type = "psm",
     }
   }
   
-  
+  # ---
   if (!is.null(nms)) {
     nms_t <- nms %>% 
       gsub("^rev_", "", .)

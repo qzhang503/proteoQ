@@ -121,6 +121,22 @@
 #               byions, czions, axions
 #           add_hexcodes_fnl2
 
+## calc_pepscores (scores.R)
+#   scalc_pepprobs
+#     calc_probi
+#       calc_probi_bypep
+#         calc_probi_byvmods
+#           add_seions
+#           find_ppm_outer_bycombi (msmsmatches.R)
+
+## grp_prots (quant.R)
+#   groupProts2 (quant2.R)
+#     map_pepprot2
+#     cut_protgrps2
+#     greedysetcover3
+#     
+
+
 
 
 ## (Tentative) same-site rules: no additive varmods

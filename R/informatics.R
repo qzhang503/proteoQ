@@ -399,6 +399,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		         ...) {
 		  plotHM(df = df,
 		         id = !!id,
+		         col_order = !!col_order,
 		         col_benchmark = !!col_benchmark,
 			       label_scheme_sub = label_scheme_sub,
 			       filepath = filepath,

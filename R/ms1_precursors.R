@@ -473,7 +473,7 @@ calc_aamasses <- function (fixedmods = c("TMT6plex (K)",
   #      (c3) dHex(1)Hex(1) (S): VS(3)SALSPSK
   #      (c4) Phospho (S): VSS(4)ALSPSK
   
-  options(digits = 9)
+  options(digits = 9L)
   
   local({
     
@@ -1155,11 +1155,9 @@ split_fastaseqs <- function (fasta, acc_type, acc_pattern, maxn_fasta_seqs,
   # rev_peps <- clusterApply(cl, rev_fasta_db, make_fastapeps0, max_miss) %>% 
   #   purrr::flatten()
   
-  # rm(list = c("fasta_db", "rev_fasta_db"))
   rm(list = c("fasta_db"))
   stopCluster(cl)
   
-  # invisible(list(fwds = peps, revs = rev_peps))
   invisible(peps)
 }
 
@@ -1323,7 +1321,7 @@ ms1masses_noterm <- function (aa_seqs, aa_masses,
                               parallel = TRUE, 
                               digits = 4L) {
   
-  options(digits = 9)
+  options(digits = 9L)
   
   n_cores <- detectCores()
   
@@ -1354,11 +1352,6 @@ ms1masses_noterm <- function (aa_seqs, aa_masses,
   parallel::stopCluster(cl)
   
   attr(aa_masses, "data") <- out
-  
-  # message("\tCompleted peptide masses: ", 
-  #         paste(attributes(aa_masses)$fmods, 
-  #               attributes(aa_masses)$vmods, 
-  #               collapse = ", "))
   
   rm(list = c("aa_seqs", "out"))
   gc()
@@ -1479,7 +1472,7 @@ distri_peps <- function (aa_masses, peps, max_miss) {
 #' n(i+1) = n(i) + (i+1)
 #' 
 #' @param max_miss The maximum number of cleavages.
-ct_counts <- function (max_miss) {
+ct_counts <- function (max_miss = 2L) {
   
   ct <- integer(max_miss)
   

@@ -351,8 +351,17 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
   out <- out %>% 
     `names<-`(seq_along(.)) %T>% 
     saveRDS(file.path(out_path, "ion_matches.rds")) 
+  
+  stopCluster(cl)
+  gc()
 
   # Decoys
+  n_cores <- parallel::detectCores()
+  cl <- makeCluster(getOption("cl.cores", n_cores))
+  clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
+  clusterExport(cl, list("%fin%"), envir = environment(fastmatch::`%fin%`))
+  clusterExport(cl, list("fmatch"), envir = environment(fastmatch::fmatch))
+  
   maxs <- map_dbl(out, object.size) %>% which_topx(1)
   maxs2 <- maxs %>% paste0("rev_", .)
 

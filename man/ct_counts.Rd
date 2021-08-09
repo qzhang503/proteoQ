@@ -4,7 +4,7 @@
 \alias{ct_counts}
 \title{Counts the number of trailing residues from C-term for the replacment of "-".}
 \usage{
-ct_counts(max_miss)
+ct_counts(max_miss = 2L)
 }
 \arguments{
 \item{max_miss}{The maximum number of cleavages.}

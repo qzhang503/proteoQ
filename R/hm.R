@@ -46,8 +46,8 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row,
 #' @inheritParams gspaTest
 #' @import stringr dplyr ggplot2 RColorBrewer pheatmap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
-                   scale_log2r, complete_cases, 
+plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub, 
+                   filepath, filename, scale_log2r, complete_cases, 
                    annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, 
                    xmin = -1, xmax = 1, xmargin = .1, 
                    p_dist_rows = 2, p_dist_cols = 2, 
@@ -112,6 +112,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
              recursive = TRUE, showWarnings = FALSE)
   
   id <- rlang::as_string(rlang::enexpr(id))
+  col_order <- rlang::enexpr(col_order)
   col_benchmark <- rlang::as_string(rlang::enexpr(col_benchmark))
   
   dots <- rlang::enexprs(...)
@@ -279,6 +280,34 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
   if (nrow(df_hm) == 0) {
     stop("Zero data rows after removing all-NA rows.", 
          call. = FALSE)
+  }
+  
+  # sample orders
+  if (cluster_cols && (!is.null(col_order))) {
+    message("No column-ordering of samples at `cluster_cols = TRUE`.")
+  }
+
+  if ((!cluster_cols) && (!is.null(col_order)) && 
+      length(unique(label_scheme_sub[[col_order]])) > 1L) {
+    
+    df_hm <- local({
+      plot_orders <- label_scheme_sub %>%
+        dplyr::select(Sample_ID, !!col_order) %>%
+        dplyr::filter(!is.na(!!col_order)) %>%
+        unique(.) %>%
+        dplyr::arrange(!!col_order)
+      
+      if (nrow(plot_orders) != length(sample_ids)) {
+        stop("The number of entries under `", rlang::as_string(col_order), 
+             "` is different to the number of selected samples.", 
+             call. = FALSE)
+      }
+      
+      df_hm <- df_hm[, as.character(plot_orders$Sample_ID), drop = FALSE]
+    })
+    
+    # cluster_cols <- FALSE
+    # warning("Coerce `cluster_cols` to FALSE", call. = FALSE)
   }
 
   if (cluster_rows) {
@@ -483,7 +512,7 @@ plotHM <- function(df, id, col_benchmark, label_scheme_sub, filepath, filename,
 #'
 #'@import purrr
 #'@export
-pepHM <- function (col_select = NULL, col_benchmark = NULL,
+pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                    rm_allna = TRUE, 
                    df = NULL, filepath = NULL, filename = NULL,
@@ -509,6 +538,7 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   col_select <- rlang::enexpr(col_select)
+  col_order <- rlang::enexpr(col_order)
   col_benchmark <- rlang::enexpr(col_benchmark)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -520,6 +550,7 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
   
   info_anal(id = !!id, 
             col_select = !!col_select, 
+            col_order = !!col_order, 
             col_benchmark = !!col_benchmark,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 
@@ -571,6 +602,7 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'
 #'@inheritParams  prnEucDist
 #'@inheritParams normPSM
+#'@inheritParams prnCorr_logFC
 #'@param hc_method_rows A character string; the same agglomeration method for 
 #'\code{\link[stats]{hclust}} of data rows. The default is \code{complete}. 
 #'@param hc_method_cols A character string; similar to \code{hc_method_rows} 
@@ -694,7 +726,7 @@ pepHM <- function (col_select = NULL, col_benchmark = NULL,
 #'@import dplyr ggplot2
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
-prnHM <- function (col_select = NULL, col_benchmark = NULL,
+prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
                    rm_allna = TRUE, 
                    df = NULL, filepath = NULL, filename = NULL, 
@@ -728,6 +760,7 @@ prnHM <- function (col_select = NULL, col_benchmark = NULL,
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
   col_select <- rlang::enexpr(col_select)
+  col_order <- rlang::enexpr(col_order)
   col_benchmark <- rlang::enexpr(col_benchmark)
   df <- rlang::enexpr(df)
   filepath <- rlang::enexpr(filepath)
@@ -739,6 +772,7 @@ prnHM <- function (col_select = NULL, col_benchmark = NULL,
   
   info_anal(id = !!id, 
             col_select = !!col_select, 
+            col_order = !!col_order, 
             col_benchmark = !!col_benchmark,
             scale_log2r = scale_log2r, 
             complete_cases = complete_cases, 

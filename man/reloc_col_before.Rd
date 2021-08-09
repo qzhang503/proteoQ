@@ -11,7 +11,8 @@ reloc_col_before(df, to_move = "before_anchor", col_after = "anchor")
 
 \item{to_move}{The column to be moved.}
 
-\item{col_after}{The anchor column to which the \code{to_move} will be moved before.}
+\item{col_after}{The anchor column to which the \code{to_move} will be moved
+before.}
 }
 \description{
 The same as \code{reloc_col}.

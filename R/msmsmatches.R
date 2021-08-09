@@ -4,6 +4,7 @@
 #' @param n The number of top entries to keep.
 #' @return The indexes of the top-n entries.
 which_topx <- function(x, n = 50L, ...) {
+  
   len <- length(x)
   p <- len - n
   
@@ -20,6 +21,7 @@ which_topx <- function(x, n = 50L, ...) {
 #' @inheritParams which_topx
 #' @return The top-n entries.
 topx <- function(x, n = 50L, ...) {
+  
   len <- length(x)
   p <- len - n
   
@@ -106,9 +108,6 @@ chunksplit <- function (data, n_chunks = 5L, type = "list") {
   x <- cbind(lower = floor(as.numeric( sub("\\((.+),.*", "\\1", labs))),
              upper = ceiling(as.numeric( sub("[^,]*,([^]]*)\\]", "\\1", labs))))
   
-  # x[x[, 1] < 0, 1] <- 1
-  # x[x[, 2] > len, 2] <- len
-  
   grps <- findInterval(1:len, x[, 1])
   split(data, grps)
 }
@@ -137,6 +136,7 @@ chunksplitLB <- function (data, n_chunks = 5L, nx = 100L, type = "list") {
   if (len == 0L) return(data)
   
   # The finer groups by 'nx'
+  
   grps_nx <- local({
     labsx <- levels(cut(1:len, nx))
     
@@ -149,6 +149,7 @@ chunksplitLB <- function (data, n_chunks = 5L, nx = 100L, type = "list") {
   })
   
   # The equated size for a chunk
+  
   size_chunk <- local({
     size_nx <- data %>% 
       split(., grps_nx) %>% 
@@ -165,6 +166,7 @@ chunksplitLB <- function (data, n_chunks = 5L, nx = 100L, type = "list") {
       cumsum()
     
     # the position indexes
+    
     ps <- purrr::map_dbl(1:(n_chunks-1), ~ {
       which(size_data < size_chunk * .x) %>% `[`(length(.))
     })
@@ -288,11 +290,6 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     parallel = TRUE
   )
   
-  ## Hash tables
-  
-  
-  
-  
   ## AA masses
   aa_masses_all <- res$fwd %>% 
     purrr::map(~ {
@@ -390,6 +387,9 @@ matchMS <- function (out_path = "~/proteoQ/outs",
         dplyr::select(uniq_id, grep("^I[0-9]{3}[NC]{0,1}$", names(.))) 
     }) %>% 
     dplyr::bind_rows()
+  
+  rm(list = c("out"))
+  gc()
 
   # ---
   out <- calc_pepscores(topn_ms2ions = topn_ms2ions, 
@@ -456,7 +456,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                   !grepl("^-", prot_acc))
   
   # set aside one-hit wonders
-  out0 <- out %>% 
+  out3 <- out %>% 
     dplyr::filter(!prot_issig, prot_n_pep == 1L) %>% 
     dplyr::mutate(prot_tier = 3L)
   
@@ -469,8 +469,25 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   gc()
   
   # Protein groups
+  if (length(unique(out$prot_acc)) > 35000) {
+    out2 <- out %>% dplyr::filter(prot_tier == 2L)
+    out <- out %>% dplyr::filter(prot_tier == 1L)
+    
+    if (length(unique(out$prot_acc)) > 35000) {
+      warning("Over 35,000 protein entries.", call. = FALSE)
+    }
+  } else {
+    out2 <- out[0, ]
+  }
+
   out <- out %>% grp_prots(file.path(out_path, "temp1")) 
-  out0 <- out0 %>% grp_prots(file.path(out_path, "temp0")) 
+  out3 <- out3 %>% grp_prots(file.path(out_path, "temp3"))
+  
+  if (nrow(out2) > 0L) {
+    out2 <- out2 %>% grp_prots(file.path(out_path, "temp2"))
+  } else {
+    out2 <- out[0, ]
+  }
   
   out <- dplyr::bind_cols(
     out %>% .[grepl("^prot_", names(.))], 
@@ -488,17 +505,27 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     max <- max(out$prot_hit_num, na.rm = TRUE)
     
     if (combine_tier_three) {
-      out <- out %>% 
-        dplyr::bind_rows(out0) %>% 
+      out <- list(out, out2, out3) %>% 
+        dplyr::bind_rows() %>% 
         dplyr::arrange(prot_acc, pep_seq) %T>% 
         readr::write_tsv(file.path(out_path, "psmQ.txt"))
     } else {
+      if (nrow(out2) > 0L) {
+        message("Tier-2 proteins saved separately in `psmT2.txt`.")
+        
+        out2 <- out2[names(out)] %>% 
+          dplyr::mutate(prot_hit_num = prot_hit_num + max)  %T>% 
+          readr::write_tsv(file.path(out_path, "psmT2.txt"))
+        
+        max <- max(out2$prot_hit_num, na.rm = TRUE)
+      }
+      
       message("Tier-3 proteins saved separately in `psmT3.txt`.")
       
-      out0 <- out0[names(out)] %>% 
+      out3 <- out3[names(out)] %>% 
         dplyr::mutate(prot_hit_num = prot_hit_num + max)  %T>% 
         readr::write_tsv(file.path(out_path, "psmT3.txt"))
-      
+
       out <- out %>% 
         dplyr::arrange(prot_acc, pep_seq) %T>% 
         readr::write_tsv(file.path(out_path, "psmQ.txt"))
@@ -1237,7 +1264,7 @@ find_ppm_outer_bypep <- function (theos, expts, ppm_ms2) {
     theos <- list(theos)
   }
   
-  map(theos, find_ppm_outer_bycombi, expts, ppm_ms2)
+  purrr::map(theos, find_ppm_outer_bycombi, expts, ppm_ms2)
 }
 
 
@@ -1300,6 +1327,7 @@ find_ppm_outer_bycombi <- function (theos, expts, ppm_ms2 = 25L) {
   es[names(e1)] <- e1
   
   # the first half are b-ions and the second half are y-ions
+  
   list(theo = theos, expt = es)
 }
 
