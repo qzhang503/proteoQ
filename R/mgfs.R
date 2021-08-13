@@ -11,20 +11,21 @@ load_mgfs <- function (mgf_path, min_mass = 500L, min_ms2mass = 110L,
   rds <- file.path(mgf_path, "mgf_queries.rds")
   
   if (file.exists(rds)) {
-    message("Loading cached MGFs: `", rds, "`.")
-    mgf_frames <- readRDS(rds)
+    message("Found cached MGFs: `", rds, "`.")
   } else {
     message("Processing raw MGFs.")
-    mgf_frames <- readMGF(filepath = mgf_path, 
-                          min_mass = min_mass, 
-                          min_ms2mass = min_ms2mass, 
-                          topn_ms2ions = topn_ms2ions, 
-                          ret_range = c(0, Inf), 
-                          ppm_ms1 = ppm_ms1, 
-                          ppm_ms2 = ppm_ms2, 
-                          index_ms2 = index_ms2, 
-                          out_path = rds) 
+    readMGF(filepath = mgf_path, 
+            min_mass = min_mass, 
+            min_ms2mass = min_ms2mass, 
+            topn_ms2ions = topn_ms2ions, 
+            ret_range = c(0, Inf), 
+            ppm_ms1 = ppm_ms1, 
+            ppm_ms2 = ppm_ms2, 
+            index_ms2 = index_ms2, 
+            out_path = rds) 
   }
+  
+  invisible(NULL)
 }
 
 
@@ -110,7 +111,10 @@ readMGF <- function (filepath = "~/proteoQ/mgfs",
                                             ppm = ppm_ms1)) %T>% 
     saveRDS(., out_path)
   
-  invisible(out)
+  rm(list = c("out"))
+  gc()
+  
+  invisible(NULL)
 }
 
 

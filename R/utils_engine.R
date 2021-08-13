@@ -492,3 +492,15 @@ find_cterm_mass <- function (aa_masses) {
 }
 
 
+#' Left-joining of two data frames.
+#' 
+#' @param x The left data frame.
+#' @param y The right data frame.
+#' @param by The key.
+#' @export
+quick_leftjoin <- function (x, y, by = NULL) {
+  rows <- match(y[[by]], x[[by]])
+  x <- x[rows, ]
+  y <- y[, -which(names(y) == by), drop = FALSE]
+  cbind2(x, y)
+}

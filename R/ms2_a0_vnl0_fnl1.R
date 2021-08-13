@@ -5,63 +5,54 @@
 #' @param fmods_nl The attribute of \code{fmods_nl} from an \code{aa_masses}.
 #' @rdname ms2match_base
 ms2match_a0_vnl0_fnl1 <- function (i, aa_masses, ntmass, ctmass, fmods_nl, 
-                                   mod_indexes, n_cores, cl, mgf_path, out_path, 
+                                   mod_indexes, mgf_path, out_path, 
                                    type_ms2ions = "by", maxn_vmods_per_pep = 5L, 
                                    maxn_sites_per_vmod = 3L, 
                                    maxn_vmods_sitescombi_per_pep = 32L, 
                                    minn_ms2 = 6L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
                                    min_ms2mass = 110L, digits = 4L) {
   
+  n_cores <- parallel::detectCores()
+  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+  parallel::clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
+  parallel::clusterExport(cl, list("%fin%"), envir = environment(fastmatch::`%fin%`))
+  parallel::clusterExport(cl, list("fmatch"), envir = environment(fastmatch::fmatch))
+  parallel::clusterExport(cl, list("post_frame_adv"), envir = environment(proteoQ:::post_frame_adv))
+  
   tempdata <- purge_search_space(i, aa_masses, mgf_path, n_cores, ppm_ms1)
   mgf_frames <- tempdata$mgf_frames
   theopeps <- tempdata$theopeps
   rm(list = c("tempdata"))
+  gc()
   
-  if (is_empty(mgf_frames) || is_empty(theopeps)) return(NULL)
+  if (length(mgf_frames) == 0L || length(theopeps) == 0L) return(NULL)
   
   # ---
-  out <- hms2_a0_vnl0_fnl1(mgf_frames[[1]], theopeps[[1]], 
-                           aa_masses = aa_masses, 
-                           ntmass = ntmass, 
-                           ctmass = ctmass, 
-                           fmods_nl = fmods_nl, 
-                           mod_indexes = mod_indexes, 
-                           type_ms2ions = type_ms2ions, 
-                           maxn_vmods_per_pep = 
-                             maxn_vmods_per_pep, 
-                           maxn_sites_per_vmod = 
-                             maxn_sites_per_vmod, 
-                           maxn_vmods_sitescombi_per_pep = 
-                             maxn_vmods_sitescombi_per_pep, 
-                           minn_ms2 = minn_ms2, 
-                           ppm_ms1 = ppm_ms1, 
-                           ppm_ms2 = ppm_ms2, 
-                           min_ms2mass = min_ms2mass, 
-                           digits = digits)
-
-  # ---
-  out <- clusterMap(cl, hms2_a0_vnl0_fnl1, 
-                    mgf_frames, theopeps, 
-                    MoreArgs = list(aa_masses = aa_masses, 
-                                    ntmass = ntmass, 
-                                    ctmass = ctmass, 
-                                    fmods_nl = fmods_nl, 
-                                    mod_indexes = mod_indexes, 
-                                    type_ms2ions = type_ms2ions, 
-                                    maxn_vmods_per_pep = 
-                                      maxn_vmods_per_pep, 
-                                    maxn_sites_per_vmod = 
-                                      maxn_sites_per_vmod, 
-                                    maxn_vmods_sitescombi_per_pep = 
-                                      maxn_vmods_sitescombi_per_pep, 
-                                    minn_ms2 = minn_ms2, 
-                                    ppm_ms1 = ppm_ms1, 
-                                    ppm_ms2 = ppm_ms2, 
-                                    min_ms2mass = min_ms2mass, 
-                                    digits = digits), 
-                    .scheduling = "dynamic") %>% 
+  out <- parallel::clusterMap(
+    cl, hms2_a0_vnl0_fnl1, 
+    mgf_frames, theopeps, 
+    MoreArgs = list(aa_masses = aa_masses, 
+                    ntmass = ntmass, 
+                    ctmass = ctmass, 
+                    fmods_nl = fmods_nl, 
+                    mod_indexes = mod_indexes, 
+                    type_ms2ions = type_ms2ions, 
+                    maxn_vmods_per_pep = 
+                      maxn_vmods_per_pep, 
+                    maxn_sites_per_vmod = 
+                      maxn_sites_per_vmod, 
+                    maxn_vmods_sitescombi_per_pep = 
+                      maxn_vmods_sitescombi_per_pep, 
+                    minn_ms2 = minn_ms2, 
+                    ppm_ms1 = ppm_ms1, 
+                    ppm_ms2 = ppm_ms2, 
+                    min_ms2mass = min_ms2mass, 
+                    digits = digits), 
+    .scheduling = "dynamic") %>% 
     dplyr::bind_rows() %>% # across nodes
     post_ms2match(i, aa_masses, out_path)
+  
+  parallel::stopCluster(cl)
   
   rm(list = c("mgf_frames", "theopeps"))
   gc()

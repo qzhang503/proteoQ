@@ -16,7 +16,8 @@
 #     - proc_mgfs
 #    - find_ms1_interval
 
-
+# calc_tmtint (quant.R)
+#   find_reporter_ints
 
 
 

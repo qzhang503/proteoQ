@@ -4,7 +4,7 @@
 \alias{probco_bypeplen}
 \title{Helper of \link{calc_pepfdr}.}
 \usage{
-probco_bypeplen(len, td, fdr_type, target_fdr)
+probco_bypeplen(len, td, fdr_type, target_fdr, out_path)
 }
 \arguments{
 \item{len}{Numeric; the length of peptides.}
@@ -20,6 +20,8 @@ levels of PSMs or peptides. The same level applies further to protein FDR
 and indicated under the column \code{prot_issig} in outputs. This results
 in FDR controls of either PSM <-> protein or peptide <-> protein at a given
 \code{target_fdr}.}
+
+\item{out_path}{The output path.}
 }
 \description{
 Calculates the probability cut-off for target-decoy pairs at a given peptide

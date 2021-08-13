@@ -17,6 +17,8 @@ ms2match(
   ppm_ms1,
   ppm_ms2,
   min_ms2mass,
+  quant,
+  ppm_reporters,
   fasta,
   acc_type,
   acc_pattern,
@@ -65,6 +67,13 @@ a hit.}
 \item{ppm_ms1}{The mass tolerance of MS1 species.}
 
 \item{ppm_ms2}{The mass tolerance of MS2 species.}
+
+\item{quant}{A quantitation method. The default is "none". Additional choices
+include \code{tmt6} etc. For other multiplicities of \code{tmt}, use the
+compatible higher plexes, for example, \code{tmt16} for \code{tmt12} etc.
+and \code{tmt10} for \code{tmt8} etc.}
+
+\item{ppm_reporters}{The mass tolerance of MS2 reporter ions.}
 
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. There is no default and the experimenters need to

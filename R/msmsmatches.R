@@ -252,21 +252,53 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     add = TRUE
   )
   
+  ## Preparation
+  # fdr_type
+  fdr_type <- rlang::enexpr(fdr_type)
+  oks <- eval(formals()[["fdr_type"]])
+  
+  if (length(fdr_type) > 1L) {
+    fdr_type <- oks[[1]]
+  } else {
+    fdr_type <- rlang::as_string(fdr_type)
+  }
+  
+  stopifnot(fdr_type %in% oks)
+  rm(list = c("oks"))
+  
+  # quant
+  quant <- rlang::enexpr(quant)
+  oks <- eval(formals()[["quant"]])
+  
+  if (length(quant) > 1L) {
+    quant <- oks[[1]]
+  } else {
+    quant <- rlang::as_string(quant)
+  }
+  
+  stopifnot(quant %in% oks, length(quant) == 1L)
+  rm(list = c("oks"))
+  
+  # out_path
   out_path <- create_dir(out_path)
   
-  local({
-    filelist <- list.files(path = file.path(mgf_path), pattern = "\\.mgf$")
-    
-    if (purrr::is_empty(filelist)) {
-      stop("No `.mgf` files under ", mgf_path, 
-           call. = FALSE)
-    }
-  })
+  filelist <- list.files(path = file.path(mgf_path), pattern = "\\.mgf$")
   
-  ## Indexes of modifications
+  if (purrr::is_empty(filelist)) {
+    stop("No `.mgf` files under ", mgf_path, 
+         call. = FALSE)
+  }
+  
+  rm(list = c("filelist"))
+  
+  # Indexes of modifications
   mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
     as.hexmode() %>% 
     `names<-`(c(fixedmods, varmods))
+  
+  data.frame(Abbr = as.character(mod_indexes), 
+             Desc = names(mod_indexes)) %>% 
+    readr::write_tsv(file.path(out_path, "mod_indexes.txt"))
   
   ## Theoretical MS1 masses
   res <- calc_pepmasses2(
@@ -307,91 +339,56 @@ matchMS <- function (out_path = "~/proteoQ/outs",
 
   ## Bin theoretical peptides
   bin_ms1masses(res, min_mass, max_mass, ppm_ms1, out_path)
+  
   rm(list = c("res"))
+  gc()
   
   ## MGFs
-  mgf_frames <- load_mgfs(mgf_path = mgf_path, 
-                          min_mass = min_mass, 
-                          min_ms2mass = 110L, 
-                          topn_ms2ions = topn_ms2ions, 
-                          ppm_ms1 = ppm_ms1, 
-                          ppm_ms2 = ppm_ms2, 
-                          index_ms2 = FALSE)
-  
-  gc()
-  
+  load_mgfs(mgf_path = mgf_path, 
+            min_mass = min_mass, 
+            min_ms2mass = 110L, 
+            topn_ms2ions = topn_ms2ions, 
+            ppm_ms1 = ppm_ms1, 
+            ppm_ms2 = ppm_ms2, 
+            index_ms2 = FALSE)
+
   ## MSMS matches
-  out <- ms2match(mgf_path = mgf_path, 
-                  aa_masses_all = aa_masses_all, 
-                  out_path = out_path, 
-                  mod_indexes = mod_indexes, 
-                  type_ms2ions = type_ms2ions, 
-                  maxn_vmods_per_pep = maxn_vmods_per_pep, 
-                  maxn_sites_per_vmod = maxn_sites_per_vmod, 
-                  maxn_vmods_sitescombi_per_pep = 
-                    maxn_vmods_sitescombi_per_pep, 
-                  minn_ms2 = minn_ms2, 
-                  ppm_ms1 = ppm_ms1, 
-                  ppm_ms2 = ppm_ms2, 
-                  min_ms2mass = 110L, 
-                  
-                  # dummy for argument matching
-                  fasta = fasta, 
-                  acc_type = acc_type, 
-                  acc_pattern = acc_pattern,
-                  topn_ms2ions = topn_ms2ions,
-                  fixedmods = fixedmods, 
-                  varmods = varmods, 
-                  include_insource_nl = include_insource_nl, 
-                  enzyme = enzyme,
-                  maxn_fasta_seqs = maxn_fasta_seqs,
-                  maxn_vmods_setscombi = maxn_vmods_setscombi, 
-                  min_len = min_len, 
-                  max_len = max_len, 
-                  max_miss = max_miss, 
-
-                  digits = digits)
+  ms2match(mgf_path = mgf_path, 
+           aa_masses_all = aa_masses_all, 
+           out_path = out_path, 
+           mod_indexes = mod_indexes, 
+           type_ms2ions = type_ms2ions, 
+           maxn_vmods_per_pep = maxn_vmods_per_pep, 
+           maxn_sites_per_vmod = maxn_sites_per_vmod, 
+           maxn_vmods_sitescombi_per_pep = 
+             maxn_vmods_sitescombi_per_pep, 
+           minn_ms2 = minn_ms2, 
+           ppm_ms1 = ppm_ms1, 
+           ppm_ms2 = ppm_ms2, 
+           min_ms2mass = 110L, 
+           quant = quant, 
+           ppm_reporters = ppm_reporters, 
+           
+           # dummy for argument matching
+           fasta = fasta, 
+           acc_type = acc_type, 
+           acc_pattern = acc_pattern,
+           topn_ms2ions = topn_ms2ions,
+           fixedmods = fixedmods, 
+           varmods = varmods, 
+           include_insource_nl = include_insource_nl, 
+           enzyme = enzyme,
+           maxn_fasta_seqs = maxn_fasta_seqs,
+           maxn_vmods_setscombi = maxn_vmods_setscombi, 
+           min_len = min_len, 
+           max_len = max_len, 
+           max_miss = max_miss, 
+           
+           digits = digits)
   
-  # Peptide scores
-  fdr_type <- rlang::enexpr(fdr_type)
-  oks <- eval(formals()[["fdr_type"]])
-  
-  if (length(fdr_type) > 1L) {
-    fdr_type <- oks[[1]]
-  } else {
-    fdr_type <- rlang::as_string(fdr_type)
-  }
-  
-  stopifnot(fdr_type %in% oks)
-  rm(list = c("oks"))
-  
-  # TMT intensities
-  quant <- rlang::enexpr(quant)
-  oks <- eval(formals()[["quant"]])
-  
-  if (length(quant) > 1L) {
-    quant <- oks[[1]]
-  } else {
-    quant <- rlang::as_string(quant)
-  }
-  
-  stopifnot(quant %in% oks, length(quant) == 1L)
-  rm(list = c("oks"))
-  
-  reporters <- out %>% 
-    imap( ~ {
-      .x %>% 
-        calc_tmtint(quant = quant, ppm_reporters = ppm_reporters) %>% 
-        tidyr::unite(uniq_id, raw_file, pep_mod_group, scan_num, sep = ".", 
-                     remove = TRUE) %>% 
-        dplyr::select(uniq_id, grep("^I[0-9]{3}[NC]{0,1}$", names(.))) 
-    }) %>% 
-    dplyr::bind_rows()
-  
-  rm(list = c("out"))
   gc()
-
-  # ---
+  
+  ## Peptide scores
   out <- calc_pepscores(topn_ms2ions = topn_ms2ions, 
                         type_ms2ions = type_ms2ions, 
                         target_fdr = target_fdr, 
@@ -404,26 +401,32 @@ matchMS <- function (out_path = "~/proteoQ/outs",
                         digits = digits)
   
   gc()
-
-  # Protein accessions, score cut-offs
-  out <- out %>% add_prot_acc() 
-  out <- out %>% calc_protfdr(target_fdr)
-
+  
+  ## Peptide ranks
+  out <- local({
+    out1 <- out %>% 
+      dplyr::filter(!grepl("^rev_", pep_mod_group)) %>% 
+      dplyr::group_by(scan_num, raw_file) %>% 
+      dplyr::arrange(-pep_score) %>% 
+      dplyr::mutate(pep_rank = row_number()) %>% 
+      dplyr::ungroup()
+    
+    out2 <- out %>% 
+      dplyr::filter(grepl("^rev_", pep_mod_group))
+    
+    out <- dplyr::bind_rows(out1, out2)
+  })
+  
+  ## Protein accessions; Protein score cut-offs; Reporter-ion intensities
+  # (currently all pep_rank's)
+  out <- out %>% 
+    add_prot_acc() %>% 
+    calc_protfdr(target_fdr) %>% 
+    add_rptrs(quant, out_path)
+  
   gc()
   
-  # Clean-ups
-  data.frame(Abbr = as.character(mod_indexes), Desc = names(mod_indexes)) %>% 
-    readr::write_tsv(file.path(out_path, "mod_indexes.txt"))
-  
-  # Brings back reporter intensities
-  if (quant != "none") {
-    out <- out %>% 
-      tidyr::unite(uniq_id, raw_file, pep_mod_group, scan_num, sep = ".", 
-                   remove = FALSE) %>% 
-      dplyr::left_join(reporters, by = "uniq_id") %>% 
-      dplyr::select(-uniq_id)
-  }
-  
+  ## Clean-ups
   out <- out %>% 
     dplyr::mutate(pep_ms1_delta = ms1_mass - theo_ms1) %>% 
     dplyr::rename(pep_scan_title = scan_title, 
@@ -453,7 +456,59 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   out <- out %T>% 
     readr::write_tsv(file.path(out_path, "psmC.txt")) %>% 
     dplyr::filter(pep_issig, !pep_isdecoy, pep_rank <= 3L, 
-                  !grepl("^-", prot_acc))
+                  !grepl("^-", prot_acc)) %>% 
+    psmC2Q(combine_tier_three, out_path)
+
+  message("Search completed.")
+  
+  # ---
+  rm(list = c(".path_cache", ".path_fasta", ".time_stamp"), envir = .GlobalEnv)
+  
+  .savecall <- TRUE
+  
+  invisible(out)
+}
+
+
+#' Adds back reporter-ion intensities
+#' 
+#' @param df Results from \link{calc_protfdr}.
+#' @inheritParams matchMS
+add_rptrs <- function (df, quant = "none", out_path) {
+  
+  if (grepl("^tmt[0-9]+$", quant)) {
+    files <- list.files(path = file.path(out_path, "temp"), 
+                        pattern = "^reporters_\\d+\\.rds$")
+    
+    idxes <- gsub("^reporters_([0-9]+)\\.rds$", "\\1", files) %>% 
+      as.integer() %>% 
+      order()
+    
+    files <- files[idxes]
+    
+    reporters <- purrr::map(files, ~ {
+      readRDS(file.path(out_path, "temp", .x))
+    }) %>% 
+      dplyr::bind_rows()
+    
+    rm(list = c("idxes", "files"))
+    
+    df <- df %>% 
+      tidyr::unite(uniq_id, raw_file, pep_mod_group, scan_num, sep = ".", 
+                   remove = FALSE) %>% 
+      dplyr::left_join(reporters, by = "uniq_id") %>% 
+      dplyr::select(-uniq_id)
+  }
+  
+  invisible(df)
+}
+
+
+#' From \code{psmQ} to \code{psmQ}.
+#' 
+#' @param out A result from \code{psmQ} with additional filtrations.
+#' @inheritParams matchMS
+psmC2Q <- function (out, combine_tier_three = FALSE, out_path) {
   
   # set aside one-hit wonders
   out3 <- out %>% 
@@ -469,17 +524,17 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   gc()
   
   # Protein groups
-  if (length(unique(out$prot_acc)) > 35000) {
+  if (length(unique(out$prot_acc)) > 35000L) {
     out2 <- out %>% dplyr::filter(prot_tier == 2L)
     out <- out %>% dplyr::filter(prot_tier == 1L)
     
-    if (length(unique(out$prot_acc)) > 35000) {
+    if (length(unique(out$prot_acc)) > 35000L) {
       warning("Over 35,000 protein entries.", call. = FALSE)
     }
   } else {
     out2 <- out[0, ]
   }
-
+  
   out <- out %>% grp_prots(file.path(out_path, "temp1")) 
   out3 <- out3 %>% grp_prots(file.path(out_path, "temp3"))
   
@@ -500,6 +555,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     reloc_col_after("prot_tier", "prot_isess")
   
   out <- local({
+    message("Tier-1 proteins are high-confidence identifications.")
     message("Tier-3 proteins are low-confidence identifications.")
     
     max <- max(out$prot_hit_num, na.rm = TRUE)
@@ -525,7 +581,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
       out3 <- out3[names(out)] %>% 
         dplyr::mutate(prot_hit_num = prot_hit_num + max)  %T>% 
         readr::write_tsv(file.path(out_path, "psmT3.txt"))
-
+      
       out <- out %>% 
         dplyr::arrange(prot_acc, pep_seq) %T>% 
         readr::write_tsv(file.path(out_path, "psmQ.txt"))
@@ -534,16 +590,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     invisible(out)
   })
   
-  message("Search completed.")
-  
-  # ---
-  rm(list = c(".path_cache", ".path_fasta", ".time_stamp"), envir = .GlobalEnv)
-  
-  .savecall <- TRUE
-  
-  invisible(out)
 }
-
 
 
 #' Subsets the frames of theoretical peptides.

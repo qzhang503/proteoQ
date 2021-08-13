@@ -10,10 +10,6 @@ calc_tmtint <- function (data = NULL,
                          quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"),
                          ppm_reporters = 10) {
 
-  # val <- rlang::enexpr(quant)
-  # f <- match.call()[[1]]
-  # val <- match_valexpr(f = !!f, arg = "quant", val = !!val)
-
   if (quant == "none") {
     out <- data
   } else {
