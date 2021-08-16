@@ -4,14 +4,20 @@
 \alias{psmC2Q}
 \title{From \code{psmQ} to \code{psmQ}.}
 \usage{
-psmC2Q(out, combine_tier_three = FALSE, out_path)
+psmC2Q(out, combine_tier_three = FALSE, fdr_type = "psm", out_path)
 }
 \arguments{
-\item{out}{A result from \code{psmQ} with additional filtrations.}
+\item{out}{A result from \code{psmQ} with additional filtration.}
 
-\item{combine_tier_three}{Logical; if TRUE, combines tier-3 proteins in the
-output of \code{psmQ.txt}. If FALSE, saves tier-3 proteins separately in
-\code{psmT3.txt}.}
+\item{combine_tier_three}{Logical; if TRUE, combines all protein results to
+the output of \code{psmQ.txt}. Outputs under the option TRUE are often
+comparable to Mascot outputs with FDR controls at the levels of PSMs or
+peptides.}
+
+\item{fdr_type}{Character string; the type of FDR controlling. The value is
+in one of c("psm", "peptide", "protein"). Note that \code{fdr_type =
+protein} is equivalent to \code{fdr_type = psm} or \code{peptide} with the
+additional filtration of data at \code{prot_tier == 1}.}
 
 \item{out_path}{The output path.}
 }

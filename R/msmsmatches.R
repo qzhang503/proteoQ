@@ -180,6 +180,8 @@ chunksplitLB <- function (data, n_chunks = 5L, nx = 100L, type = "list") {
 
 #' Searches MS ions.
 #'
+#' Database searches of MSMS data.
+#'
 #' @inheritParams calc_ms2ions
 #' @inheritParams calc_pepmasses
 #' @inheritParams search_mgf_frames
@@ -199,16 +201,15 @@ chunksplitLB <- function (data, n_chunks = 5L, nx = 100L, type = "list") {
 #'   "uniprot_id", "refseq_acc", "other"). See also \link{load_fasta2} for
 #'   custom examples.
 #' @param target_fdr Numeric; the levels of false-discovery rate (FDR) at the
-#'   levels of PSMs or peptides. The same level applies further to protein FDR
-#'   and indicated under the column \code{prot_issig} in outputs. This results
-#'   in FDR controls of either PSM <-> protein or peptide <-> protein at a given
-#'   \code{target_fdr}.
+#'   levels of PSMs, peptides or proteins. See also argument \code{fdr_type}.
 #' @param fdr_type Character string; the type of FDR controlling. The value is
-#'   in one of c("psm", "peptide"). Note that protein FDR is in conjunction with
-#'   "psm" or "peptide". Separate protein FDR may be available in the future.
-#' @param combine_tier_three Logical; if TRUE, combines tier-3 proteins in the
-#'   output of \code{psmQ.txt}. If FALSE, saves tier-3 proteins separately in
-#'   \code{psmT3.txt}.
+#'   in one of c("psm", "peptide", "protein"). Note that \code{fdr_type =
+#'   protein} is equivalent to \code{fdr_type = psm} or \code{peptide} with the
+#'   additional filtration of data at \code{prot_tier == 1}.
+#' @param combine_tier_three Logical; if TRUE, combines all protein results to
+#'   the output of \code{psmQ.txt}. Outputs under the option TRUE are often
+#'   comparable to Mascot outputs with FDR controls at the levels of PSMs or
+#'   peptides.
 #' @seealso \link{load_fasta2} for setting the values of \code{acc_type} and
 #'   \code{acc_pattern}. \link{parse_unimod} for the grammar of Unimod.
 #' @export
@@ -266,7 +267,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   stopifnot(fdr_type %in% oks)
   rm(list = c("oks"))
   
-  # quant
+  # quantitation method
   quant <- rlang::enexpr(quant)
   oks <- eval(formals()[["quant"]])
   
@@ -279,7 +280,7 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   stopifnot(quant %in% oks, length(quant) == 1L)
   rm(list = c("oks"))
   
-  # out_path
+  # output path
   out_path <- create_dir(out_path)
   
   filelist <- list.files(path = file.path(mgf_path), pattern = "\\.mgf$")
@@ -389,36 +390,37 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   gc()
   
   ## Peptide scores
-  out <- calc_pepscores(topn_ms2ions = topn_ms2ions, 
-                        type_ms2ions = type_ms2ions, 
-                        target_fdr = target_fdr, 
-                        fdr_type = fdr_type, 
-                        min_len = min_len, 
-                        max_len = max_len, 
-                        penalize_sions = TRUE, 
-                        ppm_ms2 = ppm_ms2, 
-                        out_path = out_path, 
-                        digits = digits)
-  
-  gc()
-  
+  if (file.exists(file.path(out_path, "scores.rds"))) {
+    out <- readRDS(file.path(out_path, "scores.rds"))
+  } else {
+    out <- calc_pepscores(topn_ms2ions = topn_ms2ions, 
+                          type_ms2ions = type_ms2ions, 
+                          target_fdr = target_fdr, 
+                          fdr_type = fdr_type, 
+                          min_len = min_len, 
+                          max_len = max_len, 
+                          penalize_sions = TRUE, 
+                          ppm_ms2 = ppm_ms2, 
+                          out_path = out_path, 
+                          digits = digits) %T>% 
+      saveRDS(file.path(out_path, "scores.rds"))
+    
+    gc()
+  }
+
   ## Peptide ranks
-  out <- local({
-    out1 <- out %>% 
-      dplyr::filter(!grepl("^rev_", pep_mod_group)) %>% 
-      dplyr::group_by(scan_num, raw_file) %>% 
-      dplyr::arrange(-pep_score) %>% 
-      dplyr::mutate(pep_rank = row_number()) %>% 
-      dplyr::ungroup()
-    
-    out2 <- out %>% 
-      dplyr::filter(grepl("^rev_", pep_mod_group))
-    
-    out <- dplyr::bind_rows(out1, out2)
-  })
+  # keeps the best for ties in each pep_seq (0000500, 0005000) -> top.3
+  out <- out %>% 
+    dplyr::mutate(pep_score = round(pep_score, 2)) %>% 
+    dplyr::filter(!duplicated(.[, c("pep_isdecoy", "scan_num", "raw_file", 
+                                    "pep_seq", "pep_score")])) %>% 
+    dplyr::group_by(pep_isdecoy, scan_num, raw_file) %>% 
+    dplyr::arrange(-pep_score) %>% 
+    dplyr::mutate(pep_rank = row_number()) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::filter(pep_rank <= 3L)
   
-  ## Protein accessions; Protein score cut-offs; Reporter-ion intensities
-  # (currently all pep_rank's)
+  ## Protein accessions; Protein score cut-offs etc.
   out <- out %>% 
     add_prot_acc() %>% 
     calc_protfdr(target_fdr) %>% 
@@ -455,9 +457,9 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   # ---
   out <- out %T>% 
     readr::write_tsv(file.path(out_path, "psmC.txt")) %>% 
-    dplyr::filter(pep_issig, !pep_isdecoy, pep_rank <= 3L, 
+    dplyr::filter(pep_issig, !pep_isdecoy, # pep_rank <= 3L, 
                   !grepl("^-", prot_acc)) %>% 
-    psmC2Q(combine_tier_three, out_path)
+    psmC2Q(combine_tier_three, fdr_type, out_path)
 
   message("Search completed.")
   
@@ -506,9 +508,10 @@ add_rptrs <- function (df, quant = "none", out_path) {
 
 #' From \code{psmQ} to \code{psmQ}.
 #' 
-#' @param out A result from \code{psmQ} with additional filtrations.
+#' @param out A result from \code{psmQ} with additional filtration.
 #' @inheritParams matchMS
-psmC2Q <- function (out, combine_tier_three = FALSE, out_path) {
+psmC2Q <- function (out, combine_tier_three = FALSE, fdr_type = "psm", 
+                    out_path) {
   
   # set aside one-hit wonders
   out3 <- out %>% 
@@ -525,14 +528,32 @@ psmC2Q <- function (out, combine_tier_three = FALSE, out_path) {
   
   # Protein groups
   if (length(unique(out$prot_acc)) > 35000L) {
+    if (fdr_type != "protein") {
+      warning("Coerce `fdr_type = protein` ", 
+              "and additional peptides saved in `psmT2.txt`.", 
+              call. = FALSE)
+      
+      # dummy
+      fdr_type <- "protein"
+    } else {
+      message("Tier-2 proteins saved separately in `psmT2.txt`.")
+    }
+    
     out2 <- out %>% dplyr::filter(prot_tier == 2L)
     out <- out %>% dplyr::filter(prot_tier == 1L)
     
-    if (length(unique(out$prot_acc)) > 35000L) {
-      warning("Over 35,000 protein entries.", call. = FALSE)
-    }
+    # if (length(unique(out$prot_acc)) > 35000L) {
+    #   warning("Over 35,000 protein entries tier-1 proteins.", call. = FALSE)
+    # }
   } else {
-    out2 <- out[0, ]
+    if (fdr_type == "protein") {
+      out2 <- out %>% dplyr::filter(prot_tier == 2L)
+      out <- out %>% dplyr::filter(prot_tier == 1L)
+    } else {
+      out2 <- out[0, ]
+      out <- out
+    }
+    
   }
   
   out <- out %>% grp_prots(file.path(out_path, "temp1")) 
@@ -560,6 +581,14 @@ psmC2Q <- function (out, combine_tier_three = FALSE, out_path) {
     
     max <- max(out$prot_hit_num, na.rm = TRUE)
     
+    if (fdr_type == "protein") {
+      if (combine_tier_three) {
+        warning("Coerce `combine_tier_three` to FALSE at `fdr_type = protein`.", 
+                call. = FALSE)
+        combine_tier_three <- FALSE
+      }
+    }
+
     if (combine_tier_three) {
       out <- list(out, out2, out3) %>% 
         dplyr::bind_rows() %>% 
@@ -567,7 +596,7 @@ psmC2Q <- function (out, combine_tier_three = FALSE, out_path) {
         readr::write_tsv(file.path(out_path, "psmQ.txt"))
     } else {
       if (nrow(out2) > 0L) {
-        message("Tier-2 proteins saved separately in `psmT2.txt`.")
+        # message("Tier-2 proteins saved separately in `psmT2.txt`.")
         
         out2 <- out2[names(out)] %>% 
           dplyr::mutate(prot_hit_num = prot_hit_num + max)  %T>% 
@@ -576,7 +605,7 @@ psmC2Q <- function (out, combine_tier_three = FALSE, out_path) {
         max <- max(out2$prot_hit_num, na.rm = TRUE)
       }
       
-      message("Tier-3 proteins saved separately in `psmT3.txt`.")
+      # message("Tier-3 proteins saved separately in `psmT3.txt`.")
       
       out3 <- out3[names(out)] %>% 
         dplyr::mutate(prot_hit_num = prot_hit_num + max)  %T>% 
