@@ -10,10 +10,6 @@ calc_tmtint <- function (data = NULL,
                          quant = c("none", "tmt6", "tmt10", "tmt11", "tmt16"),
                          ppm_reporters = 10) {
 
-  # val <- rlang::enexpr(quant)
-  # f <- match.call()[[1]]
-  # val <- match_valexpr(f = !!f, arg = "quant", val = !!val)
-
   if (quant == "none") {
     out <- data
   } else {
@@ -408,53 +404,6 @@ map_pepprot <- function (df, out_path = NULL) {
 }
 
 
-#' Helper of \link{groupProts}.
-#'
-#' @param out The data frame from upstream steps.
-#' @param out_path The output path.
-grp_prots <- function (out, out_path = NULL) {
-  
-  dir.create(file.path(out_path), recursive = TRUE, showWarnings = FALSE)
-
-  out <- out %>% dplyr::arrange(pep_seq)
-
-  # essential entries
-  rows <- (out$pep_issig & (!out$pep_isdecoy) & (out$pep_rank <= 3L))
-  
-  df <- out[rows, ]
-
-  if (nrow(df) > 1L) {
-    df <- df %>% groupProts2(out_path)
-  } else {
-    df <- df %>%
-      dplyr::mutate(prot_isess = TRUE,
-                    prot_hit_num = 1L,
-                    prot_family_member = 1L)
-  }
-
-  # non-essential entries
-  prot_accs <- df %>%
-    dplyr::filter(!duplicated(prot_acc), prot_isess) %>%
-    `[[`("prot_acc")
-
-  df2 <- out[!rows, ] %>%
-    dplyr::filter(!duplicated(prot_acc)) %>%
-    dplyr::select(prot_acc) %>%
-    dplyr::mutate(prot_isess = ifelse(prot_acc %in% prot_accs, TRUE, FALSE)) %>%
-    dplyr::left_join(df[, c("prot_acc", "prot_hit_num", "prot_family_member")] %>%
-                       dplyr::filter(!duplicated(prot_acc)),
-                     by = "prot_acc") %>%
-    dplyr::right_join(out[!rows, ], by = "prot_acc") %>%
-    dplyr::mutate(pep_literal_unique = NA, pep_razor_unique = NA) %>%
-    dplyr::select(names(df))
-
-  rm(list = c("prot_accs"))
-
-  out <- dplyr::bind_rows(df, df2) %>%
-    dplyr::select(-which(names(.) %in% c("prot_n_psm", "prot_n_pep")))
-}
-
-
 #' Groups proteins by shared peptides.
 #'
 #' Adds columns \code{prot_hit_num} and \code{prot_family_member} to
@@ -819,48 +768,6 @@ greedysetcover2 <- function (mat) {
   }
   
   invisible(sets)
-}
-
-
-#' Greedy set cover.
-#' 
-#' A bool matrix input. Output both essential sets and elements.
-#' 
-#' @param mat A bool matrix of protein (cols)-peptide (rows) map. 
-#' 
-#' @return A two-column data frame of prot_acc and pep_seq. 
-greedysetcover3 <- function (mat) {
-  
-  if (is.matrix(mat)) {
-    mat <- Matrix::Matrix(as.matrix(mat), sparse = TRUE)
-    gc()
-  }
-
-  prot_acc <- NULL
-  pep_seq <- NULL
-  
-  while(nrow(mat)) {
-    max <- which.max(Matrix::colSums(mat, na.rm = TRUE))
-    
-    if (max == 0L) {
-      break
-    }
-    
-    prot <- names(max)
-    rows <- which(mat[, max])
-    # peps <- names(rows) # name dropped if only one row
-    peps <- rownames(mat)[rows]
-    
-    prot_acc <- c(prot_acc, rep(prot, length(peps)))
-    pep_seq <- c(pep_seq, peps)
-    
-    mat <- mat[-rows, -max, drop = FALSE]
-  }
-  
-  rm(list = c("mat"))
-  gc()
-  
-  dplyr::bind_cols(prot_acc = prot_acc, pep_seq = pep_seq)
 }
 
 

@@ -4,7 +4,7 @@
 \alias{bin_ms1masses}
 \title{Helper in binning precursor masses}
 \usage{
-bin_ms1masses(res, min_mass, max_mass, ppm_ms1, out_path)
+bin_ms1masses(res, min_mass = 500L, max_mass = 10000L, ppm_ms1 = 20L, out_path)
 }
 \arguments{
 \item{res}{The results from \link{calc_pepmasses2}.}

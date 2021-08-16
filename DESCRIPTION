@@ -1,6 +1,6 @@
 Package: proteoQ
-Title: Data Processing and Informatic Analysis of  Spectrometrirc Data
-Version: 1.6.0.1
+Title: Database Searching, Processing and Informatic Analysis of Mass Spectrometrirc Data
+Version: 1.6.1.0
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -62,6 +62,7 @@ Imports:
     parallel,
     pheatmap,
     plyr,
+	proteoCpp, 
     proteoQDA,
 	proxyC,
     reshape2,
@@ -77,6 +78,7 @@ Imports:
     Rcpp
 RoxygenNote: 7.1.1
 Remotes:
-	qzhang503/proteoQDA
+	qzhang503/proteoQDA, 
+	qzhang503/proteoCpp
 LinkingTo: 
     Rcpp

@@ -5,6 +5,7 @@
 #' @param path A file path.
 #' @param create Logical; if TRUE create the path if not yet existed.
 find_dir <- function (path, create = FALSE) {
+  
   stopifnot(length(path) == 1L)
   
   path <- gsub("\\\\", "/", path)
@@ -223,6 +224,7 @@ match_valexpr <- function (f = NULL, arg = NULL, val = NULL, default = NULL) {
 #' @param path A file path.
 #' @param ignores The file extensions to be ignored.
 delete_files <- function (path, ignores = NULL, ...) {
+  
   dots <- rlang::enexprs(...)
   recursive <- dots[["recursive"]]
   
@@ -446,6 +448,7 @@ purge_search_space <- function (i, aa_masses, mgf_path, n_cores, ppm_ms1 = 20L,
 #' @param theopeps Lists of theoretical peptides. A column of \code{pep_seq} is
 #'   assumed.
 sub_neuloss_peps <- function (pattern, theopeps) {
+  
   rows <- purrr::map(theopeps, ~ grepl(pattern, .x$pep_seq))
   purrr::map2(theopeps, rows, ~ .x[.y, ])
 }
@@ -457,6 +460,7 @@ sub_neuloss_peps <- function (pattern, theopeps) {
 #' 
 #' @inheritParams hms2_base
 find_nterm_mass <- function (aa_masses) {
+  
   ntmod <- attr(aa_masses, "ntmod", exact = TRUE)
   
   if (is_empty(ntmod)) {
@@ -475,6 +479,7 @@ find_nterm_mass <- function (aa_masses) {
 #' 
 #' @inheritParams hms2_base
 find_cterm_mass <- function (aa_masses) {
+  
   ctmod <- attr(aa_masses, "ctmod", exact = TRUE)
   
   if (is_empty(ctmod)) {
@@ -487,3 +492,15 @@ find_cterm_mass <- function (aa_masses) {
 }
 
 
+#' Left-joining of two data frames.
+#' 
+#' @param x The left data frame.
+#' @param y The right data frame.
+#' @param by The key.
+#' @export
+quick_leftjoin <- function (x, y, by = NULL) {
+  rows <- match(y[[by]], x[[by]])
+  x <- x[rows, ]
+  y <- y[, -which(names(y) == by), drop = FALSE]
+  cbind2(x, y)
+}

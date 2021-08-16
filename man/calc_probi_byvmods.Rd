@@ -11,10 +11,10 @@ calc_probi_byvmods(
   expt_ints,
   N,
   type_ms2ions = "by",
-  topn_ms2ions = 100,
+  topn_ms2ions = 100L,
   penalize_sions = TRUE,
-  ppm_ms2 = 25,
-  digits = 5
+  ppm_ms2 = 25L,
+  digits = 5L
 )
 }
 \arguments{

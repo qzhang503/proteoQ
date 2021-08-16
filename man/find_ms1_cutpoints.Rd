@@ -4,7 +4,7 @@
 \alias{find_ms1_cutpoints}
 \title{Finds the cut-points of MS1 masses for binning.}
 \usage{
-find_ms1_cutpoints(from = 350L, to = 1700L, ppm = 20L)
+find_ms1_cutpoints(from = 500L, to = 10000L, ppm = 20L)
 }
 \arguments{
 \item{from}{Numeric; the starting MS1 mass.}

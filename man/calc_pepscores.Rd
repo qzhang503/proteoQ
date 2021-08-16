@@ -5,16 +5,16 @@
 \title{Calculates the scores of peptides.}
 \usage{
 calc_pepscores(
-  topn_ms2ions = 100,
+  topn_ms2ions = 100L,
   type_ms2ions = "by",
   target_fdr = 0.01,
   fdr_type = "psm",
   min_len = 7L,
   max_len = 100L,
   penalize_sions = FALSE,
-  ppm_ms2 = 25,
+  ppm_ms2 = 25L,
   out_path = "~/proteoQ/outs",
-  digits = 5
+  digits = 5L
 )
 }
 \arguments{
@@ -27,14 +27,12 @@ ions}. Values are in one of "by", "ax" and "cz". The default is "by" for b-
 and y-ions.}
 
 \item{target_fdr}{Numeric; the levels of false-discovery rate (FDR) at the
-levels of PSMs or peptides. The same level applies further to protein FDR
-and indicated under the column \code{prot_issig} in outputs. This results
-in FDR controls of either PSM <-> protein or peptide <-> protein at a given
-\code{target_fdr}.}
+levels of PSMs, peptides or proteins. See also argument \code{fdr_type}.}
 
 \item{fdr_type}{Character string; the type of FDR controlling. The value is
-in one of c("psm", "peptide"). Note that protein FDR is in conjunction with
-"psm" or "peptide". Separate protein FDR may be available in the future.}
+in one of c("psm", "peptide", "protein"). Note that \code{fdr_type =
+protein} is equivalent to \code{fdr_type = psm} or \code{peptide} with the
+additional filtration of data at \code{prot_tier == 1}.}
 
 \item{min_len}{Integer; the minimum length of peptides. Shorter peptides will
 be excluded.}

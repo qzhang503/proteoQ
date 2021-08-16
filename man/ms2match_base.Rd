@@ -16,8 +16,6 @@ ms2match_a0_vnl0_fnl1(
   ctmass,
   fmods_nl,
   mod_indexes,
-  n_cores,
-  cl,
   mgf_path,
   out_path,
   type_ms2ions = "by",
@@ -40,8 +38,6 @@ ms2match_a1_vnl0_fnl0(
   ctmass = NULL,
   amods,
   mod_indexes,
-  n_cores,
-  cl,
   mgf_path,
   out_path,
   type_ms2ions = "by",
@@ -65,8 +61,6 @@ ms2match_a1_vnl0_fnl1(
   amods,
   fmods_nl,
   mod_indexes,
-  n_cores,
-  cl,
   mgf_path,
   out_path,
   type_ms2ions = "by",
@@ -90,8 +84,6 @@ ms2match_a1_vnl1_fnl0(
   amods,
   vmods_nl,
   mod_indexes,
-  n_cores,
-  cl,
   mgf_path,
   out_path,
   type_ms2ions = "by",
@@ -111,8 +103,6 @@ ms2match_base(
   ntmass,
   ctmass,
   mod_indexes,
-  n_cores,
-  cl,
   mgf_path,
   out_path,
   type_ms2ions = "by",
@@ -141,10 +131,6 @@ variable.}
 
 \item{mod_indexes}{Integer; the indexes of fixed and/or variable
 modifications.}
-
-\item{n_cores}{The number of CPU cores.}
-
-\item{cl}{The cluster nodes.}
 
 \item{mgf_path}{The file path to a list of MGF files. There is no default and
 the experimenters need to supply the files.}

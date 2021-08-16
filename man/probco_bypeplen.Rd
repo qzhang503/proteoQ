@@ -4,7 +4,7 @@
 \alias{probco_bypeplen}
 \title{Helper of \link{calc_pepfdr}.}
 \usage{
-probco_bypeplen(len, td, fdr_type, target_fdr)
+probco_bypeplen(len, td, fdr_type, target_fdr, out_path)
 }
 \arguments{
 \item{len}{Numeric; the length of peptides.}
@@ -12,14 +12,14 @@ probco_bypeplen(len, td, fdr_type, target_fdr)
 \item{td}{A target-decoy pair.}
 
 \item{fdr_type}{Character string; the type of FDR controlling. The value is
-in one of c("psm", "peptide"). Note that protein FDR is in conjunction with
-"psm" or "peptide". Separate protein FDR may be available in the future.}
+in one of c("psm", "peptide", "protein"). Note that \code{fdr_type =
+protein} is equivalent to \code{fdr_type = psm} or \code{peptide} with the
+additional filtration of data at \code{prot_tier == 1}.}
 
 \item{target_fdr}{Numeric; the levels of false-discovery rate (FDR) at the
-levels of PSMs or peptides. The same level applies further to protein FDR
-and indicated under the column \code{prot_issig} in outputs. This results
-in FDR controls of either PSM <-> protein or peptide <-> protein at a given
-\code{target_fdr}.}
+levels of PSMs, peptides or proteins. See also argument \code{fdr_type}.}
+
+\item{out_path}{The output path.}
 }
 \description{
 Calculates the probability cut-off for target-decoy pairs at a given peptide

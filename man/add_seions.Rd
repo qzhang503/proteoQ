@@ -4,7 +4,7 @@
 \alias{add_seions}
 \title{Adds secondary ions of b0, y0 etc.}
 \usage{
-add_seions(ms2s, type_ms2ions = "by", digits = 5)
+add_seions(ms2s, type_ms2ions = "by", digits = 5L)
 }
 \arguments{
 \item{ms2s}{A vector of theoretical MS2 m-over-z values.}

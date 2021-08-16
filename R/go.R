@@ -691,7 +691,9 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
 #' @importFrom plyr ldply
 #' @export
 map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPROT", 
-                          filename = NULL, db_path = "~/proteoQ/dbs/entrez", overwrite = FALSE) {
+                          filename = NULL, db_path = "~/proteoQ/dbs/entrez", 
+                          overwrite = FALSE) {
+  
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
@@ -701,10 +703,13 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
   abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
   from <- rlang::as_string(rlang::enexpr(from))
   filename <- set_db_outname(!!rlang::enexpr(filename), 
-                             species, paste(tolower(from), "entrez", sep = "_" ))
+                             species, paste(tolower(from), 
+                                            "entrez", 
+                                            sep = "_" ))
   
   if ((!file.exists(file.path(db_path, filename))) || overwrite)  {
     pkg_nm <- paste("org", abbr_species, "eg.db", sep = ".")
+    
     if (!requireNamespace(pkg_nm, quietly = TRUE)) {
       stop("Run `BiocManager::install(\"", pkg_nm, "\")` first, 
            then `library(", pkg_nm, ")`", call. = FALSE)
@@ -717,7 +722,8 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
     )
     
     if (!is.object(x)) {
-      if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", call. = FALSE)
+      if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", 
+                       call. = FALSE)
     }
     
     entrez_ids <- AnnotationDbi::mappedkeys(x) 

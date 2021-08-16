@@ -7,6 +7,7 @@
 plotHM(
   df,
   id,
+  col_order,
   col_benchmark,
   label_scheme_sub,
   filepath,
@@ -48,6 +49,12 @@ require the fields of significance p-values, the \code{df} will be one of
 
 \item{id}{Character string; one of \code{pep_seq}, \code{pep_seq_mod},
 \code{prot_acc} and \code{gene}.}
+
+\item{col_order}{Character string to a column key in \code{expt_smry.xlsx}.
+Numeric values under which will be used for the left-to-right arrangement of
+samples in graphic outputs or top-to-bottom arrangement in text outputs. At
+the NULL default, the column key \code{Order} will be used. If values under
+column \code{Order} are left blank, samples will be ordered by their names.}
 
 \item{col_benchmark}{Not used.}
 

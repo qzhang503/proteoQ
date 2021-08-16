@@ -1,3 +1,50 @@
+#' Helper of \link{groupProts}.
+#'
+#' @param out The data frame from upstream steps.
+#' @param out_path The output path.
+grp_prots <- function (out, out_path = NULL) {
+  
+  dir.create(file.path(out_path), recursive = TRUE, showWarnings = FALSE)
+  
+  out <- out %>% dplyr::arrange(pep_seq)
+  
+  # essential entries
+  rows <- (out$pep_issig & (!out$pep_isdecoy) & (out$pep_rank <= 3L))
+  
+  df <- out[rows, ]
+  
+  if (nrow(df) > 1L) {
+    df <- df %>% groupProts2(out_path)
+  } else {
+    df <- df %>%
+      dplyr::mutate(prot_isess = TRUE,
+                    prot_hit_num = 1L,
+                    prot_family_member = 1L)
+  }
+  
+  # non-essential entries
+  prot_accs <- df %>%
+    dplyr::filter(!duplicated(prot_acc), prot_isess) %>%
+    `[[`("prot_acc")
+  
+  df2 <- out[!rows, ] %>%
+    dplyr::filter(!duplicated(prot_acc)) %>%
+    dplyr::select(prot_acc) %>%
+    dplyr::mutate(prot_isess = ifelse(prot_acc %in% prot_accs, TRUE, FALSE)) %>%
+    dplyr::left_join(df[, c("prot_acc", "prot_hit_num", "prot_family_member")] %>%
+                       dplyr::filter(!duplicated(prot_acc)),
+                     by = "prot_acc") %>%
+    dplyr::right_join(out[!rows, ], by = "prot_acc") %>%
+    dplyr::mutate(pep_literal_unique = NA, pep_razor_unique = NA) %>%
+    dplyr::select(names(df))
+  
+  rm(list = c("prot_accs"))
+  
+  out <- dplyr::bind_rows(df, df2) %>%
+    dplyr::select(-which(names(.) %in% c("prot_n_psm", "prot_n_pep")))
+}
+
+
 #' Groups proteins by shared peptides.
 #'
 #' Adds columns \code{prot_hit_num} and \code{prot_family_member} to
@@ -17,6 +64,7 @@ groupProts2 <- function (df, out_path = NULL) {
   
   # --- (1) protein ~ peptide map ---
   mat <- map_pepprot2(df[, c("prot_acc", "pep_seq")], out_path)
+  # saveRDS(mat, file.path(out_path, "mat.rds"))
   gc()
   
   # --- (2) protein ~ protein groups by distance map ---
@@ -87,10 +135,9 @@ groupProts2 <- function (df, out_path = NULL) {
 map_pepprot2 <- function (df, out_path = NULL) {
   message("Building protein-peptide maps.")
   
-  df <- df[, c("prot_acc", "pep_seq")] %>%
-    tidyr::unite(pep_prot., pep_seq, prot_acc, sep = "@", remove = FALSE) %>%
-    dplyr::filter(!duplicated(pep_prot.)) %>%
-    dplyr::select(-pep_prot.)
+  df <- df[, c("prot_acc", "pep_seq")] 
+  df <- unique(df)
+  
   gc()
   
   peps <- df$pep_seq
@@ -110,9 +157,10 @@ map_pepprot2 <- function (df, out_path = NULL) {
   # ---
   mpeps <- unique(rownames(mat))
   
-  len <- length(mpeps)
-  ncol <- ncol(mat)
-  out <- rep(0, len * ncol)
+  len <- as.numeric(length(mpeps))
+  ncol <- as.numeric(ncol(mat))
+  len2 <- len * ncol
+  out <- rep(0L, len2)
   
   start <- 1
   end <- ncol
@@ -128,15 +176,38 @@ map_pepprot2 <- function (df, out_path = NULL) {
     
     start <- start + ncol
     end <- end + ncol
+    
+    if (i %% 100 == 0) gc()
   }
   
   rm(list = c("mat", "mati"))
   gc()
   
-  out <- Matrix::Matrix(out, ncol = ncol, byrow = TRUE, sparse = TRUE)
-  rownames(out) <- mpeps
-  gc()
-  
+  ## --- testing ---
+  if (object.size(out)/1024^3 > 5) {
+    size <- 10000
+    n_chunks <- ceiling(len/size)
+    
+    x0 <- NULL
+    
+    for (i in 1:n_chunks) {
+      x <- out[(ncol*(size*(i-1))+1):min(len2, (ncol*(size*i)))]
+      x <- Matrix::Matrix(x, ncol = ncol, byrow = TRUE, sparse = TRUE)
+      gc()
+      x0 <- rbind2(x0, x)
+    }
+    
+    rownames(x0) <- mpeps
+    out <- x0
+    
+    rm(list = c("x", "x0"))
+    gc()
+  } else {
+    out <- Matrix::Matrix(out, ncol = ncol, byrow = TRUE, sparse = TRUE)
+    rownames(out) <- mpeps
+    gc()
+  }
+
   out <- out == 1L
   gc()
   
@@ -182,6 +253,154 @@ map_pepprot2 <- function (df, out_path = NULL) {
 #' @param out_path A file pth to outputs.
 cut_protgrps2 <- function (mat, out_path = NULL) {
 
+  dista = proxyC::simil(mat, margin = 2) # sparse distance matrix
+  cns <- colnames(mat)
+  rm(list = c("mat"))
+  gc()
+  
+  # --- testing
+  ncol <- ncol(dista)
+  cols <- 1:ncol
+
+  if (ncol > 10000) {
+    mat2 <- matrix(nrow = ncol, ncol = ncol)
+    colnames(mat2) <- cns
+    rownames(mat2) <- cns
+    
+    max_rc <- 2500 * 40000 # 5000 out of memory
+    gc()
+    
+    size <- ceiling(max_rc/ncol)
+    n_chunks <- ceiling(ncol/size)
+    
+    for (i in 1:n_chunks) {
+      rows <- (1+(i-1)*size):min(i*size, ncol)
+
+      x <- dista[rows, cols] 
+      gc()
+      
+      x <- (x == 0) # sparse logical matrix
+      gc()
+      
+      mat2[rows, cols] <- as.matrix(x) # regular matrix
+      gc()
+    }
+    
+    rm(list = c("x"))
+    gc()
+  } else {
+    dista <- (dista == 0) # sparse logical matrix
+    gc()
+    
+    dista <- as.matrix(dista) # regular matrix
+    gc()
+    
+    mat2 <- dista
+    
+    rm(list = c("dista"))
+    gc()
+  }
+  
+  # Diagonal values are `FALSE`
+  # TRUE - orthogonal (no shared peptides)
+  # FALSE - with shared peptides
+  # 
+  #             KKA1_ECOLX NP_000005 NP_000007
+  # KKA1_ECOLX      FALSE      TRUE      TRUE
+  # NP_000005        TRUE     FALSE      TRUE
+  # NP_000007        TRUE      TRUE     FALSE
+  
+  # --- finds protein groups
+  mat2 <- as_lgldist(mat2, diag = FALSE, upper = FALSE)
+  gc()
+  
+  hc <- hclust(mat2, method = "single")
+  gc()
+  
+  grps <- data.frame(prot_hit_num = cutree(hc, h = .9)) %>% 
+    tibble::rownames_to_column("prot_acc") %>%
+    dplyr::group_by(prot_hit_num) %>%
+    dplyr::mutate(prot_family_member = row_number()) %>%
+    dplyr::ungroup()
+  
+  if (!is.null(out_path)) {
+    saveRDS(grps, file.path(out_path, "prot_grps.rds"))
+  }
+  
+  stopifnot(identical(grps$prot_acc, cns))
+  
+  invisible(grps)
+}
+
+
+#' Simplified \link[stats]{as.dist} for memory efficiency.
+#' 
+#' Assumed the input is already a symmetric matrix.
+#' 
+#' @inheritParams stats::as.dist
+as_dist <- function (m, diag = FALSE, upper = FALSE) {
+  
+  p <- nrow(m)
+  
+  ans <- m[row(m) > col(m)]
+  gc()
+  attributes(ans) <- NULL
+  
+  if (!is.null(rownames(m))) {
+    attr(ans, "Labels") <- rownames(m)
+  } else if (!is.null(colnames(m))) {
+    attr(ans, "Labels") <- colnames(m)
+  }
+  
+  attr(ans, "Size") <- p
+  attr(ans, "call") <- match.call()
+  class(ans) <- "dist"
+  
+  if (is.null(attr(ans, "Diag")) || !missing(diag)) {
+    attr(ans, "Diag") <- diag
+  }
+    
+  if (is.null(attr(ans, "Upper")) || !missing(upper)) {
+    attr(ans, "Upper") <- upper
+  }
+
+  ans
+}
+
+
+#' Simplified \link[stats]{as.dist} for memory efficiency.
+#' 
+#' Assumed the input is already a symmetric matrix.
+#' 
+#' @inheritParams stats::as.dist
+as_lgldist <- function(m, diag = FALSE, upper = FALSE) {
+  
+  d = proteoCpp::to_lgldistC(m)
+  
+  if (!is.null(rownames(m))) {
+    attr(d, "Labels") <- rownames(m)
+  } else if (!is.null(colnames(m))) {
+    attr(d, "Labels") <- colnames(m)
+  }
+
+  attr(d, "class") = "dist"
+  attr(d, "Size") = nrow(m)
+  attr(d, "call") = match.call()
+  attr(d, "Diag") = diag
+  attr(d, "Upper") = upper
+
+  d
+}
+
+
+#' Cuts proteins into groups.
+#'
+#' By the number of shared peptides.
+#'
+#' @param mat A logical matrix; peptides in rows and proteins in columns.
+#' @param out_path A file pth to outputs.
+cut_protgrps2_orig <- function (mat, out_path = NULL) {
+  
   out = proxyC::simil(mat, margin = 2)
   gc()
   
@@ -190,10 +409,10 @@ cut_protgrps2 <- function (mat, out_path = NULL) {
   
   out <- round(out, digits = 2)
   gc()
-
+  
   # f <- function(x, y) sum(x & y)
   # out <- proxy::dist(mat, by_rows = FALSE, method = f)
-
+  
   cns <- colnames(mat)
   
   # --- finds protein groups
@@ -221,4 +440,48 @@ cut_protgrps2 <- function (mat, out_path = NULL) {
   
   invisible(grps)
 }
+
+
+
+#' Greedy set cover.
+#' 
+#' A bool matrix input. Output both essential sets and elements.
+#' 
+#' @param mat A bool matrix of protein (cols)-peptide (rows) map. 
+#' 
+#' @return A two-column data frame of prot_acc and pep_seq. 
+greedysetcover3 <- function (mat) {
+  
+  if (is.matrix(mat)) {
+    mat <- Matrix::Matrix(as.matrix(mat), sparse = TRUE)
+    gc()
+  }
+  
+  prot_acc <- NULL
+  pep_seq <- NULL
+  
+  while(nrow(mat)) {
+    max <- which.max(Matrix::colSums(mat, na.rm = TRUE))
+    
+    if (max == 0L) {
+      break
+    }
+    
+    prot <- names(max)
+    rows <- which(mat[, max])
+    # peps <- names(rows) # name dropped if only one row
+    peps <- rownames(mat)[rows]
+    
+    prot_acc <- c(prot_acc, rep(prot, length(peps)))
+    pep_seq <- c(pep_seq, peps)
+    
+    mat <- mat[-rows, -max, drop = FALSE]
+  }
+  
+  rm(list = c("mat"))
+  gc()
+  
+  dplyr::bind_cols(prot_acc = prot_acc, pep_seq = pep_seq)
+}
+
 

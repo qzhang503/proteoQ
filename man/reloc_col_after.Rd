@@ -11,7 +11,8 @@ reloc_col_after(df, to_move = "after_anchor", col_before = "anchor")
 
 \item{to_move}{The column to be moved.}
 
-\item{col_before}{The anchor column to which the \code{to_move} will be moved after.}
+\item{col_before}{The anchor column to which the \code{to_move} will be moved
+after.}
 }
 \description{
 Relocate column "to_move" immediately after column "col_before".

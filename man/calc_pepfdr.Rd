@@ -6,11 +6,12 @@
 \usage{
 calc_pepfdr(
   out,
-  nms,
+  nms = "rev_2",
   target_fdr = 0.01,
   fdr_type = "psm",
   min_len = 7L,
-  max_len = 100L
+  max_len = 100L,
+  out_path
 )
 }
 \arguments{

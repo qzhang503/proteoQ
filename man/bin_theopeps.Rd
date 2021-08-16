@@ -4,7 +4,7 @@
 \alias{bin_theopeps}
 \title{Helper: separates theoretical peptides into mass groups.}
 \usage{
-bin_theopeps(peps, min_mass = 350L, max_mass = 1700L, ppm = 20L)
+bin_theopeps(peps, min_mass = 500L, max_mass = 10000L, ppm = 20L)
 }
 \arguments{
 \item{peps}{A list of theoretical peptides with masses.}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/ms2_base.R
 \name{fuzzy_match_one}
 \alias{fuzzy_match_one}
-\title{Fuzzy matches with +/-1 offsets.}
+\title{Fuzzy matches with a +/-1 window.}
 \usage{
 fuzzy_match_one(x, y)
 }
@@ -12,5 +12,5 @@ fuzzy_match_one(x, y)
 \item{y}{A vector to be matched against.}
 }
 \description{
-Fuzzy matches with +/-1 offsets.
+Fuzzy matches with a +/-1 window.
 }

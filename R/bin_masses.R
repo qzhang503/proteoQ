@@ -4,7 +4,8 @@
 #' @param min_mass A minimum mass of precursors.
 #' @param max_mass A maximum mass of precursors.
 #' @inheritParams matchMS
-bin_ms1masses <- function (res, min_mass, max_mass, ppm_ms1, out_path) {
+bin_ms1masses <- function (res, min_mass = 500L, max_mass = 10000L, 
+                           ppm_ms1 = 20L, out_path) {
   
   .path_cache <- get(".path_cache", envir = .GlobalEnv)
   .path_fasta <- get(".path_fasta", envir = .GlobalEnv)
@@ -59,7 +60,7 @@ bin_ms1masses <- function (res, min_mass, max_mass, ppm_ms1, out_path) {
 #'   correspond to the lists of \code{res}.
 #' @import parallel
 #' @export
-binTheoPeps <- function (res, min_mass = 516.2405, max_mass = 10000L, ppm = 20L, 
+binTheoPeps <- function (res, min_mass = 500L, max_mass = 10000L, ppm = 20L, 
                          out_path = file.path("~/proteoQ/outs", 
                                               "pepmasses/binned_theopeps.rds")) {
   
@@ -96,7 +97,7 @@ binTheoPeps <- function (res, min_mass = 516.2405, max_mass = 10000L, ppm = 20L,
 #' 
 #' @param peps A list of theoretical peptides with masses.
 #' @inheritParams binTheoPeps
-bin_theopeps <- function (peps, min_mass = 350L, max_mass = 1700L, ppm = 20L) {
+bin_theopeps <- function (peps, min_mass = 500L, max_mass = 10000L, ppm = 20L) {
   
   ps <- find_ms1_cutpoints(min_mass, max_mass, ppm)
   
@@ -123,7 +124,7 @@ bin_theopeps <- function (peps, min_mass = 350L, max_mass = 1700L, ppm = 20L) {
 #' @param ppm Numeric; the ppm for data binning.
 #' @return Cut points.
 #' @seealso find_ms1_interval
-find_ms1_cutpoints <- function (from = 350L, to = 1700L, ppm = 20L) {
+find_ms1_cutpoints <- function (from = 500L, to = 10000L, ppm = 20L) {
   
   d <- ppm/1e6
   n <- ceiling(log(to/from)/log(1+d))

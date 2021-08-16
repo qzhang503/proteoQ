@@ -4,7 +4,7 @@
 \alias{find_ppm_outer_bycombi}
 \title{Finds the the outer products for a vector of MS2 ions at a given ion series.}
 \usage{
-find_ppm_outer_bycombi(theos, expts, ppm_ms2 = 25)
+find_ppm_outer_bycombi(theos, expts, ppm_ms2 = 25L)
 }
 \arguments{
 \item{theos}{Numeric vector; one series of theoretical MS2s.}

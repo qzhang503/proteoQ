@@ -16,15 +16,15 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
                       mod_indexes, type_ms2ions, maxn_vmods_per_pep, 
                       maxn_sites_per_vmod, maxn_vmods_sitescombi_per_pep, 
                       minn_ms2, ppm_ms1, ppm_ms2, min_ms2mass, 
-                      
+                      quant, ppm_reporters, 
+
                       # dummies
                       fasta, acc_type, acc_pattern,
                       topn_ms2ions, fixedmods, varmods, 
                       include_insource_nl, enzyme, 
                       maxn_fasta_seqs, maxn_vmods_setscombi, 
                       min_len, max_len, max_miss, 
-                      # topn_ms2ions, target_fdr, fdr_type, quant, ppm_reporters, 
-                      
+
                       digits) {
   
   options(digits = 9L)
@@ -45,7 +45,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
   cache_pars <- find_callarg_vals(time = NULL, 
                                   path = file.path(out_path, "Calls"), 
                                   fun = paste0(fun, ".rda"), 
-                                  arg = names(formals(fun))) %>% 
+                                  args = names(formals(fun))) %>% 
     .[! . %in% args_except] %>% 
     .[sort(names(.))]
   
@@ -55,19 +55,27 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
     .[sort(names(.))]
   
   if (identical(cache_pars, call_pars)) {
-    files <- c(
-      file.path(out_path, "ion_matches.rds"), 
-      file.path(out_path, "ion_matches_rev.rds")
-    )
+    len <- length(aa_masses_all)
     
-    if (all(file.exists(files))) {
-      message("Loading ion matches from cache.")
+    fions <- list.files(path = file.path(out_path, "temp"), 
+                        pattern = "ion_matches_[0-9]+\\.rds$")
+    
+    ok_ions <- (length(fions) == len)
+    
+    if (grepl("^tmt[0-9]+$", quant)) {
+      ftmt <- list.files(path = file.path(out_path, "temp"), 
+                          pattern = "reporters_[0-9]+\\.rds$")
       
-      out <- readRDS(file.path(out_path, "ion_matches.rds"))
-      
+      ok_tmt <- (length(ftmt) == len)
+    } else {
+      ok_tmt <- TRUE
+    }
+    
+    if (ok_ions && ok_tmt) {
+      message("Found cached ion matches.")
       .savecall <- FALSE
       
-      return(out)
+      return(NULL)
     }
   }
   
@@ -76,16 +84,9 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
   delete_files(out_path, ignores = c("\\.[Rr]$", "\\.(mgf|MGF)$", "\\.xlsx$", 
                                      "\\.xls$", "\\.csv$", "\\.txt$", 
                                      "^mgf$", "^mgfs$"))
-  
-  # ---
-  n_cores <- parallel::detectCores()
-  cl <- makeCluster(getOption("cl.cores", n_cores))
-  clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
-  clusterExport(cl, list("%fin%"), envir = environment(fastmatch::`%fin%`))
-  clusterExport(cl, list("fmatch"), envir = environment(fastmatch::fmatch))
-  
-  # Targets 
-  out <- vector("list", length(aa_masses_all))
+
+  ## Targets 
+  obj_sizes <- numeric(length(aa_masses_all))
   types <- purrr::map_chr(aa_masses_all, attr, "type", exact = TRUE)
   
   # (1, 2) "amods- tmod+ vnl- fnl-", "amods- tmod- vnl- fnl-" 
@@ -104,28 +105,26 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       #   or fixed N-term `TMT + hydrogen`
       
       ntmod <- attr(aa_masses, "ntmod", exact = TRUE)
-      if (is_empty(ntmod)) {
+      if (length(ntmod) == 0L) {
         ntmass <- aa_masses["N-term"] - 0.000549 # - electron
       } else {
         ntmass <- aa_masses[names(ntmod)] + 1.00727647 # + proton
       }
       
       ctmod <- attr(aa_masses, "ctmod", exact = TRUE)
-      if (is_empty(ctmod)) {
+      if (length(ctmod) == 0L) {
         ctmass <- aa_masses["C-term"] + 2.01510147 # + (H) + (H+)
       } else {
         ctmass <- aa_masses[names(ctmod)] + 2.01510147
       }
       
       # (`map` against groups of frames)
-      out[[i]] <- ms2match_base(
+      out <- ms2match_base(
         i = i, 
         aa_masses = aa_masses, 
         ntmass = ntmass, 
         ctmass = ctmass, 
         mod_indexes = mod_indexes, 
-        n_cores = n_cores,
-        cl = cl, 
         mgf_path = mgf_path, 
         out_path = out_path, 
         type_ms2ions = type_ms2ions, 
@@ -137,6 +136,20 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         ppm_ms2 = ppm_ms2, 
         min_ms2mass = min_ms2mass, 
         digits = digits)
+      
+      obj_sizes[i] <- object.size(out)
+      
+      if (grepl("^tmt[0-9]+$", quant)) {
+        out <- out %>% 
+          calc_tmtint(quant = quant, ppm_reporters = ppm_reporters) %>% 
+          tidyr::unite(uniq_id, raw_file, pep_mod_group, scan_num, sep = ".", 
+                       remove = TRUE) %>% 
+          dplyr::select(uniq_id, grep("^I[0-9]{3}[NC]{0,1}$", names(.))) %T>% 
+          saveRDS(file.path(out_path, "temp", paste0("reporters_", i, ".rds")))
+      }
+      
+      rm(list = c("out"))
+      gc()
     }
   }
   
@@ -153,14 +166,14 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       aa_masses <- aa_masses_all[[i]]
       
       ntmod <- attr(aa_masses, "ntmod", exact = TRUE)
-      if (is_empty(ntmod)) {
+      if (length(ntmod) == 0L) {
         ntmass <- aa_masses["N-term"] - 0.000549
       } else {
         ntmass <- aa_masses[names(ntmod)] + 1.00727647
       }
       
       ctmod <- attr(aa_masses, "ctmod", exact = TRUE)
-      if (is_empty(ctmod)) {
+      if (length(ctmod) == 0L) {
         ctmass <- aa_masses["C-term"] + 2.01510147
       } else {
         ctmass <- aa_masses[names(ctmod)] + 2.01510147
@@ -168,16 +181,13 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       
       fmods_nl <- attr(aa_masses, "fmods_nl", exact = TRUE)
       
-      # (`map` against groups of frames)
-      out[[i]] <- ms2match_a0_vnl0_fnl1(
+      out <- ms2match_a0_vnl0_fnl1(
         i = i, 
         aa_masses = aa_masses, 
         ntmass = ntmass, 
         ctmass = ctmass, 
         fmods_nl = fmods_nl, 
         mod_indexes = mod_indexes, 
-        n_cores = n_cores,
-        cl = cl, 
         mgf_path = mgf_path, 
         out_path = out_path, 
         type_ms2ions = type_ms2ions, 
@@ -189,6 +199,20 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         ppm_ms2 = ppm_ms2, 
         min_ms2mass = min_ms2mass, 
         digits = digits)
+      
+      obj_sizes[i] <- object.size(out)
+      
+      if (grepl("^tmt[0-9]+$", quant)) {
+        out <- out %>% 
+          calc_tmtint(quant = quant, ppm_reporters = ppm_reporters) %>% 
+          tidyr::unite(uniq_id, raw_file, pep_mod_group, scan_num, sep = ".", 
+                       remove = TRUE) %>% 
+          dplyr::select(uniq_id, grep("^I[0-9]{3}[NC]{0,1}$", names(.))) %T>% 
+          saveRDS(file.path(out_path, "temp", paste0("reporters_", i, ".rds")))
+      }
+      
+      rm(list = c("out"))
+      gc()
     }
   }
   
@@ -203,14 +227,14 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       aa_masses <- aa_masses_all[[i]]
       
       ntmod <- attr(aa_masses, "ntmod", exact = TRUE)
-      if (is_empty(ntmod)) {
+      if (length(ntmod) == 0L) {
         ntmass <- aa_masses["N-term"] - 0.000549
       } else {
         ntmass <- aa_masses[names(ntmod)] + 1.00727647
       }
       
       ctmod <- attr(aa_masses, "ctmod", exact = TRUE)
-      if (is_empty(ctmod)) {
+      if (length(ctmod) == 0L) {
         ctmass <- aa_masses["C-term"] + 2.01510147
       } else {
         ctmass <- aa_masses[names(ctmod)] + 2.01510147
@@ -218,8 +242,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       
       amods <- attr(aa_masses, "amods", exact = TRUE) # variable anywhere
       
-      # (`map` against groups of frames)
-      out[[i]] <- ms2match_a1_vnl0_fnl0(
+      out <- ms2match_a1_vnl0_fnl0(
         i = i, 
         aa_masses = aa_masses, 
         ntmod = ntmod, 
@@ -228,8 +251,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         ctmass = ctmass, 
         amods = amods, 
         mod_indexes = mod_indexes, 
-        n_cores = n_cores,
-        cl = cl, 
         mgf_path = mgf_path, 
         out_path = out_path, 
         type_ms2ions = type_ms2ions, 
@@ -241,6 +262,20 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         ppm_ms2 = ppm_ms2, 
         min_ms2mass = min_ms2mass, 
         digits = digits)
+      
+      obj_sizes[i] <- object.size(out)
+      
+      if (grepl("^tmt[0-9]+$", quant)) {
+        out <- out %>% 
+          calc_tmtint(quant = quant, ppm_reporters = ppm_reporters) %>% 
+          tidyr::unite(uniq_id, raw_file, pep_mod_group, scan_num, sep = ".", 
+                       remove = TRUE) %>% 
+          dplyr::select(uniq_id, grep("^I[0-9]{3}[NC]{0,1}$", names(.))) %T>% 
+          saveRDS(file.path(out_path, "temp", paste0("reporters_", i, ".rds")))
+      }
+      
+      rm(list = c("out"))
+      gc()
     }
   }
   
@@ -255,14 +290,14 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       aa_masses <- aa_masses_all[[i]]
       
       ntmod <- attr(aa_masses, "ntmod", exact = TRUE)
-      if (is_empty(ntmod)) {
+      if (length(ntmod) == 0L) {
         ntmass <- aa_masses["N-term"] - 0.000549
       } else {
         ntmass <- aa_masses[names(ntmod)] + 1.00727647
       }
       
       ctmod <- attr(aa_masses, "ctmod", exact = TRUE)
-      if (is_empty(ctmod)) {
+      if (length(ctmod) == 0L) {
         ctmass <- aa_masses["C-term"] + 2.01510147
       } else {
         ctmass <- aa_masses[names(ctmod)] + 2.01510147
@@ -271,8 +306,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       amods <- attr(aa_masses, "amods", exact = TRUE) # variable anywhere
       vmods_nl <- attr(aa_masses, "vmods_nl", exact = TRUE)
       
-      # (`map` against groups of frames)
-      out[[i]] <- ms2match_a1_vnl1_fnl0(
+      out <- ms2match_a1_vnl1_fnl0(
         i = i, 
         aa_masses = aa_masses, 
         ntmod = ntmod, 
@@ -282,8 +316,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         amods = amods, 
         vmods_nl = vmods_nl, 
         mod_indexes = mod_indexes, 
-        n_cores = n_cores,
-        cl = cl, 
         mgf_path = mgf_path, 
         out_path = out_path, 
         type_ms2ions = type_ms2ions, 
@@ -295,6 +327,20 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         ppm_ms2 = ppm_ms2, 
         min_ms2mass = min_ms2mass, 
         digits = digits)
+      
+      obj_sizes[i] <- object.size(out)
+      
+      if (grepl("^tmt[0-9]+$", quant)) {
+        out <- out %>% 
+          calc_tmtint(quant = quant, ppm_reporters = ppm_reporters) %>% 
+          tidyr::unite(uniq_id, raw_file, pep_mod_group, scan_num, sep = ".", 
+                       remove = TRUE) %>% 
+          dplyr::select(uniq_id, grep("^I[0-9]{3}[NC]{0,1}$", names(.))) %T>% 
+          saveRDS(file.path(out_path, "temp", paste0("reporters_", i, ".rds")))
+      }
+      
+      rm(list = c("out"))
+      gc()
     }
   }
   
@@ -310,14 +356,14 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       aa_masses <- aa_masses_all[[i]]
       
       ntmod <- attr(aa_masses, "ntmod", exact = TRUE)
-      if (is_empty(ntmod)) {
+      if (length(ntmod) == 0L) {
         ntmass <- aa_masses["N-term"] - 0.000549
       } else {
         ntmass <- aa_masses[names(ntmod)] + 1.00727647
       }
       
       ctmod <- attr(aa_masses, "ctmod", exact = TRUE)
-      if (is_empty(ctmod)) {
+      if (length(ctmod) == 0L) {
         ctmass <- aa_masses["C-term"] + 2.01510147
       } else {
         ctmass <- aa_masses[names(ctmod)] + 2.01510147
@@ -326,8 +372,7 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       amods <- attr(aa_masses, "amods", exact = TRUE) # variable anywhere
       fmods_nl <- attr(aa_masses, "fmods_nl", exact = TRUE)
       
-      # (`map` against groups of frames)
-      out[[i]] <- ms2match_a1_vnl0_fnl1(
+      out <- ms2match_a1_vnl0_fnl1(
         i = i, 
         aa_masses = aa_masses, 
         ntmod = ntmod, 
@@ -337,8 +382,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         amods = amods, 
         fmods_nl = fmods_nl, 
         mod_indexes = mod_indexes, 
-        n_cores = n_cores,
-        cl = cl, 
         mgf_path = mgf_path, 
         out_path = out_path, 
         type_ms2ions = type_ms2ions, 
@@ -350,35 +393,45 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
         ppm_ms2 = ppm_ms2, 
         min_ms2mass = min_ms2mass, 
         digits = digits)
+      
+      obj_sizes[i] <- object.size(out)
+      
+      if (grepl("^tmt[0-9]+$", quant)) {
+        out <- out %>% 
+          calc_tmtint(quant = quant, ppm_reporters = ppm_reporters) %>% 
+          tidyr::unite(uniq_id, raw_file, pep_mod_group, scan_num, sep = ".", 
+                       remove = TRUE) %>% 
+          dplyr::select(uniq_id, grep("^I[0-9]{3}[NC]{0,1}$", names(.))) %T>% 
+          saveRDS(file.path(out_path, "temp", paste0("reporters_", i, ".rds")))
+      }
+      
+      rm(list = c("out"))
+      gc()
     }
   }
   
-  out <- out %>% 
-    `names<-`(seq_along(.)) %T>% 
-    saveRDS(file.path(out_path, "ion_matches.rds")) 
-
-  # Decoys
-  maxs <- map_dbl(out, object.size) %>% which_topx(1)
-  maxs2 <- maxs %>% paste0("rev_", .)
+  ## Decoys
+  maxs <- which.max(obj_sizes)
+  maxs2 <- paste0("rev_", maxs)
 
   aa_masses <- aa_masses_all[[maxs]]
   
   ntmod <- attr(aa_masses, "ntmod", exact = TRUE)
-  if (is_empty(ntmod)) {
+  if (length(ntmod) == 0L) {
     ntmass <- aa_masses["N-term"] - 0.000549
   } else {
     ntmass <- aa_masses[names(ntmod)] + 1.00727647
   }
   
   ctmod <- attr(aa_masses, "ctmod", exact = TRUE)
-  if (is_empty(ctmod)) {
+  if (length(ctmod) == 0L) {
     ctmass <- aa_masses["C-term"] + 2.01510147
   } else {
     ctmass <- aa_masses[names(ctmod)] + 2.01510147
   }
   
   amods <- attr(aa_masses, "amods", exact = TRUE) # variable anywhere
-
+  
   if (length(amods) == 0L) { # (1, 2)
     rev <- ms2match_base(
       i = maxs2, 
@@ -386,8 +439,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       ntmass = ntmass, 
       ctmass = ctmass, 
       mod_indexes = mod_indexes, 
-      n_cores = n_cores,
-      cl = cl, 
       mgf_path = mgf_path, 
       out_path = out_path, 
       type_ms2ions = type_ms2ions, 
@@ -409,8 +460,6 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       ctmass = ctmass, 
       amods = amods, 
       mod_indexes = mod_indexes, 
-      n_cores = n_cores,
-      cl = cl, 
       mgf_path = mgf_path, 
       out_path = out_path, 
       type_ms2ions = type_ms2ions, 
@@ -424,16 +473,14 @@ ms2match <- function (mgf_path, aa_masses_all, out_path,
       digits = digits)
   }
   
-  rev <- list(rev)  %>% 
-    `names<-`(maxs2) %T>% 
-    saveRDS(file.path(out_path, "ion_matches_rev.rds")) 
-
-  stopCluster(cl)
+  saveRDS(rev, file.path(out_path, "temp", paste0("ion_matches_", maxs2, ".rds"))) 
+  
+  rm(list = c("rev"))
   gc()
   
   .savecall <- TRUE
   
-  invisible(out)
+  invisible(NULL)
 }
 
 
