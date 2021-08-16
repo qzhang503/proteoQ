@@ -273,125 +273,112 @@ calc_probi_byvmods <- function (df, nms, expt_moverzs, expt_ints,
   # (OK n < 0L)
   
   n <- N - m - sum(!is.na(df2$expt))
-
-  if (penalize_sions) {
-    
-    ## step 0: the original tidyverse approach
-    
-    # m2 <- nrow(df2)
-    
-    # y2 <- df2 %>% 
-    #   left_join(expts, by = "expt") %>% 
-    #   `[[`("int") %>% 
-    #   split(rep(seq_len(m2/m), each = m)) %>% 
-    #   Reduce(`%+%`, .) %>% 
-    #   data.frame(idx = seq_len(m), int2 = .)
-    
-    # y <- left_join(expts, df %>% mutate(idx = row_number()), by = "expt") %>% 
-    #   dplyr::left_join(y2, by = "idx") %>% 
-    #   mutate(int = ifelse(is.na(int2), int, int + int2)) %>% 
-    #   select(-c("int2", "idx")) %>% 
-    #   arrange(-int) %>% 
-    #   mutate(k = row_number(), x = k - cumsum(is.na(theo))) %>% 
-    #   filter(!is.na(theo))
-
-    
-    ## step 1: compiles secondary intensities
-    
-    # (1.1)
-    len <- length(df2$expt) # .6 us
-    
-    i_se <- match(df2$expt, expt_moverzs) # secondary ions (df2) in expts; 4 us
-    i_s <- which(!is.na(i_se)) # indexes in df2; 1.7 us
-    i_e <- i_se[i_s] # indexes of the matches in expts; .4 us
-    
-    df2$int <- rep(NA, len) # matched intensities; .7 us
-    df2$int[i_s] <- expt_ints[i_e] # the corresponding intensities from expts; 1.4 us
-    
-    # (1.2) collapse b0, b*, b2 etc.
-    int2 <- df2$int %>% 
-      split(rep(seq_len(len/m), each = m)) %>% 
-      Reduce(`%+%`, .)
-    
-    y2 <- list(idx = 1:m, int2 = int2)
-    
-    ## step 2 (join expts and "theo", "idx" from the primary df): 
-    # (y <- left_join(expts, df %>% mutate(idx = row_number()), by = "expt"))
-    # 
-    #   expts: "expt" (expt_moverzs), "int" (expt_ints)
-    #   df: "theo" (m/z), "expt" (m/z), "idx" (indexes)
-    #   -> y: "theo", "expt", "int" "idx"
-    
-    # (2.1)
-    df$idx <- 1:m
-    
-    i_ep <- match(expt_moverzs, df$expt) # expts in primary ions (df); 4 us
-    i_e <- which(!is.na(i_ep)) # indexes in expts; 1.7 us
-    i_p <- i_ep[i_e] # indexes of matches in primary df; .4 us
-    
-    # (2.2)
-    nu <- rep(NA, topn_ms2ions)
-    y <- list(expt = expt_moverzs, int = expt_ints)
-    
-    y$theo <- nu
-    y$idx <- nu
-    
-    y$theo[i_e] <- df$theo[i_p] # .5 us
-    y$idx[i_e] <- df$idx[i_p]
-    
-    ## step 3: add `int2` from `y2`
-    #  (dplyr::left_join(y, y2, by = "idx"))
-
-    i_yy2 <- match(y$idx, y2$idx)
-    i_y <- which(!is.na(i_yy2))
-    i_y2 <- i_yy2[i_y]
-    
-    y$int2 <- nu
-    y$int2[i_y] <- y2$int2[i_y2]
-    
-    ## step 4: collapses `int2` to `int`
-    #  (mutate(y, int = ifelse(is.na(int2), int, int + int2)))
-    #  (`int2` not used if the corresponding `int` not available)
-    
-    # int <- y[["int"]]
-    # int2 <- y[["int2"]]
-    # y[["int"]] <- ifelse(is.na(int2), int, int + int2)
-    y[["int"]] <- y[["int"]] %+% y[["int2"]]
-    y[["int2"]] <- NULL
-    y[["idx"]] <- NULL
-    
-    ## step 5: arrange(-int)
-    
-    idx <- order(y[["int"]], decreasing = TRUE, method = "radix", na.last = TRUE) # 16.4 us
-    y[["expt"]] <- y[["expt"]][idx]
-    y[["int"]] <- y[["int"]][idx]
-    y[["theo"]] <- y[["theo"]][idx]
-    
-    ## step 6: mutate(k = row_number(), x = k - cumsum(is.na(theo)))
-    
-    k <- 1:topn_ms2ions
-    x <- k - cumsum(is.na(y[["theo"]]))
-    
-    y$k <- k
-    y$x <- x
-    
-    ## step 7: filter(!is.na(theo))
-    
-    idx <- !is.na(y[["theo"]])
-    
-    y[["expt"]] <- y[["expt"]][idx]
-    y[["int"]] <- y[["int"]][idx]
-    y[["theo"]] <- y[["theo"]][idx]
-    y[["k"]] <- y[["k"]][idx]
-    y[["x"]] <- y[["x"]][idx]
-  } else {
-    y <- left_join(expts, df, by = "expt") %>% 
-      arrange(-int) %>% 
-      mutate(k = row_number(), 
-             x = k - cumsum(is.na(theo))) %>% 
-      filter(!is.na(theo))
-  }
   
+  ## step 0: the original tidyverse approach
+  
+  # m2 <- nrow(df2)
+  
+  # y2 <- df2 %>% 
+  #   left_join(expts, by = "expt") %>% 
+  #   `[[`("int") %>% 
+  #   split(rep(seq_len(m2/m), each = m)) %>% 
+  #   Reduce(`%+%`, .) %>% 
+  #   data.frame(idx = seq_len(m), int2 = .)
+  
+  # y <- left_join(expts, df %>% mutate(idx = row_number()), by = "expt") %>% 
+  #   dplyr::left_join(y2, by = "idx") %>% 
+  #   mutate(int = ifelse(is.na(int2), int, int + int2)) %>% 
+  #   select(-c("int2", "idx")) %>% 
+  #   arrange(-int) %>% 
+  #   mutate(k = row_number(), x = k - cumsum(is.na(theo))) %>% 
+  #   filter(!is.na(theo))
+  
+  ## step 1: compiles secondary intensities
+  
+  # (1.1)
+  len <- length(df2$expt) # .6 us
+  
+  i_se <- match(df2$expt, expt_moverzs) # secondary ions (df2) in expts; 4 us
+  i_s <- which(!is.na(i_se)) # indexes in df2; 1.7 us
+  i_e <- i_se[i_s] # indexes of the matches in expts; .4 us
+  
+  df2$int <- rep(NA, len) # matched intensities; .7 us
+  df2$int[i_s] <- expt_ints[i_e] # the corresponding intensities from expts; 1.4 us
+  
+  # (1.2) collapse b0, b*, b2 etc.
+  int2 <- df2$int %>% 
+    split(rep(seq_len(len/m), each = m)) %>% 
+    Reduce(`%+%`, .)
+  
+  y2 <- list(idx = 1:m, int2 = int2)
+  
+  ## step 2 (join expts and "theo", "idx" from the primary df): 
+  # (y <- left_join(expts, df %>% mutate(idx = row_number()), by = "expt"))
+  # 
+  #   expts: "expt" (expt_moverzs), "int" (expt_ints)
+  #   df: "theo" (m/z), "expt" (m/z), "idx" (indexes)
+  #   -> y: "theo", "expt", "int" "idx"
+  
+  # (2.1)
+  df$idx <- 1:m
+  
+  i_ep <- match(expt_moverzs, df$expt) # expts in primary ions (df); 4 us
+  i_e <- which(!is.na(i_ep)) # indexes in expts; 1.7 us
+  i_p <- i_ep[i_e] # indexes of matches in primary df; .4 us
+  
+  # (2.2)
+  nu <- rep(NA, topn_ms2ions)
+  y <- list(expt = expt_moverzs, int = expt_ints)
+  
+  y$theo <- nu
+  y$idx <- nu
+  
+  y$theo[i_e] <- df$theo[i_p] # .5 us
+  y$idx[i_e] <- df$idx[i_p]
+  
+  ## step 3: add `int2` from `y2`
+  #  (dplyr::left_join(y, y2, by = "idx"))
+  
+  i_yy2 <- match(y$idx, y2$idx)
+  i_y <- which(!is.na(i_yy2))
+  i_y2 <- i_yy2[i_y]
+  
+  y$int2 <- nu
+  y$int2[i_y] <- y2$int2[i_y2]
+  
+  ## step 4: collapses `int2` to `int`
+  #  (mutate(y, int = ifelse(is.na(int2), int, int + int2)))
+
+  y[["int"]] <- y[["int"]] %+% y[["int2"]]
+  y[["int2"]] <- NULL
+  y[["idx"]] <- NULL
+  
+  ## step 5: arrange(-int)
+  
+  idx <- order(y[["int"]], decreasing = TRUE, method = "radix", na.last = TRUE) # 16.4 us
+  y[["expt"]] <- y[["expt"]][idx]
+  y[["int"]] <- y[["int"]][idx]
+  y[["theo"]] <- y[["theo"]][idx]
+  
+  ## step 6: mutate(k = row_number(), x = k - cumsum(is.na(theo)))
+  
+  k <- 1:topn_ms2ions
+  x <- k - cumsum(is.na(y[["theo"]]))
+  
+  y$k <- k
+  y$x <- x
+  
+  ## step 7: filter(!is.na(theo))
+  
+  idx <- !is.na(y[["theo"]])
+  
+  y[["expt"]] <- y[["expt"]][idx]
+  y[["int"]] <- y[["int"]][idx]
+  y[["theo"]] <- y[["theo"]][idx]
+  y[["k"]] <- y[["k"]][idx]
+  y[["x"]] <- y[["x"]][idx]
+  
+  ## Probability
   # note: x <= k <= x + n
   
   x <- y$x

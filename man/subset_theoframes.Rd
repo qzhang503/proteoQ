@@ -4,7 +4,7 @@
 \alias{subset_theoframes}
 \title{Subsets the frames of theoretical peptides.}
 \usage{
-subset_theoframes(mgf_frames, theopeps)
+subset_theoframes(mgf_frames = NULL, theopeps = NULL)
 }
 \arguments{
 \item{mgf_frames}{MGFs in frames. Each frame contains one to multiple MGFs

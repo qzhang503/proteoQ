@@ -91,9 +91,13 @@ knitr::opts_chunk$set(
 
 ## Introduction to proteoQ
 
-Tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is designed for automated, flexible and reproducible *mining* of proteomics data. It interacts with an Excel spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates operations, such as data normalization, against chosen rows and/or columns of data into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data pre-processing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.
+Tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is designed for both the *searches* and *mining* of proteomics data. 
 
-The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of proteoQ consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/) or [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) for TMT ($\le$ 16-plex) or LFQ experiments, using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.[^1]
+The main utility for database searches is **proteoQ::matchMS**. The outputs, or third-party search results, are then applied for informatic analysis.  
+
+With data mining, it interacts with an Excel spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates operations, such as data normalization, against chosen rows and/or columns of data into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data pre-processing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.
+
+The [informatic framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of proteoQ consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/), [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) or the **proteoQ::matchMS** utility, for TMT ($\le$ 16-plex) or LFQ experiments, using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.[^1]
 
 [^1]: To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags or Label-free Approaches. <https://github.com/qzhang503/proteoQ>.
 
@@ -103,7 +107,7 @@ The [framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of prote
 
 ## Installation
 
-To install this package, start R (version "4.0") and enter:
+To install this package, start R (latest version or "4.1.1") and enter:
 
 ```{r installation_1, include = TRUE, eval = FALSE}
 if (!requireNamespace("devtools", quietly = TRUE))
@@ -127,7 +131,7 @@ In this document, I (Qiang Zhang) first illustrate the following applications of
 -   Mixed-bed normalization using full or partial data.
 -   Removal of low-quality entries from PSM, peptide and protein data.
 
-The data set we will use in this section corresponds to the proteomics data from Mertins et al. [@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, samples from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data were analyzed against the search engines of Mascot, MaxQuant, MSFragger or Spectrum Mill. Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed whereas details of LFQ analysis can be found in the help document of `proteoQ::load_expts`.
+The data set we will use in this section corresponds to the proteomics data from Mertins et al. [@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, samples from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data were analyzed against the search engines of Mascot, MaxQuant, MSFragger or Spectrum Mill. Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed whereas details of LFQ analysis can be found in the help document of `proteoQ::load_expts`.  
 
 ### 1.1 Experiment setup
 
@@ -149,12 +153,13 @@ copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 
 #### 1.1.2 PSM data
 
-The data processing begins with PSM table(s) from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/), [MaxQuant, MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/) or Spectrum Mill with the following compilation in file names:
+The data processing begins with PSM table(s) from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/), [MaxQuant, MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/), Spectrum Mill or proteoQ::matchMS with the following compilation in file names:
 
 -   Mascot: begin with letter `F`, followed by digits and ends with `.csv`;
 -   MaxQuant: start with `msms` and end with `.txt`;
 -   MSFragger: start with `psm` and end with `.tsv`;
--   Spectrum Mill: start with `PSMexport` and end with `.ssv`.
+-   Spectrum Mill: start with `PSMexport` and end with `.ssv`, 
+-   proteoQ: start with `psmQ` and end with `.txt`.
 
 The corresponding PSMs are available through one of the followings `copy_` utilities:
 
@@ -172,12 +177,33 @@ copy_msfragger_gtmt()
 copy_specmill_gtmt()
 ```
 
+or through the database searches by proteoQ:  
+
+```{r matchMS, include = TRUE, eval = FALSE}
+# (No bandwidth was purchased to host the MGF files; 
+#  please provide your own for now Or please help to host the MGF examples)
+matchMS(
+  out_path = "~/proteoQ/examples", 
+  
+  # e.g., place mgf files under the indicated folder
+  mgf_path = file.path(out_path, "mgf"), 
+  
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
+  acc_type = c("refseq_acc", "other"), 
+  max_miss = 2, 
+  quant = "tmt10", 
+  fdr_type = "protein", 
+)
+```
+
 To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:
 
 ```{r copy_global_mascot, include = TRUE, eval = FALSE}
 dat_dir <- "~/proteoQ/examples"
 copy_mascot_gtmt(dat_dir)
 ```
+
 
 #### 1.1.3 Metadata
 
