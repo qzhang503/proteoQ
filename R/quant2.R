@@ -133,8 +133,7 @@ groupProts2 <- function (df, out_path = NULL) {
 #' out <- map_pepprot2(df)
 #' }
 map_pepprot2 <- function (df, out_path = NULL) {
-  message("Building protein-peptide maps.")
-  
+
   df <- df[, c("prot_acc", "pep_seq")] 
   df <- unique(df)
   

@@ -4,7 +4,7 @@
 \alias{add_rptrs}
 \title{Adds back reporter-ion intensities}
 \usage{
-add_rptrs(df, quant = "none", out_path)
+add_rptrs(df = NULL, quant = "none", out_path = NULL)
 }
 \arguments{
 \item{df}{Results from \link{calc_protfdr}.}

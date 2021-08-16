@@ -4,7 +4,12 @@
 \alias{psmC2Q}
 \title{From \code{psmQ} to \code{psmQ}.}
 \usage{
-psmC2Q(out, combine_tier_three = FALSE, fdr_type = "psm", out_path)
+psmC2Q(
+  out = NULL,
+  combine_tier_three = FALSE,
+  fdr_type = "psm",
+  out_path = NULL
+)
 }
 \arguments{
 \item{out}{A result from \code{psmQ} with additional filtration.}
@@ -14,10 +19,11 @@ the output of \code{psmQ.txt}. Outputs under the option TRUE are often
 comparable to Mascot outputs with FDR controls at the levels of PSMs or
 peptides.}
 
-\item{fdr_type}{Character string; the type of FDR controlling. The value is
-in one of c("psm", "peptide", "protein"). Note that \code{fdr_type =
-protein} is equivalent to \code{fdr_type = psm} or \code{peptide} with the
-additional filtration of data at \code{prot_tier == 1}.}
+\item{fdr_type}{Character string; the type of FDR control. The value is in
+one of c("psm", "peptide", "protein"). Note that \code{fdr_type = protein}
+is equivalent to \code{fdr_type = peptide} with the additional filtration
+of data at \code{prot_tier == 1}. A variant is to set \code{fdr_type =
+psm}, followed by a data filtration at \code{prot_tier == 1}.}
 
 \item{out_path}{The output path.}
 }

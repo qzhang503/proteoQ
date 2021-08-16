@@ -120,13 +120,14 @@ include \code{tmt6} etc. For other multiplicities of \code{tmt}, use the
 compatible higher plexes, for example, \code{tmt16} for \code{tmt12} etc.
 and \code{tmt10} for \code{tmt8} etc.}
 
-\item{target_fdr}{Numeric; the levels of false-discovery rate (FDR) at the
-levels of PSMs, peptides or proteins. See also argument \code{fdr_type}.}
+\item{target_fdr}{Numeric; a targeted false-discovery rate (FDR) at the
+levels of PSM, peptide or protein. See also argument \code{fdr_type}.}
 
-\item{fdr_type}{Character string; the type of FDR controlling. The value is
-in one of c("psm", "peptide", "protein"). Note that \code{fdr_type =
-protein} is equivalent to \code{fdr_type = psm} or \code{peptide} with the
-additional filtration of data at \code{prot_tier == 1}.}
+\item{fdr_type}{Character string; the type of FDR control. The value is in
+one of c("psm", "peptide", "protein"). Note that \code{fdr_type = protein}
+is equivalent to \code{fdr_type = peptide} with the additional filtration
+of data at \code{prot_tier == 1}. A variant is to set \code{fdr_type =
+psm}, followed by a data filtration at \code{prot_tier == 1}.}
 
 \item{combine_tier_three}{Logical; if TRUE, combines all protein results to
 the output of \code{psmQ.txt}. Outputs under the option TRUE are often
@@ -134,6 +135,10 @@ comparable to Mascot outputs with FDR controls at the levels of PSMs or
 peptides.}
 
 \item{digits}{Integer; the number of decimal places to be used.}
+}
+\value{
+A list of complete PSMs in \code{psmC.txt}; a list of quality PSMs in
+  \code{psmQ.txt}.
 }
 \description{
 Database searches of MSMS data.
