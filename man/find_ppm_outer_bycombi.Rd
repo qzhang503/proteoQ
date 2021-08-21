@@ -50,6 +50,4 @@ names(theos) <- c("D", "S", "S", "Q", "G", "P", "C", "E", "P",
 
 find_ppm_outer_bycombi(theos, expts)
 }
-
-
 }

@@ -215,6 +215,20 @@ chunksplitLB <- function (data, n_chunks = 5L, nx = 100L, type = "list") {
 #'   \code{acc_pattern}. \link{parse_unimod} for the grammar of Unimod.
 #' @return A list of complete PSMs in \code{psmC.txt}; a list of quality PSMs in
 #'   \code{psmQ.txt}.
+#' @examples 
+#' \donttest{
+#' matchMS(
+#'   fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
+#'             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta", 
+#'             "~/proteoQ/dbs/fasta/crap/crap.fasta"), 
+#'   acc_type = c("refseq_acc", "refseq_acc", "other"), 
+#'   max_miss = 2, 
+#'   quant = "tmt10", 
+#'   fdr_type = "protein", 
+#'   out_path = "~/proteoQ/examples", 
+#' )
+#' 
+#' }
 #' @export
 matchMS <- function (out_path = "~/proteoQ/outs", 
                      mgf_path = file.path(out_path, "mgf"), 
@@ -410,19 +424,13 @@ matchMS <- function (out_path = "~/proteoQ/outs",
     gc()
   }
   
-  ## Peptide ranks
-  # keeps the best for ties in each pep_seq (0000500, 0005000) -> top.3
-  out <- out %>% 
-    dplyr::mutate(pep_score = round(pep_score, 2)) %>% 
-    dplyr::filter(!duplicated(.[, c("pep_isdecoy", "scan_num", "raw_file", 
-                                    "pep_seq", "pep_score")])) %>% 
-    dplyr::group_by(pep_isdecoy, scan_num, raw_file) %>% 
-    dplyr::arrange(-pep_score) %>% 
-    dplyr::mutate(pep_rank = row_number()) %>% 
-    dplyr::ungroup() %>% 
-    dplyr::filter(pep_rank <= 3L)
+  ## Peptide ranks and score deltas between `pep_ivmod`
+  out <- calc_peploc(out)
   
-  ## Protein accessions; Protein score cut-offs and optional reporter ions
+  gc()
+  
+  ## Protein accessions; Protein score cut-offs and 
+  #  optional reporter ions
   out <- out %>% 
     add_prot_acc() %>% 
     calc_protfdr(target_fdr) %>% 
@@ -453,25 +461,237 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   ) %>% 
     reloc_col_after("pep_exp_z", "pep_exp_mr") %>% 
     reloc_col_after("pep_calc_mr", "pep_exp_z") %>% 
-    reloc_col_after("pep_delta", "pep_calc_mr") 
+    reloc_col_after("pep_delta", "pep_calc_mr") %T>% 
+    readr::write_tsv(file.path(out_path, "psmC.txt"))
   
-  # ---
-  out <- out %T>% 
-    readr::write_tsv(file.path(out_path, "psmC.txt")) %>% 
-    dplyr::filter(pep_issig, !pep_isdecoy, # pep_rank <= 3L, 
-                  !grepl("^-", prot_acc)) %>% 
-    psmC2Q(combine_tier_three = combine_tier_three, 
-           fdr_type = fdr_type, 
-           out_path = out_path)
+  ## psmC to psmQ
+  out <- try_psmC2Q(out, out_path = out_path, 
+                    fdr_type = fdr_type, 
+                    combine_tier_three = combine_tier_three)
 
-  message("Search completed.")
-  
-  # ---
-  rm(list = c(".path_cache", ".path_fasta", ".time_stamp"), envir = .GlobalEnv)
-  
   .savecall <- TRUE
   
   invisible(out)
+}
+
+
+#' Helper of \link{psmC2Q}.
+#' 
+#' @inheritParams psmC2Q
+#' @importFrom magrittr %>% %T>% 
+try_psmC2Q <- function (out = NULL, out_path = NULL, fdr_type = "protein", 
+                        combine_tier_three = FALSE) {
+  
+  n_peps <- length(unique(out$pep_seq))
+  n_prots <- length(unique(out$prot_acc))
+  
+  # `n_peps` and `n_prots` including both targets and decoys: 
+  # `n_prots` about 1:1
+  # `n_peps` about 1.8:1
+  
+  if (n_peps > 1000000L && n_prots > 100000L) {
+    out <- NA
+  } else {
+    out <- tryCatch(
+      proteoQ::psmC2Q(out, 
+                      out_path = out_path, 
+                      fdr_type = fdr_type, 
+                      combine_tier_three = combine_tier_three), 
+      error = function(e) NA
+    )
+  }
+
+  if (is.na(out)) {
+    message("Retry with a new R session: \n\n", 
+            "proteoQ::reproc_psmC(\n", 
+            "  out_path = \"", out_path, "\",\n", 
+            "  fdr_type = \"", fdr_type, "\",\n", 
+            "  combine_tier_three  = ", combine_tier_three, "\n", 
+            ")")
+    
+    fileConn <- file(file.path("~/post_psmC.R"))
+    
+    lines <- c(
+      "library(proteoQ)\n", 
+      "proteoQ::reproc_psmC(", 
+      paste0("  out_path = \"", out_path, "\","), 
+      paste0("  fdr_type = \"", fdr_type, "\","), 
+      paste0("  combine_tier_three = ", combine_tier_three), 
+      ")\n", 
+      "unlink(\"~/post_psmC.R\")"
+    )
+    
+    writeLines(lines, fileConn)
+    close(fileConn)
+    
+    rstudioapi::restartSession(command='source("~/post_psmC.R")')
+  } else {
+    rm(list = c(".path_cache", ".path_fasta", ".time_stamp"), 
+       envir = .GlobalEnv)
+    
+    message("Search completed.")
+  }
+  
+  invisible(out)
+}
+
+
+#' Helper of \link{calc_peploc}.
+#' 
+#' Not yet currently used.
+#' 
+#' @inheritParams psmC2Q
+#' @importFrom magrittr %>% %T>% 
+try_calc_peploc <- function (out = NULL) {
+  
+  out <- tryCatch(
+    calc_peploc(out), 
+    error = function(e) NA
+  )
+  
+  if (is.na(out)) {
+    message("Retry with a new R session: \n\n", 
+            "proteoQ::calc_peploc(\n", 
+            "  out = \"", file.path(out_path, "scores.rds"), "\" \n", 
+            ")")
+    
+    fileConn <- file(file.path("~/calc_peploc.R"))
+    
+    lines <- c(
+      "library(proteoQ)\n", 
+      "proteoQ::calc_peploc(", 
+      paste0("  out = readRDS(", "\"", file.path(out_path, "scores.rds"), "\"", ")"), 
+      ")\n", 
+      "unlink(\"~/calc_peploc.R\")"
+    )
+    
+    writeLines(lines, fileConn)
+    close(fileConn)
+    
+    rstudioapi::restartSession(command='source("~/calc_peploc.R")')
+  }
+  
+  invisible(out)
+}
+
+
+#' Calculates the delta scores of `pep_seq`.
+#'
+#' A score delta between the best and the second best.
+#'
+#' There should not be any duplicated rows by the combination of
+#' c("pep_isdecoy", "scan_num", "raw_file", "pep_seq", "pep_ivmod")
+#'
+#' @param x The result from \link{calc_pepscores}.
+#' @rawNamespace import(data.table, except = c(last, first, between, transpose,
+#'   melt, dcast))
+#' @export
+calc_peploc <- function (x) {
+  
+  ## memory inefficient
+  # x <- x %>% 
+  #   dplyr::mutate(pep_score = round(pep_score, 2)) %>% 
+  #   dplyr::filter(!duplicated(.[, c("pep_isdecoy", "scan_num", "raw_file", 
+  #                                   "pep_seq", "pep_score")])) %>% 
+  #   dplyr::group_by(pep_isdecoy, scan_num, raw_file) %>% 
+  #   # does addl' row ordering by pep_isdecoy, scan_num, raw_file
+  #   dplyr::arrange(-pep_score, .by_group = TRUE) %>% 
+  #   dplyr::mutate(pep_rank = row_number()) %>% 
+  #   dplyr::ungroup() %>% 
+  #   dplyr::filter(pep_rank <= 3L)
+  # 
+  # gc()
+  
+  ## memory more efficient
+  x <- data.table::data.table(x)
+  gc()
+  
+  ## keeps the best for ties in each pep_seq (0000500, 0005000) -> top.3
+  ## (`pep_score` as a surrogate for tied `pep_ivmod`)
+  
+  # x[ , "pep_score" := round(pep_score, 2)]
+  # x <- x[!duplicated(x[, c("pep_isdecoy", "scan_num", "raw_file", "pep_seq", "pep_score")]), ]
+  # x[order(-pep_score), pep_rank := seq_len(.N), by = list(pep_isdecoy, scan_num, raw_file)]
+  # x <- x[x[, pep_rank <= 3L], ]
+  # 
+  # gc()
+  
+  # `pep_locprob`
+  x[, "sscore" := sum(pep_score, na.rm = TRUE), 
+     by = list(pep_isdecoy, scan_num, raw_file, pep_seq)]
+  gc()
+  
+  x[, "pep_locprob" := (pep_score/sscore)]
+  x <- x[, -c("sscore")]
+  gc()
+  
+  # `pep_locdiff`
+  # (`pep_rank` within the same `pep_seq` for position isomers)
+  x[, uniq_id := paste(pep_isdecoy, scan_num, raw_file, pep_seq, sep = ".")]
+  x[order(-pep_score), pep_rank := seq_len(.N), by = list(uniq_id)]
+  gc()
+
+  x2 <- x1 <- x
+  x1 <- x1[pep_rank == 1L, ]
+  x2 <- x2[pep_rank == 2L, ]
+  gc()
+  
+  delta <- dplyr::left_join(x1[, c("uniq_id", "pep_locprob")], 
+                            x2[, c("uniq_id", "pep_locprob")], 
+                            by = "uniq_id")
+  
+  delta[["pep_locdiff"]] <- delta[["pep_locprob.x"]] - delta[["pep_locprob.y"]]
+  delta <- delta[, c("uniq_id", "pep_locdiff")]
+  
+  rm(list = c("x1", "x2"))
+  gc()
+  
+  # joining
+  x <- dplyr::left_join(x, delta, by = "uniq_id")
+  x <- x[, -c("uniq_id")]
+  
+  rm(list = c("delta"))
+  gc()
+  
+  # (new `pep_rank`s across different `pep_seq`s)
+  x[, uniq_id := paste(pep_isdecoy, scan_num, raw_file, sep = ".")]
+  x[order(-pep_score), pep_rank := seq_len(.N), by = list(uniq_id)]
+  x <- x[pep_rank <= 3L, ]
+  
+  x[ , "pep_locprob" := round(pep_locprob, 2)]
+  x[ , "pep_locdiff" := round(pep_locdiff, 2)]
+  
+  gc()
+  
+  invisible(x)
+}
+
+
+#' Reprocessing of \code{psmC.txt}.
+#'
+#' Protein grouping from \code{psmC.txt} to \code{psmQ.txt}.
+#'
+#' May solve some memory shortage issues for large data sets (e.g., over a
+#' million peptide sequences * 35000 proteins from \code{psmC.txt}).
+#'
+#' @inheritParams matchMS
+#' @export
+reproc_psmC <- function (out_path = NULL, fdr_type = "protein", 
+                         combine_tier_three = FALSE) {
+  
+  if (is.null(out_path)) {
+    stop("`out_path` cannot be NULL.", call. = FALSE)
+  }
+  
+  message("Please wait for the `Search completed` message...")
+
+  readr::read_tsv(file.path(out_path, "psmC.txt"), 
+                  show_col_types = FALSE) %>% 
+    psmC2Q(out_path = out_path, 
+           fdr_type = fdr_type, 
+           combine_tier_three = combine_tier_three)
+  
+  message("Search completed.")
 }
 
 
@@ -509,12 +729,13 @@ add_rptrs <- function (df = NULL, quant = "none", out_path = NULL) {
 }
 
 
-#' From \code{psmQ} to \code{psmQ}.
+#' From \code{psmC.txt} to \code{psmQ.txt}.
 #' 
-#' @param out A result from \code{psmQ} with additional filtration.
+#' @param out A result of \code{psmC.txt}.
 #' @inheritParams matchMS
-psmC2Q <- function (out = NULL, combine_tier_three = FALSE, fdr_type = "psm", 
-                    out_path = NULL) {
+#' @export
+psmC2Q <- function (out = NULL, out_path = NULL, fdr_type = "protein", 
+                    combine_tier_three = FALSE) {
   
   message("\n=================================\n", 
           "prot_tier  prot_issig  prot_n_pep \n", 
@@ -523,6 +744,9 @@ psmC2Q <- function (out = NULL, combine_tier_three = FALSE, fdr_type = "psm",
           "    3          [n]          = 1\n", 
           "=================================\n")
   
+  out <- out %>% 
+    dplyr::filter(pep_issig, !pep_isdecoy, !grepl("^-", prot_acc)) 
+  
   # Set aside one-hit wonders
   out3 <- out %>% 
     dplyr::filter(!prot_issig, prot_n_pep == 1L) %>% 
@@ -530,7 +754,7 @@ psmC2Q <- function (out = NULL, combine_tier_three = FALSE, fdr_type = "psm",
   
   out <- dplyr::bind_rows(
     out %>% dplyr::filter(prot_issig), 
-    out %>% filter(!prot_issig, prot_n_pep >= 2L)
+    out %>% dplyr::filter(!prot_issig, prot_n_pep >= 2L)
   ) %>% 
     dplyr::mutate(prot_tier = ifelse(prot_issig, 1L, 2L))
   
@@ -561,15 +785,15 @@ psmC2Q <- function (out = NULL, combine_tier_three = FALSE, fdr_type = "psm",
     }
   }
   
-  out <- out %>% grp_prots(file.path(out_path, "temp1"))
+  out <- out %>% proteoQ::grp_prots(file.path(out_path, "temp1"))
   
   if (nrow(out2) > 0L) {
-    out2 <- out2 %>% grp_prots(file.path(out_path, "temp2"))
+    out2 <- out2 %>% proteoQ::grp_prots(file.path(out_path, "temp2"))
   } else {
     out2 <- out[0, ]
   }
   
-  out3 <- out3 %>% grp_prots(file.path(out_path, "temp3"))
+  out3 <- out3 %>% proteoQ::grp_prots(file.path(out_path, "temp3"))
   
   # Cleanup
   out <- dplyr::bind_cols(
@@ -578,9 +802,9 @@ psmC2Q <- function (out = NULL, combine_tier_three = FALSE, fdr_type = "psm",
     out %>% .[grepl("^psm_", names(.))], 
     out %>% .[!grepl("^prot_|^pep_|^psm_", names(.))], 
   ) %>% 
-    reloc_col_after("prot_es", "prot_family_member") %>% 
-    reloc_col_after("prot_es_co", "prot_es") %>% 
-    reloc_col_after("prot_tier", "prot_isess")
+    proteoQ:::reloc_col_after("prot_es", "prot_family_member") %>% 
+    proteoQ:::reloc_col_after("prot_es_co", "prot_es") %>% 
+    proteoQ:::reloc_col_after("prot_tier", "prot_isess")
   
   # Three-tier combines
   max <- max(out$prot_hit_num, na.rm = TRUE)
@@ -928,7 +1152,6 @@ pmatch_bymgfs_i <- function (i, aa_masses, mgf_path, n_cores, out_path,
 }
 
 
-
 #' Helper of \link{search_mgf_frames}
 #'
 #' Searches MGFs in a frame at a given combination of fixed and variable
@@ -1235,21 +1458,21 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
   theos_af_ms2 <- theos_af_ms2[af_allowed]
 
   # --- find MS2 matches ---
-  if (is_empty(theos_bf_ms2)) {
+  if (purrr::is_empty(theos_bf_ms2)) {
     x_bf <- theos_bf_ms2
   } else {
     x_bf <- purrr::map(theos_bf_ms2, find_ppm_outer_bypep, 
                        expt_moverz_ms2, ppm_ms2)
   }
   
-  if (is_empty(theos_cr_ms2)) {
+  if (purrr::is_empty(theos_cr_ms2)) {
     x_cr <- theos_cr_ms2
   } else {
     x_cr <- purrr::map(theos_cr_ms2, find_ppm_outer_bypep, 
                        expt_moverz_ms2, ppm_ms2)
   }
   
-  if (is_empty(theos_af_ms2)) {
+  if (purrr::is_empty(theos_af_ms2)) {
     x_af <- theos_af_ms2
   } else {
     x_af <- purrr::map(theos_af_ms2, find_ppm_outer_bypep, 
@@ -1259,19 +1482,19 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
   x <- c(x_bf, x_cr, x_af)
   
   # cleans up
-  rows <- map(x, ~ {
+  rows <- purrr::map(x, ~ {
     this <- .x
-    map_lgl (this, ~ sum(!is.na(.x[["expt"]])) >= minn_ms2)
+    purrr::map_lgl (this, ~ sum(!is.na(.x[["expt"]])) >= minn_ms2)
   })
-  x <- map2(x, rows, ~ .x[.y])
+  x <- purrr::map2(x, rows, ~ .x[.y])
   
-  empties <- map_lgl(x, is_empty)
+  empties <- purrr::map_lgl(x, is_empty)
   x <- x[!empties]
   
   # ---
   theomasses_ms1 <- c(theomasses_bf_ms1, theomasses_cr_ms1, theomasses_af_ms1)
   theomasses_ms1 <- theomasses_ms1[!empties]
-  x <- map2(x, theomasses_ms1, ~ {
+  x <- purrr::map2(x, theomasses_ms1, ~ {
     attr(.x, "theo_ms1") <- .y
     .x
   })
@@ -1384,8 +1607,6 @@ find_ppm_outer_bypep <- function (theos, expts, ppm_ms2) {
 #' 
 #' find_ppm_outer_bycombi(theos, expts)
 #' }
-#' 
-#' 
 find_ppm_outer_bycombi <- function (theos, expts, ppm_ms2 = 25L) {
   
   d <- outer(theos, expts, "find_ppm_error")
@@ -1404,6 +1625,4 @@ find_ppm_outer_bycombi <- function (theos, expts, ppm_ms2 = 25L) {
   
   list(theo = theos, expt = es)
 }
-
-
 

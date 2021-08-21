@@ -2,6 +2,7 @@
 #'
 #' @param out The data frame from upstream steps.
 #' @param out_path The output path.
+#' @export
 grp_prots <- function (out, out_path = NULL) {
   
   dir.create(file.path(out_path), recursive = TRUE, showWarnings = FALSE)
@@ -14,7 +15,7 @@ grp_prots <- function (out, out_path = NULL) {
   df <- out[rows, ]
   
   if (nrow(df) > 1L) {
-    df <- df %>% groupProts2(out_path)
+    df <- df %>% proteoQ::groupProts2(out_path)
   } else {
     df <- df %>%
       dplyr::mutate(prot_isess = TRUE,
@@ -52,6 +53,7 @@ grp_prots <- function (out, out_path = NULL) {
 #'
 #' @param df Interim results from \link{matchMS}.
 #' @param out_path The output path.
+#' @export
 groupProts2 <- function (df, out_path = NULL) {
   
   # `pep_seq` in `df` are all from target and significant;
@@ -63,16 +65,15 @@ groupProts2 <- function (df, out_path = NULL) {
   # 11 MNT_HUMAN    EEQERLR
   
   # --- (1) protein ~ peptide map ---
-  mat <- map_pepprot2(df[, c("prot_acc", "pep_seq")], out_path)
-  # saveRDS(mat, file.path(out_path, "mat.rds"))
+  mat <- proteoQ::map_pepprot2(df[, c("prot_acc", "pep_seq")], out_path)
   gc()
   
   # --- (2) protein ~ protein groups by distance map ---
-  grps <- cut_protgrps2(mat, out_path)
+  grps <- proteoQ::cut_protgrps2(mat, out_path)
   gc()
   
   # --- (3) set covers by groups ---
-  sets <- greedysetcover3(mat)
+  sets <- proteoQ::greedysetcover3(mat)
   gc()
   
   if (!is.null(out_path)) {
@@ -86,8 +87,8 @@ groupProts2 <- function (df, out_path = NULL) {
   
   # --- set aside df0 ---
   df <- df %>% dplyr::mutate(prot_isess = prot_acc %in% sets)
-  df0 <- df %>% filter(!prot_isess)
-  df <- df %>% filter(prot_isess)
+  df0 <- df %>% dplyr::filter(!prot_isess)
+  df <- df %>% dplyr::filter(prot_isess)
 
   mat_ess <- mat[, colnames(mat) %in% unique(df$prot_acc)]
   
@@ -132,6 +133,7 @@ groupProts2 <- function (df, out_path = NULL) {
 #' 
 #' out <- map_pepprot2(df)
 #' }
+#' @export
 map_pepprot2 <- function (df, out_path = NULL) {
 
   df <- df[, c("prot_acc", "pep_seq")] 
@@ -141,7 +143,7 @@ map_pepprot2 <- function (df, out_path = NULL) {
   
   peps <- df$pep_seq
   
-  mat = Matrix::sparse.model.matrix(~ -1 + prot_acc, df)
+  mat <- Matrix::sparse.model.matrix(~ -1 + prot_acc, df)
   colnames(mat) <- gsub("prot_acc", "", colnames(mat))
   mat <- mat == 1L
   rownames(mat) <- peps
@@ -149,7 +151,7 @@ map_pepprot2 <- function (df, out_path = NULL) {
   
   # ---
   dpeps <- peps[duplicated(peps)]
-  drows <- rownames(mat) %in% dpeps
+  drows <- (rownames(mat) %in% dpeps)
   mat0 <- mat[!drows, ]
   mat <- mat[drows, ]
   
@@ -182,7 +184,7 @@ map_pepprot2 <- function (df, out_path = NULL) {
   rm(list = c("mat", "mati"))
   gc()
   
-  ## --- testing ---
+  # ---
   if (object.size(out)/1024^3 > 5) {
     size <- 10000
     n_chunks <- ceiling(len/size)
@@ -250,14 +252,15 @@ map_pepprot2 <- function (df, out_path = NULL) {
 #'
 #' @param mat A logical matrix; peptides in rows and proteins in columns.
 #' @param out_path A file pth to outputs.
-cut_protgrps2 <- function (mat, out_path = NULL) {
+#' @export
+cut_protgrps2 <- function (mat = NULL, out_path = NULL) {
 
   dista = proxyC::simil(mat, margin = 2) # sparse distance matrix
   cns <- colnames(mat)
   rm(list = c("mat"))
   gc()
   
-  # --- testing
+  # ---
   ncol <- ncol(dista)
   cols <- 1:ncol
 
@@ -301,7 +304,7 @@ cut_protgrps2 <- function (mat, out_path = NULL) {
   }
   
   # Diagonal values are `FALSE`
-  # TRUE - orthogonal (no shared peptides)
+  # TRUE - orthogonal (without shared peptides)
   # FALSE - with shared peptides
   # 
   #             KKA1_ECOLX NP_000005 NP_000007
@@ -310,7 +313,7 @@ cut_protgrps2 <- function (mat, out_path = NULL) {
   # NP_000007        TRUE      TRUE     FALSE
   
   # --- finds protein groups
-  mat2 <- as_lgldist(mat2, diag = FALSE, upper = FALSE)
+  mat2 <- proteoQ::as_lgldist(mat2, diag = FALSE, upper = FALSE)
   gc()
   
   hc <- hclust(mat2, method = "single")
@@ -319,7 +322,7 @@ cut_protgrps2 <- function (mat, out_path = NULL) {
   grps <- data.frame(prot_hit_num = cutree(hc, h = .9)) %>% 
     tibble::rownames_to_column("prot_acc") %>%
     dplyr::group_by(prot_hit_num) %>%
-    dplyr::mutate(prot_family_member = row_number()) %>%
+    dplyr::mutate(prot_family_member = dplyr::row_number()) %>%
     dplyr::ungroup()
   
   if (!is.null(out_path)) {
@@ -372,6 +375,7 @@ as_dist <- function (m, diag = FALSE, upper = FALSE) {
 #' Assumed the input is already a symmetric matrix.
 #' 
 #' @inheritParams stats::as.dist
+#' @export
 as_lgldist <- function(m, diag = FALSE, upper = FALSE) {
   
   d = proteoCpp::to_lgldistC(m)
@@ -392,56 +396,6 @@ as_lgldist <- function(m, diag = FALSE, upper = FALSE) {
 }
 
 
-#' Cuts proteins into groups.
-#'
-#' By the number of shared peptides.
-#'
-#' @param mat A logical matrix; peptides in rows and proteins in columns.
-#' @param out_path A file pth to outputs.
-cut_protgrps2_orig <- function (mat, out_path = NULL) {
-  
-  out = proxyC::simil(mat, margin = 2)
-  gc()
-  
-  out <- as.matrix(out)
-  gc()
-  
-  out <- round(out, digits = 2)
-  gc()
-  
-  # f <- function(x, y) sum(x & y)
-  # out <- proxy::dist(mat, by_rows = FALSE, method = f)
-  
-  cns <- colnames(mat)
-  
-  # --- finds protein groups
-  out[out == 0] <- 2L
-  out[out < 2L] <- 0
-  gc()
-  
-  out <- out %>% as.dist(diag = TRUE, upper = TRUE)
-  gc()
-  
-  hc <- hclust(out, method = "single")
-  gc()
-  
-  grps <- data.frame(prot_hit_num = cutree(hc, h = 1)) %>%
-    tibble::rownames_to_column("prot_acc") %>%
-    dplyr::group_by(prot_hit_num) %>%
-    dplyr::mutate(prot_family_member = row_number()) %>%
-    dplyr::ungroup() 
-  
-  if (!is.null(out_path)) {
-    saveRDS(grps, file.path(out_path, "prot_grps.rds"))
-  }
-  
-  stopifnot(identical(grps$prot_acc, cns))
-  
-  invisible(grps)
-}
-
-
-
 #' Greedy set cover.
 #' 
 #' A bool matrix input. Output both essential sets and elements.
@@ -449,6 +403,7 @@ cut_protgrps2_orig <- function (mat, out_path = NULL) {
 #' @param mat A bool matrix of protein (cols)-peptide (rows) map. 
 #' 
 #' @return A two-column data frame of prot_acc and pep_seq. 
+#' @export
 greedysetcover3 <- function (mat) {
   
   if (is.matrix(mat)) {
@@ -462,9 +417,7 @@ greedysetcover3 <- function (mat) {
   while(nrow(mat)) {
     max <- which.max(Matrix::colSums(mat, na.rm = TRUE))
     
-    if (max == 0L) {
-      break
-    }
+    if (max == 0L) break
     
     prot <- names(max)
     rows <- which(mat[, max])
