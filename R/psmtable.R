@@ -645,7 +645,7 @@ rmPSMHeaders <- function(parallel = TRUE) {
 add_mod_conf <- function(df, dat_dir) {
   
   dat_file <- unique(df$dat_file)
-  stopifnot(length(dat_file) == 1)
+  stopifnot(length(dat_file) == 1L)
   
   file <- file.path(dat_dir, "PSM/cache", paste0(dat_file, "_queryInfo.rds"))
   
@@ -662,15 +662,22 @@ add_mod_conf <- function(df, dat_dir) {
     return(df)
   }
   
-  # (1) when left_join(df, queries) by uniq_id = c("pep_query", "pep_seq"), 
-  # the same `uniq_id` but different "pep_var_mod_pos" forms different rows; 
-  # different rows under the same `uniq_id` be used for `df_first` and `df_second`.
+  # (1) no need of `raw_file` being part of `uniq_id` as `pep_query` is 
+  #     by each `dat_file` and irrespective to `raw_file`
+  # 
+  # (nevertheless, the same `pep_query` may have multiple `pep_seq`s and 
+  #  each `pep_seq` may have multiple `pep_var_mod_pos`s)
   # 
   # (2) no need of `dat_file` being part of the `uniq_by` 
-  #   as `df` has been split under a give `dat_file`
-  
+  #   as `df` has been split by `dat_file`
+  # 
+  # (3) when left_join(df, queries) by uniq_id = c("pep_query", "pep_seq"), 
+  # the same `uniq_id` but different "pep_var_mod_pos" forms different rows; 
+  # different rows under the same `uniq_id` are used for `df_first` and `df_second`.
+
   # Don't: 
   # uniq_by <- c("pep_query", "pep_seq", "pep_var_mod_pos")
+
   uniq_by <- c("pep_query", "pep_seq")
   
   queries <- readRDS(file) %>% 
@@ -695,11 +702,11 @@ add_mod_conf <- function(df, dat_dir) {
   # 
   # Senario 1: one `uniq_id`, multiple `pep_var_mod_conf`
   # 
-  # `df`:
+  # In `df`:
   # uniq_id           pep_var_mod_pos
   # 48940.SGEGEVSGLMR 0.50000000000.0
   # 
-  # `queries`
+  # In `queries`: 
   # uniq_id           pep_tot_int pep_var_mod_pos pep_var_mod_conf
   # 48940.SGEGEVSGLMR    21739660 0.50000000000.0           1.00  
   # 48940.SGEGEVSGLMR    21739660 0.00000050000.0           0.0002
@@ -707,7 +714,7 @@ add_mod_conf <- function(df, dat_dir) {
   # `df2` after left_join by `uniq_id`: 
   # uniq_id           pep_var_mod  pep_var_mod_pos pep_var_mod_conf
   # 48940.SGEGEVSGLMR Phospho (ST) 0.50000000000.0           1.00
-  # 48940.SGEGEVSGLMR Phospho (ST) 0.50000000000.0           0.0002
+  # 48940.SGEGEVSGLMR Phospho (ST) 0.50000000000.0           0.0002 <-- 
   # 
   # the same `pep_var_mod_pos` but different `pep_var_mod_conf`; 
   # namely, the second `pep_var_mod_pos` etc. do not link to `pep_var_mod_conf`.
@@ -725,7 +732,7 @@ add_mod_conf <- function(df, dat_dir) {
   # TIF1B_HUMAN 183371.VFPGSTTEDYNLIVIER 0.00000500000000000.0
   # TIF1B_MOUSE 183371.VFPGSTTEDYNLIVIER 0.00000500000000000.0
   # 
-  # `queries` (no `prot_acc`)
+  # `queries` (`prot_acc` not available)
   # uniq_id                  pep_tot_int pep_var_mod_pos       pep_var_mod_conf
   # 183371.VFPGSTTEDYNLIVIER     1714404 0.00000500000000000.0           0.493 
   # 183371.VFPGSTTEDYNLIVIER     1714404 0.00005000000000000.0           0.493 
@@ -753,57 +760,7 @@ add_mod_conf <- function(df, dat_dir) {
   # Note that queries doesn't have column `prot_acc` and a two-stage joining 
   # with `uniq_id` followed by `uniq_id2` is required.
   
-  run_scripts <- FALSE
-  if (run_scripts) {
-    df2 <- df %>% 
-      tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
-      dplyr::left_join(queries %>% 
-                         # be explicit on intended columns
-                         dplyr::select(which(names(.) %in% 
-                                               c("uniq_id", 
-                                                 "pep_tot_int", 
-                                                 "pep_var_mod_conf", 
-                                                 "pep_scan_range", 
-                                                 "pep_ret_range", 
-                                                 "pep_ms2_sumint", 
-                                                 "pep_n_ions", 
-                                                 "pep_ions_first", 
-                                                 "pep_ions_second", 
-                                                 "pep_ions_third"))), 
-                       by = "uniq_id") %>% 
-      dplyr::mutate(.n = row_number()) %>% 
-      dplyr::arrange(-pep_var_mod_conf) %>% 
-      dplyr::group_by(uniq_id) 
-    
-    df_first <- df2 %>% 
-      dplyr::filter(row_number() == 1) %>% 
-      dplyr::ungroup(uniq_id) %>% 
-      dplyr::arrange(.n) 
-    
-    df_second <- df2 %>% 
-      dplyr::filter(row_number() == 2) %>% 
-      dplyr::ungroup(uniq_id) %>% 
-      dplyr::arrange(.n) %>% 
-      dplyr::select(uniq_id, pep_var_mod_conf) %>%
-      dplyr::rename(pep_var_mod_conf_2 = pep_var_mod_conf)
-    
-    ## possible `pep_var_mod_conf` values are all NA; 
-    #  thus `pep_locprob` & `pep_locdiff` both be NA 
-    # query_number                  pep_seq              pep_var_mod_pos pep_var_mod_conf
-    # 1       312209 MDPLSELQDDLTLDDTSQALNQLK 1.400000000000000050002000.0             <NA>
-    # 2       312209 MDPLSELQDDLTLDDTSQALNQLK 1.400000000000000500002000.0             <NA>
-    # 3       312209 MDPLSELQDDLTLDDTSQALNQLK 1.400000000005000000002000.0             <NA>
-    # 4       312209 MDPLSELQDDLTLDDTSQALNQLK 1.400050000000000000002000.0             <NA>
-    
-    out <- df_first %>% 
-      dplyr::left_join(df_second, by = "uniq_id") %>% 
-      dplyr::mutate(pep_locdiff = pep_var_mod_conf - pep_var_mod_conf_2) %>% 
-      dplyr::select(-pep_var_mod_conf_2) %>% 
-      dplyr::rename(pep_locprob = pep_var_mod_conf) %>% 
-      dplyr::arrange(.n) %>% 
-      dplyr::select(-uniq_id, -.n)
-  }
-  
+
   # two-stage joining and subsetting
   # (1) df + queries by uniq_id
   # (2) grouped by uniq_id2
@@ -831,12 +788,12 @@ add_mod_conf <- function(df, dat_dir) {
     dplyr::group_by(uniq_id2)
   
   df_first <- df2 %>% 
-    dplyr::filter(row_number() == 1) %>% 
+    dplyr::filter(row_number() == 1L) %>% 
     dplyr::ungroup(uniq_id2) %>% 
     dplyr::arrange(.n) 
   
   df_second <- df2 %>% 
-    dplyr::filter(row_number() == 2) %>% 
+    dplyr::filter(row_number() == 2L) %>% 
     dplyr::ungroup(uniq_id2) %>% 
     dplyr::arrange(.n) %>% 
     dplyr::select(uniq_id2, pep_var_mod_conf) %>%
@@ -858,6 +815,7 @@ add_mod_conf <- function(df, dat_dir) {
     dplyr::arrange(.n) %>% 
     dplyr::select(-c("uniq_id", "uniq_id2", ".n"))
   
+  invisible(out)
 }
 
 
@@ -1836,7 +1794,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   filelist = list.files(path = file.path(dat_dir, "PSM/cache"),
                         pattern = "^F[0-9]+.*_hdr_rm.csv$")
 
-	if (length(filelist) == 0) {
+	if (length(filelist) == 0L) {
 	  stop(paste("Missing intermediate PSM file(s) under: ", 
 	             file.path(dat_dir, "PSM/cache")), 
 	       call. = FALSE)

@@ -492,15 +492,82 @@ find_cterm_mass <- function (aa_masses) {
 }
 
 
+#' Right-joining of two data frames.
+#'
+#' Rows ordered by \code{y}, which is different to \link[dplyr]{right_join}.
+#'
+#' @param x The left data frame (to be proliferated by rows).
+#' @param y The right data frame (the dominated one).
+#' @param by The key.
+#' @export
+#' @examples
+#' \donttest{
+#' df1 <- data.frame(A = c("a", "b", "c"), B = c(1, 1, 1))
+#' df2 <- data.frame(A = c("a", "c", "d"), C = c(2, 2, "3"))
+#'
+#' x1 <- quick_rightjoin(df1, df2, by = "A")
+#' x1 <- x1[, c("A", "B", "C")]
+#' rownames(x1) <- seq_len(nrow(x1))
+#'
+#' x2 <- dplyr::right_join(df1, df2, by = "A")
+#' x2 <- x2[, c("A", "B", "C")]
+#'
+#' stopifnot(identical(x1, x2))
+#'
+#' # row order may be different
+#' x1 <- quick_rightjoin(df2, df1, by = "A")
+#' x1 <- x1[, c("A", "B", "C")]
+#' rownames(x1) <- seq_len(nrow(x1))
+#'
+#' x2 <- dplyr::right_join(df2, df1, by = "A")
+#' x2 <- x2[, c("A", "B", "C")]
+#'
+#' # FALSE
+#' identical(x1, x2)
+#' }
+quick_rightjoin <- function (x, y, by = NULL) {
+  
+  # the indexes of y in x; 
+  # NA rows in "x", if "y" not found in "x"
+  
+  rows <- match(y[[by]], x[[by]])
+  x <- x[rows, ]
+  x[[by]] <- NULL
+  
+  ## faster, but not for data.table
+  # x <- x[, -which(names(x) == by), drop = FALSE]
+
+  cbind2(x, y)
+}
+
+
 #' Left-joining of two data frames.
 #' 
 #' @param x The left data frame.
 #' @param y The right data frame.
 #' @param by The key.
 #' @export
+#' @examples
+#' \donttest{
+#' df1 <- data.frame(A = c("a", "b", "c"), B = c(1, 1, 1))
+#' df2 <- data.frame(A = c("a", "c", "d"), C = c(2, 2, "3"))
+#' 
+#' x1 <- quick_leftjoin(df1, df2, by = "A")
+#' x1 <- x1[, c("A", "B", "C")]
+#' rownames(x1) <- seq_len(nrow(x1))
+#' 
+#' x2 <- dplyr::left_join(df1, df2, by = "A")
+#' 
+#' stopifnot(identical(x1, x2))
+#' }
 quick_leftjoin <- function (x, y, by = NULL) {
-  rows <- match(y[[by]], x[[by]])
-  x <- x[rows, ]
-  y <- y[, -which(names(y) == by), drop = FALSE]
+
+  rows <- match(x[[by]], y[[by]])
+  y <- y[rows, ]
+  y[[by]] <- NULL
+  
+  ## faster, but not for data.table
+  # y <- y[, -which(names(y) == by), drop = FALSE]
+
   cbind2(x, y)
 }

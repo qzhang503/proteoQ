@@ -482,7 +482,6 @@ calc_probi <- function (mts, expt_moverzs, expt_ints,
 #' @param entry A row of data from \link{pmatch_bymgfs}.
 #' @inheritParams matchMS
 #' @import purrr
-#' @export
 scalc_pepprobs <- function (entry, topn_ms2ions = 100L, type_ms2ions = "by", 
                             penalize_sions = FALSE, ppm_ms2 = 25L, digits = 4L) {
 
@@ -734,7 +733,8 @@ calcpepsc <- function (file, topn_ms2ions = 100L, type_ms2ions = "by",
   
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   parallel::clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
-  
+  clusterExport(cl, list("scalc_pepprobs"), envir = environment(proteoQ:::scalc_pepprobs))
+
   df <- readRDS(file.path(out_path, "temp", file))
   df[["uniq_id"]] <- paste(df[["scan_num"]], df[["raw_file"]], sep = "@")
   
@@ -777,18 +777,12 @@ calcpepsc <- function (file, topn_ms2ions = 100L, type_ms2ions = "by",
   parallel::stopCluster(cl)
   gc()
   
-  # make column `pep_vmod_degen`: TRUE/FALSE
-  # keeps only the first
-  # ...
-  
-  
-  
   ## Reassemble `df`
   df <- dplyr::bind_rows(df)
   df <- df[, -which(names(df) == "matches"), drop = FALSE]
   
   df <- dplyr::bind_cols(df, df2)
-  df <- quick_leftjoin(df, probs, "uniq_id")
+  df <- quick_rightjoin(df, probs, "uniq_id")
   df <- df[, -which(names(df) == "uniq_id"), drop = FALSE]
   df <- post_pepscores(df)
   
@@ -1064,7 +1058,7 @@ calc_protfdr <- function (out, target_fdr = .01) {
   # protein enrichment score cut-offs
   score_co <- out2 %>% 
     split(.$prot_n_pep) %>% 
-    map_dbl(calc_protfdr_i, target_fdr) %>% 
+    purrr::map_dbl(calc_protfdr_i, target_fdr) %>% 
     fit_protfdr(max_n_pep) %>% 
     dplyr::filter(prot_n_pep %in% all_n_peps) %>% 
     dplyr::rename(prot_es_co = prot_score_co)

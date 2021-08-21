@@ -4,7 +4,7 @@
 \alias{cut_protgrps2}
 \title{Cuts proteins into groups.}
 \usage{
-cut_protgrps2(mat, out_path = NULL)
+cut_protgrps2(mat = NULL, out_path = NULL)
 }
 \arguments{
 \item{mat}{A logical matrix; peptides in rows and proteins in columns.}

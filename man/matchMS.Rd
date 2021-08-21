@@ -143,6 +143,21 @@ A list of complete PSMs in \code{psmC.txt}; a list of quality PSMs in
 \description{
 Database searches of MSMS data.
 }
+\examples{
+\donttest{
+matchMS(
+  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
+            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta", 
+            "~/proteoQ/dbs/fasta/crap/crap.fasta"), 
+  acc_type = c("refseq_acc", "refseq_acc", "other"), 
+  max_miss = 2, 
+  quant = "tmt10", 
+  fdr_type = "protein", 
+  out_path = "~/proteoQ/examples", 
+)
+
+}
+}
 \seealso{
 \link{load_fasta2} for setting the values of \code{acc_type} and
   \code{acc_pattern}. \link{parse_unimod} for the grammar of Unimod.

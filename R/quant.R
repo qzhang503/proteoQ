@@ -184,6 +184,7 @@ find_reporter_ints <- function (ms2_moverzs, ms2_ints, theos, ul,
 #' @inheritParams find_reporter_ints
 #' @return A vector of indexes
 find_reporters_ppm <- function (theos, expts, ppm_reporters = 10, len, nms) {
+  
   d <- outer(theos, expts, "find_ppm_error")
   row_cols <- which(abs(d) <= ppm_reporters, arr.ind = TRUE)
 
@@ -196,6 +197,7 @@ find_reporters_ppm <- function (theos, expts, ppm_reporters = 10, len, nms) {
 #' @param out_path An output path.
 #' @param df The results after scoring.
 add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
+  
   # Targets, theoretical
   bins <- list.files(path = file.path(.path_fasta, "pepmasses", .time_stamp),
                      pattern = "binned_theopeps_\\d+\\.rds$",
@@ -282,6 +284,7 @@ add_prot_acc <- function (df, out_path = "~/proteoQ/outs") {
 #' out <- map_pepprot(df)
 #' }
 map_pepprot <- function (df, out_path = NULL) {
+  
   message("Building protein-peptide maps.")
   
   df <- df[, c("prot_acc", "pep_seq")] %>%
@@ -562,6 +565,7 @@ cut_protgrps <- function (mat, out_path = NULL) {
 #' @param cols The column indexes of \code{mat}.
 #' @inheritParams parDist
 par_dist <- function (cols, mat) {
+  
   len_m <- length(mat)
   len_c <- length(cols)
 
@@ -753,6 +757,7 @@ greedysetcover <- function (df) {
 #' @param mat A matrix of protein (cols)-peptide (rows) map.
 #' @return A list of proteins. 
 greedysetcover2 <- function (mat) {
+  
   sets <- NULL
   
   while(!is.null(dim(mat))) {
@@ -779,6 +784,7 @@ greedysetcover2 <- function (mat) {
 #' @param mat A matrix of protein (cols)-peptide (rows) map.
 #' @return A two-column data frame of prot_acc and pep_seq.
 greedysetcoverM <- function (df) {
+  
   nms <- colnames(df)
   colnames(df) <- c("s", "a")
   
@@ -844,6 +850,7 @@ greedysetcoverM <- function (df) {
 #' @param mat A logical matrix; protein accession in column names and peptide
 #'   sequences in row names.
 find_ess_prots <- function (mat) {
+  
   mat %>%
     data.frame(check.names = FALSE) %>%
     tibble::rownames_to_column("pep_seq") %>%

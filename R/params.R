@@ -1030,7 +1030,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'@import dplyr fs
 #'@rawNamespace import(rlang, except = c(list_along, invoke, flatten_raw,
 #'  modify, as_function, flatten_dbl, flatten_lgl, flatten_int, flatten_chr,
-#'  splice, flatten, prepend, "%@%"))
+#'  splice, flatten, prepend, "%@%", ":="))
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", 

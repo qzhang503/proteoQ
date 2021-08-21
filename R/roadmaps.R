@@ -1,5 +1,18 @@
 ## matchMS
+#   calc_pepmasses2 (ms1_precursors.R)
+#   bin_ms1masses (bin_masses.R)
+#   load_mgfs (mgf.R)
+#   ms2match (msmsmatches2.R)
+#   calc_pepscores (scores.R)
+#   calc_peploc
+#   add_prot_acc (quant.R)
+#   calc_protfdr (scores.R)
+#   add_rptrs
+#   try_psmC2Q
+#     psmC2Q
+#       grp_prots (quant2.R)
 # 
+# ======================================
 # bin_masses.R
 #   - bin_ms1masses
 #    - binTheoPeps
@@ -15,12 +28,11 @@
 #       - proc_mgfs
 #     - proc_mgfs
 #    - find_ms1_interval
-
+# 
 # calc_tmtint (quant.R)
 #   find_reporter_ints
-
-
-
+# 
+# 
 
 # ms1_precursors.R: 
 #   - calc_pepmasses2
@@ -129,11 +141,16 @@
 #         calc_probi_byvmods
 #           add_seions
 #           find_ppm_outer_bycombi (msmsmatches.R)
+# 
+## calc_protfdr (scores.R)
+#   calc_protfdr_i
+#   fit_protfdr
 
 ## grp_prots (quant2.R)
-#   groupProts2 (quant2.R)
+#   groupProts2
 #     map_pepprot2
 #     cut_protgrps2
+#       as_lgldist
 #     greedysetcover3
 #     
 
