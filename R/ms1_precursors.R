@@ -114,11 +114,20 @@ calc_pepmasses2 <- function (
   if (!purrr::is_empty(.time_stamp)) {
     message("Loading peptide masses from cache.")
     
-    fwd_peps <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
-                             "pepmasses.rds"))
+    max_mass <- find_max_mass(out_path = out_path, .path_fasta = .path_fasta, 
+                              .time_stamp = .time_stamp)
     
-    rev_peps <- readRDS(file.path(.path_fasta, "pepmasses", .time_stamp, 
-                                 "pepmasses_rev.rds"))
+    aa_masses <- find_aa_masses(out_path = out_path, 
+                                fixedmods = fixedmods, 
+                                varmods = varmods, 
+                                maxn_vmods_setscombi = maxn_vmods_setscombi, 
+                                index_mods = index_mods)
+    
+    rm(list = c("max_mass", "aa_masses"))
+    gc()
+    
+    fwd_peps <- NULL
+    rev_peps <- NULL
     
     .savecall <- FALSE
   } else {
@@ -128,25 +137,11 @@ calc_pepmasses2 <- function (
     
     .time_stamp <- format(Sys.time(), ".%Y-%m-%d_%H%M%S")
     
-    # --- 
-    aa_masses <- local({
-      message("Computing the combinations of fixed and variable modifications.")
-      
-      if (index_mods) {
-        mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
-          as.hexmode() %>% 
-          `names<-`(c(fixedmods, varmods))
-      } else {
-        mod_indexes <- NULL
-      }
-      
-      aa_masses <- calc_aamasses(fixedmods = fixedmods, 
-                                 varmods = varmods, 
-                                 maxn_vmods_setscombi = maxn_vmods_setscombi, 
-                                 mod_indexes = mod_indexes, 
-                                 add_varmasses = FALSE, 
-                                 add_nlmasses = FALSE)
-    })
+    aa_masses <- find_aa_masses(out_path = out_path, 
+                                fixedmods = fixedmods, 
+                                varmods = varmods, 
+                                maxn_vmods_setscombi = maxn_vmods_setscombi, 
+                                index_mods = index_mods)
     
     gc()
     
@@ -346,6 +341,14 @@ calc_pepmasses2 <- function (
     saveRDS(fwd_peps, file.path(out_path, "pepmasses.rds"))
     saveRDS(rev_peps, file.path(out_path, "pepmasses_rev.rds"))
     
+    max_mass <- fwd_peps %>% 
+      purrr::map(attr, "data") %>% 
+      unlist(use.names = FALSE) %>% 
+      max(na.rm = TRUE) %T>% 
+      saveRDS(file.path(out_path, "temp", "max_mass.rds"))
+    
+    gc()
+    
     # ---
     .savecall <- TRUE
   }
@@ -355,6 +358,72 @@ calc_pepmasses2 <- function (
   assign(".path_fasta", .path_fasta, envir = .GlobalEnv)
   
   invisible(list(fwd = fwd_peps, rev = rev_peps))
+}
+
+
+#' Finds the existence of \code{aa_masses_all.rds}.
+#' 
+#' @inheritParams calc_pepmasses2
+find_aa_masses  <- function(out_path = NULL, fixedmods = NULL, varmods = NULL, 
+                            maxn_vmods_setscombi = 64L, index_mods = FALSE) {
+  
+  if (!file.exists(file.path(out_path, "temp", "aa_masses_all.rds"))) {
+    message("Computing the combinations of fixed and variable modifications.")
+    
+    dir.create(file.path(out_path, "temp"), recursive = TRUE, showWarnings = FALSE)
+    
+    .time_stamp <- format(Sys.time(), ".%Y-%m-%d_%H%M%S")
+    
+    if (index_mods) {
+      mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
+        as.hexmode() %>% 
+        `names<-`(c(fixedmods, varmods))
+    } else {
+      mod_indexes <- NULL
+    }
+    
+    aa_masses <- calc_aamasses(fixedmods = fixedmods, 
+                               varmods = varmods, 
+                               maxn_vmods_setscombi = maxn_vmods_setscombi, 
+                               mod_indexes = mod_indexes, 
+                               add_varmasses = FALSE, 
+                               add_nlmasses = FALSE) %T>% 
+      saveRDS(file.path(out_path, "temp", "aa_masses_all.rds"))
+  } else {
+    aa_masses <- readRDS(file.path(out_path, "temp", "aa_masses_all.rds"))
+  }
+  
+  invisible(aa_masses)
+}
+
+
+#' Finds the existence of \code{max_mass.rds}.
+#' 
+#' @param .path_cache The file path to cache.
+#' @param .time_stamp The time stamp to cache.
+#' @inheritParams calc_pepmasses2
+find_max_mass <- function (out_path = NULL, .path_fasta = NULL, .time_stamp = NULL) {
+  
+  if (!file.exists(file.path(out_path, "temp", "max_mass.rds"))) {
+    
+    dir.create(file.path(out_path, "temp"), recursive = TRUE, showWarnings = FALSE)
+    
+    fwd_peps <- readRDS(file.path(.path_fasta, "pepmasses", 
+                                  .time_stamp, "pepmasses.rds"))
+    
+    max_mass <- fwd_peps %>% 
+      purrr::map(attr, "data") %>% 
+      unlist(use.names = FALSE) %>% 
+      max(na.rm = TRUE) %T>% 
+      saveRDS(file.path(out_path, "temp", "max_mass.rds"))
+    
+    rm(list = c("fwd_peps"))
+    gc()
+  } else {
+    max_mass <- readRDS(file.path(out_path, "temp", "max_mass.rds"))
+  }
+  
+  invisible(max_mass)
 }
 
 

@@ -33,6 +33,188 @@ extract_raws <- function(raw_dir = NULL, dat_dir = NULL) {
 }
 
 
+#' Finds the names of Mascot PSM files.
+#' 
+#' @param filelist A list of PSM files.
+#' @inheritParams load_expts
+find_mascot_psmraws <-function(filelist = NULL, dat_dir = NULL) {
+  
+  dir.create(file.path(dat_dir, "PSM/cache"), 
+             recursive = TRUE, 
+             showWarnings = FALSE)
+  
+  purrr::walk(filelist, batchPSMheader, 
+              dat_dir, 
+              TMT_plex = 16, 
+              proc_extdata = FALSE, 
+              warns = FALSE)
+  
+  purrr::walk(gsub("\\.csv$", "_hdr_rm.csv", filelist), ~ {
+    df <- read.delim(file.path(dat_dir, "PSM/cache", .x), 
+                     sep = ',', 
+                     check.names = FALSE, 
+                     header = TRUE, 
+                     stringsAsFactors = FALSE, 
+                     quote = "\"", 
+                     fill = TRUE , 
+                     skip = 0)
+    
+    l <- df$pep_scan_title[1]
+    
+    if (grepl("File:~", l, fixed = TRUE)) { # MSConvert
+      raws <- df[, "pep_scan_title"] %>% 
+        gsub("^[^ ]+ File:\\~(.*)\\.(raw|d)\\~.*", "\\1", .) %>% 
+        unique()
+    } else if (grepl("File: ~", l, fixed = TRUE)) { # PD
+      raws <- df[, "pep_scan_title"] %>% 
+        gsub("\\\\", "/", .) %>% 
+        gsub('^.*/(.*)\\.(raw|d)\\~.*', '\\1', .) %>% 
+        unique()
+    }
+    
+    if (length(raws) > 0) {
+      out_nm <- paste0("msraws_in_", 
+                       .x %>% 
+                         gsub("\\.[^.]*$", "", .) %>% 
+                         gsub("_hdr_rm$", "", .), 
+                       ".txt")
+      data.frame(RAW_File = raws) %>% 
+        write.table(file.path(dat_dir, out_nm), 
+                    sep = "\t", 
+                    col.names = TRUE, 
+                    row.names = FALSE, 
+                    quote = FALSE)
+      
+      message("MS file names stored in ", file.path(dat_dir, out_nm))
+    }
+  })
+} 
+
+
+#' Finds the names of MaxQuant PSM files.
+#' 
+#' @param filelist A list of PSM files.
+#' @inheritParams load_expts
+find_mq_psmraws <- function(filelist = NULL, dat_dir = NULL) {
+  
+  purrr::walk(filelist, ~ {
+    df <- suppressWarnings(
+      readr::read_tsv(file.path(dat_dir, .x), 
+                      col_types = cols(`Raw file` = col_character())))
+    
+    raws <- unique(df$`Raw file`)
+    
+    if (!purrr::is_empty(raws)) {
+      out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
+      
+      data.frame(RAW_File = raws) %>% 
+        write.table(file.path(dat_dir, out_nm), 
+                    sep = "\t", 
+                    col.names = TRUE, 
+                    row.names = FALSE, 
+                    quote = FALSE)
+      
+      message("MS file names stored in ", file.path(dat_dir, out_nm))
+    }
+  })
+}
+
+
+#' Finds the names of Spectrum Mill PSM files.
+#' 
+#' @param filelist A list of PSM files.
+#' @inheritParams load_expts
+find_sm_psmraws <- function(filelist = NULL, dat_dir = NULL) {
+  
+  purrr::walk(filelist, ~ {
+    df <- suppressWarnings(
+      readr::read_delim(file.path(dat_dir, .x), 
+                        delim = ";", 
+                        col_types = cols(filename = col_character()))) %>% 
+      dplyr::mutate(filename = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", filename))
+    
+    raws <- unique(df$filename)
+    
+    if (!purrr::is_empty(raws)) {
+      out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
+      
+      data.frame(RAW_File = raws) %>% 
+        write.table(file.path(dat_dir, out_nm), 
+                    sep = "\t", 
+                    col.names = TRUE, 
+                    row.names = FALSE, 
+                    quote = FALSE)
+      
+      message("MS file names stored in ", file.path(dat_dir, out_nm))
+    }
+  })
+}
+
+
+#' Finds the names of MSFragger PSM files.
+#' 
+#' @param filelist A list of PSM files.
+#' @inheritParams load_expts
+find_mf_psmraws <- function(filelist = NULL, dat_dir = NULL) {
+  
+  purrr::walk(filelist, ~ {
+    
+    df <- suppressWarnings(
+      readr::read_delim(file.path(dat_dir, .x), 
+                        delim = "\t", 
+                        col_types = cols(Spectrum = col_character())) 
+    ) %>% 
+      dplyr::mutate(Spectrum = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", Spectrum))
+    
+    raws <- unique(df$Spectrum)
+    
+    if (!purrr::is_empty(raws)) {
+      out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
+      
+      data.frame(RAW_File = raws) %>% 
+        write.table(file.path(dat_dir, out_nm), 
+                    sep = "\t", 
+                    col.names = TRUE, 
+                    row.names = FALSE, 
+                    quote = FALSE)
+      
+      message("MS file names stored in ", file.path(dat_dir, out_nm))
+    }
+  })
+}
+
+
+#' Finds the names of proteoQ PSM files.
+#' 
+#' @param filelist A list of PSM files.
+#' @inheritParams load_expts
+find_pq_psmraws <- function(filelist = NULL, dat_dir = NULL) {
+  
+  purrr::walk(filelist, ~ {
+    
+    df <- suppressWarnings(
+      readr::read_tsv(file.path(dat_dir, .x), 
+                      col_types = cols(prot_acc = col_character())) 
+    )
+    
+    raws <- unique(df$raw_file)
+    
+    if (!purrr::is_empty(raws)) {
+      out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
+      
+      data.frame(RAW_File = raws) %>% 
+        write.table(file.path(dat_dir, out_nm), 
+                    sep = "\t", 
+                    col.names = TRUE, 
+                    row.names = FALSE, 
+                    quote = FALSE)
+      
+      message("MS file names stored in ", file.path(dat_dir, out_nm))
+    }
+  })
+}
+
+
 #' Extract the names of RAW MS files from PSM data
 #'
 #' \code{extract_psm_raws} extracts the MS file names from the PSM data under
@@ -49,161 +231,7 @@ extract_raws <- function(raw_dir = NULL, dat_dir = NULL) {
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @export
 extract_psm_raws <- function(dat_dir = NULL) {
-
-  find_mascot_psmraws <-function(filelist) {
-    
-    dir.create(file.path(dat_dir, "PSM/cache"), 
-               recursive = TRUE, 
-               showWarnings = FALSE)
-    
-    purrr::walk(filelist, batchPSMheader, 
-                dat_dir, 
-                TMT_plex = 16, 
-                proc_extdata = FALSE, 
-                warns = FALSE)
-    
-    purrr::walk(gsub("\\.csv$", "_hdr_rm.csv", filelist), ~ {
-      df <- read.delim(file.path(dat_dir, "PSM/cache", .x), 
-                       sep = ',', 
-                       check.names = FALSE, 
-                       header = TRUE, 
-                       stringsAsFactors = FALSE, 
-                       quote = "\"", 
-                       fill = TRUE , 
-                       skip = 0)
-      
-      df <- df[, "pep_scan_title", drop = FALSE] %>% 
-        dplyr::mutate(RAW_File = gsub('^(.*)\\\\(.*)\\.raw.*', '\\2', 
-                                      .$pep_scan_title)) %>% 
-        dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', 
-                                      .$RAW_File))
-      
-      raws <- unique(df$RAW_File)
-      
-      if (!purrr::is_empty(raws)) {
-        out_nm <- paste0("msraws_in_", 
-                         .x %>% 
-                           gsub("\\.[^.]*$", "", .) %>% 
-                           gsub("_hdr_rm$", "", .), 
-                         ".txt")
-        data.frame(RAW_File = raws) %>% 
-          write.table(file.path(dat_dir, out_nm), 
-                      sep = "\t", 
-                      col.names = TRUE, 
-                      row.names = FALSE, 
-                      quote = FALSE)
-        
-        message("MS file names stored in ", file.path(dat_dir, out_nm))
-      }
-    })
-  } 
   
-  find_mq_psmraws <- function(filelist) {
-    
-    purrr::walk(filelist, ~ {
-      df <- suppressWarnings(
-        readr::read_tsv(file.path(dat_dir, .x), 
-                          col_types = cols(`Raw file` = col_character())))
-
-      raws <- unique(df$`Raw file`)
-      
-      if (!purrr::is_empty(raws)) {
-        out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
-        
-        data.frame(RAW_File = raws) %>% 
-          write.table(file.path(dat_dir, out_nm), 
-                      sep = "\t", 
-                      col.names = TRUE, 
-                      row.names = FALSE, 
-                      quote = FALSE)
-        
-        message("MS file names stored in ", file.path(dat_dir, out_nm))
-      }
-    })
-  }
-  
-  find_sm_psmraws <- function(filelist) {
-    
-    purrr::walk(filelist, ~ {
-      df <- suppressWarnings(
-        readr::read_delim(file.path(dat_dir, .x), 
-                          delim = ";", 
-                          col_types = cols(filename = col_character()))) %>% 
-        dplyr::mutate(filename = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", filename))
-
-      raws <- unique(df$filename)
-      
-      if (!purrr::is_empty(raws)) {
-        out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
-        
-        data.frame(RAW_File = raws) %>% 
-          write.table(file.path(dat_dir, out_nm), 
-                      sep = "\t", 
-                      col.names = TRUE, 
-                      row.names = FALSE, 
-                      quote = FALSE)
-        
-        message("MS file names stored in ", file.path(dat_dir, out_nm))
-      }
-    })
-  }
-  
-  find_mf_psmraws <- function(filelist) {
-    
-    purrr::walk(filelist, ~ {
-      
-      df <- suppressWarnings(
-        readr::read_delim(file.path(dat_dir, .x), 
-                          delim = "\t", 
-                          col_types = cols(Spectrum = col_character())) 
-      ) %>% 
-        dplyr::mutate(Spectrum = gsub("\\.[0-9]+\\.[0-9]+\\.[0-9]+$", "", Spectrum))
-      
-      raws <- unique(df$Spectrum)
-      
-      if (!purrr::is_empty(raws)) {
-        out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
-        
-        data.frame(RAW_File = raws) %>% 
-          write.table(file.path(dat_dir, out_nm), 
-                      sep = "\t", 
-                      col.names = TRUE, 
-                      row.names = FALSE, 
-                      quote = FALSE)
-        
-        message("MS file names stored in ", file.path(dat_dir, out_nm))
-      }
-    })
-  }
-  
-  find_pq_psmraws <- function(filelist) {
-    
-    purrr::walk(filelist, ~ {
-      
-      df <- suppressWarnings(
-        readr::read_tsv(file.path(dat_dir, .x), 
-                        col_types = cols(prot_acc = col_character())) 
-      )
-      
-      raws <- unique(df$raw_file)
-      
-      if (!purrr::is_empty(raws)) {
-        out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
-        
-        data.frame(RAW_File = raws) %>% 
-          write.table(file.path(dat_dir, out_nm), 
-                      sep = "\t", 
-                      col.names = TRUE, 
-                      row.names = FALSE, 
-                      quote = FALSE)
-        
-        message("MS file names stored in ", file.path(dat_dir, out_nm))
-      }
-    })
-  }
-  
-  
-  # ---
   if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()
   } else {
@@ -239,11 +267,11 @@ extract_psm_raws <- function(dat_dir = NULL) {
   }
 
   switch (type,
-    mascot = find_mascot_psmraws(filelist),
-    mq = find_mq_psmraws(filelist),
-    sm = find_sm_psmraws(filelist),
-    mf = find_mf_psmraws(filelist),
-    pq = find_pq_psmraws(filelist), 
+    mascot = find_mascot_psmraws(filelist, dat_dir),
+    mq = find_mq_psmraws(filelist, dat_dir),
+    sm = find_sm_psmraws(filelist, dat_dir),
+    mf = find_mf_psmraws(filelist, dat_dir),
+    pq = find_pq_psmraws(filelist, dat_dir), 
     stop("Unknown `type`.", call. = FALSE)
   )
 }
@@ -2167,13 +2195,23 @@ pad_mascot_channels <- function(file, ...) {
                    quote = "\"", fill = TRUE , skip = 0) %>% 
     filters_in_call(!!!filter_dots)
   
+  # ---
+  l <- df$pep_scan_title[1]
+  
+  if (grepl("File:~", l, fixed = TRUE)) { # MSConvert
+    df <- df %>%
+      dplyr::mutate(RAW_File = gsub("^[^ ]+ File:\\~(.*)\\.(raw|d)\\~.*", 
+                                    "\\1", 
+                                    pep_scan_title))
+  } else if (grepl("File: ~", l, fixed = TRUE)) { # PD
+    df <- df %>% 
+      dplyr::mutate(RAW_File = gsub("\\\\", "/", pep_scan_title), 
+                    RAW_File = gsub('^.*/(.*)\\.(raw|d)\\~.*', '\\1', RAW_File)) 
+  }
+  
+  rm(list = "l")
+  
   df <- df %>%
-    dplyr::mutate(RAW_File = pep_scan_title) %>% 
-    dplyr::mutate(RAW_File = gsub('^.*\\\\(.*)\\.raw~.*', '\\1', RAW_File)) %>% 
-    dplyr::mutate(RAW_File = gsub('^.*\\\\(.*)\\.RAW~.*', '\\1', RAW_File)) %>% 
-    dplyr::mutate(RAW_File = gsub('^.*\\/(.*)\\.raw~.*', '\\1', RAW_File)) %>% 
-    dplyr::mutate(RAW_File = gsub('^.*\\/(.*)\\.RAW~.*', '\\1', RAW_File)) %>% 
-    dplyr::mutate(RAW_File = gsub("^.*File:~(.*)\\.d~?.*", '\\1', .$RAW_File)) %>% 
     dplyr::mutate(prot_acc = gsub("\\.[0-9]*$", "", prot_acc)) # for some refseq_acc
   
   this_plex <- find_mascot_plex(df)
@@ -6178,16 +6216,17 @@ pad_tmt_channels <- function(file, ...) {
     filters_in_call(!!!filter_dots)
   
   if ("raw_file" %in% names(df)) {
-    df <- df %>% dplyr::rename(RAW_File = raw_file)
+    df <- df %>% dplyr::rename(RAW_File = raw_file) %>%
+      dplyr::mutate(RAW_File = gsub("\\.(raw|d)$", "", RAW_File))
   } else {
     df <- df %>%
-      dplyr::mutate(RAW_File = gsub("\\\\", "/", pep_scan_title)) %>% 
+      dplyr::mutate(RAW_File = gsub("\\\\", "/", pep_scan_title)) %>%
       dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.(raw|RAW)[\\\"]{0,1}; .*", "\\1", 
                                     RAW_File)) %>% 
       dplyr::mutate(RAW_File = gsub("^.*/(.*)\\.d[\\\"]{0,1}; .*", "\\1", 
                                     RAW_File))
   }
-
+  
   this_plex <- sum(grepl("^I[0-9]{3}[NC]{0,1}$", names(df)))
   TMT_plex <- TMT_plex(label_scheme_full)
   stopifnot(this_plex >= 0L)

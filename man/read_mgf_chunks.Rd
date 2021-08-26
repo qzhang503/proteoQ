@@ -10,7 +10,16 @@ read_mgf_chunks(
   ret_range = c(0L, Inf),
   ppm_ms2 = 25L,
   min_ms2mass = 110L,
-  index_ms2 = FALSE
+  index_ms2 = FALSE,
+  pat_file,
+  pat_scan,
+  n_spacer,
+  n_hdr,
+  n_to_pepmass,
+  n_to_title,
+  n_to_scan,
+  n_to_rt,
+  n_to_charge
 )
 }
 \arguments{
@@ -20,6 +29,35 @@ read_mgf_chunks(
 MS2 ion searches. The default is to use the top-100 ions in an MS2 event.}
 
 \item{ret_range}{The range of retention time in seconds.}
+
+\item{ppm_ms2}{The mass tolerance of MS2 species.}
+
+\item{min_ms2mass}{A minimum m/z of MS2 ions.}
+
+\item{index_ms2}{Logical; if TRUE, converts MS2 m/z values to indices.}
+
+\item{pat_file}{The pattern for parsing the \code{File} field in MGF.}
+
+\item{pat_scan}{The pattern for parsing the \code{scan} field in MGF.}
+
+\item{n_spacer}{The number of spacer lines between the preceding line END
+IONS and the following line BEGIN IONS. The value is 1 for Proteome
+Discoverer and 0 for MSConvert.}
+
+\item{n_hdr}{The number of lines before MS2 data in an MGF. The value is +6
+for PD and +5 for MSConvert.}
+
+\item{n_to_pepmass}{The number of lines from BEGIN to PEPMASS.}
+
+\item{n_to_title}{The number of lines from BEGIN to TITLE. The value is the
+same between PD and MSConvert.}
+
+\item{n_to_scan}{The number of lines from BEGIN to SCANS. The value is +5 for
+PD.}
+
+\item{n_to_rt}{The number of lines from BEGIN to RTINSECONDS.}
+
+\item{n_to_charge}{The number of lines from BEGIN to CHARGE.}
 }
 \description{
 Reads mgfs in chunks.

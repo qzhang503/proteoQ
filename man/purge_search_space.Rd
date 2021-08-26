@@ -23,8 +23,6 @@ variable.}
 \item{mgf_path}{The file path to a list of MGF files. There is no default and
 the experimenters need to supply the files.}
 
-\item{ppm_ms1}{The mass tolerance of MS1 species.}
-
 \item{fmods_nl}{The attribute of \code{fmods_nl} from an \code{aa_masses}.}
 }
 \description{

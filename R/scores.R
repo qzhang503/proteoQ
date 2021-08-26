@@ -731,10 +731,6 @@ calcpepsc <- function (file, topn_ms2ions = 100L, type_ms2ions = "by",
   n_cores <- parallel::detectCores()
   n_cores2 <- n_cores^2L
   
-  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-  parallel::clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
-  clusterExport(cl, list("scalc_pepprobs"), envir = environment(proteoQ:::scalc_pepprobs))
-
   df <- readRDS(file.path(out_path, "temp", file))
   df[["uniq_id"]] <- paste(df[["scan_num"]], df[["raw_file"]], sep = "@")
   
@@ -752,6 +748,10 @@ calcpepsc <- function (file, topn_ms2ions = 100L, type_ms2ions = "by",
   }
   
   if (length(df) >= n_cores2) {
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    parallel::clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
+    clusterExport(cl, list("scalc_pepprobs"), envir = environment(proteoQ:::scalc_pepprobs))
+    
     probs <- parallel::clusterApplyLB(cl, df, 
                                       calc_pepprobs_i, 
                                       topn_ms2ions = topn_ms2ions, 
@@ -759,8 +759,12 @@ calcpepsc <- function (file, topn_ms2ions = 100L, type_ms2ions = "by",
                                       penalize_sions = penalize_sions, 
                                       ppm_ms2 = ppm_ms2,
                                       out_path = out_path, 
-                                      digits = digits) %>% 
-      dplyr::bind_rows()
+                                      digits = digits)
+    
+    parallel::stopCluster(cl)
+    gc()
+    
+    probs <- probs %>% dplyr::bind_rows()
   } else {
     if (is.data.frame(df)) df <- list(df)
     
@@ -774,7 +778,7 @@ calcpepsc <- function (file, topn_ms2ions = 100L, type_ms2ions = "by",
       dplyr::bind_rows()
   }
   
-  parallel::stopCluster(cl)
+  
   gc()
   
   ## Reassemble `df`

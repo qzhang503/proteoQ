@@ -85,9 +85,10 @@ binTheoPeps <- function (res, min_mass = 500L, max_mass = 10000L, ppm = 20L,
   }) %>% 
     parallel::clusterMap(cl, cbind_theopepes, ., file.path(out_dir, out_nms))
   
-  rm(list = c("res"))
-  
   parallel::stopCluster(cl)
+  
+  rm(list = c("res"))
+  gc()
   
   invisible(out)
 }

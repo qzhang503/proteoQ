@@ -15,7 +15,7 @@ theoretical peptides.}
 \item{aa_masses}{A named list containing the (mono-isotopic) masses of amino
 acid residues.}
 
-\item{out_path}{The output path.}
+\item{out_path}{An output path.}
 }
 \description{
 Post processing after ms2match.

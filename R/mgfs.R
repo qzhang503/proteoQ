@@ -37,7 +37,10 @@ load_mgfs <- function (mgf_path, min_mass = 500L, min_ms2mass = 110L,
 #' @param topn_ms2ions A non-negative integer; the top-n species for uses in
 #'   MS2 ion searches. The default is to use the top-100 ions in an MS2 event.
 #' @param ret_range The range of retention time in seconds.
+#' @param out_path An output path.
+#' @inheritParams load_mgfs
 #' @inheritParams matchMS
+#' @inheritParams frames_adv_base
 #' @import stringi
 #' @examples
 #' \donttest{
@@ -55,13 +58,27 @@ readMGF <- function (filepath = "~/proteoQ/mgfs",
     writeLines(x, nm)
   }
   
-  # ---
+  # parsing rules
   filelist <- list.files(path = file.path(filepath), pattern = "^.*\\.mgf$")
   
   if (length(filelist) == 0L) {
     stop("No '.mgf' files under ", filepath, call. = FALSE)
   }
   
+  pat_mgf <- find_mgf_type(file.path(filepath, filelist[[1]]))
+  
+  pat_file = pat_mgf$pat_file
+  pat_scan = pat_mgf$pat_scan
+  n_spacer = pat_mgf$n_spacer
+  n_hdr = pat_mgf$n_hdr
+  n_to_pepmass = pat_mgf$n_to_pepmass
+  n_to_title = pat_mgf$n_to_title
+  n_to_scan = pat_mgf$n_to_scan
+  n_to_rt = pat_mgf$n_to_rt
+  n_to_charge = pat_mgf$n_to_charge
+  
+  rm(list = c("pat_mgf"))
+
   # by mgf files
   out <- vector("list", length(filelist))
   
@@ -88,7 +105,16 @@ readMGF <- function (filepath = "~/proteoQ/mgfs",
                                 ret_range = ret_range, 
                                 ppm_ms2 = ppm_ms2, 
                                 min_ms2mass = min_ms2mass, 
-                                index_ms2 = index_ms2)
+                                index_ms2 = index_ms2, 
+                                pat_file = pat_file, 
+                                pat_scan = pat_scan, 
+                                n_spacer = n_spacer, 
+                                n_hdr = n_hdr, 
+                                n_to_pepmass = n_to_pepmass, 
+                                n_to_title = n_to_title, 
+                                n_to_scan = n_to_scan, 
+                                n_to_rt = n_to_rt, 
+                                n_to_charge = n_to_charge)
     
     local({
       temp_dir2 <- file.path(filepath, gsub("\\.[^.]*$", "", filelist[i]))
@@ -120,13 +146,28 @@ readMGF <- function (filepath = "~/proteoQ/mgfs",
 
 #' Reads mgfs in chunks.
 #' 
+#' @param pat_file The pattern for parsing the \code{File} field in MGF.
+#' @param pat_scan  The pattern for parsing the \code{scan} field in MGF.
+#' @param n_spacer The number of spacer lines between the preceding line END
+#'   IONS and the following line BEGIN IONS. The value is 1 for Proteome
+#'   Discoverer and 0 for MSConvert.
+#' @param n_hdr The number of lines before MS2 data in an MGF. The value is +6
+#'   for PD and +5 for MSConvert.
+#' @param n_to_pepmass The number of lines from BEGIN to PEPMASS.
+#' @param n_to_title The number of lines from BEGIN to TITLE. The value is the
+#'   same between PD and MSConvert.
+#' @param n_to_scan The number of lines from BEGIN to SCANS. The value is +5 for
+#'   PD.
+#' @param n_to_rt The number of lines from BEGIN to RTINSECONDS.
+#' @param n_to_charge The number of lines from BEGIN to CHARGE.
 #' @inheritParams readMGF
-#' @import stringi
+#' @inheritParams matchMS
 read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs", 
                              topn_ms2ions = 100L, ret_range = c(0L, Inf), 
-                             ppm_ms2 = 25L, min_ms2mass = 110L, 
-                             index_ms2 = FALSE) {
-
+                             ppm_ms2 = 25L, min_ms2mass = 110L, index_ms2 = FALSE, 
+                             pat_file, pat_scan, n_spacer, n_hdr, n_to_pepmass, 
+                             n_to_title, n_to_scan, n_to_rt, n_to_charge) {
+  
   filelist <- list.files(path = file.path(filepath), pattern = "^.*\\.mgf$")
   
   if (length(filelist) == 0L) {
@@ -136,13 +177,28 @@ read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs",
   n_cores <- parallel::detectCores()
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   
+  parallel::clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
+  parallel::clusterExport(cl, list("proc_mgf_chunks"), 
+                          envir = environment(proteoQ:::proc_mgf_chunks))
+  parallel::clusterExport(cl, list("proc_mgfs"), 
+                          envir = environment(proteoQ:::proc_mgfs))
+  
   out <- parallel::clusterApply(cl, file.path(filepath, filelist), 
                                 proc_mgf_chunks_i, 
                                 topn_ms2ions = topn_ms2ions, 
                                 ret_range = ret_range, 
                                 ppm_ms2 = ppm_ms2, 
                                 min_ms2mass = min_ms2mass, 
-                                index_ms2 = index_ms2) %>% 
+                                index_ms2 = index_ms2, 
+                                pat_file = pat_file, 
+                                pat_scan = pat_scan, 
+                                n_spacer = n_spacer, 
+                                n_hdr = n_hdr, 
+                                n_to_pepmass = n_to_pepmass, 
+                                n_to_title = n_to_title, 
+                                n_to_scan = n_to_scan, 
+                                n_to_rt = n_to_rt, 
+                                n_to_charge = n_to_charge) %>% 
     dplyr::bind_rows()
   
   parallel::stopCluster(cl)
@@ -196,9 +252,18 @@ read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs",
       proc_mgfs(gaps, 
                 topn_ms2ions = topn_ms2ions, 
                 ret_range = ret_range, 
-                index_ms2 = index_ms2, 
                 ppm_ms2 = ppm_ms2, 
-                min_ms2mass = min_ms2mass)
+                min_ms2mass = min_ms2mass, 
+                index_ms2 = index_ms2, 
+                pat_file = pat_file, 
+                pat_scan = pat_scan, 
+                n_spacer = n_spacer, 
+                n_hdr = n_hdr, 
+                n_to_pepmass = n_to_pepmass, 
+                n_to_title = n_to_title, 
+                n_to_scan = n_to_scan, 
+                n_to_rt = n_to_rt, 
+                n_to_charge = n_to_charge)
     )
   }
   
@@ -210,31 +275,42 @@ read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs",
 #' 
 #' @param file A mgf chunk (chunk_1.mgf etc.) with prepending file path.
 #' @inheritParams read_mgf_chunks
-#' @import stringi
 proc_mgf_chunks_i <- function (file, topn_ms2ions = 100L, ret_range = c(0L, Inf), 
-                               ppm_ms2 = 25L, min_ms2mass = 110L, 
-                               index_ms2 = FALSE) {
+                               ppm_ms2 = 25L, min_ms2mass = 110L, index_ms2 = FALSE, 
+                               pat_file, pat_scan, n_spacer, n_hdr, n_to_pepmass, 
+                               n_to_title, n_to_scan, n_to_rt, n_to_charge) {
 
   message("Parsing '", file, "'.")
   
-  x <- stri_read_lines(file) %>% 
+  x <- stringi::stri_read_lines(file) %>% 
     proc_mgf_chunks(topn_ms2ions = topn_ms2ions, 
                     ret_range = ret_range, 
                     ppm_ms2 = ppm_ms2, 
                     min_ms2mass = min_ms2mass, 
                     index_ms2 = index_ms2, 
-                    filepath = file)
+                    filepath = file, 
+                    pat_file = pat_file, 
+                    pat_scan = pat_scan, 
+                    n_spacer = n_spacer, 
+                    n_hdr = n_hdr, 
+                    n_to_pepmass = n_to_pepmass, 
+                    n_to_title = n_to_title, 
+                    n_to_scan = n_to_scan, 
+                    n_to_rt = n_to_rt, 
+                    n_to_charge = n_to_charge)
 }
 
 
 #' Processes MGF entries in chunks.
-#' 
+#'
 #' @param lines MGF lines.
 #' @inheritParams readMGF
-#' @import stringi
+#' @inheritParams read_mgf_chunks
 proc_mgf_chunks <- function (lines, topn_ms2ions = 100L, ret_range = c(0L, Inf), 
                              ppm_ms2 = 25L, min_ms2mass = 110L, index_ms2 = FALSE, 
-                             filepath = file.path("~/proteoQ/mgfs/temp")) {
+                             filepath = file.path("~/proteoQ/mgfs/temp"), 
+                             pat_file, pat_scan, n_spacer, n_hdr, n_to_pepmass, 
+                             n_to_title, n_to_scan, n_to_rt, n_to_charge) {
   
   basename <- gsub("\\.[^.]*$", "", filepath)
   
@@ -246,7 +322,7 @@ proc_mgf_chunks <- function (lines, topn_ms2ions = 100L, ret_range = c(0L, Inf),
     lb <- begins[length(begins)]
     
     if (lb > le) {
-      af <- lines[(le+2):length(lines)]
+      af <- lines[(le + n_spacer + 1L):length(lines)]
     } else {
       af <- NULL
     }
@@ -261,7 +337,7 @@ proc_mgf_chunks <- function (lines, topn_ms2ions = 100L, ret_range = c(0L, Inf),
     lb <- begins[1]
     
     if (lb > le) {
-      bf <- lines[1:(le+1)]
+      bf <- lines[1:(le + n_spacer)]
     } else {
       bf <- NULL
     }
@@ -272,11 +348,11 @@ proc_mgf_chunks <- function (lines, topn_ms2ions = 100L, ret_range = c(0L, Inf),
   })
   
   if (!is.null(af)) {
-    lines <- lines[1:(begins[length(begins)]-1)]
+    lines <- lines[1:(begins[length(begins)] - 1L)]
   }
   
   if (!is.null(bf)) {
-    lines <- lines[-c(1:(ends[1]+1))]
+    lines <- lines[-c(1:(ends[1] + n_spacer))]
   }
   
   out <- proc_mgfs(lines, 
@@ -284,90 +360,124 @@ proc_mgf_chunks <- function (lines, topn_ms2ions = 100L, ret_range = c(0L, Inf),
                    ret_range = ret_range, 
                    ppm_ms2 = ppm_ms2, 
                    min_ms2mass = min_ms2mass, 
-                   index_ms2 = index_ms2)
+                   index_ms2 = index_ms2, 
+                   pat_file = pat_file, 
+                   pat_scan = pat_scan, 
+                   n_spacer = n_spacer, 
+                   n_hdr = n_hdr, 
+                   n_to_pepmass = n_to_pepmass, 
+                   n_to_title = n_to_title, 
+                   n_to_scan = n_to_scan, 
+                   n_to_rt = n_to_rt, 
+                   n_to_charge = n_to_charge)
 }
 
 
 #' Helper in processing MGF entries in chunks.
-#' 
+#'
 #' @inheritParams proc_mgf_chunks
-#' @import stringi
 proc_mgfs <- function (lines, topn_ms2ions = 100L, ret_range = c(0L, Inf), 
-                       ppm_ms2 = 25L, min_ms2mass = 110L, index_ms2 = FALSE) {
+                       ppm_ms2 = 25L, min_ms2mass = 110L, index_ms2 = FALSE, 
+                       pat_file, pat_scan, 
+                       n_spacer = 1L, n_hdr = 6L, n_to_pepmass = 2L, 
+                       n_to_title = 1L, n_to_scan = 5L, n_to_rt = 4L, 
+                       n_to_charge = 3L) {
+  
+  options(digits = 9L)
   
   # MS2 ions
-  begins <- which(stri_startswith_fixed(lines, "BEGIN IONS"))
-  ends <- which(stri_endswith_fixed(lines, "END IONS"))
+  begins <- which(stringi::stri_startswith_fixed(lines, "BEGIN IONS"))
+  ends <- which(stringi::stri_endswith_fixed(lines, "END IONS"))
   
-  ms2s <- purrr::map2(begins, ends, ~ lines[(.x + 6) : (.y - 1)]) %>% 
-    purrr::map(stri_split_fixed, " ", n = 2, simplify = TRUE) 
-  
+  # (-1L: one line above "END IONS")
+  ms2s <- purrr::map2(begins, ends, ~ lines[(.x + n_hdr) : (.y - 1L)]) %>% 
+    purrr::map(stringi::stri_split_fixed, " ", n = 2, simplify = TRUE) 
+
   ms2_moverzs <- ms2s %>% 
-    purrr::map(~ .x[, 1] %>% as.numeric()) 
+    purrr::map(~ .x[, 1] %>% as.numeric())
+  
+  # not to round the `ms2_ints` values here (to avoid ties and thus 
+  # shorter length after `which_topx` of a vector of integers; 
+  # more likely to have ties with integers than demicals)
+  # 
+  # the latest `which_topx` handles ties and the length of the output 
+  #  equals `topn_ms2ions` even with ties; 
+  # except when the length of a vector is shorter than `topn_ms2ions`)
   
   ms2_ints <- ms2s %>% 
-    purrr::map(~ .x[, 2] %>% as.numeric()) 
-  
-  lens <- purrr::map(ms2_moverzs, length)
+    purrr::map(~ .x[, 2] %>% as.numeric())
+
+  lens <- purrr::map_dbl(ms2_moverzs, length)
   
   if (topn_ms2ions < Inf) {
-    rows <- purrr::map(ms2_ints, which_topx, topn_ms2ions)
-    ms2_ints <- purrr::map2(ms2_ints, rows, ~ .x[.y])
-    ms2_moverzs <- purrr::map2(ms2_moverzs, rows, ~ .x[.y])
+    # rows <- purrr::map(ms2_ints, which_topx, topn_ms2ions)
+    rows <- purrr::map(ms2_ints, which_topx2, topn_ms2ions)
+    
+    # OK to round `ms2_ints` now
+    ms2_ints <- purrr::map2(ms2_ints, rows, ~ round(.x[.y], digits = 0L))
+    ms2_moverzs <- purrr::map2(ms2_moverzs, rows, ~ round(.x[.y], digits = 5L))
     rm(list = c("rows", "ms2s"))
   }
   
   # MS1 ions
-  ms1s <- lines[begins+2] %>% 
-    stri_replace_first_fixed("PEPMASS=", "") %>% 
-    purrr::map(stri_split_fixed, " ", n = 2, simplify = TRUE)
+  ms1s <- lines[begins + n_to_pepmass] %>% 
+    stringi::stri_replace_first_fixed("PEPMASS=", "") %>% 
+    purrr::map(stringi::stri_split_fixed, " ", n = 2, simplify = TRUE)
   
   ms1_moverzs <- ms1s %>% 
-    purrr::map(~ .x[, 1] %>% as.numeric())
-  
+    purrr::map_dbl(~ .x[, 1] %>% as.numeric() %>% round(digits = 5L))
+    
   ms1_ints <- ms1s %>% 
-    purrr::map(~ .x[, 2] %>% as.numeric())
-  
+    purrr::map_dbl(~ .x[, 2] %>% as.numeric() %>% round(digits = 0L))
+
   rm(list = c("ms1s"))
+  gc()
   
   # Others
-  scan_titles <- lines[begins+1] %>% 
-    stri_replace_first_fixed("TITLE=", "") %>% 
-    as.list()
+  scan_titles <- lines[begins + n_to_title] %>% 
+    stringi::stri_replace_first_fixed("TITLE=", "")
+
+  if (pat_file == "^.* File:\"([^\"]+)\".*") {
+    raw_files <- scan_titles %>% 
+      gsub(pat_file, "\\1", .) %>% 
+      gsub("\\\\", "/", .) # %>% as.list()
+  } else if (pat_file == "^.*File: \"([^\"]+)\".*") {
+    raw_files <- scan_titles %>% 
+      gsub(pat_file, "\\1", .) %>% 
+      gsub("\\\\", "/", .) %>% 
+      gsub("^.*/(.*)", "\\1", .) # %>% as.list()
+  } else {
+    stop("Unknown MGF format.")
+  }
   
-  scan_nums <- lines[begins+5] %>% 
-    stri_replace_first_fixed("SCANS=", "") %>% 
-    as.numeric() %>% 
-    as.list()
-  
-  ret_times  <- lines[begins+4] %>% 
-    stri_replace_first_fixed("RTINSECONDS=", "") %>% 
-    as.numeric() %>% 
-    as.list()
-  
-  ms1_charges <- lines[begins+3] %>% 
-    stri_replace_first_fixed("CHARGE=", "") %>% 
-    as.list()
-  
+  scan_nums <- scan_titles %>% 
+    gsub(pat_scan, "\\1", .) %>% 
+    as.integer()
+
+  ret_times  <- lines[begins + n_to_rt] %>% 
+    stringi::stri_replace_first_fixed("RTINSECONDS=", "") %>% 
+    as.numeric()
+
+  ms1_charges <- lines[begins + n_to_charge] %>% 
+    stringi::stri_replace_first_fixed("CHARGE=", "")
+
   # MS1 neutral masses
   proton <- 1.00727647
   
   charges <- ms1_charges %>% 
-    purrr::map(stri_reverse) %>% 
-    purrr::map(as.numeric)
+    purrr::map(stringi::stri_reverse) %>% 
+    purrr::map_dbl(as.numeric)
   
   ms1_masses <- purrr::map2(ms1_moverzs, charges, ~ {
     .x * .y - .y * proton 
-  })
-  
-  # Rounding
-  # ms1_ints <- ms1_ints %>% map(as.integer)
-  # ms2_ints <- ms2_ints %>% map(as.integer)
+  }) %>% 
+    purrr::map_dbl(round, digits = 5L)
   
   # Subsetting
   rows <- (ret_times >= ret_range[1] & ret_times <= ret_range[2])
   
   scan_titles <- scan_titles[rows]
+  raw_files <- raw_files[rows]
   ms1_moverzs <- ms1_moverzs[rows]
   ms1_masses <- ms1_masses[rows]
   ms1_ints <- ms1_ints[rows]
@@ -385,6 +495,7 @@ proc_mgfs <- function (lines, topn_ms2ions = 100L, ret_range = c(0L, Inf),
   }
   
   out <- tibble::tibble(scan_title = scan_titles, 
+                        raw_file = raw_files, 
                         ms1_moverz = ms1_moverzs, 
                         ms1_mass = ms1_masses, 
                         ms1_int = ms1_ints, 
@@ -395,7 +506,6 @@ proc_mgfs <- function (lines, topn_ms2ions = 100L, ret_range = c(0L, Inf),
                         ms2_int = ms2_ints, 
                         ms2_n = lens)
 }
-                       
 
 
 #' Calculates the frame numbers for a list of experimental MS1 mass by
@@ -416,5 +526,113 @@ find_ms1_interval <- function (mass = 1714.81876, from = 350L, ppm = 20L) {
 }
 
 
+#' Add the MS file name to timsTOF mgf files.
+#'
+#' @param path The file path to mgf files.
+#' @param n Integer; the first \code{n} lines for quick checks of the MS file
+#'   name.
+#' @export
+proc_mgf_timstof <- function (path, n = 1000L) {
+  filelist <- list.files(path = file.path(path), 
+                         pattern = "^.*\\.mgf$")
+  
+  if (length(filelist) == 0L) {
+    stop("No mgf files under ", path, 
+         call. = FALSE)
+  }
+  
+  purrr::walk(filelist, ~ {
+    lines <- readLines(file.path(path, .x))
+    
+    hdr <- lines[1:n]
+    
+    fn <- hdr %>% 
+      .[grepl("^COM\\=.*\\.d$", .)] %>% 
+      gsub("^COM\\=(.*)$", "\\1", .) %>% 
+      paste0("File:~", ., "~,")
+    
+    stopifnot(length(fn) == 1L)
+    
+    lntit <- hdr %>% 
+      .[grepl("^TITLE", .)] %>% 
+      `[`(1)
+    
+    if (grepl("File:~", lntit)) {
+      warning("MS file names already in ", .x, 
+              call. = FALSE)
+    } else {
+      rows <- grepl("^TITLE", lines)
+      
+      lines[rows] <- lines[rows]  %>% 
+        gsub("(Cmpd \\d+,)", paste("\\1", fn, sep =" "), .)
+      
+      writeLines(lines, file.path(path, .x))
+    }
+  })
+}
+
+
+#' Finds the type of MGF.
+#' 
+#' @param file The path to an MGF file.
+find_mgf_type <- function (file) {
+  
+  hdr <- readLines(file, 1000L)
+  
+  ln_tit <- hdr %>% 
+    .[grepl("^TITLE", .)] %>% 
+    `[`(1)
+  
+  file_msconvert <- "File:\""
+  file_pd <- "File: \""
+  
+  scan_msonvert <- "scan=\\d+"
+  scan_pd <- "scans: \"\\d+\""
+  
+  if (grepl(file_msconvert, ln_tit) && grepl(scan_msonvert, ln_tit)) {
+    type <- "msconvert"
+  } else if (grepl(file_pd, ln_tit) && grepl(scan_pd, ln_tit)) {
+    type <- "pd"
+  }
+  
+  if (type == "msconvert") {
+    pat_file2 <- "^.* File:\"([^\"]+)\".*"
+    pat_scan2 <- "^.* scan=([0-9]+)\"$"
+
+    n_spacer = 0L
+    n_hdr = 5L
+    n_to_pepmass = 3L
+    n_to_title = 1L
+    n_to_scan = 0L
+    n_to_rt = 2L
+    n_to_charge = 4L
+  } else if (type == "pd") {
+    pat_file2 <- "^.*File: \"([^\"]+)\".*"
+    pat_scan2 <- "^.* scans: \"([0-9]+)\"$"
+
+    n_spacer = 1L
+    n_hdr = 6L
+    n_to_pepmass = 2L
+    n_to_title = 1L
+    n_to_scan = 5L
+    n_to_rt = 4L
+    n_to_charge = 3L
+  } else {
+    stop("The `File` lines in MGF needs to be in the format of ", 
+         "File:\"my.raw\" or File: \"my.raw\".\n", 
+         "The `scan` lines in MGF needs to be in the format of ", 
+         "scan=123 or scans: \"123\".")
+  }
+  
+  invisible(list(pat_file = pat_file2, 
+                 pat_scan = pat_scan2, 
+                 n_spacer = n_spacer, 
+                 n_hdr = n_hdr, 
+                 n_to_pepmass = n_to_pepmass, 
+                 n_to_title = n_to_title, 
+                 n_to_scan = n_to_scan, 
+                 n_to_rt = n_to_rt, 
+                 n_to_charge = n_to_charge))
+}
 
 

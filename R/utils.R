@@ -2045,7 +2045,25 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta) {
     pep_pos_all <- stringr::str_locate_all(this_fasta, pattern = pep_seq)
     pep_pos_all <- pep_pos_all[[1]]
     
-    for (i in 1:nrow(pep_pos_all)) {
+    # can have no matches in the fasta is different to what are used in 
+    #  database searches; i.e., the fasta sequence may be altered.
+    
+    n_rows <- nrow(pep_pos_all)
+    
+    if (n_rows == 0L) {
+      warning(pep_seq, " not found in ", fasta_name, ".\n", 
+              "Probably different fastas between database searches and proteoQ.", 
+              call. = FALSE)
+
+      return(
+        cbind(pep_seq, pep_res_before = NA_character_, 
+              start = NA_integer_, end = NA_integer_, 
+              pep_res_after = NA_character_, fasta_name = fasta_name, 
+              is_tryptic = NA)
+      )
+    }
+    
+    for (i in seq_len(n_rows)) {
       pep_pos_i <- pep_pos_all[i, ]
       
       pos_bf <- pep_pos_i[1] - 1
@@ -3946,51 +3964,6 @@ find_delim <- function (filename) {
   invisible(delim)
 }
 
-
-#' Add the MS file name to timsTOF mgf files.
-#'
-#' @param path The file path to mgf files.
-#' @param n Integer; the first \code{n} lines for quick checks of the MS file
-#'   name.
-#' @export
-proc_mgf_timstof <- function (path, n = 1000) {
-  filelist <- list.files(path = file.path(path), 
-                         pattern = "^.*\\.mgf$")
-  
-  if (purrr::is_empty(filelist)) {
-    stop("No mgf files under ", path, 
-         call. = FALSE)
-  }
-  
-  purrr::walk(filelist, ~ {
-    lines <- readLines(file.path(path, .x))
-    
-    hdr <- lines[1:n]
-
-    fn <- hdr %>% 
-      .[grepl("^COM\\=.*\\.d$", .)] %>% 
-      gsub("^COM\\=(.*)$", "\\1", .) %>% 
-      paste0("File:~", ., "~,")
-    
-    stopifnot(length(fn) == 1)
-    
-    lntit <- hdr %>% 
-      .[grepl("^TITLE", .)] %>% 
-      `[`(1)
-    
-    if (grepl("File:~", lntit)) {
-      warning("MS file names already in ", .x, 
-              call. = FALSE)
-    } else {
-      rows <- grepl("^TITLE", lines)
-      
-      lines[rows] <- lines[rows]  %>% 
-        gsub("(Cmpd \\d+,)", paste("\\1", fn, sep =" "), .)
-
-      writeLines(lines, file.path(path, .x))
-    }
-  })
-}
 
 
 #' Flatten lists recursively
