@@ -22,13 +22,6 @@ the experimenters need to supply the files.}
 
 \item{min_ms2mass}{A minimum m/z of MS2 ions.}
 
-\item{topn_ms2ions}{A non-negative integer; the top-n species for uses in
-MS2 ion searches. The default is to use the top-100 ions in an MS2 event.}
-
-\item{ppm_ms1}{The mass tolerance of MS1 species.}
-
-\item{ppm_ms2}{The mass tolerance of MS2 species.}
-
 \item{index_ms2}{Logical; if TRUE, converts MS2 m/z values to indices.}
 }
 \description{

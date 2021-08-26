@@ -1,8 +1,18 @@
 #' Finds the indexes of top-n entries without re-ordering.
-#'
+#' 
+#' At length(x) >= n, the length of output may be shorter than n with ties.
+#' 
 #' @param x A numeric vector.
 #' @param n The number of top entries to keep.
 #' @return The indexes of the top-n entries.
+#' @examples
+#' \donttest{
+#' which_topx(c(1:5), 50)
+#' 
+#' length(which_topx(sample(5000, 500), 100))
+#' 
+#' length(which_topx(sample(100, 100, replace = TRUE), 100))
+#' }
 which_topx <- function(x, n = 50L, ...) {
   
   len <- length(x)
@@ -13,6 +23,41 @@ which_topx <- function(x, n = 50L, ...) {
   xp <- sort(x, partial = p, ...)[p]
   
   which(x > xp)
+}
+
+
+#' Finds the indexes of top-n entries without re-ordering.
+#'
+#' @param x A numeric vector.
+#' @param n The number of top entries to keep.
+#' @return The indexes of the top-n entries.
+which_topx2 <- function(x, n = 50L, ...) {
+  
+  len <- length(x)
+  p <- len - n
+  
+  if (p  <= 0L) return(seq_along(x))
+  
+  xp <- sort(x, partial = p, ...)[p]
+  
+  ans <- which(x > xp)
+  
+  # in case of ties -> length(ans) < n
+  # detrimental e.g. ms2_n = 500 and n = 100 
+  #   -> expect 100 `ms2_moverzs` guaranteed but may be only 99
+  # 
+  # MGF `ms2_moverzs` is increasing
+  # `ans2` goes first to ensure non-decreasing index for `ms2_moverzs`
+  
+  d <- n - length(ans)
+  
+  if (d > 0L) {
+    ans2 <- which(x == xp)
+    ans <- c(ans2[1:d], ans)
+    ans <- sort(ans)
+  }
+  
+  invisible(ans)
 }
 
 
@@ -340,19 +385,11 @@ matchMS <- function (out_path = "~/proteoQ/outs",
   )
   
   ## AA masses
-  aa_masses_all <- res$fwd %>% 
-    purrr::map(~ {
-      attr(.x, "data") <- NULL
-      .x
-    })
+  aa_masses_all <- readRDS(file.path(out_path, "temp", "aa_masses_all.rds")) 
   
   ## Mass range
   min_mass <- 500L
-  
-  max_mass <- res$fwd %>% 
-    purrr::map(attr, "data") %>% 
-    unlist(use.names = FALSE) %>% 
-    max(na.rm = TRUE)
+  max_mass <- readRDS(file.path(out_path, "temp", "max_mass.rds")) 
 
   ## Bin theoretical peptides
   bin_ms1masses(res, min_mass, max_mass, ppm_ms1, out_path)
@@ -501,7 +538,7 @@ try_psmC2Q <- function (out = NULL, out_path = NULL, fdr_type = "protein",
     )
   }
 
-  if (is.na(out)) {
+  if (length(out) == 1L && is.na(out)) {
     message("Retry with a new R session: \n\n", 
             "proteoQ::reproc_psmC(\n", 
             "  out_path = \"", out_path, "\",\n", 
@@ -1553,7 +1590,6 @@ search_mgf <- function (expt_mass_ms1, expt_moverz_ms2,
 #'
 #' @param expts Numeric vector; one series of experimental MS2s.
 #' @param theos Numeric vector; one to multiple series of theoretical MS2s.
-#' @importFrom purrr map
 #' @inheritParams search_mgf_frames
 find_ppm_outer_bypep <- function (theos, expts, ppm_ms2) {
   
@@ -1561,7 +1597,8 @@ find_ppm_outer_bypep <- function (theos, expts, ppm_ms2) {
     theos <- list(theos)
   }
   
-  purrr::map(theos, find_ppm_outer_bycombi, expts, ppm_ms2)
+  # purrr::map(theos, find_ppm_outer_bycombi, expts, ppm_ms2)
+  lapply(theos, find_ppm_outer_bycombi, expts, ppm_ms2)
 }
 
 
@@ -1571,7 +1608,6 @@ find_ppm_outer_bypep <- function (theos, expts, ppm_ms2) {
 #'
 #' @param expts Numeric vector; one series experimental MS2s.
 #' @param theos Numeric vector; one series of theoretical MS2s.
-#' @importFrom dplyr bind_cols
 #' @inheritParams find_ppm_outer_bypep
 #' @examples 
 #' \donttest{

@@ -299,11 +299,6 @@ post_ms2match <- function (out, i, aa_masses, out_path) {
       dplyr::mutate(., pep_isdecoy = FALSE) }
   
   out <- out %>%
-    dplyr::mutate(raw_file = gsub("\\\\", "/", scan_title)) %>% 
-    dplyr::mutate(raw_file = gsub("^.*/(.*)\\.(raw|RAW)[\\\"]{0,1}; .*", "\\1", 
-                                  raw_file)) %>% 
-    dplyr::mutate(raw_file = gsub("^.*/(.*)\\.d[\\\"]{0,1}; .*", "\\1", 
-                                  raw_file)) %>% 
     reloc_col_after("raw_file", "scan_num") %>% 
     reloc_col_after("pep_mod_group", "raw_file") %T>% 
     saveRDS(file.path(out_path, "temp", paste0("ion_matches_", i, ".rds")))
