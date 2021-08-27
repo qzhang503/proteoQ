@@ -174,7 +174,7 @@ read_mgf_chunks <- function (filepath = "~/proteoQ/mgfs",
     stop("No mgf files under ", filepath, call. = FALSE)
   }
   
-  n_cores <- parallel::detectCores()
+  n_cores <- detect_cores()
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   
   parallel::clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))

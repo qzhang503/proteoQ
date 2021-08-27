@@ -728,7 +728,7 @@ calcpepsc <- function (file, topn_ms2ions = 100L, type_ms2ions = "by",
                        penalize_sions = FALSE, ppm_ms2 = 25L, out_path = NULL, 
                        digits = 4L) {
   
-  n_cores <- parallel::detectCores()
+  n_cores <- detect_cores()
   n_cores2 <- n_cores^2L
   
   df <- readRDS(file.path(out_path, "temp", file))

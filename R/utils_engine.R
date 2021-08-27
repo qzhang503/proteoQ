@@ -566,3 +566,32 @@ quick_leftjoin <- function (x, y, by = NULL) {
 
   cbind2(x, y)
 }
+
+
+#' Detects and suggests the number of CPU cores.
+#' 
+#' @param max_n_cores The maximum number of cores for uses.
+detect_cores <- function (max_n_cores = NULL) {
+  
+  n_cores <- parallel::detectCores()
+  
+  if (is.null(max_n_cores)) {
+    max_n_cores <- n_cores
+  } else {
+    max_n_cores <- min(max_n_cores, n_cores)
+  }
+  
+  if (n_cores > 128L) {
+    max_n_cores <- min(max_n_cores, n_cores - 8L)
+  } else if (n_cores <= 128L && n_cores > 64L) {
+    max_n_cores <- min(max_n_cores, n_cores - 4L)
+  } else if (n_cores <= 64L && n_cores > 32L) {
+    max_n_cores <- min(max_n_cores, n_cores - 2L)
+  } else if (n_cores <= 32L && n_cores > 16L) {
+    max_n_cores <- min(max_n_cores, n_cores - 1L)
+  } else {
+    max_n_cores <- min(max_n_cores, n_cores)
+  }
+  
+  invisible(max_n_cores)
+}
