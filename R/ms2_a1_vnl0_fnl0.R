@@ -16,7 +16,7 @@ ms2match_a1_vnl0_fnl0 <- function (i, aa_masses, ntmod = NULL, ctmod = NULL,
                                    minn_ms2 = 6L, ppm_ms1 = 20L, ppm_ms2 = 25L, 
                                    min_ms2mass = 110L, digits = 4L) {
   
-  n_cores <- parallel::detectCores()
+  n_cores <- detect_cores()
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   parallel::clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
   parallel::clusterExport(cl, list("%fin%"), envir = environment(fastmatch::`%fin%`))

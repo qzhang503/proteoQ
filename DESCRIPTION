@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Database Searching, Processing and Informatic Analysis of Mass Spectrometrirc Data
-Version: 1.6.1.2
+Version: 1.6.1.3
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -20,7 +20,6 @@ Suggests:
 	NMF,
 	broom,
     broom.mixed,
-    data.table,
 	downloader,
 	httr,
     knitr,
@@ -34,6 +33,7 @@ Imports:
     biomaRt,
     boot,
     cluster,
+    data.table,
     dplyr,
     e1071,
 	fastmatch,

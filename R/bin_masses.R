@@ -74,7 +74,7 @@ binTheoPeps <- function (res, min_mass = 500L, max_mass = 10000L, ppm = 20L,
     purrr::map(attributes) %>% 
     purrr::map(`[[`, "data")
   
-  n_cores <- parallel::detectCores()
+  n_cores <- detect_cores()
   cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
   
   out <- purrr::map(res, ~ {

@@ -649,7 +649,7 @@ rmPSMHeaders <- function(parallel = TRUE) {
 	TMT_plex <- TMT_plex(label_scheme_full)
 
 	if (parallel && length(filelist) > 1) {
-	  n_cores <- pmin(parallel::detectCores(), length(filelist))
+	  n_cores <- pmin(detect_cores(), length(filelist))
 	  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
 	  
 	  parallel::clusterMap(cl, batchPSMheader, filelist, 
@@ -1651,7 +1651,7 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
   df_split <- df_split %>% .[names(.) %>% sort_tmt_lcms()]
   
   if (parallel) {
-    n_cores <- pmin(parallel::detectCores(), length(df_split))
+    n_cores <- pmin(detect_cores(), length(df_split))
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
     
     suppressWarnings(
@@ -2545,7 +2545,7 @@ cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq",
 	  reorder_files()
 
 	if (parallel) {
-	  n_cores <- pmin(parallel::detectCores(), length(filelist))
+	  n_cores <- pmin(detect_cores(), length(filelist))
 	  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
 	  
 	  parallel::clusterExport(cl, list("add_cols_at"), 
@@ -3883,7 +3883,7 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
           "for `filter_` varargs.")
   
   if (parallel) {
-    n_cores <- pmin(parallel::detectCores(), length(filelist))
+    n_cores <- pmin(detect_cores(), length(filelist))
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
     
     parallel::clusterExport(cl, list("add_cols_at"), 

@@ -296,7 +296,7 @@ map_pepprot <- function (df, out_path = NULL) {
   # ---
   nrow <- nrow(df)
   max_rows <- 30720L
-  n_cores <- detectCores()
+  n_cores <- detect_cores()
 
   if (nrow > max_rows) {
     prots <- data.frame(prot_acc = unique(df$prot_acc))
@@ -361,7 +361,7 @@ map_pepprot <- function (df, out_path = NULL) {
       dplyr::mutate(pep_seq = df$pep_seq) %>%
       dplyr::group_by(pep_seq)
     
-    n_cores <- detectCores()
+    n_cores <- detect_cores()
     cl <- multidplyr::new_cluster(n_cores)
     
     mat <- mat %>%
@@ -445,7 +445,7 @@ groupProts <- function (df, out_path = NULL) {
   if (length(mats) <= 500L) {
     sets <- map(mats, find_ess_prots)
   } else {
-    n_cores <- detectCores()
+    n_cores <- detect_cores()
     cl <- makeCluster(getOption("cl.cores", n_cores))
     
     clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
@@ -661,7 +661,7 @@ parDist <- function (mat) {
 
   size <- object.size(mat)/1024^3
   mem <- memory.limit() *.45/1024
-  n_cores <- floor(min(mem/size, detectCores()))
+  n_cores <- floor(min(mem/size, detect_cores()))
   
   if (n_cores <= 1L) {
     stop("Not enough memory for parallel distance calculation.", call. = FALSE)
@@ -805,7 +805,7 @@ greedysetcoverM <- function (df) {
     dplyr::group_by(a)
 
   # collapse rows
-  n_cores <- detectCores()
+  n_cores <- detect_cores()
   cl <- multidplyr::new_cluster(n_cores)
   
   mat <- mat %>%

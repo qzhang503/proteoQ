@@ -226,7 +226,7 @@ calc_pepmasses2 <- function (
     # --- combinatorial ---
     message("Calculating peptide masses (variable modifications) ...")
     
-    n_cores <- detectCores()
+    n_cores <- detect_cores()
     cl <- makeCluster(getOption("cl.cores", n_cores))
     
     fmods_ps <- purrr::map(aa_masses, attr, "fmods_ps", exact = TRUE)
@@ -337,9 +337,12 @@ calc_pepmasses2 <- function (
       .x
     })
     
-    out_path <- create_dir(file.path(.path_fasta, "pepmasses", .time_stamp))
-    saveRDS(fwd_peps, file.path(out_path, "pepmasses.rds"))
-    saveRDS(rev_peps, file.path(out_path, "pepmasses_rev.rds"))
+    path_masses <- create_dir(file.path(.path_fasta, "pepmasses", .time_stamp))
+    saveRDS(fwd_peps, file.path(path_masses, "pepmasses.rds"))
+    saveRDS(rev_peps, file.path(path_masses, "pepmasses_rev.rds"))
+    
+    # max_mass
+    create_dir(file.path(out_path, "temp"))
     
     max_mass <- fwd_peps %>% 
       purrr::map(attr, "data") %>% 
@@ -371,8 +374,6 @@ find_aa_masses  <- function(out_path = NULL, fixedmods = NULL, varmods = NULL,
     message("Computing the combinations of fixed and variable modifications.")
     
     dir.create(file.path(out_path, "temp"), recursive = TRUE, showWarnings = FALSE)
-    
-    .time_stamp <- format(Sys.time(), ".%Y-%m-%d_%H%M%S")
     
     if (index_mods) {
       mod_indexes <- seq_along(c(fixedmods, varmods)) %>% 
@@ -1201,7 +1202,7 @@ split_fastaseqs <- function (fasta, acc_type, acc_pattern, maxn_fasta_seqs,
   # ---
   # message("Reversing protein sequences.")
   
-  n_cores <- detectCores()
+  n_cores <- detect_cores()
   cl <- makeCluster(getOption("cl.cores", n_cores))
   
   clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
@@ -1337,7 +1338,7 @@ ms1masses_bare <- function (seqs, aa_masses, ftmass = NULL,
   
   # (2) rolling sum (not yet terminal H2O)
   
-  n_cores <- detectCores()
+  n_cores <- detect_cores()
   cl <- makeCluster(getOption("cl.cores", n_cores))
   
   clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
@@ -1392,7 +1393,7 @@ ms1masses_noterm <- function (aa_seqs, aa_masses,
   
   options(digits = 9L)
   
-  n_cores <- detectCores()
+  n_cores <- detect_cores()
   
   aa_seqs <- suppressWarnings(split(aa_seqs, seq_len(n_cores)))
   

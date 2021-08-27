@@ -342,7 +342,7 @@ mcalc_monopep <- function (aa_seqs, aa_masses,
   options(digits = 9)
   
   if (parallel) {
-    n_cores <- detectCores()
+    n_cores <- detect_cores()
     
     aa_seqs <- suppressWarnings(split(aa_seqs, seq_len(n_cores)))
     
@@ -2090,7 +2090,7 @@ pre_pepmasses <- function (fasta, acc_type, acc_pattern, maxn_fasta_seqs, aa_mas
          call. = FALSE)
   }
 
-  n_cores <- detectCores()
+  n_cores <- detect_cores()
   cl <- makeCluster(getOption("cl.cores", n_cores))
   
   clusterExport(cl, list("%>%"), envir = environment(magrittr::`%>%`))
