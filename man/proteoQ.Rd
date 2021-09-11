@@ -5,15 +5,10 @@
 \alias{proteoQ}
 \title{proteoQ: A package for processing mass spectrometry data.}
 \description{
-The proteoQ package provides five categories of functions in (1) database
-searches, (2) data preprocessing, (3) annotation, (4) quality assurance
-assessments and (5) informatic analysis.
+The proteoQ provides four categories of functions in data preprocessing, (2)
+annotation, (3) quality assurance assessments and (4) informatic analysis.
+The companion package, proteoM, performs database searches.
 }
-\section{Main utility in database searches}{
- matchMS (additional tool kits:
-  load_fasta2, parse_unimod, calc_monopeptide, calc_ms2ionseries)
-}
-
 \section{Utilities in data preprocessing}{
  normPSM -> (purgePSM) -> PSM2Pep ->
   mergePep -> standPep -> (purgePep) -> standPrn

@@ -12,7 +12,7 @@ write_fasta(fasta_db, file)
 \item{file}{A character string to the name of a protein fasta file.}
 }
 \description{
-Writes a fasta file.
+Writes a fasta file (Not yet used).
 }
 \examples{
 \donttest{

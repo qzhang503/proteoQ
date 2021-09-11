@@ -19,7 +19,8 @@ header will also be removed.}
 off the interpretation of comment lines.}
 }
 \description{
-Reads a file in fasta format by line.
+Reads a file in fasta format by line (used in both
+\link[proteoQ]{load_fasta} and \link[proteoM]{load_fasta2}).
 }
 \examples{
 \donttest{

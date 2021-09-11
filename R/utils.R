@@ -233,7 +233,6 @@ reorderCols2 <- function(df = NULL, pattern = NULL) {
 #' @import dplyr 
 #' @importFrom stringr str_split
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-#' @export
 ins_cols_after <- function(df = NULL, idx_bf = ncol(df), idx_ins = NULL) {
   if (is.null(df)) stop("`df` cannot be `NULL`.", call. = FALSE)
   if (is.null(idx_ins)) return(df)
@@ -2183,6 +2182,8 @@ annotPeppos <- function (df){
 
 
 #' Subset fasta by accession type
+#' 
+#' Not yet used.
 #' 
 #' @inheritParams info_anal
 #' @inheritParams normPSM

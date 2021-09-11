@@ -26,5 +26,5 @@ correct file path(s) and name(s).}
 c("refseq_acc", "uniprot_acc", "uniprot_id")}
 }
 \description{
-Subset fasta by accession type
+Not yet used.
 }

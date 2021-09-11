@@ -14,10 +14,21 @@ for peptides with more than two identifying PSMs. Dixon's method will be
 used when \eqn{2 < n \le 25} and Rosner's method will be used when \eqn{n >
 25}. The default is FALSE.}
 
+\item{group_psm_by}{A character string specifying the method in PSM grouping.
+At the \code{pep_seq} default, descriptive statistics will be calculated
+based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
+alternative, peptides with different variable modifications will be treated
+as different species and descriptive statistics will be calculated based on
+the same \code{pep_seq_mod} groups.}
+
 \item{dat_dir}{A character string to the working directory. The default is to
 match the value under the global environment.}
 
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 }
 \description{
 Parallel PSM cleanup
