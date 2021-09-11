@@ -1008,13 +1008,13 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
 #'
 #'@family Monoisotopic masses of peptides
-#'@seealso \emph{MS1 peptide masses} \cr \code{\link{calc_pepmasses}} for
-#'  mono-isotopic masses of peptides from fasta databases \cr
-#'  \code{\link{calc_monopeptide}} for mono-isotopic masses of peptides from
-#'  individual sequences \cr \code{\link{parse_unimod}} for parsing
-#'  \href{https://www.unimod.org/}{Unimod} fixed modifications,  variable
-#'  modifications and neutral losses. \cr \code{\link{find_unimod}} for finding
-#'  a Unimod
+#'@seealso \emph{MS1 peptide masses} \cr \code{\link[proteoM]{calc_pepmasses}}
+#'  for mono-isotopic masses of peptides from fasta databases \cr
+#'  \code{\link[proteoM]{calc_monopeptide}} for mono-isotopic masses of peptides
+#'  from individual sequences \cr \code{\link[proteoM]{parse_unimod}} for
+#'  parsing \href{https://www.unimod.org/}{Unimod} fixed modifications, variable
+#'  modifications and neutral losses. \cr \code{\link[proteoM]{find_unimod}} for
+#'  finding a Unimod
 #'
 #'
 #'

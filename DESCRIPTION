@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Database Searching, Processing and Informatic Analysis of Mass Spectrometrirc Data
-Version: 1.6.1.3
+Version: 1.7.0.0
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
@@ -78,7 +78,7 @@ Imports:
     Rcpp
 RoxygenNote: 7.1.1
 Remotes:
-	qzhang503/proteoQDA, 
-	qzhang503/proteoCpp
+	qzhang503/proteoCpp, 
+	qzhang503/proteoQDA
 LinkingTo: 
     Rcpp

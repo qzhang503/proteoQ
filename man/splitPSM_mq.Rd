@@ -27,6 +27,19 @@ splitPSM_mq(
 )
 }
 \arguments{
+\item{group_psm_by}{A character string specifying the method in PSM grouping.
+At the \code{pep_seq} default, descriptive statistics will be calculated
+based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
+alternative, peptides with different variable modifications will be treated
+as different species and descriptive statistics will be calculated based on
+the same \code{pep_seq_mod} groups.}
+
+\item{group_pep_by}{A character string specifying the method in peptide
+grouping. At the \code{prot_acc} default, descriptive statistics will be
+calculated based on the same \code{prot_acc} groups. At the \code{gene}
+alternative, proteins with the same gene name but different accession
+numbers will be treated as one group.}
+
 \item{fasta}{Character string(s) to the name(s) of fasta file(s) with
 prepended directory path. The \code{fasta} database(s) need to match those
 used in MS/MS ion search. There is no default and users need to provide the
@@ -67,6 +80,10 @@ The default is FALSE.}
 
 \item{rm_krts}{Logical; if TRUE, keratin entries will be removed. The default
 is FALSE.}
+
+\item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
+across ratio columns of \code{log2_R126} etc. The setting also applies to
+\code{log2_R000} in LFQ.}
 
 \item{rm_reverses}{A logical argument for uses with \code{MaxQuant} TMT and
 LFQ. At the TRUE default, \code{Reverse} entries will be removed.}
@@ -111,6 +128,8 @@ table below for details. The default is TRUE.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
+
+\item{...}{Not currently used.}
 }
 \description{
 \code{splitPSM_mq} splits the PSM outputs by TMT experiment and LC/MS

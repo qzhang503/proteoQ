@@ -1618,3 +1618,63 @@ gspa_colAnnot <- function (annot_cols = NULL, df, sample_ids, annot_colnames = N
 }
 
 
+
+
+##########################################
+# From proteoM
+##########################################
+
+#' Greedy set cover.
+#'
+#' @param df A two-column data frame.
+greedysetcover <- function (df) {
+  
+  ## assume: (1) two columns 
+  # stopifnot(ncol(df) == 2L)
+  
+  len <- length(unique(df[[1]]))
+  
+  if (len == 1L) {
+    return(df)
+  }
+  
+  nms <- colnames(df)
+  colnames(df) <- c("s", "a")
+  
+  # (2) no duplicated entries (for speeds)
+  # df <- df %>%
+  #   tidyr::unite(sa, s, a, sep = "@", remove = FALSE) %>%
+  #   dplyr::filter(!duplicated(sa)) %>%
+  #   dplyr::select(-sa)
+  
+  # ---
+  cts <- df %>%
+    dplyr::group_by(s) %>%
+    dplyr::summarise(n = n()) 
+  
+  df <- dplyr::left_join(cts, df, by = "s") %>%
+    dplyr::arrange(-n)
+  
+  sets <- NULL
+  
+  while(nrow(df) > 0L) {
+    s <- df[[1, "s"]]
+    sa <- df[df$s == s, c("s", "a")]
+    
+    sets <- rbind(sets, sa)
+    
+    # may consider partial sorting
+    df <- df %>%
+      dplyr::filter(! a %in% sa[["a"]]) %>%
+      dplyr::group_by(s) %>%
+      dplyr::mutate(n = n()) %>%
+      dplyr::arrange(-n)
+  }
+  
+  colnames(sets) <- nms
+  
+  invisible(sets)
+}
+
+
+

@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2021-08-16
+2021-09-10
 
 -   [Introduction to proteoQ](#introduction-to-proteoq)
 -   [Installation](#installation)
@@ -39,27 +39,35 @@ true
     -   [5.2 Vararg table](#52-vararg-table)
 -   [References](#references)
 
+The proteo\[X\] family currently contains members of
+
+-   proteoM for the identification of peptides and proteins against mass
+    spectrometric data.  
+-   proteoQ for quality metrics and informatics.
+-   proteoCpp for faster and memory-efficient codes with Rcpp.
+-   proteoQDA for exemplary data.
+
+Details about [proteoM](https://github.com/qzhang503/proteoM) can be
+found elsewhere and the document will be mainly about proteoQ.
+
 ## Introduction to proteoQ
 
 Tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag))
 and label-free quantitaion (LFQ) have been commonly applied in mass
 spectrometry (MS)-based quantification of proteins and peptides. The
-proteoQ tool is designed for both the *searches* and *mining* of
-proteomics data.
+proteoQ tool is designed for the *mining* of proteomics data. It takes
+database search results from **proteoM::matchMS** or third-party search
+engines.
 
-The main utility for database searches is **proteoQ::matchMS**. The
-outputs, or third-party search results, are then applied for informatic
-analysis.
-
-With data mining, it interacts with an Excel spread sheet for dynamic
-sample selections, aesthetics controls and statistical modelings. It
-further integrates operations, such as data normalization, against
-chosen rows and/or columns of data into functions at the users’
-interface. The arrangements allow users to put *ad hoc* manipulation of
-data behind the scene and instead apply metadata to openly address
-biological questions using various data pre-processing and informatic
-tools. In addition, the entire workflow is documented and can be
-conveniently reproduced upon revisiting.
+The tool interacts with an Excel spread sheet for dynamic sample
+selections, aesthetics controls and statistical modelings. It further
+integrates operations, such as data normalization, against chosen rows
+and/or columns of data into functions at the users’ interface. The
+arrangements allow users to put *ad hoc* manipulation of data behind the
+scene and instead apply metadata to openly address biological questions
+using various data pre-processing and informatic tools. In addition, the
+entire workflow is documented and can be conveniently reproduced upon
+revisiting.
 
 The [informatic
 framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of
@@ -69,7 +77,7 @@ engines of [Mascot](https://http://www.matrixscience.com/),
 [MaxQuant](https://www.maxquant.org/),
 [MSFragger](http://msfragger.nesvilab.org/), [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill)
-or the **proteoQ::matchMS** utility, for TMT (≤ 16-plex) or LFQ
+or the **proteoM::matchMS** utility, for TMT (≤ 16-plex) or LFQ
 experiments, using Thermo’s Orbitrap mass analyzers. Peptide and protein
 results are then produced with users’ selection of parameters in data
 filtration, alignment and normalization. The package further offers a
@@ -86,7 +94,7 @@ to render a html version of the README.)
 
 ## Installation
 
-To install this package, start R (latest version or “4.1.1”) and enter:
+To install this package, start R (latest version) and enter:
 
 ``` r
 if (!requireNamespace("devtools", quietly = TRUE))
@@ -102,8 +110,8 @@ devtools::install_github("qzhang503/proteoQ@QZ_20190930")
 
 ## 1 Data normalization
 
-In this document, I (Qiang Zhang) first illustrate the following
-applications of proteoQ:
+In this document, I first illustrate the following applications of
+proteoQ:
 
 -   Summarization of PSM results to normalized peptide and protein data.
 -   Visualization of quality metrics in normalized peptide and protein
@@ -181,21 +189,23 @@ copy_msfragger_gtmt()
 copy_specmill_gtmt()
 ```
 
-or through the database searches by proteoQ:
+or through the database searches by proteoM:
 
 ``` r
-# (No bandwidth was purchased to host the MGF files; 
-#  please provide your own for now Or please help to host the MGF examples)
+library(proteoM)
+
+#  Need to supply your own MGFs under `mgf_path` 
+# (with the formats in MSConvert or Thermo's Proteome Discoverer)
 matchMS(
   out_path = "~/proteoQ/examples", 
-  
-  # e.g., place mgf files under the indicated folder
-  mgf_path = file.path(out_path, "mgf"), 
-  
+  mgf_path = "~/proteoQ/examples/mgfs",
   fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
             "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
-  acc_type = c("refseq_acc", "other"), 
-  max_miss = 2, 
+  acc_type = c("refseq_acc", "refseq_acc"), 
+  fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"),
+  varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
+              "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
+  max_miss = 4, 
   quant = "tmt10", 
   fdr_type = "protein", 
 )
