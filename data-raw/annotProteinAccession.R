@@ -283,13 +283,13 @@ map_refseq <- function(species) {
 		keys = up@taxIdUniprots,
 		keytype = "UNIPROTKB", 
 		columns = c("REFSEQ_PROTEIN")) %>% 
-		mutate(REFSEQ_PROTEIN = gsub("\\..*", "", REFSEQ_PROTEIN)) %>% 
-		dplyr::rename(Uniprot_accession = UNIPROTKB)
+	  dplyr::mutate(REFSEQ_PROTEIN = gsub("\\..*", "", REFSEQ_PROTEIN)) %>% 
+	  dplyr::rename(Uniprot_accession = UNIPROTKB)
 	
 	## ---- easier new approach ----
 	# human
 	dat_dir <- "~/proteoQ"
-	fasta <- read_fasta(pattern = ">..\\|([^\\|]+)\\|.*", 
+	fasta <- read_fasta(acc_pattern = ">..\\|([^\\|]+)\\|.*", 
 	                    file = "~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta")
 	
 	# (1) uniprot_acc ~ gene
@@ -306,12 +306,11 @@ map_refseq <- function(species) {
 	# load "uniprot_acc.txt" to uniprot web site
 	# ...
 	# save results: "uniprot_acc_to_refseq_hs.txt"
-
-	up_rs <- readr::read_tsv("~/proteoQ/uniprot_acc_to_refseq_hs.txt", 
-	                                 col_types = cols(From = col_character())) %>% 
+	
+	up_rs <- readr::read_tsv("~/proteoQ/uniprot_acc_to_refseq_hs.txt") %>% 
 	  dplyr::rename(uniprot_acc = From, refseq_acc = To) %>% 
 	  dplyr::mutate(refseq_acc = gsub("\\.[0-9]*$", "", refseq_acc))
-	
+
 	# (3) refseq_acc ~ gene
 	rs_gn <- up_rs %>% 
 	  dplyr::left_join(up_gn, by = "uniprot_acc") %>% 

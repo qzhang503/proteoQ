@@ -1034,7 +1034,8 @@ load_dbs <- function (gset_nms = NULL, species = NULL) {
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx", 
-                        frac_smry = "frac_smry.xlsx") {
+                        frac_smry = "frac_smry.xlsx") 
+{
   on.exit(mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
             save_call("load_expts"))
   
@@ -1052,7 +1053,8 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx",
 #'
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom fs file_info
-reload_expts <- function() {
+reload_expts <- function() 
+{
   dat_dir <- get_gl_dat_dir()
   
   expt_smry <- match_call_arg(load_expts, expt_smry)
@@ -1062,9 +1064,9 @@ reload_expts <- function() {
   if (is.na(fi_xlsx)) stop("Time stamp of ", expt_smry, " not available.")
   
   fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme_full.rda"))$change_time
-  if (fi_xlsx > fi_rda) {
+  
+  if (fi_xlsx > fi_rda) 
     load_expts(dat_dir = dat_dir, expt_smry = !!expt_smry, frac_smry = !!frac_smry)
-  }
 }
 
 
@@ -1084,8 +1086,9 @@ reload_expts <- function() {
 #'   reference(s) and sample(s).
 #' 
 #' @importFrom dplyr select filter
-channelInfo <- function (dat_dir = NULL, set_idx = NULL, injn_idx = 1) {
-	stopifnot(length(set_idx) == 1)
+channelInfo <- function (dat_dir = NULL, set_idx = NULL, injn_idx = 1) 
+{
+	stopifnot(length(set_idx) == 1L)
   
   if (is.null(set_idx)) stop("Need to specify `set_idx`.", call. = FALSE)
   if (is.null(dat_dir)) stop("Need to specify `dat_dir`.", call. = FALSE)
@@ -1095,10 +1098,9 @@ channelInfo <- function (dat_dir = NULL, set_idx = NULL, injn_idx = 1) {
   label_scheme_sub <- label_scheme_full %>%
     dplyr::filter(TMT_Set == set_idx, LCMS_Injection == injn_idx)
   
-  if (nrow(label_scheme_sub) == 0) {
+  if (nrow(label_scheme_sub) == 0) 
     stop("No samples at TMT_Set ", set_idx, " and LCMS_Injection ", injn_idx, ".", 
          call. = FALSE)
-  }
 
 	ref <- label_scheme_sub$Reference
 
@@ -1121,15 +1123,15 @@ channelInfo <- function (dat_dir = NULL, set_idx = NULL, injn_idx = 1) {
 #'
 #' @param label_scheme_full The label_scheme with the probable inclusion of
 #'   different LCMS_inj under the same TMT_Set.
-n_TMT_sets <- function (label_scheme_full) {
-	length(unique(label_scheme_full$TMT_Set))
-}
+n_TMT_sets <- function (label_scheme_full) 
+  length(unique(label_scheme_full$TMT_Set))
 
 
 #' Finds the maximum number of LCMS injections under the same TMT_Set.
 #'
 #' @inheritParams n_TMT_sets
-n_LCMS <- function (label_scheme_full) {
+n_LCMS <- function (label_scheme_full) 
+{
   label_scheme_full %>% 
     dplyr::select(TMT_Set, LCMS_Injection) %>% 
     tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = FALSE) %>% 
@@ -1146,15 +1148,15 @@ n_LCMS <- function (label_scheme_full) {
 #'
 #' \code{TMT_plex} returns the multiplexity of TMT labels.
 #' @inheritParams n_TMT_sets
-TMT_plex <- function (label_scheme_full) {
+TMT_plex <- function (label_scheme_full) 
   nlevels(as.factor(label_scheme_full$TMT_Channel))
-}
 
 #' Finds the multiplexity of TMT labels from previously made
 #' label_scheme_full.rda
 #'
 #' \code{TMT_plex} returns the multiplexity of TMT labels.
-TMT_plex2 <- function () {
+TMT_plex2 <- function () 
+{
   load(file.path(get_gl_dat_dir(), "label_scheme_full.rda"))
   TMT_plex(label_scheme_full)
 }
@@ -1164,26 +1166,31 @@ TMT_plex2 <- function () {
 #'
 #' \code{TMT_levels} returns the factor levels of TMT labels.
 #' @param TMT_plex Numeric; the multiplexity of TMT, i.e., 10, 11 etc.
-TMT_levels <- function (TMT_plex) {
-	if (TMT_plex == 16) {
-	  TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+TMT_levels <- function (TMT_plex) 
+{
+  TMT_levels <- if (TMT_plex == 18) 
+    c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+                    "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
+                    "TMT-131N", "TMT-131C", "TMT-132N", "TMT-132C", 
+                    "TMT-133N", "TMT-133C", "TMT-134N", "TMT-134C", "TMT-135N")
+  else if (TMT_plex == 16) 
+	  c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
 	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
 	                  "TMT-131N", "TMT-131C", "TMT-132N", "TMT-132C", 
 	                  "TMT-133N", "TMT-133C", "TMT-134N")
-	} else if (TMT_plex == 11) {
-	  TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+	else if (TMT_plex == 11) 
+	  c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
 	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
 	                  "TMT-131N", "TMT-131C")
-	} else if (TMT_plex == 10) {
-	  TMT_levels <- c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+	else if (TMT_plex == 10) 
+	  c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
 	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131")
-	} else if (TMT_plex == 6) {
-	  TMT_levels <- c("TMT-126", "TMT-127", "TMT-128", "TMT-129", "TMT-130", "TMT-131")
-	} else if (TMT_plex == 1) {
-	  TMT_levels <- c("TMT-126")
-	} else if (TMT_plex == 0) {
-	  TMT_levels <- NULL
-	}
+	else if (TMT_plex == 6) 
+	  c("TMT-126", "TMT-127", "TMT-128", "TMT-129", "TMT-130", "TMT-131")
+	else if (TMT_plex == 1) 
+	  c("TMT-126")
+	else if (TMT_plex == 0) 
+	  NULL
 }
 
 
@@ -1192,7 +1199,8 @@ TMT_levels <- function (TMT_plex) {
 #' Removes duplicated sample entries under different LC/MS injections.
 #' @inheritParams load_expts
 #' @inheritParams n_TMT_sets
-simple_label_scheme <- function (dat_dir, label_scheme_full) {
+simple_label_scheme <- function (dat_dir, label_scheme_full) 
+{
 	TMT_plex <- TMT_plex(label_scheme_full)
 	TMT_levels <- TMT_levels(TMT_plex)
 
@@ -1220,9 +1228,8 @@ simple_label_scheme <- function (dat_dir, label_scheme_full) {
 	  dplyr::mutate(LCMS_Injection = 1) %>% 
 	  dplyr::arrange(TMT_Set, TMT_Channel)
 
-	if (nrow(label_scheme) < (TMT_plex * n_TMT_sets(label_scheme))) {
+	if (nrow(label_scheme) < (TMT_plex * n_TMT_sets(label_scheme))) 
 	  stop("Duplicated sample ID(s) in `expt_smry.xlsx`", call. = FALSE)
-	}
 
 	save(label_scheme, file = file.path(dat_dir, "label_scheme.rda"))
 	
@@ -1235,7 +1242,8 @@ simple_label_scheme <- function (dat_dir, label_scheme_full) {
 #' \code{check_raws} finds mismatched RAW files between expt_smry.xlsx and
 #' PSM outputs.
 #' @param df A data frame containing the PSM table from database searches.
-check_raws <- function(df) {
+check_raws <- function(df) 
+{
   stopifnot ("RAW_File" %in% names(df))
   
   dat_dir <- get_gl_dat_dir()
@@ -1247,13 +1255,14 @@ check_raws <- function(df) {
   local({
     ls_raws <- label_scheme_full$RAW_File %>% unique()
     fs_raws <- fraction_scheme$RAW_File %>% unique()
-    if (! (all(is.na(ls_raws)) || all(ls_raws %in% fs_raws))) {
+    
+    if (!(all(is.na(ls_raws)) || all(ls_raws %in% fs_raws))) {
       load(file.path(dat_dir, "Calls", "load_expts.rda"))
       fn_frac <- call_pars$frac_smry
       unlink(file.path(dat_dir, fn_frac))
       prep_fraction_scheme(dat_dir, fn_frac)
       load(file = file.path(dat_dir, "fraction_scheme.rda"))
-    }    
+    }
   })
 
   local({
@@ -1262,17 +1271,15 @@ check_raws <- function(df) {
     extra_fs_tmt <- fs_tmt %>% .[! . %in% ls_tmt]
     extra_ls_tmt <- ls_tmt %>% .[! . %in% fs_tmt]
 
-    if (!purrr::is_empty(extra_fs_tmt)) {
+    if (length(extra_fs_tmt)) 
       stop("TMT_Set ", purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
            " in fraction scheme not found in label scheme.", 
            call. = FALSE)
-    }
     
-    if (!purrr::is_empty(extra_ls_tmt)) {
+    if (length(extra_ls_tmt)) 
       stop("TMT_Set ", purrr::reduce(extra_ls_tmt, paste, sep = ", "), 
            " in label scheme not found in fraction scheme.", 
            call. = FALSE)
-    }
   })
   
   local({
@@ -1291,19 +1298,17 @@ check_raws <- function(df) {
     extra_fs_tmt <- fs_tmtinj %>% .[! . %in% ls_tmtinj]
     extra_ls_tmt <- ls_tmtinj %>% .[! . %in% fs_tmtinj]
     
-    if (!purrr::is_empty(extra_fs_tmt)) {
+    if (length(extra_fs_tmt)) 
       stop("The combination of TMT_Set & LCMS ", 
            purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
            " in fraction scheme not found in label scheme.", 
            call. = FALSE)
-    }
     
-    if (!purrr::is_empty(extra_ls_tmt)) {
+    if (length(extra_ls_tmt)) 
       stop("The combination of TMT_Set & LCMS ", 
            purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
            " in label scheme not found in fraction scheme.", 
            call. = FALSE)
-    }
   })
   
   tmtinj_raw <- fraction_scheme %>% 
@@ -1319,15 +1324,16 @@ check_raws <- function(df) {
   wrong_label_scheme_raws <- label_scheme_raws %>% .[! . %in% ms_raws]
   
   # --- rm `missing_ms_raws` from `df`
-  if (!purrr::is_empty(missing_ms_raws)) {
+  if (length(missing_ms_raws)) {
     df <- df %>% dplyr::filter(! RAW_File %in% missing_ms_raws)
+    
     warning("RAW file (names) not in metadata and ", 
             "corresponding entries removed from PSM data:\n", 
             purrr::reduce(missing_ms_raws, paste, sep = "\n"), 
             call. = FALSE)
   }
   
-  if (!purrr::is_empty(wrong_label_scheme_raws)) {
+  if (length(wrong_label_scheme_raws)) 
     stop("\n============================================================================\n", 
          "RAW file name(s) in metadata have no corresponding entries in PSM data:\n", 
          "(Hint: check the possibility that MS file(s) may have ", 
@@ -1335,7 +1341,6 @@ check_raws <- function(df) {
          purrr::reduce(wrong_label_scheme_raws, paste, sep = "\n"), 
          "\n============================================================================\n", 
          call. = FALSE)
-  }
   
   ## RAW_File may not be unique if the same RAW goes into different DAT files (searches)
   # df <- df %>% dplyr::left_join(tmtinj_raw, id = "RAW_File")
@@ -1346,25 +1351,29 @@ check_raws <- function(df) {
 #' Find the TMT-plex from Mascot PSM exports
 #' @param df A PSM export from Mascot
 #' @param pep_seq_rows The row(s) contain character string "pep_seq".
-find_masct_tmtplex <- function(df, pep_seq_rows = NULL) {
+find_masct_tmtplex <- function(df, pep_seq_rows = NULL) 
+{
   if (is.null(pep_seq_rows)) pep_seq_rows <- grep("pep_seq", df)
-  if (purrr::is_empty(pep_seq_rows)) {
+  
+  if (purrr::is_empty(pep_seq_rows)) 
     stop("The row of `pep_seq` not found.", call. = FALSE)
-  }
   
   first_line <- df[pep_seq_rows[1] + 1]
   
-  if (grepl("\"134N\"", first_line, fixed = TRUE) || 
-      grepl("\"134\"", first_line, fixed = TRUE)) {
-    mascot_tmtplex <- 16
-  } else if (grepl("\"131C\"", first_line, fixed = TRUE)) {
-    mascot_tmtplex <- 11
-  } else if (grepl("\"131\"", first_line, fixed = TRUE) && 
-             grepl("\"130C\"", first_line, fixed = TRUE)) {
-    mascot_tmtplex <- 10
-  } else if (grepl("\"131\"", first_line, fixed = TRUE)) {
-    mascot_tmtplex <- 6
-  } else {
-    mascot_tmtplex <- 0
-  }
+  mascot_tmtplex <- if (grepl("\"135C\"", first_line, fixed = TRUE) || 
+      grepl("\"135\"", first_line, fixed = TRUE)) 
+    18 
+  else if (grepl("\"134N\"", first_line, fixed = TRUE) || 
+      grepl("\"134\"", first_line, fixed = TRUE)) 
+    16
+  else if (grepl("\"131C\"", first_line, fixed = TRUE)) 
+    11
+  else if (grepl("\"131\"", first_line, fixed = TRUE) && 
+             grepl("\"130C\"", first_line, fixed = TRUE)) 
+    10
+  else if (grepl("\"131\"", first_line, fixed = TRUE)) 
+    6
+  else 
+    0
 }
+

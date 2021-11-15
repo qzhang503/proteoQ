@@ -76,7 +76,7 @@ Imports:
     RColorBrewer,
     RCurl,
     Rcpp
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Remotes:
 	qzhang503/proteoCpp, 
 	qzhang503/proteoQDA

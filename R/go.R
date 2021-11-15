@@ -1,7 +1,8 @@
 #' Helper to create `db_path`
 #' 
 #' @inheritParams prepGO
-create_db_path <- function (db_path) {
+create_db_path <- function (db_path) 
+{
   if (!fs::dir_exists(db_path)) {
     new_db_path <- fs::path_expand_r(db_path)
     new_db_path2 <- fs::path_expand(db_path)
@@ -24,7 +25,9 @@ create_db_path <- function (db_path) {
 #' 
 #' @param fn_obo filename according to \code{obo_url}
 #' @inheritParams prepGO
-proc_obo <- function(db_path, fn_obo, type = c("biological_process", "cellular_component", "molecular_function")) {
+proc_obo <- function(db_path, fn_obo, 
+                     type = c("biological_process", "cellular_component", "molecular_function")) 
+{
   filepath <- file.path(db_path, "cache", fn_obo)
   if (!file.exists(filepath)) stop("File not found ", filepath, ".", call. = FALSE)
 
@@ -47,7 +50,8 @@ proc_obo <- function(db_path, fn_obo, type = c("biological_process", "cellular_c
 #' 
 #' @param fn_gaf filename according to \code{gaf_url}
 #' @inheritParams prepGO
-proc_gaf <- function(db_path, fn_gaf) {
+proc_gaf <- function(db_path, fn_gaf) 
+{
   filepath <- file.path(db_path, "cache", fn_gaf)
   if (!file.exists(filepath)) stop("File not found ", filepath, ".", call. = FALSE)
 
@@ -98,7 +102,8 @@ proc_gaf <- function(db_path, fn_gaf) {
 #' @param to the type of target IDs
 #' @inheritParams prepGO
 #' @import dplyr purrr 
-annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL", to = "ENTREZID") {
+annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL", to = "ENTREZID") 
+{
   if (all(is.null(keys))) stop("Argument `keys` cannot be NULL", call. = FALSE)
 
   pkg_nm <- paste("org", abbr_species, "eg.db", sep = ".")
@@ -129,7 +134,8 @@ annot_from_to <- function(abbr_species = "Hs", keys = NULL, from = "SYMBOL", to 
 #' 
 #' @inheritParams prepGO
 #' @inheritParams annot_from_to
-get_full_entrez <- function(species, from = "egUNIPROT") {
+get_full_entrez <- function(species, from = "egUNIPROT") 
+{
   abbr_species <- sp_lookup_Ul(species)
   
   pkg_nm <- paste("org", abbr_species, "eg.db", sep = ".")
@@ -147,8 +153,11 @@ get_full_entrez <- function(species, from = "egUNIPROT") {
 #' 
 #' @inheritParams prepMSig
 #' @examples \donttest{res <- find_human_orthologs(mouse)}
-find_human_orthologs <- function(species, ortho_mart) {
-  if (species == "human") stop("Ortholog `species` needs to be different to `human`.", call. = FALSE)
+find_human_orthologs <- function(species, ortho_mart) 
+{
+  if (species == "human") {
+    stop("Ortholog `species` needs to be different to `human`.", call. = FALSE)
+  }
   
   out_nm <- paste0("ortho_hs", sp_lookup(species))
 
@@ -181,7 +190,8 @@ find_human_orthologs <- function(species, ortho_mart) {
 #' Helper to look up GO species 
 #' 
 #' @inheritParams prepMSig
-sp_lookup_go <- function(species) {
+sp_lookup_go <- function(species) 
+{
   switch(species, 
          human = "human",
          mgi = "mouse",
@@ -193,7 +203,8 @@ sp_lookup_go <- function(species) {
 #' 
 #' @import stringr
 #' @inheritParams prepMSig
-find_abbr_species <- function(species = "human", abbr_species = NULL) {
+find_abbr_species <- function(species = "human", abbr_species = NULL) 
+{
   species <- rlang::as_string(rlang::enexpr(species))
   abbr_species <- rlang::enexpr(abbr_species)
   
@@ -227,7 +238,8 @@ find_abbr_species <- function(species = "human", abbr_species = NULL) {
 #' 
 #' @param signature A character string, i.e. "go" for uses in an output filename.
 #' @inheritParams prepMSig
-set_db_outname <- function(filename = NULL, species = "human", signature) {
+set_db_outname <- function(filename = NULL, species = "human", signature) 
+{
   filename <- rlang::enexpr(filename)
   
   if (is.null(filename)) {
@@ -255,8 +267,8 @@ set_db_outname <- function(filename = NULL, species = "human", signature) {
 #' 
 #' @inheritParams prepMSig
 dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/c2.all.v7.0.entrez.gmt", 
-                    db_path = "~/proteoQ/dbs/msig", overwrite = FALSE) {
-  
+                    db_path = "~/proteoQ/dbs/msig", overwrite = FALSE) 
+{
   if (!grepl("\\.entrez\\.gmt$", msig_url)) {
     stop("Use a link to a `.entrez.gmt` file; not `.symbols.gmt`.", call. = FALSE)
   }
@@ -282,7 +294,8 @@ dl_msig <- function(msig_url = "https://data.broadinstitute.org/gsea-msigdb/msig
 #' 
 #' @param fn_gmt filename of downloaded gmt results.
 #' @inheritParams prepMSig
-proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filename) {
+proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filename) 
+{
   filepath <- file.path(db_path, "cache", fn_gmt)
   if (!file.exists(filepath)) stop("File not found ", filepath, ".", call. = FALSE)
   
@@ -420,8 +433,8 @@ proc_gmt <- function(species, abbr_species, ortho_mart, fn_gmt, db_path, filenam
 prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_url = NULL, 
                    db_path = "~/proteoQ/dbs/go", 
                    type = c("biological_process", "cellular_component", "molecular_function"), 
-                   filename = NULL, overwrite = FALSE) {
-  
+                   filename = NULL, overwrite = FALSE) 
+{
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
@@ -627,8 +640,8 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
                                          rat = "rnorvegicus_gene_ensembl", 
                                          human = "to_itself",
                                          "unknown"), 
-                     db_path = "~/proteoQ/dbs/msig", filename = NULL, overwrite = FALSE) {
-
+                     db_path = "~/proteoQ/dbs/msig", filename = NULL, overwrite = FALSE) 
+{
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
@@ -692,8 +705,8 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
 #' @export
 map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPROT", 
                           filename = NULL, db_path = "~/proteoQ/dbs/entrez", 
-                          overwrite = FALSE) {
-  
+                          overwrite = FALSE) 
+{
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
@@ -790,7 +803,8 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
 #'@example inst/extdata/examples/prepEntrez_.R
 #'@export
 Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
-                       db_path = "~/proteoQ/dbs/entrez", overwrite = FALSE) {
+                       db_path = "~/proteoQ/dbs/entrez", overwrite = FALSE) 
+{
   map_to_entrez(!!rlang::enexpr(species), 
                 !!rlang::enexpr(abbr_species), 
                 "UNIPROT", 
@@ -798,8 +812,6 @@ Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
                 db_path, 
                 overwrite)
 }
-
-
 
 
 #'Map RefSeq accessions to Entrez IDs and gene names
@@ -817,7 +829,8 @@ Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 #'@example inst/extdata/examples/prepEntrez_.R
 #'@export
 Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
-                       db_path = "~/proteoQ/dbs/entrez", overwrite = FALSE) {
+                       db_path = "~/proteoQ/dbs/entrez", overwrite = FALSE) 
+{
   map_to_entrez(!!rlang::enexpr(species), 
                 !!rlang::enexpr(abbr_species), 
                 "REFSEQ", 
@@ -825,8 +838,6 @@ Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
                 db_path, 
                 overwrite)
 }
-
-
 
 
 #' Map uniprot or refseq to entrez (not currently used)
@@ -839,7 +850,9 @@ Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 map_to_entrez_os_name <- function(species = "human", abbr_species = NULL, 
                                   os_name = "Homo sapiens", 
                                   from = "UNIPROT", 
-                                  filename = NULL, db_path = "~/proteoQ/dbs/entrez", overwrite = FALSE) {
+                                  filename = NULL, db_path = "~/proteoQ/dbs/entrez", 
+                                  overwrite = FALSE) 
+{
   # the value of species will be used under column `species` in Protein.txt etc
   # add column species in the rds output
   
@@ -902,7 +915,8 @@ map_to_entrez_os_name <- function(species = "human", abbr_species = NULL,
 #' create a lookup table and remove duplicated entries
 #' 
 #' @inheritParams map_to_entrez_os_name
-create_os_lookup <- function(species, os_name, overwrite = FALSE) {
+create_os_lookup <- function(species, os_name, overwrite = FALSE) 
+{
   my_lookup <- c(
     "Homo sapiens" = "human",
     "Mus musculus" = "mouse",

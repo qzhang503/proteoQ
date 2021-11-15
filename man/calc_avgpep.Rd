@@ -4,7 +4,7 @@
 \alias{calc_avgpep}
 \title{Averaged peptide molecular weight (for proteins)}
 \usage{
-calc_avgpep(aa_seq, digits = 4)
+calc_avgpep(aa_seq = NULL, digits = 4L)
 }
 \arguments{
 \item{aa_seq}{Character string; a peptide sequences with one-letter

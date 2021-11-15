@@ -285,6 +285,17 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
                 upper = list(continuous = my_custom_cor, 
                              digits = 2))
   p2 <- ggcorr(df, label = TRUE, label_round = 2)
+  
+  local({
+    cors <- df %>% 
+      cor(use = "pairwise.complete.obs") %>% 
+      data.frame(check.names = FALSE) %>% 
+      tibble::rownames_to_column("Sample_ID")
+
+    filename <- gsub("(.*\\.)[^.]*$", paste0("\\1", "txt"), filename)
+    readr::write_delim(cors,file.path(filepath, filename), 
+                       delim = find_delim(filename))
+  })
 
   g2 <- ggplotGrob(p2)
   colors <- g2$grobs[[6]]$children[[3]]$gp$fill

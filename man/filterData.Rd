@@ -2,7 +2,7 @@
 % Please edit documentation in R/sigtests.R
 \name{filterData}
 \alias{filterData}
-\title{Filter rows by variance quantiles}
+\title{Filters rows by variance quantiles}
 \usage{
 filterData(df, cols = NULL, var_cutoff = 0.001)
 }
@@ -24,5 +24,5 @@ Entries with variances smaller than the threshold will be excluded from
 linear modeling. The default is 1E-3.}
 }
 \description{
-Filter rows by variance quantiles
+Filters rows by variance quantiles
 }

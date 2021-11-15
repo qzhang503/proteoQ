@@ -6567,17 +6567,21 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     filelistQ <- list.files(path = file.path(dat_dir), pattern = "^psmQ.*\\.txt$")
     filelistC <- list.files(path = file.path(dat_dir), pattern = "^psmC.*\\.txt$")
     
-    if (length(filelistQ) > 0L && length(filelistC) > 0L) {
+    if (length(filelistQ) && length(filelistC)) {
       message("Both `psmQ[...].txt` and `psmC[...].txt` are present; ", 
               "`psmQ[...].txt` will be used.")
       
       filelist <- filelistQ
-    } else if (length(filelistQ) > 0L) {
+    } else if (length(filelistQ)) {
       filelist <- filelistQ
-    } else if (length(filelistC) > 0L) {
+    } else if (length(filelistC)) {
       filelist <- filelistC
+      
+      stop(paste("No PSM files of `psmQC[...].txt` under", file.path(dat_dir), ".",
+                 "\nMake sure that the names of PSM files start with `psm[QC]`."), 
+           call. = FALSE)
     } else {
-      stop(paste("No PSM files of `psm[QC][...].txt` under", file.path(dat_dir), ".",
+      stop(paste("No PSM files of `psmQC[...].txt` under", file.path(dat_dir), ".",
                  "\nMake sure that the names of PSM files start with `psm[QC]`."), 
            call. = FALSE)
     }
@@ -6593,7 +6597,8 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     .[grepl("^filter_", names(.))]
   dots <- dots %>% .[! . %in% filter_dots]
   
-  message("Primary column keys in `psm[QC][...].txt` for `filter_` varargs.")
+  message("Primary column keys in `psmQ[...].txt` for `filter_` varargs.")
+  message("Found PSM files: ", paste(filelist, collapse = ", "))
   
   df <- filelist %>% 
     purrr::map(pad_tmt_channels, !!!filter_dots) %>% 
