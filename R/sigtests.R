@@ -4,14 +4,16 @@
 #' @param na.rm The same as in \code{mean}.
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 rowVars <- function (x, na.rm = TRUE) {
-		sqr <- function(x) x * x
-		n <- rowSums(!is.na(x))
-		n[n <= 1] <- NA
-		return(rowSums(sqr(x - rowMeans(x,na.rm = na.rm)), na.rm = na.rm)/(n - 1))
+  
+  sqr <- function(x) x * x
+  n <- rowSums(!is.na(x))
+  n[n <= 1] <- NA
+  
+  return(rowSums(sqr(x - rowMeans(x,na.rm = na.rm)), na.rm = na.rm)/(n - 1))
 }
 
 
-#' Filter rows by variance quantiles
+#' Filters rows by variance quantiles
 #' 
 #' @inheritParams info_anal
 #' @inheritParams gn_rollup
@@ -19,9 +21,10 @@ rowVars <- function (x, na.rm = TRUE) {
 #' @import dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
+  
   if (is.null(cols)) cols <- 1:ncol(df)
   
-  if (length(cols) > 1) {
+  if (length(cols) > 1L) {
     df <- df %>% 
       dplyr::select(cols) %>% 
       dplyr::mutate(Variance = rowVars(.), 
@@ -66,7 +69,8 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 
 	key_col <- fml[len] %>% gsub("(.*)\\[\\s*\\~*.*\\].*", "\\1", .)
 
-	label_scheme_sub <- label_scheme_sub %>% dplyr::filter(!is.na(!!sym(key_col)))
+	label_scheme_sub <- label_scheme_sub %>% 
+	  dplyr::filter(!is.na(!!sym(key_col)))
 
 	if (grepl("\\[\\s*\\~\\s*", fml[len])) { # formula = ~ Term[ ~ V]
 		base <- fml[len] %>% gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", .)
@@ -80,7 +84,7 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 		label_scheme_sub <- label_scheme_sub %>%
 			dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col), levels = new_levels))
 	} else if (!grepl("\\[", fml[len])) { # formula = log2Ratio ~ Term
-		new_levels <- label_scheme_sub[[key_col]] %>% levels() # leveled by the alphebatic order
+		new_levels <- label_scheme_sub[[key_col]] %>% levels() # leveled by the alphabetic order
 	} else { # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]
 		new_levels <- NULL
 	}
@@ -118,8 +122,8 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 	  
 	  message("\ncontrs: ", contrs %>% as.character, "\n")
 	  message("new_contrs: ", new_contrs %>% as.character, "\n")
-	  message("elements: ", elements %>% as.character, "\n")
-	  message("new_elements: ", new_elements %>% as.character, "\n\n")		
+	  message("elements: ", paste(elements, collapse = ", "), "\n")
+	  message("new_elements: ", paste(new_elements, collapse = ", "), "\n\n")
 	}
 
 	label_scheme_sub_sub <- label_scheme_sub %>%
@@ -128,7 +132,8 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 	
 	if (nrow(label_scheme_sub_sub) == 0) {
 	  stop("No samples were found for formula ", formula, 
-	       "\nCheck the terms under column ", key_col, call. = FALSE)
+	       "\nCheck the terms under column ", key_col, 
+	       call. = FALSE)
 	}
 
 	design <- model.matrix(~0+label_scheme_sub_sub[[key_col]]) %>%
@@ -141,7 +146,8 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 	new_design <- design %>% 
 	  `colnames<-`(new_design_nms)
 	
-	contr_mat <- makeContrasts(contrasts = new_contrs, levels = data.frame(new_design)) %>% 
+	contr_mat <- makeContrasts(contrasts = new_contrs, 
+	                           levels = data.frame(new_design)) %>% 
 	  `colnames<-`(contrs) %>% 
 	  `rownames<-`(colnames(design))
 	
@@ -172,6 +178,7 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 #' @inheritParams prnSig 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 my_padj <- function(df_pval, pval_cutoff) {
+  
 	df_pval %>%
 		purrr::map(~ .x <= pval_cutoff)	%>%
 		purrr::map(~ ifelse(!.x, NA, .x)) %>%
@@ -196,7 +203,9 @@ my_padj <- function(df_pval, pval_cutoff) {
 #' @param log2rs A data frame of log2FC
 #' @inheritParams prnSig
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff, padj_method = "BH") {
+lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff, 
+                       padj_method = "BH") {
+  
 	nms <- rownames(pvals)
 
 	pass_pvals <- pvals %>% purrr::map(~ .x <= pval_cutoff)
@@ -253,6 +262,10 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	# formula = log2Ratio ~ Term
 	# formula = ~ Term[~V] # no interaction terms
 	# formula = ~ Term
+  
+  dots <- rlang::enexprs(...)
+  # lmFit_dots <- dots %>% .[. %in% c("method")]
+  # eBayes_dots <- dots %>% .[. %in% c("proportion")]
 
 	id <- rlang::as_string(rlang::enexpr(id))
 
@@ -273,25 +286,38 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	df <- df %>% 
 	  filterData(var_cutoff = var_cutoff) %>% 
 	  dplyr::select(as.character(label_scheme_sub_sub$Sample_ID))
+	
+	local({
+	  ncol <- ncol(df)
+	  if (ncol < 4L) 
+	    warning("May need more samples than ", ncol, " for statistical tests.")
+	})
 
 	if (length(random_vars) > 0) {
 		# only use the first random variable
 	  if (length(random_vars) > 1) {
-	    warning("Uses only the first random variable: ", random_vars[1], call. = FALSE)
+	    warning("Uses only the first random variable: ", random_vars[1], 
+	            call. = FALSE)
 	  }
 	  
 	  design_random <- label_scheme_sub_sub[[random_vars[1]]] 
 		corfit <- duplicateCorrelation(df, design = design, block = design_random)
 		
-		fit <- df %>%
-			lmFit(design = design, block = design_random, correlation = corfit$consensus) %>%
-			contrasts.fit(contr_mat) %>%
-			eBayes()
+		fit <- suppressWarnings(
+		  df %>%
+		    lmFit(design = design, 
+		          block = design_random, 
+		          correlation = corfit$consensus) %>%
+		    contrasts.fit(contr_mat) %>%
+		    eBayes()
+		)
 	} else {
-		fit <- df %>%
-			lmFit(design = design) %>%
-			contrasts.fit(contr_mat) %>%
-			eBayes()
+	  fit <- suppressWarnings(
+	    df %>%
+	      lmFit(design = design) %>%
+	      contrasts.fit(contr_mat) %>%
+	      eBayes()
+	  )
 	}
 
 	print(design)
@@ -332,7 +358,7 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 			dplyr::group_by(!!rlang::sym(id)) %>%
 			tidyr::nest()
 
-		if (!purrr::is_empty(random_vars)) {
+		if (length(random_vars)) {
 		  if (!requireNamespace("broom.mixed", quietly = TRUE)) {
 		    stop("\n====================================================================", 
 		         "\nNeed package \"broom.mixed\" for this function to work.",
@@ -341,17 +367,17 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 		  }
 		  
 		  if (!requireNamespace("lmerTest", quietly = TRUE)) {
-		    stop("\n====================================================================", 
+		    stop("\n============================================================", 
 		         "\nNeed package \"lmerTest\" for this function to work.",
-		         "\n====================================================================",
+		         "\n============================================================",
 		         call. = FALSE)
 		  }
 		  
 		  res_lm <- df_lm %>%
 				dplyr::mutate(
-				  model = purrr::map(
-				    data, 
-				    ~ lmerTest::lmer(data = .x, formula = new_formula, contrasts = contr_mat_lm))) %>%
+				  model = purrr::map(data, 
+				    ~ lmerTest::lmer(data = .x, formula = new_formula, 
+				                     contrasts = contr_mat_lm))) %>%
 				dplyr::mutate(glance = purrr::map(model, broom.mixed::tidy)) %>%
 			  tidyr::unnest(glance, keep_empty = TRUE) %>% 
 				dplyr::filter(!grepl("Intercept", term), effect != "ran_pars") %>%
@@ -366,9 +392,9 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 				lm_summary(log2rs, pval_cutoff, logFC_cutoff, padj_method)
 		} else {
 		  if (!requireNamespace("broom", quietly = TRUE)) {
-		    stop("\n====================================================================", 
+		    stop("\n============================================================", 
 		         "\nNeed package \"broom\" for this function to work.",
-		         "\n====================================================================",
+		         "\n============================================================",
 		         call. = FALSE)
 		  }
 		  
@@ -414,7 +440,8 @@ sigTest <- function(df, id, label_scheme_sub,
 
   dat_dir <- get_gl_dat_dir()
   
-  stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), is.numeric, logical(1)))
+  stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), is.numeric, 
+                   logical(1L)))
   
 	id <- rlang::as_string(rlang::enexpr(id))
 	method <- rlang::as_string(rlang::enexpr(method))
@@ -432,8 +459,8 @@ sigTest <- function(df, id, label_scheme_sub,
 	dots <- dots %>% 
 	  .[! . %in% c(filter_dots, arrange_dots)]
 	
-	non_fml_dots <- dots[!map_lgl(dots, is_formula)]
-	dots <- dots[map_lgl(dots, is_formula)]
+	non_fml_dots <- dots[!purrr::map_lgl(dots, is_formula)]
+	dots <- dots[purrr::map_lgl(dots, is_formula)]
 	
 	if (id %in% c("pep_seq", "pep_seq_mod")) {
 	  pepSig_formulas <- dots
@@ -451,46 +478,77 @@ sigTest <- function(df, id, label_scheme_sub,
 
 	fn_prefix2 <- ifelse(impute_na, "_impNA_pVals.txt", "_pVals.txt")
 	
-	quietly_log <- local({
-  	dfw <- df %>% 
-  	  filters_in_call(!!!filter_dots) %>% 
-  	  arrangers_in_call(!!!arrange_dots) %>% 
-  	  prepDM(id = !!id, 
-  	         scale_log2r = scale_log2r, 
-  	         sub_grp = label_scheme_sub$Sample_ID, 
-  	         anal_type = anal_type, 
-  	         rm_allna = rm_allna) %>% 
-  	  .$log2R
-  	
-  	# `complete_cases` depends on lm contrasts
-	  purrr::map(dots, ~ purrr::quietly(model_onechannel)
-	             (dfw, !!id, .x, label_scheme_sub, 
-	               complete_cases, method, padj_method, var_cutoff, 
-	               pval_cutoff, logFC_cutoff, !!!non_fml_dots)) 
+	df_op <- local({
+	  dfw <- df %>% 
+	    filters_in_call(!!!filter_dots) %>% 
+	    arrangers_in_call(!!!arrange_dots) %>% 
+	    prepDM(id = !!id, 
+	           scale_log2r = scale_log2r, 
+	           sub_grp = label_scheme_sub$Sample_ID, 
+	           anal_type = anal_type, 
+	           rm_allna = rm_allna) %>% 
+	    .$log2R
+	  
+	  # `complete_cases` depends on lm contrasts
+	  purrr::map(dots, ~ model_onechannel(dfw, !!id, .x, label_scheme_sub, 
+	                                             complete_cases, method, 
+	                                             padj_method, var_cutoff, 
+	                                             pval_cutoff, logFC_cutoff, 
+	                                             !!!non_fml_dots)) %>% 
+	    do.call("cbind", .)
 	})
-
-	if (id %in% c("pep_seq", "pep_seq_mod")) {
-	  out_path <- file.path(dat_dir, "Peptide/Model/log/pepSig_log.txt")
-	} else if (id %in% c("prot_acc", "gene")) {
-	  out_path <- file.path(dat_dir, "Protein/Model/log/prnSig_log.txt")
+	
+	run_scripts <- FALSE
+	if (run_scripts) {
+	  quietly_log <- local({
+	    dfw <- df %>% 
+	      filters_in_call(!!!filter_dots) %>% 
+	      arrangers_in_call(!!!arrange_dots) %>% 
+	      prepDM(id = !!id, 
+	             scale_log2r = scale_log2r, 
+	             sub_grp = label_scheme_sub$Sample_ID, 
+	             anal_type = anal_type, 
+	             rm_allna = rm_allna) %>% 
+	      .$log2R
+	    
+	    # `complete_cases` depends on lm contrasts
+	    purrr::map(dots, ~ purrr::quietly(model_onechannel)
+	               (dfw, !!id, .x, label_scheme_sub, 
+	                 complete_cases, method, padj_method, var_cutoff, 
+	                 pval_cutoff, logFC_cutoff, !!!non_fml_dots)) 
+	  })
+	  
+	  if (id %in% c("pep_seq", "pep_seq_mod")) {
+	    out_path <- file.path(dat_dir, "Peptide/Model/log/pepSig_log.txt")
+	  } else if (id %in% c("prot_acc", "gene")) {
+	    out_path <- file.path(dat_dir, "Protein/Model/log/prnSig_log.txt")
+	  }
+	  
+	  purrr::map(quietly_log, ~ {
+	    .x[[1]] <- NULL
+	    return(.x)
+	  }) %>% 
+	    purrr::reduce(`c`, .init = NULL) %>% 
+	    purrr::walk(., write, out_path, append = TRUE)
+	  
+	  df_op <- purrr::map(quietly_log, `[[`, 1) %>%
+	    do.call("cbind", .)
 	}
 	
-	purrr::map(quietly_log, ~ {
-	  .x[[1]] <- NULL
-	  return(.x)
-	}) %>% 
-	  purrr::reduce(`c`, .init = NULL) %>% 
-	  purrr::walk(., write, out_path, append = TRUE)
-
-	df_op <- purrr::map(quietly_log, `[[`, 1) %>%
-	  do.call("cbind", .)
-
 	local({
   	# record the `scale_log2r` status; otherwise, need to indicate it in a way
   	# for example, `_N` or `_Z` in file names
   	dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)	  
 	  
-	  if (data_type == "Peptide") type <- "pep" else if (data_type == "Protein") type <- "prn"
+	  if (data_type == "Peptide") {
+	    type <- "pep"
+	  } else if (data_type == "Protein") {
+	    type <- "prn"
+	  } else {
+	    stop("`data_type` needs to be either `Peptide` or `Protein`.", 
+	         call. = FALSE)
+	  }
+	  
 	  file <- paste0(type, "Sig_imp", ifelse(impute_na, "TRUE", "FALSE"), ".rda")
 	  
 	  call_pars <- c(scale_log2r = scale_log2r, 
@@ -532,6 +590,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
                     rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
+  
   on.exit({
     mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
       c(rlang::enexprs(...)) %>% 
@@ -541,7 +600,8 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
-  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
+            length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -550,7 +610,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
     method <- "limma"
   } else {
     method <- rlang::as_string(method)
-    stopifnot(method %in% c("limma", "lm"), length(method) == 1)
+    stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
   }
   
   df <- rlang::enexpr(df)
@@ -570,7 +630,7 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
                    rlang::is_logical, logical(1)))
   
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), 
-                   is.numeric, logical(1)))
+                   is.numeric, logical(1L)))
   
   info_anal(df = !!df, 
             df2 = NULL, 
@@ -713,6 +773,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
                     rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
                     df = NULL, filepath = NULL, filename = NULL, ...) {
+  
   on.exit({
     load(file.path(get_gl_dat_dir(), "Calls/prnSig_formulas.rda"))
     dots <- my_union(rlang::enexprs(...), prnSig_formulas)
@@ -724,7 +785,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1)
+  stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), length(id) == 1L)
   
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -733,7 +794,7 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
     method <- "limma"
   } else {
     method <- rlang::as_string(method)
-    stopifnot(method %in% c("limma", "lm"), length(method) == 1)
+    stopifnot(method %in% c("limma", "lm"), length(method) == 1L)
   }
   
   df <- rlang::enexpr(df)
@@ -749,10 +810,10 @@ prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
   }
   
   stopifnot(vapply(c(scale_log2r, impute_na, complete_cases, rm_allna), 
-                   rlang::is_logical, logical(1)))
+                   rlang::is_logical, logical(1L)))
   
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), 
-                   is.numeric, logical(1)))
+                   is.numeric, logical(1L)))
   
   info_anal(df = !!df, 
             df2 = NULL, 

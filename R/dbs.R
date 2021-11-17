@@ -36,13 +36,13 @@
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>%
 #' @seealso \code{\link{write_fasta}}
-read_fasta <- function (file, acc_pattern = ">([^ ]+?) .*", comment_char = "") {
+read_fasta <- function (file, acc_pattern = ">([^ ]+?) .*", comment_char = "") 
+{
   lines <- readLines(file)
   
-  if (nchar(comment_char) > 0) {
+  if (nchar(comment_char) > 0) 
     lines <- lines %>% .[!grepl(paste0("^", comment_char), .)]
-  }
-  
+
   headers <- grep(">", lines)
   begins <- headers + 1
   ends <- (headers[-1] - 1) %>% `c`(length(lines))
@@ -53,12 +53,12 @@ read_fasta <- function (file, acc_pattern = ">([^ ]+?) .*", comment_char = "") {
   
   db <- purrr::map2(seqs, hdrs, ~ {
     attr(.x, "header") <- .y
-    return(.x)
+    .x
   })
   
   names(db) <- hdrs %>% gsub(acc_pattern, "\\1", .)
 
-  return(db)
+  invisible(db)
 }
 
 
@@ -76,7 +76,8 @@ read_fasta <- function (file, acc_pattern = ">([^ ]+?) .*", comment_char = "") {
 #'
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>%
-write_fasta <- function (fasta_db, file) {
+write_fasta <- function (fasta_db, file) 
+{
   filepath <- gsub("(^.*/).*$", "\\1", file)
   dir.create(filepath, showWarnings = FALSE, recursive = TRUE)
   
@@ -93,17 +94,16 @@ write_fasta <- function (fasta_db, file) {
 #' \donttest{
 #' fasta_db <- load_fasta("~/proteoQ/dbs/fasta/uniprot/uniprot_hs_2020_05.fasta")
 #' }
-load_fasta <- function (fasta = NULL) {
-  if (is.null(fasta)) {
+load_fasta <- function (fasta = NULL) 
+{
+  if (is.null(fasta)) 
     stop("FASTA file(s) are required.", call. = FALSE)
-  }
-  
-  if (!all(file.exists(fasta))) {
+
+  if (!all(file.exists(fasta))) 
     stop("Missing FASTA file(s): \n", 
          purrr::reduce(fasta %>% .[!file.exists(.)], paste, sep = "\n"), 
          call. = FALSE)
-  }
-  
+
   purrr::map(fasta, ~ read_fasta(.x)) %>% 
     do.call(`c`, .) %>% 
     `names<-`(gsub(">", "", names(.))) %>% 
@@ -126,8 +126,9 @@ load_fasta <- function (fasta = NULL) {
 #'
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>%
-calc_avgpep <- function (aa_seq, digits = 4) {
-  options(digits = 9)
+calc_avgpep <- function (aa_seq = NULL, digits = 4L) 
+{
+  options(digits = 9L)
   
   aa_masses <- c(
     A = 71.0779, R = 156.1857, N = 114.1026, D = 115.0874, 

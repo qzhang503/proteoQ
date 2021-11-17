@@ -8,21 +8,26 @@
 #' @param pattern Regex pattern for capturing intensity and ratio columns.
 #' @import dplyr purrr forcats
 #' @importFrom magrittr %>% %T>% %$% %<>% not 
-newColnames <- function(i, x, label_scheme, pattern = "[RI][0-9]{3}[NC]{0,1}") {
+newColnames <- function(i, x, label_scheme, pattern = "[RI][0-9]{3}[NC]{0,1}") 
+{
   label_scheme_sub <- label_scheme %>%
     dplyr::filter(TMT_Set == i) 
   
   cols <- grep(paste0(pattern, "_", i, "$"), names(x))
-  nm_channel <- gsub(paste0("(", pattern, ")_", i, "$"), "\\1", names(x)[cols])
-  names(x)[cols] <- paste0(nm_channel, " (", as.character(label_scheme_sub$Sample_ID), ")")
   
-  # update the column indexes with TMT_Set being replaced with Sample_ID
+  nm_channel <- gsub(paste0("(", pattern, ")_", i, "$"), "\\1", names(x)[cols])
+  
+  names(x)[cols] <- 
+    paste0(nm_channel, " (", as.character(label_scheme_sub$Sample_ID), ")")
+  
+  # updates the column indexes with TMT_Set being replaced with Sample_ID
   cols <- grep(paste0(pattern, "\\s+\\(.*\\)$"), names(x))
   
   # cols with the updated names go first
-  if (length(cols) < ncol(x)) x <- dplyr::bind_cols(x[, cols], x[, -cols, drop = FALSE])
+  if (length(cols) < ncol(x)) 
+    x <- dplyr::bind_cols(x[, cols], x[, -cols, drop = FALSE])
   
-  return(x)
+  invisible(x)
 }
 
 
@@ -30,14 +35,15 @@ newColnames <- function(i, x, label_scheme, pattern = "[RI][0-9]{3}[NC]{0,1}") {
 #' 
 #' @inheritParams load_expts
 #' @inheritParams n_TMT_sets
-use_mq_peptable <- function (dat_dir, label_scheme_full) {
+use_mq_peptable <- function (dat_dir, label_scheme_full) 
+{
   filelist <- list.files(path = file.path(dat_dir), pattern = "^peptides.*\\.txt$")
   
-  if (length(filelist) == 0) {
+  if (!length(filelist)) {
     message("Primary column keys in `Peptide/TMTset1_LCMSinj1_Peptide_N.txt` etc. ", 
             "for `filter_` varargs.")
     return(FALSE)
-  } else if (length(filelist) > 1) {
+  } else if (length(filelist) > 1L) {
     stop("Only single MaxQuant `peptides.txt` allowed.", call. = FALSE)
   } else {
     if (!file.exists(file.path(dat_dir, filelist))) {
@@ -53,7 +59,8 @@ use_mq_peptable <- function (dat_dir, label_scheme_full) {
 #' Check the single presence of MaxQuant proteinGroups[...].txt.
 #' 
 #' @inheritParams load_expts
-single_mq_prntable <- function (dat_dir) {
+single_mq_prntable <- function (dat_dir) 
+{
   filelist <- list.files(path = file.path(dat_dir), 
                          pattern = "^proteinGroups.*\\.txt$")
   
@@ -77,7 +84,8 @@ single_mq_prntable <- function (dat_dir) {
 #' 
 #' @param df A data frame of MaxQuant peptides.txt or proteinGroups.txt.
 #' @param label_scheme Experiment summary
-check_mq_df <- function (df, label_scheme) {
+check_mq_df <- function (df, label_scheme) 
+{
   mq_nms <- names(df) %>% 
     .[grepl("^LFQ intensity ", .)] %>% 
     gsub("^LFQ intensity ", "", .)
@@ -108,7 +116,8 @@ check_mq_df <- function (df, label_scheme) {
 #' Extracts MaxQuant intensity values and calculates log2FC.
 #' 
 #' @param df A data frame of MaxQuant results.
-extract_mq_ints <- function (df) {
+extract_mq_ints <- function (df) 
+{
   calc_mq_log2r <- function (df, type, refChannels) {
     type <- paste0("^", type, " ")
     col_smpls <- grep(type, names(df))
@@ -192,7 +201,8 @@ extract_mq_ints <- function (df) {
 #' @inheritParams n_TMT_sets
 #' @inheritParams mergePep
 #' @inheritParams prn_mq_lfq
-pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
+pep_mq_lfq <- function(label_scheme, omit_single_lfq) 
+{
   dat_dir <- get_gl_dat_dir()
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
@@ -421,7 +431,8 @@ pep_mq_lfq <- function(label_scheme, omit_single_lfq) {
 #' Temporary handling using MaxQuant peptide.txt.
 #' 
 #' @param label_scheme Experiment summary.
-pep_mq_lfq2 <- function(label_scheme) {
+pep_mq_lfq2 <- function(label_scheme) 
+{
   dat_dir <- get_gl_dat_dir()
   group_psm_by <- match_call_arg(normPSM, group_psm_by)
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
@@ -558,7 +569,8 @@ pep_mq_lfq2 <- function(label_scheme) {
 #' load MaxQuant protein table
 #' 
 #' @param label_scheme Experiment summary
-prn_mq_lfq <- function(label_scheme) {
+prn_mq_lfq <- function(label_scheme) 
+{
   dat_dir <- get_gl_dat_dir()
   group_pep_by <- "prot_acc"
   
@@ -617,7 +629,8 @@ prn_mq_lfq <- function(label_scheme) {
 #' @param df A data frame.
 #' @param type The type of intensity data.
 #' @param refChannels The reference channels.
-calc_lfq_log2r <- function (df, type, refChannels) {
+calc_lfq_log2r <- function (df, type, refChannels) 
+{
   stopifnot(type %in% c("I000", "N_I000"))
   
   new_type <- paste0("^", type, " ")
@@ -628,15 +641,13 @@ calc_lfq_log2r <- function (df, type, refChannels) {
 
   col_smpls <- grep(new_type, names(df))
   
-  if (purrr::is_empty(col_smpls)) {
+  if (purrr::is_empty(col_smpls)) 
     stop("No sample columns start with ", type, ".", call. = FALSE)
-  }
   
-  if (length(refChannels) > 0) {
-    col_refs <- which(names(df) %in% paste0(type, " (", refChannels, ")"))
-  } else {
-    col_refs <- col_smpls
-  }
+  col_refs <- if (length(refChannels) > 0) 
+    which(names(df) %in% paste0(type, " (", refChannels, ")"))
+  else 
+    col_smpls
   
   sweep(df[, col_smpls, drop = FALSE], 1,
         rowMeans(df[, col_refs, drop = FALSE], na.rm = TRUE), "/") %>%
@@ -653,7 +664,8 @@ calc_lfq_log2r <- function (df, type, refChannels) {
 #' 
 #' @param df A data frame.
 #' @param pattern The pattern of intensity fields.
-na_single_lfq <- function (df, pattern = "^I000 ") {
+na_single_lfq <- function (df, pattern = "^I000 ") 
+{
   df_lfq <- df[, grep(pattern, names(df)), drop = FALSE]
   not_single_zero <- (rowSums(df_lfq > 0, na.rm = TRUE) > 1) 
   not_single_zero[!not_single_zero] <- NA
@@ -673,7 +685,8 @@ na_single_lfq <- function (df, pattern = "^I000 ") {
 #' 
 #' @param df A data frame.
 #' @inheritParams mergePep
-calc_lfq_pepnums <- function (df, omit_single_lfq) {
+calc_lfq_pepnums <- function (df, omit_single_lfq) 
+{
   load(file.path(dat_dir, "label_scheme.rda"))
   
   if (omit_single_lfq) {
@@ -717,7 +730,8 @@ calc_lfq_pepnums <- function (df, omit_single_lfq) {
 #' @param df A data frame.
 #' @param filelist A list of individual peptide tables.
 #' @inheritParams normPSM 
-calc_lfq_pepnums2 <- function (df, filelist, group_psm_by) {
+calc_lfq_pepnums2 <- function (df, filelist, group_psm_by) 
+{
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -763,7 +777,8 @@ calc_lfq_pepnums2 <- function (df, filelist, group_psm_by) {
 #' @param filelist A list of PSM files.
 #' @inheritParams splitPSM
 #' @inheritParams annotPSM
-calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) {
+calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) 
+{
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -788,6 +803,7 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) {
     
     if (parallel) {
       nms <- names(df_n)
+      
       stopifnot(nms[1] == group_psm_by, nms[2] == "TMT_Set")
       
       n_cores <- parallel::detectCores()
@@ -861,8 +877,8 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) {
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
                            use_duppeps = TRUE, cut_points = Inf, 
                            omit_single_lfq = TRUE, use_mq_pep = FALSE, 
-                           rm_allna = FALSE, parallel = TRUE, ...) {
-  
+                           rm_allna = FALSE, parallel = TRUE, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -872,9 +888,10 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
   
-  filelist <- list.files(path = file.path(dat_dir, "Peptide"), 
-                         pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"), 
-                         full.names = TRUE)
+  filelist <- 
+    list.files(path = file.path(dat_dir, "Peptide"), 
+               pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"), 
+               full.names = TRUE)
   
   if (purrr::is_empty(filelist)) {
     stop("No individual peptide tables available; run `PSM2Pep()` first.", 
@@ -898,11 +915,12 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   
   if (!use_mq_pep) {
     df_num <- calc_tmt_nums(df, filelist, group_psm_by, parallel)
+    
     pep_lfqnums <- df %>% 
       dplyr::select(group_psm_by) %>% 
       dplyr::filter(!duplicated(!!rlang::sym(group_psm_by)))
 
-    if (TMT_plex == 0) {
+    if (TMT_plex == 0L) {
       df_num <- calc_lfq_pepnums(df_num, omit_single_lfq)
       pep_lfqnums <- calc_lfq_pepnums2(df, filelist, group_psm_by)
       df_num <- df_num %>% dplyr::left_join(pep_lfqnums, by = group_psm_by)
@@ -921,7 +939,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   df_num <- local({
     df_num <- df_num %>% 
       dplyr::mutate(mean_lint = 
-                      log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.)), drop = FALSE], 
+                      log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.)), 
+                                       drop = FALSE], 
                                      na.rm = TRUE)), 
                     mean_lint = round(mean_lint, digits = 2))
     
@@ -995,7 +1014,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     purrr::reduce(dplyr::left_join, by = group_pep_by)
   
   # --- update sd_log2R000 (...) ---
-  if (TMT_plex == 0 && !use_mq_pep) {
+  if (TMT_plex == 0L && !use_mq_pep) {
     df <- local({
       df <- df %>% 
         dplyr::select(-grep("^sd_log2_R000 ", names(.)))
@@ -1010,7 +1029,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   }
   
   # --- add varmod columns ---
-  if (("pep_seq_mod" %in% names(df)) && (match_call_arg(normPSM, use_lowercase_aa))) {
+  if (("pep_seq_mod" %in% names(df)) && 
+      (match_call_arg(normPSM, use_lowercase_aa))) {
     df <- df %>% 
       dplyr::mutate(pep_mod_protnt = ifelse(grepl("^~", pep_seq_mod), 
                                             TRUE, FALSE)) %>% 
@@ -1098,7 +1118,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
 #' @inheritParams info_anal
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-med_summarise_keys <- function(df, id) {
+med_summarise_keys <- function(df, id) 
+{
   ## --- Mascot ---
   mascot_median_keys <- c("pep_score", "pep_rank", "pep_isbold", 
                           "pep_exp_mr", "pep_delta", 
@@ -1247,7 +1268,8 @@ med_summarise_keys <- function(df, id) {
 #' load prior Peptide.txt
 #' 
 #' @inheritParams info_anal
-load_prior <- function(filename, id) {
+load_prior <- function(filename, id) 
+{
   dat_dir <- get_gl_dat_dir()
   
   stopifnot(file.exists(filename))
@@ -1269,7 +1291,8 @@ load_prior <- function(filename, id) {
 #' Format numeric columns
 #' 
 #' @inheritParams info_anal
-fmt_num_cols <- function (df) {
+fmt_num_cols <- function (df) 
+{
   run_scripts <- FALSE
   if (run_scripts) {
     df[, grepl("^Z_log2_R[0-9]{3}[NC]{0,1}", names(df))] <-  
@@ -1418,8 +1441,10 @@ fmt_num_cols <- function (df) {
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@importFrom plyr ddply
 #'@export
-mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = Inf, 
-                      rm_allna = FALSE, omit_single_lfq = TRUE, parallel = TRUE, ...) {
+mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, 
+                      cut_points = Inf, rm_allna = FALSE, 
+                      omit_single_lfq = TRUE, parallel = TRUE, ...) 
+{
   dat_dir <- get_gl_dat_dir()  
   
   old_opts <- options()
@@ -1640,8 +1665,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, cut_points = In
 standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, 
                       range_log2r = c(10, 90), 
                       range_int = c(5, 95), n_comp = NULL, seed = NULL, 
-                      plot_log2FC_cv = FALSE, ...) {
-
+                      plot_log2FC_cv = FALSE, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   
   old_opts <- options()
@@ -1847,12 +1872,12 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
 #'@import stringr dplyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
-Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_3_mean", 
-                                        "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", 
-                                        "lfq_all"), 
-                     use_unique_pep = TRUE, cut_points = Inf, rm_outliers = FALSE, 
-                     rm_allna = FALSE, ...) {
-  
+Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", 
+                                        "top_3_mean", "lfq_max", "lfq_top_2_sum", 
+                                        "lfq_top_3_sum", "lfq_all"), 
+                     use_unique_pep = TRUE, cut_points = Inf, 
+                     rm_outliers = FALSE, rm_allna = FALSE, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/Histogram"), 
              recursive = TRUE, showWarnings = FALSE)
@@ -1883,14 +1908,14 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_
   TMT_plex <- TMT_plex(label_scheme_full)
   
   method_pep_prn <- rlang::enexpr(method_pep_prn)
-  if (TMT_plex > 0) {
-    if (length(method_pep_prn) > 1) {
+  if (TMT_plex > 0L) {
+    if (length(method_pep_prn) > 1L) {
       method_pep_prn <- "median"
     } else {
       method_pep_prn <- rlang::as_string(method_pep_prn)
     }
   } else {
-    if (length(method_pep_prn) > 1) {
+    if (length(method_pep_prn) > 1L) {
       method_pep_prn <- "lfq_top_3_sum"
     } else {
       method_pep_prn <- rlang::as_string(method_pep_prn)
@@ -1909,18 +1934,17 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_
                                   "weighted_mean", "top_3_mean", 
                                   "lfq_max", "lfq_top_2_sum", 
                                   "lfq_top_3_sum", "lfq_all"), 
-            length(method_pep_prn) == 1)
+            length(method_pep_prn) == 1L)
 
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
   stopifnot(group_pep_by %in% c("prot_acc", "gene"), length(group_pep_by) == 1)
   
   stopifnot(vapply(c(use_unique_pep), rlang::is_logical, logical(1)))
   
-  if (group_pep_by == "gene") {
-    gn_rollup <- TRUE
-  } else {
-    gn_rollup <- FALSE
-  }
+  gn_rollup <- if (group_pep_by == "gene") 
+    TRUE
+  else 
+    FALSE
   
   message("Primary column keys in `Peptide/Peptide.txt` ", 
           "for `filter_` varargs.")
@@ -1972,7 +1996,9 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean", "top_
 #' 
 #' @param df A data frame.
 #' @inheritParams normPSM
-map_peps_prots <- function (df, group_psm_by = "pep_seq", group_pep_by = "prot_acc") {
+map_peps_prots <- function (df, group_psm_by = "pep_seq", 
+                            group_pep_by = "prot_acc") 
+{
   dat_dir <- get_gl_dat_dir()
   
   df <- df %>% 
@@ -2005,7 +2031,8 @@ map_peps_prots <- function (df, group_psm_by = "pep_seq", group_pep_by = "prot_a
 #' 
 #' @param df A data frame.
 #' @inheritParams normPSM
-find_prot_family_rows <- function (df, group_psm_by, group_pep_by) {
+find_prot_family_rows <- function (df, group_psm_by, group_pep_by) 
+{
   dat_dir <- get_gl_dat_dir()
   
   pep_prot_map <- map_peps_prots(df, group_psm_by, group_pep_by) 
@@ -2033,8 +2060,8 @@ find_prot_family_rows <- function (df, group_psm_by, group_pep_by) {
 #' @inheritParams normPSM
 #' @inheritParams Pep2Prn
 calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, group_pep_by, 
-                              method_pep_prn) {
-  
+                              method_pep_prn) 
+{
   my_sum_n <- function (x, n = 3, ...) {
     if (n < 1) stop("`n` need to be a positive integer.", call. = FALSE)
     if (is.infinite(n)) n <- length(x)
@@ -2182,7 +2209,9 @@ calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, group_pep_by,
 #' @param id Always "prot_acc".
 #' @inheritParams calc_lfq_prnnums
 #' @inheritParams Pep2Prn
-calc_tmt_prnnums <- function (df, use_unique_pep, id = "prot_acc", method_pep_prn) {
+calc_tmt_prnnums <- function (df, use_unique_pep, id = "prot_acc", 
+                              method_pep_prn) 
+{
   if (use_unique_pep && "pep_isunique" %in% names(df)) {
     df <- df %>% dplyr::filter(pep_isunique == 1)
   }
@@ -2208,8 +2237,9 @@ calc_tmt_prnnums <- function (df, use_unique_pep, id = "prot_acc", method_pep_pr
 #' @param gn_rollup Logical; if TRUE, rolls up protein accessions to gene names.
 #' @inheritParams info_anal
 #' @inheritParams Pep2Prn
-pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, rm_outliers, 
-                       rm_allna = FALSE, ...) {
+pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, 
+                       rm_outliers, rm_allna = FALSE, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   TMT_plex <- TMT_plex(label_scheme)
@@ -2392,7 +2422,8 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, rm_outlier
         "Peak coverage", "Peak Coverage",  
         "Proteins", "Protein group IDs")
     ))) %>% 
-    dplyr::select(-which(names(.) %in% c("Is Unique", "Protein", "Gene", "Mapped Genes", 
+    dplyr::select(-which(names(.) %in% c("Is Unique", "Protein", "Gene", 
+                                         "Mapped Genes", 
                                          "Mapped Proteins", "Nextscore", 
                                          "PeptideProphet Probability")))
 
@@ -2544,7 +2575,8 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, rm_outlier
 #' @param df A PSM data frame
 #' @inheritParams mergePep
 #' @inheritParams annotPSM
-assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) {
+assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) 
+{
   # Scenario: 
   # In `dat_file_1`, peptide_x assigned to Prn_MOUSE against "human + mouse" databases.
   # In `dat_file_2` the same peptide_x assigned to PRN_HUMAN against "human only" database.
@@ -2559,7 +2591,7 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) {
     dplyr::summarise(N = n_distinct(!!rlang::sym(group_pep_by))) %>%
     dplyr::filter(N > 1)
   
-  if (nrow(dup_peps) > 0) {
+  if (nrow(dup_peps)) {
     if (use_duppeps) {
       # to ensure the same order in column names during replacement
       col_nms <- suppressWarnings(
@@ -2604,7 +2636,7 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) {
         dplyr::summarise(N = n_distinct(!!rlang::sym(group_pep_by))) %>%
         dplyr::filter(N > 1)
       
-      if (nrow(dup_peps_af) > 0) {
+      if (nrow(dup_peps_af)) {
         write.csv(dup_peps_af, file.path(dat_dir, "Peptide/dbl_dipping_peptides.csv"), 
                   row.names = FALSE)
         df <- df %>% 
