@@ -106,7 +106,8 @@
 standPrn <- function (method_align = c("MC", "MGKernel"), 
                       range_log2r = c(10, 90), range_int = c(5, 95), 
                       n_comp = NULL, seed = NULL, 
-                      col_select = NULL, cut_points = Inf, cache = TRUE, ...) {
+                      col_select = NULL, cut_points = Inf, cache = TRUE, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   dir.create(file.path(dat_dir, "Protein/Histogram"), 
              recursive = TRUE, showWarnings = FALSE)
@@ -149,7 +150,11 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   pep_id <- match_call_arg(normPSM, group_psm_by)
   
   col_select <- rlang::enexpr(col_select)
-  col_select <- ifelse(is.null(col_select), rlang::expr(Sample_ID), rlang::sym(col_select))
+  col_select <- if (is.null(col_select)) 
+    rlang::expr(Sample_ID) 
+  else 
+    rlang::sym(col_select)
+
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
   ok_existing_params(file.path(dat_dir, "Protein/Histogram/MGKernel_params_N.txt"))

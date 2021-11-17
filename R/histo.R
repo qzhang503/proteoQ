@@ -164,11 +164,11 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 
 	if (!scale_y) {
 	  df <- df %>% 
-	  filters_in_call(!!!filter_dots) %>% 
-	  arrangers_in_call(!!!arrange_dots)
+	    filters_in_call(!!!filter_dots) %>% 
+	    arrangers_in_call(!!!arrange_dots)
 	}
 
-	stopifnot(nrow(df) > 0)
+	stopifnot(nrow(df) > 0L)
 	
 	# cut_points = c(prot_icover = seq(.25, .75, .25))
 	# cut_points = c(mean_lint = seq(4, 7, .5)) 
@@ -200,7 +200,12 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 	    dplyr::select(-grep("^N_I[0-9]{3}", names(.))) %>%
 	    `names<-`(gsub("^[NZ]{1}_log2_R[0-9]{3}[NC]{0,1}\\s+\\((.*)\\)$", "\\1", 
 	                   names(.))) %>%
-	    tidyr::gather(key = Sample_ID, value = value, -col_cut) %>%
+	    tidyr::gather(key = Sample_ID, value = value, -col_cut) 
+	  
+	  if (! "Sample_ID" %in% names(df_melt)) 
+	    stop("No ratio fields available after data filtration.", call. = FALSE)
+	  
+	  df_melt <- de_melt %>%
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
 	    dplyr::arrange(Sample_ID) %>%
 	    dplyr::filter(!is.na(value), !is.na(col_cut)) %>%

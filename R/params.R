@@ -5,14 +5,14 @@
 #' @import dplyr tidyr purrr openxlsx
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom readxl read_excel
-prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
-
+prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") 
+{
 	my_channels <- function (x) {
 		x <- as.character(x)
 		pos <- !grepl("^TMT", x)
 		x[pos] <- paste0("TMT-", x[pos])
 
-		return(x)
+		invisible(x)
 	}
 
 	replace_na_smpls <- function(x, prefix) {
@@ -62,7 +62,7 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
   	
   	missing_cols <- must_have %>% .[! . %in% names(label_scheme_full)]
   	
-  	if (!purrr::is_empty(missing_cols)) {
+  	if (length(missing_cols)) {
   	  purrr::walk(missing_cols, 
   	              ~ message(paste0("\'", ., "\' must be present in \'", 
   	                               filename, "\'\n")))
@@ -129,13 +129,14 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	
 	TMT_plex <- TMT_plex(label_scheme_full)
 	
-	if (!TMT_plex %in% c(0, 6, 10, 11, 16)) {
+	if (!TMT_plex %in% c(0, 6, 10, 11, 16, 18)) {
 	  stop("Apparent `TMT_plex = ", TMT_plex, 
-	       "` is not one of c(0, 6, 10, 11, 16).\n", 
+	       "` is not one of c(0, 6, 10, 11, 16, 18).\n", 
 	       "For non-TMT experiments (LFQ or simple qualitative processsing), \n", 
 	       "  leave the fields under `TMT_Channel` blank.\n", 
-	       "For other TMT-plexes, pad the `TMT_Channel` upstream to an available multiplicity: \n", 
-	       "  e.g. 1 -> 6, 8 -> 10 (regular TMT) or 9 -> 16, 15 -> 16 (TMTpro).", 
+	       "For other TMT-plexes, ", 
+	       "pad the `TMT_Channel` upstream to an available multiplicity: \n", 
+	       "  e.g. 1 -> 6, 8 -> 10 (regular TMT) or 9 -> 18, 15 -> 18 (TMTpro).", 
 	       call. = FALSE)
 	}
 
@@ -371,7 +372,7 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 	      tidyr::unite(key, LCMS_Injection, Sample_ID, remove = FALSE) %>% 
 	      dplyr::filter(duplicated(key))
 	    
-	    if (nrow(dups) > 0) {
+	    if (nrow(dups)) {
 	      dups %>%
 	        dplyr::select(LCMS_Injection, Sample_ID) %>% 
 	        print()
@@ -438,7 +439,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx") {
 #' @import dplyr purrr tidyr openxlsx
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom readxl read_excel
-prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
+prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") 
+{
   old_opts <- options()
   on.exit(options(old_opts), add = TRUE)
   options(warning.length = 5000L)
@@ -503,7 +505,8 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 			                                      sheet = "Fractions") %>%
 			  dplyr::filter(rowSums(!is.na(.)) > 0)
 		} else if (fn_suffix == "csv") {
-			fraction_scheme <- read.csv(file.path(dat_dir, filename), check.names = TRUE, 
+			fraction_scheme <- read.csv(file.path(dat_dir, filename), 
+			                            check.names = TRUE, 
 			                            header = TRUE, comment.char = "#", 
 			                            na.strings = c("", "NA"))  %>%
 			  dplyr::filter(rowSums(!is.na(.)) > 0)
@@ -755,9 +758,12 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx") {
 #'@import dplyr
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
-load_dbs <- function (gset_nms = NULL, species = NULL) {
-  if (is.null(gset_nms)) stop("`gset_nms` cannot be NULL.", call. = FALSE)
-  if (is.null(species)) stop("`species` cannot be NULL.", call. = FALSE)
+load_dbs <- function (gset_nms = NULL, species = NULL) 
+{
+  if (is.null(gset_nms)) 
+    stop("`gset_nms` cannot be NULL.", call. = FALSE)
+  if (is.null(species)) 
+    stop("`species` cannot be NULL.", call. = FALSE)
   
   defaults <- c("go_sets", "kegg_sets", "c2_msig", "kinsub")
   sys_defs <- gset_nms %>% .[. %in% defaults]
@@ -1334,12 +1340,12 @@ check_raws <- function(df)
   }
   
   if (length(wrong_label_scheme_raws)) 
-    stop("\n============================================================================\n", 
+    stop("\n=========================================================================\n", 
          "RAW file name(s) in metadata have no corresponding entries in PSM data:\n", 
          "(Hint: check the possibility that MS file(s) may have ", 
          "no PSM contributions.)\n\n", 
          purrr::reduce(wrong_label_scheme_raws, paste, sep = "\n"), 
-         "\n============================================================================\n", 
+         "\n=========================================================================\n", 
          call. = FALSE)
   
   ## RAW_File may not be unique if the same RAW goes into different DAT files (searches)
@@ -1353,7 +1359,8 @@ check_raws <- function(df)
 #' @param pep_seq_rows The row(s) contain character string "pep_seq".
 find_masct_tmtplex <- function(df, pep_seq_rows = NULL) 
 {
-  if (is.null(pep_seq_rows)) pep_seq_rows <- grep("pep_seq", df)
+  if (is.null(pep_seq_rows)) 
+    pep_seq_rows <- grep("pep_seq", df)
   
   if (purrr::is_empty(pep_seq_rows)) 
     stop("The row of `pep_seq` not found.", call. = FALSE)
