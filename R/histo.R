@@ -205,7 +205,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 	  if (! "Sample_ID" %in% names(df_melt)) 
 	    stop("No ratio fields available after data filtration.", call. = FALSE)
 	  
-	  df_melt <- de_melt %>%
+	  df_melt <- df_melt %>%
 	    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme_sub$Sample_ID)) %>%
 	    dplyr::arrange(Sample_ID) %>%
 	    dplyr::filter(!is.na(value), !is.na(col_cut)) %>%

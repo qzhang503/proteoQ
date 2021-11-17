@@ -1373,8 +1373,8 @@ add_shared_genes <- function (df, key = "Proteins", sep = ";",
 #' entries or not.
 #' 
 #' @param df PSM data.
-add_shared_prot_accs <- function (df) {
-  
+add_shared_prot_accs <- function (df) 
+{
   stopifnot("pep_seq" %in% names(df))
   stopifnot("prot_acc" %in% names(df))
   stopifnot("Mapped Proteins" %in% names(df))
@@ -1448,8 +1448,8 @@ add_shared_prot_accs <- function (df) {
 #' @param sep Character string; the separator of the mapped proteins.
 #' @inheritParams splitPSM
 add_shared_sm_genes <- function (df, key = "Proteins", sep = ";", 
-                                 fasta = NULL, entrez = NULL) {
-  
+                                 fasta = NULL, entrez = NULL) 
+{
   stopifnot(all(c("pep_seq", key) %in% names(df)))
   
   sep_new = ", "
@@ -1518,8 +1518,8 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
                       rptr_intco = 0, rptr_intrange = c(0, 100), 
                       rm_craps = FALSE, rm_krts = FALSE, rm_allna = FALSE, 
                       annot_kinases = FALSE, 
-                      plot_rptr_int = TRUE, parallel = TRUE) {
-  
+                      plot_rptr_int = TRUE, parallel = TRUE) 
+{
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   load(file = file.path(dat_dir, "fraction_scheme.rda"))
@@ -1753,8 +1753,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                      purge_phosphodata = TRUE, 
                      annot_kinases = FALSE, plot_rptr_int = TRUE, 
                      rptr_intco = 0, rptr_intrange = c(0, 100), 
-                     use_lowercase_aa = TRUE, parallel = TRUE, ...) {
-  
+                     use_lowercase_aa = TRUE, parallel = TRUE, ...) 
+{
   # --- Outlines ---
   # (1.1) row filtration, column padding and psm file combinations
   # (Mascot: not yet available I000 or I126 etc., 
@@ -2086,8 +2086,8 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #' 
 #' @param file An intermediate PSM table.
 #' @param ... filter_dots.
-pad_mascot_channels <- function(file, ...) {
-  
+pad_mascot_channels <- function(file, ...) 
+{
   find_mascot_plex <- function (df) {
     to_126 <- grep("/126", df[1, ], fixed = TRUE)
     
@@ -2302,8 +2302,8 @@ pad_mascot_channels <- function(file, ...) {
 #' excluded.
 #'
 #' @param df An intermediate PSM table from Mascot export
-pad_mascot_fields <- function(df) {
-  
+pad_mascot_fields <- function(df) 
+{
   local({
     list_a <- list.files(path = file.path(dat_dir), 
                          pattern = "^F[0-9]+.*\\.csv$")
@@ -2376,8 +2376,8 @@ pad_mascot_fields <- function(df) {
 #' @inheritParams cleanupPSM
 #' @inheritParams TMT_levels
 psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex, 
-                         rm_allna) {
-  
+                         rm_allna) 
+{
   df <- read.csv(file.path(dat_dir, "PSM/cache", file), 
                  check.names = FALSE, header = TRUE, comment.char = "#")
   
@@ -2534,8 +2534,8 @@ psm_mcleanup <- function(file, rm_outliers, group_psm_by, dat_dir, TMT_plex,
 #' @import dplyr tidyr
 #' @importFrom stringr str_split
 cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq", 
-                       rm_allna = FALSE, parallel = TRUE) {
-
+                       rm_allna = FALSE, parallel = TRUE) 
+{
   dat_dir <- get_gl_dat_dir()
 
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -2588,8 +2588,8 @@ cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq",
 #'@import dplyr tidyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>%
 mcPSM <- function(df, set_idx, injn_idx, mc_psm_by, group_psm_by, group_pep_by, 
-                  rm_allna = FALSE) {
-  
+                  rm_allna = FALSE) 
+{
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   
@@ -2728,8 +2728,8 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                      mc_psm_by = "peptide", 
                      fasta = NULL, expt_smry = "expt_smry.xlsx", 
                      plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
-                     rm_allna = FALSE, ...) {
-
+                     rm_allna = FALSE, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -3065,8 +3065,8 @@ normPSM <- function(dat_dir = NULL,
                     plot_rptr_int = TRUE, plot_log2FC_cv = TRUE, 
                     use_lowercase_aa = TRUE, 
                     corrected_int = TRUE, rm_reverses = TRUE, 
-                    parallel = TRUE, ...) {
-  
+                    parallel = TRUE, ...) 
+{
   old_opts <- options()
   options(warn = 1)
   on.exit(options(old_opts), add = TRUE)
@@ -3094,9 +3094,8 @@ normPSM <- function(dat_dir = NULL,
     message("Variable `dat_dir` added to the Global Environment.")
   }
 
-  if (is.null(fasta)) {
+  if (is.null(fasta)) 
     stop("Path(s) to fasta file(s) cannot be empty.", call. = FALSE)
-  }
   
   # ---
   group_psm_by <- rlang::enexpr(group_psm_by)
@@ -3316,8 +3315,8 @@ normPSM <- function(dat_dir = NULL,
 #' @param df PSM data
 #' @inheritParams annotPSM
 #' @inheritParams channelInfo
-rm_cols_mqpsm <- function(df, group_psm_by, set_idx) {
-  
+rm_cols_mqpsm <- function(df, group_psm_by, set_idx) 
+{
   df <- local({
     uniq_by <- c("pep_seq_mod", "Charge", "pep_ret_range", "raw_file")
     
@@ -3423,8 +3422,8 @@ rm_cols_mqpsm <- function(df, group_psm_by, set_idx) {
 #' @inheritParams TMT_levels
 calcPeptide <- function(df, group_psm_by, method_psm_pep, 
                        group_pep_by, dat_dir, set_idx, injn_idx, TMT_plex, 
-                       rm_allna = FALSE) {
-  
+                       rm_allna = FALSE) 
+{
   stopifnot("prot_acc" %in% names(df))
 
   channelInfo <- channelInfo(dat_dir = dat_dir, 
@@ -3665,8 +3664,8 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 psm_to_pep <- function (file, dat_dir, label_scheme_full, 
                         group_psm_by, group_pep_by, method_psm_pep, 
-                        rm_allna = FALSE, ...) {
-  
+                        rm_allna = FALSE, ...) 
+{
   dots <- rlang::enexprs(...)
   filter_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
@@ -3812,8 +3811,8 @@ psm_to_pep <- function (file, dat_dir, label_scheme_full,
 PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3_mean", 
                                         "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", 
                                         "lfq_all"), 
-                    rm_allna = FALSE, parallel = TRUE, ...) {
-
+                    rm_allna = FALSE, parallel = TRUE, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -3914,8 +3913,8 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
 #' 
 #' @param x A character string of amino acid sequence.
 #' @param ch A tag before the letter to conversion to its lower case.
-my_tolower <- function(x, ch = "^") {
-  
+my_tolower <- function(x, ch = "^") 
+{
   locales <- gregexpr(ch, x) %>% .[[1]] %>% `+`(., 1)
   lowers <- map(locales, ~ substr(x, .x, .x)) %>% tolower()
   
@@ -3936,8 +3935,8 @@ my_tolower <- function(x, ch = "^") {
 #' @import dplyr
 #' @importFrom purrr walk
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
-  
+add_maxquant_pepseqmod <- function(df, use_lowercase_aa) 
+{
   if (!use_lowercase_aa) return(df)
   
   # (1) all non-terminal modifications: M(Oxidation (M)) -> m ...
@@ -4132,8 +4131,8 @@ add_maxquant_pepseqmod <- function(df, use_lowercase_aa) {
 #' @import dplyr
 #' @importFrom purrr walk
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-add_msfragger_pepseqmod <- function(df, use_lowercase_aa) {
-  
+add_msfragger_pepseqmod <- function(df, use_lowercase_aa) 
+{
   if (!use_lowercase_aa) return(df)
   
   # (1) all non-terminal modifications
@@ -4217,8 +4216,8 @@ add_msfragger_pepseqmod <- function(df, use_lowercase_aa) {
 #' @param df2 The data frame to be inserted.
 #' @param idx The index of \code{df} column for \code{df2} to be inserted
 #'   (after).
-add_cols_at <- function(df, df2, idx) {
-  
+add_cols_at <- function(df, df2, idx) 
+{
   stopifnot(idx >= 0)
   
   if (idx == 0) {
@@ -4249,8 +4248,8 @@ add_cols_at <- function(df, df2, idx) {
 #' @param df2 The data columns to replace those in \code{df}.
 #' @param idxs The sequences of column indexes in \code{df}. Note that
 #'   \code{idxs} need to be a continuous sequences.
-replace_cols_at <- function(df, df2, idxs) {
-  
+replace_cols_at <- function(df, df2, idxs) 
+{
   ncol <- ncol(df)
   stopifnot(all(idxs >= 1), all(idxs <= ncol))
   
@@ -4284,8 +4283,8 @@ replace_cols_at <- function(df, df2, idxs) {
 #' @param df The original data frame.
 #' @param from The column to be moved from.
 #' @param to The column to which the \code{from} will be moved before.
-reloc_col <- function (df, from = "m/z", to = "Mass") {
-  
+reloc_col <- function (df, from = "m/z", to = "Mass") 
+{
   df0 <- df
   
   df2 <- suppressWarnings(df %>% dplyr::select(one_of(from)))
@@ -4308,8 +4307,8 @@ reloc_col <- function (df, from = "m/z", to = "Mass") {
 #' @param to_move The column to be moved.
 #' @param col_before The anchor column to which the \code{to_move} will be moved
 #'   after.
-reloc_col_after <- function(df, to_move = "after_anchor", col_before = "anchor") {
-  
+reloc_col_after <- function(df, to_move = "after_anchor", col_before = "anchor") 
+{
   if (!(to_move %in% names(df) && col_before %in% names(df))) return(df)
   
   if (to_move == col_before) return(df)
@@ -4327,7 +4326,8 @@ reloc_col_after <- function(df, to_move = "after_anchor", col_before = "anchor")
 #' Relocate column "to_move" immediately after the last column.
 #' 
 #' @inheritParams reloc_col_after
-reloc_col_after_last <- function (df, to_move = "after_anchor") {
+reloc_col_after_last <- function (df, to_move = "after_anchor") 
+{
   col_last <- names(df)[ncol(df)]
   reloc_col_after(df, to_move, col_last)
 }
@@ -4336,7 +4336,8 @@ reloc_col_after_last <- function (df, to_move = "after_anchor") {
 #' Relocate column "to_move" immediately after the first column.
 #' 
 #' @inheritParams reloc_col_after
-reloc_col_after_first <- function(df, to_move = "after_anchor") {
+reloc_col_after_first <- function(df, to_move = "after_anchor") 
+{
   col_first <- names(df)[1]
   reloc_col_after(df, to_move, col_first)
 }
@@ -4351,8 +4352,8 @@ reloc_col_after_first <- function(df, to_move = "after_anchor") {
 #' @param col_after The anchor column to which the \code{to_move} will be moved
 #'   before.
 reloc_col_before <- function(df, to_move = "before_anchor", 
-                             col_after = "anchor") {
-  
+                             col_after = "anchor") 
+{
   if (!(to_move %in% names(df) && col_after %in% names(df))) return(df)
 
   df2 <- df %>% dplyr::select(one_of(to_move))
@@ -4369,7 +4370,8 @@ reloc_col_before <- function(df, to_move = "before_anchor",
 #' Relocate column "to_move" immediately before the last column.
 #' 
 #' @inheritParams reloc_col_after
-reloc_col_before_last <- function(df, to_move = "after_anchor") {
+reloc_col_before_last <- function(df, to_move = "after_anchor") 
+{
   col_last <- names(df)[ncol(df)]
   reloc_col_before(df, to_move, col_last)
 }
@@ -4378,7 +4380,8 @@ reloc_col_before_last <- function(df, to_move = "after_anchor") {
 #' Relocate column "to_move" immediately before the first column.
 #' 
 #' @inheritParams reloc_col_after
-reloc_col_before_first <- function (df, to_move = "after_anchor") {
+reloc_col_before_first <- function (df, to_move = "after_anchor") 
+{
   col_first <- names(df)[1]
   reloc_col_before(df, to_move, col_first)
 }
@@ -4389,8 +4392,8 @@ reloc_col_before_first <- function (df, to_move = "after_anchor") {
 #' To keep columns at the same order after descriptive summary.
 #' 
 #' @inheritParams reloc_col_after
-find_preceding_colnm <- function(df, to_move) {
-  
+find_preceding_colnm <- function(df, to_move) 
+{
   if (!to_move %in% names(df)) {
     stop("Column ", to_move, " not found.", 
          call. = FALSE)
@@ -4412,8 +4415,8 @@ find_preceding_colnm <- function(df, to_move) {
 #' @param df A PSM data frame.
 #' @param cols A vector; the names of columns to be moved to the front of
 #'   \code{df}.
-order_psm_cols <- function(df, cols) {
-  
+order_psm_cols <- function(df, cols) 
+{
   purrr::walk(cols, ~ {
     if (is.null(df[[.x]])) df[[.x]] <- NA
     df <<- df
@@ -4434,8 +4437,8 @@ order_psm_cols <- function(df, cols) {
 #' @param df A data frame of PSM.
 #' @param psm_cols A character string of column names.
 #' @param rm_na_cols Logical; if TRUE, remove columns of all NAs.
-order_mascot_psm_cols <- function(df, psm_cols = NULL, rm_na_cols = FALSE) {
-  
+order_mascot_psm_cols <- function(df, psm_cols = NULL, rm_na_cols = FALSE) 
+{
   if (is.null(psm_cols)) {
     psm_cols <- c("prot_hit_num", "prot_family_member", "prot_acc", 
                   "prot_desc", "prot_score", "prot_mass", 
@@ -4499,8 +4502,8 @@ order_mascot_psm_cols <- function(df, psm_cols = NULL, rm_na_cols = FALSE) {
 #' @inheritParams splitPSM
 #' @inheritParams splitPSM_mq
 #' @inheritParams pad_mascot_channels
-pad_mq_channels <- function(file, fasta, entrez, corrected_int, ...) {
-  
+pad_mq_channels <- function(file, fasta, entrez, corrected_int, ...) 
+{
   filter_dots <- rlang::enexprs(...) %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
@@ -4741,8 +4744,8 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
                         rptr_intco = 0, rptr_intrange = c(0, 100), 
                         use_lowercase_aa = TRUE, 
-                        parallel = TRUE, ...) {
-
+                        parallel = TRUE, ...) 
+{
   on.exit(
     if (exists(".savecall", envir = rlang::current_env())) {
       if (.savecall) {
@@ -5509,8 +5512,8 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         purge_phosphodata = TRUE, 
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
                         rptr_intco = 0, rptr_intrange = c(0, 100), 
-                        use_lowercase_aa = TRUE, parallel = TRUE, ...) {
-  
+                        use_lowercase_aa = TRUE, parallel = TRUE, ...) 
+{
   on.exit(
     if (exists(".savecall", envir = rlang::current_env())) {
       if (.savecall) {
@@ -5726,8 +5729,8 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #' Pad MSFragger TMT channels to the highest plex. 
 #' 
 #' @inheritParams pad_mascot_channels
-pad_mf_channels <- function(file, ...) {
-  
+pad_mf_channels <- function(file, ...) 
+{
   filter_dots <- rlang::enexprs(...) %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
@@ -5910,8 +5913,8 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                         annot_kinases = FALSE, plot_rptr_int = TRUE, 
                         rptr_intco = 0, rptr_intrange = c(0, 100), 
                         use_lowercase_aa = TRUE, 
-                        parallel = TRUE, ...) {
-  
+                        parallel = TRUE, ...) 
+{
   on.exit(
     if (exists(".savecall", envir = rlang::current_env())) {
       if (.savecall) {
@@ -6158,7 +6161,8 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 #' @param this_plex Numeric; the multiplexity of TMT, i.e., 10, 11 etc. before
 #'   padding.
 #' @inheritParams TMT_levels
-find_padding_pos <- function (this_plex, TMT_plex) {
+find_padding_pos <- function (this_plex, TMT_plex) 
+{
   
   if (this_plex == 6) {
     if (TMT_plex == 10) {
@@ -6167,20 +6171,32 @@ find_padding_pos <- function (this_plex, TMT_plex) {
       pos <- c(3, 5, 7, 9, 11)
     } else if (TMT_plex == 16) {
       pos <- c(3, 5, 7, 9, 11:16)
+    } else if (TMT_plex == 18) {
+      pos <- c(3, 5, 7, 9, 11:18)
     } else {
-      stop("TMT_plex not one of c(10, 11, 16).", call. = FALSE)
+      stop("TMT_plex not one of c(10, 11, 16, 18).", call. = FALSE)
     }
   } else if (this_plex == 10) {
     if (TMT_plex == 11) {
       pos <- 11
     } else if (TMT_plex == 16) {
       pos <- c(11:16)
+    } else if (TMT_plex == 18) {
+      pos <- c(11:18)
     } else {
-      stop("TMT_plex not one of c(11, 16).", call. = FALSE)
+      stop("TMT_plex not one of c(11, 16, 18).", call. = FALSE)
     }
   } else if (this_plex == 11) {
     if (TMT_plex == 16) {
       pos <- c(12:16)
+    } else if (TMT_plex == 18) {
+      pos <- c(12:18)
+    } else {
+      stop("TMT_plex not one of c(16, 18).", call. = FALSE)
+    }
+  } else if (this_plex == 16) {
+    if (TMT_plex == 18) {
+      pos <- c(17:18)
     } else {
       stop("TMT_plex not one of c(16).", call. = FALSE)
     }
@@ -6660,7 +6676,8 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::arrange(prot_hit_num, prot_family_member)
   
   # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
-  df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by)
+  df <- df %>% 
+    add_quality_cols(!!group_psm_by, !!group_pep_by)
   
   # (2.4) find the shared prot_accs and genes for each peptide
   prot_accs <- df %>% 
@@ -6718,9 +6735,8 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   df <- local({
     uniq_by <- c("pep_scan_num", "pep_seq", "pep_ivmod")
     
-    if (length(unique(df$dat_file)) >= 1L) {
+    if (length(unique(df$dat_file)) >= 1L) 
       uniq_by <- c(uniq_by, "dat_file")
-    }
     
     df <- df %>% 
       tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
@@ -6758,10 +6774,6 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   invisible(df)
 }
-
-
-
-
 
 
 
