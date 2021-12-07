@@ -2,7 +2,7 @@
 % Please edit documentation in R/informatics.R
 \name{vararg_secmsg}
 \alias{vararg_secmsg}
-\title{helper for finding input `df`}
+\title{Helper for finding input \code{df}.}
 \usage{
 vararg_secmsg(id = NULL, anal_type = NULL, ...)
 }
@@ -19,5 +19,5 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 \item{...}{Not currently used.}
 }
 \description{
-helper for finding input `df`
+Helper for finding input \code{df}.
 }

@@ -6,6 +6,7 @@
 \usage{
 plot_corr_sub(
   df,
+  cor_method = "pearson",
   xlab,
   ylab,
   filename,

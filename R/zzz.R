@@ -3,6 +3,7 @@
   packageStartupMessage("Welcome to proteoQ!\n\n",
                         "=============================================================================\n",
                         "NEW features (v1.7.0.1):\n",
-                        "Utilities in database searches now migrated to proteoM.\n",
+                        "Database search engine migrated to: ", 
+                        "https://github.com/qzhang503/proteoM\n",
                         "=============================================================================\n")
 }

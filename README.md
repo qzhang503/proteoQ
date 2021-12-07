@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2021-09-10
+2021-12-07
 
 -   [Introduction to proteoQ](#introduction-to-proteoq)
 -   [Installation](#installation)
@@ -41,11 +41,14 @@ true
 
 The proteo\[X\] family currently contains members of
 
--   proteoM for the identification of peptides and proteins against mass
-    spectrometric data.  
--   proteoQ for quality metrics and informatics.
--   proteoCpp for faster and memory-efficient codes with Rcpp.
--   proteoQDA for exemplary data.
+-   [proteoM](https://github.com/qzhang503/proteoM) for database
+    searches.  
+-   [proteoQ](https://github.com/qzhang503/proteoQ) for quality metrics
+    and informatics.
+-   [proteoCpp](https://github.com/qzhang503/proteoCpp) for faster and
+    memory-efficient codes with Rcpp.
+-   [proteoQDA](https://github.com/qzhang503/proteoQDA) for exemplary
+    data.
 
 Details about [proteoM](https://github.com/qzhang503/proteoM) can be
 found elsewhere and the document will be mainly about proteoQ.
@@ -77,7 +80,7 @@ engines of [Mascot](https://http://www.matrixscience.com/),
 [MaxQuant](https://www.maxquant.org/),
 [MSFragger](http://msfragger.nesvilab.org/), [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill)
-or the **proteoM::matchMS** utility, for TMT (≤ 16-plex) or LFQ
+or the **proteoM::matchMS** utility, for TMT (≤ 18-plex) or LFQ
 experiments, using Thermo’s Orbitrap mass analyzers. Peptide and protein
 results are then produced with users’ selection of parameters in data
 filtration, alignment and normalization. The package further offers a
@@ -189,7 +192,8 @@ copy_msfragger_gtmt()
 copy_specmill_gtmt()
 ```
 
-or through the database searches by proteoM:
+or through the database searches by
+[proteoM](https://github.com/qzhang503/proteoM):
 
 ``` r
 library(proteoM)

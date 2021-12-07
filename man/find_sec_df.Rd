@@ -2,7 +2,7 @@
 % Please edit documentation in R/informatics.R
 \name{find_sec_df}
 \alias{find_sec_df}
-\title{helper for finding input `df` (not currently used)}
+\title{Helper for finding input \code{df} (not currently used).}
 \usage{
 find_sec_df(df = NULL, anal_type = NULL, id = NULL, ...)
 }
@@ -29,5 +29,5 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 \item{...}{Not currently used.}
 }
 \description{
-helper for finding input `df` (not currently used)
+Helper for finding input \code{df} (not currently used).
 }

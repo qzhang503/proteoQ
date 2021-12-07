@@ -30,9 +30,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
                        df = NULL, df2 = NULL, filepath = NULL, filename = NULL,
                        anal_type = c("Corrplot", "Heatmap", "Histogram", 
                                      "MA", "MDS", "Model",
-                                     "NMF", "Trend")) {
-
-  if (anal_type %in% c("MDS", "Volcano", "mapGSPA")) scipen = 999 else scipen = 0
+                                     "NMF", "Trend")) 
+{
+  if (anal_type %in% c("MDS", "Volcano", "mapGSPA")) 
+    scipen = 999 
+  else 
+    scipen = 0
 
   old_opts <- options()
 
@@ -62,17 +65,50 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	col_alpha <- rlang::enexpr(col_alpha)
 	col_benchmark <- rlang::enexpr(col_benchmark)
 
-	col_select <- ifelse(is.null(col_select), rlang::expr(Select), rlang::sym(col_select))
-	col_group <- ifelse(is.null(col_group), rlang::expr(Group), rlang::sym(col_group))
-	col_order <- ifelse(is.null(col_order), rlang::expr(Order), rlang::sym(col_order))
-	col_color <- ifelse(is.null(col_color), rlang::expr(Color), rlang::sym(col_color))
-	col_fill <- ifelse(is.null(col_fill), rlang::expr(Fill), rlang::sym(col_fill))
-	col_shape <- ifelse(is.null(col_shape), rlang::expr(Shape), rlang::sym(col_shape))
-	col_size <- ifelse(is.null(col_size), rlang::expr(Size), rlang::sym(col_size))
-	col_alpha <- ifelse(is.null(col_alpha), rlang::expr(Alpha), rlang::sym(col_alpha))
-	col_benchmark <- ifelse(is.null(col_benchmark), 
-	                        rlang::expr(Benchmark), 
-	                        rlang::sym(col_benchmark))
+	col_select <- if (is.null(col_select)) 
+	  rlang::expr(Select)
+	else 
+	  rlang::sym(col_select)
+
+	col_group <- if (is.null(col_group)) 
+	  rlang::expr(Group) 
+	else 
+	  rlang::sym(col_group)
+	  
+	col_order <- if (is.null(col_order))
+	  rlang::expr(Order)
+	else 
+	  rlang::sym(col_order)
+	  
+	col_color <- if (is.null(col_color)) 
+	  rlang::expr(Color)
+	else 
+	  rlang::sym(col_color)
+	  
+	col_fill <- if (is.null(col_fill))
+	  rlang::expr(Fill)
+	else 
+	  rlang::sym(col_fill)
+
+	col_shape <- if (is.null(col_shape))
+	  rlang::expr(Shape) 
+	else 
+	  rlang::sym(col_shape)
+
+	col_size <- if (is.null(col_size))
+	  rlang::expr(Size)
+	else 
+	  rlang::sym(col_size)
+	  
+	col_alpha <- if (is.null(col_alpha))
+	  rlang::expr(Alpha) 
+	else 
+	  rlang::sym(col_alpha)
+
+	col_benchmark <- if (is.null(col_benchmark))
+	  rlang::expr(Benchmark)
+	else
+	  rlang::sym(col_benchmark)
 
 	if (col_select == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
 	if (col_group == rlang::expr(Sample_ID)) stop(err_msg1, call. = FALSE)
@@ -101,13 +137,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	dat_dir <- get_gl_dat_dir()
 	load(file = file.path(dat_dir, "label_scheme.rda"))
 
-	if (is.null(label_scheme[[col_select]])) {
+	if (is.null(label_scheme[[col_select]])) 
 		stop("Column \'", rlang::as_string(col_select), "\' not found.", 
 		     call. = FALSE)
-	} else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
+	else if (sum(!is.na(label_scheme[[col_select]])) == 0) 
 		stop("No samples under column \'", rlang::as_string(col_select), "\'.", 
 		     call. = FALSE)
-	}
 
 	if (is.null(label_scheme[[col_group]])) {
 		col_group <- rlang::expr(Select)
@@ -173,32 +208,31 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	}
 
 	id <- rlang::as_string(rlang::enexpr(id))
-	if (length(id) != 1)
-	  stop("\'id\' must be one of \'pep_seq\', \'pep_seq_mod\', \'prot_acc\' or \'gene\'", 
+	if (length(id) != 1L) 
+	  stop("'id' must be one of 'pep_seq', 'pep_seq_mod', 'prot_acc' or 'gene'.", 
 	       call. = FALSE)
 
-	if (id %in% c("prot_acc", "gene")) {
+	if (id %in% c("prot_acc", "gene")) 
 		data_type <- "Protein"
-	} else if (id %in% c("pep_seq", "pep_seq_mod")) {
+	else if (id %in% c("pep_seq", "pep_seq_mod")) 
 		data_type <- "Peptide"
-	} else {
+	else 
 		stop("Unrecognized 'id'; ", 
 		     "needs to be in c(\"pep_seq\", \"pep_seq_mod\", \"prot_acc\", \"gene\")",
 		     call. = TRUE)
-	}
 
 	anal_type <- rlang::as_string(rlang::enexpr(anal_type))
 
 	if (is.null(filepath)) {
-		if (grepl("Trend", anal_type)) {
-		  filepath = file.path(dat_dir, data_type, "Trend")
-		} else if (grepl("NMF", anal_type)) {
-		  filepath = file.path(dat_dir, data_type, "NMF")
-		} else if (grepl("GSPA", anal_type)) {
-		  filepath = file.path(dat_dir, data_type, "GSPA")
-		} else {
-		  filepath = file.path(dat_dir, data_type, anal_type)
-		}
+		filepath <- if (grepl("Trend", anal_type)) 
+		  file.path(dat_dir, data_type, "Trend")
+		else if (grepl("NMF", anal_type)) 
+		  file.path(dat_dir, data_type, "NMF")
+		else if (grepl("GSPA", anal_type)) 
+		  file.path(dat_dir, data_type, "GSPA")
+		else 
+		  file.path(dat_dir, data_type, anal_type)
+		
 		dir.create(file.path(filepath, "log"), 
 		           recursive = TRUE, showWarnings = FALSE)
 	} else {
@@ -210,14 +244,13 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		fn_prefix <- paste0(fn_prefix, "_", ifelse(scale_log2r, "Z", "N"))
 		fn_prefix <- fn_prefix %>% ifelse(impute_na, paste0(., "_impNA"), .)
 
-		if (anal_type %in% c("Model", "KinSub")) {
-		  fn_suffix <- "txt"
-		} else {
-		  fn_suffix <- "png"
-		}
+		fn_suffix <- if (anal_type %in% c("Model", "KinSub")) 
+		   "txt"
+		else 
+		  "png"
 		
 	} else {
-	  if (length(filename) > 1) {
+	  if (length(filename) > 1L) {
 	    stop("Do not provide multiple file names.", 
 	         call. = FALSE)
 	  }
@@ -225,9 +258,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	  fn_prefix <- gsub("\\.[^.]*$", "", filename)
 	  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
 	  
-		if (fn_prefix == fn_suffix) {
+		if (fn_prefix == fn_suffix) 
 		  stop("No '.' in the file name.", call. = FALSE)
-		}
     
 	  if (anal_type %in% c("Trend", "NMF", "GSPA")) {
 	    fn_prefix <- paste(fn_prefix, data_type, anal_type, sep = "_")
@@ -242,6 +274,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	                  "GSPA", "mapGSPA",
 	                  "GSVA", "GSEA", "String", "LDA", 
 	                  "KinSub")
+	
 	use_sec_data <- c("Trend_line", "NMF_con", "NMF_coef", 
 	                  "NMF_meta", "GSPA_hm", "mapGSPA")
 
@@ -267,7 +300,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 			dplyr::filter(!is.na(!!col_select))
 	}
 
-	if (nrow(label_scheme_sub) == 0)
+	if (!nrow(label_scheme_sub))
 	  stop(paste0("No samples or conditions were defined for \"", anal_type, "\""), 
 	       call. = FALSE)
 
@@ -446,7 +479,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 			          ...)
 		}
 	} else if (anal_type == "Corrplot") {
-		function(data_select = "logFC", ...) {
+		function(data_select = "logFC", 
+		         cor_method = "pearson", ...) {
 		  plotCorr(df = df,
 		           id = !!id,
 		           anal_type = anal_type,
@@ -458,6 +492,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		           complete_cases = complete_cases,
 		           filepath = filepath,
 		           filename = paste0(fn_prefix, "_", data_select, ".", fn_suffix),
+		           cor_method = cor_method, 
 		           ...)
 		}
 	} else if (anal_type == "Model") {
@@ -806,11 +841,12 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 #' @param ... Not currently used.
 #' @inheritParams info_anal
 find_pri_df <- function (anal_type = "Model", df = NULL, 
-                         id = "gene", impute_na = FALSE, ...) {
+                         id = "gene", impute_na = FALSE, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   
   err_msg2 <- paste0("not found. \n", 
-                     "Run functions PSM, peptide and protein normalization first.")
+                     "Run functions of PSM, peptide and protein normalization first.")
   err_msg3 <- paste0("not found. \n", 
                      "Impute NA values with ", 
                      "`pepImp()` or `prnImp()` or set `impute_na = FALSE`.")
@@ -838,132 +874,129 @@ find_pri_df <- function (anal_type = "Model", df = NULL,
     }
 
     if (anal_type %in% c("Histogram")) { # never impute_na and no pVals
-      if (file.exists(fn_raw)) {
+      if (file.exists(fn_raw)) 
         src_path <- fn_raw
-      } else {
+      else 
         stop(paste(fn_raw, err_msg2), call. = FALSE)
-      }
 
-      if (id %in% c("pep_seq", "pep_seq_mod")) {
+      if (id %in% c("pep_seq", "pep_seq_mod")) 
         message("Primary column keys in `Peptide/Peptide.txt` ", 
                 "for `filter_` varargs.")
-      } else if (id %in% c("prot_acc", "gene")) {
+      else if (id %in% c("prot_acc", "gene")) 
         message("Primary column keys in `Protein/Protein.txt` ", 
                 "for `filter_` varargs.")
-      }
     } else if (anal_type %in% c("Model")) { # optional impute_na but no pVals
       if (impute_na) {
-        if (file.exists(fn_imp)) {
+        if (file.exists(fn_imp)) 
           src_path <- fn_imp
-        } else {
+        else 
           stop(paste(fn_imp, err_msg3), call. = FALSE)
-        }
       } else {
-        if (file.exists(fn_raw)) {
+        if (file.exists(fn_raw)) 
           src_path <- fn_raw
-        } else {
+        else 
           stop(paste(fn_raw, err_msg2), call. = FALSE)
-        }
       }
 
-      if (id %in% c("pep_seq", "pep_seq_mod")) {
+      if (id %in% c("pep_seq", "pep_seq_mod")) 
         message("Primary column keys in `Peptide/Peptide[_impNA].txt` ", 
                 "for `filter_` varargs.")
-      } else if (id %in% c("prot_acc", "gene")) {
+      else if (id %in% c("prot_acc", "gene")) 
         message("Primary column keys in `Protein/Protein[_impNA].txt` ", 
                 "for `filter_` varargs.")
-      }
     } else if (anal_type %in% c("Volcano", "GSPA", "mapGSPA", "GSEA")) { # data with pVals
       if (impute_na) {
-        if (file.exists(fn_imp_p)) {
+        if (file.exists(fn_imp_p)) 
           src_path <- fn_imp_p
-        } else {
+        else 
           stop(paste(fn_imp_p, err_msg4), call. = FALSE)
-        }
       } else {
-        if (file.exists(fn_p)) {
+        if (file.exists(fn_p)) 
           src_path <- fn_p
-        } else {
+        else 
           stop(paste(fn_p, err_msg5), call. = FALSE)
-        }
       }
 
-      if (id %in% c("pep_seq", "pep_seq_mod")) {
+      if (id %in% c("pep_seq", "pep_seq_mod")) 
         message("Primary column keys in `Model/Peptide[_impNA]_pVals.txt` ", 
                 "for `filter_` varargs.")
-      } else if (id %in% c("prot_acc", "gene")) {
+      else if (id %in% c("prot_acc", "gene")) 
         message("Primary column keys in `Model/Protein[_impNA]_pVals.txt` ", 
                 "for `filter_` varargs.")
-      }
     } else if (anal_type %in% c("Heatmap", "MDS", "PCA", "EucDist", "Trend", 
                                 "NMF", "NMF_meta",
                                 "GSVA", "Corrplot", "String", "LDA", 
                                 "KinSub")) { # optional impute_na and possible pVals
       if (impute_na) {
-        if (file.exists(fn_imp_p)) {
+        if (file.exists(fn_imp_p)) 
           src_path <- fn_imp_p
-        } else if (file.exists(fn_imp)) {
+        else if (file.exists(fn_imp)) 
           src_path <- fn_imp
-        } else {
+        else 
           stop(paste(fn_imp, err_msg3), call. = FALSE)
-        }
       } else {
-        if (file.exists(fn_p)) {
+        if (file.exists(fn_p)) 
           src_path <- fn_p
-        } else if (file.exists(fn_raw)) {
+        else if (file.exists(fn_raw)) 
           src_path <- fn_raw
-        } else {
+        else 
           stop(paste(fn_raw, err_msg2), call. = FALSE)
-        }
       }
 
-      if (id %in% c("pep_seq", "pep_seq_mod")) {
+      if (id %in% c("pep_seq", "pep_seq_mod")) 
         message("Primary column keys in `Model/Peptide[_impNA_pVals].txt` ", 
                 "for `filter_` varargs.")
-      } else if (id %in% c("prot_acc", "gene")) {
+      else if (id %in% c("prot_acc", "gene")) 
         message("Primary column keys in `Model/Protein[_impNA_pVals].txt` ", 
                 "for `filter_` varargs.")
-      }
     }
   } else {
     df <- rlang::as_string(df)
 
-    if (anal_type == "Model") stop("Use default file name.", call. = FALSE)
+    if (anal_type == "Model") 
+      stop("Use default file name.", call. = FALSE)
 
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       src_path <- file.path(dat_dir, "Peptide/Model", df)
-      if (!file.exists(src_path)) src_path <- file.path(dat_dir, "Peptide", df)
+      
+      if (!file.exists(src_path)) 
+        src_path <- file.path(dat_dir, "Peptide", df)
     } else if (id %in% c("prot_acc", "gene")) {
       src_path <- file.path(dat_dir, "Protein/Model", df)
-      if (!file.exists(src_path)) src_path <- file.path(dat_dir, "Protein", df)
+      
+      if (!file.exists(src_path)) 
+        src_path <- file.path(dat_dir, "Protein", df)
     }
   }
 
   df <- tryCatch(read.csv(src_path, check.names = FALSE, header = TRUE, sep = "\t",
                           comment.char = "#"), error = function(e) NA)
 
-  if (is.null(dim(df))) stop(src_path, " not found.", call. = FALSE)
+  if (is.null(dim(df))) 
+    stop(src_path, " not found.", call. = FALSE)
 
   df <- df %>% reorderCols2()
 
   message(paste("Primary file loaded:", src_path))
 
-  return(df)
+  invisible(df)
 }
 
 
-#' helper for finding input `df` (not currently used)
+#' Helper for finding input \code{df} (not currently used).
 #'
 #' @param ... Not currently used.
 #' @inheritParams info_anal
-find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) {
+find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   
   df <- rlang::enexpr(df)
   anal_type <- rlang::enexpr(anal_type)
   id <- rlang::enexpr(id)
 
-  if (is.null(df) || is.null(anal_type) || is.null(id)) return (NULL)
+  if (is.null(df) || is.null(anal_type) || is.null(id)) 
+    return (NULL)
 
   df <- rlang::as_string(df)
   anal_type <- rlang::as_string(anal_type)
@@ -987,15 +1020,16 @@ find_sec_df <- function (df = NULL, anal_type = NULL, id = NULL, ...) {
 
   if (is.null(dim(df))) stop(src_path, " not found.", call. = FALSE)
 
-  return(df)
+  invisible(df)
 }
 
 
-#' helper for finding input `df`
+#' Helper for finding input \code{df}.
 #'
 #' @param ... Not currently used.
 #' @inheritParams info_anal
-vararg_secmsg <- function (id = NULL, anal_type = NULL, ...) {
+vararg_secmsg <- function (id = NULL, anal_type = NULL, ...) 
+{
   id <- rlang::as_string(rlang::enexpr(id))
   anal_type <- rlang::as_string(rlang::enexpr(anal_type))
 
