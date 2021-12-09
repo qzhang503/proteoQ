@@ -784,10 +784,11 @@ load_dbs <- function (gset_nms = NULL, species = NULL)
     filelist <- purrr::map(abbr_sp, ~ paste0(sys_defs, "_", .x)) %>% 
       unlist()
 
-    suppressWarnings(data(package = "proteoQ", list = filelist))
+    suppressWarnings(data(package = "proteoQ", list = filelist, 
+                          envir = environment()))
     gsets <- purrr::map(filelist, ~ try(get(.x), silent = TRUE)) %>% 
       do.call(`c`, .)
-    suppressWarnings(rm(list = filelist, envir = .GlobalEnv))
+    # suppressWarnings(rm(list = filelist, envir = .GlobalEnv))
     
     if (length(gsets) > 0) names(gsets) <- gsub("/", "-", names(gsets))      
   } else {

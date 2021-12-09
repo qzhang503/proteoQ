@@ -291,7 +291,7 @@ prepString <- function(species = "human", # abbr_species = NULL,
     
     if (taxid_links != "9606" && species == "human") {
       species <- local({
-        data(uniprot_species, package = "proteoQ")
+        data(uniprot_species, package = "proteoQ", envir = environment())
         
         species_string <- uniprot_species %>% 
           dplyr::filter(.data$taxid == .env$taxid_links) %>% 

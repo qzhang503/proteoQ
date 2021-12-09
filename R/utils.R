@@ -1023,7 +1023,7 @@ add_refseq_gene <- function (acc_lookup, acc_type)
 
   if (all(species %in% c("human", "mouse", "rat"))) {
     filelist <- paste0(abbr_acc, "entrez_", abbr_sp)
-    data(package = "proteoQ", list = filelist)
+    data(package = "proteoQ", list = filelist, envir = environment())
     
     entrez_db <- purrr::map(filelist, ~ get(.x)) %>% 
       dplyr::bind_rows() %>% 
@@ -1106,7 +1106,7 @@ add_entrez <- function (acc_lookup, acc_type, warns = TRUE)
   
   # four columns: 
   # 1. uniprot_acc/refseq_acc/other_acc  2. gene  3. entrez  4. species
-  data(package = "proteoQ", list = filelist)
+  data(package = "proteoQ", list = filelist, envir = environment())
   
   db <- purrr::map(filelist, ~ get(.x)) %>% 
     dplyr::bind_rows() %>% 
@@ -1697,7 +1697,7 @@ annotKin <- function (df, acc_type)
   
   stopifnot ("prot_acc" %in% names(df))
 	
-  data(package = "proteoQ", kinase_lookup)
+  data(package = "proteoQ", kinase_lookup, envir = environment())
   
   if (!acc_type %in% names(kinase_lookup)) {
     df <- df %>% 
@@ -3630,7 +3630,7 @@ set_cutpoints2 <- function(cut_points, df)
 #' @param acc_types The types of protein accessions
 load_craps <- function(acc_types) 
 {
-  data(package = "proteoQ", prn_annot_crap)
+  data(package = "proteoQ", prn_annot_crap, envir = environment())
   
   if (identical(acc_types, "other_acc")) {
     craps <- prn_annot_crap %>% 

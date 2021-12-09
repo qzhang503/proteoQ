@@ -2032,12 +2032,12 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 
   # (2.7) apply parsimony
   df <- local({
-    uniq_by <- c("pep_query", "pep_seq", "pep_var_mod_pos")
+    uniq_by <- c("RAW_File", "pep_query", "pep_seq", "pep_var_mod_pos")
     
-    if (length(unique(df$dat_file)) >= 1) {
+    # always TRUE; just a reminder of `dat_file`
+    if (length(unique(df$dat_file)) >= 1) 
       uniq_by <- c(uniq_by, "dat_file")
-    }
-    
+
     df <- df %>% 
       tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
       dplyr::mutate(.n = row_number()) %>% 
@@ -6733,7 +6733,7 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # (2.7) apply parsimony
   df <- local({
-    uniq_by <- c("pep_scan_num", "pep_seq", "pep_ivmod")
+    uniq_by <- c("RAW_File", "pep_scan_num", "pep_seq", "pep_ivmod")
     
     if (length(unique(df$dat_file)) >= 1L) 
       uniq_by <- c(uniq_by, "dat_file")

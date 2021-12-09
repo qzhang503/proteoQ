@@ -161,13 +161,13 @@ find_human_orthologs <- function(species, ortho_mart)
   
   out_nm <- paste0("ortho_hs", sp_lookup(species))
 
-  data(package = "proteoQ", mart_hs)
+  data(package = "proteoQ", mart_hs, envir = environment())
   
   if (species == "mouse") {
-    data(package = "proteoQ", mart_mm)
+    data(package = "proteoQ", mart_mm, envir = environment())
     martL <- mart_mm
   } else if (species == "rat") {
-    data(package = "proteoQ", mart_rn)
+    data(package = "proteoQ", mart_rn, envir = environment())
     martL <- mart_rn
   } else {
     martL <- biomaRt::useMart(biomart = 'ENSEMBL_MART_ENSEMBL', dataset = ortho_mart)
