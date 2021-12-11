@@ -254,6 +254,12 @@ p <- p + facet_wrap(~ Contrast, nrow = 1, labeller = label_value)
 p <- p + geom_table(data = res$topn_labels, aes(table = gene), 
                     x = -res$xmax*.85, y = res$ymax/2)
 
+# Highlight
+prnVol(
+  highlights = rlang::exprs(gene \%in\% c("ACTB", "GAPDH")), 
+  filename = highlights.png
+)
+
 
 ## protein subgroups by gene sets
 # prerequisite analysis of GSPA

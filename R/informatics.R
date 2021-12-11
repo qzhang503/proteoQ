@@ -519,7 +519,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	  }
 	} else if (anal_type == "Volcano") {
 	  function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, 
-	           theme = NULL, ...) {
+	           theme = NULL, highlights = NULL, ...) {
 	    plotVolcano(df = df,
 	                df2 = NULL,
 	                id = !!id,
@@ -537,6 +537,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	                impute_na = impute_na,
 	                filepath = filepath,
 	                filename = paste0(fn_prefix, ".", fn_suffix),
+	                highlights = highlights, 
 	                theme = theme,
 	                ...)
 	  }

@@ -14,6 +14,7 @@ fullVolcano(
   filename = NULL,
   adjP = FALSE,
   topn_labels = 20,
+  highlights = NULL,
   ...
 )
 }
@@ -56,6 +57,9 @@ The default is FALSE.}
 \item{topn_labels}{A non-negative integer; the top-n species for labeling in a
 plot. At \code{topn_labels = 0}, no labels of proteins/peptides will be
 shown. The default is to label the top-20 species with the lowest p-values.}
+
+\item{highlights}{A list of entries for highlighting. See also \code{filter_}
+varargs for the format.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also

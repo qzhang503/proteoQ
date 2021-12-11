@@ -23,6 +23,7 @@ plotVolcano(
   filepath = NULL,
   filename = NULL,
   theme = NULL,
+  highlights = NULL,
   ...
 )
 }
@@ -131,6 +132,9 @@ image type will be determined by the extension of the file name.}
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}
 theme, i.e., theme_bw(), or a custom theme. At the NULL default, a system
 theme will be applied.}
+
+\item{highlights}{A list of entries for highlighting. See also \code{filter_}
+varargs for the format.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
