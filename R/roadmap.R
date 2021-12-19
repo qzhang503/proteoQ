@@ -1,11 +1,17 @@
+#################################
+# proteoM -> proteoQ
+#################################
 # normPSM
-#   splitPSM_pq
-#     TMT_plex
-#     pad_tmt_channels
-#     pad_psm_fields
-#     add_pepseqmod
-#     annotPrn
-#     add_quality_cols
-#     annotPeppos
-#     add_prot_icover
-#     calc_cover
+#   splitPSM_pq (psmtable.R)
+#     TMT_plex (params.R)
+#     pad_tmt_channels (psmtable.R)
+#     pad_psm_fields (psmtable.R)
+#     add_pepseqmod (psmtable.R)
+#     annotPrn (utils.R)
+#     add_quality_cols (utils.R)
+#     annotPeppos (utils.R)
+#     add_prot_icover (utils.R)
+#     calc_cover (utils.R)
+#################################
+
+

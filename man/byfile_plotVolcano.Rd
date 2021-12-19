@@ -15,8 +15,9 @@ byfile_plotVolcano(
   topn_labels = 20,
   anal_type = "Volcano",
   gset_nms = "go_sets",
-  scale_log2r,
-  impute_na,
+  scale_log2r = TRUE,
+  impute_na = FALSE,
+  highlights = highlights,
   theme = NULL,
   ...
 )
@@ -84,6 +85,9 @@ of standard deviation across all samples. The default is TRUE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{highlights}{A list of entries for highlighting. See also \code{filter_}
+varargs for the format.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}

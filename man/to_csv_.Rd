@@ -2,7 +2,7 @@
 % Please edit documentation in R/volcanos.R
 \name{to_csv_}
 \alias{to_csv_}
-\title{Convert a data frame column to a csv vector}
+\title{Converts a data frame column to a csv vector}
 \usage{
 to_csv_(x)
 }
@@ -10,5 +10,5 @@ to_csv_(x)
 \item{x}{A data frame column.}
 }
 \description{
-Convert a data frame column to a csv vector
+Converts a data frame column to a csv vector
 }

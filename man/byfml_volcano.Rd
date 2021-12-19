@@ -5,7 +5,7 @@
 \title{Formula specific volcano plots}
 \usage{
 byfml_volcano(
-  fml_nm,
+  fml_nm = NULL,
   gspval_cutoff,
   gslogFC_cutoff,
   topn_gsets,
@@ -23,6 +23,7 @@ byfml_volcano(
   scale_log2r,
   complete_cases,
   impute_na,
+  highlights = NULL,
   theme = NULL,
   ...
 )
@@ -127,6 +128,9 @@ missing values will be used. The default is FALSE.}
 
 \item{impute_na}{Logical; if TRUE, data with the imputation of missing values
 will be used. The default is FALSE.}
+
+\item{highlights}{A list of entries for highlighting. See also \code{filter_}
+varargs for the format.}
 
 \item{theme}{A
 \href{https://ggplot2.tidyverse.org/reference/ggtheme.html}{ggplot2}

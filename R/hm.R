@@ -259,7 +259,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
   
   if (is.null(dots$annotation_colors)) {
     annotation_colors <- setHMColor(annotation_col)
-  } else if (is.na(dots$annotation_colors)) {
+  } else if (suppressWarnings(is.na(dots$annotation_colors))) {
     annotation_colors <- NA
   } else {
     annotation_colors <- eval(dots$annotation_colors, envir = rlang::caller_env())

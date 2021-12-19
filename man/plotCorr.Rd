@@ -16,6 +16,7 @@ plotCorr(
   complete_cases = complete_cases,
   filepath = filepath,
   filename = filename,
+  cor_method = cor_method,
   ...
 )
 }
@@ -73,15 +74,18 @@ is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
+\item{cor_method}{A character string indicating which correlation coefficient
+is to be computed. One of \code{"pearson"} (default), \code{"kendall"}, or
+\code{"spearman"}.}
+
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-Additional parameters for
-plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
-of plot \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity \cr
-\code{xmax}, the maximum \eqn{x} of logFC data or intensity data \cr
-\code{xbreaks}, the breaks on \eqn{x} axis; the same breaks will be applied
-to \eqn{y} axis.}
+Additional parameters for plotting: \cr \code{width}, the width of plot \cr
+\code{height}, the height of plot \cr \code{xmin}, the minimum \eqn{x} of
+logFC or intensity \cr \code{xmax}, the maximum \eqn{x} of logFC data or
+intensity data \cr \code{xbreaks}, the breaks on \eqn{x} axis; the same
+breaks will be applied to \eqn{y} axis.}
 }
 \description{
 Correlation plots

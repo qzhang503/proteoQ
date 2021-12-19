@@ -3,13 +3,13 @@
 #' @param x A data frame.
 #' @param na.rm The same as in \code{mean}.
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-rowVars <- function (x, na.rm = TRUE) {
-  
+rowVars <- function (x, na.rm = TRUE) 
+{
   sqr <- function(x) x * x
   n <- rowSums(!is.na(x))
   n[n <= 1] <- NA
   
-  return(rowSums(sqr(x - rowMeans(x,na.rm = na.rm)), na.rm = na.rm)/(n - 1))
+  rowSums(sqr(x - rowMeans(x,na.rm = na.rm)), na.rm = na.rm)/(n - 1)
 }
 
 
@@ -20,8 +20,8 @@ rowVars <- function (x, na.rm = TRUE) {
 #' @inheritParams prnSig
 #' @import dplyr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
-  
+filterData <- function (df, cols = NULL, var_cutoff = 1E-3) 
+{
   if (is.null(cols)) cols <- 1:ncol(df)
   
   if (length(cols) > 1L) {
@@ -39,7 +39,7 @@ filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
       dplyr::select(-Variance)
   }
   
-  return(df)
+  invisible(df)
 }
 
 
@@ -48,8 +48,8 @@ filterData <- function (df, cols = NULL, var_cutoff = 1E-3) {
 #' @inheritParams gspaTest
 #' @inheritParams model_onechannel
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-prepFml <- function(formula, label_scheme_sub, ...) {
-
+prepFml <- function(formula, label_scheme_sub, ...) 
+{
 	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
 	# formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
 	# formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]  + (1|TMT_Set)
@@ -72,27 +72,31 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 	label_scheme_sub <- label_scheme_sub %>% 
 	  dplyr::filter(!is.na(!!sym(key_col)))
 
-	if (grepl("\\[\\s*\\~\\s*", fml[len])) { # formula = ~ Term[ ~ V]
-		base <- fml[len] %>% gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", .)
-	} else {
-		base <- NULL
-	}
+	# formula = ~ Term[ ~ V]
+	base <- if (grepl("\\[\\s*\\~\\s*", fml[len])) 
+		fml[len] %>% gsub(".*\\[\\s*\\~\\s*(.*)\\]", "\\1", .)
+	else 
+		NULL
 
 	if (!is.null(base)) { # formula = ~ Term[~V]
 		new_levels <- label_scheme_sub[[key_col]] %>% levels()
-		new_levels <- c(new_levels[new_levels == base], new_levels[new_levels != base])
+		new_levels <- c(new_levels[new_levels == base], 
+		                new_levels[new_levels != base])
 		label_scheme_sub <- label_scheme_sub %>%
 			dplyr::mutate(!!sym(key_col) := factor(!!sym(key_col), levels = new_levels))
-	} else if (!grepl("\\[", fml[len])) { # formula = log2Ratio ~ Term
+	} 
+	else if (!grepl("\\[", fml[len])) { # formula = log2Ratio ~ Term
 		new_levels <- label_scheme_sub[[key_col]] %>% levels() # leveled by the alphabetic order
-	} else { # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]
+	}
+	else { # formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]
 		new_levels <- NULL
 	}
 
 	if (!is.null(new_levels)) {
 		contrs <- paste(new_levels[-1], new_levels[1], sep = "-")
 		elements <- new_levels
-	} else {
+	} 
+	else {
 	  contrs <- fml[len] %>%
 	    gsub(".*\\[(.*)\\].*", "\\1", .) %>%
 	    gsub("\\\"", "", .) %>%
@@ -164,11 +168,11 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 
 	message("random_vars: ", random_vars %>% as.character, "\n\n")
 	
-	return(list(design = design, 
-	            contr_mat = contr_mat, 
-	            key_col = key_col, 
-	            random_vars = random_vars,
-							label_scheme_sub_sub = label_scheme_sub_sub))
+	invisible(list(design = design, 
+	               contr_mat = contr_mat, 
+	               key_col = key_col, 
+	               random_vars = random_vars,
+	               label_scheme_sub_sub = label_scheme_sub_sub))
 }
 
 
@@ -177,8 +181,8 @@ prepFml <- function(formula, label_scheme_sub, ...) {
 #' @param df_pval A data frame containing pVals
 #' @inheritParams prnSig 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-my_padj <- function(df_pval, pval_cutoff) {
-  
+my_padj <- function(df_pval, pval_cutoff) 
+{
 	df_pval %>%
 		purrr::map(~ .x <= pval_cutoff)	%>%
 		purrr::map(~ ifelse(!.x, NA, .x)) %>%
@@ -204,8 +208,8 @@ my_padj <- function(df_pval, pval_cutoff) {
 #' @inheritParams prnSig
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff, 
-                       padj_method = "BH") {
-  
+                       padj_method = "BH") 
+{
 	nms <- rownames(pvals)
 
 	pass_pvals <- pvals %>% purrr::map(~ .x <= pval_cutoff)
@@ -249,8 +253,8 @@ lm_summary <- function(pvals, log2rs, pval_cutoff, logFC_cutoff,
 #' @importFrom MASS ginv
 model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases, 
                               method, padj_method, var_cutoff, 
-                              pval_cutoff, logFC_cutoff, ...) {
-
+                              pval_cutoff, logFC_cutoff, ...) 
+{
 	# formula = log2Ratio ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "Ner-V"]  + (1|TMT_Set) + (1|Duplicate)
 	# formula = ~ Term["Ner-V", "Ner_PLUS_PD-PD", "(Ner_PLUS_PD-PD)-(Ner-V)"]
 	# formula = ~ Term["(Ner+Ner_PLUS_PD)/2-V", "Ner_PLUS_PD-V", "PD-V"]  + (1|TMT_Set)
@@ -262,6 +266,8 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	# formula = log2Ratio ~ Term
 	# formula = ~ Term[~V] # no interaction terms
 	# formula = ~ Term
+  
+  options(warn = 1L)
   
   dots <- rlang::enexprs(...)
   # lmFit_dots <- dots %>% .[. %in% c("method")]
@@ -275,6 +281,16 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	key_col <- fml_ops$key_col
 	random_vars <- fml_ops$random_vars
 	label_scheme_sub_sub <- fml_ops$label_scheme_sub_sub
+	
+	local({
+	  ss <- (colSums(design) == 1)
+	  bads <- ss[ss]
+
+	  if (length(bads)) 
+	    warning("Single sample condition: ", paste0(names(bads), collapse = ", "), 
+	            " under `", formula, "`.", 
+	            call. = FALSE)
+	})
 
 	# keep the name list as rows may drop in filtration
 	df_nms <- df %>%
@@ -289,12 +305,14 @@ model_onechannel <- function (df, id, formula, label_scheme_sub, complete_cases,
 	
 	local({
 	  ncol <- ncol(df)
+	  
 	  if (ncol < 4L) 
-	    warning("May need more samples than ", ncol, " for statistical tests.")
+	    warning(formula, ": the total number of samples is ", ncol, ".\n", 
+	            "May need more samples for statistical tests.", 
+	            call. = FALSE)
 	})
 
-	if (length(random_vars) > 0) {
-		# only use the first random variable
+	if (length(random_vars)) {
 	  if (length(random_vars) > 1) {
 	    warning("Uses only the first random variable: ", random_vars[1], 
 	            call. = FALSE)
@@ -436,8 +454,8 @@ sigTest <- function(df, id, label_scheme_sub,
                     scale_log2r, complete_cases, impute_na, rm_allna, 
                     filepath, filename, 
 										method, padj_method, var_cutoff, pval_cutoff, logFC_cutoff, 
-										data_type, anal_type, ...) {
-
+										data_type, anal_type, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   
   stopifnot(vapply(c(var_cutoff, pval_cutoff, logFC_cutoff), is.numeric, 
@@ -466,10 +484,12 @@ sigTest <- function(df, id, label_scheme_sub,
 	  pepSig_formulas <- dots
 	  save(pepSig_formulas, file = file.path(dat_dir, "Calls/pepSig_formulas.rda"))
 	  rm(pepSig_formulas)
-	} else if (id %in% c("prot_acc", "gene")) {
+	} 
+	else if (id %in% c("prot_acc", "gene")) {
 	  if (rlang::is_empty(dots)) {
 	    prnSig_formulas <- dots <- concat_fml_dots()
-	  } else {
+	  } 
+	  else {
 	    prnSig_formulas <- dots
 	  }
 	  save(prnSig_formulas, file = file.path(dat_dir, "Calls", "prnSig_formulas.rda"))
@@ -498,46 +518,9 @@ sigTest <- function(df, id, label_scheme_sub,
 	    do.call("cbind", .)
 	})
 	
-	run_scripts <- FALSE
-	if (run_scripts) {
-	  quietly_log <- local({
-	    dfw <- df %>% 
-	      filters_in_call(!!!filter_dots) %>% 
-	      arrangers_in_call(!!!arrange_dots) %>% 
-	      prepDM(id = !!id, 
-	             scale_log2r = scale_log2r, 
-	             sub_grp = label_scheme_sub$Sample_ID, 
-	             anal_type = anal_type, 
-	             rm_allna = rm_allna) %>% 
-	      .$log2R
-	    
-	    # `complete_cases` depends on lm contrasts
-	    purrr::map(dots, ~ purrr::quietly(model_onechannel)
-	               (dfw, !!id, .x, label_scheme_sub, 
-	                 complete_cases, method, padj_method, var_cutoff, 
-	                 pval_cutoff, logFC_cutoff, !!!non_fml_dots)) 
-	  })
-	  
-	  if (id %in% c("pep_seq", "pep_seq_mod")) {
-	    out_path <- file.path(dat_dir, "Peptide/Model/log/pepSig_log.txt")
-	  } else if (id %in% c("prot_acc", "gene")) {
-	    out_path <- file.path(dat_dir, "Protein/Model/log/prnSig_log.txt")
-	  }
-	  
-	  purrr::map(quietly_log, ~ {
-	    .x[[1]] <- NULL
-	    return(.x)
-	  }) %>% 
-	    purrr::reduce(`c`, .init = NULL) %>% 
-	    purrr::walk(., write, out_path, append = TRUE)
-	  
-	  df_op <- purrr::map(quietly_log, `[[`, 1) %>%
-	    do.call("cbind", .)
-	}
-	
+	# record the `scale_log2r` status; otherwise, need to indicate it in a way
+	# for example, `_N` or `_Z` in file names
 	local({
-  	# record the `scale_log2r` status; otherwise, need to indicate it in a way
-  	# for example, `_N` or `_Z` in file names
   	dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)	  
 	  
 	  if (data_type == "Peptide") {
@@ -589,8 +572,8 @@ sigTest <- function(df, id, label_scheme_sub,
 pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
                     rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
-                    df = NULL, filepath = NULL, filename = NULL, ...) {
-  
+                    df = NULL, filepath = NULL, filename = NULL, ...) 
+{
   on.exit({
     mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
       c(rlang::enexprs(...)) %>% 
@@ -772,8 +755,8 @@ pepSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALS
 prnSig <- function (scale_log2r = TRUE, impute_na = FALSE, complete_cases = FALSE, 
                     rm_allna = FALSE, method = c("limma", "lm"), padj_method = "BH", 
                     var_cutoff = 1E-3, pval_cutoff = 1.00, logFC_cutoff = log2(1), 
-                    df = NULL, filepath = NULL, filename = NULL, ...) {
-  
+                    df = NULL, filepath = NULL, filename = NULL, ...) 
+{
   on.exit({
     load(file.path(get_gl_dat_dir(), "Calls/prnSig_formulas.rda"))
     dots <- my_union(rlang::enexprs(...), prnSig_formulas)

@@ -1,13 +1,13 @@
 Package: proteoQ
-Title: Database Searching, Processing and Informatic Analysis of Mass Spectrometrirc Data
-Version: 1.7.0.1
+Title: Processing and Informatic Analysis of Mass Spectrometrirc Data
+Version: 1.7.0.5
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",
            role = c("aut", "cre"),
            email = "qzhang503@gmail.com", 
 					 comment = c(ORCID = "0000-0001-7046-4378"))
-Description: Searches and Analysis of Mass Spectrometrirc Data.  
+Description: Analysis of Mass Spectrometrirc Data.  
 biocViews: 
 Depends: R (>= 4.1)
 License: MIT + file LICENSE
@@ -61,11 +61,9 @@ Imports:
     openxlsx,
     parallel,
     pheatmap,
-    plyr,
 	proteoCpp, 
     proteoQDA,
 	proxyC,
-    reshape2,
     rlang,
     Biobase,
     BiocManager,

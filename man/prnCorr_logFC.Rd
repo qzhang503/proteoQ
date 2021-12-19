@@ -16,6 +16,7 @@ pepCorr_logFC(
   df = NULL,
   filepath = NULL,
   filename = NULL,
+  cor_method = "pearson",
   ...
 )
 
@@ -28,6 +29,7 @@ pepCorr_logInt(
   df = NULL,
   filepath = NULL,
   filename = NULL,
+  cor_method = "pearson",
   ...
 )
 
@@ -40,6 +42,7 @@ prnCorr_logFC(
   df = NULL,
   filepath = NULL,
   filename = NULL,
+  cor_method = "pearson",
   ...
 )
 
@@ -52,6 +55,7 @@ prnCorr_logInt(
   df = NULL,
   filepath = NULL,
   filename = NULL,
+  cor_method = "pearson",
   ...
 )
 }
@@ -98,30 +102,32 @@ is \code{.txt}. For image files, they are typically saved via
 \code{\link[ggplot2]{ggsave}} or \code{\link[pheatmap]{pheatmap}} where the
 image type will be determined by the extension of the file name.}
 
+\item{cor_method}{A character string indicating which correlation coefficient
+is to be computed. One of \code{"pearson"} (default), \code{"kendall"}, or
+\code{"spearman"}.}
+
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 against data in a primary file linked to \code{df}. See also
 \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-Additional parameters for
-plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
-of plot \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity \cr
-\code{xmax}, the maximum \eqn{x} of logFC data or intensity data \cr
-\code{xbreaks}, the breaks on \eqn{x} axis; the same breaks will be applied
-to \eqn{y} axis.}
+Additional parameters for plotting: \cr \code{width}, the width of plot \cr
+\code{height}, the height of plot \cr \code{xmin}, the minimum \eqn{x} of
+logFC or intensity \cr \code{xmax}, the maximum \eqn{x} of logFC data or
+intensity data \cr \code{xbreaks}, the breaks on \eqn{x} axis; the same
+breaks will be applied to \eqn{y} axis.}
 }
 \value{
 Correlation plots.
 }
 \description{
-\code{pepCorr_logFC} plots Pearson correlation for peptide \code{logFC}. 
-data.
+\code{pepCorr_logFC} plots correlation for peptide \code{logFC}. data.
 
-\code{pepCorr_logInt} plots Pearson correlation of the \code{log10} intensity
-of ions for peptide data.
+\code{pepCorr_logInt} plots correlation of the \code{log10} intensity of ions
+for peptide data.
 
-code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}.
+\code{prnCorr_logFC} plots correlation for protein \code{logFC}.
 
-\code{prnCorr_logInt} plots Pearson correlation of the \code{log10} intensity
-of ions for protein data.
+\code{prnCorr_logInt} plots correlation of the \code{log10} intensity of ions
+for protein data.
 }
 \details{
 With TMT experiments, the same polypeptide may be triggered for MS2 any where
@@ -193,58 +199,62 @@ prnCorr_logInt(
 
 }
 \seealso{
-\emph{Metadata} \cr 
- \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+\emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+ and a reduced working example in data normalization \cr
 
- \emph{Data normalization} \cr 
- \code{\link{normPSM}} for extended examples in PSM data normalization \cr
- \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
- \code{\link{mergePep}} for extended examples in peptide data merging \cr 
- \code{\link{standPep}} for extended examples in peptide data normalization \cr
- \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
- \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
- \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
- \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
- \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
- 
- \emph{Variable arguments of `filter_...`} \cr 
- \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
- \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
- \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
- \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
- 
- \emph{Missing values} \cr 
- \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
- 
- \emph{Informatics} \cr 
- \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
- \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
- \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
- \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
- \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
- \code{\link{prnGSVA}} for gene set variance analysis \cr 
- \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
- \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
- \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
- \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
- \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
- \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
- \code{\link{prnCorr_logInt}}  for correlation plots \cr 
- \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
- \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
- \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
- \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
- 
- \emph{Custom databases} \cr 
- \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
- \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
- \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
- ontology}} \cr 
- \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
- signatures} \cr 
- \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
- 
- \emph{Column keys in PSM, peptide and protein outputs} \cr 
+ \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+ PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in
+ PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+ examples in peptide data merging \cr \code{\link{standPep}} for extended
+ examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+ extended examples in peptide to protein summarization \cr
+ \code{\link{standPrn}} for extended examples in protein data normalization.
+ \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+ in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+ extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+ and \code{\link{extract_psm_raws}} for extracting MS file names \cr
+
+ \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+ \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+ \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+ \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+ \code{\link{ends_with_chars_in}} for data subsetting by character strings
+ \cr
+
+ \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+ missing value imputation \cr
+
+ \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+ significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+ volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+ analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+ GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+ and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+ set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+ online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+ visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+ visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+ visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+ visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+ \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+ correlation plots \cr \code{\link{anal_prnTrend}} and
+ \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+ \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+ \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+ \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+ \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+
+ \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+ UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+ among RefSeq accessions, gene names and Entrez IDs \cr \code{\link{prepGO}}
+ for
+ \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+  ontology}} \cr \code{\link{prepMSig}} for
+ \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+  signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}}
+ for STRING-DB \cr
+
+ \emph{Column keys in PSM, peptide and protein outputs} \cr
  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr

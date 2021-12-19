@@ -161,13 +161,13 @@ find_human_orthologs <- function(species, ortho_mart)
   
   out_nm <- paste0("ortho_hs", sp_lookup(species))
 
-  data(package = "proteoQ", mart_hs)
+  data(package = "proteoQ", mart_hs, envir = environment())
   
   if (species == "mouse") {
-    data(package = "proteoQ", mart_mm)
+    data(package = "proteoQ", mart_mm, envir = environment())
     martL <- mart_mm
   } else if (species == "rat") {
-    data(package = "proteoQ", mart_rn)
+    data(package = "proteoQ", mart_rn, envir = environment())
     martL <- mart_rn
   } else {
     martL <- biomaRt::useMart(biomart = 'ENSEMBL_MART_ENSEMBL', dataset = ortho_mart)
@@ -699,9 +699,8 @@ prepMSig <- function(species = "human", msig_url = NULL, abbr_species = NULL,
 #'   "REFSEQ", "ACCNUM").
 #' @inheritParams prepMSig
 #' @inheritParams annot_from_to
-#' @import dplyr purrr tidyr reshape2 org.Hs.eg.db org.Mm.eg.db
+#' @import dplyr purrr tidyr org.Hs.eg.db org.Mm.eg.db
 #'   org.Rn.eg.db
-#' @importFrom plyr ldply
 #' @export
 map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPROT", 
                           filename = NULL, db_path = "~/proteoQ/dbs/entrez", 
@@ -729,6 +728,7 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
     }
     
     new_from <- paste0("eg", from)
+    
     x <- tryCatch(
       get(paste("org", abbr_species, new_from, sep = ".")),
       error = function(e) 1
@@ -742,7 +742,7 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
     entrez_ids <- AnnotationDbi::mappedkeys(x) 
     
     accessions <- as.list(x[entrez_ids]) %>% 
-      plyr::ldply(., rbind) %>% 
+      list_to_dataframe() %>% 
       `names_pos<-`(., 1, c("entrez")) %>% 
       `names_pos<-`(., 2:ncol(.), paste(new_from, 1:(length(.)-1), sep = ".")) %>% 
       dplyr::mutate_at(.vars = grep("^eg", names(.)), ~ as.character(.x)) %>% 
@@ -756,7 +756,7 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
         dplyr::rename(uniprot_acc = value)
       
       accessions <- annot_from_to(abbr_species, unique(accessions$uniprot_acc), 
-                             "UNIPROT", "SYMBOL") %>% 
+                                  "UNIPROT", "SYMBOL") %>% 
         dplyr::rename(uniprot_acc = UNIPROT, gene = SYMBOL) %>% 
         dplyr::filter(!is.na(uniprot_acc), !is.na(gene))  %>% 
         dplyr::left_join(accessions, by = "uniprot_acc") %>% 
@@ -773,7 +773,8 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
         dplyr::mutate(entrez = as.numeric(entrez)) %>% 
         dplyr::select(c("refseq_acc", "gene", "entrez", "species"))
     } else {
-      stop("Variable `from` needs to be either `UNIPROT` or `REFSEQ`.", call. = FALSE)
+      stop("Variable `from` needs to be either `UNIPROT` or `REFSEQ`.", 
+           call. = FALSE)
     }
     
     saveRDS(accessions, file.path(db_path, filename))
@@ -799,7 +800,7 @@ map_to_entrez <- function(species = "human", abbr_species = NULL, from = "UNIPRO
 #'@param db_path Character string; the local path for database(s). The default
 #'  is \code{"~/proteoQ/dbs/entrez"}.
 #'@inheritParams prepMSig
-#'@import dplyr purrr tidyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
+#'@import dplyr purrr tidyr org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
 #'@example inst/extdata/examples/prepEntrez_.R
 #'@export
 Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
@@ -825,7 +826,7 @@ Uni2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 #'\code{proteoQ}.
 #'
 #'@rdname Uni2Entrez
-#'@import dplyr purrr tidyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
+#'@import dplyr purrr tidyr org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
 #'@example inst/extdata/examples/prepEntrez_.R
 #'@export
 Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL, 
@@ -845,8 +846,7 @@ Ref2Entrez <- function(species = "human", abbr_species = NULL, filename = NULL,
 #' @param os_name An organism name by UniProt.
 #' @inheritParams Uni2Entrez
 #' @inheritParams annot_from_to
-#' @import dplyr purrr tidyr reshape2 org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
-#' @importFrom plyr ldply
+#' @import dplyr purrr tidyr org.Hs.eg.db org.Mm.eg.db org.Rn.eg.db
 map_to_entrez_os_name <- function(species = "human", abbr_species = NULL, 
                                   os_name = "Homo sapiens", 
                                   from = "UNIPROT", 
@@ -863,36 +863,39 @@ map_to_entrez_os_name <- function(species = "human", abbr_species = NULL,
   create_os_lookup(species, os_name, overwrite)
   
   abbr_species <- find_abbr_species(!!species, !!rlang::enexpr(abbr_species))
-  filename <- set_db_outname(!!rlang::enexpr(filename), species, paste(tolower(from), "entrez", sep = "_" ))
+  filename <- set_db_outname(!!rlang::enexpr(filename), species, 
+                             paste(tolower(from), "entrez", sep = "_" ))
   
   if ((!file.exists(file.path(db_path, filename))) || overwrite)  {
     pkg_nm <- paste("org", abbr_species, "eg.db", sep = ".")
+    
     if (!requireNamespace(pkg_nm, quietly = TRUE)) {
       stop("Run `BiocManager::install(\"", pkg_nm, "\")` first, 
            then `library(", pkg_nm, ")`", call. = FALSE)
     }
     
     new_from <- paste0("eg", from)
+    
     x <- tryCatch(
       get(paste("org", abbr_species, new_from, sep = ".")),
       error = function(e) 1
     )
     
     if (!is.object(x)) {
-      if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", call. = FALSE)
+      if (x == 1) stop("Did you forget to run `library(", pkg_nm, ")`?", 
+                       call. = FALSE)
     }
     
     entrez_ids <- AnnotationDbi::mappedkeys(x) 
     
     accessions <- as.list(x[entrez_ids]) %>% 
-      plyr::ldply(., rbind) %>% 
+      list_to_dataframe() %>% 
       `names_pos<-`(., 1, c("entrez")) %>% 
       `names_pos<-`(., 2:ncol(.), paste(new_from, 1:(length(.)-1), sep = ".")) %>% 
       dplyr::mutate_at(.vars = grep("^eg", names(.)), ~ as.character(.x)) %>% 
       tidyr::gather("variable", "value", -entrez) %>% 
       dplyr::filter(!is.na(entrez), !is.na(value)) %>% 
-      dplyr::select(-c("variable")) # %>% 
-    # dplyr::mutate(species = species)
+      dplyr::select(-c("variable"))
     
     if (from == "UNIPROT") {
       accessions <- accessions %>% dplyr::rename(uniprot_acc = value)

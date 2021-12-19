@@ -101,7 +101,6 @@
 #'@example inst/extdata/examples/normPrn_.R
 #'@import stringr dplyr tidyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>%
-#'@importFrom plyr ddply
 #'@export
 standPrn <- function (method_align = c("MC", "MGKernel"), 
                       range_log2r = c(10, 90), range_int = c(5, 95), 
@@ -161,30 +160,32 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   
   if (is.null(label_scheme[[col_select]])) {
     col_select <- rlang::expr(Sample_ID)
-    warning("Column \'", rlang::as_string(col_select), "\' does not exist.
-			Use column \'Sample_ID\' instead.", call. = FALSE)
+    
+    warning("Column `", rlang::as_string(col_select), "` not existed. ", 
+            "Use column `Sample_ID` instead.", 
+            call. = FALSE)
   } else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
     col_select <- rlang::expr(Sample_ID)
-    warning("No samples were specified under column \'", rlang::as_string(col_select), "\'.
-			Use column \'Sample_ID\' instead.", call. = FALSE)
+    
+    warning("No samples under column '", rlang::as_string(col_select), "`. ", 
+            "Use column `Sample_ID` instead.", 
+            call. = FALSE)
   }
   
   dots <- rlang::enexprs(...)
   
   filename <- file.path(dat_dir, "Protein/Protein.txt")
   
-  if (!file.exists(filename)) {
+  if (!file.exists(filename)) 
     stop(filename, " not found; run `Pep2Prn` first.")
-  }
-  
+
   df <- read.csv(filename, sep = "\t", check.names = FALSE, 
                  header = TRUE, comment.char = "#") 
 
   local({
-    if (sum(grepl("^log2_R[0-9]{3}[NC]{0,1}", names(df))) <= 1) {
+    if (sum(grepl("^log2_R[0-9]{3}[NC]{0,1}", names(df))) <= 1) 
       stop("Need more than one sample for `standPep` or `standPrn`.", 
            call. = FALSE)
-    }
   })
   
   message("Primary column keys in `Protein/Protein.txt` for `slice_` varargs.")
@@ -204,10 +205,14 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
   
   df <- df %>% 
     dplyr::filter(!nchar(as.character(.[["prot_acc"]])) == 0) %>% 
-    dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
-    dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 0)) %>% 
-    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), as.numeric) %>% 
-    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), ~ round(.x, digits = 3)) %T>% 
+    dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), 
+                     as.numeric) %>% 
+    dplyr::mutate_at(vars(grep("I[0-9]{3}[NC]*", names(.))), 
+                     ~ round(.x, digits = 0)) %>% 
+    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), 
+                     as.numeric) %>% 
+    dplyr::mutate_at(vars(grep("log2_R[0-9]{3}[NC]*", names(.))), 
+                     ~ round(.x, digits = 3)) %T>% 
     write.table(file.path(dat_dir, "Protein", "Protein.txt"), 
                 sep = "\t", col.names = TRUE, row.names = FALSE)
   

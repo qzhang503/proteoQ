@@ -10,12 +10,12 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
                       col_select = NULL, col_order = NULL,
                       label_scheme_sub = label_scheme_sub, 
                       scale_log2r = scale_log2r, complete_cases = complete_cases, 
-                      filepath = filepath, filename = filename, ...) {
+                      filepath = filepath, filename = filename, 
+                      cor_method = cor_method, ...) 
+{
+  if (complete_cases) 
+    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
 
-  if (complete_cases) {
-    df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-  }
-  
   id <- rlang::as_string(rlang::enexpr(id))
   dots <- rlang::enexprs(...)
   
@@ -74,12 +74,15 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
 	label_scheme_sub <- label_scheme_sub %>% 
 	  dplyr::filter(Sample_ID %in% colnames(df))
 	
-	if (is.null(width)) width <- 1.4 * length(label_scheme_sub$Sample_ID)
-	if (is.null(height)) height <- width
-	if (ncol(df) > 44) stop("Maximum number of samples for correlation plots is 44.", 
-	                        call. = FALSE)
+	if (is.null(width)) 
+	  width <- 1.4 * length(label_scheme_sub$Sample_ID)
+	if (is.null(height)) 
+	  height <- width
+	if (ncol(df) > 44) 
+	  stop("Maximum number of samples for correlation plots is 44.", 
+	       call. = FALSE)
 
-	if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1) {
+	if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1L) {
 		df <- df[, order(names(df))]
 	} else {
 	  corrplot_orders <- label_scheme_sub %>%
@@ -91,10 +94,85 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
 	  df <- df[, as.character(corrplot_orders$Sample_ID), drop = FALSE]
 	}
 
-	plot_corr_sub(df = df, xlab = x_label, ylab = y_label,
+	plot_corr_sub(df = df, 
+	              cor_method = cor_method, 
+	              xlab = x_label, ylab = y_label,
 	              filename = filename, filepath = filepath,
 	              xmin = xmin, xmax = xmax, xbreaks = xbreaks, 
 	              width = width, height = height, !!!dots)
+}
+
+
+#' Custom correlation plots
+#' 
+#' @param data A data frame
+#' @param mapping A mapping aesthetics.
+#' @param color A color.
+#' @param sizeRange A range of sizes.
+#' @param cor_method A correlation method.
+#' 
+#' @examples 
+#' \donttest{
+#' my_custom_cor(data, aes(x = col_nm_1, y = col_nm_1))
+#' }
+my_custom_cor <- function(data, mapping, color = I("grey50"), 
+                          sizeRange = c(1, 4), 
+                          cor_method = "pearson", 
+                          ...) 
+{
+  x <- GGally::eval_data_col(data, mapping$x)
+  y <- GGally::eval_data_col(data, mapping$y)
+  
+  x[is.infinite(x)] <- NA
+  y[is.infinite(y)] <- NA
+  
+  ct <- cor.test(x, y, method = cor_method)
+  
+  sig <- symnum(
+    ct$p.value, corr = FALSE, na = FALSE,
+    cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1),
+    symbols = c("***", "**", "*", ".", " ")
+  )
+  
+  r <- unname(ct$estimate)
+  rt <- format(r, digits=2)[1]
+  
+  cex <- max(sizeRange)
+  
+  percent_of_range <- function(percent, range) {
+    percent * diff(range) + min(range, na.rm = TRUE)
+  }
+  
+  ggally_text(
+    label = as.character(rt),
+    mapping = aes(),
+    xP = 0.5, yP = 0.5,
+    size = I(percent_of_range(cex * abs(r), sizeRange)),
+    color = color,
+    ...
+  ) +
+    ## add the sig stars
+    # geom_text(
+    #   aes_string(
+    #     x = 0.8,
+    #     y = 0.8
+    #   ),
+    #   label = sig,
+    #   size = I(cex),
+    #   color = color,
+    #   ...
+    # ) +
+  theme_classic() +
+    theme(
+      panel.background = element_rect(
+        color = color,
+        linetype = "longdash"
+      ),
+      axis.line = element_blank(),
+      axis.ticks = element_blank(),
+      axis.text.y = element_blank(),
+      axis.text.x = element_blank()
+    )
 }
 
 
@@ -112,16 +190,19 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
 #' 
 #' @import stringr dplyr ggplot2 GGally purrr 
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-plot_corr_sub <- function (df, xlab, ylab, filename, filepath, 
-                           xmin, xmax, xbreaks, width, height, ...) {
-                           
-  my_fn <- function(data, mapping, method = "lm", ...){
+plot_corr_sub <- function (df, cor_method = "pearson", 
+                           xlab, ylab, filename, filepath, 
+                           xmin, xmax, xbreaks, width, height, ...) 
+{
+  # not used
+  my_fn <- function(data, mapping, method = "lm", ...) {
     p <- ggplot(data = data, mapping = mapping) +
       geom_point(alpha = 0.3, size = .1) +
       geom_smooth(method = method, ...)
     p
   }
 
+  # not used
   lm_with_cor <- function(data, mapping, ..., method = "pearson") {
     x <- data[[deparse(mapping$x)]]
     y <- data[[deparse(mapping$y)]]
@@ -140,7 +221,8 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
       )
   }
 
-  panel_cor = function(x, y, digits = 2, prefix = "", cex.cor, ...){
+  # not used
+  panel_cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
     usr = par("usr")
     on.exit(par(usr))
     par(usr = c(0, 1, 0, 1))
@@ -152,7 +234,8 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
     bg = "transparent"
   }
 
-  panel_hist = function(x, ...){
+  # not used
+  panel_hist <- function(x, ...) {
     usr = par('usr')
     on.exit(par(usr))
     par(usr = c(usr[1:2], 0, 1.5))
@@ -165,14 +248,16 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
     bg = "transparent"
   }
 
-  panel_lm = function(x, y, col = par('col'), bg = NA, pch = par('pch'),
-                      cex = 1, col.smooth = 'black', ...){
+  # not used
+  panel_lm <- function(x, y, col = par('col'), bg = NA, pch = par('pch'),
+                       cex = 1, col.smooth = 'black', ...){
     points(x, y, pch = pch, col = "red",  bg = bg, cex = cex)
     # abline(stats::lm(y~x), col=col.smooth,...)
     bg = "transparent"
   }
 
-  my_lower <- function(data, mapping, method = "lm", ...){
+  # not used
+  my_lower <- function(data, mapping, method = "lm", ...) {
     p <- ggplot(data = data, mapping = mapping) +
       geom_point(size = .02, alpha = .5) +
       geom_abline(alpha = .5, linetype = "dashed", color = "gray", size = 1) +
@@ -180,74 +265,20 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
     p
   }
 
-  my_lower_no_sm <- function(data, mapping, method = "lm", ...){
+  my_lower_no_sm <- function(data, mapping, method = "lm", ...) {
     p <- ggplot(data = data, mapping = mapping) +
       geom_point(size = .02, alpha = .5) +
       geom_abline(alpha = .5, linetype = "dashed", color = "gray", size = 1)
     p
   }
 
-  my_diag <- function(data, mapping, ...){
+  # not u sed
+  my_diag <- function(data, mapping, ...) {
     p <- ggplot(data = data, mapping = mapping) +
       geom_density(fill = "#fec44f", size = .02, alpha = .5, adjust = 3)
     p
   }
 
-  my_custom_cor <- function(data, mapping, color = I("grey50"), 
-                            sizeRange = c(1, 4), ...) {
-    x <- GGally::eval_data_col(data, mapping$x)
-    y <- GGally::eval_data_col(data, mapping$y)
-    
-    x[is.infinite(x)] <- NA
-    y[is.infinite(y)] <- NA
-
-    ct <- cor.test(x, y)
-    sig <- symnum(
-      ct$p.value, corr = FALSE, na = FALSE,
-      cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1),
-      symbols = c("***", "**", "*", ".", " ")
-    )
-
-    r <- unname(ct$estimate)
-    rt <- format(r, digits=2)[1]
-
-    cex <- max(sizeRange)
-
-    percent_of_range <- function(percent, range) {
-      percent * diff(range) + min(range, na.rm = TRUE)
-    }
-
-    ggally_text(
-      label = as.character(rt),
-      mapping = aes(),
-      xP = 0.5, yP = 0.5,
-      size = I(percent_of_range(cex * abs(r), sizeRange)),
-      color = color,
-      ...
-    ) +
-      ## add the sig stars
-      # geom_text(
-      #   aes_string(
-      #     x = 0.8,
-      #     y = 0.8
-      #   ),
-      #   label = sig,
-      #   size = I(cex),
-      #   color = color,
-      #   ...
-      # ) +
-    theme_classic() +
-      theme(
-        panel.background = element_rect(
-          color = color,
-          linetype = "longdash"
-        ),
-        axis.line = element_blank(),
-        axis.ticks = element_blank(),
-        axis.text.y = element_blank(),
-        axis.text.x = element_blank()
-      )
-  }
 
   my_theme <- theme_bw() +
     theme(
@@ -282,13 +313,13 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
                 labeller = label_wrap_gen(10),
                 title = "", xlab = xlab, ylab = ylab, 
                 lower = list(continuous = my_lower_no_sm),
-                upper = list(continuous = my_custom_cor, 
-                             digits = 2))
+                upper = list(continuous = wrap(my_custom_cor, 
+                                               cor_method = cor_method)))
   p2 <- ggcorr(df, label = TRUE, label_round = 2)
   
   local({
     cors <- df %>% 
-      cor(use = "pairwise.complete.obs") %>% 
+      cor(method = cor_method) %>% 
       data.frame(check.names = FALSE) %>% 
       tibble::rownames_to_column("Sample_ID")
 
@@ -374,8 +405,7 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 
 #'Correlation plots
 #'
-#'\code{pepCorr_logFC} plots Pearson correlation for peptide \code{logFC}. 
-#'data.
+#'\code{pepCorr_logFC} plots correlation for peptide \code{logFC}. data.
 #'
 #'@rdname prnCorr_logFC
 #'
@@ -384,7 +414,9 @@ plot_corr_sub <- function (df, xlab, ylab, filename, filepath,
 pepCorr_logFC <- function (col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, 
-                           df = NULL, filepath = NULL, filename = NULL, ...) {
+                           df = NULL, filepath = NULL, filename = NULL, 
+                           cor_method = "pearson", ...) 
+{
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
@@ -399,6 +431,8 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
+  cor_method <- rlang::as_string(rlang::enexpr(cor_method))
+  
   reload_expts()
   
   info_anal(id = !!id, 
@@ -411,14 +445,16 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
             df2 = NULL, 
             filepath = !!filepath, 
             filename = !!filename,
-            anal_type = "Corrplot")(data_select = "logFC", ...)
+            anal_type = "Corrplot")(data_select = "logFC", 
+                                    cor_method = cor_method, 
+                                    ...)
 }
 
 
 #'Correlation plots
 #'
-#'\code{pepCorr_logInt} plots Pearson correlation of the \code{log10} intensity
-#'of ions for peptide data.
+#'\code{pepCorr_logInt} plots correlation of the \code{log10} intensity of ions
+#'for peptide data.
 #'
 #'@rdname prnCorr_logFC
 #'
@@ -427,7 +463,9 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
 pepCorr_logInt <- function (col_select = NULL, col_order = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, 
                             impute_na = FALSE, 
-                            df = NULL, filepath = NULL, filename = NULL, ...) {
+                            df = NULL, filepath = NULL, filename = NULL, 
+                            cor_method = "pearson", ...) 
+{
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
@@ -442,6 +480,8 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
+  cor_method <- rlang::as_string(rlang::enexpr(cor_method))
+  
   reload_expts()
   
   info_anal(id = !!id, 
@@ -454,18 +494,20 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
             df2 = NULL, 
             filepath = !!filepath, 
             filename = !!filename,
-            anal_type = "Corrplot")(data_select = "logInt", ...)
+            anal_type = "Corrplot")(data_select = "logInt", 
+                                    cor_method = cor_method, 
+                                    ...)
 }
 
 
 #'Correlation plots
 #'
-#' code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}.
+#'\code{prnCorr_logFC} plots correlation for protein \code{logFC}.
 #'
-#' With TMT experiments, the same polypeptide may be triggered for MS2 any where
-#' between the baseline and the apex levels during a peak elution. The direct
-#' comparison of reporter-ion intensities between plex-es might have little
-#' meaning.
+#'With TMT experiments, the same polypeptide may be triggered for MS2 any where
+#'between the baseline and the apex levels during a peak elution. The direct
+#'comparison of reporter-ion intensities between plex-es might have little
+#'meaning.
 #'
 #'@inheritParams prnHist
 #'@inheritParams prnMDS
@@ -474,83 +516,90 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 #'  samples in graphic outputs or top-to-bottom arrangement in text outputs. At
 #'  the NULL default, the column key \code{Order} will be used. If values under
 #'  column \code{Order} are left blank, samples will be ordered by their names.
+#'@param cor_method A character string indicating which correlation coefficient
+#'  is to be computed. One of \code{"pearson"} (default), \code{"kendall"}, or
+#'  \code{"spearman"}.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  against data in a primary file linked to \code{df}. See also
 #'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
-#'  Additional parameters for
-#'  plotting: \cr \code{width}, the width of plot \cr \code{height}, the height
-#'  of plot \cr \code{xmin}, the minimum \eqn{x} of logFC or intensity \cr
-#'  \code{xmax}, the maximum \eqn{x} of logFC data or intensity data \cr
-#'  \code{xbreaks}, the breaks on \eqn{x} axis; the same breaks will be applied
-#'  to \eqn{y} axis.
-#'  
-#'@seealso 
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'  Additional parameters for plotting: \cr \code{width}, the width of plot \cr
+#'  \code{height}, the height of plot \cr \code{xmin}, the minimum \eqn{x} of
+#'  logFC or intensity \cr \code{xmax}, the maximum \eqn{x} of logFC data or
+#'  intensity data \cr \code{xbreaks}, the breaks on \eqn{x} axis; the same
+#'  breaks will be applied to \eqn{y} axis.
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'  and a reduced working example in data normalization \cr
+#'
+#'  \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'  PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in
+#'  PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+#'  examples in peptide data merging \cr \code{\link{standPep}} for extended
+#'  examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+#'  extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'  in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'  extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+#'  and \code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
+#'  \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'  \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings
+#'  \cr
+#'
+#'  \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'  missing value imputation \cr
+#'
+#'  \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'  significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'  volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'  analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'  GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'  and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'  set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'  online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'  visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'  visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'  visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'  visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr \code{\link{anal_prnTrend}} and
+#'  \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'  \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'  \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+#'
+#'  \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'  UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'  among RefSeq accessions, gene names and Entrez IDs \cr \code{\link{prepGO}}
+#'  for
+#'  \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'   ontology}} \cr \code{\link{prepMSig}} for
+#'  \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'   signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}}
+#'  for STRING-DB \cr
+#'
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr
 #'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
-#'  
+#'
 #'@example inst/extdata/examples/prnCorr_.R
 #'
 #'@return Correlation plots.
 #'@import dplyr ggplot2
-#' @importFrom magrittr %>% %T>% %$% %<>% 
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 prnCorr_logFC <- function (col_select = NULL, col_order = NULL, 
                            scale_log2r = TRUE, complete_cases = FALSE, 
                            impute_na = FALSE, 
-                           df = NULL, filepath = NULL, filename = NULL, ...) {
+                           df = NULL, filepath = NULL, filename = NULL, 
+                           cor_method = "pearson", ...) 
+{
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
@@ -565,6 +614,8 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
+  cor_method <- rlang::as_string(rlang::enexpr(cor_method))
+  
   reload_expts()
   
   info_anal(id = !!id, 
@@ -577,14 +628,16 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
             df2 = NULL, 
             filepath = !!filepath, 
             filename = !!filename,
-            anal_type = "Corrplot")(data_select = "logFC", ...)
+            anal_type = "Corrplot")(data_select = "logFC", 
+                                    cor_method = cor_method, 
+                                    ...)
 }
 
 
 #'Correlation Plots
 #'
-#'\code{prnCorr_logInt} plots Pearson correlation of the \code{log10} intensity
-#'of ions for protein data.
+#'\code{prnCorr_logInt} plots correlation of the \code{log10} intensity of ions
+#'for protein data.
 #'
 #'
 #'@rdname prnCorr_logFC
@@ -594,7 +647,9 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
 prnCorr_logInt <- function (col_select = NULL, col_order = NULL, 
                             scale_log2r = TRUE, complete_cases = FALSE, 
                             impute_na = FALSE, 
-                            df = NULL, filepath = NULL, filename = NULL, ...) {
+                            df = NULL, filepath = NULL, filename = NULL, 
+                            cor_method = "pearson", ...) 
+{
   check_dots(c("id", "anal_type", "data_select", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_pep_by)
@@ -609,6 +664,8 @@ prnCorr_logInt <- function (col_select = NULL, col_order = NULL,
   filepath <- rlang::enexpr(filepath)
   filename <- rlang::enexpr(filename)
   
+  cor_method <- rlang::as_string(rlang::enexpr(cor_method))
+  
   reload_expts()
   
   info_anal(id = !!id, 
@@ -621,7 +678,9 @@ prnCorr_logInt <- function (col_select = NULL, col_order = NULL,
             df2 = NULL, 
             filepath = !!filepath, 
             filename = !!filename,
-            anal_type = "Corrplot")(data_select = "logInt", ...)
+            anal_type = "Corrplot")(data_select = "logInt", 
+                                    cor_method = cor_method, 
+                                    ...)
 }
 
 

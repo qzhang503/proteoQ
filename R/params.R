@@ -115,8 +115,9 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx")
 	    
 	    if (tmt_pair[1] %in% unique_tmt && tmt_pair[2] %in% unique_tmt) {
 	      label_scheme_full <- label_scheme_full %>% 
-	        dplyr::mutate(TMT_Channel = 
-	                        gsub(paste0(tmt_pair[1], "$"), tmt_pair[2], TMT_Channel))
+	        dplyr::mutate(TMT_Channel = gsub(paste0(tmt_pair[1], "$"), 
+	                                         tmt_pair[2], 
+	                                         TMT_Channel))
 	    }
 	  }
 	  
@@ -279,15 +280,19 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx")
     		dplyr::mutate(n = n()) %>%
     		dplyr::filter(n != TMT_plex)
     
-    	if (nrow(check_tmt) > 0) {
+    	if (nrow(check_tmt)) {
+    	  message("=======================================")
+    	  message("=== Mismatched TMT channel & plexes ===")
     		check_tmt %>%
     			dplyr::select(TMT_Set, LCMS_Injection, TMT_Channel) %>%
+    	    data.frame(check.names = FALSE) %>% 
     			print()
-    	  
-    	  stop("`", check_tmt$TMT_Channel, "` not found under set ", check_tmt$TMT_Set, 
-    	          " injection ", check_tmt$LCMS_Injection, ".", 
-    	          "\n(Use `TMT-131`, instead of `TMT-131N`, for 10-plex experiment(s).)", 
-    	          call. = FALSE)
+    		message("=======================================")
+    		
+    		stop("Some parsed `TMT_plex` are different to `", TMT_plex, "`.", 
+    		     "\n(E.g., Use `TMT-131`, instead of `TMT-131N`, ", 
+    		     "for 10-plex experiment(s).)", 
+    		     call. = FALSE)
     	}
   	})
   	
@@ -333,7 +338,7 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx")
   	    dplyr::summarise(count = n_distinct(Sample_ID)) %>% 
   	    dplyr::filter(count > 1) 
   	  
-  	  if (nrow(dups) > 1) {
+  	  if (nrow(dups) > 1L) {
   	    stop("Fix the above duplication(s) in sample IDs.\n", 
   	         print(data.frame(dups)),
   	         call. = FALSE)
@@ -364,7 +369,8 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx")
   	openxlsx::writeData(wb, sheet = "Setup", label_scheme_full)
   	openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
 	} else {
-	  label_scheme_full <- label_scheme_full %>% dplyr::filter(!is.na(Sample_ID)) 
+	  label_scheme_full <- label_scheme_full %>% 
+	    dplyr::filter(!is.na(Sample_ID)) 
 	  
 	  # check the uniqueness of Sample_ID for LFQ
 	  local({
@@ -603,12 +609,11 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx")
 	      not_oks_2 <- expt_raws %>% .[! . %in% frac_raws]
 	      
 	      if (!purrr::is_empty(not_oks_2)) {
-	        stop(
-	          "File(s) in `expt_smry` not in `", filename, "`:\n", 
-	          purrr::reduce(not_oks_2, paste, sep = ", "), 
-	          call. = FALSE
-	        )
+	        stop("File(s) in `expt_smry` not in `", filename, "`:\n", 
+	             purrr::reduce(not_oks_2, paste, sep = ", "), 
+	             call. = FALSE)
 	      }
+	      
 	    }
 	  })
 
@@ -779,10 +784,11 @@ load_dbs <- function (gset_nms = NULL, species = NULL)
     filelist <- purrr::map(abbr_sp, ~ paste0(sys_defs, "_", .x)) %>% 
       unlist()
 
-    suppressWarnings(data(package = "proteoQ", list = filelist))
+    suppressWarnings(data(package = "proteoQ", list = filelist, 
+                          envir = environment()))
     gsets <- purrr::map(filelist, ~ try(get(.x), silent = TRUE)) %>% 
       do.call(`c`, .)
-    suppressWarnings(rm(list = filelist, envir = .GlobalEnv))
+    # suppressWarnings(rm(list = filelist, envir = .GlobalEnv))
     
     if (length(gsets) > 0) names(gsets) <- gsub("/", "-", names(gsets))      
   } else {
@@ -791,7 +797,8 @@ load_dbs <- function (gset_nms = NULL, species = NULL)
   
   if (!purrr::is_empty(not_sys_defs)) {
     if (!all(grepl("\\.rds$", not_sys_defs))) {
-      stop("Custom gene set files indicated by `gset_nms` must end with extension `.rds`.", 
+      stop("Custom gene set files indicated by `gset_nms` must ", 
+           "end with extension `.rds`.", 
            call. = FALSE)
     }
 
@@ -803,7 +810,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL)
     
     gsets2 <- purrr::map(not_sys_defs, readRDS) %>% do.call(`c`, .)
     
-    if (length(gsets2) > 0)  {
+    if (length(gsets2))  {
       names(gsets2) <- gsub("/", "-", names(gsets2))
     } else {
       stop("Empty data file in: \n", purrr::reduce(not_sys_defs, paste, sep = ", \n"), 
@@ -815,7 +822,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL)
   
   gsets <- c(gsets, gsets2) %>% .[!duplicated(.)]
   
-  if (length(gsets) == 0) {
+  if (!length(gsets)) {
     warning("Zero entries in `gsets`.", call. = FALSE)
   }
 
@@ -1067,12 +1074,17 @@ reload_expts <- function()
   frac_smry <- match_call_arg(load_expts, frac_smry)
   
   fi_xlsx <- fs::file_info(file.path(dat_dir, expt_smry))$change_time
-  if (is.na(fi_xlsx)) stop("Time stamp of ", expt_smry, " not available.")
   
-  fi_rda <- fs::file_info(file.path(dat_dir, "label_scheme_full.rda"))$change_time
+  if (is.na(fi_xlsx)) 
+    stop("Time stamp of ", expt_smry, " not available.")
+  
+  fi_rda <- 
+    fs::file_info(file.path(dat_dir, "label_scheme_full.rda"))$change_time
   
   if (fi_xlsx > fi_rda) 
-    load_expts(dat_dir = dat_dir, expt_smry = !!expt_smry, frac_smry = !!frac_smry)
+    load_expts(dat_dir = dat_dir, 
+               expt_smry = !!expt_smry, 
+               frac_smry = !!frac_smry)
 }
 
 
@@ -1096,8 +1108,10 @@ channelInfo <- function (dat_dir = NULL, set_idx = NULL, injn_idx = 1)
 {
 	stopifnot(length(set_idx) == 1L)
   
-  if (is.null(set_idx)) stop("Need to specify `set_idx`.", call. = FALSE)
-  if (is.null(dat_dir)) stop("Need to specify `dat_dir`.", call. = FALSE)
+  if (is.null(set_idx)) 
+    stop("Need to specify `set_idx`.", call. = FALSE)
+  if (is.null(dat_dir)) 
+    stop("Need to specify `dat_dir`.", call. = FALSE)
 
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   
@@ -1342,7 +1356,7 @@ check_raws <- function(df)
   if (length(wrong_label_scheme_raws)) 
     stop("\n=========================================================================\n", 
          "RAW file name(s) in metadata have no corresponding entries in PSM data:\n", 
-         "(Hint: check the possibility that MS file(s) may have ", 
+         "(Hint: check the possibility that MS file(s) have ", 
          "no PSM contributions.)\n\n", 
          purrr::reduce(wrong_label_scheme_raws, paste, sep = "\n"), 
          "\n=========================================================================\n", 

@@ -155,8 +155,17 @@ prnVol(
 )
 
 # hide `xco` and/or `yco` lines
+# (xco = 0 -> log2(xco) = - Inf)
 prnVol(
   xco = 0,
+  yco = Inf,
+  filename = no_xylines.png,
+)
+
+# shows vertical center line at log2(1)
+# (xco = 1 -> log2(xco) = 0)
+prnVol(
+  xco = 1,
   yco = Inf,
   filename = no_xylines.png,
 )
@@ -223,7 +232,7 @@ res <- readRDS(file.path(dat_dir, "Protein/Volcano/W2_bat/foo.rds"))
 
 p <- ggplot() +
   geom_point(data = res$data, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
-             size = 3, colour = "#252525", shape = 20, alpha = .5) +
+             size = 3, colour = "#f0f0f0", shape = 20, alpha = .5) +
   geom_point(data = res$greater, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
              size = 3, color = res$palette[2], shape = 20, alpha = .8) +
   geom_point(data = res$less, mapping = aes(x = log2Ratio, y = -log10(pVal)), 
@@ -253,6 +262,12 @@ p <- p + facet_wrap(~ Contrast, nrow = 1, labeller = label_value)
 
 p <- p + geom_table(data = res$topn_labels, aes(table = gene), 
                     x = -res$xmax*.85, y = res$ymax/2)
+
+# Highlight
+prnVol(
+  highlights = rlang::exprs(gene \%in\% c("ACTB", "GAPDH")), 
+  filename = highlights.png
+)
 
 
 ## protein subgroups by gene sets

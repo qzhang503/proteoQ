@@ -1439,7 +1439,6 @@ fmt_num_cols <- function (df)
 #'@example inst/extdata/examples/mergePep_.R
 #'@import stringr dplyr tidyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>% 
-#'@importFrom plyr ddply
 #'@export
 mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, 
                       cut_points = Inf, rm_allna = FALSE, 
@@ -1660,7 +1659,6 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE,
 #'
 #'@import stringr dplyr tidyr purrr
 #'@importFrom magrittr %>% %T>% %$% %<>%
-#'@importFrom plyr ddply
 #'@export
 standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL, 
                       range_log2r = c(10, 90), 
@@ -2095,7 +2093,7 @@ calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, group_pep_by,
   
   pep_prot_map <- df %>% 
     map_peps_prots(group_psm_by, group_pep_by) %>% 
-    plyr::ldply(rbind) %>% 
+    list_to_dataframe() %>% 
     `names_pos<-`(1, group_psm_by) %>% 
     tidyr::gather(-group_psm_by, key = n, value = !!rlang::sym(group_pep_by)) %>% 
     dplyr::select(-n) %>% 

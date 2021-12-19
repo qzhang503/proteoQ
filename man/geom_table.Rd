@@ -2,7 +2,7 @@
 % Please edit documentation in R/volcanos.R
 \name{geom_table}
 \alias{geom_table}
-\title{Print table in ggplot2 images}
+\title{Prints table in ggplot2 images}
 \usage{
 geom_table(
   mapping = NULL,
@@ -33,5 +33,5 @@ geom_table(
 \item{...}{same as ggplot2.}
 }
 \description{
-Print table in ggplot2 images
+Prints table in ggplot2 images
 }

@@ -272,5 +272,45 @@ pepHM(
   arrange_peps_by = exprs(gene),  
   filename = "ncl_bi1.png",
 )
+
+## Customer annotation colors 
+annot_colors_group <- colorRampPalette(brewer.pal(n = 9, "Set1"))(12)
+names(annot_colors_group) <- c("W16.BI.TMT1", "W16.BI.TMT2", 
+                               "W16.JHU.TMT1", "W16.JHU.TMT2", 
+                               "W16.PNNL.TMT1", "W16.PNNL.TMT2",
+                               "W2.BI.TMT1", "W2.BI.TMT2", 
+                               "W2.JHU.TMT1", "W2.JHU.TMT2", 
+                               "W2.PNNL.TMT1", "W2.PNNL.TMT2")
+
+annot_colors_lab <- brewer.pal(n = 3, "Set2")
+names(annot_colors_lab) <- c("BI", "JHU", "PNNL")
+
+annot_colors_batch <- brewer.pal(n = 4, "Set3")[1:2]
+names(annot_colors_batch) <- c("TMT1", "TMT2")
+
+annot_colors_whim <- brewer.pal(n = 4, "Set3")[3:4]
+names(annot_colors_whim) <- c("W16", "W2")
+
+annot_colors <- list(Group = annot_colors_group, 
+                     Lab = annot_colors_lab, 
+                     Batch = annot_colors_batch, 
+                     WHIM = annot_colors_whim)
+
+prnHM(
+  xmin = -1, 
+  xmax = 1, 
+  xmargin = 0.1, 
+  annot_cols = c("Group", "Color", "Alpha", "Shape"), 
+  annot_colnames = c("Group", "Lab", "Batch", "WHIM"), 
+  annotation_colors = annot_colors, 
+  cluster_rows = TRUE, 
+  cutree_rows = 10, 
+  show_rownames = FALSE, 
+  show_colnames = TRUE, 
+  fontsize_row = 3, 
+  cellwidth = 14, 
+  filter_sp = exprs(species == "human"), 
+  filename = custom.png,
+)
 }
 
