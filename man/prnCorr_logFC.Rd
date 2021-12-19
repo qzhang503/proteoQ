@@ -119,16 +119,15 @@ breaks will be applied to \eqn{y} axis.}
 Correlation plots.
 }
 \description{
-\code{pepCorr_logFC} plots Pearson correlation for peptide \code{logFC}. 
-data.
+\code{pepCorr_logFC} plots correlation for peptide \code{logFC}. data.
 
-\code{pepCorr_logInt} plots Pearson correlation of the \code{log10} intensity
-of ions for peptide data.
+\code{pepCorr_logInt} plots correlation of the \code{log10} intensity of ions
+for peptide data.
 
-code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}.
+\code{prnCorr_logFC} plots correlation for protein \code{logFC}.
 
-\code{prnCorr_logInt} plots Pearson correlation of the \code{log10} intensity
-of ions for protein data.
+\code{prnCorr_logInt} plots correlation of the \code{log10} intensity of ions
+for protein data.
 }
 \details{
 With TMT experiments, the same polypeptide may be triggered for MS2 any where

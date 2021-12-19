@@ -4130,3 +4130,36 @@ subset_keepattr <- function (data, nm = c("M", "N"))
   data
 }
 
+
+#' Lists to data.frame.
+#' 
+#' A simple replacement of plyr::ldply. 
+#' @param x Lists of vectors.
+list_to_dataframe <- function (x) 
+{
+  nms <- names(x)
+  lens <- unlist(lapply(x, length))
+  mlen <- max(lens)
+  
+  for (i in seq_along(x)) {
+    d <- mlen - lens[i]
+    if (d) x[[i]] <- c(x[[i]], rep(NA, d))
+  }
+  
+  ans <- do.call(rbind, x)
+  
+  if (is.null(nms)) {
+    # rownames(ans) <- seq_len(nrow(ans))
+    cns <- seq_len(mlen)
+  } else {
+    # rownames(ans) <- nms
+    ans <- cbind(nms, ans)
+    cns <- c(".id", seq_len(mlen))
+  }
+
+  ans <- data.frame(ans)
+  colnames(ans) <- cns
+  rownames(ans) <- seq_len(nrow(ans))
+
+  invisible(ans)
+}

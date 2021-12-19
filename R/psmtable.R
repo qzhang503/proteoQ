@@ -105,7 +105,7 @@ find_mq_psmraws <- function(filelist = NULL, dat_dir = NULL)
     
     raws <- unique(df$`Raw file`)
     
-    if (!purrr::is_empty(raws)) {
+    if (length(raws)) {
       out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
       
       data.frame(RAW_File = raws) %>% 
@@ -136,7 +136,7 @@ find_sm_psmraws <- function(filelist = NULL, dat_dir = NULL)
     
     raws <- unique(df$filename)
     
-    if (!purrr::is_empty(raws)) {
+    if (length(raws)) {
       out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
       
       data.frame(RAW_File = raws) %>% 
@@ -169,7 +169,7 @@ find_mf_psmraws <- function(filelist = NULL, dat_dir = NULL)
     
     raws <- unique(df$Spectrum)
     
-    if (!purrr::is_empty(raws)) {
+    if (length(raws)) {
       out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
       
       data.frame(RAW_File = raws) %>% 
@@ -200,7 +200,7 @@ find_pq_psmraws <- function(filelist = NULL, dat_dir = NULL)
     
     raws <- unique(df$raw_file)
     
-    if (!purrr::is_empty(raws)) {
+    if (length(raws)) {
       out_nm <- paste0("msraws_in_", gsub("\\.[^.]*$", "", .x), ".txt")
       
       data.frame(RAW_File = raws) %>% 
@@ -233,12 +233,11 @@ find_pq_psmraws <- function(filelist = NULL, dat_dir = NULL)
 #' @export
 extract_psm_raws <- function(dat_dir = NULL) 
 {
-  if (is.null(dat_dir)) {
+  if (is.null(dat_dir)) 
     dat_dir <- get_gl_dat_dir()
-  } else {
+  else 
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
-  }
-  
+
   type <- find_search_engine(dat_dir)
 
   pattern <- switch(type, 
@@ -248,23 +247,21 @@ extract_psm_raws <- function(dat_dir = NULL)
     mf = "^psm.*\\.tsv$", 
     pq = "^psm[QC]{1}.*\\.txt$", 
     stop("Data type needs to be one of `mascot`, `maxquant`,", 
-         " `spectrum_mill`, `msfragger` or `proteoQ`.", 
+         " `spectrum_mill`, `msfragger` or `proteoM`.", 
          call. = FALSE)
   )
   
   filelist <- list.files(path = file.path(dat_dir), pattern = pattern)
   
-  if (purrr::is_empty(filelist)) {
-    stop("No ", toupper(type), " files(s) under ", dat_dir, 
-         call. = FALSE)
-  }
-  
-  if (type == "pq") {
-    fileQ <- filelist %>% .[grepl("^psmQ.*\\.txt$", .)]
+  if (purrr::is_empty(filelist)) 
+    stop("No ", toupper(type), " files(s) under ", dat_dir, call. = FALSE)
 
-    if (length(fileQ)) {
+  if (type == "pq") {
+    fileQ <- filelist %>% 
+      .[grepl("^psmQ.*\\.txt$", .)]
+
+    if (length(fileQ)) 
       filelist <- fileQ
-    }
   }
 
   switch (type,
@@ -384,7 +381,8 @@ batchPSMheader <- function(filename, dat_dir, TMT_plex, proc_extdata = TRUE,
     
     if (!all(oks)) {
       stop("\nNot all of `", 
-           purrr::reduce(keys, paste, sep = ", "), "`\n are present in ", filename, ".\n", 
+           purrr::reduce(keys, paste, sep = ", "), "`\n are present in ", 
+           filename, ".\n", 
            err_msg, 
            call. = FALSE)
     }
@@ -425,7 +423,7 @@ batchPSMheader <- function(filename, dat_dir, TMT_plex, proc_extdata = TRUE,
       
       queries <- stringr::str_split(data_all[pep_seq_rows[2]:length(data_all)], 
                                     pattern) %>% 
-        plyr::ldply(., rbind) %>% 
+        list_to_dataframe() %>% 
         `names<-`(.[1, ]) %>% 
         `names<-`(gsub("\"", "", names(.))) %>% 
         `[`(-1, ) %>% 
@@ -524,8 +522,9 @@ batchPSMheader <- function(filename, dat_dir, TMT_plex, proc_extdata = TRUE,
     if (proc_extdata) {
       message("Processing `Unassigned queries`: ", filename)
       
-      stringr::str_split(data_all[(unassign_hits_row+2):length(data_all)], pattern) %>% 
-        plyr::ldply(., rbind) %>% 
+      stringr::str_split(data_all[(unassign_hits_row+2):length(data_all)], 
+                         pattern) %>% 
+        list_to_dataframe() %>% 
         dplyr::select(-ncol(.)) %>% 
         saveRDS(file.path(dat_dir, "PSM/cache", 
                           paste0(gsub("\\.[^.]*$", "", filename), "_unassigned.rds")))
@@ -579,7 +578,7 @@ batchPSMheader <- function(filename, dat_dir, TMT_plex, proc_extdata = TRUE,
     
     empai <- c(data_psm[1], empai) %>% 
       stringr::str_split(pattern) %>% 
-      plyr::ldply(rbind) %>% 
+      list_to_dataframe() %>% 
       `names<-`(.[1, ]) %>% 
       `names<-`(gsub("\"", "", names(.), fixed = TRUE)) %>% 
       `[`(-1, ) 
@@ -967,8 +966,8 @@ add_mascot_pepseqmod <- function(df, use_lowercase_aa, purge_phosphodata)
           
           if (nrow(df_sub) > 0) {
             # "-2" for the two characters, "0." ..., in 'pep_var_mod_pos'
-            pos_matrix  <- gregexpr(mod, df_sub$pep_var_mod_pos) %>%
-              plyr::ldply(rbind) %>%
+            pos_matrix  <- gregexpr(mod, df_sub$pep_var_mod_pos) %>% 
+              list_to_dataframe() %>% 
               purrr::map(~ {.x - 2}) %>%
               data.frame(check.names = FALSE)
             
@@ -1332,7 +1331,7 @@ add_shared_genes <- function (df, key = "Proteins", sep = ";",
 
   pep_seqs <- df[["shared_prot_accs"]] %>% 
     stringr::str_split(sep_new) %>% 
-    plyr::ldply(rbind) %>% 
+    list_to_dataframe() %>% 
     dplyr::bind_cols(
       df %>% dplyr::select(pep_seq), 
     ) %>% 
@@ -1400,8 +1399,8 @@ add_shared_prot_accs <- function (df)
   
   df_accs <- df_acc[["Mapped Proteins"]] %>% 
     stringr::str_split(", ") %>% 
-    plyr::ldply(rbind) 
-  
+    list_to_dataframe()
+
   df_accs2 <- purrr::imap(df_accs, ~ {
     data.frame(fasta_name = .x) %>% 
       dplyr::left_join(acc_lookup[, c("prot_acc", "fasta_name")], 
@@ -1467,7 +1466,7 @@ add_shared_sm_genes <- function (df, key = "Proteins", sep = ";",
   
   pep_seqs <- df[["shared_prot_accs"]] %>% 
     stringr::str_split(sep_new) %>% 
-    plyr::ldply(rbind) %>% 
+    list_to_dataframe() %>% 
     dplyr::bind_cols(
       df %>% dplyr::select(pep_seq), 
     ) %>% 
@@ -5057,7 +5056,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         # (would be redundant at multiple msms.txt(s))
         gn_grp_maps <- gn_grp_maps[["gene_groups"]] %>% 
           stringr::str_split(", ") %>% 
-          plyr::ldply(rbind) %>% 
+          list_to_dataframe() %>% 
           dplyr::bind_cols(
             gn_grp_maps %>% dplyr::select("gene"), 
           ) %>% 
@@ -5418,7 +5417,7 @@ add_sm_pepseqmod <- function(df, use_lowercase_aa) {
           dplyr::select(variableSites) %>% 
           dplyr::mutate(variableSites = as.character(variableSites)) %$% 
           stringr::str_split(.$variableSites, " ") %>% 
-          plyr::ldply(., rbind) %>% 
+          list_to_dataframe() %>% 
           `names<-`(paste0("mod_", names(.))) %>% 
           purrr::map(~ gsub("[A-z]", "", .)) %>% 
           dplyr::bind_cols() %>% 
@@ -6393,7 +6392,7 @@ add_pepseqmod <- function(df, use_lowercase_aa, purge_phosphodata)
     
     # (1) non terminal modifications
     pos_matrix  <- gregexpr("[1-f]", df$pep_ivmod) %>%
-      plyr::ldply(rbind) %>%
+      list_to_dataframe() %>% 
       data.frame(check.names = FALSE)
     pos_matrix[pos_matrix < 0L] <- NA
     

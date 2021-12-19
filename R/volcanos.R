@@ -569,6 +569,7 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 	    greater = dfw_greater, 
 	    less = dfw_less, 
 	    topns = dfw_sub_top20, 
+	    highlights = dfw_high, 
 	    topn_labels = dt, 
 	    palette = myPalette, 
 	    xco = xco, 

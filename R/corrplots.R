@@ -405,8 +405,7 @@ plot_corr_sub <- function (df, cor_method = "pearson",
 
 #'Correlation plots
 #'
-#'\code{pepCorr_logFC} plots Pearson correlation for peptide \code{logFC}. 
-#'data.
+#'\code{pepCorr_logFC} plots correlation for peptide \code{logFC}. data.
 #'
 #'@rdname prnCorr_logFC
 #'
@@ -454,8 +453,8 @@ pepCorr_logFC <- function (col_select = NULL, col_order = NULL,
 
 #'Correlation plots
 #'
-#'\code{pepCorr_logInt} plots Pearson correlation of the \code{log10} intensity
-#'of ions for peptide data.
+#'\code{pepCorr_logInt} plots correlation of the \code{log10} intensity of ions
+#'for peptide data.
 #'
 #'@rdname prnCorr_logFC
 #'
@@ -503,7 +502,7 @@ pepCorr_logInt <- function (col_select = NULL, col_order = NULL,
 
 #'Correlation plots
 #'
-#'code{prnCorr_logFC} plots Pearson correlation for protein \code{logFC}.
+#'\code{prnCorr_logFC} plots correlation for protein \code{logFC}.
 #'
 #'With TMT experiments, the same polypeptide may be triggered for MS2 any where
 #'between the baseline and the apex levels during a peak elution. The direct
@@ -637,8 +636,8 @@ prnCorr_logFC <- function (col_select = NULL, col_order = NULL,
 
 #'Correlation Plots
 #'
-#'\code{prnCorr_logInt} plots Pearson correlation of the \code{log10} intensity
-#'of ions for protein data.
+#'\code{prnCorr_logInt} plots correlation of the \code{log10} intensity of ions
+#'for protein data.
 #'
 #'
 #'@rdname prnCorr_logFC
