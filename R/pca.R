@@ -18,8 +18,8 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                      filepath = NULL, filename = NULL, 
                      center_features = TRUE, scale_features = TRUE,
                      theme = NULL,
-                     anal_type = "PCA", ...) {
-  
+                     anal_type = "PCA", ...) 
+{
   stopifnot(vapply(c(scale_log2r, complete_cases, impute_na, show_ids, 
                      center_features, scale_features),
                    rlang::is_logical, logical(1)))
@@ -34,9 +34,8 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   complete_cases <- to_complete_cases(complete_cases = complete_cases, 
                                       impute_na = impute_na)
-  if (complete_cases) {
-    df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-  }
+  if (complete_cases) 
+    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
   
   if (show_ellipses && type == "feats") {
     show_ellipses <- FALSE
@@ -97,7 +96,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     warning("Argument `x` in `prcomp()` automated.", call. = FALSE)
   }
   
-  if (!purrr::is_empty(fml_dots)) {
+  if (length(fml_dots)) {
     fml_dots <- NULL
     warning("The method for class 'formula' is not yet available in proteoQ.", 
             call. = FALSE)
@@ -126,13 +125,12 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   df <- res$pca
   
   # key `Label` used in `geom_lower_text()`
-  if ("Sample_ID" %in% names(df)) {
-    df$Label <- df$Sample_ID
-  } else if (id %in% names(df)) {
-    df$Label <- df[[id]]
-  } else {
-    df$Label <- df[, 1, drop = FALSE]
-  }
+  df$Label <- if ("Sample_ID" %in% names(df)) 
+    df$Sample_ID
+  else if (id %in% names(df))
+    df[[id]]
+  else 
+    df[, 1, drop = FALSE]
   
   res$prop_var <- res$prop_var %>%
     gsub("%", "", .) %>%
@@ -147,6 +145,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
   if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% names(df))
     assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
+    assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
   if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% names(df))
     assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
   if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% names(df))
@@ -158,8 +157,9 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   if (!is.na(map_size)) col_size <- NULL
   if (!is.na(map_alpha)) col_alpha <- NULL
   
-  rm(map_color, map_fill, map_shape, map_size, map_alpha)
-  
+  rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha"))
+  suppressWarnings(rm(list = c("map_.")))
+
   color_brewer <- rlang::enexpr(color_brewer)
   fill_brewer <- rlang::enexpr(fill_brewer)
   if (!is.null(color_brewer)) color_brewer <- rlang::as_string(color_brewer)
@@ -207,9 +207,20 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
             call. = FALSE)
     dimension <- max_dim
   }
-  rm(max_dim)
+  rm(list = "max_dim")
   
   # --- set up aes ---
+  if ((!is.null(col_color)) && rlang::as_string(col_color) == ".") 
+    col_color <- NULL
+  if ((!is.null(col_fill)) && rlang::as_string(col_fill) == ".") 
+    col_fill <- NULL
+  if ((!is.null(col_shape)) && rlang::as_string(col_shape) == ".") 
+    col_shape <- NULL
+  if ((!is.null(col_size)) && rlang::as_string(col_size) == ".") 
+    col_size <- NULL
+  if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
+    col_alpha <- NULL
+  
   if (dimension > 2) {
     mapping <- ggplot2::aes(colour = !!col_color, 
                             fill = !!col_fill, 
@@ -226,10 +237,28 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                             alpha = !!col_alpha)
   }
   
-  idx <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
+  idxes <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
   
-  mapping_var <- mapping[!idx]
-  mapping_fix <- mapping[idx]
+  mapping_var <- mapping[!idxes]
+  mapping_fix <- mapping[idxes]
+
+  local({
+    nms <- names(mapping_var)
+    not_xy <- which(!nms %in% c("x", "y"))
+    
+    vars <- mapping_var[not_xy]
+
+    if (length(vars)) {
+      for (var in vars) {
+        col <- quo_name(var)
+
+        if (anyNA(df[[col]])) {
+          warning("NA/incomplete aesthetics in column `", col, "`.\n", 
+                  call. = FALSE)
+        }
+      }
+    }
+  })
   
   if (type == "obs") {
     dot_shape <- 21
@@ -304,6 +333,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     
     if ((!is.null(col_size)) & (!is.null(size_manual))) {
       stopifnot(length(unique(label_scheme_sub[[col_size]])) == length(size_manual))
+      
       for (x in 2:dimension) {
         for (y in 1:(x-1)) {
           p[x, y] <- p[x, y] + scale_size_manual(values = size_manual)
@@ -313,6 +343,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     
     if ((!is.null(col_shape)) & (!is.null(shape_manual))) {
       stopifnot(length(unique(label_scheme_sub[[col_shape]])) == length(shape_manual))
+      
       for (x in 2:dimension) {
         for (y in 1:(x-1)) {
           p[x, y] <- p[x, y] + scale_shape_manual(values = shape_manual)
@@ -322,6 +353,7 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
     
     if ((!is.null(col_alpha)) & (!is.null(alpha_manual))) {
       stopifnot(length(unique(label_scheme_sub[[col_alpha]])) == length(alpha_manual))
+      
       for (x in 2:dimension) {
         for (y in 1:(x-1)) {
           p[x, y] <- p[x, y] + scale_shape_manual(values = alpha_manual)

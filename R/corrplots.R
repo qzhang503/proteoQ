@@ -319,7 +319,7 @@ plot_corr_sub <- function (df, cor_method = "pearson",
   
   local({
     cors <- df %>% 
-      cor(method = cor_method) %>% 
+      cor(use = "pairwise.complete.obs", method = cor_method) %>% 
       data.frame(check.names = FALSE) %>% 
       tibble::rownames_to_column("Sample_ID")
 

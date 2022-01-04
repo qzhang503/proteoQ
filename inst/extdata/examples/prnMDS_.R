@@ -27,6 +27,20 @@ pepMDS(
   filename = "peps_rowfil_colsel.png",
 )
 
+# column `Alpha` will be used at the default of
+# `col_alpha = NULL`;
+# To bypass the aesthetics under column `Alpha`, 
+# use `col_alpha = NA`
+# (the same applies to other aesthetics, and PCA and LDA)
+pepMDS(
+  col_select = Select, 
+  col_alpha = NA, 
+  filter_peps_by = exprs(pep_n_psm >= 10),
+  show_ids = FALSE, 
+  filename = "peps_rowfil_no_alpha.png",
+)
+
+
 ## proteins
 prnMDS(
   col_color = Color,

@@ -82,26 +82,36 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	  
 	col_color <- if (is.null(col_color)) 
 	  rlang::expr(Color)
+	else if(suppressWarnings(is.na(col_color)))
+	  rlang::sym(".")
 	else 
 	  rlang::sym(col_color)
 	  
 	col_fill <- if (is.null(col_fill))
 	  rlang::expr(Fill)
+	else if(suppressWarnings(is.na(col_fill)))
+	  rlang::sym(".")
 	else 
 	  rlang::sym(col_fill)
 
 	col_shape <- if (is.null(col_shape))
 	  rlang::expr(Shape) 
+	else if(suppressWarnings(is.na(col_shape)))
+	  rlang::sym(".")
 	else 
 	  rlang::sym(col_shape)
 
 	col_size <- if (is.null(col_size))
 	  rlang::expr(Size)
+	else if(suppressWarnings(is.na(col_size)))
+	  rlang::sym(".")
 	else 
 	  rlang::sym(col_size)
 	  
 	col_alpha <- if (is.null(col_alpha))
 	  rlang::expr(Alpha) 
+	else if(suppressWarnings(is.na(col_alpha)))
+	  rlang::sym(".")
 	else 
 	  rlang::sym(col_alpha)
 
@@ -164,7 +174,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	  # warning("No samples under column \'", rlang::as_string(col_order), "\'.", call. = FALSE)
 	}
 
-	if (is.null(label_scheme[[col_color]])) {
+	if (is.null(label_scheme[[col_color]]) && rlang::as_string(col_color) != ".") {
 		warning("Column \'", rlang::as_string(col_color), 
 		        "\' not found.", 
 		        call. = FALSE)
@@ -172,7 +182,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		# warning("No samples under column \'", rlang::as_string(col_color), "\'.", call. = FALSE)
 	}
 
-	if (is.null(label_scheme[[col_fill]])) {
+	if (is.null(label_scheme[[col_fill]]) && rlang::as_string(col_fill) != ".") {
 		warning("Column \'", rlang::as_string(col_fill), 
 		        "\' not found.", 
 		        call. = FALSE)
@@ -180,21 +190,21 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		# warning("No samples under column \'", rlang::as_string(col_fill), "\'.", call. = FALSE)
 	}
 
-	if (is.null(label_scheme[[col_shape]])) {
+	if (is.null(label_scheme[[col_shape]]) && rlang::as_string(col_shape) != ".") {
 		warning("Column \'", rlang::as_string(col_shape), "\' not found.", 
 		        call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_shape]])) == 0) {
 		# warning("No samples under column \'", rlang::as_string(col_shape), "\'.", call. = FALSE)
 	}
 
-	if (is.null(label_scheme[[col_size]])) {
+	if (is.null(label_scheme[[col_size]]) && rlang::as_string(col_size) != ".") {
 		warning("Column \'", rlang::as_string(col_size), "\' not found.", 
 		        call. = FALSE)
 	} else if (sum(!is.na(label_scheme[[col_size]])) == 0) {
 		# warning("No samples under column \'", rlang::as_string(col_size), "\'.", call. = FALSE)
 	}
 
-	if(is.null(label_scheme[[col_alpha]])) {
+	if(is.null(label_scheme[[col_alpha]]) && rlang::as_string(col_alpha) != ".") {
 		warning("Column \'", rlang::as_string(col_alpha), "\' not found.", 
 		        call. = FALSE)
 	} else if(sum(!is.na(label_scheme[[col_alpha]])) == 0) {

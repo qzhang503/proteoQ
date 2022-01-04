@@ -32,8 +32,8 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                      CV = NULL, 
                      na.action = NULL, 
                      nu = NULL, 
-                     ...) {
-
+                     ...) 
+{
   stopifnot(vapply(c(scale_log2r, complete_cases, impute_na, show_ids,
                      center_features, scale_features),
                    rlang::is_logical, logical(1)))
@@ -48,9 +48,8 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 
   complete_cases <- to_complete_cases(complete_cases = complete_cases, 
                                       impute_na = impute_na)
-  if (complete_cases) {
+  if (complete_cases) 
     df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-  }
 
   if (show_ellipses && type == "feats") {
     show_ellipses <- FALSE
@@ -137,13 +136,12 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 
   df <- res$x
 
-  if ("Sample_ID" %in% names(df)) {
-    df$Label <- df$Sample_ID
-  } else if (id %in% names(df)) {
-    df$Label <- df[[id]]
-  } else {
-    df$Label <- df[, 1, drop = FALSE]
-  }
+  df$Label <- if ("Sample_ID" %in% names(df))
+    df$Sample_ID
+  else if (id %in% names(df))
+    df[[id]]
+  else 
+    df$df[, 1, drop = FALSE]
 
 	map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
 
@@ -164,7 +162,8 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	if (!is.na(map_size)) col_size <- NULL
 	if (!is.na(map_alpha)) col_alpha <- NULL
 
-	rm(map_color, map_fill, map_shape, map_size, map_alpha)
+	rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha"))
+	suppressWarnings(rm(list = c("map_.")))
 
 	color_brewer <- rlang::enexpr(color_brewer)
 	fill_brewer <- rlang::enexpr(fill_brewer)
@@ -214,9 +213,20 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	          call. = FALSE)
 	  dimension <- max_dim
 	}
-	rm(max_dim)
+	rm(list = c("max_dim"))
 
 	# --- set up aes ---
+	if ((!is.null(col_color)) && rlang::as_string(col_color) == ".") 
+	  col_color <- NULL
+	if ((!is.null(col_fill)) && rlang::as_string(col_fill) == ".") 
+	  col_fill <- NULL
+	if ((!is.null(col_shape)) && rlang::as_string(col_shape) == ".") 
+	  col_shape <- NULL
+	if ((!is.null(col_size)) && rlang::as_string(col_size) == ".") 
+	  col_size <- NULL
+	if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
+	  col_alpha <- NULL
+	
 	if (dimension > 2) {
 	  mapping <- ggplot2::aes(colour = !!col_color, fill = !!col_fill, shape = !!col_shape,
 	                          size = !!col_size, alpha = !!col_alpha)
@@ -226,11 +236,29 @@ plotLDA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	                          size = !!col_size, alpha = !!col_alpha)
 	}
 
-	idx <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
+	idxes <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
 
-	mapping_var <- mapping[!idx]
-	mapping_fix <- mapping[idx]
-
+	mapping_var <- mapping[!idxes]
+	mapping_fix <- mapping[idxes]
+	
+	local({
+	  nms <- names(mapping_var)
+	  not_xy <- which(!nms %in% c("x", "y"))
+	  
+	  vars <- mapping_var[not_xy]
+	  
+	  if (length(vars)) {
+	    for (var in vars) {
+	      col <- quo_name(var)
+	      
+	      if (anyNA(df[[col]])) {
+	        warning("NA/incomplete aesthetics in column `", col, "`.\n", 
+	                call. = FALSE)
+	      }
+	    }
+	  }
+	})
+	
 	fix_args <- list(colour = "darkgray", fill = NA, shape = 21, size = 4, alpha = 0.9) %>%
 	  .[names(.) %in% names(mapping_fix)] %>%
 	  .[!is.na(.)]

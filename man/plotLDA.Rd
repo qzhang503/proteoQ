@@ -98,24 +98,33 @@ performed if the fields under the indicated group column is empty.}
 
 \item{col_color}{Character string to a column key in \code{expt_smry.xlsx}.
 Values under which will be used for the \code{color} aesthetics in plots. At
-the NULL default, the column key \code{Color} will be used.}
+the NULL default, the column key \code{Color} will be used. If NA, bypasses
+the aesthetics (a means to bypass the look-up of column \code{Color} and
+handle duplication in aesthetics).}
 
 \item{col_fill}{Character string to a column key in \code{expt_smry.xlsx}.
 Values under which will be used for the \code{fill} aesthetics in plots. At
-the NULL default, the column key \code{Fill} will be used.}
+the NULL default, the column key \code{Fill} will be used. If NA, bypasses
+the aesthetics (a means to bypass the look-up of column \code{Fill} and
+handle duplication in aesthetics).}
 
 \item{col_shape}{Character string to a column key in \code{expt_smry.xlsx}.
 Values under which will be used for the \code{shape} aesthetics in plots. At
-the NULL default, the column key \code{Shape} will be used.}
+the NULL default, the column key \code{Shape} will be used. If NA, bypasses
+the aesthetics (a means to bypass the look-up of column \code{Shape} and
+handle duplication in aesthetics).}
 
 \item{col_size}{Character string to a column key in \code{expt_smry.xlsx}.
 Values under which will be used for the \code{size} aesthetics in plots. At
-the NULL default, the column key \code{Size} will be used.}
+the NULL default, the column key \code{Size} will be used. If NA, bypasses
+the aesthetics (a means to bypass the look-up of column \code{Size} and
+handle duplication in aesthetics).}
 
 \item{col_alpha}{Character string to a column key in \code{expt_smry.xlsx}.
 Values under which will be used for the \code{alpha} (transparency)
 aesthetics in plots. At the NULL default, the column key \code{Alpha} will
-be used.}
+be used. If NA, bypasses the aesthetics (a means to bypass the look-up of
+column \code{Alpha} and handle duplication in aesthetics).}
 
 \item{color_brewer}{Character string to the name of a color brewer for use in
 \href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_color_brewer},

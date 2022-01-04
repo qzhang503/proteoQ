@@ -4049,7 +4049,7 @@ check_ggplot_aes <- function(p)
     purrr::map_lgl(anyNA)
   
   if (any(cols)) {
-    warning("\n\nMismatches in the lengths of vectors ", 
+    warning("\nMismatches in the lengths of vectors ", 
             "between selected samples and the aesthetics of `", 
             purrr::reduce(names(which(cols)), paste, sep = ", "), "`.\n", 
             "Fix the missing values in the corresponding columns in `expt_smry.xlsx`.\n", 
