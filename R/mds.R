@@ -47,8 +47,8 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
                      filepath = NULL, filename = NULL, 
                      center_features = TRUE, scale_features = TRUE,
                      theme = NULL, anal_type = "MDS",
-                     ...) {
-
+                     ...) 
+{
   stopifnot(vapply(c(scale_log2r, complete_cases, adjEucDist, 
                      show_ids, 
                      center_features, scale_features),
@@ -63,9 +63,8 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   col_size <- rlang::enexpr(col_size)
   col_alpha <- rlang::enexpr(col_alpha)
 
-  if (complete_cases) {
-    df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
-  }
+  if (complete_cases) 
+    df <- my_complete_cases(df, scale_log2r, label_scheme_sub)
 
   id <- rlang::enexpr(id)
   dots <- rlang::enexprs(...)
@@ -93,41 +92,32 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   # ... NA ...
 
   # (2) excluded formalArgs: 
-  if (!is.null(anal_dots[["x"]])) {
+  if (!is.null(anal_dots[["x"]])) 
     warning("Argument `x` in `dist()` automated.", call. = FALSE)
-  }
                                      
-  if (!is.null(anal_dots[["diag"]])) {
+  if (!is.null(anal_dots[["diag"]])) 
     warning("Argument `diag` in `dist()` automated.", call. = FALSE)
-  }
   
-  if (!is.null(anal_dots[["upper"]])) {
+  if (!is.null(anal_dots[["upper"]])) 
     warning("Argument `upper` in `dist()` automated.", call. = FALSE)
-  }
                                          
-  if (!is.null(anal_dots[["m"]])) {
+  if (!is.null(anal_dots[["m"]])) 
     warning("Argument `m` in `dist()` not used.", call. = FALSE)
-  }
 
-  if (!is.null(anal_dots[["d"]])) {
+  if (!is.null(anal_dots[["d"]])) 
     warning("Distance object `d` automated.", call. = FALSE)
-  }
   
-  if (!is.null(anal_dots[["eig"]])) {
+  if (!is.null(anal_dots[["eig"]])) 
     warning("Argument `eig` in `cmdscale()` automated.", call. = FALSE)
-  }
   
-  if (!is.null(anal_dots[["x.ret"]])) {
+  if (!is.null(anal_dots[["x.ret"]])) 
     warning("Argument `x.ret` in `cmdscale()` automated.", call. = FALSE)
-  }
   
-  if (!is.null(anal_dots[["list."]])) {
+  if (!is.null(anal_dots[["list."]])) 
     warning("Argument `list.` in `cmdscale()` automated.", call. = FALSE)
-  }
 
-  if (!is.null(anal_dots[["y"]])) {
+  if (!is.null(anal_dots[["y"]])) 
     warning("Argument `y` in `isoMDS()` automated.", call. = FALSE)
-  }
 
   # note that `method`, `k`, `p` already in main arguments
   anal_dots <- anal_dots %>% 
@@ -168,13 +158,12 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
       !!!anal_dots)
 
   # key `Label` used in `geom_lower_text()`
-  if ("Sample_ID" %in% names(df)) {
-    df$Label <- df$Sample_ID
-  } else if (id %in% names(df)) {
-    df$Label <- df[[id]]
-  } else {
-    df$Label <- df[, 1, drop = FALSE]
-  }
+  df$Label <- if ("Sample_ID" %in% names(df)) 
+    df$Sample_ID
+  else if (id %in% names(df)) 
+    df$df[[id]]
+  else 
+    df[, 1, drop = FALSE]
 
 	map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
 
@@ -195,7 +184,8 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	if (!is.na(map_size)) col_size <- NULL
 	if (!is.na(map_alpha)) col_alpha <- NULL
 
-	rm(map_color, map_fill, map_shape, map_size, map_alpha)
+	rm(list = c("map_color", "map_fill", "map_shape", "map_size", "map_alpha"))
+	suppressWarnings(rm(list = c("map_.")))
 
 	color_brewer <- rlang::enexpr(color_brewer)
 	fill_brewer <- rlang::enexpr(fill_brewer)
@@ -247,9 +237,20 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	          call. = FALSE)
 	  dimension <- max_dim
 	}
-	rm(max_dim)
+	rm(list = c("max_dim"))
 
 	# --- set up aes ---
+	if ((!is.null(col_color)) && rlang::as_string(col_color) == ".") 
+	  col_color <- NULL
+	if ((!is.null(col_fill)) && rlang::as_string(col_fill) == ".") 
+	  col_fill <- NULL
+	if ((!is.null(col_shape)) && rlang::as_string(col_shape) == ".") 
+	  col_shape <- NULL
+	if ((!is.null(col_size)) && rlang::as_string(col_size) == ".") 
+	  col_size <- NULL
+	if ((!is.null(col_alpha)) && rlang::as_string(col_alpha) == ".") 
+	  col_alpha <- NULL
+	
 	if (dimension > 2) {
 	  mapping <- ggplot2::aes(colour = !!col_color, 
 	                          fill = !!col_fill, 
@@ -266,10 +267,28 @@ plotMDS <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
 	                          alpha = !!col_alpha)
 	}
 
-	idx <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
+	idxes <- purrr::map(mapping, `[[`, 1) %>% purrr::map_lgl(is.null)
 
-	mapping_var <- mapping[!idx]
-	mapping_fix <- mapping[idx]
+	mapping_var <- mapping[!idxes]
+	mapping_fix <- mapping[idxes]
+	
+	local({
+	  nms <- names(mapping_var)
+	  not_xy <- which(!nms %in% c("x", "y"))
+	  
+	  vars <- mapping_var[not_xy]
+	  
+	  if (length(vars)) {
+	    for (var in vars) {
+	      col <- quo_name(var)
+	      
+	      if (anyNA(df[[col]])) {
+	        warning("NA/incomplete aesthetics in column `", col, "`.\n", 
+	                call. = FALSE)
+	      }
+	    }
+	  }
+	})
 
 	fix_args <- list(colour = "darkgray", 
 	                 fill = NA, 
@@ -907,20 +926,29 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'@inheritParams anal_prnNMF
 #'@param col_color Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{color} aesthetics in plots. At
-#'  the NULL default, the column key \code{Color} will be used.
+#'  the NULL default, the column key \code{Color} will be used. If NA, bypasses
+#'  the aesthetics (a means to bypass the look-up of column \code{Color} and
+#'  handle duplication in aesthetics).
 #'@param  col_fill Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{fill} aesthetics in plots. At
-#'  the NULL default, the column key \code{Fill} will be used.
+#'  the NULL default, the column key \code{Fill} will be used. If NA, bypasses
+#'  the aesthetics (a means to bypass the look-up of column \code{Fill} and
+#'  handle duplication in aesthetics).
 #'@param col_shape Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{shape} aesthetics in plots. At
-#'  the NULL default, the column key \code{Shape} will be used.
+#'  the NULL default, the column key \code{Shape} will be used. If NA, bypasses
+#'  the aesthetics (a means to bypass the look-up of column \code{Shape} and
+#'  handle duplication in aesthetics).
 #'@param col_size Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{size} aesthetics in plots. At
-#'  the NULL default, the column key \code{Size} will be used.
+#'  the NULL default, the column key \code{Size} will be used. If NA, bypasses
+#'  the aesthetics (a means to bypass the look-up of column \code{Size} and
+#'  handle duplication in aesthetics).
 #'@param col_alpha Character string to a column key in \code{expt_smry.xlsx}.
 #'  Values under which will be used for the \code{alpha} (transparency)
 #'  aesthetics in plots. At the NULL default, the column key \code{Alpha} will
-#'  be used.
+#'  be used. If NA, bypasses the aesthetics (a means to bypass the look-up of
+#'  column \code{Alpha} and handle duplication in aesthetics).
 #'@param color_brewer Character string to the name of a color brewer for use in
 #'  \href{https://ggplot2.tidyverse.org/reference/scale_brewer.html}{ggplot2::scale_color_brewer},
 #'   i.e., \code{color_brewer = Set1}. At the NULL default, the setting in
@@ -979,57 +1007,60 @@ pepMDS <- function (col_select = NULL, col_group = NULL, col_color = NULL,
 #'  \code{\link{normPSM}} for the format of \code{filter_} statements. \cr \cr
 #'  Additional parameters for \code{ggsave}: \cr \code{width}, the width of
 #'  plot; \cr \code{height}, the height of plot \cr \code{...}
-#'@seealso
-#'  \emph{Metadata} \cr
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'  and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'  \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'  PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in
+#'  PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+#'  examples in peptide data merging \cr \code{\link{standPep}} for extended
+#'  examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+#'  extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'  in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'  extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+#'  and \code{\link{extract_psm_raws}} for extracting MS file names \cr
 #'
-#'  \emph{Variable arguments of `filter_...`} \cr
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'  \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'  \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
 #'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
 #'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings
+#'  \cr
 #'
-#'  \emph{Missing values} \cr
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr
+#'  \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'  missing value imputation \cr
 #'
-#'  \emph{Informatics} \cr
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}},
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'  \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'  significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'  volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'  analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'  GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'  and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'  set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'  online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'  visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'  visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'  visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'  visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr \code{\link{anal_prnTrend}} and
+#'  \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'  \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'  \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
 #'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
 #'
-#'  \emph{Custom databases} \cr
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
-#'  ontology}} \cr
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
-#'  signatures} \cr
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
+#'  \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'  UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'  among RefSeq accessions, gene names and Entrez IDs \cr \code{\link{prepGO}}
+#'  for
+#'  \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'   ontology}} \cr \code{\link{prepMSig}} for
+#'  \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'   signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}}
+#'  for STRING-DB \cr
 #'
 #'  \emph{Column keys in PSM, peptide and protein outputs} \cr
 #'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr

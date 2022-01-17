@@ -1205,8 +1205,7 @@ parse_acc <- function(df)
   }, prot_accs)
   
   df %>% 
-    dplyr::left_join(data.frame(prot_acc = prot_accs, 
-                                acc_type = acc_types), 
+    dplyr::left_join(data.frame(prot_acc = prot_accs, acc_type = acc_types), 
                      by = "prot_acc")
 }
 
@@ -1223,32 +1222,6 @@ parse_acc <- function(df)
 #' @return A lookup table, \code{acc_lookup}.
 parse_fasta <- function (df, fasta, entrez, warns = TRUE) 
 {
-  na_genes_by_acc <- function(acc_lookup) {
-    if (nrow(acc_lookup) && 
-        "prot_acc" %in% names(acc_lookup) && 
-        "gene" %in% names(acc_lookup)) {
-      na_gene <- (is.na(acc_lookup$gene)) | (stringr::str_length(acc_lookup$gene) == 0)
-      acc_lookup$gene <- as.character(acc_lookup$gene)
-      acc_lookup$gene[na_gene] <- as.character(acc_lookup$prot_acc[na_gene])
-    }
-
-    acc_lookup
-  }
-  
-  na_species_by_org <- function(acc_lookup) {
-    if (nrow(acc_lookup) && 
-        "organism" %in% names(acc_lookup) && 
-        "species" %in% names(acc_lookup)) {
-      na_species <- 
-        (is.na(acc_lookup$species)) | (stringr::str_length(acc_lookup$species) == 0)
-      acc_lookup$species <- as.character(acc_lookup$species)
-      acc_lookup$species[na_species] <- as.character(acc_lookup$organism[na_species])
-    }
-
-    acc_lookup
-  }
-  
-
   my_lookup <- c(
     "Homo sapiens" = "human",
     "Mus musculus" = "mouse",
@@ -1309,87 +1282,11 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
   # accession lookups by acc_type's
   df_splits <- df %>% split(., .$acc_type, drop = TRUE)
   
-  acc_lookup <- purrr::map(df_splits, ~ {
-    acc_type <- .x[["acc_type"]] %>% .[1]
-    
-    if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
-      acc_lookup <- names(fasta_db) %>% 
-        gsub("^..\\|", "", .) %>% 
-        stringr::str_split("\\|", simplify = TRUE) %>% 
-        data.frame() %>% 
-        `colnames<-`(paste("X", seq_len(ncol(.)), sep = ".")) %>% 
-        `names_pos<-`(1:2, c("uniprot_acc", "uniprot_id")) %>% 
-        dplyr::select(c("uniprot_acc", "uniprot_id")) %>% 
-        dplyr::bind_cols(data.frame(fasta_name = names(fasta_db)), .) %>% 
-        dplyr::filter(grepl(pat_uni_acc, uniprot_acc), 
-                      grepl(pat_uni_id, uniprot_id)) %>%         
-        dplyr::filter(.[[acc_type]] %in% unique(.x$prot_acc)) %>% 
-        dplyr::filter(!duplicated(.[[acc_type]])) %>% 
-        dplyr::mutate(refseq_acc = NA_character_, 
-                      other_acc = NA_character_, 
-                      acc_type = acc_type, 
-                      prot_acc = !!rlang::sym(acc_type))
-      
-      local({
-        n_fasta <- length(fasta_db)
-        n_lookup <- nrow(acc_lookup)
-        perc <- n_lookup/n_fasta 
-
-        if (perc < .1 && warns) 
-          warning("The portion of uniprot accessions being annotated with \n", 
-                  purrr::reduce(fasta, paste, sep = "\n"), " is ", 
-                  format(round(perc, 3), nsmall = 3), 
-                  "\n============================================================", 
-                  "\n!!! Check the choice of fasta(s) for probable mismatches.!!!", 
-                  "\n  A common source of mistakes: choose Uniprot with proteoQ", 
-                  "\n  but used Refseq in database searches, or vice versa.", 
-                  "\n============================================================", 
-                  call. = FALSE)
-      })
-    } else if (acc_type == "refseq_acc") {
-      acc_lookup <- tibble::tibble(fasta_name = names(fasta_db), 
-                                   refseq_acc = names(fasta_db)) %>% 
-        dplyr::filter(grepl(pat_ref_acc, refseq_acc)) %>% 
-        dplyr::filter(.[[acc_type]] %in% unique(.x$prot_acc)) %>% 
-        dplyr::filter(!duplicated(.[[acc_type]])) %>% 
-        dplyr::mutate(uniprot_acc = NA_character_, 
-                      uniprot_id = NA_character_, 
-                      other_acc = NA_character_, 
-                      acc_type = acc_type, 
-                      prot_acc = !!rlang::sym(acc_type)) %>% 
-        dplyr::select(c("fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
-                        "other_acc", "acc_type", "prot_acc"))
-      
-      local({
-        n_fasta <- length(fasta_db)
-        n_lookup <- nrow(acc_lookup)
-        perc <- n_lookup/n_fasta 
-        
-        if (perc < .1 && warns) 
-          warning("The portion of refseq accessions being annotated with \n", 
-                  purrr::reduce(fasta, paste, sep = "\n"), " is ", 
-                  format(round(perc, 3), nsmall = 3), 
-                  "\nInsepct the specification of fasta databases for probable mismatches", 
-                  call. = FALSE)
-      })
-    } else if (acc_type == "other_acc") {
-      acc_lookup <- tibble::tibble(fasta_name = names(fasta_db), 
-                                   other_acc = names(fasta_db)) %>% 
-        dplyr::filter(other_acc %in% unique(.x$prot_acc)) %>% 
-        dplyr::filter(!duplicated(other_acc)) %>% 
-        dplyr::mutate(uniprot_acc = NA_character_, 
-                      uniprot_id = NA_character_, 
-                      refseq_acc = NA_character_, 
-                      acc_type = acc_type, 
-                      prot_acc = other_acc) %>% 
-        dplyr::select(c("fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
-                        "other_acc", "acc_type", "prot_acc")) 
-    }
-
-    invisible(acc_lookup)
-  }) %>% 
+  acc_lookup <- lapply(df_splits, hparse_fasta, 
+                       fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc, 
+                       fasta, warns) %>% 
     dplyr::bind_rows()
-  
+
   # --- subset and annotate fasta_db with entries in acc_lookup ---
   fasta_db <- local({
     fasta_db <- fasta_db %>% 
@@ -1399,115 +1296,21 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
     if (!length(fasta_db)) 
       stop("No fasta entries match protein accessions; probably wrong fasta file.", 
            call. = FALSE)
-    
-    acc_types <- unique(df$acc_type)
-    
-    purrr::map(acc_types, ~ {
-      if (.x == "uniprot_acc") {
-        fasta_names_sub <- acc_lookup %>% 
-          dplyr::filter(!is.na(!!rlang::sym(.x))) %>% 
-          .[["fasta_name"]] %>% 
-          unique()
-        
-        fasta_db_sub <- fasta_db %>% .[names(.) %in% fasta_names_sub]
-        
-        # add attributes
-        prot_acc <- gsub("^..\\|(.*)\\|.*$", "\\1", names(fasta_db_sub))
-        fasta_db_sub <- purrr::map2(fasta_db_sub, prot_acc, ~ {
-          attr(.x, "prot_acc") <- .y
-          .x
-        })
-        
-        prot_desc <- fasta_db_sub %>%
-          purrr::map(attr, "header") %>% 
-          gsub("^.*\\|.*\\s+?", "", .)
-        fasta_db_sub <- purrr::map2(fasta_db_sub, prot_desc, ~ {
-          attr(.x, "prot_desc") <- .y
-          .x
-        })
-        
-      } else if (.x == "uniprot_id") {
-        fasta_names_sub <- acc_lookup %>% 
-          dplyr::filter(!is.na(!!rlang::sym(.x))) %>% 
-          .[["fasta_name"]] %>% 
-          unique()
-        
-        fasta_db_sub <- fasta_db %>% .[names(.) %in% fasta_names_sub]
 
-        prot_acc <- gsub("^.*\\|(.*)$", "\\1", names(fasta_db_sub))
-        
-        fasta_db_sub <- purrr::map2(fasta_db_sub, prot_acc, ~ {
-          attr(.x, "prot_acc") <- .y
-          .x
-        })
-        
-        prot_desc <- fasta_db_sub %>%
-          purrr::map(attr, "header") %>% 
-          gsub("^.*\\|.*\\s+?", "", .)
-        
-        fasta_db_sub <- purrr::map2(fasta_db_sub, prot_desc, ~ {
-          attr(.x, "prot_desc") <- .y
-          .x
-        })
-        
-      } else if (.x == "refseq_acc") {
-        fasta_names_sub <- acc_lookup %>% 
-          dplyr::filter(!is.na(!!rlang::sym(.x))) %>% 
-          .[["fasta_name"]] %>% 
-          unique()
-        
-        fasta_db_sub <- fasta_db %>% .[names(.) %in% fasta_names_sub]
-        
-        prot_acc <- gsub("\\.[0-9]*$", "", names(fasta_db_sub))
-        
-        fasta_db_sub <- purrr::map2(fasta_db_sub, prot_acc, ~ {
-          attr(.x, "prot_acc") <- .y
-          .x
-        })
-        
-        prot_desc <- fasta_db_sub %>%
-          purrr::map(attr, "header") %>% 
-          gsub("^.*_.*\\s+?", "", .)
-        
-        fasta_db_sub <- purrr::map2(fasta_db_sub, prot_desc, ~ {
-          attr(.x, "prot_desc") <- .y
-          .x
-        })
-        
-      } else {
-        fasta_names_sub <- acc_lookup %>% 
-          dplyr::filter(!is.na(other_acc)) %>% 
-          .[["fasta_name"]] %>% 
-          unique()
-        
-        fasta_db_sub <- fasta_db %>% .[names(.) %in% fasta_names_sub]
-
-        prot_acc <- names(fasta_db_sub)
-        
-        fasta_db_sub <- purrr::map2(fasta_db_sub, prot_acc, ~ {
-          attr(.x, "prot_acc") <- .y
-          .x
-        })
-        
-        prot_desc <- fasta_db_sub %>% 
-          purrr::map(attr, "header") 
-        
-        fasta_db_sub <- purrr::map2(fasta_db_sub, prot_desc, ~ {
-          attr(.x, "prot_desc") <- .y
-          .x
-        })
-      }
-      
-      invisible(fasta_db_sub)
-    }) %>% 
-      do.call(`c`, .)
+    fasta_db <- lapply(unique(df$acc_type), add_prot_desc, 
+                       acc_lookup = acc_lookup, 
+                       fasta_db = fasta_db) %>% 
+      do.call(`c`, .) %>% 
+      .[!duplicated(names(.))]
+    
+    save(fasta_db, file = file.path(dat_dir, "fasta_db.rda"))
+    
+    fasta_db
   }) 
-  fasta_db <- fasta_db %>% .[!duplicated(names(.))]
-  save(fasta_db, file = file.path(dat_dir, "fasta_db.rda"))
 
   # -- add columns prot_desc, prot_mass, prot_len ---
   acc_lookup <- suppressWarnings(
-    fasta_smry <- dplyr::bind_cols(
+    dplyr::bind_cols(
       prot_acc = purrr::map_chr(fasta_db, attr, "prot_acc"), 
       prot_desc = purrr::map_chr(fasta_db, attr, "prot_desc"), 
       prot_mass = purrr::map_dbl(fasta_db, ~ calc_avgpep(.x)), 
@@ -1519,10 +1322,11 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
     dplyr::left_join(acc_lookup, ., by = "prot_acc")
   
   # -- add columns gene, organism, species, entrez ---
-  df_splits <- df %>% split(., .$acc_type, drop = TRUE)
+  df_splits <- df %>% 
+    split(., .$acc_type, drop = TRUE)
   
   acc_lookup <- purrr::map(df_splits, ~ {
-    acc_type <- .x[["acc_type"]] %>% .[1]
+    acc_type <- .x[["acc_type"]][1]
     
     if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
       genes <- local({
@@ -1566,8 +1370,10 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
         add_custom_entrez(acc_lookup, entrez, acc_type)
       
       # added on 12-01-2020
-      acc_lookup <- acc_lookup %>% dplyr::filter(!is.na(.[["uniprot_acc"]]))
-    } else if (acc_type == "refseq_acc") {
+      acc_lookup <- acc_lookup %>% 
+        dplyr::filter(!is.na(.[["uniprot_acc"]]))
+    } 
+    else if (acc_type == "refseq_acc") {
       # columns organism and species
       acc_lookup <- acc_lookup %>% 
         dplyr::filter(grepl("^[XNY]{1}[MRP]{1}_", prot_acc)) %>% 
@@ -1585,8 +1391,10 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
       acc_lookup <- add_refseq_gene(acc_lookup, acc_type)
       
       # added on 12-01-2020
-      acc_lookup <- acc_lookup %>% dplyr::filter(!is.na(.[["refseq_acc"]]))
-    } else {
+      acc_lookup <- acc_lookup %>% 
+        dplyr::filter(!is.na(.[["refseq_acc"]]))
+    } 
+    else {
       acc_lookup <- acc_lookup %>% 
         dplyr::filter(acc_type == "other_acc") %>% 
         dplyr::mutate(gene = NA_character_, 
@@ -1608,6 +1416,196 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
   save(acc_lookup, file = file.path(dat_dir, "acc_lookup.rda"))
   
   invisible(acc_lookup)
+}
+
+
+#' Helper of \link{parse_fasta} by accession type.
+#'
+#' NA genes are replaced with prot_acc.
+#' 
+#' @param df_sub An input data frame with a single type of protein accession.
+#' @param fasta A fasta database.
+#' @inheritParams parse_fasta
+hparse_fasta <- function (df_sub, fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc, 
+                          fasta, warns) 
+{
+  acc_type <- df_sub[["acc_type"]][1]
+  
+  if (acc_type %in% c("uniprot_acc", "uniprot_id")) {
+    acc_lookup <- names(fasta_db) %>% 
+      gsub("^..\\|", "", .) %>% 
+      stringr::str_split("\\|", simplify = TRUE) %>% 
+      data.frame(check.names = FALSE) %>% 
+      dplyr::select(1:2) %>% 
+      `names<-`(c("uniprot_acc", "uniprot_id")) %>% 
+      dplyr::bind_cols(data.frame(fasta_name = names(fasta_db)), .) %>% 
+      dplyr::filter(grepl(pat_uni_acc, uniprot_acc), 
+                    grepl(pat_uni_id, uniprot_id)) %>%     
+      dplyr::filter(.[[acc_type]] %in% unique(df_sub$prot_acc)) %>% 
+      dplyr::filter(!duplicated(.[[acc_type]])) %>% 
+      dplyr::mutate(refseq_acc = NA_character_, 
+                    other_acc = NA_character_, 
+                    acc_type = acc_type, 
+                    prot_acc = !!rlang::sym(acc_type))
+    
+    local({
+      n_fasta <- length(fasta_db)
+      n_lookup <- nrow(acc_lookup)
+      perc <- n_lookup/n_fasta 
+      
+      if (perc < .1 && warns) 
+        warning("The portion of uniprot accessions being annotated with \n", 
+                purrr::reduce(fasta, paste, sep = "\n"), " is ", 
+                format(round(perc, 3), nsmall = 3), 
+                "\n============================================================", 
+                "\n!!! Check the choice of fasta(s) for probable mismatches.!!!", 
+                "\n  A common source of mistakes: choose Uniprot with proteoQ", 
+                "\n  but used Refseq in database searches, or vice versa.", 
+                "\n============================================================", 
+                call. = FALSE)
+    })
+  } 
+  else if (acc_type == "refseq_acc") {
+    acc_lookup <- tibble::tibble(fasta_name = names(fasta_db), 
+                                 refseq_acc = names(fasta_db)) %>% 
+      dplyr::filter(grepl(pat_ref_acc, refseq_acc)) %>% 
+      dplyr::filter(.[[acc_type]] %in% unique(df_sub$prot_acc)) %>% 
+      dplyr::filter(!duplicated(.[[acc_type]])) %>% 
+      dplyr::mutate(uniprot_acc = NA_character_, 
+                    uniprot_id = NA_character_, 
+                    other_acc = NA_character_, 
+                    acc_type = acc_type, 
+                    prot_acc = !!rlang::sym(acc_type)) %>% 
+      dplyr::select(c("fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
+                      "other_acc", "acc_type", "prot_acc"))
+    
+    local({
+      n_fasta <- length(fasta_db)
+      n_lookup <- nrow(acc_lookup)
+      perc <- n_lookup/n_fasta 
+      
+      if (perc < .1 && warns) 
+        warning("The portion of refseq accessions being annotated with \n", 
+                purrr::reduce(fasta, paste, sep = "\n"), " is ", 
+                format(round(perc, 3), nsmall = 3), 
+                "\nInsepct the specification of fasta databases for probable mismatches", 
+                call. = FALSE)
+    })
+  } 
+  else if (acc_type == "other_acc") {
+    acc_lookup <- tibble::tibble(fasta_name = names(fasta_db), 
+                                 other_acc = names(fasta_db)) %>% 
+      dplyr::filter(other_acc %in% unique(df_sub$prot_acc)) %>% 
+      dplyr::filter(!duplicated(other_acc)) %>% 
+      dplyr::mutate(uniprot_acc = NA_character_, 
+                    uniprot_id = NA_character_, 
+                    refseq_acc = NA_character_, 
+                    acc_type = acc_type, 
+                    prot_acc = other_acc) %>% 
+      dplyr::select(c("fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
+                      "other_acc", "acc_type", "prot_acc")) 
+  }
+  
+  invisible(acc_lookup)
+}
+
+
+#' Helper of \link{parse_fasta}.
+#' 
+#' Coerces NA values in genes by the value of accessions.
+#' 
+#' @param acc_type The type of protein accession.
+na_genes_by_acc <- function(acc_lookup) {
+  if (nrow(acc_lookup) && 
+      "prot_acc" %in% names(acc_lookup) && 
+      "gene" %in% names(acc_lookup)) {
+    na_gene <- (is.na(acc_lookup$gene)) | (stringr::str_length(acc_lookup$gene) == 0)
+    acc_lookup$gene <- as.character(acc_lookup$gene)
+    acc_lookup$gene[na_gene] <- as.character(acc_lookup$prot_acc[na_gene])
+  }
+  
+  acc_lookup
+}
+
+
+#' Helper of \link{parse_fasta}.
+#' 
+#' Coerces NA values in species by the value of organism.
+#' 
+#' @param acc_type The type of protein accession.
+na_species_by_org <- function(acc_lookup) {
+  if (nrow(acc_lookup) && 
+      "organism" %in% names(acc_lookup) && 
+      "species" %in% names(acc_lookup)) {
+    na_species <- 
+      (is.na(acc_lookup$species)) | (stringr::str_length(acc_lookup$species) == 0)
+    acc_lookup$species <- as.character(acc_lookup$species)
+    acc_lookup$species[na_species] <- as.character(acc_lookup$organism[na_species])
+  }
+  
+  acc_lookup
+}
+
+
+#' Helper of \link{parse_fasta}.
+#' 
+#' Adds attributes to fasta entries.
+#' 
+#' @param pat_acc A regular expression of protein accession.
+#' @inheritParams add_prot_desc
+add_fasta_attrs <- function (pat_acc, acc_type, acc_lookup, fasta_db) 
+{
+  fasta_names_sub <- acc_lookup %>% 
+    dplyr::filter(!is.na(!!rlang::sym(acc_type))) %>% 
+    .[["fasta_name"]] %>% 
+    unique()
+  
+  fasta_db_sub <- fasta_db %>% 
+    .[names(.) %in% fasta_names_sub]
+  
+  # add attributes
+  prot_acc <- if(is.null(pat_acc))
+    names(fasta_db_sub)
+  else
+    gsub(pat_acc, "\\1", names(fasta_db_sub))
+  
+  fasta_db_sub <- purrr::map2(fasta_db_sub, prot_acc, function (fa, pr) {
+    attr(fa, "prot_acc") <- pr
+    fa
+  })
+  
+  prot_desc <- fasta_db_sub %>%
+    purrr::map(attr, "header") %>% 
+    gsub("^.*\\|.*\\s+?", "", .)
+  
+  fasta_db_sub <- purrr::map2(fasta_db_sub, prot_desc, function (fa, pr) {
+    attr(fa, "prot_desc") <- pr
+    fa
+  })
+  
+  invisible(fasta_db_sub)
+}
+
+
+#' Helper of \link{parse_fasta}.
+#' 
+#' Adds \code{prot_desc} by \code{acc_type}.
+#' 
+#' @param acc_type The type of protein accession.
+#' @param acc_lookup A look-up table of protein accessions.
+#' @param fasta_db A database of fasta.
+add_prot_desc <- function (acc_type, acc_lookup, fasta_db) 
+{
+  pat_acc <- if (acc_type == "uniprot_acc")
+    "^..\\|(.*)\\|.*$"
+  else if (acc_type == "uniprot_id")
+    "^.*\\|(.*)$"
+  else if (acc_type == "refseq_acc")
+    "^(.*)\\.[0-9]*$"
+  else
+    NULL
+  
+  add_fasta_attrs(pat_acc, acc_type, acc_lookup, fasta_db) 
 }
 
 
@@ -1819,7 +1817,10 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL,
   
   if (anal_type == "GSPA") {
     file <- file.path(dat_dir, "Calls/anal_prnGSPA.rda")
-    if (!file.exists(file)) stop("Run `prnGSPA` first.", call. = FALSE)
+    
+    if (!file.exists(file)) 
+      stop("Run `prnGSPA` first.", call. = FALSE)
+    
     load(file = file)
   }
   
@@ -1833,32 +1834,31 @@ match_gspa_filename <- function (anal_type = "GSPA", subdir = NULL,
     if (!length(filename)) 
       stop("No result file found under `", subdir, "`", call. = FALSE)
     
-    if (scale_log2r) {
-      filename <- filename %>% .[grepl("^Protein_GSPA_Z", .)]
-    } else {
-      filename <- filename %>% .[grepl("^Protein_GSPA_N", .)]
-    }
+    if (scale_log2r)
+      filename <- filename[grepl("^Protein_GSPA_Z", filename)]
+    else
+      filename <- filename[grepl("^Protein_GSPA_N", filename)]
 
-    if (impute_na) {
-      filename <- filename %>% .[grepl("Protein_GSPA_[NZ]_impNA\\.txt", .)]
-    } else {
-      filename <- filename %>% .[grepl("Protein_GSPA_[NZ]\\.txt", .)]
-    }
+    if (impute_na)
+      filename <- filename[grepl("Protein_GSPA_[NZ]_impNA\\.txt", filename)]
+    else
+      filename <- filename[grepl("Protein_GSPA_[NZ]\\.txt", filename)]
 
     if (length(filename) > 1L) 
       stop("More than one result file found under `", subdir, "`", call. = FALSE)
     
     if (rlang::is_empty(filename)) 
-      stop("No input files correspond to impute_na = ", 
-           impute_na, ", scale_log2r = ", scale_log2r, 
-           call. = FALSE)
+      stop("No input files correspond to impute_na = ", impute_na, ", 
+           scale_log2r = ", scale_log2r, call. = FALSE)
   }
 
   invisible(filename)
 }
 
 
-#' Matches gset_nms to prnGSPA (not currently used)
+#' Matches gset_nms to prnGSPA.
+#' 
+#' Not currently used.
 #' 
 #' @inheritParams prnGSPA
 match_gset_nms <- function (gset_nms = NULL) 
@@ -1873,10 +1873,11 @@ match_gset_nms <- function (gset_nms = NULL)
       stop("`gset_nms` is NULL and ", file, " not found.", 
            call. = FALSE)
     }
-  } else {
+  } 
+  else {
     if (file.exists(file)) {
-      gset_nms <- gset_nms %>% 
-        .[. %in% match_call_arg(anal_prnGSPA, gset_nms)]
+      # gset_nms <- gset_nms %>% .[. %in% match_call_arg(anal_prnGSPA, gset_nms)]
+      gset_nms <- gset_nms %>% .[. %in% match_call_arg(anal_prnGSPA, .)]
     } else {
       warning("File `", file, "`` not available for `gset_nms` matches.", 
               "\nUse the `gset_nms` value as it.", 
@@ -1892,7 +1893,7 @@ match_gset_nms <- function (gset_nms = NULL)
           call. = FALSE)
   }
   
-  if (purrr::is_empty(gset_nms)) {
+  if (!length(gset_nms)) {
     stop ("The `gset_nms` is EMPTY after parameter matching.", 
           "\n\tCheck the values of `gset_nms` in the latest call to `prnGSPA(...)`.", 
           call. = FALSE)
@@ -1939,22 +1940,20 @@ match_scale_log2r <- function(scale_log2r)
 match_logi_gv <- function(var, val) 
 {
   oval <- val
-  gvar <- tryCatch(gvar <- get(var, envir = .GlobalEnv), 
-                   error = function(e) "e")
-  
+  gvar <- tryCatch(gvar <- get(var, envir = .GlobalEnv), error = function(e) "e")
+
   if (gvar != "e") {
     stopifnot(rlang::is_logical(gvar))
     
-    if (gvar != oval) {
+    if (gvar != oval) 
       warning("Coerce ", var, " to ", gvar, 
               " after matching to the global setting.", 
               call. = FALSE)
-    }
 
     return(gvar)
-  } else {
+  } 
+  else
     return(val)
-  }
 }
 
 
@@ -1997,11 +1996,10 @@ match_pepSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE)
   else 
     match_call_arg(pepSig_impFALSE, scale_log2r)
   
-  if (scale_log2r != mscale_log2r) {
+  if (scale_log2r != mscale_log2r)
     warning("scale_log2r = ", mscale_log2r, 
             " after matching to pepSig(impute_na = ", impute_na, ", ...)", 
             call. = FALSE)
-  }
 
   scale_log2r <- mscale_log2r
 }
@@ -2021,7 +2019,8 @@ replace_na_genes <- function(df, acc_type)
 		na_gene <- (is.na(df[, c("gene")])) | (str_length(df$gene) == 0)
 		df$gene <- as.character(df$gene)
 		df$gene[na_gene] <- as.character(df$prot_acc[na_gene])
-	} else if (acc_type == "uniprot_id") {
+	} 
+	else if (acc_type == "uniprot_id") {
 		temp <- data.frame(do.call('rbind', 
 		                           strsplit(as.character(df$prot_desc), 
 		                                    'GN=', 
@@ -2033,7 +2032,8 @@ replace_na_genes <- function(df, acc_type)
 
 		na_gene <- is.na(df$gene)
 		df[na_gene, c("gene")] <- temp[na_gene, c("gene")]
-		rm(temp)
+		
+		rm(list = c("temp"))
 
 		df <- df %>%
 			dplyr::mutate(gene = gsub(".*\\|", "", gene))
@@ -2148,10 +2148,9 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta)
       
       if (!(grepl("[KR]$", pep_seq) || pep_res_after == "-") || 
            (!pep_res_before %in% c("K", "R", "-")) && 
-          (pep_res_before != "M" || pep_pos_i[1] != 2L)
-      ) {
+          (pep_res_before != "M" || pep_pos_i[1] != 2L))
         next
-      } else {
+      else
         return(cbind(pep_seq, 
                      pep_res_before, 
                      start = pep_pos_i[[1]], 
@@ -2159,7 +2158,6 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta)
                      pep_res_after, 
                      fasta_name, 
                      is_tryptic = TRUE))
-      }
     }
     
     # no matches
@@ -2168,7 +2166,8 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta)
     out <- cbind(pep_seq, pep_res_before, start = pep_pos_i[[1]], 
                  end = pep_pos_i[[2]], pep_res_after, fasta_name, 
                  is_tryptic = FALSE)
-  } else  { # no fasta matches
+  } 
+  else  { # no fasta matches
     out <- cbind(pep_seq, 
                  pep_res_before = NA_character_, 
                  start = NA_integer_, 
@@ -2208,7 +2207,8 @@ annotPeppos <- function (df)
     dplyr::filter(!duplicated(pep_prn)) %>% 
     dplyr::select(c("pep_seq", "fasta_name")) 
   
-  fasta_db_sub <- fasta_db %>% .[names(.) %in% unique(df_pep_prn$fasta_name)]
+  fasta_db_sub <- fasta_db %>% 
+    .[names(.) %in% unique(df_pep_prn$fasta_name)]
 
   pep_pos_all <- suppressWarnings(
     purrr::map2(as.list(df_pep_prn$fasta_name), 
@@ -2222,7 +2222,8 @@ annotPeppos <- function (df)
                    "fasta_name", "is_tryptic")) %>% 
     data.frame(check.names = FALSE) %>% 
     tidyr::unite(pep_prn, pep_seq, fasta_name, sep = "@", remove = TRUE) %>% 
-    dplyr::mutate(pep_start = as.numeric(pep_start), pep_end = as.numeric(pep_end))
+    dplyr::mutate(pep_start = as.numeric(pep_start), 
+                  pep_end = as.numeric(pep_end))
   
   df$pep_res_before <- NULL
   df$pep_res_after <- NULL
@@ -2266,11 +2267,13 @@ subset_fasta <- function (df, fasta, acc_type)
     fasta <- fasta %>% 
       `names<-`(gsub("^.*\\|.*\\|(.*)$", "\\1", names(.))) %>% 
       .[names(.) %in% unique(df$prot_acc)]
-  } else if (acc_type == "uniprot_acc") {
+  } 
+  else if (acc_type == "uniprot_acc") {
     fasta <- fasta %>% 
       `names<-`(gsub("^.*\\|(.*)\\|.*$", "\\1", names(.))) %>% 
       .[names(.) %in% unique(df$prot_acc)]
-  } else if (acc_type == "refseq_acc") {
+  } 
+  else if (acc_type == "refseq_acc") {
     fasta <- fasta %>% 
       .[names(.) %in% unique(df$prot_acc)]
   }    
@@ -2300,7 +2303,8 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
   if (id == "gene") {
     gn_rollup <- TRUE
     id <- "prot_acc"
-  } else {
+  } 
+  else {
     gn_rollup <- FALSE
   }
   
@@ -2349,7 +2353,8 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
       ) %>% 
         dplyr::left_join(df, ., by = "gene")
     })
-  } else {
+  } 
+  else {
     df <- df %>% 
       dplyr::left_join(max_npeps, by = "fasta_name")
   }
@@ -2391,7 +2396,8 @@ calc_cover <- function(df, id)
   if (id == "gene") {
     gn_rollup <- TRUE
     id <- "prot_acc"
-  } else {
+  } 
+  else {
     gn_rollup <- FALSE
   }
   
@@ -3001,6 +3007,7 @@ my_geomean <- function (x, ...)
 #' Counts phospho.
 #' 
 #' Not currently used.
+#' 
 count_phosphopeps <- function() 
 {
   dat_dir <- get_gl_dat_dir()
@@ -3230,7 +3237,8 @@ concat_fml_dots <- function(fmls = NULL, fml_nms = NULL,
       stop("Run both `pepSig()` and `prnSig()` first.", 
            call. = FALSE)
     }
-  } else {
+  } 
+  else {
     match_fmls(fmls)
     dots <- c(dots, fmls)
   }
@@ -3269,7 +3277,8 @@ gn_rollup <- function (df, cols)
     dfc <- suppressWarnings(
       dfc %>% dplyr::summarise_all(~ max(.x, na.rm = TRUE))
     )
-  } else {
+  } 
+  else {
     dfc <- df %>% 
       dplyr::select(gene) %>% 
       dplyr::mutate(prot_cover = NA)
@@ -3363,7 +3372,8 @@ find_fn_exts <- function (filename, type = "text")
         graphics = "png",
         stop("Invalid extension in file name(s).", Call. = FALSE)
       )
-    } else {
+    } 
+    else {
       fn_ext <- gsub("^.*\\.([^.]*)$", "\\1", .x) # %>% .[1]
     }
   })
@@ -3637,7 +3647,8 @@ load_craps <- function(acc_types)
       dplyr::select("fasta_name") %>% 
       dplyr::filter(!is.na(fasta_name), !duplicated(fasta_name)) %>% 
       unlist()
-  } else {
+  } 
+  else {
     craps <- prn_annot_crap %>% 
       dplyr::select(which(names(.) %in% acc_types)) %>% 
       tidyr::gather("acc_type", "prot_acc") %>% 
@@ -3657,19 +3668,24 @@ find_int_cols <- function (TMT_plex)
     c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
       "I130N", "I130C", "I131N", "I131C", 
       "I132N", "I132C", "I133N", "I133C", "I134N", "I134C", "I135N")
-  } else if (TMT_plex == 16) {
+  } 
+  else if (TMT_plex == 16) {
     c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
       "I130N", "I130C", "I131N", "I131C", 
       "I132N", "I132C", "I133N", "I133C", "I134N")
-  } else if (TMT_plex == 11) {
+  } 
+  else if (TMT_plex == 11) {
     c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
       "I130N", "I130C", "I131N", "I131C")
-  } else if (TMT_plex == 10) {
+  } 
+  else if (TMT_plex == 10) {
     c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
       "I130N", "I130C", "I131")
-  } else if(TMT_plex == 6) {
+  } 
+  else if(TMT_plex == 6) {
     c("I126", "I127", "I128", "I129", "I130", "I131")
-  } else {
+  } 
+  else {
     NULL
   }
 }
@@ -3684,19 +3700,24 @@ find_ratio_cols <- function (TMT_plex)
     c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
       "R130N", "R130C", "R131N", "R131C", 
       "R132N", "R132C", "R133N", "R133C", "R134N", "R134C", "R135N")
-  } else if (TMT_plex == 16) {
+  } 
+  else if (TMT_plex == 16) {
     c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
       "R130N", "R130C", "R131N", "R131C", 
       "R132N", "R132C", "R133N", "R133C", "R134N")
-  } else if (TMT_plex == 11) {
+  } 
+  else if (TMT_plex == 11) {
     c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
       "R130N", "R130C", "R131N", "R131C")
-  } else if (TMT_plex == 10) {
+  } 
+  else if (TMT_plex == 10) {
     c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
       "R130N", "R130C", "R131")
-  } else if(TMT_plex == 6) {
+  } 
+  else if(TMT_plex == 6) {
     c("R127", "R128", "R129", "R130", "R131")
-  } else {
+  } 
+  else {
     NULL
   }
 }
@@ -3905,12 +3926,12 @@ check_formalArgs <- function(w = anal_prnTrend, f = cmeans, excludes = NULL)
     args_f <- args_f %>% .[! . %in% excludes]
   }
   
-  if (!purrr::is_empty(args_f)) {
+  if (length(args_f)) {
     purrr::walk(args_w, ~ {
       ambi <- stringr::str_detect(.x, paste0("^", args_f)) %>% 
         which()
       
-      if (!purrr::is_empty(ambi)) {
+      if (length(ambi)) {
         warning("Ambiguous arguments between \"", 
                 purrr::reduce(args_f[ambi], paste, sep = ", "), 
                 "\" from `", f, 
@@ -4049,7 +4070,7 @@ check_ggplot_aes <- function(p)
     purrr::map_lgl(anyNA)
   
   if (any(cols)) {
-    warning("\n\nMismatches in the lengths of vectors ", 
+    warning("\nMismatches in the lengths of vectors ", 
             "between selected samples and the aesthetics of `", 
             purrr::reduce(names(which(cols)), paste, sep = ", "), "`.\n", 
             "Fix the missing values in the corresponding columns in `expt_smry.xlsx`.\n", 

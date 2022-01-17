@@ -1259,10 +1259,10 @@ psm_msplit <- function(df, nm, fn_lookup, dat_dir, plot_rptr_int, TMT_plex)
 
 #' Find peptides that are shared by proteins.
 #'
-#' Only for PSM tables where the same `pep_seq` duplicated in rows with
-#' different `prot_acc`s . This for now means Mascot with same-set and sub-set
-#' proteins enabled. Otherwise, e.g. when applying to other search engines
-#' without such redundancy, every peptide would turn out to be unique.
+#' Only for PSM tables where the same \code{pep_seq}  duplicated in rows with
+#' different \code{prot_acc}'s . This for now means Mascot with same-set and
+#' sub-set proteins enabled. Otherwise, e.g. when applying to other search
+#' engines without such redundancy, every peptide would turn out to be unique.
 #'
 #' Output rows are unique at the levels of \code{c("prot_acc", "pep_seq")}.
 #'
@@ -1525,7 +1525,7 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
   
   TMT_plex <- TMT_plex(label_scheme_full)
   
-  if (TMT_plex > 0 && scale_rptr_int) {
+  if (TMT_plex > 0L && scale_rptr_int) {
     df <- local({
       pattern <- "^I[0-9]{3}[NC]{0,1}"
       
@@ -1614,7 +1614,8 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
       dplyr::mutate(psm_index = row_number()) %>%
       data.frame(check.names = FALSE) %>% 
       split(., .$TMT_inj, drop = TRUE)
-  } else {
+  } 
+  else {
     tmtinj_raw_map <- tmtinj_raw_map %>% 
       dplyr::mutate(PSM_File = gsub("\\.csv$", "", PSM_File)) %>% 
       tidyr::unite(RAW_File2, c("RAW_File", "PSM_File"), sep = "@") 
@@ -1630,10 +1631,12 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
   }
   
   missing_tmtinj <- setdiff(names(df_split), unique(tmtinj_raw_map$TMT_inj))
+  
   if (!purrr::is_empty(missing_tmtinj)) {
     warning("TMT sets and LC/MS injections not have corresponindg PSM files:\n", 
             call. = FALSE)
     message(paste0("\tTMT.LCMS: ", missing_tmtinj, "\n"))
+    
     stop(paste("Remove mismatched `TMT_Set` and/or `LC/MS` from experiment summary file."), 
          call. = FALSE)
   }
@@ -1662,7 +1665,8 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
     )
     
     parallel::stopCluster(cl)
-  } else {
+  } 
+  else {
     purrr::walk2(df_split, names(df_split), psm_msplit, 
                  fn_lookup, dat_dir, plot_rptr_int, TMT_plex)
   }
@@ -3067,17 +3071,18 @@ normPSM <- function(dat_dir = NULL,
                     parallel = TRUE, ...) 
 {
   old_opts <- options()
-  options(warn = 1)
+  options(warn = 1L)
   on.exit(options(old_opts), add = TRUE)
   
   on.exit(
-    if (exists(".savecall", envir = rlang::current_env())) {
+    if (exists(".savecall", envir = environment())) {
       if (.savecall) {
-        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+        mget(names(formals()), envir = environment(), inherits = FALSE) %>% 
           c(dots) %>% 
           save_call("normPSM")
       }
-    } else {
+    } 
+    else {
       warning("The current call is not saved.", call. = TRUE)
     }, 
     add = TRUE
@@ -3088,7 +3093,8 @@ normPSM <- function(dat_dir = NULL,
 
   if (is.null(dat_dir)) {
     dat_dir <- get_gl_dat_dir()
-  } else {
+  } 
+  else {
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
     message("Variable `dat_dir` added to the Global Environment.")
   }
@@ -3206,8 +3212,10 @@ normPSM <- function(dat_dir = NULL,
                       rptr_intrange = rptr_intrange, 
                       use_lowercase_aa = use_lowercase_aa, 
                       parallel = parallel, ...)
-  } else if (type == "mascot") {
+  } 
+  else if (type == "mascot") {
     rmPSMHeaders(parallel = parallel)
+    
     df <- splitPSM(group_psm_by = group_psm_by, 
                    group_pep_by = group_pep_by, 
                    fasta = fasta, 
@@ -3224,7 +3232,8 @@ normPSM <- function(dat_dir = NULL,
                    rptr_intrange = rptr_intrange, 
                    use_lowercase_aa = use_lowercase_aa, 
                    parallel = parallel, ...)
-  } else if (type == "mq") {
+  } 
+  else if (type == "mq") {
     df <- splitPSM_mq(group_psm_by = group_psm_by, 
                       group_pep_by = group_pep_by, 
                       fasta = fasta, 
@@ -3243,7 +3252,8 @@ normPSM <- function(dat_dir = NULL,
                       rptr_intrange = rptr_intrange, 
                       use_lowercase_aa = use_lowercase_aa, 
                       parallel = parallel, ...)
-  } else if (type == "sm") {
+  } 
+  else if (type == "sm") {
     df <- splitPSM_sm(group_psm_by = group_psm_by, 
                       group_pep_by = group_pep_by, 
                       fasta = fasta, 
@@ -3260,7 +3270,8 @@ normPSM <- function(dat_dir = NULL,
                       rptr_intrange = rptr_intrange, 
                       use_lowercase_aa = use_lowercase_aa, 
                       parallel = parallel, ...)
-  } else if (type == "mf") {
+  } 
+  else if (type == "mf") {
     df <- splitPSM_mf(group_psm_by = group_psm_by, 
                       group_pep_by = group_pep_by, 
                       fasta = fasta, 
@@ -6553,10 +6564,9 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # --- End ---
   
   on.exit(
-    if (exists(".savecall", envir = rlang::current_env())) {
-      if (.savecall) {
+    if (exists(".savecall", envir = environment())) {
+      if (.savecall) 
         message("Split PSMs by TMT experiments and LCMS series --- Completed.")
-      }
     }, 
     add = TRUE
   )
@@ -6577,15 +6587,18 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
               "`psmQ[...].txt` will be used.")
       
       filelist <- filelistQ
-    } else if (length(filelistQ)) {
+    } 
+    else if (length(filelistQ)) {
       filelist <- filelistQ
-    } else if (length(filelistC)) {
+    } 
+    else if (length(filelistC)) {
       filelist <- filelistC
       
       stop(paste("No PSM files `psmQ[...].txt` under", file.path(dat_dir), ".",
                  "\nMake sure that the names of PSM files start with `psmQ`."), 
            call. = FALSE)
-    } else {
+    } 
+    else {
       stop(paste("No PSM files `psmQ[...].txt` under", file.path(dat_dir), ".",
                  "\nMake sure that the names of PSM files start with `psmQ`."), 
            call. = FALSE)
@@ -6596,9 +6609,11 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   # (1.1) row filtration, column padding and psm file combinations
   dots <- rlang::enexprs(...)
+  
   filter_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
+  
   dots <- dots %>% .[! . %in% filter_dots]
   
   message("Primary column keys in `psmQ[...].txt` for `filter_` varargs.")
@@ -6628,7 +6643,8 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       dplyr::mutate_at(vars(grep("^R[0-9]{3}[NC]{0,1}", names(.))), 
                        ~ replace(.x, is.infinite(.x), NA)) %>% 
       dplyr::bind_cols(df, .) 
-  } else {
+  } 
+  else {
     stopifnot("I000" %in% names(df))
     
     df <- df %>% 
@@ -6694,18 +6710,14 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                      by = "pep_seq")
   
   # (2.5) find the uniqueness of peptides
-  if (pep_unique_by == "group") {
-    df <- df %>% 
-      dplyr::mutate(pep_isunique = pep_razor_unique)
-  } else if (pep_unique_by == "protein") {
-    df <- df %>% 
-      dplyr::mutate(pep_isunique = pep_literal_unique)
-  } else if (pep_unique_by == "none") {
-    df <- df %>% 
-      dplyr::mutate(pep_isunique = TRUE)
-  } else {
-    df <- df
-  }
+  df <- if (pep_unique_by == "group") 
+    dplyr::mutate(df, pep_isunique = pep_razor_unique)
+  else if (pep_unique_by == "protein") 
+    dplyr::mutate(df, pep_isunique = pep_literal_unique)
+  else if (pep_unique_by == "none") 
+    dplyr::mutate(df, pep_isunique = TRUE)
+  else
+    df
   
   # 0, not NA, since we known... even pep_tot_int is NA
   df <- df %>% 
