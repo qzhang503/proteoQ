@@ -14,10 +14,10 @@ find_shared_prots(df, pep_id = "pep_seq", prot_id = "prot_acc")
 \item{prot_id}{The column key of protein accessions.}
 }
 \description{
-Only for PSM tables where the same `pep_seq` duplicated in rows with
-different `prot_acc`s . This for now means Mascot with same-set and sub-set
-proteins enabled. Otherwise, e.g. when applying to other search engines
-without such redundancy, every peptide would turn out to be unique.
+Only for PSM tables where the same \code{pep_seq}  duplicated in rows with
+different \code{prot_acc}'s . This for now means Mascot with same-set and
+sub-set proteins enabled. Otherwise, e.g. when applying to other search
+engines without such redundancy, every peptide would turn out to be unique.
 }
 \details{
 Output rows are unique at the levels of \code{c("prot_acc", "pep_seq")}.

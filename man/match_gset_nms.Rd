@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{match_gset_nms}
 \alias{match_gset_nms}
-\title{Matches gset_nms to prnGSPA (not currently used)}
+\title{Matches gset_nms to prnGSPA.}
 \usage{
 match_gset_nms(gset_nms = NULL)
 }
@@ -20,5 +20,5 @@ custom data bases, follow the same format of list as \code{GO} or
 \code{MSig}.}
 }
 \description{
-Matches gset_nms to prnGSPA (not currently used)
+Not currently used.
 }

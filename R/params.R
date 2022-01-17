@@ -742,7 +742,9 @@ prep_fraction_scheme <- function(dat_dir = NULL, filename = "frac_smry.xlsx")
 	
 	# LFQ: Sample_ID in .xlsx, but not .rda
 	# TMT: no Sample_ID in either
-	fraction_scheme <- fraction_scheme %>% dplyr::select(-one_of("Sample_ID"))
+	fraction_scheme <- 
+	  suppressWarnings(dplyr::select(fraction_scheme, -one_of("Sample_ID")))
+
 	save(fraction_scheme, file = file.path(dat_dir, "fraction_scheme.rda"))
 }
 
@@ -1059,6 +1061,11 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx",
 
   prep_label_scheme(dat_dir, expt_smry)
   prep_fraction_scheme(dat_dir, frac_smry)
+  
+  local({
+    session_info <- sessionInfo()
+    save(session_info, file = file.path(dat_dir, "Calls", "proteoQ.rda"))
+  })
 }
 
 
