@@ -6,7 +6,7 @@ Authors@R:
            family = "Zhang",
            role = c("aut", "cre"),
            email = "qzhang503@gmail.com", 
-					 comment = c(ORCID = "0000-0001-7046-4378"))
+           comment = c(ORCID = "0000-0001-7046-4378"))
 Description: Analysis of Mass Spectrometrirc Data.  
 biocViews: 
 Depends: R (>= 4.1)
