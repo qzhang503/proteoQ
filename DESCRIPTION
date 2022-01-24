@@ -14,20 +14,20 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Suggests: 
-	AnnotationDbi,
-	GSVA, 
+    AnnotationDbi,
+    GSVA, 
     RJSONIO,
-	NMF,
-	broom,
+    NMF,
+    broom,
     broom.mixed,
-	downloader,
-	httr,
+    downloader,
+    httr,
     knitr,
     lmerTest,
     mice,
     rmarkdown,
-	testthat, 
-	xml2
+    testthat, 
+    xml2
 VignetteBuilder: knitr
 Imports: 
     biomaRt,
@@ -36,7 +36,7 @@ Imports:
     data.table,
     dplyr,
     e1071,
-	fastmatch,
+    fastmatch,
     forcats,
     ggplot2,
     grid,
@@ -61,22 +61,22 @@ Imports:
     openxlsx,
     parallel,
     pheatmap,
-	proteoCpp, 
+    proteoCpp, 
     proteoQDA,
-	proxyC,
+    proxyC,
     rlang,
     Biobase,
     BiocManager,
     EnvStats,
     GGally,
     MASS,
-	Matrix,
+    Matrix,
     RColorBrewer,
     RCurl,
     Rcpp
 RoxygenNote: 7.1.2
 Remotes:
-	qzhang503/proteoCpp, 
-	qzhang503/proteoQDA
+    qzhang503/proteoCpp, 
+    qzhang503/proteoQDA
 LinkingTo: 
     Rcpp
