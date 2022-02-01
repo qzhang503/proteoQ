@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{pad_mq_channels}
 \alias{pad_mq_channels}
-\title{Pad MaxQuant TMT channels to the highest plex.}
+\title{Pads MaxQuant TMT channels to the highest plex.}
 \usage{
 pad_mq_channels(file, fasta, entrez, corrected_int, ...)
 }
@@ -29,5 +29,5 @@ the TRUE default, values under columns "Reporter intensity corrected..." in
 \item{...}{Not currently used.}
 }
 \description{
-Pad MaxQuant TMT channels to the highest plex.
+Pads MaxQuant TMT channels to the highest plex.
 }

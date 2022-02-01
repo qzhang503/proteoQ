@@ -359,6 +359,35 @@ aggrTopn <- function(f)
 }
 
 
+#' Aggregation of LFQ inentisty.
+#'
+#' Summarizes \code{log2FC} and \code{intensity} by the descriptive statistics
+#' of \code{c("mean", "median", "sum")}. Note that data are already subset by
+#' top_n.
+#'
+#' @param f A function for data summarization.
+#' @examples \donttest{df_num <- aggrLFQ(sum)(df, prot_acc, na.rm = TRUE)}
+aggrLFQ <- function(f) 
+{
+  function (df, id, ...) {
+    id <- rlang::as_string(rlang::enexpr(id))
+    nms <- names(df)
+    cols <- grep("log2_R[0-9]{3}|I[0-9]{3}", nms)
+    
+    if (!id %in% nms)
+      stop("Column `", id, "` not found.")
+    
+    if (!length(cols))
+      stop("Columns of log2 ratios or intensity not found.")
+    
+    df %>%
+      dplyr::select(id, cols) %>%
+      dplyr::group_by(!!rlang::sym(id)) %>%
+      dplyr::summarise_all(~ f(.x, ...))
+  }
+}
+
+
 #' Calculates weighted mean
 #'
 #' \code{tmt_wtmean} calculates the weighted mean of \code{log2FC} based on

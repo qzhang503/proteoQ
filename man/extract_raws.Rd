@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{extract_raws}
 \alias{extract_raws}
-\title{Extract RAW MS file names}
+\title{Extracts RAW MS file names}
 \usage{
 extract_raws(raw_dir = NULL, dat_dir = NULL)
 }

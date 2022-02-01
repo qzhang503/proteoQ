@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{reloc_col}
 \alias{reloc_col}
-\title{Relocate column "m/z" to be immediately before column "Mass".}
+\title{Relocates column "m/z" to be immediately before column "Mass".}
 \usage{
 reloc_col(df, from = "m/z", to = "Mass")
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{pad_sm_channels}
 \alias{pad_sm_channels}
-\title{Pad Spectrum Mill TMT channels to the highest plex}
+\title{Pads Spectrum Mill TMT channels to the highest plex}
 \usage{
 pad_sm_channels(file, ...)
 }
@@ -12,5 +12,5 @@ pad_sm_channels(file, ...)
 \item{...}{filter_dots.}
 }
 \description{
-Pad Spectrum Mill TMT channels to the highest plex
+Pads Spectrum Mill TMT channels to the highest plex
 }

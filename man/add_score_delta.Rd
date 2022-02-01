@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{add_score_delta}
 \alias{add_score_delta}
-\title{Add column "pep_score_delta"}
+\title{Adds column "pep_score_delta"}
 \usage{
 add_score_delta(df)
 }
@@ -10,5 +10,5 @@ add_score_delta(df)
 \item{df}{A data frame of PSMs}
 }
 \description{
-Add column "pep_score_delta"
+Adds column "pep_score_delta"
 }

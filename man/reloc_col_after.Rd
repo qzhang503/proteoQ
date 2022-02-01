@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{reloc_col_after}
 \alias{reloc_col_after}
-\title{Relocate column "to_move" immediately after column "col_before".}
+\title{Relocates column "to_move" immediately after column "col_before".}
 \usage{
 reloc_col_after(df, to_move = "after_anchor", col_before = "anchor")
 }
@@ -15,5 +15,5 @@ reloc_col_after(df, to_move = "after_anchor", col_before = "anchor")
 after.}
 }
 \description{
-Relocate column "to_move" immediately after column "col_before".
+Relocates column "to_move" immediately after column "col_before".
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{splitPSM_mf}
 \alias{splitPSM_mf}
-\title{Splits PSM tables}
+\title{Splits MSFragger PSM tables}
 \usage{
 splitPSM_mf(
   group_psm_by = "pep_seq",
