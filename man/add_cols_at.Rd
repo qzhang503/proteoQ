@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{add_cols_at}
 \alias{add_cols_at}
-\title{Pad columns to a placeholder data frame.}
+\title{Pads columns to a placeholder data frame.}
 \usage{
 add_cols_at(df, df2, idx)
 }
@@ -15,5 +15,5 @@ add_cols_at(df, df2, idx)
 (after).}
 }
 \description{
-Pad columns to a placeholder data frame.
+Pads columns to a placeholder data frame.
 }

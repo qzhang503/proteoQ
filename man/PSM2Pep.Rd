@@ -7,6 +7,7 @@
 PSM2Pep(
   method_psm_pep = c("median", "mean", "weighted_mean", "top_3_mean", "lfq_max",
     "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all"),
+  lfq_ret_tol = 60L,
   rm_allna = FALSE,
   parallel = TRUE,
   ...
@@ -22,6 +23,9 @@ The descriptive statistics includes \code{c("mean", "median",
 LFQ) ions at the \code{PSMs} levels will be the weight when summarizing
 \code{log2FC} with various \code{"top_n"} statistics or
 \code{"weighted_mean"}.}
+
+\item{lfq_ret_tol}{The tolerance of retention time (in seconds) for the
+aggregation of LFQ data.}
 
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to

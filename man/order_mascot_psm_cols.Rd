@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{order_mascot_psm_cols}
 \alias{order_mascot_psm_cols}
-\title{Order Mascot PSM columns}
+\title{Orders Mascot PSM columns}
 \usage{
 order_mascot_psm_cols(df, psm_cols = NULL, rm_na_cols = FALSE)
 }

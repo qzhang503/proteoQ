@@ -57,6 +57,15 @@ prep_label_scheme <- function(dat_dir = NULL, filename = "expt_smry.xlsx")
 	}
 
 	local({
+	  cols_noname <- grepl("^\\.{3}", names(label_scheme_full))
+	  nms <- colnames(label_scheme_full)[cols_noname]
+	  
+	  if (length(nms)) 
+	    warning("Missing column name in `", filename, "`: ", paste(nms, collapse = ", "), 
+	            call. = FALSE)
+	})
+	
+	local({
   	must_have <- c("TMT_Channel", "TMT_Set", "LCMS_Injection", "RAW_File",
   								"Sample_ID", "Reference")
   	
@@ -1064,7 +1073,8 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx",
   
   local({
     session_info <- sessionInfo()
-    save(session_info, file = file.path(dat_dir, "Calls", "proteoQ.rda"))
+    dir.create(file.path(dat_dir, "Calls"), recursive = TRUE, showWarnings = FALSE)
+    try(save(session_info, file = file.path(dat_dir, "Calls", "proteoQ.rda")))
   })
 }
 

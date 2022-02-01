@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2021-12-07
+2022-01-25
 
 -   [Introduction to proteoQ](#introduction-to-proteoq)
 -   [Installation](#installation)
@@ -3347,7 +3347,7 @@ in the following:
 | pep\_len              | Number of amino acid residues in a peptide sequence                                                               |                                                                                                                  |
 | pep\_miss             | Count of missed cleavage sites in peptide                                                                         |                                                                                                                  |
 | pep\_frame            | Mascot calculation of translation frame number                                                                    |                                                                                                                  |
-| pep\_score            | Score of PSM(s)                                                                                                   | Mean description from PSMs.                                                                                      |
+| pep\_score            | Score of peptide                                                                                                  | Mean description from PSMs.                                                                                      |
 | pep\_expect           | Expectation value or posterior error probability of PSM(s)                                                        | Geometric-mean description from PSMs.                                                                            |
 | pep\_locprob          | The highest probablity from site analysis of the variable modification sites                                      | Mean description from PSMs.                                                                                      |
 | pep\_locdiff          | pep\_locprob – pep\_locprob2                                                                                      | See also PSM keys.                                                                                               |

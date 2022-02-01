@@ -1,4 +1,4 @@
-#' Extract RAW MS file names
+#' Extracts RAW MS file names
 #'
 #' Extract a list of \code{RAW} file names that can be passed to metadata file
 #' of \code{expt_smry.xlsx} and/or \code{frac_smry.xlsx}
@@ -648,15 +648,18 @@ rmPSMHeaders <- function(parallel = TRUE)
 	load(file = file.path(dat_dir, "label_scheme_full.rda"))
 	TMT_plex <- TMT_plex(label_scheme_full)
 
-	if (parallel && length(filelist) > 1) {
-	  n_cores <- pmin(parallel::detectCores(), length(filelist))
+	n_files <- length(filelist)
+	
+	if (parallel && (n_files > 1)) {
+	  n_cores <- min(parallel::detectCores(), n_files)
 	  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
 	  
 	  parallel::clusterMap(cl, batchPSMheader, filelist, 
 	                       MoreArgs = list(dat_dir, TMT_plex))
 	  
 	  parallel::stopCluster(cl)
-	} else {
+	} 
+	else {
 	  purrr::walk(filelist, batchPSMheader, dat_dir, TMT_plex)
 	}
 	
@@ -1525,7 +1528,7 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
   
   TMT_plex <- TMT_plex(label_scheme_full)
   
-  if (TMT_plex > 0L && scale_rptr_int) {
+  if (TMT_plex && scale_rptr_int) {
     df <- local({
       pattern <- "^I[0-9]{3}[NC]{0,1}"
       
@@ -1555,7 +1558,7 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
   
   if (annot_kinases) {
     df <- df %>% 
-      split(., .$acc_type, drop = TRUE) %>% 
+      split(.$acc_type, drop = TRUE) %>% 
       .[acc_types] %>% 
       purrr::imap( ~ annotKin(.x, .y)) %>% 
       do.call(rbind, .)
@@ -1575,9 +1578,6 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
     dplyr::mutate_at(.vars = grep("^I[0-9]{3}|^R[0-9]{3}", names(.)), 
                      as.numeric) %>%
     dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
-                     ~ ifelse(.x == -1, NA, .x)) %>%
-    # "-1" becomes NA
-    dplyr::mutate_at(.vars = grep("^I[0-9]{3}", names(.)), 
                      ~ ifelse(.x <= rptr_intco, NA, .x)) %>% 
     dplyr::mutate_at(vars(grep("^I[0-9]{3}[NC]{0,1}", names(.))), ~ {
       x <- .x
@@ -1588,14 +1588,14 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
   
   if (length(grep("^I[0-9]{3}", names(df))) > 1 && rm_allna) {
     df <- df %>% 
-      dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}[NC]{0,1}", names(.))])) > 0) %>%
-      dplyr::filter(rowSums(!is.na(.[grep("^I[0-9]{3}[NC]{0,1}", names(.))])) > 0) 
+      dplyr::filter(rowSums(!is.na(.[grep("^R[0-9]{3}[NC]{0,1}", names(.))])) > 0, 
+                    rowSums(!is.na(.[grep("^I[0-9]{3}[NC]{0,1}", names(.))])) > 0)
   }
   
-  if (nrow(df) == 0) {
+  if (!nrow(df)) {
     stop("No non-trivial reporter-ion intensities/ratios available.\n", 
          "In the case of Mascot ", 
-         "Did you forget to check `Peptide quantitation` when exporting PSMs?\n",
+         "Have you forgot to check `Peptide quantitation` when exporting PSMs?\n",
          "See also https://proteoq.netlify.app/post/exporting-mascot-psms/.", 
          call. = FALSE)
   }
@@ -1613,7 +1613,7 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
       dplyr::group_by(TMT_inj) %>%
       dplyr::mutate(psm_index = row_number()) %>%
       data.frame(check.names = FALSE) %>% 
-      split(., .$TMT_inj, drop = TRUE)
+      split(.$TMT_inj, drop = TRUE)
   } 
   else {
     tmtinj_raw_map <- tmtinj_raw_map %>% 
@@ -1632,7 +1632,7 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
   
   missing_tmtinj <- setdiff(names(df_split), unique(tmtinj_raw_map$TMT_inj))
   
-  if (!purrr::is_empty(missing_tmtinj)) {
+  if (length(missing_tmtinj)) {
     warning("TMT sets and LC/MS injections not have corresponindg PSM files:\n", 
             call. = FALSE)
     message(paste0("\tTMT.LCMS: ", missing_tmtinj, "\n"))
@@ -1653,8 +1653,10 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
   
   df_split <- df_split %>% .[names(.) %>% sort_tmt_lcms()]
   
-  if (parallel) {
-    n_cores <- pmin(parallel::detectCores(), length(df_split))
+  n_files <- length(df_split)
+  
+  if (parallel && (n_files > 1L)) {
+    n_cores <- min(parallel::detectCores(), n_files)
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
     
     suppressWarnings(
@@ -2548,14 +2550,18 @@ cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq",
 	                      pattern = "^TMT.*LCMS.*\\.csv$") %>% 
 	  reorder_files()
 
-	if (parallel) {
-	  n_cores <- pmin(parallel::detectCores(), length(filelist))
+	n_files <- length(filelist)
+	
+	if (parallel && (n_files > 1L)) {
+	  n_cores <- min(parallel::detectCores(), n_files)
 	  cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
 	  
-	  parallel::clusterExport(cl, list("add_cols_at"), 
-	                          envir = env_where("add_cols_at"))
-	  parallel::clusterExport(cl, list("reloc_col_before"), 
-	                          envir = env_where("reloc_col_before"))
+	  parallel::clusterExport(
+	    cl,
+	    c("add_cols_at", 
+	      "reloc_col_before"), 
+	    envir = environment(proteoQ:::add_cols_at)
+	  )
 	  
 	  suppressWarnings(
 	    silent_out <- parallel::clusterApply(
@@ -2566,10 +2572,12 @@ cleanupPSM <- function(rm_outliers = FALSE, group_psm_by = "pep_seq",
 	      TMT_plex, 
 	      rm_allna)
 	  )
-	  rm(silent_out)
+	  
+	  rm(list = "silent_out")
 
-  	parallel::stopCluster(cl)	  
-	} else {
+  	parallel::stopCluster(cl)
+	} 
+	else {
 	  purrr::walk(filelist, psm_mcleanup, 
 	              rm_outliers, 
 	              group_psm_by, 
@@ -3420,40 +3428,50 @@ rm_cols_mqpsm <- function(df, group_psm_by, set_idx)
 }
 
 
-#' Calculate peptide data for individual TMT experiments
-#' 
+#' Calculates peptide data for individual TMT experiments
+#'
 #' Argument \code{injn_idx} does not currently used.
-#' 
+#'
+#' @param lfq_ret_tol The tolerance of retention time (in seconds) for the
+#'   aggregation of LFQ data.
 #' @inheritParams mcPSM
 #' @inheritParams PSM2Pep
 #' @inheritParams annotPSM
 #' @inheritParams channelInfo
 #' @inheritParams locate_outliers
 #' @inheritParams TMT_levels
-calcPeptide <- function(df, group_psm_by, method_psm_pep, 
-                       group_pep_by, dat_dir, set_idx, injn_idx, TMT_plex, 
-                       rm_allna = FALSE) 
+calcPeptide <- function(df = NULL, group_psm_by = "pep_seq", 
+                        method_psm_pep = "median", group_pep_by = "prot_acc", 
+                        dat_dir = NULL, set_idx = 1L, injn_idx = 1L, 
+                        TMT_plex = 10L, lfq_ret_tol = 60L, rm_allna = FALSE) 
 {
-  stopifnot("prot_acc" %in% names(df))
+  nms <- names(df)
+  
+  if (!"prot_acc" %in% nms)
+    stop("Column `prot_acc` not found.")
+  
+  if (!group_psm_by %in% nms)
+    stop("Column `", group_psm_by, "` not found.")
+  
+  if (!any(grepl("log2_R[0-9]{3}|I[0-9]{3}", nms)))
+    stop("Columns of log2 ratios or intensity not found.")
 
   channelInfo <- channelInfo(dat_dir = dat_dir, 
                              set_idx = set_idx, 
                              injn_idx = injn_idx)
   
-  if (TMT_plex > 0) {
+  # (no rm_allna for LFQ as Maxquant LFQ intensities can be all NA)
+  if (TMT_plex && rm_allna) {
     df <- df %>% 
-      { if (rm_allna) 
-        dplyr::filter(., rowSums(!is.na(.[grepl("^N_log2_R[0-9]{3}", names(.))])) > 0) 
-        else 
-          . }
-
-    if (nrow(df) == 0) {
+      dplyr::filter(rowSums(!is.na(.[grepl("^N_log2_R[0-9]{3}", names(.))])) > 0) 
+    
+    if (!nrow(df)) {
       stop("Fields 'N_log2_R' are all NA at TMT_plex = ", TMT_plex, ".\n", 
            "Is this an error-tolerant search without intensity/ratio values in the psm table?", 
            "May consider replacing 'NA' with '1' to proceed.", 
            call. = FALSE)
     }
-  } 
+  }
   
   df <- df %>%
     dplyr::arrange(!!rlang::sym(group_psm_by), prot_acc) %>%
@@ -3468,7 +3486,7 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
       "raw_file", "pep_query", "pep_summed_mod_pos", "pep_local_mod_pos", 
       "pep_rank", "pep_isbold", "pep_exp_mz", "pep_exp_mr", "pep_exp_z", 
       "pep_delta", "pep_calc_mr", "pep_homol", "pep_ident", 
-      "pep_num_match", "pep_scan_range", "pep_ret_range", 
+      "pep_num_match", "pep_scan_range", # "pep_ret_range", 
       "pep_ms2_sumint", "pep_n_ions", 
       "pep_ions_first", "pep_ions_second", "pep_ions_third")))
   
@@ -3478,11 +3496,11 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
     col_start <- which(names(df) == "Scan Number")
     col_end <- which(names(df) == "Retention Time")
     
-    if (!(purrr::is_empty(col_start) || purrr::is_empty(col_end))) {
+    if (length(col_start) && length(col_end)) {
       df <- df %>% dplyr::select(-(col_start : col_end))
     }
     
-    return(df)
+    df
   })
   
   df <- df %>% 
@@ -3548,37 +3566,131 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
       "Number of Enzymatic Termini", 
       "Ion Mobility", "Assigned Modifications", "Observed Modifications", 
       "Entry Name", "Protein Description")))
-
-  # summarizes log2FC and intensity from the same `set_idx` 
-  # at one or multiple LCMS series
-  df_num <- switch(method_psm_pep, 
-                   mean = 
-                     aggrNums(mean)(df, !!rlang::sym(group_psm_by), na.rm = TRUE), 
-                   median = 
-                     aggrNums(median)(df, !!rlang::sym(group_psm_by), na.rm = TRUE), 
-                   weighted_mean = 
-                     tmt_wtmean(df, !!rlang::sym(group_psm_by), na.rm = TRUE), 
-                   top_3_mean = 
-                     TMT_top_n(df_num, !!rlang::sym(id), na.rm = TRUE), 
-                   lfq_max = 
-                     aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 1, na.rm = TRUE), 
-                   lfq_top_2_sum = 
-                     aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 2, na.rm = TRUE), 
-                   lfq_top_3_sum = 
-                     aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 3, na.rm = TRUE), 
-                   lfq_all = 
-                     aggrTopn(sum)(df, !!rlang::sym(group_psm_by), Inf, na.rm = TRUE), 
-                   aggrNums(median)(df, !!rlang::sym(group_psm_by), na.rm = TRUE))
   
-  if (TMT_plex == 0) {
-    df_num <- df_num %>% 
-      dplyr::mutate(log2_R000 = NA, N_log2_R000 = NA)
+  
+  # summarizes log2FC and intensity from the same `set_idx` 
+  #   at one or multiple LCMS series
+  if (!TMT_plex) {
+    cols <- grep("^I[0-9]{3}[NC]{0,1}", names(df))
+    
+    if (length(cols))
+      ok_intensity <- TRUE
+    else {
+      warning("Columns of precursor intensities not found.")
+      ok_intensity <- FALSE
+    }
+    
+    if ("pep_ret_range" %in% names(df))
+      ok_ret <- TRUE
+    else {
+      warning("`pep_ret_range` not found.")
+      ok_ret <- FALSE
+    }
+    
+    if (!all(is.na(df[["pep_ret_range"]]))) 
+      ok_ret2 <- TRUE
+    else {
+      warning("Values of `pep_ret_range` are all NA.")
+      ok_ret2 <- FALSE
+    }
+    
+    ok_lfq_ret <- ok_intensity && ok_ret && ok_ret2
+    
+    if (ok_lfq_ret) {
+      # subset by top_n intensity
+      df <- local({
+        n <- switch(method_psm_pep, 
+                    lfq_max = 1, 
+                    lfq_top_2_sum = 2, 
+                    lfq_top_3_sum = 3, 
+                    lfq_all = Inf, 
+                    2)
+        
+        # but since I000 are all NA with MaxQuant timsTOF 
+        # would have to replace NA with 0
+        
+        df <- df %>% 
+          dplyr::mutate(I000 = ifelse(is.na(I000), 0, I000)) %>% 
+          dplyr::group_by(!!rlang::sym(group_psm_by))
+        
+        if (!is.infinite(n)) {
+          df <- df  %>% dplyr::top_n(n = n, wt = I000)
+        }
+        
+        df <- df %>%
+          dplyr::arrange(-I000) %>% 
+          dplyr::ungroup()
+      })
+      
+      # subset by retention time
+      df <- local({
+        uniq_by <- c(group_psm_by, "pep_ret_range")
+        
+        # 1.1 no yet differentiation of neutral losses at different pep_ivmod
+        # 1.2 no yet differentiation of different charge states
+        # 1.2 no differentiation by raw_file
+        # 1.3 no differentiation by dat_file
+        # 2.1 the same pep_seq at different prot_acc makes no difference
+        
+        df_uniq <- unique(df[, c(group_psm_by, "pep_ret_range")])
+        df_split <- split(df_uniq, df_uniq[[group_psm_by]])
+        
+        rows <- unlist(lapply(df_split, function (x) nrow(x) == 1L))
+        dfu <- dplyr::bind_rows(df_split[rows])
+        df_split <- df_split[!rows]
+        
+        dfm <- lapply(df_split, function (x) {
+          a <- x$pep_ret_range
+          d <- c(0, abs(a[2:length(a)] - a[1]))
+          rows <- ifelse(d <= lfq_ret_tol, TRUE, FALSE)
+          x[rows, ]
+        }) %>% 
+          dplyr::bind_rows()
+        
+        oks <- dplyr::bind_rows(dfu, dfm) %>% 
+          tidyr::unite(uniq_id, uniq_by, sep = ".", remove = TRUE) %>% 
+          dplyr::mutate(keep. = TRUE)
+        
+        df <- df %>% 
+          tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
+          dplyr::left_join(oks, by = "uniq_id") %>% 
+          dplyr::filter(keep.) %>% 
+          dplyr::select(-c("keep.", "uniq_id"))
+        
+        df <- df %>% dplyr::select(-c("pep_ret_range"))
+      })
+      
+      df_num <- aggrLFQ(sum)(df, !!rlang::sym(group_psm_by), 1, na.rm = TRUE) %>% 
+        dplyr::mutate(log2_R000 = NA, N_log2_R000 = NA)
+    }
   }
   
+  # works even without precursor intensity (MaxQuant)
+  if (!exists("df_num", envir = environment())) {
+    df_num <- switch(method_psm_pep, 
+                     mean = 
+                       aggrNums(mean)(df, !!rlang::sym(group_psm_by), na.rm = TRUE), 
+                     median = 
+                       aggrNums(median)(df, !!rlang::sym(group_psm_by), na.rm = TRUE), 
+                     weighted_mean = 
+                       tmt_wtmean(df, !!rlang::sym(group_psm_by), na.rm = TRUE), 
+                     top_3_mean = 
+                       TMT_top_n(df_num, !!rlang::sym(group_psm_by), na.rm = TRUE), 
+                     lfq_max = 
+                       aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 1, na.rm = TRUE), 
+                     lfq_top_2_sum = 
+                       aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 2, na.rm = TRUE), 
+                     lfq_top_3_sum = 
+                       aggrTopn(sum)(df, !!rlang::sym(group_psm_by), 3, na.rm = TRUE), 
+                     lfq_all = 
+                       aggrTopn(sum)(df, !!rlang::sym(group_psm_by), Inf, na.rm = TRUE), 
+                     aggrNums(median)(df, !!rlang::sym(group_psm_by), na.rm = TRUE))
+  }
+
   # `pep_unique_int` and `pep_razor_int` recalculated  
-  # from the newly derived `pep_tot_int` (always by sum over `group_psm_by`). 
+  #   from the newly derived `pep_tot_int` (always by sum over `group_psm_by`). 
   # `pep_tot_int` is different to the summary of I000, I126 etc. 
-  # which is according to `method_psm_pep`
+  #   which is according to `method_psm_pep`
   
   df_first <- df %>% 
     dplyr::select(-which(names(.) %in% c("pep_unique_int", 
@@ -3601,16 +3713,15 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
   df <- local({
     stopifnot(all(c("pep_tot_int", "shared_prot_accs", "shared_genes") %in% names(df)))
     
-    if (group_pep_by == "gene") {
+    if (group_pep_by == "gene")
       col_map <- "shared_genes"
-    } else {
+    else
       col_map <- "shared_prot_accs"
-    }
-    
+
     # floating `pep_isunique` can be either `pep_razor_unique` or `pep_literal_unique`
     # so don't use `pep_isunique`
     
-    out <- df %>% 
+    df %>% 
       dplyr::mutate(pep_unique_int = ifelse(pep_literal_unique, pep_tot_int, 0), 
                     pep_razor_int = ifelse(pep_razor_unique, pep_tot_int, 0))
   })
@@ -3620,9 +3731,9 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
     reloc_col_after("pep_razor_int", "pep_unique_int")
   
   if (group_psm_by == "pep_seq_mod") {
-    df <- df %>% dplyr::select(-pep_seq)
+    df <- dplyr::select(df, -pep_seq)
   } else {
-    df <- df %>% dplyr::select(-pep_seq_mod)
+    df <- dplyr::select(df, -pep_seq_mod)
   }
   
   df <- cbind.data.frame(df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df)), 
@@ -3634,7 +3745,7 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
     dplyr::mutate_at(.vars = grep("I[0-9]{3}|log2_R[0-9]{3}", names(.)),
                      list(~ replace(.x, is.infinite(.x), NA)))
   
-  if (TMT_plex > 0) {
+  if (TMT_plex) {
     df <- local({
       col_r <- grepl("^log2_R[0-9]{3}", names(df))
       cf <- apply(df[, col_r, drop = FALSE], 2, median, na.rm = TRUE)
@@ -3660,7 +3771,7 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
     na_zeroIntensity() %>% 
     dplyr::mutate(TMT_Set = set_idx)
   
-  return(df)
+  invisible(df)
 }
 
 
@@ -3672,8 +3783,9 @@ calcPeptide <- function(df, group_psm_by, method_psm_pep,
 #' @inheritParams n_TMT_sets
 #' @inheritParams calcPeptide
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-psm_to_pep <- function (file, dat_dir, label_scheme_full, 
-                        group_psm_by, group_pep_by, method_psm_pep, 
+psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL, 
+                        group_psm_by = "pep_seq", group_pep_by = "prot_acc", 
+                        method_psm_pep = "median", lfq_ret_tol = 60L, 
                         rm_allna = FALSE, ...) 
 {
   dots <- rlang::enexprs(...)
@@ -3705,10 +3817,13 @@ psm_to_pep <- function (file, dat_dir, label_scheme_full,
             "(LFQ) intensity from MaxQuant `peptides[...].txt` will be used.")
     
     df <- rm_cols_mqpsm(df, group_psm_by, set_idx)
-  } else {
-    df <- df %>% 
-        calcPeptide(group_psm_by, method_psm_pep, group_pep_by, dat_dir, 
-                    set_idx, injn_idx, TMT_plex, rm_allna)
+  } 
+  else {
+    df <- calcPeptide(df = df, group_psm_by = group_psm_by, 
+                      method_psm_pep = method_psm_pep, 
+                      group_pep_by = group_pep_by, dat_dir = dat_dir, 
+                      set_idx = set_idx, injn_idx = injn_idx, TMT_plex = TMT_plex, 
+                      lfq_ret_tol = lfq_ret_tol, rm_allna = rm_allna)
   }
   
   df <- dplyr::bind_cols(
@@ -3749,6 +3864,8 @@ psm_to_pep <- function (file, dat_dir, label_scheme_full,
 #'  LFQ) ions at the \code{PSMs} levels will be the weight when summarizing
 #'  \code{log2FC} with various \code{"top_n"} statistics or
 #'  \code{"weighted_mean"}.
+#'@param lfq_ret_tol The tolerance of retention time (in seconds) for the
+#'  aggregation of LFQ data.
 #'@inheritParams normPSM
 #'@param ... \code{filter_}: Variable argument statements for the filtration of
 #'  data rows. See also \code{\link{normPSM}}.
@@ -3818,10 +3935,10 @@ psm_to_pep <- function (file, dat_dir, label_scheme_full,
 #'@import stringr dplyr purrr 
 #'@importFrom magrittr %>% %T>% %$% %<>% 
 #'@export
-PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3_mean", 
-                                        "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", 
-                                        "lfq_all"), 
-                    rm_allna = FALSE, parallel = TRUE, ...) 
+PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", 
+                                       "top_3_mean", "lfq_max", "lfq_top_2_sum", 
+                                       "lfq_top_3_sum", "lfq_all"), 
+                    lfq_ret_tol = 60L, rm_allna = FALSE, parallel = TRUE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
   
@@ -3848,24 +3965,25 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
   
   method_psm_pep <- rlang::enexpr(method_psm_pep)
-  if (TMT_plex > 0) {
-    if (length(method_psm_pep) > 1) {
+  
+  if (TMT_plex) {
+    if (length(method_psm_pep) > 1L) 
       method_psm_pep <- "median"
-    } else {
+    else
       method_psm_pep <- rlang::as_string(method_psm_pep)
-    }
-  } else {
-    if (length(method_psm_pep) > 1) {
+  } 
+  else {
+    if (length(method_psm_pep) > 1L)
       method_psm_pep <- "lfq_top_2_sum"
-    } else {
+    else 
       method_psm_pep <- rlang::as_string(method_psm_pep)
-    }
   }
   
   if (method_psm_pep == "top.3") {
     stop("Method `top.3` depreciated; instead use `top_3_mean`.", 
          call. = FALSE)
-  } else if (method_psm_pep == "weighted.mean") {
+  } 
+  else if (method_psm_pep == "weighted.mean") {
     stop("Method `weighted.mean` depreciated; instead use `weighted_mean`.", 
          call. = FALSE)
   }
@@ -3873,8 +3991,9 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
   stopifnot(method_psm_pep %in% c("median", "mean", "weighted_mean", "top_3_mean", 
                                   "lfq_max", "lfq_top_2_sum", "lfq_top_3_sum", 
                                   "lfq_all"), 
-            length(method_psm_pep) == 1)
+            length(method_psm_pep) == 1L)
   
+  stopifnot(vapply(c(lfq_ret_tol), is.numeric, logical(1)))
   stopifnot(vapply(c(rm_allna, parallel), rlang::is_logical, logical(1)))
   
   dir.create(file.path(dat_dir, "Peptide/cache"), 
@@ -3887,30 +4006,36 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
   message("Primary column keys in `PSM/TMTset1_LCMSinj1_PSM_N.txt` etc. ", 
           "for `filter_` varargs.")
   
-  if (parallel) {
-    n_cores <- pmin(parallel::detectCores(), length(filelist))
+  n_files <- length(filelist)
+  
+  if (parallel && (n_files > 1L)) {
+    n_cores <- min(parallel::detectCores(), n_files)
+    
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
     
-    parallel::clusterExport(cl, list("add_cols_at"), 
-                            envir = env_where("add_cols_at"))
-    
-    parallel::clusterExport(cl, list("reloc_col_before"), 
-                            envir = env_where("reloc_col_before"))
+    parallel::clusterExport(cl, list("add_cols_at", "reloc_col_before"), 
+                            envir = environment(proteoQ:::add_cols_at))
     
     parallel::clusterExport(cl, list("exprs"), 
                             envir = environment(rlang::exprs))
     
     suppressWarnings(
       silent_out <- parallel::clusterApply(
-        cl, filelist, psm_to_pep, dat_dir, label_scheme_full, 
-        group_psm_by, group_pep_by, method_psm_pep, rm_allna, ...)
+        cl, filelist, psm_to_pep, 
+        dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
+        group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
+        method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
+        rm_allna = rm_allna, ...)
     )
     
     parallel::stopCluster(cl)
-  } else {
+  } 
+  else {
     purrr::walk(as.list(filelist), psm_to_pep, 
-                dat_dir, label_scheme_full, 
-                group_psm_by, group_pep_by, method_psm_pep, rm_allna, ...)
+                dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
+                group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
+                method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
+                rm_allna = rm_allna, ...)
   }
   
   .saveCall <- TRUE
@@ -3926,19 +4051,16 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", "top_3
 my_tolower <- function(x, ch = "^") 
 {
   locales <- gregexpr(ch, x) %>% .[[1]] %>% `+`(., 1)
-  lowers <- map(locales, ~ substr(x, .x, .x)) %>% tolower()
+  lowers <- purrr::map(locales, ~ substr(x, .x, .x)) %>% tolower()
   
-  for (i in seq_along(lowers)) {
+  for (i in seq_along(lowers)) 
     substr(x, locales[i], locales[i]) <- lowers[i]
-  }
-  
-  x <- gsub(ch, "", x)
-  
-  return(x)
+
+  gsub(ch, "", x)
 }
 
 
-#' Add the `pep_seq_mod` field to MaxQuant PSMs
+#' Adds the `pep_seq_mod` field to MaxQuant PSMs
 #'
 #' @inheritParams splitPSM
 #' @inheritParams locate_outliers
@@ -4134,7 +4256,7 @@ add_maxquant_pepseqmod <- function(df, use_lowercase_aa)
 }
 
 
-#' Add the `pep_seq_mod` field to MSFragger PSMs
+#' Adds the `pep_seq_mod` field to MSFragger PSMs
 #'
 #' @inheritParams splitPSM
 #' @inheritParams locate_outliers
@@ -4220,7 +4342,7 @@ add_msfragger_pepseqmod <- function(df, use_lowercase_aa)
 }
 
 
-#' Pad columns to a placeholder data frame.
+#' Pads columns to a placeholder data frame.
 #' 
 #' @param df The original data frame.
 #' @param df2 The data frame to be inserted.
@@ -4250,7 +4372,7 @@ add_cols_at <- function(df, df2, idx)
 }
 
 
-#' Replace columns in the original PSM table.
+#' Replaces columns in the original PSM table.
 #' 
 #' The column index(es) need to be continuous.
 #' 
@@ -4286,7 +4408,7 @@ replace_cols_at <- function(df, df2, idxs)
 }
 
 
-#' Relocate column "m/z" to be immediately before column "Mass".
+#' Relocates column "m/z" to be immediately before column "Mass".
 #' 
 #' Not currently used.
 #' 
@@ -4311,7 +4433,7 @@ reloc_col <- function (df, from = "m/z", to = "Mass")
 }
 
 
-#' Relocate column "to_move" immediately after column "col_before".
+#' Relocates column "to_move" immediately after column "col_before".
 #'
 #' @param df The original data frame.
 #' @param to_move The column to be moved.
@@ -4333,7 +4455,7 @@ reloc_col_after <- function(df, to_move = "after_anchor", col_before = "anchor")
 }
 
 
-#' Relocate column "to_move" immediately after the last column.
+#' Relocates column "to_move" immediately after the last column.
 #' 
 #' @inheritParams reloc_col_after
 reloc_col_after_last <- function (df, to_move = "after_anchor") 
@@ -4343,7 +4465,7 @@ reloc_col_after_last <- function (df, to_move = "after_anchor")
 }
 
 
-#' Relocate column "to_move" immediately after the first column.
+#' Relocates column "to_move" immediately after the first column.
 #' 
 #' @inheritParams reloc_col_after
 reloc_col_after_first <- function(df, to_move = "after_anchor") 
@@ -4353,7 +4475,7 @@ reloc_col_after_first <- function(df, to_move = "after_anchor")
 }
 
 
-#' Relocate column "to_move" immediately before anchor column "col_after".
+#' Relocates column "to_move" immediately before anchor column "col_after".
 #'
 #' The same as \code{reloc_col}.
 #'
@@ -4377,7 +4499,7 @@ reloc_col_before <- function(df, to_move = "before_anchor",
 }
 
 
-#' Relocate column "to_move" immediately before the last column.
+#' Relocates column "to_move" immediately before the last column.
 #' 
 #' @inheritParams reloc_col_after
 reloc_col_before_last <- function(df, to_move = "after_anchor") 
@@ -4387,7 +4509,7 @@ reloc_col_before_last <- function(df, to_move = "after_anchor")
 }
 
 
-#' Relocate column "to_move" immediately before the first column.
+#' Relocates column "to_move" immediately before the first column.
 #' 
 #' @inheritParams reloc_col_after
 reloc_col_before_first <- function (df, to_move = "after_anchor") 
@@ -4397,7 +4519,7 @@ reloc_col_before_first <- function (df, to_move = "after_anchor")
 }
 
 
-#' Helper: find the column name before \code{to_move}.
+#' Helper: finds the column name before \code{to_move}.
 #' 
 #' To keep columns at the same order after descriptive summary.
 #' 
@@ -4419,7 +4541,7 @@ find_preceding_colnm <- function(df, to_move)
 }
 
 
-#' Order PSM columns.
+#' Orders PSM columns.
 #'
 #' Only for certain columns.
 #' @param df A PSM data frame.
@@ -4439,7 +4561,7 @@ order_psm_cols <- function(df, cols)
 }
 
 
-#' Order Mascot PSM columns
+#' Orders Mascot PSM columns
 #' 
 #' Columns indicated by \code{psm_cols} will be moved to the front, and columns
 #' of ratios and ratios and intensities to the end. 
@@ -4507,7 +4629,7 @@ order_mascot_psm_cols <- function(df, psm_cols = NULL, rm_na_cols = FALSE)
 }
 
 
-#' Pad MaxQuant TMT channels to the highest plex. 
+#' Pads MaxQuant TMT channels to the highest plex. 
 #' 
 #' @inheritParams splitPSM
 #' @inheritParams splitPSM_mq
@@ -5233,7 +5355,7 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 }
 
 
-#' Pad Spectrum Mill TMT channels to the highest plex
+#' Pads Spectrum Mill TMT channels to the highest plex
 #' @inheritParams pad_mascot_channels
 pad_sm_channels <- function(file, ...) {
   
@@ -5401,7 +5523,7 @@ pad_sm_channels <- function(file, ...) {
 }
 
 
-#' Add the `pep_seq_mod` field to MaxQuant PSMs
+#' Adds the `pep_seq_mod` field to MaxQuant PSMs
 #'
 #' @inheritParams splitPSM
 #' @inheritParams locate_outliers
@@ -5736,7 +5858,7 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
 }
 
 
-#' Pad MSFragger TMT channels to the highest plex. 
+#' Pads MSFragger TMT channels to the highest plex. 
 #' 
 #' @inheritParams pad_mascot_channels
 pad_mf_channels <- function(file, ...) 
@@ -5905,8 +6027,7 @@ pad_mf_channels <- function(file, ...)
 }
 
 
-
-#'Splits PSM tables
+#'Splits MSFragger PSM tables
 #'
 #'\code{splitPSM_mf} splits the PSM outputs by TMT experiment and LC/MS
 #'injection.
@@ -6469,7 +6590,7 @@ add_pepseqmod <- function(df, use_lowercase_aa, purge_phosphodata)
 }
 
 
-#' Add column "pep_score_delta"
+#' Adds column "pep_score_delta"
 #' 
 #' @param df A data frame of PSMs
 add_score_delta <- function(df) 
@@ -6626,6 +6747,9 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   
   stopifnot(all(c("RAW_File", "dat_file") %in% names(df)))
   
+  if ("pep_ret_time" %in% names(df))
+    df <- dplyr::rename(df, pep_ret_range = pep_ret_time)
+  
   # (1.2) add ratio columns
   if (TMT_plex > 0L) {
     stopifnot("I126" %in% names(df))
@@ -6669,14 +6793,16 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
             any(grepl("^R[0-9]{3}[NC]{0,1}", names(df))))
   
   # (1.4.2) phospho (later)
-  if (all(c("pep_var_mod", "pep_locprob", "pep_locdiff") %in% names(df))) {
+  # pep_vmod
+  
+  if (all(c("pep_vmod", "pep_locprob", "pep_locdiff") %in% names(df))) {
     df <- df %>% 
       dplyr::mutate(pep_phospho_locprob = 
-                      ifelse(grepl("Phospho", pep_var_mod), 
+                      ifelse(grepl("Phospho", pep_vmod), 
                              pep_locprob, 
                              NA_real_)) %>% 
       dplyr::mutate(pep_phospho_locdiff = 
-                      ifelse(grepl("Phospho", pep_var_mod), 
+                      ifelse(grepl("Phospho", pep_vmod), 
                              pep_locdiff, 
                              NA_real_))
   }
@@ -6746,6 +6872,7 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   df <- local({
     uniq_by <- c("RAW_File", "pep_scan_num", "pep_seq", "pep_ivmod")
     
+    # actually always include `dat_file`
     if (length(unique(df$dat_file)) >= 1L) 
       uniq_by <- c(uniq_by, "dat_file")
     

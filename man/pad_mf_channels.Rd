@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{pad_mf_channels}
 \alias{pad_mf_channels}
-\title{Pad MSFragger TMT channels to the highest plex.}
+\title{Pads MSFragger TMT channels to the highest plex.}
 \usage{
 pad_mf_channels(file, ...)
 }
@@ -12,5 +12,5 @@ pad_mf_channels(file, ...)
 \item{...}{filter_dots.}
 }
 \description{
-Pad MSFragger TMT channels to the highest plex.
+Pads MSFragger TMT channels to the highest plex.
 }

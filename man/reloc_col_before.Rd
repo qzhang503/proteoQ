@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{reloc_col_before}
 \alias{reloc_col_before}
-\title{Relocate column "to_move" immediately before anchor column "col_after".}
+\title{Relocates column "to_move" immediately before anchor column "col_after".}
 \usage{
 reloc_col_before(df, to_move = "before_anchor", col_after = "anchor")
 }

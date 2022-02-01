@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{add_msfragger_pepseqmod}
 \alias{add_msfragger_pepseqmod}
-\title{Add the `pep_seq_mod` field to MSFragger PSMs}
+\title{Adds the `pep_seq_mod` field to MSFragger PSMs}
 \usage{
 add_msfragger_pepseqmod(df, use_lowercase_aa)
 }
@@ -14,5 +14,5 @@ residues will be abbreviated with lower-case and/or \code{^_~}. See the
 table below for details. The default is TRUE.}
 }
 \description{
-Add the `pep_seq_mod` field to MSFragger PSMs
+Adds the `pep_seq_mod` field to MSFragger PSMs
 }

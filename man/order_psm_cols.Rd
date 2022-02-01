@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{order_psm_cols}
 \alias{order_psm_cols}
-\title{Order PSM columns.}
+\title{Orders PSM columns.}
 \usage{
 order_psm_cols(df, cols)
 }

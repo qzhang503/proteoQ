@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{replace_cols_at}
 \alias{replace_cols_at}
-\title{Replace columns in the original PSM table.}
+\title{Replaces columns in the original PSM table.}
 \usage{
 replace_cols_at(df, df2, idxs)
 }

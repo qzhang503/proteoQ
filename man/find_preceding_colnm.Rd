@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{find_preceding_colnm}
 \alias{find_preceding_colnm}
-\title{Helper: find the column name before \code{to_move}.}
+\title{Helper: finds the column name before \code{to_move}.}
 \usage{
 find_preceding_colnm(df, to_move)
 }

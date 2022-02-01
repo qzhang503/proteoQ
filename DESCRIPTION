@@ -1,6 +1,6 @@
 Package: proteoQ
 Title: Processing and Informatic Analysis of Mass Spectrometrirc Data
-Version: 1.7.0.6
+Version: 1.7.0.7
 Authors@R: 
     person(given = "Qiang",
            family = "Zhang",

@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{reloc_col_before_last}
 \alias{reloc_col_before_last}
-\title{Relocate column "to_move" immediately before the last column.}
+\title{Relocates column "to_move" immediately before the last column.}
 \usage{
 reloc_col_before_last(df, to_move = "after_anchor")
 }
@@ -12,5 +12,5 @@ reloc_col_before_last(df, to_move = "after_anchor")
 \item{to_move}{The column to be moved.}
 }
 \description{
-Relocate column "to_move" immediately before the last column.
+Relocates column "to_move" immediately before the last column.
 }
