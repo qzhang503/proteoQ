@@ -4,7 +4,7 @@
 \alias{add_msfragger_pepseqmod}
 \title{Adds the `pep_seq_mod` field to MSFragger PSMs}
 \usage{
-add_msfragger_pepseqmod(df, use_lowercase_aa)
+add_msfragger_pepseqmod(df = NULL, use_lowercase_aa = TRUE)
 }
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}

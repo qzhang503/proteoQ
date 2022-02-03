@@ -2,9 +2,16 @@
 % Please edit documentation in R/psmtable.R
 \name{psm_msplit}
 \alias{psm_msplit}
-\title{Parallel split of PSM tables}
+\title{Parallel splits of PSM tables}
 \usage{
-psm_msplit(df, nm, fn_lookup, dat_dir, plot_rptr_int, TMT_plex)
+psm_msplit(
+  df = NULL,
+  nm = NULL,
+  fn_lookup = NULL,
+  dat_dir = NULL,
+  plot_rptr_int = TRUE,
+  TMT_plex = 10L
+)
 }
 \arguments{
 \item{df}{A list of data frames.}
@@ -23,5 +30,5 @@ applicable to the precursor intensity with MaxQuant LFQ.}
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}
 }
 \description{
-Parallel split of PSM tables
+Parallel splits of PSM tables
 }

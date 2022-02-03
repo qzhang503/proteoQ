@@ -4,7 +4,13 @@
 \alias{batchPSMheader}
 \title{Processes Mascot PSMs}
 \usage{
-batchPSMheader(filename, dat_dir, TMT_plex, proc_extdata = TRUE, warns = TRUE)
+batchPSMheader(
+  filename = NULL,
+  dat_dir = NULL,
+  TMT_plex = 10L,
+  proc_extdata = TRUE,
+  warns = TRUE
+)
 }
 \arguments{
 \item{filename}{The name of a PSM file.}

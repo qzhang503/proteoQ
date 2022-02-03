@@ -4,7 +4,7 @@
 \alias{pad_sm_channels}
 \title{Pads Spectrum Mill TMT channels to the highest plex}
 \usage{
-pad_sm_channels(file, ...)
+pad_sm_channels(file = NULL, ...)
 }
 \arguments{
 \item{file}{An intermediate PSM table.}

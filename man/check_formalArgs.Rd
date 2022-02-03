@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{check_formalArgs}
 \alias{check_formalArgs}
-\title{Check conflicts in function arguments.}
+\title{Checks conflicts in function arguments.}
 \usage{
 check_formalArgs(w = anal_prnTrend, f = cmeans, excludes = NULL)
 }

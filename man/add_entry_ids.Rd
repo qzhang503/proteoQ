@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{add_entry_ids}
 \alias{add_entry_ids}
-\title{Add numeric indices for peptides or proteins}
+\title{Adds numeric indices for peptides or proteins}
 \usage{
 add_entry_ids(df, col_in = "pep_seq", col_out = "pep_index")
 }
@@ -14,5 +14,5 @@ add_entry_ids(df, col_in = "pep_seq", col_out = "pep_index")
 \item{col_out}{The name of the output column.}
 }
 \description{
-Add numeric indices for peptides or proteins
+Adds numeric indices for peptides or proteins
 }

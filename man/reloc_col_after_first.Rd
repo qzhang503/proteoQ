@@ -4,7 +4,7 @@
 \alias{reloc_col_after_first}
 \title{Relocates column "to_move" immediately after the first column.}
 \usage{
-reloc_col_after_first(df, to_move = "after_anchor")
+reloc_col_after_first(df = NULL, to_move = "after_anchor")
 }
 \arguments{
 \item{df}{The original data frame.}

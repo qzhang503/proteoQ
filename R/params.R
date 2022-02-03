@@ -1354,8 +1354,15 @@ check_raws <- function(df)
     dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File)) %>% 
 		dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File)) # Bruker
   
-  ms_raws <- df$RAW_File %>% unique()
-  label_scheme_raws <- tmtinj_raw$RAW_File %>% unique()
+  ms_raws <- unique(df$RAW_File)
+  
+  if (all(is.na(ms_raws)))
+    stop("All values of `RAW_File` are NA.")
+  
+  label_scheme_raws <- unique(tmtinj_raw$RAW_File)
+  
+  # ms_raws <- df$RAW_File %>% unique()
+  # label_scheme_raws <- tmtinj_raw$RAW_File %>% unique()
   
   missing_ms_raws <- ms_raws %>% .[! . %in% label_scheme_raws]
   wrong_label_scheme_raws <- label_scheme_raws %>% .[! . %in% ms_raws]
@@ -1385,10 +1392,11 @@ check_raws <- function(df)
 }
 
 
-#' Find the TMT-plex from Mascot PSM exports
+#' Finds the TMT-plex from Mascot PSM exports
+#' 
 #' @param df A PSM export from Mascot
 #' @param pep_seq_rows The row(s) contain character string "pep_seq".
-find_masct_tmtplex <- function(df, pep_seq_rows = NULL) 
+find_mascot_tmtplex <- function(df, pep_seq_rows = NULL) 
 {
   if (is.null(pep_seq_rows)) 
     pep_seq_rows <- grep("pep_seq", df)

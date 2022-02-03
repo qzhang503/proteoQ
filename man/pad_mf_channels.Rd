@@ -4,7 +4,7 @@
 \alias{pad_mf_channels}
 \title{Pads MSFragger TMT channels to the highest plex.}
 \usage{
-pad_mf_channels(file, ...)
+pad_mf_channels(file = NULL, ...)
 }
 \arguments{
 \item{file}{An intermediate PSM table.}

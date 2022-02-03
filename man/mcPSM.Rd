@@ -5,12 +5,12 @@
 \title{Median-centering normalization of PSM data}
 \usage{
 mcPSM(
-  df,
-  set_idx,
-  injn_idx,
-  mc_psm_by,
-  group_psm_by,
-  group_pep_by,
+  df = NULL,
+  set_idx = 1L,
+  injn_idx = 1L,
+  mc_psm_by = "peptide",
+  group_psm_by = "pep_seq",
+  group_pep_by = "prot_acc",
   rm_allna = FALSE
 )
 }

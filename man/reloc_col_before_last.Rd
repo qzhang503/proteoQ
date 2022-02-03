@@ -4,7 +4,7 @@
 \alias{reloc_col_before_last}
 \title{Relocates column "to_move" immediately before the last column.}
 \usage{
-reloc_col_before_last(df, to_move = "after_anchor")
+reloc_col_before_last(df = NULL, to_move = "after_anchor")
 }
 \arguments{
 \item{df}{The original data frame.}

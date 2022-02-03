@@ -2,9 +2,9 @@
 % Please edit documentation in R/psmtable.R
 \name{pad_mascot_channels}
 \alias{pad_mascot_channels}
-\title{Pad Mascot TMT channels to the highest plex}
+\title{Pads Mascot TMT channels to the highest plex}
 \usage{
-pad_mascot_channels(file, ...)
+pad_mascot_channels(file = NULL, ...)
 }
 \arguments{
 \item{file}{An intermediate PSM table.}
@@ -12,5 +12,5 @@ pad_mascot_channels(file, ...)
 \item{...}{filter_dots.}
 }
 \description{
-Pad Mascot TMT channels to the highest plex
+Pads Mascot TMT channels to the highest plex
 }

@@ -1352,7 +1352,7 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
   
   # -- add columns gene, organism, species, entrez ---
   df_splits <- df %>% 
-    split(., .$acc_type, drop = TRUE)
+    split(.$acc_type, drop = TRUE)
   
   acc_lookup <- purrr::map(df_splits, ~ {
     acc_type <- .x[["acc_type"]][1]
@@ -1385,13 +1385,20 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
           dplyr::bind_rows(., na_org) %>% 
           dplyr::select(-prot_desc) %>% 
           dplyr::right_join(acc_lookup, by = "prot_acc")
-        
+
         # column species
         acc_lookup <- acc_lookup %>% 
           dplyr::mutate(species = my_lookup[.$organism]) %>% 
           na_species_by_org() 
       })
       
+      if (!nrow(acc_lookup)) {
+        warning("No matches in protein accessions.\n", 
+                "Likely incorrect fasta databases and may run into ", 
+                "an error of no species in entrez annoation.", 
+                call. = FALSE)
+      }
+
       # column entrez
       acc_lookup <- if (is.null(entrez)) 
         add_entrez(acc_lookup, acc_type, warns)
@@ -1409,6 +1416,13 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
         dplyr::mutate(organism = gsub("^.*\\[(.*)\\]\\.*.*", "\\1", prot_desc)) %>% 
         dplyr::mutate(species = my_lookup[.$organism]) %>% 
         na_species_by_org()
+      
+      if (!nrow(acc_lookup)) {
+        warning("No matches in protein accessions.\n", 
+                "Likely incorrect fasta databases and may run into ", 
+                "an error of no species in entrez annoation.", 
+                call. = FALSE)
+      }
       
       # column entrez
       acc_lookup <- if (is.null(entrez)) 
@@ -1483,22 +1497,34 @@ hparse_fasta <- function (df_sub, fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc
       perc <- n_lookup/n_fasta 
       
       if (perc < .1 && warns) 
-        warning("The portion of uniprot accessions being annotated with \n", 
-                purrr::reduce(fasta, paste, sep = "\n"), " is ", 
-                format(round(perc, 3), nsmall = 3), 
-                "\n============================================================", 
-                "\n!!! Check the choice of fasta(s) for probable mismatches.!!!", 
+        warning("\nThe portion of uniprot accessions being annotated with \n", 
+                paste(fasta, collapse = "\n"), " is `", 
+                format(round(perc, 3), nsmall = 3), "`.\n", 
+                "\n------------------------------------------------------------", 
+                "\nCheck the choice of fasta(s) for probable mismatches.", 
                 "\n  A common source of mistakes: choose Uniprot with proteoQ", 
                 "\n  but used Refseq in database searches, or vice versa.", 
-                "\n============================================================", 
+                "\n------------------------------------------------------------", 
+                call. = FALSE)
+      
+      if (perc < 1e-5) 
+        warning("\n\n============================================================\n", 
+                "PLEASE READ:\n\n", 
+                "Almost NO uniprot accessions being annotated with \n", 
+                paste(fasta, collapse = "\n"), " is `", perc, "`.\n", 
+                "\nThe fasta databases is probably incorrect.", 
+                "\n============================================================\n", 
                 call. = FALSE)
     })
   } 
   else if (acc_type == "refseq_acc") {
+    unique_accs <- unique(df_sub$prot_acc)
+    unique_accs <- gsub("\\.[0-9]+$", "", unique_accs)
+    
     acc_lookup <- tibble::tibble(fasta_name = names(fasta_db), 
                                  refseq_acc = names(fasta_db)) %>% 
       dplyr::filter(grepl(pat_ref_acc, refseq_acc)) %>% 
-      dplyr::filter(.[[acc_type]] %in% unique(df_sub$prot_acc)) %>% 
+      dplyr::filter(.[[acc_type]] %in% unique_accs) %>% 
       dplyr::filter(!duplicated(.[[acc_type]])) %>% 
       dplyr::mutate(uniprot_acc = NA_character_, 
                     uniprot_id = NA_character_, 
@@ -1514,10 +1540,23 @@ hparse_fasta <- function (df_sub, fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc
       perc <- n_lookup/n_fasta 
       
       if (perc < .1 && warns) 
-        warning("The portion of refseq accessions being annotated with \n", 
-                purrr::reduce(fasta, paste, sep = "\n"), " is ", 
-                format(round(perc, 3), nsmall = 3), 
-                "\nInsepct the specification of fasta databases for probable mismatches", 
+        warning("\nThe portion of refseq accessions being annotated with \n", 
+                paste(fasta, collapse = "\n"), " is `", 
+                format(round(perc, 3), nsmall = 3), "`.\n", 
+                "\n------------------------------------------------------------", 
+                "\nCheck the choice of fasta(s) for probable mismatches.", 
+                "\n  A common source of mistakes: choose refseq with proteoQ", 
+                "\n  but used uniprot in database searches, or vice versa.", 
+                "\n------------------------------------------------------------", 
+                call. = FALSE)
+
+      if (perc < 1e-5) 
+        warning("\n\n============================================================\n", 
+                "PLEASE READ:\n\n", 
+                "Almost NO refseq accessions being annotated with \n", 
+                paste(fasta, collapse = "\n"), " is `", perc, "`.\n", 
+                "\nThe fasta databases is probably incorrect.", 
+                "\n============================================================\n", 
                 call. = FALSE)
     })
   } 
@@ -3691,27 +3730,34 @@ load_craps <- function(acc_types)
 #' Finds the columns of reporter-ion intensity.
 #' 
 #' @inheritParams TMT_levels
-find_int_cols <- function (TMT_plex) 
+find_int_cols <- function (TMT_plex = 10L) 
 {
-  col_int <- if (TMT_plex == 18) {
+  oks <- c(0L, 6L, 10L, 11L, 16L, 18L)
+  
+  if (! TMT_plex %in% oks) 
+    warning("`TMT_plex` is not one of ", paste(oks, collapse = ", "), ".", 
+            call. = FALSE)
+  
+  col_int <- if (TMT_plex == 18L) {
     c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
       "I130N", "I130C", "I131N", "I131C", 
-      "I132N", "I132C", "I133N", "I133C", "I134N", "I134C", "I135N")
+      "I132N", "I132C", "I133N", "I133C", "I134N", 
+      "I134C", "I135N")
   } 
-  else if (TMT_plex == 16) {
+  else if (TMT_plex == 16L) {
     c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
       "I130N", "I130C", "I131N", "I131C", 
       "I132N", "I132C", "I133N", "I133C", "I134N")
   } 
-  else if (TMT_plex == 11) {
+  else if (TMT_plex == 11L) {
     c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
       "I130N", "I130C", "I131N", "I131C")
   } 
-  else if (TMT_plex == 10) {
+  else if (TMT_plex == 10L) {
     c("I126", "I127N", "I127C", "I128N", "I128C", "I129N", "I129C",
       "I130N", "I130C", "I131")
   } 
-  else if(TMT_plex == 6) {
+  else if(TMT_plex == 6L) {
     c("I126", "I127", "I128", "I129", "I130", "I131")
   } 
   else {
@@ -3723,27 +3769,28 @@ find_int_cols <- function (TMT_plex)
 #' Finds the columns of reporter-ion ratios.
 #' 
 #' @inheritParams TMT_levels
-find_ratio_cols <- function (TMT_plex) 
+find_ratio_cols <- function (TMT_plex = 10L) 
 {
-  col_ratio <- if (TMT_plex == 18) {
+  col_ratio <- if (TMT_plex == 18L) {
     c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
       "R130N", "R130C", "R131N", "R131C", 
-      "R132N", "R132C", "R133N", "R133C", "R134N", "R134C", "R135N")
+      "R132N", "R132C", "R133N", "R133C", "R134N", 
+      "R134C", "R135N")
   } 
-  else if (TMT_plex == 16) {
+  else if (TMT_plex == 16L) {
     c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
       "R130N", "R130C", "R131N", "R131C", 
       "R132N", "R132C", "R133N", "R133C", "R134N")
   } 
-  else if (TMT_plex == 11) {
+  else if (TMT_plex == 11L) {
     c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
       "R130N", "R130C", "R131N", "R131C")
   } 
-  else if (TMT_plex == 10) {
+  else if (TMT_plex == 10L) {
     c("R127N", "R127C", "R128N", "R128C", "R129N", "R129C",
       "R130N", "R130C", "R131")
   } 
-  else if(TMT_plex == 6) {
+  else if(TMT_plex == 6L) {
     c("R127", "R128", "R129", "R130", "R131")
   } 
   else {
@@ -3752,7 +3799,7 @@ find_ratio_cols <- function (TMT_plex)
 }
 
 
-#' Process MaxQuant mqpar.xml
+#' Processes MaxQuant mqpar.xml
 #' 
 #' @inheritParams load_expts
 #' @param mqpar The name of .xml file. The default is "mqpar.xml".
@@ -3910,7 +3957,7 @@ make_mq_meta2 <- function (dat_dir = proteoQ:::get_gl_dat_dir(),
 }
 
 
-#' Add numeric indices for peptides or proteins
+#' Adds numeric indices for peptides or proteins
 #' 
 #' @param df A data frame.
 #' @param col_in The column key to be indexed.
@@ -3930,7 +3977,7 @@ add_entry_ids <- function (df, col_in = "pep_seq", col_out = "pep_index")
 }
 
 
-#' Check conflicts in function arguments.
+#' Checks conflicts in function arguments.
 #' 
 #' Conflicts between wrapper and function to be wrapped. Note that \code{f}
 #' contains function name but not package name.

@@ -2,9 +2,13 @@
 % Please edit documentation in R/psmtable.R
 \name{add_quality_cols}
 \alias{add_quality_cols}
-\title{Add columns \code{pep_n_psm}, \code{prot_n_psm} and \code{prot_n_pep}.}
+\title{Adds columns \code{pep_n_psm}, \code{prot_n_psm} and \code{prot_n_pep}.}
 \usage{
-add_quality_cols(df, group_psm_by, group_pep_by)
+add_quality_cols(
+  df = NULL,
+  group_psm_by = "pep_seq",
+  group_pep_by = "prot_acc"
+)
 }
 \arguments{
 \item{df}{A data frame.}
@@ -23,5 +27,5 @@ alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
 }
 \description{
-Add columns \code{pep_n_psm}, \code{prot_n_psm} and \code{prot_n_pep}.
+Adds columns \code{pep_n_psm}, \code{prot_n_psm} and \code{prot_n_pep}.
 }

@@ -4,7 +4,7 @@
 \alias{add_cols_at}
 \title{Pads columns to a placeholder data frame.}
 \usage{
-add_cols_at(df, df2, idx)
+add_cols_at(df = NULL, df2 = NULL, idx = 0L)
 }
 \arguments{
 \item{df}{The original data frame.}

@@ -4,7 +4,7 @@
 \alias{find_int_cols}
 \title{Finds the columns of reporter-ion intensity.}
 \usage{
-find_int_cols(TMT_plex)
+find_int_cols(TMT_plex = 10L)
 }
 \arguments{
 \item{TMT_plex}{Numeric; the multiplexity of TMT, i.e., 10, 11 etc.}

@@ -4,7 +4,7 @@
 \alias{add_maxquant_pepseqmod}
 \title{Adds the `pep_seq_mod` field to MaxQuant PSMs}
 \usage{
-add_maxquant_pepseqmod(df, use_lowercase_aa)
+add_maxquant_pepseqmod(df = NULL, use_lowercase_aa = TRUE)
 }
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}

@@ -4,7 +4,7 @@
 \alias{add_shared_prot_accs}
 \title{Find the shared protein accessions when using MSFragger.}
 \usage{
-add_shared_prot_accs(df)
+add_shared_prot_accs(df = NULL)
 }
 \arguments{
 \item{df}{PSM data.}

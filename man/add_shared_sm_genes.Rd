@@ -5,7 +5,7 @@
 \title{Find peptides that are shared by genes.}
 \usage{
 add_shared_sm_genes(
-  df,
+  df = NULL,
   key = "Proteins",
   sep = ";",
   fasta = NULL,

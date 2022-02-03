@@ -4,7 +4,7 @@
 \alias{order_psm_cols}
 \title{Orders PSM columns.}
 \usage{
-order_psm_cols(df, cols)
+order_psm_cols(df = NULL, cols = NULL)
 }
 \arguments{
 \item{df}{A PSM data frame.}

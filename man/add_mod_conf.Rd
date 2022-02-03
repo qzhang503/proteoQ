@@ -2,9 +2,9 @@
 % Please edit documentation in R/psmtable.R
 \name{add_mod_conf}
 \alias{add_mod_conf}
-\title{Add column "pep_var_mod_conf"}
+\title{Adds column "pep_var_mod_conf"}
 \usage{
-add_mod_conf(df, dat_dir)
+add_mod_conf(df = NULL, dat_dir = NULL)
 }
 \arguments{
 \item{df}{A data frame of PSMs}
@@ -13,5 +13,9 @@ add_mod_conf(df, dat_dir)
 match the value under the global environment.}
 }
 \description{
-Add column "pep_var_mod_conf"
+Currently only for Mascot.
+}
+\details{
+Not yet supports Mascot timsTOF format and thus \code{pep_scan_range} is
+\code{NA_integer_} not \code{NA_character_}.
 }

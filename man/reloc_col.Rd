@@ -4,7 +4,7 @@
 \alias{reloc_col}
 \title{Relocates column "m/z" to be immediately before column "Mass".}
 \usage{
-reloc_col(df, from = "m/z", to = "Mass")
+reloc_col(df = NULL, from = "m/z", to = "Mass")
 }
 \arguments{
 \item{df}{The original data frame.}

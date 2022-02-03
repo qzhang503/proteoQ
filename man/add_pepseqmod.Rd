@@ -4,7 +4,7 @@
 \alias{add_pepseqmod}
 \title{Add the `pep_seq_mod` field to Mascot PSMs}
 \usage{
-add_pepseqmod(df, use_lowercase_aa, purge_phosphodata)
+add_pepseqmod(df = NULL, use_lowercase_aa = TRUE, purge_phosphodata = TRUE)
 }
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}

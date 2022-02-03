@@ -2,9 +2,9 @@
 % Please edit documentation in R/psmtable.R
 \name{rm_cols_mqpsm}
 \alias{rm_cols_mqpsm}
-\title{Remove columns from PSM table}
+\title{Removes columns from PSM table}
 \usage{
-rm_cols_mqpsm(df, group_psm_by, set_idx)
+rm_cols_mqpsm(df = NULL, group_psm_by = "pep_seq", set_idx = 1L)
 }
 \arguments{
 \item{df}{PSM data}
@@ -20,5 +20,5 @@ the same \code{pep_seq_mod} groups.}
 files such as \code{label_scheme.xlsx} and \code{frac_scheme.xlsx}.}
 }
 \description{
-Remove columns from PSM table
+Removes columns from PSM table
 }
