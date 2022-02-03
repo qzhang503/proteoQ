@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{arrangers_in_call}
 \alias{arrangers_in_call}
-\title{Arrange rows}
+\title{Arranges rows}
 \usage{
 arrangers_in_call(.df, ..., .na.last = TRUE)
 }
@@ -14,5 +14,5 @@ arrangers_in_call(.df, ..., .na.last = TRUE)
 \item{.na.last}{The same as \link[base]{order}}
 }
 \description{
-Arrange rows
+Arranges rows
 }

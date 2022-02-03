@@ -841,7 +841,7 @@ load_dbs <- function (gset_nms = NULL, species = NULL)
 } 
 
 
-#'Load TMT or LFQ experiments
+#'Loads TMT or LFQ experiments
 #'
 #'\code{load_expts} processes \code{.xlsx} or \code{.csv} files containing the
 #'metadata of TMT or LFQ experiments. For simplicity, \code{.xlsx} will be
@@ -1079,7 +1079,7 @@ load_expts <- function (dat_dir = NULL, expt_smry = "expt_smry.xlsx",
 }
 
 
-#' Reload the "expt_smry.xlsx" and "frac_smry.xlsx"
+#' Reloads the "expt_smry.xlsx" and "frac_smry.xlsx"
 #'
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 #' @importFrom fs file_info
@@ -1205,28 +1205,28 @@ TMT_plex2 <- function ()
 #' @param TMT_plex Numeric; the multiplexity of TMT, i.e., 10, 11 etc.
 TMT_levels <- function (TMT_plex) 
 {
-  TMT_levels <- if (TMT_plex == 18) 
+  TMT_levels <- if (TMT_plex == 18L) 
     c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
-                    "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
-                    "TMT-131N", "TMT-131C", "TMT-132N", "TMT-132C", 
-                    "TMT-133N", "TMT-133C", "TMT-134N", "TMT-134C", "TMT-135N")
-  else if (TMT_plex == 16) 
+      "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
+      "TMT-131N", "TMT-131C", "TMT-132N", "TMT-132C", 
+      "TMT-133N", "TMT-133C", "TMT-134N", "TMT-134C", "TMT-135N")
+  else if (TMT_plex == 16L) 
+    c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
+      "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
+      "TMT-131N", "TMT-131C", "TMT-132N", "TMT-132C", 
+      "TMT-133N", "TMT-133C", "TMT-134N")
+	else if (TMT_plex == 11L) 
 	  c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
-	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
-	                  "TMT-131N", "TMT-131C", "TMT-132N", "TMT-132C", 
-	                  "TMT-133N", "TMT-133C", "TMT-134N")
-	else if (TMT_plex == 11) 
+	    "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
+	    "TMT-131N", "TMT-131C")
+	else if (TMT_plex == 10L) 
 	  c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
-	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", 
-	                  "TMT-131N", "TMT-131C")
-	else if (TMT_plex == 10) 
-	  c("TMT-126", "TMT-127N", "TMT-127C", "TMT-128N", "TMT-128C", 
-	                  "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131")
-	else if (TMT_plex == 6) 
+	    "TMT-129N", "TMT-129C", "TMT-130N", "TMT-130C", "TMT-131")
+	else if (TMT_plex == 6L) 
 	  c("TMT-126", "TMT-127", "TMT-128", "TMT-129", "TMT-130", "TMT-131")
-	else if (TMT_plex == 1) 
+	else if (TMT_plex == 1L) 
 	  c("TMT-126")
-	else if (TMT_plex == 0) 
+	else if (TMT_plex == 0L) 
 	  NULL
 }
 
@@ -1274,7 +1274,7 @@ simple_label_scheme <- function (dat_dir, label_scheme_full)
 }
 
 
-#' Find mismatches in RAW file names
+#' Finds mismatches in RAW file names
 #'
 #' \code{check_raws} finds mismatched RAW files between expt_smry.xlsx and
 #' PSM outputs.
@@ -1356,6 +1356,7 @@ check_raws <- function(df)
   
   ms_raws <- unique(df$RAW_File)
   
+  # (sometime due to parsing error, i.e., of unknown formats)
   if (all(is.na(ms_raws)))
     stop("All values of `RAW_File` are NA.")
   
@@ -1401,25 +1402,25 @@ find_mascot_tmtplex <- function(df, pep_seq_rows = NULL)
   if (is.null(pep_seq_rows)) 
     pep_seq_rows <- grep("pep_seq", df)
   
-  if (purrr::is_empty(pep_seq_rows)) 
+  if (!length(pep_seq_rows)) 
     stop("The row of `pep_seq` not found.", call. = FALSE)
   
   first_line <- df[pep_seq_rows[1] + 1]
   
   mascot_tmtplex <- if (grepl("\"135C\"", first_line, fixed = TRUE) || 
       grepl("\"135\"", first_line, fixed = TRUE)) 
-    18 
+    18L 
   else if (grepl("\"134N\"", first_line, fixed = TRUE) || 
       grepl("\"134\"", first_line, fixed = TRUE)) 
-    16
+    16L
   else if (grepl("\"131C\"", first_line, fixed = TRUE)) 
-    11
+    11L
   else if (grepl("\"131\"", first_line, fixed = TRUE) && 
              grepl("\"130C\"", first_line, fixed = TRUE)) 
-    10
+    10L
   else if (grepl("\"131\"", first_line, fixed = TRUE)) 
-    6
+    6L
   else 
-    0
+    0L
 }
 

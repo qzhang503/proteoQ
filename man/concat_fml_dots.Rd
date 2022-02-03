@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{concat_fml_dots}
 \alias{concat_fml_dots}
-\title{Concatenate formula(s) to varargs of dots}
+\title{Concatenates formula(s) to varargs of dots}
 \usage{
 concat_fml_dots(fmls = NULL, fml_nms = NULL, dots = NULL, anal_type = "zzz")
 }
@@ -20,5 +20,5 @@ automatically. Exemplary values include \code{anal_type = c("PCA",
 "NMF", "Purge", "Trend", "LDA", ...)}.}
 }
 \description{
-Concatenate formula(s) to varargs of dots
+Concatenates formula(s) to varargs of dots
 }

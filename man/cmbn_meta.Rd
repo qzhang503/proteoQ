@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{cmbn_meta}
 \alias{cmbn_meta}
-\title{Combine data with metadata}
+\title{Combines data with metadata}
 \usage{
 cmbn_meta(data, metadata)
 }
@@ -12,5 +12,5 @@ cmbn_meta(data, metadata)
 \item{metadata}{Another data frame}
 }
 \description{
-Combine data with metadata
+Combines data with metadata
 }

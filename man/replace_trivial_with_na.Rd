@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{replace_trivial_with_na}
 \alias{replace_trivial_with_na}
-\title{Replace a trivial vector with NA values.}
+\title{Replaces a trivial vector with NA values.}
 \usage{
 replace_trivial_with_na(x)
 }
@@ -10,5 +10,5 @@ replace_trivial_with_na(x)
 \item{x}{A numeric vector}
 }
 \description{
-Replace a trivial vector with NA values.
+Replaces a trivial vector with NA values.
 }

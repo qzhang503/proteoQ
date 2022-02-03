@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{ok_existing_params}
 \alias{ok_existing_params}
-\title{Check the suitability of existing param files for MGKernel}
+\title{Checks the suitability of existing param files for MGKernel}
 \usage{
 ok_existing_params(filepath)
 }
@@ -10,5 +10,5 @@ ok_existing_params(filepath)
 \item{filepath}{A file path to \code{"MGKernel_params_N.txt"}}
 }
 \description{
-Check the suitability of existing param files for MGKernel
+Checks the suitability of existing param files for MGKernel
 }

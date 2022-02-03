@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{find_search_engine}
 \alias{find_search_engine}
-\title{Find the type of search engine}
+\title{Finds the type of search engine}
 \usage{
 find_search_engine(dat_dir = NULL)
 }
@@ -11,5 +11,5 @@ find_search_engine(dat_dir = NULL)
 match the value under the global environment.}
 }
 \description{
-Find the type of search engine
+Finds the type of search engine
 }

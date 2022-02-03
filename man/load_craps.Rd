@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{load_craps}
 \alias{load_craps}
-\title{Load cRAPs}
+\title{Loads cRAPs}
 \usage{
 load_craps(acc_types)
 }

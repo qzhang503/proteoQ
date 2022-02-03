@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{recur_flatten}
 \alias{recur_flatten}
-\title{Flatten lists recursively}
+\title{Flattens lists recursively}
 \usage{
 recur_flatten(x)
 }
@@ -10,5 +10,5 @@ recur_flatten(x)
 \item{x}{Lists}
 }
 \description{
-Flatten lists recursively
+Flattens lists recursively
 }

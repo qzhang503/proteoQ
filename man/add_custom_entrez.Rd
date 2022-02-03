@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{add_custom_entrez}
 \alias{add_custom_entrez}
-\title{Add custom Entrez IDs and optional overwriting species}
+\title{Adds custom Entrez IDs and optional overwriting species}
 \usage{
 add_custom_entrez(acc_lookup, entrez, acc_type)
 }
@@ -19,5 +19,5 @@ for preparing custom entrez files.}
 \item{acc_type}{The type of protein accessions}
 }
 \description{
-Add custom Entrez IDs and optional overwriting species
+Adds custom Entrez IDs and optional overwriting species
 }

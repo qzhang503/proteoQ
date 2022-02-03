@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{rm_sglval_cols}
 \alias{rm_sglval_cols}
-\title{Remove single-value columns}
+\title{Removes single-value columns}
 \usage{
 rm_sglval_cols(x)
 }
@@ -10,5 +10,5 @@ rm_sglval_cols(x)
 \item{x}{A data frame of \code{log2FC}.}
 }
 \description{
-Remove single-value columns
+Removes single-value columns
 }

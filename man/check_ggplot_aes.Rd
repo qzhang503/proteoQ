@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{check_ggplot_aes}
 \alias{check_ggplot_aes}
-\title{Check missing values in a ggplot2 object.}
+\title{Checks missing values in a ggplot2 object.}
 \usage{
 check_ggplot_aes(p)
 }
@@ -10,5 +10,5 @@ check_ggplot_aes(p)
 \item{p}{A ggplot2 object.}
 }
 \description{
-Check missing values in a ggplot2 object.
+Checks missing values in a ggplot2 object.
 }

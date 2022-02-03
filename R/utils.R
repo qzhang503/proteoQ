@@ -14,14 +14,15 @@
 #' \donttest{tempData <- prepDM(df, entrez, scale_log2r, label_scheme_sub$Sample_ID)}
 #'@import dplyr
 #'@importFrom magrittr %>% %T>% %$% %<>% 
-prepDM <- function(df, id, scale_log2r, sub_grp, type = "ratio", anal_type, 
-                   rm_allna = FALSE) 
+prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL, 
+                   type = "ratio", anal_type = NULL, rm_allna = FALSE) 
 {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
   
-  stopifnot(nrow(df) > 0L)  
-  
+  if (!nrow(df))
+    stop("Zero row of data after subsetting.")
+
   id <- rlang::as_string(rlang::enexpr(id))
   
   if (anal_type %in% c("ESGAGE", "GSVA")) {
@@ -262,7 +263,7 @@ ins_cols_after <- function(df = NULL, idx_bf = ncol(df), idx_ins = NULL)
 }
 
 
-#' Sort by the indexes of TMT_Set and LCMS_Injection
+#' Sorts by the indexes of TMT_Set and LCMS_Injection
 #' 
 #' "8.3"    "8.5"   "11.1"   "11.3"   "99.2"  "99.10" 
 #' Not "8.3"    "8.5"   "11.1"   "11.3"   "99.10"  "99.2" 
@@ -284,7 +285,7 @@ sort_tmt_lcms <- function (nms)
 }
 
 
-#' Replace zero intensity with NA
+#' Replaces zero intensity with NA
 #'
 #' \code{na_zeroIntensity} replaces zero intensity with NA to avoid -Inf in
 #' log10 transformation.
@@ -304,7 +305,7 @@ na_zeroIntensity <- function(df)
 	invisible(df)
 }
 
-#' Find all zero rows
+#' Finds all zero rows
 #' 
 #' @param x A data frame.
 not_allzero_rows <- function(x) (rowSums(x != 0, na.rm = TRUE) > 0)
@@ -333,7 +334,7 @@ aggrNums <- function(f)
 }
 
 
-#' Sum top_n
+#' Sums top_n
 #'
 #' \code{aggrTopn} summarizes \code{log2FC} and \code{intensity} by the
 #' descriptive statistics of \code{c("mean", "median", "sum")}. Note the
@@ -596,7 +597,7 @@ is_trivial_col <- function (df, col)
 }
 
 
-#' Find a trivial vector
+#' Finds a trivial vector
 #' 
 #' @param x A numeric vector
 is_trivial_dbl <- function (x) 
@@ -613,7 +614,7 @@ is_trivial_dbl <- function (x)
 }
 
 
-#' Replace a trivial vector with NA values.
+#' Replaces a trivial vector with NA values.
 #' 
 #' @param x A numeric vector
 replace_trivial_with_na <- function (x) 
@@ -641,14 +642,14 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
   load(file = file.path(dat_dir, "label_scheme.rda"))
 	exists <- annot_cols %in% names(label_scheme)
 
-	if (sum(!exists) > 0) {
+	if (sum(!exists) > 0L) {
 		warning(paste0("Column '", annot_cols[!exists], "'",
 		               " not found in \'label_scheme\' and will be skipped."), 
 		        call. = FALSE)
 		annot_cols <- annot_cols[exists]
 	}
 
-	if (length(annot_cols) == 0) 
+	if (!length(annot_cols)) 
 	  return(NA)
 
 	x <- label_scheme %>%
@@ -657,7 +658,7 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 	
 	idx <- !not_all_NA(x)
 	
-	if (sum(idx) > 0) 
+	if (sum(idx) > 0L) 
 	  stop("No aesthetics defined under column(s) `", 
 	       purrr::reduce(names(x)[idx], paste, sep = ", "), "`.", 
 	       call. = FALSE)
@@ -701,6 +702,7 @@ setHMColor <- function (annotation_col)
 
 	if (is.null(ncol)) 
 	  return (NA)
+	
 	if (!ncol) 
 	  return (NA)
 
@@ -912,7 +914,7 @@ imputeNA <- function (id, overwrite = FALSE, ...)
 }
 
 
-#'Impute NA values for peptide data
+#'Imputes NA values for peptide data
 #'
 #'\code{pepImp} is a wrapper of \code{\link{imputeNA}} for peptide data with
 #'auto-determination of \code{id}.
@@ -1019,7 +1021,7 @@ sp_lookup_Ul <- function(species)
 }
 
 
-#' Add gene IDs for RefSeq
+#' Adds gene IDs for RefSeq
 #' 
 #' @inheritParams add_entrez
 add_refseq_gene <- function (acc_lookup, acc_type) 
@@ -1050,7 +1052,8 @@ add_refseq_gene <- function (acc_lookup, acc_type)
                        stop("Unknown `accession type`.", 
                             Call. = FALSE))
 
-  if (all(species %in% c("human", "mouse", "rat"))) {
+  # (`species` can be empty)
+  if (all(isTRUE(species %in% c("human", "mouse", "rat")))) {
     filelist <- paste0(abbr_acc, "entrez_", abbr_sp)
     data(package = "proteoQ", list = filelist, envir = environment())
     
@@ -1072,7 +1075,7 @@ add_refseq_gene <- function (acc_lookup, acc_type)
 }
 
 
-#' Add Entrez IDs
+#' Adds Entrez IDs
 #' 
 #' @param acc_lookup A data frame of protein accession lookups
 #' @param acc_type The type of protein accessions
@@ -1094,17 +1097,19 @@ add_entrez <- function (acc_lookup, acc_type, warns = TRUE)
   def_sps <- c("human", "mouse", "rat")
   species <- unique(acc_lookup$species) %>% .[!is.na(.)]
   
-  if ((!all(species %in% def_sps))) {
+  if ((!all(isTRUE(species %in% def_sps)))) {
     if (warns) {
       warning("No default `entrez` lookups for species other than: ", 
-              purrr::reduce(def_sps, paste, sep = ", "), ".\n",
+              paste(def_sps, collapse = ", "), ".\n",
               "To annotate, provide the file path and name(s) via argument `entrez`.\n", 
               "See also `?Uni2Entrez` and `?Ref2Entrez` for custom `entrez` lookups.", 
               call. = FALSE)
       
-      warning("At the `entrez = NULL` default, ignore non-default species: \n", 
-              purrr::reduce(species %>% .[! . %in% def_sps], paste, sep = ", "), 
-              call. = FALSE)
+      if (all(isTRUE(species))) {
+        warning("At the `entrez = NULL` default, ignore non-default species: \n", 
+                paste(species[!species %in% def_sps], collapse = ", "), 
+                call. = FALSE)
+      }
     }
 
     species <- species %>% .[. %in% def_sps]
@@ -1148,7 +1153,7 @@ add_entrez <- function (acc_lookup, acc_type, warns = TRUE)
 }
 
 
-#' Add custom Entrez IDs and optional overwriting species
+#' Adds custom Entrez IDs and optional overwriting species
 #' 
 #' @inheritParams  add_entrez
 #' @inheritParams normPSM
@@ -1201,7 +1206,7 @@ add_custom_entrez <- function(acc_lookup, entrez, acc_type)
 } 
 
 
-#' Determine the protein accession type from PSM tables
+#' Determines the protein accession type from PSM tables
 #'
 #' Find the protein accession from a non-cRAP entry and parse it.
 #' 
@@ -1210,10 +1215,7 @@ parse_acc <- function(df)
 {
   stopifnot("prot_acc" %in% names(df))
   
-  prot_accs <- df %>%
-    dplyr::select(prot_acc) %>%
-    unlist %>% 
-    unique()
+  prot_accs <- unique(df$prot_acc)
   
   pat_uni_acc <- 
     "^[OPQ][0-9][A-Z0-9]{3}[0-9]|^[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}"
@@ -1239,7 +1241,7 @@ parse_acc <- function(df)
 }
 
 
-#' Parse FASTA for accession lookups
+#' Parses FASTA for accession lookups
 #'
 #' NA genes are replaced with prot_acc
 #' 
@@ -1300,16 +1302,23 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
   
   
   # add column `acc_type`; note that `df` not saved
+  if (!nrow(df))
+    warning("Zero row of input data.")
+  
   df <- df %>% 
     parse_acc() %>% 
-    dplyr::filter(nchar(prot_acc) > 0)
+    dplyr::filter(nchar(prot_acc) > 0L)
 
   # load fasta_db
   fasta_db <- load_fasta(fasta) %>% 
     `names<-`(gsub("\\.[0-9]*$", "", names(.)))
+  
+  if (!length(fasta_db)) 
+    warning("FASTA databases are empty.")
 
   # accession lookups by acc_type's
-  df_splits <- df %>% split(., .$acc_type, drop = TRUE)
+  df_splits <- df %>% 
+    split(.$acc_type, drop = TRUE)
   
   acc_lookup <- lapply(df_splits, hparse_fasta, 
                        fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc, 
@@ -1377,7 +1386,7 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
           dplyr::filter(!grepl("OS=", .$prot_desc)) %>% 
           dplyr::mutate(organism = NA_character_)
         
-        # columns gene and organism
+        # adds gene and organism
         acc_lookup <- genes %>% 
           dplyr::filter(grepl("OS=", .$prot_desc)) %>% 
           dplyr::mutate(organism = gsub("^.*OS=(.*?)=.*$", "\\1", prot_desc)) %>% 
@@ -1386,31 +1395,29 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
           dplyr::select(-prot_desc) %>% 
           dplyr::right_join(acc_lookup, by = "prot_acc")
 
-        # column species
+        # adds species
         acc_lookup <- acc_lookup %>% 
           dplyr::mutate(species = my_lookup[.$organism]) %>% 
           na_species_by_org() 
       })
       
       if (!nrow(acc_lookup)) {
-        warning("No matches in protein accessions.\n", 
-                "Likely incorrect fasta databases and may run into ", 
-                "an error of no species in entrez annoation.", 
+        warning("\nNo matches in protein accessions at `acc_type = ", acc_type, "`.\n", 
+                "Fix the FASTA before running into errors", 
                 call. = FALSE)
       }
 
-      # column entrez
+      # adds entrez
       acc_lookup <- if (is.null(entrez)) 
         add_entrez(acc_lookup, acc_type, warns)
       else 
         add_custom_entrez(acc_lookup, entrez, acc_type)
       
-      # added on 12-01-2020
       acc_lookup <- acc_lookup %>% 
         dplyr::filter(!is.na(.[["uniprot_acc"]]))
     } 
     else if (acc_type == "refseq_acc") {
-      # columns organism and species
+      # adds organism and species
       acc_lookup <- acc_lookup %>% 
         dplyr::filter(grepl("^[XNY]{1}[MRP]{1}_", prot_acc)) %>% 
         dplyr::mutate(organism = gsub("^.*\\[(.*)\\]\\.*.*", "\\1", prot_desc)) %>% 
@@ -1418,13 +1425,13 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
         na_species_by_org()
       
       if (!nrow(acc_lookup)) {
-        warning("No matches in protein accessions.\n", 
-                "Likely incorrect fasta databases and may run into ", 
-                "an error of no species in entrez annoation.", 
+        warning("\nNo matches in protein accessions at `acc_type = ", acc_type, "`.\n", 
+                "Fix the FASTA before running into an error such as ", 
+                "no species in gene name annoation.", 
                 call. = FALSE)
       }
       
-      # column entrez
+      # adds entrez
       acc_lookup <- if (is.null(entrez)) 
         add_entrez(acc_lookup, acc_type, warns)
       else 
@@ -1433,7 +1440,6 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
       # separately column gene
       acc_lookup <- add_refseq_gene(acc_lookup, acc_type)
       
-      # added on 12-01-2020
       acc_lookup <- acc_lookup %>% 
         dplyr::filter(!is.na(.[["refseq_acc"]]))
     } 
@@ -1490,32 +1496,6 @@ hparse_fasta <- function (df_sub, fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc
                     other_acc = NA_character_, 
                     acc_type = acc_type, 
                     prot_acc = !!rlang::sym(acc_type))
-    
-    local({
-      n_fasta <- length(fasta_db)
-      n_lookup <- nrow(acc_lookup)
-      perc <- n_lookup/n_fasta 
-      
-      if (perc < .1 && warns) 
-        warning("\nThe portion of uniprot accessions being annotated with \n", 
-                paste(fasta, collapse = "\n"), " is `", 
-                format(round(perc, 3), nsmall = 3), "`.\n", 
-                "\n------------------------------------------------------------", 
-                "\nCheck the choice of fasta(s) for probable mismatches.", 
-                "\n  A common source of mistakes: choose Uniprot with proteoQ", 
-                "\n  but used Refseq in database searches, or vice versa.", 
-                "\n------------------------------------------------------------", 
-                call. = FALSE)
-      
-      if (perc < 1e-5) 
-        warning("\n\n============================================================\n", 
-                "PLEASE READ:\n\n", 
-                "Almost NO uniprot accessions being annotated with \n", 
-                paste(fasta, collapse = "\n"), " is `", perc, "`.\n", 
-                "\nThe fasta databases is probably incorrect.", 
-                "\n============================================================\n", 
-                call. = FALSE)
-    })
   } 
   else if (acc_type == "refseq_acc") {
     unique_accs <- unique(df_sub$prot_acc)
@@ -1533,32 +1513,6 @@ hparse_fasta <- function (df_sub, fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc
                     prot_acc = !!rlang::sym(acc_type)) %>% 
       dplyr::select(c("fasta_name", "uniprot_acc", "uniprot_id", "refseq_acc", 
                       "other_acc", "acc_type", "prot_acc"))
-    
-    local({
-      n_fasta <- length(fasta_db)
-      n_lookup <- nrow(acc_lookup)
-      perc <- n_lookup/n_fasta 
-      
-      if (perc < .1 && warns) 
-        warning("\nThe portion of refseq accessions being annotated with \n", 
-                paste(fasta, collapse = "\n"), " is `", 
-                format(round(perc, 3), nsmall = 3), "`.\n", 
-                "\n------------------------------------------------------------", 
-                "\nCheck the choice of fasta(s) for probable mismatches.", 
-                "\n  A common source of mistakes: choose refseq with proteoQ", 
-                "\n  but used uniprot in database searches, or vice versa.", 
-                "\n------------------------------------------------------------", 
-                call. = FALSE)
-
-      if (perc < 1e-5) 
-        warning("\n\n============================================================\n", 
-                "PLEASE READ:\n\n", 
-                "Almost NO refseq accessions being annotated with \n", 
-                paste(fasta, collapse = "\n"), " is `", perc, "`.\n", 
-                "\nThe fasta databases is probably incorrect.", 
-                "\n============================================================\n", 
-                call. = FALSE)
-    })
   } 
   else if (acc_type == "other_acc") {
     acc_lookup <- tibble::tibble(fasta_name = names(fasta_db), 
@@ -1574,6 +1528,34 @@ hparse_fasta <- function (df_sub, fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc
                       "other_acc", "acc_type", "prot_acc")) 
   }
   
+  n_fasta <- length(fasta_db)
+  n_lookup <- nrow(acc_lookup)
+  perc <- n_lookup/n_fasta 
+  
+  message("At acc_type = \"", acc_type, "\":\n", 
+          " the number of entries in FASTA: ", n_fasta, "\n", 
+          " the number of entries matched: ", n_lookup, "\n", 
+          " percent annotated: ", format(round(perc, 3), nsmall = 3))
+  
+  if (acc_type != "other_acc" && perc < 1e-5 && warns) {
+    warning("\n\n============================================================\n", 
+            "PLEASE READ:\n\n", 
+            "Almost NO protein accessions being annotated.\n", 
+            # paste(fasta, collapse = "\n"), " is `", perc, "`.\n", 
+            "The fasta database(s) are probably incorrect.", 
+            "\n============================================================\n", 
+            call. = FALSE)
+  } 
+  else if (acc_type != "other_acc" && perc < .1 && warns) {
+    warning("\n------------------------------------------------------------", 
+            "\nDouble check the choice of fasta(s) for probable mismatches.\n", 
+            "\nA common source of mistakes: ", 
+            "\n choose Uniprot with proteoQ", 
+            "\n but used Refseq in database searches, or vice versa.", 
+            "\n------------------------------------------------------------", 
+            call. = FALSE)
+  }
+
   invisible(acc_lookup)
 }
 
@@ -1583,13 +1565,15 @@ hparse_fasta <- function (df_sub, fasta_db, pat_uni_acc, pat_uni_id, pat_ref_acc
 #' Coerces NA values in genes by the value of accessions.
 #' 
 #' @param acc_type The type of protein accession.
-na_genes_by_acc <- function(acc_lookup) {
+na_genes_by_acc <- function(acc_lookup) 
+{
   if (nrow(acc_lookup) && 
       "prot_acc" %in% names(acc_lookup) && 
-      "gene" %in% names(acc_lookup)) {
-    na_gene <- (is.na(acc_lookup$gene)) | (stringr::str_length(acc_lookup$gene) == 0)
+      "gene" %in% names(acc_lookup)) 
+  {
+    na_genes <- (is.na(acc_lookup$gene)) | (stringr::str_length(acc_lookup$gene) == 0)
     acc_lookup$gene <- as.character(acc_lookup$gene)
-    acc_lookup$gene[na_gene] <- as.character(acc_lookup$prot_acc[na_gene])
+    acc_lookup$gene[na_genes] <- as.character(acc_lookup$prot_acc[na_genes])
   }
   
   acc_lookup
@@ -1601,10 +1585,12 @@ na_genes_by_acc <- function(acc_lookup) {
 #' Coerces NA values in species by the value of organism.
 #' 
 #' @param acc_type The type of protein accession.
-na_species_by_org <- function(acc_lookup) {
+na_species_by_org <- function(acc_lookup) 
+{
   if (nrow(acc_lookup) && 
       "organism" %in% names(acc_lookup) && 
-      "species" %in% names(acc_lookup)) {
+      "species" %in% names(acc_lookup)) 
+  {
     na_species <- 
       (is.na(acc_lookup$species)) | (stringr::str_length(acc_lookup$species) == 0)
     acc_lookup$species <- as.character(acc_lookup$species)
@@ -1690,9 +1676,10 @@ annotPrn <- function (df, fasta, entrez)
 {
   na_fasta_name_by_prot_acc <- function(df) 
   {
-    if (nrow(df) > 0 && "fasta_name" %in% names(df)) {
+    if (nrow(df) && ("fasta_name" %in% names(df))) {
       na_fasta_name <- 
         (is.na(df$fasta_name)) | (stringr::str_length(df$fasta_name) == 0)
+      
       df$fasta_name[na_fasta_name] <- df$prot_acc[na_fasta_name]
     }
     
@@ -1701,9 +1688,10 @@ annotPrn <- function (df, fasta, entrez)
   
   na_acc_type_to_other <- function(df) 
   {
-    if (nrow(df) > 0 && "acc_type" %in% names(df)) {
+    if (nrow(df) && "acc_type" %in% names(df)) {
       na_acc_type <- 
         (is.na(df$acc_type)) | (stringr::str_length(df$acc_type) == 0)
+      
       df$acc_type[na_acc_type] <- "other_acc"
     }
 
@@ -1759,7 +1747,8 @@ annotPrn <- function (df, fasta, entrez)
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 annotKin <- function (df, acc_type) 
 {
-	if (is.null(df)) return(df)
+	if (is.null(df)) 
+	  return(df)
   
   stopifnot ("prot_acc" %in% names(df))
 	
@@ -1992,7 +1981,7 @@ match_scale_log2r <- function(scale_log2r)
 }
 
 
-#' Match to a global logical variable
+#' A match to a global logical variable
 #' 
 #' @param var Character string representation of a variable.
 #' @param val The value of \code{var} before matching.
@@ -2025,7 +2014,7 @@ match_logi_gv <- function(var, val)
 }
 
 
-#' Match scale_log2r 
+#' Matches scale_log2r 
 #'
 #' \code{match_prnSig_scale_log2r} matches the value of \code{scale_log2r} to the value
 #' in the most recent prnSig at a given impute_na status
@@ -2050,7 +2039,7 @@ match_prnSig_scale_log2r <- function(scale_log2r = TRUE, impute_na = FALSE)
 }
 
 
-#' Match scale_log2r 
+#' Matches scale_log2r 
 #'
 #' \code{match_pepSig_scale_log2r} matches the value of \code{scale_log2r} to the value
 #' in the most recent pepSig at a given impute_na status.
@@ -2128,7 +2117,7 @@ na_genes_by_acc <- function(df)
 }
 
 
-#' Find peptide start and end positions
+#' Finds peptide start and end positions
 #'
 #' \code{find_pep_pos} finds the start and the end positions of peptides in
 #' ascribed proteins description based on the \code{fasta}.
@@ -2311,7 +2300,7 @@ annotPeppos <- function (df)
 }
 
 
-#' Subset fasta by accession type
+#' Subsets fasta by accession type
 #' 
 #' Not yet used.
 #' 
@@ -2348,7 +2337,7 @@ subset_fasta <- function (df, fasta, acc_type)
 }
 
 
-#' Find peptide abundance indexes.
+#' Finds peptide abundance indexes.
 #' 
 #' @param max_len The maximum length of peptide sequence for consideration.
 #' @inheritParams info_anal
@@ -2568,7 +2557,7 @@ to_linfc <- function(df)
 }
 
 
-#' Remove single-value columns
+#' Removes single-value columns
 #' 
 #' @inheritParams setHMlims
 #' @import dplyr purrr
@@ -2592,7 +2581,7 @@ rm_sglval_cols <- function (x)
 }
 
 
-#' Combine data with metadata
+#' Combines data with metadata
 #' 
 #' @param data A data frame
 #' @param metadata Another data frame 
@@ -2621,7 +2610,7 @@ cmbn_meta <- function(data, metadata)
 }
 
 
-#' Check file names for ggsave
+#' Checks file names for ggsave
 #' @param filename Character string; An output file name.
 gg_imgname <- function(filename) 
 {
@@ -2642,7 +2631,7 @@ gg_imgname <- function(filename)
 }
 
 
-#' Check file names for ggsave
+#' Checks file names for ggsave
 #' 
 #' @inheritParams info_anal
 #' @import dplyr purrr
@@ -2656,7 +2645,7 @@ rm_pval_whitespace <- function(df)
 }
 
 
-#' Filter rows
+#' Filters rows
 #'
 #' @param df a data frame. 
 #' @param ... Arguments for \link[dplyr]{filter}
@@ -2703,7 +2692,7 @@ filters_in_call <- function (df, ...)
 }
 
 
-#' Arrange rows
+#' Arranges rows
 #'
 #' @param .df a data frame. 
 #' @param .na.last The same as \link[base]{order}
@@ -2741,7 +2730,7 @@ arrangers_in_call <- function(.df, ..., .na.last = TRUE)
 }
 
 
-#' Calculate PSM SDs
+#' Calculates PSM SDs
 #' 
 #' The standard deviations are based on samples under each TMT set and LCMS.
 #' 
@@ -2778,7 +2767,7 @@ calc_sd_fcts_psm <- function (df, range_log2r = c(5, 95), range_int = c(5, 95),
 }
 
 
-#' Calculate CV per TMT_Set and LCMS_injection
+#' Calculates CV per TMT_Set and LCMS_injection
 #' 
 #' @inheritParams info_anal
 #' @param type Character string; the type of data.
@@ -3061,7 +3050,7 @@ rptr_violin <- function(df, filepath, width, height)
 }
 
 
-#' geometric mean
+#' Geometric mean
 #' 
 #' @param x A data frame.
 #' @param ... The same in \code{mean}.
@@ -3099,7 +3088,7 @@ count_phosphopeps <- function()
 }
 
 
-#' peptide mis-cleavage counts
+#' Peptide mis-cleavage counts
 #' 
 count_pepmiss <- function() 
 {
@@ -3134,7 +3123,7 @@ count_pepmiss <- function()
 }
 
 
-#' Row filtration helpers
+#' Helper of row filtration
 #'
 #' \code{contain_str}: contain a literal string; "PEPTIDES" contain_str "TIDE".
 #' 
@@ -3160,7 +3149,7 @@ contain_str <- function (match, vars, ignore.case = FALSE)
   grepl(match, vars, fixed = TRUE, ignore.case)
 }
 
-#' Row filtration helpers
+#' Helper of row filtration
 #'
 #' \code{contain_chars_in}: contain some of the characters in a literal string;
 #' "PEPTIDES" contain_chars_in "XP".
@@ -3173,7 +3162,7 @@ contain_chars_in <- function (match, vars, ignore.case = FALSE)
   grepl(paste0("[", match, "]"), vars, fixed = FALSE, ignore.case)
 }
 
-#' Row filtration helpers
+#' Helper of row filtration
 #'
 #' \code{not_contain_str}" not contain a literal string; "PEPTIDES"
 #' not_contain_str "TED".
@@ -3186,7 +3175,7 @@ not_contain_str <- function (match, vars, ignore.case = FALSE)
   !grepl(match, vars, fixed = TRUE, ignore.case)
 }
 
-#' Row filtration helpers
+#' Helper of row filtration
 #'
 #' \code{not_contain_chars_in}: not contain any of the characters in a literal
 #' string; "PEPTIDES" not_contain_chars_in  "CAB".
@@ -3199,7 +3188,7 @@ not_contain_chars_in <- function (match, vars, ignore.case = FALSE)
   !grepl(paste0("[", match, "]"), vars, fixed = FALSE, ignore.case = FALSE)
 }
 
-#' Row filtration helpers
+#' Helper of row filtration
 #'
 #' \code{start_with_str}: start with a literal string. "PEPTIDES" start_with_str
 #' "PEP".
@@ -3212,7 +3201,7 @@ start_with_str <- function (match, vars, ignore.case = FALSE)
   grepl(paste0("^", match), vars, fixed = FALSE, ignore.case)
 }
 
-#' Row filtration helpers
+#' Helper of row filtration
 #'
 #' \code{end_with_str}: end with a literal string. "PEPTIDES" end_with_str
 #' "TIDES".
@@ -3225,7 +3214,7 @@ end_with_str <- function (match, vars, ignore.case = FALSE)
   grepl(paste0(match, "$"), vars, fixed = FALSE, ignore.case)
 }
 
-#' Row filtration helpers
+#' Helper of row filtration
 #'
 #' \code{start_with_chars_in}: start with one of the characters in a literal
 #' string. "PEPTIDES" start_with_chars_in "XP".
@@ -3238,7 +3227,7 @@ start_with_chars_in <- function (match, vars, ignore.case = FALSE)
   grepl(paste0("^[", match, "]"), vars, fixed = FALSE, ignore.case)
 }
 
-#' Row filtration helpers
+#' Helper of row filtration
 #'
 #' \code{ends_with_chars_in}: end with one of the characters in a literal
 #' string. "PEPTIDES" ends_with_chars_in "XS".
@@ -3252,7 +3241,7 @@ ends_with_chars_in <- function (match, vars, ignore.case = FALSE)
 }
 
 
-#' Row filtration helpers
+#' Helper of row filtration
 #'
 #' \code{rows_are_all}: rows are all
 #' @rdname contain_str
@@ -3263,7 +3252,7 @@ rows_are_all <- function (match, vars, ignore.case = FALSE)
 }
 
 
-#' Row filtration helpers
+#' Helper of row filtration
 #'
 #' \code{rows_are_all}: rows are all
 #' @rdname contain_str
@@ -3273,7 +3262,7 @@ rows_are_not_all <- function (match, vars, ignore.case = FALSE) {
 }
 
 
-#' Concatenate formula(s) to varargs of dots
+#' Concatenates formula(s) to varargs of dots
 #' 
 #' @param fmls A character vector of formula(s)
 #' @param dots A character vector of formula(s) in \code{dots}
@@ -3315,7 +3304,7 @@ concat_fml_dots <- function(fmls = NULL, fml_nms = NULL,
 }
 
 
-#' Roll up genes
+#' Rolls up genes
 #' 
 #' @param df A data frame
 #' @param cols Column indexes
@@ -3358,7 +3347,7 @@ gn_rollup <- function (df, cols)
 }
 
 
-#' Compare dot-dot-dot between prior and current
+#' Compares dot-dot-dot between prior and current
 #' 
 #' @param call_nm The name of a function call.
 #' @param curr_dots The values of the current dots.
@@ -3400,11 +3389,11 @@ my_complete_cases <- function (df, scale_log2r, label_scheme_sub)
   if (sum(rows) == 0) 
     stop("None of the cases are complete.", call. = FALSE)
   
-  df <- df[rows, ]
+  df[rows, ]
 }
 
 
-#' my union of named list 
+#' The union of named list 
 #' 
 #' names will be kept after the unification
 #' 
@@ -3418,7 +3407,9 @@ my_union <- function (x, y)
 }
 
 
-#' find the base names of files (not currently used)
+#' Finds the base names of files 
+#' 
+#' (not currently used)
 #' 
 #' @param filenames A character vector of filenames
 find_fn_bases <- function (filenames) 
@@ -3427,7 +3418,7 @@ find_fn_bases <- function (filenames)
 }
 
 
-#' find the extensions of files
+#' Finds the extensions of files
 #' 
 #' @param filename A character string of filename
 #' @param type the type of filename extension
@@ -3448,7 +3439,7 @@ find_fn_exts <- function (filename, type = "text")
 }
 
 
-#' check duplicate argments in 'dots'
+#' Checks duplicate argments in 'dots'
 #' 
 #' @param blacklist A character vector of variable names.
 #' @param ... A list of arguments for checking.
@@ -3464,7 +3455,7 @@ check_dots <- function (blacklist = NULL, ...)
 }
 
 
-#' check depreciated arguments
+#' Checks depreciated arguments
 #' 
 #' @param blacklist A list of paired character vectors. In each pair, the first
 #'   element is the old argument name if incurred and the second is the new name
@@ -3495,7 +3486,7 @@ check_depreciated_args <- function (blacklist = NULL, ...)
 }
 
 
-#' force 'complete_cases = TRUE' at 'impute_na = FALSE'
+#' Forces 'complete_cases = TRUE' at 'impute_na = FALSE'
 #' 
 #' @inheritParams prnHM
 to_complete_cases <- function (complete_cases = FALSE, impute_na = FALSE) 
@@ -3511,10 +3502,11 @@ to_complete_cases <- function (complete_cases = FALSE, impute_na = FALSE)
 }
 
 
-#' check 'gset_nms'
+#' Checks \code{gset_nms}
 #'
-#' It is OK that `gset_nms` not in `c("go_sets", "c2_msig", "kegg_sets", "kinsub)` as
-#' custom gene sets may be applied.
+#' It is OK that \code{gset_nms} not in "go_sets", "c2_msig", "kegg_sets",
+#' "kinsub" as custom gene sets may be applied.
+#'
 #' @inheritParams prnGSPA
 check_gset_nms <- function (gset_nms) 
 {
@@ -3538,7 +3530,7 @@ check_gset_nms <- function (gset_nms)
 }
 
 
-#' Check the suitability of existing param files for MGKernel
+#' Checks the suitability of existing param files for MGKernel
 #' 
 #' @param filepath A file path to \code{"MGKernel_params_N.txt"}
 ok_existing_params <- function (filepath) 
@@ -3577,7 +3569,7 @@ ok_existing_params <- function (filepath)
 } 
 
 
-#' Find the environment of a function
+#' Finds the environment of a function
 #' 
 #' @param name The name of a function.
 #' @param env The environment.
@@ -3593,7 +3585,7 @@ env_where <- function(name, env = rlang::caller_env())
 }
 
 
-#' Generate cut points.
+#' Generates cut points.
 #' 
 #' @param x A sequence of numeric values with probable NA value.
 #' @inheritParams prnHist
@@ -3702,7 +3694,7 @@ set_cutpoints2 <- function(cut_points, df)
 }
 
 
-#' Load cRAPs
+#' Loads cRAPs
 #' 
 #' Load the cRAP proteins by the types of accessions
 #' @param acc_types The types of protein accessions
@@ -3869,7 +3861,7 @@ make_mq_meta <- function (dat_dir = proteoQ:::get_gl_dat_dir(), mqpar = "mqpar.x
 }
 
 
-#' Process MaxQuant mqpar.xml
+#' Processes MaxQuant mqpar.xml
 #' 
 #' @inheritParams load_expts
 #' @param mqpar The name of .xml file. The default is "mqpar.xml".
@@ -4023,7 +4015,7 @@ check_formalArgs <- function(w = anal_prnTrend, f = cmeans, excludes = NULL)
 }
 
 
-#' Check conflicts in function arguments.
+#' Checks conflicts in function arguments.
 #' 
 #' Conflicts between wrapper and function to be wrapped. Note that \code{f}
 #' contains both function name and package name.
@@ -4067,7 +4059,7 @@ check_formalArgs2 <- function(w = anal_prnTrend, f = NMF::nmf, excludes = NULL)
 }
 
 
-#' Set dot-dot-dot for ggsave.
+#' Sets dot-dot-dot for ggsave.
 #' 
 #' @param dots Arguments passed on.
 #' @param dummies Arguments automated for ggsave.
@@ -4083,7 +4075,7 @@ set_ggsave_dots <- function(dots, dummies = c("filename", "plot", "device", "pat
 }
 
 
-#' Find the type of search engine
+#' Finds the type of search engine
 #' 
 #' @inheritParams load_expts
 find_search_engine <- function(dat_dir = NULL) 
@@ -4132,7 +4124,7 @@ find_search_engine <- function(dat_dir = NULL)
 }
 
 
-#' Check missing values in a ggplot2 object.
+#' Checks missing values in a ggplot2 object.
 #' 
 #' @param p A ggplot2 object.
 check_ggplot_aes <- function(p) 
@@ -4156,7 +4148,7 @@ check_ggplot_aes <- function(p)
 }
 
 
-#' Standardize range values.
+#' Standardizes range values.
 #' 
 #' @param from_to A numeric vector of length 2.
 prep_range <- function(from_to = c(0, 1)) 
@@ -4173,7 +4165,7 @@ prep_range <- function(from_to = c(0, 1))
 }
 
 
-#' Find the deliminator of a file.
+#' Finds the deliminator of a file.
 #' 
 #' @param filename A file name.
 find_delim <- function (filename) 
@@ -4196,7 +4188,7 @@ find_delim <- function (filename)
 
 
 
-#' Flatten lists recursively
+#' Flattens lists recursively
 #' 
 #' @param x Lists
 recur_flatten <- function (x) 
@@ -4228,9 +4220,10 @@ subset_keepattr <- function (data, nm = c("M", "N"))
 }
 
 
-#' Lists to data.frame.
+#' Lists to a data frame
 #' 
 #' A simple replacement of plyr::ldply. 
+#' 
 #' @param x Lists of vectors.
 list_to_dataframe <- function (x) 
 {
@@ -4260,3 +4253,4 @@ list_to_dataframe <- function (x)
 
   invisible(ans)
 }
+

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{my_union}
 \alias{my_union}
-\title{my union of named list}
+\title{The union of named list}
 \usage{
 my_union(x, y)
 }

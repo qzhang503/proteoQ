@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{my_geomean}
 \alias{my_geomean}
-\title{geometric mean}
+\title{Geometric mean}
 \usage{
 my_geomean(x, ...)
 }
@@ -12,5 +12,5 @@ my_geomean(x, ...)
 \item{...}{The same in \code{mean}.}
 }
 \description{
-geometric mean
+Geometric mean
 }

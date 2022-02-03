@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{check_gset_nms}
 \alias{check_gset_nms}
-\title{check 'gset_nms'}
+\title{Checks \code{gset_nms}}
 \usage{
 check_gset_nms(gset_nms)
 }
@@ -20,6 +20,6 @@ custom data bases, follow the same format of list as \code{GO} or
 \code{MSig}.}
 }
 \description{
-It is OK that `gset_nms` not in `c("go_sets", "c2_msig", "kegg_sets", "kinsub)` as
-custom gene sets may be applied.
+It is OK that \code{gset_nms} not in "go_sets", "c2_msig", "kegg_sets",
+"kinsub" as custom gene sets may be applied.
 }

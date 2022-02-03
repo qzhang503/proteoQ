@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{find_fn_exts}
 \alias{find_fn_exts}
-\title{find the extensions of files}
+\title{Finds the extensions of files}
 \usage{
 find_fn_exts(filename, type = "text")
 }
@@ -12,5 +12,5 @@ find_fn_exts(filename, type = "text")
 \item{type}{the type of filename extension}
 }
 \description{
-find the extensions of files
+Finds the extensions of files
 }

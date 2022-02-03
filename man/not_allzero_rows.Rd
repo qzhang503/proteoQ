@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{not_allzero_rows}
 \alias{not_allzero_rows}
-\title{Find all zero rows}
+\title{Finds all zero rows}
 \usage{
 not_allzero_rows(x)
 }
@@ -10,5 +10,5 @@ not_allzero_rows(x)
 \item{x}{A data frame.}
 }
 \description{
-Find all zero rows
+Finds all zero rows
 }

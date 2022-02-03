@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{check_depreciated_args}
 \alias{check_depreciated_args}
-\title{check depreciated arguments}
+\title{Checks depreciated arguments}
 \usage{
 check_depreciated_args(blacklist = NULL, ...)
 }
@@ -16,5 +16,5 @@ no longer in the formalArgs of a function. If present, they will be in
 \code{...}.}
 }
 \description{
-check depreciated arguments
+Checks depreciated arguments
 }

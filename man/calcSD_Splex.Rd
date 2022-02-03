@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{calcSD_Splex}
 \alias{calcSD_Splex}
-\title{Calculate CV per TMT_Set and LCMS_injection}
+\title{Calculates CV per TMT_Set and LCMS_injection}
 \usage{
 calcSD_Splex(df, id, type = "log2_R")
 }
@@ -23,5 +23,5 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{type}{Character string; the type of data.}
 }
 \description{
-Calculate CV per TMT_Set and LCMS_injection
+Calculates CV per TMT_Set and LCMS_injection
 }
