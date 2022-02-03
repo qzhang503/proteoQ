@@ -4,7 +4,13 @@
 \alias{pad_mq_channels}
 \title{Pads MaxQuant TMT channels to the highest plex.}
 \usage{
-pad_mq_channels(file, fasta, entrez, corrected_int, ...)
+pad_mq_channels(
+  file = NULL,
+  fasta = NULL,
+  entrez = NULL,
+  corrected_int = TRUE,
+  ...
+)
 }
 \arguments{
 \item{file}{An intermediate PSM table.}
@@ -26,7 +32,7 @@ the TRUE default, values under columns "Reporter intensity corrected..." in
 \code{MaxQuant} PSM results (\code{msms.txt}) will be used. Otherwise,
 "Reporter intensity" values without corrections will be used.}
 
-\item{...}{Not currently used.}
+\item{...}{filter_dots.}
 }
 \description{
 Pads MaxQuant TMT channels to the highest plex.

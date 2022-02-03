@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{add_entrez}
 \alias{add_entrez}
-\title{Add Entrez IDs}
+\title{Adds Entrez IDs}
 \usage{
 add_entrez(acc_lookup, acc_type, warns = TRUE)
 }
@@ -14,5 +14,5 @@ add_entrez(acc_lookup, acc_type, warns = TRUE)
 \item{warns}{Logical; if TRUE, show warning message(s).}
 }
 \description{
-Add Entrez IDs
+Adds Entrez IDs
 }

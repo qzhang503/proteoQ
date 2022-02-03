@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{aggrTopn}
 \alias{aggrTopn}
-\title{Sum top_n}
+\title{Sums top_n}
 \usage{
 aggrTopn(f)
 }

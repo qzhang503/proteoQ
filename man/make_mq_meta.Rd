@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{make_mq_meta}
 \alias{make_mq_meta}
-\title{Process MaxQuant mqpar.xml}
+\title{Processes MaxQuant mqpar.xml}
 \usage{
 make_mq_meta(
   dat_dir = proteoQ:::get_gl_dat_dir(),
@@ -22,5 +22,5 @@ match the value under the global environment.}
 \item{out}{The name of output .xml file.}
 }
 \description{
-Process MaxQuant mqpar.xml
+Processes MaxQuant mqpar.xml
 }

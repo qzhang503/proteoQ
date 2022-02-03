@@ -4,7 +4,13 @@
 \alias{add_shared_genes}
 \title{Find peptides that are shared by genes.}
 \usage{
-add_shared_genes(df, key = "Proteins", sep = ";", fasta = NULL, entrez = NULL)
+add_shared_genes(
+  df = NULL,
+  key = "Proteins",
+  sep = ";",
+  fasta = NULL,
+  entrez = NULL
+)
 }
 \arguments{
 \item{df}{PSM data.}

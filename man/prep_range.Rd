@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{prep_range}
 \alias{prep_range}
-\title{Standardize range values.}
+\title{Standardizes range values.}
 \usage{
 prep_range(from_to = c(0, 1))
 }
@@ -10,5 +10,5 @@ prep_range(from_to = c(0, 1))
 \item{from_to}{A numeric vector of length 2.}
 }
 \description{
-Standardize range values.
+Standardizes range values.
 }

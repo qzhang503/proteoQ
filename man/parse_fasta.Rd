@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{parse_fasta}
 \alias{parse_fasta}
-\title{Parse FASTA for accession lookups}
+\title{Parses FASTA for accession lookups}
 \usage{
 parse_fasta(df, fasta, entrez, warns = TRUE)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{add_prot_icover}
 \alias{add_prot_icover}
-\title{Find peptide abundance indexes.}
+\title{Finds peptide abundance indexes.}
 \usage{
 add_prot_icover(df, id = "gene", pep_id = "pep_seq", max_len = 50)
 }
@@ -25,5 +25,5 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{max_len}{The maximum length of peptide sequence for consideration.}
 }
 \description{
-Find peptide abundance indexes.
+Finds peptide abundance indexes.
 }

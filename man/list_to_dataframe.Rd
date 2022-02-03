@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{list_to_dataframe}
 \alias{list_to_dataframe}
-\title{Lists to data.frame.}
+\title{Lists to a data frame}
 \usage{
 list_to_dataframe(x)
 }

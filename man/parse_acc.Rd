@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{parse_acc}
 \alias{parse_acc}
-\title{Determine the protein accession type from PSM tables}
+\title{Determines the protein accession type from PSM tables}
 \usage{
 parse_acc(df)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{na_zeroIntensity}
 \alias{na_zeroIntensity}
-\title{Replace zero intensity with NA}
+\title{Replaces zero intensity with NA}
 \usage{
 na_zeroIntensity(df)
 }

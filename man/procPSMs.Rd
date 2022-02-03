@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{procPSMs}
 \alias{procPSMs}
-\title{Process PSMs.}
+\title{Processes PSMs.}
 \usage{
 procPSMs(
   df = NULL,

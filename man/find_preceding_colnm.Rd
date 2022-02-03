@@ -4,7 +4,7 @@
 \alias{find_preceding_colnm}
 \title{Helper: finds the column name before \code{to_move}.}
 \usage{
-find_preceding_colnm(df, to_move)
+find_preceding_colnm(df = NULL, to_move = NULL)
 }
 \arguments{
 \item{df}{The original data frame.}

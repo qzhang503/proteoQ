@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{identical_dots}
 \alias{identical_dots}
-\title{Compare dot-dot-dot between prior and current}
+\title{Compares dot-dot-dot between prior and current}
 \usage{
 identical_dots(call_nm, curr_dots, pattern)
 }
@@ -14,5 +14,5 @@ identical_dots(call_nm, curr_dots, pattern)
 \item{pattern}{The pattern for comparison.}
 }
 \description{
-Compare dot-dot-dot between prior and current
+Compares dot-dot-dot between prior and current
 }

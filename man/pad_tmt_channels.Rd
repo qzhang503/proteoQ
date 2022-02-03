@@ -2,9 +2,9 @@
 % Please edit documentation in R/psmtable.R
 \name{pad_tmt_channels}
 \alias{pad_tmt_channels}
-\title{Pads TMT channels to the highest plex.}
+\title{Pads TMT channels to the highest multiplex.}
 \usage{
-pad_tmt_channels(file, ...)
+pad_tmt_channels(file = NULL, ...)
 }
 \arguments{
 \item{file}{An intermediate PSM table.}
@@ -12,5 +12,5 @@ pad_tmt_channels(file, ...)
 \item{...}{filter_dots.}
 }
 \description{
-Pads TMT channels to the highest plex.
+Pads TMT channels to the highest multiplex.
 }

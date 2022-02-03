@@ -2,9 +2,9 @@
 % Please edit documentation in R/psmtable.R
 \name{find_shared_prots}
 \alias{find_shared_prots}
-\title{Find peptides that are shared by proteins.}
+\title{Finds peptides that are shared by proteins.}
 \usage{
-find_shared_prots(df, pep_id = "pep_seq", prot_id = "prot_acc")
+find_shared_prots(df = NULL, pep_id = "pep_seq", prot_id = "prot_acc")
 }
 \arguments{
 \item{df}{PSM data.}

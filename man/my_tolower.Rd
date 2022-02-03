@@ -2,9 +2,9 @@
 % Please edit documentation in R/psmtable.R
 \name{my_tolower}
 \alias{my_tolower}
-\title{To lower case}
+\title{To lower cases}
 \usage{
-my_tolower(x, ch = "^")
+my_tolower(x = "", ch = "^")
 }
 \arguments{
 \item{x}{A character string of amino acid sequence.}
@@ -12,5 +12,5 @@ my_tolower(x, ch = "^")
 \item{ch}{A tag before the letter to conversion to its lower case.}
 }
 \description{
-To lower case
+To lower cases
 }

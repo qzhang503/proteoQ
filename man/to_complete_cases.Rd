@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{to_complete_cases}
 \alias{to_complete_cases}
-\title{force 'complete_cases = TRUE' at 'impute_na = FALSE'}
+\title{Forces 'complete_cases = TRUE' at 'impute_na = FALSE'}
 \usage{
 to_complete_cases(complete_cases = FALSE, impute_na = FALSE)
 }
@@ -14,5 +14,5 @@ missing values will be used. The default is FALSE.}
 will be used. The default is FALSE.}
 }
 \description{
-force 'complete_cases = TRUE' at 'impute_na = FALSE'
+Forces 'complete_cases = TRUE' at 'impute_na = FALSE'
 }

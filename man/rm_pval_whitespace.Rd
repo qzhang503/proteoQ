@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{rm_pval_whitespace}
 \alias{rm_pval_whitespace}
-\title{Check file names for ggsave}
+\title{Checks file names for ggsave}
 \usage{
 rm_pval_whitespace(df)
 }
@@ -18,5 +18,5 @@ require the fields of significance p-values, the \code{df} will be one of
 "protein_impNA_pVal.txt")}.}
 }
 \description{
-Check file names for ggsave
+Checks file names for ggsave
 }

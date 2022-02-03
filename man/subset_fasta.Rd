@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{subset_fasta}
 \alias{subset_fasta}
-\title{Subset fasta by accession type}
+\title{Subsets fasta by accession type}
 \usage{
 subset_fasta(df, fasta, acc_type)
 }

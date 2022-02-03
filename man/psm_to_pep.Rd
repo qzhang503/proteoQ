@@ -55,8 +55,7 @@ aggregation of LFQ data.}
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 
-\item{...}{\code{filter_}: Variable argument statements for the filtration of
-data rows. See also \code{\link{normPSM}}.}
+\item{...}{filter_dots.}
 }
 \description{
 Helper of PSM2Pep

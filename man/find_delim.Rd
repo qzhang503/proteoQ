@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{find_delim}
 \alias{find_delim}
-\title{Find the deliminator of a file.}
+\title{Finds the deliminator of a file.}
 \usage{
 find_delim(filename)
 }
@@ -10,5 +10,5 @@ find_delim(filename)
 \item{filename}{A file name.}
 }
 \description{
-Find the deliminator of a file.
+Finds the deliminator of a file.
 }

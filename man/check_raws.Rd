@@ -2,7 +2,7 @@
 % Please edit documentation in R/params.R
 \name{check_raws}
 \alias{check_raws}
-\title{Find mismatches in RAW file names}
+\title{Finds mismatches in RAW file names}
 \usage{
 check_raws(df)
 }

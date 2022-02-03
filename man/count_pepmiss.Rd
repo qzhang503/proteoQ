@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils.R
 \name{count_pepmiss}
 \alias{count_pepmiss}
-\title{peptide mis-cleavage counts}
+\title{Peptide mis-cleavage counts}
 \usage{
 count_pepmiss()
 }
 \description{
-peptide mis-cleavage counts
+Peptide mis-cleavage counts
 }

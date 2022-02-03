@@ -4,7 +4,14 @@
 \alias{psm_mcleanup}
 \title{Parallel PSM cleanup}
 \usage{
-psm_mcleanup(file, rm_outliers, group_psm_by, dat_dir, TMT_plex, rm_allna)
+psm_mcleanup(
+  file = NULL,
+  rm_outliers = FALSE,
+  group_psm_by = "pep_seq",
+  dat_dir = NULL,
+  TMT_plex = 10L,
+  rm_allna = FALSE
+)
 }
 \arguments{
 \item{file}{A PSM file (name).}

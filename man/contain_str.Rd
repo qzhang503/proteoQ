@@ -11,7 +11,7 @@
 \alias{ends_with_chars_in}
 \alias{rows_are_all}
 \alias{rows_are_not_all}
-\title{Row filtration helpers}
+\title{Helper of row filtration}
 \usage{
 contain_str(match, vars, ignore.case = FALSE)
 

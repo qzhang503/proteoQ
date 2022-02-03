@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{match_prnSig_scale_log2r}
 \alias{match_prnSig_scale_log2r}
-\title{Match scale_log2r}
+\title{Matches scale_log2r}
 \usage{
 match_prnSig_scale_log2r(scale_log2r = TRUE, impute_na = FALSE)
 }

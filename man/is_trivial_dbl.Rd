@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{is_trivial_dbl}
 \alias{is_trivial_dbl}
-\title{Find a trivial vector}
+\title{Finds a trivial vector}
 \usage{
 is_trivial_dbl(x)
 }
@@ -10,5 +10,5 @@ is_trivial_dbl(x)
 \item{x}{A numeric vector}
 }
 \description{
-Find a trivial vector
+Finds a trivial vector
 }

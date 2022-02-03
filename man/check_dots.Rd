@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{check_dots}
 \alias{check_dots}
-\title{check duplicate argments in 'dots'}
+\title{Checks duplicate argments in 'dots'}
 \usage{
 check_dots(blacklist = NULL, ...)
 }
@@ -12,5 +12,5 @@ check_dots(blacklist = NULL, ...)
 \item{...}{A list of arguments for checking.}
 }
 \description{
-check duplicate argments in 'dots'
+Checks duplicate argments in 'dots'
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{match_logi_gv}
 \alias{match_logi_gv}
-\title{Match to a global logical variable}
+\title{A match to a global logical variable}
 \usage{
 match_logi_gv(var, val)
 }
@@ -12,7 +12,7 @@ match_logi_gv(var, val)
 \item{val}{The value of \code{var} before matching.}
 }
 \description{
-Match to a global logical variable
+A match to a global logical variable
 }
 \examples{
 \donttest{

@@ -2,10 +2,10 @@
 % Please edit documentation in R/params.R
 \name{reload_expts}
 \alias{reload_expts}
-\title{Reload the "expt_smry.xlsx" and "frac_smry.xlsx"}
+\title{Reloads the "expt_smry.xlsx" and "frac_smry.xlsx"}
 \usage{
 reload_expts()
 }
 \description{
-Reload the "expt_smry.xlsx" and "frac_smry.xlsx"
+Reloads the "expt_smry.xlsx" and "frac_smry.xlsx"
 }

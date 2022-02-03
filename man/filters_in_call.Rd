@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{filters_in_call}
 \alias{filters_in_call}
-\title{Filter rows}
+\title{Filters rows}
 \usage{
 filters_in_call(df, ...)
 }
@@ -12,5 +12,5 @@ filters_in_call(df, ...)
 \item{...}{Arguments for \link[dplyr]{filter}}
 }
 \description{
-Filter rows
+Filters rows
 }

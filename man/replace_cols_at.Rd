@@ -4,7 +4,7 @@
 \alias{replace_cols_at}
 \title{Replaces columns in the original PSM table.}
 \usage{
-replace_cols_at(df, df2, idxs)
+replace_cols_at(df = NULL, df2 = NULL, idxs = 1L)
 }
 \arguments{
 \item{df}{The original data frame.}

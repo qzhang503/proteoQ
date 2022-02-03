@@ -2,7 +2,7 @@
 % Please edit documentation in R/params.R
 \name{load_expts}
 \alias{load_expts}
-\title{Load TMT or LFQ experiments}
+\title{Loads TMT or LFQ experiments}
 \usage{
 load_expts(
   dat_dir = NULL,

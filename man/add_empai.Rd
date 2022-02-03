@@ -2,9 +2,9 @@
 % Please edit documentation in R/psmtable.R
 \name{add_empai}
 \alias{add_empai}
-\title{Add column "prot_empai"}
+\title{Adds column "prot_empai"}
 \usage{
-add_empai(df, dat_dir)
+add_empai(df = NULL, dat_dir = NULL)
 }
 \arguments{
 \item{df}{A data frame of PSMs}
@@ -13,5 +13,5 @@ add_empai(df, dat_dir)
 match the value under the global environment.}
 }
 \description{
-Add column "prot_empai"
+Adds column "prot_empai"
 }

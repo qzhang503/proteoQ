@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{add_refseq_gene}
 \alias{add_refseq_gene}
-\title{Add gene IDs for RefSeq}
+\title{Adds gene IDs for RefSeq}
 \usage{
 add_refseq_gene(acc_lookup, acc_type)
 }
@@ -12,5 +12,5 @@ add_refseq_gene(acc_lookup, acc_type)
 \item{acc_type}{The type of protein accessions}
 }
 \description{
-Add gene IDs for RefSeq
+Adds gene IDs for RefSeq
 }

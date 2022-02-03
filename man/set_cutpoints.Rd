@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{set_cutpoints}
 \alias{set_cutpoints}
-\title{Generate cut points.}
+\title{Generates cut points.}
 \usage{
 set_cutpoints(cut_points = NULL, x = NULL)
 }
@@ -20,5 +20,5 @@ data binning, set \code{cut_points = Inf} or \code{-Inf}. The binning of
 \item{x}{A sequence of numeric values with probable NA value.}
 }
 \description{
-Generate cut points.
+Generates cut points.
 }

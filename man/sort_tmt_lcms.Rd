@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{sort_tmt_lcms}
 \alias{sort_tmt_lcms}
-\title{Sort by the indexes of TMT_Set and LCMS_Injection}
+\title{Sorts by the indexes of TMT_Set and LCMS_Injection}
 \usage{
 sort_tmt_lcms(nms)
 }

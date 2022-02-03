@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{gn_rollup}
 \alias{gn_rollup}
-\title{Roll up genes}
+\title{Rolls up genes}
 \usage{
 gn_rollup(df, cols)
 }
@@ -12,5 +12,5 @@ gn_rollup(df, cols)
 \item{cols}{Column indexes}
 }
 \description{
-Roll up genes
+Rolls up genes
 }

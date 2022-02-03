@@ -5,12 +5,12 @@
 \title{Prepares data for analysis}
 \usage{
 prepDM(
-  df,
-  id,
-  scale_log2r,
-  sub_grp,
+  df = NULL,
+  id = "pep_seq",
+  scale_log2r = TRUE,
+  sub_grp = NULL,
   type = "ratio",
-  anal_type,
+  anal_type = NULL,
   rm_allna = FALSE
 )
 }

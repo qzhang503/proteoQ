@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{set_ggsave_dots}
 \alias{set_ggsave_dots}
-\title{Set dot-dot-dot for ggsave.}
+\title{Sets dot-dot-dot for ggsave.}
 \usage{
 set_ggsave_dots(dots, dummies = c("filename", "plot", "device", "path"))
 }
@@ -12,5 +12,5 @@ set_ggsave_dots(dots, dummies = c("filename", "plot", "device", "path"))
 \item{dummies}{Arguments automated for ggsave.}
 }
 \description{
-Set dot-dot-dot for ggsave.
+Sets dot-dot-dot for ggsave.
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{find_pep_pos}
 \alias{find_pep_pos}
-\title{Find peptide start and end positions}
+\title{Finds peptide start and end positions}
 \usage{
 find_pep_pos(fasta_name, pep_seq, fasta)
 }

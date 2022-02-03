@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{calc_sd_fcts_psm}
 \alias{calc_sd_fcts_psm}
-\title{Calculate PSM SDs}
+\title{Calculates PSM SDs}
 \usage{
 calc_sd_fcts_psm(
   df,

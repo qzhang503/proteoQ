@@ -4,7 +4,7 @@
 \alias{pad_psm_fields}
 \title{Pads PSM exports.}
 \usage{
-pad_psm_fields(df)
+pad_psm_fields(df = NULL)
 }
 \arguments{
 \item{df}{An intermediate PSM table from Mascot export}

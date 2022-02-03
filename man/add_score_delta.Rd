@@ -4,11 +4,11 @@
 \alias{add_score_delta}
 \title{Adds column "pep_score_delta"}
 \usage{
-add_score_delta(df)
+add_score_delta(df = NULL)
 }
 \arguments{
 \item{df}{A data frame of PSMs}
 }
 \description{
-Adds column "pep_score_delta"
+Not currently used.
 }

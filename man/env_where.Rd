@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{env_where}
 \alias{env_where}
-\title{Find the environment of a function}
+\title{Finds the environment of a function}
 \usage{
 env_where(name, env = rlang::caller_env())
 }
@@ -12,5 +12,5 @@ env_where(name, env = rlang::caller_env())
 \item{env}{The environment.}
 }
 \description{
-Find the environment of a function
+Finds the environment of a function
 }
