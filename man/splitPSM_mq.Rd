@@ -138,7 +138,7 @@ injection.
 \details{
 Different to \code{splitPSM} used in \code{Mascot} processes,
 \code{pep_seq_mod}, \code{prot_n_psm}, \code{prot_n_pep} and \code{pep_n_psm}
-are calculated later in \code{annotPSM_mq}. This is suitable mainly because
-there is no columns like \code{prot_matches_sig} and \code{prot_sequences_sig}
-need to be updated after data merging in \code{splitPSM_mq}.
+are calculated later in \code{annotPSM}. This is suitable mainly because there
+is no columns like \code{prot_matches_sig} and \code{prot_sequences_sig} need
+to be updated after data merging in \code{splitPSM_mq}.
 }
