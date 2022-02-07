@@ -2,18 +2,23 @@ Header	Descrption	Note
 prot_acc	Protein accession string	
 prot_desc	Protein description taken from Fasta title line	
 prot_mass	Protein mass	
-prot_len	The number of amino acid residues under a proposed protein	
+prot_len	Number of amino acid residues under a proposed protein	
 prot_pi	Mascot calculation of protein isoelectric point	
-prot_tax_str	Protein taxonomy as string	
-prot_tax_id	Protein taxonomy as Tax ID	
-prot_seq	Protein sequence in 1 letter code	
+prot_tax_str	Mascot protein taxonomy as string	
+prot_tax_id	Mascot protein taxonomy as Tax ID	
+prot_seq	Mascot protein sequence in 1 letter code	
 prot_empai	Mascot empirical protein abundance index	
-prot_icover	Integerized protein sequence coverage by counts of tryptic peptides	See also PSM keys.
-prot_cover	Protein sequence coverage	v.s.
+prot_icover	Protein sequence coverage by counts of tryptic peptides	See also PSM keys.
+prot_cover	Coverage of protein sequence by amino acid residues	v.s.
+prot_issig	Protein identification is significant or not	
+prot_isess	Protein identification is essential or not	
+prot_tier	Protein tier	
+prot_es	Protein enrichment score	
+prot_es_co	Protein enrichment score cut-off	
 prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	Joint results from individual PSM tables; the counts exclude entries that are filtered by users.
 prot_n_pep	Count of significant peptide sequences in quantitation under a proposed protein	v.s.
 pep_n_psm	Counts of significant PSMs in quantitation under a proposed peptide	v.s.
-pep_isunique	Peptide sequence is unique or not.	See also PSM keys.
+pep_isunique	Peptide sequence is unique or not.	See also PSM keys for levels of uniqueness
 pep_literal_unique	Peptide sequence is unique to hit or not.	v.s.
 pep_razor_unique	Peptide sequence is unique to group or not.	v.s.
 pep_tot_int	Total MS1 intenisty of a peptide sequence	Sum statistics from PSMs
@@ -28,21 +33,28 @@ pep_end	Mascot: ordinal position of last peptide residue in protein sequence
 pep_len	Number of amino acid residues in a peptide sequence	
 pep_miss	Count of missed cleavage sites in peptide	
 pep_frame	Mascot calculation of translation frame number	
-pep_score	Score of peptide	Mean description from PSMs.
+pep_isdecoy	Is peptide identication a decoy or not	
+pep_issig	Is peptide identication significant or not	
+pep_score_co	Peptide enrichment score cut-off	Median description from PSMs.
+pep_n_nl	Number of neutral losses under the same `group_psm_by`	v.s.
+pep_score	Score of peptide	v.s.
 pep_expect	Expectation value or posterior error probability of PSM(s)	Geometric-mean description from PSMs.
-pep_locprob	The highest probablity from site analysis of the variable modification sites	Mean description from PSMs.
+pep_n_exp_z	Number of unique charge states under a peptide sequence	Median description from PSMs. The levels of peptide uniqueness are according to `group_psm_by`.
+pep_ret_range	Range of LCMS retention times of a peptide match	v.s.
+pep_ret_sd	Standard deviation of `pep_ret_range` across samples and LCMS series	
+pep_locprob	The highest probablity from site analysis of the variable modification sites	Median description from PSMs.
 pep_locdiff	pep_locprob – pep_locprob2	See also PSM keys.
 pep_phospho_locprob	The highest probability in phosphorylation sites	
 pep_phospho_locdiff	The difference between the highest and the second highest probability of phosphorylation sites	
-pep_mod_protnt	Logical indicating if a sequence contains protein N-terminal modification	"Optional at `normPSM(group_psm_by = pep_seq_mod, use_lowercase_aa = TRUE)`. See also. `?proteoQ::normPSM`."
-pep_mod_protntac	Logical indicating if a sequence contains protein N-terminal acetylation	v.s.
-pep_mod_pepnt	Logical indicating if a sequence contains N-terminal modification	v.s.
-pep_mod_m	Logical indicating if a sequence contains methionine oxidation	v.s.
-pep_mod_n	Logical indicating if a sequence contains asparagine deamidation	v.s.
-pep_mod_sty	"Logical indicating if a sequence contains the phospholyration of serine, threonine or tyrosine"	v.s.
-pep_mod_pepct	Logical indicating if a sequence contains C-terminal modification	v.s.
-pep_mod_protctam	Logical indicating if a sequence contains protein C-terminal amidation	v.s.
-pep_mod_protct	Logical indicating if a sequence contains protein C-terminal modification	v.s.
+pep_mod_protnt	Is if a sequence contains protein N-terminal modification	"Optional at `normPSM(group_psm_by = pep_seq_mod, use_lowercase_aa = TRUE)`. See also. `?proteoQ::normPSM`."
+pep_mod_protntac	Is a sequence contains protein N-terminal acetylation	v.s.
+pep_mod_pepnt	Is a sequence contains N-terminal modification	v.s.
+pep_mod_m	Is a sequence contains methionine oxidation	v.s.
+pep_mod_n	Is a sequence contains asparagine deamidation	v.s.
+pep_mod_sty	"Is a sequence contains the phospholyration of serine, threonine or tyrosine"	v.s.
+pep_mod_pepct	Is a sequence contains C-terminal modification	v.s.
+pep_mod_protctam	Is a sequence contains protein C-terminal amidation	v.s.
+pep_mod_protct	Is a sequence contains protein C-terminal modification	v.s.
 pep_mean_raw	Mean log2_R (...) across samples	`Reference` and `Empty` samples excluded.
 pep_mean_n	Mean N_log2FC(...) across samples	v.s.
 pep_mean_z	Mean Z_log2FC(...) across samples	v.s.
@@ -53,14 +65,14 @@ uniprot_id	Protein UniProt entry name
 refseq_acc	Protein RefSeq accession	
 other_acc	Protein accession with formats other than UniProt or RefSeq	
 entrez	Protein Entrez ID	
-species	The species of a protein entry	
-acc_type	The type of accession names	
+species	Species of a protein entry	
+acc_type	Type of accession names	
 shared_prot_accs	List of protein accesssions under the same group	See also PSM keys.
 shared_genes	List of genes under the same group	
-kin_attr	The attribute of proteins being kinases	
-kin_class	"The classes of kinases, e.g., TK, TKL..."	
-kin_order	"The order of ""kin_class"" from the kinase tree diagram"	
-is_tryptic	Logical indicating if a sequence belongs to a canonical tryptic peptide	
+kin_attr	Is protein with an attribute of kinase or not	
+kin_class	"Class of kinases, e.g., TK, TKL..."	
+kin_order	"Order of ""kin_class"" from the kinase tree diagram"	
+is_tryptic	Is a peptide sequence a canonical tryptic peptide or not	
 mean_lint	Mean log10 intensity (N_I...) across samples	`Reference` and `Empty` samples excluded.
 count_nna	Count of non-NA log2FC	v.s.
 ...	Additional column keys	

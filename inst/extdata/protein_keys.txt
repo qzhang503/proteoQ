@@ -2,13 +2,13 @@ Header	Descrption	Note
 prot_acc	Protein accession string	
 prot_desc	Protein description taken from Fasta title line	
 prot_mass	Protein mass	
-prot_len	The number of amino acid residues under a proposed protein	
+prot_len	Number of amino acid residues under a proposed protein	
 prot_pi	Mascot calculation of protein isoelectric point	
-prot_tax_str	Protein taxonomy as string	
-prot_tax_id	Protein taxonomy as Tax ID	
-prot_seq	Protein sequence in 1 letter code	
+prot_tax_str	Mascot protein taxonomy as string	
+prot_tax_id	Mascot protein taxonomy as Tax ID	
+prot_seq	Mascot protein sequence in 1 letter code	
 prot_empai	Mascot empirical protein abundance index	
-prot_icover	Protein sequence coverage by tryptic peptides	
+prot_icover	Protein sequence coverage by counts of tryptic peptides	
 prot_cover	Protein sequence coverage	
 prot_n_psm	Count of significant PSMs in quantitation under a proposed protein	
 prot_n_uniqpsm	"Count of unique, significant PSMs in quantitation under a proposed protein"	
@@ -27,11 +27,11 @@ uniprot_id	Protein UniProt entry name
 refseq_acc	Protein RefSeq accession	
 other_acc	Protein accession with formats other than UniProt or RefSeq	
 entrez	Protein Entrez ID	
-species	The species of a protein entry	
-acc_type	The type of accession names	
-kin_attr	The attribute of proteins being kinases	
-kin_class	"The classes of kinases, e.g., TK, TKL..."	
-kin_order	"The order of ""kin_class"" from the kinase tree diagram"	
+species	Species of a protein entry	
+acc_type	Type of accession names	
+kin_attr	Is protein with an attribute of kinase or not	
+kin_class	"Class of kinases, e.g., TK, TKL..."	
+kin_order	"Order of ""kin_class"" from the kinase tree diagram"	
 mean_lint	Mean log10 intensity (N_I...) across samples	
 count_nna	Count of non-NA log2FC	
 I... (...)	Reporter-ion intensity; I000 in LFQ	According to the descriptive statistics in `Pep2Prn(method_pep_prn = ...)`

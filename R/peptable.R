@@ -860,15 +860,15 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel)
 }
 
 
-#' Combined peptide reports across multiple TMT experiments.
+#' Combines peptide reports across multiple experiments.
 #'
-#' Median summarization of data from the same TMT experiment at different LCMS
-#' injections summed \code{pep_n_psm}, \code{prot_n_psm}, and \code{prot_n_pep}
-#' after data merging no Z_log2_R yet available use \code{col_select =
-#' expr(Sample_ID)} not \code{col_select} to get all Z_log2_R why: users may
-#' specify \code{col_select} only partial to Sample_ID entries.
+#' Median summarization of data from the same TMT or LFQ experiment at different
+#' LCMS injections summed \code{pep_n_psm}, \code{prot_n_psm}, and
+#' \code{prot_n_pep} after data merging no Z_log2_R yet available use
+#' \code{col_select = expr(Sample_ID)} not \code{col_select} to get all Z_log2_R
+#' why: users may specify \code{col_select} only partial to Sample_ID entries.
 #'
-#' @param use_mq_pep Logical; if TRUE, use the peptides.txt from MaxQuant. This
+#' @param use_mq_pep Logical; if TRUE, uses the peptides.txt from MaxQuant. This
 #'   is an interim solution for MaxQuant timsTOF.
 #' @inheritParams info_anal
 #' @inheritParams normPSM
@@ -877,7 +877,8 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel)
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
                            use_duppeps = TRUE, cut_points = Inf, 
                            omit_single_lfq = TRUE, use_mq_pep = FALSE, 
-                           rm_allna = FALSE, parallel = TRUE, ...) 
+                           rm_allna = FALSE, ret_sd_tol = Inf, 
+                           rm_ret_outliers = FALSE, parallel = TRUE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -893,7 +894,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
                pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"), 
                full.names = TRUE)
   
-  if (purrr::is_empty(filelist)) {
+  if (!length(filelist)) {
     stop("No individual peptide tables available; run `PSM2Pep()` first.", 
          call. = FALSE)
   }
@@ -926,7 +927,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
       df_num <- df_num %>% dplyr::left_join(pep_lfqnums, by = group_psm_by)
     } 
     
-  } else {
+  } 
+  else {
     # temporarily back-fill from a MaxQuant peptide table
     df_num <- pep_mq_lfq(label_scheme, omit_single_lfq)
     pep_lfqnums <- pep_mq_lfq2(label_scheme)
@@ -934,8 +936,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   }
   
   save(pep_lfqnums, file = file.path(dat_dir, "Peptide/cache/pep_lfqnums.rda"))
-  rm(pep_lfqnums)
-  
+  rm(list = c("pep_lfqnums"))
+
   df_num <- local({
     df_num <- df_num %>% 
       dplyr::mutate(mean_lint = 
@@ -976,13 +978,78 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     dplyr::group_by(!!rlang::sym(group_pep_by)) %>%
     dplyr::summarise(prot_n_pep = n())
   
+  if ("pep_ret_range" %in% names(df) && !all(is.na(df$pep_ret_range))) {
+    if (rm_ret_outliers) {
+      df <- df %>% dplyr::mutate(id. = row_number())
+      
+      oks <- local({
+        df <- df[, c(group_psm_by, "pep_ret_range", "id.")]
+        col <- which(names(df) == "pep_ret_range")
+        df <- df %>% split(.[[group_psm_by]], drop = TRUE)
+        
+        rows <- unlist(lapply(df, function (x) nrow(x) <= 2L))
+        df0 <- dplyr::bind_rows(df[rows])
+        df1 <- df[!rows] 
+        
+        if (length(df1)) {
+          df1 <- lapply(df1, locate_outliers, col) %>% 
+            dplyr::bind_rows() %>% 
+            dplyr::filter(!is.na(pep_ret_range))
+        }
+        
+        c(df0$id., df1$id.)
+      })
+      
+      if (length(oks)) 
+        df <- df %>% dplyr::filter(id. %in% oks)
+      
+      df <- df %>% dplyr::select(-id.)
+      rm(list = "oks")
+    }
+    
+    pep_ret_sd <- df %>% 
+      calc_pep_retsd(group_psm_by, use_unique = FALSE) %>% 
+      dplyr::arrange(!!rlang::sym(group_psm_by))
+    
+    if (!is.infinite(ret_sd_tol)) {
+      message("Removal of `", group_psm_by, "` entries at ", 
+              "retention time SD >= ", ret_sd_tol, ".")
+      
+      # (all entries under the same peptide will be removed)
+      df <- local({
+        peps <- pep_ret_sd %>% 
+          dplyr::filter(pep_ret_sd <= ret_sd_tol) %>% 
+          .[[group_psm_by]]
+        
+        df %>% dplyr::filter(!!rlang::sym(group_psm_by) %in% peps)
+      })
+    }
+  }
+  else {
+    if (rm_ret_outliers) {
+      message("Peptide retention times not available for data filtration ", 
+              "by `rm_ret_outliers`.")
+    }
+    
+    if (!is.infinite(ret_sd_tol)) {
+      message("Peptide retention times not available for data filtration ", 
+              "by `ret_sd_tol`.")
+    }
+
+    pep_ret_sd <- df %>%
+      dplyr::select(group_psm_by) %>% 
+      unique() %>% 
+      dplyr::mutate(pep_ret_sd = NA) %>% 
+      dplyr::arrange(!!rlang::sym(group_psm_by))
+  }
+  
   df_first <- df %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
     dplyr::select(-which(names(.) %in% c("pep_unique_int", "pep_razor_int"))) %>% 
     dplyr::select(-which(names(.) %in% c("pep_n_psm", "prot_n_psm", "prot_n_pep", 
                                          "prot_matches_sig", "prot_sequences_sig", 
+                                         "pep_ret_sd", 
                                          "TMT_Set"))) %>% 
-                                         
     med_summarise_keys(group_psm_by) %>% 
     dplyr::mutate(pep_unique_int = 
                     ifelse(pep_literal_unique, pep_tot_int, 0)) %>% 
@@ -991,20 +1058,23 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     dplyr::arrange(!!rlang::sym(group_psm_by)) %>% 
     reloc_col_after("pep_expect", "pep_score") %>% 
     reloc_col_after("pep_phospho_locprob", "pep_locdiff") %>% 
-    reloc_col_after("pep_phospho_locdiff", "pep_phospho_locprob")
-  
+    reloc_col_after("pep_phospho_locdiff", "pep_phospho_locprob") %>% 
+    reloc_col_after("pep_n_nl", "pep_rank_nl")
+
   df <- local({
     colnm_before <- find_preceding_colnm(df, "pep_tot_int")
     
-    df <- list(pep_n_psm, df_first, df_num) %>%
+    df <- list(pep_n_psm, df_first, pep_ret_sd, df_num) %>%
       purrr::reduce(dplyr::left_join, by = group_psm_by) %>% 
       reloc_col_before(group_psm_by, "pep_res_after") %>% 
       reloc_col_after("pep_tot_int", colnm_before) %>% 
       reloc_col_after("pep_unique_int", "pep_tot_int") %>% 
-      reloc_col_after("pep_razor_int", "pep_unique_int")
+      reloc_col_after("pep_razor_int", "pep_unique_int") %>% 
+      reloc_col_after("pep_ret_sd", "pep_ret_range")
   })
   
   separate_lfq_cols <- TRUE
+  
   if (separate_lfq_cols) {
     df <- df %>% 
       dplyr::select(-grep("^pep_.*_int \\(", names(.)))
@@ -1051,7 +1121,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
                                               TRUE, FALSE)) %>% 
       dplyr::mutate(pep_mod_protct = ifelse(grepl("~{1}$", pep_seq_mod), 
                                             TRUE, FALSE))
-  } else {
+  } 
+  else {
     df <- df %>% 
       dplyr::mutate(pep_mod_protnt = NA, 
                     pep_mod_protntac = NA, 
@@ -1090,7 +1161,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   
   # a placeholder so no need to handle the exception of 
   # no `Z_log2_R` columns before the first `normMulGau`
-  if (purrr::is_empty(grep("^Z_log2_R[0-9]{3}[NC]{0,1}", names(df)))) {
+  if (!length(grep("^Z_log2_R[0-9]{3}[NC]{0,1}", names(df)))) {
     df <- df %>% 
       dplyr::select(grep("^N_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
       `names<-`(gsub("^N_log2_R", "Z_log2_R", names(.))) %>% 
@@ -1124,7 +1195,9 @@ med_summarise_keys <- function(df, id)
   mascot_median_keys <- c("pep_score", "pep_rank", "pep_isbold", 
                           "pep_exp_mr", "pep_delta", 
                           "pep_exp_mz", "pep_exp_z", 
-                          "pep_locprob", "pep_locdiff")
+                          "pep_locprob", "pep_locdiff", 
+                          "pep_ret_range", "pep_n_nl", "pep_n_exp_z", 
+                          "pep_score_co", "pep_n_nl")
   mascot_geomean_keys <- c("pep_expect")
   mascot_sum_keys <- c("pep_tot_int")
   
@@ -1343,8 +1416,8 @@ fmt_num_cols <- function (df)
 #'\code{sd_log2_R...} are the standard deviation of the \code{log2FC} of
 #'proteins from ascribing peptides.
 #'
-#'Description of the column keys in the output: \cr 
-#'\code{system.file("extdata", "peptide_keys.txt", package = "proteoQ")}
+#'Description of the column keys in the output: \cr \code{system.file("extdata",
+#'"peptide_keys.txt", package = "proteoQ")}
 #'
 #'The peptide counts in individual peptide tables,
 #'\code{TMTset1_LCMSinj1_Peptide_N.txt} etc., may be fewer than the entries
@@ -1361,6 +1434,12 @@ fmt_num_cols <- function (df)
 #'  also \code{\link{prnHist}} for data binning in histogram visualization.
 #'@param use_duppeps Logical; if TRUE, re-assigns double/multiple dipping
 #'  peptide sequences to the most likely proteins by majority votes.
+#'@param ret_sd_tol Numeric; the tolerance in the variance of retention time
+#'  (w.r.t. measures in seconds). The thresholding applies to both TMT and LFQ
+#'  data. The default is \code{Inf}. Depends on the setting of LCMS gradients, a
+#'  setting of, e.g., 150 might be suitable.
+#' @param rm_ret_outliers Logical; if TRUE, removes peptide entries with
+#'   outlying retention times across samples and/or LCMS series.
 #'@param omit_single_lfq Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
 #'  with single measured values across all samples. The default is TRUE.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
@@ -1377,77 +1456,82 @@ fmt_num_cols <- function (df)
 #'  with \code{pep_len > 50}. See also \code{\link{normPSM}}.
 #'@inheritParams normPSM
 #'@inheritParams splitPSM
-#'@seealso 
-#'  \emph{Metadata} \cr 
-#'  \code{\link{load_expts}} for metadata preparation and a reduced working example in data normalization \cr
 #'
-#'  \emph{Data normalization} \cr 
-#'  \code{\link{normPSM}} for extended examples in PSM data normalization \cr
-#'  \code{\link{PSM2Pep}} for extended examples in PSM to peptide summarization \cr 
-#'  \code{\link{mergePep}} for extended examples in peptide data merging \cr 
-#'  \code{\link{standPep}} for extended examples in peptide data normalization \cr
-#'  \code{\link{Pep2Prn}} for extended examples in peptide to protein summarization \cr
-#'  \code{\link{standPrn}} for extended examples in protein data normalization. \cr 
-#'  \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples in data purging \cr
-#'  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
-#'  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
-#'  
-#'  \emph{Variable arguments of `filter_...`} \cr 
-#'  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
-#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
-#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 
-#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings \cr 
-#'  
-#'  \emph{Missing values} \cr 
-#'  \code{\link{pepImp}} and \code{\link{prnImp}} for missing value imputation \cr 
-#'  
-#'  \emph{Informatics} \cr 
-#'  \code{\link{pepSig}} and \code{\link{prnSig}} for significance tests \cr 
-#'  \code{\link{pepVol}} and \code{\link{prnVol}} for volcano plot visualization \cr 
-#'  \code{\link{prnGSPA}} for gene set enrichment analysis by protein significance pVals \cr 
-#'  \code{\link{gspaMap}} for mapping GSPA to volcano plot visualization \cr 
-#'  \code{\link{prnGSPAHM}} for heat map and network visualization of GSPA results \cr 
-#'  \code{\link{prnGSVA}} for gene set variance analysis \cr 
-#'  \code{\link{prnGSEA}} for data preparation for online GSEA. \cr 
-#'  \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS visualization \cr 
-#'  \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA visualization \cr 
-#'  \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA visualization \cr 
-#'  \code{\link{pepHM}} and \code{\link{prnHM}} for heat map visualization \cr 
-#'  \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}}, \code{\link{pepCorr_logInt}} and 
-#'  \code{\link{prnCorr_logInt}}  for correlation plots \cr 
-#'  \code{\link{anal_prnTrend}} and \code{\link{plot_prnTrend}} for trend analysis and visualization \cr 
-#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}}, \code{\link{plot_pepNMFCon}}, 
-#'  \code{\link{plot_prnNMFCon}}, \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and 
-#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr 
-#'  
-#'  \emph{Custom databases} \cr 
-#'  \code{\link{Uni2Entrez}} for lookups between UniProt accessions and Entrez IDs \cr 
-#'  \code{\link{Ref2Entrez}} for lookups among RefSeq accessions, gene names and Entrez IDs \cr 
-#'  \code{\link{prepGO}} for \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene 
-#'  ontology}} \cr 
-#'  \code{\link{prepMSig}} for \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular 
-#'  signatures} \cr 
-#'  \code{\link{prepString}} and \code{\link{anal_prnString}} for STRING-DB \cr
-#'  
-#'  \emph{Column keys in PSM, peptide and protein outputs} \cr 
+#'@seealso \emph{Metadata} \cr \code{\link{load_expts}} for metadata preparation
+#'  and a reduced working example in data normalization \cr
+#'
+#'  \emph{Data normalization} \cr \code{\link{normPSM}} for extended examples in
+#'  PSM data normalization \cr \code{\link{PSM2Pep}} for extended examples in
+#'  PSM to peptide summarization \cr \code{\link{mergePep}} for extended
+#'  examples in peptide data merging \cr \code{\link{standPep}} for extended
+#'  examples in peptide data normalization \cr \code{\link{Pep2Prn}} for
+#'  extended examples in peptide to protein summarization \cr
+#'  \code{\link{standPrn}} for extended examples in protein data normalization.
+#'  \cr \code{\link{purgePSM}} and \code{\link{purgePep}} for extended examples
+#'  in data purging \cr \code{\link{pepHist}} and \code{\link{prnHist}} for
+#'  extended examples in histogram visualization. \cr \code{\link{extract_raws}}
+#'  and \code{\link{extract_psm_raws}} for extracting MS file names \cr
+#'
+#'  \emph{Variable arguments of `filter_...`} \cr \code{\link{contain_str}},
+#'  \code{\link{contain_chars_in}}, \code{\link{not_contain_str}},
+#'  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}},
+#'  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and
+#'  \code{\link{ends_with_chars_in}} for data subsetting by character strings
+#'  \cr
+#'
+#'  \emph{Missing values} \cr \code{\link{pepImp}} and \code{\link{prnImp}} for
+#'  missing value imputation \cr
+#'
+#'  \emph{Informatics} \cr \code{\link{pepSig}} and \code{\link{prnSig}} for
+#'  significance tests \cr \code{\link{pepVol}} and \code{\link{prnVol}} for
+#'  volcano plot visualization \cr \code{\link{prnGSPA}} for gene set enrichment
+#'  analysis by protein significance pVals \cr \code{\link{gspaMap}} for mapping
+#'  GSPA to volcano plot visualization \cr \code{\link{prnGSPAHM}} for heat map
+#'  and network visualization of GSPA results \cr \code{\link{prnGSVA}} for gene
+#'  set variance analysis \cr \code{\link{prnGSEA}} for data preparation for
+#'  online GSEA. \cr \code{\link{pepMDS}} and \code{\link{prnMDS}} for MDS
+#'  visualization \cr \code{\link{pepPCA}} and \code{\link{prnPCA}} for PCA
+#'  visualization \cr \code{\link{pepLDA}} and \code{\link{prnLDA}} for LDA
+#'  visualization \cr \code{\link{pepHM}} and \code{\link{prnHM}} for heat map
+#'  visualization \cr \code{\link{pepCorr_logFC}}, \code{\link{prnCorr_logFC}},
+#'  \code{\link{pepCorr_logInt}} and \code{\link{prnCorr_logInt}}  for
+#'  correlation plots \cr \code{\link{anal_prnTrend}} and
+#'  \code{\link{plot_prnTrend}} for trend analysis and visualization \cr
+#'  \code{\link{anal_pepNMF}}, \code{\link{anal_prnNMF}},
+#'  \code{\link{plot_pepNMFCon}}, \code{\link{plot_prnNMFCon}},
+#'  \code{\link{plot_pepNMFCoef}}, \code{\link{plot_prnNMFCoef}} and
+#'  \code{\link{plot_metaNMF}} for NMF analysis and visualization \cr
+#'
+#'  \emph{Custom databases} \cr \code{\link{Uni2Entrez}} for lookups between
+#'  UniProt accessions and Entrez IDs \cr \code{\link{Ref2Entrez}} for lookups
+#'  among RefSeq accessions, gene names and Entrez IDs \cr \code{\link{prepGO}}
+#'  for
+#'  \code{\href{http://current.geneontology.org/products/pages/downloads.html}{gene
+#'   ontology}} \cr \code{\link{prepMSig}} for
+#'  \href{https://data.broadinstitute.org/gsea-msigdb/msigdb/release/7.0/}{molecular
+#'   signatures} \cr \code{\link{prepString}} and \code{\link{anal_prnString}}
+#'  for STRING-DB \cr
+#'
+#'  \emph{Column keys in PSM, peptide and protein outputs} \cr
 #'  system.file("extdata", "psm_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "peptide_keys.txt", package = "proteoQ") \cr
 #'  system.file("extdata", "protein_keys.txt", package = "proteoQ") \cr
-#'  
+#'
 #'@return The primary output is in \code{.../Peptide/Peptide.txt}.
 #'
 #'@example inst/extdata/examples/mergePep_.R
 #'@import stringr dplyr tidyr purrr
-#'@importFrom magrittr %>% %T>% %$% %<>% 
+#'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, 
                       cut_points = Inf, rm_allna = FALSE, 
-                      omit_single_lfq = TRUE, parallel = TRUE, ...) 
+                      omit_single_lfq = TRUE, ret_sd_tol = Inf, 
+                      rm_ret_outliers = FALSE, parallel = TRUE, ...) 
 {
-  dat_dir <- get_gl_dat_dir()  
+  dat_dir <- get_gl_dat_dir()
   
   old_opts <- options()
-  options(warn = 1)
+  options(warn = 1L)
   on.exit(options(old_opts), add = TRUE)
   
   on.exit(
@@ -1461,7 +1545,10 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE,
     add = TRUE
   )
   
-  stopifnot(vapply(c(plot_log2FC_cv), rlang::is_logical, logical(1)))
+  stopifnot(vapply(c(plot_log2FC_cv, use_duppeps, rm_allna, omit_single_lfq, 
+                     rm_ret_outliers, parallel), 
+                   rlang::is_logical, logical(1)))
+  stopifnot(cut_points >= 0, ret_sd_tol > 0)
 
   reload_expts()
 
@@ -1497,6 +1584,8 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE,
                       parallel = parallel, 
                       use_mq_pep = use_mq_pep, 
                       rm_allna = rm_allna, 
+                      ret_sd_tol = ret_sd_tol, 
+                      rm_ret_outliers = rm_ret_outliers, 
                       !!!filter_dots) 
   
   if (plot_log2FC_cv) {
