@@ -6763,7 +6763,7 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   dots <- dots %>% .[! . %in% filter_dots]
   
   message("Primary column keys in `psmQ[...].txt` for `filter_` varargs.")
-  message("Found PSM files: ", paste(filelist, collapse = ", "))
+  message("Found PSM files: \n", paste(filelist, collapse = ", \n"))
   
   df <- filelist %>% 
     purrr::map(pad_tmt_channels, !!!filter_dots) %>% 

@@ -141,8 +141,11 @@ if (!choose_one) {
   ## or MSFragger
   # copy_msfragger_gtmt(dat_dir)
   
+  ## or proteoM
+  # copy_proteom_gtmt(dat_dir)
+  
   ## or Spectrum Mill
-  # copy_specmill_gtmt(dat_dir)
+  # (temporarily unavailable)
 }
 
 # ===================================
@@ -261,8 +264,11 @@ if (!choose_one) {
   ## or MSFragger
   # copy_msfragger_plfq(dat_dir)
   
+  ## or proteoM
+  # copy_proteom_plfq(dat_dir)
+  
   ## or Spectrum Mill
-  # copy_specmill_plfq(dat_dir)
+  # (temporarily unavailable)
 }
 
 

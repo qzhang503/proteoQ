@@ -3053,10 +3053,10 @@ rptr_violin <- function(df, filepath, width, height)
 #' Geometric mean
 #' 
 #' @param x A data frame.
-#' @param ... The same in \code{mean}.
+#' @param ... Additional arguments for \code{mean}.
 my_geomean <- function (x, ...) 
 {
-  x <- log10(x) %>% mean(...)
+  x <- mean(log10(x), ...)
   10^x
 }
 
@@ -3080,15 +3080,18 @@ count_phosphopeps <- function()
   n_phos_peps <- nrow(df_phos)
   n_phos_sites <- stringr::str_count(df_phos[[id]], "[sty]") %>% sum()
   
-  write.csv(
-    data.frame(n_peps = n_phos_peps, n_sites = n_phos_sites), 
-    file.path(dat_dir, "Peptide/cache", "phos_pep_nums.csv"), 
-    row.names = FALSE
-  )
+  ans <- data.frame(n_peps = n_phos_peps, n_sites = n_phos_sites)
+  
+  write.csv(ans, file.path(dat_dir, "Peptide/cache", "phos_pep_nums.csv"), 
+    row.names = FALSE)
+  
+  invisible(ans)
 }
 
 
 #' Peptide mis-cleavage counts
+#' 
+#' NOt currently used.
 #' 
 count_pepmiss <- function() 
 {
@@ -3100,7 +3103,8 @@ count_pepmiss <- function()
   filelist <- list.files(path = file.path(dat_dir, "PSM/cache"),
                         pattern = "^F[0-9]{6}_hdr_rm.csv$")
   
-  if (length(filelist) == 0) stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
+  if (!length(filelist)) 
+    stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
   
   df <- purrr::map(filelist, ~ {
     data <- read.delim(file.path(dat_dir, "PSM/cache", .x), sep = ',', 
@@ -3116,10 +3120,13 @@ count_pepmiss <- function()
     mis <- data %>% dplyr::filter(pep_miss > 0) %>% nrow()
     
     tibble::tibble(total = tot, miscleavage = mis, percent = miscleavage/tot)
-  }) %>% do.call(rbind, .)
+  }) %>% 
+    do.call(rbind, .)
   
   write.csv(df, file.path(dat_dir, "PSM/cache/miscleavage_nums.csv"), 
             row.names = FALSE)
+  
+  invisible(df)
 }
 
 
@@ -3145,7 +3152,7 @@ count_pepmiss <- function()
 #' @export
 contain_str <- function (match, vars, ignore.case = FALSE) 
 {
-  stopifnot(is_string(match), nchar(match) > 0)
+  stopifnot(rlang::is_string(match), nchar(match) > 0L)
   grepl(match, vars, fixed = TRUE, ignore.case)
 }
 
@@ -3158,7 +3165,7 @@ contain_str <- function (match, vars, ignore.case = FALSE)
 #' @export
 contain_chars_in <- function (match, vars, ignore.case = FALSE) 
 {
-  stopifnot(is_string(match), nchar(match) > 0)
+  stopifnot(rlang::is_string(match), nchar(match) > 0L)
   grepl(paste0("[", match, "]"), vars, fixed = FALSE, ignore.case)
 }
 
@@ -3171,7 +3178,7 @@ contain_chars_in <- function (match, vars, ignore.case = FALSE)
 #' @export
 not_contain_str <- function (match, vars, ignore.case = FALSE) 
 {
-  stopifnot(is_string(match), nchar(match) > 0)
+  stopifnot(rlang::is_string(match), nchar(match) > 0L)
   !grepl(match, vars, fixed = TRUE, ignore.case)
 }
 
@@ -3184,7 +3191,7 @@ not_contain_str <- function (match, vars, ignore.case = FALSE)
 #' @export
 not_contain_chars_in <- function (match, vars, ignore.case = FALSE) 
 {
-  stopifnot(is_string(match), nchar(match) > 0)
+  stopifnot(rlang::is_string(match), nchar(match) > 0L)
   !grepl(paste0("[", match, "]"), vars, fixed = FALSE, ignore.case = FALSE)
 }
 
@@ -3210,7 +3217,7 @@ start_with_str <- function (match, vars, ignore.case = FALSE)
 #' @export
 end_with_str <- function (match, vars, ignore.case = FALSE) 
 {
-  stopifnot(is_string(match), nchar(match) > 0)
+  stopifnot(rlang::is_string(match), nchar(match) > 0L)
   grepl(paste0(match, "$"), vars, fixed = FALSE, ignore.case)
 }
 
@@ -3223,7 +3230,7 @@ end_with_str <- function (match, vars, ignore.case = FALSE)
 #' @export
 start_with_chars_in <- function (match, vars, ignore.case = FALSE) 
 {
-  stopifnot(is_string(match), nchar(match) > 0)
+  stopifnot(rlang::is_string(match), nchar(match) > 0L)
   grepl(paste0("^[", match, "]"), vars, fixed = FALSE, ignore.case)
 }
 
@@ -3247,7 +3254,7 @@ ends_with_chars_in <- function (match, vars, ignore.case = FALSE)
 #' @rdname contain_str
 rows_are_all <- function (match, vars, ignore.case = FALSE) 
 {
-  stopifnot(is_string(match), nchar(match) > 0)
+  stopifnot(rlang::is_string(match), nchar(match) > 0L)
   !grepl(paste0("[^", match, "]"), vars, fixed = FALSE, ignore.case = FALSE)
 }
 
@@ -3257,7 +3264,7 @@ rows_are_all <- function (match, vars, ignore.case = FALSE)
 #' \code{rows_are_all}: rows are all
 #' @rdname contain_str
 rows_are_not_all <- function (match, vars, ignore.case = FALSE) {
-  stopifnot(is_string(match), nchar(match) > 0)
+  stopifnot(rlang::is_string(match), nchar(match) > 0L)
   grepl(paste0("[^", match, "]"), vars, fixed = FALSE, ignore.case = FALSE)
 }
 
