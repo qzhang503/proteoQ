@@ -7,5 +7,5 @@
 count_pepmiss()
 }
 \description{
-Peptide mis-cleavage counts
+NOt currently used.
 }

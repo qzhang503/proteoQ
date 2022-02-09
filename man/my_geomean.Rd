@@ -9,7 +9,7 @@ my_geomean(x, ...)
 \arguments{
 \item{x}{A data frame.}
 
-\item{...}{The same in \code{mean}.}
+\item{...}{Additional arguments for \code{mean}.}
 }
 \description{
 Geometric mean

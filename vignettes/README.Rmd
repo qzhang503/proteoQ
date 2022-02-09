@@ -93,17 +93,16 @@ The proteo[X] family currently contains members of
 
 -   [proteoM](https://github.com/qzhang503/proteoM) for database searches.  
 -   [proteoQ](https://github.com/qzhang503/proteoQ) for quality metrics and informatics.
--   [proteoCpp](https://github.com/qzhang503/proteoCpp) for faster and memory-efficient codes with Rcpp.
 -   [proteoQDA](https://github.com/qzhang503/proteoQDA) for exemplary data.  
 
-Details about [proteoM](https://github.com/qzhang503/proteoM) can be found elsewhere and the document will be mainly about proteoQ.  
+The document is mainly about proteoQ.
 
 ## Introduction to proteoQ
-Tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is designed for the *mining* of proteomics data. It takes database search results from **proteoM::matchMS** or third-party search engines.  
+Tandem mass tag ([TMT](https://en.wikipedia.org/wiki/Tandem_mass_tag)) and label-free quantitaion (LFQ) have been commonly applied in mass spectrometry (MS)-based quantification of proteins and peptides. The proteoQ tool is designed for the *mining* of proteomics data. It takes database search results from various search engines.  
 
-The tool interacts with an Excel spread sheet for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates operations, such as data normalization, against chosen rows and/or columns of data into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data pre-processing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.
+The tool interacts with an Excel spread sheet (or `.csv`) for dynamic sample selections, aesthetics controls and statistical modelings. It further integrates operations, such as data normalization, against chosen rows and/or columns of data into functions at the users' interface. The arrangements allow users to put *ad hoc* manipulation of data behind the scene and instead apply metadata to openly address biological questions using various data pre-processing and informatic tools. In addition, the entire workflow is documented and can be conveniently reproduced upon revisiting.
 
-The [informatic framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of proteoQ consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/), [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill) or the **proteoM::matchMS** utility, for TMT ($\le$ 18-plex) or LFQ experiments, using Thermo's Orbitrap mass analyzers. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.[^1]
+The [informatic framework](https://proteoq.netlify.app/post/how-do-i-run-proteoq/) of proteoQ consists of data processing and informatics analysis. It first processes the peptide spectrum matches (PSM) tables from the search engines of [Mascot](https://http://www.matrixscience.com/), [MaxQuant](https://www.maxquant.org/), [MSFragger](http://msfragger.nesvilab.org/), [proteoM](https://github.com/qzhang503/proteoM) or [Spectrum Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill), for TMT ($\le$ 18-plex) or LFQ experiments, using mass analyzers of Thermo's Orbitrap or Bruker's timsTOF. Peptide and protein results are then produced with users' selection of parameters in data filtration, alignment and normalization. The package further offers a suite of tools and functionalities in statistics, informatics and data visualization by creating 'wrappers' around published R routines.[^1]
 
 [^1]: To cite this work: (2019) R package proteoQ for Quantitative Proteomics Using Tandem Mass Tags or Label-free Approaches. <https://github.com/qzhang503/proteoQ>.  
 
@@ -137,7 +136,7 @@ In this document, I first illustrate the following applications of proteoQ:
 -   Mixed-bed normalization using full or partial data.
 -   Removal of low-quality entries from PSM, peptide and protein data.
 
-The data set we will use in this section corresponds to the proteomics data from Mertins et al. [@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, samples from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data were analyzed against the search engines of Mascot, MaxQuant, MSFragger or Spectrum Mill. Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed whereas details of LFQ analysis can be found in the help document of `proteoQ::load_expts`.  
+The data set we will use in this section corresponds to the proteomics data from Mertins et al. [@mertins2018np]. In the study, two different breast cancer subtypes, triple negative (WHIM2) and luminal (WHIM16), from patient-derived xenograft (PDX) models were assessed by three independent laboratories. At each site, samples from WHIM2 and WHIM16 were each split and labeled with 10-plex TMT at equal sample sizes and repeated on a different day. This results in a total of 60 samples labeled under six 10-plex TMT experiments. The samples under each 10-plex TMT were fractionated by off-line, high pH reversed-phase (Hp-RP) chromatography, followed by on-line LC/MS analysis. The MS data were analyzed against the search engines of Mascot, MaxQuant, MSFragger, proteoM or Spectrum Mill. Ten percent of the PSM entries were sampled randomly from the complete data sets and stored in a companion package, `proteoQDA`. For simplicity, only TMT examples will be discussed in the document. Examples of LFQ analysis can be found in the help document of `proteoQ::load_expts`, which is another good stop for exploring `proteoQ`.  
 
 ### 1.1 Experiment setup
 
@@ -159,13 +158,13 @@ copy_refseq_mm("~/proteoQ/dbs/fasta/refseq")
 
 #### 1.1.2 PSM data
 
-The data processing begins with PSM table(s) from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/), [MaxQuant, MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/), Spectrum Mill or proteoQ::matchMS with the following compilation in file names:
+The data processing begins with PSM table(s) from [Mascot](https://proteoq.netlify.app/post/exporting-mascot-psms/), [MaxQuant, MSFragger](https://proteoq.netlify.app/post/interfaces-to-search-engines/),  [proteoM](https://github.com/qzhang503/proteoM) or Spectrum Mill with the following compilation in file names:
 
 -   Mascot: begin with letter `F`, followed by digits and ends with `.csv`;
 -   MaxQuant: start with `msms` and end with `.txt`;
 -   MSFragger: start with `psm` and end with `.tsv`;
--   Spectrum Mill: start with `PSMexport` and end with `.ssv`, 
--   proteoQ: start with `psmQ` and end with `.txt`.
+-   proteoM: start with `psmQ` and end with `.txt`;
+-   Spectrum Mill: start with `PSMexport` and end with `.ssv`.
 
 The corresponding PSMs are available through one of the followings `copy_` utilities:
 
@@ -179,30 +178,11 @@ copy_maxquant_gtmt()
 # or MSFragger
 copy_msfragger_gtmt()
 
+# or proteoM
+copy_proteom_gtmt()
+
 # or Spectrum Mill
-copy_specmill_gtmt()
-```
-
-or through the database searches by [proteoM](https://github.com/qzhang503/proteoM):  
-
-```{r matchMS, include = TRUE, eval = FALSE}
-library(proteoM)
-
-#  Need to supply your own MGFs under `mgf_path` 
-# (with the formats in MSConvert or Thermo's Proteome Discoverer)
-matchMS(
-  out_path = "~/proteoQ/examples", 
-  mgf_path = "~/proteoQ/examples/mgfs",
-  fasta = c("~/proteoQ/dbs/fasta/refseq/refseq_hs_2013_07.fasta", 
-            "~/proteoQ/dbs/fasta/refseq/refseq_mm_2013_07.fasta"), 
-  acc_type = c("refseq_acc", "refseq_acc"), 
-  fixedmods = c("TMT6plex (K)", "Carbamidomethyl (C)"),
-  varmods = c("TMT6plex (N-term)", "Acetyl (Protein N-term)", "Oxidation (M)",
-              "Deamidated (N)", "Gln->pyro-Glu (N-term = Q)"),
-  max_miss = 4, 
-  quant = "tmt10", 
-  fdr_type = "protein", 
-)
+# (temporarily unavailable)
 ```
 
 To illustrate, I copy over Mascot PSMs to a working directory, `dat_dir`:
@@ -215,7 +195,7 @@ copy_mascot_gtmt(dat_dir)
 
 #### 1.1.3 Metadata
 
-The workflow involves an Excel template containing the metadata of multiplex experiments, including experiment numbers, TMT channels, LC/MS injection indexes, sample IDs, reference channels, RAW MS data file names and additional fields from users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to LC/MS, a second Excel template will also be filled out to link multiple RAW MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`.[^4] Unless otherwise mentioned, we will assume these default file names throughout the document.
+The workflow involves an Excel (or `.csv`) template containing the metadata of multiplex experiments, including experiment numbers, TMT channels, LC/MS injection indexes, sample IDs, reference channels, RAW MS data file names and additional fields from users. The default file name for the experimental summary is `expt_smry.xlsx`. If samples were fractionated off-line prior to LC/MS, a second Excel template will also be filled out to link multiple RAW MS file names that are associated to the same sample IDs. The default file name for the fractionation summary is `frac_smry.xlsx`.[^4] Unless otherwise mentioned, we will assume these default file names throughout the document.
 
 [^4]: To extract the names of RAW MS files under a \`raw_dir\` folder: \`extract_raws(raw_dir)\`. Very occasionally, there may be RAW MS files without PSM contributions. In this case, the file names will be shown as missing by the program and need to be removed from \`expt_smry.xlsx\` or \`frac_smry.xlsx\`. The function \`extract_psm_raws()\` was developed to extract the list of RAW files that are actually present in PSM files.
 
