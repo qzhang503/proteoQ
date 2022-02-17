@@ -139,18 +139,27 @@ plotPCA <- function (df = NULL, id = NULL, label_scheme_sub = NULL,
   
   map_color <- map_fill <- map_shape <- map_size <- map_alpha <- NA
   
-  if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% names(df))
+  if (col_color != rlang::expr(Color) || !rlang::as_string(sym(col_color)) %in% names(df)) {
     assign(paste0("map_", tolower(rlang::as_string(col_color))), "X")
-  if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% names(df))
-    assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
-  if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% names(df))
-    assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
-    assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
-  if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% names(df))
-    assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
-  if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% names(df))
-    assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
+  }
   
+  if (col_fill != rlang::expr(Fill)  || !rlang::as_string(sym(col_fill)) %in% names(df)) {
+    assign(paste0("map_", tolower(rlang::as_string(col_fill))), "X")
+  }
+  
+  if (col_shape != rlang::expr(Shape) || !rlang::as_string(sym(col_shape)) %in% names(df)) {
+    assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
+    assign(paste0("map_", tolower(rlang::as_string(col_shape))), "X")
+  }
+  
+  if (col_size != rlang::expr(Size) || !rlang::as_string(sym(col_size)) %in% names(df)) {
+    assign(paste0("map_", tolower(rlang::as_string(col_size))), "X")
+  }
+  
+  if (col_alpha != rlang::expr(Alpha) || !rlang::as_string(sym(col_alpha)) %in% names(df)) {
+    assign(paste0("map_", tolower(rlang::as_string(col_alpha))), "X")
+  }
+
   if (!is.na(map_color)) col_color <- NULL
   if (!is.na(map_fill)) col_fill <- NULL
   if (!is.na(map_shape)) col_shape <- NULL
