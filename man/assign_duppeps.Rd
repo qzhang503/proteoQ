@@ -4,7 +4,13 @@
 \alias{assign_duppeps}
 \title{Assign duplicated peptides to a leading protein}
 \usage{
-assign_duppeps(df, group_psm_by, group_pep_by, use_duppeps = TRUE)
+assign_duppeps(
+  df,
+  group_psm_by,
+  group_pep_by,
+  use_duppeps = TRUE,
+  duppeps_repair = "denovo"
+)
 }
 \arguments{
 \item{df}{A PSM data frame}
@@ -24,6 +30,16 @@ numbers will be treated as one group.}
 
 \item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
 peptide sequences to the most likely proteins by majority votes.}
+
+\item{duppeps_repair}{Not currently used (or only with \code{majority}).
+ Character string; the method of reparing double-dipping peptide sequences
+ upon data pooling.
+
+ For instance, the same sequence of PEPTIDE may be assigned to protein
+ accession PROT_ACC1 in data set 1 and PROT_ACC2 in data set 2. At the
+ \code{denovo} default, the peptide to protein association will be
+ re-established freshly. At the \code{majority} alternative, a majority rule
+ will be applied for the re-assignments.}
 }
 \description{
 Assign duplicated peptides to a leading protein

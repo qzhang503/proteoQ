@@ -2,7 +2,7 @@
 % Please edit documentation in R/purge.R
 \name{lgl_cleanup}
 \alias{lgl_cleanup}
-\title{Update data groups of `log2_R_` and `I_` etc. by logical matrix
+\title{Updates data groups of `log2_R_` and `I_` etc. by logical matrix
 `lgl_log2_...`.}
 \usage{
 lgl_cleanup(df, type = "sd", rm_allna = FALSE)
@@ -21,6 +21,6 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{type}{Type of logical matrix.}
 }
 \description{
-Update data groups of `log2_R_` and `I_` etc. by logical matrix
+Updates data groups of `log2_R_` and `I_` etc. by logical matrix
 `lgl_log2_...`.
 }

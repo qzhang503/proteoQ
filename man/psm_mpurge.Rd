@@ -2,17 +2,17 @@
 % Please edit documentation in R/purge.R
 \name{psm_mpurge}
 \alias{psm_mpurge}
-\title{Purge PSM helper}
+\title{Purges PSM helper}
 \usage{
 psm_mpurge(
   file,
   dat_dir,
-  group_psm_by,
-  group_pep_by,
-  pt_cv,
-  max_cv,
-  keep_ohw,
-  min_n,
+  group_psm_by = "pep_seq",
+  group_pep_by = "prot_acc",
+  pt_cv = NULL,
+  max_cv = NULL,
+  keep_ohw = TRUE,
+  min_n = 1L,
   rm_allna = FALSE,
   theme,
   ...
@@ -40,7 +40,7 @@ numbers will be treated as one group.}
 \item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
 percentile threshold will be replaced with NA. The default is NULL with no
 data trimming by CV percentile. The precedence in data purging is
-\code{pt_cv} \eqn{\ge} \code{max_v} \eqn{\ge} \code{min_n}.}
+\code{pt_cv} \eqn{\ge} \code{max_cv} \eqn{\ge} \code{min_n}.}
 
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
 will be replaced with NA. The default is NULL with no data trimming by max

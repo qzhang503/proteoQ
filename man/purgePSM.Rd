@@ -2,7 +2,7 @@
 % Please edit documentation in R/purge.R
 \name{purgePSM}
 \alias{purgePSM}
-\title{Purge PSM data}
+\title{Purges PSM data}
 \usage{
 purgePSM(
   dat_dir = NULL,
@@ -10,7 +10,7 @@ purgePSM(
   max_cv = NULL,
   adjSD = FALSE,
   keep_ohw = TRUE,
-  min_n = 1,
+  min_n = 1L,
   rm_allna = FALSE,
   theme = NULL,
   ...
@@ -23,7 +23,7 @@ match the value under the global environment.}
 \item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
 percentile threshold will be replaced with NA. The default is NULL with no
 data trimming by CV percentile. The precedence in data purging is
-\code{pt_cv} \eqn{\ge} \code{max_v} \eqn{\ge} \code{min_n}.}
+\code{pt_cv} \eqn{\ge} \code{max_cv} \eqn{\ge} \code{min_n}.}
 
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
 will be replaced with NA. The default is NULL with no data trimming by max
@@ -68,8 +68,6 @@ using MS1 peak area/intensity.
 The CV of peptides are calculated from contributing PSMs at the basis of per
 TMT experiment per series of LC/MS. Note that greater CV may be encountered
 for samples that are more different to reference material(s).
-
-Rows of with all NA values in \code{log2FC} will be removed as well.
 }
 \examples{
 \donttest{

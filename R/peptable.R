@@ -796,11 +796,12 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel)
   
   tbl_lcms <- n_LCMS(label_scheme_full)
   
-  if (any(tbl_lcms$n_LCMS > 1)) {
-    tbl_n <- tbl_lcms %>% dplyr::filter(n_LCMS > 1)
-    df_n <- df_num %>% dplyr::filter(TMT_Set %in% tbl_n$TMT_Set)
-    df_1 <- df_num %>% dplyr::filter(! TMT_Set %in% tbl_n$TMT_Set)
-    
+  if (any(tbl_lcms$n_LCMS > 1L)) {
+    tbl_n <- tbl_lcms %>% dplyr::filter(n_LCMS > 1L)
+    rows <- df_num$TMT_Set %in% tbl_n$TMT_Set
+    df_n <- df_num[rows, ]
+    df_1 <- df_num[!rows, ]
+
     if (parallel) {
       nms <- names(df_n)
       
@@ -825,7 +826,8 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel)
         dplyr::bind_rows(df_1) # the same order of columns ensured
       
       parallel::stopCluster(cl)
-    } else {
+    } 
+    else {
       df_num <- df_n %>% 
         dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>% 
         dplyr::bind_rows(df_1)
@@ -843,8 +845,8 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel)
   df_num <- df_num %>%
     dplyr::mutate(ID = factor(ID, levels = Levels)) %>%
     tidyr::spread(ID, value)
-  rm(Levels)
-  
+  rm(list = c("Levels"))
+
   set_indexes <- gsub("^.*TMTset(\\d+).*", "\\1", filelist) %>% 
     unique() %>% 
     as.integer() %>% 
@@ -875,9 +877,9 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel)
 #' @inheritParams splitPSM
 #' @inheritParams mergePep
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
-                           use_duppeps = TRUE, cut_points = Inf, 
-                           omit_single_lfq = TRUE, use_mq_pep = FALSE, 
-                           rm_allna = FALSE, ret_sd_tol = Inf, 
+                           use_duppeps = TRUE, duppeps_repair = "denovo", 
+                           cut_points = Inf, omit_single_lfq = TRUE, 
+                           use_mq_pep = FALSE, rm_allna = FALSE, ret_sd_tol = Inf, 
                            rm_ret_outliers = FALSE, parallel = TRUE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
@@ -899,9 +901,11 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
          call. = FALSE)
   }
   
-  df <- do.call(rbind, 
-                purrr::map(filelist, read.csv, check.names = FALSE, header = TRUE, 
-                           sep = "\t", comment.char = "#")) %>% 
+  df <- suppressWarnings(
+    purrr::map(filelist, readr::read_tsv, col_types = get_col_types(), 
+               show_col_types = FALSE)
+  ) %>% 
+    dplyr::bind_rows() %>% 
     dplyr::select(-which(names(.) %in% c("dat_file"))) %>% 
     dplyr::mutate(TMT_Set = factor(TMT_Set)) %>%
     dplyr::arrange(TMT_Set) 
@@ -912,7 +916,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     df <- df %>% dplyr::mutate(gene = forcats::fct_explicit_na(gene))
   }
   
-  df <- df %>% assign_duppeps(group_psm_by, group_pep_by, use_duppeps)
+  df <- df %>% 
+    assign_duppeps(group_psm_by, group_pep_by, use_duppeps, duppeps_repair)
   
   if (!use_mq_pep) {
     df_num <- calc_tmt_nums(df, filelist, group_psm_by, parallel)
@@ -921,7 +926,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
       dplyr::select(group_psm_by) %>% 
       dplyr::filter(!duplicated(!!rlang::sym(group_psm_by)))
 
-    if (TMT_plex == 0L) {
+    if (!TMT_plex) {
       df_num <- calc_lfq_pepnums(df_num, omit_single_lfq)
       pep_lfqnums <- calc_lfq_pepnums2(df, filelist, group_psm_by)
       df_num <- df_num %>% dplyr::left_join(pep_lfqnums, by = group_psm_by)
@@ -1424,6 +1429,15 @@ fmt_num_cols <- function (df)
 #'indicated under the \code{prot_n_pep} column after the peptide
 #'removals/cleanups using \code{purgePSM}.
 #'
+#'@param duppeps_repair Not currently used (or only with \code{majority}).
+#'  Character string; the method of reparing double-dipping peptide sequences
+#'  upon data pooling.
+#'
+#'  For instance, the same sequence of PEPTIDE may be assigned to protein
+#'  accession PROT_ACC1 in data set 1 and PROT_ACC2 in data set 2. At the
+#'  \code{denovo} default, the peptide to protein association will be
+#'  re-established freshly. At the \code{majority} alternative, a majority rule
+#'  will be applied for the re-assignments.
 #'@param cut_points A named, numeric vector defines the cut points (knots) for
 #'  the median-centering of \code{log2FC} by sections. For example, at
 #'  \code{cut_points = c(mean_lint = seq(4, 7, .5))}, \code{log2FC} will be
@@ -1438,8 +1452,8 @@ fmt_num_cols <- function (df)
 #'  (w.r.t. measures in seconds). The thresholding applies to both TMT and LFQ
 #'  data. The default is \code{Inf}. Depends on the setting of LCMS gradients, a
 #'  setting of, e.g., 150 might be suitable.
-#' @param rm_ret_outliers Logical; if TRUE, removes peptide entries with
-#'   outlying retention times across samples and/or LCMS series.
+#'@param rm_ret_outliers Logical; if TRUE, removes peptide entries with outlying
+#'  retention times across samples and/or LCMS series.
 #'@param omit_single_lfq Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
 #'  with single measured values across all samples. The default is TRUE.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
@@ -1524,6 +1538,7 @@ fmt_num_cols <- function (df)
 #'@importFrom magrittr %>% %T>% %$% %<>%
 #'@export
 mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, 
+                      duppeps_repair = c("majority", "denovo"), 
                       cut_points = Inf, rm_allna = FALSE, 
                       omit_single_lfq = TRUE, ret_sd_tol = Inf, 
                       rm_ret_outliers = FALSE, parallel = TRUE, ...) 
@@ -1535,15 +1550,30 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE,
   on.exit(options(old_opts), add = TRUE)
   
   on.exit(
-    if (exists(".savecall", envir = rlang::current_env())) {
+    if (exists(".savecall", envir = environment())) {
       if (.savecall) {
-        mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+        mget(names(formals()), envir = environment(), inherits = FALSE) %>% 
           c(dots) %>% 
           save_call("mergePep")
       }
     }, 
     add = TRUE
   )
+  
+  # ---
+  duppeps_repair <- "majority"
+  duppeps_repair <- rlang::enexpr(duppeps_repair)
+  oks <- eval(formals()[["duppeps_repair"]])
+  
+  duppeps_repair <- if (length(duppeps_repair) > 1L) 
+    oks[[1]]
+  else 
+    rlang::as_string(duppeps_repair)
+  
+  stopifnot(duppeps_repair %in% oks, length(duppeps_repair) == 1L)
+  
+  rm(list = c("oks"))
+  # ---
   
   stopifnot(vapply(c(plot_log2FC_cv, use_duppeps, rm_allna, omit_single_lfq, 
                      rm_ret_outliers, parallel), 
@@ -1570,6 +1600,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE,
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
 
   dots <- rlang::enexprs(...)
+  
   filter_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
@@ -1579,6 +1610,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE,
   df <- normPep_Mplex(group_psm_by = group_psm_by, 
                       group_pep_by = group_pep_by, 
                       use_duppeps = use_duppeps, 
+                      duppeps_repair = duppeps_repair, 
                       cut_points = cut_points, 
                       omit_single_lfq = omit_single_lfq,
                       parallel = parallel, 
@@ -1995,24 +2027,25 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean",
   TMT_plex <- TMT_plex(label_scheme_full)
   
   method_pep_prn <- rlang::enexpr(method_pep_prn)
-  if (TMT_plex > 0L) {
-    if (length(method_pep_prn) > 1L) {
+  
+  if (TMT_plex) {
+    if (length(method_pep_prn) > 1L) 
       method_pep_prn <- "median"
-    } else {
+    else 
       method_pep_prn <- rlang::as_string(method_pep_prn)
-    }
-  } else {
-    if (length(method_pep_prn) > 1L) {
+  } 
+  else {
+    if (length(method_pep_prn) > 1L) 
       method_pep_prn <- "lfq_top_3_sum"
-    } else {
+    else 
       method_pep_prn <- rlang::as_string(method_pep_prn)
-    }
   }
   
   if (method_pep_prn == "top.3") {
     stop("Method `top.3` depreciated; instead use `top_3_mean`.", 
          call. = FALSE)
-  } else if (method_pep_prn == "weighted.mean") {
+  } 
+  else if (method_pep_prn == "weighted.mean") {
     stop("Method `weighted.mean` depreciated; instead use `weighted_mean`.", 
          call. = FALSE)
   }
@@ -2024,8 +2057,8 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean",
             length(method_pep_prn) == 1L)
 
   group_pep_by <- match_call_arg(normPSM, group_pep_by)
-  stopifnot(group_pep_by %in% c("prot_acc", "gene"), length(group_pep_by) == 1)
   
+  stopifnot(group_pep_by %in% c("prot_acc", "gene"), length(group_pep_by) == 1)
   stopifnot(vapply(c(use_unique_pep), rlang::is_logical, logical(1)))
   
   gn_rollup <- if (group_pep_by == "gene") 
@@ -2037,6 +2070,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean",
           "for `filter_` varargs.")
   
   dots <- rlang::enexprs(...)
+  
   filter_dots <- dots %>% 
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
@@ -2324,8 +2358,9 @@ calc_tmt_prnnums <- function (df, use_unique_pep, id = "prot_acc",
 #' @param gn_rollup Logical; if TRUE, rolls up protein accessions to gene names.
 #' @inheritParams info_anal
 #' @inheritParams Pep2Prn
-pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup, 
-                       rm_outliers, rm_allna = FALSE, ...) 
+pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median", 
+                       use_unique_pep = TRUE, gn_rollup = TRUE, 
+                       rm_outliers = FALSE, rm_allna = FALSE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme.rda"))
@@ -2339,8 +2374,13 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup,
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
   
-  df <- read.csv(file.path(dat_dir, "Peptide/Peptide.txt"), check.names = FALSE, 
-                 header = TRUE, sep = "\t", comment.char = "#") %>% 
+  df <- suppressWarnings(
+    readr::read_tsv(file.path(dat_dir, "Peptide/Peptide.txt"), 
+                    col_types = get_col_types(), 
+                    show_col_types = FALSE)
+  )
+  
+  df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
     { if (TMT_plex > 0 && rm_allna) 
       .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] else . } 
@@ -2662,13 +2702,16 @@ pep_to_prn <- function(id, method_pep_prn, use_unique_pep, gn_rollup,
 #' @param df A PSM data frame
 #' @inheritParams mergePep
 #' @inheritParams annotPSM
-assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE) 
+assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE, 
+                           duppeps_repair = "denovo") 
 {
   # Scenario: 
   # In `dat_file_1`, peptide_x assigned to Prn_MOUSE against "human + mouse" databases.
   # In `dat_file_2` the same peptide_x assigned to PRN_HUMAN against "human only" database.
   # When combining, `dat_file_1` and `dat_file_2`, all the peptide entries will be 
   #   re-assigned to the protein id with the greater `prot_n_pep`.
+  
+  message("Assigning multiple-dipped peptide sequences.\n")
 
   dat_dir <- get_gl_dat_dir()
   
@@ -2680,64 +2723,123 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE)
   
   if (nrow(dup_peps)) {
     if (use_duppeps) {
-      # to ensure the same order in column names during replacement
-      col_nms <- suppressWarnings(
-        df %>% 
-          dplyr::select(grep("^prot_", names(.)), 
-                        one_of(c("gene", "acc_type", "entrez", "species", 
-                                 "kin_attr", "kin_class", "kin_order"))) %>% 
-          dplyr::select(-one_of(c("prot_n_psm", "prot_n_pep", "prot_cover", 
-                                  "prot_matches_sig", "prot_sequences_sig"))) %>% 
-          names()
-      )
-      
-      df_dups <- purrr::map(as.character(unique(dup_peps[[group_psm_by]])), ~ {
-        df_sub <- df %>% 
-          dplyr::filter(!!rlang::sym(group_psm_by) == .x) %>% 
-          dplyr::arrange(-prot_n_pep, -prot_n_psm, -prot_mass)
-  
-        # if (group_pep_by prot_acc) use the first prot_acc and also the first gene
-        # if (group_pep_by gene) use the first gene and also the first prot_acc
-        
-        cols_replace <- df_sub %>% 
-          dplyr::select(col_nms) %>% 
-          dplyr::slice(1)
+      if (duppeps_repair == "denovo") {
+        df <- local({
+          # grps <- readRDS(file.path(dat_dir, "grps.rds"))
+          grps <- proteoM:::groupProts(unique(df[, c("prot_acc", "pep_seq")]), 
+                                       out_path = dat_dir)
+          sets <- readRDS(file.path(dat_dir, "prot_pep_setcover.rds"))
+          ids <- with(sets, paste0(prot_acc, ".", pep_seq))
+          
+          # e.g. "prot_hit_num", "prot_family_member" may be not in df
+          col_nms <- names(df)
 
-        df_sub2 <- df_sub %>% dplyr::slice(-1)
-        df_sub2[, col_nms] <- cols_replace
-        
-        df_sub <- dplyr::bind_rows(df_sub %>% dplyr::slice(1), df_sub2)
-      }) %>% 
-        dplyr::bind_rows() %>% 
-        dplyr::select(names(df)) 
-      
-      df <- dplyr::bind_rows(
-        df %>% dplyr::filter(! (!!rlang::sym(group_psm_by) %in% df_dups[[group_psm_by]])), 
-        df_dups) 
-      
-      # update `dup_peps`; should be empty
-      dup_peps_af <- df %>% 
-        dplyr::filter(!!rlang::sym(group_psm_by) %in% dup_peps[[group_psm_by]]) %>%
-        dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
-        dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
-        dplyr::summarise(N = n_distinct(!!rlang::sym(group_pep_by))) %>%
-        dplyr::filter(N > 1)
-      
-      if (nrow(dup_peps_af)) {
-        write.csv(dup_peps_af, file.path(dat_dir, "Peptide/dbl_dipping_peptides.csv"), 
-                  row.names = FALSE)
-        df <- df %>% 
-          dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps_af[[group_psm_by]]))
+          grps <- grps %>% 
+            .[, names(.) %in% col_nms] %>% 
+            tidyr::unite(prot_pep, prot_acc, pep_seq, sep = ".", remove = FALSE) %>% 
+            dplyr::filter(prot_pep %in% ids) %>% 
+            dplyr::select(-prot_pep)
+
+          updated_nms <- names(grps) %>% .[! . == "pep_seq"]
+
+          ans <- df %>% 
+            dplyr::select(-which(names(.) %in% updated_nms)) %>% 
+            dplyr::right_join(grps, by = "pep_seq") %>% 
+            dplyr::select(col_nms)
+
+          # keep the original pep_n_psm
+          # update prot_n_psm, prot_n_pep and pep_n_psm later...
+          # update other ^prot_ fields
+          # and more...
+          
+          ans
+        })
       }
-    } else {
+      else if (duppeps_repair == "majority") {
+        df <- local({
+          # to ensure the same order in column names during replacement
+          col_nms <- suppressWarnings(
+            df %>% 
+              dplyr::select(grep("^prot_", names(.)), 
+                            one_of(c("gene", "acc_type", "entrez", "species", 
+                                     "kin_attr", "kin_class", "kin_order"))) %>% 
+              dplyr::select(-one_of(c("prot_n_psm", "prot_n_pep", "prot_cover", 
+                                      "prot_matches_sig", "prot_sequences_sig"))) %>% 
+              names()
+          )
+          
+          rows <- df[[group_psm_by]] %in% dup_peps[[group_psm_by]]
+          
+          dups <- df[rows, ]
+          unis <- df[!rows, ]
+          
+          ans <- lapply(split(dups, dups[[group_psm_by]]), 
+                        replace_by_rowone, col_nms) %>% 
+            dplyr::bind_rows() %>% 
+            dplyr::select(names(df))
+          
+          dplyr::bind_rows(unis, ans)
+        })
+      }
+      else {
+        stop("Invalide choice of `duppeps_repair`." )
+      }
+
+      if (FALSE) {
+        # update `dup_peps`; should be empty
+        dup_peps_af <- df %>% 
+          dplyr::filter(!!rlang::sym(group_psm_by) %in% dup_peps[[group_psm_by]]) %>%
+          dplyr::select(!!rlang::sym(group_psm_by), !!rlang::sym(group_pep_by)) %>%
+          dplyr::group_by(!!rlang::sym(group_psm_by)) %>%
+          dplyr::summarise(N = n_distinct(!!rlang::sym(group_pep_by))) %>%
+          dplyr::filter(N > 1)
+        
+        if (nrow(dup_peps_af)) {
+          write.csv(dup_peps_af, file.path(dat_dir, "Peptide/dbl_dipping_peptides.csv"), 
+                    row.names = FALSE)
+          
+          df <- df %>% 
+            dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps_af[[group_psm_by]]))
+        }
+      }
+      
+    } 
+    else {
       write.csv(dup_peps, file.path(dat_dir, "Peptide/dbl_dipping_peptides.csv"), 
                 row.names = FALSE)
+      
       df <- df %>% 
         dplyr::filter(! (!!rlang::sym(group_psm_by) %in% dup_peps[[group_psm_by]]))
     }
   }
   
-  return(df)
+  invisible(df)
 }
+
+
+
+#' Replaces values by the first row.
+#'
+#' @param df A data frame.
+#' @param col_nms The column names under which the values in \code{df} will be
+#'   replaced with those in the first row.
+replace_by_rowone <- function (df, col_nms) 
+{
+  # assumed `prot_n_pep`, `prot_n_psm` and `prot_mass`
+  df <- df %>% 
+    dplyr::arrange(-prot_n_pep, -prot_n_psm, -prot_mass)
+  
+  # if (group_pep_by prot_acc) use the first prot_acc and also the first gene
+  # if (group_pep_by gene) use the first gene and also the first prot_acc
+  
+  cols_replace <- df[1, col_nms]
+  
+  df2 <- df[-1, ]
+  df2[, col_nms] <- cols_replace
+  
+  dplyr::bind_rows(df[1, ], df2)
+}
+
+
 
 

@@ -1,9 +1,10 @@
-#' Update data groups of `log2_R_` and `I_` etc. by logical matrix
+#' Updates data groups of `log2_R_` and `I_` etc. by logical matrix
 #' `lgl_log2_...`.
 #'
 #' @inheritParams info_anal
 #' @param type Type of logical matrix.
-lgl_cleanup <- function (df, type = "sd", rm_allna = FALSE) {
+lgl_cleanup <- function (df, type = "sd", rm_allna = FALSE) 
+{
   fields <- paste0("^lgl_log2_", type, "[0-9]{3}[NC]{0,1}")
   
   df[, grepl("^log2_R[0-9]{3}", names(df))] <-
@@ -43,7 +44,7 @@ lgl_cleanup <- function (df, type = "sd", rm_allna = FALSE) {
 }
 
 
-#' Filter data groups by a CV cut-off
+#' Filters data groups by a CV cut-off
 #'
 #' \code{purge_by_cv} replaces the data entries at \code{group CV > max_cv} to
 #' NA.
@@ -56,13 +57,16 @@ lgl_cleanup <- function (df, type = "sd", rm_allna = FALSE) {
 #'   CV.
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE) {
+purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1L, 
+                         rm_allna = FALSE) 
+{
   if ((!keep_ohw) && is.null(max_cv)) {
     max_cv <- 100
   }
   
   if (!is.null(max_cv)) {
-    stopifnot(is.numeric(max_cv))
+    if (!is.numeric(max_cv))
+      stop("Need numeric value for `max_cv`.")
 
     df_sd_lgl <- df %>% 
       dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.)))
@@ -71,7 +75,8 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1, rm_allna = 
       # remove duplicated PSMs under the same id
       df_sd_lgl <- df_sd_lgl %>% 
         dplyr::filter(!duplicated(.[[id]]))
-    } else if (id %in% c("prot_acc", "gene")) {
+    } 
+    else if (id %in% c("prot_acc", "gene")) {
       # no duplicated id, but protein `sd` under each channel can be 
       #   a mix of non-NA (one value) and NA
       # this is due to the `wide` joining of data when forming `Peptide.txt`
@@ -101,11 +106,11 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1, rm_allna = 
       lgl_cleanup(rm_allna = rm_allna)
   }
   
-  return(df)
+  invisible(df)
 }
 
 
-#' Filter data groups by quantiles of CV
+#' Filters data groups by quantiles of CV
 #'
 #' \code{purge_by_qt} replaces the data entries at \code{CV > quantile} with NA.
 #'
@@ -115,16 +120,20 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1, rm_allna = 
 #' @param pt_cv Numeric between 0 and 1; the percentile of CV. Values above the
 #'   percentile threshold will be replaced with NA. The default is NULL with no
 #'   data trimming by CV percentile. The precedence in data purging is
-#'   \code{pt_cv} \eqn{\ge} \code{max_v} \eqn{\ge} \code{min_n}.
+#'   \code{pt_cv} \eqn{\ge} \code{max_cv} \eqn{\ge} \code{min_n}.
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>%
-purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE) {
+purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1L, 
+                        rm_allna = FALSE) 
+{
   if ((!keep_ohw) && is.null(pt_cv)) {
     pt_cv <- 100
   }
   
   if (!is.null(pt_cv)) {
-    stopifnot(is.numeric(pt_cv))
+    if (!is.numeric(pt_cv))
+      stop("Need numeric value for `pt_cv`.")
+
     if (pt_cv > 1) pt_cv <- pt_cv / 100
     
     df_sd_lgl <- df %>% 
@@ -133,7 +142,8 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1, rm_all
     if (id %in% c("pep_seq", "pep_seq_mod")) {
       df_sd_lgl <- df_sd_lgl %>% 
         dplyr::filter(!duplicated(.[[id]]))
-    } else if (id %in% c("prot_acc", "gene")) {
+    } 
+    else if (id %in% c("prot_acc", "gene")) {
       df_sd_lgl <- df_sd_lgl %>% 
         dplyr::group_by(!!rlang::sym(id)) %>% 
         dplyr::summarise_all(~ dplyr::first(na.omit(.x)))
@@ -171,11 +181,11 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1, rm_all
       lgl_cleanup(rm_allna = rm_allna)
   }
   
-  return(df)
+  invisible(df)
 }
 
 
-#' Filter data groups by a minimal number of observations (n_obs)
+#' Filters data groups by a minimal number of observations (n_obs)
 #'
 #' \code{purge_by_n} replaces the data entries at \code{group n_obs < min_n} to
 #' NA.
@@ -189,8 +199,10 @@ purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1, rm_all
 #'   smaller than \code{min_n} will be replaced with NA. 
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>%
-purge_by_n <- function (df, id, min_n = 1, rm_allna = FALSE) {
-  stopifnot(is.numeric(min_n))
+purge_by_n <- function (df, id, min_n = 1L, rm_allna = FALSE) 
+{
+  if (!is.numeric(min_n))
+    stop("Need numeric value for `min_n`.")
 
   if (min_n == 1) return(df)
   
@@ -219,7 +231,7 @@ purge_by_n <- function (df, id, min_n = 1, rm_allna = FALSE) {
 }
 
 
-#' Purge PSM helper
+#' Purges PSM helper
 #' 
 #' May be used for parallel processes.
 #' 
@@ -227,18 +239,26 @@ purge_by_n <- function (df, id, min_n = 1, rm_allna = FALSE) {
 #' @inheritParams purgePSM
 #' @inheritParams annotPSM
 #' @inheritParams prnHist
-psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by, 
-                        pt_cv, max_cv, keep_ohw, min_n, rm_allna = FALSE, 
-                        theme, ...) {
+psm_mpurge <- function (file, dat_dir, group_psm_by = "pep_seq", 
+                        group_pep_by = "prot_acc", pt_cv = NULL, max_cv = NULL, 
+                        keep_ohw = TRUE, min_n = 1L, rm_allna = FALSE, 
+                        theme, ...) 
+{
   dots <- rlang::enexprs(...)
 
   file.copy(file.path(dat_dir, "PSM", file), file.path(dat_dir, "PSM/Copy", file))
 
-  df <- read.csv(file.path(dat_dir, "PSM", file), check.names = FALSE, 
-                 header = TRUE, sep = "\t", comment.char = "#") %>% 
-    purge_by_qt(group_psm_by, pt_cv, keep_ohw, min_n, rm_allna) %>% 
-    purge_by_cv(group_psm_by, max_cv, keep_ohw, min_n, rm_allna) %>% 
-    purge_by_n(group_psm_by, min_n, rm_allna) %>% 
+  df <- suppressWarnings(
+    readr::read_tsv(file.path(dat_dir, "PSM", file), col_types = get_col_types(), 
+                    show_col_types = FALSE)
+  )
+  
+  df <- df %>% 
+    purge_by_qt(id = group_psm_by, pt_cv = pt_cv, keep_ohw = keep_ohw, 
+                min_n = min_n, rm_allna = rm_allna) %>% 
+    purge_by_cv(id = group_psm_by, max_cv = max_cv, keep_ohw = keep_ohw, 
+                min_n = min_n, rm_allna = rm_allna) %>% 
+    purge_by_n(id = group_psm_by, min_n = min_n, rm_allna = rm_allna) %>% 
     { if (rm_allna) .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
       else . }
 
@@ -270,8 +290,7 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
     dplyr::mutate(prot_n_psm.x = prot_n_psm.y, prot_n_pep.x = prot_n_pep.y) %>% 
     dplyr::rename(prot_n_psm = prot_n_psm.x, prot_n_pep = prot_n_pep.x) %>% 
     dplyr::select(-prot_n_psm.y, -prot_n_pep.y) %T>% 
-    write.table(file.path(dat_dir, "PSM", file), sep = "\t", 
-                col.names = TRUE, row.names = FALSE)
+    readr::write_tsv(file.path(dat_dir, "PSM", file))
 
   # plot
   width <- eval(dots$width, envir = rlang::caller_env())
@@ -279,18 +298,28 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
   
   if (is.null(width)) width <- 8 
   if (is.null(height)) height <- 8
+  
   dots <- dots %>% .[! names(.) %in% c("width", "height")]
   
-  filepath <- file.path(dat_dir, "PSM/log2FC_cv/purged", gsub("_PSM_N.txt", "_sd.png", file))
-  quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_psm_by, filepath = filepath, 
-                                         width = width, height = height, type = "log2_R", 
+  filepath <- file.path(dat_dir, "PSM/log2FC_cv/purged", 
+                        gsub("_PSM_N.txt", "_sd.png", file))
+  
+  quiet_out <- purrr::quietly(sd_violin)(df = df, 
+                                         id = !!group_psm_by, 
+                                         filepath = filepath, 
+                                         width = width, 
+                                         height = height, 
+                                         type = "log2_R", 
                                          adjSD = FALSE, 
-                                         is_psm = TRUE, col_select = NULL, col_order = NULL, 
-                                         theme = theme, !!!dots)
+                                         is_psm = TRUE, 
+                                         col_select = NULL, 
+                                         col_order = NULL, 
+                                         theme = theme, 
+                                         !!!dots)
 }
 
 
-#'Purge PSM data
+#'Purges PSM data
 #'
 #'\code{purgePSM} removes \code{peptide} entries from PSM tables by quality
 #'criteria. It further plots the distributions of the CV of \code{log2FC} by TMT
@@ -300,8 +329,6 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
 #'The CV of peptides are calculated from contributing PSMs at the basis of per
 #'TMT experiment per series of LC/MS. Note that greater CV may be encountered
 #'for samples that are more different to reference material(s).
-#'
-#'Rows of with all NA values in \code{log2FC} will be removed as well.
 #'
 #'@inheritParams normPSM
 #'@inheritParams purge_by_cv
@@ -385,10 +412,11 @@ psm_mpurge <- function (file, dat_dir, group_psm_by, group_pep_by,
 #'
 #'@export
 purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, 
-                      keep_ohw = TRUE, min_n = 1, rm_allna = FALSE, 
-                      theme= NULL, ...) {
+                      keep_ohw = TRUE, min_n = 1L, rm_allna = FALSE, 
+                      theme= NULL, ...) 
+{
   on.exit(
-    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+    mget(names(formals()), envir = environment(), inherits = FALSE) %>% 
       c(rlang::enexprs(...)) %>% 
       save_call("purPSM"), 
     add = TRUE
@@ -405,16 +433,16 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   dots <- dots %>% 
     .[! . %in% filter_dots]
   
-  if (!rlang::is_empty(filter_dots)) {
+  if (length(filter_dots)) {
     warning("No data filtration by `filter_` varargs. will be applied", 
             call. = FALSE)
   }
 
-  if (is.null(dat_dir)) {
+  if (is.null(dat_dir)) 
     dat_dir <- get_gl_dat_dir()
-  } else {
+  else 
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
-  }
+
   dir.create(file.path(dat_dir, "PSM/log2FC_cv/purged"), 
              recursive = TRUE, showWarnings = FALSE)
   
@@ -424,10 +452,10 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   stopifnot(
     group_psm_by %in% c("pep_seq", "pep_seq_mod"), 
     group_pep_by %in% c("prot_acc", "gene"), 
-    length(group_psm_by) == 1, 
-    length(group_pep_by) == 1, 
+    length(group_psm_by) == 1L, 
+    length(group_pep_by) == 1L, 
     is.logical(keep_ohw), 
-    length(keep_ohw) == 1
+    length(keep_ohw) == 1L
   )
   
   if (!keep_ohw) {
@@ -439,9 +467,8 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   TMT_plex <- TMT_plex(label_scheme_full)
   
-  if (TMT_plex == 0) {
-    stop("No PSM purging for LFQ using MS1 peak area.", 
-         call. = FALSE)
+  if (!TMT_plex) {
+    stop("No PSM purging for LFQ using MS1 peak area.", call. = FALSE)
   }
 
   filelist <- list.files(path = file.path(dat_dir, "PSM"), 
@@ -451,13 +478,52 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   dir.create(file.path(dat_dir, "PSM/Copy"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  purrr::walk(filelist, psm_mpurge, 
-              dat_dir, group_psm_by, group_pep_by, pt_cv, max_cv, keep_ohw, min_n, rm_allna, 
-              theme, !!!dots)
+  n_files <- length(filelist)
+  
+  if (n_files > 3L) {
+    n_cores <- min(parallel::detectCores(), n_files)
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    
+    parallel::clusterExport(cl, list("purge_by_qt", "purge_by_cv", "purge_by_n"), 
+                            envir = environment(proteoQ:::purge_by_qt))
+    parallel::clusterExport(cl, "dat_dir")
+    
+    args <- c(list(dat_dir = dat_dir,  
+                   group_psm_by = group_psm_by, 
+                   group_pep_by = group_pep_by, 
+                   pt_cv = pt_cv, 
+                   max_cv = max_cv, 
+                   keep_ohw = keep_ohw, 
+                   min_n = min_n, 
+                   rm_allna = rm_allna, 
+                   theme = theme), 
+              dots)
+    
+    suppressMessages(
+      parallel::clusterMap(
+        cl, psm_mpurge, filelist,  
+        MoreArgs = args)
+    )
+
+    parallel::stopCluster(cl)
+  } 
+  else {
+    purrr::walk(filelist, psm_mpurge, 
+                dat_dir = dat_dir, 
+                group_psm_by = group_psm_by, 
+                group_pep_by = group_pep_by, 
+                pt_cv = pt_cv, 
+                max_cv = max_cv, 
+                keep_ohw = keep_ohw, 
+                min_n = min_n, 
+                rm_allna = rm_allna, 
+                theme = theme, 
+                !!!dots)
+  }
 }
 
 
-#'Purge peptide data
+#'Purges peptide data
 #'
 #'\code{purgePep} removes \code{protein} entries from \code{Peptide.txt} by
 #'quality criteria. It further plots the distributions of the CV of
@@ -470,8 +536,6 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'The data nullification will be applied column-wisely for all available
 #'samples. Argument \code{col_select} is merely used to subset samples for the
 #'visualization of \code{log2FC} distributions.
-#'
-#'Rows of with all NA values in \code{log2FC} will be removed too.
 #'
 #'@inheritParams purgePSM
 #'@inheritParams prnHist
@@ -545,11 +609,11 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'
 #'@export
 purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, 
-                      adjSD = FALSE, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE, 
-                      col_select = NULL, col_order = NULL, 
+                      adjSD = FALSE, keep_ohw = TRUE, min_n = 1L, 
+                      rm_allna = FALSE, col_select = NULL, col_order = NULL, 
                       filename = NULL, theme= NULL, ...) {
   on.exit(
-    mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
+    mget(names(formals()), envir = environment(), inherits = FALSE) %>% 
       c(rlang::enexprs(...)) %>% 
       save_call("purPep"), 
     add = TRUE
@@ -566,7 +630,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   dots <- dots %>% 
     .[! . %in% filter_dots]
   
-  if (!rlang::is_empty(filter_dots)) {
+  if (length(filter_dots)) {
     warning("No data filtration by `filter_` varargs will be applied.", 
             call. = FALSE)
   }
@@ -575,20 +639,22 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   col_order <- rlang::enexpr(col_order)
   
   filename <- rlang::enexpr(filename)
+  
   if (is.null(filename)) {
     filename <- "Peptide_sd.png"
     fn_prefix <- "Peptide_sd"
     fn_suffix <- "png"
-  } else {
+  } 
+  else {
     fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filename)
     fn_prefix <- gsub("\\.[^.]*$", "", filename)
   }
   
-  if (is.null(dat_dir)) {
+  if (is.null(dat_dir)) 
     dat_dir <- get_gl_dat_dir()
-  } else {
+  else 
     assign("dat_dir", dat_dir, envir = .GlobalEnv)
-  }
+  
   dir.create(file.path(dat_dir, "Peptide/log2FC_cv/purged"), 
              recursive = TRUE, showWarnings = FALSE)
   
@@ -598,10 +664,10 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   stopifnot(
     group_psm_by %in% c("pep_seq", "pep_seq_mod"), 
     group_pep_by %in% c("prot_acc", "gene"), 
-    length(group_psm_by) == 1, 
-    length(group_pep_by) == 1, 
+    length(group_psm_by) == 1L, 
+    length(group_pep_by) == 1L, 
     is.logical(keep_ohw), 
-    length(keep_ohw) == 1
+    length(keep_ohw) == 1L
   )
 
   if (!keep_ohw) {
@@ -618,8 +684,11 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
             file.path(dat_dir, "Peptide/Copy/Peptide.txt"))
   
   fn <- file.path(dat_dir, "Peptide", "Peptide.txt")
-  df <- read.csv(fn, check.names = FALSE, header = TRUE, 
-                 sep = "\t", comment.char = "#") %>% 
+  
+  df <- suppressWarnings(
+    readr::read_tsv(fn, col_types = get_col_types(), show_col_types = FALSE))
+
+  df <- df %>% 
     purge_by_qt(group_pep_by, pt_cv, keep_ohw, min_n, rm_allna) %>% 
     purge_by_cv(group_pep_by, max_cv, keep_ohw, min_n, rm_allna) %>% 
     purge_by_n(group_pep_by, min_n, rm_allna) %>% 
@@ -663,14 +732,23 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   
   if (is.null(width)) width <- 8 * n_TMT_sets(label_scheme_full)
   if (is.null(height)) height <- 8
+  
   dots <- dots %>% .[! names(.) %in% c("width", "height")]
   
   filepath <- file.path(dat_dir, "Peptide/log2FC_cv/purged", filename)
-  quiet_out <- purrr::quietly(sd_violin)(df = df, id = !!group_pep_by, filepath = filepath, 
-                                         width = width, height = height, type = "log2_R", 
-                                         adjSD = FALSE, is_psm = FALSE, 
-                                         col_select = !!col_select, col_order = !!col_order, 
-                                         theme = theme, !!!dots)
+  
+  quiet_out <- purrr::quietly(sd_violin)(df = df, 
+                                         id = !!group_pep_by, 
+                                         filepath = filepath, 
+                                         width = width, 
+                                         height = height, 
+                                         type = "log2_R", 
+                                         adjSD = FALSE, 
+                                         is_psm = FALSE, 
+                                         col_select = !!col_select, 
+                                         col_order = !!col_order, 
+                                         theme = theme, 
+                                         !!!dots)
 }
 
 

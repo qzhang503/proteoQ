@@ -2,9 +2,9 @@
 % Please edit documentation in R/purge.R
 \name{purge_by_cv}
 \alias{purge_by_cv}
-\title{Filter data groups by a CV cut-off}
+\title{Filters data groups by a CV cut-off}
 \usage{
-purge_by_cv(df, id, max_cv, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE)
+purge_by_cv(df, id, max_cv, keep_ohw = TRUE, min_n = 1L, rm_allna = FALSE)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
