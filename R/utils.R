@@ -715,16 +715,16 @@ setHMColor <- function (annotation_col)
 	palette <- lapply(names(annotation_col), function(x) {
 		n <- nlevels(annotation_col[[x]])
 
-		palette <- if(n <= 9 && n >= 3) 
-		  brewer.pal(n, name = "Set2")
-		else if(n > 9) 
-			colorRampPalette(brewer.pal(n = 7, "Set1"))(n)
-		else if(n == 2) 
+		palette <- if(n < 9L && n >= 3L) 
+		  brewer.pal(n, name = "Set2") # Set2: maximum 8 
+		else if(n >= 9L) 
+			colorRampPalette(brewer.pal(n = 7L, "Set1"))(n)
+		else if(n == 2L) 
 		  c("#66C2A5", "#FC8D62")
-		else if(n == 1) 
+		else if(n == 1L) 
 		  c("#66C2A5")
-		else if(n == 0) 
-			colorRampPalette(brewer.pal(n = 9, "YlOrBr"))(100)
+		else if(n == 0L) 
+			colorRampPalette(brewer.pal(n = 9L, "YlOrBr"))(100)
 
 		names(palette) <- levels(annotation_col[[x]])
 

@@ -12,7 +12,8 @@
 #' @import dplyr pheatmap
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 my_pheatmap <- function(mat, filename, annotation_col, annotation_row, 
-                        color, annotation_colors, breaks, ...) {
+                        color, annotation_colors, breaks, ...) 
+{
   mat <- rlang::enexpr(mat)
   filename <- rlang::enexpr(filename)
   annotation_col <- rlang::enexpr(annotation_col)
@@ -48,7 +49,8 @@ my_pheatmap <- function(mat, filename, annotation_col, annotation_row,
 #' @importFrom magrittr %>% %T>% %$% %<>% 
 plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub, 
                    filepath, filename, scale_log2r, complete_cases, 
-                   annot_cols = NULL, annot_colnames = NULL, annot_rows = annot_rows, 
+                   annot_cols = NULL, annot_colnames = NULL, 
+                   annot_rows = annot_rows, 
                    xmin = -1, xmax = 1, xmargin = .1, 
                    p_dist_rows = 2, p_dist_cols = 2, 
                    hc_method_rows = "complete", hc_method_cols = "complete", 
@@ -62,8 +64,8 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
                    annotation_row = NULL, 
                    clustering_method = NULL, 
                    rm_allna = TRUE, 
-                   ...) {
-  
+                   ...) 
+{
   # (1) `x`, `p` etc. defined as NULL @param
   dummies <- c("x", "diag", "upper", "method", "p", 
                "annotation_col", "annotation_row", "clustering_method")
@@ -83,6 +85,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     paste0("`clustering_method` in `pheatmap()` split into ", 
            "`hc_method_rows` and `hc_method_cols`.")
   )
+  
   stopifnot(length(dummies) == length(msgs))
   
   # (2) checking (for developer only)
@@ -179,12 +182,12 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     color_breaks <- eval(dots$breaks, envir = rlang::caller_env())
   }
   
-  if (is.null(dots$color)) {
-    mypalette <- grDevices::colorRampPalette(c("blue", "white", "red"))(n_color)
+  mypalette <- if (is.null(dots$color)) {
+    grDevices::colorRampPalette(c("blue", "white", "red"))(n_color)
   } else if (is.na(dots$color)) {
-    mypalette <- grDevices::colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
+    grDevices::colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
   } else {
-    mypalette <- eval(dots$color, envir = rlang::caller_env())
+    eval(dots$color, envir = rlang::caller_env())
   }
   
   x_label <- expression("Ratio ("*log[2]*")")
@@ -214,8 +217,8 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
   
-  if (nrow(df) == 0) stop("Zero data rows available after data filtration.", 
-                          call. = FALSE)
+  if (!nrow(df)) 
+    stop("Zero data rows available after data filtration.", call. = FALSE)
 
   dfR <- df %>%
     dplyr::select(grep(NorZ_ratios, names(.))) %>%
@@ -241,28 +244,28 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
             call. = FALSE)
   }
 
-  if (is.null(annot_cols)) {
-    annotation_col <- NA
+  annotation_col <- if (is.null(annot_cols)) {
+    NA
   } else {
-    annotation_col <- colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
+    colAnnot(annot_cols = annot_cols, sample_ids = sample_ids)
   }
   
-  if (!is.null(annot_colnames) & length(annot_colnames) == length(annot_cols)) {
+  if ((!is.null(annot_colnames)) && (length(annot_colnames) == length(annot_cols))) {
     colnames(annotation_col) <- annot_colnames
   }
   
-  if (is.null(annot_rows)) {
-    annotation_row <- NA
+  annotation_row <- if (is.null(annot_rows)) {
+    NA
   } else {
-    annotation_row <- df %>% dplyr::select(annot_rows)
+    df %>% dplyr::select(annot_rows)
   }
   
-  if (is.null(dots$annotation_colors)) {
-    annotation_colors <- setHMColor(annotation_col)
+  annotation_colors <- if (is.null(dots$annotation_colors)) {
+    setHMColor(annotation_col)
   } else if (suppressWarnings(is.na(dots$annotation_colors))) {
-    annotation_colors <- NA
+    NA
   } else {
-    annotation_colors <- eval(dots$annotation_colors, envir = rlang::caller_env())
+    eval(dots$annotation_colors, envir = rlang::caller_env())
   }
   
   if (complete_cases) {
@@ -277,9 +280,8 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     dplyr::select(which(names(.) %in% sample_ids)) %>% 
     { if (rm_allna) .[rowSums(!is.na(.)) > 0L, ] else . } 
   
-  if (nrow(df_hm) == 0) {
-    stop("Zero data rows after removing all-NA rows.", 
-         call. = FALSE)
+  if (!nrow(df_hm)) {
+    stop("Zero data rows after removing all-NA rows.", call. = FALSE)
   }
   
   # sample orders
@@ -294,7 +296,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
       plot_orders <- label_scheme_sub %>%
         dplyr::select(Sample_ID, !!col_order) %>%
         dplyr::filter(!is.na(!!col_order)) %>%
-        unique(.) %>%
+        unique() %>%
         dplyr::arrange(!!col_order)
       
       if (nrow(plot_orders) != length(sample_ids)) {
@@ -316,16 +318,16 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
 
     h <- tryCatch(
       hclust(d, hc_method_rows), 
-      error = function(e) 1
+      error = function(e) 1L
     )
     
-    if (class(h) != "hclust" && h == 1) {
+    if (class(h) != "hclust" && h == 1L) {
       warning("Row clustering cannot be performed.", call. = FALSE)
       h <- FALSE
     }
 
     dots$cluster_rows <- h
-    rm(d, h)
+    rm(list = c("d", "h"))
   } else {
     dots$cluster_rows <- FALSE
   }
@@ -339,13 +341,13 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
       error = function(e) 1
     )
     
-    if (class(h_cols) != "hclust" && h_cols == 1) {
+    if ((class(h_cols) != "hclust") && (h_cols == 1)) {
       warning("Column clustering cannot be performed.", call. = FALSE)
       h_cols <- FALSE
     }
     
     dots$cluster_cols <- h_cols
-    # rm(d_cols, h_cols) # h_cols also for subtrees
+    # rm(list = c("d_cols", "h_cols")) # h_cols also for subtrees
   } else {
     dots$cluster_cols <- FALSE
   }
@@ -375,8 +377,8 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
   cutree_rows <- eval(dots$cutree_rows, envir = rlang::caller_env())
   df <- df %>% dplyr::mutate(!!id := as.character(!!rlang::sym(id)))
   
-  if (!is.null(cutree_rows) & cluster_rows) {
-    if (is.numeric(cutree_rows) && nrow(df) >= cutree_rows) {
+  if ((!is.null(cutree_rows)) && cluster_rows) {
+    if (is.numeric(cutree_rows) && (nrow(df) >= cutree_rows)) {
       Cluster <- data.frame(Cluster = cutree(p$tree_row, k = cutree_rows)) %>%
         dplyr::mutate(!!id := rownames(.)) %>%
         dplyr::left_join(df, by = id) %T>% 
@@ -405,20 +407,20 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
                                p = p_dist_rows)
           max_d_row <- suppressWarnings(max(d_sub, na.rm = TRUE))
           
-          if (length(d_sub) == 0 || is.infinite(max_d_row)) {
+          if ((!length(d_sub)) || is.infinite(max_d_row)) {
             h_sub <- FALSE
           } else {
             d_sub[is.na(d_sub)] <- .5 * max_d_row
             
-            if (nrow <= 2) {
+            if (nrow <= 2L) {
               h_sub <- FALSE
             } else {
               h_sub <- tryCatch(
                 hclust(d_sub, hc_method_rows),
-                error = function(e) 1
+                error = function(e) 1L
               )
               
-              if (class(h_sub) != "hclust" && h_sub == 1) {
+              if (class(h_sub) != "hclust" && h_sub == 1L) {
                 warning("No row clustering for subtree: ", cluster_id, call. = FALSE)
                 h_sub <- FALSE
               }
@@ -435,14 +437,14 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
                                    p = p_dist_cols)
           max_d_col <- suppressWarnings(max(d_sub_col, na.rm = TRUE))
           
-          if (length(d_sub_col) == 0) next
+          if (!length(d_sub_col)) next
           
           if (is.infinite(max_d_col)) {
             v_sub <- FALSE
           } else {
             d_sub_col[is.na(d_sub_col)] <- .5 * max_d_col
   
-            if (nrow_trans <= 2) {
+            if (nrow_trans <= 2L) {
               v_sub <- FALSE
             } else {
               v_sub <- tryCatch(
@@ -450,7 +452,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
                 error = function(e) 1
               )
               
-              if (class(v_sub) != "hclust" && v_sub == 1) {
+              if ((class(v_sub) != "hclust") && (v_sub == 1)) {
                 warning("No column clustering for subtree: ", cluster_id, 
                         call. = FALSE)
                 v_sub <- FALSE
@@ -459,7 +461,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
           }
         }
         
-        if (nrow <= 150) {
+        if (nrow <= 150L) {
           cellheight <- 5
           fontsize_row <- 5
           show_rownames <- TRUE
@@ -524,7 +526,8 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    x = NULL, p = NULL, method = NULL, 
                    diag = NULL, upper = NULL, 
                    annotation_col = NULL, annotation_row = NULL, 
-                   clustering_method = NULL, ...) {
+                   clustering_method = NULL, ...) 
+{
   old_opts <- options()
   options(warn = 1, warnPartialMatchArgs = TRUE)
   on.exit(options(old_opts), add = TRUE)
@@ -533,7 +536,7 @@ pepHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
 
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
@@ -738,8 +741,8 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
                    x = NULL, p = NULL, method = NULL, 
                    diag = NULL, upper = NULL, 
                    annotation_col = NULL, annotation_row = NULL, 
-                   clustering_method = NULL, ...) {
-  
+                   clustering_method = NULL, ...) 
+{
   ## incorrect match of `x` to `xmargin` if `x` from dot-dot-dot
   ## correct match if `x` defined explictly in `prnHM`
   # prnHM(xmin = -1, xmax = 1, x = df)
@@ -755,7 +758,7 @@ prnHM <- function (col_select = NULL, col_order = NULL, col_benchmark = NULL,
 
   id <- match_call_arg(normPSM, group_pep_by)
   stopifnot(rlang::as_string(id) %in% c("prot_acc", "gene"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   scale_log2r <- match_logi_gv("scale_log2r", scale_log2r)
   
