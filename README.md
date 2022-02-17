@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2022-02-09
+2022-02-16
 
 -   [Introduction to proteoQ](#introduction-to-proteoq)
 -   [Installation](#installation)
@@ -3340,8 +3340,8 @@ in the following:
 | pep\_unique\_int      | Unique MS1 intenisty of a peptide sequence                                                                        | v.s.                                                                                                             |
 | pep\_razor\_int       | Razor MS1 intenisty of a peptide sequence                                                                         | v.s.                                                                                                             |
 | pep\_res\_before      | Flanking residue on N-term side of peptide                                                                        |                                                                                                                  |
-| pep\_seq              | One-letter representation of peptide sequences without variable modifications                                     | See also PSM keys; the key will become `pep_seq_mod` at `normPSM(group_psm_by = pep_seq_mod)`                    |
-| pep\_seq\_mod         | `pep_seq` with variable modifications                                                                             | See also PSM keys; the key will become `pep_seq` at `normPSM(group_psm_by = pep_seq)`                            |
+| pep\_seq              | One-letter representation of peptide sequences without variable modifications                                     |                                                                                                                  |
+| pep\_seq\_mod         | `pep_seq` with variable modifications                                                                             |                                                                                                                  |
 | pep\_res\_after       | Flanking residue on C-term side of peptide                                                                        |                                                                                                                  |
 | pep\_start            | Ordinal position of first peptide residue in protein sequence                                                     |                                                                                                                  |
 | pep\_end              | Mascot: ordinal position of last peptide residue in protein sequence                                              |                                                                                                                  |

@@ -2,9 +2,16 @@
 % Please edit documentation in R/purge.R
 \name{purge_by_qt}
 \alias{purge_by_qt}
-\title{Filter data groups by quantiles of CV}
+\title{Filters data groups by quantiles of CV}
 \usage{
-purge_by_qt(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1, rm_allna = FALSE)
+purge_by_qt(
+  df,
+  id,
+  pt_cv = NULL,
+  keep_ohw = TRUE,
+  min_n = 1L,
+  rm_allna = FALSE
+)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -23,7 +30,7 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
 percentile threshold will be replaced with NA. The default is NULL with no
 data trimming by CV percentile. The precedence in data purging is
-\code{pt_cv} \eqn{\ge} \code{max_v} \eqn{\ge} \code{min_n}.}
+\code{pt_cv} \eqn{\ge} \code{max_cv} \eqn{\ge} \code{min_n}.}
 
 \item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
 default is TRUE. The argument is softly depreciated; instead use

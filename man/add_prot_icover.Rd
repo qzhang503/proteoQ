@@ -4,7 +4,7 @@
 \alias{add_prot_icover}
 \title{Finds peptide abundance indexes.}
 \usage{
-add_prot_icover(df, id = "gene", pep_id = "pep_seq", max_len = 50)
+add_prot_icover(df, id = "gene", pep_id = "pep_seq", max_len = 500L)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined

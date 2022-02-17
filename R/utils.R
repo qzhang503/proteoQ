@@ -1053,7 +1053,7 @@ add_refseq_gene <- function (acc_lookup, acc_type)
                             Call. = FALSE))
 
   # (`species` can be empty)
-  if (all(isTRUE(species %in% c("human", "mouse", "rat")))) {
+  if (length(species)  && all(species %in% c("human", "mouse", "rat"))) {
     filelist <- paste0(abbr_acc, "entrez_", abbr_sp)
     data(package = "proteoQ", list = filelist, envir = environment())
     
@@ -1096,8 +1096,11 @@ add_entrez <- function (acc_lookup, acc_type, warns = TRUE)
   
   def_sps <- c("human", "mouse", "rat")
   species <- unique(acc_lookup$species) %>% .[!is.na(.)]
+  all_ok_species <- all(species %in% def_sps)
   
-  if ((!all(isTRUE(species %in% def_sps)))) {
+  if (length(species) && (!all_ok_species)) {
+    cat("\n")
+    
     if (warns) {
       warning("No default `entrez` lookups for species other than: ", 
               paste(def_sps, collapse = ", "), ".\n",
@@ -1105,8 +1108,11 @@ add_entrez <- function (acc_lookup, acc_type, warns = TRUE)
               "See also `?Uni2Entrez` and `?Ref2Entrez` for custom `entrez` lookups.", 
               call. = FALSE)
       
-      if (all(isTRUE(species))) {
-        warning("At the `entrez = NULL` default, ignore non-default species: \n", 
+      if (!all_ok_species) {
+        cat("\n")
+        
+        warning("At `entrez = NULL`, no entrez annoation of ", 
+                "non-default species: \n", 
                 paste(species[!species %in% def_sps], collapse = ", "), 
                 call. = FALSE)
       }
@@ -1145,7 +1151,7 @@ add_entrez <- function (acc_lookup, acc_type, warns = TRUE)
   db <- purrr::map(filelist, ~ get(.x)) %>% 
     dplyr::bind_rows() %>% 
     dplyr::filter(!duplicated(.[[entrez_key]])) %>% 
-    dplyr::mutate(entrez = as.numeric(entrez),
+    dplyr::mutate(entrez = as.integer(entrez),
                   !!entrez_key := as.character(!!rlang::sym(entrez_key))) %>% 
     dplyr::select(entrez_key, "entrez")
   
@@ -1191,7 +1197,7 @@ add_custom_entrez <- function(acc_lookup, entrez, acc_type)
     db %>% 
       dplyr::select(which(names(.) %in% cols_out)) %>% 
       { if ("species" %in% names(.)) . else .[["species"]] <- NA_character_ } %>% 
-      dplyr::mutate(entrez = as.numeric(entrez)) %>% 
+      dplyr::mutate(entrez = as.integer(entrez)) %>% 
       dplyr::select(cols_out)
   }) %>% 
     dplyr::bind_rows() 
@@ -1347,17 +1353,18 @@ parse_fasta <- function (df, fasta, entrez, warns = TRUE)
   }) 
 
   # -- add columns prot_desc, prot_mass, prot_len ---
-  acc_lookup <- suppressWarnings(
-    dplyr::bind_cols(
-      prot_acc = purrr::map_chr(fasta_db, attr, "prot_acc"), 
-      prot_desc = purrr::map_chr(fasta_db, attr, "prot_desc"), 
-      prot_mass = purrr::map_dbl(fasta_db, ~ calc_avgpep(.x)), 
-      prot_len = nchar(fasta_db)
+  acc_lookup <- local({
+    more <- dplyr::bind_cols(
+      prot_acc = unname(purrr::map_chr(fasta_db, attr, "prot_acc")), 
+      prot_desc = unname(purrr::map_chr(fasta_db, attr, "prot_desc")), 
+      prot_mass = unname(purrr::map_dbl(fasta_db, ~ calc_avgpep(.x))), 
+      prot_len = unname(nchar(fasta_db)), 
     ) %>% 
       dplyr::filter(!duplicated(prot_acc)) %>% 
       dplyr::mutate(prot_mass = round(prot_mass, digits = 0))
-  ) %>% 
-    dplyr::left_join(acc_lookup, ., by = "prot_acc")
+    
+    dplyr::left_join(acc_lookup, more, by = "prot_acc")
+  })
   
   # -- add columns gene, organism, species, entrez ---
   df_splits <- df %>% 
@@ -2279,8 +2286,8 @@ annotPeppos <- function (df)
                    "fasta_name", "is_tryptic")) %>% 
     data.frame(check.names = FALSE) %>% 
     tidyr::unite(pep_prn, pep_seq, fasta_name, sep = "@", remove = TRUE) %>% 
-    dplyr::mutate(pep_start = as.numeric(pep_start), 
-                  pep_end = as.numeric(pep_end))
+    dplyr::mutate(pep_start = as.integer(pep_start), 
+                  pep_end = as.integer(pep_end))
   
   df$pep_res_before <- NULL
   df$pep_res_after <- NULL
@@ -2343,12 +2350,13 @@ subset_fasta <- function (df, fasta, acc_type)
 #' @inheritParams info_anal
 #' @inheritParams find_shared_prots
 add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq", 
-                             max_len = 50) 
+                             max_len = 500L) 
 {
   dat_dir <- get_gl_dat_dir()
   
   ok <- tryCatch(load(file = file.path(dat_dir, "fasta_db.rda")),
                  error = function(e) "e")
+  
   if (ok != "fasta_db") 
     stop("`fasta_db.rda` not found under ", dat_dir, ".", 
          call. = FALSE)
@@ -2365,8 +2373,8 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
     gn_rollup <- FALSE
   }
   
-  min_len <- min(nchar(df[[pep_id]])) - 1
-  max_len2 <- max_len - 1
+  min_len <- min(nchar(df[[pep_id]])) - 1L
+  max_len2 <- max_len - 1L
   
   zero_npeps <- df %>%
     dplyr::filter(pep_len <= max_len, pep_miss == 0L) %>% 
@@ -2391,7 +2399,7 @@ add_prot_icover <- function (df, id = "gene", pep_id = "pep_seq",
     dplyr::left_join(zero_npeps, by = "fasta_name") %>% 
     dplyr::mutate(prot_n_pep0 = ifelse(is.na(prot_n_pep0), 1L, prot_n_pep0)) %>% 
     dplyr::mutate(prot_icover = prot_n_pep0/prot_n_pepi, 
-                  prot_icover = round(prot_icover, digits = 3)) %>% 
+                  prot_icover = round(prot_icover, digits = 3L)) %>% 
     dplyr::select(-c("prot_n_pepi", "prot_n_pep0"))
   
   if (gn_rollup) {
@@ -2437,15 +2445,11 @@ calc_cover <- function(df, id)
   load(file = file.path(dat_dir, "fasta_db.rda"))
 
   if (all(is.factor(df$pep_start))) {
-    df$pep_start <- df$pep_start %>% 
-      as.character() %>% 
-      as.numeric()
+    df$pep_start <-as.numeric(as.character(df$pep_start))
   }
     
   if (all(is.factor(df$pep_end))) {
-    df$pep_end <- df$pep_end %>% 
-      as.character() %>% 
-      as.numeric()
+    df$pep_end <- as.numeric(as.character(df$pep_end))
   }
 
   id <- rlang::as_string(rlang::enexpr(id))
@@ -2465,25 +2469,24 @@ calc_cover <- function(df, id)
          "Check the correctness of fasta file(s).", 
          call. = FALSE)
   
-  if (length(fasta_db) <= 200) 
+  if (length(fasta_db) <= 200L) 
     warning("Less than 200 entries in fasta matched by protein accessions.\n", 
             "Make sure the fasta file is correct.", 
             call. = FALSE)
   
   df_sels <- df %>%
     dplyr::select(prot_acc, pep_start, pep_end) %>%
-    dplyr::mutate(index = row_number()) %>% 
+    unique() %>% 
     dplyr::left_join(acc_lookup, by = "prot_acc") %>%
-    dplyr::filter(!is.na(prot_len), !duplicated(index)) %>% 
-    dplyr::select(-index)
+    dplyr::filter(!is.na(prot_len)) %>% 
+    dplyr::filter(pep_start <= prot_len, 
+                  pep_end <= prot_len)
   
   if (!nrow(df_sels)) 
     stop("Probably incorrect accession types in the fasta file(s).", 
          call. = FALSE)
   
   df_sels <- df_sels %>%
-    dplyr::filter(pep_start <= prot_len) %>%
-    dplyr::filter(pep_end <= prot_len) %>%
     split(.[["prot_acc"]], drop = TRUE) %>%
     purrr::map(function (.x) {
       len <- .x[1, "prot_len"]
@@ -2492,33 +2495,35 @@ calc_cover <- function(df, id)
       for (i in 1:nrow(.x)) {
         aa_map[.x[i, ]$pep_start : .x[i, ]$pep_end] <- TRUE
       }
-
+      
       sum(aa_map, na.rm = TRUE)/len
     } ) %>%
     do.call("rbind", .) %>%
     data.frame(check.names = FALSE) %>%
     `colnames<-`("prot_cover") %>%
     tibble::rownames_to_column("prot_acc") %>%
-    dplyr::mutate(prot_cover = ifelse(prot_cover > 1, 1, prot_cover)) 
+    dplyr::mutate(prot_cover = ifelse(prot_cover > 1, 1, prot_cover))
   
   if (gn_rollup) {
-    df_sels <- df %>% 
-      dplyr::select(prot_acc, gene) %>% 
-      dplyr::filter(!duplicated(prot_acc)) %>% 
-      dplyr::left_join(df_sels, by = "prot_acc") %>% 
-      dplyr::select(-prot_acc) %>% 
-      dplyr::filter(!is.na(gene)) %>% 
-      dplyr::group_by(gene) 
-    
-    df_sels <- suppressWarnings(
-      df_sels %>% dplyr::summarise_all(~ max(.x, na.rm = TRUE))
-    )
-    
-    df_sels <- df %>% 
-      dplyr::select(prot_acc, gene) %>% 
-      dplyr::filter(!duplicated(prot_acc)) %>% 
-      dplyr::left_join(df_sels, by = "gene") %>% 
-      dplyr::select(-gene) 
+    df_sels <- local({
+      df_sub <- df %>% 
+        dplyr::select(prot_acc, gene) %>% 
+        dplyr::filter(!duplicated(prot_acc))
+      
+      df_sels <- df_sub %>% 
+        dplyr::left_join(df_sels, by = "prot_acc") %>% 
+        dplyr::select(-prot_acc) %>% 
+        dplyr::filter(!is.na(gene)) %>% 
+        dplyr::group_by(gene) 
+      
+      df_sels <- suppressWarnings(
+        df_sels %>% dplyr::summarise_all(~ max(.x, na.rm = TRUE))
+      )
+      
+      df_sels <- df_sub %>% 
+        dplyr::left_join(df_sels, by = "gene") %>% 
+        dplyr::select(-gene)
+    })
   }
   
   df <- df %>% 
@@ -2531,11 +2536,11 @@ calc_cover <- function(df, id)
     df <- df %>% 
       dplyr::mutate(prot_icover = 
                       ifelse(!is.na(prot_icover), prot_icover, prot_cover), 
-                    prot_icover = round(prot_icover, digits = 3))
+                    prot_icover = round(prot_icover, digits = 3L))
   }
   
   df <- df %>% 
-    dplyr::mutate(prot_cover = round(prot_cover, digits = 3)) 
+    dplyr::mutate(prot_cover = round(prot_cover, digits = 3L)) 
 
   invisible(df)
 }
@@ -2776,10 +2781,12 @@ calcSD_Splex <- function (df, id, type = "log2_R")
   if (type == "log2_R") {
     df <- df %>% 
       dplyr::select(!!rlang::sym(id), grep("^log2_R[0-9]{3}", names(.)))
-  } else if (type == "N_log2_R") {
+  } 
+  else if (type == "N_log2_R") {
     df <- df %>% 
       dplyr::select(!!rlang::sym(id), grep("^N_log2_R[0-9]{3}", names(.)))
-  } else if (type == "Z_log2_R") {
+  } 
+  else if (type == "Z_log2_R") {
     df <- df %>% 
       dplyr::select(!!rlang::sym(id), grep("^Z_log2_R[0-9]{3}", names(.)))
   }
@@ -4259,5 +4266,171 @@ list_to_dataframe <- function (x)
   rownames(ans) <- seq_len(nrow(ans))
 
   invisible(ans)
+}
+
+
+#' Gets column types.
+#' 
+#' @import readr
+get_col_types <- function () 
+{
+  # just a remainder of proteoM columns
+  col_types_pq <- cols(
+    prot_acc = col_character(), 
+    prot_issig = col_logical(), 
+    prot_isess = col_logical(),
+    prot_tier = col_integer(), 
+    prot_hit_num = col_integer(), 
+    prot_family_member = col_integer(), 
+    prot_es = col_number(), 
+    prot_es_co = col_number(), 
+    pep_seq = col_character(), 
+    pep_n_ms2 = col_integer(), 
+    pep_scan_title = col_character(), 
+    pep_exp_mz = col_number(),
+    pep_exp_mr = col_number(), 
+    pep_exp_z = col_character(), 
+    pep_calc_mr = col_number(), 
+    pep_delta = col_number(),
+    pep_tot_int = col_number(), 
+    pep_ret_range = col_number(), 
+    pep_scan_num = col_character(), # timsTOF
+    pep_mod_group = col_integer(), 
+    pep_frame = col_integer(), 
+    pep_fmod = col_character(),
+    pep_vmod = col_character(),
+    pep_isdecoy = col_logical(),
+    pep_ivmod = col_character(),
+    pep_len = col_integer(), 
+    pep_issig = col_logical(),
+    pep_score = col_double(),
+    pep_score_co = col_double(),
+    pep_rank = col_integer(), 
+    pep_locprob = col_double(),
+    pep_locdiff = col_double(),
+    pep_rank_nl = col_integer(), 
+    pep_literal_unique = col_logical(),
+    pep_razor_unique = col_logical(),
+    raw_file = col_character(), )
+  
+  col_types <- cols(
+    prot_hit_num = col_integer(),
+    prot_family_member = col_integer(),
+    prot_acc = col_character(),
+    prot_desc = col_character(),
+    prot_score = col_double(),
+    prot_mass = col_double(),
+    prot_matches = col_integer(),
+    prot_matches_sig = col_integer(),
+    prot_sequences = col_integer(),
+    prot_sequences_sig = col_integer(),
+    prot_n_psm = col_integer(),
+    prot_n_pep = col_integer(),
+    prot_len = col_integer(),
+    prot_pi = col_double(),
+    prot_tax_str = col_character(),
+    prot_tax_id = col_integer(),
+    prot_seq = col_character(),
+    prot_empai = col_double(),
+    prot_icover = col_double(),
+    prot_cover = col_double(),
+    
+    prot_index = col_integer(),
+    prot_issig = col_logical(),
+    prot_isess = col_logical(),
+    prot_tier = col_integer(),
+    prot_es = col_double(),
+    prot_es_co = col_double(),
+    pep_query = col_integer(),
+    pep_rank = col_integer(),
+    pep_n_psm = col_integer(),
+    pep_isbold = col_logical(),
+    pep_isunique = col_logical(),
+    pep_literal_unique = col_logical(),
+    pep_razor_unique = col_logical(),
+    pep_tot_int = col_double(),
+    pep_unique_int = col_double(),
+    pep_razor_int = col_double(),
+    pep_exp_mz = col_double(),
+    pep_exp_mr = col_double(),
+    pep_exp_z = col_character(),
+    pep_calc_mr = col_double(),
+    pep_delta = col_double(),
+    pep_score = col_double(),
+    pep_homol = col_double(),
+    pep_ident = col_double(),
+    pep_expect = col_double(),
+    
+    pep_res_before = col_character(),
+    pep_seq = col_character(),
+    pep_seq_mod = col_character(),
+    pep_res_after = col_character(),
+    pep_start = col_integer(),
+    pep_end = col_integer(),
+    pep_len = col_integer(),
+    pep_miss = col_integer(),
+    pep_frame = col_integer(),
+    pep_var_mod = col_character(),
+    pep_var_mod_pos = col_character(),
+    pep_summed_mod_pos = col_character(),
+    pep_local_mod_pos = col_character(),
+    pep_num_match = col_integer(), # Mascot
+    pep_scan_title = col_character(),
+    pep_index = col_integer(),
+    pep_scan_range = col_character(), # timsTOF
+    
+    pep_n_exp_z = col_integer(), 
+    pep_ret_sd = col_double(),
+    pep_n_nl = col_integer(),
+    
+    pep_ret_range = col_double(),
+    pep_ms2_sumint = col_double(),
+    pep_n_ions = col_integer(),
+    pep_locprob = col_double(),
+    pep_locdiff = col_double(),
+    pep_phospho_locprob = col_double(),
+    pep_phospho_locdiff = col_double(),
+    pep_ions_first = col_character(),
+    pep_ions_second = col_character(),
+    pep_ions_third = col_character(),
+    pep_n_ms2 = col_integer(),
+    pep_scan_num = col_character(),
+    pep_mod_group = col_integer(),
+    pep_fmod = col_character(),
+    pep_vmod = col_character(),
+    pep_isdecoy = col_logical(),
+    pep_ivmod = col_character(),
+    pep_issig = col_logical(),
+    pep_score_co = col_double(),
+    pep_rank_nl = col_integer(),
+    
+    gene = col_character(),
+    fasta_name = col_character(),
+    uniprot_acc = col_character(),
+    uniprot_id = col_character(),
+    refseq_acc = col_character(),
+    other_acc = col_character(),
+    entrez = col_integer(),
+    species = col_character(),
+    acc_type = col_character(),
+    shared_prot_accs = col_character(),
+    shared_genes = col_character(),
+    kin_attr = col_logical(),
+    kin_class = col_character(),
+    kin_order = col_integer(),
+    is_tryptic = col_logical(),
+    
+    dat_file = col_character(),
+    raw_file = col_character(),
+    mean_lint = col_double(),
+    count_nna = col_integer(),
+    TMT_Set = col_integer(),
+  )
+  
+  nms <- names(col_types$cols)
+  
+  stopifnot(length(nms) == length(unique(nms)))
+  
+  col_types
 }
 

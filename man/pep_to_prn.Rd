@@ -5,11 +5,11 @@
 \title{Helper of Pep2Prn}
 \usage{
 pep_to_prn(
-  id,
-  method_pep_prn,
-  use_unique_pep,
-  gn_rollup,
-  rm_outliers,
+  id = "prot_acc",
+  method_pep_prn = "median",
+  use_unique_pep = TRUE,
+  gn_rollup = TRUE,
+  rm_outliers = FALSE,
   rm_allna = FALSE,
   ...
 )

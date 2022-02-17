@@ -2,7 +2,7 @@
 % Please edit documentation in R/purge.R
 \name{purgePep}
 \alias{purgePep}
-\title{Purge peptide data}
+\title{Purges peptide data}
 \usage{
 purgePep(
   dat_dir = NULL,
@@ -10,7 +10,7 @@ purgePep(
   max_cv = NULL,
   adjSD = FALSE,
   keep_ohw = TRUE,
-  min_n = 1,
+  min_n = 1L,
   rm_allna = FALSE,
   col_select = NULL,
   col_order = NULL,
@@ -26,7 +26,7 @@ match the value under the global environment.}
 \item{pt_cv}{Numeric between 0 and 1; the percentile of CV. Values above the
 percentile threshold will be replaced with NA. The default is NULL with no
 data trimming by CV percentile. The precedence in data purging is
-\code{pt_cv} \eqn{\ge} \code{max_v} \eqn{\ge} \code{min_n}.}
+\code{pt_cv} \eqn{\ge} \code{max_cv} \eqn{\ge} \code{min_n}.}
 
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
 will be replaced with NA. The default is NULL with no data trimming by max
@@ -93,8 +93,6 @@ same protein from different LC/MS will be summarized by median statistics.
 The data nullification will be applied column-wisely for all available
 samples. Argument \code{col_select} is merely used to subset samples for the
 visualization of \code{log2FC} distributions.
-
-Rows of with all NA values in \code{log2FC} will be removed too.
 }
 \examples{
 \donttest{

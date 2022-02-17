@@ -25,8 +25,8 @@ pep_tot_int	Total MS1 intenisty of a peptide sequence	Sum statistics from PSMs
 pep_unique_int	Unique MS1 intenisty of a peptide sequence	v.s.
 pep_razor_int	Razor MS1 intenisty of a peptide sequence	v.s.
 pep_res_before	Flanking residue on N-term side of peptide	
-pep_seq	One-letter representation of peptide sequences without variable modifications	See also PSM keys; the key will become `pep_seq_mod` at `normPSM(group_psm_by = pep_seq_mod)`
-pep_seq_mod	`pep_seq` with variable modifications	See also PSM keys; the key will become `pep_seq` at `normPSM(group_psm_by = pep_seq)`
+pep_seq	One-letter representation of peptide sequences without variable modifications	
+pep_seq_mod	`pep_seq` with variable modifications	
 pep_res_after	Flanking residue on C-term side of peptide	
 pep_start	Ordinal position of first peptide residue in protein sequence	
 pep_end	Mascot: ordinal position of last peptide residue in protein sequence	

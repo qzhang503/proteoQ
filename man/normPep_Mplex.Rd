@@ -8,6 +8,7 @@ normPep_Mplex(
   group_psm_by = "pep_seq_mod",
   group_pep_by = "prot_acc",
   use_duppeps = TRUE,
+  duppeps_repair = "denovo",
   cut_points = Inf,
   omit_single_lfq = TRUE,
   use_mq_pep = FALSE,
@@ -35,6 +36,16 @@ numbers will be treated as one group.}
 \item{use_duppeps}{Logical; if TRUE, re-assigns double/multiple dipping
 peptide sequences to the most likely proteins by majority votes.}
 
+\item{duppeps_repair}{Not currently used (or only with \code{majority}).
+ Character string; the method of reparing double-dipping peptide sequences
+ upon data pooling.
+
+ For instance, the same sequence of PEPTIDE may be assigned to protein
+ accession PROT_ACC1 in data set 1 and PROT_ACC2 in data set 2. At the
+ \code{denovo} default, the peptide to protein association will be
+ re-established freshly. At the \code{majority} alternative, a majority rule
+ will be applied for the re-assignments.}
+
 \item{cut_points}{A named, numeric vector defines the cut points (knots) for
 the median-centering of \code{log2FC} by sections. For example, at
 \code{cut_points = c(mean_lint = seq(4, 7, .5))}, \code{log2FC} will be
@@ -59,8 +70,8 @@ across ratio columns of \code{log2_R126} etc. The setting also applies to
 data. The default is \code{Inf}. Depends on the setting of LCMS gradients, a
 setting of, e.g., 150 might be suitable.}
 
-\item{rm_ret_outliers}{Logical; if TRUE, removes peptide entries with
-outlying retention times across samples and/or LCMS series.}
+\item{rm_ret_outliers}{Logical; if TRUE, removes peptide entries with outlying
+retention times across samples and/or LCMS series.}
 
 \item{parallel}{Logical; if TRUE, performs parallel computation. The default
 is TRUE.}
