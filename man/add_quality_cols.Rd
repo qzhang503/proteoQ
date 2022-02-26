@@ -7,7 +7,8 @@
 add_quality_cols(
   df = NULL,
   group_psm_by = "pep_seq",
-  group_pep_by = "prot_acc"
+  group_pep_by = "prot_acc",
+  uniq_by = NULL
 )
 }
 \arguments{
@@ -25,6 +26,9 @@ grouping. At the \code{prot_acc} default, descriptive statistics will be
 calculated based on the same \code{prot_acc} groups. At the \code{gene}
 alternative, proteins with the same gene name but different accession
 numbers will be treated as one group.}
+
+\item{uniq_by}{A vector of column keys in \code{df} defining the levels of
+uniqueness in PSM entries.}
 }
 \description{
 Adds columns \code{pep_n_psm}, \code{prot_n_psm} and \code{prot_n_pep}.

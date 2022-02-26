@@ -83,6 +83,79 @@ update_df <- function (df, label_scheme_fit, cf_x_fit, sd_coefs_fit) {
 }
 
 
+#' Add mean-deviation
+#' 
+#' @param df A data frame.
+#' @param label_schem_fit A subset of lable_scheme.
+#' @param filepath A file path.
+add_mean_dev <- function (df, label_scheme_fit, filepath) 
+{
+  if (grepl("Peptide\\\\", filepath) || grepl("Peptide/", filepath)) {
+    prefix <- "pep_mean_"
+  } 
+  else if (grepl("Protein\\\\", filepath) || grepl("Protein/", filepath)) {
+    prefix <- "prot_mean_"
+  } 
+  else {
+    return(df)
+  }
+  
+  nm_log2r_raw <- names(df) %>% 
+    .[grepl("^log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+    find_fit_nms(label_scheme_fit$Sample_ID)
+  
+  nm_log2r_n <- names(df) %>% 
+    .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+    find_fit_nms(label_scheme_fit$Sample_ID)
+  
+  nm_log2r_z <- names(df) %>% 
+    .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
+    find_fit_nms(label_scheme_fit$Sample_ID)
+  
+  df <- df %>% 
+    dplyr::mutate(!!paste0(prefix, "raw") := 
+                    rowMeans(.[, names(.) %in% nm_log2r_raw, drop = FALSE], 
+                             na.rm = TRUE), 
+                  !!paste0(prefix, "n") := 
+                  rowMeans(.[, names(.) %in% nm_log2r_n, drop = FALSE], 
+                           na.rm = TRUE), 
+                  !!paste0(prefix, "z") := 
+                    rowMeans(.[, names(.) %in% nm_log2r_z, drop = FALSE], 
+                             na.rm = TRUE)) 
+  
+  df[, grepl(paste0("^", prefix), names(df))] <- 
+    df[, grepl(paste0("^", prefix), names(df))] %>%
+    dplyr::mutate_if(is.logical, as.numeric) %>%
+    round(., digits = 3)
+  
+  if (prefix == "pep_mean_") {
+    df <- dplyr::bind_cols(
+      df %>% dplyr::select(grep("^prot_", names(.))), 
+      df %>% dplyr::select(grep("^pep_", names(.))), 
+      df %>% dplyr::select(-grep("^pep_|^prot_", names(.)))
+    )
+  } 
+  else {
+    df <- local({
+      new_nms <- paste0(prefix, c("raw", "n", "z"))
+      
+      nm_last <- names(df) %>% 
+        .[! . %in% new_nms] %>% 
+        .[grepl(paste0("^", prefix %>% gsub("mean_", "", .)), .)] %>% 
+        .[length(.)]
+      
+      idx <- which(names(df) == nm_last)
+      
+      dplyr::bind_cols(
+        df %>% dplyr::select(1:idx), 
+        df %>% dplyr::select(new_nms), 
+        df %>% dplyr::select((idx+1):ncol(.)) %>% dplyr::select(-new_nms)
+      )    
+    })
+  }
+}
+
+
 #'Data normalization
 #'
 #'\code{normMulGau} normalizes \code{log2FC} under the assumption of multi
@@ -211,67 +284,7 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL,
   }
   
   
-  # add mean-deviation info for `expt_smry::Select`ed samples
-  add_mean_dev <- function (df, label_scheme_fit) {
-    if (grepl("Peptide\\\\", filepath) || grepl("Peptide/", filepath)) {
-      prefix <- "pep_mean_"
-    } else if (grepl("Protein\\\\", filepath) || grepl("Protein/", filepath)) {
-      prefix <- "prot_mean_"
-    } else {
-      return(df)
-    }
-    
-    nm_log2r_raw <- names(df) %>% 
-      .[grepl("^log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-      find_fit_nms(label_scheme_fit$Sample_ID)
-    
-    nm_log2r_n <- names(df) %>% 
-      .[grepl("^N_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-      find_fit_nms(label_scheme_fit$Sample_ID)
-    
-    nm_log2r_z <- names(df) %>% 
-      .[grepl("^Z_log2_R[0-9]{3}[NC]*\\s+\\(", .)] %>% 
-      find_fit_nms(label_scheme_fit$Sample_ID)
-    
-    df <- df %>% 
-      dplyr::mutate(!!paste0(prefix, "raw") := rowMeans(.[, names(.) %in% nm_log2r_raw], 
-                                                        na.rm = TRUE), 
-                    !!paste0(prefix, "n") := rowMeans(.[, names(.) %in% nm_log2r_n], 
-                                                      na.rm = TRUE), 
-                    !!paste0(prefix, "z") := rowMeans(.[, names(.) %in% nm_log2r_z], 
-                                                      na.rm = TRUE)) 
-    
-    df[, grepl(paste0("^", prefix), names(df))] <- 
-      df[, grepl(paste0("^", prefix), names(df))] %>%
-      dplyr::mutate_if(is.logical, as.numeric) %>%
-      round(., digits = 3)
 
-    if (prefix == "pep_mean_") {
-      df <- dplyr::bind_cols(
-        df %>% dplyr::select(grep("^prot_", names(.))), 
-        df %>% dplyr::select(grep("^pep_", names(.))), 
-        df %>% dplyr::select(-grep("^pep_|^prot_", names(.)))
-      )
-    } else {
-      df <- local({
-        new_nms <- paste0(prefix, c("raw", "n", "z"))
-        
-        nm_last <- names(df) %>% 
-          .[! . %in% new_nms] %>% 
-          .[grepl(paste0("^", prefix %>% gsub("mean_", "", .)), .)] %>% 
-          .[length(.)]
-        
-        idx <- which(names(df) == nm_last)
-        
-        dplyr::bind_cols(
-          df %>% dplyr::select(1:idx), 
-          df %>% dplyr::select(new_nms), 
-          df %>% dplyr::select((idx+1):ncol(.)) %>% dplyr::select(-new_nms)
-        )    
-      })
-    }
-  }
-  
   
   plot_foo <- function () {
     # Pass arguments by row
@@ -476,9 +489,9 @@ normMulGau <- function(df, method_align, n_comp, seed = NULL,
 	label_scheme_not_trivial <- label_scheme %>% 
 	  dplyr::filter(!Reference, !grepl("^Empty\\.[0-9]+", Sample_ID))
 	
-	df <- df %>% add_mean_dev(label_scheme_not_trivial)
+	df <- df %>% add_mean_dev(label_scheme_not_trivial, filepath)
 	
-	return(df)
+	invisible(df)
 }
 
 
