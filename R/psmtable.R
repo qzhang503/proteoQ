@@ -1223,10 +1223,16 @@ add_empai <- function(df = NULL, dat_dir = NULL)
 #' Adds columns \code{pep_n_psm}, \code{prot_n_psm} and \code{prot_n_pep}.
 #'
 #' @param df A data frame.
+#' @param uniq_by A vector of column keys in \code{df} defining the levels of
+#'   uniqueness in PSM entries.
 #' @inheritParams normPSM
 add_quality_cols <- function(df = NULL, group_psm_by = "pep_seq", 
-                             group_pep_by = "prot_acc") 
+                             group_pep_by = "prot_acc", uniq_by = NULL) 
 {
+  # PSMs might be duplicated: one PSM -> multiple rows (by NLs or pep_seq_mod)
+  if (!is.null(uniq_by)) 
+    df <- unique(df, by = uniq_by)
+  
   group_psm_by <- rlang::enexpr(group_psm_by)
   group_pep_by <- rlang::enexpr(group_pep_by)
   
@@ -1822,10 +1828,9 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # 
   # (2.2) compile "preferred" columns
   # 
-  # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
-  # dependency: prot_n_pep be used as weights in protein parsimony
+  # (2.3) find the shared prot_accs and genes for each peptide
   # 
-  # (2.4) find the shared prot_accs and genes for each peptide
+  # (2.4) remove non-essential proteins after shared_prot_accs, shared_genes
   # 
   # (2.5) find the levels of uniqueness for peptides
   # uniqueness currently by prot_acc, not gene
@@ -1843,7 +1848,10 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (c) remove redundant peptides under each `dat_file`
   #     dbl-dipping peptides across `dat_file` will be handled in `mergePep`
   # 
-  # (2.8) other fields
+  # (2.8) add columns pep_n_psm, prot_n_psm, prot_n_pep
+  # dependency: after the removals of redundant PSMs, peptides
+  # 
+  # (2.9) other fields
   # for compatibility, updates after data merging etc.
   # --- End ---
   
@@ -1993,10 +2001,7 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     invisible(df)
   })
   
-  # (2.3) adds columns pep_n_psm, prot_n_psm, prot_n_pep
-  df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by)
-
-  # (2.4) finds the shared prot_accs and genes for each peptide
+  # (2.3) finds the shared prot_accs and genes for each peptide
   prot_accs <- df %>% 
     find_shared_prots("pep_seq", "prot_acc") %>% 
     filter(!duplicated(pep_seq))
@@ -2011,6 +2016,11 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::left_join(genes[, c("pep_seq", "shared_genes")], 
                      by = "pep_seq")
 
+  # (2.4) remove non-essential proteins after shared_prot_accs, shared_genes
+  # run this asap; otherwise some primary peptides may be removed by other filters
+  if ("prot_family_member" %in% names(df)) 
+    df <- dplyr::filter(df, !is.na(prot_family_member))
+  
   # (2.5) find the uniqueness of peptides
   df <- local({
     # shared peptides can also be due to 
@@ -2077,65 +2087,50 @@ splitPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         dplyr::mutate(., prot_cover = prot_cover/100) } 
 
   # (2.7) apply parsimony
-  df <- local({
-    uniq_by <- c("RAW_File", "pep_query", "pep_seq", "pep_var_mod_pos")
-    
-    # always TRUE; just a reminder of `dat_file`
-    if (length(unique(df$dat_file)) >= 1L) 
-      uniq_by <- c(uniq_by, "dat_file")
-    
-    # run this first; otherwise some primary peptides may be removed
-    if ("prot_family_member" %in% names(df)) 
-      df <- dplyr::filter(df, !is.na(prot_family_member))
-
-    df <- df %>% 
-      dplyr::arrange(-prot_n_pep, -pep_isbold, -prot_mass)
-    
-    rows <- !duplicated(df[, uniq_by])
-    df <- df[rows, ]
-    
-    df <- try(
-      dplyr::arrange(df, prot_hit_num, prot_family_member, pep_start, pep_end)
-    )
-
-    ## before
-    # prot_acc   I126 I127N   I127C
-    # 1  2::HBB1_MOUSE  29410 20920   27430
-    # 2  2::HBE_MOUSE  29410 20920   27430
-    # 3  2::HBE_MOUSE 137000 38330 1115000
-    
-    ## after
-    # prot_acc   I126 I127N   I127C
-    # 1  2::HBB1_MOUSE  29410 20920   27430
-    # 2  2::HBE_MOUSE 137000 38330 1115000
-    
-    # remove subset proteins
-    ## one example: I <-> L
-    # (No prot_family_member)
-    # prot_hit_num	prot_family_member	prot_acc	pep_rank	pep_isbold	pep_isunique	pep_seq
-    # 1	            1	                  2::P04114	1	        1	          1	            AAIQALR
-    # 1		                              2::Q9BY43	1	        0	          1	            AALQALR
-    
-    # df <- df %>% 
-    #   tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
-    #   dplyr::mutate(.n = row_number()) %>% 
-    #   dplyr::arrange(-prot_n_pep, -pep_isbold, -prot_mass) %>% 
-    #   dplyr::filter(!duplicated(uniq_id)) %>% 
-    #   dplyr::arrange(.n) %>% 
-    #   dplyr::select(-uniq_id, -.n)
-    # 
-    # if ("prot_family_member" %in% names(df)) {
-    #   df <- dplyr::filter(df, !is.na(prot_family_member))
-    # }
-    
-    invisible(df)
-  })
+  # allow PSM duplicates that are different at `pep_var_mod_pos` if there are any;
+  # mostly not but possible redundancy of one query -> multiple `pep_var_mod_pos`
   
-  # (2.8) update original Mascot fields
+  # uniq_by <- c("RAW_File", "pep_query", "pep_seq")
+  uniq_by <- c("RAW_File", "pep_query", "pep_seq", "pep_var_mod_pos")
+
+  if (length(unique(df$dat_file)) >= 1L) 
+    uniq_by <- c(uniq_by, "dat_file")
+  
+  # redundancy at prot_acc also removed (kept the heaviest one)
+  df <- df %>% dplyr::arrange(pep_rank, -pep_isbold, -prot_mass)
+  rows <- !duplicated(df[, uniq_by])
+  df <- df[rows, ]
+  rm(list = c("rows"))
+  
+  df <- try(
+    dplyr::arrange(df, prot_hit_num, prot_family_member, pep_start, pep_end)
+  )
+  
+  ## before
+  #      prot_acc   I126 I127N   I127C
+  # 1  HBB1_MOUSE  29410 20920   27430
+  # 2  HBE_MOUSE   29410 20920   27430
+  # 3  HBE_MOUSE  137000 38330 1115000
+  
+  ## after
+  #      prot_acc   I126 I127N   I127C
+  # 1  HBB1_MOUSE  29410 20920   27430
+  # 2  HBE_MOUSE  137000 38330 1115000
+  
+  # remove subset proteins
+  ## one example: I <-> L
+  # (No prot_family_member)
+  # prot_hit_num	prot_family_member	prot_acc	pep_rank	pep_isbold	pep_isunique	pep_seq
+  # 1	            1	                  P04114	1	        1	          1	            AAIQALR
+  # 1		                              Q9BY43	1	        0	          1	            AALQALR
+
+  # (2.8) adds columns pep_n_psm, prot_n_psm, prot_n_pep
+  # prot_n_psm and pep_n_psm may be inflated depends on the PSM redundancy 
+  df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by, uniq_by = NULL)
+  
+  # (2.9) update original Mascot fields
   # (e.g. updated counts after data merging)
 
-  # (3) data processing
-  
   .saveCall <- TRUE
   
   invisible(df)
@@ -5207,9 +5202,6 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       add_entry_ids("prot_acc", "prot_index")
   })
 
-  # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
-  df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by)
-  
   # (2.4) find the shared prot_accs and genes for each peptide
   message("\nParsing shared proteins...\n")
   
@@ -5439,6 +5431,9 @@ splitPSM_mq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         calc_cover(., id = !!rlang::sym(group_pep_by)) 
       else . } %>% 
     dplyr::select(-which(names(.) %in% c("Length", "Missed cleavages", "Missed Clevages"))) 
+  
+  # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
+  df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by)
   
   .saveCall <- TRUE
   
@@ -5833,7 +5828,6 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   })
   
   # (2.2) compile "preferred" columns
-  
   df <- local({
     df <- df %>% 
       dplyr::mutate(pep_scan_range = NA,
@@ -5858,9 +5852,6 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       add_entry_ids("prot_acc", "prot_index")
   })
   
-  # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
-  df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by)
-
   # (2.4) find the shared prot_accs and genes for each peptide
   df <- df %>% 
     add_shared_sm_genes(key = "accession_numbers", sep = "\\|", fasta, entrez)
@@ -5925,6 +5916,9 @@ splitPSM_sm <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     { if (!("prot_cover" %in% names(.) && length(filelist) == 1)) 
         calc_cover(., id = !!rlang::sym(group_pep_by)) 
       else . }
+  
+  # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
+  df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by)
   
   .saveCall <- TRUE
   
@@ -6250,9 +6244,6 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
       add_entry_ids("prot_acc", "prot_index")
   })
   
-  # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
-  df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by)
-  
   # (2.4) find the shared prot_accs and genes for each peptide
   # (the original uniqueness of peptides by MSFragger may not holder after 
   # the joining of PSM files)
@@ -6328,6 +6319,9 @@ splitPSM_mf <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     { if (!("prot_cover" %in% names(.) && length(filelist) == 1)) 
         calc_cover(., id = !!rlang::sym(group_pep_by)) 
       else . } 
+  
+  # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
+  df <- df %>% add_quality_cols(!!group_psm_by, !!group_pep_by)
   
   # placeholder: no yet localization probability 
   # ...
@@ -6759,10 +6753,9 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # 
   # (2.2) compile "preferred" columns
   # 
-  # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
-  # dependency: prot_n_pep be used as weights in protein parsimony
+  # (2.3) find the shared prot_accs and genes for each peptide
   # 
-  # (2.4) find the shared prot_accs and genes for each peptide
+  # (2.4) remove non-essential proteins after shared_prot_accs, shared_genes
   # 
   # (2.5) find the levels of uniqueness for peptides
   # uniqueness currently by prot_acc, not gene
@@ -6780,7 +6773,11 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   # (c) remove redundant peptides under each `dat_file`
   #     dbl-dipping peptides across `dat_file` will be handled in `mergePep`
   # 
-  # (2.8) other fields
+  # (2.8) add columns pep_n_psm, prot_n_psm, prot_n_pep
+  # dependency: after the removal of duplicated PSM entries (under the same 
+  #   dat_file + RAW_File + pep_scan_num + pep_seq)
+  # 
+  # (2.x) other fields
   # for compatibility, updates after data merging etc.
   # --- End ---
   
@@ -6857,9 +6854,9 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   if ("pep_ms2_n" %in% names(df))
     df <- dplyr::rename(df, pep_n_ms2 = pep_ms2_n)
   
-  # --- maybe regrouping here at length(filelist) > 1L ---
-  # add_prot_acc(df) to avoid dependency w.r.t. terminal vs interior sequences;
-  # but need path info to access the cached lookups
+  # maybe new set cover of pep_seq's by prot_acc's here at length(filelist) > 1L; 
+  # add_prot_acc(df) to avoid dependency w.r.t. terminal vs interior sequences,
+  #   but need path info to access the cached lookups
 
   # (1.2) add ratio columns
   if (TMT_plex) {
@@ -6927,11 +6924,7 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
   df <- df %>% 
     dplyr::arrange(prot_hit_num, prot_family_member)
   
-  # (2.3) add columns pep_n_psm, prot_n_psm, prot_n_pep
-  df <- df %>% 
-    add_quality_cols(!!group_psm_by, !!group_pep_by)
-  
-  # (2.4) find the shared prot_accs and genes for each peptide
+  # (2.3) find the shared prot_accs and genes for each peptide
   prot_accs <- df %>% 
     find_shared_prots("pep_seq", "prot_acc") %>% 
     filter(!duplicated(pep_seq))
@@ -6946,6 +6939,10 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
     dplyr::left_join(genes[, c("pep_seq", "shared_genes")], 
                      by = "pep_seq")
   
+  # (2.4) remove non-essential proteins after shared_prot_accs, shared_genes
+  df <- df %>% 
+    dplyr::filter(!is.na(prot_family_member))
+
   # (2.5) find the uniqueness of peptides
   df <- if (pep_unique_by == "group") 
     dplyr::mutate(df, pep_isunique = pep_razor_unique)
@@ -6980,58 +6977,128 @@ splitPSM_pq <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
                   pep_miss = as.integer(pep_miss)) %>% 
     add_prot_icover(id = group_pep_by) %>% 
     calc_cover(id = !!rlang::sym(group_pep_by)) 
-  
-  # (2.7) apply parsimony
-  df <- local({
-    uniq_by <- c("RAW_File", "pep_scan_num", "pep_seq", "pep_ivmod")
-    
-    # actually always include `dat_file`
-    if (length(unique(df$dat_file)) >= 1L) 
-      uniq_by <- c(uniq_by, "dat_file")
-    
-    # remove non-essential proteins first; otherwise some primary sequences
-    # may drop
-    df <- df %>% 
-      dplyr::filter(!is.na(prot_family_member)) %>% 
-      dplyr::arrange(-prot_n_pep, -pep_issig, -prot_mass) 
 
+  # (2.7) apply parsimony
+  # uniq_by <- c("RAW_File", "pep_scan_num", "pep_seq")
+  # if (length(unique(df$dat_file))) uniq_by <- c("dat_file", uniq_by)
+  # df <- df %>% dplyr::arrange(pep_rank, -prot_mass)
+  # rows <- !duplicated(df[, uniq_by])
+  # df <- df[rows, ]
+  # rm(list = c("rows"))
+
+  # ---
+  psm_redundancy_at <- "pep_seq"
+  
+  # redundant prot_acc's removed with the heaviest being kept
+  df <- df %>% 
+    dplyr::arrange(pep_rank, -prot_mass)
+
+  if (!psm_redundancy_at %in% c("pep_seq", "pep_seq_mod", "neuloss")) {
+    warning("Unknown `psm_redundancy_at`; use `pep_seq`.")
+    psm_redundancy_at <- "pep_seq"
+  }
+  
+  if (psm_redundancy_at == "pep_seq") {
+    uniq_by <- c("RAW_File", "pep_scan_num", "pep_seq")
+    
+    if (length(unique(df$dat_file))) 
+      uniq_by <- c("dat_file", uniq_by)
+    
     rows <- !duplicated(df[, uniq_by])
     df <- df[rows, ]
+    rm(list = c("rows"))
+  }
+  else if (psm_redundancy_at %in% c("pep_seq_mod", "neuloss")) {
+    # removals NL indicators at the end of `pep_ivmod`
+    df <- df %>% 
+      dplyr::mutate(pep_ivmod2 = gsub(" .*$", "", pep_ivmod))
+    
+    uniq_by <- c("RAW_File", "pep_scan_num", "pep_seq", "pep_ivmod")
+    
+    if (length(unique(df$dat_file))) 
+      uniq_by <- c("dat_file", uniq_by)
+    
+    uniq_by2 <- c(uniq_by[uniq_by != "pep_ivmod"], "pep_ivmod2")
+    
+    ## handle ties in NL
+    # 
+    # the same `pep_ivmod2` at different NLs with ties in `pep_rank` 
+    #   -> keeps the best NL at EACH rank
+    # 000050050, NL(1), 1; 000050050, NL(2), 1; 000050050, NL(3), 1
+    # 000050050, NL(1), 2; 000050050, NL(2), 2
+    #   -> pep_rank == 1: 000050050, NL(1), 1
+    #   -> pep_rank == 2: 000050050, NL(1), 2
+    df <- df %>% 
+      dplyr::arrange(-pep_score) %>% 
+      dplyr::group_by_at(c(uniq_by2, "pep_rank")) %>% 
+      dplyr::filter(row_number() == 1L) %>% 
+      dplyr::ungroup()
+    
+    ## keep the best pep_ivmod2 
+    # (since the same raw, scan, pep_seq, & pep_ivmod2, non-best NL are trivial)
+    # 000050050, NL(1), 1
+    # 000050050, NL(1), 2
+    #   -> 000050050, NL(1), 1
+    df <- df %>% 
+      dplyr::group_by_at(c(uniq_by2)) %>% 
+      dplyr::filter(row_number() == 1L)
+    
+    ## handle ties in pep_seq_mod
+    if (psm_redundancy_at == "pep_seq_mod") {
+      uniq_by3 <- uniq_by2[uniq_by2 != "pep_ivmod2"]
+      
+      # keeps the first pep_seq_mod at each rank
+      # pep_seq, 000050050, 1; pep_seq, 000050500, 1, pep_seq, 000055000, 1
+      # pep_seq, 000050060, 2; pep_seq, 000050600, 2
+      #   -> pep_seq, 000050050, 1
+      #   -> pep_seq, 000050060, 2
+      df <- df %>% 
+        dplyr::group_by_at(c(uniq_by3, "pep_rank")) %>% 
+        # dplyr::arrange(-pep_score) %>% 
+        dplyr::filter(row_number() == 1L) %>% 
+        dplyr::ungroup() 
+      
+      # keeps the best `pep_seq_mod` under the same scan
+      # (since the same raw, scan & pep_seq, non-best pep_ivmod2 are trivial)
+      # pep_seq, 000050050, 1
+      # pep_seq, 000050060, 2
+      #   -> pep_seq, 000050050, 1
+      df <- df %>% 
+        dplyr::group_by_at(c(uniq_by3)) %>% 
+        # dplyr::arrange(-pep_score) %>% 
+        dplyr::filter(row_number() == 1L) 
+    }
     
     df <- df %>% 
-      dplyr::arrange(prot_hit_num, prot_family_member, pep_start, pep_end)
+      dplyr::select(-pep_ivmod2)
+  }
 
-    ## before
-    # prot_acc   I126 I127N   I127C
-    # 1  HBB1_MOUSE  29410 20920   27430
-    # 2  HBE_MOUSE  29410 20920   27430
-    # 3  HBE_MOUSE 137000 38330 1115000
-    
-    ## after
-    # prot_acc   I126 I127N   I127C
-    # 1  HBB1_MOUSE  29410 20920   27430
-    # 2  HBE_MOUSE 137000 38330 1115000
-    
-    # remove subset proteins
-    ## one example: I <-> L
-    # (No prot_family_member)
-    # prot_hit_num	prot_family_member	prot_acc	pep_rank	pep_isbold	pep_isunique	pep_seq
-    # 1	            1	                  P04114	1	        1	          1	            AAIQALR
-    # 1		                              Q9BY43	1	        0	          1	            AALQALR
-    
-    # df <- df %>% 
-    #   tidyr::unite(uniq_id, uniq_by, sep = ".", remove = FALSE) %>% 
-    #   dplyr::mutate(.n = row_number()) %>% 
-    #   dplyr::arrange(-prot_n_pep, -pep_issig, -prot_mass) %>% 
-    #   dplyr::filter(!duplicated(uniq_id)) %>% 
-    #   dplyr::arrange(.n) %>% 
-    #   dplyr::select(-uniq_id, -.n)
-    # 
-    # df <- df %>% 
-    #   dplyr::filter(!is.na(prot_family_member)) %>% 
-    #   dplyr::arrange(prot_hit_num, prot_family_member, pep_start, pep_end)
-  })
+  df <- df %>% 
+    dplyr::arrange(prot_hit_num, prot_family_member, pep_start, pep_end)
   
+  ## before
+  #      prot_acc   I126 I127N   I127C
+  # 1  HBB1_MOUSE  29410 20920   27430
+  # 2  HBE_MOUSE   29410 20920   27430
+  # 3  HBE_MOUSE  137000 38330 1115000
+  
+  ## after
+  #      prot_acc   I126 I127N   I127C
+  # 1  HBB1_MOUSE  29410 20920   27430
+  # 2  HBE_MOUSE  137000 38330 1115000
+  
+  # remove subset proteins
+  ## one example: I <-> L
+  # (No prot_family_member)
+  # prot_hit_num	prot_family_member	prot_acc	pep_rank	pep_isbold	pep_isunique	pep_seq
+  # 1	            1	                  P04114	1	        1	          1	            AAIQALR
+  # 1		                              Q9BY43	1	        0	          1	            AALQALR
+  
+  # (2.8) add columns pep_n_psm, prot_n_psm, prot_n_pep
+  # (after the non-redundant PSM entries)
+  df <- df %>% 
+    add_quality_cols(!!group_psm_by, !!group_pep_by, uniq_by)
+
   .saveCall <- TRUE
   
   invisible(df)

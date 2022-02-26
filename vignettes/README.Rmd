@@ -146,7 +146,7 @@ The data packages, proteoQDA, should have been made available through the proteo
 
 #### 1.1.1 Fasta databases
 
-RefSeq databases of human and mouse were used in the MS/MS searches against the WHIM data sets. To properly annotate protein entries with proteoQ, we would need the fasta file(s) that were used in the database searches.[^3] In the example below, we copy over the corresponding fasta files from the proteoqDA to a database folder:
+RefSeq databases of human and mouse were used in the MS/MS searches against the WHIM data sets. To properly annotate protein entries with proteoQ, we would need the fasta file(s) that were used in the database searches.[^3] In the example below, we copy over the corresponding fasta files from the proteoQDA to a database folder:
 
 [^3]: See <https://www.uniprot.org/proteomes/>.
 
