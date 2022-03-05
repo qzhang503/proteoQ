@@ -85,9 +85,9 @@ exports and \code{filter_psms_at = exprs(pep_expect <= 0.1)} will remove PSM
 entries with \code{pep_expect > 0.1}.}
 }
 \description{
-Median summarization of data from the same TMT or LFQ experiment at different
-LCMS injections summed \code{pep_n_psm}, \code{prot_n_psm}, and
-\code{prot_n_pep} after data merging no Z_log2_R yet available use
-\code{col_select = expr(Sample_ID)} not \code{col_select} to get all Z_log2_R
-why: users may specify \code{col_select} only partial to Sample_ID entries.
+Median summary of data from the same TMT or LFQ experiment at different LCMS
+injections summed \code{pep_n_psm}, \code{prot_n_psm}, and \code{prot_n_pep}
+after data merging no Z_log2_R yet available use \code{col_select =
+expr(Sample_ID)} not \code{col_select} to get all Z_log2_R why: users may
+specify \code{col_select} only partial to Sample_ID entries.
 }

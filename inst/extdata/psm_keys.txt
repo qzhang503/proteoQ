@@ -52,6 +52,7 @@ pep_start	Ordinal position of first peptide residue in protein sequence
 pep_end	Ordinal position of last peptide residue in protein sequence	
 pep_len	Number of amino acid residues in a peptide sequence	
 pep_miss	Count of missed cleavage sites in peptide	
+pep_istryptic	Is a peptide sequence a canonical tryptic peptide or not	
 pep_frame	Mascot calculation of translation frame number	
 pep_var_mod	Mascot variable modifications from all sources as list of names	
 pep_var_mod_pos	"Mascot variable modifications as a string of digits, e.g. ’0.0001000.0?. Non-zero digits identify mods according to key in export header. First and last positions are for terminus mods."	
@@ -77,11 +78,10 @@ pep_mod_group	Index of peptide modification group
 pep_fmod	Fix modifications of peptide	
 pep_vmod	Variable modificaiton of peptide	
 pep_isdecoy	Is peptide identication a decoy or not	
-pep_ivmod	Variable modificaiton of peptide as a string of hexcodes	Ordianl number of neutral lossin in square brackets for fixed modifications and in round parentheses for variable modifications.
+pep_ivmod	Variable Anywhere modificaiton of peptide as a string of hexcodes	Ordianl number of neutral lossin in square brackets for fixed modifications and in round parentheses for variable modifications. Terminal modifications are not indicated by the string.
 pep_issig	Is peptide identication significant or not	
 pep_score_co	Peptide enrichment score cut-off	
 pep_rank_nl	Ordinal number of neutral loss under the same peptide including modifications (`pep_seq_mod`)	
-pep_n_nl	Number of neutral losses under the same `pep_seq_mod`	
 gene	Protein gene name	
 fasta_name	Protein name taken from Fasta title line	"By default, the character string before the first white space. See also `?read_fasta` for additional options."
 uniprot_acc	Protein UniProt accession	
@@ -96,7 +96,8 @@ shared_genes	List of genes under the same group
 kin_attr	Is protein with an attribute of kinase or not	
 kin_class	"Class of kinases, e.g., TK, TKL..."	
 kin_order	"Order of ""kin_class"" from the kinase tree diagram"	
-is_tryptic	Is a peptide sequence a canonical tryptic peptide or not	
+		
+		
 dat_file	File name of PSM results	
 ...	Additional column keys	
 raw_file	MS file name where peptides or proteins are identified	

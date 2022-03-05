@@ -2147,25 +2147,23 @@ na_genes_by_acc <- function(df)
 #' }
 find_pep_pos <- function (fasta_name, pep_seq, fasta) 
 {
-  # entry not found 
-  # when fasta is different to the one used in database searches
-  
   if (is.na(fasta_name)) {
     return(
-      cbind(pep_seq, pep_res_before = NA_character_, 
+      cbind(pep_seq = pep_seq, pep_res_before = NA_character_, 
             start = NA_integer_, end = NA_integer_, 
             pep_res_after = NA_character_, fasta_name = fasta_name, 
-            is_tryptic = NA))
+            pep_istryptic = NA))
   }
 
   this_fasta <- fasta %>% .[names(.) == fasta_name]
+  len_fasta <- length(this_fasta)
   pep_seq <- as.character(pep_seq)
   
-  if (!rlang::is_empty(this_fasta)) {
+  if (len_fasta == 1L) {
     pep_pos_all <- stringr::str_locate_all(this_fasta, pattern = pep_seq)
     pep_pos_all <- pep_pos_all[[1]]
     
-    # can have no matches in the fasta is different to what are used in 
+    # can have no matches if the fasta is different to what are used in 
     #  database searches; i.e., the fasta sequence may be altered.
     
     n_rows <- nrow(pep_pos_all)
@@ -2176,17 +2174,17 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta)
               call. = FALSE)
 
       return(
-        cbind(pep_seq, pep_res_before = NA_character_, 
+        cbind(pep_seq = pep_seq, pep_res_before = NA_character_, 
               start = NA_integer_, end = NA_integer_, 
               pep_res_after = NA_character_, fasta_name = fasta_name, 
-              is_tryptic = NA))
+              pep_istryptic = NA))
     }
     
     for (i in seq_len(n_rows)) {
       pep_pos_i <- pep_pos_all[i, ]
       
-      pos_bf <- pep_pos_i[1] - 1
-      pos_af <- pep_pos_i[2] + 1
+      pos_bf <- pep_pos_i[1] - 1L
+      pos_af <- pep_pos_i[2] + 1L
       
       pep_res_before <- stringr::str_sub(this_fasta, pos_bf, pos_bf)
       pep_res_after <- stringr::str_sub(this_fasta, pos_af, pos_af)
@@ -2194,13 +2192,12 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta)
       # Mascot specialty of "X" residues (see also aa_residues.rda)
       # prot_acc: "XP_003960355", original "QERFCQXK" becomes "QERFCQVK"
       
-      # `any` because `c`
       if (any(is.na(c(pep_res_before, pep_res_after)))) 
         return(
-          cbind(pep_seq, pep_res_before = NA_character_, 
+          cbind(pep_seq = pep_seq, pep_res_before = NA_character_, 
                 start = NA_integer_, end = NA_integer_, 
                 pep_res_after = NA_character_, fasta_name = fasta_name, 
-                is_tryptic = NA))
+                pep_istryptic = NA))
 
       if (nchar(pep_res_before) == 0L) pep_res_before <- "-"
       if (nchar(pep_res_after) == 0L) pep_res_after <- "-"
@@ -2215,30 +2212,36 @@ find_pep_pos <- function (fasta_name, pep_seq, fasta)
           (pep_res_before != "M" || pep_pos_i[1] != 2L))
         next
       else
-        return(cbind(pep_seq, 
-                     pep_res_before, 
+        return(cbind(pep_seq = pep_seq, 
+                     pep_res_before = pep_res_before, 
                      start = pep_pos_i[[1]], 
                      end = pep_pos_i[[2]],  
-                     pep_res_after, 
-                     fasta_name, 
-                     is_tryptic = TRUE))
+                     pep_res_after = pep_res_after, 
+                     fasta_name = fasta_name, 
+                     pep_istryptic = TRUE))
     }
     
     # no matches
     pep_pos_i <- pep_pos_all[1, ]
     
-    out <- cbind(pep_seq, pep_res_before, start = pep_pos_i[[1]], 
-                 end = pep_pos_i[[2]], pep_res_after, fasta_name, 
-                 is_tryptic = FALSE)
+    out <- cbind(pep_seq = pep_seq, 
+                 pep_res_before = pep_res_before, 
+                 start = pep_pos_i[[1]], 
+                 end = pep_pos_i[[2]], 
+                 pep_res_after, fasta_name, 
+                 pep_istryptic = FALSE)
   } 
-  else  { # no fasta matches
-    out <- cbind(pep_seq, 
+  else  if (len_fasta == 0L) { # no fasta matches
+    out <- cbind(pep_seq = pep_seq, 
                  pep_res_before = NA_character_, 
                  start = NA_integer_, 
                  end = NA_integer_, 
                  pep_res_after = NA_character_, 
                  fasta_name = fasta_name, 
-                 is_tryptic = FALSE)
+                 pep_istryptic = FALSE)
+  }
+  else {
+    stop("More than one matched fasta_name.")
   }
 
   invisible(out)
@@ -2258,11 +2261,16 @@ annotPeppos <- function (df)
 {
   stopifnot(all(c("fasta_name", "pep_seq") %in% names(df)))
   
-  load(file = file.path(dat_dir, "fasta_db.rda"))
+  file <- file.path(dat_dir, "fasta_db.rda")
+  
+  if (!file.exists(file)) 
+    stop("File not found: ", file, call. = FALSE)
+  
+  load(file = file)
 
   # ok cases that same `pep_seq` but different `prot_acc`
   # (K)	MENGQSTAAK	(L) NP_510965
-  # (-)	MENGQSTAAK	(L) NP_001129505  
+  # (-)	MENGQSTAAK	(L) NP_001129505
   
   df <- df %>% 
     dplyr::mutate(pep_prn = paste(pep_seq, fasta_name, sep = "@"))
@@ -2283,7 +2291,7 @@ annotPeppos <- function (df)
     do.call(rbind, .) %>% 
     `colnames<-`(c("pep_seq", "pep_res_before", "pep_start", 
                    "pep_end", "pep_res_after", 
-                   "fasta_name", "is_tryptic")) %>% 
+                   "fasta_name", "pep_istryptic")) %>% 
     data.frame(check.names = FALSE) %>% 
     tidyr::unite(pep_prn, pep_seq, fasta_name, sep = "@", remove = TRUE) %>% 
     dplyr::mutate(pep_start = as.integer(pep_start), 
@@ -2293,13 +2301,14 @@ annotPeppos <- function (df)
   df$pep_res_after <- NULL
   df$pep_start <- NULL
   df$pep_end <- NULL
+  nms <- names(df)
   
-  if ("pep_res_before" %in% names(df)) pep_pos_all$pep_res_before <- NULL
-  if ("pep_res_after" %in% names(df)) pep_pos_all$pep_res_after <- NULL
-  if ("pep_start" %in% names(df)) pep_pos_all$pep_start <- NULL
-  if ("pep_end" %in% names(df)) pep_pos_all$pep_end <- NULL
+  if ("pep_res_before" %in% nms) pep_pos_all$pep_res_before <- NULL
+  if ("pep_res_after" %in% nms) pep_pos_all$pep_res_after <- NULL
+  if ("pep_start" %in% nms) pep_pos_all$pep_start <- NULL
+  if ("pep_end" %in% nms) pep_pos_all$pep_end <- NULL
   
-  df <- df %>% 
+  df %>% 
     dplyr::left_join(pep_pos_all, by = "pep_prn") %>% 
     dplyr::select(-pep_prn) %>% 
     reloc_col_before("pep_end", "pep_res_before") %>% 
@@ -4418,7 +4427,7 @@ get_col_types <- function ()
     kin_attr = col_logical(),
     kin_class = col_character(),
     kin_order = col_integer(),
-    is_tryptic = col_logical(),
+    pep_istryptic = col_logical(),
     
     dat_file = col_character(),
     raw_file = col_character(),

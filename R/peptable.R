@@ -864,11 +864,11 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel)
 
 #' Combines peptide reports across multiple experiments.
 #'
-#' Median summarization of data from the same TMT or LFQ experiment at different
-#' LCMS injections summed \code{pep_n_psm}, \code{prot_n_psm}, and
-#' \code{prot_n_pep} after data merging no Z_log2_R yet available use
-#' \code{col_select = expr(Sample_ID)} not \code{col_select} to get all Z_log2_R
-#' why: users may specify \code{col_select} only partial to Sample_ID entries.
+#' Median summary of data from the same TMT or LFQ experiment at different LCMS
+#' injections summed \code{pep_n_psm}, \code{prot_n_psm}, and \code{prot_n_pep}
+#' after data merging no Z_log2_R yet available use \code{col_select =
+#' expr(Sample_ID)} not \code{col_select} to get all Z_log2_R why: users may
+#' specify \code{col_select} only partial to Sample_ID entries.
 #'
 #' @param use_mq_pep Logical; if TRUE, uses the peptides.txt from MaxQuant. This
 #'   is an interim solution for MaxQuant timsTOF.
@@ -1089,7 +1089,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     purrr::reduce(dplyr::left_join, by = group_pep_by)
   
   # --- update sd_log2R000 (...) ---
-  if (TMT_plex == 0L && !use_mq_pep) {
+  if (!(TMT_plex || use_mq_pep)) {
     df <- local({
       df <- df %>% 
         dplyr::select(-grep("^sd_log2_R000 ", names(.)))
@@ -2534,7 +2534,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   
   df <- df %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-    dplyr::select(-which(names(.) %in% c("is_tryptic", "mean_lint", "count_nna", 
+    dplyr::select(-which(names(.) %in% c("pep_istryptic", "mean_lint", "count_nna", 
                                          "shared_prot_accs", "shared_genes"))) %>% 
     dplyr::select(-grep("^Reporter mass deviation", names(.))) %>% 
     dplyr::select(-which(names(.) %in% c("m/z", "PIF", "PEP"))) %>% 

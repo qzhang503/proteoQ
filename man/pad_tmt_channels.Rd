@@ -12,5 +12,5 @@ pad_tmt_channels(file = NULL, ...)
 \item{...}{filter_dots.}
 }
 \description{
-Pads TMT channels to the highest multiplex.
+For proteoM.
 }
