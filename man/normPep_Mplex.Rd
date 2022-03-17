@@ -10,12 +10,11 @@ normPep_Mplex(
   use_duppeps = TRUE,
   duppeps_repair = "denovo",
   cut_points = Inf,
-  omit_single_lfq = TRUE,
+  omit_single_lfq = FALSE,
   use_mq_pep = FALSE,
   rm_allna = FALSE,
   ret_sd_tol = Inf,
   rm_ret_outliers = FALSE,
-  parallel = TRUE,
   ...
 )
 }
@@ -55,8 +54,8 @@ default is \code{cut_points = Inf}, or equivalently \code{-Inf}, where the
 \code{log2FC} under each sample will be median-centered as one piece. See
 also \code{\link{prnHist}} for data binning in histogram visualization.}
 
-\item{omit_single_lfq}{Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
-with single measured values across all samples. The default is TRUE.}
+\item{omit_single_lfq}{Logical; if TRUE, omits LFQ entries with single
+measured values across all samples. The default is FALSE.}
 
 \item{use_mq_pep}{Logical; if TRUE, uses the peptides.txt from MaxQuant. This
 is an interim solution for MaxQuant timsTOF.}
@@ -72,9 +71,6 @@ setting of, e.g., 150 might be suitable.}
 
 \item{rm_ret_outliers}{Logical; if TRUE, removes peptide entries with outlying
 retention times across samples and/or LCMS series.}
-
-\item{parallel}{Logical; if TRUE, performs parallel computation. The default
-is TRUE.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. Each statement contains to a list of logical expression(s). The

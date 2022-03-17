@@ -4278,6 +4278,40 @@ list_to_dataframe <- function (x)
 }
 
 
+#' Finds the list of psmQ files.
+#' 
+#' @inheritParams load_expts
+find_psmQ_files <- function (dat_dir) 
+{
+  filelistQ <- list.files(path = file.path(dat_dir), pattern = "^psmQ.*\\.txt$")
+  filelistC <- list.files(path = file.path(dat_dir), pattern = "^psmC.*\\.txt$")
+  
+  if (length(filelistQ) && length(filelistC)) {
+    message("Both `psmQ[...].txt` and `psmC[...].txt` are present; ", 
+            "`psmQ[...].txt` will be used.")
+    
+    filelist <- filelistQ
+  } 
+  else if (length(filelistQ)) {
+    filelist <- filelistQ
+  } 
+  else if (length(filelistC)) {
+    filelist <- filelistC
+    
+    stop(paste("No PSM files `psmQ[...].txt` under", file.path(dat_dir), ".",
+               "\nMake sure that the names of PSM files start with `psmQ`."), 
+         call. = FALSE)
+  } 
+  else {
+    stop(paste("No PSM files `psmQ[...].txt` under", file.path(dat_dir), ".",
+               "\nMake sure that the names of PSM files start with `psmQ`."), 
+         call. = FALSE)
+  }
+  
+  filelist
+}
+
+
 #' Gets column types.
 #' 
 #' @import readr

@@ -10,10 +10,9 @@ mergePep(
   duppeps_repair = c("majority", "denovo"),
   cut_points = Inf,
   rm_allna = FALSE,
-  omit_single_lfq = TRUE,
+  omit_single_lfq = FALSE,
   ret_sd_tol = Inf,
   rm_ret_outliers = FALSE,
-  parallel = TRUE,
   ...
 )
 }
@@ -47,8 +46,8 @@ also \code{\link{prnHist}} for data binning in histogram visualization.}
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
 
-\item{omit_single_lfq}{Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
-with single measured values across all samples. The default is TRUE.}
+\item{omit_single_lfq}{Logical; if TRUE, omits LFQ entries with single
+measured values across all samples. The default is FALSE.}
 
 \item{ret_sd_tol}{Numeric; the tolerance in the variance of retention time
 (w.r.t. measures in seconds). The thresholding applies to both TMT and LFQ
@@ -57,9 +56,6 @@ setting of, e.g., 150 might be suitable.}
 
 \item{rm_ret_outliers}{Logical; if TRUE, removes peptide entries with outlying
 retention times across samples and/or LCMS series.}
-
-\item{parallel}{Logical; if TRUE, performs parallel computation. The default
-is TRUE.}
 
 \item{...}{\code{filter_}: Variable argument statements for the row filtration
 of data against the column keys in individual peptide tables of

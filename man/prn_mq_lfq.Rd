@@ -2,7 +2,7 @@
 % Please edit documentation in R/peptable.R
 \name{prn_mq_lfq}
 \alias{prn_mq_lfq}
-\title{load MaxQuant protein table}
+\title{Loads MaxQuant protein table}
 \usage{
 prn_mq_lfq(label_scheme)
 }
@@ -10,5 +10,5 @@ prn_mq_lfq(label_scheme)
 \item{label_scheme}{Experiment summary}
 }
 \description{
-load MaxQuant protein table
+Loads MaxQuant protein table
 }

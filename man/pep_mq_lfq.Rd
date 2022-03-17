@@ -9,8 +9,8 @@ pep_mq_lfq(label_scheme, omit_single_lfq)
 \arguments{
 \item{label_scheme}{Experiment summary}
 
-\item{omit_single_lfq}{Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
-with single measured values across all samples. The default is TRUE.}
+\item{omit_single_lfq}{Logical; if TRUE, omits LFQ entries with single
+measured values across all samples. The default is FALSE.}
 }
 \description{
 Fill back temporarily intensity values that are not filled in LFQ msms.txt.

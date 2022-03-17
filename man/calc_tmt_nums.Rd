@@ -4,7 +4,7 @@
 \alias{calc_tmt_nums}
 \title{Calculates numeric values}
 \usage{
-calc_tmt_nums(df, filelist, group_psm_by, parallel)
+calc_tmt_nums(df, filelist, group_psm_by)
 }
 \arguments{
 \item{df}{A data frame of PSM.}
@@ -17,10 +17,8 @@ based on the same \code{pep_seq} groups. At the \code{pep_seq_mod}
 alternative, peptides with different variable modifications will be treated
 as different species and descriptive statistics will be calculated based on
 the same \code{pep_seq_mod} groups.}
-
-\item{parallel}{Logical; if TRUE, performs parallel computation. The default
-is TRUE.}
 }
 \description{
-Fields of numeric values: sd_log2_R, log2_R, log2_R, I, N_I.
+Spreads fields of numeric values: sd_log2_R, log2_R, log2_R, I, N_I by TMT
+sets. Also works for LFQ as each sample corresponds to a TMT set.
 }

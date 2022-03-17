@@ -78,7 +78,7 @@ pep_mod_group	Index of peptide modification group
 pep_fmod	Fix modifications of peptide	
 pep_vmod	Variable modificaiton of peptide	
 pep_isdecoy	Is peptide identication a decoy or not	
-pep_ivmod	Variable Anywhere modificaiton of peptide as a string of hexcodes	Ordianl number of neutral lossin in square brackets for fixed modifications and in round parentheses for variable modifications. Terminal modifications are not indicated by the string.
+pep_ivmod	Variable Anywhere modificaiton of peptide as a string of hexcodes	Terminal modifications are not part of the string. proteoM: ordianl number indicating neutral losses in square brackets for fixed modifications and in round parentheses for variable modifications; the numbers are removed during proteoQ. 
 pep_issig	Is peptide identication significant or not	
 pep_score_co	Peptide enrichment score cut-off	
 pep_rank_nl	Ordinal number of neutral loss under the same peptide including modifications (`pep_seq_mod`)	
