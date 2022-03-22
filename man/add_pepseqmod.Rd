@@ -2,9 +2,9 @@
 % Please edit documentation in R/psmtable.R
 \name{add_pepseqmod}
 \alias{add_pepseqmod}
-\title{Add the `pep_seq_mod` field to Mascot PSMs}
+\title{Adds the `pep_seq_mod` field to PSMs.}
 \usage{
-add_pepseqmod(df = NULL, use_lowercase_aa = TRUE, purge_phosphodata = TRUE)
+add_pepseqmod(df, use_lowercase_aa = TRUE, purge_phosphodata = TRUE)
 }
 \arguments{
 \item{df}{A data frame containing the PSM table from database searches.}
@@ -18,5 +18,5 @@ variable modification(s), entries without phosphorylation will be removed.
 The default is TRUE.}
 }
 \description{
-Add the `pep_seq_mod` field to Mascot PSMs
+For proteoM
 }

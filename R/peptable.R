@@ -43,12 +43,15 @@ use_mq_peptable <- function (dat_dir, label_scheme_full)
     message("Primary column keys in `Peptide/TMTset1_LCMSinj1_Peptide_N.txt` etc. ", 
             "for `filter_` varargs.")
     return(FALSE)
-  } else if (length(filelist) > 1L) {
+  } 
+  else if (length(filelist) > 1L) {
     stop("Only single MaxQuant `peptides.txt` allowed.", call. = FALSE)
-  } else {
+  } 
+  else {
     if (!file.exists(file.path(dat_dir, filelist))) {
       stop("No MaxQuant LFQ file `peptides[...].txt` udner", dat_dir, call. = FALSE)
-    } else {
+    } 
+    else {
       message("MaxQuant file `", filelist, "` found.")
       return(TRUE)
     }
@@ -198,9 +201,10 @@ extract_mq_ints <- function (df)
 #' Handling of MaxQuant peptide.txt
 #'
 #' Fill back temporarily intensity values that are not filled in LFQ msms.txt.
+#' 
+#' @param label_scheme Experiment summary
 #' @inheritParams n_TMT_sets
 #' @inheritParams mergePep
-#' @inheritParams prn_mq_lfq
 pep_mq_lfq <- function(label_scheme, omit_single_lfq) 
 {
   dat_dir <- get_gl_dat_dir()
@@ -566,7 +570,7 @@ pep_mq_lfq2 <- function(label_scheme)
 }
 
 
-#' load MaxQuant protein table
+#' Loads MaxQuant protein table
 #' 
 #' @param label_scheme Experiment summary
 prn_mq_lfq <- function(label_scheme) 
@@ -625,7 +629,12 @@ prn_mq_lfq <- function(label_scheme)
 
 
 #' Helper: calculates LFQ log2FC.
-#' 
+#'
+#' For rows with single intensity values: original intensities kept but
+#' \code{log2_R000} coerced from 0 to NA. This will keep single-value rows away
+#' from data alignment that are based on \code{log2_R000}. Otherwise, the
+#' alignment may be trapped to the spike at \code{log2_R000 = 0}. 
+#'
 #' @param df A data frame.
 #' @param type The type of intensity data.
 #' @param refChannels The reference channels.
@@ -641,22 +650,28 @@ calc_lfq_log2r <- function (df, type, refChannels)
 
   col_smpls <- grep(new_type, names(df))
   
-  if (purrr::is_empty(col_smpls)) 
+  if (!length(col_smpls)) 
     stop("No sample columns start with ", type, ".", call. = FALSE)
   
-  col_refs <- if (length(refChannels) > 0) 
+  col_refs <- if (length(refChannels)) 
     which(names(df) %in% paste0(type, " (", refChannels, ")"))
   else 
     col_smpls
   
-  sweep(df[, col_smpls, drop = FALSE], 1,
+  dfx <- df[, col_smpls, drop = FALSE]
+  rows_sv <- (rowSums(!is.na(dfx)) == 1L)
+  
+  ans <- sweep(dfx, 1,
         rowMeans(df[, col_refs, drop = FALSE], na.rm = TRUE), "/") %>%
     log2(.)  %>% 
-    dplyr::mutate_all(~ replace(.x, is.infinite(.), NA)) %>% 
+    dplyr::mutate_all(~ replace(.x, is.infinite(.), NA_real_)) %>% 
     `colnames<-`(gsub(paste0(new_type, "(.*)$"), 
                       paste0(no_hat, "\\1"), 
-                      names(.))) %>% 
-    cbind(df, .)
+                      names(.)))
+  
+  ans[rows_sv, ] <- NA_real_
+  
+  cbind(df, ans)
 }
 
 
@@ -667,10 +682,13 @@ calc_lfq_log2r <- function (df, type, refChannels)
 na_single_lfq <- function (df, pattern = "^I000 ") 
 {
   df_lfq <- df[, grep(pattern, names(df)), drop = FALSE]
-  not_single_zero <- (rowSums(df_lfq > 0, na.rm = TRUE) > 1) 
-  not_single_zero[!not_single_zero] <- NA
+
+  # slightly more flexible than (rowSums(!is.na(df_lfq)) > 1L)
+  # in case that upstream NA's are replaced 0's
+  not_single_zero <- (rowSums(df_lfq > 0, na.rm = TRUE) > 1L) 
+  not_single_zero[!not_single_zero] <- NA # NA logical
   
-  df_lfq[] <- purrr::map(df_lfq, `*`, not_single_zero)
+  df_lfq[] <- lapply(df_lfq, `*`, not_single_zero)
   df[, grep(pattern, names(df))] <- df_lfq
   
   invisible(df)
@@ -685,7 +703,7 @@ na_single_lfq <- function (df, pattern = "^I000 ")
 #' 
 #' @param df A data frame.
 #' @inheritParams mergePep
-calc_lfq_pepnums <- function (df, omit_single_lfq) 
+calc_lfq_pepnums <- function (df, omit_single_lfq = FALSE) 
 {
   load(file.path(dat_dir, "label_scheme.rda"))
   
@@ -705,9 +723,9 @@ calc_lfq_pepnums <- function (df, omit_single_lfq)
     calc_lfq_log2r("I000", refChannels) %>% 
     calc_lfq_log2r("N_I000", refChannels) %>% 
     dplyr::mutate_at(.vars = grep("log2_R000\\s", names(.)), 
-                     ~ replace(.x, is.infinite(.), NA)) 
+                     ~ replace(.x, is.infinite(.), NA_real_)) 
 
-  if (purrr::is_empty(grep("log2_R000", names(df)))) {
+  if (!length(grep("log2_R000", names(df)))) {
     stop("No `log2_R000...` columns available.\n",
          "Probably inconsistent sample IDs between metadata and MaxQuant `peptides.txt`.", 
          call. = FALSE)
@@ -770,14 +788,15 @@ calc_lfq_pepnums2 <- function (df, filelist, group_psm_by)
 
 
 #' Calculates numeric values
-#' 
-#' Fields of numeric values: sd_log2_R, log2_R, log2_R, I, N_I.
+#'
+#' Spreads fields of numeric values: sd_log2_R, log2_R, log2_R, I, N_I by TMT
+#' sets. Also works for LFQ as each sample corresponds to a TMT set.
 #'
 #' @param df A data frame of PSM.
 #' @param filelist A list of PSM files.
 #' @inheritParams splitPSM
 #' @inheritParams annotPSM
-calc_tmt_nums <- function (df, filelist, group_psm_by, parallel) 
+calc_tmt_nums <- function (df, filelist, group_psm_by) 
 {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -802,36 +821,29 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel)
     df_n <- df_num[rows, ]
     df_1 <- df_num[!rows, ]
 
-    if (parallel) {
-      nms <- names(df_n)
-      
-      stopifnot(nms[1] == group_psm_by, nms[2] == "TMT_Set")
-      
-      n_cores <- parallel::detectCores()
-      cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-      
-      df_num <- suppressWarnings(
-        parallel::clusterApply(
-          cl, 3:ncol(df_n), function(i) {
-            df_n %>% 
-              dplyr::select(c(1:2, i)) %>% 
-              dplyr::summarise_all(~ median(.x, na.rm = TRUE))
-          }
-        )
-      ) %>% 
-        purrr::map(~ tidyr::unite(.x, id, group_psm_by, TMT_Set, sep = "@"))  %>% 
-        purrr::reduce(dplyr::left_join, by = "id") %>% 
-        tidyr::separate(id, into = c(group_psm_by, "TMT_Set"), sep = "@", 
-                        remove = TRUE) %>% 
-        dplyr::bind_rows(df_1) # the same order of columns ensured
-      
-      parallel::stopCluster(cl)
-    } 
-    else {
-      df_num <- df_n %>% 
-        dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>% 
-        dplyr::bind_rows(df_1)
-    }
+    nms <- names(df_n)
+    
+    stopifnot(nms[1] == group_psm_by, nms[2] == "TMT_Set")
+    
+    n_cores <- parallel::detectCores()
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    
+    df_num <- suppressWarnings(
+      parallel::clusterApply(
+        cl, 3:ncol(df_n), function(i) {
+          df_n %>% 
+            dplyr::select(c(1:2, i)) %>% 
+            dplyr::summarise_all(~ median(.x, na.rm = TRUE))
+        }
+      )
+    ) %>% 
+      purrr::map(~ tidyr::unite(.x, id, group_psm_by, TMT_Set, sep = "@"))  %>% 
+      purrr::reduce(dplyr::left_join, by = "id") %>% 
+      tidyr::separate(id, into = c(group_psm_by, "TMT_Set"), sep = "@", 
+                      remove = TRUE) %>% 
+      dplyr::bind_rows(df_1) # the same order of columns ensured
+    
+    parallel::stopCluster(cl)
   } 
   
   df_num <- df_num %>%
@@ -864,11 +876,11 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel)
 
 #' Combines peptide reports across multiple experiments.
 #'
-#' Median summarization of data from the same TMT or LFQ experiment at different
-#' LCMS injections summed \code{pep_n_psm}, \code{prot_n_psm}, and
-#' \code{prot_n_pep} after data merging no Z_log2_R yet available use
-#' \code{col_select = expr(Sample_ID)} not \code{col_select} to get all Z_log2_R
-#' why: users may specify \code{col_select} only partial to Sample_ID entries.
+#' Median summary of data from the same TMT or LFQ experiment at different LCMS
+#' injections summed \code{pep_n_psm}, \code{prot_n_psm}, and \code{prot_n_pep}
+#' after data merging no Z_log2_R yet available use \code{col_select =
+#' expr(Sample_ID)} not \code{col_select} to get all Z_log2_R why: users may
+#' specify \code{col_select} only partial to Sample_ID entries.
 #'
 #' @param use_mq_pep Logical; if TRUE, uses the peptides.txt from MaxQuant. This
 #'   is an interim solution for MaxQuant timsTOF.
@@ -878,9 +890,9 @@ calc_tmt_nums <- function (df, filelist, group_psm_by, parallel)
 #' @inheritParams mergePep
 normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_acc", 
                            use_duppeps = TRUE, duppeps_repair = "denovo", 
-                           cut_points = Inf, omit_single_lfq = TRUE, 
+                           cut_points = Inf, omit_single_lfq = FALSE, 
                            use_mq_pep = FALSE, rm_allna = FALSE, ret_sd_tol = Inf, 
-                           rm_ret_outliers = FALSE, parallel = TRUE, ...) 
+                           rm_ret_outliers = FALSE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
@@ -891,11 +903,11 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
   
-  filelist <- 
-    list.files(path = file.path(dat_dir, "Peptide"), 
-               pattern = paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$"), 
-               full.names = TRUE)
+  pat <- paste0("TMTset[0-9]+_LCMSinj[0-9]+_Peptide_N\\.txt$")
   
+  filelist <- list.files(path = file.path(dat_dir, "Peptide"), pattern = pat, 
+                         full.names = TRUE)
+
   if (!length(filelist)) {
     stop("No individual peptide tables available; run `PSM2Pep()` first.", 
          call. = FALSE)
@@ -920,7 +932,8 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     assign_duppeps(group_psm_by, group_pep_by, use_duppeps, duppeps_repair)
   
   if (!use_mq_pep) {
-    df_num <- calc_tmt_nums(df, filelist, group_psm_by, parallel)
+    # also for LFQ as each sample corresponds to a TMT set
+    df_num <- calc_tmt_nums(df, filelist, group_psm_by)
     
     pep_lfqnums <- df %>% 
       dplyr::select(group_psm_by) %>% 
@@ -1089,7 +1102,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     purrr::reduce(dplyr::left_join, by = group_pep_by)
   
   # --- update sd_log2R000 (...) ---
-  if (TMT_plex == 0L && !use_mq_pep) {
+  if (!(TMT_plex || use_mq_pep)) {
     df <- local({
       df <- df %>% 
         dplyr::select(-grep("^sd_log2_R000 ", names(.)))
@@ -1454,8 +1467,8 @@ fmt_num_cols <- function (df)
 #'  setting of, e.g., 150 might be suitable.
 #'@param rm_ret_outliers Logical; if TRUE, removes peptide entries with outlying
 #'  retention times across samples and/or LCMS series.
-#'@param omit_single_lfq Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
-#'  with single measured values across all samples. The default is TRUE.
+#'@param omit_single_lfq Logical; if TRUE, omits LFQ entries with single
+#'  measured values across all samples. The default is FALSE.
 #'@param ... \code{filter_}: Variable argument statements for the row filtration
 #'  of data against the column keys in individual peptide tables of
 #'  \code{TMTset1_LCMSinj1_Peptide_N.txt, TMTset1_LCMSinj2_Peptide_N.txt}, etc.
@@ -1540,8 +1553,8 @@ fmt_num_cols <- function (df)
 mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE, 
                       duppeps_repair = c("majority", "denovo"), 
                       cut_points = Inf, rm_allna = FALSE, 
-                      omit_single_lfq = TRUE, ret_sd_tol = Inf, 
-                      rm_ret_outliers = FALSE, parallel = TRUE, ...) 
+                      omit_single_lfq = FALSE, ret_sd_tol = Inf, 
+                      rm_ret_outliers = FALSE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
   
@@ -1576,7 +1589,7 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE,
   # ---
   
   stopifnot(vapply(c(plot_log2FC_cv, use_duppeps, rm_allna, omit_single_lfq, 
-                     rm_ret_outliers, parallel), 
+                     rm_ret_outliers), 
                    rlang::is_logical, logical(1)))
   stopifnot(cut_points >= 0, ret_sd_tol > 0)
 
@@ -1613,7 +1626,6 @@ mergePep <- function (plot_log2FC_cv = TRUE, use_duppeps = TRUE,
                       duppeps_repair = duppeps_repair, 
                       cut_points = cut_points, 
                       omit_single_lfq = omit_single_lfq,
-                      parallel = parallel, 
                       use_mq_pep = use_mq_pep, 
                       rm_allna = rm_allna, 
                       ret_sd_tol = ret_sd_tol, 
@@ -2534,7 +2546,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   
   df <- df %>% 
     dplyr::select(-grep("log2_R[0-9]{3}|I[0-9]{3}", names(.))) %>% 
-    dplyr::select(-which(names(.) %in% c("is_tryptic", "mean_lint", "count_nna", 
+    dplyr::select(-which(names(.) %in% c("pep_istryptic", "mean_lint", "count_nna", 
                                          "shared_prot_accs", "shared_genes"))) %>% 
     dplyr::select(-grep("^Reporter mass deviation", names(.))) %>% 
     dplyr::select(-which(names(.) %in% c("m/z", "PIF", "PEP"))) %>% 
@@ -2815,7 +2827,6 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE,
   
   invisible(df)
 }
-
 
 
 #' Replaces values by the first row.

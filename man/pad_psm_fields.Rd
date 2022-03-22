@@ -4,10 +4,10 @@
 \alias{pad_psm_fields}
 \title{Pads PSM exports.}
 \usage{
-pad_psm_fields(df = NULL)
+pad_psm_fields(dfs = NULL)
 }
 \arguments{
-\item{df}{An intermediate PSM table from Mascot export}
+\item{dfs}{Intermediate PSM tables.}
 }
 \description{
 Intensity or ratio columns are handled during channel padding and thus

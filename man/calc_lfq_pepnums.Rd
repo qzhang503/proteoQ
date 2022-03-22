@@ -4,13 +4,13 @@
 \alias{calc_lfq_pepnums}
 \title{Calculates log2FC of peptides based on LFQ intensity.}
 \usage{
-calc_lfq_pepnums(df, omit_single_lfq)
+calc_lfq_pepnums(df, omit_single_lfq = FALSE)
 }
 \arguments{
 \item{df}{A data frame.}
 
-\item{omit_single_lfq}{Logical for MaxQuant LFQ; if TRUE, omits LFQ entries
-with single measured values across all samples. The default is TRUE.}
+\item{omit_single_lfq}{Logical; if TRUE, omits LFQ entries with single
+measured values across all samples. The default is FALSE.}
 }
 \description{
 With LFQ, values of \code{log2_R000 (...)} and \code{N_log2_R000 (...)} in

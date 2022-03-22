@@ -54,7 +54,7 @@ plotVolcano <- function(df = NULL, df2 = NULL, id = "gene", adjP = FALSE,
     filters_in_call(!!!filter_dots) %>% 
     arrangers_in_call(!!!arrange_dots)
   
-  rm(filter_dots, arrange_dots, select_dots)
+  rm(list = c("filter_dots", "arrange_dots", "select_dots"))
   
   if (adjP) {
     df <- df %>%
@@ -349,21 +349,49 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 	
 	stopifnot(length(contrast_groups) > 0L)
 
-	dfw <- purrr::map(contrast_groups, ~ {
-	  pat <- paste0(" \\(", .x, "\\)")
-	  cols_1 <- grepl(paste0("^pVal", pat), names(df))
-	  cols_2 <- grepl(paste0("^adjP", pat), names(df))
-	  cols_3 <- grepl(paste0("^log2Ratio", pat), names(df))
+	dfw <- purrr::map(contrast_groups, function (x) {
+	  nms <- names(df)
+	  pat <- paste0(" (", x, ")")
+	  keys <- c("pVal", "adjP", "log2Ratio")
 	  
-	  x <- df[, cols_1 | cols_2 | cols_3] %>%
-	    `colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
-	    dplyr::mutate(Contrast = .x)
+	  dfa <- local({
+	    cols <- lapply(keys, function (key) {
+	      grepl(paste0(key, pat), nms, fixed = TRUE) & grepl(paste0("^", key), nms)
+	    })
+	    
+	    df[, purrr::reduce(cols, `|`)] %>%
+	      `colnames<-`(gsub("\\s+\\(.*\\)$", "", names(.))) %>%
+	      dplyr::mutate(Contrast = x)
+	  })
 	  
-	  y <- df[, !grepl("^pVal\\s+|^adjP\\s+|^log2Ratio\\s+", names(df)), 
-	          drop = FALSE]
+	  dfb <- local({
+	    pat_i <- lapply(keys, function (key) {
+	      paste0("^", key, " ")
+	    })
+	    
+	    df[, !grepl(paste(pat_i, collapse = "|"), nms), drop = FALSE]
+	  })
 	  
-	  dplyr::bind_cols(y, x)
-	}) %>% 
+	  dplyr::bind_cols(dfb, dfa)
+	})
+	
+	local({
+	  if (length(dfw) > 1) {
+	    ncols <- unlist(lapply(dfw, ncol))
+	    
+	    if (length(unique(ncols)) > 1L)
+	      stop("Uneven number of columns detected. ", "Please report the bug.")
+
+	    nms <- lapply(dfw, names)
+	    nms_1 <- nms[[1]]
+	    nms_all <- unique(unlist(nms))
+	    
+	    if (length(nms_1) != length(nms_all))
+	      stop("Uneven column names detected. ", "Please report the bug.")
+	  }
+	})
+	
+	dfw <- dfw %>% 
 	  do.call(rbind, .) %>% 
 	  dplyr::mutate(
 	    Contrast = factor(Contrast, levels = contrast_groups),

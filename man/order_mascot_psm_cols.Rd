@@ -4,7 +4,7 @@
 \alias{order_mascot_psm_cols}
 \title{Orders Mascot PSM columns}
 \usage{
-order_mascot_psm_cols(df = NULL, psm_cols = NULL, rm_na_cols = FALSE)
+order_mascot_psm_cols(df, psm_cols = NULL, rm_na_cols = FALSE)
 }
 \arguments{
 \item{df}{A data frame of PSM.}

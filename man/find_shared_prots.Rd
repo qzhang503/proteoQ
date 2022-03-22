@@ -20,5 +20,6 @@ sub-set proteins enabled. Otherwise, e.g. when applying to other search
 engines without such redundancy, every peptide would turn out to be unique.
 }
 \details{
-Output rows are unique at the levels of \code{c("prot_acc", "pep_seq")}.
+Output rows are unique at the levels of \code{c("prot_acc", "pep_seq")}. By
+default, sequences of \code{Protein} terminals will be treated separately.
 }

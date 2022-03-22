@@ -14,5 +14,8 @@ calc_lfq_log2r(df, type, refChannels)
 \item{refChannels}{The reference channels.}
 }
 \description{
-Helper: calculates LFQ log2FC.
+For rows with single intensity values: original intensities kept but
+\code{log2_R000} coerced from 0 to NA. This will keep single-value rows away
+from data alignment that are based on \code{log2_R000}. Otherwise, the
+alignment may be trapped to the spike at \code{log2_R000 = 0}.
 }

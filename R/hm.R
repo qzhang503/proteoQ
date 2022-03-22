@@ -330,6 +330,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     rm(list = c("d", "h"))
   } else {
     dots$cluster_rows <- FALSE
+    h <- FALSE
   }
   
   if (cluster_cols) {
@@ -350,6 +351,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
     # rm(list = c("d_cols", "h_cols")) # h_cols also for subtrees
   } else {
     dots$cluster_cols <- FALSE
+    h_cols <- FALSE
   }
   
   filename <- gg_imgname(filename)
