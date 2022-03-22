@@ -4,17 +4,27 @@
 \alias{newColnames}
 \title{Make new column names}
 \usage{
-newColnames(i, x, label_scheme, pattern = "[RI][0-9]{3}[NC]{0,1}")
+newColnames(
+  TMT_Set = 1L,
+  df,
+  label_scheme,
+  pattern = "[RI][0-9]{3}[NC]{0,1}",
+  group_ids = NULL
+)
 }
 \arguments{
-\item{i}{Integer; the index of TMT experiment.}
+\item{TMT_Set}{Integer; the index of TMT experiment.}
 
-\item{x}{Data frame; log2FC data.}
+\item{df}{Data frame; log2FC data.}
 
 \item{label_scheme}{Experiment summary.}
 
 \item{pattern}{Regex pattern for capturing intensity and ratio columns.}
+
+\item{group_ids}{A character vector; for example, c("heavy", "light") that
+can be found from column \code{pep_group} in \code{df}; \code{group_ids} is
+NULL if column \code{pep_group} is not in \code{df}.}
 }
 \description{
-\code{newColnames} match names to Sample_ID in label_scheme
+According to the Sample_ID(s) in label_scheme.
 }

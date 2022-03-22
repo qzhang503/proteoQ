@@ -343,6 +343,58 @@ pepSig(
 )
 
 prnSig(impute_na = TRUE)
+
+
+# ***********************************
+# ***********    SILAC    ***********
+# ***********************************
+
+# Database searches
+library(proteoM)
+
+matchMS(
+  silac_mix = list(base = NULL, heavy = c("K8 (K)", "R10 (R)")),
+  ...
+)
+
+# The rest is the same as LFQ
+
+library(proteoQ)
+load_expts("~/proteoQ/examples")
+
+# PSM data standardization
+normPSM(
+  group_psm_by = pep_seq_mod, 
+  fasta = c("~/proteoQ/dbs/fasta/uniprot/uniprot_hsmm_2020_03.fasta"),
+)
+
+# PSM purging not applicable with LFQ
+# purgePSM()
+
+# PSMs to peptides
+PSM2Pep()
+
+# peptide data merging
+mergePep()
+
+# peptide data standardization
+standPep()
+
+# peptide data histograms
+pepHist()
+
+# optional peptide purging
+purgePep()
+
+# peptides to proteins
+Pep2Prn(use_unique_pep = TRUE)
+
+# protein data standardization
+standPrn()
+
+# protein data histograms
+prnHist()
+
 }
 
 

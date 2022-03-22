@@ -233,6 +233,23 @@ pepSig(
 )
 
 prnSig(impute_na = TRUE)
+
+
+# ***********************************
+# ***********    SILAC    ***********
+# ***********************************
+
+# Database searches
+library(proteoM)
+
+matchMS(
+  silac_mix = list(base = NULL, heavy = c("K8 (K)", "R10 (R)")),
+  ...
+)
+
+# The remaining is the same as LFQ
+# ...
+
 }
 
 

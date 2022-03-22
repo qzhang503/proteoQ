@@ -5,41 +5,50 @@
 #' @param type Type of logical matrix.
 lgl_cleanup <- function (df, type = "sd", rm_allna = FALSE) 
 {
-  fields <- paste0("^lgl_log2_", type, "[0-9]{3}[NC]{0,1}")
+  pat <- "[0-9]{3}[NC]{0,1}"
+  fields <- paste0("^lgl_log2_", type, pat)
+  pat_log2_R <- paste0("^log2_R", pat)
+  pat_N_log2_R <- paste0("^N_log2_R", pat)
+  pat_Z_log2_R <- paste0("^Z_log2_R", pat)
+  pat_I <- paste0("^I", pat)
+  pat_N_I <- paste0("^N_I", pat)
+  pat_sd <- paste0("^sd_log2_R", pat)
+
+  nms <- names(df)
   
-  df[, grepl("^log2_R[0-9]{3}", names(df))] <-
-    purrr::map2(as.list(df[, grepl("^log2_R[0-9]{3}", names(df))]),
-                as.list(df[, grepl(fields, names(df))]), `*`) %>%
+  df[, grepl(pat_log2_R, nms)] <-
+    purrr::map2(as.list(df[, grepl(pat_log2_R, nms)]),
+                as.list(df[, grepl(fields, nms)]), `*`) %>%
     dplyr::bind_cols()
   
-  df[, grepl("^N_log2_R[0-9]{3}", names(df))] <-
-    purrr::map2(as.list(df[, grepl("^N_log2_R[0-9]{3}", names(df))]),
-                as.list(df[, grepl(fields, names(df))]), `*`) %>%
+  df[, grepl(pat_N_log2_R, nms)] <-
+    purrr::map2(as.list(df[, grepl(pat_N_log2_R, nms)]),
+                as.list(df[, grepl(fields, nms)]), `*`) %>%
     dplyr::bind_cols()
   
-  df[, grepl("^Z_log2_R[0-9]{3}", names(df))] <-
-    purrr::map2(as.list(df[, grepl("^Z_log2_R[0-9]{3}", names(df))]),
-                as.list(df[, grepl(fields, names(df))]), `*`) %>%
+  df[, grepl(pat_Z_log2_R, nms)] <-
+    purrr::map2(as.list(df[, grepl(pat_Z_log2_R, nms)]),
+                as.list(df[, grepl(fields, nms)]), `*`) %>%
     dplyr::bind_cols()
   
-  df[, grepl("^I[0-9]{3}", names(df))] <-
-    purrr::map2(as.list(df[, grepl("^I[0-9]{3}", names(df))]),
-                as.list(df[, grepl(fields, names(df))]), `*`) %>%
+  df[, grepl(pat_I, nms)] <-
+    purrr::map2(as.list(df[, grepl(pat_I, nms)]),
+                as.list(df[, grepl(fields, nms)]), `*`) %>%
     dplyr::bind_cols()
   
-  df[, grepl("^N_I[0-9]{3}", names(df))] <-
-    purrr::map2(as.list(df[, grepl("^N_I[0-9]{3}", names(df))]),
-                as.list(df[, grepl(fields, names(df))]), `*`) %>%
+  df[, grepl(pat_N_I, nms)] <-
+    purrr::map2(as.list(df[, grepl(pat_N_I, nms)]),
+                as.list(df[, grepl(fields, nms)]), `*`) %>%
     dplyr::bind_cols()
   
-  df[, grepl("^sd_log2_R[0-9]{3}", names(df))] <-
-    purrr::map2(as.list(df[, grepl("^sd_log2_R[0-9]{3}", names(df))]),
-                as.list(df[, grepl(fields, names(df))]), `*`) %>%
+  df[, grepl(pat_sd, nms)] <-
+    purrr::map2(as.list(df[, grepl(pat_sd, nms)]),
+                as.list(df[, grepl(fields, nms)]), `*`) %>%
     dplyr::bind_cols()
   
   df <- df %>% 
     dplyr::select(-grep(fields, names(.))) %>% 
-    { if (rm_allna) .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+    { if (rm_allna) .[rowSums(!is.na(.[grepl(pat_log2_R, names(.))])) > 0L, ] 
       else .} 
 }
 
@@ -57,56 +66,47 @@ lgl_cleanup <- function (df, type = "sd", rm_allna = FALSE)
 #'   CV.
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>% 
-purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1L, 
-                         rm_allna = FALSE) 
+purge_by_cv <- function (df, id, max_cv = NULL, min_n = 1L, rm_allna = FALSE) 
 {
-  if ((!keep_ohw) && is.null(max_cv)) {
-    max_cv <- 100
-  }
-  
-  if (!is.null(max_cv)) {
-    if (!is.numeric(max_cv))
-      stop("Need numeric value for `max_cv`.")
+  if (is.null(max_cv)) 
+    return(df)
 
-    df_sd_lgl <- df %>% 
-      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.)))
-    
-    if (id %in% c("pep_seq", "pep_seq_mod")) {
-      # remove duplicated PSMs under the same id
-      df_sd_lgl <- df_sd_lgl %>% 
-        dplyr::filter(!duplicated(.[[id]]))
-    } 
-    else if (id %in% c("prot_acc", "gene")) {
-      # no duplicated id, but protein `sd` under each channel can be 
-      #   a mix of non-NA (one value) and NA
-      # this is due to the `wide` joining of data when forming `Peptide.txt`
-      df_sd_lgl <- df_sd_lgl %>% 
-        dplyr::group_by(!!rlang::sym(id)) %>% 
-        dplyr::summarise_all(~ dplyr::first(na.omit(.x)))
-    }
-    
-    # SD is NA <=> single PSM
-    # remove later
-    if (keep_ohw) {
-      df_sd_lgl <- df_sd_lgl %>% 
-        dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
-                         ~ replace(.x, is.na(.x), -1E-3))
-    }
-    
+  if (!is.numeric(max_cv)) 
+    stop("Need numeric value for `max_cv`.")
+
+  if (max_cv > 1) 
+    max_cv <- max_cv / 100
+  
+  pat <- "^sd_log2_R[0-9]{3}[NC]{0,1}"
+  
+  df_sd_lgl <- df %>% 
+    dplyr::select(id, grep(pat, names(.)))
+
+  # remove duplicated PSMs under the same id
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
     df_sd_lgl <- df_sd_lgl %>% 
-      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
-                       ~ replace(.x, .x > max_cv, NA)) %>% 
-      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
-                       ~ replace(.x, !is.na(.x), 1)) %>% 
-      `names<-`(gsub("^sd_log2_R", "lgl_log2_sd", names(.)))
-
-    df <- df %>% 
-      dplyr::arrange(!!rlang::sym(id)) %>% 
-      dplyr::left_join(df_sd_lgl, by = id) %>% 
-      lgl_cleanup(rm_allna = rm_allna)
+      dplyr::filter(!duplicated(.[[id]]))
+  } 
+  # no duplicated id, but protein `sd` under each channel can be 
+  #   a mix of non-NA (one value) and NA
+  # this is due to the `wide` joining of data when forming `Peptide.txt`
+  else if (id %in% c("prot_acc", "gene")) {
+    df_sd_lgl <- df_sd_lgl %>% 
+      dplyr::group_by(!!rlang::sym(id)) %>% 
+      dplyr::summarise_all(~ dplyr::first(na.omit(.x)))
   }
   
-  invisible(df)
+  df_sd_lgl <- df_sd_lgl %>% 
+    dplyr::mutate_at(vars(grep(pat, names(.))), 
+                     ~ replace(.x, .x > max_cv, NA_real_)) %>% 
+    dplyr::mutate_at(vars(grep(pat, names(.))), 
+                     ~ replace(.x, !is.na(.x), 1)) %>% 
+    `names<-`(gsub("^sd_log2_R", "lgl_log2_sd", names(.)))
+  
+  df <- df %>% 
+    dplyr::arrange(!!rlang::sym(id)) %>% 
+    dplyr::left_join(df_sd_lgl, by = id) %>% 
+    lgl_cleanup(rm_allna = rm_allna)
 }
 
 
@@ -123,65 +123,53 @@ purge_by_cv <- function (df, id, max_cv, keep_ohw = TRUE, min_n = 1L,
 #'   \code{pt_cv} \eqn{\ge} \code{max_cv} \eqn{\ge} \code{min_n}.
 #' @import dplyr purrr
 #' @importFrom magrittr %>% %T>% %$% %<>%
-purge_by_qt <- function(df, id, pt_cv = NULL, keep_ohw = TRUE, min_n = 1L, 
-                        rm_allna = FALSE) 
+purge_by_qt <- function(df, id, pt_cv = NULL, min_n = 1L, rm_allna = FALSE) 
 {
-  if ((!keep_ohw) && is.null(pt_cv)) {
-    pt_cv <- 100
-  }
+  if (is.null(pt_cv)) 
+    return(df)
   
-  if (!is.null(pt_cv)) {
-    if (!is.numeric(pt_cv))
-      stop("Need numeric value for `pt_cv`.")
-
-    if (pt_cv > 1) pt_cv <- pt_cv / 100
-    
-    df_sd_lgl <- df %>% 
-      dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.)))
-    
-    if (id %in% c("pep_seq", "pep_seq_mod")) {
-      df_sd_lgl <- df_sd_lgl %>% 
-        dplyr::filter(!duplicated(.[[id]]))
-    } 
-    else if (id %in% c("prot_acc", "gene")) {
-      df_sd_lgl <- df_sd_lgl %>% 
-        dplyr::group_by(!!rlang::sym(id)) %>% 
-        dplyr::summarise_all(~ dplyr::first(na.omit(.x)))
-    }
-    
-    qts <- df_sd_lgl %>% 
-      .[, grepl("^sd_log2_R[0-9]{3}{0,1}", names(.))] %>% 
-      purrr::map_dbl(~ quantile(.x, probs = pt_cv, na.rm = TRUE))
-    
-    # SD is NA <-> single PSM
-    # remove later
-    if (keep_ohw) {
-      df_sd_lgl <- df_sd_lgl %>% 
-        dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
-                         ~ replace(.x, is.na(.x), -1E-3))
-    }
-    
-    df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]{0,1}", names(df_sd_lgl))] <- 
-      purrr::map2(as.list(df_sd_lgl[, grepl("^sd_log2_R[0-9]{3}[NC]{0,1}", 
-                                            names(df_sd_lgl))]), 
-                  as.list(qts), ~ {
-                    .x[.x > .y] <- NA
-                    return(.x)
-                  }) %>% 
-      dplyr::bind_cols()
-    
+  if (!is.numeric(pt_cv))
+    stop("Need numeric value for `pt_cv`.")
+  
+  if (pt_cv > 1) 
+    pt_cv <- pt_cv / 100
+  
+  pat <- "^sd_log2_R[0-9]{3}[NC]{0,1}"
+  
+  df_sd_lgl <- df %>% 
+    dplyr::select(id, grep(pat, names(.)))
+  
+  if (id %in% c("pep_seq", "pep_seq_mod")) {
     df_sd_lgl <- df_sd_lgl %>% 
-      dplyr::mutate_at(vars(grep("^sd_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
-                       ~ replace(.x, !is.na(.x), 1)) %>% 
-      `names<-`(gsub("^sd_log2_R", "lgl_log2_sd", names(.)))
-    
-    df <- df %>% 
-      dplyr::arrange(!!rlang::sym(id)) %>% 
-      dplyr::left_join(df_sd_lgl, by = id) %>% 
-      lgl_cleanup(rm_allna = rm_allna)
+      dplyr::filter(!duplicated(.[[id]]))
+  } 
+  else if (id %in% c("prot_acc", "gene")) {
+    df_sd_lgl <- df_sd_lgl %>% 
+      dplyr::group_by(!!rlang::sym(id)) %>% 
+      dplyr::summarise_all(~ dplyr::first(na.omit(.x)))
   }
   
-  invisible(df)
+  qts <- df_sd_lgl %>% 
+    .[, grepl(pat, names(.))] %>% 
+    purrr::map_dbl(~ quantile(.x, probs = pt_cv, na.rm = TRUE))
+  
+  df_sd_lgl[, grepl(pat, names(df_sd_lgl))] <- 
+    purrr::map2(as.list(df_sd_lgl[, grepl(pat, names(df_sd_lgl))]), 
+                as.list(qts), ~ {
+                  .x[.x > .y] <- NA_real_
+                  return(.x)
+                }) %>% 
+    dplyr::bind_cols()
+  
+  df_sd_lgl <- df_sd_lgl %>% 
+    dplyr::mutate_at(vars(grep(pat, names(.))), 
+                     ~ replace(.x, !is.na(.x), 1)) %>% 
+    `names<-`(gsub("^sd_log2_R", "lgl_log2_sd", names(.)))
+  
+  df <- df %>% 
+    dplyr::arrange(!!rlang::sym(id)) %>% 
+    dplyr::left_join(df_sd_lgl, by = id) %>% 
+    lgl_cleanup(rm_allna = rm_allna)
 }
 
 
@@ -204,45 +192,47 @@ purge_by_n <- function (df, id, min_n = 1L, rm_allna = FALSE)
   if (!is.numeric(min_n))
     stop("Need numeric value for `min_n`.")
 
-  if (min_n == 1) return(df)
+  if (min_n == 1L) 
+    return(df)
   
+  pat <- "[0-9]{3}[NC]{0,1}"
+  pat_log2_R <- paste0("^log2_R", pat)
+  pat_lgl <- paste0("^lgl_log2_R", pat)
+
   df_lgl <- df %>% 
-    dplyr::select(id, grep("^log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
+    dplyr::select(id, grep(pat_log2_R, names(.))) %>% 
     dplyr::group_by(!!rlang::sym(id)) %>% 
     dplyr::summarise_all(~ sum(!is.na(.x))) %>% 
     `names<-`(gsub("^log2_R", "lgl_log2_R", names(.)))
   
-  df_lgl[, grepl("^lgl_log2_R[0-9]{3}[NC]{0,1}", names(df_lgl))] <- 
-    purrr::map(as.list(df_lgl[, grepl("^lgl_log2_R[0-9]{3}[NC]{0,1}", names(df_lgl))]), 
+  nms <- names(df_lgl)
+  
+  df_lgl[, grepl(pat_lgl, nms)] <- 
+    purrr::map(as.list(df_lgl[, grepl(pat_lgl, nms)]), 
                ~ {
-                 .x[.x < min_n] <- NA
+                 .x[.x < min_n] <- NA_real_
                  return(.x)
                }, min_n) %>% 
     dplyr::bind_cols() %>% 
-    dplyr::mutate_at(vars(grep("^lgl_log2_R[0-9]{3}[NC]{0,1}", names(.))), 
+    dplyr::mutate_at(vars(grep(pat_lgl, names(.))), 
                      ~ replace(.x, !is.na(.x), 1))
   
   df <- df %>% 
     dplyr::arrange(!!rlang::sym(id)) %>% 
     dplyr::left_join(df_lgl, by = id) %>% 
     lgl_cleanup(type = "R", rm_allna = rm_allna)
-
-  invisible(df)
 }
 
 
-#' Purges PSM helper
-#' 
-#' May be used for parallel processes.
+#' Helper of \link{purgePSM}
 #' 
 #' @param file A list of file (names).
 #' @inheritParams purgePSM
 #' @inheritParams annotPSM
 #' @inheritParams prnHist
-psm_mpurge <- function (file, dat_dir, group_psm_by = "pep_seq", 
+psm_mpurge <- function (file, dat_dir = NULL, group_psm_by = "pep_seq", 
                         group_pep_by = "prot_acc", pt_cv = NULL, max_cv = NULL, 
-                        keep_ohw = TRUE, min_n = 1L, rm_allna = FALSE, 
-                        theme, ...) 
+                        min_n = 1L, rm_allna = FALSE, theme, ...) 
 {
   dots <- rlang::enexprs(...)
 
@@ -253,13 +243,15 @@ psm_mpurge <- function (file, dat_dir, group_psm_by = "pep_seq",
                     show_col_types = FALSE)
   )
   
+  pat_log2_R <- "^log2_R[0-9]{3}[NC]{0,1}"
+
   df <- df %>% 
-    purge_by_qt(id = group_psm_by, pt_cv = pt_cv, keep_ohw = keep_ohw, 
+    purge_by_qt(id = group_psm_by, pt_cv = pt_cv, 
                 min_n = min_n, rm_allna = rm_allna) %>% 
-    purge_by_cv(id = group_psm_by, max_cv = max_cv, keep_ohw = keep_ohw, 
+    purge_by_cv(id = group_psm_by, max_cv = max_cv, 
                 min_n = min_n, rm_allna = rm_allna) %>% 
     purge_by_n(id = group_psm_by, min_n = min_n, rm_allna = rm_allna) %>% 
-    { if (rm_allna) .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+    { if (rm_allna) .[rowSums(!is.na(.[grepl(pat_log2_R, names(.))])) > 0L, ] 
       else . }
 
   # update
@@ -337,10 +329,6 @@ psm_mpurge <- function (file, dat_dir, group_psm_by = "pep_seq",
 #'@inheritParams plot_prnTrend
 #'@param adjSD Not currently used. If TRUE, adjust the standard deviation in
 #'  relative to the width of ratio profiles.
-#'@param keep_ohw Logical; if TRUE, keep one-hit-wonders with unknown CV. The
-#'  default is TRUE. The argument is softly depreciated; instead use
-#'  \code{min_n}. Equivalency: \code{keep_ohw = TRUE <=> min_n == 1; keep_ohw =
-#'  FALSE <=> min_n == 2}.
 #'@param ... Additional parameters for plotting: \cr \code{ymax}, the maximum
 #'  \eqn{y} at a log2 scale. \cr \code{ybreaks}, the breaks in \eqn{y}-axis at a
 #'  log2 scale. \cr \code{width}, the width of plot. \cr \code{height}, the
@@ -412,15 +400,17 @@ psm_mpurge <- function (file, dat_dir, group_psm_by = "pep_seq",
 #'
 #'@export
 purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE, 
-                      keep_ohw = TRUE, min_n = 1L, rm_allna = FALSE, 
-                      theme= NULL, ...) 
+                      min_n = 1L, rm_allna = FALSE, theme= NULL, ...) 
 {
   on.exit(
     mget(names(formals()), envir = environment(), inherits = FALSE) %>% 
       c(rlang::enexprs(...)) %>% 
-      save_call("purPSM"), 
+      save_call(fun), 
     add = TRUE
   )
+  
+  this_call <- match.call()
+  fun <- as.character(this_call[[1]])
   
   check_dots(c("id", "anal_type", "filename", "filepath"), ...)
 
@@ -434,8 +424,7 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     .[! . %in% filter_dots]
   
   if (length(filter_dots)) {
-    warning("No data filtration by `filter_` varargs. will be applied", 
-            call. = FALSE)
+    warning("`filter_` not applicable with `", fun, "`", call. = FALSE)
   }
 
   if (is.null(dat_dir)) 
@@ -453,16 +442,8 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
     group_psm_by %in% c("pep_seq", "pep_seq_mod"), 
     group_pep_by %in% c("prot_acc", "gene"), 
     length(group_psm_by) == 1L, 
-    length(group_pep_by) == 1L, 
-    is.logical(keep_ohw), 
-    length(keep_ohw) == 1L
+    length(group_pep_by) == 1L
   )
-  
-  if (!keep_ohw) {
-    warning("`keep_ohw` softly depreciated; \n", 
-            "use `min_n` to specify a minimal count of psms.", 
-            call. = FALSE)
-  }
   
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   TMT_plex <- TMT_plex(label_scheme_full)
@@ -493,7 +474,6 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
                    group_pep_by = group_pep_by, 
                    pt_cv = pt_cv, 
                    max_cv = max_cv, 
-                   keep_ohw = keep_ohw, 
                    min_n = min_n, 
                    rm_allna = rm_allna, 
                    theme = theme), 
@@ -514,7 +494,6 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
                 group_pep_by = group_pep_by, 
                 pt_cv = pt_cv, 
                 max_cv = max_cv, 
-                keep_ohw = keep_ohw, 
                 min_n = min_n, 
                 rm_allna = rm_allna, 
                 theme = theme, 
@@ -609,15 +588,19 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
 #'
 #'@export
 purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, 
-                      adjSD = FALSE, keep_ohw = TRUE, min_n = 1L, 
-                      rm_allna = FALSE, col_select = NULL, col_order = NULL, 
-                      filename = NULL, theme= NULL, ...) {
+                      adjSD = FALSE, min_n = 1L, rm_allna = FALSE, 
+                      col_select = NULL, col_order = NULL, filename = NULL, 
+                      theme= NULL, ...) 
+{
   on.exit(
     mget(names(formals()), envir = environment(), inherits = FALSE) %>% 
       c(rlang::enexprs(...)) %>% 
-      save_call("purPep"), 
+      save_call(fun), 
     add = TRUE
   )
+  
+  this_call <- match.call()
+  fun <- as.character(this_call[[1]])
   
   check_dots(c("id", "anal_type", "filename", "filepath"), ...)
   
@@ -631,8 +614,7 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
     .[! . %in% filter_dots]
   
   if (length(filter_dots)) {
-    warning("No data filtration by `filter_` varargs will be applied.", 
-            call. = FALSE)
+    warning("`filter_` not applicable with `", fun, "`", call. = FALSE)
   }
 
   col_select <- rlang::enexpr(col_select)
@@ -665,17 +647,9 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
     group_psm_by %in% c("pep_seq", "pep_seq_mod"), 
     group_pep_by %in% c("prot_acc", "gene"), 
     length(group_psm_by) == 1L, 
-    length(group_pep_by) == 1L, 
-    is.logical(keep_ohw), 
-    length(keep_ohw) == 1L
+    length(group_pep_by) == 1L
   )
 
-  if (!keep_ohw) {
-    warning("`keep_ohw` softly depreciated; \n", 
-            "use `min_n` to specify a minimal count of peptides.", 
-            call. = FALSE)
-  }
-  
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
 
   dir.create(file.path(dat_dir, "Peptide/Copy"), 
@@ -687,12 +661,14 @@ purgePep <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL,
   
   df <- suppressWarnings(
     readr::read_tsv(fn, col_types = get_col_types(), show_col_types = FALSE))
+  
+  pat_log2_R <- "^log2_R[0-9]{3}[NC]{0,1}"
 
   df <- df %>% 
-    purge_by_qt(group_pep_by, pt_cv, keep_ohw, min_n, rm_allna) %>% 
-    purge_by_cv(group_pep_by, max_cv, keep_ohw, min_n, rm_allna) %>% 
+    purge_by_qt(group_pep_by, pt_cv, min_n, rm_allna) %>% 
+    purge_by_cv(group_pep_by, max_cv, min_n, rm_allna) %>% 
     purge_by_n(group_pep_by, min_n, rm_allna) %>% 
-    { if (rm_allna) .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] 
+    { if (rm_allna) .[rowSums(!is.na(.[grepl(pat_log2_R, names(.))])) > 0L, ] 
       else . }
 
   # update

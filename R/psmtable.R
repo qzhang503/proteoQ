@@ -2984,7 +2984,7 @@ annotPSM <- function(group_psm_by = "pep_seq", group_pep_by = "prot_acc",
         )
       }
 
-      if (plot_log2FC_cv && TMT_plex > 0) {
+      if (plot_log2FC_cv && TMT_plex) {
         try(
           df %>% 
             sd_violin(id = !!group_psm_by, 
@@ -3607,12 +3607,24 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
   if (!"prot_acc" %in% nms)
     stop("Column `prot_acc` not found.")
   
+  if (length(group_psm_by) != 1L)
+    stop("Length of `group_psm_by` is not one.")
+  
   if (!group_psm_by %in% nms)
     stop("Column `", group_psm_by, "` not found.")
   
   if (!any(grepl("log2_R[0-9]{3}|I[0-9]{3}", nms)))
     stop("Columns of log2 ratios or intensity not found.")
+  
+  group_psm_by0 <- group_psm_by
+  
+  group_ids <- if ("pep_group" %in% nms) unique(df$pep_group) else NULL
 
+  if (length(group_ids) >= 2L) {
+    group_psm_by <- c(group_psm_by, "pep_group")
+    save(group_ids, file = file.path(dat_dir, "group_ids.rds"))
+  }
+  
   channelInfo <- channelInfo(dat_dir = dat_dir, 
                              set_idx = set_idx, 
                              injn_idx = injn_idx)
@@ -3632,7 +3644,7 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
   }
   
   df <- df %>%
-    dplyr::arrange(!!rlang::sym(group_psm_by), prot_acc) %>%
+    dplyr::arrange_at(c(group_psm_by, "prot_acc")) %>% 
     dplyr::select(-grep("^R[0-9]{3}", names(.)))
   
   # --- Mascot ---
@@ -3755,7 +3767,7 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
     }
     
     ok_lfq_ret <- ok_intensity && ok_ret && ok_ret2
-    
+
     if (ok_lfq_ret) {
       # subset by top_n intensity
       df <- local({
@@ -3767,12 +3779,12 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
                     2)
         
         # but since I000 are all NA with MaxQuant timsTOF 
-        # would have to replace NA with 0
+        # -> would have to replace NA with 0
         
         df <- df %>% 
           dplyr::mutate(I000 = ifelse(is.na(I000), 0, I000)) %>% 
-          dplyr::group_by(!!rlang::sym(group_psm_by))
-        
+          dplyr::group_by_at(group_psm_by)
+
         if (!is.infinite(n)) {
           df <- df  %>% dplyr::top_n(n = n, wt = I000)
         }
@@ -3785,7 +3797,7 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
       # subset by retention time
       df <- local({
         uniq_by <- c(group_psm_by, "pep_ret_range")
-        
+
         # 1.1 no yet differentiation of neutral losses at different pep_ivmod
         # 1.2 no yet differentiation of different charge states
         # 1.2 no differentiation by raw_file
@@ -3793,8 +3805,10 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
         # 2.1 the same pep_seq at different prot_acc makes no difference
         
         df_uniq <- unique(df[, c(group_psm_by, "pep_ret_range")])
-        df_split <- split(df_uniq, df_uniq[[group_psm_by]])
-        
+
+        # (group_psm_by0 not group_psm_by)
+        df_split <- split(df_uniq, df_uniq[[group_psm_by0]])
+
         rows <- unlist(lapply(df_split, function (x) nrow(x) == 1L))
         dfu <- dplyr::bind_rows(df_split[rows])
         df_split <- df_split[!rows]
@@ -3818,7 +3832,7 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
           dplyr::select(-c("keep.", "uniq_id"))
       })
       
-      df_num <- aggrLFQ(sum)(df, !!rlang::sym(group_psm_by), na.rm = TRUE) %>% 
+      df_num <- aggrLFQs(sum)(df, group_psm_by, na.rm = TRUE) %>% 
         dplyr::mutate(log2_R000 = NA, N_log2_R000 = NA)
     }
   }
@@ -3867,7 +3881,7 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
     colnm_before <- find_preceding_colnm(df, "pep_tot_int")
     
     list(df_first, df_num) %>%
-      purrr::reduce(left_join, by = group_psm_by) %>% 
+      purrr::reduce(dplyr::left_join, by = group_psm_by) %>% 
       reloc_col_after("pep_score", "pep_razor_unique") %>% 
       reloc_col_after("pep_expect", "pep_score") %>% 
       reloc_col_after("pep_ret_sd", "pep_ret_range") %>% 
@@ -3875,7 +3889,8 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
   })
   
   df <- local({
-    stopifnot(all(c("pep_tot_int", "shared_prot_accs", "shared_genes") %in% names(df)))
+    stopifnot(all(c("pep_tot_int", "shared_prot_accs", "shared_genes") %in% 
+                    names(df)))
     
     if (group_pep_by == "gene")
       col_map <- "shared_genes"
@@ -3893,14 +3908,6 @@ calcPeptide <- function(df = NULL, group_psm_by = "pep_seq",
     reloc_col_after("pep_unique_int", "pep_tot_int") %>% 
     reloc_col_after("pep_razor_int", "pep_unique_int")
   
-  if (FALSE) {
-    if (group_psm_by == "pep_seq_mod") {
-      df <- dplyr::select(df, -pep_seq)
-    } else {
-      df <- dplyr::select(df, -pep_seq_mod)
-    }
-  }
-
   df <- cbind.data.frame(df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df)), 
                             drop = FALSE],
                          df[, grepl("I[0-9]{3}", names(df)), 
@@ -3994,7 +4001,6 @@ psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL,
     df <- rm_cols_mqpsm(df, group_psm_by, set_idx)
   } 
   else {
-    # 2022-02-12: allows both `pep_seq` and `pep_seq_mod` in `df`
     df <- calcPeptide(df = df, group_psm_by = group_psm_by, 
                       method_psm_pep = method_psm_pep, 
                       group_pep_by = group_pep_by, dat_dir = dat_dir, 
@@ -4114,10 +4120,9 @@ psm_to_pep <- function (file = NULL, dat_dir = NULL, label_scheme_full = NULL,
 PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean", 
                                        "top_3_mean", "lfq_max", "lfq_top_2_sum", 
                                        "lfq_top_3_sum", "lfq_all"), 
-                    lfq_ret_tol = 60L, rm_allna = FALSE, parallel = TRUE, ...) 
+                    lfq_ret_tol = 60L, rm_allna = FALSE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
-  
   load(file = file.path(dat_dir, "label_scheme_full.rda"))
   TMT_plex <- TMT_plex(label_scheme_full)
   
@@ -4170,7 +4175,7 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
             length(method_psm_pep) == 1L)
   
   stopifnot(vapply(c(lfq_ret_tol), is.numeric, logical(1)))
-  stopifnot(vapply(c(rm_allna, parallel), rlang::is_logical, logical(1)))
+  stopifnot(vapply(c(rm_allna), rlang::is_logical, logical(1)))
   
   dir.create(file.path(dat_dir, "Peptide/cache"), 
              recursive = TRUE, showWarnings = FALSE)
@@ -4184,7 +4189,7 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
   
   n_files <- length(filelist)
   
-  if (parallel && (n_files > 1L)) {
+  if (n_files > 1L) {
     n_cores <- min(parallel::detectCores(), n_files)
     
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
@@ -4207,11 +4212,10 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
     parallel::stopCluster(cl)
   } 
   else {
-    purrr::walk(as.list(filelist), psm_to_pep, 
-                dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
-                group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
-                method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
-                rm_allna = rm_allna, ...)
+    psm_to_pep(filelist, dat_dir = dat_dir, label_scheme_full = label_scheme_full, 
+               group_psm_by = group_psm_by, group_pep_by = group_pep_by, 
+               method_psm_pep = method_psm_pep, lfq_ret_tol = lfq_ret_tol, 
+               rm_allna = rm_allna, ...)
   }
   
   .saveCall <- TRUE

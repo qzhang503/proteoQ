@@ -3,7 +3,9 @@
 #' @inheritParams KinSubTest 
 #' @import dplyr purrr 
 #' @importFrom magrittr %>% %T>% %$% %<>%
-annot_KinSub <- function(df, db_nms, match_orgs, id, filepath = NULL, filename = NULL, ...) {
+annot_KinSub <- function(df, db_nms, match_orgs, id, filepath = NULL, 
+                         filename = NULL, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   
   if (!all(file.exists(db_nms))) {
@@ -28,8 +30,8 @@ annot_KinSub <- function(df, db_nms, match_orgs, id, filepath = NULL, filename =
     stop("`acc_lookup.rda` not found under ", dat_dir, ".", 
          call. = FALSE)
   }
-  rm(ok)
-  
+  rm(list = "ok")
+
   acc_lookup <- acc_lookup %>% 
     dplyr::filter(!is.na(entrez), !is.na(gene), !duplicated(entrez)) %>% 
     dplyr::select(gene, entrez) 
@@ -77,11 +79,12 @@ annot_KinSub <- function(df, db_nms, match_orgs, id, filepath = NULL, filename =
 KinSubTest <- function(df = NULL, id = gene, label_scheme_sub = NULL, 
                        db_nms = NULL, match_orgs = TRUE, 
                        scale_log2r = TRUE, complete_cases = FALSE, 
-                       filepath = NULL, filename = NULL, ...) {
+                       filepath = NULL, filename = NULL, ...) 
+{
   dat_dir <- get_gl_dat_dir()
   id <- rlang::as_string(rlang::enexpr(id))
   
-  stopifnot(id %in% names(df), nrow(label_scheme_sub) > 0)
+  stopifnot(id %in% names(df), nrow(label_scheme_sub) > 0L)
 
   if (complete_cases) {
     df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
@@ -137,8 +140,8 @@ KinSubTest <- function(df = NULL, id = gene, label_scheme_sub = NULL,
 anal_KinSub <- function (db_nms = "~/proteoQ/dbs/psp/Kinase_Substrate_Dataset.txt", 
                          type = c("peptide", "protein"), match_orgs = TRUE, 
                          scale_log2r = TRUE, complete_cases = FALSE, impute_na = FALSE, 
-                         df = NULL, filepath = NULL, filename = NULL, ...) {
-  
+                         df = NULL, filepath = NULL, filename = NULL, ...) 
+{
   on.exit(
     if (rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod")) {
       mget(names(formals()), envir = rlang::current_env(), inherits = FALSE) %>% 
@@ -157,10 +160,11 @@ anal_KinSub <- function (db_nms = "~/proteoQ/dbs/psp/Kinase_Substrate_Dataset.tx
   type <- rlang::enexpr(type)
   if (length(type) > 1) {
     type <- "peptide"
-  } else {
+  } 
+  else {
     type <- rlang::as_string(type)
     stopifnot(type %in% c("peptide", "protein"), 
-              length(type) == 1)
+              length(type) == 1L)
   }
 
   id <- switch(type, 

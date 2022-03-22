@@ -14,7 +14,7 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
   
   stopifnot(vapply(c(scale_log2r, complete_cases, show_curves, show_vline, scale_y), 
                    rlang::is_logical, logical(1)))
-  stopifnot(nrow(label_scheme_sub) > 0)
+  stopifnot(nrow(label_scheme_sub) > 0L)
 
   if (complete_cases) {
     df <- df %>% my_complete_cases(scale_log2r, label_scheme_sub)
@@ -267,12 +267,13 @@ plotHisto <- function (df = NULL, id, label_scheme_sub, scale_log2r,
 pepHist <- function (col_select = NULL, scale_log2r = TRUE, complete_cases = FALSE, 
                      cut_points = c(mean_lint = NA), 
                      show_curves = TRUE, show_vline = TRUE, scale_y = TRUE, 
-                     df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) {
+                     df = NULL, filepath = NULL, filename = NULL, theme = NULL, ...) 
+{
   check_dots(c("id", "anal_type", "df2"), ...)
   
   id <- match_call_arg(normPSM, group_psm_by)
   stopifnot(rlang::as_string(id) %in% c("pep_seq", "pep_seq_mod"), 
-            length(id) == 1)
+            length(id) == 1L)
 
   col_select <- rlang::enexpr(col_select)
   df <- rlang::enexpr(df)

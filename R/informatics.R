@@ -145,7 +145,7 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	filename <- rlang::enexpr(filename)
 
 	dat_dir <- get_gl_dat_dir()
-	load(file = file.path(dat_dir, "label_scheme.rda"))
+	label_scheme <- load_ls_group(dat_dir, label_scheme)
 
 	if (is.null(label_scheme[[col_select]])) 
 		stop("Column \'", rlang::as_string(col_select), "\' not found.", 
@@ -245,7 +245,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		
 		dir.create(file.path(filepath, "log"), 
 		           recursive = TRUE, showWarnings = FALSE)
-	} else {
+	} 
+	else {
 	  stop("Use default `filepath`.", call. = FALSE)
 	}
 
@@ -259,7 +260,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		else 
 		  "png"
 		
-	} else {
+	} 
+	else {
 	  if (length(filename) > 1L) {
 	    stop("Do not provide multiple file names.", 
 	         call. = FALSE)
@@ -298,14 +300,16 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	if (anal_type %in% use_sec_data) {
 	  df2 <- rlang::eval_bare(df2, env = current_env())
 	  vararg_secmsg(id = !!id, anal_type = !!anal_type)
-	} else {
+	} 
+	else {
 	  df2 <- NULL
 	}
 
 	if (anal_type %in% c("Model", "GSPA", "GSVA", "GSEA")) {
 		label_scheme_sub <- label_scheme %>% # to be subset by "formulas"
 			dplyr::filter(!grepl("^Empty\\.[0-9]+", .$Sample_ID), !Reference)
-	} else {
+	} 
+	else {
 		label_scheme_sub <- label_scheme %>%
 			dplyr::filter(!is.na(!!col_select))
 	}
@@ -373,7 +377,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		          anal_type = anal_type,
 		          ...)
 		}
-	} else if (anal_type == "PCA") {
+	} 
+	else if (anal_type == "PCA") {
 		function(choice = "prcomp", type = "obs", dimension = 2, folds = 1,
 		         show_ids = TRUE, show_ellipses = FALsE, 
 		         center_features = TRUE, scale_features = TRUE,
@@ -409,7 +414,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		          anal_type = anal_type,
 		          ...)
 		}
-	} else if (anal_type == "EucDist") {
+	} 
+	else if (anal_type == "EucDist") {
 		function(adjEucDist = FALSE, annot_cols = NULL, annot_colnames = NULL, ...) {
 		  plotEucDist(df = df,
 		              id = !!id,
@@ -424,7 +430,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
     		          anal_type = anal_type,
     		          ...)
 		}
-	} else if (anal_type == "Heatmap") {
+	} 
+	else if (anal_type == "Heatmap") {
 		function(xmin = -1, xmax = 1, xmargin = 0.1,
 		         annot_cols = NULL, annot_colnames = NULL, annot_rows = NULL,
 		         p_dist_rows = 2, p_dist_cols = 2,
@@ -471,7 +478,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 			       rm_allna = rm_allna, 
 			       ...)
 		}
-	} else if (anal_type == "Histogram") {
+	} 
+	else if (anal_type == "Histogram") {
 		function(cut_points = NA, show_curves = TRUE, show_vline = TRUE, 
 		         scale_y = TRUE, theme = NULL, ...) {
 			plotHisto(df = df,
@@ -488,7 +496,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 			          theme = theme,
 			          ...)
 		}
-	} else if (anal_type == "Corrplot") {
+	} 
+	else if (anal_type == "Corrplot") {
 		function(data_select = "logFC", 
 		         cor_method = "pearson", ...) {
 		  plotCorr(df = df,
@@ -505,7 +514,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		           cor_method = cor_method, 
 		           ...)
 		}
-	} else if (anal_type == "Model") {
+	} 
+	else if (anal_type == "Model") {
 	  function(method = "limma", padj_method = "BH", 
 	           var_cutoff = 1E-3, pval_cutoff = 1, logFC_cutoff = log2(1), 
 	           rm_allna = FALSE, ...) {
@@ -527,7 +537,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	            anal_type = anal_type,
 	            ...)
 	  }
-	} else if (anal_type == "Volcano") {
+	} 
+	else if (anal_type == "Volcano") {
 	  function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, 
 	           theme = NULL, highlights = NULL, ...) {
 	    plotVolcano(df = df,
@@ -551,7 +562,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	                theme = theme,
 	                ...)
 	  }
-	} else if (anal_type == "mapGSPA") {
+	} 
+	else if (anal_type == "mapGSPA") {
 	  function(fml_nms = NULL, adjP = FALSE, topn_labels = 20, 
 	           gspval_cutoff = 0.05, gslogFC_cutoff = log2(1.2), 
 	           topn_gsets = Inf, show_sig = "none", 
@@ -577,7 +589,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	                theme = theme,
 	                ...)
 	  }
-	} else if (anal_type == "Trend") {
+	} 
+	else if (anal_type == "Trend") {
 		function(choice = "cmeans", n_clust = NULL, ...) {
 		  analTrend(df = df,
 		            id = !!id,
@@ -594,7 +607,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		            anal_type = anal_type,
                 ...)
 		}
-	} else if (anal_type == "Trend_line") {
+	} 
+	else if (anal_type == "Trend_line") {
 	  function(n_clust = NULL, theme = NULL, ...) {
 	    plotTrend(df2 = df2,
 	              id = !!id,
@@ -610,7 +624,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	              theme = theme,
 	              ...)
 	  }
-	} else if (anal_type == "NMF") {
+	} 
+	else if (anal_type == "NMF") {
 		function(rank = NULL, nrun = 50, seed = NULL, ...) {
 		  analNMF(df = df,
 		          id = !!id,
@@ -627,7 +642,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		          anal_type = anal_type,
 		          ...)
 		}
-	} else if (anal_type == "NMF_con") {
+	} 
+	else if (anal_type == "NMF_con") {
 	  function(rank = NULL, ...) {
 	    plotNMFCon(df2 = df2,
 	               id = !!id,
@@ -640,7 +656,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	               filename = paste0(fn_prefix, ".", fn_suffix),
 	               ...)
 	  }
-	} else if (anal_type == "NMF_coef") {
+	} 
+	else if (anal_type == "NMF_coef") {
 	  function(rank = NULL, ...) {
 	    plotNMFCoef(df2 = df2,
 	                id = !!id,
@@ -653,7 +670,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	                filename = paste0(fn_prefix, ".", fn_suffix),
 	                ...)
 	  }
-	} else if (anal_type == "NMF_meta") {
+	} 
+	else if (anal_type == "NMF_meta") {
 	  function(rank = NULL, ...) {
 	    plotNMFmeta(df = df,
 	                df2 = df2,
@@ -668,7 +686,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	                anal_type = anal_type,
 	                ...)
 	  }
-	} else if (anal_type == "GSPA") {
+	} 
+	else if (anal_type == "GSPA") {
 		function(gset_nms = "go_sets", var_cutoff = .5,
 		         pval_cutoff = 1E-2, logFC_cutoff = log2(1.1),
 		         gspval_cutoff = 1E-2, gslogFC_cutoff = log2(1),
@@ -699,7 +718,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 		           anal_type = anal_type,
 		           ...)
 		}
-	} else if (anal_type == "GSPA_hm") {
+	} 
+	else if (anal_type == "GSPA_hm") {
 	  function(...) {
 	    gspaHM(df2 = df2,
 	           scale_log2r = scale_log2r,
@@ -709,7 +729,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	           filename = paste0(fn_prefix, ".", fn_suffix),
 	           ...)
 	  }
-	} else if(anal_type == "GSVA") {
+	} 
+	else if(anal_type == "GSVA") {
 	  function(lm_method = "limma", padj_method = "BH", 
 	           gset_nms = "go_sets", var_cutoff = .5,
 	           pval_cutoff = 1E-4, logFC_cutoff = log2(1.1), ...) {
@@ -730,7 +751,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
                anal_type = anal_type,
                ...)
 	  }
-	} else if (anal_type == "GSEA") {
+	} 
+	else if (anal_type == "GSEA") {
 	  function(gset_nms = "go_sets", var_cutoff = 0.5, pval_cutoff = 1E-2, 
 	           logFC_cutoff = log2(1.1), ...) {
 	    gspaTest(df = df,
@@ -756,7 +778,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	            anal_type = anal_type,
 	            ...)
 	  }
-	} else if (anal_type == "String") {
+	} 
+	else if (anal_type == "String") {
 	  function(db_nms = NULL, score_cutoff = .7, ...) {
 	    stringTest(df = df,
 	               id = !!id,
@@ -769,7 +792,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	               filename = paste0(fn_prefix, ".csv"),
 	               ...)
 	  }
-	} else if (anal_type == "LDA") {
+	} 
+	else if (anal_type == "LDA") {
 	  function(choice = "lda", method = "moment", 
 	           type = "obs", dimension = 2, folds = 1, show_ids = TRUE,
 	           show_ellipses = FALsE, 
@@ -828,7 +852,8 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	            nu = nu, 
 	            ...)
 	  }
-	} else if (anal_type == "KinSub") {
+	} 
+	else if (anal_type == "KinSub") {
 	  function(db_nms = NULL, match_orgs = TRUE, ...) {
 	    KinSubTest(df = df,
 	               id = !!id,
@@ -842,7 +867,6 @@ info_anal <- function (id = gene, col_select = NULL, col_group = NULL,
 	               ...)
 	  }
 	}
-
 }
 
 

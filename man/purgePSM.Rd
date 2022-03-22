@@ -9,7 +9,6 @@ purgePSM(
   pt_cv = NULL,
   max_cv = NULL,
   adjSD = FALSE,
-  keep_ohw = TRUE,
   min_n = 1L,
   rm_allna = FALSE,
   theme = NULL,
@@ -31,11 +30,6 @@ CV.}
 
 \item{adjSD}{Not currently used. If TRUE, adjust the standard deviation in
 relative to the width of ratio profiles.}
-
-\item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
-default is TRUE. The argument is softly depreciated; instead use
-\code{min_n}. Equivalency: \code{keep_ohw = TRUE <=> min_n == 1; keep_ohw =
-FALSE <=> min_n == 2}.}
 
 \item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
 entries in PSM tables with the number of identifying PSMs smaller than

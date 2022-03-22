@@ -18,7 +18,7 @@ prepDM <- function(df = NULL, id = "pep_seq", scale_log2r = TRUE, sub_grp = NULL
                    type = "ratio", anal_type = NULL, rm_allna = FALSE) 
 {
   dat_dir <- get_gl_dat_dir()
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  label_scheme <- load_ls_group(dat_dir, label_scheme)
   
   if (!nrow(df))
     stop("Zero row of data after subsetting.")
@@ -360,31 +360,35 @@ aggrTopn <- function(f)
 }
 
 
-#' Aggregation of LFQ inentisty.
+#' Aggregation of LFQ intensity.
 #'
 #' Summarizes \code{log2FC} and \code{intensity} by the descriptive statistics
 #' of \code{c("mean", "median", "sum")}. Note that data are already subset by
 #' top_n.
+#' 
+#' \code{ids} are a list of column keys.
 #'
-#' @param f A function for data summarization.
+#' @param f A function for data summary.
 #' @examples \donttest{df_num <- aggrLFQ(sum)(df, prot_acc, na.rm = TRUE)}
-aggrLFQ <- function(f) 
+aggrLFQs <- function(f) 
 {
-  function (df, id, ...) {
-    id <- rlang::as_string(rlang::enexpr(id))
+  function (df, ids, ...) {
     nms <- names(df)
-    cols <- grep("log2_R[0-9]{3}|I[0-9]{3}", nms)
     
-    if (!id %in% nms)
-      stop("Column `", id, "` not found.")
+    bads <- ids[!ids %in% nms]
+    
+    if (length(bads))
+      stop("Columns not found `", paste(bads, collapse = ", "), "` not found.")
+    
+    cols <- grep("log2_R[0-9]{3}|I[0-9]{3}", nms)
     
     if (!length(cols))
       stop("Columns of log2 ratios or intensity not found.")
     
     df %>%
-      dplyr::select(id, cols) %>%
-      dplyr::group_by(!!rlang::sym(id)) %>%
-      dplyr::summarise_all(~ f(.x, ...))
+      dplyr::select(ids, cols) %>%
+      dplyr::group_by_at(ids) %>%
+      dplyr::summarise_all(~ sum(.x, ...))
   }
 }
 
@@ -639,7 +643,8 @@ colAnnot <- function (annot_cols = NULL, sample_ids = NULL, annot_colnames = NUL
 	  return(NA)
 
   dat_dir <- get_gl_dat_dir()
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  # load(file = file.path(dat_dir, "label_scheme.rda"))
+  label_scheme <- load_ls_group(dat_dir, label_scheme)
 	exists <- annot_cols %in% names(label_scheme)
 
 	if (sum(!exists) > 0L) {
@@ -2854,11 +2859,12 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
 
   if (col_select == rlang::expr(Sample_ID)) 
     stop(err_msg1, call. = FALSE)
+  
   if (col_order == rlang::expr(Sample_ID)) 
     stop(err_msg1, call. = FALSE)
   
-  load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  label_scheme_full <- load_ls_group(dat_dir, label_scheme_full)
+  label_scheme <- load_ls_group(dat_dir, label_scheme)
   
   if (is.null(label_scheme_full[[col_select]])) 
     stop("Column \'", rlang::as_string(col_select), "\' does not exist.", 
@@ -2871,24 +2877,21 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
     warning("Column \'", rlang::as_string(col_order), "\' does not exist.
 			Samples will be arranged by the alphebatic order.", 
             call. = FALSE)
-  } else if (sum(!is.na(label_scheme_full[[col_order]])) == 0) {
+  } 
+  else if (sum(!is.na(label_scheme_full[[col_order]])) == 0) {
     # warning("No orders under column \'", rlang::as_string(col_order), "\'.", call. = FALSE)
   }
   
   if (is_psm) {
     label_scheme_sub <- local({
-      set_idx <- filepath %>% 
-        gsub("^.*TMTset(\\d+)_.*", "\\1", .) %>% 
-        as.integer()
-      
-      injn_idx <- filepath %>% 
-        gsub("^.*TMTset\\d+_LCMSinj(\\d+)_sd\\.png$", "\\1", .) %>% 
-        as.integer()
-    
+      set_idx <- as.integer(gsub("^.*TMTset(\\d+)_.*", "\\1", filepath))
+      injn_idx <- as.integer(gsub("^.*TMTset\\d+_LCMSinj(\\d+)_sd\\.png$", "\\1", filepath))
+
       label_scheme_full %>% 
         dplyr::filter(TMT_Set == set_idx, LCMS_Injection == injn_idx) 
     })
-  } else {
+  } 
+  else {
     label_scheme_sub <- label_scheme
   }
   
@@ -2900,7 +2903,7 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
   
   TMT_plex <- TMT_plex(label_scheme_full)
   
-  if (TMT_plex == 0) {
+  if (!TMT_plex) {
     label_scheme_sub$new_id <- label_scheme_sub$Sample_ID
   }
 
@@ -2918,29 +2921,28 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
   
   df <- df %>% dplyr::filter(!duplicated(.[[id]]))
 
-  if (type == "log2_R") {
-    df_sd <- df %>% dplyr::select(id, grep("^sd_log2_R[0-9]{3}[NC]*", names(.)))
-  } else if (type == "N_l og2_R") {
-    df_sd <- df %>% dplyr::select(id, grep("^sd_N_log2_R[0-9]{3}[NC]*", names(.)))
-  } else if (type == "Z_log2_R") {
-    df_sd <- df %>% dplyr::select(id, grep("^sd_Z_log2_R[0-9]{3}[NC]*", names(.)))
-  }
-
+  pat0 <- "[0-9]{3}[NC]{0,1}"
+  
+  df_sd <- df %>% 
+    dplyr::select(id, grep(paste0("^sd_", type, pat0), names(.)))
+  
   # all-NA first removed for finding all-NaN columns
+  pat_log2_R <- paste0("^.*log2_R", pat0)
+
   df_sd <- df_sd %>% 
-    dplyr::filter(rowSums(!is.na(.[grep("^.*log2_R[0-9]{3}", names(.))])) > 0)
+    dplyr::filter(rowSums(!is.na(.[grep(pat_log2_R, names(.))])) > 0L)
   
   if (adjSD) {
     SD <- df %>%
-      dplyr::select(grep("^log2_R[0-9]{3}|^I[0-9]{3}", names(.))) %>%
-      dblTrim(., range_log2r = c(0, 100), range_int = c(0, 100), 
+      dplyr::select(grep("^log2_R[0-9]{3}[NC]{0,1}|^I[0-9]{3}[NC]{0,1}", names(.))) %>%
+      dblTrim(range_log2r = c(0, 100), range_int = c(0, 100), 
               type_r = "log2_R", type_int = "I")
     
     df_sd[, grep("^.*log2_R", names(df_sd))] <- 
       df_sd[, grep("^.*log2_R", names(df_sd)), drop = FALSE] %>% 
       sweep(., 2, sqrt(SD), "/")
     
-    df_z <- df_sd %>% dplyr::select(grep("^.*log2_R[0-9]{3}", names(.)))
+    df_z <- df_sd %>% dplyr::select(grep(pat_log2_R, names(.)))
     nan_cols <- purrr::map_lgl(df_z, is_all_nan, na.rm = TRUE)
     df_z[, nan_cols] <- 0
     df_sd[, grep("^.*_log2_R[0-9]{3}", names(df_sd))] <- df_z
@@ -2948,10 +2950,11 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
     rm(list = c("df_z", {nan_cols}, "SD"))
   }
 
-  if (TMT_plex > 0) {
+  if (TMT_plex) {
     df_sd <- df_sd %>% 
       `names<-`(gsub("^.*log2_R", "", names(.))) 
-  } else {
+  } 
+  else {
     df_sd <- df_sd %>% 
       `names<-`(gsub("sd_log2_R000 \\((.*)\\)$", "\\1", names(.))) 
   }
@@ -3002,7 +3005,7 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
       width_temp <- width
       width <- height
       height <- width_temp
-      rm(width_temp)
+      rm(list = "width_temp")
     }
     
     ggsave_dots <- set_ggsave_dots(dots, c("filename", "plot", "width", "height", 
@@ -3027,7 +3030,7 @@ rptr_violin <- function(df, filepath, width, height)
   df <- df %>% 
     dplyr::select(which(not_all_NA(.)))
   
-  if (ncol(df) == 0) {
+  if (!ncol(df)) {
     message("No intensity columns available.")
     return (NULL)
   }
@@ -3559,7 +3562,8 @@ check_gset_nms <- function (gset_nms)
 ok_existing_params <- function (filepath) 
 {
   dat_dir <- get_gl_dat_dir()
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  # load(file = file.path(dat_dir, "label_scheme.rda"))
+  label_scheme <- load_ls_group(dat_dir, label_scheme)
   
   if (!file.exists(filepath)) 
     return(TRUE)
@@ -3568,12 +3572,12 @@ ok_existing_params <- function (filepath)
                             col_types = cols(Component = col_double()))
 
   missing_samples <- local({
-    par_samples <- params$Sample_ID %>% unique() %>% .[!is.na(.)]
-    expt_samples <- label_scheme$Sample_ID %>% unique()
+    par_samples <- unique(params$Sample_ID) %>% .[!is.na(.)]
+    expt_samples <- unique(label_scheme$Sample_ID)
     setdiff(expt_samples, par_samples)
   })
   
-  if (purrr::is_empty(missing_samples)) 
+  if (!length(missing_samples)) 
     return(TRUE)
   
   try(unlink(file.path(dat_dir, "Peptide/Histogram/MGKernel_params_[NZ].txt")))
@@ -3683,29 +3687,27 @@ set_cutpoints2 <- function(cut_points, df)
       cut_nm <- "mean_lint"
     }
     
-    if (! is.numeric(df[[cut_nm]])) 
-      stop("Column `", cut_nm, "` is not numeric.", 
-           call. = FALSE)
-    
+    if (!is.numeric(df[[cut_nm]])) 
+      stop("Column `", cut_nm, "` is not numeric.", call. = FALSE)
+
     cut_points <- quantile(df[[cut_nm]], na.rm = TRUE) 
     seqs <- seq_along(cut_points)
     names(cut_points)[seqs] <- cut_nm
-  } else {
-    cut_nm <- cut_points %>% 
-      `[`(1) %>% 
-      names() %>% 
-      gsub("1$", "", .)
+  } 
+  else {
+    cut_nm <- gsub("1$", "", names(cut_points[1]))
     
-    if (purrr::is_empty(cut_nm)) cut_nm <- "mean_lint"
+    if (!length(cut_nm)) 
+      cut_nm <- "mean_lint"
     
-    if (! cut_nm %in% names(df)) {
+    if (!cut_nm %in% names(df)) {
       warning("Column `", cut_nm, "` not found in `df`;", 
               "instead use column `mean_lint`.", 
               call. = FALSE)
       cut_nm <- "mean_lint"
     }
     
-    if (! is.numeric(df[[cut_nm]])) 
+    if (!is.numeric(df[[cut_nm]])) 
       stop("Column `", cut_nm, "` is not numeric.", call. = FALSE)
     
     cut_points <- set_cutpoints(cut_points, df[[cut_nm]])
@@ -4475,5 +4477,66 @@ get_col_types <- function ()
   stopifnot(length(nms) == length(unique(nms)))
   
   col_types
+}
+
+
+#' Wrapper of writing Excel
+#' 
+#' @param df A data frame.
+#' @param sheetName An Excel sheet name.
+#' @param filename An output file name.
+#' @inheritParams load_expts
+write_excel_wb <- function (df, sheetName = "Setup", dat_dir = NULL, filename) 
+{
+  if (is.null(dat_dir)) 
+    dat_dir <- get_gl_dat_dir()
+  
+  wb <- openxlsx::createWorkbook()
+  openxlsx::addWorksheet(wb, sheetName = sheetName)
+  openxlsx::writeData(wb, sheet = sheetName, df)
+  openxlsx::saveWorkbook(wb, file.path(dat_dir, filename), overwrite = TRUE)
+}
+
+
+#' Loads label_scheme or label_scheme_group.
+#'
+#' Prefer label_scheme_group over label_scheme.
+#'
+#' @param filename A file name of "label_scheme" or "label_scheme_full".
+#' @param prefer_group Logical; if TRUE, prefer label_scheme_group over
+#'   label_scheme etc.
+#' @inheritParams load_expts
+load_ls_group <- function (dat_dir, filename = "label_scheme", 
+                           prefer_group = TRUE) 
+{
+  filename <- rlang::as_string(rlang::enexpr(filename))
+  
+  if (grepl("\\.rda$", filename)) {
+    fn_prefix <- gsub("\\.[^.]*$", "", filename)
+  }
+  else {
+    fn_prefix <- filename
+    filename <- paste0(filename, ".rda")
+  }
+  
+  file <- file.path(dat_dir, filename)
+  file2 <- file.path(dat_dir, paste0(fn_prefix, "_group.rda"))
+  fn_prefix2 <- paste0(fn_prefix, "_group")
+  
+  if (file.exists(file2) && prefer_group) {
+    fi <- file2
+    nm <- fn_prefix2
+  }
+  else if (file.exists(file)) {
+    fi <- file
+    nm <- fn_prefix
+  }
+  else {
+    stop("`label_schem` not found under ", dat_dir)
+  }
+  
+  load(fi)
+  
+  get(nm, envir = environment(), inherits = FALSE)
 }
 
