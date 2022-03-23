@@ -683,23 +683,26 @@ fitKernelDensity <- function (df, n_comp = 3, seed = NULL, ...)
 					all(x == 0)) {
 			df_par <- data.frame(Component = c(1:n_comp), lambda = rep(NA, n_comp),
 									mean = rep(NA, n_comp), sd = rep(NA, n_comp))
-		} else {
+		} 
+		else {
 			x <- x[!is.na(x)]
 
-			stopifnot(n_comp > 1)
+			stopifnot(n_comp > 1L)
 
 			mixEM_call <- rlang::quo(mixtools::normalmixEM(!!x, k = !!n_comp, !!!dots))
+			
 			if (!is.null(seed)) set.seed(seed) else set.seed(sample(.Random.seed, 1))
 			
 			quietly_out <- purrr::quietly(rlang::eval_tidy)(mixEM_call, caller_env())
 			x_k2 <- quietly_out$result
+			
 			df_par <- data.frame(Component = 1:n_comp, 
 			                     lambda = x_k2$lambda, 
 			                     mean = x_k2$mu, 
 			                     sd = x_k2$sigma)
 		}
 
-		return(df_par)
+		invisible(df_par)
 	}
 
 	dots <- rlang::enexprs(...)

@@ -22,14 +22,11 @@ newColnames <- function(TMT_Set = 1L, df, label_scheme,
   }
   else {
     # no lapply, need side effects
-    for (id in group_ids) 
+    for (id in group_ids) {
       df <- hsubColnames(id, df, pattern, TMT_Set, label_scheme_sub)
+    }
   }
 
-  ## cols with the updated names go first
-  # cols <- grep(paste0(pattern, "\\s+\\(.*\\) *\\[*.*\\]*$"), names(df))
-  # if (length(cols) < ncol(df)) df <- dplyr::bind_cols(df[, cols, drop = FALSE], df[, -cols, drop = FALSE])
-  
   invisible(df)
 }
 
@@ -874,7 +871,7 @@ spreadPepNums <- function (df, filelist, group_psm_by)
   lapply(cols_grp, 
          function (x) if (!x %in% nms) stop("Column `", x, "` not found."))
   
-  group_ids <- unique(df$pep_group)
+  group_ids <- if ("pep_group" %in% nms) unique(df$pep_group) else NULL
   
   if (length(group_ids) >= 2L) {
     cols_grp <- c(cols_grp, "pep_group")
