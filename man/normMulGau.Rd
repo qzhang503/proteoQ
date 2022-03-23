@@ -6,11 +6,11 @@
 \usage{
 normMulGau(
   df,
-  method_align,
+  method_align = "MC",
   n_comp,
   seed = NULL,
-  range_log2r,
-  range_int,
+  range_log2r = c(0, 100),
+  range_int = c(0, 100),
   filepath,
   col_select = NULL,
   cut_points = Inf,

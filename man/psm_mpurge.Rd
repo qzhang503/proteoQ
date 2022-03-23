@@ -2,16 +2,15 @@
 % Please edit documentation in R/purge.R
 \name{psm_mpurge}
 \alias{psm_mpurge}
-\title{Purges PSM helper}
+\title{Helper of \link{purgePSM}}
 \usage{
 psm_mpurge(
   file,
-  dat_dir,
+  dat_dir = NULL,
   group_psm_by = "pep_seq",
   group_pep_by = "prot_acc",
   pt_cv = NULL,
   max_cv = NULL,
-  keep_ohw = TRUE,
   min_n = 1L,
   rm_allna = FALSE,
   theme,
@@ -46,11 +45,6 @@ data trimming by CV percentile. The precedence in data purging is
 will be replaced with NA. The default is NULL with no data trimming by max
 CV.}
 
-\item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
-default is TRUE. The argument is softly depreciated; instead use
-\code{min_n}. Equivalency: \code{keep_ohw = TRUE <=> min_n == 1; keep_ohw =
-FALSE <=> min_n == 2}.}
-
 \item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
 entries in PSM tables with the number of identifying PSMs smaller than
 \code{min_n} will be replaced with NA. When calling from \code{purgePep},
@@ -73,5 +67,5 @@ height of plot. \cr \code{flip_coord}, logical; if TRUE, flip \code{x} and
 \code{y} axis.}
 }
 \description{
-May be used for parallel processes.
+Helper of \link{purgePSM}
 }

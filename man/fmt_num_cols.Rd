@@ -2,7 +2,7 @@
 % Please edit documentation in R/peptable.R
 \name{fmt_num_cols}
 \alias{fmt_num_cols}
-\title{Format numeric columns}
+\title{Formats numeric columns}
 \usage{
 fmt_num_cols(df)
 }
@@ -18,5 +18,5 @@ require the fields of significance p-values, the \code{df} will be one of
 "protein_impNA_pVal.txt")}.}
 }
 \description{
-Format numeric columns
+Formats numeric columns
 }

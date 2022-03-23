@@ -130,13 +130,13 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     add = TRUE
   )
   
-  
   reload_expts()
   
   method_align <- rlang::enexpr(method_align)
   if (method_align == rlang::expr(c("MC", "MGKernel"))) {
     method_align <- "MC"
-  } else {
+  } 
+  else {
     method_align <- rlang::as_string(method_align)
     stopifnot(method_align %in% c("MC", "MGKernel"), 
               length(method_align) == 1)
@@ -147,31 +147,37 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
 
   id <- match_call_arg(normPSM, group_pep_by)
   pep_id <- match_call_arg(normPSM, group_psm_by)
-  
+  label_scheme <- load_ls_group(dat_dir, label_scheme)
+  ok_existing_params(file.path(dat_dir, "Protein/Histogram/MGKernel_params_N.txt"))
+
   col_select <- rlang::enexpr(col_select)
   col_select <- if (is.null(col_select)) 
     rlang::expr(Sample_ID) 
   else 
     rlang::sym(col_select)
+  col_select <- rlang::as_string(col_select)
 
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  if (col_select == "Sample_ID" && all(is.na(label_scheme[["Sample_ID"]])))
+    stop("All values under  column `Sample_ID` are NA.", call. = FALSE)
   
-  ok_existing_params(file.path(dat_dir, "Protein/Histogram/MGKernel_params_N.txt"))
-  
-  if (is.null(label_scheme[[col_select]])) {
-    col_select <- rlang::expr(Sample_ID)
-    
-    warning("Column `", rlang::as_string(col_select), "` not existed. ", 
-            "Use column `Sample_ID` instead.", 
-            call. = FALSE)
-  } else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
-    col_select <- rlang::expr(Sample_ID)
-    
-    warning("No samples under column '", rlang::as_string(col_select), "`. ", 
-            "Use column `Sample_ID` instead.", 
-            call. = FALSE)
+  if (col_select != "Sample_ID") {
+    if (is.null(label_scheme[[col_select]])) {
+      col_select <- "Sample_ID"
+      
+      warning("Column `", col_select, "` not existed. ", 
+              "Used column `Sample_ID` instead.", call. = FALSE)
+    } 
+    else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
+      col_select <- "Sample_ID"
+      
+      warning("No samples under column '", col_select, "`. ", 
+              "Used column `Sample_ID` instead.", call. = FALSE)
+    }
+    else {
+      stop("Column `Sample_ID` not found in metadata.", call. = FALSE)
+    }
   }
-  
+
   dots <- rlang::enexprs(...)
   
   filename <- file.path(dat_dir, "Protein/Protein.txt")
@@ -183,11 +189,9 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     readr::read_tsv(filename, col_types = get_col_types(), show_col_types = FALSE)
   )
 
-  local({
-    if (sum(grepl("^log2_R[0-9]{3}[NC]{0,1}", names(df))) <= 1) 
-      stop("Need more than one sample for `standPep` or `standPrn`.", 
-           call. = FALSE)
-  })
+  if (sum(grepl("^log2_R[0-9]{3}[NC]{0,1}", names(df))) <= 1) 
+    stop("Need more than one sample for `standPep` or `standPrn`.", 
+         call. = FALSE)
   
   message("Primary column keys in `Protein/Protein.txt` for `slice_` varargs.")
   

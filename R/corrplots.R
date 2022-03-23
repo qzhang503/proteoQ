@@ -55,18 +55,20 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
 	             rm_allna = TRUE) 
 	
 	if (data_select == "logFC") {
-	  df <- df %>% .$log2R
+	  df <- df$log2R
 	  y_label <- x_label <- expression("Ratio ("*log[2]*")")
 	  if (is.null(xmin)) xmin <- -2
 	  if (is.null(xmax)) xmax <- 2
 	  if (is.null(xbreaks)) xbreaks <- 1
-	} else if (data_select == "logInt") {
-	  df <- df %>% .$Intensity %>% log10()
+	} 
+	else if (data_select == "logInt") {
+	  df <- log10(df$Intensity)
 	  y_label <- x_label <- expression("Intensity ("*log[10]*")")
 	  if (is.null(xmin)) xmin <- 3.5
 	  if (is.null(xmax)) xmax <- 6
 	  if (is.null(xbreaks)) xbreaks <- 1
-	} else {
+	} 
+	else {
 	  stop("`data_select` nees to be either`logFC` or `logInt`.", 
 	       call. = FALSE)
 	}
@@ -84,7 +86,8 @@ plotCorr <- function (df = NULL, id, anal_type, data_select,
 
 	if (dplyr::n_distinct(label_scheme_sub[[col_order]]) == 1L) {
 		df <- df[, order(names(df))]
-	} else {
+	} 
+	else {
 	  corrplot_orders <- label_scheme_sub %>%
 	    dplyr::select(Sample_ID, !!col_select, !!col_order) %>%
 	    dplyr::filter(!is.na(!!col_order)) %>%

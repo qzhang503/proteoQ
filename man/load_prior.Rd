@@ -2,7 +2,7 @@
 % Please edit documentation in R/peptable.R
 \name{load_prior}
 \alias{load_prior}
-\title{load prior Peptide.txt}
+\title{Loads prior Peptide.txt}
 \usage{
 load_prior(filename, id)
 }
@@ -17,5 +17,5 @@ image type will be determined by the extension of the file name.}
 \code{prot_acc} and \code{gene}.}
 }
 \description{
-load prior Peptide.txt
+Loads prior Peptide.txt
 }

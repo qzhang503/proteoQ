@@ -9,7 +9,6 @@ PSM2Pep(
     "lfq_top_2_sum", "lfq_top_3_sum", "lfq_all"),
   lfq_ret_tol = 60L,
   rm_allna = FALSE,
-  parallel = TRUE,
   ...
 )
 }
@@ -30,9 +29,6 @@ aggregation of LFQ data.}
 \item{rm_allna}{Logical; if TRUE, removes data rows that are exclusively NA
 across ratio columns of \code{log2_R126} etc. The setting also applies to
 \code{log2_R000} in LFQ.}
-
-\item{parallel}{Logical; if TRUE, performs parallel computation. The default
-is TRUE.}
 
 \item{...}{\code{filter_}: Variable argument statements for the filtration of
 data rows. See also \code{\link{normPSM}}.}

@@ -4,7 +4,7 @@
 \alias{purge_by_cv}
 \title{Filters data groups by a CV cut-off}
 \usage{
-purge_by_cv(df, id, max_cv, keep_ohw = TRUE, min_n = 1L, rm_allna = FALSE)
+purge_by_cv(df, id, max_cv = NULL, min_n = 1L, rm_allna = FALSE)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined
@@ -23,11 +23,6 @@ require the fields of significance p-values, the \code{df} will be one of
 \item{max_cv}{Numeric; the cut-off in maximum CV. Values above the threshold
 will be replaced with NA. The default is NULL with no data trimming by max
 CV.}
-
-\item{keep_ohw}{Logical; if TRUE, keep one-hit-wonders with unknown CV. The
-default is TRUE. The argument is softly depreciated; instead use
-\code{min_n}. Equivalency: \code{keep_ohw = TRUE <=> min_n == 1; keep_ohw =
-FALSE <=> min_n == 2}.}
 
 \item{min_n}{Positive integer. When calling from \code{purgePSM}, peptide
 entries in PSM tables with the number of identifying PSMs smaller than

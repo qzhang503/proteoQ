@@ -195,7 +195,7 @@ plotHM <- function(df, id, col_order, col_benchmark, label_scheme_sub,
   NorZ_ratios_to_ctrl <- paste("toCtrl", NorZ_ratios, sep = "_")
   
   dat_dir <- get_gl_dat_dir()
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  label_scheme <- load_ls_group(dat_dir, label_scheme)
   
   sample_ids <- label_scheme_sub$Sample_ID
   
