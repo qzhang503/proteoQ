@@ -947,10 +947,10 @@ spreadPepNums <- function (df, filelist, group_psm_by)
   } 
   
   df_num <- df_num %>%
-    dplyr::arrange_at(cols_grp2) %>%
     tidyr::gather(grep("R[0-9]{3}|I[0-9]{3}", names(.)), key = ID, value = value) %>%
+    dplyr::arrange_at(cols_grp2) %>%
     tidyr::unite(ID, c(ID, cols_grp2))
-
+  
   # define the levels of TMT channels;
   # otherwise, the order of channels will flip between N(itrogen) and C(arbon)
   Levels <- unique(df_num$ID)
