@@ -1788,6 +1788,127 @@ procPSMs <- function (df = NULL, scale_rptr_int = FALSE,
 }
 
 
+#' Finds mismatches in RAW file names
+#'
+#' \code{check_raws} finds mismatched RAW files between expt_smry.xlsx and
+#' PSM outputs.
+#' @param df A data frame containing the PSM table from database searches.
+check_raws <- function(df) 
+{
+  stopifnot ("RAW_File" %in% names(df))
+  
+  dat_dir <- get_gl_dat_dir()
+  
+  load(file = file.path(dat_dir, "label_scheme_full.rda"))
+  load(file = file.path(dat_dir, "fraction_scheme.rda"))
+  
+  # automated frac_smry.xlsx may be based on wrong information 
+  # from expt_smry.xlsx (e.g. Sample_ID removals)
+  local({
+    ls_raws <-  unique(label_scheme_full$RAW_File)
+    fs_raws <-  unique(fraction_scheme$RAW_File)
+    
+    if (!(all(is.na(ls_raws)) || all(ls_raws %in% fs_raws))) {
+      expt_smry <- match_call_arg(load_expts, expt_smry)
+      frac_smry <- match_call_arg(load_expts, frac_smry)
+      unlink(file.path(dat_dir, frac_smry))
+      prep_fraction_scheme(dat_dir, expt_smry, frac_smry)
+
+      load(file = file.path(dat_dir, "fraction_scheme.rda"))
+    }
+  })
+  
+  local({
+    ls_tmt <- unique(label_scheme_full$TMT_Set)
+    fs_tmt <- unique(fraction_scheme$TMT_Set)
+    extra_fs_tmt <- fs_tmt %>% .[! . %in% ls_tmt]
+    extra_ls_tmt <- ls_tmt %>% .[! . %in% fs_tmt]
+    
+    if (length(extra_fs_tmt)) 
+      stop("TMT_Set ", purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
+           " in fraction scheme not found in label scheme.", 
+           call. = FALSE)
+    
+    if (length(extra_ls_tmt)) 
+      stop("TMT_Set ", purrr::reduce(extra_ls_tmt, paste, sep = ", "), 
+           " in label scheme not found in fraction scheme.", 
+           call. = FALSE)
+  })
+  
+  local({
+    ls_tmtinj <- label_scheme_full %>% 
+      tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>% 
+      dplyr::select(TMT_inj) %>% 
+      unique() %>% 
+      unlist()
+    
+    fs_tmtinj <- fraction_scheme %>% 
+      tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>% 
+      dplyr::select(TMT_inj) %>% 
+      unique() %>% 
+      unlist()
+    
+    extra_fs_tmt <- fs_tmtinj %>% .[! . %in% ls_tmtinj]
+    extra_ls_tmt <- ls_tmtinj %>% .[! . %in% fs_tmtinj]
+    
+    if (length(extra_fs_tmt)) 
+      stop("The combination of TMT_Set & LCMS ", 
+           purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
+           " in fraction scheme not found in label scheme.", 
+           call. = FALSE)
+    
+    if (length(extra_ls_tmt)) 
+      stop("The combination of TMT_Set & LCMS ", 
+           purrr::reduce(extra_fs_tmt, paste, sep = ", "), 
+           " in label scheme not found in fraction scheme.", 
+           call. = FALSE)
+  })
+  
+  tmtinj_raw <- fraction_scheme %>% 
+    tidyr::unite(TMT_inj, TMT_Set, LCMS_Injection, sep = ".", remove = TRUE) %>%
+    dplyr::select(-Fraction) %>%
+    dplyr::mutate(RAW_File = gsub("\\.raw$", "", RAW_File)) %>% 
+    dplyr::mutate(RAW_File = gsub("\\.d$", "", RAW_File)) # Bruker
+  
+  ms_raws <- unique(df$RAW_File)
+  
+  # (sometime due to parsing error, i.e., of unknown formats)
+  if (all(is.na(ms_raws)))
+    stop("All values of `RAW_File` are NA.")
+  
+  label_scheme_raws <- unique(tmtinj_raw$RAW_File)
+  
+  # ms_raws <- df$RAW_File %>% unique()
+  # label_scheme_raws <- tmtinj_raw$RAW_File %>% unique()
+  
+  missing_ms_raws <- ms_raws %>% .[! . %in% label_scheme_raws]
+  wrong_label_scheme_raws <- label_scheme_raws %>% .[! . %in% ms_raws]
+  
+  # --- rm `missing_ms_raws` from `df`
+  if (length(missing_ms_raws)) {
+    df <- df %>% dplyr::filter(! RAW_File %in% missing_ms_raws)
+    
+    warning("RAW file (names) not in metadata and ", 
+            "corresponding entries removed from PSM data:\n", 
+            purrr::reduce(missing_ms_raws, paste, sep = "\n"), 
+            call. = FALSE)
+  }
+  
+  if (length(wrong_label_scheme_raws)) 
+    stop("\n=========================================================================\n", 
+         "RAW file name(s) in metadata have no corresponding entries in PSM data:\n", 
+         "(Hint: check the possibility that MS file(s) have ", 
+         "no PSM contributions.)\n\n", 
+         purrr::reduce(wrong_label_scheme_raws, paste, sep = "\n"), 
+         "\n=========================================================================\n", 
+         call. = FALSE)
+  
+  ## RAW_File may not be unique if the same RAW goes into different DAT files (searches)
+  # df <- df %>% dplyr::left_join(tmtinj_raw, id = "RAW_File")
+  invisible (list(lookup = tmtinj_raw, df = df))
+}
+
+
 #' Splits PSM tables
 #'
 #' \code{splitPSM} splits the PSM outputs after \code{rmPSMHeaders()}. It

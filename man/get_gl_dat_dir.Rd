@@ -2,10 +2,10 @@
 % Please edit documentation in R/global.R
 \name{get_gl_dat_dir}
 \alias{get_gl_dat_dir}
-\title{Fetch global \code{dat_dir}.}
+\title{Fetches global \code{dat_dir}.}
 \usage{
 get_gl_dat_dir()
 }
 \description{
-Fetch global \code{dat_dir}.
+Fetches global \code{dat_dir}.
 }

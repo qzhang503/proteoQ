@@ -16,6 +16,9 @@ ok_file_ncomp(filepath, filename, n_comp)
 \code{n_comp} overwrites the argument \code{k} in
 \code{\link[mixtools]{normalmixEM}}.}
 }
+\value{
+A logical value
+}
 \description{
-Compares to prior n_comp value.
+Returns TRUE if matched in the value of n_comp; otherwise return FALSE.
 }

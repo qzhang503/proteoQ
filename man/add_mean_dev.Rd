@@ -2,7 +2,7 @@
 % Please edit documentation in R/normalization.R
 \name{add_mean_dev}
 \alias{add_mean_dev}
-\title{Add mean-deviation}
+\title{Adds mean-deviation}
 \usage{
 add_mean_dev(df, label_scheme_fit, filepath)
 }
@@ -14,5 +14,5 @@ add_mean_dev(df, label_scheme_fit, filepath)
 \item{label_schem_fit}{A subset of lable_scheme.}
 }
 \description{
-Add mean-deviation
+Adds mean-deviation
 }

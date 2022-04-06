@@ -2,15 +2,31 @@
 % Please edit documentation in R/normalization.R
 \name{find_fit_nms}
 \alias{find_fit_nms}
-\title{Find sample IDS for used in the current fitting.}
+\title{Finds sample IDS for used in the current fitting.}
 \usage{
-find_fit_nms(nm_a, nm_b)
+find_fit_nms(universe, selected, pat = NULL)
 }
 \arguments{
-\item{nm_a}{A name list from data table.}
+\item{universe}{A name list from data table.}
 
-\item{nm_b}{A name list from metadata.}
+\item{selected}{A name list from metadata.}
+
+\item{pat}{A pattern in regular expression.}
 }
 \description{
-Find sample IDS for used in the current fitting.
+Finds sample IDS for used in the current fitting.
+}
+\examples{
+pat <- "^N_log2_R[0-9]{3}[NC]{0,1}\\\\s+\\\\("
+
+# special character of "+" and pointed brackets
+universe <- c("N_log2_R000 (<Mix1+Mix2> [base])", "N_log2_R000 (Mix1 [heavy])", 
+              "N_log2_R000 (Mix2 [heavy])")
+selected <- c("<Mix1+Mix2> [base]", "Mix2 [heavy]")
+
+# special character of "+" and round parenthesis
+universe <- c("N_log2_R000 ((Mix1+Mix2) [base])", "N_log2_R000 (Mix1 [heavy])", 
+              "N_log2_R000 (Mix2 [heavy])")
+selected <- c("(Mix1+Mix2) [base]", "Mix2 [heavy]")
+
 }

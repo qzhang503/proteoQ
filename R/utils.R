@@ -4540,3 +4540,63 @@ load_ls_group <- function (dat_dir, filename = "label_scheme",
   get(nm, envir = environment(), inherits = FALSE)
 }
 
+
+#' Parses \code{col_select}.
+#' 
+#' @inheritParams standPep
+#' @param label_scheme Experiment summary
+parse_col_select <- function (col_select, label_scheme) 
+{
+  sids <- label_scheme[["Sample_ID"]]
+  
+  if (is.null(sids))
+    stop("Column `Sample_ID` not found in metadata.", call. = FALSE)
+  
+  if (col_select == "Sample_ID" && all(is.na(sids)))
+    stop("All values under  column `Sample_ID` are NA.", call. = FALSE)
+  
+  if (col_select == "Sample_ID")
+    return(col_select)
+  
+  if (is.null(label_scheme[[col_select]])) {
+    col_select <- "Sample_ID"
+    
+    warning("Column `", col_select, "` not existed. ", 
+            "Used column `Sample_ID` instead.", call. = FALSE)
+  } 
+  else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
+    col_select <- "Sample_ID"
+    
+    warning("No samples under column '", col_select, "`. ", 
+            "Used column `Sample_ID` instead.", call. = FALSE)
+  }
+  
+  col_select
+}
+
+
+#' Parses file name.
+#' 
+#' @param filename A file name.
+#' @param dat_dir A working directory.
+#' @param must_exists Logical; if TRUE, the file must be present.
+parse_filename <- function (filename, dat_dir, must_exists = FALSE) 
+{
+  file <- file.path(dat_dir, filename)
+  
+  if (must_exists && !file.exists(file))
+    stop(filename, " not found under '", dat_dir, "'.", call. = FALSE)
+  
+  if (!grepl("\\.", filename))
+    stop("File name has no extension: ", filename)
+  
+  fn_suffix <- gsub("^.*\\.([^\\.]*)$", "\\1", filename)
+  fn_prefix <- gsub("\\.[^\\.]*$", "", filename)
+  
+  if (nchar(fn_prefix) <= 0L)
+    stop("File name has no base: ", filename)
+  
+  list(fn_prefix = fn_prefix, fn_suffix = fn_suffix)
+}
+
+
