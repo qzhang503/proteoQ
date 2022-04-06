@@ -27,6 +27,7 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
 
   if (is.null(dat_dir)) {
     dat_dir <- tryCatch(get("dat_dir", envir = .GlobalEnv), error = function(e) 1)
+    
     if (dat_dir == 1) 
       stop("Variable `dat_dir` not found; ", 
            "assign the working directory to the variable first.", 
@@ -67,14 +68,11 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
   dir.create(file.path(dat_dir, "PSM/individual_mods"), 
              recursive = TRUE, showWarnings = FALSE)
   
-  if (!purrr::is_empty(list.files(path = file.path(dat_dir), 
-                                  pattern = "^F[0-9]+\\.csv$"))) {
+  if (length(list.files(path = file.path(dat_dir), pattern = "^F[0-9]+\\.csv$"))) {
     type <- "mascot"
-  } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), 
-                                         pattern = "^msms.*\\.txt$"))) {
+  } else if (length(list.files(path = file.path(dat_dir), pattern = "^msms.*\\.txt$"))) {
     type <- "mq"
-  } else if (!purrr::is_empty(list.files(path = file.path(dat_dir), 
-                                         pattern = "^PSMexport.*\\.ssv$"))) {
+  } else if (length(list.files(path = file.path(dat_dir), pattern = "^PSMexport.*\\.ssv$"))) {
     type <- "sm"
   } else {
     stop("Unknow data type or missing data files.", call. = FALSE)
@@ -94,17 +92,20 @@ labEffPSM <- function(group_psm_by = c("pep_seq", "pep_seq_mod"),
   
   TMT_plex <- TMT_plex(label_scheme_full)
   
-  filelist = list.files(path = file.path(dat_dir, "PSM/cache"),
-                        pattern = "^F[0-9]{6}_hdr_rm.csv$")
+  filepath <- file.path(dat_dir, "PSM/cache")
+  filelist = list.files(path = filepath, pattern = "^F[0-9]{6}_hdr_rm.csv$")
+
+  if (length(filelist) == 0) 
+    stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
   
-  if (length(filelist) == 0) stop(paste("No PSM files under", file.path(dat_dir, "PSM")))
-  
-  if (length(filelist) != 4) stop("Nee all four PSM files using search parameters of:\n", 
-                                  "1. TMT at both N-terminal and K\n", 
-                                  "2. TMT at N-terminal but not K\n", 
-                                  "3. TMT at K but not N-terminal\n",
-                                  "4. TMT on neither N-terminal or K",
-                                  call. = FALSE)
+  if (length(filelist) != 4) 
+    stop("Need all four PSM files using search parameters of:\n", 
+         "1. TMT at both N-terminal and K\n", 
+         "2. TMT at N-terminal but not K\n", 
+         "3. TMT at K but not N-terminal\n",
+         "4. TMT on neither N-terminal or K\n",
+         "The number of files under ", filepath, " is ", length(filelist), 
+         call. = FALSE)
   
   df <- purrr::map(filelist, ~ {
     df <- read.delim(file.path(dat_dir, "PSM/cache", .x), sep = ',', check.names = FALSE, 

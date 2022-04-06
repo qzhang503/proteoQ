@@ -4,7 +4,13 @@
 \alias{dblTrim}
 \title{Data normalization}
 \usage{
-dblTrim(df, range_log2r, range_int, type_r = "N_log2_R", type_int = "N_I")
+dblTrim(
+  df,
+  range_log2r = c(0, 100),
+  range_int = c(0, 100),
+  type_r = "N_log2_R",
+  type_int = "N_I"
+)
 }
 \arguments{
 \item{df}{The name of a primary data file. By default, it will be determined

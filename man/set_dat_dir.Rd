@@ -2,7 +2,7 @@
 % Please edit documentation in R/global.R
 \name{set_dat_dir}
 \alias{set_dat_dir}
-\title{Set global \code{dat_dir}}
+\title{Sets global \code{dat_dir}}
 \usage{
 set_dat_dir(dat_dir = NULL)
 }
@@ -11,5 +11,5 @@ set_dat_dir(dat_dir = NULL)
 match the value under the global environment.}
 }
 \description{
-Set global \code{dat_dir}
+Sets global \code{dat_dir}
 }

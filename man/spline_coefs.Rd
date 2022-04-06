@@ -2,10 +2,22 @@
 % Please edit documentation in R/normalization.R
 \name{spline_coefs}
 \alias{spline_coefs}
-\title{calculates `x` positions by spline points}
+\title{calculates the median-centered \eqn{x}'s positions by spline points}
 \usage{
 spline_coefs(df, label_scheme, label_scheme_fit, ...)
 }
+\arguments{
+\item{df}{A data frame.}
+
+\item{label_scheme}{The metadata of label scheme.}
+
+\item{label_scheme_fit}{the subset of \code{label_scheme} used in fitting.}
+
+\item{...}{Additional parameters, including slice_dots.}
+}
 \description{
-Only with method_align = MC
+Only used with \code{method_align = MC}. The values of \eqn{x}'s for sample
+IDs indicated in \code{label_scheme_fit} will be updated for subsequent
+adjustment in median centering. The rest of \eqn{x}'s stays the same,
+corresponding to no further changes in center positions.
 }

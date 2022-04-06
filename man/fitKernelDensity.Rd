@@ -4,7 +4,7 @@
 \alias{fitKernelDensity}
 \title{Data normalization}
 \usage{
-fitKernelDensity(df, n_comp = 3, seed = NULL, ...)
+fitKernelDensity(df, n_comp = 3L, seed = NULL, ...)
 }
 \arguments{
 \item{df}{An input data frame.}

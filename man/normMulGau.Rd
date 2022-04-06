@@ -7,11 +7,11 @@
 normMulGau(
   df,
   method_align = "MC",
-  n_comp,
+  n_comp = NULL,
   seed = NULL,
   range_log2r = c(0, 100),
   range_int = c(0, 100),
-  filepath,
+  filepath = NULL,
   col_select = NULL,
   cut_points = Inf,
   ...
@@ -90,6 +90,13 @@ fixed across panels; the default is "fixed" and the alternative is "free".}
 A data frame.
 }
 \description{
-\code{normMulGau} normalizes \code{log2FC} under the assumption of multi
-Gaussian kernels.
+\code{normMulGau} normalizes \code{log2FC}.
+}
+\details{
+When executed with \link{mergePep} or link{Pep2Prn}, the \code{method_align}
+is always \code{MC}. As a result, peptide or protein data are at first
+median-centered.
+
+It is then up to \link{standPep} or \link{standPep} for alternative choices
+in \code{method_align}, \code{col_select} etc.
 }

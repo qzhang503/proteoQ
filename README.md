@@ -1,7 +1,7 @@
 proteoQ
 ================
 true
-2022-03-21
+2022-03-31
 
 -   [Introduction to proteoQ](#introduction-to-proteoq)
 -   [Installation](#installation)
@@ -77,7 +77,7 @@ engines of [Mascot](https://http://www.matrixscience.com/),
 [MSFragger](http://msfragger.nesvilab.org/),
 [proteoM](https://github.com/qzhang503/proteoM) or [Spectrum
 Mill](https://www.agilent.com/en/products/software-informatics/masshunter-suite/masshunter-for-life-science-research/spectrum-mill),
-for TMT (≤ 18-plex), LFQ or SILAC experiments, using mass analyzers of
+for TMT (≤ 16-plex), LFQ or SILAC experiments, using mass analyzers of
 Thermo’s Orbitrap or Bruker’s timsTOF. Peptide and protein results are
 then produced with users’ selection of parameters in data filtration,
 alignment and normalization. The package further offers a suite of tools

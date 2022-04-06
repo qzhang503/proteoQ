@@ -155,28 +155,7 @@ standPrn <- function (method_align = c("MC", "MGKernel"),
     rlang::expr(Sample_ID) 
   else 
     rlang::sym(col_select)
-  col_select <- rlang::as_string(col_select)
-
-  if (col_select == "Sample_ID" && all(is.na(label_scheme[["Sample_ID"]])))
-    stop("All values under  column `Sample_ID` are NA.", call. = FALSE)
-  
-  if (col_select != "Sample_ID") {
-    if (is.null(label_scheme[[col_select]])) {
-      col_select <- "Sample_ID"
-      
-      warning("Column `", col_select, "` not existed. ", 
-              "Used column `Sample_ID` instead.", call. = FALSE)
-    } 
-    else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
-      col_select <- "Sample_ID"
-      
-      warning("No samples under column '", col_select, "`. ", 
-              "Used column `Sample_ID` instead.", call. = FALSE)
-    }
-    else {
-      stop("Column `Sample_ID` not found in metadata.", call. = FALSE)
-    }
-  }
+  col_select <- parse_col_select(rlang::as_string(col_select), label_scheme)
 
   dots <- rlang::enexprs(...)
   

@@ -4,7 +4,7 @@
 \alias{find_n_comp}
 \title{Checks \code{n_comp}}
 \usage{
-find_n_comp(df, n_comp, method_align)
+find_n_comp(df, n_comp = NULL, method_align = "MC")
 }
 \arguments{
 \item{df}{An input data frame}

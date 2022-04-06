@@ -601,64 +601,6 @@ pep_mq_lfq2 <- function(label_scheme)
 }
 
 
-#' Loads MaxQuant protein table
-#' 
-#' @param label_scheme Experiment summary
-prn_mq_lfq <- function(label_scheme) 
-{
-  dat_dir <- get_gl_dat_dir()
-  group_pep_by <- "prot_acc"
-  
-  filelist <- single_mq_prntable(dat_dir)
-  
-  df <- read.csv(file.path(dat_dir, filelist), check.names = FALSE, 
-                 header = TRUE, sep = "\t", comment.char = "#") %>% 
-    dplyr::filter(not_allzero_rows(.[grep("^LFQ intensity ", names(.))]))
-  
-  df <- check_mq_df(df, label_scheme)
-  
-  df <- df %>% 
-    dplyr::rename(
-      prot_acc = "Majority protein IDs", 
-      gene = "Gene names", 
-    ) %>% 
-    dplyr::mutate(prot_acc = gsub("\\;.*", "", prot_acc), 
-                  gene = gsub("\\;.*", "", gene))
-  
-  df <- df %>% 
-    dplyr::select(group_pep_by, grep("^Intensity |^LFQ intensity ", names(.))) %>% 
-    extract_mq_ints()
-  
-  # (1) calculate Z_log2_R
-  sd_coefs <- df %>% 
-    calc_sd_fcts(range_log2r = c(5, 95), range_int = c(5, 95), label_scheme)
-  
-  x_vals <- df %>%
-    dplyr::select(grep("^N_log2_R[0-9]{3}", names(.))) %>% 
-    `colnames<-`(gsub("^N_log2_R[0-9]{3}[NC]*\\s+\\((.*)\\)$", "\\1", names(.))) %>%
-    dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>%
-    unlist() %>%
-    data.frame(x = .) %>%
-    tibble::rownames_to_column("Sample_ID") %>%
-    dplyr::mutate(Sample_ID = factor(Sample_ID, levels = label_scheme$Sample_ID)) %>%
-    dplyr::arrange(Sample_ID) %>% 
-    dplyr::mutate(x = ifelse(is.na(x), NA, 0))
-  
-  df <- update_df(df, label_scheme, x_vals, sd_coefs)
-  
-  df %>% 
-    dplyr::select(
-      group_pep_by, 
-      grep("^I", names(.)), 
-      grep("^N_I", names(.)), 
-      grep("^sd_log2_R", names(.)), 
-      grep("^log2_R", names(.)), 
-      grep("^N_log2_R", names(.)), 
-      grep("^Z_log2_R", names(.)), 
-    )
-}
-
-
 #' Helper: calculates LFQ log2FC.
 #'
 #' For rows with single intensity values: original intensities kept but
@@ -872,7 +814,7 @@ spreadPepNums <- function (df, filelist, group_psm_by)
          function (x) if (!x %in% nms) stop("Column `", x, "` not found."))
   
   group_ids <- if ("pep_group" %in% nms) unique(df$pep_group) else NULL
-  
+
   if (length(group_ids) >= 2L) {
     cols_grp <- c(cols_grp, "pep_group")
     cols_grp2 <- c(cols_grp2, "pep_group")
@@ -894,14 +836,22 @@ spreadPepNums <- function (df, filelist, group_psm_by)
 
   rm(list = "nms")
 
+  ## Numeric fields
+  pat_sd_log2_R <- "^sd_log2_R[0-9]{3}[NC]{0,1}"
+  pat_log2_R <- "^log2_R[0-9]{3}[NC]{0,1}"
+  pat_N_log2_R <- "^N_log2_R[0-9]{3}[NC]{0,1}"
+  # pat_Z_log2_R <- "^Z_log2_R[0-9]{3}[NC]{0,1}"
+  pat_I <- "^I[0-9]{3}[NC]{0,1}"
+  pat_N_I <- "^N_I[0-9]{3}[NC]{0,1}"
+  
   df_num <- df %>% 
     dplyr::select(cols_grp, 
-                  grep("^sd_log2_R[0-9]{3}", names(.)), 
-                  grep("^log2_R[0-9]{3}", names(.)), 
-                  grep("^N_log2_R[0-9]{3}", names(.)), 
-                  # grep("^Z_log2_R[0-9]{3}", names(.)), 
-                  grep("^I[0-9]{3}", names(.)), 
-                  grep("^N_I[0-9]{3}", names(.))) %>% 
+                  grep(pat_sd_log2_R, names(.)), 
+                  grep(pat_log2_R, names(.)), 
+                  grep(pat_N_log2_R, names(.)), 
+                  # grep(pat_Z_log2_R, names(.)), 
+                  grep(pat_I, names(.)), 
+                  grep(pat_N_I, names(.))) %>% 
     dplyr::group_by_at(cols_grp)
 
   tbl_lcms <- n_LCMS(label_scheme_full)
@@ -920,7 +870,7 @@ spreadPepNums <- function (df, filelist, group_psm_by)
     
     df_n <- df_n %>% 
       dplyr::group_by_at(c(col1, col2, col3))
-
+    
     n_cores <- parallel::detectCores()
     cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
     
@@ -941,28 +891,76 @@ spreadPepNums <- function (df, filelist, group_psm_by)
       keys <- df_num[[1]][, c(col1, col2, col3), drop = FALSE]
       xs <- lapply(df_num, function (x) x[, -c(col1, col2, col3), drop = FALSE])
       
-      xs <- dplyr::bind_cols(keys, xs) %>% 
+      dplyr::bind_cols(keys, xs) %>% 
         dplyr::bind_rows(df_1)
     })
-  } 
-  
+  }
+
+  # format: ..._log2_R126_1_[base], ..._I126_1_[base]
   df_num <- df_num %>%
-    tidyr::gather(grep("R[0-9]{3}|I[0-9]{3}", names(.)), key = ID, value = value) %>%
+    tidyr::gather(grep("R[0-9]{3}[NC]{0,1}|I[0-9]{3}[NC]{0,1}", names(.)), 
+                  key = ID, value = value) %>%
     dplyr::arrange_at(cols_grp2) %>%
     tidyr::unite(ID, c(ID, cols_grp2))
   
-  # define the levels of TMT channels;
-  # otherwise, the order of channels will flip between N(itrogen) and C(arbon)
-  Levels <- unique(df_num$ID)
-  df_num <- df_num %>%
-    dplyr::mutate(ID = factor(ID, levels = Levels)) %>%
-    tidyr::spread(ID, value)
-  rm(list = c("Levels"))
+  ## define the levels of TMT channels;
+  #  otherwise, the order of channels will flip between N(itrogen) and C(arbon)
+  df_num <- local({
+    type_levels <- c("I", "N_I", "sd_log2_R", "log2_R", "N_log2_R")
+
+    tmt_levels <- local({
+      tmt_plexes <- TMT_plex(label_scheme)
+      tmt_levels <- TMT_levels(tmt_plexes)
+      if (tmt_plexes) gsub("^TMT-", "", tmt_levels) else "000"
+    })
+    
+    lapply(c("type_levels", "tmt_levels"), function (x) {
+      if (is.factor(x)) stop("`", x, "` cannot be factor.")
+    })
+
+    df_num <- df_num %>% 
+      dplyr::mutate(type = gsub("^(.*[RI]{1})[0-9]{3}[NC]{0,1}_.*", "\\1", ID), 
+                    set = gsub("^.*[RI]{1}[0-9]{3}[NC]{0,1}_([0-9]+).*", "\\1", ID), 
+                    channel = gsub("^.*[RI]{1}([0-9]{3}[NC]{0,1})_.*", "\\1", ID)) %>% 
+      dplyr::mutate(type = factor(type, levels = type_levels), 
+                    set = as.integer(set), 
+                    channel = factor(channel, levels = tmt_levels)) 
+    
+    lapply(c("type", "channel", "set"), function (x) {
+      if (any(is.na(df_num[[x]]))) 
+        stop("Unexpected NA under column `", x, "`.")
+    })
+
+    fct_cols <- c("type", "set", "channel", "group")
+    
+    df_num  <- df_num %>% 
+      dplyr::mutate(group = gsub("^.*[RI]{1}[0-9]{3}[NC]{0,1}_[0-9]+_(.*)$", "\\1", ID), 
+                    group = factor(group, levels = group_ids)) %>% 
+      dplyr::arrange_at(fct_cols) %>% 
+      dplyr::select(-which(names(.) %in% fct_cols))
+
+    id_levels <- unique(df_num$ID)
+    
+    df_num <- df_num %>%
+      dplyr::mutate(ID = factor(ID, levels = id_levels)) %>%
+      tidyr::spread(ID, value)
+  })
+
+  if (FALSE) {
+    Levels <- unique(df_num$ID)
+    df_num <- df_num %>%
+      dplyr::mutate(ID = factor(ID, levels = Levels)) %>%
+      tidyr::spread(ID, value)
+    rm(list = c("Levels"))
+  }
 
   set_indexes <- gsub("^.*TMTset(\\d+).*", "\\1", filelist) %>% 
     unique() %>% 
     as.integer() %>% 
     sort()
+  
+  if (is.factor(group_ids))
+    stop("`group_ids` cannot be factor.")
   
   for (set_idx in set_indexes) {
     df_num <- newColnames(TMT_Set = set_idx, 
@@ -1954,34 +1952,12 @@ standPep <- function (method_align = c("MC", "MGKernel"), col_select = NULL,
   ok_existing_params(file.path(dat_dir, "Peptide/Histogram/MGKernel_params_N.txt"))
 
   col_select <- rlang::enexpr(col_select)
-  col_select <- if (is.null(col_select)) {
-    rlang::expr(Sample_ID)
-  } else {
+  col_select <- if (is.null(col_select)) 
+    rlang::expr(Sample_ID) 
+  else 
     rlang::sym(col_select)
-  }
-  col_select <- rlang::as_string(col_select)
+  col_select <- parse_col_select(rlang::as_string(col_select), label_scheme)
 
-  if (col_select == "Sample_ID" && all(is.na(label_scheme[["Sample_ID"]])))
-    stop("All values under  column `Sample_ID` are NA.", call. = FALSE)
-  
-  if (col_select != "Sample_ID") {
-    if (is.null(label_scheme[[col_select]])) {
-      col_select <- "Sample_ID"
-      
-      warning("Column `", col_select, "` not existed. ", 
-              "Used column `Sample_ID` instead.", call. = FALSE)
-    } 
-    else if (sum(!is.na(label_scheme[[col_select]])) == 0) {
-      col_select <- "Sample_ID"
-      
-      warning("No samples under column '", col_select, "`. ", 
-              "Used column `Sample_ID` instead.", call. = FALSE)
-    }
-    else {
-      stop("Column `Sample_ID` not found in metadata.", call. = FALSE)
-    }
-  }
-  
   dots <- rlang::enexprs(...)
   
   filename <- file.path(dat_dir, "Peptide/Peptide.txt")
@@ -2211,11 +2187,11 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean",
     .[purrr::map_lgl(., is.language)] %>% 
     .[grepl("^filter_", names(.))]
   
-  df <- pep_to_prn(prot_acc, 
-                   method_pep_prn, 
-                   use_unique_pep, 
-                   gn_rollup, 
-                   rm_outliers, 
+  df <- pep_to_prn(id = prot_acc, 
+                   method_pep_prn = method_pep_prn, 
+                   use_unique_pep = use_unique_pep, 
+                   gn_rollup = gn_rollup, 
+                   rm_outliers = rm_outliers, 
                    rm_allna = rm_allna, 
                    !!!filter_dots) 
   

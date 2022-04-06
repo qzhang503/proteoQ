@@ -2,9 +2,10 @@
 % Please edit documentation in R/normalization.R
 \name{calc_sd_fcts}
 \alias{calc_sd_fcts}
-\title{SD for all non-trival samples.}
+\title{Calculates standard deviations and the corresponding factors for scaling
+normalization.}
 \usage{
-calc_sd_fcts(df, range_log2r, range_int, label_scheme)
+calc_sd_fcts(df, range_log2r = c(0, 100), range_int = c(0, 100), label_scheme)
 }
 \arguments{
 \item{df}{A data frame.}
@@ -21,6 +22,16 @@ default is between the 5th and the 95th quantiles.}
 
 \item{label_scheme}{Experiment summary}
 }
+\value{
+A data frame. Column \code{SD}, the original standard deviations;
+  \code{fct}, the scaling factors as SD/mean(SD).
+}
 \description{
-SD for all non-trival samples.
+The \emph{mean} SD is based on the data from \emph{non-trivial} samples. In
+the output, \eqn{fct < 1} corresponds to the need of profile broadening in
+log2Ratios whereas \eqn{fct > 1} corresponds to the need of profile
+shrinking.
+}
+\details{
+Currently no slice dots for the utility.
 }
