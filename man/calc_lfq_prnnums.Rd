@@ -2,15 +2,15 @@
 % Please edit documentation in R/peptable.R
 \name{calc_lfq_prnnums}
 \alias{calc_lfq_prnnums}
-\title{Calculates the \code{total}, \code{razor} and \code{unique} intensities of
-proteins}
+\title{Adds the \code{total}, \code{razor} and \code{unique} intensities of
+proteins.}
 \usage{
 calc_lfq_prnnums(
   df,
-  use_unique_pep,
-  group_psm_by,
-  group_pep_by,
-  method_pep_prn
+  use_unique_pep = TRUE,
+  group_psm_by = "pep_seq",
+  group_pep_by = "gene",
+  method_pep_prn = "lfq_top_3_sum"
 )
 }
 \arguments{
@@ -48,6 +48,6 @@ peptide levels will be the weight when summarizing \code{log2FC} with
 various \code{"top_n"} statistics or \code{"weighted_mean"}.}
 }
 \description{
-Calculates the \code{total}, \code{razor} and \code{unique} intensities of
-proteins
+Adds the \code{total}, \code{razor} and \code{unique} intensities of
+proteins.
 }

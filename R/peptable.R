@@ -682,8 +682,8 @@ na_single_lfq <- function (df, pattern = "^I000 ")
 #' @inheritParams mergePep
 calclfqPepNums <- function (df, omit_single_lfq = FALSE) 
 {
-  load(file.path(dat_dir, "label_scheme.rda"))
-  
+  label_scheme <- load_ls_group(dat_dir, label_scheme)
+
   if (omit_single_lfq) {
     df <- df %>% 
       na_single_lfq("^I000 ") %>% 
@@ -728,9 +728,8 @@ calclfqPepNums <- function (df, omit_single_lfq = FALSE)
 calclfqPepInts <- function (df, filelist, group_psm_by) 
 {
   dat_dir <- get_gl_dat_dir()
-  load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
-  
+  label_scheme <- load_ls_group(dat_dir, label_scheme, prefer_group = FALSE)
+
   cols_grp <- c(group_psm_by, "TMT_Set")
   cols_grp2 <- c("TMT_Set")
   nms <- names(df)
@@ -739,8 +738,9 @@ calclfqPepInts <- function (df, filelist, group_psm_by)
          function (x) if (!x %in% nms) stop("Column `", x, "` not found."))
   
   group_ids <- if ("pep_group" %in% nms) unique(df$pep_group) else NULL
+  is_mulgrps <- length(group_ids) >= 2L
   
-  if (length(group_ids) >= 2L) {
+  if (is_mulgrps) {
     cols_grp <- c(cols_grp, "pep_group")
     cols_grp2 <- c(cols_grp2, "pep_group")
   }
@@ -756,13 +756,51 @@ calclfqPepInts <- function (df, filelist, group_psm_by)
     dplyr::arrange(TMT_Set) %>%
     tidyr::gather(grep("^pep_.*_int$", names(.)), key = ID, value = value) %>%
     tidyr::unite(ID, ID, cols_grp2)
-
-  Levels <- unique(df_num$ID)
-  df_num <- df_num %>%
-    dplyr::mutate(ID = factor(ID, levels = Levels)) %>%
-    tidyr::spread(ID, value)
-  rm(Levels)
   
+  ## pep_tot_int_1_light, pep_unique_int_1_light, pep_razor_int_1_light
+  type_levels <- c("pep_tot_int", "pep_unique_int", "pep_razor_int")
+  tmt_levels <- NULL
+  
+  df_num <- local({
+    lapply(c("type_levels"), function (x) {
+      if (is.factor(df_num[[x]])) stop("`", x, "` cannot be factor.")
+    })
+    
+    pat <- "pep_.*_int"
+    
+    df_num <- df_num %>% 
+      dplyr::mutate(type = gsub(paste0("^(", pat, ")", "_.*"), "\\1", ID), 
+                    set = gsub(paste0("^", pat, "_([0-9]+).*"), "\\1", ID), ) %>% 
+      dplyr::mutate(type = factor(type, levels = type_levels), 
+                    set = as.integer(set), ) 
+    
+    lapply(c("type", "set"), function (x) {
+      if (any(is.na(df_num[[x]]))) stop("Unexpected NA under column `", x, "`.")
+    })
+    
+    fct_cols <- c("type", "set", "group")
+    
+    df_num <- df_num %>% 
+      dplyr::mutate(group = gsub(paste0("^", pat, "_[0-9]+_(.*)$"), "\\1", ID), 
+                    group = factor(group, levels = group_ids)) %>% 
+      dplyr::arrange_at(fct_cols) %>% 
+      dplyr::select(-which(names(.) %in% fct_cols))
+    
+    id_levels <- unique(df_num$ID)
+    
+    df_num <- df_num %>%
+      dplyr::mutate(ID = factor(ID, levels = id_levels)) %>%
+      tidyr::spread(ID, value)
+  })
+  
+  if (FALSE) {
+    Levels <- unique(df_num$ID)
+    df_num <- df_num %>%
+      dplyr::mutate(ID = factor(ID, levels = Levels)) %>%
+      tidyr::spread(ID, value)
+    rm(list = "Levels")
+  }
+
   set_indexes <- gsub("^.*TMTset(\\d+).*", "\\1", filelist) %>% 
     unique() %>% 
     as.integer() %>% 
@@ -776,7 +814,16 @@ calclfqPepInts <- function (df, filelist, group_psm_by)
                           group_ids = group_ids)
   }
 
-  ans <- df_num %>% 
+  if (is_mulgrps) {
+    label_scheme_group <- load_ls_group(dat_dir, label_scheme, prefer_group = TRUE)
+    
+    df_num <- pad_grp_samples(df = df_num, 
+                              sids = as.character(label_scheme_group$Sample_ID), 
+                              tmt_levels = tmt_levels, 
+                              type_levels = type_levels)
+  }
+
+  df_num %>% 
     dplyr::select(!!rlang::sym(group_psm_by), 
                   grep("^pep_.*_int ", names(.))) %>% 
     dplyr::ungroup() %>% 
@@ -803,24 +850,24 @@ calclfqPepInts <- function (df, filelist, group_psm_by)
 spreadPepNums <- function (df, filelist, group_psm_by) 
 {
   dat_dir <- get_gl_dat_dir()
-  load(file = file.path(dat_dir, "label_scheme_full.rda"))
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  label_scheme <- load_ls_group(dat_dir, label_scheme, prefer_group = FALSE)
+  label_scheme_full <- load_ls_group(dat_dir, label_scheme_full, prefer_group = FALSE)
   
   cols_grp <- c(group_psm_by, "TMT_Set")
   cols_grp2 <- c("TMT_Set")
   nms <- names(df)
   
-  lapply(cols_grp, 
-         function (x) if (!x %in% nms) stop("Column `", x, "` not found."))
-  
-  group_ids <- if ("pep_group" %in% nms) unique(df$pep_group) else NULL
+  lapply(cols_grp, function (x) if (! x %in% nms) stop("Column `", x, "` not found."))
 
-  if (length(group_ids) >= 2L) {
+  group_ids <- if ("pep_group" %in% nms) unique(df$pep_group) else NULL
+  is_mulgrps <- length(group_ids) >= 2L
+
+  if (is_mulgrps) {
     cols_grp <- c(cols_grp, "pep_group")
     cols_grp2 <- c(cols_grp2, "pep_group")
     
-    label_scheme_group <- rep_ls_groups(label_scheme, group_ids)
-    label_scheme_full_group <- rep_ls_groups(label_scheme_full, group_ids)
+    label_scheme_group <- rep_ls_groups(group_ids)
+    label_scheme_full_group <- rep_ls_groups(group_ids)
     save(label_scheme_group, file = file.path(dat_dir, "label_scheme_group.rda"))
     save(label_scheme_full_group, file = file.path(dat_dir, "label_scheme_full_group.rda"))
     
@@ -852,70 +899,29 @@ spreadPepNums <- function (df, filelist, group_psm_by)
                   # grep(pat_Z_log2_R, names(.)), 
                   grep(pat_I, names(.)), 
                   grep(pat_N_I, names(.))) %>% 
-    dplyr::group_by_at(cols_grp)
+    dplyr::group_by_at(cols_grp) %>% 
+    aggrNumLCMS(group_psm_by, label_scheme_full)
 
-  tbl_lcms <- n_LCMS(label_scheme_full)
-  
-  if (any(tbl_lcms$n_LCMS > 1L)) {
-    tbl_n <- tbl_lcms %>% dplyr::filter(n_LCMS > 1L)
-    rows <- df_num$TMT_Set %in% tbl_n$TMT_Set
-    df_n <- df_num[rows, ]
-    df_1 <- df_num[!rows, ]
-    
-    nms_n <- names(df_n)
-    cols <- grep("log2_R[0-9]{3}[NC]{0,1}|I[0-9]{3}[NC]{0,1}", nms_n)
-    col1 <- which(nms_n == group_psm_by)
-    col2 <- which(nms_n == "TMT_Set")
-    col3 <- which(nms_n == "pep_group")
-    
-    df_n <- df_n %>% 
-      dplyr::group_by_at(c(col1, col2, col3))
-    
-    n_cores <- parallel::detectCores()
-    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
-    
-    df_num <- suppressWarnings(
-      parallel::clusterApply(
-        cl, cols, function(col) {
-          df_n %>% 
-            dplyr::select(c(col1, col2, col3, col)) %>% 
-            dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>% 
-            dplyr::ungroup()
-        }
-      )
-    )
-    
-    parallel::stopCluster(cl)
-    
-    df_num <- local({
-      keys <- df_num[[1]][, c(col1, col2, col3), drop = FALSE]
-      xs <- lapply(df_num, function (x) x[, -c(col1, col2, col3), drop = FALSE])
-      
-      dplyr::bind_cols(keys, xs) %>% 
-        dplyr::bind_rows(df_1)
-    })
-  }
-
-  # format: ..._log2_R126_1_[base], ..._I126_1_[base]
+  ## Format: ..._log2_R126_1_[base], ..._I126_1_[base]
   df_num <- df_num %>%
     tidyr::gather(grep("R[0-9]{3}[NC]{0,1}|I[0-9]{3}[NC]{0,1}", names(.)), 
                   key = ID, value = value) %>%
     dplyr::arrange_at(cols_grp2) %>%
     tidyr::unite(ID, c(ID, cols_grp2))
   
+  type_levels <- c("I", "N_I", "sd_log2_R", "log2_R", "N_log2_R")
+  
+  tmt_levels <- local({
+    tmt_plexes <- TMT_plex(label_scheme)
+    tmt_levels <- TMT_levels(tmt_plexes)
+    if (tmt_plexes) gsub("^TMT-", "", tmt_levels) else "000"
+  })
+  
   ## define the levels of TMT channels;
   #  otherwise, the order of channels will flip between N(itrogen) and C(arbon)
   df_num <- local({
-    type_levels <- c("I", "N_I", "sd_log2_R", "log2_R", "N_log2_R")
-
-    tmt_levels <- local({
-      tmt_plexes <- TMT_plex(label_scheme)
-      tmt_levels <- TMT_levels(tmt_plexes)
-      if (tmt_plexes) gsub("^TMT-", "", tmt_levels) else "000"
-    })
-    
     lapply(c("type_levels", "tmt_levels"), function (x) {
-      if (is.factor(x)) stop("`", x, "` cannot be factor.")
+      if (is.factor(df_num[[x]])) stop("`", x, "` cannot be factor.")
     })
 
     df_num <- df_num %>% 
@@ -927,8 +933,7 @@ spreadPepNums <- function (df, filelist, group_psm_by)
                     channel = factor(channel, levels = tmt_levels)) 
     
     lapply(c("type", "channel", "set"), function (x) {
-      if (any(is.na(df_num[[x]]))) 
-        stop("Unexpected NA under column `", x, "`.")
+      if (any(is.na(df_num[[x]]))) stop("Unexpected NA under column `", x, "`.")
     })
 
     fct_cols <- c("type", "set", "channel", "group")
@@ -975,8 +980,150 @@ spreadPepNums <- function (df, filelist, group_psm_by)
                   grep("[RI][0-9]{3}[NC]{0,1}", names(.))) %>% 
     dplyr::ungroup() %>% 
     dplyr::arrange(!!rlang::sym(group_psm_by))
+  
+  if (is_mulgrps) {
+    df_num <- pad_grp_samples(df = df_num, 
+                              sids = as.character(label_scheme_group$Sample_ID), 
+                              tmt_levels = tmt_levels, 
+                              type_levels = type_levels)
+  }
 
   invisible(df_num)
+}
+
+
+#' Aggregates data from the same TMT_Set at different LCMS_Injection.
+#' 
+#' @param df A data frame.
+#' @param label_scheme_full Metadata.
+aggrNumLCMS <- function (df, group_psm_by = "pep_seq_mod", label_scheme_full)
+{
+  tbl_lcms <- n_LCMS(label_scheme_full)
+  
+  if (any(tbl_lcms$n_LCMS > 1L)) {
+    tb_n <- dplyr::filter(tbl_lcms, n_LCMS > 1L)
+    rows <- df$TMT_Set %in% tb_n$TMT_Set
+    df_n <- df[rows, ]
+    df_1 <- df[!rows, ]
+    
+    nms_n <- names(df_n)
+    cols <- grep("log2_R[0-9]{3}[NC]{0,1}|I[0-9]{3}[NC]{0,1}", nms_n)
+    col1 <- which(nms_n == group_psm_by)
+    col2 <- which(nms_n == "TMT_Set")
+    col3 <- which(nms_n == "pep_group")
+    
+    df_n <- df_n %>% 
+      dplyr::group_by_at(c(col1, col2, col3))
+    
+    n_cores <- parallel::detectCores()
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    
+    df <- suppressWarnings(
+      parallel::clusterApply(
+        cl, cols, function(col) {
+          df_n %>% 
+            dplyr::select(c(col1, col2, col3, col)) %>% 
+            dplyr::summarise_all(~ median(.x, na.rm = TRUE)) %>% 
+            dplyr::ungroup()
+        }
+      )
+    )
+    
+    parallel::stopCluster(cl)
+    
+    keys <- df[[1]][, c(col1, col2, col3), drop = FALSE]
+    xs <- lapply(df, function (x) x[, -c(col1, col2, col3), drop = FALSE])
+    
+    df <- dplyr::bind_cols(keys, xs) %>% 
+      dplyr::bind_rows(df_1)
+  }
+  
+  invisible(df)
+}
+
+
+#' Pads sample groups.
+#'
+#' For uses with group searches (with non-trivial values under
+#' \code{pep_group}). For example, heavy may be missing in complete under one
+#' sample and light missing in another.
+#'
+#' @param df A data frame.
+#' @param sids The Sample_IDs from label_scheme.
+#' @param tmt_levels The levels of TMT: 000, 126, 127 etc. without the
+#'   \code{TMT-} prefix.
+#' @param type_levels The levels of five types.
+#' 
+#' @examples 
+#' \donttest{
+#' # 10-plex
+#' tmt_levels <- TMT_levels(10)
+#' tmt_levels <- gsub("^TMT-", "", tmt_levels)
+#' 
+#' group_ids <- c("light", "heavy")
+#' 
+#' sids <- LETTERS[1:10]
+#' len <- length(sids)
+#' sids <- rep(sids, each = length(group_ids))
+#' 
+#' group_ids <- rep(group_ids, len)
+#' sids <- paste0(sids, " [", group_ids, "]")
+#' 
+#' rm(list = c("len", "group_ids"))
+#' 
+#' # 1-plex
+#' #' tmt_levels <- TMT_levels(1)
+#' tmt_levels <- gsub("^TMT-", "", tmt_levels)
+#' 
+#' group_ids <- c("light", "heavy")
+#' 
+#' sids <- LETTERS[1]
+#' len <- length(sids)
+#' sids <- rep(sids, each = length(group_ids))
+#' 
+#' group_ids <- rep(group_ids, len)
+#' sids <- paste0(sids, " [", group_ids, "]")
+#' 
+#' rm(list = c("len", "group_ids"))
+#' }
+pad_grp_samples <- function (df, sids, tmt_levels = NULL, 
+                             type_levels = c("I", "N_I", "sd_log2_R", "log2_R", "N_log2_R")) 
+{
+  len_tp <- length(type_levels)
+  len_si <- length(sids)
+  len_tmt <- length(tmt_levels)
+
+  univ <- unlist(lapply(type_levels, function (x) paste0(x, tmt_levels)))
+  
+  # pept_tot_int etc.: len_tmt == 0L and is.null(tmt_levels)
+  if (len_tmt <= 1L) {
+    univ <- unlist(lapply(univ, function (x) paste0(x, " (", sids, ")")))
+  }
+  else {
+    n_grps <- len_si/len_tmt
+    univ <- rep(univ, each = n_grps)
+    univ <- paste0(univ, " (", rep(sids, len_tp), ")")
+  }
+  
+  more_nms <- univ[!univ %in% names(df)]
+  len <- length(more_nms)
+  
+  if (len) {
+    for (i in 1:len) {
+      more_nms_i <- more_nms[[i]]
+      df[[more_nms_i]] <- NA_real_
+    }
+    
+    nms <- names(df)
+    
+    # stopifnot(all(univ %in% nms))
+    
+    df <- dplyr::bind_cols(
+      df[, setdiff(nms, univ), drop = FALSE], 
+      df[, univ, drop = FALSE])
+  }
+  
+  invisible(df)
 }
 
 
@@ -985,8 +1132,10 @@ spreadPepNums <- function (df, filelist, group_psm_by)
 #' The new Sample_ID: "Sample [heavy]", "Sample [light]" etc.
 #' 
 #' @inheritParams newColnames
-rep_ls_groups <- function (label_scheme, group_ids) 
+rep_ls_groups <- function (group_ids) 
 {
+  label_scheme <- load_ls_group(dat_dir, label_scheme, prefer_group = FALSE)
+
   nrow <- nrow(label_scheme)
   sids <- label_scheme$Sample_ID
   n_grps <- length(group_ids)
@@ -1037,8 +1186,7 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
                          full.names = TRUE)
 
   if (!length(filelist)) {
-    stop("No individual peptide tables available; run `PSM2Pep()` first.", 
-         call. = FALSE)
+    stop("No individual peptide tables available; run `PSM2Pep()` first.")
   }
   
   df <- suppressWarnings(
@@ -1061,6 +1209,10 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
   
   if (!use_mq_pep) {
     df_num <- spreadPepNums(df, filelist, group_psm_by)
+    
+    # (updates metadata in case of "group searches")
+    # label_scheme <- load_ls_group(dat_dir, label_scheme)
+    # label_scheme_full <- load_ls_group(dat_dir, label_scheme_full)
 
     if (TMT_plex) {
       pep_lfqnums <- unique(df[, group_psm_by, drop = FALSE])
@@ -1068,14 +1220,14 @@ normPep_Mplex <- function (group_psm_by = "pep_seq_mod", group_pep_by = "prot_ac
     else {
       pep_lfqnums <- calclfqPepInts(df, filelist, group_psm_by)
       df_num <- calclfqPepNums(df_num, omit_single_lfq)
-      df_num <- df_num %>% dplyr::left_join(pep_lfqnums, by = group_psm_by)
+      df_num <- dplyr::left_join(df_num, pep_lfqnums, by = group_psm_by)
     }
   } 
   else {
     # temporarily back-fill from a MaxQuant peptide table
     df_num <- pep_mq_lfq(label_scheme, omit_single_lfq)
     pep_lfqnums <- pep_mq_lfq2(label_scheme)
-    df_num <- df_num %>% dplyr::left_join(pep_lfqnums, by = group_psm_by)
+    df_num <- dplyr::left_join(df_num, pep_lfqnums, by = group_psm_by)
   }
   
   save(pep_lfqnums, file = file.path(dat_dir, "Peptide/cache/pep_lfqnums.rda"))
@@ -2110,6 +2262,7 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean",
                      rm_outliers = FALSE, rm_allna = FALSE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
+  
   dir.create(file.path(dat_dir, "Protein/Histogram"), 
              recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(dat_dir, "Protein/cache"), 
@@ -2173,14 +2326,10 @@ Pep2Prn <- function (method_pep_prn = c("median", "mean", "weighted_mean",
   stopifnot(group_pep_by %in% c("prot_acc", "gene"), length(group_pep_by) == 1)
   stopifnot(vapply(c(use_unique_pep), rlang::is_logical, logical(1)))
   
-  gn_rollup <- if (group_pep_by == "gene") 
-    TRUE
-  else 
-    FALSE
-  
-  message("Primary column keys in `Peptide/Peptide.txt` ", 
-          "for `filter_` varargs.")
-  
+  gn_rollup <- if (group_pep_by == "gene") TRUE else FALSE
+
+  message("Column keys in `Peptide/Peptide.txt` ", "for \"filter_\" varargs.")
+
   dots <- rlang::enexprs(...)
   
   filter_dots <- dots %>% 
@@ -2286,31 +2435,43 @@ find_prot_family_rows <- function (df, group_psm_by, group_pep_by)
 }
 
 
-#' Calculates the \code{total}, \code{razor} and \code{unique} intensities of
-#' proteins
+#' Sums top-n.
 #' 
+#' @param x A numeric vector.
+#' @param n An positive integer.
+my_sum_n <- function (x, n = 3, ...) 
+{
+  if (n < 1L) 
+    stop("\"n\" need to be a positive integer.", call. = FALSE)
+  
+  if (is.infinite(n)) 
+    n <- length(x)
+  
+  # need to convert x to integers if to partial sort
+  sum(sort(x, decreasing = TRUE)[1:n], ...)
+}
+
+
+#' Adds the \code{total}, \code{razor} and \code{unique} intensities of
+#' proteins.
+#'
 #' @param df A data frame.
 #' @inheritParams normPSM
 #' @inheritParams Pep2Prn
-calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, group_pep_by, 
-                              method_pep_prn) 
+calc_lfq_prnnums <- function (df, use_unique_pep = TRUE, 
+                              group_psm_by = "pep_seq", group_pep_by = "gene", 
+                              method_pep_prn = "lfq_top_3_sum") 
 {
-  my_sum_n <- function (x, n = 3, ...) {
-    if (n < 1) stop("`n` need to be a positive integer.", call. = FALSE)
-    if (is.infinite(n)) n <- length(x)
-    x %>% sort(decreasing = TRUE) %>% .[1:n] %>% sum(...)
-  }
-
-  load(file.path(dat_dir, "label_scheme.rda"))
+  label_scheme <- load_ls_group(dat_dir, label_scheme)
   
-  # join lfq numbers
+  # join LFQ numbers
   ok <- tryCatch(load(file.path(dat_dir, "Peptide/cache/pep_lfqnums.rda")), 
                  error = function(e) "e")
   if (ok != "pep_lfqnums") {
     stop("`pep_lfqnums.rda` not found under ", dat_dir, ".", 
          call. = FALSE)
   }
-  rm(ok)
+  rm(list = "ok")
   
   # `pep_lfqnums` was made to reduce the clumsiness of Peptide.txt in LFQ; 
   # however, entries in `pep_lfqnums` may be not be in `df` from peptide merging
@@ -2334,16 +2495,15 @@ calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, group_pep_by,
     dplyr::filter(!is.na(!!rlang::sym(group_pep_by))) %>% 
     dplyr::rename(prot_map = group_pep_by)
   
-  if (grepl("^lfq_top_", method_pep_prn)) {
-    n <- gsub("^lfq_top_(\\d+)_[A-z]+", "\\1", method_pep_prn) %>% as.integer()
-  } else if (method_pep_prn == "lfq_max") {
-    n <- 1
-  } else if (method_pep_prn == "lfq_all") {
-    n <- Inf
-  } else {
-    n <- 3
-  }
-  
+  n <- if (grepl("^lfq_top_", method_pep_prn))
+    as.integer(gsub("^lfq_top_(\\d+)_[A-z]+", "\\1", method_pep_prn))
+  else if (method_pep_prn == "lfq_max")
+    1L
+  else if (method_pep_prn == "lfq_all")
+    Inf
+  else
+    3L
+
   # --- top_n ---
   # 1. summarizes top_n  of tot, razor and unique 
   # 2. selects one of them according to `pep_unique_by`
@@ -2351,7 +2511,8 @@ calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, group_pep_by,
     # currently if top_n, not to filter by `use_unique_pep`
     #   to keep them the same as MSFragger calculations
     # instead let `pep_unique_by` decides which one to use
-    df <- df %>% dplyr::left_join(pep_prot_map, by = group_psm_by) 
+    df <- df %>% 
+      dplyr::left_join(pep_prot_map, by = group_psm_by) 
 
     prot_tot_ints <- df %>% 
       dplyr::select(prot_map, grep("^pep_tot_int\\s\\(", names(.))) %>% 
@@ -2374,18 +2535,22 @@ calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, group_pep_by,
   })
 
   pep_unique_by <- match_call_arg(normPSM, pep_unique_by)
+  
   if (use_unique_pep) {
     if (pep_unique_by == "group") {
       dfw <- three_lfqints %>% 
         dplyr::select(grep("^prot_razor_int\\s\\(", names(.)))
-    } else if (pep_unique_by == "protein") {
+    }
+    else if (pep_unique_by == "protein") {
       dfw <- three_lfqints %>% 
         dplyr::select(grep("^prot_unique_int\\s\\(", names(.)))
-    } else {
+    }
+    else {
       stop("`pep_unique_by` need to be `group` or `protein`.", 
            call. = FALSE)
     }
-  } else {
+  }
+  else {
     dfw <- three_lfqints %>% 
       dplyr::select(grep("^prot_tot_int\\s\\(", names(.)))
   }
@@ -2396,28 +2561,28 @@ calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, group_pep_by,
   
   # --- median centering ---
   dfw <- local({
-    col_log2Ratio <- grepl("^log2_R[0-9]{3}[NC]{0,1}", names(dfw))
-    cf <- apply(dfw[, col_log2Ratio, drop = FALSE], 2, median, na.rm = TRUE)
+    cols_log2Ratio <- grepl("^log2_R[0-9]{3}[NC]{0,1}", names(dfw))
+    cfs <- apply(dfw[, cols_log2Ratio, drop = FALSE], 2, median, na.rm = TRUE)
     
-    dfw <- sweep(dfw[, col_log2Ratio, drop = FALSE], 2, cf, "-") %>%
+    dfw <- sweep(dfw[, cols_log2Ratio, drop = FALSE], 2, cfs, "-") %>%
       `colnames<-`(paste("N", names(.), sep="_"))	%>%
       cbind(dfw, .)
     
-    dfw <- sweep(dfw[, grepl("^I[0-9]{3}", names(dfw)), drop = FALSE], 2, 2^cf, "/") %>%
+    dfw <- sweep(dfw[, grepl("^I[0-9]{3}", names(dfw)), drop = FALSE], 2, 2^cfs, "/") %>%
       `colnames<-`(paste("N", names(.), sep="_"))	%>%
       cbind(dfw, .)
     
     dfw <- dfw %>% dplyr::mutate(!!group_pep_by := three_lfqints[["prot_map"]])
     
-    if (purrr::is_empty(grep("log2_R000", names(dfw)))) {
-      stop("No `log2_R000...` columns available.\n", call. = FALSE)
+    if (!length(grep("log2_R000", names(dfw)))) {
+      stop("No \"log2_R000...\" columns available.\n", call. = FALSE)
     }
     
     dfw <- dfw %>% 
       dplyr::mutate_at(.vars = grep("log2_R000\\s", names(.)), 
-                       ~ replace(.x, is.infinite(.), NA))
+                       ~ replace(.x, is.infinite(.), NA_real_))
     
-    if (purrr::is_empty(grep("^Z_log2_R[0-9]{3}[NC]{0,1}", names(dfw)))) {
+    if (!length(grep("^Z_log2_R[0-9]{3}[NC]{0,1}", names(dfw)))) {
       dfw <- dfw %>% 
         dplyr::select(grep("^N_log2_R[0-9]{3}[NC]{0,1}", names(.))) %>% 
         `names<-`(gsub("^N_log2_R", "Z_log2_R", names(.))) %>% 
@@ -2441,11 +2606,11 @@ calc_lfq_prnnums <- function (df, use_unique_pep, group_psm_by, group_pep_by,
 #' @param id Always "prot_acc".
 #' @inheritParams calc_lfq_prnnums
 #' @inheritParams Pep2Prn
-calc_tmt_prnnums <- function (df, use_unique_pep, id = "prot_acc", 
-                              method_pep_prn) 
+calc_tmt_prnnums <- function (df, use_unique_pep = TRUE, id = "prot_acc", 
+                              method_pep_prn = "median") 
 {
   if (use_unique_pep && "pep_isunique" %in% names(df)) {
-    df <- df %>% dplyr::filter(pep_isunique == 1)
+    df <- df %>% dplyr::filter(pep_isunique)
   }
   
   df_num <- df %>% 
@@ -2474,11 +2639,10 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
                        rm_outliers = FALSE, rm_allna = FALSE, ...) 
 {
   dat_dir <- get_gl_dat_dir()
-  load(file = file.path(dat_dir, "label_scheme.rda"))
+  label_scheme <- load_ls_group(dat_dir, label_scheme)
   TMT_plex <- TMT_plex(label_scheme)
   
-  # `id` is always "prot_acc"; 
-  # `group_pep_by` could be "gene"
+  # `id` is always "prot_acc"; `group_pep_by` could be "gene"
   id <- rlang::as_string(rlang::enexpr(id))
   
   filter_dots <- rlang::enexprs(...) %>% 
@@ -2493,7 +2657,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   
   df <- df %>% 
     filters_in_call(!!!filter_dots) %>% 
-    { if (TMT_plex > 0 && rm_allna) 
+    { if (TMT_plex && rm_allna) 
       .[rowSums(!is.na(.[grepl("^log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ] else . } 
   
   if (rm_outliers) {
@@ -2509,7 +2673,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
         dplyr::mutate_at(.vars = grep("^X[0-9]{3}", names(.)), 
                          ~ replace(.x, is.infinite(.x), NA)) %>% 
         data.frame(check.names = FALSE) %>% 
-        split(., .[[id]], drop = TRUE)
+        split(.[[id]], drop = TRUE)
       
       range_colRatios <- grep("^X[0-9]{3}", names(dfw_split[[1]]))
       
@@ -2563,11 +2727,11 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
 
   if (! "pep_isunique" %in% names(df)) {
     df$pep_isunique <- TRUE
-    warning("Column `pep_isunique` created and TRUE values assumed.", 
+    warning("Column \"pep_isunique\" created and TRUE values assumed.", 
             call. = FALSE)
   } else if (all(is.na(df$pep_isunique))) {
     df$pep_isunique <- TRUE
-    warning("Values of `pep_isunique` are all NA and coerced to TRUE.", 
+    warning("Values of \"pep_isunique\" are all NA and coerced to TRUE.", 
             call. = FALSE)
   }
   
@@ -2610,15 +2774,14 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   
   # first by `id = prot_acc` and later optional roll-up to `gene`
   if (grepl("^lfq_", method_pep_prn)) {
-    if (TMT_plex > 0) {
-      stop("`method_pep_prn = lfq_[...]` only for LFQ.", 
-           call. = FALSE)
-    }
+    if (TMT_plex)
+      stop("\"method_pep_prn = lfq_[...]\" only for LFQ.", call. = FALSE)
 
     df_num <- calc_lfq_prnnums(df, use_unique_pep, group_psm_by, 
                                id, method_pep_prn) %>% 
       dplyr::filter(!is.na(!!rlang::sym(id)))
-  } else {
+  } 
+  else {
     df_num <- calc_tmt_prnnums(df, use_unique_pep, id, method_pep_prn)
   }
   
@@ -2671,7 +2834,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
     dplyr::group_by(!!rlang::sym(id)) %>% 
     dplyr::summarise_all(~ median(.x, na.rm = TRUE))
   df <- df %>% dplyr::select(-which(names(.) %in% mq_median_keys))
-  rm(mq_median_keys)
+  rm(list = "mq_median_keys")
   
   sm_median_keys <- c(
     "deltaForwardReverseScore", "percent_scored_peak_intensity", "totalIntensity", 
@@ -2683,7 +2846,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
     dplyr::group_by(!!rlang::sym(id)) %>% 
     dplyr::summarise_all(~ median(.x, na.rm = TRUE))
   df <- df %>% dplyr::select(-which(names(.) %in% sm_median_keys))
-  rm(sm_median_keys)
+  rm(list = "sm_median_keys")
   
   mf_median_keys <- NULL
   df_mq_med <- df %>% 
@@ -2691,7 +2854,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
     dplyr::group_by(!!rlang::sym(id)) %>% 
     dplyr::summarise_all(~ median(.x, na.rm = TRUE))
   df <- df %>% dplyr::select(-which(names(.) %in% mf_median_keys))
-  rm(mf_median_keys)
+  rm(list = "mf_median_keys")
 
   df_first <- df %>% 
     dplyr::filter(!duplicated(!!rlang::sym(id))) %>% 
@@ -2718,12 +2881,12 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
     df[, grepl("log2_R[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
     dplyr::mutate_if(is.integer, as.numeric) %>% 
-    round(., digits = 3)
+    round(digits = 3L)
   
   df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] <- 
     df[, grepl("I[0-9]{3}", names(df)) & !sapply(df, is.logical)] %>% 
     dplyr::mutate_if(is.integer, as.numeric) %>% 
-    round(., digits = 0)
+    round(digits = 0L)
   
   df <- dplyr::bind_cols(
     df[, !grepl("I[0-9]{3}|log2_R[0-9]{3}", names(df)), drop = FALSE], 
@@ -2736,8 +2899,6 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
   if (rm_allna) {
     df <- df %>% 
       .[rowSums(!is.na(.[grepl("^N_log2_R[0-9]{3}[NC]{0,1}", names(.))])) > 0, ]
-  } else {
-    df <- df
   }
 
   if (gn_rollup) {
@@ -2756,7 +2917,7 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
         dplyr::mutate(mean_lint = 
                         log10(rowMeans(.[, grepl("^N_I[0-9]{3}[NC]{0,1}", names(.)), 
                                          drop = FALSE], na.rm = TRUE)), 
-                      mean_lint = round(mean_lint, digits = 2))
+                      mean_lint = round(mean_lint, digits = 2L))
       
       count_nna <- dfa %>% 
         dplyr::select(grep("N_log2_R[0-9]{3}[NC]{0,1}", 
@@ -2800,12 +2961,10 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
       dplyr::select(nms)
   } 
   
-  df <- dplyr::bind_cols(
+  dplyr::bind_cols(
     df %>% dplyr::select(grep("^prot_", names(.))), 
     df %>% dplyr::select(-grep("^prot_", names(.))), 
   ) 
-  
-  return(df)
 }
 
 
@@ -2813,7 +2972,8 @@ pep_to_prn <- function(id = "prot_acc", method_pep_prn = "median",
 #' @param df A PSM data frame
 #' @inheritParams mergePep
 #' @inheritParams annotPSM
-assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE, 
+assign_duppeps <- function(df, group_psm_by = "pep_seq", 
+                           group_pep_by = "pep_seq_mod", use_duppeps = TRUE, 
                            duppeps_repair = "denovo") 
 {
   # Scenario: 
@@ -2935,12 +3095,13 @@ assign_duppeps <- function(df, group_psm_by, group_pep_by, use_duppeps = TRUE,
 #'   replaced with those in the first row.
 replace_by_rowone <- function (df, col_nms) 
 {
-  # assumed `prot_n_pep`, `prot_n_psm` and `prot_mass`
+  stopifnot(all(c("prot_n_pep", "prot_n_psm", "prot_mass") %in% names(df)))
+  
   df <- df %>% 
     dplyr::arrange(-prot_n_pep, -prot_n_psm, -prot_mass)
   
-  # if (group_pep_by prot_acc) use the first prot_acc and also the first gene
-  # if (group_pep_by gene) use the first gene and also the first prot_acc
+  # if (group_pep_by == "prot_acc") use the first prot_acc and also the first gene
+  # if (group_pep_by == "gene") use the first gene and also the first prot_acc
   
   cols_replace <- df[1, col_nms]
   
@@ -2949,7 +3110,4 @@ replace_by_rowone <- function (df, col_nms)
   
   dplyr::bind_rows(df[1, ], df2)
 }
-
-
-
 

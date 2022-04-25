@@ -4,7 +4,12 @@
 \alias{calc_tmt_prnnums}
 \title{Helper: calculates the TMT log2FC and reporter-ion intensity of proteins}
 \usage{
-calc_tmt_prnnums(df, use_unique_pep, id = "prot_acc", method_pep_prn)
+calc_tmt_prnnums(
+  df,
+  use_unique_pep = TRUE,
+  id = "prot_acc",
+  method_pep_prn = "median"
+)
 }
 \arguments{
 \item{df}{A data frame.}

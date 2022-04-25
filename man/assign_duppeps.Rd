@@ -6,8 +6,8 @@
 \usage{
 assign_duppeps(
   df,
-  group_psm_by,
-  group_pep_by,
+  group_psm_by = "pep_seq",
+  group_pep_by = "pep_seq_mod",
   use_duppeps = TRUE,
   duppeps_repair = "denovo"
 )

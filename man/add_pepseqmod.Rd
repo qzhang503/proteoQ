@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{add_pepseqmod}
 \alias{add_pepseqmod}
-\title{Adds the `pep_seq_mod` field to PSMs.}
+\title{Adds the \code{pep_seq_mod} field to PSMs.}
 \usage{
 add_pepseqmod(df, use_lowercase_aa = TRUE, purge_phosphodata = TRUE)
 }
@@ -18,5 +18,5 @@ variable modification(s), entries without phosphorylation will be removed.
 The default is TRUE.}
 }
 \description{
-For proteoM
+For proteoM.
 }

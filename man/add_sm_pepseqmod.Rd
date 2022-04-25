@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{add_sm_pepseqmod}
 \alias{add_sm_pepseqmod}
-\title{Adds the `pep_seq_mod` field to MaxQuant PSMs}
+\title{Adds the \code{pep_seq_mod} field to MaxQuant PSMs}
 \usage{
 add_sm_pepseqmod(df = NULL, use_lowercase_aa = TRUE)
 }
@@ -14,5 +14,5 @@ residues will be abbreviated with lower-case and/or \code{^_~}. See the
 table below for details. The default is TRUE.}
 }
 \description{
-Adds the `pep_seq_mod` field to MaxQuant PSMs
+Adds the \code{pep_seq_mod} field to MaxQuant PSMs
 }
