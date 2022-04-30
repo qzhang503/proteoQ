@@ -4,11 +4,9 @@
 \alias{rep_ls_groups}
 \title{Replicates new label_scheme with new Sample_IDs by group_ids.}
 \usage{
-rep_ls_groups(label_scheme, group_ids)
+rep_ls_groups(group_ids)
 }
 \arguments{
-\item{label_scheme}{Experiment summary.}
-
 \item{group_ids}{A character vector; for example, c("heavy", "light") that
 can be found from column \code{pep_group} in \code{df}; \code{group_ids} is
 NULL if column \code{pep_group} is not in \code{df}.}

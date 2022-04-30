@@ -436,7 +436,7 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
                    filename = NULL, overwrite = FALSE) 
 {
   old_opts <- options()
-  options(warn = 1)
+  options(warn = 1L)
   on.exit(options(old_opts), add = TRUE)
   
   if (!requireNamespace("downloader", quietly = TRUE)) {
@@ -469,7 +469,8 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
                       stop("`species` need to be one of `human`, `mouse` or `rat` for an auto lookup of GAF files.", 
                            call. = FALSE))
     fn_gaf <- names(gaf_url)
-  } else {
+  } 
+  else {
     fn_gaf <- gaf_url %>% gsub("^.*/(.*)$", "\\1", .)
     
     species <- local({
@@ -491,7 +492,8 @@ prepGO <- function(species = "human", abbr_species = NULL, gaf_url = NULL, obo_u
   if (is.null(obo_url)) {
     obo_url <- c("go-basic.obo" = "http://purl.obolibrary.org/obo/go/go-basic.obo")
     fn_obo <- names(obo_url)
-  } else {
+  } 
+  else {
     fn_obo <- obo_url %>% gsub("^.*/(.*)$", "\\1", .)
   }
 

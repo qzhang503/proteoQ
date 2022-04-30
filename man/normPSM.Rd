@@ -427,7 +427,7 @@ normPSM(
  \code{\link{pepHist}} and \code{\link{prnHist}} for extended examples in histogram visualization. \cr 
  \code{\link{extract_raws}} and \code{\link{extract_psm_raws}} for extracting MS file names \cr 
  
- \emph{Variable arguments of `filter_...`} \cr 
+ \emph{Variable arguments of \code{filter_...}} \cr 
  \code{\link{contain_str}}, \code{\link{contain_chars_in}}, \code{\link{not_contain_str}}, 
  \code{\link{not_contain_chars_in}}, \code{\link{start_with_str}}, 
  \code{\link{end_with_str}}, \code{\link{start_with_chars_in}} and 

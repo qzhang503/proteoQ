@@ -347,7 +347,8 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 	  y_label <- dots$y_label
 	}
 	
-	stopifnot(length(contrast_groups) > 0L)
+	if (!length(contrast_groups))
+	  stop("No constrasts available.")
 
 	dfw <- purrr::map(contrast_groups, function (x) {
 	  nms <- names(df)
@@ -376,7 +377,7 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 	})
 	
 	local({
-	  if (length(dfw) > 1) {
+	  if (length(dfw) > 1L) {
 	    ncols <- unlist(lapply(dfw, ncol))
 	    
 	    if (length(unique(ncols)) > 1L)
@@ -508,7 +509,7 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 		labs(title = title, x = x_label, y = y_label) +
 		theme
 
-	if (nrow(dfw_sub_top20) > 0) {
+	if (nrow(dfw_sub_top20)) {
 		p <- p + geom_text(data = dfw_sub_top20, 
 		                   mapping = aes(x = log2Ratio, 
 		                                 y = -log10(pVal), 
@@ -552,45 +553,14 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 	                                   height = height, 
 	                                   !!!ggsave_dots)))
 
-	# Venn
-	summ_venn <- function(df, id, contrast_groups) {
-		stopifnot(length(contrast_groups) <= 5)
-
-		universe <- sort(unique(df[[id]]))
-
-		Counts <- matrix(0, nrow = length(universe), ncol = length(contrast_groups)) %>%
-			`rownames<-`(universe) %>%
-			`colnames<-`(contrast_groups)
-
-		for (Group in contrast_groups) {
-			ids <- df %>% dplyr::filter(Contrast == Group) %>% dplyr::select(id) %>% unlist()
-			Counts[, Group] <- rownames(Counts) %in% ids
-		}
-
-		return(Counts)
-	}
-
-	plot_venn <- function(Counts, filepath, direction) {
-		myPalette <- brewer.pal(n = 9, name = "Set1")
-		Width <- 3
-		Height <- 3
-
-		fn_prefix <- paste0(direction, "_venn")
-
-		png(file.path(filepath, fml_nm, paste0(fn_prefix, ".png")), 
-		    width = Width, height = Height, units = "in", res = 300)
-			limma::vennDiagram(limma::vennCounts(Counts), circle.col = myPalette, cex = .5)
-		dev.off()
-		write.table(Counts, file.path(filepath, fml_nm, paste0(fn_prefix, ".txt")), sep = "\t", 
-		            col.names = TRUE, row.names = TRUE, quote = FALSE)	
-	}
-
-	summ_venn(dfw_greater, id, contrast_groups) %>% 
-	  plot_venn(filepath, paste0(fn_prefix, "_greater"))
+	local({
+	  gr <- summ_venn(dfw_greater, id, contrast_groups)
+	  plot_venn(gr, filepath, paste0(fn_prefix, "_greater"), fml_nm)
+	  
+	  le <- summ_venn(dfw_less, id, contrast_groups)
+	  plot_venn(le, filepath, paste0(fn_prefix, "_less"), fml_nm)
+	})
 	
-	summ_venn(dfw_less, id, contrast_groups) %>% 
-	  plot_venn(filepath, paste0(fn_prefix, "_less"))
-
 	saveRDS(
 	  list(
 	    data = dfw, 
@@ -616,6 +586,62 @@ fullVolcano <- function(df = NULL, id = "gene", contrast_groups = NULL, theme = 
 	
 }
 
+
+#' Venn counts.
+#' 
+#' @param df A data frame.
+#' @param id ID.
+#' @param contrast_groups Contrast groups
+#' @param max_size The maximum number of contrast groups.
+summ_venn <- function(df, id, contrast_groups, max_size = 20L) 
+{
+  if (length(contrast_groups) > max_size)
+    return(NULL)
+
+  universe <- sort(unique(df[[id]]))
+  
+  Counts <- matrix(0, nrow = length(universe), ncol = length(contrast_groups)) %>%
+    `rownames<-`(universe) %>%
+    `colnames<-`(contrast_groups)
+  
+  for (Group in contrast_groups) {
+    ids <- df %>% dplyr::filter(Contrast == Group) %>% dplyr::select(id) %>% unlist()
+    Counts[, Group] <- rownames(Counts) %in% ids
+  }
+  
+  invisible(Counts)
+}
+
+
+#' Plots Venn.
+#' 
+#' @param Counts Counts from \link{summ_venn}.
+#' @param filepath A file path.
+#' @param direction A direction of up or down.
+#' @param fml_nm Formula name.
+plot_venn <- function(Counts, filepath, direction, fml_nm) 
+{
+  if (is.null(Counts))
+    return(NULL)
+
+  myPalette <- brewer.pal(n = 9, name = "Set1")
+  Width <- 3
+  Height <- 3
+  fn_prefix <- paste0(direction, "_venn")
+  
+  write.table(Counts, file.path(filepath, fml_nm, paste0(fn_prefix, ".txt")), 
+              sep = "\t", col.names = TRUE, row.names = TRUE, quote = FALSE)
+  
+  if (ncol(Counts) > 5L) {
+    warning("No Venn diagrams with more than 5 groups.")
+    return(NULL)
+  }
+  
+  png(file.path(filepath, fml_nm, paste0(fn_prefix, ".png")), 
+      width = Width, height = Height, units = "in", res = 300)
+  limma::vennDiagram(limma::vennCounts(Counts), circle.col = myPalette, cex = .5)
+  dev.off()
+}
 
 #' Volcano plots of protein \code{log2FC} under given gene sets
 #'

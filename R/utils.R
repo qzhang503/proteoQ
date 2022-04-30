@@ -2832,6 +2832,9 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
                       is_psm = FALSE, col_select = NULL, col_order = NULL, 
                       theme = NULL, ...) 
 {
+  fn_suffix <- gsub("^.*\\.([^.]*)$", "\\1", filepath)
+  fn_prefix <- gsub("\\.[^.]*$", "", filepath)
+  
   df <- df %>% 
     dplyr::select(which(not_all_NA(.)))
   
@@ -2973,6 +2976,12 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
       dplyr::mutate(Channel = factor(Channel, levels = Levels)) %>% 
       dplyr::filter(!is.na(SD))
     
+    mean_sd <- df_sd %>% 
+      dplyr::group_by(Channel) %>% 
+      dplyr::summarise(SD = mean(SD, na.rm = TRUE)) %>% 
+      dplyr::mutate(SD = round(SD, digits = 3L)) %T>% 
+      readr::write_tsv(paste0(fn_prefix, ".txt"))
+    
     p <- ggplot() +
       geom_violin(df_sd, mapping = aes(x = Channel, y = SD, fill = Channel), 
                   alpha = .8, size = .25, linetype = 0, 
@@ -2984,15 +2993,17 @@ sd_violin <- function(df = NULL, id = NULL, filepath = NULL,
                    shape=23, size=2, fill="white", alpha=.5) +
       labs(title = expression(""), 
            x = expression("Channel"), 
-           y = expression("SD ("*log[2]*"FC)")) 
+           y = expression("SD ("*log[2]*"FC)")) + 
+      geom_text(data = mean_sd, aes(x = Channel, label = SD, y = SD + 0.2), 
+                size = 5, colour = "red", alpha = .5)
     
     if (!is.null(ymax)) {
       if (is.null(ybreaks)) {
         ybreaks <- ifelse(ymax > 1, 0.5, ifelse(ymax > 0.5, 0.2, 0.1))
       }
 
-      p <- p + scale_y_continuous(limits = c(0, ymax), 
-                                  breaks = seq(0, ymax, ybreaks))
+      p <- p + 
+        scale_y_continuous(limits = c(0, ymax), breaks = seq(0, ymax, ybreaks))
     }
 
     if (is.null(theme) || purrr::is_function(theme)) 
@@ -4347,6 +4358,23 @@ get_col_types <- function ()
     pep_isdecoy = col_logical(),
     pep_ivmod = col_character(),
     pep_len = col_integer(), 
+    
+    pep_ms2_moverzs = col_character(),
+    pep_ms2_ints = col_character(), 
+    pep_ms2_theos = col_character(),
+    pep_ms2_theos2 = col_character(),
+    pep_ms2_exptints = col_character(),
+    pep_ms2_exptints2 = col_character(),
+    
+    pep_n_matches = col_integer(), 
+    pep_n_matches2 = col_integer(),
+    pep_ms2_deltas = col_character(),
+    pep_ms2_ideltas = col_character(),
+    pep_ms2_deltas2 = col_character(), 
+    pep_ms2_ideltas2 = col_character(),
+    pep_ms2_deltas_mean = col_double(),
+    pep_ms2_deltas_sd = col_double(),
+    
     pep_issig = col_logical(),
     pep_score = col_double(),
     pep_score_co = col_double(),
@@ -4506,8 +4534,7 @@ write_excel_wb <- function (df, sheetName = "Setup", dat_dir = NULL, filename)
 #' @param prefer_group Logical; if TRUE, prefer label_scheme_group over
 #'   label_scheme etc.
 #' @inheritParams load_expts
-load_ls_group <- function (dat_dir, filename = "label_scheme", 
-                           prefer_group = TRUE) 
+load_ls_group <- function (dat_dir, filename = "label_scheme", prefer_group = TRUE) 
 {
   filename <- rlang::as_string(rlang::enexpr(filename))
   
@@ -4599,4 +4626,58 @@ parse_filename <- function (filename, dat_dir, must_exists = FALSE)
   list(fn_prefix = fn_prefix, fn_suffix = fn_suffix)
 }
 
+
+#' Reprocesses of Bruker MGF files.
+#' 
+#' @param file A file name with prepending path.
+#' 
+#' @examples
+#' \donttest{
+#' filepath = "F:/timsTOF/mgf"
+#' mprocBrukerMGF(filepath)
+#' }
+procBrukerMGF <- function (file) 
+{
+  message("Processing: ", file)
+  
+  lines <- readLines(file)
+  
+  fi <- local({
+    hdr <- lines[1:50L]
+    ln <- hdr[grepl("###.*\\.d$", hdr)]
+    nm <- gsub("###\t(.*\\.d$)", "\\1", ln)
+    paste0("File:", nm)
+  })
+  
+  rows <- which(stringi::stri_startswith_fixed(lines, "TITLE="))
+  
+  tits <- lapply(rows, function (i) 
+    gsub("^([^,]*?), (.*)", paste("\\1", fi, "\\2", sep = ", "), lines[i]))
+  
+  lines[rows] <- tits
+  
+  writeLines(unlist(lines), file)
+}
+
+
+#' Batch-reprocessing of Bruker MGF files.
+#' 
+#' @param filepath A file path to MGF.
+#' @param n_cores The number of CPU cores.
+#' @export
+mprocBrukerMGF <- function (filepath, n_cores = 1L) 
+{
+  files <- list.files(filepath, pattern = "\\.mgf$", full.names = TRUE, 
+                      recursive = TRUE)
+  
+  if (n_cores > 1L) {
+    n_cores <- min(parallel::detectCores(), n_cores)
+    cl <- parallel::makeCluster(getOption("cl.cores", n_cores))
+    parallel::clusterApply(cl, files, procBrukerMGF)
+    parallel::stopCluster(cl)
+  }
+  else {
+    lapply(files, procBrukerMGF)
+  }
+}
 

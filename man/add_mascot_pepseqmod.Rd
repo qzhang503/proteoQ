@@ -2,7 +2,7 @@
 % Please edit documentation in R/psmtable.R
 \name{add_mascot_pepseqmod}
 \alias{add_mascot_pepseqmod}
-\title{Adds the `pep_seq_mod` field to Mascot PSMs}
+\title{Adds the \code{pep_seq_mod} field to Mascot PSMs}
 \usage{
 add_mascot_pepseqmod(
   df = NULL,
@@ -22,5 +22,5 @@ variable modification(s), entries without phosphorylation will be removed.
 The default is TRUE.}
 }
 \description{
-Adds the `pep_seq_mod` field to Mascot PSMs
+Adds the \code{pep_seq_mod} field to Mascot PSMs
 }

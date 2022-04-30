@@ -33,5 +33,5 @@ for preparing custom entrez files.}
 }
 \description{
 For Spectrum Mill with duplicates, such as P06748|Q61937|P06748|Q61937,
-removals under `accession_numbers`.
+removals under \code{accession_numbers}.
 }
