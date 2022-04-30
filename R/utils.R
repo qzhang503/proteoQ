@@ -4664,6 +4664,7 @@ procBrukerMGF <- function (file)
 #' 
 #' @param filepath A file path to MGF.
 #' @param n_cores The number of CPU cores.
+#' @export
 mprocBrukerMGF <- function (filepath, n_cores = 1L) 
 {
   files <- list.files(filepath, pattern = "\\.mgf$", full.names = TRUE, 
