@@ -790,7 +790,7 @@ calclfqPepInts <- function (df, filelist, group_psm_by)
     
     df_num <- df_num %>%
       dplyr::mutate(ID = factor(ID, levels = id_levels)) %>%
-      tidyr::spread(ID, value)
+      tidyr::pivot_wider(names_from = ID, values_from = value)
   })
   
   if (FALSE) {

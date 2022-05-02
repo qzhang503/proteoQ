@@ -4322,8 +4322,11 @@ PSM2Pep <- function(method_psm_pep = c("median", "mean", "weighted_mean",
              recursive = TRUE, showWarnings = FALSE)
   
   filelist <- list.files(path = file.path(dat_dir, "PSM"), 
-                         pattern = "*_PSM_N\\.txt$") %>%
+                         pattern = "_PSM_N\\.txt$") %>%
     reorder_files()
+  
+  if (!length(filelist)) 
+    stop("Files of \"_PSM_N.txt\" not found.")
   
   message("Primary column keys in \"PSM/TMTset1_LCMSinj1_PSM_N.txt\" etc. ", 
           "for \"filter_\" varargs.")
