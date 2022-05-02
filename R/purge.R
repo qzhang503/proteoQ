@@ -453,8 +453,11 @@ purgePSM <- function (dat_dir = NULL, pt_cv = NULL, max_cv = NULL, adjSD = FALSE
   }
 
   filelist <- list.files(path = file.path(dat_dir, "PSM"), 
-                         pattern = "*_PSM_N\\.txt$") %>%
+                         pattern = "_PSM_N\\.txt$") %>%
     reorder_files()
+  
+  if (!length(filelist)) 
+    stop("Files of \"_PSM_N.txt\" not found.")
   
   dir.create(file.path(dat_dir, "PSM/Copy"), 
              recursive = TRUE, showWarnings = FALSE)
