@@ -62,7 +62,6 @@ Imports:
     parallel,
     pheatmap,
     proteoCpp, 
-    proteoQDA,
     proxyC,
     rlang,
     Biobase,
@@ -76,7 +75,6 @@ Imports:
     Rcpp
 RoxygenNote: 7.1.2
 Remotes:
-    qzhang503/proteoCpp, 
-    qzhang503/proteoQDA
+    qzhang503/proteoCpp
 LinkingTo: 
     Rcpp
